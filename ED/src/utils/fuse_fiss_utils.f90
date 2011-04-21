@@ -283,6 +283,21 @@ module fuse_fiss_utils
             cpatch%hcapveg              (ico) = cpatch%hcapveg           (ico) * area_scale
             cpatch%veg_energy           (ico) = cpatch%veg_energy        (ico) * area_scale
             cpatch%monthly_dndt         (ico) = cpatch%monthly_dndt      (ico) * area_scale
+            cpatch%today_gpp            (ico) = cpatch%today_gpp         (ico) * area_scale
+            cpatch%today_nppleaf        (ico) = cpatch%today_nppleaf     (ico) * area_scale
+            cpatch%today_nppfroot       (ico) = cpatch%today_nppfroot    (ico) * area_scale
+            cpatch%today_nppsapwood     (ico) = cpatch%today_nppsapwood  (ico) * area_scale
+            cpatch%today_nppcroot       (ico) = cpatch%today_nppcroot    (ico) * area_scale
+            cpatch%today_nppseeds       (ico) = cpatch%today_nppseeds    (ico) * area_scale
+            cpatch%today_nppwood        (ico) = cpatch%today_nppwood     (ico) * area_scale
+            cpatch%today_nppdaily       (ico) = cpatch%today_nppdaily    (ico) * area_scale
+            cpatch%today_gpp_pot        (ico) = cpatch%today_gpp_pot     (ico) * area_scale
+            cpatch%today_gpp_max        (ico) = cpatch%today_gpp_max     (ico) * area_scale
+            cpatch%today_leaf_resp      (ico) = cpatch%today_leaf_resp   (ico) * area_scale
+            cpatch%today_root_resp      (ico) = cpatch%today_root_resp   (ico) * area_scale
+                     
+            !----- Crown area shall not exceed one. ---------------------------------------!
+            cpatch%crown_area           (ico) = min(1.,cpatch%crown_area (ico) * area_scale)
             if (idoutput > 0 .or. imoutput > 0 .or. iqoutput > 0) then
                cpatch%dmean_par_v       (ico) = cpatch%dmean_par_v       (ico) * area_scale
                cpatch%dmean_par_v_beam  (ico) = cpatch%dmean_par_v_beam  (ico) * area_scale
@@ -714,6 +729,7 @@ module fuse_fiss_utils
                cpatch%lai                  (ico) = cpatch%lai               (ico) * 0.5
                cpatch%wpa                  (ico) = cpatch%wpa               (ico) * 0.5
                cpatch%wai                  (ico) = cpatch%wai               (ico) * 0.5
+               cpatch%crown_area           (ico) = cpatch%crown_area        (ico) * 0.5
                cpatch%nplant               (ico) = cpatch%nplant            (ico) * 0.5
                cpatch%mean_gpp             (ico) = cpatch%mean_gpp          (ico) * 0.5
                cpatch%mean_leaf_resp       (ico) = cpatch%mean_leaf_resp    (ico) * 0.5
@@ -722,6 +738,12 @@ module fuse_fiss_utils
                cpatch%mean_storage_resp    (ico) = cpatch%mean_storage_resp (ico) * 0.5
                cpatch%mean_vleaf_resp      (ico) = cpatch%mean_vleaf_resp   (ico) * 0.5
                cpatch%today_gpp            (ico) = cpatch%today_gpp         (ico) * 0.5
+               cpatch%today_nppleaf        (ico) = cpatch%today_nppleaf     (ico) * 0.5
+               cpatch%today_nppfroot       (ico) = cpatch%today_nppfroot    (ico) * 0.5
+               cpatch%today_nppsapwood     (ico) = cpatch%today_nppsapwood  (ico) * 0.5
+               cpatch%today_nppcroot       (ico) = cpatch%today_nppcroot    (ico) * 0.5
+               cpatch%today_nppseeds       (ico) = cpatch%today_nppseeds    (ico) * 0.5
+               cpatch%today_nppdaily       (ico) = cpatch%today_nppdaily    (ico) * 0.5
                cpatch%today_gpp_pot        (ico) = cpatch%today_gpp_pot     (ico) * 0.5
                cpatch%today_gpp_max        (ico) = cpatch%today_gpp_max     (ico) * 0.5
                cpatch%today_leaf_resp      (ico) = cpatch%today_leaf_resp   (ico) * 0.5
@@ -840,8 +862,9 @@ module fuse_fiss_utils
       cpatch%lai(idt)                  = cpatch%lai(isc)
       cpatch%wpa(idt)                  = cpatch%wpa(isc)
       cpatch%wai(idt)                  = cpatch%wai(isc)
+      cpatch%crown_area(idt)           = cpatch%crown_area(isc)
       cpatch%bstorage(idt)             = cpatch%bstorage(isc)
-      cpatch%solvable(idt)             = cpatch%solvable(isc)
+      cpatch%resolvable(idt)           = cpatch%resolvable(isc)
 
       do imonth = 1,13
          cpatch%cb(imonth,idt)         = cpatch%cb(imonth,isc)
@@ -870,6 +893,13 @@ module fuse_fiss_utils
       cpatch%today_leaf_resp(idt)      = cpatch%today_leaf_resp(isc)
       cpatch%today_root_resp(idt)      = cpatch%today_root_resp(isc)
       cpatch%today_gpp(idt)            = cpatch%today_gpp(isc)
+      cpatch%today_nppleaf(idt)        = cpatch%today_nppleaf(isc)
+      cpatch%today_nppfroot(idt)       = cpatch%today_nppfroot(isc)
+      cpatch%today_nppsapwood(idt)     = cpatch%today_nppsapwood(isc)
+      cpatch%today_nppcroot(idt)       = cpatch%today_nppcroot(isc)
+      cpatch%today_nppseeds(idt)       = cpatch%today_nppseeds(isc)
+      cpatch%today_nppwood(idt)        = cpatch%today_nppwood(isc)
+      cpatch%today_nppdaily(idt)       = cpatch%today_nppdaily(isc)
       cpatch%today_gpp_pot(idt)        = cpatch%today_gpp_pot(isc)
       cpatch%today_gpp_max(idt)        = cpatch%today_gpp_max(isc)
       cpatch%growth_respiration(idt)   = cpatch%growth_respiration(isc)
@@ -925,6 +955,7 @@ module fuse_fiss_utils
 
       cpatch%gpp(idt)                  = cpatch%gpp(isc)
       cpatch%paw_avg(idt)              = cpatch%paw_avg(isc)
+      cpatch%elongf(idt)               = cpatch%elongf(isc)
 
       cpatch%turnover_amp(idt)         = cpatch%turnover_amp(isc)     
       cpatch%llspan(idt)               = cpatch%llspan(isc)     
@@ -958,6 +989,13 @@ module fuse_fiss_utils
          cpatch%dmean_par_v_beam      (idt) = cpatch%dmean_par_v_beam      (isc) 
          cpatch%dmean_par_v_diff      (idt) = cpatch%dmean_par_v_diff      (isc) 
          cpatch%dmean_gpp             (idt) = cpatch%dmean_gpp             (isc)
+         cpatch%dmean_nppleaf         (idt) = cpatch%dmean_nppleaf         (isc)
+         cpatch%dmean_nppfroot        (idt) = cpatch%dmean_nppfroot        (isc)
+         cpatch%dmean_nppsapwood      (idt) = cpatch%dmean_nppsapwood      (isc)
+         cpatch%dmean_nppcroot        (idt) = cpatch%dmean_nppcroot        (isc)
+         cpatch%dmean_nppseeds        (idt) = cpatch%dmean_nppseeds        (isc)
+         cpatch%dmean_nppwood         (idt) = cpatch%dmean_nppwood         (isc)
+         cpatch%dmean_nppdaily        (idt) = cpatch%dmean_nppdaily        (isc)
          cpatch%dmean_leaf_resp       (idt) = cpatch%dmean_leaf_resp       (isc)
          cpatch%dmean_root_resp       (idt) = cpatch%dmean_root_resp       (isc)
          cpatch%dmean_fs_open         (idt) = cpatch%dmean_fs_open         (isc)
@@ -997,6 +1035,14 @@ module fuse_fiss_utils
          cpatch%mmean_beamext_level     (idt) = cpatch%mmean_beamext_level     (isc)
          cpatch%mmean_diffext_level     (idt) = cpatch%mmean_diffext_level     (isc)
          cpatch%mmean_gpp               (idt) = cpatch%mmean_gpp               (isc)
+         cpatch%mmean_nppleaf           (idt) = cpatch%mmean_nppleaf           (isc)
+         cpatch%mmean_nppfroot          (idt) = cpatch%mmean_nppfroot          (isc)
+         cpatch%mmean_nppsapwood        (idt) = cpatch%mmean_nppsapwood        (isc)
+         cpatch%mmean_nppcroot          (idt) = cpatch%mmean_nppcroot          (isc)
+         cpatch%mmean_nppseeds          (idt) = cpatch%mmean_nppseeds          (isc)
+         cpatch%mmean_nppwood           (idt) = cpatch%mmean_nppwood           (isc)
+         cpatch%mmean_nppdaily          (idt) = cpatch%mmean_nppdaily          (isc)
+         
          cpatch%mmean_leaf_resp         (idt) = cpatch%mmean_leaf_resp         (isc)
          cpatch%mmean_root_resp         (idt) = cpatch%mmean_root_resp         (isc)
          cpatch%mmean_growth_resp       (idt) = cpatch%mmean_growth_resp       (isc)
@@ -1138,8 +1184,9 @@ module fuse_fiss_utils
       end if
       !------------------------------------------------------------------------------------!
 
-      cpatch%wpa(recc)    = cpatch%wpa(recc)  + cpatch%wpa(donc)
-      cpatch%wai(recc)    = cpatch%wai(recc)  + cpatch%wai(donc)
+      cpatch%wpa(recc)        = cpatch%wpa(recc)  + cpatch%wpa(donc)
+      cpatch%wai(recc)        = cpatch%wai(recc)  + cpatch%wai(donc)
+      cpatch%crown_area(recc) = min(1.0,cpatch%crown_area(recc)  + cpatch%crown_area(donc))
       cpatch%veg_energy(recc) = cpatch%veg_energy(recc) + cpatch%veg_energy(donc)
       cpatch%veg_water(recc)  = cpatch%veg_water(recc)  + cpatch%veg_water(donc)
       cpatch%hcapveg(recc)    = cpatch%hcapveg(recc)    + cpatch%hcapveg(donc)
@@ -1207,7 +1254,31 @@ module fuse_fiss_utils
 
       cpatch%today_gpp(recc)     = cpatch%today_gpp(recc)                                  &
                                  + cpatch%today_gpp(donc)
-
+                                 
+      cpatch%today_nppleaf(recc) = cpatch%today_nppleaf(recc)                              &
+                                 + cpatch%today_nppleaf(donc)
+                                 
+      cpatch%today_nppfroot(recc)= cpatch%today_nppfroot(recc)                             &
+                                 + cpatch%today_nppfroot(donc)
+                                 
+      cpatch%today_nppsapwood(recc) = cpatch%today_nppsapwood(recc)                        &
+                                 + cpatch%today_nppsapwood(donc)
+                                 
+      cpatch%today_nppcroot(recc)= cpatch%today_nppcroot(recc)                             &
+                                 + cpatch%today_nppcroot(donc)
+                                 
+      cpatch%today_nppseeds(recc)= cpatch%today_nppseeds(recc)                             &
+                                 + cpatch%today_nppseeds(donc)
+                                 
+      cpatch%today_nppwood(recc) = cpatch%today_nppwood(recc)                              &
+                                 + cpatch%today_nppwood(donc)
+                                 
+      cpatch%today_nppdaily(recc)= cpatch%today_nppdaily(recc)                             &
+                                 + cpatch%today_nppdaily(donc)
+                                 
+      cpatch%today_nppleaf(recc) = cpatch%today_nppleaf(recc)                              &
+                                 + cpatch%today_nppleaf(donc)
+                                 
       cpatch%today_gpp_pot(recc) = cpatch%today_gpp_pot(recc)                              &
                                  + cpatch%today_gpp_pot(donc)
 
@@ -1383,14 +1454,34 @@ module fuse_fiss_utils
       cpatch%root_respiration(recc) = cpatch%root_respiration(recc)                        &
                                     + cpatch%root_respiration(donc)
       !------------------------------------------------------------------------------------!
-     
-      cpatch%paw_avg(recc) = cpatch%paw_avg(recc) + cpatch%paw_avg(donc)
 
-      cpatch%turnover_amp(recc)  = (cpatch%turnover_amp(recc) * cpatch%nplant(recc)        &
-           + cpatch%turnover_amp(donc) * cpatch%nplant(donc) ) *newni   
-      cpatch%llspan(recc)  = (cpatch%llspan(recc) * cpatch%nplant(recc)                    &
-           + cpatch%llspan(donc) * cpatch%nplant(donc) ) *newni   
-      cpatch%vm_bar(recc)  = (cpatch%vm_bar(recc) * cpatch%nplant(recc)                    &
+
+      !------------------------------------------------------------------------------------!
+      !     Potential available water and elongation factor can be consider "intensive"    !
+      ! variable water.                                                                    !
+      !------------------------------------------------------------------------------------!
+      cpatch%paw_avg(recc) = ( cpatch%paw_avg(recc)     * cpatch%nplant(recc)              &
+                             + cpatch%paw_avg(donc)     * cpatch%nplant(donc) )            &
+                           * newni
+      cpatch%elongf(recc)  = ( cpatch%elongf(recc)     * cpatch%nplant(recc)               &
+                             + cpatch%elongf(donc)     * cpatch%nplant(donc) )             &
+                           * newni
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !    Light-phenology characteristics (MLO I am not sure if they should be scaled by  !
+      ! nplant or LAI, it seems LAI would make more sense...)
+      !------------------------------------------------------------------------------------!
+      cpatch%turnover_amp(recc)  = ( cpatch%turnover_amp(recc) * cpatch%nplant(recc)       &
+                                   + cpatch%turnover_amp(donc) * cpatch%nplant(donc) )     &
+                                 *newni   
+
+      cpatch%llspan(recc)        = ( cpatch%llspan(recc)       * cpatch%nplant(recc)       &
+                                   + cpatch%llspan(donc)       * cpatch%nplant(donc) )     &
+                                 *newni
+
+      cpatch%vm_bar(recc)        = (cpatch%vm_bar(recc) * cpatch%nplant(recc)                    &
            + cpatch%vm_bar(donc) * cpatch%nplant(donc) ) *newni   
       cpatch%sla(recc)  = (cpatch%sla(recc) * cpatch%nplant(recc)                          &
            + cpatch%sla(donc) * cpatch%nplant(donc) ) *newni   
@@ -1439,6 +1530,42 @@ module fuse_fiss_utils
                                                  * cpatch%nplant(recc)                     &
                                                  + cpatch%dmean_gpp(donc)                  &
                                                  * cpatch%nplant(donc) ) * newni
+                                                 
+         cpatch%dmean_nppleaf           (recc) = ( cpatch%dmean_nppleaf(recc)              &
+                                                 * cpatch%nplant(recc)                     &
+                                                 + cpatch%dmean_nppleaf(donc)              &
+                                                 * cpatch%nplant(donc) ) * newni
+                                                 
+         cpatch%dmean_nppfroot          (recc) = ( cpatch%dmean_nppfroot(recc)             &
+                                                 * cpatch%nplant(recc)                     &
+                                                 + cpatch%dmean_nppfroot(donc)             &
+                                                 * cpatch%nplant(donc) ) * newni
+                                                 
+         cpatch%dmean_nppsapwood        (recc) = ( cpatch%dmean_nppsapwood(recc)           &
+                                                 * cpatch%nplant(recc)                     &
+                                                 + cpatch%dmean_nppsapwood(donc)           &
+                                                 * cpatch%nplant(donc) ) * newni
+                                                 
+         cpatch%dmean_nppcroot          (recc) = ( cpatch%dmean_nppcroot(recc)             &
+                                                 * cpatch%nplant(recc)                     &
+                                                 + cpatch%dmean_nppcroot(donc)             &
+                                                 * cpatch%nplant(donc) ) * newni
+                                                 
+         cpatch%dmean_nppseeds          (recc) = ( cpatch%dmean_nppseeds(recc)             &
+                                                 * cpatch%nplant(recc)                     &
+                                                 + cpatch%dmean_nppseeds(donc)             &
+                                                 * cpatch%nplant(donc) ) * newni
+                                                 
+         cpatch%dmean_nppwood           (recc) = ( cpatch%dmean_nppwood(recc)              &
+                                                 * cpatch%nplant(recc)                     &
+                                                 + cpatch%dmean_nppwood(donc)              &
+                                                 * cpatch%nplant(donc) ) * newni
+                                                 
+         cpatch%dmean_nppdaily          (recc) = ( cpatch%dmean_nppdaily(recc)             &
+                                                 * cpatch%nplant(recc)                     &
+                                                 + cpatch%dmean_nppdaily(donc)             &
+                                                 * cpatch%nplant(donc) ) * newni
+                                                 
          cpatch%dmean_leaf_resp         (recc) = ( cpatch%dmean_leaf_resp(recc)            &
                                                  * cpatch%nplant(recc)                     &
                                                  + cpatch%dmean_leaf_resp(donc)            &
@@ -1528,6 +1655,42 @@ module fuse_fiss_utils
                                                * cpatch%nplant(recc)                       &
                                                + cpatch%mmean_gpp(donc)                    &
                                                * cpatch%nplant(donc) ) * newni
+                                               
+         cpatch%mmean_nppleaf           (recc) = ( cpatch%mmean_nppleaf(recc)              &
+                                                 * cpatch%nplant(recc)                     &
+                                                 + cpatch%mmean_nppleaf(donc)              &
+                                                 * cpatch%nplant(donc) ) * newni
+                                                 
+         cpatch%mmean_nppfroot          (recc) = ( cpatch%mmean_nppfroot(recc)             &
+                                                 * cpatch%nplant(recc)                     &
+                                                 + cpatch%mmean_nppfroot(donc)             &
+                                                 * cpatch%nplant(donc) ) * newni
+                                                 
+         cpatch%mmean_nppsapwood        (recc) = ( cpatch%mmean_nppsapwood(recc)           &
+                                                 * cpatch%nplant(recc)                     &
+                                                 + cpatch%mmean_nppsapwood(donc)           &
+                                                 * cpatch%nplant(donc) ) * newni
+                                                 
+         cpatch%mmean_nppcroot          (recc) = ( cpatch%mmean_nppcroot(recc)             &
+                                                 * cpatch%nplant(recc)                     &
+                                                 + cpatch%mmean_nppcroot(donc)             &
+                                                 * cpatch%nplant(donc) ) * newni
+                                                 
+         cpatch%mmean_nppseeds          (recc) = ( cpatch%mmean_nppseeds(recc)             &
+                                                 * cpatch%nplant(recc)                     &
+                                                 + cpatch%mmean_nppseeds(donc)             &
+                                                 * cpatch%nplant(donc) ) * newni
+                                                 
+         cpatch%mmean_nppwood           (recc) = ( cpatch%mmean_nppwood(recc)              &
+                                                 * cpatch%nplant(recc)                     &
+                                                 + cpatch%mmean_nppwood(donc)              &
+                                                 * cpatch%nplant(donc) ) * newni
+                                                 
+         cpatch%mmean_nppdaily          (recc) = ( cpatch%mmean_nppdaily(recc)             &
+                                                 * cpatch%nplant(recc)                     &
+                                                 + cpatch%mmean_nppdaily(donc)             &
+                                                 * cpatch%nplant(donc) ) * newni
+                                                 
          cpatch%mmean_leaf_resp       (recc) = ( cpatch%mmean_leaf_resp(recc)              &
                                                * cpatch%nplant(recc)                       &
                                                + cpatch%mmean_leaf_resp(donc)              &
@@ -1760,11 +1923,18 @@ module fuse_fiss_utils
                                      , polygontype         & ! structure
                                      , sitetype            & ! structure
                                      , patchtype           ! ! structure
-      use fusion_fission_coms , only : ff_ndbh             & ! intent(in)
-                                     , ntol                & ! intent(in)
-                                     , profile_tol         & ! intent(in)
-                                     , pat_tolerance_max   & ! intent(in)
+      use fusion_fission_coms , only : ff_nhgt             & ! intent(in)
+                                     , niter_patfus        & ! intent(in)
+                                     , dark_cumlai_min     & ! intent(in)
+                                     , dark_cumlai_max     & ! intent(in)
+                                     , dark_cumlai_mult    & ! intent(in)
+                                     , sunny_cumlai_min    & ! intent(in)
+                                     , sunny_cumlai_max    & ! intent(in)
+                                     , sunny_cumlai_mult   & ! intent(in)
                                      , print_fuse_details  & ! intent(in)
+                                     , light_toler_min     & ! intent(in)
+                                     , light_toler_max     & ! intent(in)
+                                     , light_toler_mult    & ! intent(in)
                                      , fuse_prefix         ! ! intent(in)
       use ed_max_dims         , only : n_pft               & ! intent(in)
                                      , str_len             ! ! intent(in)
@@ -1772,7 +1942,8 @@ module fuse_fiss_utils
                                      , maxcohort           ! ! intent(in)
       use ed_node_coms        , only : mynum               ! ! intent(in)
       use ed_misc_coms        , only : current_time        ! ! intent(in)
-
+      use grid_coms           , only : nzg                 & ! intent(in)
+                                     , nzs                 ! ! intent(in)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       type(edtype)          , target      :: cgrid           ! Current grid
@@ -1787,22 +1958,36 @@ module fuse_fiss_utils
       type(sitetype)        , pointer     :: tempsite        ! Temporary site
       logical, dimension(:) , allocatable :: fuse_table      ! Flag: this will remain.
       character(len=str_len)              :: fuse_fout       ! Filename for detailed output
-      real   , dimension(n_pft,ff_ndbh)   :: mean_nplant     ! Mean # of plants
-      integer                             :: ipy,isi         ! Counters
-      integer                             :: jpy,jsi         ! Counters
-      integer                             :: ipa,ico         ! Counters
-      integer                             :: donp,recp       ! Counters
-      integer                             :: ipft,idbh       ! Counters
+      real   , dimension(ff_nhgt)         :: laimax_cum      ! Mean # of plants
+      integer                             :: ipy             ! Counters
+      integer                             :: isi             ! Counters
+      integer                             :: jpy             ! Counters
+      integer                             :: jsi             ! Counters
+      integer                             :: ipa             ! Counters
+      integer                             :: ico             ! Counters
+      integer                             :: donp            ! Counters
+      integer                             :: recp            ! Counters
+      integer                             :: ipft            ! Counters
+      integer                             :: ihgt            ! Counters
+      integer                             :: ifus            ! Counters
       integer                             :: npatches_new    ! New # of patches
       integer                             :: npatches_old    ! Old # of patches
+      integer                             :: npatches_orig   ! Original # of patches
       logical                             :: fuse_flag       ! Flag: fusion will happen
       logical                             :: recp_found      ! Found a receptor candidate
-      logical                             :: small_donp      ! Donor patch bin too small
-      logical                             :: small_recp      ! Receptor patch bin too small
-      real                                :: diff            !
-      real                                :: refv            !
-      real                                :: norm            !
-      real                                :: tolerance_mult  ! Multiplying factor for tol.
+      logical                             :: sunny_donp      ! Donor patch bin too sunny
+      logical                             :: sunny_recp      ! Receptor patch bin too sunny
+      logical                             :: dark_donp       ! Donor patch bin too small
+      logical                             :: dark_recp       ! Receptor patch bin too small
+      real                                :: diff            ! Absolute difference in prof.
+      real                                :: refv            ! Reference value of bin
+      real                                :: norm            ! Normalised difference
+      real                                :: llevel_donp     ! Light level of donor patch
+      real                                :: llevel_recp     ! Light level of rec.  patch
+      real                                :: sunny_toler     ! Light layer tolerance.
+      real                                :: dark_lai80      ! Minimum dark layer.
+      real                                :: dark_toler      ! Dark layer tolerance.
+      real                                :: light_toler     ! Light level Relative toler.
       real                                :: old_area        ! For area conservation check
       real                                :: new_area        ! For area conservation check
       real                                :: old_lai_tot     ! Old total LAI
@@ -1813,6 +1998,8 @@ module fuse_fiss_utils
       real                                :: elim_lai        ! Elim. LAI during 1 fusion
       real                                :: elim_nplant_tot ! Total eliminated nplant
       real                                :: elim_lai_tot    ! Elim. eliminated LAI
+      real                                :: cumlai_recp     ! Cumulative LAI (receptor)
+      real                                :: cumlai_donp     ! Cumulative LAI (donor)
       integer                             :: tot_npolygons   ! Total # of polygons
       integer                             :: tot_nsites      ! Total # of sites
       integer                             :: tot_npatches    ! Total # of patches
@@ -1878,6 +2065,9 @@ module fuse_fiss_utils
             !----- Skip this site if it contains only one patch... ------------------------!
             if (csite%npatches < 2) cycle siteloop
 
+            !----- Save original number of patches. ---------------------------------------!
+            npatches_orig = csite%npatches
+
             !----- Allocate the swapper patches in the site type. -------------------------!
             nullify(tempsite)
             allocate(tempsite)
@@ -1907,8 +2097,8 @@ module fuse_fiss_utils
                old_area  = old_area + csite%area(ipa)
                cpatch => csite%patch(ipa)
                do ico = 1, cpatch%ncohorts
-                  old_nplant_tot = old_nplant_tot + cpatch%nplant(ico)*csite%area(ipa)
-                  old_lai_tot    = old_lai_tot    + cpatch%lai(ico)*csite%area(ipa)
+                  old_nplant_tot = old_nplant_tot + cpatch%nplant(ico) * csite%area(ipa)
+                  old_lai_tot    = old_lai_tot    + cpatch%lai(ico)    * csite%area(ipa)
                end do
             end do
             !------------------------------------------------------------------------------!
@@ -1939,7 +2129,7 @@ module fuse_fiss_utils
                !---------------------------------------------------------------------------!
                if (print_fuse_details) then
                   open (unit=72,file=trim(fuse_fout),status='old',action='write'           &
-                                                     ,position='append')
+                                                    ,position='append')
                   write(unit=72,fmt='(a,i6,a)') '     * Patch ',donp,' is empty.'
                   close(unit=72,status='keep')
                end if
@@ -1965,7 +2155,8 @@ module fuse_fiss_utils
                   !     Take an average of the patch properties of donpatch and recpatch,  !
                   ! and assign the average recpatch.                                       !
                   !------------------------------------------------------------------------!
-                  call fuse_2_patches(csite,donp,recp,cpoly%met(isi)%prss,cpoly%lsl(isi)   &
+                  call fuse_2_patches(csite,donp,recp,nzg,nzs,cpoly%met(isi)%prss          &
+                                     ,cpoly%lsl(isi),cpoly%ntext_soil(:,isi)               &
                                      ,cpoly%green_leaf_factor(:,isi),elim_nplant,elim_lai)
 
 
@@ -2035,8 +2226,11 @@ module fuse_fiss_utils
             !    maxpatch.                                                                 !
             !------------------------------------------------------------------------------!
             !----- Start with no multiplication factor. -----------------------------------!
-            tolerance_mult = 1.0
-            mainfuseloop: do
+            dark_toler   = dark_cumlai_max
+            sunny_toler  = sunny_cumlai_min
+            light_toler  = light_toler_min
+
+            mainfuseloop: do ifus=0,niter_patfus
                npatches_old = count(fuse_table)
                npatches_new = npatches_old
 
@@ -2047,9 +2241,11 @@ module fuse_fiss_utils
                if (print_fuse_details) then
                   open (unit=72,file=trim(fuse_fout),status='old',action='write'           &
                                                      ,position='append')
-                  write(unit=72,fmt='(a,1x,a,1x,es12.5,a)')                                &
+                  write(unit=72,fmt='(a,1x,3(a,1x,es9.2,1x))')                             &
                                               '   + Looking for similar populated patches' &
-                                             ,'(Tolerance =',tolerance_mult*ntol,') :'
+                                             ,' - Sunny Tolerance =',sunny_toler           &
+                                             ,' - Dark Tolerance  =',dark_toler            &
+                                             ,' - Rel. Tolerance  =',light_toler
                   close(unit=72,status='keep')
                end if
                !---------------------------------------------------------------------------!
@@ -2065,7 +2261,16 @@ module fuse_fiss_utils
                   !------------------------------------------------------------------------!
                   !     If this is an empty patch, or has already been merged, we skip it. !
                   !------------------------------------------------------------------------!
-                  if ((.not. fuse_table(donp))) cycle donloopp
+                  if ((.not. fuse_table(donp))) then
+                     if (print_fuse_details) then
+                        open  (unit=72,file=trim(fuse_fout),status='old',action='write'    &
+                                                           ,position='append')
+                        write (unit=72,fmt='(a,1x,i6,1x,a)') '     - DONP:',donp           &
+                                                            ,'has been already fused...'
+                        close (unit=72,status='keep')
+                     end if
+                     cycle donloopp
+                  end if
                   !------------------------------------------------------------------------!
 
 
@@ -2084,9 +2289,26 @@ module fuse_fiss_utils
                         exit recloopp
                      end if
                   end do recloopp
-                  if (.not. recp_found) cycle donloopp
+                  
+                  if (.not. recp_found) then
+                     if (print_fuse_details) then
+                        open  (unit=72,file=trim(fuse_fout),status='old',action='write'    &
+                                                           ,position='append')
+                        write (unit=72,fmt='(a)') '     - No receptor patch found. '
+                        close (unit=72,status='keep')
+                     end if
+                     cycle donloopp
+                  end if
                   !------------------------------------------------------------------------!
 
+
+                  if (print_fuse_details) then
+                     open  (unit=72,file=trim(fuse_fout),status='old',action='write'       &
+                                                        ,position='append')
+                     write (unit=72,fmt='(2(a,1x,i6,1x))') '     - DONP =',donp            &
+                                                                 ,'RECP =',recp
+                     close (unit=72,status='keep')
+                  end if
 
 
                   !------------------------------------------------------------------------!
@@ -2098,47 +2320,133 @@ module fuse_fiss_utils
                   !------------------------------------------------------------------------!
 
 
+                  !------------------------------------------------------------------------!
+                  !     Find the LAI that corresponds to 80% of the maximum LAI, to avoid  !
+                  ! relaxing too much for forests.                                         !
+                  !------------------------------------------------------------------------!
+                  dark_lai80 = 0.40 * ( sum(csite%cumlai_profile(:,1,recp))                &
+                                      + sum(csite%cumlai_profile(:,1,donp)) )
+
 
                   !------------------------------------------------------------------------!
-                  !     Compare the size profile for each PFT.  If we find any case in     !
-                  ! which the difference is too large to allow fusion, we quit and move to !
-                  ! the next candidate donor patch.  If we leave this nested loop without  !
-                  ! cycling donp, then that means that both patches can be fused.          !
+                  !     Compare the size profile for each PFT.  Here we compare the        !
+                  ! maximum LAI for each PFT and height bin.  We switched the classes from !
+                  ! DBH to height because different PFTs may have different heights for a  !
+                  ! given DBH, so we want to make sure the light profile is right.         !
                   !------------------------------------------------------------------------!
-                  pftloop:do ipft=1,n_pft
-                     dbhloop: do idbh=1,ff_ndbh
-                        small_donp = csite%pft_density_profile(ipft,idbh,donp) <=          &
-                                     tolerance_mult*ntol
-                        small_recp = csite%pft_density_profile(ipft,idbh,recp) <=          &
-                                     tolerance_mult*ntol
-                        !------------------------------------------------------------------!
-                        !    If both patches have little or no biomass in this bin, don't  !
-                        ! even bother checking the difference.                             !
-                        !------------------------------------------------------------------!
-                        if (small_donp .and. small_recp) cycle dbhloop
-                        !------------------------------------------------------------------!
+                  hgtloop: do ihgt=1,ff_nhgt
+                     cumlai_recp = sum(csite%cumlai_profile(:,ihgt,recp))
+                     cumlai_donp = sum(csite%cumlai_profile(:,ihgt,donp))
+
+                     !---------------------------------------------------------------------!
+                     !    Check whether these bins contain some LAI.  We don't need to     !
+                     ! check the cohorts if the understorey is too dark, so once both      !
+                     ! patches becomes very dark (very high LAI), we stop checking the     !
+                     ! profiles.                                                           !
+                     !---------------------------------------------------------------------!
+                     dark_donp = cumlai_donp > dark_toler
+                     dark_recp = cumlai_recp > dark_toler
+                     !---------------------------------------------------------------------!
 
 
-                        !------------------------------------------------------------------!
-                        !    Find the normalised difference in the density of this PFT and !
-                        ! size.  If one of the patches is missing any member of the        !
-                        ! profile the norm will be set to 2.0, which is the highest value  !
-                        ! that the norm can be.                                            !
-                        !------------------------------------------------------------------!
-                        diff = abs( csite%pft_density_profile(ipft,idbh,donp)              &
-                                  - csite%pft_density_profile(ipft,idbh,recp) )
-                        refv = 0.5 * ( csite%pft_density_profile(ipft,idbh,donp)           &
-                                     + csite%pft_density_profile(ipft,idbh,recp))
-                        norm = diff / refv
-                        fuse_flag = norm <= profile_tol
 
-                        !------------------------------------------------------------------!
-                        !     If fuse_flag is false, the patches aren't similar, move to   !
-                        ! the next donor patch.                                            !
-                        !------------------------------------------------------------------!
-                        if (.not. fuse_flag) cycle donloopp
-                     end do dbhloop
-                  end do pftloop
+                     !---------------------------------------------------------------------!
+                     if (dark_recp .and. dark_donp) then
+
+                        if (print_fuse_details) then
+                           open  (unit=72,file=trim(fuse_fout),status='old',action='write' &
+                                                              ,position='append')
+                           write (unit=72,fmt='(1(a,1x,i6,1x),4(a,1x,es9.2,1x)'//          &
+                                              ',2(a,1x,l1,1x))')                           &
+                              '       * IHGT=',ihgt                                        &
+                             ,'CUMLAI_RECP =',cumlai_recp,'CUMLAI_DONP =',cumlai_donp      &
+                             ,'DARK_TOLER =',dark_toler,'DARK_LAI80 =',dark_lai80          &
+                             ,'DARK_RECP =',dark_recp,'DARK_DONP =',dark_donp
+                           close (unit=72,status='keep')
+                        end if
+                        cycle hgtloop
+                     end if
+                     !---------------------------------------------------------------------!
+
+
+
+                     
+                     !---------------------------------------------------------------------!
+                     !    Check whether these bins contain some LAI.  Bins that have       !
+                     ! tiny cumulative LAI may differ by a lot in the relative scale,      !
+                     ! but the actual value is so small that we don't really care          !
+                     ! whether they are relatively different.                              !
+                     !---------------------------------------------------------------------!
+                     sunny_donp = cumlai_donp <= sunny_toler
+                     sunny_recp = cumlai_recp <= sunny_toler
+                     !---------------------------------------------------------------------!
+
+
+
+
+
+                     !---------------------------------------------------------------------!
+                     !    If both patches have little or no biomass in this bin, don't     !
+                     ! even bother checking the difference.                                !
+                     !---------------------------------------------------------------------!
+                     if (sunny_donp .and. sunny_recp) then
+                        if (print_fuse_details) then
+                           open  (unit=72,file=trim(fuse_fout),status='old',action='write' &
+                                                              ,position='append')
+                           write (unit=72,fmt='(1(a,1x,i6,1x),3(a,1x,es9.2,1x)'//          &
+                                              ',2(a,1x,l1,1x))')                           &
+                              '       * IHGT=',ihgt                                        &
+                             ,'CUMLAI_RECP =',cumlai_recp,'CUMLAI_DONP =',cumlai_donp      &
+                             ,'SUNNY_TOLER =',sunny_toler,'SUNNY_RECP =',sunny_recp        &
+                             ,'SUNNY_RECP =',sunny_donp
+                           close (unit=72,status='keep')
+                        end if
+                        cycle hgtloop
+                     end if
+                     !---------------------------------------------------------------------!
+
+
+                     !---------------------------------------------------------------------!
+                     !    Find the normalised difference in the density of this PFT and    !
+                     ! size.  If one of the patches is missing any member of the           !
+                     ! profile the norm will be set to 2.0, which is the highest value     !
+                     ! that the norm can be.                                               !
+                     !---------------------------------------------------------------------!
+                     llevel_donp = exp(- 0.5 * cumlai_donp)
+                     llevel_recp = exp(- 0.5 * cumlai_recp)
+                     
+                     diff = abs(llevel_donp - llevel_recp )
+                     refv =    (llevel_donp + llevel_recp ) * 0.5
+                     norm = diff / refv
+                     fuse_flag = norm <= light_toler
+                     !---------------------------------------------------------------------!
+
+
+
+                     !---------------------------------------------------------------------!
+                     if (print_fuse_details) then
+                        open  (unit=72,file=trim(fuse_fout),status='old',action='write'    &
+                                                           ,position='append')
+                        write (unit=72,fmt='(1(a,1x,i6,1x),7(a,1x,es9.2,1x)'//             &
+                                           ',1(a,1x,l1,1x))')                              &
+                           '       * IHGT=',ihgt                                           &
+                          ,'CLAI_RECP =',cumlai_recp,'CLAI_DONP =',cumlai_donp             &
+                          ,'LL_RECP =',llevel_recp,'LL_DONP =',llevel_donp                 &
+                          ,'DIFF =',diff,'REFV =',refv,'NORM =',norm                       &
+                          ,'FUSE_FLAG =',fuse_flag
+                        close (unit=72,status='keep')
+                     end if
+                     !---------------------------------------------------------------------!
+
+
+
+                     !---------------------------------------------------------------------!
+                     !     If fuse_flag is false, the patches aren't similar, move to      !
+                     ! the next donor patch.                                               !
+                     !---------------------------------------------------------------------!
+                     if (.not. fuse_flag) cycle donloopp
+                     !---------------------------------------------------------------------!
+                  end do hgtloop
                   !------------------------------------------------------------------------!
 
 
@@ -2149,7 +2457,8 @@ module fuse_fiss_utils
                   ! properties of donpatch and recpatch, and leave the averaged values at  !
                   ! recpatch.                                                              !
                   !------------------------------------------------------------------------!
-                  call fuse_2_patches(csite,donp,recp,cpoly%met(isi)%prss,cpoly%lsl(isi)   &
+                  call fuse_2_patches(csite,donp,recp,nzg,nzs,cpoly%met(isi)%prss          &
+                                     ,cpoly%lsl(isi),cpoly%ntext_soil(:,isi)               &
                                      ,cpoly%green_leaf_factor(:,isi),elim_nplant,elim_lai)
                   !------------------------------------------------------------------------!
 
@@ -2204,15 +2513,16 @@ module fuse_fiss_utils
                ! less than the target, or if we have reached the maximum tolerance and the !
                ! patch fusion still can't find similar patches, we quit the fusion loop.   !
                !---------------------------------------------------------------------------!
-               if ( npatches_new <= abs(maxpatch) .or.                                     &
-                    ( npatches_new == npatches_old .and.                                   &
-                      tolerance_mult > pat_tolerance_max ) ) exit mainfuseloop
+               if (npatches_new <= abs(maxpatch)) exit mainfuseloop
                !---------------------------------------------------------------------------!
-               
-               !----- Increment tolerance -------------------------------------------------!
-               tolerance_mult = tolerance_mult * 1.1
 
+               !----- Increment tolerance -------------------------------------------------!
+               sunny_toler =     sunny_toler * sunny_cumlai_mult
+               dark_toler  = max(dark_toler  * dark_cumlai_mult , dark_lai80 )
+               light_toler =     light_toler * light_toler_mult
+               !---------------------------------------------------------------------------!
             end do mainfuseloop
+
             !------------------------------------------------------------------------------!
 
 
@@ -2262,9 +2572,10 @@ module fuse_fiss_utils
             if (print_fuse_details) then
                open (unit=72,file=trim(fuse_fout),status='old',action='write'              &
                                                   ,position='append')
-               write(unit=72,fmt='(a)')       '   + Patches were sorted. '
-               write(unit=72,fmt='(a,1x,i6)') '   + Final number of patches: '             &
-                                             ,csite%npatches
+               write(unit=72,fmt='(a)')             '   + Patches were sorted. '
+               write(unit=72,fmt='(2(a,1x,i6,1x))')                                        &
+                                       '   + Number of patches.  Original =',npatches_orig &
+                                                                ,'Current =',csite%npatches
                write(unit=72,fmt='(a)')       ' '
                close(unit=72,status='keep')
             end if
@@ -2351,14 +2662,11 @@ module fuse_fiss_utils
    !=======================================================================================!
    !   This subroutine will merge two patches into 1.                                      !
    !---------------------------------------------------------------------------------------!
-   subroutine fuse_2_patches(csite,donp,recp,prss,lsl,green_leaf_factor                 &
+   subroutine fuse_2_patches(csite,donp,recp,mzg,mzs,prss,lsl,ntext_soil,green_leaf_factor &
                                ,elim_nplant,elim_lai)
       use ed_state_vars      , only : sitetype              & ! Structure 
                                     , patchtype             ! ! Structure
       use soil_coms          , only : soil                  ! ! intent(in), lookup table
-      use grid_coms          , only : nzg                   & ! intent(in)
-                                    , nzs                   ! ! intent(in)
-      use fusion_fission_coms, only : ff_ndbh               ! ! intent(in)
       use ed_max_dims        , only : n_pft                 & ! intent(in)
                                     , n_dbh                 ! ! intent(in)
       use mem_polygons       , only : maxcohort             ! ! intent(in)
@@ -2376,6 +2684,9 @@ module fuse_fiss_utils
       integer                , intent(in)  :: donp              ! Donating patch
       integer                , intent(in)  :: recp              ! Receptor patch
       integer                , intent(in)  :: lsl               ! Lowest soil level
+      integer                , intent(in)  :: mzg               ! # of soil layers
+      integer                , intent(in)  :: mzs               ! # of sfc. water layers
+      integer, dimension(mzg), intent(in)  :: ntext_soil        ! Soil type
       real, dimension(n_pft) , intent(in)  :: green_leaf_factor ! Green leaf factor...
       real                   , intent(in)  :: prss              ! Sfc. air density
       real                   , intent(out) :: elim_nplant       ! Eliminated nplant 
@@ -2534,12 +2845,10 @@ module fuse_fiss_utils
          csite%sfcwater_energy(1,recp) = newareai *                                        &
                                          (csite%sfcwater_energy(1,recp) * csite%area(recp) &
                                          +csite%sfcwater_energy(1,donp) * csite%area(donp) )
-         csite%total_snow_depth(recp)  = csite%sfcwater_depth(1,recp)
       else
          csite%sfcwater_mass(1,recp)   = 0.
          csite%sfcwater_depth(1,recp)  = 0.
          csite%sfcwater_energy(1,recp) = 0.
-         csite%total_snow_depth(recp)  = 0.
       end if
       !------------------------------------------------------------------------------------!
       ! 4. Converting energy back to J/kg;                                                 !
@@ -2549,8 +2858,8 @@ module fuse_fiss_utils
       !------------------------------------------------------------------------------------!
 
 
-      !----- Merging soil energy and water. -----------------------------------------------!
-      do iii=1,nzg
+      !----- Merge soil energy and water. -------------------------------------------------!
+      do iii=1,mzg
          csite%soil_energy(iii,recp)     = newareai *                                      &
                                          ( csite%soil_energy(iii,donp) * csite%area(donp)  &
                                          + csite%soil_energy(iii,recp) * csite%area(recp))
@@ -2574,7 +2883,7 @@ module fuse_fiss_utils
       ! + csite%csite%sfcwater_tempk(k,recp)                                               !
       ! + csite%sfcwater_fracliq(k,recp)                                                   !
       !------------------------------------------------------------------------------------!
-      call new_patch_sfc_props(csite,recp)
+      call new_patch_sfc_props(csite,recp,mzg,mzs,ntext_soil)
       !------------------------------------------------------------------------------------!
 
       csite%mean_rh(recp)                = newareai *                                      &
@@ -2769,14 +3078,14 @@ module fuse_fiss_utils
                                   + csite%wbudget_precipgain(recp) * csite%area(recp) )
 
 
-      do iii=1,nzg
+      do iii=1,mzg
          csite%avg_smoist_gg(iii,recp)   = newareai *                                      &
               ( csite%avg_smoist_gg(iii,donp)       * csite%area(donp)                     &
               + csite%avg_smoist_gg(iii,recp)       * csite%area(recp) )
 
-         csite%avg_smoist_gc(iii,recp)   = newareai *                                      &
-              ( csite%avg_smoist_gc(iii,donp)       * csite%area(donp)                     &
-              + csite%avg_smoist_gc(iii,recp)       * csite%area(recp) )
+         csite%avg_transloss(iii,recp)   = newareai *                                      &
+              ( csite%avg_transloss(iii,donp)       * csite%area(donp)                     &
+              + csite%avg_transloss(iii,recp)       * csite%area(recp) )
 
          csite%aux_s(iii,recp)           = newareai *                                      &
               ( csite%aux_s(iii,donp)               * csite%area(donp)                     &
@@ -2900,7 +3209,7 @@ module fuse_fiss_utils
       ! + csite%can_temp(recp)                                                             !
       ! + csite%can_rhos(recp)                                                             !
       !------------------------------------------------------------------------------------!
-      call update_patch_thermo_props(csite,recp,recp)
+      call update_patch_thermo_props(csite,recp,recp,mzg,mzs,ntext_soil)
 
       !------------------------------------------------------------------------------------!
       !     Now we need to adjust the densities of cohorts. Because the patch area         !
@@ -2927,6 +3236,13 @@ module fuse_fiss_utils
          cpatch%mean_storage_resp     (ico) = cpatch%mean_storage_resp  (ico)  * area_scale
          cpatch%mean_vleaf_resp       (ico) = cpatch%mean_vleaf_resp    (ico)  * area_scale
          cpatch%today_gpp             (ico) = cpatch%today_gpp          (ico)  * area_scale
+         cpatch%today_nppleaf         (ico) = cpatch%today_nppleaf      (ico)  * area_scale
+         cpatch%today_nppfroot        (ico) = cpatch%today_nppfroot     (ico)  * area_scale
+         cpatch%today_nppsapwood      (ico) = cpatch%today_nppsapwood   (ico)  * area_scale
+         cpatch%today_nppcroot        (ico) = cpatch%today_nppcroot     (ico)  * area_scale
+         cpatch%today_nppseeds        (ico) = cpatch%today_nppseeds     (ico)  * area_scale
+         cpatch%today_nppwood         (ico) = cpatch%today_nppwood      (ico)  * area_scale
+         cpatch%today_nppdaily        (ico) = cpatch%today_nppdaily     (ico)  * area_scale
          cpatch%today_gpp_pot         (ico) = cpatch%today_gpp_pot      (ico)  * area_scale
          cpatch%today_gpp_max         (ico) = cpatch%today_gpp_max      (ico)  * area_scale
          cpatch%today_leaf_resp       (ico) = cpatch%today_leaf_resp    (ico)  * area_scale
@@ -2939,6 +3255,8 @@ module fuse_fiss_utils
          cpatch%veg_water             (ico) = cpatch%veg_water          (ico)  * area_scale
          cpatch%hcapveg               (ico) = cpatch%hcapveg            (ico)  * area_scale
          cpatch%veg_energy            (ico) = cpatch%veg_energy         (ico)  * area_scale
+         !----- Crown area shall not exceed one. ---------------------------------------!
+         cpatch%crown_area            (ico) = min(1.,cpatch%crown_area  (ico)  * area_scale)
          if (idoutput > 0 .or. imoutput > 0 .or. iqoutput > 0) then
             cpatch%dmean_par_v        (ico) = cpatch%dmean_par_v        (ico)  * area_scale
             cpatch%dmean_par_v_beam   (ico) = cpatch%dmean_par_v_beam   (ico)  * area_scale
@@ -2976,6 +3294,13 @@ module fuse_fiss_utils
          cpatch%mean_storage_resp     (ico) = cpatch%mean_storage_resp  (ico)  * area_scale
          cpatch%mean_vleaf_resp       (ico) = cpatch%mean_vleaf_resp    (ico)  * area_scale
          cpatch%today_gpp             (ico) = cpatch%today_gpp          (ico)  * area_scale
+         cpatch%today_nppleaf         (ico) = cpatch%today_nppleaf      (ico)  * area_scale
+         cpatch%today_nppfroot        (ico) = cpatch%today_nppfroot     (ico)  * area_scale
+         cpatch%today_nppsapwood      (ico) = cpatch%today_nppsapwood   (ico)  * area_scale
+         cpatch%today_nppcroot        (ico) = cpatch%today_nppcroot     (ico)  * area_scale
+         cpatch%today_nppseeds        (ico) = cpatch%today_nppseeds     (ico)  * area_scale
+         cpatch%today_nppwood         (ico) = cpatch%today_nppwood      (ico)  * area_scale
+         cpatch%today_nppdaily        (ico) = cpatch%today_nppdaily     (ico)  * area_scale
          cpatch%today_gpp_pot         (ico) = cpatch%today_gpp_pot      (ico)  * area_scale
          cpatch%today_gpp_max         (ico) = cpatch%today_gpp_max      (ico)  * area_scale
          cpatch%today_leaf_resp       (ico) = cpatch%today_leaf_resp    (ico)  * area_scale
@@ -2988,6 +3313,8 @@ module fuse_fiss_utils
          cpatch%veg_water             (ico) = cpatch%veg_water          (ico)  * area_scale
          cpatch%hcapveg               (ico) = cpatch%hcapveg            (ico)  * area_scale
          cpatch%veg_energy            (ico) = cpatch%veg_energy         (ico)  * area_scale
+         !----- Crown area shall not exceed one. ---------------------------------------!
+         cpatch%crown_area            (ico) = min(1.,cpatch%crown_area  (ico)  * area_scale)
          if (idoutput > 0 .or. imoutput > 0 .or. iqoutput > 0) then
             cpatch%dmean_par_v        (ico) = cpatch%dmean_par_v        (ico)  * area_scale
             cpatch%dmean_par_v_beam   (ico) = cpatch%dmean_par_v_beam   (ico)  * area_scale
@@ -3048,6 +3375,8 @@ module fuse_fiss_utils
       ! + csite%disp_height(recp)                                                          !
       ! + csite%lai(recp)                                                                  !
       ! + csite%veg_rough(recp)                                                            !
+      ! + csite%total_sfcw_depth(recp)                                                     !
+      ! + csite%snowfac(recp)                                                              !
       ! + csite%opencan_frac(recp)                                                         !
       ! + csite%ggnet(recp)                                                                !
       !------------------------------------------------------------------------------------!
@@ -3065,7 +3394,7 @@ module fuse_fiss_utils
 
       !------------------------------------------------------------------------------------!
       !    This subroutine will update the size profile within patch.                      !
-      ! + csite%pft_density_profile(:,:,recp)                                              !
+      ! + csite%cumlai_profile(:,:,recp)                                                   !
       !------------------------------------------------------------------------------------!
       call patch_pft_size_profile(csite,recp)
       !------------------------------------------------------------------------------------!
@@ -3089,34 +3418,78 @@ module fuse_fiss_utils
    subroutine patch_pft_size_profile(csite,ipa)
       use ed_state_vars       , only : sitetype   & ! structure
                                      , patchtype  ! ! structure
-      use fusion_fission_coms , only : ff_ndbh    & ! intent(in)
-                                     , dffdbhi    ! ! intent(in)
+      use fusion_fission_coms , only : ff_nhgt    & ! intent(in)
+                                     , hgt_class  ! ! intent(in)
+      use allometry           , only : dbh2bl     ! ! intent(in)
       use ed_max_dims         , only : n_pft      ! ! intent(in)
+      use pft_coms            , only : hgt_min    ! ! intent(in)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
-      type(sitetype)         , target     :: csite             ! Current site
-      integer                , intent(in) :: ipa               ! Current patch ID
+      type(sitetype)         , target     :: csite     ! Current site
+      integer                , intent(in) :: ipa       ! Current patch index
       !----- Local variables --------------------------------------------------------------!
-      type(patchtype)        , pointer    :: cpatch        ! Current patch
-      integer                             :: ipft,idbh,ico ! Counters
+      type(patchtype)        , pointer    :: cpatch    ! Current patch
+      integer                             :: ipft      ! PFT index
+      integer                             :: ihgt      ! Height class index
+      integer                             :: ico       ! Counters
+      real                                :: lai_pot   ! Potential LAI
       !------------------------------------------------------------------------------------!
 
-      !----- Initialize bins --------------------------------------------------------------!
+
+      !----- Reset all bins to zero. ------------------------------------------------------!
       do ipft=1,n_pft
-         do idbh=1,ff_ndbh
-            csite%pft_density_profile(ipft,idbh,ipa)=0.0
+         do ihgt=1,ff_nhgt
+            csite%cumlai_profile(ipft,ihgt,ipa)=0.0
          end do
       end do
+      !------------------------------------------------------------------------------------!
+
+
 
       !----- Update bins ------------------------------------------------------------------!
       cpatch => csite%patch(ipa)
-      do ico = 1,cpatch%ncohorts
+      cohortloop: do ico = 1,cpatch%ncohorts
 
-         ipft = cpatch%pft(ico)
-         idbh = min(ff_ndbh,max(1,ceiling(cpatch%dbh(ico)*dffdbhi)))
-         csite%pft_density_profile(ipft,idbh,ipa) = cpatch%nplant(ico)                     &
-                                                  + csite%pft_density_profile(ipft,idbh,ipa)
+         !----- Find the PFT class. -------------------------------------------------------!
+         ipft    = cpatch%pft(ico)
+         ihgt    = min(ff_nhgt,1 + count(hgt_class < cpatch%hite(ico)))
+         !---------------------------------------------------------------------------------!
+
+         !---------------------------------------------------------------------------------!
+         !     Check whether this cohort is almost at the minimum height given its PFT.    !
+         ! If it is, then we will skip it.                                                 !
+         !---------------------------------------------------------------------------------!
+         if (cpatch%hite(ico) < hgt_min(ipft) + 0.2) cycle cohortloop
+         !---------------------------------------------------------------------------------!
+
+
+         !----- Find the height class. ----------------------------------------------------!
+         ihgt    = min(ff_nhgt,1 + count(hgt_class < cpatch%hite(ico)))
+         !---------------------------------------------------------------------------------!
+
+
+         !----- Find the potential (on-allometry) leaf area index. ------------------------!
+         lai_pot = cpatch%nplant(ico) * cpatch%sla(ico) * dbh2bl(cpatch%dbh(ico),ipft)
+         !---------------------------------------------------------------------------------!
+
+
+         !----- Add the potential LAI to the bin. -----------------------------------------!
+         csite%cumlai_profile(ipft,ihgt,ipa) = lai_pot                                     &
+                                             + csite%cumlai_profile(ipft,ihgt,ipa)
+         !---------------------------------------------------------------------------------!
+      end do cohortloop
+      !------------------------------------------------------------------------------------!
+
+
+
+      !----- Integrate the leaf area index from top to bottom. ----------------------------!
+      do ihgt=ff_nhgt-1,1,-1
+         do ipft=1,n_pft
+            csite%cumlai_profile(ipft,ihgt,ipa) = csite%cumlai_profile(ipft,ihgt  ,ipa)    &
+                                                + csite%cumlai_profile(ipft,ihgt+1,ipa)
+         end do
       end do
+      !------------------------------------------------------------------------------------!
 
       return
    end subroutine patch_pft_size_profile

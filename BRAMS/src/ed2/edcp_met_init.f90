@@ -132,7 +132,7 @@ subroutine leaf2ed_soil_moist_energy(cgrid,ifm)
   
             do k=1,nzg
             
-               ntext = csite%ntext_soil(k,ipa)
+               ntext = cpoly%ntext_soil(k,isi)
                !---------------------------------------------------------------------------!
                !   Soil water.  Ensuring that the initial condition is within the accept-  !
                ! able range.                                                               !
@@ -174,7 +174,7 @@ subroutine leaf2ed_soil_moist_energy(cgrid,ifm)
 
 
 
-            ntext = csite%ntext_soil(nzg,ipa)
+            ntext = cpoly%ntext_soil(nzg,isi)
             ksn   = csite%nlev_sfcwater(ipa)
             ksnw1 = max(ksn,1)
             call ed_grndvap(ksn,ntext,csite%soil_water(nzg,ipa),csite%soil_tempk(nzg,ipa)  &

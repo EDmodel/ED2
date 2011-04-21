@@ -151,6 +151,7 @@ module rk4_stepper
             endif
          
          else
+
             !------------------------------------------------------------------------------!
             ! 3b.  Great, it worked, so now we can advance to the next step.  We just need !
             !      to do some minor adjustments before...                                  !
@@ -556,22 +557,19 @@ module rk4_stepper
       use ed_state_vars         , only : sitetype              & ! structure
                                        , patchtype             ! ! structure
       use grid_coms             , only : nzg                   ! ! intent(in)
-      use soil_coms             , only : soil8                 ! ! intent(in), lookup table
-      use consts_coms           , only : t3ple8                & ! intent(in)
-                                       , ttripoli8             ! ! intent(in)
-      use therm_lib8            , only : qtk8                  ! ! subroutine
 
       implicit none
       !----- Arguments --------------------------------------------------------------------!
-      type(rk4patchtype) , target      :: y,dydx
+      type(rk4patchtype) , target      :: y
+      type(rk4patchtype) , target      :: dydx
       type(sitetype)     , target      :: csite
       logical            , intent(in)  :: print_problems
       logical            , intent(out) :: reject_step
+      real(kind=8)       , intent(in)  :: h
       !----- Local variables --------------------------------------------------------------!
       type(patchtype)    , pointer     :: cpatch
       integer                          :: k
       integer                          :: ksn
-      real(kind=8)                     :: h
       real(kind=8)                     :: rk4min_veg_water
       integer                          :: ipa
       integer                          :: ico
@@ -785,7 +783,7 @@ module rk4_stepper
       cflag7 = .false.
       cflag8 = .false.
       cohortloop: do ico = 1,cpatch%ncohorts
-         if (.not. y%solvable(ico)) cycle cohortloop
+         if (.not. y%resolvable(ico)) cycle cohortloop
 
          !----- Find the minimum leaf surface water. --------------------------------------!
          rk4min_veg_water = rk4min_veg_lwater * y%tai(ico)
@@ -1061,7 +1059,7 @@ module rk4_stepper
          write(unit=*,fmt='(6(a,1x))')     '   MIN_THEIV','   MAX_THEIV','     MIN_SHV'    &
                                           ,'     MAX_SHV','     MIN_RHV','     MAX_RHV'
          write(unit=*,fmt='(6(es12.5,1x))')  rk4min_can_theiv,rk4max_can_theiv             &
-                                            ,rk4min_can_shv  ,rk4max_can_shv                &
+                                            ,rk4min_can_shv  ,rk4max_can_shv               &
                                             ,rk4min_can_rhv  ,rk4max_can_rhv
          write(unit=*,fmt='(a)') ' '
          write(unit=*,fmt='(4(a,1x))')     '    MIN_TEMP','    MAX_TEMP','   MIN_THETA'    &
@@ -1091,7 +1089,7 @@ module rk4_stepper
          write(unit=*,fmt='(78a)')         ('-',k=1,78)
          write(unit=*,fmt='(a)')           ' '
          write(unit=*,fmt='(a)')           ' 4. SOIL (TEXTURE CLASS AT TOP LAYER): '
-         write(unit=*,fmt='(4(a,1x))')     '   MIN_WATER','   MAX_WATER','    MIN_TEMP'            &
+         write(unit=*,fmt='(4(a,1x))')     '   MIN_WATER','   MAX_WATER','    MIN_TEMP'    &
                                           ,'    MAX_TEMP'
          write(unit=*,fmt='(4(es12.5,1x))') rk4min_soil_water(nzg),rk4max_soil_water(nzg)  &
                                            ,rk4min_soil_temp      ,rk4max_soil_temp
@@ -1179,7 +1177,7 @@ module rk4_stepper
          '  COH','  PFT','         LAI','         WAI','         WPA','         TAI'       &
                         ,'  VEG_ENERGY','OLD_VEG_ENER','    VEG_TEMP','OLD_VEG_TEMP'
       do ico = 1,cpatch%ncohorts
-         if(y%solvable(ico)) then
+         if(y%resolvable(ico)) then
             write(unit=*,fmt='(2(i5,1x),8(es12.4,1x))')                                    &
                ico,cpatch%pft(ico),y%lai(ico),y%wai(ico),y%wpa(ico),y%tai(ico)             &
                   ,y%veg_energy(ico),cpatch%veg_energy(ico),y%veg_temp(ico)                &
@@ -1195,7 +1193,7 @@ module rk4_stepper
                         ,'   VEG_WATER',' OLD_VEG_H2O','    HEAT_CAP','RK4_HEAT_CAP'       &
                         ,'     FRACLIQ'
       do ico = 1,cpatch%ncohorts
-         if(y%solvable(ico)) then
+         if(y%resolvable(ico)) then
             write(unit=*,fmt='(2(i5,1x),9(es12.4,1x))')                                    &
                ico,cpatch%pft(ico),y%lai(ico),y%wai(ico),y%wpa(ico),y%tai(ico)             &
                   ,y%veg_water(ico),cpatch%veg_water(ico),cpatch%hcapveg(ico)              &

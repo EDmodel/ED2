@@ -71,9 +71,6 @@ subroutine ed_init_atm()
    real                          :: elim_nplant
    real                          :: elim_lai
    real                          :: rvaux
-   real                          :: canwcap
-   real                          :: canccap
-   real                          :: canhcap
    !----- Add the MPI common block. -------------------------------------------------------!
    include 'mpif.h'
    !---------------------------------------------------------------------------------------!
@@ -134,14 +131,6 @@ subroutine ed_init_atm()
                csite%rshort_g(ipa) = 0.
                csite%rlong_g (ipa) = 0.
 
-               !---------------------------------------------------------------------------!
-               !      Initialize soil textural class.  Soil water, energy, etc. will be    !
-               ! initialized in the next round of loops.                                   !
-               !---------------------------------------------------------------------------!
-               do k = 1,nzg
-                  csite%ntext_soil(k,ipa) = cpoly%ntext_soil(k,isi)
-               enddo
-               
                csite%rough(ipa) = soil_rough
 
                !---------------------------------------------------------------------------!
@@ -184,7 +173,7 @@ subroutine ed_init_atm()
                   cpatch%lint_shv(ico) = cpatch%lint_shv(ico) / (1. + cpatch%lint_shv(ico))
                end do cohortloop1
                !----- Initialise vegetation wind and turbulence parameters. ---------------!
-               call canopy_turbulence(cpoly,isi,ipa,canwcap,canccap,canhcap)
+               call canopy_turbulence(cpoly,isi,ipa)
             end do patchloop1
          end do siteloop1
       end do polyloop1
@@ -241,7 +230,7 @@ subroutine ed_init_atm()
                      csite%soil_tempk(k,ipa) = csite%can_temp(ipa) + stgoff(k)
 
                      if (csite%soil_tempk(k,ipa) > t3ple) then
-                        nsoil=csite%ntext_soil(k,ipa)
+                        nsoil=cpoly%ntext_soil(k,isi)
                         csite%soil_fracliq(k,ipa) = 1.0
                         csite%soil_water(k,ipa)   = min(soil(nsoil)%slmsts                 &
                                                    ,max(soil(nsoil)%soilcp                 &
@@ -253,7 +242,7 @@ subroutine ed_init_atm()
                                                   + csite%soil_water(k,ipa) * cliqvlme     &
                                                   * (csite%soil_tempk(k,ipa) - tsupercool)
                      else
-                        nsoil=csite%ntext_soil(k,ipa)
+                        nsoil=cpoly%ntext_soil(k,isi)
                         csite%soil_fracliq(k,ipa) = 0.0
                         csite%soil_water(k,ipa)   = min(soil(nsoil)%slmsts                 &
                                                    ,max(soil(nsoil)%soilcp                 &
@@ -268,8 +257,9 @@ subroutine ed_init_atm()
                   end do groundloop2
 
                   !----- Initial condition is with no snow/pond. --------------------------!
-                  csite%nlev_sfcwater(ipa)    = 0
-                  csite%total_snow_depth(ipa) = 0
+                  csite%nlev_sfcwater(ipa)    = 0.
+                  csite%snowfac(ipa)          = 0.
+                  csite%total_sfcw_depth(ipa) = 0.
                   snowloop2: do k=1,nzs
                      csite%sfcwater_energy (k,ipa) = 0.
                      csite%sfcwater_depth  (k,ipa) = 0.
@@ -281,7 +271,7 @@ subroutine ed_init_atm()
                   !----- Compute patch-level LAI, vegetation height, and roughness. -------!
                   call update_patch_derived_props(csite,cpoly%lsl(isi),cmet%prss,ipa)
 
-                  nsoil = csite%ntext_soil(nzg,ipa)
+                  nsoil = cpoly%ntext_soil(nzg,isi)
                   nls   = csite%nlev_sfcwater(ipa)
                   nlsw1 = max(nls,1)
                   call ed_grndvap(nls,nsoil,csite%soil_water(nzg,ipa)                      &
@@ -295,7 +285,7 @@ subroutine ed_init_atm()
                   !----- Compute patch-level LAI, vegetation height, and roughness. -------!
                   call update_patch_derived_props(csite,cpoly%lsl(isi),cmet%prss,ipa)
 
-                  nsoil = csite%ntext_soil(nzg,ipa)
+                  nsoil = cpoly%ntext_soil(nzg,isi)
                   nls   = csite%nlev_sfcwater(ipa)
                   nlsw1 = max(nls,1)
                   call ed_grndvap(nls,nsoil,csite%soil_water(nzg,ipa)                      &

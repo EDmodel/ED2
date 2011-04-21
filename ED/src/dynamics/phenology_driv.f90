@@ -156,7 +156,8 @@ subroutine update_phenology(doy, cpoly, isi, lat)
    use decomp_coms    , only : f_labile                 ! ! intent(in)
    use phenology_coms , only : retained_carbon_fraction & ! intent(in)
                              , theta_crit               & ! intent(in)
-                             , iphen_scheme             ! ! intent(in)
+                             , iphen_scheme             & ! intent(in)
+                             , elongf_min               ! ! intent(in)
    use consts_coms    , only : t3ple                    & ! intent(in)
                              , cice                     & ! intent(in)
                              , cliq                     & ! intent(in)
@@ -188,7 +189,6 @@ subroutine update_phenology(doy, cpoly, isi, lat)
    real, dimension(nzg)                  :: theta
    real                                  :: daylight
    real                                  :: delta_bleaf
-   real                                  :: elongf
    real                                  :: bl_max
    real                                  :: old_hcapveg
    real                                  :: salloci
@@ -220,7 +220,7 @@ subroutine update_phenology(doy, cpoly, isi, lat)
 
       !----- Determine what phenology thresholds have been crossed. -----------------------!
       call phenology_thresholds(daylight,csite%soil_tempk(isoil_lev,ipa)                   &
-                               ,csite%soil_water(:,ipa),csite%ntext_soil(:,ipa)            &
+                               ,csite%soil_water(:,ipa),cpoly%ntext_soil(:,isi)            &
                                ,csite%sum_chd(ipa),csite%sum_dgd(ipa),drop_cold            &
                                ,leaf_out_cold,theta,cpoly%lsl(isi))
 
@@ -231,6 +231,9 @@ subroutine update_phenology(doy, cpoly, isi, lat)
          
          !----- Initially, we assume all leaves stay. -------------------------------------!
          cpatch%leaf_drop(ico) = 0.0
+         
+         !----- Initially, we assume elongation factor to be 1. ---------------------------!
+         cpatch%elongf(ico)    = 1.0
 
          !----- Find cohort-specific thresholds. ------------------------------------------!
          select case (iphen_scheme)
@@ -338,7 +341,7 @@ subroutine update_phenology(doy, cpoly, isi, lat)
             !------------------------------------------------------------------------------!
             if (cpatch%phenology_status(ico) < 2 .and. drop_cold) then
             
-               if (cpoly%green_leaf_factor(ipft,isi) < 0.02) then
+               if (cpoly%green_leaf_factor(ipft,isi) < elongf_min) then
                    bl_max = 0.0
                end if
                
@@ -408,12 +411,12 @@ subroutine update_phenology(doy, cpoly, isi, lat)
             ! 2. The plant has no leaves, but the soil has started to come back to more    !
             !    moist conditions. Given this situation, leaves can start growing again.   !
             !------------------------------------------------------------------------------!
-            elongf      = min (1.0, cpatch%paw_avg(ico)/theta_crit)
-            bl_max      = elongf * dbh2bl(cpatch%dbh(ico),ipft)
+            cpatch%elongf(ico) = max(0.0, min (1.0, cpatch%paw_avg(ico)/theta_crit))
+            bl_max             = cpatch%elongf(ico) * dbh2bl(cpatch%dbh(ico),ipft)
                
 
             !----- In case it is too dry, drop all the leaves... --------------------------!
-            if (elongf < 0.02) then
+            if (cpatch%elongf(ico) < elongf_min) then
                bl_max = 0.0
             end if
             
@@ -458,9 +461,10 @@ subroutine update_phenology(doy, cpoly, isi, lat)
                cpatch%cb_max(13,ico) = cpatch%cb_max(13,ico) - cpatch%leaf_drop(ico)
             !------ Becoming slightly moister again, start flushing the leaves. -----------!
 
-            elseif (elongf > 0.02 .and. cpatch%phenology_status(ico) /= 0) then  
-            ! Not in allometry but growing, allocate carbon in growth_balive               !      
-                    cpatch%phenology_status(ico) = 1                
+            elseif (cpatch%elongf(ico)            > elongf_min .and.                       &
+                    cpatch%phenology_status(ico) /= 0           ) then  
+               !----- Not in allometry but growing, allocate carbon in growth_balive. -----!
+               cpatch%phenology_status(ico) = 1                
             end if
 
 
@@ -469,9 +473,10 @@ subroutine update_phenology(doy, cpoly, isi, lat)
 
          !----- Update LAI, WPA, and WAI accordingly. -------------------------------------!
          call area_indices(cpatch%nplant(ico),cpatch%bleaf(ico),cpatch%bdead(ico)          &
-                          ,cpatch%balive(ico),cpatch%dbh(ico), cpatch%hite(ico)            &
-                          ,cpatch%pft(ico),cpatch%sla(ico), cpatch%lai(ico)                &
-                          ,cpatch%wpa(ico),cpatch%wai(ico),cpatch%bsapwood(ico))
+                          ,cpatch%balive(ico),cpatch%dbh(ico),cpatch%hite(ico)             &
+                          ,cpatch%pft(ico),cpatch%sla(ico),cpatch%lai(ico)                 &
+                          ,cpatch%wpa(ico),cpatch%wai(ico),cpatch%crown_area(ico)          &
+                          ,cpatch%bsapwood(ico))
 
          !----- Update above-ground biomass. ----------------------------------------------!
          cpatch%agb(ico) = ed_biomass(cpatch%bdead(ico),cpatch%balive(ico)                 &
@@ -618,20 +623,22 @@ end subroutine phenology_thresholds
 !------------------------------------------------------------------------------------------!
 subroutine assign_prescribed_phen(green_leaf_factor,leaf_aging_factor,dbh,pft              &
                                  ,drop_cold,leaf_out_cold,bl_max)
-   use allometry, only: dbh2bl
+   use allometry     , only : dbh2bl
+   use phenology_coms, only : elongf_min
    implicit none
-
+   !------ Arguments. ---------------------------------------------------------------------!
    logical, intent(out) :: drop_cold
    logical, intent(out) :: leaf_out_cold
-   real, intent(out) :: bl_max
-   real, intent(in) :: green_leaf_factor
-   real, intent(in) :: leaf_aging_factor
-   real, intent(in) :: dbh
-   integer, intent(in) :: pft
+   real   , intent(out) :: bl_max
+   real   , intent(in)  :: green_leaf_factor
+   real   , intent(in)  :: leaf_aging_factor
+   real   , intent(in)  :: dbh
+   integer, intent(in)  :: pft
+   !---------------------------------------------------------------------------------------!
 
-   drop_cold = green_leaf_factor /= leaf_aging_factor
-   leaf_out_cold =  green_leaf_factor > 0.02 .and. (.not. drop_cold)
-   bl_max = green_leaf_factor * dbh2bl(dbh, pft)
+   drop_cold     = green_leaf_factor /= leaf_aging_factor
+   leaf_out_cold = green_leaf_factor > elongf_min .and. (.not. drop_cold)
+   bl_max        = green_leaf_factor * dbh2bl(dbh, pft)
 
    return
 end subroutine assign_prescribed_phen

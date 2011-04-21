@@ -2155,7 +2155,21 @@ subroutine RAMS_varlib(cvar,nx,ny,nz,nsl,npat,ncld,ngrd,flnm,cdname,cdunits,ivar
       ivar_type=2
       ierr= RAMS_getvar('RSHORT',idim_type,ngrd,a,b,flnm)
       ierr_getvar = ierr_getvar + ierr
-      cdname='rshort'
+      cdname='sfc SW. rad.'
+      cdunits='W/m2'
+
+   case ('rshorttoa')
+      ivar_type=2
+      ierr= RAMS_getvar('RSHORT_TOP',idim_type,ngrd,a,b,flnm)
+      ierr_getvar = ierr_getvar + ierr
+      cdname='TOA SW rad.'
+      cdunits='W/m2'
+
+   case ('rshortd')
+      ivar_type=2
+      ierr= RAMS_getvar('RSHORT_DIFFUSE',idim_type,ngrd,a,b,flnm)
+      ierr_getvar = ierr_getvar + ierr
+      cdname='diffuse sfc. SW rad.'
       cdunits='W/m2'
 
    case ('rlong')

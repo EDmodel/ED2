@@ -2,27 +2,28 @@
 !==========================================================================================!
 !     This subroutine computes the soil respiration terms (root and heterotrophic).        !
 !------------------------------------------------------------------------------------------!
-subroutine soil_respiration(csite,ipa)
+subroutine soil_respiration(csite,ipa,mzg,ntext_soil)
 
    use ed_state_vars, only : sitetype                 & ! structure
                            , patchtype                ! ! structure
    use soil_coms    , only : soil                     ! ! intent(in)
-   use grid_coms    , only : nzg                      ! ! intent(in)
    use pft_coms     , only : root_respiration_factor  ! ! intent(in)
 
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
-   type(sitetype) , target     :: csite
-   integer        , intent(in) :: ipa
+   type(sitetype)                , target     :: csite
+   integer                       , intent(in) :: ipa
+   integer                       , intent(in) :: mzg
+   integer       , dimension(mzg), intent(in) :: ntext_soil
    !----- Local variables. ----------------------------------------------------------------!
-   type(patchtype), pointer    :: cpatch
-   integer                     :: ico
-   integer                     :: ipft
-   real                        :: r_resp_temp_fac
-   real                        :: Lc
-   real                        :: r_resp
+   type(patchtype)               , pointer    :: cpatch
+   integer                                    :: ico
+   integer                                    :: ipft
+   real                                       :: r_resp_temp_fac
+   real                                       :: Lc
+   real                                       :: r_resp
    !----- External functions. -------------------------------------------------------------!
-   real           , external   :: resp_weight
+   real                          , external   :: resp_weight
    !---------------------------------------------------------------------------------------!
 
 
@@ -31,9 +32,9 @@ subroutine soil_respiration(csite,ipa)
    !      This is the temperature dependence of root respiration.  Same for all cohorts.   !
    !---------------------------------------------------------------------------------------!
    r_resp_temp_fac = 1.0                                                                   &
-                   / (1.0 + exp(0.4 * ( 278.15 - csite%soil_tempk(nzg,ipa) ) ) )           &
-                   / (1.0 + exp(0.4 * ( csite%soil_tempk(nzg,ipa) - 318.15 ) ) )           &
-                   * exp( 10.41 - 3000.0/csite%soil_tempk(nzg,ipa) )
+                   / (1.0 + exp(0.4 * ( 278.15 - csite%soil_tempk(mzg,ipa) ) ) )           &
+                   / (1.0 + exp(0.4 * ( csite%soil_tempk(mzg,ipa) - 318.15 ) ) )           &
+                   * exp( 10.41 - 3000.0/csite%soil_tempk(mzg,ipa) )
 
    cpatch => csite%patch(ipa)
    do ico = 1,cpatch%ncohorts
@@ -46,8 +47,8 @@ subroutine soil_respiration(csite,ipa)
    end do
 
    !----- Compute soil/temperature modulation of heterotrophic respiration. ---------------!
-   csite%A_decomp(ipa) = resp_weight(csite%soil_tempk(nzg,ipa),csite%soil_water(nzg,ipa)   &
-                                    ,soil(csite%ntext_soil(nzg,ipa))%slmsts)
+   csite%A_decomp(ipa) = resp_weight(csite%soil_tempk(mzg,ipa),csite%soil_water(mzg,ipa)   &
+                                    ,soil(ntext_soil(mzg))%slmsts)
 
    !----- Compute nitrogen immobilization factor. -----------------------------------------!
    call resp_f_decomp(csite,ipa, Lc)
@@ -124,6 +125,8 @@ real function resp_weight(soil_tempk,soil_water,slmsts)
    !----- Compute the weight, which is just the combination of both. ----------------------!
    resp_weight = temperature_limitation * water_limitation
       
+!!   print*,resp_weight,temperature_limitation,water_limitation,soil_tempk,resp_water_below_opt,resp_water_above_opt
+
    return
 end function resp_weight
 !==========================================================================================!

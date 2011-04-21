@@ -603,3 +603,12 @@ brams4326
 deforest-22km
 BRAMS/build/bin/farq_leuning.mod
 ED/build/bin/farq_leuning.mod
+BRAMS/i10dbg
+ED/i10build
+ED/i11build
+coupled
+leaftest
+old_tests
+regional_ED
+BRAMS/i11dbg
+BRAMS/build/bin/lake_coms.mod

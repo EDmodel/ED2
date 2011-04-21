@@ -381,10 +381,10 @@ subroutine read_ednl(iunit,filename)
    ! be set to 1 in case the user doesn't want the mean diurnal cycle, or if frqanl is     !
    ! invalid.                                                                              !
    !---------------------------------------------------------------------------------------!
-   if (iqoutput == 0 .or. frqfast <= 0) then
+   if (iqoutput == 0 .or. frqfast <= 0.) then
       ndcycle = 1 
    else
-      ndcycle = max(1,int(frqfast / day_sec))
+      ndcycle = max(1,int(day_sec / frqfast))
    end if
    !---------------------------------------------------------------------------------------!
 

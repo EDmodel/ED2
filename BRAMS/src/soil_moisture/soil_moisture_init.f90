@@ -61,7 +61,7 @@ subroutine soil_moisture_init(n1,n2,n3,mzg,npat,ifm,can_theta,can_prss,glat,glon
    integer                                           :: i,j,k,ipat,nveg,nsoil
    integer                                           :: qi1,qi2,qj1,qj2,ncount
    integer                                           :: ii,jj,jc,ic,i1,j1,i2,j2,kk
-   integer                                           :: ifname,ipref,ipref_start
+   integer                                           :: ipref,ipref_start
    integer                                           :: icihourmin
    integer                                           :: n4us
    integer                                           :: nlat, nlon
@@ -77,6 +77,12 @@ subroutine soil_moisture_init(n1,n2,n3,mzg,npat,ifm,can_theta,can_prss,glat,glon
    real                                              :: ilatn,ilonn,ilats,ilons
    real                                              :: latn,lonn,lats,lons
    real                                              :: dlatr,dlonr
+   real                                              :: slmrel
+   real                                              :: swat_new
+   integer                                           :: size_usmodel
+   integer                                           :: size_expected
+   !----- External functions. -------------------------------------------------------------!
+   integer                           , external      :: filesize4
    !----- Namelist in case soil moisture is not a default one. ----------------------------!
    namelist /gradeumso/ latni, latnf, lonni, lonnf, ilatn, ilonn, nlat, nlon
    !---------------------------------------------------------------------------------------!
@@ -159,11 +165,10 @@ subroutine soil_moisture_init(n1,n2,n3,mzg,npat,ifm,can_theta,can_prss,glat,glon
         icihourmin = 0
       endif
 
-      !----- Binding the information and creating the name. -------------------------------!
+      !----- Bind the information and create the file name. -------------------------------!
       usdata=trim(usdata_in)//ciyear//cimon//cidate//cihourmin(1:icihourmin)//'.vfm'
 
-      ifname=len_trim(usdata)
-      inquire(file=usdata(1:ifname),exist=theref)
+      inquire(file=trim(usdata),exist=theref)
       if (.not.theref) then
          usdata=trim(usdata_in)//ciyear//cimon//cidate//cihourmin(1:icihourmin)//'.gra'
       end if
@@ -175,11 +180,9 @@ subroutine soil_moisture_init(n1,n2,n3,mzg,npat,ifm,can_theta,can_prss,glat,glon
       write(unit=*,fmt='(a,1x,a)')  '  - USDATA :',trim(usdata)
       write(unit=*,fmt='(a,1x,a)')  '  - USMODEL:',trim(usmodel)
 
-      ifname=len_trim(usmodel)
-      inquire(file=usmodel(1:ifname),exist=there)
+      inquire(file=trim(usmodel),exist=there)
       if (.not.there) then
-         ifname=len_trim(usdata)
-         inquire(file=usdata(1:ifname),exist=there)
+         inquire(file=trim(usdata),exist=there)
          if (there) then
             sair = .true.
          else
@@ -192,12 +195,14 @@ subroutine soil_moisture_init(n1,n2,n3,mzg,npat,ifm,can_theta,can_prss,glat,glon
       call alt_dia(idatea, imontha, iyeara,(int_dif_time-i),idate2, imonth2, iyear2)
    end do filefinder
 
-   ifname = len_trim(usmodel)
-   inquire(file=usmodel(1:ifname),exist=there)
-   if(.not.there) then
+   inquire (file=trim(usmodel),exist=there)
 
-      ifname=len_trim(usdata)
-      inquire(file=usdata(1:ifname),exist=there)
+   size_usmodel  = filesize4(trim(usmodel))
+   size_expected = 4*n2*n3*mzg*npat
+
+   if (size_usmodel /= size_expected) then
+
+      inquire(file=trim(usdata),exist=there)
       if (.not.there) then
          write(unit=*,fmt='(a,1x,a)')  '  - USDATA :',trim(usdata)
          write(unit=*,fmt='(a,1x,a)')  '  - USMODEL:',trim(usmodel)
@@ -393,13 +398,27 @@ subroutine soil_moisture_init(n1,n2,n3,mzg,npat,ifm,can_theta,can_prss,glat,glon
                                  ! number, we first normalise the soil moisture then scale !
                                  ! with the current parameter.                             !
                                  !---------------------------------------------------------!
-                                 nsoil           = nint(soil_text(k,i,j,ipat))
-                                 api_us(ii,jj,k) = api_us(ii,jj,k) / oslmsts(nsoil)
-                                 usdum(k)        = usdum(k) + api_us(ii,jj,k)*slmsts(nsoil)
-                              case ('SM_v2.','GL_SM.GPCP.','GL_SM.GPNR.')
-                                 !----- Soil moisture in fraction of saturation. ----------!
                                  nsoil    = nint(soil_text(k,i,j,ipat))
-                                 usdum(k) = usdum(k) + api_us(ii,jj,k)*slmsts(nsoil)
+                                 slmrel   = (api_us(ii,jj,k) - osoilcp(nsoil))             &
+                                          / (oslmsts(nsoil)  - osoilcp(nsoil))
+                                 swat_new = soilcp(nsoil)                                  &
+                                          + slmrel * (slmsts(nsoil)  - soilcp(nsoil))
+                                 usdum(k) = usdum(k) + swat_new
+
+                              case ('SM_v2.','GL_SM.GPCP.','GL_SM.GPNR.')
+                                 !---------------------------------------------------------!
+                                 !     Soil moisture in fraction of saturation.  Because   !
+                                 ! the relative position of dry air soil has changed, we   !
+                                 ! must scale the range to fall within the [soilcp;slmsts] !
+                                 ! interval.                                               !
+                                 !---------------------------------------------------------!
+                                 nsoil    = nint(soil_text(k,i,j,ipat))
+                                 slmrel   = ( api_us(ii,jj,k) * oslmsts(nsoil)             &
+                                            - osoilcp(nsoil))                              &
+                                          / (oslmsts(nsoil)  - osoilcp(nsoil))
+                                 swat_new = soilcp(nsoil)                                  &
+                                          + slmrel * (slmsts(nsoil)  - soilcp(nsoil))
+                                 usdum(k) = usdum(k) + swat_new
                               end select
                            end do
                         end if
@@ -445,7 +464,7 @@ subroutine soil_moisture_init(n1,n2,n3,mzg,npat,ifm,can_theta,can_prss,glat,glon
       deallocate(api_us,usdum,prlat,prlon)
       
       !----- Write the soil moisture into the output. -------------------------------------!
-      open (unit=19,file=usmodel,status='new',form='unformatted',access='direct'           &
+      open (unit=19,file=usmodel,status='replace',form='unformatted',access='direct'       &
            ,recl=4*n2*n3*mzg*npat)
       write(unit=19,rec=1) soil_water
       close(unit=19,status='keep')

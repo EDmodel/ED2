@@ -165,7 +165,7 @@ subroutine leaf_canopy(mzg,mzs,ksn,soil_energy,soil_water,soil_text,sfcwater_mas
       ! and moisture fluxes from vegetation to canopy, and flux resistance from soil or    !
       ! snow to canopy.                                                                    !
       !------------------------------------------------------------------------------------!
-      factv       = log(geoht / zoveg) / (vonk * vonk * atm_vels)
+      factv       = log((geoht-zdisp) / zoveg) / (vonk * vonk * atm_vels)
       aux         = exp(exar * (1. - (zdisp + zoveg) / zveg))
       ggveg       = (exar * (zveg - zdisp)) / (factv * zveg  * (exp(exar) - aux))
       ggnet       = ggfact * ggbare * ggveg / (ggbare + ggveg)
@@ -181,7 +181,7 @@ subroutine leaf_canopy(mzg,mzs,ksn,soil_energy,soil_water,soil_text,sfcwater_mas
    !     Split the total precipitation into intercepted water and through-fall, according  !
    ! to the fraction of open canopy.                                                       !
    !---------------------------------------------------------------------------------------!
-   if (solvable) then
+   if (resolvable) then
       intercepted_tot  = pcpgl  * veg_fracarea * (1. - snowfac)
       qintercepted_tot = qpcpgl * veg_fracarea * (1. - snowfac)
       dintercepted_tot = dpcpgl * veg_fracarea * (1. - snowfac)
@@ -308,7 +308,7 @@ subroutine leaf_canopy(mzg,mzs,ksn,soil_energy,soil_water,soil_text,sfcwater_mas
    ! moisture fluxes from vegetation to canopy, and flux resistance from soil or snow to   !
    ! canopy.                                                                               !
    !---------------------------------------------------------------------------------------!
-   if (solvable) then
+   if (resolvable) then
       !----- Save the vegetation class in an alias. ---------------------------------------!
       nveg = nint(leaf_class)
    
@@ -704,7 +704,7 @@ subroutine leaf_can_diag(ip,can_theta,can_theiv,can_rvap,leaf_class,can_prss,ini
    ! currently a diagnostic variable only, but it should become the main variable if we    !
    ! ever switch to foggy canopy air space.                                                !
    !---------------------------------------------------------------------------------------!
-   can_theiv = thetaeiv(can_theta,can_prss,can_temp,can_rvap,can_rvap,-8)
+   can_theiv = thetaeiv(can_theta,can_prss,can_temp,can_rvap,can_rvap,-84)
    !---------------------------------------------------------------------------------------!
 
 
@@ -729,7 +729,7 @@ subroutine leaf_veg_diag(veg_energy,veg_water,veg_hcap)
                         , tiny_parea   & ! intent(in)
                         , veg_temp     & ! intent(out)
                         , veg_fliq     & ! intent(out)
-                        , solvable     ! ! intent(in)
+                        , resolvable   ! ! intent(in)
    use rconstants, only : t3ple        ! ! intent(in)
    use therm_lib , only : qwtk         ! ! function
    implicit none
@@ -746,7 +746,7 @@ subroutine leaf_veg_diag(veg_energy,veg_water,veg_hcap)
    !     Find leaf temperature and liquid fraction of water, but only if we are solving    !
    ! leaves.                                                                               !
    !---------------------------------------------------------------------------------------!
-   if (solvable) then
+   if (resolvable) then
       call qwtk(veg_energy,veg_water,veg_hcap,veg_temp,veg_fliq)
    else
       veg_temp = can_temp

@@ -27,7 +27,8 @@ module growth_balive
                                  , plant_N_supply_scale   & ! intent(in)
                                  , c2n_storage            & ! intent(in)
                                  , growth_resp_factor     & ! intent(in)
-                                 , storage_turnover_rate  ! ! intent(in)
+                                 , storage_turnover_rate  & ! intent(in)
+                                 , phenology              ! ! intent(in)
       use physiology_coms , only : N_plant_lim            ! ! intent(in)
       use grid_coms       , only : nzg                    ! ! intent(in)
       use ed_therm_lib    , only : calc_hcapveg           & ! function
@@ -35,6 +36,7 @@ module growth_balive
       use allometry       , only : area_indices           & ! subroutine
                                  , ed_biomass             ! ! function
       use mortality       , only : mortality_rates        ! ! subroutine
+      use phenology_coms  , only : theta_crit             ! ! intent(in)
       implicit none
       !----- Arguments. -----------------------------------------------------!
       type(edtype)     , target     :: cgrid
@@ -82,6 +84,17 @@ module growth_balive
 
                   !----- Alias for current PFT. -----------------------------!
                   ipft = cpatch%pft(ico)
+
+                  !----- Update the elongation factor. ----------------------!
+                  select case (phenology(ipft))
+                  case (4)
+                     cpatch%elongf(ico) = max( 0.0                           &
+                                             , min(1.0, cpatch%paw_avg(ico)  &
+                                                      / theta_crit))
+                  case default
+                     cpatch%elongf(ico) = 1.0
+                  end select
+
 
                   !----- Initialize cohort nitrogen uptake. -----------------!
                   nitrogen_uptake = 0.0
@@ -238,7 +251,9 @@ module growth_balive
                                    , cpatch%dbh(ico)   , cpatch%hite(ico)    &
                                    , cpatch%pft(ico)   , cpatch%sla(ico)     &
                                    , cpatch%lai(ico)   , cpatch%wpa(ico)     &
-                                   , cpatch%wai(ico)   , cpatch%bsapwood(ico))
+                                   , cpatch%wai(ico)                         &
+                                   , cpatch%crown_area(ico)                  &
+                                   , cpatch%bsapwood(ico))
 
                   !----- Update above-ground biomass. -----------------------!
                   cpatch%agb(ico) = ed_biomass(cpatch%bdead(ico)             &
@@ -309,7 +324,8 @@ module growth_balive
                                  , plant_N_supply_scale   & ! intent(in)
                                  , c2n_storage            & ! intent(in)
                                  , growth_resp_factor     & ! intent(in)
-                                 , storage_turnover_rate  ! ! intent(in)
+                                 , storage_turnover_rate  & ! intent(in)
+                                 , phenology              ! ! intent(in)
       use physiology_coms , only : N_plant_lim            ! ! intent(in)
       use grid_coms       , only : nzg                    ! ! intent(in)
       use ed_therm_lib    , only : calc_hcapveg           & ! function
@@ -317,6 +333,7 @@ module growth_balive
       use allometry       , only : area_indices           & ! subroutine
                                  , ed_biomass             ! ! function
       use mortality       , only : mortality_rates        ! ! subroutine
+      use phenology_coms  , only : theta_crit             ! ! intent(in)
       implicit none
       !----- Arguments. -----------------------------------------------------!
       type(edtype)     , target     :: cgrid
@@ -363,6 +380,16 @@ module growth_balive
 
                   !----- Alias for current PFT. -----------------------------!
                   ipft = cpatch%pft(ico)
+
+                  !----- Update the elongation factor. ----------------------!
+                  select case (phenology(ipft))
+                  case (4)
+                     cpatch%elongf(ico) = max( 0.0                           &
+                                             , min(1.0, cpatch%paw_avg(ico)  &
+                                                      / theta_crit))
+                  case default
+                     cpatch%elongf(ico) = 1.0
+                  end select
 
                   !----- Initialize cohort nitrogen uptake. -----------------!
                   nitrogen_uptake = 0.0
@@ -724,18 +751,16 @@ module growth_balive
    subroutine alloc_plant_c_balance(csite,ipa,ico,salloc,salloci             &
                                    ,carbon_balance,nitrogen_uptake           &
                                    ,green_leaf_factor)
-      use ed_state_vars, only : sitetype     & ! structure
-                              , patchtype    ! ! structure
-      use pft_coms     , only : c2n_storage  & ! intent(in)
-                              , c2n_leaf     & ! intent(in)
-                              , sla          & ! intent(in)
-                              , q            & ! intent(in)
-                              , qsw          & ! intent(in)
-                              , c2n_stem     & ! intent(in)
-                              , phenology    ! ! intent(in)
-      use decomp_coms  , only : f_labile     ! ! intent(in)
-      use allometry    , only : dbh2bl       ! ! function
-      use phenology_coms, only: theta_crit   ! ! intent(in)
+      use ed_state_vars , only : sitetype     & ! structure
+                               , patchtype    ! ! structure
+      use pft_coms      , only : c2n_storage  & ! intent(in)
+                               , c2n_leaf     & ! intent(in)
+                               , sla          & ! intent(in)
+                               , q            & ! intent(in)
+                               , qsw          & ! intent(in)
+                               , c2n_stem     ! ! intent(in)
+      use decomp_coms   , only : f_labile     ! ! intent(in)
+      use allometry     , only : dbh2bl       ! ! function
       implicit none
       !----- Arguments. -----------------------------------------------------!
       type(sitetype) , target        :: csite
@@ -754,7 +779,6 @@ module growth_balive
       real                           :: bl_pot
       real                           :: increment
       real                           :: old_status
-      real                           :: elongf
       real                           :: delta_bleaf
       real                           :: delta_broot
       real                           :: delta_bsapwood
@@ -783,13 +807,6 @@ module growth_balive
             ! can go to balive pools, and put any excess in storage.         !
             !----------------------------------------------------------------!
             available_carbon=cpatch%bstorage(ico) + carbon_balance
-            
-            select case (phenology(ipft))
-            case (4)
-                elongf      = min (1.0, cpatch%paw_avg(ico)/theta_crit)
-            case default
-                elongf  = 1.0
-            end select
 
             !----------------------------------------------------------------!
             !     Maximum bleaf that the allometric relationship would       !
@@ -797,8 +814,10 @@ module growth_balive
             ! allow the plant to get back to full allometry.                 !
             !----------------------------------------------------------------!
 
-            bl_max = dbh2bl(cpatch%dbh(ico),ipft) * green_leaf_factor * elongf
-            balive_max = dbh2bl(cpatch%dbh(ico),ipft) * salloc * elongf
+            bl_max = dbh2bl(cpatch%dbh(ico),ipft) * green_leaf_factor        &
+                   * cpatch%elongf(ico)
+            balive_max = dbh2bl(cpatch%dbh(ico),ipft) * salloc               &
+                       * cpatch%elongf(ico)
 
             !--- Amount that bleaf, broot, and bsapwood are off allometry ---!
             delta_bleaf = max (0.0, bl_max- cpatch%bleaf(ico))
@@ -843,7 +862,13 @@ module growth_balive
 
             cpatch%balive(ico)   = cpatch%bleaf(ico) + cpatch%broot(ico)     &
                                  + cpatch%bsapwood(ico)
-
+            
+            !--  npp allocation in diff pools in Kg C/m2/day        -------------!
+            cpatch%today_nppleaf(ico)   = tr_bleaf       * cpatch%nplant(ico)
+            cpatch%today_nppfroot(ico)  = tr_broot       * cpatch%nplant(ico)
+            cpatch%today_nppsapwood(ico)= tr_bsapwood    * cpatch%nplant(ico)
+            cpatch%today_nppdaily(ico)  = carbon_balance * cpatch%nplant(ico)
+            
             !----------------------------------------------------------------!
             !    Find the amount of carbon used to recover the tissues that  !
             ! were off-allometry, take that from the carbon balance first,   !
@@ -882,7 +907,7 @@ module growth_balive
             
             on_allometry = 2.0 * abs(balive_max - cpatch%balive(ico))        &
                           /(balive_max + cpatch%balive(ico)) < 1.e-6
-            if (elongf == 1.0 .and. on_allometry) then
+            if (cpatch%elongf(ico) == 1.0 .and. on_allometry) then
                !-------------------------------------------------------------!
                !     We're back to allometry, change phenology_status.       !
                !-------------------------------------------------------------!
@@ -898,6 +923,12 @@ module growth_balive
             cpatch%bstorage(ico) = cpatch%bstorage(ico) + carbon_balance
             nitrogen_uptake      = nitrogen_uptake + carbon_balance          &
                                  / c2n_storage
+                                 
+            !--  npp allocation in diff pools in Kg C/m2/day        -------------!
+            cpatch%today_nppleaf(ico)     = 0.0
+            cpatch%today_nppfroot(ico)    = 0.0
+            cpatch%today_nppsapwood(ico)  = 0.0
+            cpatch%today_nppdaily(ico)    = carbon_balance * cpatch%nplant(ico)
          end if
  
 
@@ -961,6 +992,12 @@ module growth_balive
                               + (1.0 - f_labile(ipft)) / c2n_stem(ipft))     &
                             * cpatch%nplant(ico)
          end if
+         
+         !--  npp allocation in diff pools in Kg C/m2/day        -------------!
+         cpatch%today_nppleaf(ico)     = 0.0
+         cpatch%today_nppfroot(ico)    = 0.0
+         cpatch%today_nppsapwood(ico)  = 0.0
+         cpatch%today_nppdaily(ico)    = carbon_balance * cpatch%nplant(ico)
 
       end if
 
@@ -979,13 +1016,12 @@ module growth_balive
    subroutine potential_N_uptake(cpatch,ico,salloc,salloci,balive_in         &
                                 ,carbon_balance_pot,N_uptake_pot             &
                                 ,green_leaf_factor)
-      use ed_state_vars , only : patchtype   ! ! structure
-      use pft_coms      , only : c2n_storage & ! intent(in)
-                               , c2n_leaf    & ! intent(in)
-                               , c2n_stem    ! ! intent(in)
-      use decomp_coms   , only : f_labile    ! ! intent(in)
-      use allometry     , only : dbh2bl      ! ! intent(in)
-      use phenology_coms, only: theta_crit   ! ! intent(in)
+      use ed_state_vars , only : patchtype    ! ! structure
+      use pft_coms      , only : c2n_storage  & ! intent(in)
+                               , c2n_leaf     & ! intent(in)
+                               , c2n_stem     ! ! intent(in)
+      use decomp_coms   , only : f_labile     ! ! intent(in)
+      use allometry     , only : dbh2bl       ! ! intent(in)
       implicit none
       !----- Arguments. -----------------------------------------------------!
       type(patchtype), target        :: cpatch
@@ -1001,7 +1037,6 @@ module growth_balive
       real                           :: bl_max
       real                           :: bl_pot
       real                           :: increment
-      real                           :: elongf
       !----------------------------------------------------------------------!
 
       ipft = cpatch%pft(ico) 
@@ -1012,18 +1047,10 @@ module growth_balive
          !----- Positive carbon balance with plants fully flushed. ----------!
          N_uptake_pot = N_uptake_pot + carbon_balance_pot / c2n_storage
 
-      elseif (cpatch%phenology_status(ico) ==1) then
+      elseif (cpatch%phenology_status(ico) == 1) then
 
-         !-------------------------------------------------------------------!
-         !    There are at least some leaves and we are not dropping leaves. !
-         !    First we compute the maximum  possible bleaf and the how much  !
-         !    leaf biomass we could attain if all carbon balance went to leaf!
-         !    biomass.  We then decide what to do based on whether we would  !
-         !    exceed the limit or not.                                       !
-         !-------------------------------------------------------------------!
-         elongf      = min (1.0, cpatch%paw_avg(ico)/theta_crit)
-         
-         bl_max = dbh2bl(cpatch%dbh(ico),ipft) * green_leaf_factor * elongf
+         bl_max = dbh2bl(cpatch%dbh(ico),ipft) * green_leaf_factor           &
+                * cpatch%elongf(ico)
          bl_pot = cpatch%bleaf(ico) + carbon_balance_pot
 
          if (bl_pot > bl_max) then

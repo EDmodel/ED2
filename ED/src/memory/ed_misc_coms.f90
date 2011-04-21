@@ -1,6 +1,5 @@
 Module ed_misc_coms
 
-
    use ed_max_dims, only: str_len,maxpvars,str_len_short,maxgrds
 
    implicit none
@@ -85,6 +84,14 @@ Module ed_misc_coms
    real    :: max_poi99_dist
    !---------------------------------------------------------------------------------------!
 
+   !---------------------------------------------------------------------------------------!
+   !      This variable is used for the history start initialisation.  This sets the       !
+   ! maximum acceptable distance between the expected polygon and the polygon found in the !
+   ! history file.  Units: m.                                                              !
+   !---------------------------------------------------------------------------------------!
+   real    :: max_poihist_dist
+   !---------------------------------------------------------------------------------------!
+
    integer :: integration_scheme
 
 
@@ -116,6 +123,15 @@ Module ed_misc_coms
    integer :: vary_elev 
    integer :: vary_rad
    integer :: vary_hyd  
+
+   ! soil biogeochem initial conditions (over-rides patch files)
+   ! useful for data assimilation & sensitivity analysis
+   real    :: init_fsc 
+   real    :: init_stsc 
+   real    :: init_ssc 
+   real    :: init_stsl 
+   real    :: init_fsn 
+   real    :: init_msn 
 
    ! Logical Switches for various memory structures
 

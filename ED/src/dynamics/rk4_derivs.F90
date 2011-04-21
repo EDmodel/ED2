@@ -94,7 +94,7 @@ subroutine leaftw_derivs(mzg,mzs,initp,dinitp,csite,ipa)
    use rk4_coms             , only : rk4eps                & ! intent(in)
                                    , rk4tiny_sfcw_mass     & ! intent(in)
                                    , checkbudget           & ! intent(in)
-                                   , any_solvable          & ! intent(in)
+                                   , any_resolvable        & ! intent(in)
                                    , rk4site               & ! intent(in)
                                    , rk4patchtype          & ! structure
                                    , print_detailed        ! ! intent(in)
@@ -211,7 +211,7 @@ subroutine leaftw_derivs(mzg,mzs,initp,dinitp,csite,ipa)
    dinitp%virtual_water      = 0.0d0
    dinitp%virtual_depth      = 0.0d0
    initp%extracted_water(:)  = 0.0d0
-   dinitp%avg_smoist_gc(:)   = 0.0d0
+   dinitp%avg_transloss(:)   = 0.0d0
 
    !---------------------------------------------------------------------------------------!
    !     Calculate water available to vegetation (in meters). SLZ is specified in RAMSIN.  !
@@ -219,14 +219,14 @@ subroutine leaftw_derivs(mzg,mzs,initp,dinitp,csite,ipa)
    ! Eg, SLZ = -2, -1, -0.5, -0.25.  There are four soil layers in this example; soil      !
    ! layer 1 goes from 2 meters below the surface to 1 meter below the surface.            !
    !---------------------------------------------------------------------------------------!
-   nsoil = csite%ntext_soil(mzg,ipa)
+   nsoil = rk4site%ntext_soil(mzg)
    initp%available_liquid_water(mzg) = dslz8(mzg)                                          &
                                      * max(0.0d0                                           &
                                           ,initp%soil_fracliq(mzg)*(initp%soil_water(mzg)  &
                                           -soil8(nsoil)%soilwp))
 
    do k = mzg - 1, rk4site%lsl, -1
-      nsoil = csite%ntext_soil(k,ipa)
+      nsoil = rk4site%ntext_soil(k)
       initp%available_liquid_water(k) = initp%available_liquid_water(k+1) + dslz8(k)       &
            *max(0.0d0,(initp%soil_water(k)-soil8(nsoil)%soilwp)*initp%soil_fracliq(k))
    end do
@@ -237,7 +237,7 @@ subroutine leaftw_derivs(mzg,mzs,initp,dinitp,csite,ipa)
    ! [m].                                                                                  !
    !---------------------------------------------------------------------------------------!
    do k = rk4site%lsl, mzg
-      nsoil = csite%ntext_soil(k,ipa)
+      nsoil = rk4site%ntext_soil(k)
       initp%psiplusz(k) = slzt8(k) + soil8(nsoil)%slpots                                   &
                         * (soil8(nsoil)%slmsts / initp%soil_water(k)) ** soil8(nsoil)%slbs
 
@@ -265,7 +265,7 @@ subroutine leaftw_derivs(mzg,mzs,initp,dinitp,csite,ipa)
    !     Here we check whether it is bedrock or not because slmsts for that is zero.       !
    !---------------------------------------------------------------------------------------!
    do k = rk4site%lsl, mzg
-      nsoil = csite%ntext_soil(k,ipa)
+      nsoil = rk4site%ntext_soil(k)
       if(nsoil /= 13)then
          wgpfrac  = min(initp%soil_water(k) / soil8(nsoil)%slmsts,1.d0)
          soilcond = soil8(nsoil)%soilcond0                                                 &
@@ -404,7 +404,7 @@ subroutine leaftw_derivs(mzg,mzs,initp,dinitp,csite,ipa)
                        ,'leaftw_derivs','rk4_derivs.F90')
 
       if (initp%virtual_water /= 0.d0) then  !!process "virtural water" pool
-         nsoil = csite%ntext_soil(mzg,ipa)
+         nsoil = rk4site%ntext_soil(mzg)
          if (nsoil /= 13) then
             infilt = -dslzi8(mzg)* 5.d-1 * slcons18(mzg,nsoil)                             &
                    * (initp%soil_water(mzg) / soil8(nsoil)%slmsts)                         &
@@ -421,7 +421,7 @@ subroutine leaftw_derivs(mzg,mzs,initp,dinitp,csite,ipa)
       end if  !! end virtual water pool
       if (initp%nlev_sfcwater >= 1) then !----- Process "snow" water pool -----------------! 
          surface_water = initp%sfcwater_mass(1)*initp%sfcwater_fracliq(1)*wdnsi8 !(m/m2)
-         nsoil = csite%ntext_soil(mzg,ipa)
+         nsoil = rk4site%ntext_soil(mzg)
          if (nsoil /= 13) then
             !----- Calculate infiltration rate (m/s) --------------------------------------!
             infilt = -dslzi8(mzg) * 5.d-1 * slcons18(mzg,nsoil)                            &
@@ -444,8 +444,8 @@ subroutine leaftw_derivs(mzg,mzs,initp,dinitp,csite,ipa)
 
    !----- Keep qw_flux in W/m2. -----------------------------------------------------------!
    do k = rk4site%lsl+1, mzg
-      nsoil = csite%ntext_soil(k,ipa)
-      if(nsoil /= 13 .and. csite%ntext_soil(k-1,ipa) /= 13)then
+      nsoil = rk4site%ntext_soil(k)
+      if(nsoil /= 13 .and. rk4site%ntext_soil(k-1) /= 13)then
 
          wgpmid    = 5.d-1 * (initp%soil_water(k)   + initp%soil_water(k-1))
          freezeCor = 5.d-1 * (initp%soil_fracliq(k) + initp%soil_fracliq(k-1))
@@ -469,20 +469,22 @@ subroutine leaftw_derivs(mzg,mzs,initp,dinitp,csite,ipa)
    end do
 
    !----- Boundary condition at the lowest soil level -------------------------------------!
-   nsoil = csite%ntext_soil(rk4site%lsl,ipa)
+   nsoil = rk4site%ntext_soil(rk4site%lsl)
    if (nsoil /= 13) then
       select case(isoilbc)
-      case (0) !-----  Bedrock no flux across -----------!
+      case (0) 
+         !----- Bedrock, no flux across. --------------------------------------------------!
          w_flux(rk4site%lsl)     = 0.d0
          qw_flux(rk4site%lsl)    = 0.d0
          dinitp%avg_drainage     = 0.d0
          dinitp%avg_drainage_heat= 0.d0
          
-      case (1) !---------------------------------------------------------------------------!
-               !Free drainage, water movement of bottom soil layer is only under gravity,--!
-               !i.e. the soil water content of boundary layer is equal to that of bottom --!
-               !soil layer.                                                              --!
-               !---------------------------------------------------------------------------!
+      case (1) 
+         !---------------------------------------------------------------------------------!
+         !     Free drainage, water movement of bottom soil layer is only under gravity,   !
+         ! i.e. the soil water content of boundary layer is equal to that of bottom soil   !
+         ! layer.                                                                          !
+         !---------------------------------------------------------------------------------!
          wgpmid      = initp%soil_water(rk4site%lsl)
          freezeCor   = initp%soil_fracliq(rk4site%lsl)
          if (freezeCor < 1.d0) freezeCor = 1.d1**(-freezeCoef*(1.d0-freezeCor))
@@ -540,11 +542,12 @@ subroutine leaftw_derivs(mzg,mzs,initp,dinitp,csite,ipa)
          dinitp%avg_drainage      = - w_flux(rk4site%lsl) * wdns8
          dinitp%avg_drainage_heat = - qw_flux(rk4site%lsl)
 
-      case (3) !---------------------------------------------------------------------------!
-               ! Free drainage, water movement of bottom soil layer is under gravity and   !
-               ! moisture potential difference. The soil water content of boundary layer   !
-               ! is equal to field capacity.                                               !
-               !---------------------------------------------------------------------------!
+      case (3) 
+         !---------------------------------------------------------------------------------!
+         !     Free drainage, water movement of bottom soil layer is under gravity and     !
+         ! moisture potential difference.  The soil water content of boundary layer is     !
+         ! equal to field capacity.                                                        !
+         !---------------------------------------------------------------------------------!
          wgpmid      = initp%soil_water(rk4site%lsl)
          freezeCor   = initp%soil_fracliq(rk4site%lsl)
          if (freezeCor < 1.d0) freezeCor = 1.d1**(-freezeCoef*(1.d0-freezeCor))
@@ -557,7 +560,8 @@ subroutine leaftw_derivs(mzg,mzs,initp,dinitp,csite,ipa)
                                  *  (wgpmid/soil8(nsoil)%slmsts)                               &
                                  ** (2.d0 * soil8(nsoil)%slbs + 3.d0)                          &
                                  * ( initp%psiplusz(rk4site%lsl) - psiplusz_bl) * freezeCor
-         else !-- prevent bottom soil layer sucking water from the boundary layer ---!
+         else 
+            !----- Prevent bottom soil layer sucking water from the boundary layer. -------!
              w_flux(rk4site%lsl) = 0.d0
          end if
 
@@ -608,10 +612,10 @@ subroutine leaftw_derivs(mzg,mzs,initp,dinitp,csite,ipa)
    end do
 
    !---- Update soil moisture and energy from transpiration/root uptake. ------------------!
-   if (any_solvable) then
+   if (any_resolvable) then
       do k1 = rk4site%lsl, mzg    ! loop over extracted water
          do k2=k1,mzg
-            if (csite%ntext_soil(k2,ipa) /= 13) then
+            if (rk4site%ntext_soil(k2) /= 13) then
                if (initp%available_liquid_water(k1) > 0.d0) then
                   wloss = wdnsi8 * initp%extracted_water(k1)                               &
                         * initp%soil_liq(k2) / initp%available_liquid_water(k1)
@@ -620,12 +624,14 @@ subroutine leaftw_derivs(mzg,mzs,initp,dinitp,csite,ipa)
                   !----- Energy: only liquid water is lost through transpiration. ---------!
                   qwloss = wloss * cliqvlme8 * (initp%soil_tempk(k2) - tsupercool8)
                   dinitp%soil_energy(k2)   = dinitp%soil_energy(k2)   - qwloss
-                  dinitp%avg_smoist_gc(k2) = dinitp%avg_smoist_gc(k2) - wdns8*wloss
+                  dinitp%avg_transloss(k2) = dinitp%avg_transloss(k2) - wdns8*dble(wloss)  &
+                             * dslz8(k2)
                end if
             end if
          end do
       end do
    end if
+
 
    return
 end subroutine leaftw_derivs
@@ -656,7 +662,7 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
                                     , wcapcani             & ! intent(in)
                                     , hcapcani             & ! intent(in)
                                     , ccapcani             & ! intent(in)
-                                    , any_solvable         & ! intent(in)
+                                    , any_resolvable       & ! intent(in)
                                     , tiny_offset          & ! intent(in)
                                     , rk4dry_veg_lwater    & ! intent(in)
                                     , rk4fullveg_lwater    & ! intent(in)
@@ -806,7 +812,7 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
    ! whether some cohorts are already full or not, or if it is fine to exceed the maximum  !
    ! amount of water that a cohort can hold.                                               !
    !---------------------------------------------------------------------------------------!
-   if (any_solvable) then
+   if (any_resolvable) then
       taii = 0.d0
       cpatch => csite%patch(ipa)
       do ico = 1,cpatch%ncohorts
@@ -1043,14 +1049,14 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
 
 
       !------------------------------------------------------------------------------------!
-      !     Check whether this this cohort hasn't been flagged as non-solvable, i.e., it   !
+      !     Check whether this this cohort hasn't been flagged as non-resolvable, i.e., it !
       ! has leaves, belongs to a patch that is not too sparse, an it is not buried in      !
       ! snow.  We should compute energy and water at the cohort level only if the cohort   !
       ! is "safe".  Otherwise, we will set the leaf energy derivatives to zero, and pass   !
       ! all throughfall to the ground.  Later, these "unsafe" cohorts will have their leaf !
       ! energy set to equilibrium with the canopy air space (temperature).                 !
       !------------------------------------------------------------------------------------!
-      if (initp%solvable(ico)) then
+      if (initp%resolvable(ico)) then
 
          !------ Defining some shortcuts to indices ---------------------------------------!
          ipft  = cpatch%pft(ico)

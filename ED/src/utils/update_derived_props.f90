@@ -71,8 +71,8 @@ subroutine update_patch_derived_props(csite,lsl,prss,ipa)
    real            , intent(in) :: prss
    !----- Local variables -----------------------------------------------------------------!
    type(patchtype) , pointer    :: cpatch
-   real                         :: norm_fac
    real                         :: weight
+   real                         :: weight_sum
    integer                      :: ico
    integer                      :: k
    integer                      :: ksn
@@ -82,12 +82,13 @@ subroutine update_patch_derived_props(csite,lsl,prss,ipa)
 
    !----- Find the total snow depth. ------------------------------------------------------!
    ksn = csite%nlev_sfcwater(ipa)
-   csite%total_snow_depth(ipa) = 0.
+   csite%total_sfcw_depth(ipa) = 0.
    do k=1,ksn
-      csite%total_snow_depth(ipa) = csite%total_snow_depth(ipa)                            &
+      csite%total_sfcw_depth(ipa) = csite%total_sfcw_depth(ipa)                            &
                                   + csite%sfcwater_depth(k,ipa)
    end do
    !---------------------------------------------------------------------------------------!
+
 
 
 
@@ -96,7 +97,8 @@ subroutine update_patch_derived_props(csite,lsl,prss,ipa)
    csite%lai(ipa)              = 0.0
    csite%wpa(ipa)              = 0.0
    csite%wai(ipa)              = 0.0
-   norm_fac                    = 0.0
+   csite%hcapveg(ipa)          = 0.0
+   weight_sum                  = 0.0
    csite%opencan_frac(ipa)     = 1.0
    csite%plant_ag_biomass(ipa) = 0.0
    !---------------------------------------------------------------------------------------!
@@ -115,6 +117,10 @@ subroutine update_patch_derived_props(csite,lsl,prss,ipa)
       csite%wai(ipa)  = csite%wai(ipa)  + cpatch%wai(ico)
       !------------------------------------------------------------------------------------!
 
+      !----- Update the patch-level heat capacity. ----------------------------------------!
+      csite%hcapveg(ipa)  = csite%hcapveg(ipa)  + cpatch%hcapveg(ico)
+      !------------------------------------------------------------------------------------!
+
 
 
       !----- Compute the patch-level above-ground biomass
@@ -122,28 +128,24 @@ subroutine update_patch_derived_props(csite,lsl,prss,ipa)
                                   + ed_biomass(cpatch%bdead(ico),cpatch%balive(ico)        &
                                               ,cpatch%bleaf(ico),cpatch%pft(ico)           &
                                               ,cpatch%hite(ico),cpatch%bstorage(ico)       &
-                                              ,cpatch%bsapwood(ico))      &
+                                              ,cpatch%bsapwood(ico))                       &
                                   * cpatch%nplant(ico)           
       !------------------------------------------------------------------------------------!
 
 
 
       !------------------------------------------------------------------------------------!
-      !     Compute average vegetation height, weighting using crown area.  We add the     !
+      !     Compute average vegetation height, weighting using basal area.  We add the     !
       ! cohorts only until when the canopy is closed, this way we will not bias the        !
       ! vegetation height or the canopy depth towards the cohorts that live in the under-  !
       ! storey.  Also, we must take into account the depth of the temporary surface water  !
       ! or snow, because this will make the plants "shorter".                              !
       !------------------------------------------------------------------------------------!
-      if (csite%opencan_frac(ipa) > 0.0                         .and.                      &
-          cpatch%hite(ico)        > csite%total_snow_depth(ipa) ) then
-         weight                  = min(1.0, cpatch%nplant(ico)                             &
-                                          * dbh2ca(cpatch%dbh(ico),cpatch%sla(ico),ipft))
-         norm_fac                = norm_fac + weight
-         csite%veg_height(ipa)   = csite%veg_height(ipa)                                   &
-                                 + (cpatch%hite(ico) - csite%total_snow_depth(ipa))        &
-                                 * weight
-         csite%opencan_frac(ipa) = csite%opencan_frac(ipa) * (1.0 - weight)
+      if (csite%opencan_frac(ipa) > 0.0) then
+         weight                  = cpatch%nplant(ico) * cpatch%basarea(ico)
+         weight_sum              = weight_sum + weight
+         csite%veg_height(ipa)   = csite%veg_height(ipa) + cpatch%hite(ico) * weight
+         csite%opencan_frac(ipa) = csite%opencan_frac(ipa) * (1.0 - cpatch%crown_area(ico))
       end if
       !------------------------------------------------------------------------------------!
 
@@ -153,8 +155,8 @@ subroutine update_patch_derived_props(csite,lsl,prss,ipa)
 
 
    !----- Normalise the vegetation height, making sure that it is above the minimum. ------!
-   if (norm_fac > tiny(1.0)) then
-      csite%veg_height(ipa)  = max(veg_height_min,csite%veg_height(ipa) / norm_fac)
+   if (weight_sum > tiny(1.0)) then
+      csite%veg_height(ipa)  = max(veg_height_min,csite%veg_height(ipa) / weight_sum)
    else
       csite%veg_height(ipa)  = veg_height_min
    end if
@@ -177,6 +179,13 @@ subroutine update_patch_derived_props(csite,lsl,prss,ipa)
    !----- Update the canopy depth, and impose the minimum if needed be. -------------------!
    csite%can_depth(ipa) = max(csite%veg_height(ipa), minimum_canopy_depth)
    !---------------------------------------------------------------------------------------!
+
+
+
+   !----- Find the fraction of vegetation buried in snow. ---------------------------------!
+   csite%snowfac(ipa) = min(0.99, csite%total_sfcw_depth(ipa)/csite%veg_height(ipa))
+   !---------------------------------------------------------------------------------------!
+
 
 
    !----- Find the PFT-dependent size distribution of this patch. -------------------------!
@@ -203,7 +212,7 @@ end subroutine update_patch_derived_props
 !      This subroutine will take care of some diagnostic thermodynamic properties, namely  !
 ! the canopy air density and temperature.                                                  !
 !------------------------------------------------------------------------------------------!
-subroutine update_patch_thermo_props(csite,ipaa,ipaz)
+subroutine update_patch_thermo_props(csite,ipaa,ipaz,mzg,mzs,ntext_soil)
   
    use ed_state_vars, only : sitetype      ! ! structure
    use therm_lib    , only : idealdenssh   & ! function
@@ -213,21 +222,22 @@ subroutine update_patch_thermo_props(csite,ipaa,ipaz)
                            , rocp          & ! intent(in)
                            , t00           & ! intent(in)
                            , wdns          ! ! intent(in)
-   use grid_coms    , only : nzg           & ! intent(in)
-                           , nzs           ! ! intent(in)
    use soil_coms    , only : soil          ! ! intent(in)
    implicit none
 
    !----- Arguments -----------------------------------------------------------------------!
-   type(sitetype)  , target     :: csite
-   integer         , intent(in) :: ipaa
-   integer         , intent(in) :: ipaz
+   type(sitetype)                , target     :: csite
+   integer                       , intent(in) :: ipaa
+   integer                       , intent(in) :: ipaz
+   integer                       , intent(in) :: mzg
+   integer                       , intent(in) :: mzs
+   integer       , dimension(mzg), intent(in) :: ntext_soil
    !----- Local variables. ----------------------------------------------------------------!
-   integer                      :: ipa
-   integer                      :: nsoil
-   integer                      :: ksn
-   integer                      :: k
-   real                         :: soilhcap
+   integer                                    :: ipa
+   integer                                    :: nsoil
+   integer                                    :: ksn
+   integer                                    :: k
+   real                                       :: soilhcap
    !---------------------------------------------------------------------------------------!
 
 
@@ -249,8 +259,8 @@ subroutine update_patch_thermo_props(csite,ipaa,ipaz)
                                            ,csite%can_shv(ipa))
 
       !----- Update soil temperature and liquid water fraction. ---------------------------!
-      do k = 1, nzg
-         nsoil    = csite%ntext_soil(k,ipa)
+      do k = 1, mzg
+         nsoil    = ntext_soil(k)
          soilhcap = soil(nsoil)%slcpd
          call qwtk(csite%soil_energy(k,ipa),csite%soil_water(k,ipa)*wdns,soilhcap          &
                   ,csite%soil_tempk(k,ipa),csite%soil_fracliq(k,ipa))
@@ -258,14 +268,17 @@ subroutine update_patch_thermo_props(csite,ipaa,ipaz)
 
       !----- Update temporary surface water temperature and liquid water fraction. --------!
       ksn = csite%nlev_sfcwater(ipa)
+      csite%total_sfcw_depth(ipa) = 0.
       do k = 1, ksn
          call qtk(csite%sfcwater_energy(k,ipa),csite%sfcwater_tempk(k,ipa)                 &
                  ,csite%sfcwater_fracliq(k,ipa))
+         csite%total_sfcw_depth(ipa) =  csite%total_sfcw_depth(ipa)                        &
+                                     +  csite%sfcwater_depth(k,ipa)
       end do
-      do k = ksn+1,nzs
+      do k = ksn+1,mzs
          if (k == 1) then
-            csite%sfcwater_tempk  (k,ipa) = csite%soil_tempk  (nzg,ipa)
-            csite%sfcwater_fracliq(k,ipa) = csite%soil_fracliq(nzg,ipa)
+            csite%sfcwater_tempk  (k,ipa) = csite%soil_tempk  (mzg,ipa)
+            csite%sfcwater_fracliq(k,ipa) = csite%soil_fracliq(mzg,ipa)
          else
             csite%sfcwater_tempk  (k,ipa) = csite%sfcwater_tempk  (k-1,ipa)
             csite%sfcwater_fracliq(k,ipa) = csite%sfcwater_fracliq(k-1,ipa)
@@ -505,7 +518,7 @@ subroutine read_soil_moist_temp(cgrid,igr)
                         cpatch => csite%patch(ipa)
 
                         do k=1,nzg
-                           ntext = csite%ntext_soil(k,ipa)
+                           ntext = cpoly%ntext_soil(k,isi)
 
                            if(abs(slz(k)) < 0.1)then
                               csite%soil_tempk(k,ipa) = tmp1
@@ -535,7 +548,7 @@ subroutine read_soil_moist_temp(cgrid,igr)
 
                        !----- Initial condition is with no snow/pond. ---------------------!
                        csite%nlev_sfcwater(ipa)    = 0
-                       csite%total_snow_depth(ipa) = 0.
+                       csite%total_sfcw_depth(ipa) = 0.
                         do k=1,nzs
                            csite%sfcwater_energy (k,ipa) = 0.
                            csite%sfcwater_depth  (k,ipa) = 0.
@@ -555,7 +568,7 @@ subroutine read_soil_moist_temp(cgrid,igr)
                         endif
                         
                         !----- Compute the ground specific humidity. ----------------------!
-                        ntext = csite%ntext_soil(k,ipa)
+                        ntext = cpoly%ntext_soil(k,isi)
                         nls   = csite%nlev_sfcwater(ipa)
                         nlsw1 = max(1,nls)
                         call ed_grndvap(nls,ntext,csite%soil_water(nzg,ipa)                &

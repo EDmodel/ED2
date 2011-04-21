@@ -40,7 +40,7 @@ subroutine datassim()
 
    !---------------------------------------------------------------------------------------!
    !     Set bounds for nudging this sub-domain.  We first assume the sub-domain is in the !
-   ! middle, so we assign the node solvable boundaries.                                    !
+   ! middle, so we assign the node resolvable boundaries.                                  !
    !---------------------------------------------------------------------------------------!
    iwest  = ia
    ieast  = iz

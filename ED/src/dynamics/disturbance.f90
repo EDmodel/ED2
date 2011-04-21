@@ -43,11 +43,14 @@ module disturbance_utils
       use disturb_coms , only : treefall_age_threshold  & ! intent(in)
                               , min_new_patch_area      & ! intent(in)
                               , mature_harvest_age      & ! intent(in)
-                              , plantation_rotation     ! ! intent(in)
+                              , plantation_rotation     & ! intent(in)
+                              , ianth_disturb
       use ed_max_dims  , only : n_dist_types            & ! intent(in)
                               , n_pft                   & ! intent(in)
                               , n_dbh                   ! ! intent(in)
       use mem_polygons , only : maxcohort               ! ! intent(in)
+      use grid_coms    , only : nzg                     & ! intent(in)
+                              , nzs                     ! ! intent(in)
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
       type(edtype)                   , target      :: cgrid
@@ -293,12 +296,14 @@ module disturbance_utils
                   ! ing, since the leaf temperature is initially assigned as the canopy    !
                   ! air temperature.                                                       !
                   !------------------------------------------------------------------------!
-                  call update_patch_thermo_props(csite,new_lu+onsp,new_lu+onsp)
+                  call update_patch_thermo_props(csite,new_lu+onsp,new_lu+onsp,nzg,nzs     &
+                                                ,cpoly%ntext_soil(:,isi))
 
                   !----- If the new patch is agriculture, plant it with grasses. ----------!
                   if (new_lu == 1) then 
-                     call plant_patch(csite,new_lu+onsp,cpoly%agri_stocking_pft(isi)       &
+                     call plant_patch(csite,new_lu+onsp,nzg,cpoly%agri_stocking_pft(isi)   &
                                      ,cpoly%agri_stocking_density(isi)                     &
+                                     ,cpoly%ntext_soil(:,isi)                              &
                                      ,cpoly%green_leaf_factor(:,isi), 1.0, cpoly%lsl(isi))
                   end if
 
@@ -325,7 +330,8 @@ module disturbance_utils
                   call update_patch_derived_props(csite,cpoly%lsl(isi),cpoly%met(isi)%prss &
                                                  ,new_lu+onsp)
                   !----- Update soil temperature, liquid fraction, etc. -------------------!
-                  call new_patch_sfc_props(csite,new_lu+onsp)
+                  call new_patch_sfc_props(csite,new_lu+onsp,nzg,nzs                       &
+                                          ,cpoly%ntext_soil(:,isi))
                   !----- Update budget properties. ----------------------------------------!
                   call update_budget(csite,cpoly%lsl(isi),new_lu+onsp,new_lu+onsp)
 
@@ -713,14 +719,6 @@ module disturbance_utils
       !----- Initialise all fast variables. -----------------------------------------------!
       call init_ed_patch_vars(csite,np,np,lsl)
 
-      !------------------------------------------------------------------------------------!
-      !     Soil texture is the only one that doesn't receive zeroes, but the soil type    !
-      ! from the donor patch.  In reality, this should be revised when multiple soil       !
-      ! types are allowed in the same polygon.                                             !
-      !------------------------------------------------------------------------------------!
-      csite%ntext_soil(1:nzg,np) = csite%ntext_soil(1:nzg,dp)
-
-
       return
    end subroutine initialize_disturbed_patch
    !=======================================================================================!
@@ -968,6 +966,13 @@ module disturbance_utils
             tpatch%mean_storage_resp  (nco) = tpatch%mean_storage_resp(nco) * survival_fac
             tpatch%mean_vleaf_resp    (nco) = tpatch%mean_vleaf_resp  (nco) * survival_fac
             tpatch%today_gpp          (nco) = tpatch%today_gpp        (nco) * survival_fac
+            tpatch%today_nppleaf      (nco) = tpatch%today_nppleaf    (nco) * survival_fac
+            tpatch%today_nppfroot     (nco) = tpatch%today_nppfroot   (nco) * survival_fac
+            tpatch%today_nppsapwood   (nco) = tpatch%today_nppsapwood (nco) * survival_fac
+            tpatch%today_nppcroot     (nco) = tpatch%today_nppcroot   (nco) * survival_fac
+            tpatch%today_nppseeds     (nco) = tpatch%today_nppseeds   (nco) * survival_fac
+            tpatch%today_nppwood      (nco) = tpatch%today_nppwood    (nco) * survival_fac
+            tpatch%today_nppdaily     (nco) = tpatch%today_nppdaily   (nco) * survival_fac
             tpatch%today_gpp_pot      (nco) = tpatch%today_gpp_pot    (nco) * survival_fac
             tpatch%today_gpp_max      (nco) = tpatch%today_gpp_max    (nco) * survival_fac
             tpatch%today_leaf_resp    (nco) = tpatch%today_leaf_resp  (nco) * survival_fac
@@ -980,6 +985,8 @@ module disturbance_utils
             tpatch%veg_water          (nco) = tpatch%veg_water        (nco) * survival_fac
             tpatch%hcapveg            (nco) = tpatch%hcapveg          (nco) * survival_fac
             tpatch%veg_energy         (nco) = tpatch%veg_energy       (nco) * survival_fac
+            !----- Crown area shall not exceed 1. -----------------------------------------!
+            tpatch%crown_area         (nco) = min(1.,tpatch%crown_area(nco) * survival_fac)
             !----- Carbon flux monthly means are extensive, we must convert them. ---------!
             if (idoutput > 0 .or. imoutput > 0 .or. iqoutput > 0) then
                tpatch%dmean_par_v     (nco) = tpatch%dmean_par_v      (nco) * survival_fac
@@ -1198,34 +1205,38 @@ module disturbance_utils
    !    Add a cohort of the appropriate PFT type to populate a plantation/cropland/pasture !
    ! patch.                                                                                !
    !---------------------------------------------------------------------------------------!
-   subroutine plant_patch(csite,np,pft,density,green_leaf_factor,height_factor,lsl)
-      use ed_state_vars , only  : sitetype      & ! structure
-                                , patchtype     ! ! structure
-      use pft_coms       , only : q             & ! intent(in)
-                                , qsw           & ! intent(in)
-                                , sla           & ! intent(in)
-                                , hgt_min       & ! intent(in)
-                                , max_dbh       & ! intent(in)
-                                , is_grass      ! ! intent(in)
-      use ed_misc_coms   , only : dtlsm         ! ! intent(in)
-      use fuse_fiss_utils, only : sort_cohorts  ! ! sub-routine
-      use ed_therm_lib   , only : calc_hcapveg  ! ! function
-      use consts_coms    , only : t3ple         & ! intent(in)
-                                , pio4          ! ! intent(in)
-      use allometry      , only : h2dbh         & ! function
-                                , dbh2bd        & ! function
-                                , dbh2bl        & ! function
-                                , dbh2h         & ! function
-                                , area_indices  & ! function
-                                , ed_biomass    ! ! function
-      use ed_max_dims    , only : n_pft         ! ! intent(in)
+   subroutine plant_patch(csite,np,mzg,pft,density,ntext_soil,green_leaf_factor            &
+                         ,height_factor,lsl)
+      use ed_state_vars , only  : sitetype                 & ! structure
+                                , patchtype                ! ! structure
+      use pft_coms       , only : q                        & ! intent(in)
+                                , qsw                      & ! intent(in)
+                                , sla                      & ! intent(in)
+                                , hgt_min                  & ! intent(in)
+                                , max_dbh                  & ! intent(in)
+                                , is_grass                 ! ! intent(in)
+      use ed_misc_coms   , only : dtlsm                    ! ! intent(in)
+      use fuse_fiss_utils, only : sort_cohorts             ! ! sub-routine
+      use ed_therm_lib   , only : calc_hcapveg             ! ! function
+      use consts_coms    , only : t3ple                    & ! intent(in)
+                                , pio4                     ! ! intent(in)
+      use allometry      , only : h2dbh                    & ! function
+                                , dbh2bd                   & ! function
+                                , dbh2bl                   & ! function
+                                , dbh2h                    & ! function
+                                , area_indices             & ! function
+                                , ed_biomass               ! ! function
+      use ed_max_dims    , only : n_pft                    ! ! intent(in)
+      use phenology_coms , only : retained_carbon_fraction ! ! intent(in)
 
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
       type(sitetype)                  , target     :: csite
+      integer                         , intent(in) :: mzg
       integer                         , intent(in) :: np
       integer                         , intent(in) :: pft
       integer                         , intent(in) :: lsl
+      integer       , dimension(mzg)  , intent(in) :: ntext_soil
       real          , dimension(n_pft), intent(in) :: green_leaf_factor
       real                            , intent(in) :: density
       real                            , intent(in) :: height_factor
@@ -1235,6 +1246,10 @@ module disturbance_utils
       integer                                      :: nc
       real                                         :: salloc
       real                                         :: salloci
+      real                                         :: bleaf_max
+      real                                         :: balive_max
+      !----- External functions. ----------------------------------------------------------!
+      logical                         , external   :: is_resolvable
       !------------------------------------------------------------------------------------!
 
 
@@ -1273,42 +1288,31 @@ module disturbance_utils
       cpatch%pft(nc)    = pft
       cpatch%nplant(nc) = density
       cpatch%hite(nc)   = hgt_min(cpatch%pft(nc)) * min(1.0,height_factor)
-      
-      !----- This part needs a better explanation, it is quite confusing... ---------------!
-      if (is_grass(nc)) then
-         cpatch%dbh(nc)   = h2dbh(cpatch%hite(nc),cpatch%pft(nc))
-         cpatch%bleaf(nc) = dbh2bl(cpatch%dbh(nc),cpatch%pft(nc))
+      !------------------------------------------------------------------------------------!
 
-         !----- Reset allometry to make it grow. ------------------------------------------!
-         cpatch%dbh(nc)   = max_dbh(pft)
-         cpatch%bdead(nc) = dbh2bd(cpatch%dbh(nc),cpatch%hite(nc),cpatch%pft(nc))
-         cpatch%hite(nc)  = dbh2h(pft,max_dbh(pft))
-      else
-         cpatch%dbh(nc)   = h2dbh(cpatch%hite(nc),cpatch%pft(nc))
-         cpatch%bdead(nc) = dbh2bd(cpatch%dbh(nc),cpatch%hite(nc),cpatch%pft(nc))
-         cpatch%bleaf(nc) = dbh2bl(cpatch%dbh(nc),cpatch%pft(nc))
-      end if
+      !----- Initialise other cohort-level variables. -------------------------------------!
+      call init_ed_cohort_vars(cpatch, nc, lsl)
 
-      !----- Compute the biomass of living tissues. ---------------------------------------!
-      cpatch%phenology_status(nc) = 0
-      salloc                      = 1.0 + q(pft) + qsw(pft) * cpatch%hite(nc)
-      salloci                     = 1.0 / salloc
-      cpatch%balive(nc)           = cpatch%bleaf(nc) * salloc
-      cpatch%broot(nc)            = cpatch%balive(nc) * q(pft) * salloci
-      cpatch%bsapwood(nc)         = cpatch%balive(nc) * qsw(pft)*cpatch%hite(nc) * salloci
-      cpatch%sla(nc)              = sla(pft)
+
+
+      !----- Find DBH and the maximum leaf biomass. ---------------------------------------!
+      cpatch%dbh(nc)   = h2dbh(cpatch%hite(nc),cpatch%pft(nc))
+      cpatch%bdead(nc) = dbh2bd(cpatch%dbh(nc),cpatch%hite(nc),cpatch%pft(nc))
+
+      !------------------------------------------------------------------------------------!
+      !      Initialise the active and storage biomass scaled by the leaf drought phenology (or start with 1.0 if the plant doesn't !
+      ! shed their leaves due to water stress.                                             !
+      !------------------------------------------------------------------------------------!
+      call pheninit_balive_bstorage(mzg,csite,np,nc,ntext_soil)
+      !------------------------------------------------------------------------------------!
+
+
 
       !----- Compute all area indices needed. ---------------------------------------------!
       call area_indices(cpatch%nplant(nc),cpatch%bleaf(nc),cpatch%bdead(nc)                &
                        ,cpatch%balive(nc),cpatch%dbh(nc),cpatch%hite(nc),cpatch%pft(nc)    &
                        ,cpatch%sla(nc),cpatch%lai(nc),cpatch%wpa(nc),cpatch%wai(nc)        &
-                       ,cpatch%bsapwood(nc))
-
-
-      !------------------------------------------------------------------------------------!
-      !     Initialise storage with the same amount as the living biomass (why?)           !
-      !------------------------------------------------------------------------------------!
-      cpatch%bstorage(nc) = 1.0*(cpatch%balive(nc)) !! changed by MCD, was 0.0
+                       ,cpatch%crown_area(nc),cpatch%bsapwood(nc))
 
 
       !----- Finding the new basal area and above-ground biomass. -------------------------!
@@ -1316,9 +1320,6 @@ module disturbance_utils
       cpatch%agb(nc)     = ed_biomass(cpatch%bdead(nc),cpatch%balive(nc),cpatch%bleaf(nc)  &
                                      ,cpatch%pft(nc),cpatch%hite(nc) ,cpatch%bstorage(nc)  &
                                      ,cpatch%bsapwood(nc))
-
-      !----- Initialise other cohort-level variables. -------------------------------------!
-      call init_ed_cohort_vars(cpatch, nc, lsl)
 
       cpatch%veg_temp(nc)  = csite%can_temp(np)
       cpatch%veg_water(nc) = 0.0
@@ -1329,8 +1330,8 @@ module disturbance_utils
                                           ,cpatch%balive(nc),cpatch%nplant(nc)             &
                                           ,cpatch%hite(nc),cpatch%pft(nc)                  &
                                           ,cpatch%phenology_status(nc),cpatch%bsapwood(nc))
-
       cpatch%veg_energy(nc) = cpatch%hcapveg(nc) * cpatch%veg_temp(nc)
+      cpatch%resolvable(nc) = is_resolvable(csite,np,nc,green_leaf_factor)
 
       !----- Should plantations be considered recruits? -----------------------------------!
       cpatch%new_recruit_flag(nc) = 1

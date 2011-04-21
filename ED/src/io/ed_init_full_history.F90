@@ -1,460 +1,426 @@
 !==========================================================================================!
 !==========================================================================================!
+!     This subroutine will set a full history start for the simulation.  In a full history !
+! start (runtype = 'HISTORY'), we assumes that you are continuing with the exact same      !
+! configuration as a given model simulation that wrote the file in which you are using.    !
+! In this case, each node starts with a list of polygons, and searches the HDF history     !
+! file for these polygons.  It expects to find at least one polygon in the file within 250 !
+! meters of proximity (although it should be exactly at the same place).  If it does not   !
+! find this it stops.                                                                      !
+!     Assuming that it finds the polygons, the subroutine then fills each of these         !
+! polygons with data, and traverses the data hierarchical tree that roots from each        !
+! polygon, initializing the model to the exact same state as the end of the previous run.  !
+! A search based restart does not expect to find exact matches, and may not use all of the !
+! polygons in the file.  Nonetheless, it will traverse the tree from these polygons and    !
+! populate the model states with what is found in the files tree.                          !
+!------------------------------------------------------------------------------------------!
 subroutine init_full_history_restart()
-
-
-  use ed_max_dims, only: n_pft,str_len
-  use pft_coms, only: SLA, q, qsw, hgt_min, include_pft, phenology
-  use ed_misc_coms, only: sfilin, ied_init_mode,current_time
-  use mem_polygons, only: grid_res,edres
-  use consts_coms, only: pio180
-  use ed_misc_coms, only: use_target_year, restart_target_year,ied_init_mode,runtype, &
-                          ndcycle
-  use ed_state_vars,only: polygontype,sitetype,patchtype,edtype, &
-       edgrid_g,allocate_sitetype,allocate_patchtype,allocate_polygontype
-  use soil_coms, only: alloc_soilgrid
-  use grid_coms,only:ngrids
-  use ed_node_coms, only: mynum,nmachs,nnodetot,mchnum,machs
-  use hdf5
-  use hdf5_coms,only:file_id,dset_id,dspace_id,plist_id, &
-       globdims,chnkdims,chnkoffs
-  use allometry, only: dbh2h
-
-  implicit none
-  
-  character(len=1)       :: vnam
-  character(len=3)       :: cgr
-  character(len=str_len) :: hnamel
-  type(edtype),pointer      :: cgrid
-  type(polygontype),pointer :: cpoly
-  type(sitetype),pointer    :: csite
-  type(patchtype),pointer   :: cpatch
-  logical :: exists ! File existence
-  real,allocatable :: file_lats(:),file_lons(:)
-  integer,allocatable :: pysi_n(:),pysi_id(:)
-  integer,allocatable :: sipa_n(:),sipa_id(:)
-  integer,allocatable :: paco_n(:),paco_id(:)
-  
-  real :: ll_tolerance
-  real :: minrad, currad
-
-  integer :: ngr,ifpy,ipft
-  integer :: ipy,isi,ipa,ico
-  integer :: py_index,si_index,pa_index
-
-  ! HDF5 types are defined here
-  integer :: hdferr
-  include 'mpif.h'
-  real(kind=8) :: dbletime
-
- 
-
-  ! ------------------------------------------------------------------------------
-  ! There are two types of history restarts that can be done.  An exact restart
-  ! Assumes that you are continuing with the exact same configuration as a given
-  ! model simulation that wrote the file in which you are using.  In this
-  ! case, each node starts with a list of polygons, and searches the HDF history
-  ! file for these polygons.  It expects to find at least one polygon in the file 
-  ! within 250 meters of proximity.  If it does not find this it stops. It then fills
-  ! each of these polygons with data, and traverses the data hierarchical tree
-  ! that roots from each polygon, initializing the model to the exact same state
-  ! as the end of the previous run.  A search based restart does not expect to 
-  ! find exact matches, and may not use all of the polygons in the file. But none
-  ! the less, it will traverse the tree from these polygons and populate the model 
-  ! states with what is found in the files tree.
-  ! -------------------------------------------------------------------------------
-  ! Currently, we are not doing collective reads from the dataset, this may not
-  ! be a feasible option, because at least during the polygon read-in, we are not
-  ! sure which chunks to read in, so we take the whole vector of polygons for each
-  ! node. Note that all nodes read the history restart separately.
-  ! -------------------------------------------------------------------------------
-
-  
-  
-  ! Set the tolerance on a matched latitude or longitude (100 meters)
-  ! If this is a true history restart, the tolerance should be very small
-  ! If this is an initialization, perhaps a new grid, using the closest,
-  ! then there is no tolerance, ie 90.0 degrees, or some value which indicates
-  ! the destination location is no-where close to the donor location
-
-!!!  if (trim(runtype) == 'HISTORY' ) then
-
-     ll_tolerance = (1.0/115.0)*(1.0/10.0)     ! 1/10th km
-!!     ll_tolerance = (1.0/115.0)*(2.0/1.0)      ! 2km
-
-     print*,"====================================================="
-     print*,"         Entering Full State Initialization      "
-
-!!!  else if (trim(runtype)=='INITIAL' .and. ied_init_mode==4 ) then
-
-!!!     ll_tolerance = 20.0                       ! 20 km
-
-!!     print*,"====================================================="
-!!     print*," Entering Nearest Neighbor State File Initialization "
-
-
-!!!  else
-!!     call fatal_error ('Innapropriate run type encountered here'         &
- !!!         ,'init_full_history_restart','ed_history_io.f90')
-!!!  end if
-
-
-   
-  ! at equator: (1 degree / 115 kilometers)  (1 km / 10 100-meter invervals)
-
-  ! Open the HDF environment
-
-  call h5open_f(hdferr)
-
-
-  ! Turn off automatic error printing. This is done because there
-  ! may be datasets that are not in the file, but it is OK. If
-  ! data is missing that should be there, ED2 error reporting
-  ! will detect it. If something is truly missing, the following
-  ! call can be bypassed. Note, that automatic error reporting
-  ! is turned back on at the end.
-  
-  call h5eset_auto_f(0,hdferr)
-
-
-  ! Construct the file name for reinitiatlizing from
-  ! The history file
-  
-  vnam = 'S'
-  
-  do ngr=1,ngrids
-     
-     cgrid => edgrid_g(ngr)
-     
-
-     !=======================================
-     ! 1) Open the HDF5 HISTORY FILE
-     !=======================================
-
-     write(cgr,'(a1,i2.2)') 'g',ngr
-
-     dbletime=dble(current_time%time)
-     
-     call makefnam(hnamel,sfilin(1),dbletime,current_time%year, &
-          current_time%month,current_time%date,0,vnam,cgr,'h5 ')
-
-     inquire(file=trim(hnamel),exist=exists)
-
-     if (.not.exists) then
-        call fatal_error ('File '//trim(hnamel)//' not found.'         &
-                         ,'init_full_history_restart','ed_history_io.f90')
-     else
-        call h5fopen_f(hnamel, H5F_ACC_RDONLY_F, file_id, hdferr)
-        if (hdferr < 0) then
-           print *, 'Error opening HDF5 file - error - ',hdferr
-           print *, '   Filename: ',trim(hnamel)
-           call fatal_error('Error opening HDF5 file - error - '//trim(hnamel) &
-                           ,'init_full_history_restart','ed_history_io.f90')
-        end if
-     end if
-
-
-     !=======================================
-     ! 2) Retrieve global vector sizes
-     !=======================================
-
-     !
-     ! TO DO!!!!  INCLUDE NZG,NPFT,NBBH AS PART OF
-     !            THE HDF5 HEADER, AND COMPARE
-     !            AS SANITY CHECK TO THOSE VALUES
-     !            READ IN THE NAMELIST. IF THEY
-     !            DONT MATCH THEN THE NAMELIST
-     !            ENTRY SHOULD BE CHANGED....
-     !
-
-
-     ! Only read in global grid data if this is a history restart
-     ! otherwise, this data is not correct
-     ! ==========================================================
-     
-     globdims = 0_8
-     chnkdims = 0_8
-     chnkoffs = 0_8
-     
-     globdims(1) = 1_8
-     
-     call h5dopen_f(file_id,'NPOLYGONS_GLOBAL', dset_id, hdferr)
-     call h5dget_space_f(dset_id, dspace_id, hdferr)
-     call h5dread_f(dset_id, H5T_NATIVE_INTEGER,cgrid%npolygons_global,globdims, hdferr)
-     call h5sclose_f(dspace_id, hdferr)
-     call h5dclose_f(dset_id, hdferr)
-     
-     call h5dopen_f(file_id,'NSITES_GLOBAL', dset_id, hdferr)
-     call h5dget_space_f(dset_id, dspace_id, hdferr)
-     call h5dread_f(dset_id, H5T_NATIVE_INTEGER,cgrid%nsites_global,globdims, hdferr)
-     call h5sclose_f(dspace_id, hdferr)
-     call h5dclose_f(dset_id, hdferr)
-     
-     call h5dopen_f(file_id,'NPATCHES_GLOBAL', dset_id, hdferr)
-     call h5dget_space_f(dset_id, dspace_id, hdferr)
-     call h5dread_f(dset_id, H5T_NATIVE_INTEGER,cgrid%npatches_global,globdims, hdferr)
-     call h5sclose_f(dspace_id, hdferr)
-     call h5dclose_f(dset_id, hdferr)
-     
-     call h5dopen_f(file_id,'NCOHORTS_GLOBAL', dset_id, hdferr)
-     call h5dget_space_f(dset_id, dspace_id, hdferr)
-     call h5dread_f(dset_id, H5T_NATIVE_INTEGER,cgrid%ncohorts_global,globdims, hdferr)
-     call h5sclose_f(dspace_id, hdferr)
-     call h5dclose_f(dset_id, hdferr)
-     
-     
-     !=======================================
-     ! 3) Retrieve the mapping of the data tree
-     !=======================================
-     
-     globdims = 0_8
-     globdims(1) = int(cgrid%npolygons_global,8)
-     
-     allocate(pysi_n(cgrid%npolygons_global))
-     allocate(pysi_id(cgrid%npolygons_global))
-     
-     call h5dopen_f(file_id,'PYSI_N', dset_id, hdferr)
-     call h5dget_space_f(dset_id, dspace_id, hdferr)
-     call h5dread_f(dset_id, H5T_NATIVE_INTEGER,pysi_n,globdims, hdferr)
-     call h5sclose_f(dspace_id, hdferr)
-     call h5dclose_f(dset_id, hdferr)
-     
-     call h5dopen_f(file_id,'PYSI_ID', dset_id, hdferr)
-     call h5dget_space_f(dset_id, dspace_id, hdferr)
-     call h5dread_f(dset_id, H5T_NATIVE_INTEGER,pysi_id,globdims, hdferr)
-     call h5sclose_f(dspace_id, hdferr)
-     call h5dclose_f(dset_id, hdferr)
-     
-     globdims(1) = int(cgrid%nsites_global,8)
-     
-     allocate(sipa_n(cgrid%nsites_global))
-     allocate(sipa_id(cgrid%nsites_global))
-     
-     call h5dopen_f(file_id,'SIPA_N', dset_id, hdferr)
-     call h5dget_space_f(dset_id, dspace_id, hdferr)
-     call h5dread_f(dset_id, H5T_NATIVE_INTEGER,sipa_n,globdims, hdferr)
-     call h5sclose_f(dspace_id, hdferr)
-     call h5dclose_f(dset_id, hdferr)
-     
-     call h5dopen_f(file_id,'SIPA_ID', dset_id, hdferr)
-     call h5dget_space_f(dset_id, dspace_id, hdferr)
-     call h5dread_f(dset_id, H5T_NATIVE_INTEGER,sipa_id,globdims, hdferr)
-     call h5sclose_f(dspace_id, hdferr)
-     call h5dclose_f(dset_id, hdferr)
-     
-     globdims(1) = int(cgrid%npatches_global,8)
-     
-     allocate(paco_n(cgrid%npatches_global))
-     allocate(paco_id(cgrid%npatches_global))
-     
-     call h5dopen_f(file_id,'PACO_N', dset_id, hdferr)
-     call h5dget_space_f(dset_id, dspace_id, hdferr)
-     call h5dread_f(dset_id, H5T_NATIVE_INTEGER,paco_n,globdims, hdferr)
-     call h5sclose_f(dspace_id, hdferr)
-     call h5dclose_f(dset_id, hdferr)
-     
-     call h5dopen_f(file_id,'PACO_ID', dset_id, hdferr)
-     call h5dget_space_f(dset_id, dspace_id, hdferr)
-     call h5dread_f(dset_id, H5T_NATIVE_INTEGER,paco_id,globdims, hdferr)
-     call h5sclose_f(dspace_id, hdferr)
-     call h5dclose_f(dset_id, hdferr)
-     
-     
-     ! ======================================
-     ! 4) Retrieve the polygon coordinates data
-     
-     globdims(1) = int(cgrid%npolygons_global,8)
-     allocate(file_lats(cgrid%npolygons_global))
-     allocate(file_lons(cgrid%npolygons_global))
-     
-     call h5dopen_f(file_id,'LATITUDE', dset_id, hdferr)
-     call h5dget_space_f(dset_id, dspace_id, hdferr)
-     call h5dread_f(dset_id, H5T_NATIVE_REAL,file_lats,globdims, hdferr)
-     call h5sclose_f(dspace_id, hdferr)
-     call h5dclose_f(dset_id, hdferr)
-
-     call h5dopen_f(file_id,'LONGITUDE', dset_id, hdferr)
-     call h5dget_space_f(dset_id, dspace_id, hdferr)
-     call h5dread_f(dset_id, H5T_NATIVE_REAL,file_lons,globdims, hdferr)
-     call h5sclose_f(dspace_id, hdferr)
-     call h5dclose_f(dset_id, hdferr)
-
-     ! ======================================
-     ! 5) Loop the polygons in the model state
-     !    and match them with those int he file
-     !    After the match. Walk through the 
-     !    data from that polygon and initialize.
-     !    A polygon match must have both latitudes
-     !    and longitudes within 100 meters
-
-     do ipy = 1,cgrid%npolygons
-        
-        py_index = 0
-
-        cpoly => cgrid%polygon(ipy)
-
-!!!        minrad = sqrt(2*(ll_tolerance**2))
-
-        do ifpy = 1,cgrid%npolygons_global
-           
-!!!           currad = sqrt( (file_lats(ifpy)-cgrid%lat(ipy))**2 + (file_lons(ifpy)-cgrid%lon(ipy))**2 )
-
-           if ( abs(file_lats(ifpy)-cgrid%lat(ipy)) < ll_tolerance .and. &
-                abs(file_lons(ifpy)-cgrid%lon(ipy)) < ll_tolerance ) then !!! .and. &
-!!!                (currad <  minrad) ) then
-              py_index = ifpy
-!!!              minrad   = currad
-           end if
-           
-        enddo
-
-        if (py_index==0) then
-           print*,"COULD NOT MATCH A POLYGON WITH THE DATASET"
-           print*,"STOPPING"
-           print*,"THIS IS THE ",ipy,"th POLYGON"
-           print*,"GRID LATS: ",cgrid%lat(ipy)
-           print*,"GRID LONS: ",cgrid%lon(ipy)
-!           print*,"FILE LATS: ",file_lats
-!           print*,"FILE LONS: ",file_lons
-           call fatal_error('Mismatch between polygon and dataset'         &
-                           ,'init_full_history_restart','ed_history_io.f90')
-        endif
-
-        
-        ! ========================================
-        ! Get all necessary polygon variables
-        ! associated with this index for the
-        ! current polygon, scalar reads
-
-        call fill_history_grid(cgrid,ipy,py_index)
-
-        if (pysi_n(py_index) > 0) then
-           
-  !         print*,"Allocating: ",pysi_n(py_index)," sites from polygon",py_index
-           
-           call allocate_polygontype(cpoly,pysi_n(py_index))
-           
-           ! ========================================
-           ! Get all necessary site variables
-           ! associated with this index for the
-           ! current polygon, vector reads
-           
-           call fill_history_polygon(cpoly,pysi_id(py_index),cgrid%nsites_global)
-           
-           do isi = 1,cpoly%nsites
-              csite => cpoly%site(isi)
-              
-              ! Calculate the index of this site's data in the HDF
-              si_index = pysi_id(py_index) + isi - 1
-              
-              if (sipa_n(si_index) > 0) then
-                 
- !                print*,"Allocating: ",sipa_n(si_index)," patches from site ",si_index
-                 
-                 call allocate_sitetype(csite,sipa_n(si_index))
-
-                 ! ========================================
-                 ! Get all necessary patch variables
-                 ! associated with this index for the
-                 ! current site
-                 
-                 call fill_history_site(csite,sipa_id(si_index),cgrid%npatches_global)
-
-                 csite%hcapveg = 0.
-
-                 do ipa = 1,csite%npatches
-                    cpatch => csite%patch(ipa)
-                    
-                    pa_index = sipa_id(si_index) + ipa - 1
-
-                    if (paco_n(pa_index) > 0) then
-
-!                       print*,"Allocating: ",paco_n(pa_index)," cohorts from patch ",pa_index
-                       
-                       call allocate_patchtype(cpatch,paco_n(pa_index))
-                       
-                       ! ========================================
-                       ! Get all necessary patch variables
-                       ! associated with this index for the
-                       ! current site
-                       
-                       call fill_history_patch(cpatch,paco_id(pa_index),cgrid%ncohorts_global &
-                                              ,cpoly%green_leaf_factor(:,isi))
-                       
-!                       do ipft = 1,n_pft
-!                          csite%old_stoma_data_max(ipft,ipa)%recalc = 1
-!                       enddo
-                       do ico = 1,cpatch%ncohorts
-                          csite%hcapveg(ipa) = csite%hcapveg(ipa) + cpatch%hcapveg(ico)
-                       end do
-                       
-
-                    else
-
-                       cpatch%ncohorts = 0
-                       
-                    endif
-                 
-                 enddo
-
-              else
-
-                 print*,"ATTEMPTING TO FILL SITE WITH PATCH VECTOR DATA"
-                 print*,"NO PATCHES WERE FOUND in SIPA_N(SI_INDEX)"
-                 print*,"THIS IS UNLIKELY AND MORALLY QUESTIONABLE."
-                 stop
-                 
-              endif
-
-           enddo
-           
-        else
-
-           print*,"ATTEMPTING TO FILL A POLYGON WITH SITE VECTOR DATA"
-           print*,"NO SITES WERE FOUND AT PYSI_N(PY_INDEX)"
-           print*,"THIS IS EVEN MORE WRONG THAN HAVING NO PATCHES"
-           print*,"AND THAT WAS REALLY REALLY WRONG"
-           print*,"THIS IS WORSE THAN LETTING GIL BUY LUNCH FOR YOU"
-           stop
-
-        endif
-
-        
-     enddo
-
-
-     call h5fclose_f(file_id, hdferr)
-     if (hdferr.ne.0) then
-         print*,"COULD NOT CLOSE THE HDF FILE"
-         print*,hdferr
-         stop	
-     endif
-
-     deallocate(file_lats,file_lons)
-     deallocate(paco_n,paco_id)
-     deallocate(sipa_n,sipa_id)
-     deallocate(pysi_n,pysi_id )
-
-  enddo
-
-  ! Turn automatic error reporting back on.
-  ! This is probably unecessary, because the environment
-  ! is about to be flushed.
-
-  call h5eset_auto_f(1,hdferr)
-
-
-  ! Close the HDF environment
-  
-  call h5close_f(hdferr)
-
-  ! Initialize the disturbance transition rates
-  
-  write(*,'(a,i2.2)')'    Initializing anthropogenic disturbance forcing. Node: ',mynum
-  call landuse_init
-
-
-  return
+   use ed_max_dims      , only : n_pft                 & ! intent(in)
+                               , str_len               ! ! intent(in)
+   use ed_misc_coms     , only : sfilin                & ! intent(in)
+                               , current_time          & ! intent(in)
+                               , max_poihist_dist      ! ! intent(in)
+   use ed_state_vars    , only : polygontype           & ! structure
+                               , sitetype              & ! structure
+                               , patchtype             & ! structure
+                               , edtype                & ! structure
+                               , edgrid_g              & ! structure
+                               , allocate_sitetype     & ! subroutine
+                               , allocate_patchtype    & ! subroutine
+                               , allocate_polygontype  ! ! subroutine
+   use soil_coms        , only : alloc_soilgrid        ! ! subroutine
+   use grid_coms        , only : ngrids                ! ! intent(in)
+   use phenology_startup, only : phenology_init        ! ! subroutine
+   use ed_node_coms     , only : mynum                 & ! intent(in)
+                               , nmachs                & ! intent(in)
+                               , nnodetot              & ! intent(in)
+                               , mchnum                & ! intent(in)
+                               , machs                 ! ! intent(in)
+   use hdf5
+   use hdf5_coms        , only : file_id               & ! intent(inout)
+                               , dset_id               & ! intent(inout)
+                               , dspace_id             & ! intent(inout)
+                               , plist_id              & ! intent(inout)
+                               , globdims              & ! intent(inout)
+                               , chnkdims              & ! intent(inout)
+                               , chnkoffs              ! ! intent(inout)
+   implicit none
+   !------ Standard common block. ---------------------------------------------------------!
+   include 'mpif.h'
+   !------ Local variables. ---------------------------------------------------------------!
+   type(edtype)                        , pointer     :: cgrid
+   type(polygontype)                   , pointer     :: cpoly
+   type(sitetype)                      , pointer     :: csite
+   type(patchtype)                     , pointer     :: cpatch
+   character(len=3)                                  :: cgr
+   character(len=str_len)                            :: hnamel
+   integer               , dimension(:), allocatable :: pysi_n
+   integer               , dimension(:), allocatable :: pysi_id
+   integer               , dimension(:), allocatable :: sipa_n
+   integer               , dimension(:), allocatable :: sipa_id
+   integer               , dimension(:), allocatable :: paco_n
+   integer               , dimension(:), allocatable :: paco_id
+   integer                                           :: ngr
+   integer                                           :: ifpy
+   integer                                           :: ipft
+   integer                                           :: ipy
+   integer                                           :: isi
+   integer                                           :: ipa
+   integer                                           :: ico
+   integer                                           :: py_index
+   integer                                           :: si_index
+   integer                                           :: pa_index
+   integer                                           :: hdferr
+   logical                                           :: exists
+   real                  , dimension(:), allocatable :: file_lats
+   real                  , dimension(:), allocatable :: file_lons
+   real                                              :: mindist
+   real                                              :: polydist
+   real(kind=8)                                      :: dbletime
+   !------ Local constants. ---------------------------------------------------------------!
+   character(len=1)                    , parameter   :: vnam = 'S'
+   !------ External functions. ------------------------------------------------------------!
+   real                                , external    :: dist_gc
+   !---------------------------------------------------------------------------------------!
+
+
+
+   write (unit=*,fmt='(a)') '-----------------------------------------------------'
+   write (unit=*,fmt='(a)') '  Loading Full State (HISTORY)'
+
+
+   !----- Open the HDF environment. -------------------------------------------------------!
+   call h5open_f(hdferr)
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Turn off automatic error printing.  This is done because there may be datasets    !
+   ! that are not in the file, but it is OK.  If data that should be there are missing,    !
+   ! ED2 error reporting will detect it.  If something that can't be found is missing, the !
+   ! following call can be bypassed.  Note that automatic error reporting is turned back   !
+   ! on in the end.                                                                        !
+   !---------------------------------------------------------------------------------------!
+   call h5eset_auto_f(0,hdferr)
+
+
+   gridloop: do ngr=1,ngrids
+      cgrid => edgrid_g(ngr)
+
+      !------------------------------------------------------------------------------------!
+      !     Make the history file name.                                                    !
+      !------------------------------------------------------------------------------------!
+      write(cgr,'(a1,i2.2)') 'g',ngr
+
+      dbletime = dble(current_time%time)
+
+      call makefnam(hnamel,sfilin(1),dbletime,current_time%year,current_time%month         &
+                   ,current_time%date,0,vnam,cgr,'h5 ')
+      inquire(file=trim(hnamel),exist=exists)
+
+      if (.not.exists) then
+         !----- History couldn't be found.  Stop the run. ---------------------------------!
+         call fatal_error ('File '//trim(hnamel)//' not found.'                            &
+                          ,'init_full_history_restart','ed_init_full_history.F90')
+      else
+         call h5fopen_f(hnamel, H5F_ACC_RDONLY_F, file_id, hdferr)
+         if (hdferr < 0) then
+            write(unit=*,fmt='(a,1x,i8)') 'Error opening HDF5 file - error - ',hdferr
+            write(unit=*,fmt='(a,1x,a)' ) '- Filename: ',trim(hnamel)
+            call fatal_error('Error opening HDF5 file - error - '//trim(hnamel)            &
+                            ,'init_full_history_restart','ed_init_full_history.F90')
+         end if
+      end if
+
+
+      !------------------------------------------------------------------------------------!
+      !     Retrieve global vector sizes.                                                  !
+      !------------------------------------------------------------------------------------!
+      globdims    = 0_8
+      chnkdims    = 0_8
+      chnkoffs    = 0_8
+      globdims(1) = 1_8
+      
+      call h5dopen_f(file_id,'NPOLYGONS_GLOBAL', dset_id, hdferr)
+      call h5dget_space_f(dset_id, dspace_id, hdferr)
+      call h5dread_f(dset_id, H5T_NATIVE_INTEGER,cgrid%npolygons_global,globdims, hdferr)
+      call h5sclose_f(dspace_id, hdferr)
+      call h5dclose_f(dset_id, hdferr)
+      
+      call h5dopen_f(file_id,'NSITES_GLOBAL', dset_id, hdferr)
+      call h5dget_space_f(dset_id, dspace_id, hdferr)
+      call h5dread_f(dset_id, H5T_NATIVE_INTEGER,cgrid%nsites_global,globdims, hdferr)
+      call h5sclose_f(dspace_id, hdferr)
+      call h5dclose_f(dset_id, hdferr)
+      
+      call h5dopen_f(file_id,'NPATCHES_GLOBAL', dset_id, hdferr)
+      call h5dget_space_f(dset_id, dspace_id, hdferr)
+      call h5dread_f(dset_id, H5T_NATIVE_INTEGER,cgrid%npatches_global,globdims, hdferr)
+      call h5sclose_f(dspace_id, hdferr)
+      call h5dclose_f(dset_id, hdferr)
+      
+      call h5dopen_f(file_id,'NCOHORTS_GLOBAL', dset_id, hdferr)
+      call h5dget_space_f(dset_id, dspace_id, hdferr)
+      call h5dread_f(dset_id, H5T_NATIVE_INTEGER,cgrid%ncohorts_global,globdims, hdferr)
+      call h5sclose_f(dspace_id, hdferr)
+      call h5dclose_f(dset_id, hdferr)
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !     Retrieve the mapping of the data tree.                                         !
+      !------------------------------------------------------------------------------------!
+      globdims    = 0_8
+      globdims(1) = int(cgrid%npolygons_global,8)
+      
+      allocate(pysi_n(cgrid%npolygons_global))
+      allocate(pysi_id(cgrid%npolygons_global))
+      
+      call h5dopen_f(file_id,'PYSI_N', dset_id, hdferr)
+      call h5dget_space_f(dset_id, dspace_id, hdferr)
+      call h5dread_f(dset_id, H5T_NATIVE_INTEGER,pysi_n,globdims, hdferr)
+      call h5sclose_f(dspace_id, hdferr)
+      call h5dclose_f(dset_id, hdferr)
+      
+      call h5dopen_f(file_id,'PYSI_ID', dset_id, hdferr)
+      call h5dget_space_f(dset_id, dspace_id, hdferr)
+      call h5dread_f(dset_id, H5T_NATIVE_INTEGER,pysi_id,globdims, hdferr)
+      call h5sclose_f(dspace_id, hdferr)
+      call h5dclose_f(dset_id, hdferr)
+      
+      globdims(1) = int(cgrid%nsites_global,8)
+      
+      allocate(sipa_n(cgrid%nsites_global))
+      allocate(sipa_id(cgrid%nsites_global))
+      
+      call h5dopen_f(file_id,'SIPA_N', dset_id, hdferr)
+      call h5dget_space_f(dset_id, dspace_id, hdferr)
+      call h5dread_f(dset_id, H5T_NATIVE_INTEGER,sipa_n,globdims, hdferr)
+      call h5sclose_f(dspace_id, hdferr)
+      call h5dclose_f(dset_id, hdferr)
+      
+      call h5dopen_f(file_id,'SIPA_ID', dset_id, hdferr)
+      call h5dget_space_f(dset_id, dspace_id, hdferr)
+      call h5dread_f(dset_id, H5T_NATIVE_INTEGER,sipa_id,globdims, hdferr)
+      call h5sclose_f(dspace_id, hdferr)
+      call h5dclose_f(dset_id, hdferr)
+      
+      globdims(1) = int(cgrid%npatches_global,8)
+      
+      allocate(paco_n(cgrid%npatches_global))
+      allocate(paco_id(cgrid%npatches_global))
+      
+      call h5dopen_f(file_id,'PACO_N', dset_id, hdferr)
+      call h5dget_space_f(dset_id, dspace_id, hdferr)
+      call h5dread_f(dset_id, H5T_NATIVE_INTEGER,paco_n,globdims, hdferr)
+      call h5sclose_f(dspace_id, hdferr)
+      call h5dclose_f(dset_id, hdferr)
+      
+      call h5dopen_f(file_id,'PACO_ID', dset_id, hdferr)
+      call h5dget_space_f(dset_id, dspace_id, hdferr)
+      call h5dread_f(dset_id, H5T_NATIVE_INTEGER,paco_id,globdims, hdferr)
+      call h5sclose_f(dspace_id, hdferr)
+      call h5dclose_f(dset_id, hdferr)
+      !------------------------------------------------------------------------------------!
+      
+      
+      !------------------------------------------------------------------------------------!
+      !      Retrieve the polygon coordinates data.                                        !
+      !------------------------------------------------------------------------------------!
+      globdims(1) = int(cgrid%npolygons_global,8)
+      allocate(file_lats(cgrid%npolygons_global))
+      allocate(file_lons(cgrid%npolygons_global))
+      
+      call h5dopen_f(file_id,'LATITUDE', dset_id, hdferr)
+      call h5dget_space_f(dset_id, dspace_id, hdferr)
+      call h5dread_f(dset_id, H5T_NATIVE_REAL,file_lats,globdims, hdferr)
+      call h5sclose_f(dspace_id, hdferr)
+      call h5dclose_f(dset_id, hdferr)
+
+      call h5dopen_f(file_id,'LONGITUDE', dset_id, hdferr)
+      call h5dget_space_f(dset_id, dspace_id, hdferr)
+      call h5dread_f(dset_id, H5T_NATIVE_REAL,file_lons,globdims, hdferr)
+      call h5sclose_f(dspace_id, hdferr)
+      call h5dclose_f(dset_id, hdferr)
+
+
+
+      !------------------------------------------------------------------------------------!
+      !     Loop the polygons in the model state and match them with those in the file.    !
+      ! After the match, we must walk through the data from that polygon and initialize.   !
+      ! We check the distance between the expected coordinates and the retrieved ones, and !
+      ! they ought to be less than 250 metres apart, otherwise we can't use the polygon.   !
+      !------------------------------------------------------------------------------------!
+
+      polyloop: do ipy = 1,cgrid%npolygons
+         cpoly => cgrid%polygon(ipy)
+
+         py_index   = 0
+         mindist    = huge(1.)
+         do ifpy = 1,cgrid%npolygons_global
+            polydist = dist_gc(file_lons(ifpy),cgrid%lon(ipy)                              &
+                              ,file_lats(ifpy),cgrid%lat(ipy))
+            if (polydist < mindist) then
+               mindist    = polydist
+               py_index   = ifpy
+            end if
+         end do
+
+         !---------------------------------------------------------------------------------!
+         !     Check whether the closest polygon is close.                                 !
+         !---------------------------------------------------------------------------------!
+         if (mindist > max_poihist_dist) then
+            write (unit=*,fmt='(a)'          ) '------------------------------------------'
+            write (unit=*,fmt='(a)'          ) ' None of the polygons in the history file'
+            write (unit=*,fmt='(a)'          ) '    is enough close!  The model will stop!'
+            write (unit=*,fmt='(a)'          ) ' ED Polygon:'
+            write (unit=*,fmt='(a,1x,i8)'    ) ' - Polygon   :',ipy
+            write (unit=*,fmt='(a,1x,es12.5)') ' - Longitude :',cgrid%lon(ipy)
+            write (unit=*,fmt='(a,1x,es12.5)') ' - Latitude  :',cgrid%lat(ipy)
+            write (unit=*,fmt='(a)'          ) ' History file''s closest polygon:'
+            write (unit=*,fmt='(a,1x,i8)'    ) ' - Polygon   :',py_index
+            write (unit=*,fmt='(a,1x,es12.5)') ' - Longitude :',file_lons(py_index)
+            write (unit=*,fmt='(a,1x,es12.5)') ' - Latitude  :',file_lats(py_index)
+            write (unit=*,fmt='(a)'          ) '------------------------------------------'
+
+            call fatal_error('Mismatch between polygon and dataset'                        &
+                            ,'init_full_history_restart','ed_init_full_history.F90')
+         end if
+         !---------------------------------------------------------------------------------!
+
+         !---------------------------------------------------------------------------------!
+         !      Get all necessary polygon variables associated with this index for the     !
+         ! current polygon.                                                                !
+         !---------------------------------------------------------------------------------!
+         call fill_history_grid(cgrid,ipy,py_index)
+
+         if (pysi_n(py_index) > 0) then
+            !----- Allocate the polygontype structure (site level). -----------------------!
+            call allocate_polygontype(cpoly,pysi_n(py_index))
+            !------------------------------------------------------------------------------!
+
+
+
+            !------------------------------------------------------------------------------!
+            !     Get all necessary site variables associated with this index for the      !
+            ! current polygon.                                                             !
+            !------------------------------------------------------------------------------!
+            call fill_history_polygon(cpoly,pysi_id(py_index),cgrid%nsites_global)
+            
+            siteloop: do isi = 1,cpoly%nsites
+               csite => cpoly%site(isi)
+               
+               !------ Calculate the index of this site's data in the HDF. ----------------!
+               si_index = pysi_id(py_index) + isi - 1
+
+               if (sipa_n(si_index) > 0) then
+                  !----- Allocate the sitetype structure (patch level). -------------------!
+                  call allocate_sitetype(csite,sipa_n(si_index))
+
+                  !------------------------------------------------------------------------!
+                  !     Get all necessary site variables associated with this index for    !
+                  ! the current site.                                                      !
+                  !------------------------------------------------------------------------!
+                  call fill_history_site(csite,sipa_id(si_index),cgrid%npatches_global)
+
+                  csite%hcapveg = 0.
+                  patchloop: do ipa = 1,csite%npatches
+                     cpatch => csite%patch(ipa)
+                     pa_index = sipa_id(si_index) + ipa - 1
+
+                     if (paco_n(pa_index) > 0) then
+                        !----- Allocate the patchtype structure (cohort level). -----------!
+                        call allocate_patchtype(cpatch,paco_n(pa_index))
+                        
+                        !------------------------------------------------------------------!
+                        !     Get all necessary site variables associated with this index  !
+                        ! for the current patch.                                           !
+                        !------------------------------------------------------------------!
+                        call fill_history_patch(cpatch,paco_id(pa_index)                   &
+                                               ,cgrid%ncohorts_global                      &
+                                               ,cpoly%green_leaf_factor(:,isi))
+                     else
+                        cpatch%ncohorts = 0
+                     endif
+                  end do patchloop
+               else
+                  write (unit=*,fmt='(a)'          ) '------------------------------------'
+                  write (unit=*,fmt='(a)'          ) ' Found a site with no patches.'
+                  write (unit=*,fmt='(a)'          ) ' This is not allowed.'
+                  write (unit=*,fmt='(a)'          ) ' ED Polygon and Site:'
+                  write (unit=*,fmt='(a,1x,i8)'    ) ' - Polygon   :',ipy
+                  write (unit=*,fmt='(a,1x,i8)'    ) ' - Site      :',isi
+                  write (unit=*,fmt='(a,1x,es12.5)') ' - Longitude :',cgrid%lon(ipy)
+                  write (unit=*,fmt='(a,1x,es12.5)') ' - Latitude  :',cgrid%lat(ipy)
+                  write (unit=*,fmt='(a)'          ) '------------------------------------'
+                  call fatal_error('Attempted to load an empty site.'                      &
+                                  ,'init_full_history_restart','ed_init_full_history.F90')
+               end if
+
+            end do siteloop
+            
+         else
+            write (unit=*,fmt='(a)'          ) '------------------------------------'
+            write (unit=*,fmt='(a)'          ) ' Found a polygon with no sites.'
+            write (unit=*,fmt='(a)'          ) ' This is not allowed.'
+            write (unit=*,fmt='(a)'          ) ' ED Polygon:'
+            write (unit=*,fmt='(a,1x,i8)'    ) ' - Polygon   :',ipy
+            write (unit=*,fmt='(a,1x,es12.5)') ' - Longitude :',cgrid%lon(ipy)
+            write (unit=*,fmt='(a,1x,es12.5)') ' - Latitude  :',cgrid%lat(ipy)
+            write (unit=*,fmt='(a)'          ) '------------------------------------'
+            call fatal_error('Attempted to load an empty polygon.'                         &
+                            ,'init_full_history_restart','ed_init_full_history.F90')
+         end if
+      end do polyloop
+
+
+      call h5fclose_f(file_id, hdferr)
+      if (hdferr /= 0) then
+          print*,hdferr
+          call fatal_error('Could not close the HDF file'                                  &
+                          ,'init_full_history_restart','ed_init_full_history.F90')
+          
+      end if
+
+      deallocate(file_lats)
+      deallocate(file_lons)
+      deallocate(paco_n)
+      deallocate(paco_id)
+      deallocate(sipa_n)
+      deallocate(sipa_id)
+      deallocate(pysi_n)
+      deallocate(pysi_id)
+
+   end do gridloop
+
+   !---------------------------------------------------------------------------------------!
+   !     Turn automatic error reporting back on.  This is probably unnecessary, because    !
+   ! the environment is about to be flushed.                                               !
+   !---------------------------------------------------------------------------------------!
+   call h5eset_auto_f(1,hdferr)
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !----- Close the HDF environment. ------------------------------------------------------!
+   call h5close_f(hdferr)
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !----- Load the anthropogenic disturbance (or set them all to zero). -------------------!
+   write(unit=*,fmt='(a,i2.2)') ' Checking anthropogenic disturbance.  Node: ',mynum
+   call landuse_init()
+   !---------------------------------------------------------------------------------------!
+
+
+   !----- Load phenology in case it is prescribed (or set them with defaults). ------------!
+   write(unit=*,fmt='(a,i2.2)') ' Checking prescribed phenology.  Node: ',mynum
+   call phenology_init()
+
+   return
 end subroutine init_full_history_restart
 !==========================================================================================!
 !==========================================================================================!
@@ -619,6 +585,34 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
      call hdf_getslab_r(cgrid%dmean_gpp            (ipy:ipy) ,'DMEAN_GPP             '     &
                        ,dsetrank,iparallel,.false.)
 
+  if (associated(cgrid%dmean_nppleaf        ))                                             &
+     call hdf_getslab_r(cgrid%dmean_nppleaf        (ipy:ipy) ,'DMEAN_NPPLEAF         '     &
+                       ,dsetrank,iparallel,.false.)
+                       
+  if (associated(cgrid%dmean_nppfroot       ))                                             &
+     call hdf_getslab_r(cgrid%dmean_nppfroot       (ipy:ipy) ,'DMEAN_NPPFROOT        '     &
+                       ,dsetrank,iparallel,.false.)
+                       
+  if (associated(cgrid%dmean_nppsapwood     ))                                             &
+     call hdf_getslab_r(cgrid%dmean_nppsapwood     (ipy:ipy) ,'DMEAN_NPPSAPWOOD      '     &
+                       ,dsetrank,iparallel,.false.)
+                       
+  if (associated(cgrid%dmean_nppcroot       ))                                             &
+     call hdf_getslab_r(cgrid%dmean_nppcroot       (ipy:ipy) ,'DMEAN_NPPCROOT        '     &
+                       ,dsetrank,iparallel,.false.)
+                       
+  if (associated(cgrid%dmean_nppseeds       ))                                             &
+     call hdf_getslab_r(cgrid%dmean_nppseeds       (ipy:ipy) ,'DMEAN_NPPSEEDS        '     &
+                       ,dsetrank,iparallel,.false.)
+                       
+  if (associated(cgrid%dmean_nppwood        ))                                             &
+     call hdf_getslab_r(cgrid%dmean_nppwood        (ipy:ipy) ,'DMEAN_NPPWOOD         '     &
+                       ,dsetrank,iparallel,.false.)
+                       
+  if (associated(cgrid%dmean_nppdaily       ))                                             &
+     call hdf_getslab_r(cgrid%dmean_nppdaily       (ipy:ipy) ,'DMEAN_NPPDAILY        '     &
+                       ,dsetrank,iparallel,.false.)
+                       
   if (associated(cgrid%dmean_evap           ))                                             &
      call hdf_getslab_r(cgrid%dmean_evap           (ipy:ipy) ,'DMEAN_EVAP            '     &
                        ,dsetrank,iparallel,.false.)
@@ -799,7 +793,35 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
   if (associated(cgrid%mmean_gpp            ))                                             &
      call hdf_getslab_r(cgrid%mmean_gpp            (ipy:ipy) ,'MMEAN_GPP             '     &
                        ,dsetrank,iparallel,.false.)
- 
+                       
+  if (associated(cgrid%mmean_nppleaf        ))                                             &
+     call hdf_getslab_r(cgrid%mmean_nppleaf        (ipy:ipy) ,'MMEAN_NPPLEAF         '     &
+                       ,dsetrank,iparallel,.false.)
+                       
+  if (associated(cgrid%mmean_nppfroot       ))                                             &
+     call hdf_getslab_r(cgrid%mmean_nppfroot       (ipy:ipy) ,'MMEAN_NPPFROOT        '     &
+                       ,dsetrank,iparallel,.false.)
+                       
+  if (associated(cgrid%mmean_nppsapwood     ))                                             &
+     call hdf_getslab_r(cgrid%mmean_nppsapwood     (ipy:ipy) ,'MMEAN_NPPSAPWOOD      '     &
+                       ,dsetrank,iparallel,.false.)
+                       
+  if (associated(cgrid%mmean_nppcroot       ))                                             &
+     call hdf_getslab_r(cgrid%mmean_nppcroot       (ipy:ipy) ,'MMEAN_NPPCROOT        '     &
+                       ,dsetrank,iparallel,.false.)
+                       
+  if (associated(cgrid%mmean_nppseeds       ))                                             &
+     call hdf_getslab_r(cgrid%mmean_nppseeds       (ipy:ipy) ,'MMEAN_NPPSEEDS        '     &
+                       ,dsetrank,iparallel,.false.)
+                       
+  if (associated(cgrid%mmean_nppwood        ))                                             &
+     call hdf_getslab_r(cgrid%mmean_nppwood        (ipy:ipy) ,'MMEAN_NPPWOOD         '     &
+                       ,dsetrank,iparallel,.false.)
+                       
+  if (associated(cgrid%mmean_nppdaily       ))                                             &
+     call hdf_getslab_r(cgrid%mmean_nppdaily       (ipy:ipy) ,'MMEAN_NPPDAILY        '     &
+                       ,dsetrank,iparallel,.false.)
+                       
   if (associated(cgrid%mmean_evap           ))                                             &
      call hdf_getslab_r(cgrid%mmean_evap           (ipy:ipy) ,'MMEAN_EVAP            '     &
                        ,dsetrank,iparallel,.false.)
@@ -1014,6 +1036,10 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
    if(associated(cgrid%dmean_soil_water)) &
       call hdf_getslab_r(cgrid%dmean_soil_water(:,ipy) ,'DMEAN_SOIL_WATER ' ,&
       dsetrank,iparallel,.false.)
+      
+   if(associated(cgrid%dmean_transloss)) &
+      call hdf_getslab_r(cgrid%dmean_transloss(:,ipy) ,'DMEAN_TRANSLOSS ' ,&
+      dsetrank,iparallel,.false.)
 
    if(associated(cgrid%mmean_soil_temp)) &
       call hdf_getslab_r(cgrid%mmean_soil_temp(:,ipy)  ,'MMEAN_SOIL_TEMP '  ,&
@@ -1023,6 +1049,9 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
       call hdf_getslab_r(cgrid%mmean_soil_water(:,ipy) ,'MMEAN_SOIL_WATER ' ,&
       dsetrank,iparallel,.false.)
 
+   if(associated(cgrid%mmean_transloss)) &
+      call hdf_getslab_r(cgrid%mmean_transloss(:,ipy) ,'MMEAN_TRANSLOSS ' ,&
+      dsetrank,iparallel,.false.)
 
    ! Variables with 2 dimensions (ndcycle,npolygons)
    dsetrank    = 2
@@ -1173,11 +1202,11 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
                        ,dsetrank,iparallel,.false.)
   
   if (associated(cgrid%qmean_rshort       ))                                               &
-       call hdf_getslab_r(cgrid%qmean_rshort       (:,ipy)   ,'QMEAN_RSHORT        '       &
+     call hdf_getslab_r(cgrid%qmean_rshort       (:,ipy)   ,'QMEAN_RSHORT        '         &
        ,dsetrank,iparallel,.false.)
   
   if (associated(cgrid%qmean_rlong       ))                                                &
-       call hdf_getslab_r(cgrid%qmean_rlong       (:,ipy)   ,'QMEAN_RLONG        '         &
+     call hdf_getslab_r(cgrid%qmean_rlong       (:,ipy)   ,'QMEAN_RLONG        '           &
        ,dsetrank,iparallel,.false.)
 
   if (associated(cgrid%qmean_atm_shv        ))                                             &
@@ -1288,9 +1317,9 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
    if(associated(cgrid%mmean_wai_pft)) call hdf_getslab_r(cgrid%mmean_wai_pft(:,ipy) ,'MMEAN_WAI_PFT ' , &
         dsetrank,iparallel,.false.)
    if(associated(cgrid%agb_pft)) call hdf_getslab_r(cgrid%agb_pft(:,ipy) ,'AGB_PFT '       , &
-        dsetrank,iparallel,.true.)
+        dsetrank,iparallel,.false.)
    if(associated(cgrid%ba_pft)) call hdf_getslab_r(cgrid%ba_pft(:,ipy) ,'BA_PFT '        ,   &
-        dsetrank,iparallel,.true.)
+        dsetrank,iparallel,.false.)
 
 
    ! Variables with 2 dimensions (n_dbh,npolygons)
@@ -1549,27 +1578,27 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
 
    if (associated(cpoly%dmean_co2_residual))                                               &
       call hdf_getslab_r(cpoly%dmean_co2_residual   , 'DMEAN_CO2_RESIDUAL_SI '             &
-                        ,dsetrank,iparallel,.true.)
+                        ,dsetrank,iparallel,.false.)
 
    if (associated(cpoly%dmean_water_residual))                                             &
       call hdf_getslab_r(cpoly%dmean_water_residual , 'DMEAN_WATER_RESIDUAL_SI '           &
-                        ,dsetrank,iparallel,.true.)
+                        ,dsetrank,iparallel,.false.)
 
    if (associated(cpoly%dmean_energy_residual))                                            &
       call hdf_getslab_r(cpoly%dmean_energy_residual, 'DMEAN_ENERGY_RESIDUAL_SI '          &
-                        ,dsetrank,iparallel,.true.)
+                        ,dsetrank,iparallel,.false.)
 
    if (associated(cpoly%mmean_co2_residual))                                               &
       call hdf_getslab_r(cpoly%mmean_co2_residual   , 'MMEAN_CO2_RESIDUAL_SI '             &
-                        ,dsetrank,iparallel,.true.)
+                        ,dsetrank,iparallel,.false.)
 
    if (associated(cpoly%mmean_water_residual))                                             &
       call hdf_getslab_r(cpoly%mmean_water_residual , 'MMEAN_WATER_RESIDUAL_SI '           &
-                        ,dsetrank,iparallel,.true.)
+                        ,dsetrank,iparallel,.false.)
 
    if (associated(cpoly%mmean_energy_residual))                                            &
       call hdf_getslab_r(cpoly%mmean_energy_residual, 'MMEAN_ENERGY_RESIDUAL_SI '          &
-                        ,dsetrank,iparallel,.true.)
+                        ,dsetrank,iparallel,.false.)
 
    dsetrank    = 2_8
    globdims(1) = int(n_pft,8)
@@ -1717,7 +1746,7 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
    use hdf5_coms,only:file_id,dset_id,dspace_id,plist_id, &
         globdims,chnkdims,chnkoffs,cnt,stride, &
         memdims,memoffs,memsize,datatype_id,setsize
-   use fusion_fission_coms, only: ff_ndbh
+   use fusion_fission_coms, only: ff_nhgt
    use ed_misc_coms, only : ndcycle
    use hdf5
 
@@ -1888,7 +1917,7 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
    call hdf_getslab_r(csite%rlongup,'RLONGUP ',dsetrank,iparallel,.true.)
    call hdf_getslab_r(csite%rlong_albedo,'RLONG_ALBEDO ',dsetrank,iparallel,.true.)
 
-   call hdf_getslab_r(csite%total_snow_depth,'TOTAL_SNOW_DEPTH ',dsetrank,iparallel,.true.)
+   call hdf_getslab_r(csite%total_sfcw_depth,'TOTAL_SFCW_DEPTH ',dsetrank,iparallel,.false.)
    call hdf_getslab_r(csite%snowfac,'SNOWFAC ',dsetrank,iparallel,.true.)
    call hdf_getslab_r(csite%A_decomp,'A_DECOMP ',dsetrank,iparallel,.true.)
    call hdf_getslab_r(csite%f_decomp,'F_DECOMP ',dsetrank,iparallel,.true.)
@@ -1972,27 +2001,27 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
 
    if (associated(csite%dmean_co2_residual))                                               &
       call hdf_getslab_r(csite%dmean_co2_residual   , 'DMEAN_CO2_RESIDUAL_PA '             &
-                        ,dsetrank,iparallel,.true.)
+                        ,dsetrank,iparallel,.false.)
 
    if (associated(csite%dmean_water_residual))                                             &
       call hdf_getslab_r(csite%dmean_water_residual , 'DMEAN_WATER_RESIDUAL_PA '           &
-                        ,dsetrank,iparallel,.true.)
+                        ,dsetrank,iparallel,.false.)
 
    if (associated(csite%dmean_energy_residual))                                            &
       call hdf_getslab_r(csite%dmean_energy_residual, 'DMEAN_ENERGY_RESIDUAL_PA '          &
-                        ,dsetrank,iparallel,.true.)
+                        ,dsetrank,iparallel,.false.)
 
    if (associated(csite%mmean_co2_residual))                                               &
       call hdf_getslab_r(csite%mmean_co2_residual   , 'MMEAN_CO2_RESIDUAL_PA '             &
-                        ,dsetrank,iparallel,.true.)
+                        ,dsetrank,iparallel,.false.)
 
    if (associated(csite%mmean_water_residual))                                             &
       call hdf_getslab_r(csite%mmean_water_residual , 'MMEAN_WATER_RESIDUAL_PA '           &
-                        ,dsetrank,iparallel,.true.)
+                        ,dsetrank,iparallel,.false.)
 
    if (associated(csite%mmean_energy_residual))                                            &
       call hdf_getslab_r(csite%mmean_energy_residual, 'MMEAN_ENERGY_RESIDUAL_PA '          &
-                        ,dsetrank,iparallel,.true.)
+                        ,dsetrank,iparallel,.false.)
 
 
 
@@ -2050,12 +2079,12 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
    memdims(2)  = int(csite%npatches,8)
    memsize(2)  = int(csite%npatches,8)
    memoffs(2)  = 0
-   
-   call hdf_getslab_i(csite%ntext_soil,'NTEXT_SOIL_PA ',dsetrank,iparallel,.true.)
    call hdf_getslab_r(csite%soil_energy,'SOIL_ENERGY_PA ',dsetrank,iparallel,.true.)
    call hdf_getslab_r(csite%soil_water,'SOIL_WATER_PA ',dsetrank,iparallel,.true.)
+   
    call hdf_getslab_r(csite%soil_tempk,'SOIL_TEMPK_PA ',dsetrank,iparallel,.true.)
    call hdf_getslab_r(csite%soil_fracliq,'SOIL_FRACLIQ_PA ',dsetrank,iparallel,.true.)
+   call hdf_getslab_r(csite%rootdense,'PATCH_ROOT_DENSITY ',dsetrank,iparallel,.false.)
 
    !-----------------------------------------------------------------------------------!
    !  Soil water is double precision, although it may not be DP in the dataset
@@ -2064,7 +2093,7 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
 !   call h5dopen_f(file_id,'SOIL_WATER_PA ', dset_id, hdferr)
 !   if (hdferr /= 0 ) then
 !      call fatal_error('Dataset did not have soil water?' &
-!           ,'fill_history_site','ed_history_io.f90')
+!           ,'fill_history_site','ed_init_full_history.F90')
 !   endif
    ! ---------------------------------------------------------------------------------!
    ! THESE LINES ARE USEFULL FOR DETERMINING DATA SIZE OF ANY GIVEN OBJECT IN A SET   !
@@ -2090,7 +2119,7 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
 !      deallocate(buff)
 !  else
 !     call fatal_error('Soil water dataset is not real nor double?'                         &
-!                     ,'fill_history_site','ed_history_io.f90')
+!                     ,'fill_history_site','ed_init_full_history.F90')
 !  end if
 
   !--------------------------------------------------------------------------------------------  
@@ -2141,10 +2170,10 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
   memsize(3)  = int(csite%npatches,8)
   memoffs(3)  = 0_8
   
-  globdims(2) = int(ff_ndbh,8)
-  chnkdims(2) = int(ff_ndbh,8)
-  memdims(2)  = int(ff_ndbh,8)
-  memsize(2)  = int(ff_ndbh,8)
+  globdims(2) = int(ff_nhgt,8)
+  chnkdims(2) = int(ff_nhgt,8)
+  memdims(2)  = int(ff_nhgt,8)
+  memsize(2)  = int(ff_nhgt,8)
   chnkoffs(2) = 0_8
   memoffs(2)  = 0_8
 
@@ -2155,7 +2184,7 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
   chnkoffs(1) = 0_8
   memoffs(1)  = 0_8
 
-  call hdf_getslab_r(csite%pft_density_profile,'PFT_DENSITY_PROFILE ',dsetrank,iparallel,.true.)
+  call hdf_getslab_r(csite%cumlai_profile,'CUMLAI_PROFILE ',dsetrank,iparallel,.false.)
 
 
   dsetrank    = 3
@@ -2222,7 +2251,7 @@ subroutine fill_history_patch(cpatch,paco_index,ncohorts_global,green_leaf_facto
   use c34constants,only: n_stoma_atts
   use ed_max_dims,only: n_pft, n_mort
   use ed_therm_lib, only : calc_hcapveg
-  use allometry, only : area_indices
+  use allometry, only : dbh2ca
   use ed_misc_coms, only : ndcycle
   use therm_lib, only : qwtk
   implicit none
@@ -2316,6 +2345,14 @@ subroutine fill_history_patch(cpatch,paco_index,ncohorts_global,green_leaf_facto
      
      call hdf_getslab_r(cpatch%wpa,'WPA_CO ',dsetrank,iparallel,.true.)
      call hdf_getslab_r(cpatch%wai,'WAI_CO ',dsetrank,iparallel,.true.)
+     
+     call hdf_getslab_r(cpatch%crown_area,'CROWN_AREA_CO ',dsetrank,iparallel,.false.)
+     if (all(cpatch%crown_area == 0.)) then
+         do ico= 1,cpatch%ncohorts
+              cpatch%crown_area(ico) = min(1.0, cpatch%nplant(ico) * dbh2ca(cpatch%dbh(ico)  &
+                               ,cpatch%sla(ico),cpatch%pft(ico)))
+         end do
+     end if
 
      call hdf_getslab_r(cpatch%veg_energy,'VEG_ENERGY ',dsetrank,iparallel,.true.)
      call hdf_getslab_r(cpatch%hcapveg,'HCAPVEG ',dsetrank,iparallel,.true.)
@@ -2328,13 +2365,29 @@ subroutine fill_history_patch(cpatch,paco_index,ncohorts_global,green_leaf_facto
      call hdf_getslab_r(cpatch%lint_shv,'LINT_SHV ',dsetrank,iparallel,.true.)
      call hdf_getslab_r(cpatch%lint_co2_open,'LINT_CO2_OPEN ',dsetrank,iparallel,.true.)
      call hdf_getslab_r(cpatch%lint_co2_closed,'LINT_CO2_CLOSED ',dsetrank,iparallel,.true.)
-    
+ 
      call hdf_getslab_r(cpatch%mean_gpp,'MEAN_GPP ',dsetrank,iparallel,.true.)
      call hdf_getslab_r(cpatch%mean_leaf_resp,'MEAN_LEAF_RESP ',dsetrank,iparallel,.true.)
      call hdf_getslab_r(cpatch%mean_root_resp,'MEAN_ROOT_RESP ',dsetrank,iparallel,.true.)
      call hdf_getslab_r(cpatch%today_leaf_resp,'TODAY_LEAF_RESP ',dsetrank,iparallel,.true.)
      call hdf_getslab_r(cpatch%today_root_resp,'TODAY_ROOT_RESP ',dsetrank,iparallel,.true.)
      call hdf_getslab_r(cpatch%today_gpp,'TODAY_GPP ',dsetrank,iparallel,.true.)
+     
+     if (associated(cpatch%today_nppleaf            ))                                          &
+         call hdf_getslab_r(cpatch%today_nppleaf ,'TODAY_NPPLEAF ',dsetrank,iparallel,.false.)
+     if (associated(cpatch%today_nppfroot           ))                                          &
+         call hdf_getslab_r(cpatch%today_nppfroot,'TODAY_NPPFROOT ',dsetrank,iparallel,.false.)
+     if (associated(cpatch%today_nppsapwood         ))                                          &
+         call hdf_getslab_r(cpatch%today_nppsapwood ,'TODAY_NPPSAPWOOD ',dsetrank,iparallel,.false.)
+     if (associated(cpatch%today_nppcroot           ))                                          &
+         call hdf_getslab_r(cpatch%today_nppcroot,'TODAY_NPPCROOT ',dsetrank,iparallel,.false.)
+     if (associated(cpatch%today_nppseeds           ))                                          &
+         call hdf_getslab_r(cpatch%today_nppseeds,'TODAY_NPPSEEDS ',dsetrank,iparallel,.false.)
+     if (associated(cpatch%today_nppwood            ))                                          &
+         call hdf_getslab_r(cpatch%today_nppwood ,'TODAY_NPPWOOD ',dsetrank,iparallel,.false.)
+     if (associated(cpatch%today_nppdaily           ))                                          &
+         call hdf_getslab_r(cpatch%today_nppdaily,'TODAY_NPPDAILY ',dsetrank,iparallel,.false.)
+     
      call hdf_getslab_r(cpatch%today_gpp_pot,'TODAY_GPP_POT ',dsetrank,iparallel,.true.)
      call hdf_getslab_r(cpatch%today_gpp_max,'TODAY_GPP_MAX ',dsetrank,iparallel,.true.)
      call hdf_getslab_r(cpatch%growth_respiration,'GROWTH_RESPIRATION ',dsetrank,iparallel,.true.)
@@ -2345,6 +2398,22 @@ subroutine fill_history_patch(cpatch,paco_index,ncohorts_global,green_leaf_facto
 
      if (associated(cpatch%mmean_gpp       )) &
           call hdf_getslab_r(cpatch%mmean_gpp,'MMEAN_GPP_CO ',dsetrank,iparallel,.false.)
+          
+     if (associated(cpatch%mmean_nppleaf            ))                                          &
+         call hdf_getslab_r(cpatch%mmean_nppleaf ,'MMEAN_NPPLEAF_CO ',dsetrank,iparallel,.false.)
+     if (associated(cpatch%mmean_nppfroot           ))                                          &
+         call hdf_getslab_r(cpatch%mmean_nppfroot,'MMEAN_NPPFROOT_CO ',dsetrank,iparallel,.false.)
+     if (associated(cpatch%mmean_nppsapwood         ))                                          &
+         call hdf_getslab_r(cpatch%mmean_nppsapwood ,'MMEAN_NPPSAPWOOD_CO ',dsetrank,iparallel,.false.)
+     if (associated(cpatch%mmean_nppcroot           ))                                          &
+         call hdf_getslab_r(cpatch%mmean_nppcroot,'MMEAN_NPPCROOT_CO ',dsetrank,iparallel,.false.)
+     if (associated(cpatch%mmean_nppseeds           ))                                          &
+         call hdf_getslab_r(cpatch%mmean_nppseeds,'MMEAN_NPPSEEDS_CO ',dsetrank,iparallel,.false.)
+     if (associated(cpatch%mmean_nppwood            ))                                          &
+         call hdf_getslab_r(cpatch%mmean_nppwood ,'MMEAN_NPPWOOD_CO ',dsetrank,iparallel,.false.)
+     if (associated(cpatch%mmean_nppdaily           ))                                          &
+         call hdf_getslab_r(cpatch%mmean_nppdaily,'MMEAN_NPPDAILY_CO ',dsetrank,iparallel,.false.)
+          
      if (associated(cpatch%mmean_leaf_resp       )) &
           call hdf_getslab_r(cpatch%mmean_leaf_resp,'MMEAN_LEAF_RESP_CO ',dsetrank,iparallel,.false.)
      if (associated(cpatch%mmean_root_resp       )) &
@@ -2361,6 +2430,22 @@ subroutine fill_history_patch(cpatch,paco_index,ncohorts_global,green_leaf_facto
           call hdf_getslab_r(cpatch%dmean_root_resp,'DMEAN_ROOT_RESP_CO ',dsetrank,iparallel,.false.)
      if (associated(cpatch%dmean_gpp       )) &
           call hdf_getslab_r(cpatch%dmean_gpp,'DMEAN_GPP_CO ',dsetrank,iparallel,.false.)
+          
+     if (associated(cpatch%dmean_nppleaf            ))                                          &
+         call hdf_getslab_r(cpatch%dmean_nppleaf ,'DMEAN_NPPLEAF_CO ',dsetrank,iparallel,.false.)
+     if (associated(cpatch%dmean_nppfroot           ))                                          &
+         call hdf_getslab_r(cpatch%dmean_nppfroot,'DMEAN_NPPFROOT_CO ',dsetrank,iparallel,.false.)
+     if (associated(cpatch%dmean_nppsapwood         ))                                          &
+         call hdf_getslab_r(cpatch%dmean_nppsapwood ,'DMEAN_NPPSAPWOOD_CO ',dsetrank,iparallel,.false.)
+     if (associated(cpatch%dmean_nppcroot           ))                                          &
+         call hdf_getslab_r(cpatch%dmean_nppcroot,'DMEAN_NPPCROOT_CO ',dsetrank,iparallel,.false.)
+     if (associated(cpatch%dmean_nppseeds           ))                                          &
+         call hdf_getslab_r(cpatch%dmean_nppseeds,'DMEAN_NPPSEEDS_CO ',dsetrank,iparallel,.false.)
+     if (associated(cpatch%dmean_nppwood            ))                                          &
+         call hdf_getslab_r(cpatch%dmean_nppwood ,'DMEAN_NPPWOOD_CO ',dsetrank,iparallel,.false.)
+     if (associated(cpatch%dmean_nppdaily           ))                                          &
+         call hdf_getslab_r(cpatch%dmean_nppdaily,'DMEAN_NPPDAILY_CO ',dsetrank,iparallel,.false.)
+          
      if (associated(cpatch%dmean_fs_open       )) &
      call hdf_getslab_r(cpatch%dmean_fs_open,'DMEAN_FS_OPEN_CO ',dsetrank,iparallel,.false.)
      if (associated(cpatch%mmean_fs_open       )) &
@@ -2487,6 +2572,7 @@ subroutine fill_history_patch(cpatch,paco_index,ncohorts_global,green_leaf_facto
      call hdf_getslab_r(cpatch%root_respiration,'ROOT_RESPIRATION ',dsetrank,iparallel,.true.)
      call hdf_getslab_r(cpatch%gpp,'GPP ',dsetrank,iparallel,.true.)
      call hdf_getslab_r(cpatch%paw_avg,'PAW_AVG ',dsetrank,iparallel,.true.)
+     call hdf_getslab_r(cpatch%elongf,'ELONGF ',dsetrank,iparallel,.false.)
      
      !----- 13-month dimension (12 previous months + current month). ----------------------!
      dsetrank    = 2
@@ -2529,7 +2615,7 @@ subroutine fill_history_patch(cpatch,paco_index,ncohorts_global,green_leaf_facto
 
      if (associated(cpatch%mmean_mort_rate))                                               &
         call hdf_getslab_r(cpatch%mmean_mort_rate,'MMEAN_MORT_RATE_CO '                    &
-                          ,dsetrank,iparallel,.true.)
+                          ,dsetrank,iparallel,.false.)
 
      !----- 2-D, dimensioned by the number of diurnal cycle times. ------------------------!
      dsetrank    = 2
@@ -2686,7 +2772,7 @@ subroutine hdf_getslab_r(buff,varn,dsetrank,iparallel,required)
      write(unit=*,fmt=*) 'File_ID = ',file_id
      write(unit=*,fmt=*) 'Dset_ID = ',dset_id
      call fatal_error('Could not get the dataset for '//trim(varn)//'!!!' &
-          ,'hdf_getslab_r','ed_history_io.f90')
+          ,'hdf_getslab_r','ed_init_full_history.F90')
      
   else if (hdferr /= 0 .and. .not.required ) then
 
@@ -2713,14 +2799,14 @@ subroutine hdf_getslab_r(buff,varn,dsetrank,iparallel,required)
      call h5dget_space_f(dset_id,filespace,hdferr)
      if (hdferr /= 0) then
         call fatal_error('Could not get the hyperslabs filespace for '//trim(varn)//'!!!' &
-             ,'hdf_getslab_r','ed_history_io.f90')
+             ,'hdf_getslab_r','ed_init_full_history.F90')
      end if
      
      call h5sselect_hyperslab_f(filespace,H5S_SELECT_SET_F,chnkoffs, &
           chnkdims,hdferr)
      if (hdferr /= 0) then
         call fatal_error('Could not assign the hyperslabs filespace for '//trim(varn)//'!!!' &
-             ,'hdf_getslab_r','ed_history_io.f90')
+             ,'hdf_getslab_r','ed_init_full_history.F90')
      end if
      
      call h5screate_simple_f(dsetrank,memsize,memspace,hdferr)
@@ -2728,14 +2814,14 @@ subroutine hdf_getslab_r(buff,varn,dsetrank,iparallel,required)
         write(unit=*,fmt=*) 'Chnkdims = ',chnkdims
         write(unit=*,fmt=*) 'Dsetrank = ',dsetrank
         call fatal_error('Could not create the hyperslabs memspace for '//trim(varn)//'!!!' &
-             ,'hdf_getslab_r','ed_history_io.f90')
+             ,'hdf_getslab_r','ed_init_full_history.F90')
      end if
      
      call h5sselect_hyperslab_f(memspace,H5S_SELECT_SET_F,memoffs, &
           memdims,hdferr)
      if (hdferr /= 0) then
         call fatal_error('Could not assign the hyperslabs filespace for '//trim(varn)//'!!!' &
-             ,'hdf_getslab_r','ed_history_io.f90')
+             ,'hdf_getslab_r','ed_init_full_history.F90')
      end if
      
      if (iparallel == 1) then
@@ -2746,7 +2832,7 @@ subroutine hdf_getslab_r(buff,varn,dsetrank,iparallel,required)
         
         if (hdferr /= 0) then
            call fatal_error('Could not read in the hyperslab dataset for '//trim(varn)//'!!!' &
-                ,'hdf_getslab_r','ed_history_io.f90')
+                ,'hdf_getslab_r','ed_init_full_history.F90')
         end if
 
      else
@@ -2756,7 +2842,7 @@ subroutine hdf_getslab_r(buff,varn,dsetrank,iparallel,required)
 
         if (hdferr /= 0) then
            call fatal_error('Could not read in the hyperslab dataset for '//trim(varn)//'!!!' &
-                ,'hdf_getslab_r','ed_history_io.f90')
+                ,'hdf_getslab_r','ed_init_full_history.F90')
         end if
 
      endif
@@ -2810,7 +2896,7 @@ subroutine hdf_getslab_d(buff,varn,dsetrank,iparallel,required)
      write(unit=*,fmt=*) 'File_ID = ',file_id
      write(unit=*,fmt=*) 'Dset_ID = ',dset_id
      call fatal_error('Could not get the dataset for '//trim(varn)//'!!!' &
-          ,'hdf_getslab_d','ed_history_io.f90')
+          ,'hdf_getslab_d','ed_init_full_history.F90')
      
   else if (hdferr /= 0 .and. .not.required ) then
 
@@ -2837,14 +2923,14 @@ subroutine hdf_getslab_d(buff,varn,dsetrank,iparallel,required)
      call h5dget_space_f(dset_id,filespace,hdferr)
      if (hdferr /= 0) then
         call fatal_error('Could not get the hyperslabs filespace for '//trim(varn)//'!!!' &
-             ,'hdf_getslab_r','ed_history_io.f90')
+             ,'hdf_getslab_r','ed_init_full_history.F90')
      end if
      
      call h5sselect_hyperslab_f(filespace,H5S_SELECT_SET_F,chnkoffs, &
           chnkdims,hdferr)
      if (hdferr /= 0) then
         call fatal_error('Could not assign the hyperslabs filespace for '//trim(varn)//'!!!' &
-             ,'hdf_getslab_r','ed_history_io.f90')
+             ,'hdf_getslab_r','ed_init_full_history.F90')
      end if
      
      call h5screate_simple_f(dsetrank,memsize,memspace,hdferr)
@@ -2852,14 +2938,14 @@ subroutine hdf_getslab_d(buff,varn,dsetrank,iparallel,required)
         write(unit=*,fmt=*) 'Chnkdims = ',chnkdims
         write(unit=*,fmt=*) 'Dsetrank = ',dsetrank
         call fatal_error('Could not create the hyperslabs memspace for '//trim(varn)//'!!!' &
-             ,'hdf_getslab_r','ed_history_io.f90')
+             ,'hdf_getslab_r','ed_init_full_history.F90')
      end if
      
      call h5sselect_hyperslab_f(memspace,H5S_SELECT_SET_F,memoffs, &
           memdims,hdferr)
      if (hdferr /= 0) then
         call fatal_error('Could not assign the hyperslabs filespace for '//trim(varn)//'!!!' &
-             ,'hdf_getslab_r','ed_history_io.f90')
+             ,'hdf_getslab_r','ed_init_full_history.F90')
      end if
      
      if (iparallel == 1) then
@@ -2869,7 +2955,7 @@ subroutine hdf_getslab_d(buff,varn,dsetrank,iparallel,required)
              xfer_prp = plist_id)
         if (hdferr /= 0) then
            call fatal_error('Could not read in the hyperslab dataset for '//trim(varn)//'!!!' &
-                ,'hdf_getslab_r','ed_history_io.f90')
+                ,'hdf_getslab_r','ed_init_full_history.F90')
         end if
         
      else
@@ -2878,7 +2964,7 @@ subroutine hdf_getslab_d(buff,varn,dsetrank,iparallel,required)
         
         if (hdferr /= 0) then
            call fatal_error('Could not read in the hyperslab dataset for '//trim(varn)//'!!!' &
-                ,'hdf_getslab_r','ed_history_io.f90')
+                ,'hdf_getslab_r','ed_init_full_history.F90')
         end if
      endif
      
@@ -2932,7 +3018,7 @@ subroutine hdf_getslab_i(buff,varn,dsetrank,iparallel,required)
      write(unit=*,fmt=*) 'File_ID = ',file_id
      write(unit=*,fmt=*) 'Dset_ID = ',dset_id
      call fatal_error('Could not get the dataset for '//trim(varn)//'!!!' &
-          ,'hdf_getslab_i','ed_history_io.f90')
+          ,'hdf_getslab_i','ed_init_full_history.F90')
      
   else if (hdferr /= 0 .and. .not.required ) then
      
@@ -2959,14 +3045,14 @@ subroutine hdf_getslab_i(buff,varn,dsetrank,iparallel,required)
      call h5dget_space_f(dset_id,filespace,hdferr)
      if (hdferr /= 0) then
         call fatal_error('Could not get the hyperslabs filespace for '//trim(varn)//'!!!' &
-             ,'hdf_getslab_i','ed_history_io.f90')
+             ,'hdf_getslab_i','ed_init_full_history.F90')
      endif
      
      call h5sselect_hyperslab_f(filespace,H5S_SELECT_SET_F,chnkoffs, &
           chnkdims,hdferr)
      if (hdferr /= 0) then
         call fatal_error('Could not assign the hyperslabs filespace for '//trim(varn)//'!!!' &
-             ,'hdf_getslab_i','ed_history_io.f90')
+             ,'hdf_getslab_i','ed_init_full_history.F90')
      endif
      
      call h5screate_simple_f(dsetrank,memsize,memspace,hdferr)
@@ -2974,14 +3060,14 @@ subroutine hdf_getslab_i(buff,varn,dsetrank,iparallel,required)
         write(unit=*,fmt=*) 'Chnkdims = ',chnkdims
         write(unit=*,fmt=*) 'Dsetrank = ',dsetrank
         call fatal_error('Could not create the hyperslabs memspace for '//trim(varn)//'!!!' &
-             ,'hdf_getslab_i','ed_history_io.f90')
+             ,'hdf_getslab_i','ed_init_full_history.F90')
      endif
      
      call h5sselect_hyperslab_f(memspace,H5S_SELECT_SET_F,memoffs, &
           memdims,hdferr)
      if (hdferr /= 0) then
         call fatal_error('Could not assign the hyperslabs filespace for '//trim(varn)//'!!!' &
-             ,'hdf_getslab_i','ed_history_io.f90')
+             ,'hdf_getslab_i','ed_init_full_history.F90')
      end if
 
      if (iparallel == 1) then
@@ -2991,7 +3077,7 @@ subroutine hdf_getslab_i(buff,varn,dsetrank,iparallel,required)
              xfer_prp = plist_id)
         if (hdferr /= 0) then
            call fatal_error('Could not read in the hyperslab dataset for '//trim(varn)//'!!!' &
-                ,'hdf_getslab_i','ed_history_io.f90')
+                ,'hdf_getslab_i','ed_init_full_history.F90')
         end if
         
      else
@@ -2999,7 +3085,7 @@ subroutine hdf_getslab_i(buff,varn,dsetrank,iparallel,required)
              mem_space_id = memspace, file_space_id = filespace )
         if (hdferr /= 0) then
            call fatal_error('Could not read in the hyperslab dataset for '//trim(varn)//'!!!' &
-                ,'hdf_getslab_r','ed_history_io.f90')
+                ,'hdf_getslab_r','ed_init_full_history.F90')
         end if
      end if
      

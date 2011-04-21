@@ -18,7 +18,8 @@ subroutine structural_growth(cgrid, month)
                             , c2n_recruit            & ! intent(in)
                             , c2n_stem               & ! intent(in)
                             , l2n_stem               & ! intent(in)
-                            , negligible_nplant      ! ! intent(in)
+                            , negligible_nplant      & ! intent(in)
+                            , agf_bs                 ! ! intent(in)
    use decomp_coms   , only : f_labile               ! ! intent(in)
    use ed_max_dims   , only : n_pft                  & ! intent(in)
                             , n_dbh                  ! ! intent(in)
@@ -122,6 +123,13 @@ subroutine structural_growth(cgrid, month)
                !----- Grow plants; bdead gets fraction f_bdead of bstorage. ---------------!
                cpatch%bdead(ico) = cpatch%bdead(ico) + f_bdead * cpatch%bstorage(ico)
 
+
+               !------ NPP allocation to wood and course roots in KgC /m2 -----------------!
+               cpatch%today_NPPwood(ico) = agf_bs * f_bdead * cpatch%bstorage(ico)         &
+                                          * cpatch%nplant(ico)
+               cpatch%today_NPPcroot(ico) = (1- agf_bs) * f_bdead * cpatch%bstorage(ico)   &
+                                          * cpatch%nplant(ico)
+                                          
                !---------------------------------------------------------------------------!
                !      Rebalance the plant nitrogen uptake considering the actual alloc-    !
                ! ation to structural growth.  This is necessary because c2n_stem does not  !
@@ -135,6 +143,10 @@ subroutine structural_growth(cgrid, month)
                ! a fraction f_bseeds of bstorage.                                          !
                !---------------------------------------------------------------------------!
                cpatch%bseeds(ico) = f_bseeds * cpatch%bstorage(ico)
+               
+               cpatch%today_NPPseeds(ico) = f_bseeds * cpatch%bstorage(ico)                &
+                                          * cpatch%nplant(ico)
+               
                seed_litter        = cpatch%bseeds(ico) * cpatch%nplant(ico)                &
                                   * seedling_mortality(ipft)
                
@@ -517,7 +529,6 @@ subroutine update_derived_cohort_props(cpatch,ico,green_leaf_factor,lsl)
    real :: bl
    real :: bl_max
    real :: rootdepth
-   real :: elongf
    !---------------------------------------------------------------------------------------!
 
    !----- Gett DBH and height from structural biomass. ------------------------------------!
@@ -530,12 +541,13 @@ subroutine update_derived_cohort_props(cpatch,ico,green_leaf_factor,lsl)
 
       select case (phenology(cpatch%pft(ico)))
       case (4)
-         elongf  = min (1.0, cpatch%paw_avg(ico)/theta_crit)
+         cpatch%elongf(ico)  = max(0.0,min (1.0, cpatch%paw_avg(ico)/theta_crit))
       case default
-         elongf  = 1.0
+         cpatch%elongf(ico)  = 1.0
       end select
 
-      bl_max = dbh2bl(cpatch%dbh(ico),cpatch%pft(ico)) * green_leaf_factor * elongf
+      bl_max = dbh2bl(cpatch%dbh(ico),cpatch%pft(ico)) * green_leaf_factor                 &
+             * cpatch%elongf(ico)
       !------------------------------------------------------------------------------------!
       !     If LEAF biomass is not the maximum, set it to 1 (leaves partially flushed),    !
       ! otherwise, set it to 0 (leaves are fully flushed).                                 !
@@ -552,7 +564,7 @@ subroutine update_derived_cohort_props(cpatch,ico,green_leaf_factor,lsl)
    call area_indices(cpatch%nplant(ico),cpatch%bleaf(ico),cpatch%bdead(ico)                &
               ,cpatch%balive(ico),cpatch%dbh(ico), cpatch%hite(ico),cpatch%pft(ico)        &
               ,cpatch%sla(ico),cpatch%lai(ico),cpatch%wpa(ico),cpatch%wai(ico)             &
-              ,cpatch%bsapwood(ico))
+              ,cpatch%crown_area(ico),cpatch%bsapwood(ico))
 
    !----- Finding the new basal area and above-ground biomass. ----------------------------!
    cpatch%basarea(ico) = pio4 * cpatch%dbh(ico) * cpatch%dbh(ico)                
@@ -677,8 +689,11 @@ subroutine update_vital_rates(cpatch,ico,ilu,dbh_in,bdead_in,balive_in,hite_in,b
    !---------------------------------------------------------------------------------------!
    basal_area_mort(ipft,idbh) = basal_area_mort(ipft,idbh)                                 &
                               + area * (nplant_in - cpatch%nplant(ico)) * ba_in * 12.0
-   agb_mort(ipft,idbh)        = agb_mort(ipft,idbh) + area * mort_litter * 12.0
-   !---------------------------------------------------------------------------------------!
+
+!!   agb_mort(ipft,idbh)        = agb_mort(ipft,idbh) + area * mort_litter 
+!! calculation based on mort_litter includes TOTAL biomass, not AGB [[mcd]]
+   agb_mort(ipft,idbh)        = agb_mort(ipft,idbh)                                        &
+                              + area * (nplant_in - cpatch%nplant(ico))*agb_in * 12.0
 
    return
 end subroutine update_vital_rates

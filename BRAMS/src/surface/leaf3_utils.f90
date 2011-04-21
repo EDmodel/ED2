@@ -1496,7 +1496,7 @@ subroutine leaf_atmo1d(m2,m3,i,j,thp,theta,rv,rtp,co2p,up,vp,pitot,dens,height,p
    atm_co2      = co2p(i,j)
    atm_prss     = p00 * (cpi * atm_exner) ** cpor
    atm_temp     = cpi * atm_theta * atm_exner
-   atm_theiv    = thetaeiv(atm_thil,atm_prss,atm_temp,atm_rvap,atm_rtot,-8)
+   atm_theiv    = thetaeiv(atm_thil,atm_prss,atm_temp,atm_rvap,atm_rtot,-67)
    pcpgl        = pcpg(i,j)
    qpcpgl       = qpcpg(i,j)
    dpcpgl       = dpcpg(i,j)
@@ -1584,7 +1584,7 @@ subroutine leaf0(m2,m3,mpat,i,j,can_theta,can_rvap,can_co2,can_prss,can_theiv,pa
                      / ( can_rsat * (ep + can_rvap(i,j,2)))
 
    can_theiv(i,j,2)  = thetaeiv(can_theta(i,j,2),can_prss(i,j,2),can_temp,can_rvap(i,j,2)  &
-                               ,can_rvap(i,j,2),-8)
+                               ,can_rvap(i,j,2),-26)
 
    can_lntheta       = log(can_theta(i,j,2))
    can_rhos          = idealdenssh(can_prss(i,j,2),can_temp,can_shv)
@@ -1755,7 +1755,7 @@ subroutine leaf_solve_veg(ip,mzs,leaf_class,veg_height,patch_area,veg_fracarea,v
                        , tai_min     & ! intent(in)
                        , snowfac_max & ! intent(in)
                        , snowfac     & ! intent(inout)
-                       , solvable    ! ! intent(inout)
+                       , resolvable  ! ! intent(inout)
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
    integer                , intent(in) :: ip
@@ -1794,25 +1794,25 @@ subroutine leaf_solve_veg(ip,mzs,leaf_class,veg_height,patch_area,veg_fracarea,v
    if (initial) then
       !---- First call.  Decide whether the vegetation can be solved. ---------------------!
       if (ip == 1) then
-         solvable = .false.
+         resolvable = .false.
       else
          nveg = nint(leaf_class)
-         solvable = tai_max(nveg) >= tai_min .and.                                         &
-                    veg_tai       >= tai_min .and.                                         &
-                    snowfac       <= snowfac_max
+         resolvable = tai_max(nveg) >= tai_min .and.                                       &
+                      veg_tai       >= tai_min .and.                                       &
+                      snowfac       <= snowfac_max
       end if
    else
       !------------------------------------------------------------------------------------!
-      !     Call in the middle of the step.  This can go only from solvable to non-        !
-      ! solvable, in case snow or water has buried or drowned the plants.  The single      !
+      !     Call in the middle of the step.  This can go only from resolvable to non-      !
+      ! resolvable, in case snow or water has buried or drowned the plants.  The single    !
       ! direction is to avoid calling vegetation properties that cannot start to be        !
       ! computed in the middle of the step.                                                !
       !------------------------------------------------------------------------------------!
-      if (solvable) then
+      if (resolvable) then
          nveg = nint(leaf_class)
-         solvable = tai_max(nveg) >= tai_min .and.                                         &
-                    veg_tai       >= tai_min .and.                                         &
-                    snowfac       <= snowfac_max
+         resolvable = tai_max(nveg) >= tai_min .and.                                       &
+                      veg_tai       >= tai_min .and.                                       &
+                      snowfac       <= snowfac_max
       end if
    end if
    !---------------------------------------------------------------------------------------!

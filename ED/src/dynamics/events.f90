@@ -283,7 +283,7 @@ end subroutine prescribed_event
 
 
 subroutine event_harvest(agb_frac8,bgb_frac8,fol_frac8,stor_frac8)
-  use grid_coms, only : ngrids
+  use grid_coms, only : ngrids,nzg
   use ed_state_vars,only: edgrid_g, &
        edtype,polygontype,sitetype, &
        patchtype,allocate_patchtype,copy_patchtype,deallocate_patchtype 
@@ -388,7 +388,8 @@ subroutine event_harvest(agb_frac8,bgb_frac8,fol_frac8,stor_frac8)
                  call area_indices(cpatch%nplant(ico),cpatch%bleaf(ico),cpatch%bdead(ico)  &
                                   ,cpatch%balive(ico),cpatch%dbh(ico), cpatch%hite(ico)    &
                                   ,cpatch%pft(ico),cpatch%sla(ico), cpatch%lai(ico)        &
-                                  ,cpatch%wpa(ico),cpatch%wai(ico), cpatch%bsapwood(ico))
+                                  ,cpatch%wpa(ico),cpatch%wai(ico), cpatch%crown_area(ico) &
+                                  ,cpatch%bsapwood(ico))
 
                  !----- Update basal area and above-ground biomass. -----------------------!
                  cpatch%basarea(ico) = pio4 * cpatch%dbh(ico) * cpatch%dbh(ico)                
@@ -437,7 +438,7 @@ end subroutine event_harvest
 
 
 subroutine event_planting(pft,density8)
-  use grid_coms, only : ngrids
+  use grid_coms, only : ngrids,nzg,nzs
   use ed_state_vars,only: edgrid_g, &
        edtype,polygontype,sitetype, &
        patchtype,allocate_patchtype,copy_patchtype,deallocate_patchtype, &
@@ -479,11 +480,11 @@ subroutine event_planting(pft,density8)
            csite => cpoly%site(isi)
 
            do ipa=1,csite%npatches
-              
-              call plant_patch(csite,ipa,pft,density,cpoly%green_leaf_factor(:,isi) &
-                                 ,planting_ht,cpoly%lsl(isi))            
+              call update_patch_thermo_props(csite,ipa,ipa,nzg,nzs,cpoly%ntext_soil(:,isi))
+              call plant_patch(csite,ipa,nzg,pft,density,cpoly%ntext_soil(:,isi) &
+                              ,cpoly%green_leaf_factor(:,isi),planting_ht,cpoly%lsl(isi))
               call update_patch_derived_props(csite, cpoly%lsl(isi), cpoly%met(isi)%prss,ipa)
-              call new_patch_sfc_props(csite, ipa)
+              call new_patch_sfc_props(csite, ipa,nzg,nzs,cpoly%ntext_soil(:,isi))
               call update_budget(csite, cpoly%lsl(isi),ipa,ipa)
 
            enddo
@@ -505,7 +506,7 @@ subroutine event_planting(pft,density8)
 end subroutine event_planting
 
 subroutine event_fertilize(rval8)
-  use grid_coms, only : ngrids
+  use grid_coms, only : ngrids, nzg
   use ed_state_vars,only: edgrid_g, &
        edtype,polygontype,sitetype, &
        patchtype,allocate_patchtype,copy_patchtype,deallocate_patchtype 
@@ -753,6 +754,7 @@ subroutine event_till(rval8)
                  cpatch%lai(ico)        = 0.0
                  cpatch%wpa(ico)        = 0.0
                  cpatch%wai(ico)        = 0.0
+                 cpatch%crown_area(ico) = 0.0
                  cpatch%bleaf(ico)      = 0.0
                  cpatch%veg_energy(ico) = 0.0
                  cpatch%veg_water(ico)  = 0.0

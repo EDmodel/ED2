@@ -90,13 +90,6 @@ subroutine heun_timestep(cgrid)
             call zero_rk4_cohort(integration_buff%yscal)
             call zero_rk4_cohort(integration_buff%dydx)
 
-            !----- Save the previous thermodynamic state. ---------------------------------!
-            old_can_theiv    = csite%can_theiv(ipa)
-            old_can_shv      = csite%can_shv(ipa)
-            old_can_co2      = csite%can_co2(ipa)
-            old_can_rhos     = csite%can_rhos(ipa)
-            old_can_temp     = csite%can_temp(ipa)
-
             !----- Get velocity for aerodynamic resistance. -------------------------------!
             if (csite%can_theta(ipa) < cmet%atm_theta) then
                cmet%vels = cmet%vels_stab
@@ -110,7 +103,18 @@ subroutine heun_timestep(cgrid)
             !------------------------------------------------------------------------------!
             !    Update roughness and canopy depth.                                        !
             !------------------------------------------------------------------------------!
+            call update_patch_thermo_props(csite,ipa,ipa,nzg,nzs,cpoly%ntext_soil(:,isi))
             call update_patch_derived_props(csite,cpoly%lsl(isi),cmet%prss,ipa)
+            !------------------------------------------------------------------------------!
+
+
+
+            !----- Save the previous thermodynamic state. ---------------------------------!
+            old_can_theiv    = csite%can_theiv(ipa)
+            old_can_shv      = csite%can_shv(ipa)
+            old_can_co2      = csite%can_co2(ipa)
+            old_can_rhos     = csite%can_rhos(ipa)
+            old_can_temp     = csite%can_temp(ipa)
             !------------------------------------------------------------------------------!
 
 
@@ -118,10 +122,11 @@ subroutine heun_timestep(cgrid)
             !------------------------------------------------------------------------------!
             !    Copy the meteorological variables to the rk4site structure.               !
             !------------------------------------------------------------------------------!
-            call copy_met_2_rk4site(cmet%vels,cmet%atm_theiv,cmet%atm_theta                &
+            call copy_met_2_rk4site(nzg,cmet%vels,cmet%atm_theiv,cmet%atm_theta            &
                                    ,cmet%atm_tmp,cmet%atm_shv,cmet%atm_co2,cmet%geoht      &
                                    ,cmet%exner,cmet%pcpg,cmet%qpcpg,cmet%dpcpg,cmet%prss   &
                                    ,cmet%rshort,cmet%rlong,cmet%geoht,cpoly%lsl(isi)       &
+                                   ,cpoly%ntext_soil(:,isi)                                &
                                    ,cpoly%green_leaf_factor(:,isi)                         &
                                    ,cgrid%lon(ipy),cgrid%lat(ipy))
 
@@ -143,11 +148,12 @@ subroutine heun_timestep(cgrid)
 
             !----- Get photosynthesis, stomatal conductance, and transpiration. -----------!
             call canopy_photosynthesis(csite,cmet,nzg,ipa,ed_ktrans,cpoly%lsl(isi)         &
+                                      ,cpoly%ntext_soil(:,isi)                             &
                                       ,cpoly%leaf_aging_factor(:,isi)                      &
                                       ,cpoly%green_leaf_factor(:,isi))
 
             !----- Compute root and heterotrophic respiration. ----------------------------!
-            call soil_respiration(csite,ipa)
+            call soil_respiration(csite,ipa,nzg,cpoly%ntext_soil(:,isi))
 
             !------------------------------------------------------------------------------!
             !     Set up the remaining, carbon-dependent variables to the buffer.          !
@@ -474,7 +480,7 @@ subroutine heun_integ(h1,csite,ipa,nsteps)
          !    two types of new tries.  If step failed to be minimally reasonable (reject-  !
          !    ed) we have assigned a standard large error (10.0).  Otherwise a new step is !
          !    calculated based on the size of that error.  Hopefully, those new steps      !
-         !    should be less than the previous h.  If the error was small, i.e. less then  !
+         !    should be less than the previous h.  If the error was small, i.e. less than  !
          !    rk4eps, then we are done with this step, and we can move forward             !
          !    time: x = x + h                                                              !
          !---------------------------------------------------------------------------------!
@@ -644,27 +650,16 @@ subroutine heun_integ(h1,csite,ipa,nsteps)
                                              + sngloff(qwfree * dtrk4i,tiny_offset)
                end if
                if (checkbudget) then
-                  integration_buff%y%wbudget_loss2runoff = wfreeb
-                  integration_buff%y%ebudget_loss2runoff = qwfree
+                  integration_buff%y%wbudget_loss2runoff = wfreeb                          &
+                        + integration_buff%y%wbudget_loss2runoff
+                  integration_buff%y%ebudget_loss2runoff = qwfree                          &
+                        + integration_buff%y%ebudget_loss2runoff
                   integration_buff%y%wbudget_storage     =                                 &
                                      integration_buff%y%wbudget_storage - wfreeb
                   integration_buff%y%ebudget_storage    =                                  &
                                      integration_buff%y%ebudget_storage - qwfree
                end if
-
-            else
-               csite%runoff(ipa)          = 0.0
-               csite%avg_runoff(ipa)      = 0.0
-               csite%avg_runoff_heat(ipa) = 0.0
-               integration_buff%y%wbudget_loss2runoff  = 0.d0
-               integration_buff%y%ebudget_loss2runoff  = 0.d0
             end if
-         else
-            csite%runoff(ipa)          = 0.0
-            csite%avg_runoff(ipa)      = 0.0
-            csite%avg_runoff_heat(ipa) = 0.0
-            integration_buff%y%wbudget_loss2runoff  = 0.d0
-            integration_buff%y%ebudget_loss2runoff  = 0.d0
          end if
 
          !------ Copy the temporary patch to the next intermediate step -------------------!

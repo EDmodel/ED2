@@ -168,6 +168,7 @@ subroutine init_ed_misc_coms
                            , vary_hyd            & ! intent(out)
                            , vary_rad            & ! intent(out)
                            , max_thsums_dist     & ! intent(out)
+                           , max_poihist_dist    & ! intent(out)
                            , max_poi99_dist      ! ! intent(out)
    implicit none
 
@@ -216,6 +217,14 @@ subroutine init_ed_misc_coms
    ! use only).                                                                            !
    !---------------------------------------------------------------------------------------!
    max_poi99_dist     = 5.0 * erad * pio180
+   !---------------------------------------------------------------------------------------!
+
+   !---------------------------------------------------------------------------------------!
+   !      This variable is used for the history start initialisation.  This sets the       !
+   ! maximum acceptable distance between the expected polygon and the polygon found in the !
+   ! history file.  Units: m.                                                              !
+   !---------------------------------------------------------------------------------------!
+   max_poihist_dist   = 250.
    !---------------------------------------------------------------------------------------!
 
    return
@@ -267,7 +276,7 @@ subroutine init_met_params()
    atm_tmp_max = 331.     ! Highest temperature ever measured, in El Azizia, Libya
    !----- Minimum and maximum acceptable air specific humidity [kg_H2O/kg_air]. -----------!
    atm_shv_min = 1.e-6    ! That corresponds to a relative humidity of 0.1% at 1000hPa
-   atm_shv_max = 3.e-2    ! That corresponds to a dew point of 32°C at 1000hPa.
+   atm_shv_max = 3.2e-2 !3.e-2    ! That corresponds to a dew point of 32°C at 1000hPa.
    !----- Minimum and maximum acceptable CO2 mixing ratio [µmol/mol]. ---------------------!
    atm_co2_min = 100.     ! 
    atm_co2_max = 1100.    ! 
@@ -373,7 +382,6 @@ subroutine init_can_rad_params()
                                     , visible_fraction_dif        & ! intent(out)
                                     , leaf_reflect_nir            & ! intent(out)
                                     , leaf_trans_nir              & ! intent(out)
-                                    , blfac_min                   & ! intent(out)
                                     , rshort_twilight_min         & ! intent(out)
                                     , cosz_min                    & ! intent(out)
                                     , cosz_min8                   ! ! intent(out)
@@ -433,8 +441,6 @@ subroutine init_can_rad_params()
    emis_v(12:15) = 9.60d-1
    emis_v(16)    = 9.60d-1
    emis_v(17)    = 9.70d-1
-
-   blfac_min     = 1.0e-2
 
    !---------------------------------------------------------------------------------------!
    !     These variables are the thresholds for things that should be computed during the  !
@@ -856,7 +862,7 @@ subroutine init_pft_photo_params()
    Vm0(12:13)                = 18.3            * vmfact
    Vm0(14:15)                = 12.5            * 1.5
    Vm0(16)                   = 21.875          * vmfact
-   Vm0(17)                   = 15.625          * vmfact
+   Vm0(17)                   = 15.625 * 0.7264
 
    !----- Define the stomatal slope (aka the M factor). -----------------------------------!
    stomatal_slope(1)         =  6.4
@@ -875,7 +881,7 @@ subroutine init_pft_photo_params()
    stomatal_slope(14)        =  6.4
    stomatal_slope(15)        =  6.4
    stomatal_slope(16)        =  8.0    * mfact
-   stomatal_slope(17)        =  6.4    * mfact
+   stomatal_slope(17)        =  6.4
  
    cuticular_cond(1)         = 10000.0    ! 10000.0
    cuticular_cond(2)         = 10000.0    ! 10000.0
@@ -1029,7 +1035,7 @@ subroutine init_pft_resp_params()
    growth_resp_factor(14)         = 0.333
    growth_resp_factor(15)         = 0.333
    growth_resp_factor(16)         = 0.333
-   growth_resp_factor(17)         = 0.333
+   growth_resp_factor(17)         = 0.4503
 
    leaf_turnover_rate(1)          = 2.0
    leaf_turnover_rate(2)          = 1.0
@@ -1047,7 +1053,7 @@ subroutine init_pft_resp_params()
    leaf_turnover_rate(14)         = 2.0
    leaf_turnover_rate(15)         = 2.0
    leaf_turnover_rate(16)         = 2.0
-   leaf_turnover_rate(17)         = 0.333
+   leaf_turnover_rate(17)         = 0.1
 
    !----- Root turnover rate.  ------------------------------------------------------------!
    root_turnover_rate(1)          = 2.0
@@ -1056,7 +1062,7 @@ subroutine init_pft_resp_params()
    root_turnover_rate(4)          = 0.333
    root_turnover_rate(5)          = 2.0
    root_turnover_rate(6)          = 3.927218 ! 0.333
-   root_turnover_rate(7)          = 4.117847
+   root_turnover_rate(7)          = 4.117847 ! 0.333
    root_turnover_rate(8)          = 3.800132 ! 0.333
    root_turnover_rate(9)          = 5.772506
    root_turnover_rate(10)         = 5.083700
@@ -1066,7 +1072,7 @@ subroutine init_pft_resp_params()
    root_turnover_rate(14)         = 2.0
    root_turnover_rate(15)         = 2.0
    root_turnover_rate(16)         = 2.0
-   root_turnover_rate(17)         = 0.333
+   root_turnover_rate(17)         = 0.1
 
    dark_respiration_factor(1)     = 0.06
    dark_respiration_factor(2)     = 0.02 * gamfact
@@ -1084,7 +1090,7 @@ subroutine init_pft_resp_params()
    dark_respiration_factor(14)    = 0.04
    dark_respiration_factor(15)    = 0.04
    dark_respiration_factor(16)    = 0.02 * gamfact
-   dark_respiration_factor(17)    = 0.02 * gamfact
+   dark_respiration_factor(17)    = 0.03 * gamfact
 
    storage_turnover_rate(1)       = 0.0
    storage_turnover_rate(2)       = 0.0
@@ -1202,20 +1208,20 @@ subroutine init_pft_mort_params()
    mort3(13) =  0.066
    mort3(14) =  0.037
    mort3(15) =  0.037
-   mort3(16) =  0.0660
-   mort3(17) =  0.0043
+   mort3(16) =  0.06167
+   mort3(17) =  0.01
    
    if (treefall_disturbance_rate < 0.) then
       mort3(:) = mort3(:) - treefall_disturbance_rate
       treefall_disturbance_rate = 0.
    end if
    
-   seedling_mortality(1) = 0.60
-   seedling_mortality(2:4) = 0.95 
-   seedling_mortality(5) = 0.60
+   seedling_mortality(1)    = 0.60
+   seedling_mortality(2:4)  = 0.95 
+   seedling_mortality(5)    = 0.60
    seedling_mortality(6:15) = 0.95 
-   seedling_mortality(16) = 0.60 
-   seedling_mortality(17) = 0.95 
+   seedling_mortality(16)   = 0.60 
+   seedling_mortality(17)   = 0.95 
 
    treefall_s_gtht = 0.0
 
@@ -1296,7 +1302,11 @@ subroutine init_pft_alloc_params()
    is_tropical(12:13) = .false.
    is_tropical(14:15) = .true.
    is_tropical(16)    = .true.
-   is_tropical(17)    = .false.
+   !---------------------------------------------------------------------------------------!
+   !     This uses tropical allometry for DBH->Bleaf and DBH->Bdead, but otherwise it uses !
+   ! the temperate properties.                                                             !
+   !---------------------------------------------------------------------------------------!
+   is_tropical(17)    = .true.
 
    !---------------------------------------------------------------------------------------! 
    !    This flag should be used to define whether the plant is tree or grass              !
@@ -1314,7 +1324,7 @@ subroutine init_pft_alloc_params()
    ! used only for branch area purposes.                                                   !
    !---------------------------------------------------------------------------------------!
 ![KIM] - new tropical parameters
-   rho(1)     = 0.53
+   rho(1)     = 0.32
    rho(2)     = 0.53
    rho(3)     = 0.71
    rho(4)     = 0.90
@@ -1326,9 +1336,8 @@ subroutine init_pft_alloc_params()
    rho(6:11)  = 0.00   ! Currently not used
    rho(12:13) = 0.53
    rho(14:15) = 0.53
-   rho(16)    = 0.53
-   rho(17)    = 0.00   ! Currently not used
-!   rho(17)    = 0.59  ! 0.48
+   rho(16)    = 0.32
+   rho(17)    = 0.59
    !---------------------------------------------------------------------------------------!
 
    !----- Specific leaf area [m² leaf / kg C] ---------------------------------------------!
@@ -1346,7 +1355,7 @@ subroutine init_pft_alloc_params()
 !   SLA(14:15) = 10.0**((2.4-0.46*log10(12.0/leaf_turnover_rate(14:15)))) * C2B * 0.1
    SLA(14:15) = 10.0**(1.6923-0.3305*log10(12.0/leaf_turnover_rate(14:15)))
    SLA(16)    = 10.0**(2.4-0.46*log10(12.0/leaf_turnover_rate(16))) * C2B * 0.1
-   SLA(17)    = 11.0
+   SLA(17)    = 10.0
 
    !---------------------------------------------------------------------------------------!
    !    Fraction of vertical branches.  Values are from Poorter et al. (2006):             !
@@ -1441,7 +1450,7 @@ subroutine init_pft_alloc_params()
    hgt_ref(6:11)  = 1.3
    hgt_ref(12:15) = 0.0
    hgt_ref(16)    = 0.0
-   hgt_ref(17)    = 0.4
+   hgt_ref(17)    = 0.0
 
    !----- Fraction of structural stem that is assumed to be above ground. -----------------!
    agf_bs = 0.7
@@ -1461,7 +1470,7 @@ subroutine init_pft_alloc_params()
    b1Ht(12:13) = 0.4778
    b1Ht(14:15) = 0.0
    b1Ht(16)    = 0.0
-   b1Ht(17)    = 38.0
+   b1Ht(17)    = 0.0
    !----- DBH-height allometry slope [1/cm]. ----------------------------------------------!
    b2Ht(1:4)   = 0.0
    b2Ht(5)     = -0.75
@@ -1474,7 +1483,7 @@ subroutine init_pft_alloc_params()
    b2Ht(12:13) = -0.75
    b2Ht(14:15) =  0.0
    b2Ht(16)    =  0.0
-   b2Ht(17)    = -0.03
+   b2Ht(17)    =  0.0
    !----- DBH-leaf allometry intercept [kg leaf biomass / plant * cm^(-b2Bl)]. ------------!
    b1Bl(1:4)   = 0.0
    b1Bl(5)     = 0.08
@@ -1487,7 +1496,7 @@ subroutine init_pft_alloc_params()
    b1Bl(12:13) = 0.08
    b1Bl(14:15) = 0.0
    b1Bl(16)    = 0.0
-   b1Bl(17)    = 0.024
+   b1Bl(17)    = 0.0
    !-----  DBH-leaf allometry slope [dimensionless]. --------------------------------------!
    b2Bl(1:4)   = 0.0
    b2Bl(5)     = 1.0
@@ -1500,7 +1509,7 @@ subroutine init_pft_alloc_params()
    b2Bl(12:13) = 1.0
    b2Bl(14:15) = 0.0
    b2Bl(16)    = 0.0
-   b2Bl(17)     = 1.899
+   b2Bl(17)    = 0.0
    !----- DBH-stem allometry intercept [kg stem biomass / plant * cm^(-b2Bs)] -------------!
    b1Bs(1:4)   = 0.0 
    b1Bs(5)     = 1.0e-5
@@ -1513,7 +1522,7 @@ subroutine init_pft_alloc_params()
    b1Bs(12:13) = 1.0e-5
    b1Bs(14:15) = 0.0 
    b1Bs(16)    = 0.0 
-   b1Bs(17)    = 0.147
+   b1Bs(17)    = 0.0
    !----- DBH-stem allometry slope [dimensionless]. ---------------------------------------!
    b2Bs(1:4)   = 0.0
    b2Bs(5)     = 1.0
@@ -1526,7 +1535,7 @@ subroutine init_pft_alloc_params()
    b2Bs(12:13) = 1.0
    b2Bs(14:15) = 0.0
    b2Bs(16)    = 0.0
-   b2Bs(17)    = 2.238
+   b2Bs(17)    = 0.0
 
    !---------------------------------------------------------------------------------------!
    !    Defining the branching parameters, following Järvelä (2004)                        !
@@ -1819,7 +1828,7 @@ subroutine init_pft_derived_params()
                                    , negligible_nplant    & ! intent(out)
                                    , c2n_recruit          & ! intent(out)
                                    , lai_min              ! ! intent(out)
-   use canopy_radiation_coms, only : blfac_min            ! ! intent(in)
+   use phenology_coms       , only : elongf_min           ! ! intent(in)
    use allometry            , only : h2dbh                & ! function
                                    , dbh2h                & ! function
                                    , dbh2bl               & ! function
@@ -1860,7 +1869,7 @@ subroutine init_pft_derived_params()
    hgt_max(14) = 1.50
    hgt_max(15) = 1.50
    hgt_max(16) = 1.50
-   hgt_max(17) = min(35.0, 0.95 * b1Ht(17))
+   hgt_max(17) = 35.0
 
    !----- Maximum DBH. --------------------------------------------------------------------!
    do ipft=1,n_pft     
@@ -1948,10 +1957,10 @@ subroutine init_pft_derived_params()
 
 
       !------------------------------------------------------------------------------------!
-      !     The minimum LAI is the LAI of a plant at the minimum cohort size that is       !
-      ! 50% green.                                                                          !
+      !     The minimum LAI is the LAI of a plant at the minimum cohort size that is at    !
+      ! the minimum elongation factor that supports leaves.                                !
       !------------------------------------------------------------------------------------!
-      lai_min(ipft) = 0.1 * min_plant_dens * sla(ipft) * bleaf_min * blfac_min
+      lai_min(ipft) = 0.1 * min_plant_dens * sla(ipft) * bleaf_min * elongf_min
       !------------------------------------------------------------------------------------!
 
 
@@ -2334,8 +2343,10 @@ subroutine init_soil_coms
                              , snow_rough            & ! intent(out)
                              , tiny_sfcwater_mass    & ! intent(out)
                              , infiltration_method   & ! intent(out)
+                             , soil_rough8           & ! intent(out)
+                             , snow_rough8           & ! intent(out)
                              , betapower8            ! ! intent(out)
-                             
+
    use grid_coms      , only : ngrids                ! ! intent(in)
    use consts_coms    , only : grav                  & ! intent(in)
                              , hr_sec                & ! intent(in)
@@ -2525,8 +2536,9 @@ subroutine init_soil_coms
       soil8(nsoil)%xrobulk   = dble(soil(nsoil)%xrobulk  )
       soil8(nsoil)%slden     = dble(soil(nsoil)%slden    )
    end do
-   betapower8 = dble(betapower)
-   
+   betapower8  = dble(betapower)
+   soil_rough8 = dble(soil_rough)
+   snow_rough8 = dble(snow_rough)
    return
 end subroutine init_soil_coms
 !==========================================================================================!
@@ -2543,6 +2555,7 @@ subroutine init_phen_coms
    use consts_coms   , only : erad                     & ! intent(in)
                             , pio180                   ! ! intent(in)
    use phenology_coms, only : retained_carbon_fraction & ! intent(out)
+                            , elongf_min               & ! intent(out)
                             , theta_crit               & ! intent(out)
                             , dl_tr                    & ! intent(out)
                             , st_tr1                   & ! intent(out)
@@ -2564,6 +2577,7 @@ subroutine init_phen_coms
 
  
    retained_carbon_fraction = 0.5
+   elongf_min               = 0.02
    theta_crit               = thetacrit
    dl_tr                    = 655.0
    st_tr1                   = 284.3
@@ -2606,44 +2620,67 @@ end subroutine init_phen_coms
 !     This subroutine assigns the fusion and splitting parameters.                         !
 !------------------------------------------------------------------------------------------!
 subroutine init_ff_coms
-   use fusion_fission_coms, only : min_dbh_class      & ! intent(out)
-                                 , maxffdbh           & ! intent(out)
-                                 , dffdbhi            & ! intent(out)
-                                 , min_hgt_class      & ! intent(out)
+   use fusion_fission_coms, only : niter_patfus       & ! intent(out)
+                                 , hgt_class          & ! intent(out)
                                  , fusetol            & ! intent(out)
                                  , fusetol_h          & ! intent(out)
                                  , lai_fuse_tol       & ! intent(out)
                                  , lai_tol            & ! intent(out)
-                                 , ntol               & ! intent(out)
-                                 , profile_tol        & ! intent(out)
-                                 , max_patch_age      & ! intent(out)
-                                 , ff_ndbh            & ! intent(out)
+                                 , ff_nhgt            & ! intent(out)
                                  , coh_tolerance_max  & ! intent(out)
-                                 , pat_tolerance_max  & ! intent(out)
+                                 , dark_cumlai_min    & ! intent(out)
+                                 , dark_cumlai_max    & ! intent(out)
+                                 , dark_cumlai_mult   & ! intent(out)
+                                 , sunny_cumlai_min   & ! intent(out)
+                                 , sunny_cumlai_max   & ! intent(out)
+                                 , sunny_cumlai_mult  & ! intent(out)
+                                 , light_toler_min    & ! intent(out)
+                                 , light_toler_max    & ! intent(out)
+                                 , light_toler_mult   & ! intent(out)
                                  , fuse_relax         & ! intent(out)
                                  , print_fuse_details & ! intent(out)
                                  , fuse_prefix        ! ! intent(out)
-
+   use consts_coms        , only : twothirds          ! ! intent(in)
    implicit none
+   !----- Local variables. ----------------------------------------------------------------!
+   real              :: exp_patfus
+   real              :: exp_hgtclass
+   !---------------------------------------------------------------------------------------!
 
-   min_dbh_class     = 0.0  
-   maxffdbh          = 200.0 
-   min_hgt_class     = 0.0
    fusetol           = 0.4
    fusetol_h         = 0.5
    lai_fuse_tol      = 0.8
    lai_tol           = 1.0
-   ntol              = 0.001
-   profile_tol       = 0.2
-   max_patch_age     = 500.0
-   ff_ndbh           = 20
-   coh_tolerance_max = 10.0 ! Original 2.0
-   pat_tolerance_max = 100.0
+   ff_nhgt           = 7
+   coh_tolerance_max = 10.0    ! Original 2.0
+
+   !----- Define the number of height classes. --------------------------------------------!
+   allocate (hgt_class(ff_nhgt))
+   hgt_class( 1) =  2.0
+   hgt_class( 2) =  5.0
+   hgt_class( 3) =  9.0
+   hgt_class( 4) = 14.0
+   hgt_class( 5) = 20.0
+   hgt_class( 6) = 26.0
+   hgt_class( 7) = 35.0
+
+   niter_patfus       = 25
+   exp_patfus         = 1. / real(niter_patfus)
+
+   dark_cumlai_min    = 5.0
+   dark_cumlai_max    = 7.0
+   sunny_cumlai_min   = 0.5
+   sunny_cumlai_max   = 1.0
+   light_toler_min    = 0.20
+   light_toler_max    = twothirds
+   sunny_cumlai_mult  = (sunny_cumlai_max/sunny_cumlai_min)**exp_patfus
+   dark_cumlai_mult   = (dark_cumlai_min /dark_cumlai_max )**exp_patfus
+   light_toler_mult   = (light_toler_max /light_toler_min )**exp_patfus
+
    fuse_relax        = .false.
-   dffdbhi           = real(ff_ndbh)/maxffdbh
 
    !----- The following flag switches detailed debugging on. ------------------------------!
-   print_fuse_details = .false.
+   print_fuse_details = .true.
    fuse_prefix        = 'patch_fusion_'
    !---------------------------------------------------------------------------------------!
 
@@ -2770,7 +2807,7 @@ subroutine init_rk4_params()
    !---------------------------------------------------------------------------------------!
    !    These two parameter will scale the cohort heat capacity inside the RK4 integrator, !
    ! to avoid having patches with heat capacity that is way too small to be computational- !
-   ! ly stable and solvable in a fast way.  If you don't want this and want to use the     !
+   ! ly stable and resolvable in a fast way.  If you don't want this and want to use the   !
    ! nominal heat capacity, the laziest way to turn this off is by setting hcapveg_ref to  !
    ! a small number.  Don't set it to zero, otherwise you may have FPE issues.             !
    !---------------------------------------------------------------------------------------!
@@ -2915,9 +2952,10 @@ end subroutine init_rk4_params
 !==========================================================================================!
 subroutine overwrite_with_xml_config(thisnode)
    !!! PARSE XML FILE
-   use ed_max_dims, only: n_pft
-   use ed_misc_coms, only: iedcnfgf
-   
+   use ed_max_dims,   only: n_pft
+   use ed_misc_coms,  only: iedcnfgf
+   use hydrology_coms,only: useTOPMODEL
+   use soil_coms,     only: isoilbc
    implicit none
    integer, intent(in) :: thisnode
    integer             :: max_pft_xml
@@ -2947,6 +2985,11 @@ subroutine overwrite_with_xml_config(thisnode)
          call read_ed_xml_config(trim(iedcnfgf))
 
          !! THIRD, recalculate any derived values based on xml
+         if(useTOPMODEL == 1) then
+            isoilbc = 0
+            print*,"TOPMODEL enabled, setting ISOILBC to 0"
+         end if
+
 
          !! FINALLY, write out copy of settings
          call write_ed_xml_config()

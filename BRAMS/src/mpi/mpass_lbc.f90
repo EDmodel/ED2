@@ -71,8 +71,8 @@ subroutine node_sendlbc()
          mpiid = 300000 + maxgrds * (nm-1) + ngrid
 
          !----- Post the receive. ---------------------------------------------------------!
-         call MPI_Irecv(node_buffs_lbc(nm)%pack_recv_buff(1)                               &
-                       ,node_buffs_lbc(nm)%nrecv*f_ndmd_size                               &
+         call MPI_Irecv(node_buffs_lbc(nm)%pack_recv_buff                                  &
+                       ,node_buffs_lbc(nm)%nrecv                                           &
                        ,MPI_PACKED,machs(nm),mpiid,MPI_COMM_WORLD,irecv_req(nm),ierr )
       end if
    end do
@@ -94,17 +94,18 @@ subroutine node_sendlbc()
          
          nptsxy = (i2-i1+1) * (j2-j1+1)
 
+
          ipos = 1
          call MPI_Pack(i1,1,MPI_INTEGER,node_buffs_lbc(nm)%pack_send_buff                  &
-                      ,node_buffs_lbc(nm)%nsend*f_ndmd_size,ipos,MPI_COMM_WORLD,ierr)
+                      ,node_buffs_lbc(nm)%nsend,ipos,MPI_COMM_WORLD,ierr)
          call MPI_Pack(i2,1,MPI_INTEGER,node_buffs_lbc(nm)%pack_send_buff                  &
-                      ,node_buffs_lbc(nm)%nsend*f_ndmd_size,ipos,MPI_COMM_WORLD,ierr)
+                      ,node_buffs_lbc(nm)%nsend,ipos,MPI_COMM_WORLD,ierr)
          call MPI_Pack(j1,1,MPI_INTEGER,node_buffs_lbc(nm)%pack_send_buff                  &
-                      ,node_buffs_lbc(nm)%nsend*f_ndmd_size,ipos,MPI_COMM_WORLD,ierr)
+                      ,node_buffs_lbc(nm)%nsend,ipos,MPI_COMM_WORLD,ierr)
          call MPI_Pack(j2,1,MPI_INTEGER,node_buffs_lbc(nm)%pack_send_buff                  &
-                      ,node_buffs_lbc(nm)%nsend*f_ndmd_size,ipos,MPI_COMM_WORLD,ierr)
+                      ,node_buffs_lbc(nm)%nsend,ipos,MPI_COMM_WORLD,ierr)
          call MPI_Pack(mynum,1,MPI_INTEGER,node_buffs_lbc(nm)%pack_send_buff               &
-                      ,node_buffs_lbc(nm)%nsend*f_ndmd_size,ipos,MPI_COMM_WORLD,ierr)
+                      ,node_buffs_lbc(nm)%nsend,ipos,MPI_COMM_WORLD,ierr)
 
          do nv = 1,num_var(ngrid)
             if ( vtab_r(nv,ngrid)%impt1 == 1) then
@@ -124,7 +125,7 @@ subroutine node_sendlbc()
 
                !----- Add the boundary condition to the MPI buffer. -----------------------!
                call MPI_Pack(scratch%scr5 ,mtp,MPI_REAL,node_buffs_lbc(nm)%pack_send_buff  &
-                            ,node_buffs_lbc(nm)%nsend*f_ndmd_size,ipos,MPI_COMM_WORLD,ierr)
+                            ,node_buffs_lbc(nm)%nsend,ipos,MPI_COMM_WORLD,ierr)
                !---------------------------------------------------------------------------!
             end if
          end do
@@ -135,7 +136,7 @@ subroutine node_sendlbc()
 
          !----- Send out the stuff to the node. -------------------------------------------!
          mpiid = 300000 + maxgrds * (mynum-1) + ngrid
-         call MPI_Isend(node_buffs_lbc(nm)%pack_send_buff,ipos-1,MPI_Packed                     &
+         call MPI_Isend(node_buffs_lbc(nm)%pack_send_buff,ipos,MPI_PACKED                  &
                        ,ipaths(5,itype,ngrid,nm),mpiid,MPI_COMM_WORLD,isend_req(nm),ierr)
          !---------------------------------------------------------------------------------!
       end if
@@ -231,19 +232,19 @@ subroutine node_getlbc()
 
          ipos = 1
          call MPI_Unpack(node_buffs_lbc(nm)%pack_recv_buff                                 &
-                        ,node_buffs_lbc(nm)%nrecv*f_ndmd_size                              &
+                        ,node_buffs_lbc(nm)%nrecv                                          &
                         ,ipos,i1,1,MPI_INTEGER,MPI_COMM_WORLD,ierr)
          call MPI_Unpack(node_buffs_lbc(nm)%pack_recv_buff                                 &
-                        ,node_buffs_lbc(nm)%nrecv*f_ndmd_size                              &
+                        ,node_buffs_lbc(nm)%nrecv                                          &
                         ,ipos,i2,1,MPI_INTEGER,MPI_COMM_WORLD,ierr)
          call MPI_Unpack(node_buffs_lbc(nm)%pack_recv_buff                                 &
-                        ,node_buffs_lbc(nm)%nrecv*f_ndmd_size                              &
+                        ,node_buffs_lbc(nm)%nrecv                                          &
                         ,ipos,j1,1,MPI_INTEGER,MPI_COMM_WORLD,ierr)
          call MPI_Unpack(node_buffs_lbc(nm)%pack_recv_buff                                 &
-                        ,node_buffs_lbc(nm)%nrecv*f_ndmd_size                              &
+                        ,node_buffs_lbc(nm)%nrecv                                          &
                         ,ipos,j2,1,MPI_INTEGER,MPI_COMM_WORLD,ierr)
          call MPI_Unpack(node_buffs_lbc(nm)%pack_recv_buff                                 &
-                        ,node_buffs_lbc(nm)%nrecv*f_ndmd_size                              &
+                        ,node_buffs_lbc(nm)%nrecv                                          &
                         ,ipos,node_src,1,MPI_INTEGER,MPI_COMM_WORLD,ierr)
 
          !----- Total number of horizontal points. ----------------------------------------!
@@ -264,7 +265,7 @@ subroutine node_getlbc()
 
                !----- Unpack the buffer into the scratch array. ---------------------------!
                call MPI_Unpack(node_buffs_lbc(nm)%pack_recv_buff                           &
-                              ,node_buffs_lbc(nm)%nrecv*f_ndmd_size,ipos,scratch%scr6 ,mtp &
+                              ,node_buffs_lbc(nm)%nrecv,ipos,scratch%scr6,mtp              &
                               ,MPI_REAL,MPI_COMM_WORLD,ierr)
                !---------------------------------------------------------------------------!
 

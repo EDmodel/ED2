@@ -8,7 +8,7 @@ subroutine calc_met_lapse(cgrid,ipy)
   
    use ed_state_vars         , only : edtype      & ! structure
                                     , polygontype ! ! structure
-   use consts_coms           , only : toodry      ! ! intent(in)
+   use consts_coms           , only : toodry,pi1      ! ! intent(in)
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
    type(edtype)     , target     :: cgrid
@@ -39,20 +39,21 @@ subroutine calc_met_lapse(cgrid,ipy)
 
    if (bypass) then
       do isi = 1,cpoly%nsites
-         hillshade = cpoly%slope(isi)/180.
+         hillshade = sin(pi1*cpoly%slope(isi)/180.)/2.
          cpoly%met(isi)%geoht       = cgrid%met(ipy)%geoht
          cpoly%met(isi)%atm_tmp     = cgrid%met(ipy)%atm_tmp
          cpoly%met(isi)%atm_shv     = cgrid%met(ipy)%atm_shv
          cpoly%met(isi)%prss        = cgrid%met(ipy)%prss
          cpoly%met(isi)%pcpg        = cgrid%met(ipy)%pcpg
-         cpoly%met(isi)%par_diffuse = cgrid%met(ipy)%par_diffuse
+         cpoly%met(isi)%par_diffuse = cgrid%met(ipy)%par_diffuse*(1.0-hillshade)
          cpoly%met(isi)%atm_co2     = cgrid%met(ipy)%atm_co2
          cpoly%met(isi)%rlong       = cgrid%met(ipy)%rlong
          cpoly%met(isi)%par_beam    = cgrid%met(ipy)%par_beam
-         cpoly%met(isi)%nir_diffuse = cgrid%met(ipy)%nir_diffuse
+         cpoly%met(isi)%nir_diffuse = cgrid%met(ipy)%nir_diffuse*(1.0-hillshade)
          cpoly%met(isi)%nir_beam    = cgrid%met(ipy)%nir_beam
          cpoly%met(isi)%vels        = cgrid%met(ipy)%vels
-      end do
+         
+      end do      
    else
       
       !----- Second pass, calculate lapse rate adjustment. --------------------------------!
@@ -68,12 +69,12 @@ subroutine calc_met_lapse(cgrid,ipy)
          cpoly%met(isi)%prss    = cgrid%met(ipy)%prss    + cgrid%lapse(ipy)%prss    * delE
          cpoly%met(isi)%atm_co2 = cgrid%met(ipy)%atm_co2 + cgrid%lapse(ipy)%atm_co2 * delE
          cpoly%met(isi)%rlong   = cgrid%met(ipy)%rlong   + cgrid%lapse(ipy)%rlong   * delE
-         cpoly%met(isi)%par_diffuse = cgrid%met(ipy)%par_diffuse                           &
-                                    + cgrid%lapse(ipy)%par_diffuse * delE
+         cpoly%met(isi)%par_diffuse = (cgrid%met(ipy)%par_diffuse                           &
+                                    + cgrid%lapse(ipy)%par_diffuse * delE)*(1.0-hillshade)
          cpoly%met(isi)%par_beam    = cgrid%met(ipy)%par_beam                              &
                                     + cgrid%lapse(ipy)%par_beam * delE
-         cpoly%met(isi)%nir_diffuse = cgrid%met(ipy)%nir_diffuse                           &
-                                    + cgrid%lapse(ipy)%nir_diffuse * delE
+         cpoly%met(isi)%nir_diffuse = (cgrid%met(ipy)%nir_diffuse                           &
+                                    + cgrid%lapse(ipy)%nir_diffuse * delE)*(1.0-hillshade)
          cpoly%met(isi)%nir_beam    = cgrid%met(ipy)%nir_beam                              &
                                     + cgrid%lapse(ipy)%nir_beam * delE
          !---------------------------------------------------------------------------------!

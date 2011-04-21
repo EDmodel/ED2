@@ -57,8 +57,12 @@ subroutine odeint(h1,csite,ipa,nsteps)
    !----- External function. --------------------------------------------------------------!
    real                      , external    :: sngloff
    !---------------------------------------------------------------------------------------!
-   
-   !----- Checking whether we will use runoff or not, and saving this check to save time. -!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Check whether we will use runoff or not, and saving this check to save time.      !
+   !---------------------------------------------------------------------------------------!
    if (first_time) then
       simplerunoff = useRUNOFF == 0 .and. runoff_time /= 0.
       if (runoff_time /= 0.) then
@@ -68,10 +72,10 @@ subroutine odeint(h1,csite,ipa,nsteps)
       end if
       first_time   = .false.
    end if
+   !---------------------------------------------------------------------------------------!
+
 
    cpatch => csite%patch(ipa)
-
-
 
    !---------------------------------------------------------------------------------------!
    !     Copy the initial patch to the one we use for integration.                         !
@@ -86,6 +90,9 @@ subroutine odeint(h1,csite,ipa,nsteps)
    x = tbeg
    h = h1
    if (dtrk4 < 0.d0) h = -h1
+   !---------------------------------------------------------------------------------------!
+
+
 
    !---------------------------------------------------------------------------------------!
    ! Begin timestep loop                                                                   !
@@ -117,10 +124,10 @@ subroutine odeint(h1,csite,ipa,nsteps)
          ! hdid (no reason to be faster than that).                                        !
          !---------------------------------------------------------------------------------!
          if (simplerunoff .and. ksn >= 1) then
-         
-            if (integration_buff%y%sfcwater_mass(ksn) > 0.d0   .and.                       &
+            if (integration_buff%y%sfcwater_mass(ksn)    > 0.d0   .and.                    &
                 integration_buff%y%sfcwater_fracliq(ksn) > 1.d-1) then
-               wfreeb = min(1.d0,dtrk4*runoff_time_i)                                      &
+
+               wfreeb = min(1.d0, dtrk4 * runoff_time_i)                                   &
                       * integration_buff%y%sfcwater_mass(ksn)                              &
                       * (integration_buff%y%sfcwater_fracliq(ksn) - 1.d-1) / 9.d-1
 
@@ -144,42 +151,32 @@ subroutine odeint(h1,csite,ipa,nsteps)
 
                !----- Compute runoff for output -------------------------------------------!
                if (fast_diagnostics) then
-                  ! There is no need to divide wfreeb and qwfree  by time step, which will
-                  ! be done in subroutine normalize_averaged_vars.
-                  csite%runoff(ipa) = csite%runoff(ipa)                                    &
-                                    + sngloff(wfreeb,tiny_offset)
-                  csite%avg_runoff(ipa) = csite%avg_runoff(ipa)                            &
-                                        + sngloff(wfreeb,tiny_offset)
+                  !------------------------------------------------------------------------!
+                  !      There is no need to divide wfreeb and qwfree  by time step, which !
+                  ! will be done in subroutine normalize_averaged_vars.                    !
+                  !------------------------------------------------------------------------!
+                  csite%runoff(ipa)          = csite%runoff(ipa)                           &
+                                             + sngloff(wfreeb,tiny_offset)
+                  csite%avg_runoff(ipa)      = csite%avg_runoff(ipa)                       &
+                                             + sngloff(wfreeb,tiny_offset)
                   csite%avg_runoff_heat(ipa) = csite%avg_runoff_heat(ipa)                  &
                                              + sngloff(qwfree,tiny_offset)
                end if
                if (checkbudget) then
-                  !To make sure that the previous values of wbudget_loss2runoff and ebudget_loss2runoff
-                  ! are accumulated to the next time step.
-                  integration_buff%y%wbudget_loss2runoff = wfreeb                      &
-                                 + integration_buff%y%wbudget_loss2runoff
-                  integration_buff%y%ebudget_loss2runoff = qwfree                      &
-                                 + integration_buff%y%ebudget_loss2runoff
+                  !------------------------------------------------------------------------!
+                  !      To make sure that the previous values of wbudget_loss2runoff and  !
+                  ! ebudget_loss2runoff are accumulated to the next time step.             !
+                  !------------------------------------------------------------------------!
+                  integration_buff%y%wbudget_loss2runoff = wfreeb                          &
+                                    + integration_buff%y%wbudget_loss2runoff
+                  integration_buff%y%ebudget_loss2runoff = qwfree                          &
+                                    + integration_buff%y%ebudget_loss2runoff
                   integration_buff%y%wbudget_storage =                                     &
-                     integration_buff%y%wbudget_storage - wfreeb
-                  integration_buff%y%ebudget_storage =                                 &
-                     integration_buff%y%ebudget_storage - qwfree
-
+                                      integration_buff%y%wbudget_storage - wfreeb
+                  integration_buff%y%ebudget_storage =                                     &
+                                      integration_buff%y%ebudget_storage - qwfree
                end if
-
-            else
-               csite%runoff(ipa)                          = csite%runoff(ipa) + 0.0
-               csite%avg_runoff(ipa)                      = csite%avg_runoff(ipa) + 0.0
-               csite%avg_runoff_heat(ipa)                 = csite%avg_runoff_heat(ipa) + 0.0
-               integration_buff%initp%wbudget_loss2runoff = integration_buff%initp%wbudget_loss2runoff + 0.d0
-               integration_buff%initp%ebudget_loss2runoff = integration_buff%initp%ebudget_loss2runoff + 0.d0
             end if
-         else
-            csite%runoff(ipa)                          = csite%runoff(ipa) + 0.0
-            csite%avg_runoff(ipa)                      = csite%avg_runoff(ipa) + 0.0
-            csite%avg_runoff_heat(ipa)                 = csite%avg_runoff_heat(ipa) + 0.0
-            integration_buff%initp%wbudget_loss2runoff = integration_buff%initp%wbudget_loss2runoff + 0.d0
-            integration_buff%initp%ebudget_loss2runoff = integration_buff%initp%ebudget_loss2runoff + 0.d0
          end if
 
          !------ Copy the temporary patch to the next intermediate step -------------------!
@@ -221,9 +218,9 @@ end subroutine odeint
 ! is to ensure all variables are in double precision, so consistent with the buffer vari-  !
 ! ables.                                                                                   !
 !------------------------------------------------------------------------------------------!
-subroutine copy_met_2_rk4site(vels,atm_theiv,atm_theta,atm_tmp,atm_shv,atm_co2,zoff        &
-                            ,exner,pcpg,qpcpg,dpcpg,prss,rshort,rlong,geoht,lsl            &
-                            ,green_leaf_factor,lon,lat)
+subroutine copy_met_2_rk4site(mzg,vels,atm_theiv,atm_theta,atm_tmp,atm_shv,atm_co2,zoff    &
+                             ,exner,pcpg,qpcpg,dpcpg,prss,rshort,rlong,geoht,lsl           &
+                             ,ntext_soil,green_leaf_factor,lon,lat)
    use ed_max_dims    , only : n_pft         ! ! intent(in)
    use rk4_coms       , only : rk4site       ! ! structure
    use canopy_air_coms, only : ubmin8        ! ! intent(in)
@@ -231,6 +228,7 @@ subroutine copy_met_2_rk4site(vels,atm_theiv,atm_theta,atm_tmp,atm_shv,atm_co2,z
                              , idealdenssh8  ! ! function
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
+   integer                  , intent(in) :: mzg
    integer                  , intent(in) :: lsl
    real                     , intent(in) :: vels
    real                     , intent(in) :: atm_theiv
@@ -247,6 +245,7 @@ subroutine copy_met_2_rk4site(vels,atm_theiv,atm_theta,atm_tmp,atm_shv,atm_co2,z
    real                     , intent(in) :: rshort
    real                     , intent(in) :: rlong
    real                     , intent(in) :: geoht
+   integer, dimension(mzg)  , intent(in) :: ntext_soil
    real   , dimension(n_pft), intent(in) :: green_leaf_factor
    real                     , intent(in) :: lon
    real                     , intent(in) :: lat
@@ -256,7 +255,9 @@ subroutine copy_met_2_rk4site(vels,atm_theiv,atm_theta,atm_tmp,atm_shv,atm_co2,z
 
    
    !----- Copy the integer variables. -----------------------------------------------------!
-   rk4site%lsl     = lsl
+   rk4site%lsl               = lsl
+   rk4site%ntext_soil(:)     = 0
+   rk4site%ntext_soil(1:mzg) = ntext_soil(1:mzg)
 
    !----- Convert to double precision. ----------------------------------------------------!
    rk4site%atm_theiv             = dble(atm_theiv           )
@@ -403,10 +404,59 @@ subroutine inc_rk4_patch(rkp, inc, fac, cpatch)
       do k=rk4site%lsl,nzg
          rkp%avg_sensible_gg(k)  = rkp%avg_sensible_gg(k)  + fac * inc%avg_sensible_gg(k)
          rkp%avg_smoist_gg(k)    = rkp%avg_smoist_gg(k)    + fac * inc%avg_smoist_gg(k)  
-         rkp%avg_smoist_gc(k)    = rkp%avg_smoist_gc(k)    + fac * inc%avg_smoist_gc(k)  
+         rkp%avg_transloss(k)    = rkp%avg_transloss(k)    + fac * inc%avg_transloss(k)  
       end do
 
    end if
+
+   !---------------------------------------------------------------------------------------!
+   !    Increment the instantaneous fluxes.  The derivative term should be the same as the !
+   ! the full fluxes, the only difference is that these variables are normalised and       !
+   ! re-set after each time step.                                                          !
+   !---------------------------------------------------------------------------------------!
+   if (print_detailed) then
+      rkp%flx_carbon_ac      = rkp%flx_carbon_ac      + fac * inc%avg_carbon_ac
+      
+      rkp%flx_vapor_vc       = rkp%flx_vapor_vc       + fac * inc%avg_vapor_vc
+      rkp%flx_dew_cg         = rkp%flx_dew_cg         + fac * inc%avg_dew_cg
+      rkp%flx_vapor_gc       = rkp%flx_vapor_gc       + fac * inc%avg_vapor_gc
+      rkp%flx_wshed_vg       = rkp%flx_wshed_vg       + fac * inc%avg_wshed_vg
+      rkp%flx_intercepted    = rkp%flx_intercepted    + fac * inc%avg_intercepted
+      rkp%flx_throughfall    = rkp%flx_throughfall    + fac * inc%avg_throughfall
+      rkp%flx_vapor_ac       = rkp%flx_vapor_ac       + fac * inc%avg_vapor_ac
+      rkp%flx_transp         = rkp%flx_transp         + fac * inc%avg_transp
+      rkp%flx_evap           = rkp%flx_evap           + fac * inc%avg_evap
+      rkp%flx_drainage       = rkp%flx_drainage       + fac * inc%avg_drainage
+      rkp%flx_drainage_heat  = rkp%flx_drainage_heat  + fac * inc%avg_drainage_heat
+      rkp%flx_netrad         = rkp%flx_netrad         + fac * inc%avg_netrad
+      rkp%flx_sensible_vc    = rkp%flx_sensible_vc    + fac * inc%avg_sensible_vc
+      rkp%flx_qwshed_vg      = rkp%flx_qwshed_vg      + fac * inc%avg_qwshed_vg
+      rkp%flx_qintercepted   = rkp%flx_qintercepted   + fac * inc%avg_qintercepted
+      rkp%flx_qthroughfall   = rkp%flx_qthroughfall   + fac * inc%avg_qthroughfall
+      rkp%flx_sensible_gc    = rkp%flx_sensible_gc    + fac * inc%avg_sensible_gc
+      rkp%flx_sensible_ac    = rkp%flx_sensible_ac    + fac * inc%avg_sensible_ac
+
+      do k=rk4site%lsl,nzg
+         rkp%flx_sensible_gg(k)  = rkp%flx_sensible_gg(k)  + fac * inc%avg_sensible_gg(k)
+         rkp%flx_smoist_gg(k)    = rkp%flx_smoist_gg(k)    + fac * inc%avg_smoist_gg(k)  
+         rkp%flx_transloss(k)    = rkp%flx_transloss(k)    + fac * inc%avg_transloss(k)  
+      end do
+
+      do ico = 1,cpatch%ncohorts
+         rkp%cfx_hflxvc      (ico)  =       rkp%cfx_hflxvc      (ico)                      &
+                                    + fac * inc%cfx_hflxvc      (ico)
+         rkp%cfx_qwflxvc     (ico)  =       rkp%cfx_qwflxvc     (ico)                      &
+                                    + fac * inc%cfx_qwflxvc     (ico)
+         rkp%cfx_qwshed      (ico)  =       rkp%cfx_qwshed      (ico)                      &
+                                    + fac * inc%cfx_qwshed      (ico)
+         rkp%cfx_qtransp     (ico)  =       rkp%cfx_qtransp     (ico)                      &
+                                    + fac * inc%cfx_qtransp     (ico)
+         rkp%cfx_qintercepted(ico)  =       rkp%cfx_qintercepted(ico)                      &
+                                    + fac * inc%cfx_qintercepted(ico)
+      end do
+
+   end if
+   !---------------------------------------------------------------------------------------!
 
    !---------------------------------------------------------------------------------------!
    !    Increment the instantaneous fluxes.  The derivative term should be the same as the !
@@ -590,7 +640,7 @@ subroutine get_yscal(y,dy,htry,yscal,cpatch)
                                              + abs(dy%sfcwater_energy(1) * htry) )
       !------------------------------------------------------------------------------------!
 
-   case(2)
+   case (2)
       !----- Computationally stable layer. ------------------------------------------------!
       meanscale_sfcw_mass   = 0.d0
       meanscale_sfcw_energy = 0.d0
@@ -642,8 +692,8 @@ subroutine get_yscal(y,dy,htry,yscal,cpatch)
    !    Also, if the cohort has almost no water, make the scale less strict.               !
    !---------------------------------------------------------------------------------------!
    do ico = 1,cpatch%ncohorts
-      yscal%solvable(ico) = y%solvable(ico)
-      if (y%solvable(ico)) then
+      yscal%resolvable(ico) = y%resolvable(ico)
+      if (y%resolvable(ico)) then
          yscal%veg_energy(ico) = abs(y%veg_energy(ico)) + abs(dy%veg_energy(ico) * htry)
          yscal%veg_temp(ico)   = abs(y%veg_temp(ico))
          yscal%veg_water(ico)  = max(abs(y%veg_water(ico)) + abs(dy%veg_water(ico) * htry) &
@@ -795,7 +845,7 @@ subroutine get_errmax(errmax,yerr,yscal,cpatch,y,ytemp)
    integer                          :: k                ! Counter
    !---------------------------------------------------------------------------------------!
 
-   !----- Initialiee the error with an optimistic number... -------------------------------!
+   !----- Initialise the error with an optimistic number... -------------------------------!
    errmax = 0.d0
 
 
@@ -841,7 +891,7 @@ subroutine get_errmax(errmax,yerr,yscal,cpatch,y,ytemp)
    errh2oMAX  = 0.d0
    erreneMAX  = 0.d0
    do ico = 1,cpatch%ncohorts
-      if (yscal%solvable(ico)) then
+      if (yscal%resolvable(ico)) then
          errh2o     = abs(yerr%veg_water (ico) / yscal%veg_water (ico))
          errene     = abs(yerr%veg_energy(ico) / yscal%veg_energy(ico))
          errmax     = max(errmax,errh2o,errene)
@@ -982,57 +1032,62 @@ subroutine copy_rk4_patch(sourcep, targetp, cpatch)
    integer                         :: k
    !---------------------------------------------------------------------------------------!
 
-   targetp%can_theiv       = sourcep%can_theiv
-   targetp%can_lntheta     = sourcep%can_lntheta
-   targetp%can_theta       = sourcep%can_theta
-   targetp%can_temp        = sourcep%can_temp
-   targetp%can_shv         = sourcep%can_shv
-   targetp%can_co2         = sourcep%can_co2
-   targetp%can_rhos        = sourcep%can_rhos
-   targetp%can_prss        = sourcep%can_prss
-   targetp%can_exner       = sourcep%can_exner
-   targetp%can_depth       = sourcep%can_depth
-   targetp%can_rvap        = sourcep%can_rvap
-   targetp%can_rhv         = sourcep%can_rhv
-   targetp%can_ssh         = sourcep%can_ssh
-   targetp%opencan_frac    = sourcep%opencan_frac
+   targetp%can_theiv        = sourcep%can_theiv
+   targetp%can_lntheta      = sourcep%can_lntheta
+   targetp%can_theta        = sourcep%can_theta
+   targetp%can_temp         = sourcep%can_temp
+   targetp%can_shv          = sourcep%can_shv
+   targetp%can_co2          = sourcep%can_co2
+   targetp%can_rhos         = sourcep%can_rhos
+   targetp%can_prss         = sourcep%can_prss
+   targetp%can_exner        = sourcep%can_exner
+   targetp%can_depth        = sourcep%can_depth
+   targetp%can_rvap         = sourcep%can_rvap
+   targetp%can_rhv          = sourcep%can_rhv
+   targetp%can_ssh          = sourcep%can_ssh
+   targetp%veg_height       = sourcep%veg_height
+   targetp%veg_displace     = sourcep%veg_displace
+   targetp%veg_rough        = sourcep%veg_rough
+   targetp%opencan_frac     = sourcep%opencan_frac
+   targetp%total_sfcw_depth = sourcep%total_sfcw_depth
+   targetp%snowfac          = sourcep%snowfac
 
-   targetp%ggbare          = sourcep%ggbare
-   targetp%ggveg           = sourcep%ggveg
-   targetp%ggnet           = sourcep%ggnet
+   targetp%ggbare           = sourcep%ggbare
+   targetp%ggveg            = sourcep%ggveg
+   targetp%ggnet            = sourcep%ggnet
 
-   targetp%flag_wflxgc     = sourcep%flag_wflxgc
+   targetp%flag_wflxgc      = sourcep%flag_wflxgc
 
-   targetp%virtual_water   = sourcep%virtual_water
-   targetp%virtual_energy  = sourcep%virtual_energy
-   targetp%virtual_depth   = sourcep%virtual_depth
-   targetp%virtual_tempk   = sourcep%virtual_tempk
-   targetp%virtual_fracliq = sourcep%virtual_fracliq
+   targetp%virtual_water    = sourcep%virtual_water
+   targetp%virtual_energy   = sourcep%virtual_energy
+   targetp%virtual_depth    = sourcep%virtual_depth
+   targetp%virtual_tempk    = sourcep%virtual_tempk
+   targetp%virtual_fracliq  = sourcep%virtual_fracliq
 
-   targetp%rough           = sourcep%rough
+   targetp%rough            = sourcep%rough
  
-   targetp%upwp            = sourcep%upwp
-   targetp%wpwp            = sourcep%wpwp
-   targetp%tpwp            = sourcep%tpwp
-   targetp%qpwp            = sourcep%qpwp
-   targetp%cpwp            = sourcep%cpwp
+   targetp%upwp             = sourcep%upwp
+   targetp%wpwp             = sourcep%wpwp
+   targetp%tpwp             = sourcep%tpwp
+   targetp%qpwp             = sourcep%qpwp
+   targetp%cpwp             = sourcep%cpwp
 
-   targetp%ground_shv      = sourcep%ground_shv
-   targetp%ground_ssh      = sourcep%ground_ssh
-   targetp%ground_temp     = sourcep%ground_temp
-   targetp%ground_fliq     = sourcep%ground_fliq
+   targetp%ground_shv       = sourcep%ground_shv
+   targetp%ground_ssh       = sourcep%ground_ssh
+   targetp%ground_temp      = sourcep%ground_temp
+   targetp%ground_fliq      = sourcep%ground_fliq
 
-   targetp%ustar           = sourcep%ustar
-   targetp%cstar           = sourcep%cstar
-   targetp%tstar           = sourcep%tstar
-   targetp%estar           = sourcep%estar
-   targetp%qstar           = sourcep%qstar
-   targetp%zeta            = sourcep%zeta
-   targetp%ribulk          = sourcep%ribulk
-   targetp%rasveg          = sourcep%rasveg
+   targetp%ustar            = sourcep%ustar
+   targetp%cstar            = sourcep%cstar
+   targetp%tstar            = sourcep%tstar
+   targetp%estar            = sourcep%estar
+   targetp%qstar            = sourcep%qstar
+   targetp%zeta             = sourcep%zeta
+   targetp%ribulk           = sourcep%ribulk
+   targetp%rasveg           = sourcep%rasveg
 
-   targetp%cwd_rh          = sourcep%cwd_rh
-   targetp%rh              = sourcep%rh
+   targetp%cwd_rh           = sourcep%cwd_rh
+   targetp%rh               = sourcep%rh
 
    do k=rk4site%lsl,nzg
       
@@ -1077,6 +1132,7 @@ subroutine copy_rk4_patch(sourcep, targetp, cpatch)
       targetp%wpa         (k) = sourcep%wpa         (k)
       targetp%tai         (k) = sourcep%tai         (k)
       targetp%crown_area  (k) = sourcep%crown_area  (k)
+      targetp%elongf      (k) = sourcep%elongf      (k)
       targetp%gbh         (k) = sourcep%gbh         (k)
       targetp%gbw         (k) = sourcep%gbw         (k)
       targetp%gsw_open    (k) = sourcep%gsw_open    (k)
@@ -1084,7 +1140,7 @@ subroutine copy_rk4_patch(sourcep, targetp, cpatch)
       targetp%psi_open    (k) = sourcep%psi_open    (k)
       targetp%psi_closed  (k) = sourcep%psi_closed  (k)
       targetp%fs_open     (k) = sourcep%fs_open     (k)
-      targetp%solvable    (k) = sourcep%solvable    (k)
+      targetp%resolvable  (k) = sourcep%resolvable  (k)
       targetp%gpp         (k) = sourcep%gpp         (k)
       targetp%leaf_resp   (k) = sourcep%leaf_resp   (k)
       targetp%root_resp   (k) = sourcep%root_resp   (k)
@@ -1131,7 +1187,43 @@ subroutine copy_rk4_patch(sourcep, targetp, cpatch)
       do k=rk4site%lsl,nzg
          targetp%avg_sensible_gg(k) = sourcep%avg_sensible_gg(k)
          targetp%avg_smoist_gg(k)   = sourcep%avg_smoist_gg(k)  
-         targetp%avg_smoist_gc(k)   = sourcep%avg_smoist_gc(k)  
+         targetp%avg_transloss(k)   = sourcep%avg_transloss(k)  
+      end do
+   end if
+
+   if (print_detailed) then
+      targetp%flx_carbon_ac          = sourcep%flx_carbon_ac
+      targetp%flx_vapor_vc           = sourcep%flx_vapor_vc
+      targetp%flx_dew_cg             = sourcep%flx_dew_cg  
+      targetp%flx_vapor_gc           = sourcep%flx_vapor_gc
+      targetp%flx_wshed_vg           = sourcep%flx_wshed_vg
+      targetp%flx_intercepted        = sourcep%flx_intercepted
+      targetp%flx_throughfall        = sourcep%flx_throughfall
+      targetp%flx_vapor_ac           = sourcep%flx_vapor_ac
+      targetp%flx_transp             = sourcep%flx_transp  
+      targetp%flx_evap               = sourcep%flx_evap   
+      targetp%flx_netrad             = sourcep%flx_netrad   
+      targetp%flx_sensible_vc        = sourcep%flx_sensible_vc  
+      targetp%flx_qwshed_vg          = sourcep%flx_qwshed_vg    
+      targetp%flx_qintercepted       = sourcep%flx_qintercepted
+      targetp%flx_qthroughfall       = sourcep%flx_qthroughfall
+      targetp%flx_sensible_gc        = sourcep%flx_sensible_gc  
+      targetp%flx_sensible_ac        = sourcep%flx_sensible_ac
+      targetp%flx_drainage           = sourcep%flx_drainage
+      targetp%flx_drainage_heat      = sourcep%flx_drainage_heat
+
+      do k=rk4site%lsl,nzg
+         targetp%flx_sensible_gg(k) = sourcep%flx_sensible_gg(k)
+         targetp%flx_smoist_gg(k)   = sourcep%flx_smoist_gg(k)  
+         targetp%flx_transloss(k)   = sourcep%flx_transloss(k)  
+      end do
+      
+      do k=1,cpatch%ncohorts
+         targetp%cfx_hflxvc      (k) = sourcep%cfx_hflxvc      (k)
+         targetp%cfx_qwflxvc     (k) = sourcep%cfx_qwflxvc     (k)
+         targetp%cfx_qwshed      (k) = sourcep%cfx_qwshed      (k)
+         targetp%cfx_qtransp     (k) = sourcep%cfx_qtransp     (k)
+         targetp%cfx_qintercepted(k) = sourcep%cfx_qintercepted(k)
       end do
    end if
 

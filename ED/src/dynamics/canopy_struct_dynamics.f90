@@ -67,7 +67,7 @@ module canopy_struct_dynamics
    ! AND FOR WATER SITES IN COUPLED SIMULATIONS.  THE DOUBLE-PRECISIION VERSION, WHICH IS  !
    ! USED BY THE INTEGRATORS FOR MOST CASES IN ED, IS DEFINED BELOW.                       !
    !---------------------------------------------------------------------------------------!
-   subroutine canopy_turbulence(cpoly,isi,ipa,canwcap,canccap,canhcap)
+   subroutine canopy_turbulence(cpoly,isi,ipa)
       use ed_state_vars  , only : polygontype          & ! structure
                                 , sitetype             & ! structure
                                 , patchtype            ! ! structure
@@ -105,10 +105,7 @@ module canopy_struct_dynamics
       type(polygontype)   , target      :: cpoly
       integer             , intent(in)  :: isi           ! Site loop
       integer             , intent(in)  :: ipa           ! Patch loop
-      real                , intent(out) :: canwcap       ! Canopy water capacity
-      real                , intent(out) :: canccap       ! Canopy carbon capacity
-      real                , intent(out) :: canhcap       ! Canopy heat capacity
-      !----- Pointers ---------------------------------------------------------------------!
+     !----- Pointers ---------------------------------------------------------------------!
       type(sitetype)      , pointer    :: csite
       type(patchtype)     , pointer    :: cpatch
       type(met_driv_state), pointer    :: cmet
@@ -128,7 +125,6 @@ module canopy_struct_dynamics
       real           :: a_front      ! Frontal area / vol. flow exposed to drag [    m2/m3]
       real           :: zetac        ! Cumulative zeta function                 [      ---]
       real           :: K_top        ! Diffusivity at canopy top z=h            [     m2/s]
-      real           :: crown_area   ! Crown area index                         [    m2/m2]
       real           :: crowndepth   ! Depth of vegetation leafy crown          [        m]
       real           :: h            ! Canopy height                            [        m]
       real           :: layertai     ! Total leaf area of that discrete layer   [         ]
@@ -147,6 +143,10 @@ module canopy_struct_dynamics
       real           :: estar        ! Equivalent potential temperature         [        K]
       real           :: gbhmos_min   ! Minimum boundary layer heat conductance. [      m/s]
       real           :: hite         ! height.                                  [        m]
+      real           :: wcapcan      ! Canopy air space water capacity          [    kg/m2]
+      real           :: wcapcani     ! Inverse of the guy above                 [    m2/kg]
+      real           :: hcapcani     ! Inverse of canopy air space heat cap.    [   m2.K/J]
+      real           :: ccapcani     ! Inverse of canopy air space CO2 capacity [   m2/mol]
       !----- Saved variables --------------------------------------------------------------!
       real        , dimension(200), save :: zeta     ! Attenuation factor for sub-canopy K 
                                                      !    and u.  A vector size of 200, 
@@ -207,9 +207,15 @@ module canopy_struct_dynamics
          csite%ggveg(ipa) = 0.0
          csite%ggnet(ipa) = ggfact * csite%ggbare(ipa)
          !---------------------------------------------------------------------------------!
+
+
+
+         !---------------------------------------------------------------------------------!
          !     Calculate the heat and mass storage capacity of the canopy.                 !
          !---------------------------------------------------------------------------------!
-         call can_whcap(csite,ipa,canwcap,canccap,canhcap)
+         call can_whcap(csite%can_rhos(ipa),csite%can_temp(ipa),csite%can_depth(ipa)       &
+                       ,wcapcan,wcapcani,hcapcani,ccapcani)
+         !---------------------------------------------------------------------------------!
          return
       end if
       !------------------------------------------------------------------------------------!
@@ -217,7 +223,7 @@ module canopy_struct_dynamics
 
 
       !---- Find the minimum leaf boundary layer heat conductance. ------------------------!
-      if (any(cpatch%solvable)) then
+      if (any(cpatch%resolvable)) then
          gbhmos_min = 1. / (rb_inter + rb_slope * (csite%lai(ipa) + csite%wai(ipa)))
       else
          gbhmos_min = 0.
@@ -240,15 +246,20 @@ module canopy_struct_dynamics
          h        = csite%veg_height(ipa)    ! Vegetation height
          d0       = csite%veg_displace(ipa)  ! 0-plane displacement
          zref     = cmet%geoht
-         
+
 
          !---------------------------------------------------------------------------------!
-         !      Calculate a surface roughness that is visible to the ABL.  Roughness of    !
-         ! the rough wall.                                                                 !
+         !     Find the roughness as the average between the bare ground and vegetated     !
+         ! ground, and apply the snow cover to further scale it.  The weighting factors    !
+         ! are the fraction of open canopy and the fraction of the canopy buried in snow.  !
          !---------------------------------------------------------------------------------!
-         csite%rough(ipa) = max(soil_rough,csite%veg_rough(ipa))                           &
-                          * (1.0 - csite%snowfac(ipa))                                     &
-                          + snow_rough * csite%snowfac(ipa)
+         csite%rough(ipa) = snow_rough * csite%snowfac(ipa)                                &
+                          + ( soil_rough           * csite%opencan_frac(ipa)               &
+                            + csite%veg_rough(ipa) * (1.0 - csite%opencan_frac(ipa)) )     &
+                          * (1.0 - csite%snowfac(ipa))
+         !---------------------------------------------------------------------------------!
+
+
 
          !----- Get the appropriate characteristic wind speed. ----------------------------!
          if (stable) then
@@ -256,27 +267,23 @@ module canopy_struct_dynamics
          else
             cmet%vels = cmet%vels_unstab
          end if
+         !---------------------------------------------------------------------------------!
+
 
 
          !---------------------------------------------------------------------------------!
          !      Get ustar for the ABL, assume it is a dynamic shear layer that generates a !
          ! logarithmic profile of velocity.                                                !
-         !                                                                                 !
-         ! IMPORTANT NOTE: the displacement height here (d0), is used only for scaling the !
-         !                 vortices when determining diffusivity.  The default method      !
-         !                 taken from LEAF-3, as applied here, assumes that the zero plane !
-         !                 is at the ground surface when computing the log wind profile,   !
-         !                 hence the 0.0 as the argument to ed_stars.                      !
          !---------------------------------------------------------------------------------!
          call ed_stars(cmet%atm_theta,cmet%atm_theiv,cmet%atm_shv,cmet%atm_co2             &
                       ,csite%can_theta(ipa),csite%can_theiv(ipa),csite%can_shv(ipa)        &
-                      ,csite%can_co2(ipa),zref,0.0,cmet%vels,csite%rough(ipa)              &
+                      ,csite%can_co2(ipa),zref,d0,cmet%vels,csite%rough(ipa)               &
                       ,csite%ustar(ipa),csite%tstar(ipa),estar,csite%qstar(ipa)            &
                       ,csite%cstar(ipa),csite%zeta(ipa),csite%ribulk(ipa)                  &
                       ,csite%ggbare(ipa))
 
          if (csite%snowfac(ipa) < 0.9) then
-            factv  = log(zref / csite%rough(ipa)) / (vonk * vonk * cmet%vels)
+            factv  = log((zref-d0) / csite%rough(ipa)) / (vonk * vonk * cmet%vels)
             aux    = exp(exar * (1. - (d0 + csite%rough(ipa)) / h))
             csite%ggveg(ipa) = (exar * (h - d0 )) / (factv * h * (exp(exar) - aux))
          else 
@@ -293,7 +300,7 @@ module canopy_struct_dynamics
          uh = reduced_wind(csite%ustar(ipa),csite%zeta(ipa),csite%ribulk(ipa),zref,d0      &
                           ,cpatch%hite(1),csite%rough(ipa))
          do ico=1,cpatch%ncohorts
-            if (cpatch%solvable(ico)) then
+            if (cpatch%resolvable(ico)) then
                ipft  = cpatch%pft(ico)
                hite  = cpatch%hite(ico)
 
@@ -302,12 +309,11 @@ module canopy_struct_dynamics
                case (-2)
                   cpatch%veg_wind(ico) = uh
                   ipft       = cpatch%pft(ico)
-                  crown_area = min(1.0, cpatch%nplant(ico)                                 &
-                                      * dbh2ca(cpatch%dbh(ico),cpatch%sla(ico),ipft))
 
                   cpatch%veg_wind(ico) = max(uh,ugbmin)
-                  uh = uh * ( crown_area * exp(- cpatch%lai(ico) / crown_area)             &
-                            + 1. - crown_area) 
+                  uh = uh * ( cpatch%crown_area(ico)                                       &
+                            * exp(- cpatch%lai(ico) / cpatch%crown_area(ico))              &
+                            + 1.0 - cpatch%crown_area(ico)) 
                case (-1)
                   cpatch%veg_wind(ico) = max(ugbmin,uh * exp ( -0.5 * laicum))
                end select
@@ -331,14 +337,10 @@ module canopy_struct_dynamics
          end do
 
          !---------------------------------------------------------------------------------!
-         !    Calculate the heat and mass storage capacity of the canopy and interfacial   !
-         ! air spaces.  This is a tough call, because the reference height is allowed to   !
-         ! be abnormally low in this case, and it is possible that it is even lower than   !
-         ! the top of the canopy.  So... we will set the top of the interfacial layer as   !
-         ! the "reference elevation plus the top of the canopy".  An alternative could     !
-         ! be to make a conditional like in case(1).                                       !
+         !     Calculate the heat and mass storage capacity of the canopy.                 !
          !---------------------------------------------------------------------------------!
-         call can_whcap(csite,ipa,canwcap,canccap,canhcap)
+         call can_whcap(csite%can_rhos(ipa),csite%can_temp(ipa),csite%can_depth(ipa)       &
+                       ,wcapcan,wcapcani,hcapcani,ccapcani)
          !---------------------------------------------------------------------------------!
 
 
@@ -372,14 +374,21 @@ module canopy_struct_dynamics
          d0       = vh2dh * h              ! 0-plane displacement
          zref     = cmet%geoht
 
+
          !---------------------------------------------------------------------------------!
-         !      Calculate a surface roughness that is visible to the ABL.  Roughness of    !
-         ! the rough wall.                                                                 !
+         !     The roughness is found by combining two weighted averages.  The first one   !
+         ! checks the fraction of the patch that has closed canopy, and averages between   !
+         ! soil and vegetation roughness.  The other is the fraction of the vegetation     !
+         ! that is covered in snow.                                                        !
          !---------------------------------------------------------------------------------!
-         csite%rough(ipa) = max(soil_rough,csite%veg_rough(ipa))                           &
-                          * (1.0 - csite%snowfac(ipa))                                     &
-                          + snow_rough
-         
+         csite%rough(ipa) = snow_rough * csite%snowfac(ipa)                                &
+                          + ( soil_rough           * csite%opencan_frac(ipa)               &
+                            + csite%veg_rough(ipa) * (1.0 - csite%opencan_frac(ipa)) )     &
+                          * (1.0 - csite%snowfac(ipa))
+         !---------------------------------------------------------------------------------!
+
+
+
          !----- Calculate the soil surface roughness inside the canopy. -------------------!
          surf_rough = soil_rough * (1.0 - csite%snowfac(ipa))                              &
                     + snow_rough * csite%snowfac(ipa)
@@ -451,15 +460,13 @@ module canopy_struct_dynamics
             !------------------------------------------------------------------------------!
          end do
 
+
+
          !---------------------------------------------------------------------------------!
-         !    Calculate the heat and mass storage capacity of the canopy and interfacial   !
-         ! air spaces.  This is a tough call, because the reference height is allowed to   !
-         ! be abnormally low in this case, and it is possible that it is even lower than   !
-         ! the top of the canopy.  So... we will set the top of the interfacial layer as   !
-         ! the "reference elevation plus the top of the canopy".  An alternative could be  !
-         ! to make a conditional like in case(1).                                          !
+         !     Calculate the heat and mass storage capacity of the canopy.                 !
          !---------------------------------------------------------------------------------!
-         call can_whcap(csite,ipa,canwcap,canccap,canhcap)
+         call can_whcap(csite%can_rhos(ipa),csite%can_temp(ipa),csite%can_depth(ipa)       &
+                       ,wcapcan,wcapcani,hcapcani,ccapcani)
          !---------------------------------------------------------------------------------!
 
 
@@ -492,12 +499,22 @@ module canopy_struct_dynamics
          h    = csite%can_depth(ipa)  ! Canopy depth
          zref = cmet%geoht            ! Reference height
          d0   = vh2dh * h              ! 0-plane displacement
-         
-         !----- Calculate a surface roughness that is visible to the ABL. -----------------!
-         csite%rough(ipa) = max(soil_rough,csite%veg_rough(ipa))                           &
-                          * (1.0 - csite%snowfac(ipa))                                     &
-                          + snow_rough
-         
+
+
+         !---------------------------------------------------------------------------------!
+         !     The roughness is found by combining two weighted averages.  The first one   !
+         ! checks the fraction of the patch that has closed canopy, and averages between   !
+         ! soil and vegetation roughness.  The other is the fraction of the vegetation     !
+         ! that is covered in snow.                                                        !
+         !---------------------------------------------------------------------------------!
+         csite%rough(ipa) = snow_rough * csite%snowfac(ipa)                                &
+                          + ( soil_rough           * csite%opencan_frac(ipa)               &
+                            + csite%veg_rough(ipa) * (1.0 - csite%opencan_frac(ipa)) )     &
+                          * (1.0 - csite%snowfac(ipa))
+         !---------------------------------------------------------------------------------!
+
+
+
          !----- Calculate the soil surface roughness inside the canopy. -------------------!
          surf_rough = soil_rough * (1.0 - csite%snowfac(ipa))                              &
                     + snow_rough * csite%snowfac(ipa)
@@ -514,9 +531,15 @@ module canopy_struct_dynamics
 
             !----- Assume a new reference elevation at the canopy top. --------------------!
             zref = h
-            
-            !----- Find the heat, water, and carbon capacities of the canopy air space. ---!
-            call can_whcap(csite,ipa,canwcap,canccap,canhcap)
+            !------------------------------------------------------------------------------!
+
+
+            !------------------------------------------------------------------------------!
+            !     Calculate the heat and mass storage capacity of the canopy.              !
+            !------------------------------------------------------------------------------!
+            call can_whcap(csite%can_rhos(ipa),csite%can_temp(ipa),csite%can_depth(ipa)    &
+                          ,wcapcan,wcapcani,hcapcani,ccapcani)
+            !------------------------------------------------------------------------------!
 
          else         
 
@@ -527,8 +550,13 @@ module canopy_struct_dynamics
                cmet%vels = cmet%vels_unstab
             end if
 
-            !----- Find the heat, water, and carbon capacities of the canopy air space. ---!
-            call can_whcap(csite,ipa,canwcap,canccap,canhcap)
+
+            !------------------------------------------------------------------------------!
+            !     Calculate the heat and mass storage capacity of the canopy.              !
+            !------------------------------------------------------------------------------!
+            call can_whcap(csite%can_rhos(ipa),csite%can_temp(ipa),csite%can_depth(ipa)    &
+                          ,wcapcan,wcapcani,hcapcani,ccapcani)
+            !------------------------------------------------------------------------------!
 
          end if
          
@@ -608,7 +636,7 @@ module canopy_struct_dynamics
       ! 2. Say that zref is really h+zref (sketchy...)                                     !
       ! 3. Say that zref is 2*h           (sketchy...)                                     !
       !------------------------------------------------------------------------------------!
-      case(2)
+      case (2)
          
          !----- Calculate the soil surface roughness inside the canopy. -------------------!
          surf_rough = soil_rough * (1.0 - csite%snowfac(ipa))                              &
@@ -777,11 +805,13 @@ module canopy_struct_dynamics
             !------------------------------------------------------------------------------!
          end do
 
+
+
          !---------------------------------------------------------------------------------!
-         !    Calculate the heat and mass storage capacity of the canopy and interfacial   !
-         ! air spaces.                                                                     !
+         !     Calculate the heat and mass storage capacity of the canopy.                 !
          !---------------------------------------------------------------------------------!
-         call can_whcap(csite,ipa,canwcap,canccap,canhcap)
+         call can_whcap(csite%can_rhos(ipa),csite%can_temp(ipa),csite%can_depth(ipa)       &
+                       ,wcapcan,wcapcani,hcapcani,ccapcani)
          !---------------------------------------------------------------------------------!
 
 
@@ -815,12 +845,17 @@ module canopy_struct_dynamics
          d0       = csite%veg_displace(ipa) ! 0-plane displacement
          zref     = cmet%geoht
 
+
          !---------------------------------------------------------------------------------!
-         !     Find the roughness as the average between the bare ground and vegetated     !
-         ! ground.  The weighting factor is the fraction of open canopy.                   !
+         !     The roughness is found by combining two weighted averages.  The first one   !
+         ! checks the fraction of the patch that has closed canopy, and averages between   !
+         ! soil and vegetation roughness.  The other is the fraction of the vegetation     !
+         ! that is covered in snow.                                                        !
          !---------------------------------------------------------------------------------!
-         csite%rough(ipa) = soil_rough * (1.0 - csite%opencan_frac(ipa))                   &
-                          + csite%veg_rough(ipa) * csite%opencan_frac(ipa)
+         csite%rough(ipa) = snow_rough * csite%snowfac(ipa)                                &
+                          + ( soil_rough           * csite%opencan_frac(ipa)               &
+                            + csite%veg_rough(ipa) * (1.0 - csite%opencan_frac(ipa)) )     &
+                          * (1.0 - csite%snowfac(ipa))
          !---------------------------------------------------------------------------------!
 
 
@@ -875,15 +910,14 @@ module canopy_struct_dynamics
                           ,cpatch%hite(1),csite%rough(ipa))
          !---------------------------------------------------------------------------------!
          do ico = 1,cpatch%ncohorts
-            if (cpatch%solvable(ico)) then
+            if (cpatch%resolvable(ico)) then
                ipft       = cpatch%pft(ico)
                hite       = cpatch%hite(ico)
-               crown_area = min(1.0, cpatch%nplant(ico)                                    &
-                                   * dbh2ca(cpatch%dbh(ico),cpatch%sla(ico),ipft))
 
                cpatch%veg_wind(ico) = max(uh,ugbmin)
-               uh = uh * ( crown_area * exp(- cpatch%lai(ico) / crown_area)                &
-                         + 1. - crown_area) 
+               uh = uh * ( cpatch%crown_area(ico)                                          &
+                         * exp(- cpatch%lai(ico) / cpatch%crown_area(ico))                 &
+                         + 1.0 - cpatch%crown_area(ico))                          
 
                !---------------------------------------------------------------------------!
                !    Find the aerodynamic conductances for heat and water at the leaf       !
@@ -901,15 +935,13 @@ module canopy_struct_dynamics
             end if
          end do
 
+
+
          !---------------------------------------------------------------------------------!
-         !    Calculate the heat and mass storage capacity of the canopy and interfacial   !
-         ! air spaces.  This is a tough call, because the reference height is allowed to   !
-         ! be abnormally low in this case, and it is possible that it is even lower than   !
-         ! the top of the canopy.  So... we will set the top of the interfacial layer as   !
-         ! the "reference elevation plus the top of the canopy".  An alternative could     !
-         ! be to make a conditional like in case(1).                                       !
+         !     Calculate the heat and mass storage capacity of the canopy.                 !
          !---------------------------------------------------------------------------------!
-         call can_whcap(csite,ipa,canwcap,canccap,canhcap)
+         call can_whcap(csite%can_rhos(ipa),csite%can_temp(ipa),csite%can_depth(ipa)       &
+                       ,wcapcan,wcapcani,hcapcani,ccapcani)
          !---------------------------------------------------------------------------------!
       end select
       !------------------------------------------------------------------------------------!
@@ -986,7 +1018,11 @@ module canopy_struct_dynamics
                                 , rk4patchtype         & ! structure
                                 , rk4site              & ! intent(in)
                                 , tiny_offset          & ! intent(in)
-                                , ibranch_thermo
+                                , ibranch_thermo       & ! intent(in)
+                                , wcapcan              & ! intent(out)
+                                , wcapcani             & ! intent(out)
+                                , hcapcani             & ! intent(out)
+                                , ccapcani             ! ! intent(out)
       use pft_coms       , only : crown_depth_fraction & ! intent(in)
                                 , leaf_width           ! ! intent(in)
       use canopy_air_coms, only : icanturb             & ! intent(in), can. turb. scheme
@@ -1009,8 +1045,8 @@ module canopy_struct_dynamics
                                 , cpi8                 & ! intent(in)
                                 , epim18               & ! intent(in)
                                 , sqrt2o28             ! ! intent(in)
-      use soil_coms      , only : snow_rough           & ! intent(in)
-                                , soil_rough           ! ! intent(in)
+      use soil_coms      , only : snow_rough8          & ! intent(in)
+                                , soil_rough8          ! ! intent(in)
       use allometry      , only : h2trunkh             ! ! function
       implicit none
       !----- Arguments --------------------------------------------------------------------!
@@ -1087,8 +1123,7 @@ module canopy_struct_dynamics
          d0       = 0.d0
 
          !----- Calculate the surface roughness inside the canopy. ------------------------!
-         initp%rough = dble(soil_rough)*(1.d0 - dble(csite%snowfac(ipa)))                  &
-                     + dble(snow_rough)*dble(csite%snowfac(ipa))
+         initp%rough = soil_rough8 *(1.d0 - initp%snowfac) + snow_rough8 * initp%snowfac
          
          !----- Finding the characteristic scales (a.k.a. stars). -------------------------!
          call ed_stars8(rk4site%atm_theta,rk4site%atm_theiv,rk4site%atm_shv                &
@@ -1110,7 +1145,9 @@ module canopy_struct_dynamics
          !---------------------------------------------------------------------------------!
          !     Calculate the heat and mass storage capacity of the canopy.                 !
          !---------------------------------------------------------------------------------!
-         call can_whcap8(csite,ipa,initp%can_rhos,initp%can_temp,initp%can_depth)
+         call can_whcap8(initp%can_rhos,initp%can_temp,initp%can_depth                     &
+                        ,wcapcan,wcapcani,hcapcani,ccapcani)
+         !---------------------------------------------------------------------------------!
          
          return
       end if
@@ -1119,7 +1156,7 @@ module canopy_struct_dynamics
 
 
       !---- Find the minimum boundary layer heat conductance. -----------------------------!
-      if (any(initp%solvable)) then
+      if (any(initp%resolvable)) then
          gbhmos_min = 1.d0 / ( dble(rb_inter) + dble(rb_slope)                             &
                              * (dble(csite%lai(ipa)) + dble(csite%wai(ipa))))
       else
@@ -1142,43 +1179,46 @@ module canopy_struct_dynamics
       !------------------------------------------------------------------------------------!
       case (-2,-1) 
          !----- Vegetation height. --------------------------------------------------------!
-         h        = dble(csite%veg_height(ipa))
+         h        = initp%veg_height
          !----- 0-plane displacement height. ----------------------------------------------!
-         d0       = dble(csite%veg_displace(ipa))
+         d0       = initp%veg_displace
          zref     = rk4site%geoht
-         
+         !---------------------------------------------------------------------------------!
+
+
 
          !---------------------------------------------------------------------------------!
-         !      Calculate a surface roughness that is visible to the ABL.  Roughness of    !
-         ! the rough wall.                                                                 !
+         !     The roughness is found by combining two weighted averages.  The first one   !
+         ! checks the fraction of the patch that has closed canopy, and averages between   !
+         ! soil and vegetation roughness.  The other is the fraction of the vegetation     !
+         ! that is covered in snow.                                                        !
          !---------------------------------------------------------------------------------!
-         initp%rough = max(dble(soil_rough),dble(csite%veg_rough(ipa)))                    &
-                     * (1.d0 - dble(csite%snowfac(ipa)))                                   &
-                       + dble(snow_rough) * dble(csite%snowfac(ipa))
+         initp%rough = snow_rough8 * initp%snowfac                                         &
+                     + ( soil_rough8     * initp%opencan_frac                              &
+                       + initp%veg_rough * (1.d0 - initp%opencan_frac) )                   &
+                     * (1.d0 - initp%snowfac)
+         !---------------------------------------------------------------------------------!
+
+
 
          !----- Get the appropriate characteristic wind speed. ----------------------------!
          vels_ref = max(ubmin8,rk4site%vels)
+         !---------------------------------------------------------------------------------!
 
 
          !---------------------------------------------------------------------------------!
          !      Get ustar for the ABL, assume it is a dynamic shear layer that generates a !
          ! logarithmic profile of velocity.                                                !
-         !                                                                                 !
-         ! IMPORTANT NOTE: the displacement height here (d0), is used only for scaling the !
-         !                 vortices when determining diffusivity.  The default method      !
-         !                 taken from LEAF-3, as applied here, assumes that the zero plane !
-         !                 is at the ground surface when computing the log wind profile,   !
-         !                 hence the 0.0 as the argument to ed_stars.                      !
          !---------------------------------------------------------------------------------!
          call ed_stars8(rk4site%atm_theta,rk4site%atm_theiv,rk4site%atm_shv                &
                        ,rk4site%atm_co2,initp%can_theta ,initp%can_theiv,initp%can_shv     &
-                       ,initp%can_co2,zref,0.d0,vels_ref,initp%rough                       &
+                       ,initp%can_co2,zref,d0,vels_ref,initp%rough                         &
                        ,initp%ustar,initp%tstar,initp%estar,initp%qstar,initp%cstar        &
                        ,initp%zeta,initp%ribulk,initp%ggbare)
          !---------------------------------------------------------------------------------!
 
-         if (csite%snowfac(ipa) < 0.9) then
-            factv        = log(zref / initp%rough) / (vonk8 * vonk8 * vels_ref)
+         if (initp%snowfac < 9.d-1) then
+            factv        = log((zref-d0) / initp%rough) / (vonk8 * vonk8 * vels_ref)
             aux          = exp(exar8 * (1.d0 - (d0 + initp%rough) / h))
             initp%ggveg  = (exar8 * (h - d0)) / (factv * h * (exp(exar8) - aux))
          else 
@@ -1196,7 +1236,7 @@ module canopy_struct_dynamics
                            ,dble(cpatch%hite(1)),initp%rough)
          laicum = 0.d0
          do ico=1,cpatch%ncohorts
-            if (initp%solvable(ico)) then
+            if (initp%resolvable(ico)) then
                ipft  = cpatch%pft(ico)
 
                !----- Calculate the wind speed at height z. -------------------------------!
@@ -1240,15 +1280,12 @@ module canopy_struct_dynamics
             end if
          end do
 
+
          !---------------------------------------------------------------------------------!
-         !    Calculate the heat and mass storage capacity of the canopy and interfacial   !
-         ! air spaces.  This is a tough call, because the reference height is allowed to   !
-         ! be abnormally low in this case, and it is possible that it is even lower than   !
-         ! the top of the canopy.  So... we will set the top of the interfacial layer as   !
-         ! the "reference elevation plus the top of the canopy".  An alternative could be  !
-         ! to make a conditional like in case(1).                                          !
+         !     Calculate the heat and mass storage capacity of the canopy.                 !
          !---------------------------------------------------------------------------------!
-         call can_whcap8(csite,ipa,initp%can_rhos,initp%can_temp,initp%can_depth)
+         call can_whcap8(initp%can_rhos,initp%can_temp,initp%can_depth                     &
+                        ,wcapcan,wcapcani,hcapcani,ccapcani)
          !---------------------------------------------------------------------------------!
 
 
@@ -1257,7 +1294,7 @@ module canopy_struct_dynamics
          ! net resistance, which is, in turn, the weighted average of the resistances in   !
          ! bare and vegetated grounds.                                                     !
          !---------------------------------------------------------------------------------!
-         if (initp%opencan_frac > 9.99d-1 .or. csite%snowfac(ipa) >= 0.9) then
+         if (initp%opencan_frac > 9.9d-1 .or. initp%snowfac >= 9.d-1) then
             initp%ggnet = ggfact8 * initp%ggbare
          else
             initp%ggnet = ggfact8 * initp%ggbare * initp%ggveg                             &
@@ -1274,21 +1311,25 @@ module canopy_struct_dynamics
       !               even though it is nonsense.                                          !
       !------------------------------------------------------------------------------------!
       case (0)
-         h        = initp%can_depth   ! Canopy air space depth
+         h        = initp%veg_height  ! Canopy air space depth
          d0       = vh2dh8 * h        ! 0-plane displacement
          vels_ref = rk4site%vels
          zref     = rk4site%geoht
 
          !---------------------------------------------------------------------------------!
-         !      Calculate a surface roughness that is visible to the ABL.  Roughness of    !
-         ! the rough wall.                                                                 !
+         !     The roughness is found by combining two weighted averages.  The first one   !
+         ! checks the fraction of the patch that has closed canopy, and averages between   !
+         ! soil and vegetation roughness.  The other is the fraction of the vegetation     !
+         ! that is covered in snow.                                                        !
          !---------------------------------------------------------------------------------!
-         initp%rough = max(dble(soil_rough),dble(csite%veg_rough(ipa)))                    &
-                     * (1.d0 - dble(csite%snowfac(ipa))) + dble(snow_rough)
+         initp%rough = snow_rough8 * initp%snowfac                                         &
+                     + ( soil_rough8     * initp%opencan_frac                              &
+                       + initp%veg_rough * (1.d0 - initp%opencan_frac) )                   &
+                     * (1.d0 - initp%snowfac)
+         !---------------------------------------------------------------------------------!
          
          !----- Calculate the soil surface roughness inside the canopy. -------------------!
-         surf_rough = dble(soil_rough) * (1.d0 - dble(csite%snowfac(ipa)))                 &
-                    + dble(snow_rough)*dble(csite%snowfac(ipa))
+         surf_rough = soil_rough8 * (1.d0 - initp%snowfac) + snow_rough8 * initp%snowfac
 
 
          !---------------------------------------------------------------------------------!
@@ -1353,15 +1394,12 @@ module canopy_struct_dynamics
             !------------------------------------------------------------------------------!
          end do
 
+
          !---------------------------------------------------------------------------------!
-         !    Calculate the heat and mass storage capacity of the canopy and interfacial   !
-         ! air spaces.  This is a tough call, because the reference height is allowed to   !
-         ! be abnormally low in this case, and it is possible that it is even lower than   !
-         ! the top of the canopy.  So... we will set the top of the interfacial layer as   !
-         ! the "reference elevation plus the top of the canopy".  An alternative could be  !
-         ! to make a conditional like in case(1).                                          !
+         !     Calculate the heat and mass storage capacity of the canopy.                 !
          !---------------------------------------------------------------------------------!
-         call can_whcap8(csite,ipa,initp%can_rhos,initp%can_temp,initp%can_depth)
+         call can_whcap8(initp%can_rhos,initp%can_temp,initp%can_depth                     &
+                        ,wcapcan,wcapcani,hcapcani,ccapcani)
          !---------------------------------------------------------------------------------!
 
 
@@ -1394,31 +1432,56 @@ module canopy_struct_dynamics
          h    = initp%can_depth             ! Canopy height
          zref = rk4site%geoht               ! Initial reference height
          d0   = vh2dh8 * h                  ! 0-plane displacement
-         
-         !----- Calculate a surface roughness that is visible to the ABL. -----------------!
-         initp%rough = max(dble(soil_rough),dble(csite%veg_rough(ipa)))                    &
-                     * (1.d0 - dble(csite%snowfac(ipa))) + dble(snow_rough)
+
+
+
+         !---------------------------------------------------------------------------------!
+         !     The roughness is found by combining two weighted averages.  The first one   !
+         ! checks the fraction of the patch that has closed canopy, and averages between   !
+         ! soil and vegetation roughness.  The other is the fraction of the vegetation     !
+         ! that is covered in snow.                                                        !
+         !---------------------------------------------------------------------------------!
+         initp%rough = snow_rough8 * initp%snowfac                                         &
+                     + ( soil_rough8     * initp%opencan_frac                              &
+                       + initp%veg_rough * (1.d0 - initp%opencan_frac) )                   &
+                     * (1.d0 - initp%snowfac)
+         !---------------------------------------------------------------------------------!
          
          !----- Calculate the soil surface roughness inside the canopy. -------------------!
-         surf_rough = dble(soil_rough) * (1.d0 - dble(csite%snowfac(ipa)))                 &
-                    + dble(snow_rough)*dble(csite%snowfac(ipa))
-         
+         surf_rough = soil_rough8 * (1.d0 - initp%snowfac) + snow_rough8 * initp%snowfac
+
          !----- Check what is the relative position of our reference data. ----------------!
          if (rk4site%geoht < h) then
             !----- First, find the wind speed at the canopy top. --------------------------!
             vels_ref = rk4site%vels / exp(-exar8 *(1.d0 - zref/h))
             !----- Assume a new reference elevation at the canopy top. --------------------!
             zref = h
-            !----- Find the heat, water, and carbon capacities of the canopy air space. ---!
-            call can_whcap8(csite,ipa,initp%can_rhos,initp%can_temp,initp%can_depth)
+            !------------------------------------------------------------------------------!
+
+
+
+            !------------------------------------------------------------------------------!
+            !     Calculate the heat and mass storage capacity of the canopy.              !
+            !------------------------------------------------------------------------------!
+            call can_whcap8(initp%can_rhos,initp%can_temp,initp%can_depth                  &
+                           ,wcapcan,wcapcani,hcapcani,ccapcani)
+            !------------------------------------------------------------------------------!
 
          else
             !----- First, find the wind speed at the canopy top. --------------------------!
             vels_ref = rk4site%vels
             !----- Assume a new reference elevation at the canopy top. --------------------!
             zref     = rk4site%geoht
-            !----- Find the heat, water, and carbon capacities of the canopy air space. ---!
-            call can_whcap8(csite,ipa,initp%can_rhos,initp%can_temp,initp%can_depth)
+            !------------------------------------------------------------------------------!
+
+
+
+            !------------------------------------------------------------------------------!
+            !     Calculate the heat and mass storage capacity of the canopy.              !
+            !------------------------------------------------------------------------------!
+            call can_whcap8(initp%can_rhos,initp%can_temp,initp%can_depth                  &
+                           ,wcapcan,wcapcani,hcapcani,ccapcani)
+            !------------------------------------------------------------------------------!
          end if
          
          !---------------------------------------------------------------------------------!
@@ -1503,8 +1566,7 @@ module canopy_struct_dynamics
       case(2)
          
          !----- Calculate the soil surface roughness inside the canopy. -------------------!
-         surf_rough = dble(soil_rough) * (1.d0 - dble(csite%snowfac(ipa)))                 &
-                    + dble(snow_rough)*dble(csite%snowfac(ipa))
+         surf_rough = soil_rough8 * (1.d0 - initp%snowfac) + snow_rough8 * initp%snowfac
 
 
          !---------------------------------------------------------------------------------!
@@ -1610,7 +1672,7 @@ module canopy_struct_dynamics
          end do
 
          !----- Calculate the roughness lengths zo,zt,zr. ---------------------------------!
-         initp%rough = max((h-d0)*exp(-vonk8/ustarouh),dble(soil_rough))
+         initp%rough = max((h-d0)*exp(-vonk8/ustarouh),soil_rough8)
 
 
          !----- Calculate ustar, tstar, qstar, and cstar. ---------------------------------!
@@ -1668,11 +1730,12 @@ module canopy_struct_dynamics
             !------------------------------------------------------------------------------!
          end do
 
+
          !---------------------------------------------------------------------------------!
-         ! Calculate the heat and mass storage capacity of the canopy and interfacial air  !
-         ! spaces.                                                                         !
+         !     Calculate the heat and mass storage capacity of the canopy.                 !
          !---------------------------------------------------------------------------------!
-         call can_whcap8(csite,ipa,initp%can_rhos,initp%can_temp,initp%can_depth)
+         call can_whcap8(initp%can_rhos,initp%can_temp,initp%can_depth                     &
+                        ,wcapcan,wcapcani,hcapcani,ccapcani)
          !---------------------------------------------------------------------------------!
 
 
@@ -1701,18 +1764,21 @@ module canopy_struct_dynamics
       ! consider the crown area to determine the reduction factor.                         !
       !------------------------------------------------------------------------------------!
       case (3)
-         h        = dble(csite%veg_height(ipa))    ! Vegetation height
-         d0       = dble(csite%veg_displace(ipa))  ! 0-plane displacement height
+         h        = initp%veg_height    ! Vegetation height
+         d0       = initp%veg_displace  ! 0-plane displacement height
          zref     = rk4site%geoht
 
          !---------------------------------------------------------------------------------!
-         !     Find the roughness as the average between the bare ground and vegetated     !
-         ! ground.  The weighting factor is the fraction of open canopy.                   !
+         !     The roughness is found by combining two weighted averages.  The first one   !
+         ! checks the fraction of the patch that has closed canopy, and averages between   !
+         ! soil and vegetation roughness.  The other is the fraction of the vegetation     !
+         ! that is covered in snow.                                                        !
          !---------------------------------------------------------------------------------!
-         initp%rough = dble(soil_rough)           * (1.d0 - initp%opencan_frac)            &
-                     + dble(csite%veg_rough(ipa)) *         initp%opencan_frac
+         initp%rough = snow_rough8 * initp%snowfac                                         &
+                     + ( soil_rough8     * initp%opencan_frac                              &
+                       + initp%veg_rough * (1.d0 - initp%opencan_frac) )                   &
+                     * (1.d0 - initp%snowfac)
          !---------------------------------------------------------------------------------!
-
 
 
          !----- Get the appropriate characteristic wind speed. ----------------------------!
@@ -1760,7 +1826,7 @@ module canopy_struct_dynamics
                            ,dble(cpatch%hite(1)),initp%rough)
          !---------------------------------------------------------------------------------!
          do ico = 1,cpatch%ncohorts
-            if (initp%solvable(ico)) then
+            if (initp%resolvable(ico)) then
                ipft = cpatch%pft(ico)
                
                initp%veg_wind(ico) = max(ugbmin8,uh)
@@ -1795,15 +1861,12 @@ module canopy_struct_dynamics
             end if
          end do
 
+
          !---------------------------------------------------------------------------------!
-         !    Calculate the heat and mass storage capacity of the canopy and interfacial   !
-         ! air spaces.  This is a tough call, because the reference height is allowed to   !
-         ! be abnormally low in this case, and it is possible that it is even lower than   !
-         ! the top of the canopy.  So... we will set the top of the interfacial layer as   !
-         ! the "reference elevation plus the top of the canopy".  An alternative could     !
-         ! be to make a conditional like in case(1).                                       !
+         !     Calculate the heat and mass storage capacity of the canopy.                 !
          !---------------------------------------------------------------------------------!
-         call can_whcap8(csite,ipa,initp%can_rhos,initp%can_temp,initp%can_depth)
+         call can_whcap8(initp%can_rhos,initp%can_temp,initp%can_depth                     &
+                        ,wcapcan,wcapcani,hcapcani,ccapcani)
          !---------------------------------------------------------------------------------!
 
       end select
@@ -2132,12 +2195,12 @@ module canopy_struct_dynamics
       real(kind=8), intent(out) :: rib          ! Bulk richardson number.        [      ---]
       real(kind=8), intent(out) :: ggbare       ! Ground conductance.            [      m/s]
       !----- Local variables, used by L79. ------------------------------------------------!
-      logical           :: stable       ! Stable state
-      real(kind=8)      :: zoz0m        ! zref/rough(momentum)
-      real(kind=8)      :: lnzoz0m      ! ln[zref/rough(momentum)]
-      real(kind=8)      :: zoz0h        ! zref/rough(heat)
-      real(kind=8)      :: lnzoz0h      ! ln[zref/rough(heat)]
-      real(kind=8)      :: c3           ! coefficient to find the other stars
+      logical                   :: stable       ! Stable state
+      real(kind=8)              :: zoz0m        ! zref/rough(momentum)
+      real(kind=8)              :: lnzoz0m      ! ln[zref/rough(momentum)]
+      real(kind=8)              :: zoz0h        ! zref/rough(heat)
+      real(kind=8)              :: lnzoz0h      ! ln[zref/rough(heat)]
+      real(kind=8)              :: c3           ! coefficient to find the other stars
       !----- Local variables --------------------------------------------------------------!
       real(kind=8)      :: a2           ! Drag coefficient in neutral conditions
       real(kind=8)      :: c1           ! a2 * vels
@@ -2603,27 +2666,24 @@ module canopy_struct_dynamics
    !     Calculate some canopy air space properties, such as the total mass and depth, and !
    ! also the total capacities (carbon, water, and heat).                                  !
    !---------------------------------------------------------------------------------------!
-   subroutine can_whcap(csite,ipa,canwcap,canccap,canhcap)
-
-      use ed_state_vars        , only : sitetype              ! ! structure
-      use consts_coms          , only : cp                    & ! intent(in)
-                                      , ep                    & ! intent(in)
-                                      , rdry                  & ! intent(in)
-                                      , mmdryi                ! ! intent(in)
-      
+   subroutine can_whcap(can_rhos,can_temp,can_depth,wcapcan,wcapcani,hcapcani,ccapcani)
+      use consts_coms, only : cpi    & ! intent(in)
+                            , mmdry  ! ! intent(in)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
-      type(sitetype) , target         :: csite
-      integer        , intent(in)     :: ipa
-      real           , intent(out)    :: canwcap
-      real           , intent(out)    :: canccap
-      real           , intent(out)    :: canhcap
+      real(kind=4), intent(in)  :: can_rhos
+      real(kind=4), intent(in)  :: can_temp
+      real(kind=4), intent(in)  :: can_depth
+      real(kind=4), intent(out) :: wcapcan
+      real(kind=4), intent(out) :: wcapcani
+      real(kind=4), intent(out) :: hcapcani
+      real(kind=4), intent(out) :: ccapcani
       !------------------------------------------------------------------------------------!
-      
 
-      canwcap = csite%can_rhos(ipa) * csite%can_depth(ipa)
-      canccap = mmdryi * canwcap
-      canhcap = cp     * csite%can_temp(ipa) * canwcap
+      wcapcan  = can_rhos * can_depth
+      wcapcani = 1.0 / wcapcan
+      hcapcani = cpi * wcapcani / can_temp
+      ccapcani = mmdry * wcapcani
 
       return
    end subroutine can_whcap
@@ -2645,27 +2705,21 @@ module canopy_struct_dynamics
    ! (or the canopy depth) must be allowed to change over time, so work can be done by the !
    ! canopy or into the canopy.                                                            !
    !---------------------------------------------------------------------------------------!
-   subroutine can_whcap8(csite,ipa,can_rhos,can_temp,can_depth)
-
-      use rk4_coms             , only : rk4site               & ! intent(in)
-                                      , wcapcan               & ! intent(out)
-                                      , wcapcani              & ! intent(out)
-                                      , hcapcani              & ! intent(out)
-                                      , ccapcani              ! ! intent(out)
-      use ed_state_vars        , only : sitetype              ! ! structure
-      use canopy_air_coms      , only : minimum_canopy_depth8 ! ! intent(in)
-      use consts_coms          , only : cpi8                  & ! intent(in)
-                                      , rdry8                 & ! intent(in)
-                                      , ep8                   & ! intent(in)
-                                      , mmdry8                ! ! intent(in)
+   subroutine can_whcap8(can_rhos,can_temp,can_depth,wcapcan,wcapcani,hcapcani,ccapcani)
+      use consts_coms, only : cpi8    & ! intent(in)
+                            , rdry8   & ! intent(in)
+                            , ep8     & ! intent(in)
+                            , mmdry8  ! ! intent(in)
       
       implicit none
       !----- Arguments --------------------------------------------------------------------!
-      type(sitetype) , target        :: csite
-      integer        , intent(in)    :: ipa
-      real(kind=8)   , intent(in)    :: can_rhos
-      real(kind=8)   , intent(in)    :: can_temp
-      real(kind=8)   , intent(in)    :: can_depth
+      real(kind=8), intent(in)  :: can_rhos
+      real(kind=8), intent(in)  :: can_temp
+      real(kind=8), intent(in)  :: can_depth
+      real(kind=8), intent(out) :: wcapcan
+      real(kind=8), intent(out) :: wcapcani
+      real(kind=8), intent(out) :: hcapcani
+      real(kind=8), intent(out) :: ccapcani
       !------------------------------------------------------------------------------------!
 
       wcapcan  = can_rhos * can_depth

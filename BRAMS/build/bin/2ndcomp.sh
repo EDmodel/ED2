@@ -262,12 +262,16 @@ rm -fv vformat.o                  vformat.mod
 rm -fv vtab_fill.o                vtab_fill.mod
 rm -fv edcp_driver.o              edcp_driver.mod
 rm -fv edcp_init.o                edcp_init.mod
+rm -fv edcp_lake_driver.o         edcp_load_driver.mod
+rm -fv edcp_lake_misc.o           edcp_load_misc.mod
+rm -fv edcp_lake_stepper.o        edcp_load_stepper.mod
 rm -fv edcp_load_namelist.o       edcp_load_namelist.mod
 rm -fv edcp_met.o                 edcp_met.mod
 rm -fv edcp_met_init.o            edcp_met_init.mod
 rm -fv edcp_model.o               edcp_model.mod
 rm -fv edcp_mpiutils.o            edcp_mpiutils.mod
 rm -fv edcp_para_init.o           edcp_para_init.mod
+rm -fv lake_coms.o                lake_coms.mod
 rm -fv mem_edcp.o                 mem_edcp.mod
 rm -fv allometry.o                allometry.mod
 rm -fv average_utils.o            average_utils.mod

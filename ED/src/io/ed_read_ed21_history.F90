@@ -335,9 +335,36 @@ subroutine read_ed21_history_file
          call hdf_getslab_r(cgrid%workload(:,ipy),'WORKLOAD ',dsetrank,iparallel,.false.)
          !---------------------------------------------------------------------------------!
 
-         
+
+
+         !----- Load 2D dataset. ----------------------------------------------------------!
+         dsetrank     = 2_8
+         globdims(1)  = int(dset_nzg,8)     ! How many layers in the dataset?
+         chnkdims(1)  = int(1,8)            ! We are only extracting one layer
+         memdims(1)   = int(1,8)            ! We only need memory for one layer
+         memsize(1)   = int(1,8)            ! On both sides
+         chnkoffs(1)  = int(dset_nzg - 1,8) ! Take the top layer, not the bottom
+         memoffs(1)   = 0_8
+         globdims(2) = int(pysi_n(py_index),8)
+         chnkdims(2) = int(pysi_n(py_index),8)
+         memdims(2)  = int(pysi_n(py_index),8)
+         memsize(2)  = int(pysi_n(py_index),8)
+         chnkoffs(2) = 0_8
+         memoffs(2)  = 0_8
+         call hdf_getslab_i(cgrid%ntext_soil(nzg:nzg,ipy),'NTEXT_SOIL ',dsetrank           &
+                           ,iparallel,.true.)
+         !----- Now fill the soil column based on the top layer data. ---------------------!
+         do k=1,nzg-1
+            cgrid%ntext_soil(k,ipy) = cgrid%ntext_soil(nzg,ipy)
+         end do
+         !---------------------------------------------------------------------------------!
+
+
+
          !----- Allocate the vector of sites in the polygon. ------------------------------!
          call allocate_polygontype(cpoly,pysi_n(py_index))     
+         !---------------------------------------------------------------------------------!
+
 
 
          !----- Reset the HDF5 auxiliary variables before moving to the next level. -------!
@@ -347,6 +374,9 @@ subroutine read_ed21_history_file
          memoffs  = 0_8
          memdims  = 0_8
          memsize  = 1_8
+         !---------------------------------------------------------------------------------!
+
+
 
          !---------------------------------------------------------------------------------!
          !      SITE level variables.                                                      !
@@ -385,6 +415,22 @@ subroutine read_ed21_history_file
          memoffs(2)   = 0_8
          call hdf_getslab_i(cpoly%ntext_soil(nzg,:),'NTEXT_SOIL_SI ',dsetrank              &
                            ,iparallel,.true.)
+         do isi=1,cpoly%nsites
+
+            !------------------------------------------------------------------------------!
+            !     The soil layer in this case is use defined, so take this from the        !
+            ! grid level variable, and not from the dataset.                               !
+            !------------------------------------------------------------------------------!
+            cpoly%lsl(isi)  = cgrid%lsl(ipy)  ! Initialize lowest soil layer
+
+            !----- Now fill the soil column based on the top layer data. ------------------!
+            do k=1,nzg-1
+               cpoly%ntext_soil(k,isi) = cpoly%ntext_soil(nzg,isi)
+            end do
+         end do
+         !---------------------------------------------------------------------------------!
+
+
 
          !---------------------------------------------------------------------------------!
          !     Loop over all sites and fill the patch-level variables.                     !
@@ -397,19 +443,17 @@ subroutine read_ed21_history_file
 
             if (sipa_n(si_index) > 0) then
 
-               !---------------------------------------------------------------------------!
-               !     The soil layer in this case is use defined, so take this from the     !
-               ! grid level variable, and not from the dataset.                            !
-               !---------------------------------------------------------------------------!
-               cpoly%lsl(isi)  = cgrid%lsl(ipy)  ! Initialize lowest soil layer
-
-               !----- Now fill the soil column based on the top layer data. ---------------!
-               do k=1,nzg
-                  cpoly%ntext_soil(k,isi) = cpoly%ntext_soil(nzg,isi)
-               end do
-
                !----- Fill 1D polygon (site unique) level variables. ----------------------!
                call allocate_sitetype(csite,sipa_n(si_index))
+
+               !----- Reset the HDF5 auxiliary variables before moving to the next level. -!
+               globdims = 0_8
+               chnkdims = 0_8
+               chnkoffs = 0_8
+               memoffs  = 0_8
+               memdims  = 0_8
+               memsize  = 1_8
+               !---------------------------------------------------------------------------!
 
                iparallel = 0
                
@@ -420,11 +464,6 @@ subroutine read_ed21_history_file
                memdims(1)  = int(csite%npatches,8)
                memsize(1)  = int(csite%npatches,8)
                memoffs(1)  = 0
-
-               !----- Assign patch soils based off of the site level soils data. ----------!
-               do k=1,nzg
-                  csite%ntext_soil(k,:) = cpoly%ntext_soil(k,isi)
-               end do
 
                call hdf_getslab_i(csite%dist_type ,'DIST_TYPE ' ,dsetrank,iparallel,.true.)
                call hdf_getslab_r(csite%age       ,'AGE '       ,dsetrank,iparallel,.true.)
@@ -451,6 +490,19 @@ subroutine read_ed21_history_file
                !     Loop over all sites and fill the patch-level variables.               !
                !---------------------------------------------------------------------------!
                patchloop: do ipa = 1,csite%npatches
+
+                  !------------------------------------------------------------------------!
+                  !     Reset the HDF5 auxiliary variables before moving to the next       !
+                  ! level.                                                                 !
+                  !------------------------------------------------------------------------!
+                  globdims = 0_8
+                  chnkdims = 0_8
+                  chnkoffs = 0_8
+                  memoffs  = 0_8
+                  memdims  = 0_8
+                  memsize  = 1_8
+                  !------------------------------------------------------------------------!
+
                   cpatch => csite%patch(ipa)
 
                   !----- Initialise patch-level variables that depend on the cohort ones. -!
@@ -491,7 +543,7 @@ subroutine read_ed21_history_file
                      call hdf_getslab_i(cpatch%phenology_status,'PHENOLOGY_STATUS '        &
                                        ,dsetrank,iparallel,.true.)
 
-                     !----- First the 2-D variables. --------------------------------------!
+                     !----- Then the 2-D variables. ---------------------------------------!
                      dsetrank    = 2
                      globdims(1) = 13_8
                      chnkdims(1) = 13_8
@@ -604,8 +656,7 @@ subroutine read_ed21_history_file
                                                     ,cpatch%hite(ico),cpatch%bstorage(ico) &
                                                     ,cpatch%bsapwood(ico))
 
-                        cpatch%basarea(ico)  = cpatch%nplant(ico) * pio4                   &
-                                             * cpatch%dbh(ico) * cpatch%dbh(ico)
+                        cpatch%basarea(ico)  = pio4 * cpatch%dbh(ico) * cpatch%dbh(ico)
 
                          
                         !----- Assign LAI, WPA, and WAI -----------------------------------!
@@ -614,7 +665,7 @@ subroutine read_ed21_history_file
                                          ,cpatch%dbh(ico), cpatch%hite(ico)                &
                                          ,cpatch%pft(ico), SLA(cpatch%pft(ico))            &
                                          ,cpatch%lai(ico),cpatch%wpa(ico), cpatch%wai(ico) &
-                                         ,cpatch%bsapwood(ico))
+                                         ,cpatch%crown_area(ico),cpatch%bsapwood(ico))
 
 
                         !----- Update the derived patch-level variables. ------------------!
@@ -647,8 +698,11 @@ subroutine read_ed21_history_file
 
          end do siteloop
 
-         !----- Initialise the other site-level variables. --------------------------------!
+
+
+         !----- Initialise some site-level variables. -------------------------------------!
          call init_ed_site_vars(cpoly,cgrid%lat(ipy))
+         !---------------------------------------------------------------------------------!
 
       end do polyloop
 
@@ -1164,7 +1218,7 @@ subroutine read_ed21_history_unstruct
             py_index = pclosest(ipy)
 
             !------------------------------------------------------------------------------!
-            !      Retrieve the polygon coordinates data.                                        !
+            !      Retrieve the polygon coordinates data.                                  !
             !------------------------------------------------------------------------------!
 
 
@@ -1230,6 +1284,8 @@ subroutine read_ed21_history_unstruct
             
             !----- Allocate the vector of sites in the polygon. ---------------------------!
             call allocate_polygontype(cpoly,pysi_n(py_index))     
+            !------------------------------------------------------------------------------!
+
 
 
             !----- Reset the HDF5 auxiliary variables before moving to the next level. ----!
@@ -1262,21 +1318,40 @@ subroutine read_ed21_history_unstruct
             call hdf_getslab_i(cpoly%patch_count,'PATCH_COUNT ',dsetrank,iparallel,.true.)
 
             !----- Load 2D dataset. -------------------------------------------------------!
-            dsetrank     = 2_8
-            globdims(1)  = int(dset_nzg,8)     ! How many layers in the dataset?
-            chnkdims(1)  = int(1,8)            ! We are only extracting one layer
-            memdims(1)   = int(1,8)            ! We only need memory for one layer
-            memsize(1)   = int(1,8)            ! On both sides
-            chnkoffs(1)  = int(dset_nzg - 1,8) ! Take the top layer, not the bottom
-            memoffs(1)   = 0_8
-            globdims(2)  = int(dset_nsites_global,8)
-            chnkdims(2)  = int(cpoly%nsites,8)
-            chnkoffs(2)  = int(pysi_id(py_index) - 1,8)
-            memdims(2)   = int(cpoly%nsites,8)
-            memsize(2)   = int(cpoly%nsites,8)
-            memoffs(2)   = 0_8
-            call hdf_getslab_i(cpoly%ntext_soil(nzg,:),'NTEXT_SOIL_SI ',dsetrank           &
-                              ,iparallel,.true.)
+            if (cpoly%nsites > 1) then
+               !---------------------------------------------------------------------------!
+               !      Multiple-site run, load the site-level soil texture.                 !
+               !---------------------------------------------------------------------------!
+               call hdf_getslab_i(cpoly%lsl     ,'LSL_SI '     ,dsetrank,iparallel,.true.)
+               dsetrank     = 2_8
+               globdims(1)  = int(dset_nzg,8)
+               chnkdims(1)  = int(dset_nzg,8)
+               memdims(1)   = int(dset_nzg,8)
+               memsize(1)   = int(dset_nzg,8)
+               chnkoffs(1)  = 0_8
+               memoffs(1)   = 0_8
+               globdims(2)  = int(dset_nsites_global,8)
+               chnkdims(2)  = int(cpoly%nsites,8)
+               chnkoffs(2)  = int(pysi_id(py_index) - 1,8)
+               memdims(2)   = int(cpoly%nsites,8)
+               memsize(2)   = int(cpoly%nsites,8)
+               memoffs(2)   = 0_8
+               call hdf_getslab_i(cpoly%ntext_soil,'NTEXT_SOIL_SI ',dsetrank               &
+                                 ,iparallel,.true.)
+            else
+               !----- Single-site, copy the polygon-level. --------------------------------!
+               do k=1,nzg
+                  cpoly%ntext_soil(k,1) = cgrid%ntext_soil(k,ipy)
+               end do
+
+               !---------------------------------------------------------------------------!
+               !     The soil layer in this case is user defined, so take this from the    !
+               ! grid level variable, and not from the dataset.                            !
+               !---------------------------------------------------------------------------!
+               cpoly%lsl(1)  = cgrid%lsl(ipy)
+               !---------------------------------------------------------------------------!
+            end if
+
 
             !------------------------------------------------------------------------------!
             !     Loop over all sites and fill the patch-level variables.                  !
@@ -1284,21 +1359,18 @@ subroutine read_ed21_history_unstruct
             siteloop: do isi = 1,cpoly%nsites
                csite => cpoly%site(isi)
 
+               !----- Reset the HDF5 auxiliary variables before moving to the next level. -!
+               globdims = 0_8
+               chnkdims = 0_8
+               chnkoffs = 0_8
+               memoffs  = 0_8
+               memdims  = 0_8
+               memsize  = 1_8
+
                !----- Calculate the index of this site data in the HDF5 file. -------------!
                si_index = pysi_id(py_index) + isi - 1
 
                if (sipa_n(si_index) > 0) then
-
-                  !------------------------------------------------------------------------!
-                  !     The soil layer in this case is use defined, so take this from the  !
-                  ! grid level variable, and not from the dataset.                         !
-                  !------------------------------------------------------------------------!
-                  cpoly%lsl(isi)  = cgrid%lsl(ipy)  ! Initialize lowest soil layer
-
-                  !----- Now fill the soil column based on the top layer data. ------------!
-                  do k=1,nzg
-                     cpoly%ntext_soil(k,isi) = cpoly%ntext_soil(nzg,isi)
-                  end do
 
                   !----- Fill 1D polygon (site unique) level variables. -------------------!
                   call allocate_sitetype(csite,sipa_n(si_index))
@@ -1312,11 +1384,6 @@ subroutine read_ed21_history_unstruct
                   memdims(1)  = int(csite%npatches,8)
                   memsize(1)  = int(csite%npatches,8)
                   memoffs(1)  = 0
-
-                  !----- Assign patch soils based off of the site level soils data. -------!
-                  do k=1,nzg
-                     csite%ntext_soil(k,:) = cpoly%ntext_soil(k,isi)
-                  end do
 
                   call hdf_getslab_i(csite%dist_type         ,'DIST_TYPE '                 &
                                     ,dsetrank,iparallel,.true.)
@@ -1388,6 +1455,20 @@ subroutine read_ed21_history_unstruct
                      cpatch => csite%patch(ipa)
 
                      !---------------------------------------------------------------------!
+                     !     Reset the HDF5 auxiliary variables before moving to the next    !
+                     ! level.                                                              !
+                     !---------------------------------------------------------------------!
+                     globdims = 0_8
+                     chnkdims = 0_8
+                     chnkoffs = 0_8
+                     memoffs  = 0_8
+                     memdims  = 0_8
+                     memsize  = 1_8
+                     !---------------------------------------------------------------------!
+
+
+
+                     !---------------------------------------------------------------------!
                      !     Initialise patch-level variables that depend on the cohort      !
                      ! ones.                                                               !
                      !---------------------------------------------------------------------!
@@ -1436,7 +1517,7 @@ subroutine read_ed21_history_unstruct
                         call hdf_getslab_i(cpatch%phenology_status,'PHENOLOGY_STATUS '     &
                                           ,dsetrank,iparallel,.true.)
 
-                        !----- First the 2-D variables. -----------------------------------!
+                        !----- Then the 2-D variables. ------------------------------------!
                         dsetrank    = 2
                         globdims(1) = 13_8
                         chnkdims(1) = 13_8
@@ -1553,8 +1634,7 @@ subroutine read_ed21_history_unstruct
                                                        ,cpatch%bstorage(ico)               &
                                                        ,cpatch%bsapwood(ico))
 
-                           cpatch%basarea(ico)  = cpatch%nplant(ico) * pio4                &
-                                                * cpatch%dbh(ico) * cpatch%dbh(ico)
+                           cpatch%basarea(ico)  = pio4 * cpatch%dbh(ico) * cpatch%dbh(ico)
 
                            !----- Assign LAI, WPA, and WAI --------------------------------!
                            call area_indices(cpatch%nplant(ico),cpatch%bleaf(ico)          &
@@ -1562,7 +1642,8 @@ subroutine read_ed21_history_unstruct
                                             ,cpatch%dbh(ico),cpatch%hite(ico)              &
                                             ,cpatch%pft(ico),SLA(cpatch%pft(ico))          &
                                             ,cpatch%lai(ico),cpatch%wpa(ico)               &
-                                            ,cpatch%wai(ico),cpatch%bsapwood(ico))
+                                            ,cpatch%wai(ico),cpatch%crown_area(ico)        &
+                                            ,cpatch%bsapwood(ico))
 
 
                            !----- Update the derived patch-level variables. ---------------!
@@ -1595,8 +1676,10 @@ subroutine read_ed21_history_unstruct
 
             end do siteloop
 
-            !----- Initialise the other site-level variables. -----------------------------!
+
+            !----- Initialise some site-level variables. ----------------------------------!
             call init_ed_site_vars(cpoly,cgrid%lat(ipy))
+            !------------------------------------------------------------------------------!
 
          end do polyloop
 

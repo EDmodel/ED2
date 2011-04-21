@@ -353,6 +353,7 @@ subroutine spatial_averages
    real                           :: skin_fliq
    real                           :: snowarea
    real                           :: dslzsum_i
+   real                           :: rdepth
    !---------------------------------------------------------------------------------------!
 
    !----- Time scale for output.  We will use the inverse more often. ---------------------!
@@ -402,6 +403,13 @@ subroutine spatial_averages
          cgrid%avg_bseeds          (ipy) = 0.0
          cgrid%lai                 (ipy) = 0.0
          cgrid%avg_gpp             (ipy) = 0.0
+         cgrid%avg_nppleaf         (ipy) = 0.0
+         cgrid%avg_nppfroot        (ipy) = 0.0
+         cgrid%avg_nppsapwood      (ipy) = 0.0
+         cgrid%avg_nppcroot        (ipy) = 0.0
+         cgrid%avg_nppseeds        (ipy) = 0.0
+         cgrid%avg_nppwood         (ipy) = 0.0
+         cgrid%avg_nppdaily        (ipy) = 0.0
          cgrid%avg_leaf_resp       (ipy) = 0.0
          cgrid%avg_root_resp       (ipy) = 0.0
          cgrid%avg_growth_resp     (ipy) = 0.0
@@ -496,7 +504,7 @@ subroutine spatial_averages
                                          * site_area_i
             cpoly%avg_smoist_gg(:,isi)   = matmul(csite%avg_smoist_gg  ,csite%area)        &
                                          * site_area_i
-            cpoly%avg_smoist_gc(:,isi)   = matmul(csite%avg_smoist_gc  ,csite%area)        &
+            cpoly%avg_transloss(:,isi)   = matmul(csite%avg_transloss  ,csite%area)        &
                                          * site_area_i
             cpoly%aux_s(:,isi)           = matmul(csite%aux_s          ,csite%area)        &
                                          * site_area_i
@@ -504,6 +512,7 @@ subroutine spatial_averages
                                          * site_area_i
             cpoly%avg_soil_water(:,isi)  = matmul(csite%soil_water     ,csite%area)        &
                                          * site_area_i
+
 
             do k=cpoly%lsl(isi),nzg
                !---------------------------------------------------------------------------!
@@ -515,9 +524,9 @@ subroutine spatial_averages
                site_avg_soil_hcap(k) = 0.
                dslzsum_i = 1./ sum(dslz(cpoly%lsl(isi):nzg))
                do ipa=1,csite%npatches
-                  nsoil = csite%ntext_soil(k,ipa)
+                  nsoil = cpoly%ntext_soil(k,isi)
                   site_avg_soil_hcap(k) = site_avg_soil_hcap(k)                            &
-                                        + soil(csite%ntext_soil(k,ipa))%slcpd              &
+                                        + soil(cpoly%ntext_soil(k,isi))%slcpd              &
                                         * csite%area(ipa) * site_area_i
                   !----- Integrate soil wetness. ------------------------------------------!
                   cpoly%avg_soil_wetness(isi) = cpoly%avg_soil_wetness(isi)                &
@@ -593,17 +602,19 @@ subroutine spatial_averages
             end if
             !------------------------------------------------------------------------------!
 
-
             !----- Average over patches. --------------------------------------------------!
             longpatchloop: do ipa=1,csite%npatches
                cpatch => csite%patch(ipa)
+
+               !----- Zero the rootfraction diagnostic. -----------------------------------!
+               csite%rootdense(:,ipa) = 0.
 
                !---------------------------------------------------------------------------!
                !     Adding cohort "extensive" variables. Those that are not must be       !
                ! scaled by nplant. Just make sure that we have at least one cohort.        !
                !---------------------------------------------------------------------------!
                if (cpatch%ncohorts > 0) then
-                  lai_patch = sum(cpatch%lai, cpatch%solvable)
+                  lai_patch = sum(cpatch%lai, cpatch%resolvable)
                   csite%avg_veg_energy(ipa) = sum(cpatch%veg_energy)
                   csite%avg_veg_water(ipa)  = sum(cpatch%veg_water)
                   csite%hcapveg(ipa)        = sum(cpatch%hcapveg)
@@ -616,6 +627,48 @@ subroutine spatial_averages
                                               * csite%area(ipa)*cpoly%area(isi)            &
                                               * site_area_i * poly_area_i
 
+                  cgrid%avg_nppleaf(ipy)      = cgrid%avg_nppleaf(ipy)                     &
+                                              + sum(cpatch%dmean_nppleaf                   &
+                                              * cpatch%nplant)                             &
+                                              * csite%area(ipa)*cpoly%area(isi)            &
+                                              * site_area_i * poly_area_i
+                                              
+                  cgrid%avg_nppfroot(ipy)     = cgrid%avg_nppfroot(ipy)                    &
+                                              + sum(cpatch%dmean_nppfroot                  &
+                                              * cpatch%nplant)                             &
+                                              * csite%area(ipa)*cpoly%area(isi)            &
+                                              * site_area_i * poly_area_i
+                                              
+                  cgrid%avg_nppsapwood(ipy)   = cgrid%avg_nppsapwood(ipy)                  &
+                                              + sum(cpatch%dmean_nppsapwood                &
+                                              * cpatch%nplant)                             &
+                                              * csite%area(ipa)*cpoly%area(isi)            &
+                                              * site_area_i * poly_area_i
+                                              
+                  cgrid%avg_nppcroot(ipy)     = cgrid%avg_nppcroot(ipy)                    &
+                                              + sum(cpatch%dmean_nppcroot                  &
+                                              * cpatch%nplant)                             &
+                                              * csite%area(ipa)*cpoly%area(isi)            &
+                                              * site_area_i * poly_area_i
+                                              
+                  cgrid%avg_nppseeds(ipy)     = cgrid%avg_nppseeds(ipy)                    &
+                                              + sum(cpatch%dmean_nppseeds                  &
+                                              * cpatch%nplant)                             &
+                                              * csite%area(ipa)*cpoly%area(isi)            &
+                                              * site_area_i * poly_area_i
+                                              
+                  cgrid%avg_nppwood(ipy)      = cgrid%avg_nppwood(ipy)                     &
+                                              + sum(cpatch%dmean_nppwood                   &
+                                              * cpatch%nplant)                             &
+                                              * csite%area(ipa)*cpoly%area(isi)            &
+                                              * site_area_i * poly_area_i
+                                              
+                  cgrid%avg_nppdaily(ipy)     = cgrid%avg_nppdaily(ipy)                    &
+                                              + sum(cpatch%dmean_nppdaily                  &
+                                              * cpatch%nplant)                             &
+                                              * csite%area(ipa)*cpoly%area(isi)            &
+                                              * site_area_i * poly_area_i
+                                              
                   cgrid%avg_leaf_resp(ipy)    = cgrid%avg_leaf_resp(ipy)                   &
                                               + sum(cpatch%mean_leaf_resp)                 &
                                               * csite%area(ipa)*cpoly%area(isi)            &
@@ -786,6 +839,20 @@ subroutine spatial_averages
                   cpatch%old_stoma_vector(14,ico) = cpatch%old_stoma_data(ico)%prss_residual
                   cpatch%old_stoma_vector(15,ico) = cpatch%old_stoma_data(ico)%leaf_residual
                   cpatch%old_stoma_vector(16,ico) = cpatch%old_stoma_data(ico)%gsw_residual
+
+
+                  !------------------------------------------------------------------------!
+                  !    Rooting fraction: step 1, find root biomass per cubic meter         !
+                  !    broot*nplant/rooting_depth   [kg/plant]*[plant/m2]/[m]              !
+                  !------------------------------------------------------------------------!
+                  rdepth = sum(dslz(cpatch%krdepth(ico):nzg))
+                  do k=cpatch%krdepth(ico),nzg
+                     csite%rootdense(k,ipa) = csite%rootdense(k,ipa)                       &
+                                            + cpatch%broot(ico)*cpatch%nplant(ico)/rdepth
+                  end do
+                  !------------------------------------------------------------------------!
+
+
                end do cohortloop
                   
                pftloop: do ipft = 1,n_pft
@@ -818,6 +885,13 @@ subroutine spatial_averages
                csite%laiarea = csite%laiarea / laiarea_site
             end if
 
+
+            ! Take an area weighted average of the root density to get site level fraction
+            !------------------------------------------------------------------------------!
+            cpoly%avg_soil_rootfrac(:,isi) = matmul(csite%rootdense,csite%area)        &
+                 * site_area_i
+
+            
             !------------------------------------------------------------------------------!
             !    Site average of canopy thermodynamic state.  We average the variables     !
             ! that are insensitive to changes in pressure (potential temperature, specific !
@@ -977,7 +1051,7 @@ subroutine spatial_averages
                                       * poly_area_i
          cgrid%avg_smoist_gg(:,ipy)   = matmul(cpoly%avg_smoist_gg  , cpoly%area)          &
                                       * poly_area_i
-         cgrid%avg_smoist_gc(:,ipy)   = matmul(cpoly%avg_smoist_gc  , cpoly%area)          &
+         cgrid%avg_transloss(:,ipy)   = matmul(cpoly%avg_transloss  , cpoly%area)          &
                                       * poly_area_i
          cgrid%aux_s(:,ipy)           = matmul(cpoly%aux_s          , cpoly%area)          &
                                       * poly_area_i
@@ -985,6 +1059,9 @@ subroutine spatial_averages
                                       * poly_area_i
          cgrid%avg_soil_water(:,ipy)  = matmul(cpoly%avg_soil_water , cpoly%area)          &
                                       * poly_area_i
+         cgrid%avg_soil_rootfrac(:,ipy) = matmul(cpoly%avg_soil_water,cpoly%area)          &
+                                      * poly_area_i
+
 
          do k=cgrid%lsl(ipy),nzg
             !------------------------------------------------------------------------------!

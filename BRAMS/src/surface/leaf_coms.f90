@@ -47,7 +47,7 @@ module leaf_coms
    !---------------------------------------------------------------------------------------!
    integer :: niter_leaf       ! ! number of leaf timesteps
 
-   logical :: solvable         ! ! Flag to determine whether to solve vegetation or not.
+   logical :: resolvable       ! ! Flag to determine whether to resolve vegetation or not.
 
    real    :: dtll             & ! leaf timestep
             , dtll_factor      & ! leaf timestep factor (leaf timestep / model timestep)
@@ -220,10 +220,13 @@ module leaf_coms
    !---------------------------------------------------------------------------------------!
 
    !----- Roughness -----------------------------------------------------------------------!
-   real, parameter :: z0fac_water    = .016 / grav ! Coefficient before ustar²
-   real, parameter :: min_waterrough = .0001       ! Minimum water roughness height
-   real, parameter :: waterrough     = .0001       ! Water roughness height
-   real, parameter :: snowrough      = .001        ! Snow roughness height
+   real(kind=4), parameter :: z0fac_water     = .016 / grav ! Coefficient before ustar²
+   real(kind=4), parameter :: min_waterrough  = .0001       ! Min. water roughness height
+   real(kind=4), parameter :: waterrough      = .0001       ! Water roughness height
+   real(kind=4), parameter :: snowrough       = .001        ! Snow roughness height
+   !----- Double precision version of some variables above. -------------------------------!
+   real(kind=8), parameter :: z0fac_water8    = dble(z0fac_water   )
+   real(kind=8), parameter :: min_waterrough8 = dble(min_waterrough)
    !---------------------------------------------------------------------------------------!
 
    !----- Maximum transpiration allowed. --------------------------------------------------!
@@ -537,7 +540,7 @@ module leaf_coms
       !------------------------------------------------------------------------------------!
       select case (trim(idel))
       case ('INITIAL','GRID_POINT','PATCH')
-         solvable                = .false.
+         resolvable              = .false.
 
          can_lntheta             = 0.
          can_exner               = 0

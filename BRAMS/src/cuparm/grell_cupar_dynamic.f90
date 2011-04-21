@@ -880,6 +880,7 @@ subroutine grell_grell_solver(nclouds,cldd,clds,dtime,fac,aatot0,aatot,mfke,ierr
    integer, dimension(nclouds)          :: cloud   ! Absolute cloud index.
    !----- Temporary, allocatable arrays. --------------------------------------------------!
    real   , dimension(:,:), allocatable :: kke     ! Subset of mass flux kernel
+   real   , dimension(:)  , allocatable :: diagkke ! Diagonal of kke
    real   , dimension(:)  , allocatable :: mfo     ! Minus the large-scale forcing
    real   , dimension(:)  , allocatable :: mb      ! Mass flux
    integer, dimension(:)  , allocatable :: cldidx  ! Cloud index, to copy back to ensemble
@@ -925,7 +926,7 @@ subroutine grell_grell_solver(nclouds,cldd,clds,dtime,fac,aatot0,aatot,mfke,ierr
       if (nsolv == 0) exit queq_loop
 
       !----- Allocate some vectors we need for solving the linear system. -----------------!
-      allocate(kke(nsolv,nsolv),mfo(nsolv),mb(nsolv),cldidx(nsolv))
+      allocate(kke(nsolv,nsolv),diagkke(nsolv),mfo(nsolv),mb(nsolv),cldidx(nsolv))
       
       !----- Store the actual cloud number of the clouds that exist. ----------------------!
       cldidx = pack(cloud,okcld)
@@ -940,12 +941,24 @@ subroutine grell_grell_solver(nclouds,cldd,clds,dtime,fac,aatot0,aatot,mfke,ierr
             kke(isol,jsol) = fac * mfke(icld,jcld)
          end do
       end do
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !     Find the array of kernels.                                                     !
+      !------------------------------------------------------------------------------------!
+      call diagon(nsolv,kke,diagkke)
+      !------------------------------------------------------------------------------------!
+
+
 
       !------------------------------------------------------------------------------------!
       !     Solve the linear system using a Gaussian elimination method.  The system, as   !
       ! stated in Lord et al. (1982), is : K * Mb = -F.                                    !
       !------------------------------------------------------------------------------------!
       call lisys_solver(nsolv,kke,mfo,mb,is_sing)
+      !------------------------------------------------------------------------------------!
 
 
       !------------------------------------------------------------------------------------! 
@@ -959,7 +972,7 @@ subroutine grell_grell_solver(nclouds,cldd,clds,dtime,fac,aatot0,aatot,mfke,ierr
          !---------------------------------------------------------------------------------!
          deallocate(kke,mfo,mb,cldidx)
          exit queq_loop
-      elseif (any(mb < 0.)) then
+      elseif (any(mb < 0.) .or. any(diagkke == 0.)) then
          !---------------------------------------------------------------------------------!
          !     There are some negative members which can't be solved, so we must eliminate !
          ! these and try again.                                                            !
@@ -967,12 +980,12 @@ subroutine grell_grell_solver(nclouds,cldd,clds,dtime,fac,aatot0,aatot,mfke,ierr
          do jsol=1,nsolv
             jcld = cldidx(jsol)
 
-            if (mb(jsol) < 0. ) then
+            if (mb(jsol) < 0. .or. diagkke(jsol) == 0.) then
                okcld(jcld) = .false.
             end if
          end do
          !----- Free memory so it will be ready to be allocated again next time. ----------!
-         deallocate(kke,mfo,mb,cldidx)
+         deallocate(kke,diagkke,mfo,mb,cldidx)
       else
          !---------------------------------------------------------------------------------!
          !     All mass flux terms are zero or positive, we are all set.  Simply copy the  !
@@ -985,7 +998,7 @@ subroutine grell_grell_solver(nclouds,cldd,clds,dtime,fac,aatot0,aatot,mfke,ierr
             upmx(jcld) = max(0.,mfo(jsol) / kke(jsol,jsol))
          end do
          !----- Free memory before leaving the subroutine. --------------------------------!
-         deallocate(kke,mfo,mb,cldidx)
+         deallocate(kke,diagkke,mfo,mb,cldidx)
          exit queq_loop
       end if
 
@@ -1044,6 +1057,7 @@ subroutine grell_arakschu_solver(nclouds,cldd,clds,mgmzp,dtime,p_cup,clim,whlev,
    integer, dimension(nclouds)          :: cloud   ! Absolute cloud index.
    !----- Temporary, allocatable arrays. --------------------------------------------------!
    real   , dimension(:,:), allocatable :: kke     ! Subset of mass flux kernel
+   real   , dimension(:)  , allocatable :: diagkke ! Diagonal of kke
    real   , dimension(:)  , allocatable :: mfo     ! Minus the large-scale forcing
    real   , dimension(:)  , allocatable :: mb      ! Mass flux
    integer, dimension(:)  , allocatable :: cldidx  ! Cloud index, to copy back to ensemble
@@ -1089,7 +1103,7 @@ subroutine grell_arakschu_solver(nclouds,cldd,clds,mgmzp,dtime,p_cup,clim,whlev,
       if (nsolv == 0) exit queq_loop
 
       !----- Allocate some vectors we need for solving the linear system. -----------------!
-      allocate(kke(nsolv,nsolv),mfo(nsolv),mb(nsolv),cldidx(nsolv))
+      allocate(kke(nsolv,nsolv),diagkke(nsolv),mfo(nsolv),mb(nsolv),cldidx(nsolv))
       
       !----- Store the actual cloud number of those clouds 
       cldidx = pack(cloud,okcld)
@@ -1126,12 +1140,25 @@ subroutine grell_arakschu_solver(nclouds,cldd,clds,mgmzp,dtime,p_cup,clim,whlev,
             kke(isol,jsol) = mfke(icld,jcld)
          end do
       end do
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !     Find the array of kernels.                                                     !
+      !------------------------------------------------------------------------------------!
+      call diagon(nsolv,kke,diagkke)
+      !------------------------------------------------------------------------------------!
+
+
+
 
       !------------------------------------------------------------------------------------!
       !     Solve the linear system using a Gaussian elimination method.  The system, as   !
       ! stated in Lord et al. (1982), is : K * Mb = -F.                                    !
       !------------------------------------------------------------------------------------!
       call lisys_solver(nsolv,kke,mfo,mb,is_sing)
+      !------------------------------------------------------------------------------------!
 
 
       !------------------------------------------------------------------------------------! 
@@ -1145,19 +1172,19 @@ subroutine grell_arakschu_solver(nclouds,cldd,clds,mgmzp,dtime,p_cup,clim,whlev,
          !---------------------------------------------------------------------------------!
          deallocate(kke,mfo,mb,cldidx)
          exit queq_loop
-      elseif (any(mb < 0.)) then
+      elseif (any(mb < 0.) .or. any(diagkke == 0.)) then
          !---------------------------------------------------------------------------------!
          !     There are some negative members which can't be solved, so we must eliminate !
          ! these and try again.                                                            !
          !---------------------------------------------------------------------------------!
          do jsol=1,nsolv
             jcld = cldidx(jsol)
-            if (mb(jsol) < 0. ) then
+            if (mb(jsol) < 0. .or. diagkke(jsol) == 0. ) then
                okcld(jcld) = .false.
             end if
          end do
          !----- Free memory so it will be ready to be allocated next time. ----------------!
-         deallocate(kke,mfo,mb,cldidx)
+         deallocate(kke,diagkke,mfo,mb,cldidx)
       else
          !---------------------------------------------------------------------------------!
          !     All mass flux terms are zero or positive, we are all set.  Simply copy the  !
@@ -1170,7 +1197,7 @@ subroutine grell_arakschu_solver(nclouds,cldd,clds,mgmzp,dtime,p_cup,clim,whlev,
             upmx(jcld) = max(0.,mfo(jsol) / kke(jsol,jsol))
          end do
          !----- Free memory before leaving the subroutine. --------------------------------!
-         deallocate(kke,mfo,mb,cldidx)
+         deallocate(kke,diagkke,mfo,mb,cldidx)
          exit queq_loop
       end if
 

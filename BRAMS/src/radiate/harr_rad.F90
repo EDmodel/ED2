@@ -79,8 +79,10 @@ subroutine harr_swrad(nz,alb,amu0,time,mynum)
                          , asym => gp          & ! intent(in)
                          , fu                  & ! intent(inout)
                          , fd                  & ! intent(inout)
+                         , vdflx               & ! intent(inout)
                          , flxsu => flxus      & ! intent(inout)
                          , flxsd => flxds      & ! intent(inout)
+                         , flx_diff            & ! intent(inout)
                          , top                 & ! intent(in)
                          , tm                  & ! intent(in)
                          , gma                 ! ! intent(in)
@@ -92,13 +94,52 @@ subroutine harr_swrad(nz,alb,amu0,time,mynum)
    real   , intent(in) :: amu0
    real   , intent(in) :: time
    !----- Local variables -----------------------------------------------------------------!
-   integer                   :: ib,iz,mxa,ig,ik,ig1,ig2,ik1,ik2,ig3,ik3
+   integer                   :: ib
+   integer                   :: iz
+   integer                   :: mxa
+   integer                   :: ig
+   integer                   :: ik
+   integer                   :: ig1
+   integer                   :: ig2
+   integer                   :: ik1
+   integer                   :: ik2
+   integer                   :: ig3
+   integer                   :: ik3
    integer, dimension(mg)    :: na
-   real                      :: uu,fact,ufac,dfac,tu1,tu2,td1,td2,fbu,fbd,tu3,td3
-   real   , dimension(nz)    :: tg, tcr, t, r, tc, sigu, sigd, re, vd, td, vu
-   real   , dimension(mb)    :: wlenlo,wlenhi
+   real                      :: uu
+   real                      :: fact
+   real                      :: ufac
+   real                      :: dfac
+   real                      :: tu1
+   real                      :: tu2
+   real                      :: td1
+   real                      :: td2
+   real                      :: fbu
+   real                      :: fbd
+   real                      :: tu3
+   real                      :: td3
+   real                      :: diffuse_fac
+   real                      :: tdiffuse1
+   real                      :: tdiffuse2
+   real                      :: f_diffuse_d
+   real                      :: tdiffuse3
+   real   , dimension(nz)    :: tg
+   real   , dimension(nz)    :: tcr
+   real   , dimension(nz)    :: t
+   real   , dimension(nz)    :: r
+   real   , dimension(nz)    :: tc
+   real   , dimension(nz)    :: sigu
+   real   , dimension(nz)    :: sigd
+   real   , dimension(nz)    :: re
+   real   , dimension(nz)    :: vd
+   real   , dimension(nz)    :: td
+   real   , dimension(nz)    :: vu
+   real   , dimension(mb)    :: wlenlo
+   real   , dimension(mb)    :: wlenhi
    !---------------------------------------------------------------------------------------!
 
+
+   flx_diff = 0.0
 
    bandloop: do ib=1,ns
       !------------------------------------------------------------------------------------!
@@ -117,7 +158,7 @@ subroutine harr_swrad(nz,alb,amu0,time,mynum)
          fd(iz,3) = 0.
          fd(iz,4) = 0.
       end do
-
+      vdflx(:)    = 0.
       !-----  Find how many overlaps if any...also check to see whether the gas is used. --!
       mxa = 0
       do ig=1,mg
@@ -149,13 +190,15 @@ subroutine harr_swrad(nz,alb,amu0,time,mynum)
 
             !----- Now do rest of stuff in the flux subroutine ----------------------------!
             call flxsw(nz,nzmax,tg,tp(:,ib),tcr,omgp(:,ib),alb,solar(ib),amu0,t,r,tc       &
-                      ,sigu,sigd,re,vd,td,vu,fu(:,6),fd(:,6),asym(:,ib),time,mynum)
+                      ,sigu,sigd,re,vd,td,vu,fu(:,6),fd(:,6),asym(:,ib),time,vdflx(6)      &
+                      ,mynum)
 
             !----- Add pseudo-band fluxes to the total flux -------------------------------!
             do iz=1,nz
               flxsu(iz) = flxsu(iz) + wght(ig,ik,ib) * fu(iz,6)
               flxsd(iz) = flxsd(iz) + wght(ig,ik,ib) * fd(iz,6)
             end do
+            flx_diff    = flx_diff  + wght(ig,ik,ib) * vdflx(6)
 
          end do
 
@@ -170,7 +213,7 @@ subroutine harr_swrad(nz,alb,amu0,time,mynum)
          tg(1:nz) = 0.
 
          call flxsw(nz,nzmax,tg,tp(:,ib),tcr,omgp(:,ib),alb,solar(ib),amu0,t,r,tc,sigu     &
-                   ,sigd,re,vd,td,vu,fu(:,1),fd(:,1),asym(:,ib),time,mynum)
+                   ,sigd,re,vd,td,vu,fu(:,1),fd(:,1),asym(:,ib),time,vdflx(1),mynum)
 
          !----- Do the 1st gas. -----------------------------------------------------------!
          do ik1=1,npsb(ig1,ib)
@@ -182,13 +225,14 @@ subroutine harr_swrad(nz,alb,amu0,time,mynum)
             end do
 
             call flxsw(nz,nzmax,tg,tp(:,ib),tcr,omgp(:,ib),alb,solar(ib),amu0,t,r,tc,sigu  &
-                      ,sigd,re,vd,td,vu,fu(:,6),fd(:,6),asym(:,ib),time,mynum)
+                      ,sigd,re,vd,td,vu,fu(:,6),fd(:,6),asym(:,ib),time,vdflx(6),mynum)
 
             fact = wght(ig1,ik1,ib)
             do iz=1,nz
               fu(iz,2) = fu(iz,2) + fact * fu(iz,6)
               fd(iz,2) = fd(iz,2) + fact * fd(iz,6)
             end do
+            vdflx(2)   = vdflx(2) + fact * vdflx(6)
 
          end do
 
@@ -202,13 +246,14 @@ subroutine harr_swrad(nz,alb,amu0,time,mynum)
             end do
 
             call flxsw(nz,nzmax,tg,tp(:,ib),tcr,omgp(:,ib),alb,solar(ib),amu0,t,r,tc,sigu  &
-                      ,sigd,re,vd,td,vu,fu(:,6),fd(:,6),asym(:,ib),time,mynum)
+                      ,sigd,re,vd,td,vu,fu(:,6),fd(:,6),asym(:,ib),time,vdflx(6),mynum)
 
             fact = wght(ig2,ik2,ib)
             do iz=1,nz
                fu(iz,3) = fu(iz,3) + fact * fu(iz,6)
                fd(iz,3) = fd(iz,3) + fact * fd(iz,6)
             end do
+            vdflx(3) = vdflx(3) + fact * vdflx(6)
          end do
 
          !----- DMM: this is the stuff that is fixed. -------------------------------------!
@@ -227,6 +272,12 @@ subroutine harr_swrad(nz,alb,amu0,time,mynum)
            flxsd(iz) = flxsd(iz) + fbd
          end do
 
+         diffuse_fac = max(1.e-14,vdflx(1))
+         tdiffuse1   = max(0.0,min(1.1,vdflx(2)/diffuse_fac))
+         tdiffuse2   = max(0.0,min(1.1,vdflx(3)/diffuse_fac))
+         f_diffuse_d = tdiffuse1 * tdiffuse2 * vdflx(1)
+         flx_diff    = flx_diff + f_diffuse_d
+
 
 
       case (3)
@@ -239,7 +290,7 @@ subroutine harr_swrad(nz,alb,amu0,time,mynum)
          tg(1:nz) = 0.
 
          call flxsw(nz,nzmax,tg,tp(:,ib),tcr,omgp(:,ib),alb,solar(ib),amu0,t,r,tc,sigu     &
-                   ,sigd,re,vd,td,vu,fu(:,1),fd(:,1),asym(:,ib),time,mynum)
+                   ,sigd,re,vd,td,vu,fu(:,1),fd(:,1),asym(:,ib),time,vdflx(1),mynum)
 
          !----- Do the 1st gas. -----------------------------------------------------------!
          do ik1=1,npsb(ig1,ib)
@@ -251,13 +302,14 @@ subroutine harr_swrad(nz,alb,amu0,time,mynum)
             end do
 
             call flxsw(nz,nzmax,tg,tp(:,ib),tcr,omgp(:,ib),alb,solar(ib),amu0,t,r,tc,sigu  &
-                      ,sigd,re,vd,td,vu,fu(:,6),fd(:,6),asym(:,ib),time,mynum)
+                      ,sigd,re,vd,td,vu,fu(:,6),fd(:,6),asym(:,ib),time,vdflx(6),mynum)
 
             fact = wght(ig1,ik1,ib)
             do iz=1,nz
               fu(iz,2) = fu(iz,2) + fact * fu(iz,6)
               fd(iz,2) = fd(iz,2) + fact * fd(iz,6)
             end do
+            vdflx(2)   = vdflx(2) + fact * vdflx(6)
          end do
 
          !----- Do the 2nd gas. -----------------------------------------------------------!
@@ -270,13 +322,14 @@ subroutine harr_swrad(nz,alb,amu0,time,mynum)
             end do
 
             call flxsw(nz,nzmax,tg,tp(:,ib),tcr,omgp(:,ib),alb,solar(ib),amu0,t,r,tc,sigu  &
-                      ,sigd,re,vd,td,vu,fu(:,6),fd(:,6),asym(:,ib),time,mynum)
+                      ,sigd,re,vd,td,vu,fu(:,6),fd(:,6),asym(:,ib),time,vdflx(6),mynum)
 
             fact = wght(ig2,ik2,ib)
             do iz = 1,nz
               fu(iz,3) = fu(iz,3)+fact*fu(iz,6)
               fd(iz,3) = fd(iz,3)+fact*fd(iz,6)
             end do
+            vdflx(3)   = vdflx(3) + fact * vdflx(6)
          end do
 
          !----- Do the 3rd gas. -----------------------------------------------------------!
@@ -290,7 +343,7 @@ subroutine harr_swrad(nz,alb,amu0,time,mynum)
 
             !----- Now do rest of stuff in subroutine. ------------------------------------!
             call flxsw(nz,nzmax,tg,tp(:,ib),tcr,omgp(:,ib),alb,solar(ib),amu0,t,r,tc,sigu   &
-                       ,sigd,re,vd,td,vu,fu(:,6),fd(:,6),asym(:,ib),time,mynum)
+                       ,sigd,re,vd,td,vu,fu(:,6),fd(:,6),asym(:,ib),time,vdflx(6),mynum)
 
             !----- Sum the pseudo-band fluxes to get total flux. --------------------------!
             fact = wght(ig3,ik3,ib)
@@ -298,6 +351,7 @@ subroutine harr_swrad(nz,alb,amu0,time,mynum)
               fu(iz,4) = fu(iz,4) + fact * fu(iz,6)
               fd(iz,4) = fd(iz,4) + fact * fd(iz,6)
             end do
+            vdflx(4)   = vdflx(4) + fact * vdflx(6)
          end do
 
          !----- DMM: this is the stuff that is fixed. -------------------------------------!
@@ -316,6 +370,12 @@ subroutine harr_swrad(nz,alb,amu0,time,mynum)
             flxsu(iz) = flxsu(iz) + fbu
             flxsd(iz) = flxsd(iz) + fbd
          end do
+         diffuse_fac = max(1.e-14,vdflx(1))
+         tdiffuse1   = max(0.0,min(1.1,vdflx(2)/diffuse_fac))
+         tdiffuse2   = max(0.0,min(1.1,vdflx(3)/diffuse_fac))
+         tdiffuse3   = max(0.0,min(1.1,vdflx(4)/diffuse_fac))
+         f_diffuse_d = tdiffuse1 * tdiffuse2 * tdiffuse3 * vdflx(1)
+         flx_diff    = flx_diff + f_diffuse_d
 
 
 
@@ -740,7 +800,7 @@ end subroutine harr_lwrad
 !==========================================================================================!
 !==========================================================================================!
 subroutine flxsw(nz,nzmax,tg,tp,tcr,omgp,alb,slr,amu0,t,r,tc,sigu,sigd,re,vd  &
-                 ,td,vu,fu,fd,asym,time,mynum)
+                 ,td,vu,fu,fd,asym,time,vdflx,mynum)
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    integer                       , intent(in)    :: nz,nzmax,mynum
@@ -749,11 +809,12 @@ subroutine flxsw(nz,nzmax,tg,tp,tcr,omgp,alb,slr,amu0,t,r,tc,sigu,sigd,re,vd  &
    real                          , intent(in)    :: alb,slr,amu0,time
    real        , dimension(nz)   , intent(inout) :: t,r,tc,sigu,sigd,re,vd,td,vu
    real        , dimension(nzmax), intent(inout) :: fu,fd
+   real                          , intent(out)   :: vdflx
    !----- Local variables -----------------------------------------------------------------!
    integer                                       :: iz
    real(kind=8), dimension(nz)                   :: tg8,tcr8
    real(kind=8), dimension(nzmax)                :: tp8,omgp8,asym8
-   real(kind=8)                                  :: alb8,slr8,amu08
+   real(kind=8)                                  :: alb8,slr8,vdflx8,amu08
    real(kind=8), dimension(nz)                   :: t8,r8,tc8,sigu8,sigd8,re8,vd8,td8,vu8
    real(kind=8), dimension(nz)                   :: fu8,fd8
    real(kind=8)                                  :: expt1,tau,omg0,af,fact,beta0,g1,g2,gg
@@ -775,7 +836,7 @@ subroutine flxsw(nz,nzmax,tg,tp,tcr,omgp,alb,slr,amu0,t,r,tc,sigu,sigd,re,vd  &
    ! overlap (or no-overlap) is accumulated in tg.                                         !
    !---------------------------------------------------------------------------------------!
 
-   !----- Initializing double precision version of output variables. ----------------------!
+   !----- Initialise double precision version of output variables. ------------------------!
    t8    = dble(0.)
    r8    = dble(0.)
    tc8   = dble(0.)
@@ -785,7 +846,7 @@ subroutine flxsw(nz,nzmax,tg,tp,tcr,omgp,alb,slr,amu0,t,r,tc,sigu,sigd,re,vd  &
    vd8   = dble(0.)
    td8   = dble(0.)
    vu8   = dble(0.)
-   !-----  Transferring data from single to double precision. -----------------------------!
+   !-----  Transfer data from single to double precision. ---------------------------------!
    tg8   = dble(tg)
    tp8   = dble(tp)
    tcr8  = dble(tcr)
@@ -876,7 +937,7 @@ subroutine flxsw(nz,nzmax,tg,tp,tcr,omgp,alb,slr,amu0,t,r,tc,sigu,sigd,re,vd  &
       fu8(1) = alb8 * (vd8(1) + slr8 * amu08 * exp(-tc8(1) * amu0i))                       &
                     / (1.0 - alb8 * re8(1))
    end if
-  
+   vdflx8 = re8(1) * fu8(1) + vd8(1)
    !----- Do adding, going from top down calculate fluxes going up through the layers. ----!
    do iz = 2, nz
       fd8(iz-1) = re8(iz-1) * fu8(iz-1) + vd8(iz-1) + fd8(iz-1)
@@ -901,6 +962,7 @@ subroutine flxsw(nz,nzmax,tg,tp,tcr,omgp,alb,slr,amu0,t,r,tc,sigu,sigd,re,vd  &
 
    fd(1)   = dble2sngl(tinyreal,fd8(1)  )
    fu(1)   = dble2sngl(tinyreal,fu8(1)  )
+   vdflx   = dble2sngl(tinyreal,vdflx8  )
 
    return
 end subroutine flxsw

@@ -50,8 +50,8 @@
 ! the integration.                                                                         !
 !------------------------------------------------------------------------------------------!
 subroutine harr_raddriv(m1,m2,m3,nclouds,ncrad,ifm,if_adap,time,deltat,ia,iz,ja,jz         &
-                       ,nadd_rad,iswrtyp,ilwrtyp,icumfdbk,flpw,topt,glat,rtgt,pi0,pp,rho   &
-                       ,theta,rv,co2p,rshort,rlong,fthrd,rlongup,cosz                      &
+                       ,nadd_rad,iswrtyp,ilwrtyp,icumfdbk,flpw,topt,glon,glat,rtgt,pi0,pp  &
+                       ,rho,theta,rv,co2p,rshort,rshort_diffuse,rlong,fthrd,rlongup,cosz   &
                        ,albedt,rshort_top,rshortup_top,rlongup_top,fthrd_lw                &
                        ,sh_c,sh_r,sh_p,sh_s,sh_a,sh_g,sh_h                                 &
                        ,con_c,con_r,con_p,con_s,con_a,con_g,con_h                          &
@@ -62,10 +62,11 @@ subroutine harr_raddriv(m1,m2,m3,nclouds,ncrad,ifm,if_adap,time,deltat,ia,iz,ja,
    use rconstants,      only: cpor, p00i, stefan, cp, cpi, p00, hr_sec, toodry
    use micphys,         only: ncat,rxmin
    use mem_leaf,        only: isfcl
+   use mem_radiate,     only: rad_cosz_min
    use harr_coms,       only: rl,dzl,dl,pl,co2l,o3l,vp,u,tp,omgp,gp,zml,ztl,tl             &
                              ,flxus,flxds,flxul,flxdl,fu,fd,zero_harr_met_scratch          &
                              ,zero_harr_flx_scratch,nradmax,tairk,rhoi,rhoe,rhov,press     &
-                             ,rcl_parm,rpl_parm,area_parm
+                             ,rcl_parm,rpl_parm,area_parm,flx_diff
  
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
@@ -75,7 +76,7 @@ subroutine harr_raddriv(m1,m2,m3,nclouds,ncrad,ifm,if_adap,time,deltat,ia,iz,ja,
    integer                            , intent(in)    :: nadd_rad,iswrtyp,ilwrtyp,icumfdbk
    real(kind=8)                       , intent(in)    :: time
    real                               , intent(in)    :: deltat
-   real, dimension(m2,m3)             , intent(in)    :: topt,glat,flpw,rtgt
+   real, dimension(m2,m3)             , intent(in)    :: topt,glon,glat,flpw,rtgt
    real, dimension(m1,m2,m3)          , intent(in)    :: pi0,pp,rho,theta,rv,co2p
    real, dimension(m1,m2,m3)          , intent(in)    :: sh_c,sh_r,sh_p,sh_s,sh_a,sh_g,sh_h
    real, dimension(m1,m2,m3)          , intent(in)    :: con_c,con_r,con_p,con_s,con_a
@@ -86,6 +87,7 @@ subroutine harr_raddriv(m1,m2,m3,nclouds,ncrad,ifm,if_adap,time,deltat,ia,iz,ja,
    real, dimension(m1,m2,m3,nclouds)  , intent(in)    :: cuprice
    real, dimension(m2,m3)             , intent(inout) :: rshort,rlong,rlongup,cosz,albedt
    real, dimension(m2,m3)             , intent(inout) :: rshort_top,rshortup_top
+   real, dimension(m2,m3)             , intent(inout) :: rshort_diffuse
    real, dimension(m2,m3)             , intent(inout) :: rlongup_top
    real, dimension(m1,m2,m3)          , intent(inout) :: fthrd,fthrd_lw
    !------ Local arrays -------------------------------------------------------------------!
@@ -215,6 +217,8 @@ subroutine harr_raddriv(m1,m2,m3,nclouds,ncrad,ifm,if_adap,time,deltat,ia,iz,ja,
                    write (unit=*,fmt='(a)') '         The model is about to stop!'
                    write (unit=*,fmt='(2(a,1x,i5,1x))') ' - Node:',mynum,' Grid: ',ifm
                    write (unit=*,fmt='(3(a,1x,i5,1x))') ' - k = ',k,' i = ',i,' j = ',j
+                   write (unit=*,fmt='(a,1x,f10.3)')    ' - Longitude:',glon(i,j)
+                   write (unit=*,fmt='(a,1x,f10.3)')    ' - Latitude :',glat(i,j)
                    write (unit=*,fmt='(a)') ' - Either the temperature is too low, or some'
                    write (unit=*,fmt='(a)') '   negative density, mixing ratio, '
                    write (unit=*,fmt='(a)') '   or pressure was detected!'
@@ -237,19 +241,19 @@ subroutine harr_raddriv(m1,m2,m3,nclouds,ncrad,ifm,if_adap,time,deltat,ia,iz,ja,
             end do
 
             !------------------------------------------------------------------------------!
-            !    Harrington shortwave scheme (valid only if cosz > .03)                    !
+            !    Harrington shortwave scheme (valid only if cosz > cosz_min)               !
             !------------------------------------------------------------------------------!
             if (iswrtyp == 3) then
                !---------------------------------------------------------------------------!
                !    First I flush rshort, rshort_top and rshortup_top to zero, and they    !
                ! should remain zero if it is between dusk and dawn.                        !
                !---------------------------------------------------------------------------!
-               if (cosz(i,j) > 0.03) then
+               if (cosz(i,j) > rad_cosz_min) then
                   call harr_swrad(nrad,albedt(i,j),cosz(i,j),sngl(time),mynum)
-                  rshort      (i,j) = rshort(i,j)       + flxds(1)    * area_parm
-                  rshort_top  (i,j) = rshort_top  (i,j) + flxds(nrad) * area_parm
-                  rshortup_top(i,j) = rshortup_top(i,j) + flxus(nrad) * area_parm
-
+                  rshort      (i,j)   = rshort(i,j)         + flxds(1)    * area_parm
+                  rshort_top  (i,j)   = rshort_top  (i,j)   + flxds(nrad) * area_parm
+                  rshortup_top(i,j)   = rshortup_top(i,j)   + flxus(nrad) * area_parm
+                  rshort_diffuse(i,j) = rshort_diffuse(i,j) + flx_diff    * area_parm
                   do k = ka,m1-1
                      krad = k - koff
                      fthrd(k,i,j) = fthrd(k,i,j)                                           &
@@ -630,7 +634,8 @@ subroutine cloud_opt(m1,ka,nrad,koff,mcat,icld,time,mynum)
                          , availcat     ! ! intent(in)
    use rconstants , only : p00i         & ! intent(in)
                          , rocp         & ! intent(in) 
-                         , hr_sec       ! ! intent(in)
+                         , hr_sec       & ! intent(in)
+                         , lnexp_min    ! ! intent(in)
    use harr_coms  , only : jhcatharr    & ! intent(in)
                           ,dzl          & ! intent(in)
                           ,dl           & ! intent(in)
@@ -719,13 +724,14 @@ subroutine cloud_opt(m1,ka,nrad,koff,mcat,icld,time,mynum)
                   ext = cxharr(k,icat) * rhoe(k) * dzl(krad)                               &
                       * bcoef(1,ib,krc) * dn ** bcoef(2,ib,krc)
 
+
                   om = ocoef(1,ib,krc)                                                     &
-                     + ocoef(2,ib,krc) * exp(ocoef(3,ib,krc) * dn)                         &
-                     + ocoef(4,ib,krc) * exp(ocoef(5,ib,krc) * dn)
+                     + ocoef(2,ib,krc) * exp(max(-60.0,ocoef(3,ib,krc)*dn))                &
+                     + ocoef(4,ib,krc) * exp(max(-60.0,ocoef(5,ib,krc)*dn))
 
                   gg = gcoef(1,ib,icat)                                                    &
-                     + gcoef(2,ib,icat) * exp(gcoef(3,ib,icat) * dn)                       &
-                     + gcoef(4,ib,icat) * exp(gcoef(5,ib,icat) * dn)
+                     + gcoef(2,ib,icat) * exp(max(-60.0,gcoef(3,ib,icat)*dn))              &
+                     + gcoef(4,ib,icat) * exp(max(-60.0,gcoef(5,ib,icat)*dn))
 
                   if (ib <= nsolb) then
                      gg = gg * sacoef(icat)
@@ -809,12 +815,12 @@ subroutine cloud_opt(m1,ka,nrad,koff,mcat,icld,time,mynum)
                   * bcoef(1,ib,krc) * dn ** bcoef(2,ib,krc)
 
                om = ocoef(1,ib,krc)                                                        &
-                  + ocoef(2,ib,krc) * exp(ocoef(3,ib,krc) * dn)                            &
-                  + ocoef(4,ib,krc) * exp(ocoef(5,ib,krc) * dn)
+                  + ocoef(2,ib,krc) * exp(max(-60.0,ocoef(3,ib,krc)*dn))                   &
+                  + ocoef(4,ib,krc) * exp(max(-60.0,ocoef(5,ib,krc)*dn))
 
                gg = gcoef(1,ib,icat)                                                       &
-                  + gcoef(2,ib,icat) * exp(gcoef(3,ib,icat) * dn)                          &
-                  + gcoef(4,ib,icat) * exp(gcoef(5,ib,icat) * dn)
+                  + gcoef(2,ib,icat) * exp(max(-60.0,gcoef(3,ib,icat)*dn))                 &
+                  + gcoef(4,ib,icat) * exp(max(-60.0,gcoef(5,ib,icat)*dn))
 
                if (ib <= nsolb) then
                   gg = gg * sacoef(icat)

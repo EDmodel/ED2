@@ -58,13 +58,15 @@ module soil_coms
    !    These following variables will behave as parameters, but they are initialized at   !
    ! init_soil_coms (ed_params.f90), or through the XML config file.                       !
    !---------------------------------------------------------------------------------------!
-   real    :: soil_rough          ! soil roughness height                        [       m]
-   real    :: snow_rough          ! snowcover roughness height                   [       m]
-   real    :: dewmax              ! Maximum dew flux rate (deprecated)           [ kg/m2/s]
-   real    :: water_stab_thresh   ! stability threshold for RK4 integrator       [   kg/m2]
-   real    :: tiny_sfcwater_mass  ! Minimum mass allowed in temporary layers     [   kg/m2]
-   real    :: snowmin             ! Minimum snow mass needed to create a new lyr [   kg/m2]
-   integer :: infiltration_method ! Infiltration scheme (used in rk4_derivs)     [     0|1]
+   real         :: soil_rough          ! soil roughness height                   [       m]
+   real         :: snow_rough          ! snowcover roughness height              [       m]
+   real(kind=8) :: soil_rough8         ! soil roughness height                   [       m]
+   real(kind=8) :: snow_rough8         ! snowcover roughness height              [       m]
+   real         :: dewmax              ! Maximum dew flux rate (deprecated)      [ kg/m2/s]
+   real         :: water_stab_thresh   ! stability threshold for RK4 integrator  [   kg/m2]
+   real         :: tiny_sfcwater_mass  ! Min. mass allowed in temporary layers   [   kg/m2]
+   real         :: snowmin             ! Min. snow mass needed to create new lyr [   kg/m2]
+   integer      :: infiltration_method ! Infiltration scheme (for rk4_derivs)    [     0|1]
    !---------------------------------------------------------------------------------------!
 
 

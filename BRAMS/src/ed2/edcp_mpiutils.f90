@@ -30,6 +30,7 @@ subroutine masterput_ednl(mainnum)
                                    , iqoutput                   & ! intent(in)
                                    , iyoutput                   & ! intent(in)
                                    , itoutput                   & ! intent(in)
+                                   , ndcycle                    & ! intent(in)
                                    , iclobber                   & ! intent(in)
                                    , frqfast                    & ! intent(in)
                                    , sfilin                     & ! intent(in)
@@ -139,6 +140,7 @@ subroutine masterput_ednl(mainnum)
                                    , vh2dh                      ! ! intent(in)
    use mem_edcp             , only : co2_offset                 ! ! intent(in)
    implicit none
+   !----- Standard common blocks. ---------------------------------------------------------!
    include 'mpif.h'
    !----- Arguments. ----------------------------------------------------------------------!
    integer, intent(in) :: mainnum
@@ -171,6 +173,7 @@ subroutine masterput_ednl(mainnum)
    call MPI_Bcast(iyoutput,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(itoutput,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(isoutput,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(ndcycle,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(attach_metadata,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(outfast,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(outstate,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
@@ -350,6 +353,7 @@ subroutine nodeget_ednl(master_num)
                                    , iqoutput                   & ! intent(out)
                                    , iyoutput                   & ! intent(out)
                                    , itoutput                   & ! intent(out)
+                                   , ndcycle                    & ! intent(out)
                                    , iclobber                   & ! intent(out)
                                    , frqfast                    & ! intent(out)
                                    , sfilin                     & ! intent(out)
@@ -460,13 +464,20 @@ subroutine nodeget_ednl(master_num)
    use mem_edcp             , only : co2_offset                 ! ! intent(out)
 
    implicit none
+   !----- Standard common blocks. ---------------------------------------------------------!
    include 'mpif.h'
-   integer :: ierr,master_num
-   integer :: npv
-   integer :: ng
+   !----- Arguments. ----------------------------------------------------------------------!
+   integer, intent(in) :: master_num
+   !----- Local variables. ----------------------------------------------------------------!
+   integer             :: ierr
+   integer             :: npv
+   integer             :: ng
+   !---------------------------------------------------------------------------------------!
+
+
 
    call MPI_Bcast(time,1,MPI_DOUBLE_PRECISION,master_num,MPI_COMM_WORLD,ierr)
-   call MPI_Bcast(timmax,1,MPI_DOUBLE_PRECISION,master_num,MPI_COMM_WORLD,ierr)  
+   call MPI_Bcast(timmax,1,MPI_DOUBLE_PRECISION,master_num,MPI_COMM_WORLD,ierr)
 
    call MPI_Bcast(current_time%year,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(current_time%month,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
@@ -488,6 +499,7 @@ subroutine nodeget_ednl(master_num)
    call MPI_Bcast(iyoutput,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(itoutput,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(isoutput,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(ndcycle,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(attach_metadata,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(outfast,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(outstate,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
@@ -498,20 +510,13 @@ subroutine nodeget_ednl(master_num)
    call MPI_Bcast(ied_init_mode,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(edres,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
 
-
    do ng=1,maxgrds
-      call MPI_Bcast(sfilin         (ng),str_len,MPI_CHARACTER,master_num                  &
-                    ,MPI_COMM_WORLD,ierr)
-      call MPI_Bcast(veg_database   (ng),str_len,MPI_CHARACTER,master_num                  &
-                    ,MPI_COMM_WORLD,ierr)
-      call MPI_Bcast(soil_database  (ng),str_len,MPI_CHARACTER,master_num                  &
-                    ,MPI_COMM_WORLD,ierr)
-      call MPI_Bcast(lu_database    (ng),str_len,MPI_CHARACTER,master_num                  &
-                    ,MPI_COMM_WORLD,ierr)
-      call MPI_Bcast(plantation_file(ng),str_len,MPI_CHARACTER,master_num                  &
-                    ,MPI_COMM_WORLD,ierr)
-      call MPI_Bcast(lu_rescale_file(ng),str_len,MPI_CHARACTER,master_num                  &
-                    ,MPI_COMM_WORLD,ierr)
+      call MPI_Bcast(sfilin         (ng),str_len,MPI_CHARACTER,master_num,MPI_COMM_WORLD,ierr)
+      call MPI_Bcast(veg_database   (ng),str_len,MPI_CHARACTER,master_num,MPI_COMM_WORLD,ierr)
+      call MPI_Bcast(soil_database  (ng),str_len,MPI_CHARACTER,master_num,MPI_COMM_WORLD,ierr)
+      call MPI_Bcast(lu_database    (ng),str_len,MPI_CHARACTER,master_num,MPI_COMM_WORLD,ierr)
+      call MPI_Bcast(plantation_file(ng),str_len,MPI_CHARACTER,master_num,MPI_COMM_WORLD,ierr)
+      call MPI_Bcast(lu_rescale_file(ng),str_len,MPI_CHARACTER,master_num,MPI_COMM_WORLD,ierr)
    end do
 
    call MPI_Bcast(thsums_database,str_len,MPI_CHARACTER,master_num,MPI_COMM_WORLD,ierr)
@@ -578,6 +583,7 @@ subroutine nodeget_ednl(master_num)
    !      These are ED2 variables that have the same function as certain BRAMS namelist    !
    ! variables under a different name.                                                     !
    !---------------------------------------------------------------------------------------!
+  
    call MPI_Bcast(frqfast,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(frqstate,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
   
@@ -596,7 +602,7 @@ subroutine nodeget_ednl(master_num)
    call MPI_Bcast(idatea,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(imontha,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(iyeara,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
-  
+
    call MPI_Bcast(radfrq,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(iclobber,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(isfclyrm,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
@@ -608,10 +614,10 @@ subroutine nodeget_ednl(master_num)
    !---------------------------------------------------------------------------------------!
    call MPI_Bcast(nnxp,maxgrds,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(nnyp,maxgrds,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
-  
+
    call MPI_Bcast(nzg,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(nzs,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
-  
+
    call MPI_Bcast(nslcon,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(slxclay,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(slxsand,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
@@ -623,8 +629,9 @@ subroutine nodeget_ednl(master_num)
    call MPI_Bcast(ggfact,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(zrough,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
   
-   call MPI_Bcast(co2_offset,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
 
+   call MPI_Bcast(co2_offset,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
+  
    call MPI_Bcast(gamm,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(gamh,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(tprandtl,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
