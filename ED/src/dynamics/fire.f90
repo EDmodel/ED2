@@ -8,7 +8,6 @@ subroutine fire_frequency(month, cgrid)
                             , polygontype            & ! structure
                             , sitetype               & ! structure
                             , patchtype              ! ! structure
-   use pft_coms      , only : agf_bs                 ! ! intent(in)
    use grid_coms     , only : nzg                    ! ! intent(in)
    use soil_coms     , only : slz                    & ! intent(in)
                             , soil                   & ! intent(in)

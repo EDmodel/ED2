@@ -84,7 +84,7 @@ module rpost_dims
    !---------------------------------------------------------------------------------------!
    integer, parameter :: nxyzpm   = nzpmax*nxpmax*nypmax 
    integer, parameter :: maxdimp  = maxdim+1
-   integer, parameter :: nstyp    = 12
+   integer, parameter :: nstyp    = 17
    integer, parameter :: nvtyp    = 30
    integer, parameter :: nkeep    = 90
    integer, parameter :: nke      = nkeep

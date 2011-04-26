@@ -27,7 +27,7 @@ module soil_coms
    integer, parameter :: ed_nstyp = nstyp          ! total # of soil textural classes
    integer, parameter :: ed_nvtyp = nvtyp+nvtyp_teb
 #else
-   integer, parameter :: ed_nstyp = 12             ! total # of soil textural classes
+   integer, parameter :: ed_nstyp = 17             ! total # of soil textural classes
    integer, parameter :: ed_nvtyp = 21
 #endif
 
@@ -154,7 +154,7 @@ module soil_coms
       real :: sfldcap            ! Soil field capacity                           [   m3/m3]
       real :: xsand              ! Percentage of sand                            [     ---]
       real :: xclay              ! Percentage of clay                            [     ---]
-      real :: xorgan             ! Percentage of organic material                [     ---]
+      real :: xsilt              ! Percentage of silt                            [     ---]
       real :: xrobulk            ! Bulk density                                  [     ---]
       real :: slden              ! "Dry" soil density (porosity)                 [   kg/m3]
    end type soil_class
@@ -174,7 +174,7 @@ module soil_coms
       real(kind=8) :: sfldcap    ! Soil field capacity                           [   m3/m3]
       real(kind=8) :: xsand      ! Percentage of sand                            [     ---]
       real(kind=8) :: xclay      ! Percentage of clay                            [     ---]
-      real(kind=8) :: xorgan     ! Percentage of organic material                [     ---]
+      real(kind=8) :: xsilt      ! Percentage of silt                            [     ---]
       real(kind=8) :: xrobulk    ! Bulk density                                  [     ---]
       real(kind=8) :: slden      ! "Dry" soil density (porosity)                 [   kg/m3]
    end type soil_class8
@@ -266,6 +266,104 @@ module soil_coms
    !=======================================================================================!
    !=======================================================================================!
 
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !     This function determines the soil class based on the fraction of sand, clay, and  !
+   ! silt separates.                                                                       !
+   !---------------------------------------------------------------------------------------!
+   integer function find_soil_class(sandfrac,clayfrac)
+      implicit none
+      !----- Arguments. -------------------------------------------------------------------!
+      real   , intent(in) :: sandfrac
+      real   , intent(in) :: clayfrac
+      !----- Local variables. -------------------------------------------------------------!
+      integer             :: sclass
+      real                :: sand
+      real                :: clay
+      real                :: silt
+      real                :: sandline
+      real                :: loamysandline
+      !------------------------------------------------------------------------------------!
+
+
+
+      !----- Define the percentage of sand, clay, and silt. -------------------------------!
+      sand = 100. * sandfrac
+      clay = 100. * clayfrac
+      silt = 100. - sand - clay
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !     Here there is not much we can do other than explore where in the triangle      !
+      ! space we are.                                                                      !
+      !------------------------------------------------------------------------------------!
+      if (silt > 100. .or. silt < 0. .or. sand > 100. .or. sand < 0. .or.                  &
+          clay > 100. .or. clay < 0. ) then
+         write (unit=*,fmt='(a)') '---------------------------------------------------'
+         write (unit=*,fmt='(a)') ' At least one of your percentages is off-bounds...'
+         write (unit=*,fmt='(a,1x,f8.2,a)') 'SAND = ',sand,'%'
+         write (unit=*,fmt='(a,1x,f8.2,a)') 'CLAY = ',clay,'%'
+         write (unit=*,fmt='(a,1x,f8.2,a)') 'SILT = ',silt,'%'
+         write (unit=*,fmt='(a)') ' This soil doesn''t fit into any category...'
+         write (unit=*,fmt='(a)') '---------------------------------------------------'
+         call fatal_error('Incorrect fractions of sand, clay, or silt...'                  &
+                         ,'find_soil_class','soil_coms.F90')
+      elseif (sand > 85.0 + 0.5 * clay) then
+         sclass =  1  !----- Sand. --------------------------------------------------------!
+      elseif (sand > 70.0 + clay) then
+         sclass =  2  !----- Loamy sand. --------------------------------------------------!
+      elseif ((clay <= 20.0 .and. sand > 52.5) .or. (clay <= 7.5 .and. silt <= 50.0)) then
+         sclass =  3  !----- Sandy loam. --------------------------------------------------!
+      elseif ((clay <= 27.5 .and. silt > 50.0 .and. silt <= 80.0) .or.                     &
+              (silt >  80.0 .and. clay > 12.5)                    ) then
+         sclass =  4  !----- Silt loam. ---------------------------------------------------!
+      elseif (clay > 7.5 .and. clay <= 27.5 .and. silt > 27.5 .and. silt <= 50.0 .and.     &
+              sand <= 52.5) then
+         sclass =  5  !----- Loam. --------------------------------------------------------!
+      elseif (clay > 20.0 .and. clay <= 35.0 .and. silt <= 27.5 .and. sand > 45.0) then
+         sclass =  6  !----- Sandy clay loam. ---------------------------------------------!
+      elseif (clay > 27.5 .and. clay <= 40.0 .and. sand <= 20.0) then
+         sclass =  7  !----- Silty clay loam. ---------------------------------------------!
+      elseif (clay > 27.5 .and. clay <= 40.0 .and. sand > 20.0 .and. sand <= 45.0) then
+         sclass =  8  !----- Clayey loam. -------------------------------------------------!
+      elseif (clay > 35.0 .and. sand > 45.0) then
+         sclass =  9  !----- Sandy clay. --------------------------------------------------!
+      elseif (clay > 40.0 .and. silt > 40.0) then
+         sclass = 10  !----- Silty clay. --------------------------------------------------!
+      elseif (clay <= 70.0 .and. sand <= 30.0 .and. silt <= 30.0) then
+         sclass = 11  !----- Clay. --------------------------------------------------------!
+      elseif ( silt > 80.0 .and. clay <= 12.5) then
+         sclass = 14  !----- Silt. --------------------------------------------------------!
+      elseif ( clay > 70.0) then
+         sclass = 15  !----- Heavy clay. --------------------------------------------------!
+      elseif ( clay > 40.0 .and. sand > 30.0 .and. sand <= 45.0) then
+         sclass = 16  !----- Clayey sand. -------------------------------------------------!
+      elseif ( clay > 40.0 .and. silt > 30.0 .and. silt <= 40.0) then
+         sclass = 17  !----- Clayey silt. -------------------------------------------------!
+      else
+         write (unit=*,fmt='(a)') '---------------------------------------------------'
+         write (unit=*,fmt='(a,1x,f8.2,a)') 'SAND = ',sand,'%'
+         write (unit=*,fmt='(a,1x,f8.2,a)') 'CLAY = ',clay,'%'
+         write (unit=*,fmt='(a,1x,f8.2,a)') 'SILT = ',silt,'%'
+         write (unit=*,fmt='(a)') ' This soil doesn''t fit into any category...'
+         write (unit=*,fmt='(a)') '---------------------------------------------------'
+         call fatal_error('Failed finding the correct soil class...'                       &
+                         ,'find_soil_class','soil_coms.F90')
+      end if
+      !------------------------------------------------------------------------------------!
+
+      find_soil_class = sclass
+
+      return
+   end function find_soil_class
+   !=======================================================================================!
+   !=======================================================================================!
 end Module soil_coms
 !==========================================================================================!
 !==========================================================================================!

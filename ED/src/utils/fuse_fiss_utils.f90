@@ -464,8 +464,10 @@ module fuse_fiss_utils
                   ! but if they are not, we need to consider that LAI may grow...          !
                   !------------------------------------------------------------------------!
 
-                  lai_max = (cpatch%nplant(recc)*dbh2bl(cpatch%dbh(recc),cpatch%pft(recc)) &
-                          + cpatch%nplant(donc)*dbh2bl(cpatch%dbh(donc),cpatch%pft(donc))) &
+                  lai_max = ( cpatch%nplant(recc)                                          &
+                            * dbh2bl(cpatch%dbh(recc),cpatch%hite(recc),cpatch%pft(recc))  &
+                            + cpatch%nplant(donc)                                          &
+                            * dbh2bl(cpatch%dbh(donc),cpatch%hite(donc),cpatch%pft(donc))) &
                           * cpatch%sla(recc)
 
                   !----- Checking the total size of this cohort before and after fusion. --!
@@ -762,13 +764,15 @@ module fuse_fiss_utils
                !---------------------------------------------------------------------------!
 
                !----- Tweaking bdead, to ensure carbon is conserved. ----------------------!
-               cpatch%bdead(ico)  = cpatch%bdead(ico)*(1.-epsilon)
-               cpatch%dbh(ico)    = bd2dbh(cpatch%pft(ico), cpatch%bdead(ico))
-               cpatch%hite(ico)   = dbh2h(cpatch%pft(ico), cpatch%dbh(ico))
+               cpatch%bdead(ico)  = cpatch%bdead(ico) * (1.-epsilon)
+               cpatch%dbh  (ico)  = bd2dbh(cpatch%pft(ico), cpatch%bdead(ico)              &
+                                          ,cpatch%dbh(ico))
+               cpatch%hite (ico)  = dbh2h(cpatch%pft(ico), cpatch%dbh(ico))
 
-               cpatch%bdead(inew)  = cpatch%bdead(inew)*(1.+epsilon)
-               cpatch%dbh(inew)    = bd2dbh(cpatch%pft(inew), cpatch%bdead(inew))
-               cpatch%hite(inew)   = dbh2h(cpatch%pft(inew), cpatch%dbh(inew))
+               cpatch%bdead(inew) = cpatch%bdead(inew) * (1.+epsilon)
+               cpatch%dbh  (inew) = bd2dbh(cpatch%pft(inew), cpatch%bdead(inew)            &
+                                          ,cpatch%dbh(inew))                        
+               cpatch%hite (inew) = dbh2h(cpatch%pft(inew), cpatch%dbh(inew))       
                !---------------------------------------------------------------------------!
 
             end if
@@ -1101,7 +1105,7 @@ module fuse_fiss_utils
                            + cpatch%nplant(donc) * cpatch%bdead(donc) ) * newni
 
       !----- Then get dbh and hite from bdead. --------------------------------------------!
-      cpatch%dbh(recc)   = bd2dbh(cpatch%pft(recc), cpatch%bdead(recc))
+      cpatch%dbh(recc)   = bd2dbh(cpatch%pft(recc), cpatch%bdead(recc),cpatch%dbh(recc))
       cpatch%hite(recc)  = dbh2h(cpatch%pft(recc),  cpatch%dbh(recc))
 
 
@@ -3318,7 +3322,8 @@ module fuse_fiss_utils
 
 
          !----- Find the potential (on-allometry) leaf area index. ------------------------!
-         lai_pot = cpatch%nplant(ico) * cpatch%sla(ico) * dbh2bl(cpatch%dbh(ico),ipft)
+         lai_pot = cpatch%nplant(ico) * cpatch%sla(ico)                                    &
+                 * dbh2bl(cpatch%dbh(ico),cpatch%hite(ico),ipft)
          !---------------------------------------------------------------------------------!
 
 

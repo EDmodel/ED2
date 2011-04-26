@@ -185,7 +185,7 @@ module leaf_coms
 
 
    !----- Some dimensions -----------------------------------------------------------------!
-   integer, parameter :: nstyp     = 12 ! # of soil types
+   integer, parameter :: nstyp     = 17 ! # of soil types
    integer, parameter :: nvtyp     = 20 ! # of land use types
    integer, parameter :: nvtyp_teb =  1 ! # of TEB extra land use types (21 - Very urban).
    !---------------------------------------------------------------------------------------!

@@ -673,7 +673,7 @@ subroutine read_ed10_ed20_history_file
                         !     Use allometry to define leaf and the other live biomass      !
                         ! pools.                                                           !
                         !------------------------------------------------------------------!
-                        cpatch%bleaf(ic2) = dbh2bl(cpatch%dbh(ic2),ipft(ic))
+                        cpatch%bleaf(ic2) = dbh2bl(dbh(ic),cpatch%hite(ic2),ipft(ic))
                         cpatch%balive(ic2) = cpatch%bleaf(ic2) * (1.0 + q(ipft(ic))        &
                                            + qsw(ipft(ic)) * cpatch%hite(ic2))
                         cpatch%broot(ic2)  = cpatch%balive(ic2) * q(ipft(ic))              &

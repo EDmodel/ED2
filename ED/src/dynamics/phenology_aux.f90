@@ -461,7 +461,7 @@ subroutine pheninit_balive_bstorage(mzg,csite,ipa,ico,ntext_soil)
    !----- Compute the biomass of living tissues. ------------------------------------------!
    salloc               = 1.0 + q(ipft) + qsw(ipft) * cpatch%hite(ico)
    salloci              = 1.0 / salloc
-   bleaf_max            = dbh2bl(cpatch%dbh(ico),cpatch%pft(ico))
+   bleaf_max            = dbh2bl(cpatch%dbh(ico),cpatch%hite(ico),cpatch%pft(ico))
    balive_max           = bleaf_max * salloc
    cpatch%bleaf(ico)    = bleaf_max * cpatch%elongf(ico)
    cpatch%broot(ico)    = balive_max * q(ipft)   * salloci

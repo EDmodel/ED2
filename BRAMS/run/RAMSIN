@@ -325,7 +325,7 @@
    ITOPTFN  = '/n/Moorcroft_Lab/Lab/data/brams_data/topo/EL',
    ISSTFN   = '/n/Moorcroft_Lab/Lab/data/brams_data/weeklysst/2009/W',
    IVEGTFN  = '/n/Moorcroft_Lab/Lab/data/brams_data/veg_usgs/VUSGS_',
-   ISOILFN  = '/n/Moorcroft_Lab/Lab/data/brams_data/soil_radam+fao/LReFAO',
+   ISOILFN  = '/n/Moorcroft_Lab/Lab/data/brams_data/soil_brams406/Quesada+RADAM+IGBP/Quesada+RADAM+IGBP_',
     NDVIFN  = '/n/Moorcroft_Lab/Lab/data/brams_data/ndvi-modis/N',
      
 ! Topography scheme
@@ -622,11 +622,16 @@
 
    PCTLCON  = 1.,            ! Constant land % if for all domain
    NSLCON   = 8,             ! Constant soil type if for all domain
-
-   !   1 -- sand             2 -- loamy sand      3 -- sandy loam
-   !   4 -- silt loam        5 -- loam            6 -- sandy clay loam
-   !   7 -- silty clay loam  8 -- clay loam       9 -- sandy clay
-   !  10 -- silty clay      11 -- clay           12 -- peat
+   !-----------------------------------------------------------------------!
+   ! BRAMS Soil classes:                                                   !
+   !-----------------------------------------------------------------------!
+   !   1 -- sand            |  2 -- loamy sand    |  3 -- sandy loam       !
+   !   4 -- silt loam       |  5 -- loam          |  6 -- sandy clay loam  !
+   !   7 -- silty clay loam |  8 -- clayey loam   |  9 -- sandy clay       !
+   !  10 -- silty clay      | 11 -- clay          | 12 -- peat             !
+   !  13 -- bedrock         | 14 -- silt          | 15 -- heavy clay       !
+   !  16 -- clayey sand     | 17 -- clayey silt   |                        !
+   !-----------------------------------------------------------------------!
 
    ZROUGH   = .05,           ! Constant roughness if for all domain
    ALBEDO   = .2,            ! Constant albedo if not running soil model
@@ -905,7 +910,7 @@
    !  THSUMS_DATABASE - input directory for chd and dgd (not sure for what this is used).  !
    !---------------------------------------------------------------------------------------!
    VEG_DATABASE      = '/n/Moorcroft_Lab/Lab/data/ed2_data/oge2OLD/OGE2_',
-   SOIL_DATABASE     = '/n/Moorcroft_Lab/Lab/data/ed2_data/faoOLD/FAO_',
+   SOIL_DATABASE     = '/n/Moorcroft_Lab/Lab/data/ed2_data/soil_ed22/Quesada+RADAM+IGBP/Quesada+RADAM+IGBP_',
    LU_DATABASE       = '/n/Moorcroft_Lab/Lab/data/ed2_data/land_use/glu/glu-',
    PLANTATION_FILE   = '',
    LU_RESCALE_FILE   = '',
@@ -955,6 +960,10 @@
                               ! conductance and photosynthesis.  Set to 0 to do 
                               ! the full, exact calculation each time.  Set to 1 
                               ! to do the 'small perturbation' scheme.
+
+   IALLOM          = 0,       ! Which allometry to use (this affects tropical PFTs only)
+                              !  0 -- original ED-2.1
+                              !  1 -- Baker et al. (2004), equation 2
 
    !---------------------------------------------------------------------------------------!
    !     The following variable controls the phenology scheme.  Even within each scheme,   !

@@ -47,7 +47,6 @@ subroutine read_ednl(iunit,filename)
                                    , gamfact                   & ! intent(out)
                                    , lwfact                    & ! intent(out)
                                    , thioff                    & ! intent(out)
-                                   , icomppt                   & ! intent(out)
                                    , quantum_efficiency_t      ! ! intent(out)
    use phenology_coms       , only : iphen_scheme              & ! intent(out)
                                    , repro_scheme              & ! intent(out)
@@ -104,7 +103,8 @@ subroutine read_ednl(iunit,filename)
                                    , sfilout                   & ! intent(out)
                                    , sfilin                    & ! intent(out)
                                    , event_file                & ! intent(out)
-                                   , attach_metadata           ! ! intent(out)
+                                   , attach_metadata           & ! intent(out)
+                                   , iallom                    ! ! intent(out)
    use canopy_air_coms      , only : icanturb                  & ! intent(out)
                                    , isfclyrm                  & ! intent(out)
                                    , i_blyr_condct             ! ! intent(out)
@@ -187,10 +187,10 @@ subroutine read_ednl(iunit,filename)
                        ,ied_init_mode,edres,sfilin,veg_database,soil_database,lu_database  &
                        ,plantation_file,lu_rescale_file,thsums_database,soilstate_db       &
                        ,soildepth_db,isoilstateinit,isoildepthflg,integration_scheme       &
-                       ,rk4_tolerance,ibranch_thermo,istoma_scheme,iphen_scheme,radint     &
-                       ,radslp,repro_scheme,lapse_scheme,crown_mod,decomp_scheme           &
+                       ,rk4_tolerance,ibranch_thermo,istoma_scheme,iallom,iphen_scheme     &
+                       ,radint,radslp,repro_scheme,lapse_scheme,crown_mod,decomp_scheme    &
                        ,h2o_plant_lim,vmfact,mfact,kfact,gamfact,thetacrit,lwfact,thioff   &
-                       ,icomppt,quantum_efficiency_t,n_plant_lim,n_decomp_lim,include_fire &
+                       ,quantum_efficiency_t,n_plant_lim,n_decomp_lim,include_fire         &
                        ,sm_fire,ianth_disturb,icanturb,i_blyr_condct,include_these_pft     &
                        ,agri_stock,plantation_stock,pft_1st_check,maxpatch,maxcohort       &
                        ,treefall_disturbance_rate,iprintpolys,npvars,printvars,pfmtstr     &
@@ -258,6 +258,7 @@ subroutine read_ednl(iunit,filename)
       write (unit=*,fmt=*) ' rk4_tolerance             =',rk4_tolerance
       write (unit=*,fmt=*) ' ibranch_thermo            =',ibranch_thermo
       write (unit=*,fmt=*) ' istoma_scheme             =',istoma_scheme
+      write (unit=*,fmt=*) ' iallom                    =',iallom
       write (unit=*,fmt=*) ' iphen_scheme              =',iphen_scheme
       write (unit=*,fmt=*) ' radint                    =',radint
       write (unit=*,fmt=*) ' radslp                    =',radslp
@@ -273,7 +274,6 @@ subroutine read_ednl(iunit,filename)
       write (unit=*,fmt=*) ' thetacrit                 =',thetacrit
       write (unit=*,fmt=*) ' lwfact                    =',lwfact
       write (unit=*,fmt=*) ' thioff                    =',thioff
-      write (unit=*,fmt=*) ' icomppt                   =',icomppt
       write (unit=*,fmt=*) ' quantum_efficiency_t      =',quantum_efficiency_t
       write (unit=*,fmt=*) ' n_plant_lim               =',n_plant_lim
       write (unit=*,fmt=*) ' n_decomp_lim              =',n_decomp_lim

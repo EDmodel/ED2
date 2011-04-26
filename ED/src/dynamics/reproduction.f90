@@ -192,7 +192,7 @@ subroutine reproduction(cgrid, month)
                      rectest%hite     = hgt_min(ipft)
                      rectest%dbh      = h2dbh(rectest%hite, ipft)
                      rectest%bdead    = dbh2bd(rectest%dbh, rectest%hite, ipft)
-                     rectest%bleaf    = dbh2bl(rectest%dbh, ipft)
+                     rectest%bleaf    = dbh2bl(rectest%dbh, rectest%hite, ipft)
                      rectest%balive   = rectest%bleaf                                      &
                                       * (1.0 + q(ipft) + qsw(ipft) * rectest%hite)
                      rectest%nplant   = csite%repro(ipft,ipa)                              &

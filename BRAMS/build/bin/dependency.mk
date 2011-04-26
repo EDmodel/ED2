@@ -253,8 +253,8 @@ micphys.o: grid_dims.mod
 micro_coms.o: micphys.mod rconstants.mod
 geodat.o: io_params.mod mem_grid.mod mem_leaf.mod rconstants.mod
 geodat.o: teb_spm_start.mod
-landuse_input.o: hdf5_utils.mod io_params.mod leaf_coms.mod mem_mksfc.mod
-landuse_input.o: rconstants.mod
+landuse_input.o: hdf5_utils.mod io_params.mod leaf_coms.mod mem_leaf.mod
+landuse_input.o: mem_mksfc.mod rconstants.mod
 mem_mksfc.o: teb_spm_start.mod
 mksfc_driver.o: io_params.mod mem_grid.mod mem_mksfc.mod teb_spm_start.mod
 mksfc_fuso.o: io_params.mod mem_emiss.mod mem_gaspart.mod mem_grid.mod
@@ -487,9 +487,9 @@ twostream_rad.o: pft_coms.mod rk4_coms.mod
 vegetation_dynamics.o: consts_coms.mod disturb_coms.mod disturbance_utils.mod
 vegetation_dynamics.o: ed_misc_coms.mod ed_state_vars.mod fuse_fiss_utils.mod
 vegetation_dynamics.o: grid_coms.mod growth_balive.mod mem_polygons.mod
-ed_init.o: consts_coms.mod ed_misc_coms.mod ed_node_coms.mod ed_state_vars.mod
-ed_init.o: ed_work_vars.mod grid_coms.mod phenology_coms.mod
-ed_init.o: phenology_startup.mod rk4_coms.mod soil_coms.mod
+ed_init.o: consts_coms.mod ed_max_dims.mod ed_misc_coms.mod ed_node_coms.mod
+ed_init.o: ed_state_vars.mod ed_work_vars.mod grid_coms.mod mem_polygons.mod
+ed_init.o: phenology_coms.mod phenology_startup.mod rk4_coms.mod soil_coms.mod
 ed_init_atm.o: canopy_struct_dynamics.mod consts_coms.mod ed_misc_coms.mod
 ed_init_atm.o: ed_node_coms.mod ed_state_vars.mod ed_therm_lib.mod
 ed_init_atm.o: fuse_fiss_utils.mod grid_coms.mod met_driver_coms.mod

@@ -98,8 +98,7 @@ module canopy_struct_dynamics
                                 , sqrt2o2              ! ! intent(in)
       use soil_coms      , only : snow_rough           & ! intent(in)
                                 , soil_rough           ! ! intent(in)
-      use allometry      , only : h2trunkh             & ! function
-                                , dbh2ca               ! ! function
+      use allometry      , only : h2trunkh             ! ! function
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       type(polygontype)   , target      :: cpoly

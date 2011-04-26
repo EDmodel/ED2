@@ -241,7 +241,8 @@ subroutine update_phenology(doy, cpoly, isi, lat)
             !----- Get cohort-specific thresholds for prescribed phenology. ---------------!
             call assign_prescribed_phen(cpoly%green_leaf_factor(ipft,isi)                  &
                                        ,cpoly%leaf_aging_factor(ipft,isi),cpatch%dbh(ico)  &
-                                       ,ipft,drop_cold,leaf_out_cold, bl_max)
+                                       ,cpatch%hite(ico),ipft,drop_cold,leaf_out_cold      &
+                                       ,bl_max)
          case default
             !----- Drop_cold is computed in phenology_thresholds for Botta scheme. --------!
             if (drop_cold) bl_max = 0.0
@@ -412,7 +413,8 @@ subroutine update_phenology(doy, cpoly, isi, lat)
             !    moist conditions. Given this situation, leaves can start growing again.   !
             !------------------------------------------------------------------------------!
             cpatch%elongf(ico) = max(0.0, min (1.0, cpatch%paw_avg(ico)/theta_crit))
-            bl_max             = cpatch%elongf(ico) * dbh2bl(cpatch%dbh(ico),ipft)
+            bl_max             = cpatch%elongf(ico)                                        &
+                               * dbh2bl(cpatch%dbh(ico),cpatch%hite(ico),ipft)
                
 
             !----- In case it is too dry, drop all the leaves... --------------------------!
@@ -621,7 +623,7 @@ end subroutine phenology_thresholds
 !==========================================================================================!
 !    This subroutine assigns the prescribed phenology.                                     !
 !------------------------------------------------------------------------------------------!
-subroutine assign_prescribed_phen(green_leaf_factor,leaf_aging_factor,dbh,pft              &
+subroutine assign_prescribed_phen(green_leaf_factor,leaf_aging_factor,dbh,height,pft       &
                                  ,drop_cold,leaf_out_cold,bl_max)
    use allometry     , only : dbh2bl
    use phenology_coms, only : elongf_min
@@ -633,12 +635,13 @@ subroutine assign_prescribed_phen(green_leaf_factor,leaf_aging_factor,dbh,pft   
    real   , intent(in)  :: green_leaf_factor
    real   , intent(in)  :: leaf_aging_factor
    real   , intent(in)  :: dbh
+   real   , intent(in)  :: height
    integer, intent(in)  :: pft
    !---------------------------------------------------------------------------------------!
 
    drop_cold     = green_leaf_factor /= leaf_aging_factor
    leaf_out_cold = green_leaf_factor > elongf_min .and. (.not. drop_cold)
-   bl_max        = green_leaf_factor * dbh2bl(dbh, pft)
+   bl_max        = green_leaf_factor * dbh2bl(dbh, height, pft)
 
    return
 end subroutine assign_prescribed_phen

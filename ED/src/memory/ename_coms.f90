@@ -132,6 +132,7 @@ module ename_coms
       real                                              :: rk4_tolerance
       integer                                           :: ibranch_thermo
       integer                                           :: istoma_scheme
+      integer                                           :: iallom
       integer                                           :: iphen_scheme
       integer                                           :: repro_scheme
       integer                                           :: lapse_scheme
@@ -144,7 +145,6 @@ module ename_coms
       real                                              :: thetacrit
       real                                              :: lwfact
       real                                              :: thioff
-      integer                                           :: icomppt
       integer                                           :: quantum_efficiency_T
       integer                                           :: n_plant_lim
       integer                                           :: n_decomp_lim
@@ -344,6 +344,7 @@ module ename_coms
       enl%rk4_tolerance             = undef_real
       enl%ibranch_thermo            = undef_integer
       enl%istoma_scheme             = undef_integer
+      enl%iallom                    = undef_integer
       enl%iphen_scheme              = undef_integer
       enl%repro_scheme              = undef_integer
       enl%lapse_scheme              = undef_integer
@@ -356,7 +357,6 @@ module ename_coms
       enl%thetacrit                 = undef_real
       enl%lwfact                    = undef_real
       enl%thioff                    = undef_real
-      enl%icomppt                   = undef_integer
       enl%quantum_efficiency_T      = undef_integer
       enl%n_plant_lim               = undef_integer
       enl%n_decomp_lim              = undef_integer

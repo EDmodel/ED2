@@ -318,7 +318,8 @@ subroutine leaf_database(ofn,nlandsea,iaction,lat,lon,idatp)
 
               do j=j1,j2
                  do i=i1,i2
-                    call datp2datsoil(idato(i,j),dq)
+                    ! call datp2datsoil(idato(i,j),dq)
+                    dq = idato(i,j)
                     hgramtypes(dq,ilandsea) = hgramtypes(dq,ilandsea) + 1
                  enddo
               enddo

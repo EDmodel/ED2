@@ -1214,8 +1214,6 @@ module disturbance_utils
                                 , pio4                     ! ! intent(in)
       use allometry      , only : h2dbh                    & ! function
                                 , dbh2bd                   & ! function
-                                , dbh2bl                   & ! function
-                                , dbh2h                    & ! function
                                 , area_indices             & ! function
                                 , ed_biomass               ! ! function
       use ed_max_dims    , only : n_pft                    ! ! intent(in)

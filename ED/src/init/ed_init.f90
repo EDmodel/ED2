@@ -206,6 +206,14 @@ subroutine load_ecosystem_state()
 
    if (mynum < nnodetot ) call MPI_Send(ping,1,MPI_INTEGER,sendnum,103,MPI_COMM_WORLD,ierr)
 
+   if (mynum == 1) then
+      do igr=1,ngrids
+         call ed_newgrid(igr)
+         call print_soil_info(edgrid_g(igr),igr)
+      end do
+   end if
+
+
    return
 end subroutine load_ecosystem_state
 !==========================================================================================!
@@ -307,8 +315,11 @@ subroutine sfcdata_ed()
    refdepth = -2.0
 
    do nnn = 1,ed_nstyp
-      fhydraul(nnn) = log (soil(nnn)%slcons / soil(nnn)%slcons0) / refdepth
-
+      if (nnn /= 13) then
+         fhydraul(nnn) = log (soil(nnn)%slcons / soil(nnn)%slcons0) / refdepth
+      else
+         fhydraul(nnn) = 0.
+      end if
       do k = 1,nzg
          slcons1(k,nnn) = soil(nnn)%slcons     ! ORIGINAL form - const with depth
    !     slcons1(k,nnn) = soilparms(5,nnn)  &  ! TOPMODEL form - large at surface
@@ -343,5 +354,90 @@ subroutine sfcdata_ed()
 
    return
 end subroutine sfcdata_ed
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!     This subroutine prints the soil properties for a single-polygon run.                 !
+!------------------------------------------------------------------------------------------!
+subroutine print_soil_info(cgrid,ifm)
+   use ed_state_vars  , only : edtype            & ! structure
+                             , polygontype       ! ! structure
+   use mem_polygons   , only : n_poi             ! ! intent(in)
+   use soil_coms      , only : isoilflg          & ! intent(in)
+                             , soil              & ! intent(in)
+                             , slxclay           & ! intent(in)
+                             , slxsand           ! ! intent(in)
+   use grid_coms      , only : nzg               ! ! intent(in)
+   use ed_misc_coms   , only : sfilout           ! ! intent(in)
+   use ed_max_dims    , only : str_len
+   implicit none
+
+   !----- Arguments. ----------------------------------------------------------------------!
+   type(edtype)          , target     :: cgrid
+   integer               , intent(in) :: ifm
+   !----- Local variables. ----------------------------------------------------------------!
+   type(polygontype)     , pointer    :: cpoly
+   character(len=str_len)             :: polyname
+   logical                            :: prescribed
+   integer                            :: nsoil
+   integer                            :: ipy
+   integer                            :: isi
+   integer                            :: slash
+   integer                            :: endstr
+   !---------------------------------------------------------------------------------------!
+   
+   if (ifm /=1 .or. n_poi /= 1 .or. cgrid%npolygons /= 1) return
+   ipy = 1
+   cpoly => cgrid%polygon(ipy)
+
+   !----- Find the polygon name. ----------------------------------------------------------!
+   slash    = index(sfilout,'/',back=.true.) + 1
+   endstr   = len_trim(sfilout)
+   polyname = sfilout(slash:endstr)
+
+   !----- Find whether the soil type characteristics were re-defined. ---------------------!
+   prescribed = isoilflg(ifm)==2 .and. slxclay > 0. .and. slxsand > 0. .and.               &
+                (slxclay + slxsand) <= 1.
+
+   write (unit=*,fmt='(a)')           ' '
+   write (unit=*,fmt='(a)') '   --------------------------------------------------------'
+   write (unit=*,fmt='(a)')           '    Soil information:'
+   write (unit=*,fmt='(a)')           ' '
+   write (unit=*,fmt='(a,1x,a)')      '    Polygon name               :',trim(polyname)
+   write (unit=*,fmt='(a,1x,f11.3)')  '    Longitude                  :',cgrid%lon(ipy)
+   write (unit=*,fmt='(a,1x,f11.3)')  '    Latitude                   :',cgrid%lat(ipy)
+   write (unit=*,fmt='(a,11x,l1)')    '    Prescribed sand and clay   :',prescribed
+   write (unit=*,fmt='(a,1x,i11)')    '    # of sites                 :',cpoly%nsites
+
+   do isi = 1,cpoly%nsites
+      nsoil = cpoly%ntext_soil(nzg,isi)
+      write (unit=*,fmt='(a)')          ' '
+      write (unit=*,fmt='(a,1x,i11)')   '    Site :',isi
+      write (unit=*,fmt='(a,1x,i10)')   '      - Type :',nsoil
+      write(unit=*,fmt='(a,1x,es12.5)') '      - Clay fraction  =', soil(nsoil)%xclay
+      write(unit=*,fmt='(a,1x,es12.5)') '      - Sand fraction  =', soil(nsoil)%xsand
+      write(unit=*,fmt='(a,1x,es12.5)') '      - Silt fraction  =', soil(nsoil)%xsilt
+      write(unit=*,fmt='(a,1x,es12.5)') '      - SLBS           =', soil(nsoil)%slbs
+      write(unit=*,fmt='(a,1x,es12.5)') '      - SLPOTS         =', soil(nsoil)%slpots
+      write(unit=*,fmt='(a,1x,es12.5)') '      - SLCONS         =', soil(nsoil)%slcons
+      write(unit=*,fmt='(a,1x,es12.5)') '      - Dry air soil   =', soil(nsoil)%soilcp
+      write(unit=*,fmt='(a,1x,es12.5)') '      - Wilting point  =', soil(nsoil)%soilwp
+      write(unit=*,fmt='(a,1x,es12.5)') '      - Field capacity =', soil(nsoil)%sfldcap
+      write(unit=*,fmt='(a,1x,es12.5)') '      - Saturation     =', soil(nsoil)%slmsts
+      write(unit=*,fmt='(a,1x,es12.5)') '      - Heat capacity  =', soil(nsoil)%slcpd
+   end do
+   write (unit=*,fmt='(a)') '   --------------------------------------------------------'
+   write (unit=*,fmt='(a)') ' '
+
+
+   return
+end subroutine print_soil_info
 !==========================================================================================!
 !==========================================================================================!
