@@ -44,7 +44,8 @@ module disturbance_utils
                               , min_new_patch_area      & ! intent(in)
                               , mature_harvest_age      & ! intent(in)
                               , plantation_rotation     & ! intent(in)
-                              , ianth_disturb
+                              , ianth_disturb           & ! intent(in)
+                              , Time2Canopy             ! ! intent(in)
       use ed_max_dims  , only : n_dist_types            & ! intent(in)
                               , n_pft                   & ! intent(in)
                               , n_dbh                   ! ! intent(in)
@@ -199,13 +200,21 @@ module disturbance_utils
                                 mature_secondary)
  
                   if (ploughed .or. abandoned .or. natural .or. logged) then
-
-                     dA   = csite%area(ipa)                                                &
-                          * (1. - exp(- ( cpoly%disturbance_rates(new_lu,old_lu,isi)       &
+                      if (natural .and. csite%age(ipa) < Time2Canopy) then
+                          dA   = 0
+                      elseif (abandoned .and. csite%age(ipa) < Time2Canopy) then
+                          dA   = 0
+                      else
+                          dA   = csite%area(ipa)                                           &
+                               * (1. - exp(- ( cpoly%disturbance_rates(new_lu,old_lu,isi)  &
                                         + cpoly%disturbance_memory(new_lu,old_lu,isi) ) ) )
-                     area = area + dA
+                      end if
+                      
+                      area = area + dA
+                      
                   end if
                end do
+               
                if (area > min_new_patch_area) then
                   write(unit=*,fmt='(a,1x,es12.5,1x,a,1x,i5)')                             &
                       ' ---> Making new patch, with area=',area,' for dist_type=',new_lu
@@ -274,11 +283,19 @@ module disturbance_utils
                      ! the litter layer.                                                   !
                      !---------------------------------------------------------------------!
                      if (ploughed .or. abandoned .or. natural .or. logged) then
-                        dA = csite%area(ipa) * (1.0 - exp(                                 &
-                           - (cpoly%disturbance_rates(new_lu,old_lu,isi)                   &
-                           + cpoly%disturbance_memory(new_lu,old_lu,isi))))
-                        area_fac = dA / csite%area(onsp+new_lu)
 
+                      if (natural .and. csite%age(ipa) < Time2Canopy) then
+                          dA   = 0
+                      elseif (abandoned .and. csite%age(ipa) < Time2Canopy) then
+                          dA   = 0
+                      else
+                          dA   = csite%area(ipa)                                           &
+                               * (1. - exp(- ( cpoly%disturbance_rates(new_lu,old_lu,isi)  &
+                                        + cpoly%disturbance_memory(new_lu,old_lu,isi) ) ) )
+                      end if
+                      
+                        area_fac = dA / csite%area(onsp+new_lu)
+                      
                         call increment_patch_vars(csite,new_lu+onsp,ipa,area_fac)
                         call insert_survivors(csite,new_lu+onsp,ipa,new_lu,area_fac        &
                                              ,poly_dest_type,mindbh_harvest)

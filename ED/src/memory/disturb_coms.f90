@@ -69,6 +69,8 @@ module disturb_coms
    !      create a new patch).                                                             !
    !---------------------------------------------------------------------------------------!
    real :: treefall_disturbance_rate  
+   real :: maxTreeAge
+   real :: Time2Canopy
 
    !----- The prefix for land use disturbance rates. The path and prefix must be included. !
    character(len=str_len), dimension(maxgrds) :: lu_database 

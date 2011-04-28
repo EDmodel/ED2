@@ -651,7 +651,13 @@ recursive subroutine read_ed_xml_config(filename)
         !! TREEFALL
         call getConfigREAL  ('treefall_disturbance_rate','disturbance',i,rval,texist)
         if(texist) treefall_disturbance_rate = real(rval)
-
+        
+        call getConfigREAL  ('maxTreeAge','disturbance',i,rval,texist)
+        if(texist) maxTreeAge = real(rval)
+        
+        call getConfigREAL  ('Time2Canopy','disturbance',i,rval,texist)
+        if(texist) Time2Canopy = real(rval)
+        
         call getConfigREAL  ('treefall_hite_threshold','disturbance',i,rval,texist)
         if(texist) treefall_hite_threshold = real(rval)
         call getConfigREAL  ('treefall_age_theshold','disturbance',i,rval,texist)

@@ -13,7 +13,7 @@ module mortality
    !=======================================================================================!
    !    This subroutine computes the total PFT-dependent mortality rate:                   !
    !---------------------------------------------------------------------------------------!
-   subroutine mortality_rates(cpatch,ipa,ico,avg_daily_temp)
+   subroutine mortality_rates(cpatch,ipa,ico,avg_daily_temp, patch_age)
       use ed_state_vars , only : patchtype                  ! ! Structure
       use pft_coms      , only : mort1                      & ! intent(in)
                                , mort2                      & ! intent(in)
@@ -21,7 +21,8 @@ module mortality
                                , plant_min_temp             & ! intent(in)
                                , frost_mort                 ! ! intent(in)
       use disturb_coms  , only : treefall_disturbance_rate  & ! intent(in)
-                               , treefall_hite_threshold    ! ! intent(in)
+                               , treefall_hite_threshold    & ! intent(in)
+                               , Time2Canopy                ! ! intent(in)
       use ed_misc_coms  , only : current_time               ! ! intent(in)
       use ed_max_dims   , only : n_pft                      ! ! intent(in)
       use consts_coms   , only : lnexp_min                  & ! intent(in)
@@ -32,6 +33,7 @@ module mortality
       integer        , intent(in) :: ipa             ! Current patch  ID
       integer        , intent(in) :: ico             ! Current cohort ID
       real           , intent(in) :: avg_daily_temp  ! Mean temperature yesterday
+      real           , intent(in) :: patch_age
       !----- Local variables --------------------------------------------------------------!
       integer                     :: ipft            ! PFT 
       real                        :: threshtemp      ! Cold threshold temperature
@@ -61,7 +63,7 @@ module mortality
       !------------------------------------------------------------------------------------!
       ! 3.  Mortality due to treefall.                                                     !
       !------------------------------------------------------------------------------------!
-      if (cpatch%hite(ico) <= treefall_hite_threshold) then
+      if (cpatch%hite(ico) <= treefall_hite_threshold .and. patch_age >= Time2Canopy) then
          cpatch%mort_rate(3,ico) = treefall_disturbance_rate
       else
          cpatch%mort_rate(3,ico) = 0.

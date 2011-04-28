@@ -1176,12 +1176,6 @@ module ed_state_vars
      type(prescribed_phen),pointer, dimension(:) :: phen_pars
 
      !-----------------------------------
-     ! TREEFALL
-     !-----------------------------------
-     ! site average treefall disturbance rate
-     real,pointer, dimension(:) :: treefall_disturbance_rate
-
-     !-----------------------------------
      ! DISTURBANCE
      !-----------------------------------
      ! rate of natural disturbance
@@ -2574,7 +2568,6 @@ contains
     allocate(cpoly%ignition_rate(nsites))
     allocate(cpoly%lambda_fire(12,nsites))
     allocate(cpoly%phen_pars(nsites))!THIS PTR IS ALLOCATED IN PHENOLOGY_INIT
-    allocate(cpoly%treefall_disturbance_rate(nsites))
     allocate(cpoly%nat_disturbance_rate(nsites))
     allocate(cpoly%nat_dist_type(nsites))
     allocate(cpoly%disturbance_memory(n_dist_types,n_dist_types,nsites))
@@ -3643,7 +3636,6 @@ contains
     nullify(cpoly%ignition_rate)
     nullify(cpoly%lambda_fire)
     nullify(cpoly%phen_pars)
-    nullify(cpoly%treefall_disturbance_rate)
     nullify(cpoly%nat_disturbance_rate)
     nullify(cpoly%nat_dist_type)
     nullify(cpoly%disturbance_memory)
@@ -4681,7 +4673,6 @@ contains
     if(associated(cpoly%ignition_rate               )) deallocate(cpoly%ignition_rate               )
     if(associated(cpoly%lambda_fire                 )) deallocate(cpoly%lambda_fire                 )
     if(associated(cpoly%phen_pars                   )) deallocate(cpoly%phen_pars                   )
-    if(associated(cpoly%treefall_disturbance_rate   )) deallocate(cpoly%treefall_disturbance_rate   )
     if(associated(cpoly%nat_disturbance_rate        )) deallocate(cpoly%nat_disturbance_rate        )
     if(associated(cpoly%nat_dist_type               )) deallocate(cpoly%nat_dist_type               )
     if(associated(cpoly%disturbance_memory          )) deallocate(cpoly%disturbance_memory          )
@@ -10288,13 +10279,6 @@ contains
          nvar=nvar+1
            call vtable_edio_r(npts,cpoly%ignition_rate,nvar,igr,init,cpoly%siglob_id, &
            var_len,var_len_global,max_ptrs,'IGNITION_RATE :21:hist:mont:dcyc') 
-         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
-      end if
-
-      if (associated(cpoly%treefall_disturbance_rate)) then
-         nvar=nvar+1
-           call vtable_edio_r(npts,cpoly%treefall_disturbance_rate,nvar,igr,init,cpoly%siglob_id, &
-           var_len,var_len_global,max_ptrs,'TREEFALL_DISTURBANCE_RATE :21:hist') 
          call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
       end if
 

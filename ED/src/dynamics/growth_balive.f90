@@ -237,7 +237,8 @@ module growth_balive
                   ! changes daily.                                           !
                   !----------------------------------------------------------!
                   call mortality_rates(cpatch,ipa,ico                        &
-                                      ,csite%avg_daily_temp(ipa))
+                                      ,csite%avg_daily_temp(ipa)             &
+                                      ,csite%age(ipa))
                   dndt = - sum(cpatch%mort_rate(:,ico)) * cpatch%nplant(ico) &
                          * tfact
 
@@ -475,7 +476,8 @@ module growth_balive
                   ! changes daily.                                           !
                   !----------------------------------------------------------!
                   call mortality_rates(cpatch,ipa,ico                        &
-                                      ,csite%avg_daily_temp(ipa))
+                                      ,csite%avg_daily_temp(ipa)             &
+                                      ,csite%age(ipa))
                end do
 
                !----- It's a new day, reset average daily temperature. ------!
@@ -881,17 +883,26 @@ module growth_balive
             if (increment <= 0.0)  then
             !    We are using up all of daily C gain and some of bstorage    !
             !    First calculate N demand from using daily C gain            !
-        
-                nitrogen_uptake  = nitrogen_uptake   + carbon_balance        &
+                if (carbon_balance < 0.) then
+                       nitrogen_uptake = nitrogen_uptake + carbon_balance    &
+                                       / c2n_storage
+                       nitrogen_uptake = nitrogen_uptake + (carbon_balance -
+                                       increment)* ( f_labile(ipft)          &
+                                       / c2n_leaf(ipft) + (1.0 -             &
+                                       f_labile(ipft)) / c2n_stem(ipft)   &
+                                       -  1.0 / c2n_storage)
+                else
+                       nitrogen_uptake  = nitrogen_uptake   + carbon_balance &
                                  * ( f_labile(ipft)   / c2n_leaf(ipft)       &
                                  + (1.0 - f_labile(ipft)) / c2n_stem(ipft) ) 
                                  
             !   Now calculate additional N uptake required from transfer of C!
             !   from storage to balive                                       !
-                nitrogen_uptake  = nitrogen_uptake +  ( -1* increment)       &
+                       nitrogen_uptake  = nitrogen_uptake +  ( -1* increment)&
                                  * ( f_labile(ipft)  / c2n_leaf(ipft)        &
                                  + (1.0 - f_labile(ipft)) / c2n_stem(ipft)   &
                                  -  1.0 / c2n_storage)
+                 end if
                         
             else
             !   N uptake for fraction of daily C gain going to balive        !

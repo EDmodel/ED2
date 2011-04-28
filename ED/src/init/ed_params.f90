@@ -1144,7 +1144,9 @@ subroutine init_pft_mort_params()
                           , plant_min_temp             & ! intent(out)
                           , frost_mort                 ! ! intent(out)
    use consts_coms , only : t00                        ! ! intent(in)
-   use disturb_coms, only : treefall_disturbance_rate  ! ! intent(inout)
+   use disturb_coms, only : treefall_disturbance_rate  & ! intent(inout)
+                          , maxTreeAge                 & ! intent(in)
+                          , Time2Canopy                ! ! intent(in)
 
    implicit none
 
@@ -1216,6 +1218,8 @@ subroutine init_pft_mort_params()
       mort3(:) = mort3(:) - treefall_disturbance_rate
       treefall_disturbance_rate = 0.
    end if
+   
+   treefall_disturbance_rate= maxTreeAge*treefall_disturbance_rate/(maxTreeAge-Time2Canopy)
    
    seedling_mortality(1)    = 0.60
    seedling_mortality(2:4)  = 0.95 

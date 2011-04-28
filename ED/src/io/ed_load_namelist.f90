@@ -113,7 +113,9 @@ subroutine copy_nl(copy_type)
                                    , lu_database               & ! intent(out)
                                    , plantation_file           & ! intent(out)
                                    , lu_rescale_file           & ! intent(out)
-                                   , sm_fire                   ! ! intent(out)
+                                   , sm_fire                   & ! intent(out)
+                                   , maxTreeAge                & ! intent(out)
+                                   , Time2Canopy               ! ! intent(out)
    use pft_coms             , only : include_these_pft         & ! intent(out)
                                    , agri_stock                & ! intent(out)
                                    , plantation_stock          & ! intent(out)
@@ -338,6 +340,8 @@ subroutine copy_nl(copy_type)
       pft_1st_check             = nl%pft_1st_check
       
       treefall_disturbance_rate = nl%treefall_disturbance_rate
+      maxTreeAge                = nl%maxTreeAge
+      Time2Canopy               = nl%Time2Canopy
       runoff_time               = nl%runoff_time
       betapower                 = nl%betapower
       ustmin                    = nl%ustmin

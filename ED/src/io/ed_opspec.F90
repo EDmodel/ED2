@@ -1056,8 +1056,9 @@ subroutine ed_opspec_misc
    use decomp_coms           , only : n_decomp_lim                 ! ! intent(in)
    use disturb_coms          , only : include_fire                 & ! intent(in)
                                     , ianth_disturb                & ! intent(in)
-                                    , treefall_disturbance_rate    & ! intent(in)
-                                    , sm_fire                      ! ! intent(in)
+                                    , sm_fire                      & ! intent(in)
+                                    , Time2Canopy                  & ! intent(in)
+                                    , maxTreeAge                   ! ! intent(in)
    use phenology_coms        , only : iphen_scheme                 & ! intent(in)
                                     , radint                       & ! intent(in)
                                     , radslp                       & ! intent(in)
@@ -1618,6 +1619,22 @@ end do
    !   call opspec_fatal(reason,'opspec_misc')
    !   ifaterr = ifaterr +1
    !end if
+    
+   if (Time2Canopy < 0.0) then
+      write (reason,fmt='(a,1x,es14.7,a)')                                                 &
+             'Invalid TIME2CANOPY, it can''t be negative.  Yours is set to'  &
+             ,Time2Canopy,'...'
+      call opspec_fatal(reason,'opspec_misc')
+      ifaterr = ifaterr +1
+   end if
+   
+   if (maxTreeAge < 0.0) then
+      write (reason,fmt='(a,1x,es14.7,a)')                                                 &
+             'Invalid MAXTREEAGE, it can''t be negative.  Yours is set to'  &
+             ,maxTreeAge,'...'
+      call opspec_fatal(reason,'opspec_misc')
+      ifaterr = ifaterr +1
+   end if
     
    if (runoff_time < 0.0) then
       write (reason,fmt='(a,1x,es14.7,a)')                                                 &
