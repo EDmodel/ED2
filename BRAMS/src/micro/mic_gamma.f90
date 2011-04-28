@@ -61,13 +61,13 @@ end function gammq
 !==========================================================================================!
 !==========================================================================================!
 subroutine gcf(gammcf,a,x,gln)
-
-   use therm_lib, only : maxit,toler
+   use therm_lib, only : toler
    implicit none
    real :: a,x,gammcf,gln
 
-   integer, parameter :: tinypow=-38. ! To avoid FPE errors
-   real,external ::gammln
+   real   , parameter :: tinypow=-38. ! To avoid FPE errors
+   real   , external  :: gammln
+   integer, parameter :: maxit_loc = 15
 
    real :: gold,a0,a1,b0,b1,fac,an,ana,anf,gaccel
    integer :: n
@@ -79,7 +79,7 @@ subroutine gcf(gammcf,a,x,gln)
    b0 = 0.
    b1 = 1.
    fac = 1.
-   itloop: do n = 1, maxit
+   itloop: do n = 1, maxit_loc
       an = real(n)
       ana = an - a
       a0 = (a1+a0*ana)*fac

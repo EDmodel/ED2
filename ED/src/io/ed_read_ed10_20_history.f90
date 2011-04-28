@@ -666,14 +666,14 @@ subroutine read_ed10_ed20_history_file
                         if (bdead(ic) > 0.0) then
                            cpatch%bdead(ic2) = bdead(ic)
                         else
-                           cpatch%bdead(ic2) = dbh2bd(dbh(ic),cpatch%hite(ic2),ipft(ic))
+                           cpatch%bdead(ic2) = dbh2bd(dbh(ic),ipft(ic))
                         end if
 
                         !------------------------------------------------------------------!
                         !     Use allometry to define leaf and the other live biomass      !
                         ! pools.                                                           !
                         !------------------------------------------------------------------!
-                        cpatch%bleaf(ic2) = dbh2bl(dbh(ic),cpatch%hite(ic2),ipft(ic))
+                        cpatch%bleaf(ic2) = dbh2bl(dbh(ic),ipft(ic))
                         cpatch%balive(ic2) = cpatch%bleaf(ic2) * (1.0 + q(ipft(ic))        &
                                            + qsw(ipft(ic)) * cpatch%hite(ic2))
                         cpatch%broot(ic2)  = cpatch%balive(ic2) * q(ipft(ic))              &

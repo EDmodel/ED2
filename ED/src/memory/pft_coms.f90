@@ -293,28 +293,34 @@ module pft_coms
    real   , dimension(n_pft)    :: qsw
    real   , dimension(n_pft)    :: sapwood_ratio ! AREA ratio
    real   , dimension(n_pft)    :: hgt_ref ! ref height for diam/ht allom (Temperate)
-   !----- DBH-height allometry intercept (m).  Temperate PFTs only.------------------------!
+   !---------------------------------------------------------------------------------------!
+   !     DBH-height allometry intercept (m).  Notice that this variable has different      !
+   ! meaning between temperate and tropical PFTs.                                          !
+   !---------------------------------------------------------------------------------------!
    real   , dimension(n_pft)    :: b1Ht
-   !----- DBH-height allometry slope (1/cm).  Temperate PFTs only. ------------------------!
+   !---------------------------------------------------------------------------------------!
+   !     DBH-height allometry slope (1/cm).  Notice that this variable has different       !
+   ! meaning between temperate and tropical PFTs.                                          !!
+   !---------------------------------------------------------------------------------------!
    real   , dimension(n_pft)    :: b2Ht
    !----- DBH-stem allometry intercept.  All PFTs. ----------------------------------------!
    real   , dimension(n_pft)    :: b1Bs_small
    !----- DBH-stem allometry slope (dimensionless).  All PFTs. ----------------------------!
    real   , dimension(n_pft)    :: b2Bs_small
-   !----- DBH-stem allometry intercept for high DBH cohorts. ------------------------------!
+   !----- DBH-stem allometry intercept for large DBH cohorts. -----------------------------!
    real   , dimension(n_pft)    :: b1Bs_big
-   !----- DBH-stem allometry slope for high DBH cohorts. ----------------------------------!
+   !----- DBH-stem allometry slope for large DBH cohorts. ---------------------------------!
    real   , dimension(n_pft)    :: b2Bs_big
-   !----- Critic Bdead. -------------------------------------------------------------------!
+   !----- Critical Bdead, point in which plants stop growing vertically. ------------------!
    real   , dimension(n_pft)    :: bdead_crit
    !----- DBH-leaf allometry intercept (kg leaf biomass / plant * cm^{-b2Bl}).  All PFTs --!
    real   , dimension(n_pft)    :: b1Bl
    !----- DBH-leaf allometry slope (dimensionless).  All PFTs -----------------------------!
    real   , dimension(n_pft)    :: b2Bl
-   !----- DBH-AGB allometry parameters (for tropical PFTs only). --------------------------!
-   real   , dimension(n_pft)    :: b1agb
-   real   , dimension(n_pft)    :: b2agb
-   real   , dimension(n_pft)    :: b3agb
+   !----- DBH-crown allometry intercept.  All PFTs. ---------------------------------------!
+   real   , dimension(n_pft)    :: b1Ca
+   !----- DBH-crown allometry slope.  All PFTs. -------------------------------------------!
+   real   , dimension(n_pft)    :: b2Ca
    !----- Minimum DBH attainable by this PFT and minimum DBH at maximum height (cm). ------!
    real   , dimension(n_pft)    :: min_dbh
    real   , dimension(n_pft)    :: max_dbh 

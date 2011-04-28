@@ -413,8 +413,7 @@ subroutine update_phenology(doy, cpoly, isi, lat)
             !    moist conditions. Given this situation, leaves can start growing again.   !
             !------------------------------------------------------------------------------!
             cpatch%elongf(ico) = max(0.0, min (1.0, cpatch%paw_avg(ico)/theta_crit))
-            bl_max             = cpatch%elongf(ico)                                        &
-                               * dbh2bl(cpatch%dbh(ico),cpatch%hite(ico),ipft)
+            bl_max             = cpatch%elongf(ico) * dbh2bl(cpatch%dbh(ico),ipft)
                
 
             !----- In case it is too dry, drop all the leaves... --------------------------!
@@ -641,7 +640,7 @@ subroutine assign_prescribed_phen(green_leaf_factor,leaf_aging_factor,dbh,height
 
    drop_cold     = green_leaf_factor /= leaf_aging_factor
    leaf_out_cold = green_leaf_factor > elongf_min .and. (.not. drop_cold)
-   bl_max        = green_leaf_factor * dbh2bl(dbh, height, pft)
+   bl_max        = green_leaf_factor * dbh2bl(dbh, pft)
 
    return
 end subroutine assign_prescribed_phen

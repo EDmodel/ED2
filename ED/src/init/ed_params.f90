@@ -1281,12 +1281,11 @@ subroutine init_pft_alloc_params()
                           , b2Bs_small            & ! intent(out)
                           , b1Bs_big              & ! intent(out)
                           , b2Bs_big              & ! intent(out)
+                          , B1Ca                  & ! intent(out)
+                          , B2Ca                  & ! intent(out)
                           , bdead_crit            & ! intent(out)
                           , b1Bl                  & ! intent(out)
                           , b2Bl                  & ! intent(out)
-                          , b1agb                 & ! intent(out)
-                          , b2agb                 & ! intent(out)
-                          , b3agb                 & ! intent(out)
                           , C2B                   & ! intent(out)
                           , sapwood_ratio         & ! intent(out)
                           , rbranch               & ! intent(out)
@@ -1301,29 +1300,51 @@ subroutine init_pft_alloc_params()
    use allometry   , only : h2dbh                 & ! function
                           , dbh2bd                ! ! function
    use consts_coms , only : twothirds             ! ! intent(in)
-   use ed_max_dims , only : n_pft                 ! ! intent(in)
+   use ed_max_dims , only : n_pft                 & ! intent(in)
+                          , str_len               ! ! intent(in)
+   use ed_misc_coms, only : iallom                ! ! intent(in)
    implicit none
    !----- Local variables. ----------------------------------------------------------------!
-   integer            :: ipft
-   real               :: aux
+   integer                           :: ipft
+   integer                           :: n
+   real                              :: aux
    !----- Constants shared by both bdead and bleaf (tropical PFTs) ------------------------!
-   real   , parameter :: a1    =  -1.981
-   real   , parameter :: b1    =   1.047
-   real   , parameter :: dcrit = 100.0
+   real                  , parameter :: a1          =  -1.981
+   real                  , parameter :: b1          =   1.047
+   real                  , parameter :: dcrit       = 100.0
    !----- Constants used by bdead only (tropical PFTs) ------------------------------------!
-   real   , parameter :: c1d   =   0.572
-   real   , parameter :: d1d   =   0.931
-   real   , parameter :: a2d   =  -1.086
-   real   , parameter :: b2d   =   0.876
-   real   , parameter :: c2d   =   0.604
-   real   , parameter :: d2d   =   0.871
+   real                  , parameter :: c1d         =   0.572
+   real                  , parameter :: d1d         =   0.931
+   real                  , parameter :: a2d         =  -1.086
+   real                  , parameter :: b2d         =   0.876
+   real                  , parameter :: c2d         =   0.604
+   real                  , parameter :: d2d         =   0.871
    !----- Constants used by bleaf only (tropical PFTs) ------------------------------------!
-   real   , parameter :: c1l   =  -0.584
-   real   , parameter :: d1l   =   0.550
-   real   , parameter :: a2l   =  -4.111
-   real   , parameter :: b2l   =   0.605
-   real   , parameter :: c2l   =   0.848
-   real   , parameter :: d2l   =   0.438
+   real                  , parameter :: c1l         =  -0.584
+   real                  , parameter :: d1l         =   0.550
+   real                  , parameter :: a2l         =  -4.111
+   real                  , parameter :: b2l         =   0.605
+   real                  , parameter :: c2l         =   0.848
+   real                  , parameter :: d2l         =   0.438
+   !---------------------------------------------------------------------------------------!
+   !     MLO.   These are the new parameters obtained by adjusting a curve that is similar !
+   !            to the modified Chave's equation to include wood density effect on the     !
+   !            DBH->AGB allometry as described by:                                        ! 
+   !                                                                                       !
+   !            Baker, T. R., and co-authors, 2004: Variation in wood density determines   !
+   !               spatial patterns in Amazonian forest biomass.  Glob. Change Biol., 10,  !
+   !               545-562.                                                                !
+   !                                                                                       !
+   !            These parameters were obtaining by splitting balive and bdead at the same  !
+   !            ratio as the original ED-2.1 allometry, and optimising a function of the   !
+   !            form B? = (rho / a3) * exp [a1 + a2 * ln(DBH)]                             !
+   !---------------------------------------------------------------------------------------!
+   real, dimension(3)    , parameter :: aleaf       = (/ -1.259299,  1.679213,  4.985562 /)
+   real, dimension(3)    , parameter :: adead_small = (/ -1.494639,  2.453309,  1.597272 /)
+   real, dimension(3)    , parameter :: adead_big   = (/  2.105856,  2.423031, 50.198984 /)
+   !----- Other constants. ----------------------------------------------------------------!
+   logical               , parameter :: write_allom = .true.
+   character(len=str_len), parameter :: allom_file  = 'allom_param.txt'
    !---------------------------------------------------------------------------------------!
 
    !----- Carbon-to-biomass ratio of plant tissues. ---------------------------------------!
@@ -1522,9 +1543,9 @@ subroutine init_pft_alloc_params()
    b1Ht(10)    = 25.18
    b1Ht(11)    = 23.3874
    b1Ht(12:13) = 0.4778
-   b1Ht(14:15) = 0.8519565
-   b1Ht(16)    = 0.8519565
-   b1Ht(17)    = 0.8519565
+   b1Ht(14:15) = 0.37 * log(10.0)
+   b1Ht(16)    = 0.37 * log(10.0)
+   b1Ht(17)    = 0.37 * log(10.0)
    !----- DBH-height allometry slope [1/cm]. ----------------------------------------------!
    b2Ht(1:4)   = 0.64
    b2Ht(5)     = -0.75
@@ -1598,30 +1619,20 @@ subroutine init_pft_alloc_params()
    !------- Fill in the tropical PFTs, which are functions of wood density. ---------------!
    do ipft=1,n_pft
       if (is_tropical(ipft)) then
-         b1Bl(ipft) = exp(a1 * c1l * b1Ht(ipft) + d1l * log(rho(ipft)))
-         aux        = ( (a2l - a1) + b1Ht(ipft) * (c2l - c1l) + log(rho(ipft))         &
-                      * (d2l - d1l)) * (1.0/log(dcrit))
-         b2Bl(ipft) = C2B * b2l + c2l * b2Ht(ipft) + aux
+         select case(iallom)
+         case (0)
+            !---- ED-2.1 allometry. -------------------------------------------------------!
+            b1Bl(ipft) = exp(a1 + c1l * b1Ht(ipft) + d1l * log(rho(ipft)))
+            aux        = ( (a2l - a1) + b1Ht(ipft) * (c2l - c1l) + log(rho(ipft))          &
+                         * (d2l - d1l)) * (1.0/log(dcrit))
+            b2Bl(ipft) = C2B * b2l + c2l * b2Ht(ipft) + aux
+         case (1)
+            !---- Based on modified Chave et al. (2001) allometry. ------------------------!
+            b1Bl(ipft) = C2B * exp(aleaf(1)) * rho(ipft) / aleaf(3)
+            b2Bl(ipft) = aleaf(2)
+         end select
       end if
    end do
-   !---------------------------------------------------------------------------------------!
-
-
-
-
-   !---------------------------------------------------------------------------------------!
-   !    DBH->AGB parameters, following Baker et al. (2004).  This should be used for       !
-   ! tropical PFTs only.                                                                   !
-   !---------------------------------------------------------------------------------------!
-   b1agb(1:4)   = -2.00
-   b1agb(5:13)  =  0.00
-   b1agb(14:17) = -2.00
-   b2agb(1:4)   =  2.42
-   b2agb(5:13)  =  0.00
-   b2agb(14:17) =  2.42
-   b3agb(1:4)   =  0.58
-   b3agb(5:13)  =  0.00
-   b3agb(14:17) =  0.58
    !---------------------------------------------------------------------------------------!
 
 
@@ -1666,23 +1677,67 @@ subroutine init_pft_alloc_params()
    !------- Fill in the tropical PFTs, which are functions of wood density. ---------------!
    do ipft = 1, n_pft
       if (is_tropical(ipft)) then
-         b1Bs_small(ipft) = exp(a1 + c1d * b1Ht(ipft) + d1d * log(rho(ipft)))
-         b1Bs_big  (ipft) = exp(a1 + c1d * log(hgt_max(ipft)) + d1d * log(rho(ipft)))
+         select case (iallom)
+         case (0)
+            !---- ED-2.1 allometry. -------------------------------------------------------!
+            b1Bs_small(ipft) = exp(a1 + c1d * b1Ht(ipft) + d1d * log(rho(ipft)))
+            b1Bs_big  (ipft) = exp(a1 + c1d * log(hgt_max(ipft)) + d1d * log(rho(ipft)))
 
-         aux              = ( (a2d - a1) + b1Ht(ipft) * (c2d - c1d) + log(rho(ipft))   &
-                            * (d2d - d1d)) * (1.0/log(dcrit))
-         b2Bs_small(ipft) = C2B * b2d + c2d * b2Ht(ipft) + aux
+            aux              = ( (a2d - a1) + b1Ht(ipft) * (c2d - c1d) + log(rho(ipft))    &
+                               * (d2d - d1d)) * (1.0/log(dcrit))
+            b2Bs_small(ipft) = C2B * b2d + c2d * b2Ht(ipft) + aux
 
-         aux              = ( (a2d - a1) + log(hgt_max(ipft)) * (c2d - c1d)                &
-                            + log(rho(ipft)) * (d2d - d1d)) * (1.0/log(dcrit))
-         b2Bs_big  (ipft) = C2B * b2d + aux
+            aux              = ( (a2d - a1) + log(hgt_max(ipft)) * (c2d - c1d)             &
+                               + log(rho(ipft)) * (d2d - d1d)) * (1.0/log(dcrit))
+            b2Bs_big  (ipft) = C2B * b2d + aux
+
+         case (1)
+            !---- Based on modified Chave et al. (2001) allometry. ------------------------!
+            b1Bs_small(ipft) = C2B * exp(adead_small(1)) * rho(ipft) / adead_small(3)
+            b2Bs_small(ipft) = adead_small(2)
+            b1Bs_big(ipft)   = C2B * exp(adead_big(1))   * rho(ipft) / adead_big(3)
+            b2Bs_big(ipft)   = adead_big(2)
+
+         end select
       end if
 
       !----- Assigned for both cases, although it is really only needed for tropical. -----!
-      bdead_crit(ipft) = dbh2bd(max_dbh(ipft),hgt_max(ipft),ipft)
+      bdead_crit(ipft) = dbh2bd(max_dbh(ipft),ipft)
    end do
    !---------------------------------------------------------------------------------------!
 
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     DBH-crown allometry.                                                              !
+   !---------------------------------------------------------------------------------------!
+   !----- Intercept. ----------------------------------------------------------------------!
+   b1Ca(1:17) = 2.490154
+   !----- Slope.  -------------------------------------------------------------------------!
+   b2Ca(1:17) = 0.8068806
+   !---------------------------------------------------------------------------------------!
+
+   if (write_allom) then
+      open (unit=18,file=trim(allom_file),status='replace',action='write')
+      write(unit=18,fmt='(209a)') ('-',n=1,209)
+      write(unit=18,fmt='(18(1x,a))') '         PFT','    Tropical','         Rho'         &
+                                     ,'        b1Ht','        b2Ht','        b1Bl'         &
+                                     ,'        b2Bl','  b1Bs_Small','  b2Bs_Small'         &
+                                     ,'    b1Bs_Big','    b1Bs_Big','        b1Bl'         &
+                                     ,'        b2Bl','     Hgt_min','     Hgt_max'         &
+                                     ,'     Min_DBH','     Max_DBH','   Bdead_CRT'
+      write(unit=18,fmt='(209a)') ('-',n=1,209)
+      do ipft=1,n_pft
+         write (unit=18,fmt='(8x,i5,12x,l1,16(1x,es12.5))')                                &
+                        ipft,is_tropical(ipft),rho(ipft),b1Ht(ipft),b2Ht(ipft),b1Bl(ipft)  &
+                       ,b2Bl(ipft),b1Bs_small(ipft),b2Bs_small(ipft),b1Bs_big(ipft)        &
+                       ,b2Bs_big(ipft),b1Ca(ipft),b2Ca(ipft),hgt_min(ipft),hgt_max(ipft)   &
+                       ,min_dbh(ipft),max_dbh(ipft),bdead_crit(ipft)
+      end do
+      write(unit=18,fmt='(209a)') ('-',n=1,209)
+      close(unit=18,status='keep')
+   end if
 
    !---------------------------------------------------------------------------------------!
    !    Define the branching parameters, following Järvelä (2004)                          !
@@ -2021,8 +2076,8 @@ subroutine init_pft_derived_params()
 
       !----- Find the DBH and carbon pools associated with a newly formed recruit. --------!
       dbh        = h2dbh(hgt_min(ipft),ipft)
-      bleaf_min  = dbh2bl(dbh,hgt_min(ipft),ipft)
-      bdead_min  = dbh2bd(dbh,hgt_min(ipft),ipft)
+      bleaf_min  = dbh2bl(dbh,ipft)
+      bdead_min  = dbh2bd(dbh,ipft)
       balive_min = bleaf_min * (1.0 + q(ipft) + qsw(ipft) * hgt_min(ipft))
 
       !------------------------------------------------------------------------------------!
@@ -2032,8 +2087,8 @@ subroutine init_pft_derived_params()
       !------------------------------------------------------------------------------------!
       huge_dbh    = 3. * max_dbh(ipft)
       huge_height = dbh2h(ipft, max_dbh(ipft))
-      bleaf_max   = dbh2bl(huge_dbh,huge_height,ipft)
-      bdead_max   = dbh2bd(huge_dbh,huge_height,ipft)
+      bleaf_max   = dbh2bl(huge_dbh,ipft)
+      bdead_max   = dbh2bd(huge_dbh,ipft)
       balive_max  = bleaf_max * (1.0 + q(ipft) + qsw(ipft) * huge_height)
       !------------------------------------------------------------------------------------!
 

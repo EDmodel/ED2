@@ -533,8 +533,8 @@ module growth_balive
       ipft = cpatch%pft(ico)
      
       !----- Determine how much biomass we need to go back to allometry. ----!
-      off_allometry_cb = dbh2bl(cpatch%dbh(ico),cpatch%hite(ico),ipft)       &
-                       * salloc - cpatch%balive(ico)
+      off_allometry_cb = dbh2bl(cpatch%dbh(ico),ipft) * salloc               &
+                       - cpatch%balive(ico)
 
       !----- If plants have storage, transfer it to balive. -----------------!
       increment            = max(0.0,min(max(0.0, off_allometry_cb)          &
@@ -814,9 +814,9 @@ module growth_balive
             ! allow the plant to get back to full allometry.                 !
             !----------------------------------------------------------------!
 
-            bl_max     = dbh2bl(cpatch%dbh(ico),cpatch%hite(ico),ipft)       &
+            bl_max     = dbh2bl(cpatch%dbh(ico),ipft)                        &
                        * green_leaf_factor * cpatch%elongf(ico)
-            balive_max = dbh2bl(cpatch%dbh(ico),cpatch%hite(ico),ipft)       &
+            balive_max = dbh2bl(cpatch%dbh(ico),ipft)                        &
                        * salloc * cpatch%elongf(ico)
 
             !--- Amount that bleaf, broot, and bsapwood are off allometry ---!
@@ -1031,7 +1031,7 @@ module growth_balive
 
       elseif (cpatch%phenology_status(ico) == 1) then
 
-         bl_max = dbh2bl(cpatch%dbh(ico),cpatch%hite(ico),ipft)              &
+         bl_max = dbh2bl(cpatch%dbh(ico),ipft)                               &
                 * green_leaf_factor * cpatch%elongf(ico)
          bl_pot = cpatch%bleaf(ico) + carbon_balance_pot
 

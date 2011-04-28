@@ -377,8 +377,7 @@ subroutine event_harvest(agb_frac8,bgb_frac8,fol_frac8,stor_frac8)
                  end if
 
                  if(cpatch%bdead(ico) .gt. tiny(1.0)) then
-                    cpatch%dbh(ico) = bd2dbh(cpatch%pft(ico), cpatch%bdead(ico)            &
-                                            ,cpatch%dbh(ico)) 
+                    cpatch%dbh(ico) = bd2dbh(cpatch%pft(ico), cpatch%bdead(ico)) 
                     cpatch%hite(ico) = dbh2h(cpatch%pft(ico), cpatch%dbh(ico))
                  else
                     cpatch%dbh(ico)  = 0.0
@@ -799,9 +798,8 @@ end subroutine event_till
 !!$              cpatch%nplant(ico)  = density
 !!$              cpatch%hite(ico)    = hgt_min(pft)
 !!$              cpatch%dbh(ico)     = h2dbh(hgt_min(pft),pft)
-!!$              cpatch%bdead(ico)   = dbh2bd(cpatch%dbh(ico),&
-!!$                   & hgt_min(pft),pft)
-!!$              cpatch%bleaf(ico)   = dbh2bl(cpatch%dbh(ico),hgt_min(pft),pft)
+!!$              cpatch%bdead(ico)   = dbh2bd(cpatch%dbh(ico),pft)
+!!$              cpatch%bleaf(ico)   = dbh2bl(cpatch%dbh(ico),pft)
 !!$print*,cpatch%hite(ico),cpatch%dbh(ico),cpatch%bdead(ico),cpatch%bleaf(ico)
 !!$              cpatch%phenology_status(ico) = 0
 !!$              cpatch%balive(ico)  = cpatch%bleaf(ico)* &

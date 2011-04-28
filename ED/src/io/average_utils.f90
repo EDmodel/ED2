@@ -1255,6 +1255,11 @@ subroutine integrate_ed_daily_output_flux(cgrid)
                                              * umols_2_kgCyr
          cgrid%qmean_nep            (it,ipy) = cgrid%qmean_nep                   (it,ipy)  &
                                              + ( cgrid%avg_gpp                      (ipy)  &
+                                               - cgrid%avg_leaf_resp                (ipy)  &
+                                               - cgrid%avg_root_resp                (ipy)  &
+                                               - cgrid%avg_growth_resp              (ipy)  &
+                                               - cgrid%avg_storage_resp             (ipy)  &
+                                               - cgrid%avg_vleaf_resp               (ipy)  &
                                                - cgrid%avg_htroph_resp              (ipy)) &
                                              * umols_2_kgCyr
          cgrid%qmean_rh             (it,ipy) = cgrid%qmean_rh                    (it,ipy)  &

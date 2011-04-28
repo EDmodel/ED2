@@ -520,7 +520,7 @@ subroutine update_derived_cohort_props(cpatch,ico,green_leaf_factor,lsl)
    !---------------------------------------------------------------------------------------!
 
    !----- Gett DBH and height from structural biomass. ------------------------------------!
-   cpatch%dbh(ico)  = bd2dbh(cpatch%pft(ico), cpatch%bdead(ico),cpatch%dbh(ico))
+   cpatch%dbh(ico)  = bd2dbh(cpatch%pft(ico), cpatch%bdead(ico))
    cpatch%hite(ico) = dbh2h(cpatch%pft(ico), cpatch%dbh(ico))
    
    !----- Check the phenology status and whether it needs to change. ----------------------!
@@ -534,7 +534,7 @@ subroutine update_derived_cohort_props(cpatch,ico,green_leaf_factor,lsl)
          cpatch%elongf(ico)  = 1.0
       end select
 
-      bl_max = dbh2bl(cpatch%dbh(ico),cpatch%hite(ico),cpatch%pft(ico))                    &
+      bl_max = dbh2bl(cpatch%dbh(ico),cpatch%pft(ico))                                     &
              * green_leaf_factor * cpatch%elongf(ico)
       !------------------------------------------------------------------------------------!
       !     If LEAF biomass is not the maximum, set it to 1 (leaves partially flushed),    !
