@@ -403,6 +403,13 @@ subroutine spatial_averages
          cgrid%avg_bseeds          (ipy) = 0.0
          cgrid%lai                 (ipy) = 0.0
          cgrid%avg_gpp             (ipy) = 0.0
+         cgrid%avg_nppleaf         (ipy) = 0.0
+         cgrid%avg_nppfroot        (ipy) = 0.0
+         cgrid%avg_nppsapwood      (ipy) = 0.0
+         cgrid%avg_nppcroot        (ipy) = 0.0
+         cgrid%avg_nppseeds        (ipy) = 0.0
+         cgrid%avg_nppwood         (ipy) = 0.0
+         cgrid%avg_nppdaily        (ipy) = 0.0
          cgrid%avg_leaf_resp       (ipy) = 0.0
          cgrid%avg_root_resp       (ipy) = 0.0
          cgrid%avg_growth_resp     (ipy) = 0.0
@@ -497,7 +504,7 @@ subroutine spatial_averages
                                          * site_area_i
             cpoly%avg_smoist_gg(:,isi)   = matmul(csite%avg_smoist_gg  ,csite%area)        &
                                          * site_area_i
-            cpoly%avg_smoist_gc(:,isi)   = matmul(csite%avg_smoist_gc  ,csite%area)        &
+            cpoly%avg_transloss(:,isi)   = matmul(csite%avg_transloss  ,csite%area)        &
                                          * site_area_i
             cpoly%aux_s(:,isi)           = matmul(csite%aux_s          ,csite%area)        &
                                          * site_area_i
@@ -620,6 +627,48 @@ subroutine spatial_averages
                                               * csite%area(ipa)*cpoly%area(isi)            &
                                               * site_area_i * poly_area_i
 
+                  cgrid%avg_nppleaf(ipy)      = cgrid%avg_nppleaf(ipy)                     &
+                                              + sum(cpatch%dmean_nppleaf                   &
+                                              * cpatch%nplant)                             &
+                                              * csite%area(ipa)*cpoly%area(isi)            &
+                                              * site_area_i * poly_area_i
+                                              
+                  cgrid%avg_nppfroot(ipy)     = cgrid%avg_nppfroot(ipy)                    &
+                                              + sum(cpatch%dmean_nppfroot                  &
+                                              * cpatch%nplant)                             &
+                                              * csite%area(ipa)*cpoly%area(isi)            &
+                                              * site_area_i * poly_area_i
+                                              
+                  cgrid%avg_nppsapwood(ipy)   = cgrid%avg_nppsapwood(ipy)                  &
+                                              + sum(cpatch%dmean_nppsapwood                &
+                                              * cpatch%nplant)                             &
+                                              * csite%area(ipa)*cpoly%area(isi)            &
+                                              * site_area_i * poly_area_i
+                                              
+                  cgrid%avg_nppcroot(ipy)     = cgrid%avg_nppcroot(ipy)                    &
+                                              + sum(cpatch%dmean_nppcroot                  &
+                                              * cpatch%nplant)                             &
+                                              * csite%area(ipa)*cpoly%area(isi)            &
+                                              * site_area_i * poly_area_i
+                                              
+                  cgrid%avg_nppseeds(ipy)     = cgrid%avg_nppseeds(ipy)                    &
+                                              + sum(cpatch%dmean_nppseeds                  &
+                                              * cpatch%nplant)                             &
+                                              * csite%area(ipa)*cpoly%area(isi)            &
+                                              * site_area_i * poly_area_i
+                                              
+                  cgrid%avg_nppwood(ipy)      = cgrid%avg_nppwood(ipy)                     &
+                                              + sum(cpatch%dmean_nppwood                   &
+                                              * cpatch%nplant)                             &
+                                              * csite%area(ipa)*cpoly%area(isi)            &
+                                              * site_area_i * poly_area_i
+                                              
+                  cgrid%avg_nppdaily(ipy)     = cgrid%avg_nppdaily(ipy)                    &
+                                              + sum(cpatch%dmean_nppdaily                  &
+                                              * cpatch%nplant)                             &
+                                              * csite%area(ipa)*cpoly%area(isi)            &
+                                              * site_area_i * poly_area_i
+                                              
                   cgrid%avg_leaf_resp(ipy)    = cgrid%avg_leaf_resp(ipy)                   &
                                               + sum(cpatch%mean_leaf_resp)                 &
                                               * csite%area(ipa)*cpoly%area(isi)            &
@@ -1002,7 +1051,7 @@ subroutine spatial_averages
                                       * poly_area_i
          cgrid%avg_smoist_gg(:,ipy)   = matmul(cpoly%avg_smoist_gg  , cpoly%area)          &
                                       * poly_area_i
-         cgrid%avg_smoist_gc(:,ipy)   = matmul(cpoly%avg_smoist_gc  , cpoly%area)          &
+         cgrid%avg_transloss(:,ipy)   = matmul(cpoly%avg_transloss  , cpoly%area)          &
                                       * poly_area_i
          cgrid%aux_s(:,ipy)           = matmul(cpoly%aux_s          , cpoly%area)          &
                                       * poly_area_i

@@ -18,7 +18,8 @@ subroutine structural_growth(cgrid, month)
                             , c2n_recruit            & ! intent(in)
                             , c2n_stem               & ! intent(in)
                             , l2n_stem               & ! intent(in)
-                            , negligible_nplant      ! ! intent(in)
+                            , negligible_nplant      & ! intent(in)
+                            , agf_bs                 ! ! intent(in)
    use decomp_coms   , only : f_labile               ! ! intent(in)
    use ed_max_dims   , only : n_pft                  & ! intent(in)
                             , n_dbh                  ! ! intent(in)
@@ -122,6 +123,13 @@ subroutine structural_growth(cgrid, month)
                !----- Grow plants; bdead gets fraction f_bdead of bstorage. ---------------!
                cpatch%bdead(ico) = cpatch%bdead(ico) + f_bdead * cpatch%bstorage(ico)
 
+
+               !------ NPP allocation to wood and course roots in KgC /m2 -----------------!
+               cpatch%today_NPPwood(ico) = agf_bs * f_bdead * cpatch%bstorage(ico)         &
+                                          * cpatch%nplant(ico)
+               cpatch%today_NPPcroot(ico) = (1. - agf_bs) * f_bdead * cpatch%bstorage(ico) &
+                                          * cpatch%nplant(ico)
+                                          
                !---------------------------------------------------------------------------!
                !      Rebalance the plant nitrogen uptake considering the actual alloc-    !
                ! ation to structural growth.  This is necessary because c2n_stem does not  !
@@ -135,6 +143,10 @@ subroutine structural_growth(cgrid, month)
                ! a fraction f_bseeds of bstorage.                                          !
                !---------------------------------------------------------------------------!
                cpatch%bseeds(ico) = f_bseeds * cpatch%bstorage(ico)
+               
+               cpatch%today_NPPseeds(ico) = f_bseeds * cpatch%bstorage(ico)                &
+                                          * cpatch%nplant(ico)
+               
                seed_litter        = cpatch%bseeds(ico) * cpatch%nplant(ico)                &
                                   * seedling_mortality(ipft)
                
@@ -677,8 +689,10 @@ subroutine update_vital_rates(cpatch,ico,ilu,dbh_in,bdead_in,balive_in,hite_in,b
    !---------------------------------------------------------------------------------------!
    basal_area_mort(ipft,idbh) = basal_area_mort(ipft,idbh)                                 &
                               + area * (nplant_in - cpatch%nplant(ico)) * ba_in * 12.0
-   agb_mort(ipft,idbh)        = agb_mort(ipft,idbh) + area * mort_litter * 12.0
-   !---------------------------------------------------------------------------------------!
+
+   !----- Calculation based on mort_litter includes TOTAL biomass, not AGB [[mcd]]. -------!
+   agb_mort(ipft,idbh)        = agb_mort(ipft,idbh)                                        &
+                              + area * (nplant_in - cpatch%nplant(ico)) * agb_in * 12.0
 
    return
 end subroutine update_vital_rates

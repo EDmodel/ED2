@@ -432,7 +432,7 @@ events.o: fuse_fiss_utils.mod grid_coms.mod pft_coms.mod therm_lib.mod
 farq_leuning.o: c34constants.mod consts_coms.mod pft_coms.mod phenology_coms.mod
 farq_leuning.o: physiology_coms.mod rk4_coms.mod therm_lib8.mod
 fire.o: allometry.mod consts_coms.mod disturb_coms.mod ed_state_vars.mod
-fire.o: grid_coms.mod pft_coms.mod soil_coms.mod
+fire.o: grid_coms.mod soil_coms.mod
 forestry.o: allometry.mod disturb_coms.mod disturbance_utils.mod ed_max_dims.mod
 forestry.o: ed_state_vars.mod fuse_fiss_utils.mod grid_coms.mod
 growth_balive.o: allometry.mod consts_coms.mod decomp_coms.mod ed_max_dims.mod
@@ -472,10 +472,9 @@ rk4_integ_utils.o: canopy_air_coms.mod consts_coms.mod ed_max_dims.mod
 rk4_integ_utils.o: ed_misc_coms.mod ed_state_vars.mod grid_coms.mod
 rk4_integ_utils.o: hydrology_coms.mod rk4_coms.mod rk4_stepper.mod soil_coms.mod
 rk4_integ_utils.o: therm_lib8.mod
-rk4_misc.o: allometry.mod canopy_air_coms.mod canopy_struct_dynamics.mod
-rk4_misc.o: consts_coms.mod ed_max_dims.mod ed_misc_coms.mod ed_state_vars.mod
-rk4_misc.o: ed_therm_lib.mod grid_coms.mod rk4_coms.mod soil_coms.mod
-rk4_misc.o: therm_lib8.mod
+rk4_misc.o: canopy_air_coms.mod canopy_struct_dynamics.mod consts_coms.mod
+rk4_misc.o: ed_max_dims.mod ed_misc_coms.mod ed_state_vars.mod ed_therm_lib.mod
+rk4_misc.o: grid_coms.mod rk4_coms.mod soil_coms.mod therm_lib8.mod
 rk4_stepper.o: ed_state_vars.mod grid_coms.mod rk4_coms.mod soil_coms.mod
 soil_respiration.o: consts_coms.mod decomp_coms.mod ed_state_vars.mod
 soil_respiration.o: pft_coms.mod soil_coms.mod
@@ -596,8 +595,8 @@ ed_para_coms.o: ed_max_dims.mod
 ed_para_init.o: ed_max_dims.mod ed_misc_coms.mod ed_node_coms.mod
 ed_para_init.o: ed_para_coms.mod ed_work_vars.mod grid_coms.mod 
 ed_para_init.o: hdf5_coms.mod mem_polygons.mod soil_coms.mod
-allometry.o: consts_coms.mod grid_coms.mod pft_coms.mod rk4_coms.mod
-allometry.o: soil_coms.mod
+allometry.o: consts_coms.mod ed_misc_coms.mod grid_coms.mod pft_coms.mod
+allometry.o: rk4_coms.mod soil_coms.mod
 budget_utils.o: consts_coms.mod ed_max_dims.mod ed_misc_coms.mod
 budget_utils.o: ed_state_vars.mod grid_coms.mod rk4_coms.mod soil_coms.mod
 dateutils.o: consts_coms.mod

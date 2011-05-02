@@ -227,7 +227,7 @@ module rk4_coms
       real(kind=8) :: avg_carbon_ac     ! Free atm. -> canopy air
       !----- Soil fluxes ------------------------------------------------------------------!
       real(kind=8),pointer,dimension(:) :: avg_smoist_gg     ! Moisture flux between layers
-      real(kind=8),pointer,dimension(:) :: avg_smoist_gc     ! Transpired soil moisture sink
+      real(kind=8),pointer,dimension(:) :: avg_transloss     ! Transpired soil moisture sink
       real(kind=8),pointer,dimension(:) :: avg_sensible_gg   ! Soil heat flux between layers
       real(kind=8)                      :: avg_drainage      ! Drainage at the bottom.
       real(kind=8)                      :: avg_drainage_heat ! Drainage at the bottom.
@@ -261,7 +261,7 @@ module rk4_coms
       real(kind=8) :: flx_carbon_ac     ! Free atm. -> canopy air
       !----- Soil fluxes ------------------------------------------------------------------!
       real(kind=8),pointer,dimension(:) :: flx_smoist_gg     ! Moisture flux between layers
-      real(kind=8),pointer,dimension(:) :: flx_smoist_gc     ! Transpired soil moisture sink
+      real(kind=8),pointer,dimension(:) :: flx_transloss     ! Transpired soil moisture sink
       real(kind=8),pointer,dimension(:) :: flx_sensible_gg   ! Soil heat flux between layers
       real(kind=8)                      :: flx_drainage      ! Drainage at the bottom.
       real(kind=8)                      :: flx_drainage_heat ! Drainage at the bottom.
@@ -721,10 +721,10 @@ module rk4_coms
       !------------------------------------------------------------------------------------!
       allocate(y%avg_sensible_gg(nzg))
       allocate(y%avg_smoist_gg(nzg))
-      allocate(y%avg_smoist_gc(nzg))
+      allocate(y%avg_transloss(nzg))
       allocate(y%flx_sensible_gg(nzg))
       allocate(y%flx_smoist_gg(nzg))
-      allocate(y%flx_smoist_gc(nzg))
+      allocate(y%flx_transloss(nzg))
 
       call zero_rk4_patch(y)
 
@@ -772,10 +772,10 @@ module rk4_coms
       !                   aren't used.                                                     !
       !------------------------------------------------------------------------------------!
       nullify(y%avg_smoist_gg)
-      nullify(y%avg_smoist_gc)
+      nullify(y%avg_transloss)
       nullify(y%avg_sensible_gg)
       nullify(y%flx_smoist_gg)
-      nullify(y%flx_smoist_gc)
+      nullify(y%flx_transloss)
       nullify(y%flx_sensible_gg)
 
       return
@@ -937,11 +937,11 @@ module rk4_coms
       if(associated(y%sfcwater_restz        ))   y%sfcwater_restz(:)              = 0.d0
 
       if(associated(y%avg_smoist_gg         ))   y%avg_smoist_gg(:)               = 0.d0
-      if(associated(y%avg_smoist_gc         ))   y%avg_smoist_gc(:)               = 0.d0
+      if(associated(y%avg_transloss         ))   y%avg_transloss(:)               = 0.d0
       if(associated(y%avg_sensible_gg       ))   y%avg_sensible_gg(:)             = 0.d0
 
       if(associated(y%flx_smoist_gg         ))   y%flx_smoist_gg(:)               = 0.d0
-      if(associated(y%flx_smoist_gc         ))   y%flx_smoist_gc(:)               = 0.d0
+      if(associated(y%flx_transloss         ))   y%flx_transloss(:)               = 0.d0
       if(associated(y%flx_sensible_gg       ))   y%flx_sensible_gg(:)             = 0.d0
 
       return
@@ -985,10 +985,10 @@ module rk4_coms
 
       ! Diagnostics
       if (associated(y%avg_smoist_gg))           deallocate(y%avg_smoist_gg)
-      if (associated(y%avg_smoist_gc))           deallocate(y%avg_smoist_gc)
+      if (associated(y%avg_transloss))           deallocate(y%avg_transloss)
       if (associated(y%avg_sensible_gg))         deallocate(y%avg_sensible_gg)
       if (associated(y%flx_smoist_gg))           deallocate(y%flx_smoist_gg)
-      if (associated(y%flx_smoist_gc))           deallocate(y%flx_smoist_gc)
+      if (associated(y%flx_transloss))           deallocate(y%flx_transloss)
       if (associated(y%flx_sensible_gg))         deallocate(y%flx_sensible_gg)
 
       return
@@ -1284,7 +1284,7 @@ module rk4_coms
 
       !----- Reset soil fluxes only when they are allocated. ------------------------------!
       if(associated(y%flx_smoist_gg   )) y%flx_smoist_gg    (:) = 0.d0
-      if(associated(y%flx_smoist_gc   )) y%flx_smoist_gc    (:) = 0.d0
+      if(associated(y%flx_transloss   )) y%flx_transloss    (:) = 0.d0
       if(associated(y%flx_sensible_gg )) y%flx_sensible_gg  (:) = 0.d0
       !----- Reset cohort-level energy fluxes when they are allocated. --------------------!
       if(associated(y%cfx_hflxvc      )) y%cfx_hflxvc       (:) = 0.d0
@@ -1346,7 +1346,7 @@ module rk4_coms
 
       if(associated(y%flx_smoist_gg   )) y%flx_smoist_gg    (:) = y%flx_smoist_gg   (:)    &
                                                                 * hdidi
-      if(associated(y%flx_smoist_gc   )) y%flx_smoist_gc    (:) = y%flx_smoist_gc   (:)    &
+      if(associated(y%flx_transloss   )) y%flx_transloss    (:) = y%flx_transloss   (:)    &
                                                                 * hdidi
       if(associated(y%flx_sensible_gg )) y%flx_sensible_gg  (:) = y%flx_sensible_gg (:)    &
                                                                 * hdidi

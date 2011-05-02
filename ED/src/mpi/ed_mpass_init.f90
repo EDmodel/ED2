@@ -103,7 +103,8 @@ subroutine ed_masterput_nl(par_run)
    use decomp_coms,     only: n_decomp_lim
    use pft_coms,        only: include_these_pft,agri_stock,plantation_stock,pft_1st_check
    use disturb_coms,    only: include_fire,ianth_disturb, treefall_disturbance_rate        &
-                             ,lu_database,plantation_file,lu_rescale_file,sm_fire
+                             ,lu_database,plantation_file,lu_rescale_file,sm_fire          &
+                             ,time2canopy
    use optimiz_coms,    only: ioptinpt
    use canopy_radiation_coms, only : crown_mod
    use rk4_coms,        only: rk4_tolerance, ibranch_thermo, ipercol
@@ -265,6 +266,7 @@ subroutine ed_masterput_nl(par_run)
    call MPI_Bcast(ipercol,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
 
    call MPI_Bcast(treefall_disturbance_rate,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(time2canopy,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(runoff_time,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(betapower,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(ustmin,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
@@ -898,7 +900,8 @@ subroutine ed_nodeget_nl
                              ,repro_scheme, radint, radslp, thetacrit
    use decomp_coms,     only: n_decomp_lim
    use disturb_coms,    only: include_fire,ianth_disturb, treefall_disturbance_rate        &
-                             ,lu_database,plantation_file,lu_rescale_file,sm_fire
+                             ,lu_database,plantation_file,lu_rescale_file,sm_fire          &
+                             ,time2canopy
    use optimiz_coms,    only: ioptinpt
    use ed_misc_coms,    only: attach_metadata
    use canopy_air_coms, only: icanturb, i_blyr_condct, isfclyrm, ustmin, gamm, gamh        &
@@ -1070,6 +1073,7 @@ subroutine ed_nodeget_nl
    call MPI_Bcast(ipercol,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
 
    call MPI_Bcast(treefall_disturbance_rate,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(time2canopy,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(runoff_time,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(betapower,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(ustmin,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)

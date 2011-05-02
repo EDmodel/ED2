@@ -1057,8 +1057,9 @@ subroutine ed_opspec_misc
    use decomp_coms           , only : n_decomp_lim                 ! ! intent(in)
    use disturb_coms          , only : include_fire                 & ! intent(in)
                                     , ianth_disturb                & ! intent(in)
-                                    , treefall_disturbance_rate    & ! intent(in)
-                                    , sm_fire                      ! ! intent(in)
+                                    , sm_fire                      & ! intent(in)
+                                    , time2canopy                  & ! intent(in)
+                                    , treefall_disturbance_rate    ! ! intent(in)
    use phenology_coms        , only : iphen_scheme                 & ! intent(in)
                                     , radint                       & ! intent(in)
                                     , radslp                       & ! intent(in)
@@ -1612,14 +1613,33 @@ end do
       call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
    end if
+
+   if (treefall_disturbance_rate > 0.0) then
+      if (time2canopy < 0.0) then
+         write (reason,fmt='(a,1x,es14.7,a)')                                              &
+                'Invalid TIME2CANOPY, it can''t be negative.  Yours is set to'             &
+                ,time2canopy,'...'
+         call opspec_fatal(reason,'opspec_misc')
+         ifaterr = ifaterr +1
+      elseif (time2canopy >= 2.0 * (1. - epsilon(1.)) / treefall_disturbance_rate) then
+         !---------------------------------------------------------------------------------!
+         !     We need this if statement because the effective treefall tends to infinity  !
+         ! as time2canopy approaches 2. / treefall_disturbance_rate.                       !
+         !---------------------------------------------------------------------------------!
+         write (unit=*,fmt='(a,1x,es14.7)')   ' TREEFALL_DISTURBANCE_RATE ='               &
+                                             ,treefall_disturbance_rate
+         write (unit=*,fmt='(a,1x,es14.7)')   ' MAX(TIME2CANOPY)          ='               &
+                                             , 2.0 * (1. - epsilon(1.))                    &
+                                             / treefall_disturbance_rate
+         write (reason,fmt='(a,2x,a,1x,es14.7,a)')                                         &
+             ' Invalid TIME2CANOPY, it can''t be >= 2. / TREEFALL_DISTURBANCE_RATE.'       &
+            ,'Yours is set to',time2canopy,'...'
+         call opspec_fatal(reason,'opspec_misc')  
+         ifaterr = ifaterr +1
+      end if
+   end if
     
-   !if (treefall_disturbance_rate < 0.0) then
-   !   write (reason,fmt='(a,1x,es14.7,a)')                                                 &
-   !          'Invalid TREEFALL_DISTURBANCE_RATE, it can''t be negative.  Yours is set to'  &
-   !          ,treefall_disturbance_rate,'...'
-   !   call opspec_fatal(reason,'opspec_misc')
-   !   ifaterr = ifaterr +1
-   !end if
+   
     
    if (runoff_time < 0.0) then
       write (reason,fmt='(a,1x,es14.7,a)')                                                 &

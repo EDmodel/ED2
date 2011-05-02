@@ -404,7 +404,7 @@ subroutine inc_rk4_patch(rkp, inc, fac, cpatch)
       do k=rk4site%lsl,nzg
          rkp%avg_sensible_gg(k)  = rkp%avg_sensible_gg(k)  + fac * inc%avg_sensible_gg(k)
          rkp%avg_smoist_gg(k)    = rkp%avg_smoist_gg(k)    + fac * inc%avg_smoist_gg(k)  
-         rkp%avg_smoist_gc(k)    = rkp%avg_smoist_gc(k)    + fac * inc%avg_smoist_gc(k)  
+         rkp%avg_transloss(k)    = rkp%avg_transloss(k)    + fac * inc%avg_transloss(k)  
       end do
 
    end if
@@ -439,7 +439,7 @@ subroutine inc_rk4_patch(rkp, inc, fac, cpatch)
       do k=rk4site%lsl,nzg
          rkp%flx_sensible_gg(k)  = rkp%flx_sensible_gg(k)  + fac * inc%avg_sensible_gg(k)
          rkp%flx_smoist_gg(k)    = rkp%flx_smoist_gg(k)    + fac * inc%avg_smoist_gg(k)  
-         rkp%flx_smoist_gc(k)    = rkp%flx_smoist_gc(k)    + fac * inc%avg_smoist_gc(k)  
+         rkp%flx_transloss(k)    = rkp%flx_transloss(k)    + fac * inc%avg_transloss(k)  
       end do
 
       do ico = 1,cpatch%ncohorts
@@ -1140,7 +1140,7 @@ subroutine copy_rk4_patch(sourcep, targetp, cpatch)
       do k=rk4site%lsl,nzg
          targetp%avg_sensible_gg(k) = sourcep%avg_sensible_gg(k)
          targetp%avg_smoist_gg(k)   = sourcep%avg_smoist_gg(k)  
-         targetp%avg_smoist_gc(k)   = sourcep%avg_smoist_gc(k)  
+         targetp%avg_transloss(k)   = sourcep%avg_transloss(k)  
       end do
    end if
 
@@ -1168,7 +1168,7 @@ subroutine copy_rk4_patch(sourcep, targetp, cpatch)
       do k=rk4site%lsl,nzg
          targetp%flx_sensible_gg(k) = sourcep%flx_sensible_gg(k)
          targetp%flx_smoist_gg(k)   = sourcep%flx_smoist_gg(k)  
-         targetp%flx_smoist_gc(k)   = sourcep%flx_smoist_gc(k)  
+         targetp%flx_transloss(k)   = sourcep%flx_transloss(k)  
       end do
       
       do k=1,cpatch%ncohorts

@@ -283,6 +283,19 @@ module fuse_fiss_utils
             cpatch%hcapveg              (ico) = cpatch%hcapveg           (ico) * area_scale
             cpatch%veg_energy           (ico) = cpatch%veg_energy        (ico) * area_scale
             cpatch%monthly_dndt         (ico) = cpatch%monthly_dndt      (ico) * area_scale
+            cpatch%today_gpp            (ico) = cpatch%today_gpp         (ico) * area_scale
+            cpatch%today_nppleaf        (ico) = cpatch%today_nppleaf     (ico) * area_scale
+            cpatch%today_nppfroot       (ico) = cpatch%today_nppfroot    (ico) * area_scale
+            cpatch%today_nppsapwood     (ico) = cpatch%today_nppsapwood  (ico) * area_scale
+            cpatch%today_nppcroot       (ico) = cpatch%today_nppcroot    (ico) * area_scale
+            cpatch%today_nppseeds       (ico) = cpatch%today_nppseeds    (ico) * area_scale
+            cpatch%today_nppwood        (ico) = cpatch%today_nppwood     (ico) * area_scale
+            cpatch%today_nppdaily       (ico) = cpatch%today_nppdaily    (ico) * area_scale
+            cpatch%today_gpp_pot        (ico) = cpatch%today_gpp_pot     (ico) * area_scale
+            cpatch%today_gpp_max        (ico) = cpatch%today_gpp_max     (ico) * area_scale
+            cpatch%today_leaf_resp      (ico) = cpatch%today_leaf_resp   (ico) * area_scale
+            cpatch%today_root_resp      (ico) = cpatch%today_root_resp   (ico) * area_scale
+                     
             !----- Crown area shall not exceed one. ---------------------------------------!
             cpatch%crown_area           (ico) = min(1.,cpatch%crown_area (ico) * area_scale)
             if (idoutput > 0 .or. imoutput > 0 .or. iqoutput > 0) then
@@ -727,6 +740,12 @@ module fuse_fiss_utils
                cpatch%mean_storage_resp    (ico) = cpatch%mean_storage_resp (ico) * 0.5
                cpatch%mean_vleaf_resp      (ico) = cpatch%mean_vleaf_resp   (ico) * 0.5
                cpatch%today_gpp            (ico) = cpatch%today_gpp         (ico) * 0.5
+               cpatch%today_nppleaf        (ico) = cpatch%today_nppleaf     (ico) * 0.5
+               cpatch%today_nppfroot       (ico) = cpatch%today_nppfroot    (ico) * 0.5
+               cpatch%today_nppsapwood     (ico) = cpatch%today_nppsapwood  (ico) * 0.5
+               cpatch%today_nppcroot       (ico) = cpatch%today_nppcroot    (ico) * 0.5
+               cpatch%today_nppseeds       (ico) = cpatch%today_nppseeds    (ico) * 0.5
+               cpatch%today_nppdaily       (ico) = cpatch%today_nppdaily    (ico) * 0.5
                cpatch%today_gpp_pot        (ico) = cpatch%today_gpp_pot     (ico) * 0.5
                cpatch%today_gpp_max        (ico) = cpatch%today_gpp_max     (ico) * 0.5
                cpatch%today_leaf_resp      (ico) = cpatch%today_leaf_resp   (ico) * 0.5
@@ -876,6 +895,13 @@ module fuse_fiss_utils
       cpatch%today_leaf_resp(idt)      = cpatch%today_leaf_resp(isc)
       cpatch%today_root_resp(idt)      = cpatch%today_root_resp(isc)
       cpatch%today_gpp(idt)            = cpatch%today_gpp(isc)
+      cpatch%today_nppleaf(idt)        = cpatch%today_nppleaf(isc)
+      cpatch%today_nppfroot(idt)       = cpatch%today_nppfroot(isc)
+      cpatch%today_nppsapwood(idt)     = cpatch%today_nppsapwood(isc)
+      cpatch%today_nppcroot(idt)       = cpatch%today_nppcroot(isc)
+      cpatch%today_nppseeds(idt)       = cpatch%today_nppseeds(isc)
+      cpatch%today_nppwood(idt)        = cpatch%today_nppwood(isc)
+      cpatch%today_nppdaily(idt)       = cpatch%today_nppdaily(isc)
       cpatch%today_gpp_pot(idt)        = cpatch%today_gpp_pot(isc)
       cpatch%today_gpp_max(idt)        = cpatch%today_gpp_max(isc)
       cpatch%growth_respiration(idt)   = cpatch%growth_respiration(isc)
@@ -965,6 +991,13 @@ module fuse_fiss_utils
          cpatch%dmean_par_v_beam      (idt) = cpatch%dmean_par_v_beam      (isc) 
          cpatch%dmean_par_v_diff      (idt) = cpatch%dmean_par_v_diff      (isc) 
          cpatch%dmean_gpp             (idt) = cpatch%dmean_gpp             (isc)
+         cpatch%dmean_nppleaf         (idt) = cpatch%dmean_nppleaf         (isc)
+         cpatch%dmean_nppfroot        (idt) = cpatch%dmean_nppfroot        (isc)
+         cpatch%dmean_nppsapwood      (idt) = cpatch%dmean_nppsapwood      (isc)
+         cpatch%dmean_nppcroot        (idt) = cpatch%dmean_nppcroot        (isc)
+         cpatch%dmean_nppseeds        (idt) = cpatch%dmean_nppseeds        (isc)
+         cpatch%dmean_nppwood         (idt) = cpatch%dmean_nppwood         (isc)
+         cpatch%dmean_nppdaily        (idt) = cpatch%dmean_nppdaily        (isc)
          cpatch%dmean_leaf_resp       (idt) = cpatch%dmean_leaf_resp       (isc)
          cpatch%dmean_root_resp       (idt) = cpatch%dmean_root_resp       (isc)
          cpatch%dmean_fs_open         (idt) = cpatch%dmean_fs_open         (isc)
@@ -1004,6 +1037,14 @@ module fuse_fiss_utils
          cpatch%mmean_beamext_level     (idt) = cpatch%mmean_beamext_level     (isc)
          cpatch%mmean_diffext_level     (idt) = cpatch%mmean_diffext_level     (isc)
          cpatch%mmean_gpp               (idt) = cpatch%mmean_gpp               (isc)
+         cpatch%mmean_nppleaf           (idt) = cpatch%mmean_nppleaf           (isc)
+         cpatch%mmean_nppfroot          (idt) = cpatch%mmean_nppfroot          (isc)
+         cpatch%mmean_nppsapwood        (idt) = cpatch%mmean_nppsapwood        (isc)
+         cpatch%mmean_nppcroot          (idt) = cpatch%mmean_nppcroot          (isc)
+         cpatch%mmean_nppseeds          (idt) = cpatch%mmean_nppseeds          (isc)
+         cpatch%mmean_nppwood           (idt) = cpatch%mmean_nppwood           (isc)
+         cpatch%mmean_nppdaily          (idt) = cpatch%mmean_nppdaily          (isc)
+         
          cpatch%mmean_leaf_resp         (idt) = cpatch%mmean_leaf_resp         (isc)
          cpatch%mmean_root_resp         (idt) = cpatch%mmean_root_resp         (isc)
          cpatch%mmean_growth_resp       (idt) = cpatch%mmean_growth_resp       (isc)
@@ -1215,7 +1256,31 @@ module fuse_fiss_utils
 
       cpatch%today_gpp(recc)     = cpatch%today_gpp(recc)                                  &
                                  + cpatch%today_gpp(donc)
-
+                                 
+      cpatch%today_nppleaf(recc) = cpatch%today_nppleaf(recc)                              &
+                                 + cpatch%today_nppleaf(donc)
+                                 
+      cpatch%today_nppfroot(recc)= cpatch%today_nppfroot(recc)                             &
+                                 + cpatch%today_nppfroot(donc)
+                                 
+      cpatch%today_nppsapwood(recc) = cpatch%today_nppsapwood(recc)                        &
+                                 + cpatch%today_nppsapwood(donc)
+                                 
+      cpatch%today_nppcroot(recc)= cpatch%today_nppcroot(recc)                             &
+                                 + cpatch%today_nppcroot(donc)
+                                 
+      cpatch%today_nppseeds(recc)= cpatch%today_nppseeds(recc)                             &
+                                 + cpatch%today_nppseeds(donc)
+                                 
+      cpatch%today_nppwood(recc) = cpatch%today_nppwood(recc)                              &
+                                 + cpatch%today_nppwood(donc)
+                                 
+      cpatch%today_nppdaily(recc)= cpatch%today_nppdaily(recc)                             &
+                                 + cpatch%today_nppdaily(donc)
+                                 
+      cpatch%today_nppleaf(recc) = cpatch%today_nppleaf(recc)                              &
+                                 + cpatch%today_nppleaf(donc)
+                                 
       cpatch%today_gpp_pot(recc) = cpatch%today_gpp_pot(recc)                              &
                                  + cpatch%today_gpp_pot(donc)
 
@@ -1467,6 +1532,42 @@ module fuse_fiss_utils
                                                  * cpatch%nplant(recc)                     &
                                                  + cpatch%dmean_gpp(donc)                  &
                                                  * cpatch%nplant(donc) ) * newni
+                                                 
+         cpatch%dmean_nppleaf           (recc) = ( cpatch%dmean_nppleaf(recc)              &
+                                                 * cpatch%nplant(recc)                     &
+                                                 + cpatch%dmean_nppleaf(donc)              &
+                                                 * cpatch%nplant(donc) ) * newni
+                                                 
+         cpatch%dmean_nppfroot          (recc) = ( cpatch%dmean_nppfroot(recc)             &
+                                                 * cpatch%nplant(recc)                     &
+                                                 + cpatch%dmean_nppfroot(donc)             &
+                                                 * cpatch%nplant(donc) ) * newni
+                                                 
+         cpatch%dmean_nppsapwood        (recc) = ( cpatch%dmean_nppsapwood(recc)           &
+                                                 * cpatch%nplant(recc)                     &
+                                                 + cpatch%dmean_nppsapwood(donc)           &
+                                                 * cpatch%nplant(donc) ) * newni
+                                                 
+         cpatch%dmean_nppcroot          (recc) = ( cpatch%dmean_nppcroot(recc)             &
+                                                 * cpatch%nplant(recc)                     &
+                                                 + cpatch%dmean_nppcroot(donc)             &
+                                                 * cpatch%nplant(donc) ) * newni
+                                                 
+         cpatch%dmean_nppseeds          (recc) = ( cpatch%dmean_nppseeds(recc)             &
+                                                 * cpatch%nplant(recc)                     &
+                                                 + cpatch%dmean_nppseeds(donc)             &
+                                                 * cpatch%nplant(donc) ) * newni
+                                                 
+         cpatch%dmean_nppwood           (recc) = ( cpatch%dmean_nppwood(recc)              &
+                                                 * cpatch%nplant(recc)                     &
+                                                 + cpatch%dmean_nppwood(donc)              &
+                                                 * cpatch%nplant(donc) ) * newni
+                                                 
+         cpatch%dmean_nppdaily          (recc) = ( cpatch%dmean_nppdaily(recc)             &
+                                                 * cpatch%nplant(recc)                     &
+                                                 + cpatch%dmean_nppdaily(donc)             &
+                                                 * cpatch%nplant(donc) ) * newni
+                                                 
          cpatch%dmean_leaf_resp         (recc) = ( cpatch%dmean_leaf_resp(recc)            &
                                                  * cpatch%nplant(recc)                     &
                                                  + cpatch%dmean_leaf_resp(donc)            &
@@ -1556,6 +1657,42 @@ module fuse_fiss_utils
                                                * cpatch%nplant(recc)                       &
                                                + cpatch%mmean_gpp(donc)                    &
                                                * cpatch%nplant(donc) ) * newni
+                                               
+         cpatch%mmean_nppleaf           (recc) = ( cpatch%mmean_nppleaf(recc)              &
+                                                 * cpatch%nplant(recc)                     &
+                                                 + cpatch%mmean_nppleaf(donc)              &
+                                                 * cpatch%nplant(donc) ) * newni
+                                                 
+         cpatch%mmean_nppfroot          (recc) = ( cpatch%mmean_nppfroot(recc)             &
+                                                 * cpatch%nplant(recc)                     &
+                                                 + cpatch%mmean_nppfroot(donc)             &
+                                                 * cpatch%nplant(donc) ) * newni
+                                                 
+         cpatch%mmean_nppsapwood        (recc) = ( cpatch%mmean_nppsapwood(recc)           &
+                                                 * cpatch%nplant(recc)                     &
+                                                 + cpatch%mmean_nppsapwood(donc)           &
+                                                 * cpatch%nplant(donc) ) * newni
+                                                 
+         cpatch%mmean_nppcroot          (recc) = ( cpatch%mmean_nppcroot(recc)             &
+                                                 * cpatch%nplant(recc)                     &
+                                                 + cpatch%mmean_nppcroot(donc)             &
+                                                 * cpatch%nplant(donc) ) * newni
+                                                 
+         cpatch%mmean_nppseeds          (recc) = ( cpatch%mmean_nppseeds(recc)             &
+                                                 * cpatch%nplant(recc)                     &
+                                                 + cpatch%mmean_nppseeds(donc)             &
+                                                 * cpatch%nplant(donc) ) * newni
+                                                 
+         cpatch%mmean_nppwood           (recc) = ( cpatch%mmean_nppwood(recc)              &
+                                                 * cpatch%nplant(recc)                     &
+                                                 + cpatch%mmean_nppwood(donc)              &
+                                                 * cpatch%nplant(donc) ) * newni
+                                                 
+         cpatch%mmean_nppdaily          (recc) = ( cpatch%mmean_nppdaily(recc)             &
+                                                 * cpatch%nplant(recc)                     &
+                                                 + cpatch%mmean_nppdaily(donc)             &
+                                                 * cpatch%nplant(donc) ) * newni
+                                                 
          cpatch%mmean_leaf_resp       (recc) = ( cpatch%mmean_leaf_resp(recc)              &
                                                * cpatch%nplant(recc)                       &
                                                + cpatch%mmean_leaf_resp(donc)              &
@@ -2948,9 +3085,9 @@ module fuse_fiss_utils
               ( csite%avg_smoist_gg(iii,donp)       * csite%area(donp)                     &
               + csite%avg_smoist_gg(iii,recp)       * csite%area(recp) )
 
-         csite%avg_smoist_gc(iii,recp)   = newareai *                                      &
-              ( csite%avg_smoist_gc(iii,donp)       * csite%area(donp)                     &
-              + csite%avg_smoist_gc(iii,recp)       * csite%area(recp) )
+         csite%avg_transloss(iii,recp)   = newareai *                                      &
+              ( csite%avg_transloss(iii,donp)       * csite%area(donp)                     &
+              + csite%avg_transloss(iii,recp)       * csite%area(recp) )
 
          csite%aux_s(iii,recp)           = newareai *                                      &
               ( csite%aux_s(iii,donp)               * csite%area(donp)                     &
@@ -3101,6 +3238,13 @@ module fuse_fiss_utils
          cpatch%mean_storage_resp     (ico) = cpatch%mean_storage_resp  (ico)  * area_scale
          cpatch%mean_vleaf_resp       (ico) = cpatch%mean_vleaf_resp    (ico)  * area_scale
          cpatch%today_gpp             (ico) = cpatch%today_gpp          (ico)  * area_scale
+         cpatch%today_nppleaf         (ico) = cpatch%today_nppleaf      (ico)  * area_scale
+         cpatch%today_nppfroot        (ico) = cpatch%today_nppfroot     (ico)  * area_scale
+         cpatch%today_nppsapwood      (ico) = cpatch%today_nppsapwood   (ico)  * area_scale
+         cpatch%today_nppcroot        (ico) = cpatch%today_nppcroot     (ico)  * area_scale
+         cpatch%today_nppseeds        (ico) = cpatch%today_nppseeds     (ico)  * area_scale
+         cpatch%today_nppwood         (ico) = cpatch%today_nppwood      (ico)  * area_scale
+         cpatch%today_nppdaily        (ico) = cpatch%today_nppdaily     (ico)  * area_scale
          cpatch%today_gpp_pot         (ico) = cpatch%today_gpp_pot      (ico)  * area_scale
          cpatch%today_gpp_max         (ico) = cpatch%today_gpp_max      (ico)  * area_scale
          cpatch%today_leaf_resp       (ico) = cpatch%today_leaf_resp    (ico)  * area_scale
@@ -3152,6 +3296,13 @@ module fuse_fiss_utils
          cpatch%mean_storage_resp     (ico) = cpatch%mean_storage_resp  (ico)  * area_scale
          cpatch%mean_vleaf_resp       (ico) = cpatch%mean_vleaf_resp    (ico)  * area_scale
          cpatch%today_gpp             (ico) = cpatch%today_gpp          (ico)  * area_scale
+         cpatch%today_nppleaf         (ico) = cpatch%today_nppleaf      (ico)  * area_scale
+         cpatch%today_nppfroot        (ico) = cpatch%today_nppfroot     (ico)  * area_scale
+         cpatch%today_nppsapwood      (ico) = cpatch%today_nppsapwood   (ico)  * area_scale
+         cpatch%today_nppcroot        (ico) = cpatch%today_nppcroot     (ico)  * area_scale
+         cpatch%today_nppseeds        (ico) = cpatch%today_nppseeds     (ico)  * area_scale
+         cpatch%today_nppwood         (ico) = cpatch%today_nppwood      (ico)  * area_scale
+         cpatch%today_nppdaily        (ico) = cpatch%today_nppdaily     (ico)  * area_scale
          cpatch%today_gpp_pot         (ico) = cpatch%today_gpp_pot      (ico)  * area_scale
          cpatch%today_gpp_max         (ico) = cpatch%today_gpp_max      (ico)  * area_scale
          cpatch%today_leaf_resp       (ico) = cpatch%today_leaf_resp    (ico)  * area_scale

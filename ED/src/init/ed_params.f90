@@ -276,7 +276,7 @@ subroutine init_met_params()
    atm_tmp_max = 331.     ! Highest temperature ever measured, in El Azizia, Libya
    !----- Minimum and maximum acceptable air specific humidity [kg_H2O/kg_air]. -----------!
    atm_shv_min = 1.e-6    ! That corresponds to a relative humidity of 0.1% at 1000hPa
-   atm_shv_max = 3.e-2    ! That corresponds to a dew point of 32°C at 1000hPa.
+   atm_shv_max = 3.2e-2   ! That corresponds to a dew point of 32°C at 1000hPa.
    !----- Minimum and maximum acceptable CO2 mixing ratio [µmol/mol]. ---------------------!
    atm_co2_min = 100.     ! 
    atm_co2_max = 1100.    ! 
@@ -1073,7 +1073,7 @@ subroutine init_pft_resp_params()
    root_turnover_rate(14)         = 2.0
    root_turnover_rate(15)         = 2.0
    root_turnover_rate(16)         = 2.0
-   root_turnover_rate(17)         = onesixth
+   root_turnover_rate(17)         = onethird
 
    dark_respiration_factor(1)     = 0.06
    dark_respiration_factor(2)     = 0.02  * gamfact
@@ -1093,23 +1093,23 @@ subroutine init_pft_resp_params()
    dark_respiration_factor(16)    = 0.02  * gamfact
    dark_respiration_factor(17)    = 0.025 * gamfact
 
-   storage_turnover_rate(1)       = 0.0
-   storage_turnover_rate(2)       = 0.0
-   storage_turnover_rate(3)       = 0.0
-   storage_turnover_rate(4)       = 0.0
-   storage_turnover_rate(5)       = 0.0
-   storage_turnover_rate(6)       = 0.0
-   storage_turnover_rate(7)       = 0.0
-   storage_turnover_rate(8)       = 0.0
+   storage_turnover_rate(1)       = 0.00 ! 0.25
+   storage_turnover_rate(2)       = 0.00 ! 0.25
+   storage_turnover_rate(3)       = 0.00 ! 0.25
+   storage_turnover_rate(4)       = 0.00 ! 0.25
+   storage_turnover_rate(5)       = 0.00 ! 0.25
+   storage_turnover_rate(6)       = 0.00 ! 0.25
+   storage_turnover_rate(7)       = 0.00 ! 0.25
+   storage_turnover_rate(8)       = 0.00 ! 0.25
    storage_turnover_rate(9)       = 0.6243
    storage_turnover_rate(10)      = 0.6243
    storage_turnover_rate(11)      = 0.6243
-   storage_turnover_rate(12)      = 0.0
-   storage_turnover_rate(13)      = 0.0
-   storage_turnover_rate(14)      = 0.0
-   storage_turnover_rate(15)      = 0.0
-   storage_turnover_rate(16)      = 0.0
-   storage_turnover_rate(17)      = 0.0
+   storage_turnover_rate(12)      = 0.00 ! 0.25
+   storage_turnover_rate(13)      = 0.00 ! 0.25
+   storage_turnover_rate(14)      = 0.00 ! 0.25
+   storage_turnover_rate(15)      = 0.00 ! 0.25
+   storage_turnover_rate(16)      = 0.00 ! 0.25
+   storage_turnover_rate(17)      = 0.00 ! 0.25
 
    root_respiration_factor(1:17)  = 0.528
 
@@ -1143,10 +1143,23 @@ subroutine init_pft_mort_params()
                           , treefall_s_ltht            & ! intent(out)
                           , plant_min_temp             & ! intent(out)
                           , frost_mort                 ! ! intent(out)
-   use consts_coms , only : t00                        ! ! intent(in)
-   use disturb_coms, only : treefall_disturbance_rate  ! ! intent(inout)
+   use consts_coms , only : t00                        & ! intent(in)
+                          , lnexp_max                  ! ! intent(in)
+   use disturb_coms, only : treefall_disturbance_rate  & ! intent(inout)
+                          , time2canopy                ! ! intent(in)
 
    implicit none
+
+   !----- Local variables. ----------------------------------------------------------------!
+   real     :: aquad
+   real     :: bquad
+   real     :: cquad
+   real     :: discr
+   real     :: lambda_ref
+   real     :: lambda_eff
+   real     :: leff_neg
+   real     :: leff_pos
+   !---------------------------------------------------------------------------------------!
 
 
    frost_mort(1)     = 3.0
@@ -1211,12 +1224,86 @@ subroutine init_pft_mort_params()
    mort3(15) =  0.037
    mort3(16) =  0.06167
    mort3(17) =  0.01
-   
-   if (treefall_disturbance_rate < 0.) then
-      mort3(:) = mort3(:) - treefall_disturbance_rate
-      treefall_disturbance_rate = 0.
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Here we check whether we need to re-calculate the treefall disturbance rate so it !
+   ! is consistent with the time to reach the canopy.                                      !
+   !---------------------------------------------------------------------------------------!
+   if (treefall_disturbance_rate == 0.) then
+      !------ No disturbance rate, set time to reach canopy to infinity. ------------------!
+      time2canopy = huge(1.) 
+      lambda_ref  = 0.
+      lambda_eff  = 0.
+
+   else
+      lambda_ref = abs(treefall_disturbance_rate)
+
+      if (time2canopy > 0.) then
+         !---------------------------------------------------------------------------------!
+         !     We are not going to knock down trees as soon as the patch is created;       !
+         ! instead, we will wait until the patch age is older than time2canopy.  We want,  !
+         ! however, to make the mean patch age to be 1/treefall_disturbance_rate.  The     !
+         ! equation below can be retrieved by integrating the steady-state probability     !
+         ! distribution function.  The equation is quadratic and the discriminant will     !
+         ! never be zero and the treefall_disturbance_rate will be always positive because !
+         ! the values of time2canopy and treefall_disturbance_rate have already been       !
+         ! tested in ed_opspec.F90.                                                        !
+         !---------------------------------------------------------------------------------!
+         aquad    = time2canopy * time2canopy * lambda_ref  - 2. * time2canopy
+         bquad    = 2. * time2canopy * lambda_ref - 2.
+         cquad    = 2. * lambda_ref
+         !------ Find the discriminant. ---------------------------------------------------!
+         discr    = bquad * bquad - 4. * aquad * cquad
+         leff_neg = - 0.5 * (bquad - sqrt(discr)) / aquad
+         leff_pos = - 0.5 * (bquad + sqrt(discr)) / aquad
+         !---------------------------------------------------------------------------------!
+         !      Use the maximum value, but don't let the value to be too large otherwise   !
+         ! the negative exponential will cause underflow.                                  !
+         !---------------------------------------------------------------------------------!
+         lambda_eff = min(lnexp_max,max(leff_neg,leff_pos))
+      else
+         lambda_eff = lambda_ref
+      end if
+
    end if
-   
+   !---------------------------------------------------------------------------------------!
+
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !    Print out the summary.                                                             !
+   !---------------------------------------------------------------------------------------!
+   write (unit=*,fmt='(a)')           '----------------------------------------'
+   write (unit=*,fmt='(a)')           '  Treefall disturbance parameters:'
+   write (unit=*,fmt='(a,1x,es12.5)') '  - LAMBDA_REF  =',lambda_ref
+   write (unit=*,fmt='(a,1x,es12.5)') '  - LAMBDA_EFF  =',lambda_eff
+   write (unit=*,fmt='(a,1x,es12.5)') '  - TIME2CANOPY =',time2canopy
+   write (unit=*,fmt='(a)')           '----------------------------------------'
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Here we check whether patches should be created or the treefall should affect     !
+   ! only the mortality (quasi- size-structured approximation; other disturbances may be   !
+   ! turned off for a true size-structured approximation).                                 !
+   !---------------------------------------------------------------------------------------!
+   if (treefall_disturbance_rate < 0.) then
+      !------------------------------------------------------------------------------------!
+      !      We incorporate the disturbance rate into the density-independent mortality    !
+      ! rate and turn off the patch-creating treefall disturbance.                         !
+      !------------------------------------------------------------------------------------!
+      mort3(:) = mort3(:) + lambda_eff
+      treefall_disturbance_rate = 0.
+   else
+      treefall_disturbance_rate = lambda_eff
+   end if
+   !---------------------------------------------------------------------------------------!
+
+
    seedling_mortality(1)    = 0.60
    seedling_mortality(2:4)  = 0.95 
    seedling_mortality(5)    = 0.60
@@ -1224,26 +1311,26 @@ subroutine init_pft_mort_params()
    seedling_mortality(16)   = 0.60 
    seedling_mortality(17)   = 0.95 
 
-   treefall_s_gtht = 0.0
+   treefall_s_gtht          = 0.0
 
-   treefall_s_ltht(1)     = 0.25
-   treefall_s_ltht(2:4)   = 0.1
-   treefall_s_ltht(5)     = 0.25
-   treefall_s_ltht(6:11)  = 0.1
-   treefall_s_ltht(12:15) = 0.25
-   treefall_s_ltht(16)    = 0.25
-   treefall_s_ltht(17)    = 0.1
+   treefall_s_ltht(1)       = 0.25
+   treefall_s_ltht(2:4)     = 0.1
+   treefall_s_ltht(5)       = 0.25
+   treefall_s_ltht(6:11)    = 0.1
+   treefall_s_ltht(12:15)   = 0.25
+   treefall_s_ltht(16)      = 0.25
+   treefall_s_ltht(17)      = 0.1
 
-   plant_min_temp(1:4)   = t00
-   plant_min_temp(5:6)   = t00-80.0
-   plant_min_temp(7)     = t00-10.0
-   plant_min_temp(8)     = t00-60.0
-   plant_min_temp(9)     = t00-80.0
-   plant_min_temp(10:11) = t00-20.0
-   plant_min_temp(12:13) = t00-80.0
-   plant_min_temp(14:15) = t00
-   plant_min_temp(16)    = t00
-   plant_min_temp(17)    = t00-10.0
+   plant_min_temp(1:4)      = t00+2.5
+   plant_min_temp(5:6)      = t00-80.0
+   plant_min_temp(7)        = t00-10.0
+   plant_min_temp(8)        = t00-60.0
+   plant_min_temp(9)        = t00-80.0
+   plant_min_temp(10:11)    = t00-20.0
+   plant_min_temp(12:13)    = t00-80.0
+   plant_min_temp(14:15)    = t00+2.5
+   plant_min_temp(16)       = t00-5.0
+   plant_min_temp(17)       = t00-10.0
 
    return
 end subroutine init_pft_mort_params
@@ -2177,7 +2264,6 @@ subroutine init_disturb_params
    use disturb_coms , only : sm_fire                  & ! intent(in)
                            , min_new_patch_area       & ! intent(out)
                            , treefall_hite_threshold  & ! intent(out)
-                           , treefall_age_threshold   & ! intent(out)
                            , forestry_on              & ! intent(out)
                            , agriculture_on           & ! intent(out)
                            , plantation_year          & ! intent(out)
@@ -2199,9 +2285,6 @@ subroutine init_disturb_params
 
    !----- Only trees above this height create a gap when they fall. -----------------------!
    treefall_hite_threshold = 10.0 
-
-   !----- Minimum patch age for treefall disturbance. -------------------------------------!
-   treefall_age_threshold = 0.0
 
    !----- Set to 1 if to do forest harvesting. --------------------------------------------!
    forestry_on = 0
@@ -3142,9 +3225,10 @@ end subroutine init_rk4_params
 !==========================================================================================!
 subroutine overwrite_with_xml_config(thisnode)
    !!! PARSE XML FILE
-   use ed_max_dims, only: n_pft
-   use ed_misc_coms, only: iedcnfgf
-   
+   use ed_max_dims,   only: n_pft
+   use ed_misc_coms,  only: iedcnfgf
+   use hydrology_coms,only: useTOPMODEL
+   use soil_coms,     only: isoilbc
    implicit none
    integer, intent(in) :: thisnode
    integer             :: max_pft_xml
@@ -3174,6 +3258,11 @@ subroutine overwrite_with_xml_config(thisnode)
          call read_ed_xml_config(trim(iedcnfgf))
 
          !! THIRD, recalculate any derived values based on xml
+         if(useTOPMODEL == 1) then
+            isoilbc = 0
+            print*,"TOPMODEL enabled, setting ISOILBC to 0"
+         end if
+
 
          !! FINALLY, write out copy of settings
          call write_ed_xml_config()

@@ -97,8 +97,11 @@ recursive subroutine read_ed_xml_config(filename)
   call libxml2f90__ll_selecttag('ACT','config',1) !select upper level tag
   call libxml2f90__ll_exist('DOWN','extern',ntag)    !get number of pft tags
   print*,"EXTERN READ FROM FILE ::",ntag
+
   if(ntag .ge. 1) then
      do i=1,ntag
+!        call getConfigSTRING  ('extern','config',i,cval,texist)
+!print*,cval,texist
         call libxml2f90__ll_selecttag('DOWN','extern',i)
         call libxml2f90__existid('extern',texist)
         if(texist) then 
@@ -199,8 +202,8 @@ recursive subroutine read_ed_xml_config(filename)
            call getConfigINT('include_pft','pft',i,ival,texist)
            if(texist) then
               include_pft(myPFT) = ival
-           else
-              include_pft(myPFT) = 1  !! if a PFT is defined, assume it's meant to be included
+!           else
+!              include_pft(myPFT) = 1  !! if a PFT is defined, assume it's meant to be included
            endif
            call getConfigINT('include_pft_ag','pft',i,ival,texist)
            if(texist) include_pft_ag(myPFT) = ival
@@ -654,11 +657,12 @@ recursive subroutine read_ed_xml_config(filename)
         !! TREEFALL
         call getConfigREAL  ('treefall_disturbance_rate','disturbance',i,rval,texist)
         if(texist) treefall_disturbance_rate = real(rval)
-
+        
+        call getConfigREAL  ('Time2Canopy','disturbance',i,rval,texist)
+        if(texist) Time2Canopy = real(rval)
+        
         call getConfigREAL  ('treefall_hite_threshold','disturbance',i,rval,texist)
         if(texist) treefall_hite_threshold = real(rval)
-        call getConfigREAL  ('treefall_age_theshold','disturbance',i,rval,texist)
-        if(texist) treefall_age_threshold = real(rval)
 
         !! FORESTRY
         call getConfigINT  ('plantation_year','disturbance',i,ival,texist)
@@ -742,6 +746,43 @@ recursive subroutine read_ed_xml_config(filename)
         if(texist) istoma_scheme = ival
         call getConfigINT  ('n_plant_lim','physiology',i,ival,texist)
         if(texist) n_plant_lim = ival
+        
+        call libxml2f90__ll_selecttag('UP','config',1) !move back up to top level
+     enddo
+  endif
+
+
+  !********** INITIAL CONDITIONS
+  call libxml2f90__ll_selectlist(TRIM(FILENAME))       
+  call libxml2f90__ll_selecttag('ACT','config',1) !select upper level tag
+  call libxml2f90__ll_exist('DOWN','initcond',ntag)    !get number of pft tags
+  init_fsc = -1.0
+  init_stsc = -1.0
+  init_ssc = -1.0
+  init_stsl = -1.0
+  init_fsn = -1.0
+  init_msn = -1.0
+  
+  print*,"INITCOND READ FROM FILE ::",ntag
+  if(ntag .ge. 1) then
+     do i=1,ntag
+        
+        call libxml2f90__ll_selecttag('DOWN','initcond',i)
+
+        call getConfigREAL  ('fsc','initcond',i,rval,texist)
+        if(texist) init_fsc = rval
+        call getConfigREAL  ('stsc','initcond',i,rval,texist)
+        if(texist) init_stsc = rval
+        call getConfigREAL  ('ssc','initcond',i,rval,texist)
+        if(texist) init_ssc = rval
+        call getConfigREAL  ('stsl','initcond',i,rval,texist)
+        if(texist) init_stsl = rval
+        call getConfigREAL  ('fsn','initcond',i,rval,texist)
+        if(texist) init_fsn = rval
+        call getConfigREAL  ('msn','initcond',i,rval,texist)
+        if(texist) init_msn = rval
+        
+
         
         call libxml2f90__ll_selecttag('UP','config',1) !move back up to top level
      enddo

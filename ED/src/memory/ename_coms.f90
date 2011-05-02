@@ -161,6 +161,7 @@ module ename_coms
       integer                                           :: plantation_stock
       integer                                           :: pft_1st_check
       real                                              :: treefall_disturbance_rate
+      real                                              :: Time2Canopy
       real                                              :: runoff_time
       real                                              :: betapower
       real                                              :: ustmin
@@ -375,6 +376,7 @@ module ename_coms
       enl%pft_1st_check             = undef_integer
 
       enl%treefall_disturbance_rate = undef_real
+      enl%Time2Canopy               = undef_real
       enl%runoff_time               = undef_real
       enl%betapower                 = undef_real
       enl%ustmin                    = undef_real

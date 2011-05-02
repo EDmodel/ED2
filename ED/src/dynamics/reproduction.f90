@@ -282,7 +282,8 @@ subroutine reproduction(cgrid, month)
                   ! tissues, we will make them consistent with the initial amount of water !
                   ! available.  This is done inside pheninit_alive_storage.                !
                   !------------------------------------------------------------------------!
-                  call pheninit_balive_bstorage(nzg,csite,ipa,ico,cpoly%ntext_soil(:,isi))
+                  call pheninit_balive_bstorage(nzg,csite,ipa,ico,cpoly%ntext_soil(:,isi)  &
+                                               ,cpoly%green_leaf_factor(:,isi))
                   !------------------------------------------------------------------------!
 
 
