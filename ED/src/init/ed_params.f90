@@ -1016,35 +1016,36 @@ subroutine init_pft_resp_params()
                              , storage_turnover_rate     & ! intent(out)
                              , root_respiration_factor   ! ! intent(out)
    use decomp_coms    , only : f_labile                  ! ! intent(out)
-
+   use consts_coms    , only : onesixth                  & ! intent(in)
+                             , onethird                  ! ! intent(in)
    implicit none
 
-   growth_resp_factor(1)          = 0.333
-   growth_resp_factor(2)          = 0.333
-   growth_resp_factor(3)          = 0.333
-   growth_resp_factor(4)          = 0.333
-   growth_resp_factor(5)          = 0.333
+   growth_resp_factor(1)          = onethird
+   growth_resp_factor(2)          = onethird
+   growth_resp_factor(3)          = onethird
+   growth_resp_factor(4)          = onethird
+   growth_resp_factor(5)          = onethird
    growth_resp_factor(6)          = 0.4503 ! 0.333
    growth_resp_factor(7)          = 0.4503
    growth_resp_factor(8)          = 0.4503 ! 0.333
    growth_resp_factor(9)          = 0.0
    growth_resp_factor(10)         = 0.0
    growth_resp_factor(11)         = 0.0
-   growth_resp_factor(12)         = 0.333
-   growth_resp_factor(13)         = 0.333
-   growth_resp_factor(14)         = 0.333
-   growth_resp_factor(15)         = 0.333
-   growth_resp_factor(16)         = 0.333
+   growth_resp_factor(12)         = onethird
+   growth_resp_factor(13)         = onethird
+   growth_resp_factor(14)         = onethird
+   growth_resp_factor(15)         = onethird
+   growth_resp_factor(16)         = onethird
    growth_resp_factor(17)         = 0.4503
 
    leaf_turnover_rate(1)          = 2.0
    leaf_turnover_rate(2)          = 1.0
    leaf_turnover_rate(3)          = 0.5
-   leaf_turnover_rate(4)          = 0.333
+   leaf_turnover_rate(4)          = onethird
    leaf_turnover_rate(5)          = 2.0
-   leaf_turnover_rate(6)          = 0.333
-   leaf_turnover_rate(7)          = 0.333
-   leaf_turnover_rate(8)          = 0.333
+   leaf_turnover_rate(6)          = onethird
+   leaf_turnover_rate(7)          = onethird
+   leaf_turnover_rate(8)          = onethird
    leaf_turnover_rate(9)          = 0.0
    leaf_turnover_rate(10)         = 0.0
    leaf_turnover_rate(11)         = 0.0
@@ -1053,13 +1054,13 @@ subroutine init_pft_resp_params()
    leaf_turnover_rate(14)         = 2.0
    leaf_turnover_rate(15)         = 2.0
    leaf_turnover_rate(16)         = 2.0
-   leaf_turnover_rate(17)         = 0.1
+   leaf_turnover_rate(17)         = onesixth
 
    !----- Root turnover rate.  ------------------------------------------------------------!
    root_turnover_rate(1)          = 2.0
    root_turnover_rate(2)          = 1.0
    root_turnover_rate(3)          = 0.5
-   root_turnover_rate(4)          = 0.333
+   root_turnover_rate(4)          = onethird
    root_turnover_rate(5)          = 2.0
    root_turnover_rate(6)          = 3.927218 ! 0.333
    root_turnover_rate(7)          = 4.117847 ! 0.333
@@ -1067,12 +1068,12 @@ subroutine init_pft_resp_params()
    root_turnover_rate(9)          = 5.772506
    root_turnover_rate(10)         = 5.083700
    root_turnover_rate(11)         = 5.070992
-   root_turnover_rate(12)         = 0.333
-   root_turnover_rate(13)         = 0.333
+   root_turnover_rate(12)         = onethird
+   root_turnover_rate(13)         = onethird
    root_turnover_rate(14)         = 2.0
    root_turnover_rate(15)         = 2.0
    root_turnover_rate(16)         = 2.0
-   root_turnover_rate(17)         = 0.1
+   root_turnover_rate(17)         = onesixth
 
    dark_respiration_factor(1)     = 0.06
    dark_respiration_factor(2)     = 0.02 * gamfact
@@ -1110,7 +1111,7 @@ subroutine init_pft_resp_params()
    storage_turnover_rate(16)      = 0.0
    storage_turnover_rate(17)      = 0.0
 
-   root_respiration_factor        = 0.528
+   root_respiration_factor(1:17)  = 0.528
 
    f_labile(1:5)                  = 1.0
    f_labile(6:11)                 = 0.79
@@ -1332,7 +1333,7 @@ subroutine init_pft_alloc_params()
 !   rho(2)     = 0.40
 !   rho(3)     = 0.60
 !   rho(4)     = 0.87
-   rho(5)     = 0.53   ! Copied from C4 grass
+   rho(5)     = 0.32   ! Copied from C4 grass
    rho(6:11)  = 0.00   ! Currently not used
    rho(12:13) = 0.53
    rho(14:15) = 0.53

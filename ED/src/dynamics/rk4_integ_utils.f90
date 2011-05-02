@@ -458,55 +458,6 @@ subroutine inc_rk4_patch(rkp, inc, fac, cpatch)
    end if
    !---------------------------------------------------------------------------------------!
 
-   !---------------------------------------------------------------------------------------!
-   !    Increment the instantaneous fluxes.  The derivative term should be the same as the !
-   ! the full fluxes, the only difference is that these variables are normalised and       !
-   ! re-set after each time step.                                                          !
-   !---------------------------------------------------------------------------------------!
-   if (print_detailed) then
-      rkp%flx_carbon_ac      = rkp%flx_carbon_ac      + fac * inc%avg_carbon_ac
-      
-      rkp%flx_vapor_vc       = rkp%flx_vapor_vc       + fac * inc%avg_vapor_vc
-      rkp%flx_dew_cg         = rkp%flx_dew_cg         + fac * inc%avg_dew_cg
-      rkp%flx_vapor_gc       = rkp%flx_vapor_gc       + fac * inc%avg_vapor_gc
-      rkp%flx_wshed_vg       = rkp%flx_wshed_vg       + fac * inc%avg_wshed_vg
-      rkp%flx_intercepted    = rkp%flx_intercepted    + fac * inc%avg_intercepted
-      rkp%flx_throughfall    = rkp%flx_throughfall    + fac * inc%avg_throughfall
-      rkp%flx_vapor_ac       = rkp%flx_vapor_ac       + fac * inc%avg_vapor_ac
-      rkp%flx_transp         = rkp%flx_transp         + fac * inc%avg_transp
-      rkp%flx_evap           = rkp%flx_evap           + fac * inc%avg_evap
-      rkp%flx_drainage       = rkp%flx_drainage       + fac * inc%avg_drainage
-      rkp%flx_drainage_heat  = rkp%flx_drainage_heat  + fac * inc%avg_drainage_heat
-      rkp%flx_netrad         = rkp%flx_netrad         + fac * inc%avg_netrad
-      rkp%flx_sensible_vc    = rkp%flx_sensible_vc    + fac * inc%avg_sensible_vc
-      rkp%flx_qwshed_vg      = rkp%flx_qwshed_vg      + fac * inc%avg_qwshed_vg
-      rkp%flx_qintercepted   = rkp%flx_qintercepted   + fac * inc%avg_qintercepted
-      rkp%flx_qthroughfall   = rkp%flx_qthroughfall   + fac * inc%avg_qthroughfall
-      rkp%flx_sensible_gc    = rkp%flx_sensible_gc    + fac * inc%avg_sensible_gc
-      rkp%flx_sensible_ac    = rkp%flx_sensible_ac    + fac * inc%avg_sensible_ac
-
-      do k=rk4site%lsl,nzg
-         rkp%flx_sensible_gg(k)  = rkp%flx_sensible_gg(k)  + fac * inc%avg_sensible_gg(k)
-         rkp%flx_smoist_gg(k)    = rkp%flx_smoist_gg(k)    + fac * inc%avg_smoist_gg(k)  
-         rkp%flx_smoist_gc(k)    = rkp%flx_smoist_gc(k)    + fac * inc%avg_smoist_gc(k)  
-      end do
-
-      do ico = 1,cpatch%ncohorts
-         rkp%cfx_hflxvc      (ico)  =       rkp%cfx_hflxvc      (ico)                      &
-                                    + fac * inc%cfx_hflxvc      (ico)
-         rkp%cfx_qwflxvc     (ico)  =       rkp%cfx_qwflxvc     (ico)                      &
-                                    + fac * inc%cfx_qwflxvc     (ico)
-         rkp%cfx_qwshed      (ico)  =       rkp%cfx_qwshed      (ico)                      &
-                                    + fac * inc%cfx_qwshed      (ico)
-         rkp%cfx_qtransp     (ico)  =       rkp%cfx_qtransp     (ico)                      &
-                                    + fac * inc%cfx_qtransp     (ico)
-         rkp%cfx_qintercepted(ico)  =       rkp%cfx_qintercepted(ico)                      &
-                                    + fac * inc%cfx_qintercepted(ico)
-      end do
-
-   end if
-   !---------------------------------------------------------------------------------------!
-
    return
 end subroutine inc_rk4_patch
 !==========================================================================================!
@@ -777,13 +728,15 @@ subroutine get_yscal(y,dy,htry,yscal,cpatch)
                              abs(dy%ebudget_loss2drainage) < tiny_offset)      ) then
          yscal%ebudget_loss2drainage = huge_offset
       else 
-         yscal%ebudget_loss2drainage = abs(dy%ebudget_loss2drainage*htry)
+         yscal%ebudget_loss2drainage = abs(y%ebudget_loss2drainage)                        &
+                                     + abs(dy%ebudget_loss2drainage*htry)
       end if
       if (isoilbc == 0 .or. (abs(y%wbudget_loss2drainage)  < tiny_offset .and.             &
                              abs(dy%wbudget_loss2drainage) < tiny_offset)      ) then
          yscal%wbudget_loss2drainage = huge_offset
       else 
-         yscal%wbudget_loss2drainage = abs(dy%wbudget_loss2drainage*htry)
+         yscal%wbudget_loss2drainage = abs(y%wbudget_loss2drainage)                        &
+                                     + abs(dy%wbudget_loss2drainage*htry)
       end if
 
    else 
@@ -1216,42 +1169,6 @@ subroutine copy_rk4_patch(sourcep, targetp, cpatch)
          targetp%flx_sensible_gg(k) = sourcep%flx_sensible_gg(k)
          targetp%flx_smoist_gg(k)   = sourcep%flx_smoist_gg(k)  
          targetp%flx_transloss(k)   = sourcep%flx_transloss(k)  
-      end do
-      
-      do k=1,cpatch%ncohorts
-         targetp%cfx_hflxvc      (k) = sourcep%cfx_hflxvc      (k)
-         targetp%cfx_qwflxvc     (k) = sourcep%cfx_qwflxvc     (k)
-         targetp%cfx_qwshed      (k) = sourcep%cfx_qwshed      (k)
-         targetp%cfx_qtransp     (k) = sourcep%cfx_qtransp     (k)
-         targetp%cfx_qintercepted(k) = sourcep%cfx_qintercepted(k)
-      end do
-   end if
-
-   if (print_detailed) then
-      targetp%flx_carbon_ac          = sourcep%flx_carbon_ac
-      targetp%flx_vapor_vc           = sourcep%flx_vapor_vc
-      targetp%flx_dew_cg             = sourcep%flx_dew_cg  
-      targetp%flx_vapor_gc           = sourcep%flx_vapor_gc
-      targetp%flx_wshed_vg           = sourcep%flx_wshed_vg
-      targetp%flx_intercepted        = sourcep%flx_intercepted
-      targetp%flx_throughfall        = sourcep%flx_throughfall
-      targetp%flx_vapor_ac           = sourcep%flx_vapor_ac
-      targetp%flx_transp             = sourcep%flx_transp  
-      targetp%flx_evap               = sourcep%flx_evap   
-      targetp%flx_netrad             = sourcep%flx_netrad   
-      targetp%flx_sensible_vc        = sourcep%flx_sensible_vc  
-      targetp%flx_qwshed_vg          = sourcep%flx_qwshed_vg    
-      targetp%flx_qintercepted       = sourcep%flx_qintercepted
-      targetp%flx_qthroughfall       = sourcep%flx_qthroughfall
-      targetp%flx_sensible_gc        = sourcep%flx_sensible_gc  
-      targetp%flx_sensible_ac        = sourcep%flx_sensible_ac
-      targetp%flx_drainage           = sourcep%flx_drainage
-      targetp%flx_drainage_heat      = sourcep%flx_drainage_heat
-
-      do k=rk4site%lsl,nzg
-         targetp%flx_sensible_gg(k) = sourcep%flx_sensible_gg(k)
-         targetp%flx_smoist_gg(k)   = sourcep%flx_smoist_gg(k)  
-         targetp%flx_smoist_gc(k)   = sourcep%flx_smoist_gc(k)  
       end do
       
       do k=1,cpatch%ncohorts

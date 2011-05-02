@@ -746,6 +746,7 @@ module growth_balive
 
 
 
+
    !=========================================================================!
    !=========================================================================!
    subroutine alloc_plant_c_balance(csite,ipa,ico,salloc,salloci             &
@@ -793,13 +794,24 @@ module growth_balive
       real                           :: tr_bsapwood
       real                           :: bl
       logical                        :: on_allometry
+      logical                        :: time_to_flush
       !----------------------------------------------------------------------!
 
       cpatch => csite%patch(ipa)
       
       ipft = cpatch%pft(ico) 
 
-      if (carbon_balance > 0.0) then 
+      !----------------------------------------------------------------------!
+      ! When plants transit from dormancy to leaf flushing, it is possible   !
+      ! that carbon_balance is negative, but the sum of carbon_balance and   !
+      ! bstorage is positive. Under this circumstance, we have to allow      !
+      ! plants to grow leaves.                                               !
+      !----------------------------------------------------------------------!
+      increment     = cpatch%bstorage(ico) + carbon_balance
+      time_to_flush = (carbon_balance <= 0.0) .and. (increment > 0.0)        &
+                     .and. (cpatch%phenology_status(ico) == 1) 
+
+      if (carbon_balance > 0.0 .or. time_to_flush) then 
          if  (cpatch%phenology_status(ico) == 1) then
             !----------------------------------------------------------------!
             ! There are leaves, we are not actively dropping leaves and we're!
@@ -881,18 +893,28 @@ module growth_balive
             if (increment <= 0.0)  then
             !    We are using up all of daily C gain and some of bstorage    !
             !    First calculate N demand from using daily C gain            !
-        
-                nitrogen_uptake  = nitrogen_uptake   + carbon_balance        &
-                                 * ( f_labile(ipft)   / c2n_leaf(ipft)       &
+                if (carbon_balance < 0.0) then
+                    nitrogen_uptake = nitrogen_uptake + carbon_balance       &
+                                      / c2n_storage
+                    nitrogen_uptake = nitrogen_uptake + (carbon_balance -    &
+                                      increment)* ( f_labile(ipft)           &
+                                      / c2n_leaf(ipft) + (1.0 -              &
+                                      f_labile(ipft)) / c2n_stem(ipft)       &
+                                      -  1.0 / c2n_storage)
+                    
+                else 
+                    nitrogen_uptake  = nitrogen_uptake   + carbon_balance    &
+                                 * ( f_labile(ipft)   / c2n_leaf(ipft)   &
                                  + (1.0 - f_labile(ipft)) / c2n_stem(ipft) ) 
                                  
-            !   Now calculate additional N uptake required from transfer of C!
-            !   from storage to balive                                       !
-                nitrogen_uptake  = nitrogen_uptake +  ( -1* increment)       &
+                    !Now calculate additional N uptake required from transfer!
+                    !of C from storage to balive                             !
+                    nitrogen_uptake  = nitrogen_uptake +  ( -1* increment)   &
                                  * ( f_labile(ipft)  / c2n_leaf(ipft)        &
                                  + (1.0 - f_labile(ipft)) / c2n_stem(ipft)   &
                                  -  1.0 / c2n_storage)
-                        
+                end if
+
             else
             !   N uptake for fraction of daily C gain going to balive        !
                 nitrogen_uptake   = nitrogen_uptake    + (carbon_balance     &
@@ -983,6 +1005,7 @@ module growth_balive
                          * ( f_labile(ipft) / c2n_leaf(ipft)                 &
                          + (1.0 - f_labile(ipft)) / c2n_stem(ipft))          &
                          * cpatch%nplant(ico)
+                         
          else
             !    Burn the storage pool.  Dont' forget the nitrogen           !
             cpatch%bstorage(ico) =  cpatch%bstorage(ico) + carbon_balance
@@ -990,9 +1013,9 @@ module growth_balive
                             - carbon_balance                                 &
                             * ( f_labile(ipft) / c2n_leaf(ipft)              &
                               + (1.0 - f_labile(ipft)) / c2n_stem(ipft))     &
-                            * cpatch%nplant(ico)
+                            * cpatch%nplant(ico)   
          end if
-         
+
          !--  npp allocation in diff pools in Kg C/m2/day        -------------!
          cpatch%today_nppleaf(ico)     = 0.0
          cpatch%today_nppfroot(ico)    = 0.0
@@ -1005,7 +1028,6 @@ module growth_balive
    end subroutine alloc_plant_c_balance
    !=========================================================================!
    !=========================================================================!
-
 
 
 
