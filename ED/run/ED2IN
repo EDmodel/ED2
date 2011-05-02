@@ -529,7 +529,6 @@
                               !      of a 1:9 liquid-to-ice ratio through percolation.
                               !  1 - Alternative "free" water calculation.  
                               !      Anderson (1976), NOAA Tech Report NWS 19.
-                                                            
    !--------------------------------------------------------------------!
    ! PLANT FUNCTIONAL TYPES (PFTs):                                     !
    !--------------------------------------------------------------------!
