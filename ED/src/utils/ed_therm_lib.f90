@@ -387,41 +387,6 @@ module ed_therm_lib
 
       !------ Soil type at the top layer. -------------------------------------------------!
       nsoil = rk4site%ntext_soil(nzg)
-      select case (nsoil)
-      case (1:12)
-         continue
-      case default
-         write (unit=*,fmt='(a)'              ) ' ----- Strange site... ------------------'
-         write (unit=*,fmt='(a,1x,i7)'        ) ' NZG     =',nzg
-         write (unit=*,fmt='(a,1x,i7)'        ) ' LSL     =',rk4site%lsl
-         write (unit=*,fmt='(a,99(1x,i7))'    ) ' NTEXT   =',(rk4site%ntext_soil(k)        &
-                                                             ,k=1,nzg)
-         write (unit=*,fmt='(a,es12.5)'       ) ' THEIV   =',rk4site%atm_theiv
-         write (unit=*,fmt='(a,es12.5)'       ) ' THETA   =',rk4site%atm_theta
-         write (unit=*,fmt='(a,es12.5)'       ) ' TEMP    =',rk4site%atm_tmp
-         write (unit=*,fmt='(a,es12.5)'       ) ' SHV     =',rk4site%atm_shv
-         write (unit=*,fmt='(a,es12.5)'       ) ' CO2     =',rk4site%atm_co2
-         write (unit=*,fmt='(a,es12.5)'       ) ' ZOFF    =',rk4site%zoff
-         write (unit=*,fmt='(a,es12.5)'       ) ' EXNER   =',rk4site%atm_exner
-         write (unit=*,fmt='(a,es12.5)'       ) ' PCPG    =',rk4site%pcpg
-         write (unit=*,fmt='(a,es12.5)'       ) ' QPCPG   =',rk4site%qpcpg
-         write (unit=*,fmt='(a,es12.5)'       ) ' DPCPG   =',rk4site%dpcpg
-         write (unit=*,fmt='(a,es12.5)'       ) ' PRSS    =',rk4site%atm_prss
-         write (unit=*,fmt='(a,es12.5)'       ) ' RSHORT  =',rk4site%rshort
-         write (unit=*,fmt='(a,es12.5)'       ) ' RLONG   =',rk4site%rlong
-         write (unit=*,fmt='(a,es12.5)'       ) ' GEOHT   =',rk4site%geoht
-         write (unit=*,fmt='(a,es12.5)'       ) ' LON     =',rk4site%lon
-         write (unit=*,fmt='(a,es12.5)'       ) ' LAT     =',rk4site%lat
-         write (unit=*,fmt='(a,99(1x,es12.5))') ' ELONGF  =',(rk4site%green_leaf_factor(k) &
-                                                             ,k=1,n_pft)
-         write (unit=*,fmt='(a,99(1x,es12.5))') ' VELS    =',rk4site%vels
-         write (unit=*,fmt='(a,99(1x,es12.5))') ' LNTHETA =',rk4site%atm_lntheta
-         write (unit=*,fmt='(a,99(1x,es12.5))') ' RVAP    =',rk4site%atm_rvap
-         write (unit=*,fmt='(a,99(1x,es12.5))') ' RHV     =',rk4site%atm_rhv
-         write (unit=*,fmt='(a,99(1x,es12.5))') ' RHOS    =',rk4site%atm_rhos
-         call fatal_error ('Weird site-level soil texture!'                                &
-                          ,'ed_grndvap8','ed_therm_lib.f90')
-      end select
       !------------------------------------------------------------------------------------!
 
 

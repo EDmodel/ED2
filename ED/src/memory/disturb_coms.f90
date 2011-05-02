@@ -68,9 +68,19 @@ module disturb_coms
    ! < 0. Treefall will be added as a mortality rate (it will kill plants, but it won't    !
    !      create a new patch).                                                             !
    !---------------------------------------------------------------------------------------!
-   real :: treefall_disturbance_rate  
-   real :: maxTreeAge
-   real :: Time2Canopy
+   real :: treefall_disturbance_rate
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     This is the time until we start knocking down trees.  Used only when              !
+   ! treefall_disturbance_rate > 0.                                                        !
+   !---------------------------------------------------------------------------------------!
+   real :: time2canopy
+   !---------------------------------------------------------------------------------------!
+
+
 
    !----- The prefix for land use disturbance rates. The path and prefix must be included. !
    character(len=str_len), dimension(maxgrds) :: lu_database 
@@ -94,8 +104,6 @@ module disturb_coms
    real :: min_new_patch_area 
    !----- Only trees above this height create a gap when they fall. -----------------------!
    real :: treefall_hite_threshold
-   !----- Minimum patch age for treefall disturbance. -------------------------------------!
-   real :: treefall_age_threshold
    !=======================================================================================!
    !=======================================================================================!
 

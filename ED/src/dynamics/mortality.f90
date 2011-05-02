@@ -22,7 +22,7 @@ module mortality
                                , frost_mort                 ! ! intent(in)
       use disturb_coms  , only : treefall_disturbance_rate  & ! intent(in)
                                , treefall_hite_threshold    & ! intent(in)
-                               , Time2Canopy                ! ! intent(in)
+                               , time2canopy                ! ! intent(in)
       use ed_misc_coms  , only : current_time               ! ! intent(in)
       use ed_max_dims   , only : n_pft                      ! ! intent(in)
       use consts_coms   , only : lnexp_min                  & ! intent(in)
@@ -63,7 +63,7 @@ module mortality
       !------------------------------------------------------------------------------------!
       ! 3.  Mortality due to treefall.                                                     !
       !------------------------------------------------------------------------------------!
-      if (cpatch%hite(ico) <= treefall_hite_threshold .and. patch_age >= Time2Canopy) then
+      if (cpatch%hite(ico) <= treefall_hite_threshold .and. patch_age > time2canopy) then
          cpatch%mort_rate(3,ico) = treefall_disturbance_rate
       else
          cpatch%mort_rate(3,ico) = 0.

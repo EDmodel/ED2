@@ -674,7 +674,7 @@ subroutine h5_output(vtype)
          !----- Write a dummy file that signals we are done. ------------------------------!
          call makefnam(anamel,sfilout,time,iyeara,imontha,idatea,itimea*100,vnam,'g00'     &
                       ,'cmp')
-         open (unit=79,file=trim(anamel),form='formatted',status='unknown')
+         open (unit=79,file=trim(anamel),form='formatted',status='replace')
          write(unit=79,fmt='(a)') 'history write completed'
          write(unit=* ,fmt=*    ) 'Completed History Write: ',trim(anamel)
          close(unit=79,status='keep')

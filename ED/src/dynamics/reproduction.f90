@@ -191,7 +191,7 @@ subroutine reproduction(cgrid, month)
                      rectest%veg_temp = csite%can_temp(ipa)
                      rectest%hite     = hgt_min(ipft)
                      rectest%dbh      = h2dbh(rectest%hite, ipft)
-                     rectest%bdead    = dbh2bd(rectest%dbh, rectest%hite, ipft)
+                     rectest%bdead    = dbh2bd(rectest%dbh, ipft)
                      rectest%bleaf    = dbh2bl(rectest%dbh, ipft)
                      rectest%balive   = rectest%bleaf                                      &
                                       * (1.0 + q(ipft) + qsw(ipft) * rectest%hite)
@@ -282,7 +282,8 @@ subroutine reproduction(cgrid, month)
                   ! tissues, we will make them consistent with the initial amount of water !
                   ! available.  This is done inside pheninit_alive_storage.                !
                   !------------------------------------------------------------------------!
-                  call pheninit_balive_bstorage(nzg,csite,ipa,ico,cpoly%ntext_soil(:,isi))
+                  call pheninit_balive_bstorage(nzg,csite,ipa,ico,cpoly%ntext_soil(:,isi)  &
+                                               ,cpoly%green_leaf_factor(:,isi))
                   !------------------------------------------------------------------------!
 
 

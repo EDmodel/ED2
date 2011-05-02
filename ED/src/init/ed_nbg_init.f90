@@ -208,7 +208,7 @@ subroutine init_nbg_cohorts(csite,lsl,ipa_a,ipa_z)
          cpatch%phenology_status(ico) = 0
          cpatch%bstorage(ico)         = 0.0
          cpatch%dbh(ico)              = h2dbh(cpatch%hite(ico),ipft)
-         cpatch%bdead(ico)            = dbh2bd(cpatch%dbh(ico),cpatch%hite(ico),ipft)
+         cpatch%bdead(ico)            = dbh2bd(cpatch%dbh(ico),ipft)
          cpatch%bleaf(ico)            = dbh2bl(cpatch%dbh(ico),ipft)
          cpatch%sla(ico)              = sla(ipft)
 
@@ -360,7 +360,7 @@ subroutine init_cohorts_by_layers(csite,lsl,ipa_a,ipa_z)
          cpatch%phenology_status(ico) = 0
          cpatch%bstorage(ico)         = 0.0
          cpatch%dbh(ico)              = h2dbh(cpatch%hite(ico),ipft)
-         cpatch%bdead(ico)            = dbh2bd(cpatch%dbh(ico),cpatch%hite(ico),ipft)
+         cpatch%bdead(ico)            = dbh2bd(cpatch%dbh(ico),ipft)
          cpatch%bleaf(ico)            = dbh2bl(cpatch%dbh(ico),ipft)
          cpatch%sla(ico)              = sla(ipft)
 

@@ -385,15 +385,23 @@ subroutine read_met_drivers_init
          
          year_use   = metcycf - (i1stfull - iyeara)
 
+         write (unit=*,fmt='(a)'       )  '------------------------------'
+         write (unit=*,fmt='(a,1x,i12)')  ' - METCYC1 =',metcyc1
+         write (unit=*,fmt='(a,1x,i12)')  ' - METCYCF =',metcycf
+         write (unit=*,fmt='(a,1x,i12)')  ' - NYEARS  =',nyears
+         write (unit=*,fmt='(a)'       )  '------------------------------'
+         write (unit=*,fmt='(2(1x,a))') '       IYEAR','    YEAR_USE'
          do iyear=1,nyears
             if (year_use == metcycf) then
                year_use = metcyc1
             else
                year_use = year_use + 1
             end if
-            print*,"METYEARS",iyear,year_use,metcyc1,metcycf
             metyears(iyear) = year_use
+            write (unit=*,fmt='(2(1x,i12))') iyear,metyears(iyear)
          end do
+         write (unit=*,fmt='(a)'       )  '------------------------------'
+         write (unit=*,fmt='(a)'       )  ' '
 
       !------------------------------------------------------------------------------------!
       !    For years outside the met driver range, we pick up a random year.  Because we   !
@@ -401,6 +409,13 @@ subroutine read_met_drivers_init
       ! sequence will be always the same for a given met driver and first year.            !
       !------------------------------------------------------------------------------------!
       case (1)
+
+         write (unit=*,fmt='(a)'       )  '------------------------------'
+         write (unit=*,fmt='(a,1x,i12)')  ' - METCYC1 =',metcyc1
+         write (unit=*,fmt='(a,1x,i12)')  ' - METCYCF =',metcycf
+         write (unit=*,fmt='(a,1x,i12)')  ' - NYEARS  =',nyears
+         write (unit=*,fmt='(a)'       )  '------------------------------'
+         write (unit=*,fmt='(2(1x,a))') '       IYEAR','    YEAR_USE'
          do year_use=iyeara,iyearz
             iyear=year_use-iyeara+1
             if (year_use < metcyc1 .or. year_use > metcycf) then
@@ -409,7 +424,10 @@ subroutine read_met_drivers_init
             else
                metyears(iyear) = year_use
             end if
+            write (unit=*,fmt='(2(1x,i12))') iyear,metyears(iyear)
          end do
+         write (unit=*,fmt='(a)'       )  '------------------------------'
+         write (unit=*,fmt='(a)'       )  ' '
 
       !------------------------------------------------------------------------------------!
       !    For years outside the met driver range, we pick up a random year. We skip some  !
@@ -417,6 +435,13 @@ subroutine read_met_drivers_init
       ! a different sequence of years (similar to the random method used in STILT).        !
       !------------------------------------------------------------------------------------!
       case (2)
+
+         write (unit=*,fmt='(a)'       )  '------------------------------'
+         write (unit=*,fmt='(a,1x,i12)')  ' - METCYC1 =',metcyc1
+         write (unit=*,fmt='(a,1x,i12)')  ' - METCYCF =',metcycf
+         write (unit=*,fmt='(a,1x,i12)')  ' - NYEARS  =',nyears
+         write (unit=*,fmt='(a)'       )  '------------------------------'
+         write (unit=*,fmt='(2(1x,a))') '       IYEAR','    YEAR_USE'
          do year_use=iyeara,iyearz
             iyear=year_use-iyeara+1
             if (year_use < metcyc1 .or. year_use > metcycf) then
@@ -428,7 +453,10 @@ subroutine read_met_drivers_init
             else
                metyears(iyear) = year_use
             end if
+            write (unit=*,fmt='(2(1x,i12))') iyear,metyears(iyear)
          end do
+         write (unit=*,fmt='(a)'       )  '------------------------------'
+         write (unit=*,fmt='(a)'       )  ' '
       end select
    end if
    !---------------------------------------------------------------------------------------!
@@ -456,7 +484,12 @@ subroutine read_met_drivers_init
          if (exans) then
             call shdf5_open_f(trim(infile),'R')
          else
-            print*,iyear,year_use
+            write (unit=*,fmt='(a)'       )  '------------------------------'
+            write (unit=*,fmt='(a,1x,i12)')  ' - METCYC1  =',metcyc1
+            write (unit=*,fmt='(a,1x,i12)')  ' - METCYCF  =',metcycf
+            write (unit=*,fmt='(a,1x,i12)')  ' - IYEAR    =',iyear
+            write (unit=*,fmt='(a,1x,i12)')  ' - YEAR_USE =',year_use
+            write (unit=*,fmt='(a)'       )  '------------------------------'
             call fatal_error('Cannot open met driver input file '//trim(infile)//'!'       &
                             ,'read_met_drivers_init','ed_met_driver.f90')
          end if

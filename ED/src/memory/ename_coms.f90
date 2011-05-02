@@ -132,6 +132,7 @@ module ename_coms
       real                                              :: rk4_tolerance
       integer                                           :: ibranch_thermo
       integer                                           :: istoma_scheme
+      integer                                           :: iallom
       integer                                           :: iphen_scheme
       integer                                           :: repro_scheme
       integer                                           :: lapse_scheme
@@ -144,7 +145,6 @@ module ename_coms
       real                                              :: thetacrit
       real                                              :: lwfact
       real                                              :: thioff
-      integer                                           :: icomppt
       integer                                           :: quantum_efficiency_T
       integer                                           :: n_plant_lim
       integer                                           :: n_decomp_lim
@@ -161,7 +161,6 @@ module ename_coms
       integer                                           :: plantation_stock
       integer                                           :: pft_1st_check
       real                                              :: treefall_disturbance_rate
-      real                                              :: maxTreeAge
       real                                              :: Time2Canopy
       real                                              :: runoff_time
       real                                              :: betapower
@@ -346,6 +345,7 @@ module ename_coms
       enl%rk4_tolerance             = undef_real
       enl%ibranch_thermo            = undef_integer
       enl%istoma_scheme             = undef_integer
+      enl%iallom                    = undef_integer
       enl%iphen_scheme              = undef_integer
       enl%repro_scheme              = undef_integer
       enl%lapse_scheme              = undef_integer
@@ -358,7 +358,6 @@ module ename_coms
       enl%thetacrit                 = undef_real
       enl%lwfact                    = undef_real
       enl%thioff                    = undef_real
-      enl%icomppt                   = undef_integer
       enl%quantum_efficiency_T      = undef_integer
       enl%n_plant_lim               = undef_integer
       enl%n_decomp_lim              = undef_integer
@@ -377,7 +376,6 @@ module ename_coms
       enl%pft_1st_check             = undef_integer
 
       enl%treefall_disturbance_rate = undef_real
-      enl%maxTreeAge                = undef_real
       enl%Time2Canopy               = undef_real
       enl%runoff_time               = undef_real
       enl%betapower                 = undef_real

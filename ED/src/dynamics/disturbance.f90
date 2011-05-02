@@ -40,12 +40,11 @@ module disturbance_utils
                               , sitetype                & ! structure
                               , patchtype               ! ! structure
       use ed_misc_coms , only : current_time            ! ! intent(in)
-      use disturb_coms , only : treefall_age_threshold  & ! intent(in)
-                              , min_new_patch_area      & ! intent(in)
+      use disturb_coms , only : min_new_patch_area      & ! intent(in)
                               , mature_harvest_age      & ! intent(in)
                               , plantation_rotation     & ! intent(in)
                               , ianth_disturb           & ! intent(in)
-                              , Time2Canopy             ! ! intent(in)
+                              , time2canopy             ! ! intent(in)
       use ed_max_dims  , only : n_dist_types            & ! intent(in)
                               , n_pft                   & ! intent(in)
                               , n_dbh                   ! ! intent(in)
@@ -185,7 +184,7 @@ module disturbance_utils
                   abandoned = new_lu == 2 .and. old_lu == 1
                   !----- Natural disturbance, either trees are old or there is a fire. ----!
                   natural   = new_lu == 3 .and. old_lu /= 1 .and.                          &
-                              ( csite%age(ipa) > treefall_age_threshold .or.               &
+                              ( csite%age(ipa) > time2canopy .or.                          &
                                 cpoly%nat_dist_type(isi) == 1)
                   !----- Check whether the patch is ready  be harvested. ------------------!
                   mature_primary    = old_lu == 3                                  .and.   &
@@ -198,21 +197,21 @@ module disturbance_utils
                   logged    = new_lu == 2 .and.                                            &
                               ( mature_primary .or. mature_plantation .or.                 &
                                 mature_secondary)
- 
-                  if (ploughed .or. abandoned .or. natural .or. logged) then
-                      if (natural .and. csite%age(ipa) < Time2Canopy) then
-                          dA   = 0
-                      elseif (abandoned .and. csite%age(ipa) < Time2Canopy) then
-                          dA   = 0
-                      else
-                          dA   = csite%area(ipa)                                           &
-                               * (1. - exp(- ( cpoly%disturbance_rates(new_lu,old_lu,isi)  &
-                                        + cpoly%disturbance_memory(new_lu,old_lu,isi) ) ) )
-                      end if
-                      
-                      area = area + dA
-                      
+
+                  !------------------------------------------------------------------------!
+                  !    Add area if any of the disturbances that produce of type new_lu has !
+                  ! happened.  The ones that produce type other than new_lu will be always !
+                  ! false for new_lu.                                                      !
+                  !------------------------------------------------------------------------!
+                  if  (ploughed .or. abandoned .or. natural .or. logged) then
+                     dA = csite%area(ipa)                                                  &
+                        * (1. - exp(- ( cpoly%disturbance_rates(new_lu,old_lu,isi)         &
+                                      + cpoly%disturbance_memory(new_lu,old_lu,isi) ) ) )
+                     area = area + dA
                   end if
+                  !------------------------------------------------------------------------!
+
+
                end do
                
                if (area > min_new_patch_area) then
@@ -243,7 +242,7 @@ module disturbance_utils
                      ploughed  = new_lu == 1 .and. old_lu /= 1
                      abandoned = new_lu == 2 .and. old_lu == 1
                      natural   = new_lu == 3 .and. old_lu /= 1 .and.                       &
-                                 ( csite%age(ipa) > treefall_age_threshold .or.            &
+                                 ( csite%age(ipa) > time2canopy .or.                       &
                                    cpoly%nat_dist_type(isi) == 1)
                      !----- Check whether the patch is ready  be harvested. ---------------!
                      mature_primary    = old_lu == 3                                 .and. &
@@ -283,17 +282,10 @@ module disturbance_utils
                      ! the litter layer.                                                   !
                      !---------------------------------------------------------------------!
                      if (ploughed .or. abandoned .or. natural .or. logged) then
+                        dA  = csite%area(ipa)                                              &
+                            * (1. - exp(- ( cpoly%disturbance_rates(new_lu,old_lu,isi)     &
+                                       + cpoly%disturbance_memory(new_lu,old_lu,isi) ) ) ) 
 
-                      if (natural .and. csite%age(ipa) < Time2Canopy) then
-                          dA   = 0
-                      elseif (abandoned .and. csite%age(ipa) < Time2Canopy) then
-                          dA   = 0
-                      else
-                          dA   = csite%area(ipa)                                           &
-                               * (1. - exp(- ( cpoly%disturbance_rates(new_lu,old_lu,isi)  &
-                                        + cpoly%disturbance_memory(new_lu,old_lu,isi) ) ) )
-                      end if
-                      
                         area_fac = dA / csite%area(onsp+new_lu)
                       
                         call increment_patch_vars(csite,new_lu+onsp,ipa,area_fac)
@@ -1239,8 +1231,6 @@ module disturbance_utils
                                 , pio4                     ! ! intent(in)
       use allometry      , only : h2dbh                    & ! function
                                 , dbh2bd                   & ! function
-                                , dbh2bl                   & ! function
-                                , dbh2h                    & ! function
                                 , area_indices             & ! function
                                 , ed_biomass               ! ! function
       use ed_max_dims    , only : n_pft                    ! ! intent(in)
@@ -1314,13 +1304,13 @@ module disturbance_utils
 
       !----- Find DBH and the maximum leaf biomass. ---------------------------------------!
       cpatch%dbh(nc)   = h2dbh(cpatch%hite(nc),cpatch%pft(nc))
-      cpatch%bdead(nc) = dbh2bd(cpatch%dbh(nc),cpatch%hite(nc),cpatch%pft(nc))
+      cpatch%bdead(nc) = dbh2bd(cpatch%dbh(nc),cpatch%pft(nc))
 
       !------------------------------------------------------------------------------------!
       !      Initialise the active and storage biomass scaled by the leaf drought phenology (or start with 1.0 if the plant doesn't !
       ! shed their leaves due to water stress.                                             !
       !------------------------------------------------------------------------------------!
-      call pheninit_balive_bstorage(mzg,csite,np,nc,ntext_soil)
+      call pheninit_balive_bstorage(mzg,csite,np,nc,ntext_soil,green_leaf_factor)
       !------------------------------------------------------------------------------------!
 
 

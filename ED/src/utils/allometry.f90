@@ -4,28 +4,6 @@
 !------------------------------------------------------------------------------------------!
 module allometry
 
-   !----- Constants shared by both bdead and bleaf ----------------------------------------!
-   real, parameter :: a1    =  -1.981
-   real, parameter :: b1    =   1.047
-   real, parameter :: dcrit = 100.0
-   real, parameter :: ff    =   0.640
-   real, parameter :: gg    =   0.370
-   !----- Constants used by bdead only ----------------------------------------------------!
-   real, parameter :: c1d   =   0.572
-   real, parameter :: d1d   =   0.931
-   real, parameter :: a2d   =  -1.086
-   real, parameter :: b2d   =   0.876
-   real, parameter :: c2d   =   0.604
-   real, parameter :: d2d   =   0.871
-   !----- Constants used by bleaf only ----------------------------------------------------!
-   real, parameter :: c1l   =  -0.584
-   real, parameter :: d1l   =   0.550
-   real, parameter :: a2l   =  -4.111
-   real, parameter :: b2l   =   0.605
-   real, parameter :: c2l   =   0.848
-   real, parameter :: d2l   =   0.438
-   !---------------------------------------------------------------------------------------!
-
    contains
    !=======================================================================================!
    !=======================================================================================!
@@ -42,7 +20,7 @@ module allometry
       integer, intent(in) :: ipft
       !------------------------------------------------------------------------------------!
       if (is_tropical(ipft)) then
-         h2dbh = 10.0**((log10(h)-0.37)/0.64)
+         h2dbh = exp((log(h)-b1Ht(ipft))/b2Ht(ipft))
       else ! Temperate
          h2dbh = log(1.0-(h-hgt_ref(ipft))/b1Ht(ipft))/b2Ht(ipft)
       end if
@@ -59,39 +37,58 @@ module allometry
 
    !=======================================================================================!
    !=======================================================================================!
-   real function dbh2bd(dbh,h,ipft)
-
-      use pft_coms, only:  is_tropical & ! intent(in), lookup table
-                         , rho         & ! intent(in), lookup table
-                         , C2B         & ! intent(in)
-                         , b1Bs        & ! intent(in), lookup table
-                         , b2Bs        & ! intent(in), lookup table
-                         , max_dbh     ! ! intent(in), lookup table
+   real function dbh2h(ipft, dbh)
+      use pft_coms, only:  is_tropical & ! intent(in)
+                         , rho         & ! intent(in)
+                         , max_dbh     & ! intent(in)
+                         , b1Ht        & ! intent(in)
+                         , b2Ht        & ! intent(in)
+                         , hgt_ref     ! ! intent(in)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
-      real   , intent(in) :: dbh
-      real   , intent(in) :: h
-      integer, intent(in) :: ipft
-      !----- Local variables --------------------------------------------------------------!
-      real                :: p,r,qq
+      integer , intent(in) :: ipft
+      real    , intent(in) :: dbh
       !------------------------------------------------------------------------------------!
 
       if (is_tropical(ipft)) then
+         dbh2h = exp (b1Ht(ipft) + b2Ht(ipft) * log(min(dbh,max_dbh(ipft))) )
+      else !----- Temperate PFT allometry. ------------------------------------------------!
+         dbh2h = hgt_ref(ipft) + b1Ht(ipft) * (1.0 - exp(b2Ht(ipft) * dbh))
+      end if
 
-         if (dbh > max_dbh(ipft)) then
-            p  = a1 + c1d * log(h) + d1d * log(rho(ipft))
-            r  = ( (a2d - a1) + (c2d - c1d)*log(h) + log(rho(ipft))                        &
-                 * (d2d - d1d)) * (1.0/log(dcrit))
-            qq = 2.0 * b2d + r
-         else
-            p  = a1 + c1d * gg * log(10.0) + d1d * log(rho(ipft))
-            r  = ( (a2d - a1) + gg * log(10.0) * (c2d - c1d) + log(rho(ipft))              &
-                 * (d2d - d1d)) * (1.0/log(dcrit))
-            qq = 2.0 * b2d + c2d * ff + r
-         end if
-         dbh2bd = exp(p) / C2B * dbh**qq
-      else !----- Temperate PFT -----------------------------------------------------------!
-         dbh2bd = b1Bs(ipft) / C2B * dbh**b2Bs(ipft)
+      return
+   end function dbh2h
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   real function dbh2bd(dbh,ipft)
+
+      use pft_coms    , only : C2B         & ! intent(in)
+                             , b1Bs_small  & ! intent(in), lookup table
+                             , b2Bs_small  & ! intent(in), lookup table
+                             , b1Bs_big    & ! intent(in), lookup table
+                             , b2Bs_big    & ! intent(in), lookup table
+                             , max_dbh     ! ! intent(in), lookup table
+      implicit none
+      !----- Arguments --------------------------------------------------------------------!
+      real   , intent(in) :: dbh
+      integer, intent(in) :: ipft
+      !----- Local variables --------------------------------------------------------------!
+      real                :: agb
+      real                :: qd
+      !------------------------------------------------------------------------------------!
+
+      if (dbh <= max_dbh(ipft)) then
+         dbh2bd = b1Bs_small(ipft) / C2B * dbh ** b2Bs_small(ipft)
+      else
+         dbh2bd = b1Bs_big(ipft) / C2B * dbh ** b2Bs_big(ipft)
       end if
 
       return
@@ -106,38 +103,68 @@ module allometry
 
    !=======================================================================================!
    !=======================================================================================!
+   !     This subroutine computes the diameter at the breast height given the structural   !
+   ! (dead) biomass and the PFT type.  In addition to these inputs, it is also required to !
+   ! give a first guess for DBH, which can be the previous value, for example.   This is   !
+   ! only used for the new allometry, because we must solve an iterative root-finding      !
+   ! method.                                                                               !
+   !---------------------------------------------------------------------------------------!
+   real function bd2dbh(ipft, bdead)
+      use pft_coms    , only : b1Bs_small  & ! intent(in), lookup table
+                             , b2Bs_small  & ! intent(in), lookup table
+                             , b1Bs_big    & ! intent(in), lookup table
+                             , b2Bs_big    & ! intent(in), lookup table
+                             , bdead_crit  & ! intent(in), lookup table
+                             , C2B         ! ! intent(in)
+      implicit none
+      !----- Arguments --------------------------------------------------------------------!
+      integer, intent(in) :: ipft      ! PFT type                            [         ---]
+      real   , intent(in) :: bdead     ! Structural (dead) biomass           [   kgC/plant]
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !    Decide which coefficients to use based on the critical bdead.                   !
+      !------------------------------------------------------------------------------------!
+      if (bdead <= bdead_crit(ipft)) then
+         bd2dbh = (bdead / b1Bs_small(ipft) * C2B)**(1.0/b2Bs_small(ipft))
+      else
+         bd2dbh = (bdead / b1Bs_big(ipft) * C2B)**(1.0/b2Bs_big(ipft))
+      end if
+      !------------------------------------------------------------------------------------!
+
+      return
+   end function bd2dbh
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
    real function dbh2bl(dbh,ipft)
-      use pft_coms, only:  is_tropical & ! intent(in), lookup table
-                         , rho         & ! intent(in), lookup table
-                         , max_dbh     & ! intent(in), lookup table
-                         , C2B         & ! intent(in)
-                         , b1Bl        & ! intent(in), lookup table
-                         , b2Bl        ! ! intent(in), lookup table
-   
+      use pft_coms    , only : max_dbh     & ! intent(in), lookup table
+                             , C2B         & ! intent(in)
+                             , b1Bl        & ! intent(in), lookup table
+                             , b2Bl        ! ! intent(in), lookup table
+
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       real   , intent(in) :: dbh
       integer, intent(in) :: ipft
       !----- Local variables --------------------------------------------------------------!
       real                :: mdbh
-      real                :: p,r,qq
+      real                :: agb
+      real                :: qd
       !------------------------------------------------------------------------------------!
 
-      if (is_tropical(ipft)) then
-         p  = a1 + c1l * gg * log(10.0) + d1l * log(rho(ipft))
-         r  = ( (a2l - a1) + gg * log(10.0) * (c2l - c1l) + log(rho(ipft))                 &
-              * (d2l - d1l)) * (1.0/log(dcrit))
-         qq = 2.0 * b2l + c2l * ff + r  
 
-         if(dbh <= max_dbh(ipft))then
-            dbh2bl = exp(p) / C2B * dbh**qq
-         else 
-            dbh2bl = exp(p) / C2B * max_dbh(ipft)**qq
-         end if
-      else !----- Temperate ---------------------------------------------------------------!
-         mdbh   = min(dbh,max_dbh(ipft))
-         dbh2bl = b1Bl(ipft) /C2B * mdbh**b2Bl(ipft)
-      end if
+      mdbh   = min(dbh,max_dbh(ipft))
+      dbh2bl = b1Bl(ipft) / C2B * mdbh ** b2Bl(ipft)
 
       return
    end function dbh2bl
@@ -154,7 +181,12 @@ module allometry
    !    Canopy Area allometry from Dietze and Clark (2008).                                !
    !---------------------------------------------------------------------------------------!
    real function dbh2ca(dbh,sla,ipft)
-      use pft_coms, only : is_tropical,is_grass
+      use ed_misc_coms, only : iallom      ! ! intent(in)
+      use pft_coms    , only : max_dbh     & ! intent(in)
+                             , is_tropical & ! intent(in)
+                             , is_grass    & ! intent(in)
+                             , b1Ca        & ! intent(in)
+                             , b2Ca        ! ! intent(in)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       real   , intent(in) :: dbh
@@ -162,6 +194,7 @@ module allometry
       integer, intent(in) :: ipft
       !----- Internal variables -----------------------------------------------------------!
       real                :: loclai ! The maximum local LAI for a given DBH
+      real                :: dmbh   ! The maximum 
       !------------------------------------------------------------------------------------!
       if (dbh < tiny(1.0)) then
          loclai = 0.0
@@ -173,9 +206,19 @@ module allometry
       !----- Based on Dietze and Clark (2008). --------------------------------------------!
       else
          loclai = sla * dbh2bl(dbh,ipft)
-         dbh2ca = 2.490154*dbh**0.8068806
+
+         select case (iallom)
+         case (0)
+            !----- No upper bound in the allometry. ---------------------------------------!
+            dbh2ca = b1Ca(ipft) * dbh ** b2Ca(ipft)
+
+         case (1)
+            !----- Impose a maximum crown area. -------------------------------------------!
+            dbh2ca = b1Ca(ipft) * min(dbh,max_dbh(ipft)) ** b2Ca(ipft)
+
+         end select
       end if
-      
+
       !----- Local LAI / Crown area should never be less than one. ------------------------!
       dbh2ca = min (loclai, dbh2ca)
 
@@ -249,43 +292,6 @@ module allometry
 
    !=======================================================================================!
    !=======================================================================================!
-   real function dbh2h(ipft, dbh)
-      use pft_coms, only:  is_tropical & ! intent(in)
-                         , rho         & ! intent(in)
-                         , max_dbh     & ! intent(in)
-                         , b1Ht        & ! intent(in)
-                         , b2Ht        & ! intent(in)
-                         , hgt_ref     ! ! intent(in)
-      implicit none
-      !----- Arguments --------------------------------------------------------------------!
-      integer , intent(in) :: ipft
-      real    , intent(in) :: dbh
-      !------------------------------------------------------------------------------------!
-
-      if (is_tropical(ipft)) then
-         if (dbh <= max_dbh(ipft)) then
-            !----- This means that height is below its maximum. ---------------------------!
-            dbh2h = 10.0 ** (log10(dbh) * 0.64 + 0.37)
-         else
-            !----- Height is at maximum. --------------------------------------------------!
-            dbh2h = 10.0 ** (log10(max_dbh(ipft)) * 0.64 + 0.37)
-         end if
-      else !----- Temperate PFT allometry. ------------------------------------------------!
-         dbh2h = hgt_ref(ipft) + b1Ht(ipft) * (1.0 - exp(b2Ht(ipft) * dbh))
-      end if
-
-      return
-   end function dbh2h
-   !=======================================================================================!
-   !=======================================================================================!
-
-
-
-
-
-
-   !=======================================================================================!
-   !=======================================================================================!
    !    This function finds the trunk height, based on Antonarakis (2008) estimation for   !
    ! secondary forests.                                                                    !
    !---------------------------------------------------------------------------------------!
@@ -328,7 +334,7 @@ module allometry
       !------------------------------------------------------------------------------------!
 
       bstem        = agf_bs * bdead
-      absapwood     = agf_bs * bsapwood
+      absapwood    = agf_bs * bsapwood
       wood_biomass = bstem + absapwood
       return
    end function wood_biomass
@@ -365,61 +371,6 @@ module allometry
 
       return
    end function ed_biomass
-   !=======================================================================================!
-   !=======================================================================================!
-
-
-
-
-
-
-   !=======================================================================================!
-   !=======================================================================================!
-   real function bd2dbh(ipft, bdead)
-
-      use pft_coms, only:  is_tropical & ! intent(in), lookup table
-                         , rho         & ! intent(in), lookup table
-                         , b1Bs        & ! intent(in), lookup table
-                         , b2Bs        & ! intent(in), lookup table
-                         , C2B         & ! intent(in)
-                         , max_dbh     ! ! intent(in), lookup table
-
-      implicit none
-      !----- Arguments --------------------------------------------------------------------!
-      integer, intent(in) :: ipft
-      real   , intent(in) :: bdead
-      !----- Local variables --------------------------------------------------------------!
-      real :: p
-      real :: q
-      real :: r
-      real :: dbh_pot
-      real :: h_max
-      !------------------------------------------------------------------------------------!
-
-      if (is_tropical(ipft)) then
-
-         p = a1 + c1d * gg * log(10.0) + d1d * log(rho(ipft))
-         r = ( (a2d - a1 ) + gg * log(10.0) * (c2d - c1d) + log(rho(ipft))                 &
-             * (d2d - d1d)) /log(dcrit)
-         q = 2.0 * b2d + c2d * ff + r
-         dbh_pot = (bdead * 2.0 * exp(-p))**(1.0/q)     
-         
-         if (dbh_pot <= max_dbh(ipft)) then
-            bd2dbh = dbh_pot
-         else
-            h_max = dbh2h(ipft, max_dbh(ipft))
-            p = a1 + c1d * log(h_max) + d1d * log(rho(ipft))
-            r = ( (a2d - a1 ) + (c2d - c1d) * log(h_max) + log(rho(ipft))                  &
-                * (d2d - d1d))/log(dcrit)
-            q = 2.0 * b2d + r
-            bd2dbh = (bdead * 2.0 * exp(-p))**(1.0/q)
-         endif
-      else !----- Temperate PFT -----------------------------------------------------------!
-         bd2dbh = (bdead / b1Bs(ipft) * C2B)**(1.0/b2Bs(ipft))
-      end if
-
-      return
-   end function bd2dbh
    !=======================================================================================!
    !=======================================================================================!
 

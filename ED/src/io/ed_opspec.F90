@@ -1016,7 +1016,8 @@ subroutine ed_opspec_misc
                                     , iclobber                     & ! intent(in)
                                     , runtype                      & ! intent(in)
                                     , ied_init_mode                & ! intent(in)
-                                    , integration_scheme           ! ! intent(in)
+                                    , integration_scheme           & ! intent(in)
+                                    , iallom                       ! ! intent(in)
    use canopy_air_coms       , only : icanturb                     & ! intent(in)
                                     , i_blyr_condct                & ! intent(in)
                                     , isfclyrm                     & ! intent(in)
@@ -1027,7 +1028,8 @@ subroutine ed_opspec_misc
                                     , tprandtl                     & ! intent(in)
                                     , vh2vr                        & ! intent(in)
                                     , vh2dh                        ! ! intent(in)
-   use soil_coms             , only : isoilflg                     & ! intent(in)
+   use soil_coms             , only : ed_nstyp                     & ! intent(in)
+                                    , isoilflg                     & ! intent(in)
                                     , nslcon                       & ! intent(in)
                                     , slxclay                      & ! intent(in)
                                     , slxsand                      & ! intent(in)
@@ -1051,14 +1053,13 @@ subroutine ed_opspec_misc
                                     , gamfact                      & ! intent(in)
                                     , lwfact                       & ! intent(in)
                                     , thioff                       & ! intent(in)
-                                    , icomppt                      & ! intent(in)
                                     , quantum_efficiency_T         ! ! intent(in)
    use decomp_coms           , only : n_decomp_lim                 ! ! intent(in)
    use disturb_coms          , only : include_fire                 & ! intent(in)
                                     , ianth_disturb                & ! intent(in)
                                     , sm_fire                      & ! intent(in)
-                                    , Time2Canopy                  & ! intent(in)
-                                    , maxTreeAge                   ! ! intent(in)
+                                    , time2canopy                  & ! intent(in)
+                                    , treefall_disturbance_rate    ! ! intent(in)
    use phenology_coms        , only : iphen_scheme                 & ! intent(in)
                                     , radint                       & ! intent(in)
                                     , radslp                       & ! intent(in)
@@ -1193,9 +1194,10 @@ subroutine ed_opspec_misc
    end do
 #endif
 
-   if (nslcon < 1 .or. nslcon > 12) then
-      write (reason,fmt='(a,1x,i4,a)')                                                     &
-             'Invalid NSLCON, it must be between 1 and 12. Yours is set to',nslcon,'...'
+   if (nslcon < 1 .or. nslcon > ed_nstyp) then
+      write (reason,fmt='(2(a,1x,i4),a)')                                                  &
+             'Invalid NSLCON, it must be between 1 and ',ed_nstyp,'. Yours is set to'      &
+            ,nslcon,'...'
       call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
    end if
@@ -1345,6 +1347,14 @@ end do
       ifaterr = ifaterr +1
    end if
 
+   if (iallom < 0 .or. iallom > 1) then
+      write (reason,fmt='(a,1x,i4,a)')                                                     &
+                    'Invalid IALLOM, it must be between 0 and 1. Yours is set to'          &
+                    ,iallom,'...'
+      call opspec_fatal(reason,'opspec_misc')
+      ifaterr = ifaterr +1
+   end if
+
    if (iphen_scheme < -1 .or. iphen_scheme > 3) then
       write (reason,fmt='(a,1x,i4,a)')                                                     &
                     'Invalid IPHEN_SCHEME, it must be between -1 and 3. Yours is set to'   &
@@ -1428,14 +1438,6 @@ end do
       write (reason,fmt='(a,1x,es12.5,a)')                                                 &
                     'Invalid THIOFF, it must be between -20 and 20. Yours is set to'       &
                     ,lwfact,'...'
-      call opspec_fatal(reason,'opspec_misc')
-      ifaterr = ifaterr +1
-   end if
-    
-   if (icomppt < 0 .or. icomppt > 0) then
-      write (reason,fmt='(a,1x,i4,a)')                                                     &
-                    'Invalid ICOMPPT, it must be between 0 and 0. Yours is set to'         &
-                    ,icomppt,'...'
       call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
    end if
@@ -1611,14 +1613,33 @@ end do
       call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
    end if
+
+   if (treefall_disturbance_rate > 0.0) then
+      if (time2canopy < 0.0) then
+         write (reason,fmt='(a,1x,es14.7,a)')                                              &
+                'Invalid TIME2CANOPY, it can''t be negative.  Yours is set to'             &
+                ,time2canopy,'...'
+         call opspec_fatal(reason,'opspec_misc')
+         ifaterr = ifaterr +1
+      elseif (time2canopy >= 2.0 * (1. - epsilon(1.)) / treefall_disturbance_rate) then
+         !---------------------------------------------------------------------------------!
+         !     We need this if statement because the effective treefall tends to infinity  !
+         ! as time2canopy approaches 2. / treefall_disturbance_rate.                       !
+         !---------------------------------------------------------------------------------!
+         write (unit=*,fmt='(a,1x,es14.7)')   ' TREEFALL_DISTURBANCE_RATE ='               &
+                                             ,treefall_disturbance_rate
+         write (unit=*,fmt='(a,1x,es14.7)')   ' MAX(TIME2CANOPY)          ='               &
+                                             , 2.0 * (1. - epsilon(1.))                    &
+                                             / treefall_disturbance_rate
+         write (reason,fmt='(a,2x,a,1x,es14.7,a)')                                         &
+             ' Invalid TIME2CANOPY, it can''t be >= 2. / TREEFALL_DISTURBANCE_RATE.'       &
+            ,'Yours is set to',time2canopy,'...'
+         call opspec_fatal(reason,'opspec_misc')  
+         ifaterr = ifaterr +1
+      end if
+   end if
     
-   !if (treefall_disturbance_rate < 0.0) then
-   !   write (reason,fmt='(a,1x,es14.7,a)')                                                 &
-   !          'Invalid TREEFALL_DISTURBANCE_RATE, it can''t be negative.  Yours is set to'  &
-   !          ,treefall_disturbance_rate,'...'
-   !   call opspec_fatal(reason,'opspec_misc')
-   !   ifaterr = ifaterr +1
-   !end if
+   
     
    if (Time2Canopy < 0.0) then
       write (reason,fmt='(a,1x,es14.7,a)')                                                 &

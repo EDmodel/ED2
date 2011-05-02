@@ -264,6 +264,7 @@ module pft_coms
    real :: C2B
    !----- Fraction of structural stem that is assumed to be above ground. -----------------!
    real :: agf_bs
+   real :: agf_bsi
    !----- Supply coefficient for plant nitrogen uptake [m2/kgC_fine_root/day].  -----------!
    real :: plant_N_supply_scale
    !---------------------------------------------------------------------------------------!
@@ -292,13 +293,37 @@ module pft_coms
    real   , dimension(n_pft)    :: qsw
    real   , dimension(n_pft)    :: sapwood_ratio ! AREA ratio
    real   , dimension(n_pft)    :: hgt_ref ! ref height for diam/ht allom (Temperate)
-   real   , dimension(n_pft)    :: b1Ht  !  DBH-height allometry intercept (m).  Temperate PFTs only.
-   real   , dimension(n_pft)    :: b2Ht  !  DBH-height allometry slope (1/cm).  Temperate PFTs only.
-   real   , dimension(n_pft)    :: b1Bs  !  DBH-stem allometry intercept (kg stem biomass / plant * cm^{-b2Bs}).  Temperate PFTs only.
-   real   , dimension(n_pft)    :: b2Bs  !  DBH-stem allometry slope (dimensionless).  Temperate PFTs only.
-   real   , dimension(n_pft)    :: b1Bl  !  DBH-leaf allometry intercept (kg leaf biomass / plant * cm^{-b2Bl}).  Temperate PFTs only.
-   real   , dimension(n_pft)    :: b2Bl  !  DBH-leaf allometry slope (dimensionless).  Temperate PFTs only.
-   real   , dimension(n_pft)    :: max_dbh !  Maximum DBH attainable by this PFT (cm)
+   !---------------------------------------------------------------------------------------!
+   !     DBH-height allometry intercept (m).  Notice that this variable has different      !
+   ! meaning between temperate and tropical PFTs.                                          !
+   !---------------------------------------------------------------------------------------!
+   real   , dimension(n_pft)    :: b1Ht
+   !---------------------------------------------------------------------------------------!
+   !     DBH-height allometry slope (1/cm).  Notice that this variable has different       !
+   ! meaning between temperate and tropical PFTs.                                          !!
+   !---------------------------------------------------------------------------------------!
+   real   , dimension(n_pft)    :: b2Ht
+   !----- DBH-stem allometry intercept.  All PFTs. ----------------------------------------!
+   real   , dimension(n_pft)    :: b1Bs_small
+   !----- DBH-stem allometry slope (dimensionless).  All PFTs. ----------------------------!
+   real   , dimension(n_pft)    :: b2Bs_small
+   !----- DBH-stem allometry intercept for large DBH cohorts. -----------------------------!
+   real   , dimension(n_pft)    :: b1Bs_big
+   !----- DBH-stem allometry slope for large DBH cohorts. ---------------------------------!
+   real   , dimension(n_pft)    :: b2Bs_big
+   !----- Critical Bdead, point in which plants stop growing vertically. ------------------!
+   real   , dimension(n_pft)    :: bdead_crit
+   !----- DBH-leaf allometry intercept (kg leaf biomass / plant * cm^{-b2Bl}).  All PFTs --!
+   real   , dimension(n_pft)    :: b1Bl
+   !----- DBH-leaf allometry slope (dimensionless).  All PFTs -----------------------------!
+   real   , dimension(n_pft)    :: b2Bl
+   !----- DBH-crown allometry intercept.  All PFTs. ---------------------------------------!
+   real   , dimension(n_pft)    :: b1Ca
+   !----- DBH-crown allometry slope.  All PFTs. -------------------------------------------!
+   real   , dimension(n_pft)    :: b2Ca
+   !----- Minimum DBH attainable by this PFT and minimum DBH at maximum height (cm). ------!
+   real   , dimension(n_pft)    :: min_dbh
+   real   , dimension(n_pft)    :: max_dbh 
    !=======================================================================================!
    !=======================================================================================!
 
@@ -411,6 +436,8 @@ module pft_coms
    real   , dimension(n_pft)    :: init_density
    !----- Minimum height of an individual [m]. --------------------------------------------!
    real   , dimension(n_pft)    :: hgt_min
+   !----- Maximum height of an individual [m]. --------------------------------------------!
+   real   , dimension(n_pft)    :: hgt_max
    !----- Minimum biomass density [kgC/m²] required to form a new recruit. ----------------!
    real, dimension(n_pft) :: min_recruit_size
    !----- Fraction of (positive) carbon balance devoted to reproduction. ------------------!

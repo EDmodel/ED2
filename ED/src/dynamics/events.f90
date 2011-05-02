@@ -798,8 +798,7 @@ end subroutine event_till
 !!$              cpatch%nplant(ico)  = density
 !!$              cpatch%hite(ico)    = hgt_min(pft)
 !!$              cpatch%dbh(ico)     = h2dbh(hgt_min(pft),pft)
-!!$              cpatch%bdead(ico)   = dbh2bd(cpatch%dbh(ico),&
-!!$                   & hgt_min(pft),pft)
+!!$              cpatch%bdead(ico)   = dbh2bd(cpatch%dbh(ico),pft)
 !!$              cpatch%bleaf(ico)   = dbh2bl(cpatch%dbh(ico),pft)
 !!$print*,cpatch%hite(ico),cpatch%dbh(ico),cpatch%bdead(ico),cpatch%bleaf(ico)
 !!$              cpatch%phenology_status(ico) = 0

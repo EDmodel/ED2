@@ -47,7 +47,8 @@ subroutine copy_nl(copy_type)
                                    , undef_integer             & ! intent(in)
                                    , maxgrds                   ! ! intent(in)
    use ename_coms           , only : nl                        ! ! intent(in)
-   use soil_coms            , only : isoilflg                  & ! intent(out)
+   use soil_coms            , only : find_soil_class           & ! function
+                                   , isoilflg                  & ! intent(out)
                                    , nslcon                    & ! intent(out)
                                    , slxclay                   & ! intent(out)
                                    , slxsand                   & ! intent(out)
@@ -93,7 +94,6 @@ subroutine copy_nl(copy_type)
                                    , gamfact                   & ! intent(out)
                                    , lwfact                    & ! intent(out)
                                    , thioff                    & ! intent(out)
-                                   , icomppt                   & ! intent(out)
                                    , quantum_efficiency_T      ! ! intent(out)
    use phenology_coms       , only : iphen_scheme              & ! intent(out)
                                    , iphenys1                  & ! intent(out)
@@ -114,8 +114,7 @@ subroutine copy_nl(copy_type)
                                    , plantation_file           & ! intent(out)
                                    , lu_rescale_file           & ! intent(out)
                                    , sm_fire                   & ! intent(out)
-                                   , maxTreeAge                & ! intent(out)
-                                   , Time2Canopy               ! ! intent(out)
+                                   , time2canopy               ! ! intent(out)
    use pft_coms             , only : include_these_pft         & ! intent(out)
                                    , agri_stock                & ! intent(out)
                                    , plantation_stock          & ! intent(out)
@@ -166,7 +165,8 @@ subroutine copy_nl(copy_type)
                                    , outstate                  & ! intent(out)
                                    , unitfast                  & ! intent(out)
                                    , unitstate                 & ! intent(out)
-                                   , event_file                ! ! intent(out)
+                                   , event_file                & ! intent(out)
+                                   , iallom                    ! ! intent(out)
    use grid_coms            , only : time                      & ! intent(out)
                                    , centlon                   & ! intent(out)
                                    , centlat                   & ! intent(out)
@@ -299,6 +299,7 @@ subroutine copy_nl(copy_type)
       rk4_tolerance             = nl%rk4_tolerance
       ibranch_thermo            = nl%ibranch_thermo
       istoma_scheme             = nl%istoma_scheme
+      iallom                    = nl%iallom
       iphen_scheme              = nl%iphen_scheme
       repro_scheme              = nl%repro_scheme
       lapse_scheme              = nl%lapse_scheme
@@ -311,7 +312,6 @@ subroutine copy_nl(copy_type)
       thetacrit                 = nl%thetacrit
       lwfact                    = nl%lwfact
       thioff                    = nl%thioff
-      icomppt                   = nl%icomppt
       quantum_efficiency_T      = nl%quantum_efficiency_T
       radint                    = nl%radint
       radslp                    = nl%radslp
@@ -340,8 +340,7 @@ subroutine copy_nl(copy_type)
       pft_1st_check             = nl%pft_1st_check
       
       treefall_disturbance_rate = nl%treefall_disturbance_rate
-      maxTreeAge                = nl%maxTreeAge
-      Time2Canopy               = nl%Time2Canopy
+      time2canopy               = nl%time2canopy
       runoff_time               = nl%runoff_time
       betapower                 = nl%betapower
       ustmin                    = nl%ustmin
@@ -539,6 +538,20 @@ subroutine copy_nl(copy_type)
       vkopr = 0.0
    end if 
    !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !       Check whether we must re-define the default soil type (nslcon) based on the     !
+   ! fractions of sand and clay.                                                           !
+   !---------------------------------------------------------------------------------------!
+   if ( any(isoilflg == 2) .and. slxclay > 0. .and. slxsand > 0. .and.                     &
+        (slxclay + slxsand) <= 1. ) then
+      nslcon = find_soil_class(slxsand,slxclay)
+   end if
+   !---------------------------------------------------------------------------------------!
+
+
+
 
    return
 end subroutine copy_nl

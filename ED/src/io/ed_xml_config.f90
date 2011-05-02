@@ -215,9 +215,15 @@ recursive subroutine read_ed_xml_config(filename)
            call getConfigREAL  ('b2Bl','pft',i,rval,texist)
            if(texist) b2Bl(myPFT) = real(rval)
            call getConfigREAL  ('b1Bs','pft',i,rval,texist)
-           if(texist) b1Bs(myPFT) = real(rval)
+           if (texist) then
+              b1Bs_small(myPFT) = real(rval)
+              b1Bs_big(myPFT)   = real(rval)
+           end if
            call getConfigREAL  ('b2Bs','pft',i,rval,texist)
-           if(texist) b2Bs(myPFT) = real(rval)
+           if (texist) then
+              b2Bs_small(myPFT) = real(rval)
+              b2Bs_big  (myPFT) = real(rval)
+           end if
            call getConfigREAL  ('b1Ht','pft',i,rval,texist)
            if(texist) b1Ht(myPFT) = real(rval)
            call getConfigREAL  ('b2Ht','pft',i,rval,texist)
@@ -652,16 +658,11 @@ recursive subroutine read_ed_xml_config(filename)
         call getConfigREAL  ('treefall_disturbance_rate','disturbance',i,rval,texist)
         if(texist) treefall_disturbance_rate = real(rval)
         
-        call getConfigREAL  ('maxTreeAge','disturbance',i,rval,texist)
-        if(texist) maxTreeAge = real(rval)
-        
         call getConfigREAL  ('Time2Canopy','disturbance',i,rval,texist)
         if(texist) Time2Canopy = real(rval)
         
         call getConfigREAL  ('treefall_hite_threshold','disturbance',i,rval,texist)
         if(texist) treefall_hite_threshold = real(rval)
-        call getConfigREAL  ('treefall_age_theshold','disturbance',i,rval,texist)
-        if(texist) treefall_age_threshold = real(rval)
 
         !! FORESTRY
         call getConfigINT  ('plantation_year','disturbance',i,ival,texist)
@@ -968,8 +969,10 @@ subroutine write_ed_xml_config
         call putConfigREAL("SLA",SLA(i))
         call putConfigREAL("b1Bl",b1Bl(i))
         call putConfigREAL("b2Bl",b2Bl(i))
-        call putConfigREAL("b1Bs",b1Bs(i))
-        call putConfigREAL("b2Bs",b2Bs(i))
+        call putConfigREAL("b1Bs",b1Bs_small(i))
+        b1Bs_big(i) = b1Bs_big(i)
+        call putConfigREAL("b2Bs",b2Bs_small(i))
+        b2Bs_big(i) = b2Bs_big(i)
         call putConfigREAL("b1Ht",b1Ht(i))
         call putConfigREAL("b2Ht",b2Ht(i))
         call putConfigREAL("Vm0",Vm0(i))

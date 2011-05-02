@@ -43,8 +43,6 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
                                     , rehuil8                & ! function
                                     , rslif8                 & ! function
                                     , reducedpress8          ! ! function
-   use allometry             , only : dbh2bl                 & ! function
-                                    , dbh2ca                 ! ! function
    use soil_coms             , only : soil8                  ! ! intent(in)
    use ed_therm_lib          , only : ed_grndvap8            ! ! subroutine
    use canopy_air_coms       , only : i_blyr_condct          ! ! intent(in)

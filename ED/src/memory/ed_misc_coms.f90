@@ -155,4 +155,8 @@ Module ed_misc_coms
    !---------------------------------------------------------------------------------------!
 
 
+   !----- Namelist option for allometry scheme. -------------------------------------------!
+   integer :: iallom ! 0 -- Original ED-2.1 allometry
+                     ! 1 -- DBH -> AGB Tree allometry based on Baker et al. (2004)
+
 end module ed_misc_coms

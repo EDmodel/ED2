@@ -116,8 +116,12 @@ subroutine landuse_opqr(n2,n3,mzg,npat,nvegpat  &
 
    use mem_mksfc
    use rconstants
-   use leaf_coms, only : tiny_parea
-   use io_params, only : iuselai
+   use mem_leaf , only : nslcon      ! ! intent(in)
+   use leaf_coms, only : tiny_parea  & ! intent(in)
+                       , nstyp       & ! intent(in)
+                       , nvtyp       & ! intent(in)
+                       , nvtyp_teb   ! ! intent(in)
+   use io_params, only : iuselai     ! ! intent(in)
 
    implicit none
    integer :: n2,n3,mzg,npat,nvegpat
@@ -133,7 +137,7 @@ subroutine landuse_opqr(n2,n3,mzg,npat,nvegpat  &
    real :: checksum
    real :: parea_tot
 
-   integer, parameter :: maxdatq=32,nsoil=12
+   integer, parameter :: maxdatq=32
 
    integer :: datq,lsp,ngrdpix(0:maxdatq,2),datq_pat  &
              ,datsoil,soil_count,nlev_soil      &
@@ -144,7 +148,7 @@ subroutine landuse_opqr(n2,n3,mzg,npat,nvegpat  &
              ,no_ndvi,iblksizo_ndvi,isbego_ndvi,iwbego_ndvi
 
    integer, dimension(0:maxdatq) :: sumpix
-   integer, dimension(0:maxdatq,nsoil) :: datq_soil,soil_tab
+   integer, dimension(0:maxdatq,nstyp) :: datq_soil,soil_tab
 
    real :: deltallo_veg ,deltallo_soil ,deltallo_ndvi  &
           ,offlat_veg   ,offlat_soil   ,offlat_ndvi    &
@@ -295,7 +299,7 @@ subroutine landuse_opqr(n2,n3,mzg,npat,nvegpat  &
             if (patch_area(ir,jr,1) < 1.0) then
 
                do idatq = 0,maxdatq
-                  do isoil = 1,nsoil
+                  do isoil = 1,nstyp
                      datq_soil(idatq,isoil) = 0     ! Initialize counter for datq pixels
                   enddo
                enddo
@@ -306,7 +310,9 @@ subroutine landuse_opqr(n2,n3,mzg,npat,nvegpat  &
                      ! Fill datq_soil values as secondary criterion.  This is for finding dominant
                      ! soil class for each datq class.
 
-                     call datp_datsoil(datp(ip,jp,ir,jr),datsoil)
+                     !call datp_datsoil(datp(ip,jp,ir,jr),datsoil)
+                     datsoil = nint(datp(ip,jp,ir,jr))
+                     if (datsoil == 0) datsoil = nslcon
 
                      datq_pat = datq_patch(ip,jp,ir,jr)
 
@@ -331,7 +337,7 @@ subroutine landuse_opqr(n2,n3,mzg,npat,nvegpat  &
 
                      
                      soil_count = 0
-                     do isoil = 1,nsoil
+                     do isoil = 1,nstyp
                         if (datq_soil(datq_pat,isoil) .gt. soil_count) then
                            soil_count = datq_soil(datq_pat,isoil)
                            jsoil = isoil

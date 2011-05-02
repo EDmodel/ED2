@@ -436,7 +436,7 @@ integer :: ierr
 integer :: nc,nf,lnf,nftot,ng
 integer :: inyear,inmonth,indate,inhour
 
-integer, parameter :: maxfiles=1000
+integer, parameter :: maxfiles=2000
 character(len=128), dimension(maxfiles) :: fnames
 character(len=14)  :: itotdate
 character(len=1)  :: cgrid
