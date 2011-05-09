@@ -1648,15 +1648,7 @@ end do
       call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
    end if
-   
-   if (maxTreeAge < 0.0) then
-      write (reason,fmt='(a,1x,es14.7,a)')                                                 &
-             'Invalid MAXTREEAGE, it can''t be negative.  Yours is set to'  &
-             ,maxTreeAge,'...'
-      call opspec_fatal(reason,'opspec_misc')
-      ifaterr = ifaterr +1
-   end if
-    
+       
    if (runoff_time < 0.0) then
       write (reason,fmt='(a,1x,es14.7,a)')                                                 &
             'Invalid RUNOFF_TIME, it can''t be negative. Yours is set to',runoff_time,'...'

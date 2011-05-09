@@ -39,7 +39,8 @@ subroutine read_ed10_ed20_history_file
                              , allocate_sitetype   & ! subroutine
                              , allocate_patchtype  ! ! subroutine
    use grid_coms      , only : ngrids              ! ! intent(in)
-   use allometry      , only : dbh2h               & ! function
+   use allometry      , only : bd2dbh              & ! function
+                             , dbh2h               & ! function
                              , h2dbh               & ! function
                              , dbh2bd              & ! function
                              , dbh2bl              & ! function
@@ -652,22 +653,41 @@ subroutine read_ed10_ed20_history_file
                            cpatch%nplant(ic2) = nplant(ic)
                         end if
 
-                        !----- DBH [cm] (both ED-1.0 and ED-2.0 were). --------------------!
-                        cpatch%dbh(ic2) = dbh(ic)
 
-                        !----- Cohort height [m]. -----------------------------------------!
-                        if (hite(ic) > 0.0) then
-                           cpatch%hite(ic2) = hite(ic)
-                        else
-                           cpatch%hite(ic2) = dbh2h(ipft(ic), dbh(ic))
-                        end if
-
-                        !----- Dead biomass, [kgC/plant]. ---------------------------------!
-                        if (bdead(ic) > 0.0) then
-                           cpatch%bdead(ic2) = bdead(ic)
-                        else
+                        !------------------------------------------------------------------!
+                        !     Select which history file we are using.  We use DBH only     !
+                        ! when ied_init_mode is 6 (inventory initialisation, when DBH is   !
+                        ! most likely to be the actual measured variable), otherwise we    !
+                        ! use BDEAD instead.                                               !
+                        !------------------------------------------------------------------!
+                        select case(ied_init_mode)
+                        case (6)
+                           !----- Inventory.  Read DBH and find the other stuff. ----------!
+                           cpatch%dbh(ic2)   = dbh(ic)
+                           cpatch%hite(ic2)  = dbh2h(ipft(ic),dbh(ic))
                            cpatch%bdead(ic2) = dbh2bd(dbh(ic),ipft(ic))
-                        end if
+
+                        case default
+                           !---------------------------------------------------------------!
+                           !    Old ED files.  Check whether bdead is valid.  If it is, we !
+                           ! initialise DBH and height from BDEAD, othewise we use DBH     !
+                           ! instead.  This is because allometry may be different, and ED  !
+                           ! biomass varies less than DBH under different allometric       !
+                           ! equations.                                                    !
+                           !---------------------------------------------------------------!
+                           if (bdead(ic) > 0.0) then
+                              cpatch%bdead(ic2) = bdead(ic)
+                              cpatch%dbh(ic2)   = bd2dbh(ipft(ic),bdead(ic))
+                              cpatch%hite(ic2)  = dbh2h(ipft(ic),dbh(ic))
+                           else
+                              cpatch%dbh(ic2)   = dbh(ic)
+                              cpatch%hite(ic2)  = dbh2h(ipft(ic),dbh(ic))
+                              cpatch%bdead(ic2) = dbh2bd(dbh(ic),ipft(ic))
+                           end if
+                        end select
+                        !------------------------------------------------------------------!
+
+
 
                         !------------------------------------------------------------------!
                         !     Use allometry to define leaf and the other live biomass      !
@@ -677,31 +697,23 @@ subroutine read_ed10_ed20_history_file
                         cpatch%balive(ic2) = cpatch%bleaf(ic2) * (1.0 + q(ipft(ic))        &
                                            + qsw(ipft(ic)) * cpatch%hite(ic2))
                         cpatch%broot(ic2)  = cpatch%balive(ic2) * q(ipft(ic))              &
-                                           / ( 1.0 + q(ipft(ic)) + qsw(ipft(ic2))          &
+                                           / ( 1.0 + q(ipft(ic)) + qsw(ipft(ic))           &
                                              * cpatch%hite(ic2))
                         cpatch%bsapwood(ic2) = cpatch%balive(ic2)                          &
                                              * qsw(ipft(ic))* cpatch%hite(ic2)             &
-                                             / ( 1.0 + q(ipft(ic)) + qsw(ipft(ic2))        &
+                                             / ( 1.0 + q(ipft(ic)) + qsw(ipft(ic))         &
                                                * cpatch%hite(ic2))
 
 
                         !------------------------------------------------------------------!
-                        !     Start cold-deciduous trees without leaves.  All other trees  !
-                        ! are fully flushed.  This is probably because all temperate runs  !
-                        ! done with ED-1.0 and ED-2.0 were run for North America and the   !
-                        ! restart were always in January.  I doubt any one will run the    !
-                        ! older versions for temperate Southern Hemisphere, but this would !
-                        ! cause trouble...                                                 !
+                        !     Start plants with full phenology, we will take care of       !
+                        ! phenology after this sub-routine.                                !
                         !------------------------------------------------------------------!
-                        if (phenology(ipft(ic)) /= 2)then
-                           cpatch%phenology_status(ic2) = 0
-                           cpatch%bstorage(ic2) = 0.0
+                        cpatch%phenology_status(ic2) = 0
+                        cpatch%bstorage        (ic2) = 0.0
+                        !------------------------------------------------------------------!
 
-                        else
-                           cpatch%phenology_status(ic2) = 2
-                           cpatch%bleaf(ic2) = 0.0
-                           cpatch%bstorage(ic2) = 0.5 * cpatch%balive(ic2)
-                        end if
+
 
                         !----- Assign LAI, WPA, and WAI -----------------------------------!
                         call area_indices(cpatch%nplant(ic2),cpatch%bleaf(ic2)             &

@@ -49,7 +49,11 @@ subroutine read_ed21_history_file
                              , memoffs                 & ! intent(in)
                              , memsize                 ! ! intent(in)
    use allometry      , only : area_indices            & ! function
-                             , ed_biomass              ! ! function
+                             , ed_biomass              & ! function
+                             , bd2dbh                  & ! function
+                             , dbh2h                   & ! function
+                             , dbh2bd                  & ! function
+                             , dbh2bl                  ! ! function
    use fuse_fiss_utils, only : terminate_cohorts       ! ! subroutine
 
    implicit none
@@ -97,6 +101,8 @@ subroutine read_ed21_history_file
    real                                :: currad
    real                                :: elim_nplant
    real                                :: elim_lai
+   real                                :: salloc
+   real                                :: salloci
    !----- Local constants. ----------------------------------------------------------------!
    real                  , parameter   :: tiny_biomass = 1.e-20
    !----- External function. --------------------------------------------------------------!
@@ -529,19 +535,38 @@ subroutine read_ed21_history_file
                      memoffs(1)  = 0_8
 
                      call hdf_getslab_r(cpatch%dbh   ,'DBH '   ,dsetrank,iparallel,.true.)
-                     call hdf_getslab_r(cpatch%hite  ,'HITE '  ,dsetrank,iparallel,.true.)
+                     call hdf_getslab_r(cpatch%bdead ,'BDEAD ' ,dsetrank,iparallel,.true.)
                      call hdf_getslab_i(cpatch%pft   ,'PFT '   ,dsetrank,iparallel,.true.)
                      call hdf_getslab_r(cpatch%nplant,'NPLANT ',dsetrank,iparallel,.true.)
-                     call hdf_getslab_r(cpatch%bdead ,'BDEAD ' ,dsetrank,iparallel,.true.)
-                     call hdf_getslab_r(cpatch%balive,'BALIVE ',dsetrank,iparallel,.true.)
-                     call hdf_getslab_r(cpatch%bleaf ,'BLEAF ' ,dsetrank,iparallel,.true.)
-                     call hdf_getslab_r(cpatch%broot ,'BROOT ' ,dsetrank,iparallel,.true.)
-                     call hdf_getslab_r(cpatch%bsapwood        ,'BSAPWOOD '                &
-                                       ,dsetrank,iparallel,.true.)
-                     call hdf_getslab_r(cpatch%bstorage        ,'BSTORAGE '                &
-                                       ,dsetrank,iparallel,.true.)
-                     call hdf_getslab_i(cpatch%phenology_status,'PHENOLOGY_STATUS '        &
-                                       ,dsetrank,iparallel,.true.)
+
+                     !---------------------------------------------------------------------!
+                     !    Find derived properties from Bdead.  In the unlikely case that   !
+                     ! bdead is zero, then we use DBH as the starting point.  In both      !
+                     ! cases we assume that plants are in allometry.                       !
+                     !---------------------------------------------------------------------!
+                     do ico=1,cpatch%ncohorts
+                        ipft = cpatch%pft(ico)
+
+                        if (cpatch%bdead(ico) > 0.0) then
+                           cpatch%dbh(ico)   = bd2dbh(cpatch%pft(ico),cpatch%bdead(ico))
+                           cpatch%hite(ico)  = dbh2h (cpatch%pft(ico),cpatch%dbh  (ico))
+                        else
+                           cpatch%hite(ico)  = dbh2h (cpatch%pft(ico),cpatch%dbh  (ico))
+                           cpatch%bdead(ico) = dbh2bd(cpatch%dbh(ico),cpatch%pft  (ico))
+                        end if
+
+                        cpatch%bleaf(ico)  = dbh2bl(cpatch%dbh(ico),cpatch%pft(ico))
+
+                        !----- Find the other pools. --------------------------------------!
+                        salloc  = (1.0 + q(ipft) + qsw(ipft) * cpatch%hite(ico))
+                        salloci = 1.0 / salloc
+                        cpatch%balive  (ico) = cpatch%bleaf(ico) * salloc
+                        cpatch%broot   (ico) = cpatch%balive(ico) * q(ipft) * salloci
+                        cpatch%bsapwood(ico) = cpatch%balive(ico) * qsw(ipft)              &
+                                             * cpatch%hite(ico) * salloci
+                        cpatch%bstorage(ico) = 0.0
+                        cpatch%phenology_status(ico) = 0
+                     end do
 
                      !----- Then the 2-D variables. ---------------------------------------!
                      dsetrank    = 2
@@ -809,7 +834,11 @@ subroutine read_ed21_history_unstruct
                              , memoffs                 & ! intent(in)
                              , memsize                 ! ! intent(in)
    use allometry      , only : area_indices            & ! function
-                             , ed_biomass              ! ! function
+                             , ed_biomass              & ! function
+                             , bd2dbh                  & ! function
+                             , dbh2h                   & ! function
+                             , dbh2bd                  & ! function
+                             , dbh2bl                  ! ! function
    use fuse_fiss_utils, only : terminate_cohorts       ! ! subroutine
    use disturb_coms   , only : ianth_disturb           & ! intent(in)
                              , lu_rescale_file         & ! intent(in)
@@ -889,6 +918,8 @@ subroutine read_ed21_history_unstruct
    real                                                         :: dummy
    real                                                         :: elim_nplant
    real                                                         :: elim_lai
+   real                                                         :: salloc
+   real                                                         :: salloci
    !----- Local constants. ----------------------------------------------------------------!
    real                                           , parameter   :: tiny_biomass = 1.e-20
    !----- External functions. -------------------------------------------------------------!
@@ -1496,26 +1527,41 @@ subroutine read_ed21_history_unstruct
 
                         call hdf_getslab_r(cpatch%dbh             ,'DBH '                  &
                                           ,dsetrank,iparallel,.true.)
-                        call hdf_getslab_r(cpatch%hite            ,'HITE '                 &
+                        call hdf_getslab_r(cpatch%bdead           ,'BDEAD '                &
                                           ,dsetrank,iparallel,.true.)
                         call hdf_getslab_i(cpatch%pft             ,'PFT '                  &
                                           ,dsetrank,iparallel,.true.)
                         call hdf_getslab_r(cpatch%nplant          ,'NPLANT '               &
                                           ,dsetrank,iparallel,.true.)
-                        call hdf_getslab_r(cpatch%bdead           ,'BDEAD '                &
-                                          ,dsetrank,iparallel,.true.)
-                        call hdf_getslab_r(cpatch%balive          ,'BALIVE '               &
-                                          ,dsetrank,iparallel,.true.)
-                        call hdf_getslab_r(cpatch%bleaf           ,'BLEAF '                &
-                                          ,dsetrank,iparallel,.true.)
-                        call hdf_getslab_r(cpatch%broot           ,'BROOT '                &
-                                          ,dsetrank,iparallel,.true.)
-                        call hdf_getslab_r(cpatch%bsapwood        ,'BSAPWOOD '                &
-                                          ,dsetrank,iparallel,.true.)
-                        call hdf_getslab_r(cpatch%bstorage        ,'BSTORAGE '             &
-                                          ,dsetrank,iparallel,.true.)
-                        call hdf_getslab_i(cpatch%phenology_status,'PHENOLOGY_STATUS '     &
-                                          ,dsetrank,iparallel,.true.)
+
+                        !------------------------------------------------------------------!
+                        !    Find derived properties from Bdead.  In the unlikely case     !
+                        ! that bdead is zero, then we use DBH as the starting point.  In   !
+                        ! both cases we assume that plants are in allometry.               !
+                        !------------------------------------------------------------------!
+                        do ico=1,cpatch%ncohorts
+                           ipft = cpatch%pft(ico)
+
+                           if (cpatch%bdead(ico) > 0.0) then
+                              cpatch%dbh(ico)   = bd2dbh(cpatch%pft(ico),cpatch%bdead(ico))
+                              cpatch%hite(ico)  = dbh2h (cpatch%pft(ico),cpatch%dbh  (ico))
+                           else
+                              cpatch%hite(ico)  = dbh2h (cpatch%pft(ico),cpatch%dbh  (ico))
+                              cpatch%bdead(ico) = dbh2bd(cpatch%dbh(ico),cpatch%pft  (ico))
+                           end if
+
+                           cpatch%bleaf(ico)  = dbh2bl(cpatch%dbh(ico),cpatch%pft(ico))
+
+                           !----- Find the other pools. -----------------------------------!
+                           salloc  = (1.0 + q(ipft) + qsw(ipft) * cpatch%hite(ico))
+                           salloci = 1.0 / salloc
+                           cpatch%balive  (ico) = cpatch%bleaf(ico) * salloc
+                           cpatch%broot   (ico) = cpatch%balive(ico) * q(ipft) * salloci
+                           cpatch%bsapwood(ico) = cpatch%balive(ico) * qsw(ipft)           &
+                                                * cpatch%hite(ico) * salloci
+                           cpatch%bstorage(ico) = 0.0
+                           cpatch%phenology_status(ico) = 0
+                        end do
 
                         !----- Then the 2-D variables. ------------------------------------!
                         dsetrank    = 2
