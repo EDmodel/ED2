@@ -53,7 +53,6 @@ subroutine update_patch_derived_props(csite,lsl,prss,ipa)
   
    use ed_state_vars       , only : sitetype                   & ! structure
                                   , patchtype                  ! ! structure
-   use canopy_air_coms     , only : icanturb                   ! ! intent(in)
    use allometry           , only : ed_biomass                 ! ! function
    use fuse_fiss_utils     , only : patch_pft_size_profile     ! ! subroutine
    use canopy_air_coms     , only : veg_height_min             & ! intent(in)
@@ -241,17 +240,6 @@ subroutine update_patch_thermo_props(csite,ipaa,ipaz,mzg,mzs,ntext_soil)
 
 
    do ipa=ipaa,ipaz
-
-      if (csite%can_theta(ipa) < 180.   .or. csite%can_theta(ipa) > 400. .or.              &
-          csite%can_shv(ipa)   < 1.e-8  .or. csite%can_shv(ipa) > 0.04   .or.              &
-          csite%can_prss(ipa)  < 40000. .or. csite%can_prss(ipa) > 110000.) then
-          write (unit=*,fmt='(a)') '======== Weird canopy air properties... ========'
-          write (unit=*,fmt='(a,f7.2)') ' CAN_PRSS  [ hPa] = ',csite%can_prss(ipa)  * 0.01
-          write (unit=*,fmt='(a,f7.2)') ' CAN_THETA [degC] = ',csite%can_theta(ipa) - t00
-          write (unit=*,fmt='(a,f7.2)') ' CAN_SHV   [g/kg] = ',csite%can_shv(ipa)   * 1.e3
-          call fatal_error('Non-sense canopy air values!!!'                                &
-                          ,'update_patch_thermo_props','update_derived_props.f90')
-      end if
 
       csite%can_temp(ipa)     = csite%can_theta(ipa) * (p00i * csite%can_prss(ipa)) ** rocp
       csite%can_rhos(ipa)     = idealdenssh(csite%can_prss(ipa),csite%can_temp(ipa)        &

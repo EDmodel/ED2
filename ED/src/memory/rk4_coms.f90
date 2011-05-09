@@ -160,7 +160,7 @@ module rk4_coms
 
       !----- Leaf (cohort-level) variables. -----------------------------------------------!
       real(kind=8), pointer, dimension(:) :: veg_energy   ! Internal energy     [     J/m²]
-      real(kind=8), pointer, dimension(:) :: veg_water    ! Surface water mass  [    kg/m²]
+      real(kind=8), pointer, dimension(:) :: veg_water    ! Sfc. water mass     [    kg/m²]
       real(kind=8), pointer, dimension(:) :: veg_temp     ! Temperature         [        K]
       real(kind=8), pointer, dimension(:) :: veg_fliq     ! Liquid fraction     [      ---]
       real(kind=8), pointer, dimension(:) :: hcapveg      ! Heat capacity       [   J/m²/K]

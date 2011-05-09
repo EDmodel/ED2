@@ -70,6 +70,8 @@ module canopy_air_coms
    real         :: ubmin
    !----- Some parameters that were used in ED-2.0, added here for some tests. ------------!
    real         :: ez
+
+
    !----- Double precision version of some of these variables (for Runge-Kutta). ----------!
    real(kind=8) :: exar8
    real(kind=8) :: ustmin8
@@ -78,6 +80,8 @@ module canopy_air_coms
    real(kind=8) :: ez8
    real(kind=8) :: vh2dh8
    real(kind=8) :: ggfact8
+   real(kind=8) :: rasveg_min8
+   real(kind=8) :: taumin8
    !=======================================================================================!
    !=======================================================================================!
 
@@ -88,28 +92,60 @@ module canopy_air_coms
 
    !=======================================================================================!
    !=======================================================================================!
-   !     Constants for new canopy turbulence.                                              !
+   !     Parameters for Massman (1997) canopy turbulence.                                  !
    !---------------------------------------------------------------------------------------!
+    
+   !---------------------------------------------------------------------------------------!
+   !----- Number of canopy layers. --------------------------------------------------------!
+   integer       :: ncanmax
    !----- Discrete step size in canopy elevation [m]. -------------------------------------!
-   real        , parameter :: dz     = 0.5
-   !----- Fluid drag coefficient for turbulent flow in leaves. ----------------------------!
-   real        , parameter :: Cd0    = 0.2
-   !----- Sheltering factor of fluid drag on canopies. ------------------------------------!
-   real        , parameter :: Pm     = 1.0
+   real(kind=4)  :: dz_m97
+   !----- Fluid drag coefficient for turbulent flow in leaves at the top. -----------------!
+   real(kind=4)  :: cdrag0
+   !----- Sheltering factor of fluid drag at the top of the canopy. -----------------------!
+   real(kind=4)  :: pm0
    !----- Surface drag parameters (Massman 1997). -----------------------------------------!
-   real        , parameter :: c1_m97 = 0.320 
-   real        , parameter :: c2_m97 = 0.264
-   real        , parameter :: c3_m97 = 15.1
+   real(kind=4)  :: c1_m97
+   real(kind=4)  :: c2_m97
+   real(kind=4)  :: c3_m97
    !----- Eddy diffusivity due to Von Karman Wakes in gravity flows. ----------------------!
-   real        , parameter :: kvwake = 0.001
-   !----- Double precision version of these variables, used in the Runge-Kutta scheme. ----!
-   real(kind=8), parameter :: dz8     = dble(dz)
-   real(kind=8), parameter :: Cd08    = dble(Cd0)
-   real(kind=8), parameter :: Pm8     = dble(Pm)
-   real(kind=8), parameter :: c1_m978 = dble(c1_m97)
-   real(kind=8), parameter :: c2_m978 = dble(c2_m97)
-   real(kind=8), parameter :: c3_m978 = dble(c3_m97)
-   real(kind=8), parameter :: kvwake8 = dble(kvwake)
+   real(kind=4)  :: kvwake
+   !---------------------------------------------------------------------------------------!
+   !     Alpha factors to produce the profile of sheltering factor and within canopy drag, !
+   ! as suggested by Massman.                                                              !
+   !---------------------------------------------------------------------------------------!
+   real(kind=4)  :: alpha1_m97
+   real(kind=4)  :: alpha2_m97
+   !----- Parameter to represent the Roughness sublayer effect. ---------------------------!
+   real(kind=4)  :: psi_m97
+   !----- Allocatable vectors. ------------------------------------------------------------!
+   real(kind=4), dimension(:), allocatable :: zztop    ! Top of each layer
+   real(kind=4), dimension(:), allocatable :: zzmid    ! Middle of each layer
+   real(kind=4), dimension(:), allocatable :: lad      ! Leaf area density
+   real(kind=4), dimension(:), allocatable :: dladdz   ! Derivative of Leaf area density
+   real(kind=4), dimension(:), allocatable :: cdrag    ! Drag coefficient
+   real(kind=4), dimension(:), allocatable :: pshelter ! Sheltering factor
+   real(kind=4), dimension(:), allocatable :: cumldrag ! Cumulative leaf drag area fctn.
+   real(kind=4), dimension(:), allocatable :: windm97  ! Wind profile
+   !----- Double precision version of all variables above. --------------------------------!
+   real(kind=8)                            :: dz_m978
+   real(kind=8)                            :: cdrag08
+   real(kind=8)                            :: pm08
+   real(kind=8)                            :: c1_m978
+   real(kind=8)                            :: c2_m978
+   real(kind=8)                            :: c3_m978
+   real(kind=8)                            :: kvwake8
+   real(kind=8)                            :: alpha1_m978
+   real(kind=8)                            :: alpha2_m978
+   real(kind=8)                            :: psi_m978
+   real(kind=8), dimension(:), allocatable :: zztop8
+   real(kind=8), dimension(:), allocatable :: zzmid8
+   real(kind=8), dimension(:), allocatable :: lad8
+   real(kind=8), dimension(:), allocatable :: dladdz8
+   real(kind=8), dimension(:), allocatable :: cdrag8
+   real(kind=8), dimension(:), allocatable :: pshelter8
+   real(kind=8), dimension(:), allocatable :: cumldrag8
+   real(kind=8), dimension(:), allocatable :: windm978
    !=======================================================================================!
    !=======================================================================================!
 

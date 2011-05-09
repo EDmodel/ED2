@@ -118,8 +118,8 @@ subroutine load_ed_ecosystem_params()
    !----- Assign many PFT-dependent parameters. -------------------------------------------!
    call init_pft_photo_params()
    call init_pft_resp_params()
-   call init_pft_mort_params()
    call init_pft_alloc_params()
+   call init_pft_mort_params()
    call init_pft_nitro_params()
    call init_pft_leaf_params()
    call init_pft_repro_params()
@@ -469,9 +469,9 @@ subroutine init_can_air_params()
    use consts_coms    , only : onethird              & ! intent(in)
                              , twothirds             & ! intent(in)
                              , vonk                  ! ! intent(in)
-   use pft_coms       , only : hgt_min               ! ! intent(in)
-   use canopy_air_coms, only : icanturb              & ! intent(in)
-                             , i_blyr_condct         & ! intent(in)
+   use pft_coms       , only : hgt_min               & ! intent(in)
+                             , hgt_max               ! ! intent(in)
+   use canopy_air_coms, only : i_blyr_condct         & ! intent(in)
                              , isfclyrm              & ! intent(in)
                              , ustmin                & ! intent(in)
                              , ggfact                & ! intent(in)
@@ -500,6 +500,43 @@ subroutine init_can_air_params()
                              , ggfact8               & ! intent(out)
                              , ez8                   & ! intent(out)
                              , vh2dh8                & ! intent(out)
+                             , ncanmax               & ! intent(out)
+                             , dz_m97                & ! intent(out)
+                             , cdrag0                & ! intent(out)
+                             , pm0                   & ! intent(out)
+                             , c1_m97                & ! intent(out)
+                             , c2_m97                & ! intent(out)
+                             , c3_m97                & ! intent(out)
+                             , kvwake                & ! intent(out)
+                             , alpha1_m97            & ! intent(out)
+                             , alpha2_m97            & ! intent(out)
+                             , psi_m97               & ! intent(out)
+                             , zztop                 & ! intent(out)
+                             , zzmid                 & ! intent(out)
+                             , lad                   & ! intent(out)
+                             , dladdz                & ! intent(out)
+                             , cdrag                 & ! intent(out)
+                             , pshelter              & ! intent(out)
+                             , cumldrag              & ! intent(out)
+                             , windm97               & ! intent(out)
+                             , dz_m978               & ! intent(out)
+                             , cdrag08               & ! intent(out)
+                             , pm08                  & ! intent(out)
+                             , c1_m978               & ! intent(out)
+                             , c2_m978               & ! intent(out)
+                             , c3_m978               & ! intent(out)
+                             , kvwake8               & ! intent(out)
+                             , alpha1_m978           & ! intent(out)
+                             , alpha2_m978           & ! intent(out)
+                             , psi_m978              & ! intent(out)
+                             , zztop8                & ! intent(out)
+                             , zzmid8                & ! intent(out)
+                             , lad8                  & ! intent(out)
+                             , dladdz8               & ! intent(out)
+                             , cdrag8                & ! intent(out)
+                             , pshelter8             & ! intent(out)
+                             , cumldrag8             & ! intent(out)
+                             , windm978              & ! intent(out)
                              , bl79                  & ! intent(out)
                              , csm                   & ! intent(out)
                              , csh                   & ! intent(out)
@@ -573,7 +610,9 @@ subroutine init_can_air_params()
                              , beta_g28              & ! intent(out)
                              , beta_gr08             ! ! intent(out)
    implicit none
-
+   !----- Arguments. ----------------------------------------------------------------------!
+   integer :: ican
+   !---------------------------------------------------------------------------------------!
 
 
    !---------------------------------------------------------------------------------------!
@@ -628,7 +667,7 @@ subroutine init_can_air_params()
    !      Parameters for surface layer models.                                             !
    !---------------------------------------------------------------------------------------!
    !----- This is the minimum wind speed for boundary layer conductivity. -----------------!
-   ugbmin    = 0.25
+   ugbmin    = 0.10
    !----- This is the minimum wind scale under stable and unstable conditions. ------------!
    ubmin     = 0.65
    !---------------------------------------------------------------------------------------!
@@ -660,7 +699,7 @@ subroutine init_can_air_params()
 
 
    
-   !----- This is the relation between displacement height and roughness when icanturb=-1. !
+   !----- Legacy variable, we can probably remove it. -------------------------------------!
    ez  = 0.172
    !---------------------------------------------------------------------------------------!
 
@@ -723,6 +762,61 @@ subroutine init_can_air_params()
    !---------------------------------------------------------------------------------------!
 
 
+   !---------------------------------------------------------------------------------------!
+   !     Define the variables that are going to be used by Massman (1997).                 !
+   !---------------------------------------------------------------------------------------!
+   !----- Discrete step size in canopy elevation [m]. -------------------------------------!
+   dz_m97     = minval(hgt_min)
+   !----- Number of canopy layers. --------------------------------------------------------!
+   ncanmax    = ceiling(maxval(hgt_max)/dz_m97)
+   !----- Fluid drag coefficient for turbulent flow in leaves. ----------------------------!
+   cdrag0    = 0.2
+   !----- Sheltering factor of fluid drag on canopies. ------------------------------------!
+   pm0       = 1.0
+   !----- Surface drag parameters (Massman 1997). -----------------------------------------!
+   c1_m97    = 0.320 
+   c2_m97    = 0.264
+   c3_m97    = 15.1
+   !----- Eddy diffusivity due to Von Karman Wakes in gravity flows. ----------------------!
+   kvwake    = 0.0 ! 0.001
+   !---------------------------------------------------------------------------------------!
+   !     Alpha factors to produce the profile of sheltering factor and within canopy drag, !
+   ! as suggested by Massman.                                                              !
+   !---------------------------------------------------------------------------------------!
+   alpha1_m97 = 0.40
+   alpha2_m97 = 0.00
+   !---------------------------------------------------------------------------------------!
+   !      Parameter to represent the roughness sublayer effect.  According to Massman,     !
+   ! assuming this to be zero means that the sublayer effects will be ignored.  Otherwise  !
+   ! Raupach (1994) tried values up to 0.316.                                              !
+   !---------------------------------------------------------------------------------------!
+   psi_m97    = 0.316
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Allocate the scratch arrays.                                                      !
+   !---------------------------------------------------------------------------------------!
+   allocate(zztop    (0:ncanmax))
+   allocate(zzmid    (  ncanmax))
+   allocate(lad      (  ncanmax))
+   allocate(dladdz   (  ncanmax))
+   allocate(cdrag    (  ncanmax))
+   allocate(pshelter (  ncanmax))
+   allocate(cumldrag (  ncanmax))
+   allocate(windm97  (  ncanmax))
+   allocate(zztop8   (0:ncanmax))
+   allocate(zzmid8   (  ncanmax))
+   allocate(lad8     (  ncanmax))
+   allocate(dladdz8  (  ncanmax))
+   allocate(cdrag8   (  ncanmax))
+   allocate(pshelter8(  ncanmax))
+   allocate(cumldrag8(  ncanmax))
+   allocate(windm978 (  ncanmax))
+   !---------------------------------------------------------------------------------------!
+
+
 
    !----- Set the double precision variables. ---------------------------------------------!
    minimum_canopy_depth8 = dble(minimum_canopy_depth)
@@ -771,6 +865,34 @@ subroutine init_can_air_params()
    beta_g18              = dble(beta_g1             )
    beta_g28              = dble(beta_g2             )
    beta_gr08             = dble(beta_gr0            )
+   dz_m978               = dble(dz_m97              )
+   cdrag08               = dble(cdrag0              )
+   pm08                  = dble(pm0                 )
+   c1_m978               = dble(c1_m97              )
+   c2_m978               = dble(c2_m97              )
+   c3_m978               = dble(c3_m97              )
+   kvwake8               = dble(kvwake              )
+   alpha1_m978           = dble(alpha1_m97          )
+   alpha2_m978           = dble(alpha2_m97          )
+   psi_m978              = dble(psi_m97             )
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Find the maximum height of each layer.                                            !
+   !---------------------------------------------------------------------------------------!
+   do ican = 0,ncanmax
+      zztop(ican)  = real(ican) * dz_m97
+      zztop8(ican) = dble(ican) * dz_m978
+   end do
+   do ican = 1,ncanmax
+      zzmid (ican) = 0.5   * (zztop (ican-1) + zztop (ican))
+      zzmid8(ican) = 5.d-1 * (zztop8(ican-1) + zztop8(ican))
+   end do
+   !---------------------------------------------------------------------------------------!
+
+
 
    return
 end subroutine init_can_air_params
@@ -953,6 +1075,7 @@ subroutine init_pft_photo_params()
    leaf_width(16)    = 0.20 * lwfact
    leaf_width(17)    = 0.05 * lwfact
    !---------------------------------------------------------------------------------------!
+
    return
 end subroutine init_pft_photo_params
 !==========================================================================================!
@@ -1073,7 +1196,7 @@ subroutine init_pft_resp_params()
    root_turnover_rate(14)         = 2.0
    root_turnover_rate(15)         = 2.0
    root_turnover_rate(16)         = 2.0
-   root_turnover_rate(17)         = onethird
+   root_turnover_rate(17)         = onesixth
 
    dark_respiration_factor(1)     = 0.06
    dark_respiration_factor(2)     = 0.02  * gamfact
@@ -1138,6 +1261,7 @@ subroutine init_pft_mort_params()
    use pft_coms    , only : mort1                      & ! intent(out)
                           , mort2                      & ! intent(out)
                           , mort3                      & ! intent(out)
+                          , rho                        & ! intent(out)
                           , seedling_mortality         & ! intent(out)
                           , treefall_s_gtht            & ! intent(out)
                           , treefall_s_ltht            & ! intent(out)
@@ -1207,23 +1331,23 @@ subroutine init_pft_mort_params()
    mort2(16) = 20.0
    mort2(17) = 20.0
 
-   mort3(1)  =  0.06167    ! 0.037
-   mort3(2)  =  0.06167    ! 0.037
-   mort3(3)  =  0.03167    ! 0.019
-   mort3(4)  =  0.0
-   mort3(5)  =  0.066
-   mort3(6)  =  0.0033928
-   mort3(7)  =  0.0043
-   mort3(8)  =  0.0023568
-   mort3(9)  =  0.006144
-   mort3(10) =  0.003808
-   mort3(11) =  0.00428
-   mort3(12) =  0.066
-   mort3(13) =  0.066
-   mort3(14) =  0.037
-   mort3(15) =  0.037
-   mort3(16) =  0.06167
-   mort3(17) =  0.01
+   mort3(1)  = 0.15 * (1. - rho(1) / rho(4)) 
+   mort3(2)  = 0.15 * (1. - rho(2) / rho(4))  
+   mort3(3)  = 0.15 * (1. - rho(3) / rho(4))
+   mort3(4)  = 0.0
+   mort3(5)  = 0.066
+   mort3(6)  = 0.0033928
+   mort3(7)  = 0.0043
+   mort3(8)  = 0.0023568
+   mort3(9)  = 0.006144
+   mort3(10) = 0.003808
+   mort3(11) = 0.00428
+   mort3(12) = 0.066
+   mort3(13) = 0.066
+   mort3(14) = 0.037
+   mort3(15) = 0.037
+   mort3(16) = 0.06167
+   mort3(17) = 0.0043
 
 
 
@@ -1477,7 +1601,7 @@ subroutine init_pft_alloc_params()
    rho(12:13) = 0.32
    rho(14:15) = 0.32
    rho(16)    = 0.32
-   rho(17)    = 0.59
+   rho(17)    = 0.48
    !---------------------------------------------------------------------------------------!
 
    !----- Specific leaf area [m² leaf / kg C] ---------------------------------------------!
@@ -1949,7 +2073,8 @@ subroutine init_pft_leaf_params()
    use rk4_coms       , only : ibranch_thermo       ! ! intent(in)
    use pft_coms       , only : phenology            & ! intent(out)
                              , clumping_factor      & ! intent(out)
-                             , crown_depth_fraction & ! intent(out)
+                             , b1Tht                & ! intent(out)
+                             , b2Tht                & ! intent(out)
                              , c_grn_leaf_dry       & ! intent(out)
                              , c_ngrn_biom_dry      & ! intent(out)
                              , wat_dry_ratio_grn    & ! intent(out)
@@ -2021,14 +2146,25 @@ subroutine init_pft_leaf_params()
    delta_c(1:17) = 100. * wat_dry_ratio_ngrn(1:17)                                         &
                  * (-0.06191 + 2.36e-4 * t3ple - 1.33e-2 * wat_dry_ratio_ngrn(1:17))
 
-   !----- Relative height of crown. -------------------------------------------------------!
-   crown_depth_fraction(1)     = 1.0    
-   crown_depth_fraction(2:4)   = 0.25
-   crown_depth_fraction(5)     = 1.0
-   crown_depth_fraction(6:11)  = 0.35
-   crown_depth_fraction(12:15) = 1.0
-   crown_depth_fraction(16)    = 1.0
-   crown_depth_fraction(17)    = 0.25
+   !---------------------------------------------------------------------------------------!
+   !     These are used to compute the height of the first branch, which we assume it is   !
+   ! also the relative crown depth.                                                        !
+   !---------------------------------------------------------------------------------------!
+   !----- Intercept. ----------------------------------------------------------------------!
+   b1Tht(1)     = 0.01 ! 0.01
+   b1Tht(2:4)   = 0.70 ! 0.4359
+   b1Tht(5)     = 0.01 ! 0.01
+   b1Tht(6:11)  = 0.70 ! 0.4359
+   b1Tht(12:16) = 0.01 ! 0.01
+   b1Tht(17)    = 0.70 ! 0.4359
+   !----- Slope. ----------------------------------------------------------------------!
+   b2Tht(1)     = 1.0 ! 1.0
+   b2Tht(2:4)   = 1.0 ! 0.878
+   b2Tht(5)     = 1.0 ! 1.0
+   b2Tht(6:11)  = 1.0 ! 0.878
+   b2Tht(12:16) = 1.0 ! 1.0
+   b2Tht(17)    = 1.0 ! 0.878
+   !---------------------------------------------------------------------------------------!
 
    return
 end subroutine init_pft_leaf_params
@@ -2136,7 +2272,7 @@ subroutine init_pft_derived_params()
    real                              :: bleaf_max
    real                              :: bdead_max
    real                              :: min_plant_dens
-   logical               , parameter :: print_zero_table = .true.
+   logical               , parameter :: print_zero_table = .false.
    character(len=str_len), parameter :: zero_table_fn    = 'minimum.size.txt'
    !---------------------------------------------------------------------------------------!
 
@@ -2945,7 +3081,7 @@ subroutine init_ff_coms
    sunny_cumlai_min   = 0.5
    sunny_cumlai_max   = 1.0
    light_toler_min    = 0.20
-   light_toler_max    = onethird
+   light_toler_max    = twothirds
    sunny_cumlai_mult  = (sunny_cumlai_max/sunny_cumlai_min)**exp_patfus
    dark_cumlai_mult   = (dark_cumlai_min /dark_cumlai_max )**exp_patfus
    light_toler_mult   = (light_toler_max /light_toler_min )**exp_patfus

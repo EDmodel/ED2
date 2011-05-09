@@ -354,10 +354,11 @@ module pft_coms
    real, dimension(n_pft) :: leaf_width
 
    !---------------------------------------------------------------------------------------!
-   !     The fraction of the total depth of the canopy where the levaes reside, assuming   !
+   !     The fraction of the total depth of the canopy where the leaves reside, assuming   !
    ! they are uniformly distributed in this zone.                                          !
    !---------------------------------------------------------------------------------------!
-   real, dimension(n_pft) :: crown_depth_fraction  
+   real, dimension(n_pft) :: b1Tht
+   real, dimension(n_pft) :: b2Tht
    
    !---------------------------------------------------------------------------------------!
    !    Fraction of vertical branches.  Values are from Poorter et al. (2006):             !

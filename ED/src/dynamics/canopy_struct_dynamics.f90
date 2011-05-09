@@ -21,13 +21,22 @@ module canopy_struct_dynamics
    ! assumptions are that the ground surface and canopy space is modeled as a rough wall   !
    ! boundary above which exists a dynamic sublayer, above which exists the free atmo-     !
    ! sphere.  We assume a logarithmic decay of wind speed over the dynamic sublayer, which !
-   ! is due to the assumption of constant shear (ustar) in the dynamic sublayer.  An       !
-   ! appropriate closure the MOST equations uses a reference wind velocity well above the  !
-   ! top of the rough wall boundary.  However sometimes we do not have wind speed at the   !
-   ! correct reference height, which brings us to the first two variants of this canopy    !
-   ! turbulence scheme.                                                                    !
+   ! is due to the assumption of constant shear (ustar) in the dynamic sublayer.           !
    !                                                                                       !
-   ! 0. Uses the default MOST method, where displacement height and rougness are linear    !
+   ! 0.  We apply the wind profile based on the similarity theory for the tallest cohort,  !
+   !     with further reduction due to the presence of obstacles (trees), similar to       !
+   !     Leuning et al. (1995) but considering a finite crown area.  The aerodynamic       !
+   !     resistance from ground to canopy air is found in a similar way as in LEAF-3.      !
+   !     Displacement height and roughness are linear functions of the vegetation height,  !
+   !     where vegetation height is the weighted average of cohort heights, the weights    !
+   !     being the basal area.                                                             !
+   !     References:                                                                       !
+   !                                                                                       !
+   !     Leuning, R., F. M. Kelliher, D. G. G. de Pury, E. D. Schulze, 1995: Leaf          !
+   !       nitrogen, photosynthesis, conductance and transpiration: scaling from leaves to !
+   !       canopies.  Plant, Cell and Environ., 18, 1183-1200.                             !
+   !                                                                                       !
+   ! 1. This is similar to option 0, where displacement height and rougness are linear     !
    !    functions of mean canopy height, where mean canopy height is defined by the        !
    !    dead-biomass weighted average of canopy height.  Wind speed and diffusivity decay  !
    !    exponentially in the canopy on parameter alpha.  HOWEVER, if the windspeed at      !
@@ -36,12 +45,6 @@ module canopy_struct_dynamics
    !    displacement height.  After ustar is calculated, then use displacement height in   !
    !    the calculation of the eddy length scale at the canopy top to find diffusivity at  !
    !    canopy top. THIS IS THE METHOD USED IN LEAF3 AND ED2.0.                            !
-   !                                                                                       !
-   ! 1. This is the same as method 0, with the following difference.  If the wind-speed at !
-   !    reference height is less than the canopy height, first, calculate wind speed at    !
-   !    canopy top using the exponential decay function (reversely).  Then solve for ustar !
-   !    with this wind speed, the canopy top as reference height, and the default zero     !
-   !    plane displacement height and roughness length.                                    !
    !                                                                                       !
    ! 2. Follow the methods of Massman 1997.  The canopy top is taken as the height of the  !
    !    tallest cohort in the patch. The displacement height is determined by a center of  !
@@ -59,13 +62,11 @@ module canopy_struct_dynamics
    !      Vegetation Of Arbitrary Structure. Boundary Layer Meteorology, 83,               !
    !      p. 407-421, 1997.                                                                !
    !                                                                                       !
+   ! 3.  Same as 2, but the drag and sheltering parameters are functions of height.        !
+   !                                                                                       !
    !     Ultimately, this routine solves for the resistance of water vapor and sensible    !
    ! heat from the soil surface to canopy air space and from the leaf surfaces to canopy   !
    ! air space.                                                                            !
-   !                                                                                       !
-   !     THIS IS A SINGLE-PRECISION SUBROUTINE, INTENDED TO BE USED AT THE INITIALISATION  !
-   ! AND FOR WATER SITES IN COUPLED SIMULATIONS.  THE DOUBLE-PRECISIION VERSION, WHICH IS  !
-   ! USED BY THE INTEGRATORS FOR MOST CASES IN ED, IS DEFINED BELOW.                       !
    !---------------------------------------------------------------------------------------!
    subroutine canopy_turbulence(cpoly,isi,ipa)
       use ed_state_vars  , only : polygontype          & ! structure
@@ -73,93 +74,105 @@ module canopy_struct_dynamics
                                 , patchtype            ! ! structure
       use met_driver_coms, only : met_driv_state       ! ! structure
       use rk4_coms       , only : ibranch_thermo       ! ! intent(in)
-      use pft_coms       , only : crown_depth_fraction & ! intent(in)
-                                , leaf_width           ! ! intent(in)
       use canopy_air_coms, only : icanturb             & ! intent(in), can. turb. scheme
                                 , ustmin               & ! intent(in)
                                 , ugbmin               & ! intent(in)
                                 , ubmin                & ! intent(in)
+                                , gamh                 & ! intent(in)
                                 , exar                 & ! intent(in)
-                                , vh2dh                & ! intent(in)
-                                , dz                   & ! intent(in)
-                                , Cd0                  & ! intent(in)
-                                , Pm                   & ! intent(in)
+                                , dz_m97               & ! intent(in)
+                                , cdrag0               & ! intent(in)
+                                , pm0                  & ! intent(in)
                                 , c1_m97               & ! intent(in)
                                 , c2_m97               & ! intent(in)
                                 , c3_m97               & ! intent(in)
                                 , kvwake               & ! intent(in)
+                                , alpha1_m97           & ! intent(in)
+                                , alpha2_m97           & ! intent(in)
+                                , psi_m97              & ! intent(in)
+                                , zztop                & ! intent(in)
+                                , zzmid                & ! intent(in)
+                                , lad                  & ! intent(in)
+                                , dladdz               & ! intent(in)
+                                , cdrag                & ! intent(in)
+                                , pshelter             & ! intent(in)
+                                , cumldrag             & ! intent(in)
+                                , windm97              & ! intent(in)
                                 , rb_inter             & ! intent(in)
                                 , rb_slope             & ! intent(in)
-                                , ggfact               ! ! intent(in)
+                                , ggfact               & ! intent(in)
+                                , zoobukhov            ! ! function
       use consts_coms    , only : vonk                 & ! intent(in)
                                 , cp                   & ! intent(in)
                                 , cpi                  & ! intent(in)
+                                , grav                 & ! intent(in)
                                 , epim1                & ! intent(in)
                                 , sqrt2o2              ! ! intent(in)
       use soil_coms      , only : snow_rough           & ! intent(in)
                                 , soil_rough           ! ! intent(in)
-      use allometry      , only : h2trunkh             ! ! function
+      use allometry      , only : h2trunkh             & ! function
+                                , dbh2bl               ! ! function
       implicit none
       !----- Arguments --------------------------------------------------------------------!
-      type(polygontype)   , target      :: cpoly
-      integer             , intent(in)  :: isi           ! Site loop
-      integer             , intent(in)  :: ipa           ! Patch loop
-     !----- Pointers ---------------------------------------------------------------------!
-      type(sitetype)      , pointer    :: csite
-      type(patchtype)     , pointer    :: cpatch
-      type(met_driv_state), pointer    :: cmet
+      type(polygontype)   , target      :: cpoly         ! Current polygon
+      integer             , intent(in)  :: isi           ! Site index
+      integer             , intent(in)  :: ipa           ! Patch index
+      !----- Pointers ---------------------------------------------------------------------!
+      type(sitetype)      , pointer     :: csite         ! Current site
+      type(patchtype)     , pointer     :: cpatch        ! Current patch
+      type(met_driv_state), pointer     :: cmet          ! Current meteorology
       !----- Local variables --------------------------------------------------------------!
       integer        :: ico          ! Cohort loop
       integer        :: ipft         ! PFT alias
       integer        :: k            ! Elevation index
       integer        :: zcan         ! Index of canopy top elevation
+      integer        :: kafull       ! First layer fully occupied by crown
+      integer        :: kzfull       ! Last layer fully occupied by crown
+      integer        :: kapartial    ! First layer partially occupied by crown
+      integer        :: kzpartial    ! Last layer partially occupied by crown
       logical        :: stable       ! Stable canopy air space
       real           :: rasveg       ! Resistance of vegetated ground           [      s/m]
       real           :: atm_thetav   ! Free atmosphere virtual potential temp.  [        K]
       real           :: can_thetav   ! Free atmosphere virtual potential temp.  [        K]
-      real           :: sigma_e      ! Vortex penetration depth                 [        m]
-      real           :: crown_d      ! Diameter of a plant's crown              [        m]
-      real           :: Re_c         ! Canopy Reynolds Number                   [      ---]
-      real           :: Cd           ! Canopy Drag Coefficient                  [      ---]
-      real           :: a_front      ! Frontal area / vol. flow exposed to drag [    m2/m3]
-      real           :: zetac        ! Cumulative zeta function                 [      ---]
+      real           :: ldga_bk      ! Cumulative leaf drag area                [      ---]
+      real           :: lyrhalf      ! Half the contrib. of this layer to zeta  [      1/m]
+      real           :: sigmakm      ! Km coefficient at z=h                    [        m]
       real           :: K_top        ! Diffusivity at canopy top z=h            [     m2/s]
-      real           :: crowndepth   ! Depth of vegetation leafy crown          [        m]
-      real           :: h            ! Canopy height                            [        m]
-      real           :: layertai     ! Total leaf area of that discrete layer   [         ]
-      real           :: idz          ! Height of lowest discrete canopy level   [        m]
-      real           :: z            ! Elevation in the canopy                  [        m]
       real           :: Kdiff        ! Diffusivity                              [     m2/s]
-      real           :: z_om         ! Roughness length that imposes drag 
-                                     !     on the ABL winds                     [        m]
-      real           :: zref         ! Reference height                         [        m]
       real           :: surf_rough   ! Roughness length of the bare ground 
                                      !     at canopy bottom                     [        m]
       real           :: uh           ! Wind speed at the canopy top (z=h)       [      m/s]
       real           :: factv        ! Wind-dependent term for old rasveg
       real           :: aux          ! Aux. variable
-      real           :: laicum       ! Cumulative LAI (from top to bottom.)     [    m2/m2]
       real           :: estar        ! Equivalent potential temperature         [        K]
       real           :: gbhmos_min   ! Minimum boundary layer heat conductance. [      m/s]
-      real           :: hite         ! height.                                  [        m]
       real           :: wcapcan      ! Canopy air space water capacity          [    kg/m2]
       real           :: wcapcani     ! Inverse of the guy above                 [    m2/kg]
       real           :: hcapcani     ! Inverse of canopy air space heat cap.    [   m2.K/J]
       real           :: ccapcani     ! Inverse of canopy air space CO2 capacity [   m2/mol]
-      !----- Saved variables --------------------------------------------------------------!
-      real        , dimension(200), save :: zeta     ! Attenuation factor for sub-canopy K 
-                                                     !    and u.  A vector size of 200, 
-                                                     !    allows for trees 100 meters tall
-      real                        , save :: d0       ! Zero-plane displacement height (m)
-      real                        , save :: ustarouh ! The ratio of ustar over u(h)
-      real                        , save :: eta      ! The in-canopy wind attenuation scal-
-                                                     !    ing parameter
+      real           :: ustarouh     ! The ratio of ustar over u(h)             [      ---]
+      real           :: nn           ! In-canopy wind attenuation scal. param.  [      ---]
+      real           :: waiuse       ! Wood area index                          [    m2/m2]
+      real           :: htopcrown    ! height at the top of the crown           [        m]
+      real           :: hmidcrown    ! Height at the middle of the crown        [        m]
+      real           :: hbotcrown    ! Height at the bottom of the crown        [        m]
+      real           :: htop         ! Height of the topmost layer              [        m]
+      real           :: dzcrown      ! Depth that contains leaves/branches      [        m]
+      real           :: d0ohgt       ! d0/height                                [      ---]
+      real           :: z0ohgt       ! z0/height                                [      ---]
+      real           :: phih         ! Correction term for unstable cases       [      ---]
+      real           :: ladcohort    ! Leaf Area Density of this cohort         [    m2/m3]
+      real           :: ribcan       ! Ground-to-canopy bulk Richardson number  [      ---]
+      real           :: hgtoz0       ! height/z0                                [      ---]
+      real           :: lnhgtoz0     ! log(height/z0)                           [      ---]
+      real           :: zetacan      ! Estimate of z/L within the canopy        [      ---]
       !------------------------------------------------------------------------------------!
 
       !----- Assign some pointers. --------------------------------------------------------!
       csite  => cpoly%site(isi)
       cmet   => cpoly%met(isi)
       cpatch => csite%patch(ipa)
+      !------------------------------------------------------------------------------------!
 
 
       !------------------------------------------------------------------------------------!
@@ -169,6 +182,8 @@ module canopy_struct_dynamics
       atm_thetav = cmet%atm_theta       * (1. + epim1 * cmet%atm_shv      )
       can_thetav = csite%can_theta(ipa) * (1. + epim1 * csite%can_shv(ipa))
       stable     = atm_thetav >= can_thetav
+
+
 
       !------------------------------------------------------------------------------------!
       !     If there is no vegetation in this patch, then we apply turbulence to bare      !
@@ -183,10 +198,6 @@ module canopy_struct_dynamics
             cmet%vels = cmet%vels_unstab
          end if
 
-         zref     = cmet%geoht
-         h        = csite%veg_height(ipa)
-         d0       = csite%veg_displace(ipa)
-
          !----- Calculate the surface roughness inside the canopy. ------------------------!
          csite%rough(ipa) = soil_rough * (1.0 - csite%snowfac(ipa))                        &
                           + snow_rough * csite%snowfac(ipa)
@@ -194,9 +205,9 @@ module canopy_struct_dynamics
          !----- Finding the characteristic scales (a.k.a. stars). -------------------------!
          call ed_stars(cmet%atm_theta,cmet%atm_theiv,cmet%atm_shv,cmet%atm_co2             &
                       ,csite%can_theta(ipa),csite%can_theiv(ipa),csite%can_shv(ipa)        &
-                      ,csite%can_co2(ipa),zref,d0,cmet%vels,csite%rough(ipa)               &
-                      ,csite%ustar(ipa),csite%tstar(ipa),estar,csite%qstar(ipa)            &
-                      ,csite%cstar(ipa),csite%zeta(ipa),csite%ribulk(ipa)                  &
+                      ,csite%can_co2(ipa),cmet%geoht,csite%veg_displace(ipa),cmet%vels     &
+                      ,csite%rough(ipa),csite%ustar(ipa),csite%tstar(ipa),estar            &
+                      ,csite%qstar(ipa),csite%cstar(ipa),csite%zeta(ipa),csite%ribulk(ipa) &
                       ,csite%ggbare(ipa))
 
          !---------------------------------------------------------------------------------!
@@ -221,12 +232,26 @@ module canopy_struct_dynamics
 
 
 
+      !----- Check whether the reference height is high enough . --------------------------!
+      if (cpatch%hite(1) >= cmet%geoht) then
+         write (unit=*,fmt='(a)') ' Your reference height is too low...'
+         write (unit=*,fmt='(a,1x,es12.5)') ' Ref. height:           ',cmet%geoht
+         write (unit=*,fmt='(a,1x,es12.5)') ' Tallest cohort height: ',cpatch%hite(1)
+         call fatal_error('Bad reference height','canopy_turbulence'                       &
+                         ,'canopy_struct_dynamics.f90')
+      end if
+      !------------------------------------------------------------------------------------!
+
+
+
+
       !---- Find the minimum leaf boundary layer heat conductance. ------------------------!
       if (any(cpatch%resolvable)) then
          gbhmos_min = 1. / (rb_inter + rb_slope * (csite%lai(ipa) + csite%wai(ipa)))
       else
          gbhmos_min = 0.
       end if
+      !------------------------------------------------------------------------------------!
 
 
 
@@ -238,14 +263,11 @@ module canopy_struct_dynamics
 
       !------------------------------------------------------------------------------------!
       ! LEAF-3 Case: This approach is very similar to older implementations of ED-2, and   !
-      !              it is very similar to LEAF-3, and to option 0, except that option 0   !
-      !              computes the vegetated ground conductance differently.                !
+      !              it is very similar to LEAF-3, and to option 1, except that option 1   !
+      !              computes the vegetated ground conductance and wind profile different- !
+      !              ly.                                                                   !
       !------------------------------------------------------------------------------------!
-      case (-2,-1)
-         h        = csite%veg_height(ipa)    ! Vegetation height
-         d0       = csite%veg_displace(ipa)  ! 0-plane displacement
-         zref     = cmet%geoht
-
+      case (0)
 
          !---------------------------------------------------------------------------------!
          !     Find the roughness as the average between the bare ground and vegetated     !
@@ -276,15 +298,18 @@ module canopy_struct_dynamics
          !---------------------------------------------------------------------------------!
          call ed_stars(cmet%atm_theta,cmet%atm_theiv,cmet%atm_shv,cmet%atm_co2             &
                       ,csite%can_theta(ipa),csite%can_theiv(ipa),csite%can_shv(ipa)        &
-                      ,csite%can_co2(ipa),zref,d0,cmet%vels,csite%rough(ipa)               &
-                      ,csite%ustar(ipa),csite%tstar(ipa),estar,csite%qstar(ipa)            &
-                      ,csite%cstar(ipa),csite%zeta(ipa),csite%ribulk(ipa)                  &
+                      ,csite%can_co2(ipa),cmet%geoht,csite%veg_displace(ipa),cmet%vels     &
+                      ,csite%rough(ipa),csite%ustar(ipa),csite%tstar(ipa),estar            &
+                      ,csite%qstar(ipa),csite%cstar(ipa),csite%zeta(ipa),csite%ribulk(ipa) &
                       ,csite%ggbare(ipa))
 
          if (csite%snowfac(ipa) < 0.9) then
-            factv  = log((zref-d0) / csite%rough(ipa)) / (vonk * vonk * cmet%vels)
-            aux    = exp(exar * (1. - (d0 + csite%rough(ipa)) / h))
-            csite%ggveg(ipa) = (exar * (h - d0 )) / (factv * h * (exp(exar) - aux))
+            factv  = log((cmet%geoht - csite%veg_displace(ipa)) / csite%rough(ipa))        &
+                   / (vonk * vonk * cmet%vels)
+            aux    = exp(exar * (1. - (csite%veg_displace(ipa) + csite%rough(ipa))         &
+                                    / csite%veg_height(ipa)) )
+            csite%ggveg(ipa) = (exar * (csite%veg_height(ipa) - csite%veg_displace(ipa) )) &
+                             / (factv * csite%veg_height(ipa) * (exp(exar) - aux))
          else 
             csite%ggveg(ipa) = 0.
          end if
@@ -295,27 +320,20 @@ module canopy_struct_dynamics
          ! structure of the vegetation and its attenuation effects and the heat and water  !
          ! capacities.                                                                     !
          !---------------------------------------------------------------------------------!
-         laicum = 0.0
-         uh = reduced_wind(csite%ustar(ipa),csite%zeta(ipa),csite%ribulk(ipa),zref,d0      &
-                          ,cpatch%hite(1),csite%rough(ipa))
+         uh = reduced_wind(csite%ustar(ipa),csite%zeta(ipa),csite%ribulk(ipa),cmet%geoht   &
+                          ,csite%veg_displace(ipa),cpatch%hite(1),csite%rough(ipa))
+
          do ico=1,cpatch%ncohorts
+
+            !----- Calculate the wind speed at height z. ----------------------------------!
+            ipft       = cpatch%pft(ico)
+
+            cpatch%veg_wind(ico) = max(uh,ugbmin)
+            uh = uh * ( cpatch%crown_area(ico)                                             &
+                      * exp(- 0.5 * cpatch%lai(ico) / cpatch%crown_area(ico))              &
+                      + 1.0 - cpatch%crown_area(ico)) 
+
             if (cpatch%resolvable(ico)) then
-               ipft  = cpatch%pft(ico)
-               hite  = cpatch%hite(ico)
-
-               !----- Calculate the wind speed at height z. -------------------------------!
-               select case (icanturb)
-               case (-2)
-                  cpatch%veg_wind(ico) = uh
-                  ipft       = cpatch%pft(ico)
-
-                  cpatch%veg_wind(ico) = max(uh,ugbmin)
-                  uh = uh * ( cpatch%crown_area(ico)                                       &
-                            * exp(- cpatch%lai(ico) / cpatch%crown_area(ico))              &
-                            + 1.0 - cpatch%crown_area(ico)) 
-               case (-1)
-                  cpatch%veg_wind(ico) = max(ugbmin,uh * exp ( -0.5 * laicum))
-               end select
 
                !---------------------------------------------------------------------------!
                !    Find the aerodynamic conductances for heat and water at the leaf       !
@@ -326,12 +344,9 @@ module canopy_struct_dynamics
                                             ,csite%can_shv(ipa),csite%can_rhos(ipa)        &
                                             ,gbhmos_min,cpatch%gbh(ico),cpatch%gbw(ico))
                !---------------------------------------------------------------------------!
-
-               laicum = laicum      + cpatch%lai(ico)
             else
                cpatch%gbh(ico)      = 0.0
                cpatch%gbw(ico)      = 0.0
-               cpatch%veg_wind(ico) = cmet%vels
             end if
          end do
 
@@ -352,8 +367,8 @@ module canopy_struct_dynamics
             csite%ggnet(ipa) = ggfact * csite%ggbare(ipa)
          else
             csite%ggnet(ipa) = ggfact * csite%ggbare(ipa) * csite%ggveg(ipa)               &
-                             / (       csite%opencan_frac(ipa) *  csite%ggveg(ipa)         &
-                               + (1. - csite%opencan_frac(ipa)) * csite%ggbare(ipa))
+                             / ( csite%ggveg(ipa) + (1. - csite%opencan_frac(ipa))         &
+                                                  * csite%ggbare(ipa))
          end if
          !---------------------------------------------------------------------------------!
       !------------------------------------------------------------------------------------!
@@ -363,17 +378,10 @@ module canopy_struct_dynamics
 
 
       !------------------------------------------------------------------------------------!
-      ! Default Case: There is no use of zero-plane displacement in calculating ustar from !
-      !               log-scaling the constant shear layer.  So even if the reference      !
-      !               height is inside the canopy, the mathematics will be well behaved,   !
-      !               even though it is nonsense.                                          !
+      ! ED-2.1 Case: There uses a slightly different approach for wind profile and ground  !
+      !              conductance.                                                          !
       !------------------------------------------------------------------------------------!
-      case (0)
-         h        = csite%can_depth(ipa)  ! Canopy depth
-         d0       = vh2dh * h              ! 0-plane displacement
-         zref     = cmet%geoht
-
-
+      case (1)
          !---------------------------------------------------------------------------------!
          !     The roughness is found by combining two weighted averages.  The first one   !
          ! checks the fraction of the patch that has closed canopy, and averages between   !
@@ -391,73 +399,98 @@ module canopy_struct_dynamics
          !----- Calculate the soil surface roughness inside the canopy. -------------------!
          surf_rough = soil_rough * (1.0 - csite%snowfac(ipa))                              &
                     + snow_rough * csite%snowfac(ipa)
-         
+         !---------------------------------------------------------------------------------!
+
+
+
          !----- Get the appropriate characteristic wind speed. ----------------------------!
          if (stable) then
             cmet%vels = cmet%vels_stab
          else
             cmet%vels = cmet%vels_unstab
          end if
+         !---------------------------------------------------------------------------------!
+
 
 
          !---------------------------------------------------------------------------------!
          !      Get ustar for the ABL, assume it is a dynamic shear layer that generates a !
          ! logarithmic profile of velocity.                                                !
-         !                                                                                 !
-         ! IMPORTANT NOTE: the displacement height here (d0), is used only for scaling the !
-         !                 vortices when determining diffusivity.  The default method      !
-         !                 taken from LEAF-3, as applied here, assumes that the zero plane !
-         !                 is at the ground surface when computing the log wind profile,   !
-         !                 hence the 0.0 as the argument to ed_stars.                      !
          !---------------------------------------------------------------------------------!
          call ed_stars(cmet%atm_theta,cmet%atm_theiv,cmet%atm_shv,cmet%atm_co2             &
                       ,csite%can_theta(ipa),csite%can_theiv(ipa),csite%can_shv(ipa)        &
-                      ,csite%can_co2(ipa),zref,0.0,cmet%vels,csite%rough(ipa)              &
-                      ,csite%ustar(ipa),csite%tstar(ipa),estar,csite%qstar(ipa)            &
-                      ,csite%cstar(ipa),csite%zeta(ipa),csite%ribulk(ipa)                  &
+                      ,csite%can_co2(ipa),cmet%geoht,csite%veg_displace(ipa),cmet%vels     &
+                      ,csite%rough(ipa),csite%ustar(ipa),csite%tstar(ipa),estar            &
+                      ,csite%qstar(ipa),csite%cstar(ipa),csite%zeta(ipa),csite%ribulk(ipa) &
                       ,csite%ggbare(ipa))
+         !---------------------------------------------------------------------------------!
 
-         K_top = vonk * csite%ustar(ipa) * (h-d0)
+
+
 
          !---------------------------------------------------------------------------------!
          !     The surface resistance in the sub-canopy layer is the integration of        !
          ! inverse K, from the rough soil surface, to the reference point in the canopy    !
          ! where the state variable is integrated (canopy top ~ h).                        !
          !---------------------------------------------------------------------------------!
-         csite%ggveg(ipa) = (exar * K_top)                                                 &
-                          / (exp(exar) * h * (exp(-exar * surf_rough/h)-exp(-exar)))
+         K_top            = vonk * csite%ustar(ipa)                                        &
+                          * (csite%veg_height(ipa) - csite%veg_displace(ipa))
+         csite%ggveg(ipa) = ( exar * K_top )                                               &
+                          / ( exp(exar) * csite%veg_height(ipa)                            &
+                            * (exp(-exar * surf_rough/csite%veg_height(ipa)) - exp(-exar)))
+         !---------------------------------------------------------------------------------!
+
 
 
          !---------------------------------------------------------------------------------!
-         !     This part of the code initializes the geometry of the canopy air space, the !
+         !     This part of the code finds the geometry of the canopy air space, the       !
          ! structure of the vegetation and its attenuation effects and the heat and water  !
          ! capacities.                                                                     !
          !---------------------------------------------------------------------------------!
          !----- Top of canopy wind speed. -------------------------------------------------!
-         uh = reduced_wind(csite%ustar(ipa),csite%zeta(ipa),csite%ribulk(ipa),zref,d0      &
-                          ,cpatch%hite(1),csite%rough(ipa))
-
+         uh   = reduced_wind(csite%ustar(ipa),csite%zeta(ipa),csite%ribulk(ipa),cmet%geoht &
+                            ,csite%veg_displace(ipa),cpatch%hite(1),csite%rough(ipa))
+         htop = cpatch%hite(1)
          do ico=1,cpatch%ncohorts
 
+            !----- Alias for PFT type. ----------------------------------------------------!
             ipft  = cpatch%pft(ico)
-            hite  = cpatch%hite(ico)
+            !------------------------------------------------------------------------------!
 
-            !----- Estimate the height center of the crown. -------------------------------!
-            z = 0.5 * (hite + h2trunkh(cpatch%hite(ico)))
+
+
+            !----- Estimate the height at the crown midpoint. -----------------------------!
+            htopcrown = cpatch%hite(ico)
+            hbotcrown = h2trunkh(cpatch%hite(ico),ipft)
+            hmidcrown = 0.5 * (htopcrown + hbotcrown)
+            !------------------------------------------------------------------------------!
+
+
 
             !----- Calculate the wind speed at height z. ----------------------------------!
-            cpatch%veg_wind(ico) = max(ugbmin,uh * exp(-exar * (1.0 - z/h)))
+            cpatch%veg_wind(ico) = max( ugbmin                                             &
+                                      , uh * exp(-exar * (1.0 - hmidcrown/htop)))
+            !------------------------------------------------------------------------------!
+
+
 
             !------------------------------------------------------------------------------!
             !    Find the aerodynamic conductances for heat and water at the leaf boundary !
             ! layer.                                                                       !
             !------------------------------------------------------------------------------!
-            call aerodynamic_conductances(ipft,cpatch%veg_wind(ico),cpatch%veg_temp(ico)   &
-                                         ,csite%can_temp(ipa),csite%can_shv(ipa)           &
-                                         ,csite%can_rhos(ipa),gbhmos_min,cpatch%gbh(ico)   &
-                                         ,cpatch%gbw(ico))
+            if (cpatch%resolvable(ico)) then
+               call aerodynamic_conductances(ipft,cpatch%veg_wind(ico)                     &
+                                            ,cpatch%veg_temp(ico)                          &
+                                            ,csite%can_temp(ipa),csite%can_shv(ipa)        &
+                                            ,csite%can_rhos(ipa),gbhmos_min                &
+                                            ,cpatch%gbh(ico),cpatch%gbw(ico))
+            else
+               cpatch%gbh(ico) = 0.0
+               cpatch%gbw(ico) = 0.0
+            end if
             !------------------------------------------------------------------------------!
          end do
+         !---------------------------------------------------------------------------------!
 
 
 
@@ -478,8 +511,8 @@ module canopy_struct_dynamics
             csite%ggnet(ipa) = ggfact * csite%ggbare(ipa)
          else
             csite%ggnet(ipa) = ggfact * csite%ggbare(ipa) * csite%ggveg(ipa)               &
-                             / (       csite%opencan_frac(ipa) *  csite%ggveg(ipa)         &
-                               + (1. - csite%opencan_frac(ipa)) * csite%ggbare(ipa))
+                             / ( csite%ggveg(ipa)  + (1. - csite%opencan_frac(ipa))        &
+                                                   * csite%ggbare(ipa) )
          end if
          !---------------------------------------------------------------------------------!
       !------------------------------------------------------------------------------------!
@@ -488,377 +521,11 @@ module canopy_struct_dynamics
 
 
       !------------------------------------------------------------------------------------!
-      !     If the reference height is less than the height of the canopy, then we have to !
-      ! realize that we are in the exponential extinction layer.  If we are above the      !
-      ! canpopy, we are in a log extinction zone (interfacial layer).  So if zref<h, use   !
-      ! the exponential decay function to calculate u at the canopy top, and then use that !
-      ! velocity to estimate ustar.                                                        !
+      !      Use the methods of Massman (1997).  Using option 2 will make the within-      !
+      ! canopy drag and sheltering factors to be constant, whereas option 3 will allow the !
+      ! values to vary.                                                                    !
       !------------------------------------------------------------------------------------!
-      case(1)
-         h    = csite%can_depth(ipa)  ! Canopy depth
-         zref = cmet%geoht            ! Reference height
-         d0   = vh2dh * h              ! 0-plane displacement
-
-
-         !---------------------------------------------------------------------------------!
-         !     The roughness is found by combining two weighted averages.  The first one   !
-         ! checks the fraction of the patch that has closed canopy, and averages between   !
-         ! soil and vegetation roughness.  The other is the fraction of the vegetation     !
-         ! that is covered in snow.                                                        !
-         !---------------------------------------------------------------------------------!
-         csite%rough(ipa) = snow_rough * csite%snowfac(ipa)                                &
-                          + ( soil_rough           * csite%opencan_frac(ipa)               &
-                            + csite%veg_rough(ipa) * (1.0 - csite%opencan_frac(ipa)) )     &
-                          * (1.0 - csite%snowfac(ipa))
-         !---------------------------------------------------------------------------------!
-
-
-
-         !----- Calculate the soil surface roughness inside the canopy. -------------------!
-         surf_rough = soil_rough * (1.0 - csite%snowfac(ipa))                              &
-                    + snow_rough * csite%snowfac(ipa)
-         
-         !----- Check what is the relative position of our reference data. ----------------!
-         if (cmet%geoht < h) then
-         
-            !----- Get the appropriate characteristic wind speed. -------------------------!
-            if (stable) then
-               cmet%vels = cmet%vels_stab
-            else
-               cmet%vels = cmet%vels_unstab
-            end if
-
-            !----- Assume a new reference elevation at the canopy top. --------------------!
-            zref = h
-            !------------------------------------------------------------------------------!
-
-
-            !------------------------------------------------------------------------------!
-            !     Calculate the heat and mass storage capacity of the canopy.              !
-            !------------------------------------------------------------------------------!
-            call can_whcap(csite%can_rhos(ipa),csite%can_temp(ipa),csite%can_depth(ipa)    &
-                          ,wcapcan,wcapcani,hcapcani,ccapcani)
-            !------------------------------------------------------------------------------!
-
-         else         
-
-            !----- Get the appropriate characteristic wind speed. -------------------------!
-            if (stable) then
-               cmet%vels = cmet%vels_stab
-            else
-               cmet%vels = cmet%vels_unstab
-            end if
-
-
-            !------------------------------------------------------------------------------!
-            !     Calculate the heat and mass storage capacity of the canopy.              !
-            !------------------------------------------------------------------------------!
-            call can_whcap(csite%can_rhos(ipa),csite%can_temp(ipa),csite%can_depth(ipa)    &
-                          ,wcapcan,wcapcani,hcapcani,ccapcani)
-            !------------------------------------------------------------------------------!
-
-         end if
-         
-         !---------------------------------------------------------------------------------!
-         !      Get ustar for the ABL, assume it is a dynamic shear layer that generates a !
-         ! logarithmic profile of velocity.                                                !
-         !---------------------------------------------------------------------------------!
-         call ed_stars(cmet%atm_theta,cmet%atm_theiv,cmet%atm_shv,cmet%atm_co2             &
-                      ,csite%can_theta(ipa),csite%can_theiv(ipa),csite%can_shv(ipa)        &
-                      ,csite%can_co2(ipa),zref,d0,cmet%vels,csite%rough(ipa)               &
-                      ,csite%ustar(ipa),csite%tstar(ipa),estar,csite%qstar(ipa)            &
-                      ,csite%cstar(ipa),csite%zeta(ipa),csite%ribulk(ipa)                  &
-                      ,csite%ggbare(ipa))
-
-         K_top = vonk * csite%ustar(ipa) * (h-d0)
-
-         !---------------------------------------------------------------------------------!
-         !     The surface resistance in the sub-canopy layer is the integration of        !
-         ! inverse K, from the rough soil surface, to the reference point in the canopy    !
-         ! where the state variable is integrated (canopy top ~ h).                        !
-         !---------------------------------------------------------------------------------!
-         csite%ggveg(ipa) = (exar * K_top)                                                 &
-                          / (exp(exar) * h * (exp(-exar * surf_rough/h)-exp(-exar)))
-
-         !---------------------------------------------------------------------------------!
-         !     Calculate the leaf level aerodynamic resistance.                            !
-         !---------------------------------------------------------------------------------!
-         !----- Top of canopy wind speed. -------------------------------------------------!
-         uh = reduced_wind(csite%ustar(ipa),csite%zeta(ipa),csite%ribulk(ipa),zref,d0      &
-                          ,cpatch%hite(1),csite%rough(ipa))
-
-         do ico=1,cpatch%ncohorts
-            ipft  = cpatch%pft(ico)
-            hite  = cpatch%hite(ico)
-            !----- Estimate the height center of the crown. -------------------------------!
-            z = hite * (1.0 - 0.5 * crown_depth_fraction(ipft))
-
-            !----- Calculate the wind speed at height z. ----------------------------------!
-            cpatch%veg_wind(ico) = max(ugbmin,uh * exp(- exar * (1.0 - z/h)))
-
-            !------------------------------------------------------------------------------!
-            !    Find the aerodynamic conductances for heat and water at the leaf boundary !
-            ! layer.                                                                       !
-            !------------------------------------------------------------------------------!
-            call aerodynamic_conductances(ipft,cpatch%veg_wind(ico),cpatch%veg_temp(ico)   &
-                                         ,csite%can_temp(ipa),csite%can_shv(ipa)           &
-                                         ,csite%can_rhos(ipa),gbhmos_min,cpatch%gbh(ico)   &
-                                         ,cpatch%gbw(ico))
-            !------------------------------------------------------------------------------!
-         end do
-         !---------------------------------------------------------------------------------!
-
-
-         !---------------------------------------------------------------------------------!
-         !     Find the net ground conductance.  The net conductance is derived from the   !
-         ! net resistance, which is, in turn, the weighted average of the resistances in   !
-         ! bare and vegetated grounds.                                                     !
-         !---------------------------------------------------------------------------------!
-         if (csite%opencan_frac(ipa) > 0.999 .or. csite%snowfac(ipa) >= 0.9) then
-            csite%ggnet(ipa) = ggfact * csite%ggbare(ipa)
-         else
-            csite%ggnet(ipa) = ggfact * csite%ggbare(ipa) * csite%ggveg(ipa)               &
-                             / (       csite%opencan_frac(ipa) *  csite%ggveg(ipa)         &
-                               + (1. - csite%opencan_frac(ipa)) * csite%ggbare(ipa))
-         end if
-         !---------------------------------------------------------------------------------!
-      !------------------------------------------------------------------------------------!
-
-
-
-
-      !------------------------------------------------------------------------------------!
-      !      Use the methods of Massman 97, to close the equations of estimating turbulent !
-      ! transfer.  If the velocity reference height is not greater than the canopy height, !
-      ! we can do a few things:                                                            !
-      ! 1. Stop the run.                                                                   !
-      ! 2. Say that zref is really h+zref (sketchy...)                                     !
-      ! 3. Say that zref is 2*h           (sketchy...)                                     !
-      !------------------------------------------------------------------------------------!
-      case (2)
-         
-         !----- Calculate the soil surface roughness inside the canopy. -------------------!
-         surf_rough = soil_rough * (1.0 - csite%snowfac(ipa))                              &
-                    + snow_rough * csite%snowfac(ipa)
-
-
-         !---------------------------------------------------------------------------------!
-         !    LAI base drag calculation for center of pressure, d0.  Cumulative LAI based  !
-         ! velocity attenuation in the canopy.                                             !
-         !---------------------------------------------------------------------------------!
-         h = csite%can_depth(ipa)
-
-         if (cmet%geoht < h) then
-
-            !----- 1. Stop the run. -------------------------------------------------------!
-            write (unit=*,fmt='(a)') ' Your reference height is too low...'
-            write (unit=*,fmt='(a,1x,es12.5)') ' Ref. height:           ',cmet%geoht
-            write (unit=*,fmt='(a,1x,es12.5)') ' Tallest cohort height: ',h
-            call fatal_error('Bad reference height for M97','canopy_turbulence'            &
-                            ,'canopy_struct_dynamics.f90')
-            !----- 2. Say that zref is really h+zref (sketchy...). ------------------------!
-            !zref     = rk4site%geoht + h
-            !vels_ref = rk4site%vels
-            !----- 3. Say that zref is 2*h (sketchy...). ----------------------------------!
-            !zref     = 2.d0 * rk4site%geoht
-            !vels_ref = rk4site%vels
-         else
-            !----- Get the appropriate characteristic wind speed. -------------------------!
-            if (stable) then
-               cmet%vels = cmet%vels_stab
-            else
-               cmet%vels = cmet%vels_unstab
-            end if
-            zref     = cmet%geoht
-         end if
-
-         zcan = ceiling(h/dz)
-         idz  = 0.5 * dz     ! lowest element center
-
-         zetac = 0.0  ! Cumulative zeta
-
-         if (ibranch_thermo /= 0 .and. (sum(cpatch%wai)+sum(cpatch%lai)) == 0.) then
-            call fatal_error('Your plants must have some TAI, M97','canopy_turbulence'     &
-                            ,'canopy_struct_dynamics.f90')
-         end if
-
-         !---------------------------------------------------------------------------------!
-         !     Loop through the canopy at equal increments.  At each increment, determine  !
-         ! the frontal area drag surface, and the drag force zeta.                         !
-         !---------------------------------------------------------------------------------!
-         do k = 1, zcan
-            
-            !------------------------------------------------------------------------------!
-            !    Determine the combined leaf area from all cohort crowns residing in this  !
-            ! layer.                                                                       !
-            !------------------------------------------------------------------------------!
-            layertai = 0.0
-            z = real(k-1) * dz + idz  ! elevation of discrete layer
-            do ico=1,cpatch%ncohorts
-               !----- Some aliases. -------------------------------------------------------!
-               ipft  = cpatch%pft(ico)
-               hite  = cpatch%hite(ico)
-
-               crowndepth = max(dz,crown_depth_fraction(ipft)*hite)
-
-               if ( (z < hite .and. z >= (hite-crowndepth)) .or. (k == 1 .and. hite < dz)) &
-               then
-                  select case (ibranch_thermo)
-                  case (0)
-                     !---------------------------------------------------------------------!
-                     !     Although we are not solving branches, assume that at full leaf- !
-                     ! -out, there is sheltering of branches.  When leaves are not at full !
-                     ! out, then the stems and branches start to become visible to the     !
-                     ! fluid flow.  Assume that when leaves are gone, then the branches    !
-                     ! contribute about 50% of the drag surface, everything in between is  !
-                     ! a linear combination.                                               !
-                     !---------------------------------------------------------------------!
-                     layertai = layertai + (cpatch%lai(ico) + cpatch%nplant(ico) * 0.5)    &
-                                         * (dz/crowndepth) 
-                  case default
-                     !---------------------------------------------------------------------!
-                     !    Use LAI and WAI to define the frontal area of drag surface.      !
-                     !---------------------------------------------------------------------!
-                     layertai = layertai + (cpatch%lai(ico) + cpatch%wai(ico))             &
-                                         * (dz /crowndepth)
-                  end select
-               end if
-            end do
-            
-            
-
-            a_front  = layertai/dz ! Frontal area of drag surface
-            zetac    = zetac + 0.5 * a_front * (Cd0 / Pm) * dz
-            zeta(k)  = zetac       ! Use a centered drag
-            zetac    = zetac + 0.5 * a_front * (Cd0 / Pm) * dz
-         end do
-         
-         !----- The following constains the ratio of ustar over u. ------------------------!
-         ustarouh = (c1_m97 - c2_m97 * exp(-c3_m97*zeta(zcan)))
-         
-         !----- Eta, coefficient of attenuation. ------------------------------------------!
-         eta = 0.5 * zeta(zcan) / (ustarouh*ustarouh)
-         
-         !---------------------------------------------------------------------------------!
-         !     Displacement height.  Notice that if Pm and Cd0 are uniform, we can esti-   !
-         ! mate zeta(h) without a loop, if this routine is taking to long, we can merge    !
-         ! the loops.                                                                      !
-         !---------------------------------------------------------------------------------!
-         d0 = h
-         do k=1,zcan
-            d0 = d0 - dz*exp(-2.0*eta*(1.0-zeta(k)/zeta(zcan)))
-         end do
-
-         !----- Calculate the roughness lengths zo,zt,zr. ---------------------------------!
-         csite%rough(ipa) = max((h-d0)*exp(-vonk/ustarouh),soil_rough)
-         
-         !----- Find the characteristic scales (a.k.a. stars). ----------------------------!
-         call ed_stars(cmet%atm_theta,cmet%atm_theiv,cmet%atm_shv,cmet%atm_co2             &
-                      ,csite%can_theta(ipa),csite%can_theiv(ipa),csite%can_shv(ipa)        &
-                      ,csite%can_co2(ipa),zref,d0,cmet%vels,csite%rough(ipa)               &
-                      ,csite%ustar(ipa),csite%tstar(ipa),estar,csite%qstar(ipa)            &
-                      ,csite%cstar(ipa),csite%zeta(ipa),csite%ribulk(ipa)                  &
-                      ,csite%ggbare(ipa))
-
-         !----- Calculate the diffusivity at the canopy top. ------------------------------!
-         K_top = vonk * csite%ustar(ipa) * (h-d0)
-
-         rasveg = 0.
-
-         !----- Numerically integrate the inverse diffusivity. ----------------------------!
-         do k=1,zcan
-            Kdiff  = K_top * exp(-eta * (1.0-zeta(k)/zeta(zcan))) + kvwake
-            rasveg = rasveg + dz / Kdiff
-         end do
-         csite%ggveg(ipa) = 1./rasveg
-
-         !---------------------------------------------------------------------------------!
-         !     Calculate the leaf level aerodynamic resistance.                            !
-         !---------------------------------------------------------------------------------!
-
-         !----- Top of canopy wind speed. -------------------------------------------------!
-         uh = reduced_wind(csite%ustar(ipa),csite%zeta(ipa),csite%ribulk(ipa),zref,d0      &
-                          ,cpatch%hite(1),csite%rough(ipa))
-
-         do ico=1,cpatch%ncohorts
-            ipft = cpatch%pft(ico)
-            hite = cpatch%hite(ico)
-
-            !----- Estimate the height center of the crown. -------------------------------!
-            z = hite * (1. - 0.5 * crown_depth_fraction(ipft))
-
-            !----- Determine the zeta index. ----------------------------------------------!
-            k = ceiling(z/dz)
-
-            !----- Calculate the wind speed at height z. ----------------------------------!
-            cpatch%veg_wind(ico) = max(ugbmin, uh*exp(-eta * (1. - zeta(k)/zeta(zcan))))
-
-            !------------------------------------------------------------------------------!
-            !    Find the aerodynamic conductances for heat and water at the leaf boundary !
-            ! layer.                                                                       !
-            !------------------------------------------------------------------------------!
-            call aerodynamic_conductances(ipft,cpatch%veg_wind(ico),cpatch%veg_temp(ico)   &
-                                         ,csite%can_temp(ipa),csite%can_shv(ipa)           &
-                                         ,csite%can_rhos(ipa),gbhmos_min,cpatch%gbh(ico)   &
-                                         ,cpatch%gbw(ico))
-            !------------------------------------------------------------------------------!
-         end do
-
-
-
-         !---------------------------------------------------------------------------------!
-         !     Calculate the heat and mass storage capacity of the canopy.                 !
-         !---------------------------------------------------------------------------------!
-         call can_whcap(csite%can_rhos(ipa),csite%can_temp(ipa),csite%can_depth(ipa)       &
-                       ,wcapcan,wcapcani,hcapcani,ccapcani)
-         !---------------------------------------------------------------------------------!
-
-
-         !---------------------------------------------------------------------------------!
-         !     Find the net ground conductance.  The net conductance is derived from the   !
-         ! net resistance, which is, in turn, the weighted average of the resistances in   !
-         ! bare and vegetated grounds.                                                     !
-         !---------------------------------------------------------------------------------!
-         if (csite%opencan_frac(ipa) > 0.999 .or. csite%snowfac(ipa) >= 0.9) then
-            csite%ggnet(ipa) = ggfact * csite%ggbare(ipa)
-         else
-            csite%ggnet(ipa) = ggfact * csite%ggbare(ipa) * csite%ggveg(ipa)               &
-                             / (       csite%opencan_frac(ipa) *  csite%ggveg(ipa)         &
-                               + (1. - csite%opencan_frac(ipa)) * csite%ggbare(ipa))
-         end if
-         !---------------------------------------------------------------------------------!
-      !------------------------------------------------------------------------------------!
-
-
-
-
-      !------------------------------------------------------------------------------------!
-      !     Use an alternative approach, in which we take into account the fraction of     !
-      ! open canopy to scale the roughness, and we estimate the ground conductance based   !
-      ! solely on one roughness scale.  The cohort wind profile is loosely based on        !
-      ! Leuning et al. (1995), but instead of simply computing the cumulative LAI, we      !
-      ! consider the crown area to determine the reduction factor.                         !
-      !------------------------------------------------------------------------------------!
-      case (3)
-         h        = csite%veg_height(ipa)   ! Vegetation height
-         d0       = csite%veg_displace(ipa) ! 0-plane displacement
-         zref     = cmet%geoht
-
-
-         !---------------------------------------------------------------------------------!
-         !     The roughness is found by combining two weighted averages.  The first one   !
-         ! checks the fraction of the patch that has closed canopy, and averages between   !
-         ! soil and vegetation roughness.  The other is the fraction of the vegetation     !
-         ! that is covered in snow.                                                        !
-         !---------------------------------------------------------------------------------!
-         csite%rough(ipa) = snow_rough * csite%snowfac(ipa)                                &
-                          + ( soil_rough           * csite%opencan_frac(ipa)               &
-                            + csite%veg_rough(ipa) * (1.0 - csite%opencan_frac(ipa)) )     &
-                          * (1.0 - csite%snowfac(ipa))
-         !---------------------------------------------------------------------------------!
-
-
-
+      case (2,3)
          !----- Get the appropriate characteristic wind speed. ----------------------------!
          if (stable) then
             cmet%vels = cmet%vels_stab
@@ -870,69 +537,346 @@ module canopy_struct_dynamics
 
 
          !---------------------------------------------------------------------------------!
-         !     Find ustar for the ABL, assume it is a dynamic shear layer that generates a !
-         ! logarithmic profile of velocity.                                                !
+         !    Find the top layer and the top height.                                       !
          !---------------------------------------------------------------------------------!
+         zcan = ceiling(cpatch%hite(1) / dz_m97)
+         htop = zztop(zcan)
+         !---------------------------------------------------------------------------------!
+
+
+
+
+         !---------------------------------------------------------------------------------!
+         !     Loop through cohorts, and integrate the leaf area density.  Notice that we  !
+         ! will be solving all cohorts here, because even those with no leaves have        !
+         ! effects on the canopy air turbulence.  We only need to decide whether we have   !
+         ! branches or not, and we do it outside the loop to make it more efficient.       !
+         !---------------------------------------------------------------------------------!
+         !----- Reset the leaf area density array. ----------------------------------------!
+         lad(:) = 0.0
+         select case (ibranch_thermo)
+         case (0)
+            !------------------------------------------------------------------------------!
+            !     Although we are not solving branch thermodynamics, we have some drag     !
+            ! effect due to the branches.  Assume branch area index to be 15% of on-       !
+            ! -allometry LAI.  Even for grasses we may want to keep some residual due to   !
+            ! dead material that remains around.                                           !
+            !------------------------------------------------------------------------------!
+            do ico=1,cpatch%ncohorts
+               ipft = cpatch%pft(ico)
+
+
+               !------ Estimate WAI. ------------------------------------------------------!
+               waiuse = 0.10 * cpatch%nplant(ico) * cpatch%sla(ico)                        &
+                      * dbh2bl(cpatch%dbh(ico),ipft)
+               !---------------------------------------------------------------------------!
+
+
+               !---------------------------------------------------------------------------!
+               !     Find the heights, and compute the LAD of this cohort.                 !
+               !---------------------------------------------------------------------------!
+               htopcrown = cpatch%hite(ico)
+               hbotcrown = h2trunkh(cpatch%hite(ico),ipft)
+               ladcohort = (cpatch%lai(ico) + waiuse) / (htopcrown - hbotcrown)
+               kapartial = floor  (hbotcrown/dz_m97) + 1
+               kafull    = ceiling(hbotcrown/dz_m97) + 1
+               kzpartial = ceiling(htopcrown/dz_m97)
+               kzfull    = floor  (htopcrown/dz_m97)
+               !---------------------------------------------------------------------------!
+
+
+               !---------------------------------------------------------------------------!
+               !     Add the LAD for the full layers.                                      !
+               !---------------------------------------------------------------------------!
+               do k = kafull,kzfull
+                  lad(k) = lad(k) + ladcohort
+               end do
+               !---------------------------------------------------------------------------!
+
+
+
+               !---------------------------------------------------------------------------!
+               !      Add the LAD for the partial layers.  The only special case is when   !
+               ! they are both the same layer, which must be done separately.              !
+               !---------------------------------------------------------------------------!
+               if (kapartial == kzpartial) then
+                  lad(kapartial) = lad(kapartial)                                          &
+                                 + ladcohort * (htopcrown        - hbotcrown         )     &
+                                             / (zztop(kapartial) - zztop(kapartial-1))
+               else
+                  lad(kapartial) = lad(kapartial)                                          &
+                                 + ladcohort * (zztop(kapartial) - hbotcrown         )     &
+                                             / (zztop(kapartial) - zztop(kapartial-1))
+                  lad(kzpartial) = lad(kzpartial)                                          &
+                                 + ladcohort * (htopcrown        - zztop(kzpartial-1))     &
+                                             / (zztop(kzpartial) - zztop(kzpartial-1))
+               end if
+               !---------------------------------------------------------------------------!
+            end do
+
+         case default
+            !----- Use the default wood area index. ---------------------------------------!
+            do ico=1,cpatch%ncohorts
+               ipft = cpatch%pft(ico)
+
+               !---------------------------------------------------------------------------!
+               !     Find the heights, and compute the LAD of this cohort.                 !
+               !---------------------------------------------------------------------------!
+               htopcrown = cpatch%hite(ico)
+               hbotcrown = h2trunkh(cpatch%hite(ico),ipft)
+               ladcohort = (cpatch%lai(ico) + cpatch%wai(ico)) / (htopcrown - hbotcrown)
+               kapartial = floor  (hbotcrown/dz_m97) + 1
+               kafull    = ceiling(hbotcrown/dz_m97) + 1
+               kzpartial = ceiling(htopcrown/dz_m97)
+               kzfull    = floor  (htopcrown/dz_m97)
+               !---------------------------------------------------------------------------!
+
+
+               !---------------------------------------------------------------------------!
+               !     Add the LAD for the full layers.                                      !
+               !---------------------------------------------------------------------------!
+               do k = kafull,kzfull
+                  lad(k) = lad(k) + ladcohort
+               end do
+               !---------------------------------------------------------------------------!
+
+
+
+               !---------------------------------------------------------------------------!
+               !      Add the LAD for the partial layers.  The only special case is when   !
+               ! they are both the same layer, which must be done separately.              !
+               !---------------------------------------------------------------------------!
+               if (kapartial == kzpartial) then
+                  lad(kapartial) = lad(kapartial)                                          &
+                                 + ladcohort * (htopcrown        - hbotcrown         )     &
+                                             / (zztop(kapartial) - zztop(kapartial-1))
+               else
+                  lad(kapartial) = lad(kapartial)                                          &
+                                 + ladcohort * (zztop(kapartial) - hbotcrown         )     &
+                                             / (zztop(kapartial) - zztop(kapartial-1))
+                  lad(kzpartial) = lad(kzpartial)                                          &
+                                 + ladcohort * (htopcrown        - zztop(kzpartial-1))     &
+                                             / (zztop(kzpartial) - zztop(kzpartial-1))
+               end if
+               !---------------------------------------------------------------------------!
+            end do
+         end select
+         !---------------------------------------------------------------------------------!
+
+
+
+
+         !---------------------------------------------------------------------------------!
+         !     In this loop we find the drag coefficient, the sheltering factor, and the   !
+         ! cumulative leaf drag area.  This must be done in a separate loop because we     !
+         ! need the full integral of the leaf area density before we determine these       !
+         ! variables.                                                                      !
+         !---------------------------------------------------------------------------------!
+         select case (icanturb)
+         case (2)
+            !----- Constant drag and sheltering factor. -----------------------------------!
+            cdrag   (:) = cdrag0
+            pshelter(:) = pm0
+            ldga_bk     = 0.0
+            do k = 1,zcan
+               !---------------------------------------------------------------------------!
+               !     Add the contribution of this layer to Massman's zeta (which we call   !
+               ! cumldrag here to not confuse with the other zeta from the similarity      !
+               ! theory.  We integrate in three steps so we save the value in the middle   !
+               ! of the layer.                                                             !
+               !---------------------------------------------------------------------------!
+               lyrhalf      = 0.5 * lad(k) * cdrag(k) / pshelter(k) * dz_m97
+               cumldrag(k)  = ldga_bk + lyrhalf
+               ldga_bk      = ldga_bk + 2.0 * lyrhalf
+               !---------------------------------------------------------------------------!
+            end do
+         case (3)
+            ldga_bk      = 0.0
+            !----- Drag and sheltering factor are height-dependent. -----------------------!
+            do k = 1,zcan
+               !------ Functional form as in Massman (1997). ------------------------------!
+               cdrag   (k) = cdrag0 * exp( - alpha2_m97 * (1.0 - zzmid(k) / htop))
+               pshelter(k) = pm0 / (1.0 + alpha1_m97 * htop * lad(k))
+
+               !---------------------------------------------------------------------------!
+               !     Add the contribution of this layer to Massman's zeta (which we call   !
+               ! cumldrag here to not confuse with the other zeta from the similarity      !
+               ! theory.  We integrate in three steps so we save the value in the middle   !
+               ! of the layer.                                                             !
+               !---------------------------------------------------------------------------!
+               lyrhalf     = 0.5 * lad(k) * cdrag(k) / pshelter(k) * dz_m97
+               cumldrag(k) = ldga_bk + lyrhalf
+               ldga_bk     = ldga_bk + 2.0 * lyrhalf
+               !---------------------------------------------------------------------------!
+            end do
+         end select
+         !---------------------------------------------------------------------------------!
+
+
+
+         !---------------------------------------------------------------------------------!
+         !    Find the ratio between u* and u at the top cohort, using Massman's equation  !
+         ! (6).                                                                            !
+         !---------------------------------------------------------------------------------!
+         ustarouh = (c1_m97 - c2_m97 * exp(-c3_m97 * cumldrag(zcan)))
+         !---------------------------------------------------------------------------------!
+
+
+
+         !----- NN is Massman's n, the coefficient of attenuation. ------------------------!
+         nn = 0.5 * cumldrag(zcan) / (ustarouh * ustarouh)
+         !---------------------------------------------------------------------------------!
+
+
+
+         !---------------------------------------------------------------------------------!
+         !     Find the ratio between zero-plane displacement height and height, and the   !
+         ! ratio between roughness and height.  The actual values will be defined based    !
+         ! on the patch-level averaged height, not the height of the tallest cohort,       !
+         ! because it may be an extremely sparse cohort that has little impact on the      !
+         ! drag.                                                                           !
+         !---------------------------------------------------------------------------------!
+         d0ohgt = 1.0
+         do k=1,zcan
+            d0ohgt = d0ohgt - dz_m97 / htop                                                &
+                            * exp(-2.0 * nn *(1.0 - cumldrag(k) / cumldrag(zcan)))
+         end do
+         z0ohgt = (1.0 - d0ohgt) * exp(- vonk / ustarouh + psi_m97)
+         !---------------------------------------------------------------------------------!
+
+
+
+
+         !----- Find the actual displacement height and roughness. ------------------------!
+         csite%veg_displace(ipa) = max(0.,d0ohgt) * csite%veg_height(ipa)
+         csite%rough(ipa)        = max(soil_rough, z0ohgt * csite%veg_height(ipa))
+         !---------------------------------------------------------------------------------!
+
+
+
+         !----- Find the characteristic scales (a.k.a. stars). ----------------------------!
          call ed_stars(cmet%atm_theta,cmet%atm_theiv,cmet%atm_shv,cmet%atm_co2             &
                       ,csite%can_theta(ipa),csite%can_theiv(ipa),csite%can_shv(ipa)        &
-                      ,csite%can_co2(ipa),zref,d0,cmet%vels,csite%rough(ipa)               &
-                      ,csite%ustar(ipa),csite%tstar(ipa),estar,csite%qstar(ipa)            &
-                      ,csite%cstar(ipa),csite%zeta(ipa),csite%ribulk(ipa)                  &
-                      ,csite%ggnet(ipa))
+                      ,csite%can_co2(ipa),cmet%geoht,csite%veg_displace(ipa),cmet%vels     &
+                      ,csite%rough(ipa),csite%ustar(ipa),csite%tstar(ipa),estar            &
+                      ,csite%qstar(ipa),csite%cstar(ipa),csite%zeta(ipa),csite%ribulk(ipa) &
+                      ,csite%ggbare(ipa))
          !---------------------------------------------------------------------------------!
 
 
 
          !---------------------------------------------------------------------------------!
-         !     We don't compute a separate conductance for bare and vegetated grounds.     !
-         ! Since the roughness used by the ed_stars sub-routine already takes into account !
-         ! the roughness which considers both the bare and the vegetated areas, a single   !
-         ! number is obtained.  Here we update the correction factor only, and copy the    !
-         ! value for both bare and vegetated.                                              !
+         !     Calculate the leaf level aerodynamic resistance.                            !
          !---------------------------------------------------------------------------------!
-         csite%ggbare(ipa) = csite%ggnet(ipa)
-         csite%ggveg (ipa) = csite%ggnet(ipa)
-         csite%ggnet (ipa) = csite%ggnet(ipa) * ggfact
+         !----- Top of canopy wind speed. -------------------------------------------------!
+         uh = reduced_wind(csite%ustar(ipa),csite%zeta(ipa),csite%ribulk(ipa),cmet%geoht   &
+                          ,csite%veg_displace(ipa),htop,csite%rough(ipa))
          !---------------------------------------------------------------------------------!
+         do ico=1,cpatch%ncohorts
+            ipft      = cpatch%pft(ico)
+
+            !----- Find the crown relevant heights. ---------------------------------------!
+            htopcrown = cpatch%hite(ico)
+            hbotcrown = h2trunkh(cpatch%hite(ico),cpatch%pft(ico))
+            hmidcrown = 0.5 * (hbotcrown + htopcrown)
+            !------------------------------------------------------------------------------!
 
 
 
-         !---------------------------------------------------------------------------------!
-         !     This part of the code finds the wind profile.  We use the similarity theory !
-         ! to find the top cohort, and integrate the winds downwards using a method that   !
-         ! is similar to Leuning et al. (1995), but we use the local LAI and weight the    !
-         ! reduction factor by the crown area.  This should keep the winds stronger for    !
-         ! smaller cohorts when the tall ones aren't too dense, and approach the Leuning   !
-         ! et al. (1995) method when the cohort crown area approaches the patch area.      !
-         !---------------------------------------------------------------------------------!
-         uh = reduced_wind(csite%ustar(ipa),csite%zeta(ipa),csite%ribulk(ipa),zref,d0      &
-                          ,cpatch%hite(1),csite%rough(ipa))
-         !---------------------------------------------------------------------------------!
-         do ico = 1,cpatch%ncohorts
+            !----- Determine which layer we should use for wind reduction. ----------------!
+            k = max(1,ceiling(hmidcrown / dz_m97))
+            !------------------------------------------------------------------------------!
+
+
+
+            !----- Calculate the wind speed at height z. ----------------------------------!
+            cpatch%veg_wind(ico) = max( ugbmin                                             &
+                                      , uh * exp(-nn * (1. - cumldrag(k)/cumldrag(zcan))))
+            !------------------------------------------------------------------------------!
+
+
+
+            !------------------------------------------------------------------------------!
+            !    Find the aerodynamic conductances for heat and water at the leaf boundary !
+            ! layer.                                                                       !
+            !------------------------------------------------------------------------------!
             if (cpatch%resolvable(ico)) then
-               ipft       = cpatch%pft(ico)
-               hite       = cpatch%hite(ico)
-
-               cpatch%veg_wind(ico) = max(uh,ugbmin)
-               uh = uh * ( cpatch%crown_area(ico)                                          &
-                         * exp(- cpatch%lai(ico) / cpatch%crown_area(ico))                 &
-                         + 1.0 - cpatch%crown_area(ico))                          
-
-               !---------------------------------------------------------------------------!
-               !    Find the aerodynamic conductances for heat and water at the leaf       !
-               ! boundary layer.                                                           !
-               !---------------------------------------------------------------------------!
                call aerodynamic_conductances(ipft,cpatch%veg_wind(ico)                     &
                                             ,cpatch%veg_temp(ico),csite%can_temp(ipa)      &
                                             ,csite%can_shv(ipa),csite%can_rhos(ipa)        &
                                             ,gbhmos_min,cpatch%gbh(ico),cpatch%gbw(ico))
-               !---------------------------------------------------------------------------!
             else
-               cpatch%gbh(ico)      = 0.0
-               cpatch%gbw(ico)      = 0.0
-               cpatch%veg_wind(ico) = cmet%vels
+               cpatch%gbh(ico) = 0.0
+               cpatch%gbw(ico) = 0.0
             end if
+            !------------------------------------------------------------------------------!
          end do
+         !---------------------------------------------------------------------------------!
+
+
+
+
+         !---------------------------------------------------------------------------------!
+         !     Find the bulk resistance by integrating the inverse of the diffusivity for  !
+         ! each layer (e.g. Sellers et al. (1986)).  We assumed Km = sigma u, which is the !
+         ! preferred approach by Sellers et al. (1986).  To find sigma we used that        !
+         ! tau = rho * ustar^2 at z=h, and that tau = rho * Km * dU/dz.                    !
+         !---------------------------------------------------------------------------------!
+         rasveg  = 0.0
+         sigmakm = ustarouh * ustarouh * cumldrag(zcan) * pshelter(zcan)                   &
+                 / ( nn * cdrag(zcan) * lad(zcan) )
+         do k=1,zcan
+            windm97(k) = max(ugbmin, uh * exp(- nn * (1.0 - cumldrag(k)/cumldrag(zcan)) ))
+            Kdiff      = sigmakm * windm97(k) + kvwake
+            rasveg     = rasveg + dz_m97 / Kdiff
+         end do
+         !---------------------------------------------------------------------------------!
+
+
+
+
+
+
+         !---------------------------------------------------------------------------------!
+         !    According to Sellers et al (1986), equation A15, we must correct the         !
+         ! resistance for the unstable case.  There is a typo on their equation (a gravity !
+         ! term is missing, and g appears in their code in SiB-2.0 that is coupled to the  !
+         ! original BRAMS-4.0).  Instead of their approximation that is ultimately based   !
+         ! on Businger et al. (1971), we find an estimate of zeta using the same method    !
+         ! that is applied to get zeta for the Beljaars-Holtslag method.  According to     !
+         ! Sellers et al. (1986), we should apply this correction for the unstable case    !
+         ! only.                                                                           !
+         !---------------------------------------------------------------------------------!
+         if (csite%ground_temp(ipa) > csite%can_temp(ipa)) then
+            ribcan   = 2. * grav * (csite%can_temp(ipa) - csite%ground_temp(ipa))          &
+                     * htop * (1. - d0ohgt - z0ohgt)                                       &
+                     / ( (csite%can_temp(ipa) + csite%ground_temp(ipa)) * uh * uh)
+            hgtoz0   = (1. - d0ohgt) / z0ohgt
+            lnhgtoz0 = log(hgtoz0)
+            zetacan  = zoobukhov(ribcan,htop * (1.0 - d0ohgt),htop * z0ohgt                &
+                                ,hgtoz0,lnhgtoz0,hgtoz0,lnhgtoz0,.false.)
+            phih     = sqrt(1.0 - gamh * zetacan)
+         else
+            !----- Stable case, no correction needed. -------------------------------------!
+            phih     = 1.0
+         end if
+         csite%ggveg(ipa) = phih / rasveg
+         !---------------------------------------------------------------------------------!
+
+
+         !---------------------------------------------------------------------------------!
+         !     Find the net ground conductance.  The net conductance is derived from the   !
+         ! net resistance, which is, in turn, the weighted average of the resistances in   !
+         ! bare and vegetated grounds.                                                     !
+         !---------------------------------------------------------------------------------!
+         if (csite%opencan_frac(ipa) > 0.999 .or. csite%snowfac(ipa) >= 0.9) then
+            csite%ggnet(ipa) = ggfact * csite%ggbare(ipa)
+         else
+            csite%ggnet(ipa) = ggfact * csite%ggbare(ipa) * csite%ggveg(ipa)               &
+                             / ( csite%ggveg(ipa) + (1. - csite%opencan_frac(ipa))         &
+                                                  * csite%ggbare(ipa))
+         end if
+         !---------------------------------------------------------------------------------!
 
 
 
@@ -942,6 +886,7 @@ module canopy_struct_dynamics
          call can_whcap(csite%can_rhos(ipa),csite%can_temp(ipa),csite%can_depth(ipa)       &
                        ,wcapcan,wcapcani,hcapcani,ccapcani)
          !---------------------------------------------------------------------------------!
+
       end select
       !------------------------------------------------------------------------------------!
 
@@ -958,18 +903,29 @@ module canopy_struct_dynamics
 
    !=======================================================================================!
    !=======================================================================================!
+   !     This is the double precision version of the above sub-routine.                    !
+   !                                                                                       !
    !     The following subroutine calculates the turbulent transfer of scalar quantities   !
    ! using Monin Obukhov Similarity Theory under a few different flavors.  The basic       !
    ! assumptions are that the ground surface and canopy space is modeled as a rough wall   !
    ! boundary above which exists a dynamic sublayer, above which exists the free atmo-     !
    ! sphere.  We assume a logarithmic decay of wind speed over the dynamic sublayer, which !
-   ! is due to the assumption of constant shear (ustar) in the dynamic sublayer.  An       !
-   ! appropriate closure the MOST equations uses a reference wind velocity well above the  !
-   ! top of the rough wall boundary.  However sometimes we do not have wind speed at the   !
-   ! correct reference height, which brings us to the first two variants of this canopy    !
-   ! turbulence scheme.                                                                    !
+   ! is due to the assumption of constant shear (ustar) in the dynamic sublayer.           !
    !                                                                                       !
-   ! 0. Uses the default MOST method, where displacement height and rougness are linear    !
+   ! 0.  We apply the wind profile based on the similarity theory for the tallest cohort,  !
+   !     with further reduction due to the presence of obstacles (trees), similar to       !
+   !     Leuning et al. (1995) but considering a finite crown area.  The aerodynamic       !
+   !     resistance from ground to canopy air is found in a similar way as in LEAF-3.      !
+   !     Displacement height and roughness are linear functions of the vegetation height,  !
+   !     where vegetation height is the weighted average of cohort heights, the weights    !
+   !     being the basal area.                                                             !
+   !     References:                                                                       !
+   !                                                                                       !
+   !     Leuning, R., F. M. Kelliher, D. G. G. de Pury, E. D. Schulze, 1995: Leaf          !
+   !       nitrogen, photosynthesis, conductance and transpiration: scaling from leaves to !
+   !       canopies.  Plant, Cell and Environ., 18, 1183-1200.                             !
+   !                                                                                       !
+   ! 1. This is similar to option 0, where displacement height and rougness are linear     !
    !    functions of mean canopy height, where mean canopy height is defined by the        !
    !    dead-biomass weighted average of canopy height.  Wind speed and diffusivity decay  !
    !    exponentially in the canopy on parameter alpha.  HOWEVER, if the windspeed at      !
@@ -978,12 +934,6 @@ module canopy_struct_dynamics
    !    displacement height.  After ustar is calculated, then use displacement height in   !
    !    the calculation of the eddy length scale at the canopy top to find diffusivity at  !
    !    canopy top. THIS IS THE METHOD USED IN LEAF3 AND ED2.0.                            !
-   !                                                                                       !
-   ! 1. This is the same as method 0, with the following difference.  If the wind-speed at !
-   !    reference height is less than the canopy height, first, calculate wind speed at    !
-   !    canopy top using the exponential decay function (reversely).  Then solve for ustar !
-   !    with this wind speed, the canopy top as reference height, and the default zero     !
-   !    plane displacement height and roughness length.                                    !
    !                                                                                       !
    ! 2. Follow the methods of Massman 1997.  The canopy top is taken as the height of the  !
    !    tallest cohort in the patch. The displacement height is determined by a center of  !
@@ -1001,13 +951,11 @@ module canopy_struct_dynamics
    !      Vegetation Of Arbitrary Structure. Boundary Layer Meteorology, 83,               !
    !      p. 407-421, 1997.                                                                !
    !                                                                                       !
+   ! 3.  Same as 2, but the drag and sheltering parameters are functions of height.        !
+   !                                                                                       !
    !     Ultimately, this routine solves for the resistance of water vapor and sensible    !
    ! heat from the soil surface to canopy air space and from the leaf surfaces to canopy   !
    ! air space.                                                                            !
-   !                                                                                       !
-   !     THIS IS A DOUBLE-PRECISION SUBROUTINE, INTENDED TO BE USED WITH RUNGE-KUTTA       !
-   ! SCHEME.  THE SINGLE-PRECISIION VERSION, WHICH IS USED BY THE EULER INTEGRATION IS     !
-   ! DEFINED ABOVE.                                                                        !
    !---------------------------------------------------------------------------------------!
    subroutine canopy_turbulence8(csite,initp,ipa)
       use ed_state_vars  , only : polygontype          & ! structure
@@ -1022,84 +970,99 @@ module canopy_struct_dynamics
                                 , wcapcani             & ! intent(out)
                                 , hcapcani             & ! intent(out)
                                 , ccapcani             ! ! intent(out)
-      use pft_coms       , only : crown_depth_fraction & ! intent(in)
-                                , leaf_width           ! ! intent(in)
       use canopy_air_coms, only : icanturb             & ! intent(in), can. turb. scheme
                                 , ustmin8              & ! intent(in)
                                 , ugbmin8              & ! intent(in)
                                 , ubmin8               & ! intent(in)
                                 , exar8                & ! intent(in)
-                                , vh2dh8               & ! intent(in)
-                                , dz8                  & ! intent(in)
-                                , Cd08                 & ! intent(in)
-                                , Pm8                  & ! intent(in)
+                                , gamh8                & ! intent(in)
+                                , dz_m978              & ! intent(in)
+                                , cdrag08              & ! intent(in)
+                                , pm08                 & ! intent(in)
                                 , c1_m978              & ! intent(in)
                                 , c2_m978              & ! intent(in)
                                 , c3_m978              & ! intent(in)
                                 , kvwake8              & ! intent(in)
+                                , alpha1_m978          & ! intent(in)
+                                , alpha2_m978          & ! intent(in)
+                                , psi_m978             & ! intent(in)
+                                , zztop8               & ! intent(in)
+                                , zzmid8               & ! intent(in)
+                                , lad8                 & ! intent(in)
+                                , dladdz8              & ! intent(in)
+                                , cdrag8               & ! intent(in)
+                                , pshelter8            & ! intent(in)
+                                , cumldrag8            & ! intent(in)
+                                , windm978             & ! intent(in)
                                 , rb_inter             & ! intent(in)
                                 , rb_slope             & ! intent(in)
-                                , ggfact8              ! ! intent(in)
+                                , ggfact8              & ! intent(in)
+                                , zoobukhov8           ! ! intent(in)
       use consts_coms    , only : vonk8                & ! intent(in)
                                 , cpi8                 & ! intent(in)
+                                , grav8                & ! intent(in)
                                 , epim18               & ! intent(in)
                                 , sqrt2o28             ! ! intent(in)
       use soil_coms      , only : snow_rough8          & ! intent(in)
                                 , soil_rough8          ! ! intent(in)
-      use allometry      , only : h2trunkh             ! ! function
+      use allometry      , only : h2trunkh             & ! function
+                                , dbh2bl               ! ! function
       implicit none
       !----- Arguments --------------------------------------------------------------------!
-      type(sitetype)     , target     :: csite
-      type(patchtype)    , pointer    :: cpatch
-      type(rk4patchtype) , target     :: initp
+      type(sitetype)     , target     :: csite         ! Current site
+      type(rk4patchtype) , target     :: initp         ! Current integrator
       integer            , intent(in) :: ipa           ! Patch loop
+      !----- Pointers ---------------------------------------------------------------------!
+      type(patchtype)    , pointer    :: cpatch        ! Current patch
       !----- Local variables --------------------------------------------------------------!
       integer        :: ico        ! Cohort loop
       integer        :: ipft       ! PFT alias
       integer        :: k          ! Elevation index
       integer        :: zcan       ! Index of canopy top elevation
+      integer        :: kafull     ! First layer fully occupied by crown
+      integer        :: kzfull     ! Last layer fully occupied by crown
+      integer        :: kapartial  ! First layer partially occupied by crown
+      integer        :: kzpartial  ! Last layer partially occupied by crown
       logical        :: stable     ! Stable canopy air space
+      real(kind=8)   :: rasveg     ! Resistance of vegetated ground             [      s/m]
       real(kind=8)   :: atm_thetav ! Free atmosphere virtual potential temp.    [        K]
       real(kind=8)   :: can_thetav ! Free atmosphere virtual potential temp.    [        K]
-      real(kind=8)   :: sigma_e    ! Vortex penetration depth                   [        m]
-      real(kind=8)   :: crown_d    ! Diameter of a plant's crown                [        m]
-      real(kind=8)   :: Re_c       ! Canopy Reynolds Number                     [      ---]
-      real(kind=8)   :: Cd         ! Canopy Drag Coefficient                    [      ---]
-      real(kind=8)   :: a_front    ! Frontal area / vol.of flow exposed to drag [    m2/m3]
-      real(kind=8)   :: zetac      ! Cumulative zeta function                   [      ---]
+      real(kind=8)   :: ldga_bk    ! Cumulative zeta function                   [      ---]
+      real(kind=8)   :: lyrhalf    ! Half the contrib. of this layer to zeta    [      1/m]
+      real(kind=8)   :: sigmakm    ! Km coefficient at z=h                      [        m]
       real(kind=8)   :: K_top      ! Diffusivity at canopy top z=h              [     m2/s]
-      real(kind=8)   :: crowndepth ! Depth of vegetation leafy crown            [        m]
-      real(kind=8)   :: h          ! Canopy height                              [        m]
-      real(kind=8)   :: layertai   ! The total leaf area of that discrete layer [         ]
-      real(kind=8)   :: idz        ! Height of the lowest discrete canopy level [        m]
-      real(kind=8)   :: z          ! Elevation in the canopy                    [        m]
-      real(kind=8)   :: Kdiff      ! Diffusivity                                [     m2/s]
-      real(kind=8)   :: z_om       ! Roughness length that imposes drag 
-                                   !     on the ABL winds                       [        m]
-      real(kind=8)   :: zref       ! Reference height                           [        m]
-      real(kind=8)   :: vels_ref   ! Wind speed at the refernce height          [      m/s]
+      real(kind=8)   :: kdiff      ! Diffusivity                                [     m2/s]
       real(kind=8)   :: surf_rough ! Roughness length of the bare ground 
                                    !     at canopy bottom                       [        m]
       real(kind=8)   :: uh         ! Wind speed at the canopy top (z=h)         [      m/s]
       real(kind=8)   :: factv      ! Wind-dependent term for old rasveg
       real(kind=8)   :: aux        ! Aux. variable
-      real(kind=8)   :: laicum     ! Cumulative LAI (from top to bottom)        [    m2/m2]
       real(kind=8)   :: gbhmos_min ! Minimum leaf boundary layer heat condct.   [      m/s]
-      real(kind=8)   :: hite8      ! Double precision version of height.        [        m]
-      real(kind=8)   :: rasveg     ! Resistance of vegetated ground             [      s/m]
-      !----- Saved variables --------------------------------------------------------------!
-      real(kind=8), dimension(200), save :: zeta     ! Attenuation factor for sub-canopy K 
-                                                     !    and u.  A vector size of 200, 
-                                                     !    allows for trees 100 meters tall
-      real(kind=8)                , save :: d0       ! Zero-plane displacement height (m)
-      real(kind=8)                , save :: ustarouh ! The ratio of ustar over u(h)
-      real(kind=8)                , save :: eta      ! The in-canopy wind attenuation scal-
-                                                     !    ing parameter
+      real(kind=8)   :: ustarouh   ! The ratio of ustar over u(h)               [      ---]
+      real(kind=8)   :: nn         ! In-canopy wind attenuation scal. param.    [      ---]
+      real(kind=8)   :: waiuse     ! Wood area index                            [    m2/m2]
+      real(kind=8)   :: htopcrown  ! height at the top of the crown             [        m]
+      real(kind=8)   :: hmidcrown  ! Height at the middle of the crown          [        m]
+      real(kind=8)   :: hbotcrown  ! Height at the bottom of the crown          [        m]
+      real(kind=8)   :: htop       ! Height of the topmost layer                [        m]
+      real(kind=8)   :: dzcrown    ! Depth that contains leaves/branches        [        m]
+      real(kind=8)   :: d0ohgt     ! d0/height                                  [      ---]
+      real(kind=8)   :: z0ohgt     ! z0/height                                  [      ---]
+      real(kind=8)   :: phih       ! Correction term for unstable cases         [      ---]
+      real(kind=8)   :: ribcan     ! Ground-to-canopy bulk Richardson number    [      ---]
+      real(kind=8)   :: hgtoz0     ! height/z0                                  [      ---]
+      real(kind=8)   :: lnhgtoz0   ! log(height/z0)                             [      ---]
+      real(kind=8)   :: zetacan    ! Estimate of z/L within the canopy          [      ---]
+      real(kind=8)   :: ladcohort  ! Leaf Area Density of this cohort           [    m2/m3]
       !------ External procedures ---------------------------------------------------------!
       real        , external             :: sngloff  ! Safe double -> simple precision.
       !------------------------------------------------------------------------------------!
 
+
+
+      !----- Assign some pointers. --------------------------------------------------------!
       cpatch=>csite%patch(ipa)
+      !------------------------------------------------------------------------------------!
 
 
       !------------------------------------------------------------------------------------!
@@ -1115,11 +1078,6 @@ module canopy_struct_dynamics
       ! soil, no d0 and exit.                                                              !
       !------------------------------------------------------------------------------------!
       if (cpatch%ncohorts == 0) then
-         
-         vels_ref = rk4site%vels
-         zref     = rk4site%geoht
-         h        = initp%can_depth
-         d0       = 0.d0
 
          !----- Calculate the surface roughness inside the canopy. ------------------------!
          initp%rough = soil_rough8 *(1.d0 - initp%snowfac) + snow_rough8 * initp%snowfac
@@ -1127,9 +1085,12 @@ module canopy_struct_dynamics
          !----- Finding the characteristic scales (a.k.a. stars). -------------------------!
          call ed_stars8(rk4site%atm_theta,rk4site%atm_theiv,rk4site%atm_shv                &
                        ,rk4site%atm_co2,initp%can_theta ,initp%can_theiv ,initp%can_shv    &
-                       ,initp%can_co2,zref,d0,vels_ref,initp%rough                         &
-                       ,initp%ustar,initp%tstar,initp%estar,initp%qstar,initp%cstar        &
-                       ,initp%zeta,initp%ribulk,initp%ggbare)
+                       ,initp%can_co2,rk4site%geoht,initp%veg_displace,rk4site%vels        &
+                       ,initp%rough,initp%ustar,initp%tstar,initp%estar,initp%qstar        &
+                       ,initp%cstar,initp%zeta,initp%ribulk,initp%ggbare)
+         !---------------------------------------------------------------------------------!
+
+
 
          !---------------------------------------------------------------------------------!
          !      This patch is empty, so we can't define a conductance for vegetated        !
@@ -1154,6 +1115,18 @@ module canopy_struct_dynamics
 
 
 
+
+      !----- Check whether the reference height is high enough . --------------------------!
+      if (dble(cpatch%hite(1)) >= rk4site%geoht) then
+         write (unit=*,fmt='(a)') ' Your reference height is too low...'
+         write (unit=*,fmt='(a,1x,es12.5)') ' Ref. height:           ',rk4site%geoht
+         write (unit=*,fmt='(a,1x,es12.5)') ' Tallest cohort height: ',cpatch%hite(1)
+         call fatal_error('Bad reference height','canopy_turbulence8'                      &
+                         ,'canopy_struct_dynamics.f90')
+      end if
+      !------------------------------------------------------------------------------------!
+
+
       !---- Find the minimum boundary layer heat conductance. -----------------------------!
       if (any(initp%resolvable)) then
          gbhmos_min = 1.d0 / ( dble(rb_inter) + dble(rb_slope)                             &
@@ -1172,19 +1145,14 @@ module canopy_struct_dynamics
       select case (icanturb)
 
 
+
       !------------------------------------------------------------------------------------!
       ! LEAF-3 Case: This approach is very similar to older implementations of ED-2, and   !
-      !              it is very similar to LEAF-3.                                         !
+      !              it is very similar to LEAF-3, and to option 1, except that option 1   !
+      !              computes the vegetated ground conductance and wind profile different- !
+      !              ly.                                                                   !
       !------------------------------------------------------------------------------------!
-      case (-2,-1) 
-         !----- Vegetation height. --------------------------------------------------------!
-         h        = initp%veg_height
-         !----- 0-plane displacement height. ----------------------------------------------!
-         d0       = initp%veg_displace
-         zref     = rk4site%geoht
-         !---------------------------------------------------------------------------------!
-
-
+      case (0) 
 
          !---------------------------------------------------------------------------------!
          !     The roughness is found by combining two weighted averages.  The first one   !
@@ -1199,27 +1167,24 @@ module canopy_struct_dynamics
          !---------------------------------------------------------------------------------!
 
 
-
-         !----- Get the appropriate characteristic wind speed. ----------------------------!
-         vels_ref = max(ubmin8,rk4site%vels)
-         !---------------------------------------------------------------------------------!
-
-
          !---------------------------------------------------------------------------------!
          !      Get ustar for the ABL, assume it is a dynamic shear layer that generates a !
          ! logarithmic profile of velocity.                                                !
          !---------------------------------------------------------------------------------!
          call ed_stars8(rk4site%atm_theta,rk4site%atm_theiv,rk4site%atm_shv                &
                        ,rk4site%atm_co2,initp%can_theta ,initp%can_theiv,initp%can_shv     &
-                       ,initp%can_co2,zref,d0,vels_ref,initp%rough                         &
-                       ,initp%ustar,initp%tstar,initp%estar,initp%qstar,initp%cstar        &
-                       ,initp%zeta,initp%ribulk,initp%ggbare)
+                       ,initp%can_co2,rk4site%geoht,initp%veg_displace,rk4site%vels        &
+                       ,initp%rough,initp%ustar,initp%tstar,initp%estar,initp%qstar        &
+                       ,initp%cstar,initp%zeta,initp%ribulk,initp%ggbare)
          !---------------------------------------------------------------------------------!
 
          if (initp%snowfac < 9.d-1) then
-            factv        = log((zref-d0) / initp%rough) / (vonk8 * vonk8 * vels_ref)
-            aux          = exp(exar8 * (1.d0 - (d0 + initp%rough) / h))
-            initp%ggveg  = (exar8 * (h - d0)) / (factv * h * (exp(exar8) - aux))
+            factv        = log((rk4site%geoht-initp%veg_displace) / initp%rough)           &
+                         / (vonk8 * vonk8 * rk4site%vels)
+            aux          = exp(exar8 * (1.d0 - (initp%veg_displace + initp%rough)          &
+                                             / initp%veg_height) )
+            initp%ggveg  = (exar8 * (initp%veg_height - initp%veg_displace))               &
+                         / (factv * initp%veg_displace * (exp(exar8) - aux))
          else 
             initp%ggveg = 0.d0
          end if
@@ -1231,23 +1196,21 @@ module canopy_struct_dynamics
          ! capacities.                                                                     !
          !---------------------------------------------------------------------------------!
          !----- Top of canopy wind speed. -------------------------------------------------!
-         uh = reduced_wind8(initp%ustar,initp%zeta,initp%ribulk,zref,d0                    &
-                           ,dble(cpatch%hite(1)),initp%rough)
-         laicum = 0.d0
-         do ico=1,cpatch%ncohorts
-            if (initp%resolvable(ico)) then
-               ipft  = cpatch%pft(ico)
+         uh = reduced_wind8(initp%ustar,initp%zeta,initp%ribulk,rk4site%geoht              &
+                           ,initp%veg_displace,dble(cpatch%hite(1)),initp%rough)
 
-               !----- Calculate the wind speed at height z. -------------------------------!
-               select case (icanturb)
-               case (-2)
-                  initp%veg_wind(ico) = max(uh,ugbmin8)
-                  uh = uh * ( initp%crown_area(ico)                                        &
-                            * exp(- initp%lai(ico) / initp%crown_area(ico))                &
-                            + 1.d0 - initp%crown_area(ico) )
-               case (-1)
-                  initp%veg_wind(ico) = max(ugbmin8,uh * exp ( - 5.d-1 * laicum))
-               end select
+         do ico=1,cpatch%ncohorts
+
+            ipft  = cpatch%pft(ico)
+
+            !----- Calculate the wind speed at height z. ----------------------------------!
+            initp%veg_wind(ico) = max(uh,ugbmin8)
+            uh = uh * ( initp%crown_area(ico)                                              &
+                      * exp(- 5.d-1 * initp%lai(ico) / initp%crown_area(ico))              &
+                      + 1.d0 - initp%crown_area(ico) )
+            !------------------------------------------------------------------------------!
+
+            if (initp%resolvable(ico)) then
 
 
                !---------------------------------------------------------------------------!
@@ -1264,10 +1227,7 @@ module canopy_struct_dynamics
                cpatch%gbh(ico) = sngloff(initp%gbh(ico),tiny_offset)
                cpatch%gbw(ico) = sngloff(initp%gbw(ico),tiny_offset)
                !---------------------------------------------------------------------------!
-
-               laicum = laicum + initp%lai(ico)
             else
-               initp%veg_wind    (ico) = vels_ref
                initp%veg_reynolds(ico) = 0.d0
                initp%veg_grashof (ico) = 0.d0
                initp%veg_nussfree(ico) = 0.d0
@@ -1293,28 +1253,24 @@ module canopy_struct_dynamics
          ! net resistance, which is, in turn, the weighted average of the resistances in   !
          ! bare and vegetated grounds.                                                     !
          !---------------------------------------------------------------------------------!
-         if (initp%opencan_frac > 9.9d-1 .or. initp%snowfac >= 9.d-1) then
+         if (initp%opencan_frac > 9.99d-1 .or. initp%snowfac >= 9.d-1) then
             initp%ggnet = ggfact8 * initp%ggbare
          else
             initp%ggnet = ggfact8 * initp%ggbare * initp%ggveg                             &
-                        / (         initp%opencan_frac  * initp%ggveg                      &
-                          + (1.d0 - initp%opencan_frac) * initp%ggbare )
+                        / ( initp%ggveg + (1.d0 - initp%opencan_frac) * initp%ggbare )
          end if
          !---------------------------------------------------------------------------------!
       !------------------------------------------------------------------------------------!
 
-      !------------------------------------------------------------------------------------!
-      ! Default Case: There is no use of zero-plane displacement in calculating ustar from !
-      !               log-scaling the constant shear layer.  So even if the reference      !
-      !               height is inside the canopy, the mathematics will be well behaved,   !
-      !               even though it is nonsense.                                          !
-      !------------------------------------------------------------------------------------!
-      case (0)
-         h        = initp%veg_height  ! Canopy air space depth
-         d0       = vh2dh8 * h        ! 0-plane displacement
-         vels_ref = rk4site%vels
-         zref     = rk4site%geoht
 
+
+
+
+      !------------------------------------------------------------------------------------!
+      ! ED-2.1 Case: There uses a slightly different approach for wind profile and ground  !
+      !              conductance.                                                          !
+      !------------------------------------------------------------------------------------!
+      case (1)
          !---------------------------------------------------------------------------------!
          !     The roughness is found by combining two weighted averages.  The first one   !
          ! checks the fraction of the patch that has closed canopy, and averages between   !
@@ -1329,69 +1285,90 @@ module canopy_struct_dynamics
          
          !----- Calculate the soil surface roughness inside the canopy. -------------------!
          surf_rough = soil_rough8 * (1.d0 - initp%snowfac) + snow_rough8 * initp%snowfac
+         !---------------------------------------------------------------------------------!
+
 
 
          !---------------------------------------------------------------------------------!
          !      Get ustar for the ABL, assume it is a dynamic shear layer that generates a !
          ! logarithmic profile of velocity.                                                !
-         !                                                                                 !
-         ! IMPORTANT NOTE: the displacement height here (d0), is used only for scaling the !
-         !                 vortices when determining diffusivity.  The default method      !
-         !                 taken from LEAF-3, as applied here, assumes that the zero plane !
-         !                 is at the ground surface when computing the log wind profile,   !
-         !                 hence the 0.0 as the argument to ed_stars8.                     !
          !---------------------------------------------------------------------------------!
          call ed_stars8(rk4site%atm_theta,rk4site%atm_theiv,rk4site%atm_shv                &
                        ,rk4site%atm_co2,initp%can_theta,initp%can_theiv,initp%can_shv      &
-                       ,initp%can_co2,zref,0.d0,vels_ref,initp%rough                       &
-                       ,initp%ustar,initp%tstar,initp%estar,initp%qstar,initp%cstar        &
-                       ,initp%zeta,initp%ribulk,initp%ggbare)
+                       ,initp%can_co2,rk4site%geoht,initp%veg_displace,rk4site%vels        &
+                       ,initp%rough,initp%ustar,initp%tstar,initp%estar,initp%qstar        &
+                       ,initp%cstar,initp%zeta,initp%ribulk,initp%ggbare)
 
-         K_top = vonk8 * initp%ustar*(h-d0)
 
          !---------------------------------------------------------------------------------!
          !     The surface conductance in the sub-canopy layer is the integration of       !
          ! K, from the rough soil surface, to the reference point in the canopy            !
          ! where the state variable is integrated (canopy top ~ h).                        !
          !---------------------------------------------------------------------------------!
+         K_top = vonk8 * initp%ustar * (initp%veg_height - initp%veg_displace)
          initp%ggveg = (exar8 * K_top)                                                     &
-                     / (exp(exar8) * h * (exp(-exar8 * surf_rough/h)-exp(-exar8)))
+                     / ( exp(exar8) * initp%veg_height                                     &
+                       * (exp(-exar8 * surf_rough/initp%veg_height) - exp(-exar8)))
+         !---------------------------------------------------------------------------------!
 
 
          !---------------------------------------------------------------------------------!
-         !     This part of the code initializes the geometry of the canopy air space, the !
+         !     This part of the code finds the geometry of the canopy air space, the       !
          ! structure of the vegetation and its attenuation effects and the heat and water  !
          ! capacities.                                                                     !
          !---------------------------------------------------------------------------------!
          !----- Top of canopy wind speed. -------------------------------------------------!
-         uh = reduced_wind8(initp%ustar,initp%zeta,initp%ribulk,zref,d0                    &
-                          ,dble(cpatch%hite(1)),initp%rough)
-         
+         uh   = reduced_wind8(initp%ustar,initp%zeta,initp%ribulk,rk4site%geoht            &
+                             ,initp%veg_displace,dble(cpatch%hite(1)),initp%rough)
+         htop = dble(cpatch%hite(1))
          do ico=1,cpatch%ncohorts
 
+            !----- Alias for PFT type. ----------------------------------------------------!
             ipft  = cpatch%pft(ico)
-            hite8 = dble(cpatch%hite(ico))
+            !------------------------------------------------------------------------------!
+
+
 
             !----- Estimate the height center of the crown. -------------------------------!
-            !z = hite8 * (1.d0 - 5.d-1 * dble(crown_depth_fraction(ipft)))
-            z = 5.d-1 * (hite8 + dble(h2trunkh(cpatch%hite(ico))))
+            htopcrown = dble(cpatch%hite(ico))
+            hbotcrown = dble(h2trunkh(cpatch%hite(ico),ipft))
+            hmidcrown = 5.d-1 * (htopcrown + hbotcrown)
+            !------------------------------------------------------------------------------!
+
+
 
             !----- Calculate the wind speed at height z. ----------------------------------!
-            initp%veg_wind(ico) = max(ugbmin8,uh * exp(-exar8 * (1.d0 - z/h)))
+            initp%veg_wind(ico) = max(ugbmin8                                              &
+                                     , uh * exp(-exar8 * (1.d0 - hmidcrown/ htop)))
 
             !------------------------------------------------------------------------------!
             !    Find the aerodynamic conductances for heat and water at the leaf boundary !
             ! layer.                                                                       !
             !------------------------------------------------------------------------------!
-            call aerodynamic_conductances8(ipft,initp%veg_wind(ico),initp%veg_temp(ico)    &
-                                          ,initp%can_temp,initp%can_shv,initp%can_rhos     &
-                                          ,gbhmos_min,initp%gbh(ico),initp%gbw(ico)        &
-                                          ,initp%veg_reynolds(ico),initp%veg_grashof(ico)  &
-                                          ,initp%veg_nussfree(ico),initp%veg_nussforc(ico))
-            cpatch%gbh(ico) = sngloff(initp%gbh(ico),tiny_offset)
-            cpatch%gbw(ico) = sngloff(initp%gbw(ico),tiny_offset)
+            if (initp%resolvable(ico)) then
+               call aerodynamic_conductances8(ipft,initp%veg_wind(ico),initp%veg_temp(ico) &
+                                             ,initp%can_temp,initp%can_shv,initp%can_rhos  &
+                                             ,gbhmos_min,initp%gbh(ico),initp%gbw(ico)     &
+                                             ,initp%veg_reynolds(ico)                      &
+                                             ,initp%veg_grashof(ico)                       &
+                                             ,initp%veg_nussfree(ico)                      &
+                                             ,initp%veg_nussforc(ico))
+               cpatch%gbh(ico) = sngloff(initp%gbh(ico),tiny_offset)
+               cpatch%gbw(ico) = sngloff(initp%gbw(ico),tiny_offset)
+            else
+               initp%veg_reynolds(ico) = 0.d0
+               initp%veg_grashof (ico) = 0.d0
+               initp%veg_nussfree(ico) = 0.d0
+               initp%veg_nussforc(ico) = 0.d0
+               initp%gbh         (ico) = 0.d0
+               initp%gbw         (ico) = 0.d0
+               cpatch%gbh        (ico) = 0.0
+               cpatch%gbw        (ico) = 0.0
+            end if
             !------------------------------------------------------------------------------!
          end do
+         !---------------------------------------------------------------------------------!
+
 
 
          !---------------------------------------------------------------------------------!
@@ -1407,12 +1384,11 @@ module canopy_struct_dynamics
          ! net resistance, which is, in turn, the weighted average of the resistances in   !
          ! bare and vegetated grounds.                                                     !
          !---------------------------------------------------------------------------------!
-         if (initp%opencan_frac > 9.99d-1 .or. csite%snowfac(ipa) >= 0.9) then
+         if (initp%opencan_frac > 9.99d-1 .or. initp%snowfac >= 9.d-1) then
             initp%ggnet = ggfact8 * initp%ggbare
          else
             initp%ggnet = ggfact8 * initp%ggbare * initp%ggveg                             &
-                        / (         initp%opencan_frac  * initp%ggveg                      &
-                          + (1.d0 - initp%opencan_frac) * initp%ggbare )
+                        / (initp%ggveg + (1.d0 - initp%opencan_frac) * initp%ggbare )
          end if
          !---------------------------------------------------------------------------------!
       !------------------------------------------------------------------------------------!
@@ -1421,422 +1397,272 @@ module canopy_struct_dynamics
 
 
       !------------------------------------------------------------------------------------!
-      !     If the reference height is less than the height of the canopy, then we have to !
-      ! realize that we are in the exponential extinction layer.  If we are above the      !
-      ! canpopy, we are in a log extinction zone (interfacial layer).  So if zref<h, use   !
-      ! the exponential decay function to calculate u at the canopy top, and then use that !
-      ! velocity to estimate ustar.                                                        !
+      !      Use the methods of Massman (1997).  Using option 2 will make the within-      !
+      ! canopy drag and sheltering factors to be constant, whereas option 3 will allow the !
+      ! values to vary.                                                                    !
       !------------------------------------------------------------------------------------!
-      case(1)
-         h    = initp%can_depth             ! Canopy height
-         zref = rk4site%geoht               ! Initial reference height
-         d0   = vh2dh8 * h                  ! 0-plane displacement
-
+      case (2,3)
+         !---------------------------------------------------------------------------------!
+         !    Find the top layer and the top height.                                       !
+         !---------------------------------------------------------------------------------!
+         zcan = ceiling(dble(cpatch%hite(1)) / dz_m978)
+         htop = zztop8(zcan)
+         !---------------------------------------------------------------------------------!
 
 
          !---------------------------------------------------------------------------------!
-         !     The roughness is found by combining two weighted averages.  The first one   !
-         ! checks the fraction of the patch that has closed canopy, and averages between   !
-         ! soil and vegetation roughness.  The other is the fraction of the vegetation     !
-         ! that is covered in snow.                                                        !
+         !     Loop through cohorts, and integrate the leaf area density.  Notice that we  !
+         ! will be solving all cohorts here, because even those with no leaves have        !
+         ! effects on the canopy air turbulence.  We only need to decide whether we have   !
+         ! branches or not, and we do it outside the loop to make it more efficient.       !
          !---------------------------------------------------------------------------------!
-         initp%rough = snow_rough8 * initp%snowfac                                         &
-                     + ( soil_rough8     * initp%opencan_frac                              &
-                       + initp%veg_rough * (1.d0 - initp%opencan_frac) )                   &
-                     * (1.d0 - initp%snowfac)
-         !---------------------------------------------------------------------------------!
-         
-         !----- Calculate the soil surface roughness inside the canopy. -------------------!
-         surf_rough = soil_rough8 * (1.d0 - initp%snowfac) + snow_rough8 * initp%snowfac
-
-         !----- Check what is the relative position of our reference data. ----------------!
-         if (rk4site%geoht < h) then
-            !----- First, find the wind speed at the canopy top. --------------------------!
-            vels_ref = rk4site%vels / exp(-exar8 *(1.d0 - zref/h))
-            !----- Assume a new reference elevation at the canopy top. --------------------!
-            zref = h
+         !----- Reset the leaf area density array. ----------------------------------------!
+         lad8(:) = 0.d0
+         select case (ibranch_thermo)
+         case (0)
             !------------------------------------------------------------------------------!
-
-
-
+            !     Although we are not solving branch thermodynamics, we have some drag     !
+            ! effect due to the branches.  Assume branch area index to be 15% of on-       !
+            ! -allometry LAI.  Even for grasses we may want to keep some residual due to   !
+            ! dead material that remains around.                                           !
             !------------------------------------------------------------------------------!
-            !     Calculate the heat and mass storage capacity of the canopy.              !
-            !------------------------------------------------------------------------------!
-            call can_whcap8(initp%can_rhos,initp%can_temp,initp%can_depth                  &
-                           ,wcapcan,wcapcani,hcapcani,ccapcani)
-            !------------------------------------------------------------------------------!
-
-         else
-            !----- First, find the wind speed at the canopy top. --------------------------!
-            vels_ref = rk4site%vels
-            !----- Assume a new reference elevation at the canopy top. --------------------!
-            zref     = rk4site%geoht
-            !------------------------------------------------------------------------------!
-
-
-
-            !------------------------------------------------------------------------------!
-            !     Calculate the heat and mass storage capacity of the canopy.              !
-            !------------------------------------------------------------------------------!
-            call can_whcap8(initp%can_rhos,initp%can_temp,initp%can_depth                  &
-                           ,wcapcan,wcapcani,hcapcani,ccapcani)
-            !------------------------------------------------------------------------------!
-         end if
-         
-         !---------------------------------------------------------------------------------!
-         !      Get ustar for the ABL, assume it is a dynamic shear layer that generates a !
-         ! logarithmic profile of velocity.                                                !
-         !---------------------------------------------------------------------------------!
-         call ed_stars8(rk4site%atm_theta,rk4site%atm_theiv,rk4site%atm_shv                &
-                       ,rk4site%atm_co2,initp%can_theta,initp%can_theiv,initp%can_shv      &
-                       ,initp%can_co2,zref,d0,vels_ref,initp%rough                         &
-                       ,initp%ustar,initp%tstar,initp%estar,initp%qstar,initp%cstar        &
-                       ,initp%zeta,initp%ribulk,initp%ggbare)
-
-         K_top = vonk8 * initp%ustar * (h-d0)
-
-         !---------------------------------------------------------------------------------!
-         !     The surface conductance in the sub-canopy layer is the integration of K,    !
-         ! from the rough soil surface, to the reference point in the canopy where the     !
-         ! state variable is integrated (canopy top ~ h).                                  !
-         !---------------------------------------------------------------------------------!
-         initp%ggveg = (exar8 * K_top)                                                     &
-                     / (exp(exar8) * h * (exp(-exar8 * surf_rough/h)-exp(-exar8)))
-         !---------------------------------------------------------------------------------!
-
-         !---------------------------------------------------------------------------------!
-         !     Calculate the leaf level aerodynamic resistance.                            !
-         !---------------------------------------------------------------------------------!
-         !----- Top of canopy wind speed. -------------------------------------------------!
-         uh = reduced_wind8(initp%ustar,initp%zeta,initp%ribulk,zref,d0                    &
-                          ,dble(cpatch%hite(1)),initp%rough)
-
-         do ico=1,cpatch%ncohorts
-            ipft  = cpatch%pft(ico)
-            hite8 = dble(cpatch%hite(ico))
-            !----- Estimate the height center of the crown. -------------------------------!
-            z = hite8 * (1.d0-5.d-1*dble(crown_depth_fraction(ipft)))
-
-            !----- Calculate the wind speed at height z. ----------------------------------!
-            initp%veg_wind(ico) = max(ugbmin8,uh * exp(-exar8 * (1.d0 - z/h)))
-
-            !------------------------------------------------------------------------------!
-            !    Find the aerodynamic conductances for heat and water at the leaf boundary !
-            ! layer.                                                                       !
-            !------------------------------------------------------------------------------!
-            call aerodynamic_conductances8(ipft,initp%veg_wind(ico),initp%veg_temp(ico)    &
-                                          ,initp%can_temp,initp%can_shv,initp%can_rhos     &
-                                          ,gbhmos_min,initp%gbh(ico),initp%gbw(ico)        &
-                                          ,initp%veg_reynolds(ico),initp%veg_grashof(ico)  &
-                                          ,initp%veg_nussfree(ico),initp%veg_nussforc(ico))
-            cpatch%gbh(ico) = sngloff(initp%gbh(ico),tiny_offset)
-            cpatch%gbw(ico) = sngloff(initp%gbw(ico),tiny_offset)
-            !------------------------------------------------------------------------------!
-         end do
-         !---------------------------------------------------------------------------------!
-
-
-         !---------------------------------------------------------------------------------!
-         !     Find the net ground conductance.  The net conductance is derived from the   !
-         ! net resistance, which is, in turn, the weighted average of the resistances in   !
-         ! bare and vegetated grounds.                                                     !
-         !---------------------------------------------------------------------------------!
-         if (initp%opencan_frac > 9.99d-1 .or. csite%snowfac(ipa) >= 0.9) then
-            initp%ggnet = ggfact8 * initp%ggbare
-         else
-            initp%ggnet = ggfact8 * initp%ggbare * initp%ggveg                             &
-                        / (         initp%opencan_frac  * initp%ggveg                      &
-                          + (1.d0 - initp%opencan_frac) * initp%ggbare )
-         end if
-         !---------------------------------------------------------------------------------!
-      !------------------------------------------------------------------------------------!
-
-
-
-
-      !------------------------------------------------------------------------------------!
-      !      Use the methods of Massman 97, to close the equations of estimating turbulent !
-      ! transfer.  If the velocity reference height is not greater than the canopy height, !
-      ! we can do a few things:                                                            !
-      ! 1. Stop the run.                                                                   !
-      ! 2. Say that zref is really h+zref (sketchy...)                                     !
-      ! 3. Say that zref is 2*h           (sketchy...)                                     !
-      !------------------------------------------------------------------------------------!
-      case(2)
-         
-         !----- Calculate the soil surface roughness inside the canopy. -------------------!
-         surf_rough = soil_rough8 * (1.d0 - initp%snowfac) + snow_rough8 * initp%snowfac
-
-
-         !---------------------------------------------------------------------------------!
-         !    LAI base drag calculation for center of pressure, d0.  Cumulative LAI based  !
-         ! velocity attenuation in the canopy.                                             !
-         !---------------------------------------------------------------------------------!
-         h = dble(cpatch%hite(1))
-
-         if (rk4site%geoht < h) then
-
-            !----- 1. Stop the run. -------------------------------------------------------!
-            write (unit=*,fmt='(a)') ' Your reference height is too low...'
-            write (unit=*,fmt='(a,1x,es12.5)') ' Ref. height:           ',rk4site%geoht
-            write (unit=*,fmt='(a,1x,es12.5)') ' Tallest cohort height: ',h
-            call fatal_error('Bad reference height for M97','canopy_turbulence'            &
-                            ,'canopy_struct_dynamics.f90')
-            !----- 2. Say that zref is really h+zref (sketchy...). ------------------------!
-            !zref     = rk4site%geoht + h
-            !vels_ref = rk4site%vels
-            !----- 3. Say that zref is 2*h (sketchy...). ----------------------------------!
-            !zref     = 2.d0 * rk4site%geoht
-            !vels_ref = rk4site%vels
-         else
-            vels_ref = rk4site%vels
-            zref     = rk4site%geoht
-         end if
-
-         zcan = ceiling(h/dz8)
-         idz  = 5.d-1 * dz8     ! lowest element center
-
-         zetac = 0.d0  ! Cumulative zeta
-
-         if (ibranch_thermo /= 0 .and. (sum(initp%wai)+sum(initp%lai)) == 0. ) then
-            call fatal_error('Your plants must have some TAI, M97','canopy_turbulence'     &
-                            ,'canopy_struct_dynamics.f90')
-         end if
-
-         
-         !---------------------------------------------------------------------------------!
-         !     Loop through the canopy at equal increments.  At each increment, determine  !
-         ! the frontal area drag surface, and the drag force zeta.                         !
-         !---------------------------------------------------------------------------------!
-         do k = 1, zcan
-            
-            !------------------------------------------------------------------------------!
-            !    Determine the combined leaf area from all cohort crowns residing in this  !
-            ! layer.                                                                       !
-            !------------------------------------------------------------------------------!
-            layertai = 0.d0
-            z = dble(k-1) * dz8 + idz  ! elevation of discrete layer
             do ico=1,cpatch%ncohorts
-               !----- Some aliases. -------------------------------------------------------!
-               ipft  = cpatch%pft(ico)
-               hite8 = dble(cpatch%hite(ico))
+               ipft = cpatch%pft(ico)
 
-               crowndepth = max(dz8,dble(crown_depth_fraction(ipft))*hite8)
 
-               if ( (z < hite8 .and. z >= (hite8-crowndepth)) .or.                         &
-                    (k == 1 .and. hite8 < dz8) ) then
-                  select case (ibranch_thermo)
-                  case (0)
-                     !---------------------------------------------------------------------!
-                     !     Although we are not solving branches, assume that at full leaf- !
-                     ! -out, there is sheltering of branches.  When leaves are not at full !
-                     ! out, then the stems and branches start to become visible to the     !
-                     ! fluid flow.  Assume that when leaves are gone, then the branches    !
-                     ! contribute about 50% of the drag surface, everything in between is  !
-                     ! a linear combination.                                               !
-                     !---------------------------------------------------------------------!
-                     layertai=layertai + (cpatch%lai(ico) + cpatch%nplant(ico) * 0.5)      &
-                                       * (dz8/crowndepth) 
-                  case default
-                     !---------------------------------------------------------------------!
-                     !    Use LAI and WAI to define the frontal area of drag surface.      !
-                     !---------------------------------------------------------------------!
-                     layertai = layertai + (initp%lai(ico) + initp%wai(ico))               &
-                                         * (dz8 /crowndepth)
-                  end select
+               !------ Estimate WAI. ------------------------------------------------------!
+               waiuse = 1.d-1 * initp%nplant(ico) * dble(cpatch%sla(ico))                  &
+                      * dble(dbh2bl(cpatch%dbh(ico),ipft))
+               !---------------------------------------------------------------------------!
 
+
+               !---------------------------------------------------------------------------!
+               !     Find the heights, and compute the LAD of this cohort.                 !
+               !---------------------------------------------------------------------------!
+               htopcrown = dble(cpatch%hite(ico))
+               hbotcrown = dble(h2trunkh(cpatch%hite(ico),cpatch%pft(ico)))
+               ladcohort = (initp%lai(ico) + waiuse) / (htopcrown - hbotcrown)
+               kapartial = floor  (hbotcrown/dz_m978) + 1
+               kafull    = ceiling(hbotcrown/dz_m978) + 1
+               kzpartial = ceiling(htopcrown/dz_m978)
+               kzfull    = floor  (htopcrown/dz_m978)
+               !---------------------------------------------------------------------------!
+
+
+               !---------------------------------------------------------------------------!
+               !     Add the LAD for the full layers.                                      !
+               !---------------------------------------------------------------------------!
+               do k = kafull,kzfull
+                  lad8(k) = lad8(k) + ladcohort
+               end do
+               !---------------------------------------------------------------------------!
+
+
+
+               !---------------------------------------------------------------------------!
+               !      Add the LAD for the partial layers.  The only special case is when   !
+               ! they are both the same layer, which must be done separately.              !
+               !---------------------------------------------------------------------------!
+               if (kapartial == kzpartial) then
+                  lad8(kapartial) = lad8(kapartial)                                        &
+                                  + ladcohort * (htopcrown         - hbotcrown          )  &
+                                              / (zztop8(kapartial) - zztop8(kapartial-1))
+               else
+                  lad8(kapartial) = lad8(kapartial)                                        &
+                                  + ladcohort * (zztop8(kapartial) - hbotcrown          )  &
+                                              / (zztop8(kapartial) - zztop8(kapartial-1))
+                  lad8(kzpartial) = lad8(kzpartial)                                        &
+                                  + ladcohort * (htopcrown         - zztop8(kzpartial-1))  &
+                                              / (zztop8(kzpartial) - zztop8(kzpartial-1))
                end if
+               !---------------------------------------------------------------------------!
             end do
 
-            a_front  = layertai/dz8 ! Frontal area of drag surface
-            zetac    = zetac + 5.d-1 * a_front * (Cd08 / Pm8) * dz8
-            zeta(k)  = zetac       ! Use a centered drag
-            zetac    = zetac + 5.d-1 * a_front * (Cd08 / Pm8) *dz8
-         end do
-         
-         !----- The following constains the ratio of ustar over u. ------------------------!
-         ustarouh = (c1_m978 - c2_m978 * exp(-c3_m978*zeta(zcan)))
-         
-         !----- Eta, coefficient of attenuation. ------------------------------------------!
-         eta = 5.d-1 * zeta(zcan) / (ustarouh*ustarouh)
-         
-         !---------------------------------------------------------------------------------!
-         !     Displacement height.  Notice that if Pm and Cd0 are uniform, we can esti-   !
-         ! mate zeta(h) without a loop, if this routine is taking to long, we can merge    !
-         ! the loops.                                                                      !
-         !---------------------------------------------------------------------------------!
-         d0 = h
-         do k=1,zcan
-            d0 = d0 - dz8*exp(-2.d0*eta*(1.d0-zeta(k)/zeta(zcan)))
-         end do
+         case default
+            !----- Use the default wood area index. ---------------------------------------!
+            do ico=1,cpatch%ncohorts
+               ipft = cpatch%pft(ico)
 
-         !----- Calculate the roughness lengths zo,zt,zr. ---------------------------------!
-         initp%rough = max((h-d0)*exp(-vonk8/ustarouh),soil_rough8)
+               !---------------------------------------------------------------------------!
+               !     Find the heights, and compute the LAD of this cohort.                 !
+               !---------------------------------------------------------------------------!
+               htopcrown = dble(cpatch%hite(ico))
+               hbotcrown = dble(h2trunkh(cpatch%hite(ico),ipft))
+               ladcohort = (initp%lai(ico) + initp%wai(ico)) / (htopcrown - hbotcrown)
+               kapartial = floor  (hbotcrown/dz_m978) + 1
+               kafull    = ceiling(hbotcrown/dz_m978) + 1
+               kzpartial = ceiling(htopcrown/dz_m978)
+               kzfull    = floor  (htopcrown/dz_m978)
+               !---------------------------------------------------------------------------!
+
+
+               !---------------------------------------------------------------------------!
+               !     Add the LAD for the full layers.                                      !
+               !---------------------------------------------------------------------------!
+               do k = kafull,kzfull
+                  lad8(k) = lad8(k) + ladcohort
+               end do
+               !---------------------------------------------------------------------------!
+
+
+
+               !---------------------------------------------------------------------------!
+               !      Add the LAD for the partial layers.  The only special case is when   !
+               ! they are both the same layer, which must be done separately.              !
+               !---------------------------------------------------------------------------!
+               if (kapartial == kzpartial) then
+                  lad8(kapartial) = lad8(kapartial)                                        &
+                                  + ladcohort * (htopcrown         - hbotcrown          )  &
+                                              / (zztop8(kapartial) - zztop8(kapartial-1))
+               else
+                  lad8(kapartial) = lad8(kapartial)                                        &
+                                  + ladcohort * (zztop8(kapartial) - hbotcrown          )  &
+                                              / (zztop8(kapartial) - zztop8(kapartial-1))
+                  lad8(kzpartial) = lad8(kzpartial)                                        &
+                                  + ladcohort * (htopcrown         - zztop8(kzpartial-1))  &
+                                              / (zztop8(kzpartial) - zztop8(kzpartial-1))
+               end if
+               !---------------------------------------------------------------------------!
+            end do
+         end select
+         !---------------------------------------------------------------------------------!
+
+
+
+         !---------------------------------------------------------------------------------!
+         !     In this loop we find the drag coefficient, the sheltering factor, and the   !
+         ! cumulative leaf drag area.  This must be done in a separate loop because we     !
+         ! need the full integral of the leaf area density before we determine these       !
+         ! variables.                                                                      !
+         !---------------------------------------------------------------------------------!
+         select case (icanturb)
+         case (2)
+            !----- Constant drag and sheltering factor. -----------------------------------!
+            cdrag8   (:) = cdrag08
+            pshelter8(:) = pm08
+            ldga_bk      = 0.0
+            do k = 1,zcan
+               !---------------------------------------------------------------------------!
+               !     Add the contribution of this layer to Massman's zeta (which we call   !
+               ! cumldrag here to not confuse with the other zeta from the similarity      !
+               ! theory.  We integrate in three steps so we save the value in the middle   !
+               ! of the layer.                                                             !
+               !---------------------------------------------------------------------------!
+               lyrhalf      = 5.d-1 * lad8(k) * cdrag8(k) / pshelter8(k) * dz_m978
+               cumldrag8(k) = ldga_bk + lyrhalf
+               ldga_bk      = ldga_bk + 2.d0 * lyrhalf
+               !---------------------------------------------------------------------------!
+            end do
+         case (3)
+            ldga_bk      = 0.0
+            !----- Drag and sheltering factor are height-dependent. -----------------------!
+            do k = 1,zcan
+               !------ Functional form as in Massman (1997). ------------------------------!
+               cdrag8   (k) = cdrag08 * exp( - alpha2_m978 * (1.d0 - zzmid8(k) / htop))
+               pshelter8(k) = pm08 / (1.d0 + alpha1_m978 * htop * lad8(k))
+
+               !---------------------------------------------------------------------------!
+               !     Add the contribution of this layer to Massman's zeta (which we call   !
+               ! cumldrag here to not confuse with the other zeta from the similarity      !
+               ! theory.  We integrate in three steps so we save the value in the middle   !
+               ! of the layer.                                                             !
+               !---------------------------------------------------------------------------!
+               lyrhalf      = 5.d-1 * lad8(k) * cdrag8(k) / pshelter8(k) * dz_m978
+               cumldrag8(k) = ldga_bk + lyrhalf
+               ldga_bk      = ldga_bk + 2.d0 * lyrhalf
+               !---------------------------------------------------------------------------!
+            end do
+         end select
+         !---------------------------------------------------------------------------------!
+
+
+
+         !---------------------------------------------------------------------------------!
+         !    Find the ratio between u* and u at the top cohort, using Massman's equation  !
+         ! (6).                                                                            !
+         !---------------------------------------------------------------------------------!
+         ustarouh = (c1_m978 - c2_m978 * exp(-c3_m978 * cumldrag8(zcan)))
+         !---------------------------------------------------------------------------------!
+
+
+
+         !----- NN is Massman's n, the coefficient of attenuation. ------------------------!
+         nn = 5.d-1 * cumldrag8(zcan) / (ustarouh * ustarouh)
+         !---------------------------------------------------------------------------------!
+
+
+
+         !---------------------------------------------------------------------------------!
+         !     Find the ratio between zero-plane displacement height and height, and the   !
+         ! ratio between roughness and height.  The actual values will be defined based    !
+         ! on the patch-level averaged height, not the height of the tallest cohort,       !
+         ! because it may be an extremely sparse cohort that has little impact on the      !
+         ! drag.                                                                           !
+         !---------------------------------------------------------------------------------!
+         d0ohgt = 1.d0
+         do k=1,zcan
+            d0ohgt = d0ohgt - dz_m978 / htop                                               &
+                            * exp(-2.d0 * nn *(1.d0 - cumldrag8(k) / cumldrag8(zcan)))
+         end do
+         z0ohgt = (1.d0 - d0ohgt) * exp(- vonk8 / ustarouh + psi_m978)
+         !---------------------------------------------------------------------------------!
+
+
+
+
+         !----- Find the actual displacement height and roughness. ------------------------!
+         initp%veg_displace = max(0.d0,d0ohgt) * initp%veg_height
+         initp%rough        = max(soil_rough8, z0ohgt * initp%veg_height)
+         !---------------------------------------------------------------------------------!
 
 
          !----- Calculate ustar, tstar, qstar, and cstar. ---------------------------------!
          call ed_stars8(rk4site%atm_theta,rk4site%atm_theiv,rk4site%atm_shv                &
-                       ,rk4site%atm_co2,initp%can_theta ,initp%can_theiv,initp%can_shv     &
-                       ,initp%can_co2,zref,d0,vels_ref,initp%rough                         &
-                       ,initp%ustar,initp%tstar,initp%estar,initp%qstar,initp%cstar        &
-                       ,initp%zeta,initp%ribulk,initp%ggbare)
+                       ,rk4site%atm_co2,initp%can_theta,initp%can_theiv,initp%can_shv      &
+                       ,initp%can_co2,rk4site%geoht,initp%veg_displace,rk4site%vels        &
+                       ,initp%rough,initp%ustar,initp%tstar,initp%estar,initp%qstar        &
+                       ,initp%cstar,initp%zeta,initp%ribulk,initp%ggbare)
+         !---------------------------------------------------------------------------------!
 
-         !----- Calculate the diffusivity at the canopy top. ------------------------------!
-         K_top = vonk8 * initp%ustar * (h-d0)
 
-         rasveg=0.d0
 
-         !----- Numerically integrate the inverse diffusivity. ----------------------------!
-         do k=1,zcan
-            Kdiff  = K_top * exp(-eta * (1.d0-zeta(k)/zeta(zcan))) + kvwake8
-            rasveg = rasveg + dz8 / Kdiff
-         end do
-         initp%ggveg = 1.d0 / rasveg
+
 
          !---------------------------------------------------------------------------------!
          !     Calculate the leaf level aerodynamic resistance.                            !
          !---------------------------------------------------------------------------------!
-
          !----- Top of canopy wind speed. -------------------------------------------------!
-         uh = reduced_wind8(initp%ustar,initp%zeta,initp%ribulk,zref,d0                    &
-                          ,dble(cpatch%hite(1)),initp%rough)
-
+         uh = reduced_wind8(initp%ustar,initp%zeta,initp%ribulk,rk4site%geoht              &
+                           ,initp%veg_displace,htop,initp%rough)
          do ico=1,cpatch%ncohorts
             ipft = cpatch%pft(ico)
-            hite8 = dble(cpatch%hite(ico))
 
-            !----- Estimate the height center of the crown. -------------------------------!
-            z = hite8 * (1.d0 - 5.d-1 * dble(crown_depth_fraction(ipft)))
+            !----- Find the crown relevant heights. ---------------------------------------!
+            htopcrown = dble(cpatch%hite(ico))
+            hbotcrown = dble(h2trunkh(cpatch%hite(ico),cpatch%pft(ico)))
+            hmidcrown = 5.d-1 * (hbotcrown + htopcrown)
+            !------------------------------------------------------------------------------!
 
-            !----- Determine the zeta index. ----------------------------------------------!
-            k = ceiling(z/dz8)
+
+
+            !----- Determine which layer we should use for wind reduction. ----------------!
+            k = max(1,ceiling(hmidcrown / dz_m978))
+            !------------------------------------------------------------------------------!
+
+
 
             !----- Calculate the wind speed at height z. ----------------------------------!
             initp%veg_wind(ico) = max(ugbmin8                                              &
-                                     ,uh * exp(-eta * (1.d0 - zeta(k)/zeta(zcan) )))
+                                     ,uh * exp(-nn*(1.d0 - cumldrag8(k)/cumldrag8(zcan))))
+            !------------------------------------------------------------------------------!
+
+
 
             !------------------------------------------------------------------------------!
             !    Find the aerodynamic conductances for heat and water at the leaf boundary !
             ! layer.                                                                       !
             !------------------------------------------------------------------------------!
-            call aerodynamic_conductances8(ipft,initp%veg_wind(ico),initp%veg_temp(ico)    &
-                                          ,initp%can_temp,initp%can_shv,initp%can_rhos     &
-                                          ,gbhmos_min,initp%gbh(ico),initp%gbw(ico)        &
-                                          ,initp%veg_reynolds(ico),initp%veg_grashof(ico)  &
-                                          ,initp%veg_nussfree(ico),initp%veg_nussforc(ico))
-            cpatch%gbh(ico) = sngloff(initp%gbh(ico),tiny_offset)
-            cpatch%gbw(ico) = sngloff(initp%gbw(ico),tiny_offset)
-            !------------------------------------------------------------------------------!
-         end do
-
-
-         !---------------------------------------------------------------------------------!
-         !     Calculate the heat and mass storage capacity of the canopy.                 !
-         !---------------------------------------------------------------------------------!
-         call can_whcap8(initp%can_rhos,initp%can_temp,initp%can_depth                     &
-                        ,wcapcan,wcapcani,hcapcani,ccapcani)
-         !---------------------------------------------------------------------------------!
-
-
-         !---------------------------------------------------------------------------------!
-         !     Find the net ground conductance.  The net conductance is derived from the   !
-         ! net resistance, which is, in turn, the weighted average of the resistances in   !
-         ! bare and vegetated grounds.                                                     !
-         !---------------------------------------------------------------------------------!
-         if (initp%opencan_frac > 9.99d-1 .or. csite%snowfac(ipa) >= 0.9) then
-            initp%ggnet = ggfact8 * initp%ggbare
-         else
-            initp%ggnet = ggfact8 * initp%ggbare * initp%ggveg                             &
-                        / (         initp%opencan_frac  * initp%ggveg                      &
-                          + (1.d0 - initp%opencan_frac) * initp%ggbare )
-         end if
-         !---------------------------------------------------------------------------------!
-
-
-
-
-      !------------------------------------------------------------------------------------!
-      !     Use an alternative approach, in which we take into account the fraction of     !
-      ! open canopy to scale the roughness, and we estimate the ground conductance based   !
-      ! solely on one roughness scale.  The cohort wind profile is loosely based on        !
-      ! Leuning et al. (1995), but instead of simply computing the cumulative LAI, we      !
-      ! consider the crown area to determine the reduction factor.                         !
-      !------------------------------------------------------------------------------------!
-      case (3)
-         h        = initp%veg_height    ! Vegetation height
-         d0       = initp%veg_displace  ! 0-plane displacement height
-         zref     = rk4site%geoht
-
-         !---------------------------------------------------------------------------------!
-         !     The roughness is found by combining two weighted averages.  The first one   !
-         ! checks the fraction of the patch that has closed canopy, and averages between   !
-         ! soil and vegetation roughness.  The other is the fraction of the vegetation     !
-         ! that is covered in snow.                                                        !
-         !---------------------------------------------------------------------------------!
-         initp%rough = snow_rough8 * initp%snowfac                                         &
-                     + ( soil_rough8     * initp%opencan_frac                              &
-                       + initp%veg_rough * (1.d0 - initp%opencan_frac) )                   &
-                     * (1.d0 - initp%snowfac)
-         !---------------------------------------------------------------------------------!
-
-
-         !----- Get the appropriate characteristic wind speed. ----------------------------!
-         vels_ref = max(ubmin8,rk4site%vels)
-         !---------------------------------------------------------------------------------!
-
-
-
-         !---------------------------------------------------------------------------------!
-         !     Find ustar for the ABL, assume it is a dynamic shear layer that generates a !
-         ! logarithmic profile of velocity.                                                !
-         !---------------------------------------------------------------------------------!
-         call ed_stars8(rk4site%atm_theta,rk4site%atm_theiv,rk4site%atm_shv                &
-                       ,rk4site%atm_co2,initp%can_theta ,initp%can_theiv,initp%can_shv     &
-                       ,initp%can_co2,zref,d0,vels_ref,initp%rough                         &
-                       ,initp%ustar,initp%tstar,initp%estar,initp%qstar,initp%cstar        &
-                       ,initp%zeta,initp%ribulk,initp%ggnet)
-         !---------------------------------------------------------------------------------!
-
-
-
-         !---------------------------------------------------------------------------------!
-         !     We don't compute a separate conductance for bare and vegetated grounds.     !
-         ! Since the roughness used by the ed_stars sub-routine already takes into account !
-         ! the roughness which considers both the bare and the vegetated areas, a single   !
-         ! number is obtained.  Here we update the correction factor only, and copy the    !
-         ! value for both bare and vegetated.                                              !
-         !---------------------------------------------------------------------------------!
-         initp%ggbare = initp%ggnet
-         initp%ggveg  = initp%ggnet
-         initp%ggnet  = initp%ggnet * ggfact8
-         !---------------------------------------------------------------------------------!
-
-
-
-         !---------------------------------------------------------------------------------!
-         !     This part of the code finds the wind profile.  We use the similarity theory !
-         ! to find the top cohort, and integrate the winds downwards using a method that   !
-         ! is similar to Leuning et al. (1995), but we use the local LAI and weight the    !
-         ! reduction factor by the crown area.  This should keep the winds stronger for    !
-         ! smaller cohorts when the tall ones aren't too dense, and approach the Leuning   !
-         ! et al. (1995) method when the cohort crown area approaches the patch area.      !
-         !---------------------------------------------------------------------------------!
-         uh = reduced_wind8(initp%ustar,initp%zeta,initp%ribulk,zref,d0                    &
-                           ,dble(cpatch%hite(1)),initp%rough)
-         !---------------------------------------------------------------------------------!
-         do ico = 1,cpatch%ncohorts
             if (initp%resolvable(ico)) then
-               ipft = cpatch%pft(ico)
-               
-               initp%veg_wind(ico) = max(ugbmin8,uh)
-               uh = uh * ( initp%crown_area(ico)                                           &
-                         * exp(- initp%lai(ico) / initp%crown_area(ico))                   &
-                         + 1.d0 - initp%crown_area(ico) )
-
-               !---------------------------------------------------------------------------!
-               !    Find the aerodynamic conductances for heat and water at the leaf       !
-               ! boundary layer.                                                           !
-               !---------------------------------------------------------------------------!
                call aerodynamic_conductances8(ipft,initp%veg_wind(ico),initp%veg_temp(ico) &
                                              ,initp%can_temp,initp%can_shv,initp%can_rhos  &
                                              ,gbhmos_min,initp%gbh(ico),initp%gbw(ico)     &
@@ -1846,9 +1672,7 @@ module canopy_struct_dynamics
                                              ,initp%veg_nussforc(ico) )
                cpatch%gbh(ico) = sngloff(initp%gbh(ico),tiny_offset)
                cpatch%gbw(ico) = sngloff(initp%gbw(ico),tiny_offset)
-               !---------------------------------------------------------------------------!
             else
-               initp%veg_wind    (ico) = vels_ref
                initp%veg_reynolds(ico) = 0.d0
                initp%veg_grashof (ico) = 0.d0
                initp%veg_nussfree(ico) = 0.d0
@@ -1858,7 +1682,77 @@ module canopy_struct_dynamics
                cpatch%gbh(ico)         = 0.0
                cpatch%gbw(ico)         = 0.0
             end if
+            !------------------------------------------------------------------------------!
          end do
+         !---------------------------------------------------------------------------------!
+
+
+
+
+         !---------------------------------------------------------------------------------!
+         !     Find the bulk resistance by integrating the inverse of the diffusivity for  !
+         ! each layer (e.g. Sellers et al. (1986)).  We assumed Km = sigma u, which is the !
+         ! preferred approach by Sellers et al. (1986).  To find sigma we used that        !
+         ! tau = rho * ustar^2 at z=h, and that tau = rho * Km * dU/dz.                    !
+         !---------------------------------------------------------------------------------!
+         rasveg  = 0.d0
+         sigmakm = ustarouh * ustarouh * cumldrag8(zcan) * pshelter8(zcan)                 &
+                 / ( nn * cdrag8(zcan) * lad8(zcan) )
+         do k=1,zcan
+            windm978(k) = max( ugbmin8                                                     &
+                             , uh * exp(- nn * (1.d0 - cumldrag8(k)/cumldrag8(zcan))) )
+            Kdiff       = sigmakm * windm978(k) + kvwake8
+            rasveg      = rasveg + dz_m978 / Kdiff
+         end do
+         !---------------------------------------------------------------------------------!
+
+
+
+
+
+         !---------------------------------------------------------------------------------!
+         !    According to Sellers et al (1986), equation A15, we must correct the         !
+         ! resistance for the unstable case.  There is a typo on their equation (a gravity !
+         ! term is missing, and g appears in their code in SiB-2.0 that is coupled to the  !
+         ! original BRAMS-4.0).  Instead of their approximation that is ultimately based   !
+         ! on Businger et al. (1971), we find an estimate of zeta using the same method    !
+         ! that is applied to get zeta for the Beljaars-Holtslag method.  According to     !
+         ! Sellers et al. (1986), we should apply this correction for the unstable case    !
+         ! only.                                                                           !
+         !---------------------------------------------------------------------------------!
+         if (initp%ground_temp > initp%can_temp) then
+            ribcan   = 2.d0 * grav8 * (initp%can_temp - initp%ground_temp)                 &
+                     * htop * (1.d0 - d0ohgt - z0ohgt)                                     &
+                     / ( (initp%can_temp + initp%ground_temp) * uh * uh)
+            hgtoz0   = (1.d0 - d0ohgt) / z0ohgt
+            lnhgtoz0 = log(hgtoz0)
+            zetacan  = zoobukhov8(ribcan,htop * (1.d0 - d0ohgt),htop * z0ohgt              &
+                                 ,hgtoz0,lnhgtoz0,hgtoz0,lnhgtoz0,.false.)
+            phih     = sqrt(1.d0 - gamh8 * zetacan)
+         else
+            !----- Stable case, no correction needed. -------------------------------------!
+            phih     = 1.d0
+         end if
+         initp%ggveg = phih / rasveg
+         !---------------------------------------------------------------------------------!
+
+
+
+
+
+         !---------------------------------------------------------------------------------!
+         !     Find the net ground conductance.  The net conductance is derived from the   !
+         ! net resistance, which is, in turn, the weighted average of the resistances in   !
+         ! bare and vegetated grounds.                                                     !
+         !---------------------------------------------------------------------------------!
+         if (initp%opencan_frac > 9.99d-1 .or. initp%snowfac >= 9.d-1) then
+            initp%ggnet = ggfact8 * initp%ggbare
+         else
+            initp%ggnet = ggfact8 * initp%ggbare * initp%ggveg                             &
+                        / (initp%ggveg + (1.d0 - initp%opencan_frac) * initp%ggbare )
+         end if
+         !---------------------------------------------------------------------------------!
+
 
 
          !---------------------------------------------------------------------------------!
@@ -1869,6 +1763,7 @@ module canopy_struct_dynamics
          !---------------------------------------------------------------------------------!
 
       end select
+      !------------------------------------------------------------------------------------!
 
       return
    end subroutine canopy_turbulence8

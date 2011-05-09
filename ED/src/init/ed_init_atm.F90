@@ -172,8 +172,6 @@ subroutine ed_init_atm()
                   cpatch%lint_shv(ico) = rslif(csite%can_prss(ipa),cpatch%veg_temp(ico))
                   cpatch%lint_shv(ico) = cpatch%lint_shv(ico) / (1. + cpatch%lint_shv(ico))
                end do cohortloop1
-               !----- Initialise vegetation wind and turbulence parameters. ---------------!
-               call canopy_turbulence(cpoly,isi,ipa)
             end do patchloop1
          end do siteloop1
       end do polyloop1
@@ -297,6 +295,8 @@ subroutine ed_init_atm()
                                  ,csite%ground_fliq(ipa))
                end if
 
+               !----- Initialise vegetation wind and turbulence parameters. ---------------!
+               call canopy_turbulence(cpoly,isi,ipa)
 
                !----- Computing the storage terms for CO2, energy, and water budgets. -----!
                call update_budget(csite,cpoly%lsl(isi),ipa,ipa)

@@ -150,11 +150,6 @@ module rk4_driver
                !---------------------------------------------------------------------------!
                call copy_patch_init(csite,ipa,integration_buff%initp)
 
-               !---------------------------------------------------------------------------!
-               !     Calculate the canopy geometry, and the scalar transport coefficients. !
-               !---------------------------------------------------------------------------!
-               call canopy_turbulence8(csite,integration_buff%initp,ipa)
-
 
 
                !----- Get photosynthesis, stomatal conductance, and transpiration. --------!
@@ -391,6 +386,8 @@ module rk4_driver
       csite%can_co2(ipa)          = sngloff(initp%can_co2         ,tiny_offset)
       csite%can_rhos(ipa)         = sngloff(initp%can_rhos        ,tiny_offset)
       csite%can_depth(ipa)        = sngloff(initp%can_depth       ,tiny_offset)
+      csite%veg_displace(ipa)     = sngloff(initp%veg_displace    ,tiny_offset)
+      csite%rough(ipa)            = sngloff(initp%rough           ,tiny_offset)
       csite%snowfac(ipa)          = sngloff(initp%snowfac         ,tiny_offset)
       csite%total_sfcw_depth(ipa) = sngloff(initp%total_sfcw_depth,tiny_offset)
 

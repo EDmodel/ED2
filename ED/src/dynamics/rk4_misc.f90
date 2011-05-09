@@ -394,6 +394,7 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
       targetp%wbudget_loss2runoff   = 0.d0
    end if
 
+
    if (print_detailed) call reset_rk4_fluxes(targetp)
    return
 end subroutine copy_patch_init
@@ -856,7 +857,7 @@ subroutine update_diagnostic_vars(initp, csite,ipa)
 
 
    !----- Compute canopy turbulence properties. -------------------------------------------!
-   if (ok_veg .and. ok_shv .and. ok_theta) then
+   if (ok_veg .and. ok_shv .and. ok_theta .and. ok_ground) then
       call canopy_turbulence8(csite,initp,ipa)
    end if
    !---------------------------------------------------------------------------------------!

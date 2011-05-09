@@ -139,13 +139,6 @@ subroutine heun_timestep(cgrid)
             !------------------------------------------------------------------------------!
             call copy_patch_init(csite,ipa,integration_buff%initp)
 
-            !------------------------------------------------------------------------------!
-            !     Here we compute canopy turbulence-related variables, such as the rough-  !
-            ! ness scale, the characteristic scales (stars) and canopy resistance and      !
-            ! capacities.                                                                  !
-            !------------------------------------------------------------------------------!
-            call canopy_turbulence8(csite,integration_buff%initp,ipa)
-
             !----- Get photosynthesis, stomatal conductance, and transpiration. -----------!
             call canopy_photosynthesis(csite,cmet,nzg,ipa,ed_ktrans,cpoly%lsl(isi)         &
                                       ,cpoly%ntext_soil(:,isi)                             &

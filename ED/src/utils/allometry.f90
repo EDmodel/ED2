@@ -295,13 +295,16 @@ module allometry
    !    This function finds the trunk height, based on Antonarakis (2008) estimation for   !
    ! secondary forests.                                                                    !
    !---------------------------------------------------------------------------------------!
-   real function h2trunkh(h)
+   real function h2trunkh(h,ipft)
+      use pft_coms, only : b1Tht & ! intent(in)
+                         , b2Tht ! ! intent(in)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
-      real , intent(in) :: h
+      real   , intent(in) :: h
+      integer, intent(in) :: ipft
       !------------------------------------------------------------------------------------!
       
-      h2trunkh = 0.4359 * h ** 0.878
+      h2trunkh = b1Tht(ipft) * h ** b2THt(ipft)
 
       return
    end function h2trunkh
@@ -465,7 +468,7 @@ module allometry
       !----- Use curve fit based on Conijn (1995) model. ----------------------------------!
       case (1) 
          !---------------------------------------------------------------------------------!
-         !     Finding the total wood biomass and the fraction corresponding to branches.  !
+         !     Find the total wood biomass and the fraction corresponding to branches.     !
          !---------------------------------------------------------------------------------!
          bwood   = wood_biomass(bdead, balive, pft, hite, bsapwood)
          if (is_grass(pft)) then
@@ -482,7 +485,7 @@ module allometry
       !----- Use  Järvelä (2004) method. --------------------------------------------------!
       case (2) 
          !----- Now we check the first branching height, that will be the trunk height. ---!
-         blength = h2trunkh(hite)
+         blength = h2trunkh(hite,pft)
          !----- Main branch diameter is DBH (in meters) -----------------------------------!
          bdiamet = dbh * 0.01
          !----- Minimum branch diameter (in meters) ---------------------------------------!
