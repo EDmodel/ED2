@@ -2272,7 +2272,7 @@ subroutine init_pft_derived_params()
    real                              :: bleaf_max
    real                              :: bdead_max
    real                              :: min_plant_dens
-   logical               , parameter :: print_zero_table = .false.
+   logical               , parameter :: print_zero_table = .true.
    character(len=str_len), parameter :: zero_table_fn    = 'minimum.size.txt'
    !---------------------------------------------------------------------------------------!
 
@@ -2358,9 +2358,9 @@ subroutine init_pft_derived_params()
 
       !------------------------------------------------------------------------------------!
       !     The minimum LAI is the LAI of a plant at the minimum cohort size that is at    !
-      ! the minimum elongation factor that supports leaves.                                !
+      ! approaching the minimum elongation factor that supports leaves.                                !
       !------------------------------------------------------------------------------------!
-      lai_min(ipft) = 0.1 * min_plant_dens * sla(ipft) * bleaf_min * elongf_min
+      lai_min(ipft) = min(1.e-4,min_plant_dens * sla(ipft) * bleaf_min * (5. * elongf_min))
       !------------------------------------------------------------------------------------!
 
 
