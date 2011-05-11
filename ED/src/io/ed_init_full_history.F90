@@ -986,28 +986,64 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
      call hdf_getslab_r(cgrid%mmean_fsn            (ipy:ipy) ,'MMEAN_FSN             '     &
                        ,dsetrank,iparallel,.false.)
 
-  if (associated(cgrid%stdev_gpp            ))                                             &
-     call hdf_getslab_r(cgrid%stdev_gpp            (ipy:ipy) ,'STDEV_GPP             '     &
+  if (associated(cgrid%mmsqu_gpp            ))                                             &
+     call hdf_getslab_r(cgrid%mmsqu_gpp            (ipy:ipy) ,'MMSQU_GPP             '     &
                        ,dsetrank,iparallel,.false.)
- 
-  if (associated(cgrid%stdev_evap           ))                                             &
-     call hdf_getslab_r(cgrid%stdev_evap           (ipy:ipy) ,'STDEV_EVAP            '     &
+
+  if (associated(cgrid%mmsqu_leaf_resp       ))                                            &
+     call hdf_getslab_r(cgrid%mmsqu_leaf_resp      (ipy:ipy) ,'MMSQU_LEAF_RESP       '     &
                        ,dsetrank,iparallel,.false.)
- 
-  if (associated(cgrid%stdev_transp         ))                                             &
-     call hdf_getslab_r(cgrid%stdev_transp         (ipy:ipy) ,'STDEV_TRANSP          '     &
+
+  if (associated(cgrid%mmsqu_root_resp       ))                                            &
+     call hdf_getslab_r(cgrid%mmsqu_root_resp      (ipy:ipy) ,'MMSQU_ROOT_RESP       '     &
                        ,dsetrank,iparallel,.false.)
- 
-  if (associated(cgrid%stdev_sensible       ))                                             &
-     call hdf_getslab_r(cgrid%stdev_sensible       (ipy:ipy) ,'STDEV_SENSIBLE        '     &
+
+  if (associated(cgrid%mmsqu_plresp       ))                                               &
+     call hdf_getslab_r(cgrid%mmsqu_plresp      (ipy:ipy) ,'MMSQU_PLRESP             '     &
                        ,dsetrank,iparallel,.false.)
- 
-  if (associated(cgrid%stdev_nep            ))                                             &
-     call hdf_getslab_r(cgrid%stdev_nep            (ipy:ipy) ,'STDEV_NEP             '     &
+
+  if (associated(cgrid%mmsqu_nee          ))                                               &
+     call hdf_getslab_r(cgrid%mmsqu_nee         (ipy:ipy) ,'MMSQU_NEE                '     &
                        ,dsetrank,iparallel,.false.)
- 
-  if (associated(cgrid%stdev_rh             ))                                             &
-     call hdf_getslab_r(cgrid%stdev_rh             (ipy:ipy) ,'STDEV_RH              '     &
+
+  if (associated(cgrid%mmsqu_nep          ))                                               &
+     call hdf_getslab_r(cgrid%mmsqu_nep         (ipy:ipy) ,'MMSQU_NEP                '     &
+                       ,dsetrank,iparallel,.false.)
+
+  if (associated(cgrid%mmsqu_rh           ))                                               &
+     call hdf_getslab_r(cgrid%mmsqu_rh          (ipy:ipy) ,'MMSQU_RH                 '     &
+                       ,dsetrank,iparallel,.false.)
+
+  if (associated(cgrid%mmsqu_sensible_ac  ))                                               &
+     call hdf_getslab_r(cgrid%mmsqu_sensible_ac (ipy:ipy) ,'MMSQU_SENSIBLE_AC        '     &
+                       ,dsetrank,iparallel,.false.)
+
+  if (associated(cgrid%mmsqu_sensible_vc  ))                                               &
+     call hdf_getslab_r(cgrid%mmsqu_sensible_vc (ipy:ipy) ,'MMSQU_SENSIBLE_VC        '     &
+                       ,dsetrank,iparallel,.false.)
+
+  if (associated(cgrid%mmsqu_sensible_gc  ))                                               &
+     call hdf_getslab_r(cgrid%mmsqu_sensible_gc (ipy:ipy) ,'MMSQU_SENSIBLE_GC        '     &
+                       ,dsetrank,iparallel,.false.)
+
+  if (associated(cgrid%mmsqu_evap         ))                                               &
+     call hdf_getslab_r(cgrid%mmsqu_evap        (ipy:ipy) ,'MMSQU_EVAP               '     &
+                       ,dsetrank,iparallel,.false.)
+
+  if (associated(cgrid%mmsqu_transp       ))                                               &
+     call hdf_getslab_r(cgrid%mmsqu_transp      (ipy:ipy) ,'MMSQU_TRANSP             '     &
+                       ,dsetrank,iparallel,.false.)
+
+  if (associated(cgrid%mmsqu_vapor_ac     ))                                               &
+     call hdf_getslab_r(cgrid%mmsqu_vapor_ac    (ipy:ipy) ,'MMSQU_VAPOR_AC           '     &
+                       ,dsetrank,iparallel,.false.)
+
+  if (associated(cgrid%mmsqu_vapor_vc     ))                                               &
+     call hdf_getslab_r(cgrid%mmsqu_vapor_vc    (ipy:ipy) ,'MMSQU_VAPOR_VC           '     &
+                       ,dsetrank,iparallel,.false.)
+
+  if (associated(cgrid%mmsqu_vapor_gc     ))                                               &
+     call hdf_getslab_r(cgrid%mmsqu_vapor_gc    (ipy:ipy) ,'MMSQU_VAPOR_GC           '     &
                        ,dsetrank,iparallel,.false.)
 
    ! Variables with 2 dimensions (nzg,npolygons)

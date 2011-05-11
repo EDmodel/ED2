@@ -287,7 +287,7 @@ module disturbance_utils
                                        + cpoly%disturbance_memory(new_lu,old_lu,isi) ) ) ) 
 
                         area_fac = dA / csite%area(onsp+new_lu)
-
+                      
                         call increment_patch_vars(csite,new_lu+onsp,ipa,area_fac)
                         call insert_survivors(csite,new_lu+onsp,ipa,new_lu,area_fac        &
                                              ,poly_dest_type,mindbh_harvest)

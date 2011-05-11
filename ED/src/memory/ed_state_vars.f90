@@ -1896,21 +1896,27 @@ module ed_state_vars
      real, pointer, dimension(:)   :: mmean_atm_prss      ! (npolygons)
      real, pointer, dimension(:)   :: mmean_atm_vels      ! (npolygons)
 
-     !-------------------------------------------------------------------!
-     ! These variables serve two purposes. During the run they carry the !
-     ! monthly square sum, and at the time of the monthly output, it     !
-     ! is converted to standard deviation.                               !
-     ! This needs to be stored at the history run, and thus it will have !
-     ! different meaning if one looks at the -S- and -E- files.          !
-     !-------------------------------------------------------------------!
-     real, pointer, dimension(:) :: stdev_gpp
-     real, pointer, dimension(:) :: stdev_evap
-     real, pointer, dimension(:) :: stdev_transp
-     real, pointer, dimension(:) :: stdev_sensible
-     real, pointer, dimension(:) :: stdev_nep
-     real, pointer, dimension(:) :: stdev_rh
+     !-------------------------------------------------------------------------------------!
+     ! These variables have the monthly mean square,  We save this instead of the standard !
+     ! deviation because we can aggregate several months afterwards.                       !
+     !-------------------------------------------------------------------------------------!
+     real, pointer, dimension(:) :: mmsqu_gpp
+     real, pointer, dimension(:) :: mmsqu_leaf_resp
+     real, pointer, dimension(:) :: mmsqu_root_resp
+     real, pointer, dimension(:) :: mmsqu_plresp
+     real, pointer, dimension(:) :: mmsqu_nee
+     real, pointer, dimension(:) :: mmsqu_nep
+     real, pointer, dimension(:) :: mmsqu_rh
+     real, pointer, dimension(:) :: mmsqu_sensible_ac
+     real, pointer, dimension(:) :: mmsqu_sensible_vc
+     real, pointer, dimension(:) :: mmsqu_sensible_gc
+     real, pointer, dimension(:) :: mmsqu_evap
+     real, pointer, dimension(:) :: mmsqu_transp
+     real, pointer, dimension(:) :: mmsqu_vapor_ac
+     real, pointer, dimension(:) :: mmsqu_vapor_vc
+     real, pointer, dimension(:) :: mmsqu_vapor_gc
 
-     
+
      !----- Disturbance rates. ----------------------------------------------!
      real, pointer, dimension(:,:,:) :: disturbance_rates
 
@@ -2421,12 +2427,22 @@ contains
           allocate(cgrid%bseeds_pft           (n_pft       ,npolygons))
           allocate(cgrid%agb_pft              (n_pft       ,npolygons))
           allocate(cgrid%ba_pft               (n_pft       ,npolygons))
-          allocate(cgrid%stdev_gpp            (             npolygons))
-          allocate(cgrid%stdev_evap           (             npolygons))
-          allocate(cgrid%stdev_transp         (             npolygons))
-          allocate(cgrid%stdev_sensible       (             npolygons))
-          allocate(cgrid%stdev_nep            (             npolygons))
-          allocate(cgrid%stdev_rh             (             npolygons))
+          allocate(cgrid%mmsqu_gpp            (             npolygons))
+          allocate(cgrid%mmsqu_leaf_resp      (             npolygons))
+          allocate(cgrid%mmsqu_root_resp      (             npolygons))
+          allocate(cgrid%mmsqu_plresp         (             npolygons))
+          allocate(cgrid%mmsqu_nee            (             npolygons))
+          allocate(cgrid%mmsqu_nep            (             npolygons))
+          allocate(cgrid%mmsqu_rh             (             npolygons))
+          allocate(cgrid%mmsqu_sensible_ac    (             npolygons))
+          allocate(cgrid%mmsqu_sensible_vc    (             npolygons))
+          allocate(cgrid%mmsqu_sensible_gc    (             npolygons))
+          allocate(cgrid%mmsqu_evap           (             npolygons))
+          allocate(cgrid%mmsqu_transp         (             npolygons))
+          allocate(cgrid%mmsqu_vapor_ac       (             npolygons))
+          allocate(cgrid%mmsqu_vapor_vc       (             npolygons))
+          allocate(cgrid%mmsqu_vapor_gc       (             npolygons))
+
           allocate(cgrid%disturbance_rates    (n_dist_types,n_dist_types,npolygons))
 
        end if
@@ -3507,12 +3523,23 @@ contains
      nullify(cgrid%bseeds_pft              )
      nullify(cgrid%agb_pft                 )
      nullify(cgrid%ba_pft                  )
-     nullify(cgrid%stdev_gpp               )
-     nullify(cgrid%stdev_evap              )
-     nullify(cgrid%stdev_transp            )
-     nullify(cgrid%stdev_sensible          )
-     nullify(cgrid%stdev_nep               )
-     nullify(cgrid%stdev_rh                )
+
+     nullify(cgrid%mmsqu_gpp               )
+     nullify(cgrid%mmsqu_leaf_resp         )
+     nullify(cgrid%mmsqu_root_resp         )
+     nullify(cgrid%mmsqu_plresp            )
+     nullify(cgrid%mmsqu_nee               )
+     nullify(cgrid%mmsqu_nep               )
+     nullify(cgrid%mmsqu_rh                )
+     nullify(cgrid%mmsqu_sensible_ac       )
+     nullify(cgrid%mmsqu_sensible_vc       )
+     nullify(cgrid%mmsqu_sensible_gc       )
+     nullify(cgrid%mmsqu_evap              )
+     nullify(cgrid%mmsqu_transp            )
+     nullify(cgrid%mmsqu_vapor_ac          )
+     nullify(cgrid%mmsqu_vapor_vc          )
+     nullify(cgrid%mmsqu_vapor_gc          )
+
      nullify(cgrid%disturbance_rates       )
      nullify(cgrid%workload                )
 
@@ -4543,12 +4570,24 @@ contains
        if(associated(cgrid%bseeds_pft              )) deallocate(cgrid%bseeds_pft              )
        if(associated(cgrid%agb_pft                 )) deallocate(cgrid%agb_pft                 )
        if(associated(cgrid%ba_pft                  )) deallocate(cgrid%ba_pft                  )
-       if(associated(cgrid%stdev_gpp               )) deallocate(cgrid%stdev_gpp               )
-       if(associated(cgrid%stdev_evap              )) deallocate(cgrid%stdev_evap              )
-       if(associated(cgrid%stdev_transp            )) deallocate(cgrid%stdev_transp            )
-       if(associated(cgrid%stdev_sensible          )) deallocate(cgrid%stdev_sensible          )
-       if(associated(cgrid%stdev_nep               )) deallocate(cgrid%stdev_nep               )
-       if(associated(cgrid%stdev_rh                )) deallocate(cgrid%stdev_rh                )
+
+
+       if(associated(cgrid%mmsqu_gpp               )) deallocate(cgrid%mmsqu_gpp               )
+       if(associated(cgrid%mmsqu_leaf_resp         )) deallocate(cgrid%mmsqu_leaf_resp         )
+       if(associated(cgrid%mmsqu_root_resp         )) deallocate(cgrid%mmsqu_root_resp         )
+       if(associated(cgrid%mmsqu_plresp            )) deallocate(cgrid%mmsqu_plresp            )
+       if(associated(cgrid%mmsqu_nee               )) deallocate(cgrid%mmsqu_nee               )
+       if(associated(cgrid%mmsqu_nep               )) deallocate(cgrid%mmsqu_nep               )
+       if(associated(cgrid%mmsqu_rh                )) deallocate(cgrid%mmsqu_rh                )
+       if(associated(cgrid%mmsqu_sensible_ac       )) deallocate(cgrid%mmsqu_sensible_ac       )
+       if(associated(cgrid%mmsqu_sensible_vc       )) deallocate(cgrid%mmsqu_sensible_vc       )
+       if(associated(cgrid%mmsqu_sensible_gc       )) deallocate(cgrid%mmsqu_sensible_gc       )
+       if(associated(cgrid%mmsqu_evap              )) deallocate(cgrid%mmsqu_evap              )
+       if(associated(cgrid%mmsqu_transp            )) deallocate(cgrid%mmsqu_transp            )
+       if(associated(cgrid%mmsqu_vapor_ac          )) deallocate(cgrid%mmsqu_vapor_ac          )
+       if(associated(cgrid%mmsqu_vapor_vc          )) deallocate(cgrid%mmsqu_vapor_vc          )
+       if(associated(cgrid%mmsqu_vapor_gc          )) deallocate(cgrid%mmsqu_vapor_gc          )
+
        if(associated(cgrid%disturbance_rates       )) deallocate(cgrid%disturbance_rates       )
        if(associated(cgrid%workload                )) deallocate(cgrid%workload                )
 
@@ -8861,48 +8900,105 @@ contains
          call metadata_edio(nvar,igr,'Monthly mean of residual energy ','[J/m2/s]','ipoly') 
       end if
 
-      if(associated(cgrid%stdev_gpp)) then
+
+
+      if(associated(cgrid%mmsqu_gpp)) then
          nvar=nvar+1
-         call vtable_edio_r(npts,cgrid%stdev_gpp,nvar,igr,init,cgrid%pyglob_id, &
-              var_len,var_len_global,max_ptrs,'STDEV_GPP :11:hist:mont:dcyc') 
+         call vtable_edio_r(npts,cgrid%mmsqu_gpp,nvar,igr,init,cgrid%pyglob_id, &
+              var_len,var_len_global,max_ptrs,'MMSQU_GPP :11:hist:mont:dcyc') 
          call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
       end if
-      
-      if(associated(cgrid%stdev_evap)) then
+
+      if(associated(cgrid%mmsqu_leaf_resp)) then
          nvar=nvar+1
-         call vtable_edio_r(npts,cgrid%stdev_evap,nvar,igr,init,cgrid%pyglob_id, &
-              var_len,var_len_global,max_ptrs,'STDEV_EVAP :11:hist:mont:dcyc') 
+         call vtable_edio_r(npts,cgrid%mmsqu_leaf_resp,nvar,igr,init,cgrid%pyglob_id, &
+              var_len,var_len_global,max_ptrs,'MMSQU_LEAF_RESP :11:hist:mont:dcyc') 
          call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
       end if
-      
-      if(associated(cgrid%stdev_transp)) then
+
+      if(associated(cgrid%mmsqu_root_resp)) then
          nvar=nvar+1
-         call vtable_edio_r(npts,cgrid%stdev_transp,nvar,igr,init,cgrid%pyglob_id, &
-              var_len,var_len_global,max_ptrs,'STDEV_TRANSP :11:hist:mont:dcyc') 
+         call vtable_edio_r(npts,cgrid%mmsqu_root_resp,nvar,igr,init,cgrid%pyglob_id, &
+              var_len,var_len_global,max_ptrs,'MMSQU_ROOT_RESP :11:hist:mont:dcyc') 
          call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
       end if
-      
-      if(associated(cgrid%stdev_sensible)) then
+
+      if(associated(cgrid%mmsqu_plresp)) then
          nvar=nvar+1
-         call vtable_edio_r(npts,cgrid%stdev_sensible,nvar,igr,init,cgrid%pyglob_id, &
-              var_len,var_len_global,max_ptrs,'STDEV_SENSIBLE :11:hist:mont:dcyc') 
+         call vtable_edio_r(npts,cgrid%mmsqu_plresp,nvar,igr,init,cgrid%pyglob_id, &
+              var_len,var_len_global,max_ptrs,'MMSQU_PLRESP :11:hist:mont:dcyc') 
          call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
       end if
-      
-      if(associated(cgrid%stdev_nep)) then
+
+      if(associated(cgrid%mmsqu_nee)) then
          nvar=nvar+1
-         call vtable_edio_r(npts,cgrid%stdev_nep,nvar,igr,init,cgrid%pyglob_id, &
-              var_len,var_len_global,max_ptrs,'STDEV_NEP :11:hist:mont:dcyc') 
+         call vtable_edio_r(npts,cgrid%mmsqu_nee,nvar,igr,init,cgrid%pyglob_id, &
+              var_len,var_len_global,max_ptrs,'MMSQU_NEE :11:hist:mont:dcyc') 
          call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
       end if
-      
-      if(associated(cgrid%stdev_rh)) then
+
+      if(associated(cgrid%mmsqu_rh)) then
          nvar=nvar+1
-         call vtable_edio_r(npts,cgrid%stdev_rh,nvar,igr,init,cgrid%pyglob_id, &
-              var_len,var_len_global,max_ptrs,'STDEV_RH :11:hist:mont:dcyc') 
+         call vtable_edio_r(npts,cgrid%mmsqu_rh,nvar,igr,init,cgrid%pyglob_id, &
+              var_len,var_len_global,max_ptrs,'MMSQU_RH :11:hist:mont:dcyc') 
          call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
       end if
-      
+
+      if(associated(cgrid%mmsqu_sensible_ac)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,cgrid%mmsqu_sensible_ac,nvar,igr,init,cgrid%pyglob_id, &
+              var_len,var_len_global,max_ptrs,'MMSQU_SENSIBLE_AC :11:hist:mont:dcyc') 
+         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+      end if
+
+      if(associated(cgrid%mmsqu_sensible_vc)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,cgrid%mmsqu_sensible_vc,nvar,igr,init,cgrid%pyglob_id, &
+              var_len,var_len_global,max_ptrs,'MMSQU_SENSIBLE_VC :11:hist:mont:dcyc') 
+         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+      end if
+
+      if(associated(cgrid%mmsqu_sensible_gc)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,cgrid%mmsqu_sensible_gc,nvar,igr,init,cgrid%pyglob_id, &
+              var_len,var_len_global,max_ptrs,'MMSQU_SENSIBLE_GC :11:hist:mont:dcyc') 
+         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+      end if
+
+      if(associated(cgrid%mmsqu_evap)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,cgrid%mmsqu_evap,nvar,igr,init,cgrid%pyglob_id, &
+              var_len,var_len_global,max_ptrs,'MMSQU_EVAP :11:hist:mont:dcyc') 
+         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+      end if
+
+      if(associated(cgrid%mmsqu_transp)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,cgrid%mmsqu_transp,nvar,igr,init,cgrid%pyglob_id, &
+              var_len,var_len_global,max_ptrs,'MMSQU_TRANSP :11:hist:mont:dcyc') 
+         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+      end if
+
+      if(associated(cgrid%mmsqu_vapor_ac)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,cgrid%mmsqu_vapor_ac,nvar,igr,init,cgrid%pyglob_id, &
+              var_len,var_len_global,max_ptrs,'MMSQU_VAPOR_AC :11:hist:mont:dcyc') 
+         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+      end if
+
+      if(associated(cgrid%mmsqu_vapor_vc)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,cgrid%mmsqu_vapor_vc,nvar,igr,init,cgrid%pyglob_id, &
+              var_len,var_len_global,max_ptrs,'MMSQU_VAPOR_VC :11:hist:mont:dcyc') 
+         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+      end if
+
+      if(associated(cgrid%mmsqu_vapor_gc)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,cgrid%mmsqu_vapor_gc,nvar,igr,init,cgrid%pyglob_id, &
+              var_len,var_len_global,max_ptrs,'MMSQU_VAPOR_GC :11:hist:mont:dcyc') 
+         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+      end if
 
       !------------------------------------------------------------------------------------!
       !------------------------------------------------------------------------------------!
