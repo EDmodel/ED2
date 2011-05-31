@@ -278,7 +278,7 @@ subroutine ed_init_atm()
                                  ,csite%sfcwater_fracliq(nlsw1,ipa),csite%can_prss(ipa)    &
                                  ,csite%can_shv(ipa),csite%ground_shv(ipa)                 &
                                  ,csite%ground_ssh(ipa),csite%ground_temp(ipa)             &
-                                 ,csite%ground_fliq(ipa))
+                                 ,csite%ground_fliq(ipa),csite%ggsoil(ipa))
                else
                   !----- Compute patch-level LAI, vegetation height, and roughness. -------!
                   call update_patch_derived_props(csite,cpoly%lsl(isi),cmet%prss,ipa)
@@ -292,7 +292,7 @@ subroutine ed_init_atm()
                                  ,csite%sfcwater_fracliq(nlsw1,ipa),csite%can_prss(ipa)    &
                                  ,csite%can_shv(ipa),csite%ground_shv(ipa)                 &
                                  ,csite%ground_ssh(ipa),csite%ground_temp(ipa)             &
-                                 ,csite%ground_fliq(ipa))
+                                 ,csite%ground_fliq(ipa),csite%ggsoil(ipa))
                end if
 
                !----- Initialise vegetation wind and turbulence parameters. ---------------!

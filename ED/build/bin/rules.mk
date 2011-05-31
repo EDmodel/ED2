@@ -23,6 +23,11 @@ canopy_air_coms.o : $(ED_MEMORY)/canopy_air_coms.f90
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)
 
+canopy_layer_coms.o : $(ED_MEMORY)/canopy_layer_coms.f90
+	cp -f $< $(<F:.f90=.f90)
+	$(F90_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90)
+
 canopy_radiation_coms.o : $(ED_MEMORY)/canopy_radiation_coms.f90
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)

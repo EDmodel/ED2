@@ -278,6 +278,7 @@ rm -fv average_utils.o            average_utils.mod
 rm -fv budget_utils.o             budget_utils.mod
 rm -fv c34constants.o             c34constants.mod
 rm -fv canopy_air_coms.o          canopy_air_coms.mod
+rm -fv canopy_layer_coms.o        canopy_layer_coms.mod 
 rm -fv canopy_radiation_coms.o    canopy_radiation_coms.mod
 rm -fv canopy_struct_dynamics.o   canopy_struct_dynamics.mod
 rm -fv consts_coms.o              consts_coms.mod

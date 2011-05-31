@@ -26,13 +26,15 @@ module leaf_coms
                        , twothirds ! ! intent(in)
 
    !----- Parameters that are initialised from RAMSIN. ------------------------------------! 
-   real    :: ustmin    ! Minimum ustar                                          [     m/s]
-   real    :: ggfact    ! Factor to multiply the ground->canopy conductance.
-   real    :: gamm      ! Gamma used by Businger et al. (1971) - momentum.
-   real    :: gamh      ! Gamma used by Businger et al. (1971) - heat.
-   real    :: tprandtl  ! Turbulent Prandtl number.
-   real    :: vh2vr     ! Vegetation roughness:vegetation height ratio
-   real    :: vh2dh     ! Displacement height:vegetation height ratio
+   real    :: ustmin      ! Minimum ustar                                       [      m/s]
+   real    :: ggfact      ! Factor to multiply the ground->canopy conductance.
+   real    :: gamm        ! Gamma used by Businger et al. (1971) - momentum.
+   real    :: gamh        ! Gamma used by Businger et al. (1971) - heat.
+   real    :: tprandtl    ! Turbulent Prandtl number.
+   real    :: vh2vr       ! Vegetation roughness:vegetation height ratio
+   real    :: vh2dh       ! Displacement height:vegetation height ratio
+   real    :: ribmax      ! Maximum bulk Richardson number
+   real    :: leaf_maxwhc ! Leaf maximum water holding capacity                 [kg/m2leaf]
    !---------------------------------------------------------------------------------------!
 
 
@@ -97,6 +99,7 @@ module leaf_coms
             , ggnet            & ! net ground heat/water conductance             [     m/s]
             , ggbare           & ! heat/water conductance, bare ground           [     m/s]
             , ggveg            & ! heat/water conductance,  vegetated ground     [     m/s]
+            , ggsoil           & ! water conductance only, soil moisture effect  [     m/s]
             , rho_ustar        & ! canopy density time friction velocity
             , rshort_g         & ! net SW radiation absorbed by grnd
             , rshort_v         & ! net SW radiation absorbed by veg
@@ -272,7 +275,6 @@ module leaf_coms
    real, parameter :: dl79       = 5.0    ! ???
    !----- Oncley and Dudhia (1995) model. -------------------------------------------------!
    real, parameter :: bbeta      = 5.0    ! Beta used by Businger et al. (1971)
-   real, parameter :: ribmaxod95 = 0.20   ! Maximum bulk Richardson number
    !----- Beljaars and Holtslag (1991) model. ---------------------------------------------!
    real, parameter :: abh91       = -1.00         ! -a from equation  (28) and (32)
    real, parameter :: bbh91       = -twothirds    ! -b from equation  (28) and (32)
@@ -287,7 +289,6 @@ module leaf_coms
    real, parameter :: atetf       = ate   * fbh91 ! a * e * f
    real, parameter :: z0moz0h     = 1.0           ! z0(M)/z0(h)
    real, parameter :: z0hoz0m     = 1. / z0moz0h  ! z0(M)/z0(h)
-   real, parameter :: ribmaxbh91  = 0.20          ! Maximum bulk Richardson number
    !---------------------------------------------------------------------------------------!
 
 
@@ -373,6 +374,27 @@ module leaf_coms
    real(kind=4)              , parameter :: tai_min     = 0.1
    real(kind=4)              , parameter :: snowfac_max = 0.9
    !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !   Soil conductance terms, from:                                                       !
+   !                                                                                       !
+   ! Passerat de Silans, A., 1986: Transferts de masse et de chaleur dans un sol stratifié !
+   !     soumis à une excitation amtosphérique naturelle. Comparaison: Modèles-expérience. !
+   !     Thesis, Institut National Polytechnique de Grenoble. (P86)                        !
+   !                                                                                       !
+   ! retrieved from:                                                                       !
+   ! Mahfouf, J. F., J. Noilhan, 1991: Comparative study of various formulations of        !
+   !     evaporation from bare soil using in situ data. J. Appl. Meteorol., 30, 1354-1365. !
+   !     (MN91)                                                                            !
+   !                                                                                       !
+   !     Please notice that the values are inverted because we compute conductance, not    !
+   ! resistance.                                                                           !
+   !---------------------------------------------------------------------------------------!
+   real(kind=4)              , parameter :: ggsoil0 = 1. / 38113.
+   real(kind=4)              , parameter :: kksoil  = 13.515
+   !---------------------------------------------------------------------------------------!
+
 
 
    !=======================================================================================!

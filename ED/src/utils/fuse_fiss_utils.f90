@@ -349,7 +349,7 @@ module fuse_fiss_utils
                                      , patchtype           ! ! Structure
       use pft_coms            , only : rho                 & ! intent(in)
                                      , b1Ht                & ! intent(in)
-                                     , max_dbh             & ! intent(in)
+                                     , hgt_max             & ! intent(in)
                                      , sla                 & ! intent(in)
                                      , hgt_ref             ! ! intent(in)
       use fusion_fission_coms , only : fusetol_h           & ! intent(in)
@@ -359,6 +359,7 @@ module fuse_fiss_utils
                                      , coh_tolerance_max   ! ! intent(in)
       use ed_max_dims         , only : n_pft               ! ! intent(in)
       use mem_polygons        , only : maxcohort           ! ! intent(in)
+      use canopy_layer_coms   , only : crown_mod           ! ! intent(in)
       use allometry           , only : dbh2h               & ! function
                                      , dbh2bl              ! ! function
       implicit none
@@ -373,7 +374,6 @@ module fuse_fiss_utils
       type(patchtype)        , pointer     :: temppatch      ! Scratch patch
       integer                              :: donc,recc,ico3 ! Counters
       logical                              :: fusion_test    ! Flag: proceed with fusion?
-      real                                 :: hite_threshold ! Height threshold
       real                                 :: newn           ! new nplants of merged coh.
       real                                 :: lai_max        ! Maximum LAI the fused 
                                                              !    cohort could have.
@@ -410,14 +410,12 @@ module fuse_fiss_utils
       nshort    = 0
       ntall     = 0
       do ico3 = 1,cpatch%ncohorts
-         !----- Get fusion height threshold -----------------------------------------------!
-         if (rho(cpatch%pft(ico3)) == 0.0)then
-            hite_threshold = b1Ht(cpatch%pft(ico3)) !+hgt_ref(cpatch%(ico3))
-         else
-            hite_threshold = dbh2h(cpatch%pft(ico3),max_dbh(cpatch%pft(ico3)))
-         end if
-
-         if (cpatch%hite(ico3) < (0.95 * hite_threshold) ) then
+         !---------------------------------------------------------------------------------!
+         !    Get fusion height threshold.  Height is a good predictor when plants are     !
+         ! growing in height, but it approaches the maximum height DBH becomes the only    !
+         ! possible predictor because height saturates.                                    !
+         !---------------------------------------------------------------------------------!
+         if (cpatch%hite(ico3) < (0.95 * hgt_max(cpatch%pft(ico3))) ) then
             mean_hite = mean_hite + cpatch%hite(ico3)
             nshort    = nshort + 1
          else
@@ -444,15 +442,12 @@ module fuse_fiss_utils
                if (.not. fuse_table(recc)) cycle recloop ! This one is gone, move to next.
                                                          ! Hope it never happens...
 
-               !----- Get fusion height threshold. ----------------------------------------!
-               if(rho(cpatch%pft(donc)) == 0.0) then
-                  hite_threshold = b1Ht(cpatch%pft(donc))
-               else
-                  hite_threshold = dbh2h(cpatch%pft(donc), max_dbh(cpatch%pft(donc)))
-               end if
-
-               !----- Test for similarity -------------------------------------------------!
-               if (cpatch%hite(donc) >= (0.95 * hite_threshold )) then
+               !---------------------------------------------------------------------------!
+               !     Test for similarity.  Again, we use height to assess similarity only  !
+               ! when the cohort is not approaching the maximum height.  If this is the    !
+               ! case, then we use DBH to test.                                            !
+               !---------------------------------------------------------------------------!
+               if (cpatch%hite(donc) >= (0.95 * hgt_max(cpatch%pft(donc))) ) then
                   mean_dbh=0.5*(cpatch%dbh(donc)+cpatch%dbh(recc))
                   fusion_test = ( abs(cpatch%dbh(donc) - cpatch%dbh(recc)))/mean_dbh       &
                               < fusetol * tolerance_mult
@@ -476,7 +471,6 @@ module fuse_fiss_utils
                   ! leaves fully flushed, this is the same as adding the individual LAIs,  !
                   ! but if they are not, we need to consider that LAI may grow...          !
                   !------------------------------------------------------------------------!
-
                   lai_max = ( cpatch%nplant(recc)                                          &
                             * dbh2bl(cpatch%dbh(recc),cpatch%pft(recc))                    &
                             + cpatch%nplant(donc)                                          &
@@ -541,21 +535,10 @@ module fuse_fiss_utils
                      recalcloop: do ico3 = 1,cpatch%ncohorts
                         if (.not. fuse_table(ico3)) cycle recalcloop
                         !----- Get fusion height threshold --------------------------------!
-                        if (rho(cpatch%pft(ico3)) == 0.0) then
-                           hite_threshold = b1Ht(cpatch%pft(ico3))
-                        else
-                           hite_threshold = dbh2h(cpatch%pft(ico3)                         &
-                                                 , max_dbh(cpatch%pft(ico3)))
-                        end if
-                        if (cpatch%hite(ico3) < (0.95 * hite_threshold )) then
+                        if (cpatch%hite(ico3) < (0.95 * hgt_max(cpatch%pft(ico3))) ) then
                            mean_hite = mean_hite + cpatch%hite(ico3)
                            nshort = nshort+1
                         else
-                           if(cpatch%dbh(ico3).eq.0. ) then
-                              print*,"dbh(ico3) is zero",cpatch%dbh(ico3)
-                              call fatal_error('Zero DBH!','fuse_cohorts'&
-                                              &,'fuse_fiss_utils.f90')
-                           end if
                            mean_dbh = mean_dbh + cpatch%dbh(ico3)
                            ntall=ntall+1
                         end if
@@ -626,7 +609,8 @@ module fuse_fiss_utils
 
    !=======================================================================================!
    !=======================================================================================!
-   !   This subroutine will split two cohorts if its LAI has become too large.             !
+   !   This subroutine will split two cohorts if its LAI has become too large.  This is    !
+   ! only necessary when we solve radiation cohort by cohort rather than layer by layer.   !
    !---------------------------------------------------------------------------------------!
    subroutine split_cohorts(cpatch, green_leaf_factor, lsl)
 
@@ -641,6 +625,7 @@ module fuse_fiss_utils
       use ed_misc_coms         , only : iqoutput               & ! intent(in)
                                       , imoutput               & ! intent(in)
                                       , idoutput               ! ! intent(in)
+      use canopy_layer_coms    , only : crown_mod              ! ! intent(in)
       implicit none
       !----- Constants --------------------------------------------------------------------!
       real                   , parameter   :: epsilon=0.0001    ! Tweak factor...
@@ -933,8 +918,6 @@ module fuse_fiss_utils
       cpatch%lambda_light(idt)         = cpatch%lambda_light(isc)
       cpatch%beamext_level(idt)        = cpatch%beamext_level(isc)
       cpatch%diffext_level(idt)        = cpatch%diffext_level(isc)
-      cpatch%norm_par_beam(idt)        = cpatch%norm_par_beam(isc)
-      cpatch%norm_par_diff(idt)        = cpatch%norm_par_diff(isc)
       cpatch%gbh(idt)                  = cpatch%gbh(isc)
       cpatch%gbw(idt)                  = cpatch%gbw(isc)
       cpatch%A_open(idt)               = cpatch%A_open(isc)
@@ -1012,8 +995,6 @@ module fuse_fiss_utils
          cpatch%dmean_light_level_diff(idt) = cpatch%dmean_light_level_diff(isc)
          cpatch%dmean_beamext_level   (idt) = cpatch%dmean_beamext_level   (isc)
          cpatch%dmean_diffext_level   (idt) = cpatch%dmean_diffext_level   (isc)
-         cpatch%dmean_norm_par_beam   (idt) = cpatch%dmean_norm_par_beam   (isc)
-         cpatch%dmean_norm_par_diff   (idt) = cpatch%dmean_norm_par_diff   (isc)
       end if
 
       if (imoutput > 0 .or. iqoutput > 0) then
@@ -1050,8 +1031,6 @@ module fuse_fiss_utils
          cpatch%mmean_growth_resp       (idt) = cpatch%mmean_growth_resp       (isc)
          cpatch%mmean_storage_resp      (idt) = cpatch%mmean_storage_resp      (isc)
          cpatch%mmean_vleaf_resp        (idt) = cpatch%mmean_vleaf_resp        (isc)
-         cpatch%mmean_norm_par_beam     (idt) = cpatch%mmean_norm_par_beam     (isc)
-         cpatch%mmean_norm_par_diff     (idt) = cpatch%mmean_norm_par_diff     (isc)
          cpatch%mmean_mort_rate       (:,idt) = cpatch%mmean_mort_rate       (:,isc)
       end if
 
@@ -1093,8 +1072,7 @@ module fuse_fiss_utils
                                , qsw                    ! ! intent(in), lookup table
       use therm_lib     , only : qwtk                   & ! subroutine
                                , rslif                  ! ! function
-      use allometry     , only : calc_root_depth        & ! function
-                               , assign_root_depth      & ! function
+      use allometry     , only : dbh2krdepth            & ! function
                                , bd2dbh                 & ! function
                                , dbh2h                  ! ! function
       use ed_max_dims   , only : n_mort                 ! ! intent(in)
@@ -1119,7 +1097,6 @@ module fuse_fiss_utils
       real                         :: newlaii           ! Inverse of new LAI
       real                         :: cb_act            !
       real                         :: cb_max            !
-      real                         :: root_depth        !
       !------------------------------------------------------------------------------------!
 
 
@@ -1355,12 +1332,6 @@ module fuse_fiss_utils
       cpatch%diffext_level(recc)    = ( cpatch%diffext_level(recc) *cpatch%nplant(recc)    &
                                       + cpatch%diffext_level(donc) *cpatch%nplant(donc) )  &
                                     * newni
-      cpatch%norm_par_beam(recc)    = ( cpatch%norm_par_beam(recc) *cpatch%nplant(recc)    &
-                                      + cpatch%norm_par_beam(donc) *cpatch%nplant(donc))   &
-                                    * newni
-      cpatch%norm_par_diff(recc)    = ( cpatch%norm_par_diff(recc) *cpatch%nplant(recc)    &
-                                      + cpatch%norm_par_diff(donc) *cpatch%nplant(donc))   &
-                                    * newni
       !------------------------------------------------------------------------------------!
 
 
@@ -1477,19 +1448,25 @@ module fuse_fiss_utils
       !------------------------------------------------------------------------------------!
       cpatch%turnover_amp(recc)  = ( cpatch%turnover_amp(recc) * cpatch%nplant(recc)       &
                                    + cpatch%turnover_amp(donc) * cpatch%nplant(donc) )     &
-                                 *newni   
+                                 * newni
 
       cpatch%llspan(recc)        = ( cpatch%llspan(recc)       * cpatch%nplant(recc)       &
                                    + cpatch%llspan(donc)       * cpatch%nplant(donc) )     &
-                                 *newni
+                                 * newni
 
-      cpatch%vm_bar(recc)        = (cpatch%vm_bar(recc) * cpatch%nplant(recc)                    &
-           + cpatch%vm_bar(donc) * cpatch%nplant(donc) ) *newni   
-      cpatch%sla(recc)  = (cpatch%sla(recc) * cpatch%nplant(recc)                          &
-           + cpatch%sla(donc) * cpatch%nplant(donc) ) *newni   
+      cpatch%vm_bar(recc)        = ( cpatch%vm_bar(recc) * cpatch%nplant(recc)             &
+                                   + cpatch%vm_bar(donc) * cpatch%nplant(donc) )           &
+                                 * newni
+
+      cpatch%sla(recc)           = ( cpatch%sla(recc) * cpatch%nplant(recc)                &
+                                   + cpatch%sla(donc) * cpatch%nplant(donc) ) * newni
     
-      root_depth = calc_root_depth(cpatch%hite(recc), cpatch%dbh(recc), cpatch%pft(recc))
-      cpatch%krdepth(recc) = assign_root_depth(root_depth, lsl)
+      cpatch%krdepth(recc)       = dbh2krdepth(cpatch%hite(recc),cpatch%dbh(recc)          &
+                                              ,cpatch%pft(recc),lsl)
+      !------------------------------------------------------------------------------------!
+
+
+
 
       !------------------------------------------------------------------------------------!
       !    Now that we have daily and monthly means going to the cohort level, we must     !
@@ -1515,14 +1492,6 @@ module fuse_fiss_utils
          cpatch%dmean_diffext_level     (recc) = ( cpatch%dmean_diffext_level(recc)        &
                                                  * cpatch%nplant(recc)                     &
                                                  + cpatch%dmean_diffext_level(donc)        &
-                                                 * cpatch%nplant(donc) ) * newni
-         cpatch%dmean_norm_par_beam     (recc) = ( cpatch%dmean_norm_par_beam(recc)        &
-                                                 * cpatch%nplant(recc)                     &
-                                                 + cpatch%dmean_norm_par_beam(donc)        &
-                                                 * cpatch%nplant(donc) ) * newni
-         cpatch%dmean_norm_par_diff     (recc) = ( cpatch%dmean_norm_par_diff(recc)        &
-                                                 * cpatch%nplant(recc)                     &
-                                                 + cpatch%dmean_norm_par_diff(donc)        &
                                                  * cpatch%nplant(donc) ) * newni
          cpatch%dmean_lambda_light      (recc) = ( cpatch%dmean_lambda_light(recc)         &
                                                  * cpatch%nplant(recc)                     &
@@ -1624,14 +1593,6 @@ module fuse_fiss_utils
          cpatch%mmean_diffext_level   (recc) = ( cpatch%mmean_diffext_level(recc)          &
                                                * cpatch%nplant(recc)                       &
                                                + cpatch%mmean_diffext_level(donc)          &
-                                               * cpatch%nplant(donc) ) * newni
-         cpatch%mmean_norm_par_beam(recc)    = ( cpatch%mmean_norm_par_beam(recc)          &
-                                               * cpatch%nplant(recc)                       &
-                                               + cpatch%mmean_norm_par_beam(donc)          &
-                                               * cpatch%nplant(donc) ) * newni
-         cpatch%mmean_norm_par_diff(recc)    = ( cpatch%mmean_norm_par_diff(recc)          &
-                                               * cpatch%nplant(recc)                       &
-                                               + cpatch%mmean_norm_par_diff(donc)          &
                                                * cpatch%nplant(donc) ) * newni
          cpatch%mmean_lambda_light    (recc) = ( cpatch%mmean_lambda_light(recc)           &
                                                * cpatch%nplant(recc)                       &
@@ -3096,6 +3057,10 @@ module fuse_fiss_utils
                                      ( csite%ggnet(donp)              * csite%area(donp)   &
                                      + csite%ggnet(recp)              * csite%area(recp) )
 
+      csite%ggsoil(recp)             = newareai *                                          &
+                                     ( csite%ggsoil(donp)             * csite%area(donp)   &
+                                     + csite%ggsoil(recp)             * csite%area(recp) )
+
       csite%hcapveg(recp)            = newareai *                                          &
                                      ( csite%hcapveg(donp)            * csite%area(donp)   &
                                      + csite%hcapveg(recp)            * csite%area(recp) )
@@ -3686,7 +3651,6 @@ module fuse_fiss_utils
       ! + csite%total_sfcw_depth(recp)                                                     !
       ! + csite%snowfac(recp)                                                              !
       ! + csite%opencan_frac(recp)                                                         !
-      ! + csite%ggnet(recp)                                                                !
       !------------------------------------------------------------------------------------!
       call update_patch_derived_props(csite,lsl, prss,recp)
       !------------------------------------------------------------------------------------!

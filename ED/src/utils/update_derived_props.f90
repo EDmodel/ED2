@@ -566,7 +566,7 @@ subroutine read_soil_moist_temp(cgrid,igr)
                                        ,csite%can_prss(ipa)                                &
                                        ,csite%can_shv(ipa),csite%ground_shv(ipa)           &
                                        ,csite%ground_ssh(ipa),csite%ground_temp(ipa)       &
-                                       ,csite%ground_fliq(ipa))
+                                       ,csite%ground_fliq(ipa),csite%ggsoil(ipa))
 
                      end do patchloop
                   end do siteloop
@@ -684,7 +684,9 @@ end subroutine update_workload
 subroutine update_model_time_dm(ctime,dtlong)
 
    use ed_misc_coms, only : simtime ! ! variable type
-   use consts_coms , only : day_sec ! ! intent(in)
+   use consts_coms , only : day_sec & ! intent(in)
+                          , hr_sec  & ! intent(in)
+                          , min_sec ! ! intent(in)
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
    type(simtime)         , intent(inout) :: ctime  ! Current time
@@ -705,7 +707,6 @@ subroutine update_model_time_dm(ctime,dtlong)
    !----- Update the time. ----------------------------------------------------------------!
    ctime%time = ctime%time + dtlong
    !---------------------------------------------------------------------------------------!
-
 
    if (ctime%time >= day_sec)then
 
@@ -751,6 +752,16 @@ subroutine update_model_time_dm(ctime,dtlong)
          ctime%date = daymax(ctime%month)
       end if
    end if
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !----- Update the hours, minutes, and seconds. -----------------------------------------!
+   ctime%hour = floor(ctime%time / hr_sec)
+   ctime%min  = floor((ctime%time - real(ctime%hour)*hr_sec)/min_sec)
+   ctime%sec  = floor(ctime%time - real(ctime%hour)*hr_sec - real(ctime%min)*min_sec)
+   !---------------------------------------------------------------------------------------!
+
 
    return
 end subroutine update_model_time_dm

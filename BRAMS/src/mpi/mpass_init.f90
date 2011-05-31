@@ -136,7 +136,9 @@ subroutine masterput_nl(master_num)
                                  , tprandtl                    & ! intent(in)
                                  , vkopr                       & ! intent(in)
                                  , vh2vr                       & ! intent(in)
-                                 , vh2dh                       ! ! intent(in)
+                                 , vh2dh                       & ! intent(in)
+                                 , ribmax                      & ! intent(in)
+                                 , leaf_maxwhc                 ! ! intent(in)
    implicit none
    !----- External variable declaration ---------------------------------------------------!
    include 'interface.h'
@@ -295,6 +297,8 @@ subroutine masterput_nl(master_num)
    call MPI_Bcast(VKOPR,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(VH2VR,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(VH2DH,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(RIBMAX,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(LEAF_MAXWHC,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(GGFACT,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(ISOILBC,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(IPERCOL,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
@@ -379,6 +383,7 @@ subroutine masterput_nl(master_num)
    call MPI_Bcast(ISFCL,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(DTLEAF,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(ISTAR,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(IGRNDVAP,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
 
    call MPI_Bcast(ICO2,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(CO2_ON,1,MPI_LOGICAL,mainnum,MPI_COMM_WORLD,ierr)
@@ -946,7 +951,9 @@ subroutine nodeget_nl
                                  , tprandtl                    & ! intent(out)
                                  , vkopr                       & ! intent(out)
                                  , vh2vr                       & ! intent(out)
-                                 , vh2dh                       ! ! intent(out)
+                                 , vh2dh                       & ! intent(out)
+                                 , ribmax                      & ! intent(out)
+                                 , leaf_maxwhc                 ! ! intent(out)
    implicit none
    !----- External variable declaration ---------------------------------------------------!
    include 'interface.h'
@@ -1100,6 +1107,8 @@ subroutine nodeget_nl
    call MPI_Bcast(VKOPR,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(VH2VR,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(VH2DH,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(RIBMAX,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(LEAF_MAXWHC,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(GGFACT,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(ISOILBC,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(IPERCOL,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
@@ -1184,6 +1193,7 @@ subroutine nodeget_nl
    call MPI_Bcast(ISFCL,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(DTLEAF,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(ISTAR,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(IGRNDVAP,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
 
    call MPI_Bcast(ICO2,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(CO2_ON,1,MPI_LOGICAL,master_num,MPI_COMM_WORLD,ierr)

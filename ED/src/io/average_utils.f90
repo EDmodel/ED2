@@ -605,6 +605,8 @@ subroutine integrate_ed_daily_output_state(cgrid)
    real                        :: sss_can_shv
    real                        :: sss_can_co2
    real                        :: sss_can_prss
+   real                        :: sss_gnd_temp
+   real                        :: sss_gnd_shv
    real                        :: pss_veg_water
    real                        :: pss_veg_energy
    real                        :: pss_veg_hcap
@@ -640,6 +642,8 @@ subroutine integrate_ed_daily_output_state(cgrid)
       sss_can_shv      = 0.
       sss_can_co2      = 0.
       sss_can_prss     = 0.
+      sss_gnd_temp     = 0.
+      sss_gnd_shv      = 0.
       forest_poly      = 0.
       !------------------------------------------------------------------------------------!
 
@@ -733,10 +737,6 @@ subroutine integrate_ed_daily_output_state(cgrid)
                                                         + cpatch%beamext_level(ico)
                      cpatch%dmean_diffext_level(ico)    = cpatch%dmean_diffext_level(ico)  &
                                                         + cpatch%diffext_level(ico)
-                     cpatch%dmean_norm_par_beam(ico)    = cpatch%dmean_norm_par_beam(ico)  &
-                                                        + cpatch%norm_par_beam(ico)
-                     cpatch%dmean_norm_par_diff(ico)    = cpatch%dmean_norm_par_diff(ico)  &
-                                                        + cpatch%norm_par_diff(ico)
                      cpatch%dmean_lambda_light(ico)     = cpatch%dmean_lambda_light(ico)   &
                                                         + cpatch%lambda_light(ico)
                   end if
@@ -791,16 +791,27 @@ subroutine integrate_ed_daily_output_state(cgrid)
          sss_veg_hcap     = sss_veg_hcap   + (pss_veg_hcap  *site_area_i) * cpoly%area(isi)
 
 
-         sss_can_theta  = sss_can_theta                                                    &
-                        + cpoly%area(isi) * (sum(csite%can_theta*csite%area) * site_area_i)
-         sss_can_theiv  = sss_can_theiv                                                    &
-                        + cpoly%area(isi) * (sum(csite%can_theiv*csite%area) * site_area_i)
-         sss_can_shv    = sss_can_shv                                                      &
-                        + cpoly%area(isi) * (sum(csite%can_shv  *csite%area) * site_area_i)
-         sss_can_co2    = sss_can_co2                                                      &
-                        + cpoly%area(isi) * (sum(csite%can_co2  *csite%area) * site_area_i)
-         sss_can_prss   = sss_can_prss                                                     &
-                        + cpoly%area(isi) * (sum(csite%can_prss *csite%area) * site_area_i)
+         sss_can_theta  = sss_can_theta + cpoly%area(isi)                                  &
+                                        * ( sum(csite%can_theta   * csite%area)            &
+                                          * site_area_i )
+         sss_can_theiv  = sss_can_theiv + cpoly%area(isi)                                  &
+                                        * ( sum(csite%can_theiv   * csite%area)            &
+                                          * site_area_i )
+         sss_can_shv    = sss_can_shv   + cpoly%area(isi)                                  &
+                                        * ( sum(csite%can_shv     * csite%area)            &
+                                          * site_area_i )
+         sss_can_co2    = sss_can_co2   + cpoly%area(isi)                                  &
+                                        * ( sum(csite%can_co2     * csite%area)            &
+                                          * site_area_i )
+         sss_can_prss   = sss_can_prss  + cpoly%area(isi)                                  &
+                                        * ( sum(csite%can_prss    * csite%area)            &
+                                          * site_area_i )
+         sss_gnd_temp   = sss_gnd_temp  + cpoly%area(isi)                                  &
+                                        * ( sum(csite%ground_temp * csite%area)            &
+                                          * site_area_i )
+         sss_gnd_shv    = sss_gnd_shv   + cpoly%area(isi)                                  &
+                                        * ( sum(csite%ground_shv  * csite%area)            &
+                                          * site_area_i )
       end do siteloop
       
       !------------------------------------------------------------------------------------!
@@ -823,6 +834,10 @@ subroutine integrate_ed_daily_output_state(cgrid)
                                     + sss_can_co2   * poly_area_i
       cgrid%dmean_can_prss(ipy)     = cgrid%dmean_can_prss(ipy)                            &
                                     + sss_can_prss  * poly_area_i
+      cgrid%dmean_gnd_temp(ipy)     = cgrid%dmean_gnd_temp(ipy)                            &
+                                    + sss_gnd_temp  * poly_area_i
+      cgrid%dmean_gnd_shv (ipy)     = cgrid%dmean_gnd_shv (ipy)                            &
+                                    + sss_gnd_shv   * poly_area_i
 
       !------------------------------------------------------------------------------------!
       !    Variables already at edtype level, simple integration only.                     !
@@ -863,6 +878,10 @@ subroutine integrate_ed_daily_output_state(cgrid)
                                             + sss_can_co2   * poly_area_i
          cgrid%qmean_can_prss      (it,ipy) = cgrid%qmean_can_prss                (it,ipy) &
                                             + sss_can_prss  * poly_area_i
+         cgrid%qmean_gnd_temp      (it,ipy) = cgrid%qmean_gnd_temp                (it,ipy) &
+                                            + sss_gnd_temp  * poly_area_i
+         cgrid%qmean_gnd_shv       (it,ipy) = cgrid%qmean_gnd_shv                 (it,ipy) &
+                                            + sss_gnd_shv   * poly_area_i
          !------ Meteorological variables. ------------------------------------------------!
          cgrid%qmean_atm_temp      (it,ipy) = cgrid%qmean_atm_temp                (it,ipy) &
                                             + cgrid%met(ipy)%atm_tmp
@@ -1886,6 +1905,8 @@ subroutine normalize_ed_daily_output_vars(cgrid)
       cgrid%dmean_can_shv(ipy)      = cgrid%dmean_can_shv(ipy)      * dtlsm_o_daysec
       cgrid%dmean_can_co2(ipy)      = cgrid%dmean_can_co2(ipy)      * dtlsm_o_daysec
       cgrid%dmean_can_prss(ipy)     = cgrid%dmean_can_prss(ipy)     * dtlsm_o_daysec
+      cgrid%dmean_gnd_temp(ipy)     = cgrid%dmean_gnd_temp(ipy)     * dtlsm_o_daysec
+      cgrid%dmean_gnd_shv (ipy)     = cgrid%dmean_gnd_shv (ipy)     * dtlsm_o_daysec
       cgrid%dmean_atm_temp(ipy)     = cgrid%dmean_atm_temp(ipy)     * dtlsm_o_daysec
       cgrid%dmean_rshort(ipy)       = cgrid%dmean_rshort(ipy)       * dtlsm_o_daysec
       cgrid%dmean_rlong(ipy)        = cgrid%dmean_rlong(ipy)        * dtlsm_o_daysec
@@ -2054,10 +2075,6 @@ subroutine normalize_ed_daily_output_vars(cgrid)
                                                      * dtlsm_o_daylight
                   cpatch%dmean_diffext_level   (ico) = cpatch%dmean_diffext_level   (ico)  &
                                                      * dtlsm_o_daylight
-                  cpatch%dmean_norm_par_beam   (ico) = cpatch%dmean_norm_par_beam   (ico)  &
-                                                     * dtlsm_o_daylight
-                  cpatch%dmean_norm_par_diff   (ico) = cpatch%dmean_norm_par_diff   (ico)  &
-                                                     * dtlsm_o_daylight
                   cpatch%dmean_lambda_light    (ico) = cpatch%dmean_lambda_light    (ico)  &
                                                      * dtlsm_o_daylight
                else
@@ -2072,8 +2089,6 @@ subroutine normalize_ed_daily_output_vars(cgrid)
                   cpatch%dmean_light_level_diff(ico) = 0.
                   cpatch%dmean_beamext_level   (ico) = 0.
                   cpatch%dmean_diffext_level   (ico) = 0.
-                  cpatch%dmean_norm_par_beam   (ico) = 0.
-                  cpatch%dmean_norm_par_diff   (ico) = 0.
                   cpatch%dmean_lambda_light    (ico) = 0.
                end if
             end do cohortloop
@@ -2345,6 +2360,8 @@ subroutine zero_ed_daily_output_vars(cgrid)
       cgrid%dmean_can_prss       (ipy) = 0.
       cgrid%dmean_can_theta      (ipy) = 0.
       cgrid%dmean_can_theiv      (ipy) = 0.
+      cgrid%dmean_gnd_temp       (ipy) = 0.
+      cgrid%dmean_gnd_shv        (ipy) = 0.
       cgrid%dmean_atm_temp       (ipy) = 0.
       cgrid%dmean_rshort         (ipy) = 0.
       cgrid%dmean_rlong          (ipy) = 0.
@@ -2407,8 +2424,6 @@ subroutine zero_ed_daily_output_vars(cgrid)
                cpatch%dmean_light_level_diff(ico) = 0.
                cpatch%dmean_beamext_level(ico)    = 0.
                cpatch%dmean_diffext_level(ico)    = 0.
-               cpatch%dmean_norm_par_beam   (ico) = 0.
-               cpatch%dmean_norm_par_diff   (ico) = 0.
                cpatch%dmean_lambda_light(ico)     = 0.
             end do
          end do
@@ -2528,6 +2543,10 @@ subroutine integrate_ed_monthly_output_vars(cgrid)
                                       + cgrid%dmean_can_co2       (ipy)
       cgrid%mmean_can_prss      (ipy) = cgrid%mmean_can_prss      (ipy)                    &
                                       + cgrid%dmean_can_prss      (ipy)
+      cgrid%mmean_gnd_temp      (ipy) = cgrid%mmean_gnd_temp      (ipy)                    &
+                                      + cgrid%dmean_gnd_temp      (ipy)
+      cgrid%mmean_gnd_shv       (ipy) = cgrid%mmean_gnd_shv       (ipy)                    &
+                                      + cgrid%dmean_gnd_shv       (ipy)
       cgrid%mmean_atm_temp      (ipy) = cgrid%mmean_atm_temp      (ipy)                    &
                                       + cgrid%dmean_atm_temp      (ipy)
       cgrid%mmean_rshort        (ipy) = cgrid%mmean_rshort        (ipy)                    &
@@ -2690,10 +2709,6 @@ subroutine integrate_ed_monthly_output_vars(cgrid)
                                                   + cpatch%dmean_beamext_level(ico)
                cpatch%mmean_diffext_level(ico)    = cpatch%mmean_diffext_level(ico)        &
                                                   + cpatch%dmean_diffext_level(ico)
-               cpatch%mmean_norm_par_beam   (ico) = cpatch%mmean_norm_par_beam(ico)        &
-                                                  + cpatch%dmean_norm_par_beam(ico)
-               cpatch%mmean_norm_par_diff   (ico) = cpatch%mmean_norm_par_diff(ico)        &
-                                                  + cpatch%dmean_norm_par_diff(ico)
                cpatch%mmean_lambda_light(ico)     = cpatch%mmean_lambda_light(ico)         &
                                                   + cpatch%dmean_lambda_light(ico)
 
@@ -2861,6 +2876,8 @@ subroutine normalize_ed_monthly_output_vars(cgrid)
       cgrid%mmean_can_shv        (ipy) = cgrid%mmean_can_shv        (ipy) * ndaysi
       cgrid%mmean_can_co2        (ipy) = cgrid%mmean_can_co2        (ipy) * ndaysi
       cgrid%mmean_can_prss       (ipy) = cgrid%mmean_can_prss       (ipy) * ndaysi
+      cgrid%mmean_gnd_temp       (ipy) = cgrid%mmean_gnd_temp       (ipy) * ndaysi
+      cgrid%mmean_gnd_shv        (ipy) = cgrid%mmean_gnd_shv        (ipy) * ndaysi
       cgrid%mmean_atm_temp       (ipy) = cgrid%mmean_atm_temp       (ipy) * ndaysi
       cgrid%mmean_rshort         (ipy) = cgrid%mmean_rshort         (ipy) * ndaysi
       cgrid%mmean_rlong          (ipy) = cgrid%mmean_rlong          (ipy) * ndaysi
@@ -3054,10 +3071,6 @@ subroutine normalize_ed_monthly_output_vars(cgrid)
                                                    * ndaysi
                cpatch%mmean_diffext_level (ico)    = cpatch%mmean_diffext_level(ico)       &
                                                    * ndaysi
-               cpatch%mmean_norm_par_beam(ico)     = cpatch%mmean_norm_par_beam(ico)       &
-                                                   * ndaysi
-               cpatch%mmean_norm_par_diff(ico)     = cpatch%mmean_norm_par_diff(ico)       &
-                                                   * ndaysi
                cpatch%mmean_lambda_light(ico)      = cpatch%mmean_lambda_light(ico)        &
                                                    * ndaysi
 
@@ -3247,6 +3260,10 @@ subroutine normalize_ed_monthly_output_vars(cgrid)
                                               * ndaysi * dtlsm_o_frqfast
             cgrid%qmean_can_prss      (t,ipy) = cgrid%qmean_can_prss      (t,ipy)          &
                                               * ndaysi * dtlsm_o_frqfast
+            cgrid%qmean_gnd_temp      (t,ipy) = cgrid%qmean_gnd_temp      (t,ipy)          &
+                                              * ndaysi * dtlsm_o_frqfast
+            cgrid%qmean_gnd_shv       (t,ipy) = cgrid%qmean_gnd_shv       (t,ipy)          &
+                                              * ndaysi * dtlsm_o_frqfast
             cgrid%qmean_atm_temp      (t,ipy) = cgrid%qmean_atm_temp      (t,ipy)          &
                                               * ndaysi * dtlsm_o_frqfast
             cgrid%qmean_rshort        (t,ipy) = cgrid%qmean_rshort        (t,ipy)          &
@@ -3392,6 +3409,8 @@ subroutine zero_ed_monthly_output_vars(cgrid)
       cgrid%mmean_can_shv            (ipy) = 0.
       cgrid%mmean_can_co2            (ipy) = 0.
       cgrid%mmean_can_rhos           (ipy) = 0.
+      cgrid%mmean_gnd_temp           (ipy) = 0.
+      cgrid%mmean_gnd_shv            (ipy) = 0.
       cgrid%mmean_atm_temp           (ipy) = 0.
       cgrid%mmean_rshort             (ipy) = 0.
       cgrid%mmean_rlong              (ipy) = 0.
@@ -3478,8 +3497,6 @@ subroutine zero_ed_monthly_output_vars(cgrid)
                cpatch%mmean_light_level_diff  (ico) = 0.
                cpatch%mmean_beamext_level     (ico) = 0.
                cpatch%mmean_diffext_level     (ico) = 0.
-               cpatch%mmean_norm_par_beam     (ico) = 0.
-               cpatch%mmean_norm_par_diff     (ico) = 0.
                cpatch%mmean_lambda_light      (ico) = 0.
                cpatch%mmean_mort_rate       (:,ico) = 0.
             end do
@@ -3526,6 +3543,8 @@ subroutine zero_ed_monthly_output_vars(cgrid)
          cgrid%qmean_can_shv       (:,ipy) = 0.0
          cgrid%qmean_can_co2       (:,ipy) = 0.0
          cgrid%qmean_can_prss      (:,ipy) = 0.0
+         cgrid%qmean_gnd_temp      (:,ipy) = 0.0
+         cgrid%qmean_gnd_shv       (:,ipy) = 0.0
          cgrid%qmean_atm_temp      (:,ipy) = 0.0
          cgrid%qmean_rshort        (:,ipy) = 0.0
          cgrid%qmean_rlong         (:,ipy) = 0.0

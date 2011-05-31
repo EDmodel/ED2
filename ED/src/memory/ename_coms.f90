@@ -155,6 +155,7 @@ module ename_coms
       integer                                           :: icanturb
       integer                                           :: i_blyr_condct
       integer                                           :: isfclyrm
+      integer                                           :: ied_grndvap
       integer                                           :: ipercol
       integer               , dimension(n_pft)          :: include_these_pft
       integer                                           :: agri_stock
@@ -170,6 +171,8 @@ module ename_coms
       real                                              :: tprandtl
       real                                              :: vh2vr
       real                                              :: vh2dh
+      real                                              :: ribmax
+      real                                              :: leaf_maxwhc
       real                                              :: ggfact
 
       !----- Options for printing polygon vectors/arrays to standard output. --------------!
@@ -185,6 +188,7 @@ module ename_coms
       integer                                           :: ishuffle
       integer                                           :: metcyc1
       integer                                           :: metcycf
+      integer                                           :: imetavg
       real                                              :: initial_co2
 
       !------ Options controlling prescribed phenology forcing. ---------------------------!
@@ -385,6 +389,8 @@ module ename_coms
       enl%tprandtl                  = undef_real
       enl%vh2vr                     = undef_real
       enl%vh2dh                     = undef_real
+      enl%ribmax                    = undef_real
+      enl%leaf_maxwhc               = undef_real
       enl%ggfact                    = undef_real
 
       enl%iprintpolys               = undef_integer
@@ -398,6 +404,7 @@ module ename_coms
       enl%ishuffle                  = undef_integer
       enl%metcyc1                   = undef_integer
       enl%metcycf                   = undef_integer
+      enl%imetavg                   = undef_integer
       enl%initial_co2               = undef_real
 
       enl%iphenys1                  = undef_integer

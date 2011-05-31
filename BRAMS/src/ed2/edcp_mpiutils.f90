@@ -124,12 +124,13 @@ subroutine masterput_ednl(mainnum)
                                    , time2canopy                & ! intent(in)
                                    , sm_fire                    ! ! intent(in)
    use optimiz_coms         , only : ioptinpt                   ! ! intent(in)
-   use canopy_radiation_coms, only : crown_mod                  ! ! intent(in)
+   use canopy_layer_coms    , only : crown_mod                  ! ! intent(in)
    use rk4_coms             , only : rk4_tolerance              & ! intent(in)
                                    , ibranch_thermo             & ! intent(in)
                                    , ipercol                    ! ! intent(in)
    use canopy_air_coms      , only : icanturb                   & ! intent(in)
                                    , isfclyrm                   & ! intent(in)
+                                   , ied_grndvap                & ! intent(in)
                                    , i_blyr_condct              & ! intent(in)
                                    , ustmin                     & ! intent(in)
                                    , ggfact                     & ! intent(in)
@@ -138,7 +139,8 @@ subroutine masterput_ednl(mainnum)
                                    , tprandtl                   & ! intent(in)
                                    , vkopr                      & ! intent(in)
                                    , vh2vr                      & ! intent(in)
-                                   , vh2dh                      ! ! intent(in)
+                                   , vh2dh                      & ! intent(in)
+                                   , ribmax                     ! ! intent(in)
    use mem_edcp             , only : co2_offset                 ! ! intent(in)
    implicit none
    !----- Standard common blocks. ---------------------------------------------------------!
@@ -282,6 +284,7 @@ subroutine masterput_ednl(mainnum)
    call MPI_Bcast(radfrq,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(iclobber,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(isfclyrm,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(ied_grndvap,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
 
    !---------------------------------------------------------------------------------------!
    !      We should only need the grid sizes, because we expect to import the coordinates  !
@@ -314,6 +317,7 @@ subroutine masterput_ednl(mainnum)
    call MPI_Bcast(vkopr,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(vh2vr,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(vh2dh,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(ribmax,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
 
    return
 end subroutine masterput_ednl
@@ -449,12 +453,13 @@ subroutine nodeget_ednl(master_num)
                                    , time2canopy                & ! intent(out)
                                    , sm_fire                    ! ! intent(out)
    use optimiz_coms         , only : ioptinpt                   ! ! intent(out)
-   use canopy_radiation_coms, only : crown_mod                  ! ! intent(out)
+   use canopy_layer_coms    , only : crown_mod                  ! ! intent(out)
    use rk4_coms             , only : rk4_tolerance              & ! intent(out)
                                    , ibranch_thermo             & ! intent(out)
                                    , ipercol                    ! ! intent(out)
    use canopy_air_coms      , only : icanturb                   & ! intent(out)
                                    , isfclyrm                   & ! intent(out)
+                                   , ied_grndvap                & ! intent(out)
                                    , i_blyr_condct              & ! intent(out)
                                    , ustmin                     & ! intent(out)
                                    , ggfact                     & ! intent(out)
@@ -463,7 +468,8 @@ subroutine nodeget_ednl(master_num)
                                    , tprandtl                   & ! intent(out)
                                    , vkopr                      & ! intent(out)
                                    , vh2vr                      & ! intent(out)
-                                   , vh2dh                      ! ! intent(out)
+                                   , vh2dh                      & ! intent(out)
+                                   , ribmax                     ! ! intent(out)
    use mem_edcp             , only : co2_offset                 ! ! intent(out)
 
    implicit none
@@ -610,6 +616,7 @@ subroutine nodeget_ednl(master_num)
    call MPI_Bcast(radfrq,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(iclobber,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(isfclyrm,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(ied_grndvap,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
 
    !---------------------------------------------------------------------------------------!
    !      We should only need the grid sizes, because we expect to import the coordinates  !
@@ -642,6 +649,7 @@ subroutine nodeget_ednl(master_num)
    call MPI_Bcast(vkopr,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(vh2vr,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(vh2dh,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(ribmax,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
 
    return
 end subroutine nodeget_ednl

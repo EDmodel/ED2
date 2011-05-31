@@ -26,6 +26,9 @@ subroutine ed_timestep()
    integer                                 :: thismonth
    integer                                 :: thisyear
    integer                                 :: thisdate
+   integer                                 :: thishour
+   integer                                 :: thismin
+   integer                                 :: thissec
    !----- Local constants. ----------------------------------------------------------------!
    logical                    , parameter  :: print_banner = .false.
    !----- Locally saved variable to control when ED should be called. ---------------------!
@@ -46,6 +49,9 @@ subroutine ed_timestep()
       thismonth = current_time%month
       thisdate  = current_time%date
       thistime  = current_time%time
+      thishour  = current_time%hour
+      thismin   = current_time%min
+      thissec   = current_time%sec
 
       if (print_banner) then
          wtime_start=walltime(0.)
@@ -77,10 +83,11 @@ subroutine ed_timestep()
          call timing(2,cputime2)
 
          if (mynum == 1) then
-            write (unit=*,fmt='(a,i4,2(a,i2.2),a,i4.4,1x,f6.0,a,2(1x,f7.3,a))')            &
-                 ' ED2 LSM Timestep; Grid ',ngrid,'; Sim time  ',thismonth, '-',thisdate   &
-                ,'-',thisyear,thistime,'s; Wall',wtime2-wtime1,'s; CPU',cputime2-cputime1  &
-                ,'s'
+            write (unit=*,fmt='(a,i4,2(a,i2.2),a,i4.4,1x,3(i2.2,a),1x,a,2(1x,f7.3,a))')    &
+                 ' ED2 LSM Timestep; Grid ',ngrid                                          &
+                ,'; Sim time  ',thismonth, '-',thisdate,'-',thisyear                       &
+                ,thishour,':',thismin,':',thissec,'UTC;'                                   &
+                ,'Wall',wtime2-wtime1,'s; CPU',cputime2-cputime1,'s'
          end if
       end if
 

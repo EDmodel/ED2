@@ -226,9 +226,10 @@ subroutine ed_model()
       !------------------------------------------------------------------------------------!
 
       if (current_time%time < dtlsm .and. mynum == 1) then
-           write (unit=*,fmt='(a,3x,2(i2.2,a),i4.4,a,f8.2)')                               &
+           write (unit=*,fmt='(a,3x,2(i2.2,a),i4.4,a,3(i2.2,a))')                          &
               ' - Simulating:',current_time%month,'/',current_time%date,'/'                &
-                              ,current_time%year,' ',current_time%time
+                              ,current_time%year,' ',current_time%hour,':'                 &
+                              ,current_time%min,':',current_time%sec,' UTC'
       end if
 
 

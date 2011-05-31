@@ -717,6 +717,7 @@ subroutine zen(m2,m3,ia,iz,ja,jz,iswrtyp,ilwrtyp,glon,glat,cosz)
    real(kind=8)            :: hrangl             ! Hour angle in radians
    !----- Local constants. ----------------------------------------------------------------!
    real(kind=8), parameter :: capri    = -2.35d1 ! Tropic of Capricornium latitude
+   real(kind=8), parameter :: ndaysyr  =  3.65d2 ! Number of days of year (no leap years)
    integer     , parameter :: shsummer = -9      ! Julian day of Southern Hemisphere summer
    !----- External functions. -------------------------------------------------------------!
    integer, external   :: julday                 ! Function to compute day of year
@@ -731,7 +732,7 @@ subroutine zen(m2,m3,ia,iz,ja,jz,iswrtyp,ilwrtyp,glon,glat,cosz)
    !     Solfac is a multiplier of the solar constant to correct for Earth's varying       !
    ! distance to the sun.                                                                  !
    !---------------------------------------------------------------------------------------!
-   d0 =  twopi8 * dble(jday-1) / 3.65d2
+   d0 =  twopi8 * dble(jday-1) / ndaysyr
    d02 = d0 * 2.d0
    solfac = sngl(1.000110d0 + 3.4221d-2 * dcos (d0) + 1.280d-3 * dsin(d0)                  &
                             + 7.1900d-4 * dcos(d02) + 7.700d-5 * dsin(d02))
@@ -754,7 +755,7 @@ subroutine zen(m2,m3,ia,iz,ja,jz,iswrtyp,ilwrtyp,glon,glat,cosz)
 
 
    !----- Declin is the solar latitude in degrees (aka declination) -----------------------!
-   declin = capri * cos(twopi8 * dble(jday - shsummer) / 3.65d2) * pio1808
+   declin = capri * cos(twopi8 * dble(jday - shsummer) / ndaysyr) * pio1808
    sdec = dsin(declin) !-----  sdec - sine   of declination -------------------------------!
    cdec = dcos(declin) !-----  cdec - cosine of declination -------------------------------!
 

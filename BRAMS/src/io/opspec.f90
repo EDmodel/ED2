@@ -590,7 +590,9 @@ subroutine opspec3
           lc_gamh => gamh,  & ! intent(in)
           tprandtl,         & ! intent(in)
           vh2vr,            & ! intent(in)
-          vh2dh             ! ! intent(in)
+          vh2dh,            & ! intent(in)
+          ribmax,           & ! intent(in)
+          leaf_maxwhc       ! ! intent(in)
           
   use therm_lib , only:  &
           level          ! ! intent(in)
@@ -1020,6 +1022,18 @@ subroutine opspec3
      print *, vh2dh
      ifaterr = ifaterr + 1
   end if
+  
+  if (ribmax < 0.01 .or. ribmax > 20.0) then
+     print *, 'FATAL - RIBMAX must be greater than 0.01 and less than 20.'
+     print *, ribmax
+     ifaterr = ifaterr + 1
+  end if
+  
+  if (leaf_maxwhc < 0.0 .or. leaf_maxwhc > 10.0) then
+     print *, 'FATAL - LEAF_MAXWHC must be greater than 0.0 and less than 10.'
+     print *, leaf_maxwhc
+     ifaterr = ifaterr + 1
+  end if
 
   if (isoilbc < 0 .or. isoilbc > 3) then
      write (unit=*,fmt='(a,1x,i4,a)')                                                      &
@@ -1112,6 +1126,13 @@ subroutine opspec3
   ! Check whether the surface layer exchange scheme the user chose is okay. 
   if (isfcl /= 0 .and. (istar < 1 .or. istar > 5)) then
      print *, 'fatal - ISTAR must be between 1 and 5, and yours is set to ',istar,'...'
+     ifaterr=ifaterr+1
+  end if
+  
+  ! Check whether the ground vapour method scheme the user chose is fine or not. 
+  if (isfcl /= 0 .and. (igrndvap < 0 .or. igrndvap > 4)) then
+     print *, 'fatal - IGRNDVAP must be between 0 and 4, and yours is set to '            &
+            ,igrndvap,'...'
      ifaterr=ifaterr+1
   end if
 

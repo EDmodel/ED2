@@ -33,6 +33,19 @@ module canopy_air_coms
                             !      328-341.
                             !  4 - BH91, using OD95 to find zeta.
 
+
+   integer :: ied_grndvap   ! Methods to find the ground -> canopy conductance:
+                            ! In all cases the beta term is modified so it approaches
+                            !    zero as soil moisture goes to dry air soil. 
+                            !  0. Modified Lee Pielke (1992), adding field capacity, but 
+                            !     using beta factor without the square, like in 
+                            !     Noilhan and Planton (1989).  This is the closest to
+                            !     the original ED-2.0
+                            !  1. Test # 1 of Mahfouf and Noilhan (1991)
+                            !  2. Test # 2 of Mahfouf and Noilhan (1991)
+                            !  3. Test # 3 of Mahfouf and Noilhan (1991)
+                            !  4. Test # 4 of Mahfouf and Noilhan (1991)
+
    integer :: i_blyr_condct ! Methods to estimate the leaf boundary layer conductance:
                             !  0. The Nusselt number for forced convection is estimated
                             !     using the average winds, with no corrections
@@ -42,6 +55,14 @@ module canopy_air_coms
                             !  2. The actual Nusselt number for forced convection is 
                             !     multiplied by 10. as the Reynolds number gets close or
                             !     greater than 10,000.
+
+   real :: leaf_maxwhc      !   Maximum amount of water that can stay on top of the leaf
+                            ! surface.  If this amount is reached, the leaf stops collect-
+                            ! ing water, thus increasing the through fall fraction.  This 
+                            ! value is given in kg/[m2 leaf], so it will be always scaled
+                            ! by LAI.
+   !---------------------------------------------------------------------------------------!
+
    !----- Minimum Ustar [m/s]. ------------------------------------------------------------!
    real         :: ustmin
    !----- Factor to be applied to the ground->canopy conductance. -------------------------!
@@ -54,6 +75,7 @@ module canopy_air_coms
                          !     based on the namelist TPRANDTL
    real   :: vh2vr       ! vegetation roughness:vegetation height ratio
    real   :: vh2dh       ! displacement height:vegetation height ratio
+   real   :: ribmax      ! Maximum bulk Richardson number (ignored when ISFCLYRM = 1)
    !---------------------------------------------------------------------------------------!
 
    !=======================================================================================!
@@ -118,15 +140,7 @@ module canopy_air_coms
    real(kind=4)  :: alpha2_m97
    !----- Parameter to represent the Roughness sublayer effect. ---------------------------!
    real(kind=4)  :: psi_m97
-   !----- Allocatable vectors. ------------------------------------------------------------!
-   real(kind=4), dimension(:), allocatable :: zztop    ! Top of each layer
-   real(kind=4), dimension(:), allocatable :: zzmid    ! Middle of each layer
-   real(kind=4), dimension(:), allocatable :: lad      ! Leaf area density
-   real(kind=4), dimension(:), allocatable :: dladdz   ! Derivative of Leaf area density
-   real(kind=4), dimension(:), allocatable :: cdrag    ! Drag coefficient
-   real(kind=4), dimension(:), allocatable :: pshelter ! Sheltering factor
-   real(kind=4), dimension(:), allocatable :: cumldrag ! Cumulative leaf drag area fctn.
-   real(kind=4), dimension(:), allocatable :: windm97  ! Wind profile
+
    !----- Double precision version of all variables above. --------------------------------!
    real(kind=8)                            :: dz_m978
    real(kind=8)                            :: cdrag08
@@ -138,14 +152,6 @@ module canopy_air_coms
    real(kind=8)                            :: alpha1_m978
    real(kind=8)                            :: alpha2_m978
    real(kind=8)                            :: psi_m978
-   real(kind=8), dimension(:), allocatable :: zztop8
-   real(kind=8), dimension(:), allocatable :: zzmid8
-   real(kind=8), dimension(:), allocatable :: lad8
-   real(kind=8), dimension(:), allocatable :: dladdz8
-   real(kind=8), dimension(:), allocatable :: cdrag8
-   real(kind=8), dimension(:), allocatable :: pshelter8
-   real(kind=8), dimension(:), allocatable :: cumldrag8
-   real(kind=8), dimension(:), allocatable :: windm978
    !=======================================================================================!
    !=======================================================================================!
 
@@ -224,7 +230,6 @@ module canopy_air_coms
    real   :: dl79        ! ???
    !----- Oncley and Dudhia (1995) model. -------------------------------------------------!
    real   :: bbeta       ! Beta 
-   real   :: ribmaxod95  ! Maximum bulk Richardson number
    !----- Beljaars and Holtslag (1991) model. ---------------------------------------------!
    real   :: abh91       ! -a from equation  (28) and (32)
    real   :: bbh91       ! -b from equation  (28) and (32)
@@ -239,7 +244,6 @@ module canopy_air_coms
    real   :: atetf       ! a * e * f
    real   :: z0moz0h     ! z0(M)/z0(h)
    real   :: z0hoz0m     ! z0(M)/z0(h)
-   real   :: ribmaxbh91  ! Maximum bulk Richardson number
    !---------------------------------------------------------------------------------------!
 
    !----- Double precision of all these variables. ----------------------------------------!
@@ -250,8 +254,7 @@ module canopy_air_coms
    real(kind=8)   :: bbeta8
    real(kind=8)   :: gamm8
    real(kind=8)   :: gamh8
-   real(kind=8)   :: ribmaxod958
-   real(kind=8)   :: ribmaxbh918
+   real(kind=8)   :: ribmax8
    real(kind=8)   :: tprandtl8
    real(kind=8)   :: vkopr8
    real(kind=8)   :: abh918
@@ -285,16 +288,7 @@ module canopy_air_coms
    !    Minimum leaf water content to be considered.  Values smaller than this will be     !
    ! flushed to zero.  This value is in kg/[m2 leaf], so it will be always scaled by LAI.  !
    !---------------------------------------------------------------------------------------!
-   real :: dry_veg_lwater
-   !---------------------------------------------------------------------------------------!
-
-   !---------------------------------------------------------------------------------------!
-   !    Maximum leaf water that plants can hold.  Should leaf water exceed this number,    !
-   ! water will be no longer intercepted by the leaves, and any value in excess of this    !
-   ! will be promptly removed through shedding.  This value is in kg/[m2 leaf], so it will !
-   ! be always scaled by LAI.                                                              !
-   !---------------------------------------------------------------------------------------!
-   real :: fullveg_lwater
+   real :: leaf_drywhc
    !---------------------------------------------------------------------------------------!
 
 
@@ -319,12 +313,40 @@ module canopy_air_coms
 
    !=======================================================================================!
    !=======================================================================================!
+   !   Soil conductance terms, from:                                                       !
+   !                                                                                       !
+   ! Passerat de Silans, A., 1986: Transferts de masse et de chaleur dans un sol stratifié !
+   !     soumis à une excitation amtosphérique naturelle. Comparaison: Modèles-expérience. !
+   !     Thesis, Institut National Polytechnique de Grenoble. (P86)                        !
+   !                                                                                       !
+   ! retrieved from:                                                                       !
+   ! Mahfouf, J. F., J. Noilhan, 1991: Comparative study of various formulations of        !
+   !     evaporation from bare soil using in situ data. J. Appl. Meteorol., 30, 1354-1365. !
+   !     (MN91)                                                                            !
+   !                                                                                       !
+   !     Please notice that the values are inverted because we compute conductance, not    !
+   ! resistance.                                                                           !
+   !---------------------------------------------------------------------------------------!
+   real(kind=4) :: ggsoil0
+   real(kind=4) :: kksoil
+   real(kind=8) :: ggsoil08
+   real(kind=8) :: kksoil8
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
 
 
    contains
-   
-   
-   
+
+
+
    !=======================================================================================!
    !=======================================================================================!
    !    This function computes the stability  correction function for momentum.            !

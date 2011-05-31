@@ -227,15 +227,19 @@ module ed_therm_lib
    !---------------------------------------------------------------------------------------!
    subroutine ed_grndvap(ksn,nsoil,topsoil_water,topsoil_temp,topsoil_fliq,sfcwater_temp   &
                         ,sfcwater_fliq,can_prss,can_shv,ground_shv,ground_ssh              &
-                        ,ground_temp,ground_fliq)
+                        ,ground_temp,ground_fliq,ggsoil)
 
-      use soil_coms   , only : soil      & ! intent(in)
-                             , betapower ! ! intent(in)
-      use consts_coms , only : pi1       & ! intent(in)
-                             , wdns      & ! intent(in)
-                             , gorh2o    & ! intent(in)
-                             , lnexp_min ! ! intent(in)
-      use therm_lib   , only : rslif     ! ! function
+      use canopy_air_coms, only : ied_grndvap & ! intent(in)
+                                , ggsoil0     & ! intent(in)
+                                , kksoil      ! ! intent(in)
+      use soil_coms      , only : soil        & ! intent(in)
+                                , betapower   ! ! intent(in)
+      use consts_coms    , only : pi1         & ! intent(in)
+                                , wdns        & ! intent(in)
+                                , gorh2o      & ! intent(in)
+                                , lnexp_min   & ! intent(in)
+                                , huge_num    ! ! intent(in)
+      use therm_lib      , only : rslif       ! ! function
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       integer     , intent(in)  :: ksn           ! # of surface water layers    [     ----]
@@ -251,6 +255,7 @@ module ed_therm_lib
       real(kind=4), intent(out) :: ground_ssh    ! sfc. saturation spec. hum.   [kg_vap/kg]
       real(kind=4), intent(out) :: ground_temp   ! Surface temperature          [        K]
       real(kind=4), intent(out) :: ground_fliq   ! Surface liquid water frac.   [       --]
+      real(kind=4), intent(out) :: ggsoil        ! Soil conductance for evap.   [      m/s]
       !----- Local variables --------------------------------------------------------------!
       real(kind=4)              :: slpotvn       ! soil water potential         [        m]
       real(kind=4)              :: alpha         ! alpha term (Lee-Pielke,1992) [     ----]
@@ -302,9 +307,50 @@ module ed_therm_lib
          smterm     = (topsoil_water - soil(nsoil)%soilcp)                                 &
                     / (soil(nsoil)%sfldcap - soil(nsoil)%soilcp)
          beta       = (.5 * (1. - cos (min(1.,smterm) * pi1))) ** betapower
-         !----- Use the expression from LP92 to determine the specific humidity. ----------!
-         ground_shv = ground_ssh * alpha * beta + (1. - beta) * can_shv
          !---------------------------------------------------------------------------------!
+
+
+
+
+
+         !---------------------------------------------------------------------------------!
+         !     Decide which method to use to find the ground water vapour mixing ratio.    !
+         !---------------------------------------------------------------------------------!
+         select case (ied_grndvap)
+         case (0)
+            !----- LP92 method. -----------------------------------------------------------!
+            ground_shv = max(can_shv, ground_ssh * alpha * beta + (1. - beta) * can_shv)
+            ggsoil     = huge_num
+            !------------------------------------------------------------------------------!
+
+         case (1)
+            !----- MH91, test 1. ----------------------------------------------------------!
+            ground_shv = max(can_shv, ground_ssh * beta)
+            ggsoil     = huge_num
+            !------------------------------------------------------------------------------!
+
+         case (2)
+            !----- MH91, test 2. ----------------------------------------------------------!
+            ground_shv = ground_ssh
+            ggsoil     = ggsoil0 * exp(kksoil * smterm)
+            !------------------------------------------------------------------------------!
+
+         case (3)
+            !----- MH91, test 3. ----------------------------------------------------------!
+            ground_shv = max(can_shv, ground_ssh * beta + (1. - beta) * can_shv)
+            ggsoil     = huge_num
+            !------------------------------------------------------------------------------!
+
+         case (4)
+            !------------------------------------------------------------------------------!
+            !     MH91, test 4.                                                            !
+            !------------------------------------------------------------------------------!
+            ground_shv = max(can_shv, ground_ssh * alpha)
+            ggsoil     = ggsoil0 * exp(kksoil * smterm)
+            !------------------------------------------------------------------------------!
+         end select
+         !---------------------------------------------------------------------------------!
+
 
       case default
          !---------------------------------------------------------------------------------!
@@ -318,7 +364,9 @@ module ed_therm_lib
          ground_ssh = rslif(can_prss,ground_temp)
          ground_ssh = ground_ssh / (1.0 + ground_ssh)
          !----- The ground specific humidity in this case is just the saturation value. ---!
-         ground_shv  = ground_ssh
+         ground_shv = ground_ssh
+         !----- The conductance should be large so it won't contribute to the net value. --!
+         ggsoil     = huge_num
          !---------------------------------------------------------------------------------!
       end select
       !------------------------------------------------------------------------------------!
@@ -350,17 +398,21 @@ module ed_therm_lib
    !---------------------------------------------------------------------------------------!
    subroutine ed_grndvap8(ksn,topsoil_water,topsoil_temp,topsoil_fliq,sfcwater_temp        &
                          ,sfcwater_fliq,can_prss,can_shv,ground_shv,ground_ssh             &
-                         ,ground_temp,ground_fliq)
-      use soil_coms   , only : soil8      & ! intent(in)
-                             , betapower8 ! ! intent(in)
-      use consts_coms , only : pi18       & ! intent(in)
-                             , wdns8      & ! intent(in)
-                             , gorh2o8    & ! intent(in)
-                             , lnexp_min8 ! ! intent(in) 
-      use therm_lib8  , only : rslif8     ! ! function
-      use rk4_coms    , only : rk4site    ! ! intent(in)
-      use grid_coms   , only : nzg        ! ! intent(in)
-      use ed_max_dims , only : n_pft      ! ! intent(in)
+                         ,ground_temp,ground_fliq,ggsoil)
+      use canopy_air_coms, only : ied_grndvap & ! intent(in)
+                                , ggsoil08    & ! intent(in)
+                                , kksoil8     ! ! intent(in)
+      use soil_coms      , only : soil8       & ! intent(in)
+                                , betapower8  ! ! intent(in)
+      use consts_coms    , only : pi18        & ! intent(in)
+                                , wdns8       & ! intent(in)
+                                , gorh2o8     & ! intent(in)
+                                , lnexp_min8  & ! intent(in)
+                                , huge_num8   ! ! intent(in)
+      use therm_lib8     , only : rslif8      ! ! function
+      use rk4_coms       , only : rk4site     ! ! intent(in)
+      use grid_coms      , only : nzg         ! ! intent(in)
+      use ed_max_dims    , only : n_pft       ! ! intent(in)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       integer     , intent(in)  :: ksn           ! # of surface water layers    [     ----]
@@ -375,6 +427,7 @@ module ed_therm_lib
       real(kind=8), intent(out) :: ground_ssh    ! sfc. saturation spec. hum.   [kg_vap/kg]
       real(kind=8), intent(out) :: ground_temp   ! Surface temperature          [        K]
       real(kind=8), intent(out) :: ground_fliq   ! Surface liquid water frac.   [       --]
+      real(kind=8), intent(out) :: ggsoil        ! Soil conductance for evap.   [      m/s]
       !----- Local variables --------------------------------------------------------------!
       integer                   :: nsoil         ! Soil type                    [     ----]
       integer                   :: k             ! Index counter.               [     ----]
@@ -432,8 +485,48 @@ module ed_therm_lib
          smterm     = (topsoil_water - soil8(nsoil)%soilcp)                                &
                     / (soil8(nsoil)%sfldcap - soil8(nsoil)%soilcp)
          beta       = (5.d-1 * (1.d0 - cos (min(1.d0,smterm) * pi18))) ** betapower8
-         !----- Use the expression from LP92 to determine the specific humidity. ----------!
-         ground_shv = ground_ssh * alpha * beta + (1.d0 - beta) * can_shv
+         !---------------------------------------------------------------------------------!
+
+
+
+
+
+         !---------------------------------------------------------------------------------!
+         !     Decide which method to use to find the ground water vapour mixing ratio.    !
+         !---------------------------------------------------------------------------------!
+         select case (ied_grndvap)
+         case (0)
+            !----- LP92 method. -----------------------------------------------------------!
+            ground_shv = max(can_shv, ground_ssh * alpha * beta + (1.d0 - beta) * can_shv)
+            ggsoil     = huge_num8
+            !------------------------------------------------------------------------------!
+
+         case (1)
+            !----- MH91, test 1. ----------------------------------------------------------!
+            ground_shv = max(can_shv, ground_ssh * beta)
+            ggsoil     = huge_num8
+            !------------------------------------------------------------------------------!
+
+         case (2)
+            !----- MH91, test 2. ----------------------------------------------------------!
+            ground_shv = ground_ssh
+            ggsoil     = ggsoil08 * exp(kksoil8 * smterm)
+            !------------------------------------------------------------------------------!
+
+         case (3)
+            !----- MH91, test 3. ----------------------------------------------------------!
+            ground_shv = max(can_shv, ground_ssh * beta + (1.d0 - beta) * can_shv)
+            ggsoil     = huge_num8
+            !------------------------------------------------------------------------------!
+
+         case (4)
+            !------------------------------------------------------------------------------!
+            !     MH91, test 4.                                                            !
+            !------------------------------------------------------------------------------!
+            ground_shv = max(can_shv, ground_ssh * alpha)
+            ggsoil     = ggsoil08 * exp(kksoil8 * smterm)
+            !------------------------------------------------------------------------------!
+         end select
          !---------------------------------------------------------------------------------!
 
       case default
@@ -449,6 +542,8 @@ module ed_therm_lib
          ground_ssh = ground_ssh / (1.d0 + ground_ssh)
          !----- The ground specific humidity in this case is just the saturation value. ---!
          ground_shv  = ground_ssh
+         !----- The conductance should be large so it won't contribute to the net value. --!
+         ggsoil     = huge_num8
          !---------------------------------------------------------------------------------!
       end select
       !------------------------------------------------------------------------------------!

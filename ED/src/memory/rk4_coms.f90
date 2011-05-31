@@ -68,6 +68,7 @@ module rk4_coms
       real(kind=8)                        :: ggbare       ! Cond. of bare ground [     m/s]
       real(kind=8)                        :: ggveg        ! Cond. of veg. ground [     m/s]
       real(kind=8)                        :: ggnet        ! Net ground  conduct. [     m/s]
+      real(kind=8)                        :: ggsoil       ! Soil evap. conduct.  [     m/s]
       integer                             :: flag_wflxgc  ! Flag for water flux.
       !------------------------------------------------------------------------------------!
 
@@ -315,6 +316,7 @@ module rk4_coms
       real(kind=8)                    :: rlong
       real(kind=8)                    :: lon
       real(kind=8)                    :: lat
+      real(kind=8)                    :: cosz
    end type rk4sitetype
    !---------------------------------------------------------------------------------------!
 
@@ -564,8 +566,8 @@ module rk4_coms
    real(kind=8) :: rk4tiny_sfcw_mass     ! Min. non-negligible snow/pond mass   [    kg/m²]
    real(kind=8) :: rk4water_stab_thresh  ! Min. mass for a layer to be stable   [    kg/m²]
    real(kind=8) :: rk4snowmin            ! Min. snow mass required for new lyr  [    kg/m²]
-   real(kind=8) :: rk4dry_veg_lwater     ! Min. non-negligible leaf water mass  [kg/m²leaf]
-   real(kind=8) :: rk4fullveg_lwater     ! Max. leaf water mass possible        [kg/m²leaf]
+   real(kind=8) :: rk4leaf_drywhc        ! Min. non-negligible leaf water mass  [kg/m²leaf]
+   real(kind=8) :: rk4leaf_maxwhc        ! Max. leaf water mass possible        [kg/m²leaf]
    real(kind=8) :: rk4tiny_sfcw_depth    ! Minimum snow/pond depth              [        m]
    !---------------------------------------------------------------------------------------!
 
@@ -833,6 +835,7 @@ module rk4_coms
       y%ggbare                         = 0.d0
       y%ggveg                          = 0.d0
       y%ggnet                          = 0.d0
+      y%ggsoil                         = 0.d0
       y%flag_wflxgc                    = -1
       y%virtual_water                  = 0.d0
       y%virtual_energy                 = 0.d0

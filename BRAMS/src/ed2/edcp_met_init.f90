@@ -91,8 +91,6 @@ subroutine leaf2ed_soil_moist_energy(cgrid,ifm)
    integer                            :: ksn, ksnw1      ! Alias for # of pond/snow layers
    real   , dimension(:), allocatable :: lsoil_temp      ! LEAF-3 soil temperature
    real   , dimension(:), allocatable :: lsoil_fliq      ! LEAF-3 soil liquid fraction
-   real                               :: surface_temp    ! Scratch variable for ed_grndvap
-   real                               :: surface_fliq    ! Scratch variable for ed_grndvap
    real                               :: fice            ! soil ice fraction
    !---------------------------------------------------------------------------------------!
 
@@ -182,7 +180,7 @@ subroutine leaf2ed_soil_moist_energy(cgrid,ifm)
                            ,csite%sfcwater_fracliq(ksnw1,ipa),csite%can_prss(ipa)          &
                            ,csite%can_shv(ipa),csite%ground_shv(ipa)                       &
                            ,csite%ground_ssh(ipa),csite%ground_temp(ipa)                   &
-                           ,csite%ground_fliq(ipa))
+                           ,csite%ground_fliq(ipa),csite%ggsoil(ipa))
 
          end do patchloop
       end do siteloop

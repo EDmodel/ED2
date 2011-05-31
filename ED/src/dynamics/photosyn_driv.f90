@@ -127,7 +127,7 @@ subroutine canopy_photosynthesis(csite,cmet,mzg,ipa,ed_ktrans,lsl,ntext_soil    
             !------------------------------------------------------------------------------!
             !    Scale photosynthetically active radiation per unit of leaf.               !
             !------------------------------------------------------------------------------!
-            leaf_par = cpatch%par_v(tuco) / cpatch%lai(tuco)
+            leaf_par = csite%par_v_max(ipa) / cpatch%lai(tuco)
 
             !------------------------------------------------------------------------------!
             !    Call the photosynthesis for maximum photosynthetic rates.  The units      !

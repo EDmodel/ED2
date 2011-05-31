@@ -354,12 +354,20 @@ module pft_coms
    real, dimension(n_pft) :: leaf_width
 
    !---------------------------------------------------------------------------------------!
-   !     The fraction of the total depth of the canopy where the leaves reside, assuming   !
-   ! they are uniformly distributed in this zone.                                          !
+   !     Parameters to find the crown length, which will be used to find the height of the !
+   ! bottom of the crown.                                                                  !
    !---------------------------------------------------------------------------------------!
-   real, dimension(n_pft) :: b1Tht
-   real, dimension(n_pft) :: b2Tht
-   
+   real, dimension(n_pft) :: b1Cl
+   real, dimension(n_pft) :: b2Cl
+
+   !---------------------------------------------------------------------------------------!
+   !     Parameters to find the volume and the root depth.                                 !
+   !---------------------------------------------------------------------------------------!
+   real, dimension(n_pft) :: b1Vol
+   real, dimension(n_pft) :: b2Vol
+   real, dimension(n_pft) :: b1Rd
+   real, dimension(n_pft) :: b2Rd
+
    !---------------------------------------------------------------------------------------!
    !    Fraction of vertical branches.  Values are from Poorter et al. (2006):             !
    !                                                                                       !
@@ -440,15 +448,20 @@ module pft_coms
    !----- Maximum height of an individual [m]. --------------------------------------------!
    real   , dimension(n_pft)    :: hgt_max
    !----- Minimum biomass density [kgC/m²] required to form a new recruit. ----------------!
-   real, dimension(n_pft) :: min_recruit_size
+   real   , dimension(n_pft) :: min_recruit_size
+   !---------------------------------------------------------------------------------------!
+   !    Fraction of (positive) carbon balance devoted to storage (unwise to set this to    !
+   ! anything other than zero unless storage turnover rate is adjusted accordingly).       !
+   !---------------------------------------------------------------------------------------!
+   real   , dimension(n_pft) :: st_fract
    !----- Fraction of (positive) carbon balance devoted to reproduction. ------------------!
-   real, dimension(n_pft) :: r_fract
+   real   , dimension(n_pft) :: r_fract
    !----- External input of seeds [kgC/m²/year]. ------------------------------------------!
-   real, dimension(n_pft) :: seed_rain
+   real   , dimension(n_pft) :: seed_rain
    !----- Fraction of seed dispersal that is gridcell-wide. -------------------------------!
-   real, dimension(n_pft) :: nonlocal_dispersal !  
+   real   , dimension(n_pft) :: nonlocal_dispersal !  
    !----- Minimum height plants need to attain before allocating to reproduction. ---------!
-   real, dimension(n_pft) :: repro_min_h 
+   real   , dimension(n_pft) :: repro_min_h 
    !=======================================================================================!
    !=======================================================================================!
 

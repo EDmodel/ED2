@@ -48,7 +48,7 @@ subroutine soil_respiration(csite,ipa,mzg,ntext_soil)
 
    !----- Compute soil/temperature modulation of heterotrophic respiration. ---------------!
    csite%A_decomp(ipa) = resp_weight(csite%soil_tempk(mzg,ipa),csite%soil_water(mzg,ipa)   &
-                                    ,soil(ntext_soil(mzg))%slmsts)
+                                    ,ntext_soil(mzg))
 
    !----- Compute nitrogen immobilization factor. -----------------------------------------!
    call resp_f_decomp(csite,ipa, Lc)
@@ -77,23 +77,24 @@ end subroutine soil_respiration
 !     This function computes the respiration limitation factor, which includes limitations !
 ! due to temperature and moisture.                                                         !
 !------------------------------------------------------------------------------------------!
-real function resp_weight(soil_tempk,soil_water,slmsts)
+real function resp_weight(soil_tempk,soil_water,nsoil)
 
    use decomp_coms, only : resp_temperature_increase  & ! intent(in)
                          , resp_opt_water             & ! intent(in)
                          , resp_water_below_opt       & ! intent(in)
                          , resp_water_above_opt       & ! intent(in)
                          , LloydTaylor                ! ! intent(in)
+   use soil_coms  , only : soil                       ! ! intent(in)
 
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
-   real, intent(in) :: soil_tempk
-   real, intent(in) :: soil_water
-   real, intent(in) :: slmsts
+   real   , intent(in) :: soil_tempk
+   real   , intent(in) :: soil_water
+   integer, intent(in) :: nsoil
    !----- Local variables. ----------------------------------------------------------------!
-   real             :: temperature_limitation
-   real             :: water_limitation
-   real             :: rel_soil_moist
+   real                :: temperature_limitation
+   real                :: water_limitation
+   real                :: rel_soil_moist
    !---------------------------------------------------------------------------------------!
 
 
@@ -115,7 +116,8 @@ real function resp_weight(soil_tempk,soil_water,slmsts)
    !---------------------------------------------------------------------------------------!
    !     Find the relative soil moisture, then the moisture dependence.                    !
    !---------------------------------------------------------------------------------------!
-   rel_soil_moist = soil_water/slmsts
+   rel_soil_moist = (soil_water         - soil(nsoil)%soilcp)                              &
+                  / (soil(nsoil)%slmsts - soil(nsoil)%soilcp)
    if (rel_soil_moist <= resp_opt_water)then
       water_limitation = exp( (rel_soil_moist - resp_opt_water) * resp_water_below_opt)
    else

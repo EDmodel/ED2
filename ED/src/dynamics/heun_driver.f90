@@ -128,7 +128,7 @@ subroutine heun_timestep(cgrid)
                                    ,cmet%rshort,cmet%rlong,cmet%geoht,cpoly%lsl(isi)       &
                                    ,cpoly%ntext_soil(:,isi)                                &
                                    ,cpoly%green_leaf_factor(:,isi)                         &
-                                   ,cgrid%lon(ipy),cgrid%lat(ipy))
+                                   ,cgrid%lon(ipy),cgrid%lat(ipy),cgrid%cosz(ipy))
 
             !----- Compute current storage terms. -----------------------------------------!
             call update_budget(csite,cpoly%lsl(isi),ipa,ipa)

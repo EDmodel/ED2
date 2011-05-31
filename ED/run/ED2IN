@@ -322,11 +322,11 @@
                               !  1  --  Fourth-order Runge Kutta
                               !  2  --  Heun's method (second-order Runge-Kutta)
 
-   NL%RK4_TOLERANCE  = 0.01   ! This is the relative tolerance for Runge-Kutta or Heun's
-                                 !   integration.  Larger numbers will make runs go faster, 
-                                 !   at the expense of being less accurate.  Currently the 
-                                 !   valid range is between 1.e-7 and 1.e-1, but recommended
-                                 !   values are between 1.e-4 and 1.e-2
+   NL%RK4_TOLERANCE  = 0.001  ! This is the relative tolerance for Runge-Kutta or Heun's
+                              !   integration.  Larger numbers will make runs go faster, 
+                              !   at the expense of being less accurate.  Currently the 
+                              !   valid range is between 1.e-7 and 1.e-1, but recommended
+                              !   values are between 1.e-4 and 1.e-2
 
    NL%IBRANCH_THERMO = 0      ! This determines whether branches should be included in
                               !    the vegetation thermodynamics or not.  This is under
@@ -340,9 +340,14 @@
                               ! the full, exact calculation each time.  Set to 1 
                               ! to do the 'small perturbation' scheme.
 
-   NL%IALLOM          = 0     ! Which allometry to use (this affects tropical PFTs only)
+   NL%IALLOM          = 2     ! Which allometry to use (this affects tropical PFTs only)
                               !  0 -- original ED-2.1
-                              !  1 -- Baker et al. (2004), equation 2
+                              !  1 -- Baker et al. (2004), equation 2, keeping the same
+                              !       balive:bdead ratio
+                              !  2 -- Baker et al. (2004), equation 2, keeping the same
+                              !       balive as in ED-2.1
+                              !  3 -- Same as 2, but using a DBH-> Root depth equation
+                              !       based on Kenzo et al. (2009)
 
    !---------------------------------------------------------------------------------------!
    !     The following variable controls the phenology scheme.  Even within each scheme,   !
@@ -475,9 +480,13 @@
                               !     zero-plane displacement height. 
                               !  2. This uses the method of Massman (1997) using constant
                               !     drag and no sheltering. 
-                              !  3. This is also based on Massman (1997), but with the 
+                              !  3. Same as 2 but with Sellers et al. (1986) correction 
+                              !     for unstable cases.
+                              !  4. This is also based on Massman (1997), but with the 
                               !     option of varying the drag and sheltering within the 
                               !     canopy.
+                              !  5. Same as 4, but with Sellers et al. (1986) correction
+                              !     for unstable cases.
 
    NL%I_BLYR_CONDCT   = 0     ! Methods to estimate the leaf boundary layer conductance:
                               !  0. The Nusselt number for forced convection is estimated
@@ -488,6 +497,7 @@
                               !  2. The actual Nusselt number for forced convection is 
                               !     multiplied by 10. as the Reynolds number gets close or
                               !     greater than 10,000.
+
 
 
    NL%ISFCLYRM        = 3     ! Surface layer model (used to compute ustar, tstar,...)
@@ -504,6 +514,20 @@
                               !      works better during night time.
                               !  4 - The parametrisation of Beljaars and Holtslag, but 
                               !      using z/L estimation as in Oncley and Dudhia. 
+                              !  5 - The parametrisation of Oncley and Dudhia, but 
+                              !      using z/L estimation as in Beljaars and Holtslag. 
+
+   NL%IED_GRNDVAP   = 0       ! Methods to find the ground -> canopy conductance:
+                              ! In all cases the beta term is modified so it approaches
+                              !    zero as soil moisture goes to dry air soil. 
+                              !  0. Modified Lee Pielke (1992), adding field capacity, but 
+                              !     using beta factor without the square, like in 
+                              !     Noilhan and Planton (1989).  This is the closest to
+                              !     the original ED-2.0
+                              !  1. Test # 1 of Mahfouf and Noilhan (1991)
+                              !  2. Test # 2 of Mahfouf and Noilhan (1991)
+                              !  3. Test # 3 of Mahfouf and Noilhan (1991)
+                              !  4. Test # 4 of Mahfouf and Noilhan (1991)
 
    !---------------------------------------------------------------------------------------!
    !     The following variables are used only when ISFCLYRM is not 1.                     !
@@ -513,6 +537,8 @@
    NL%TPRANDTL        = 0.74  ! Turbulent Prandtl number
    NL%VH2VR           = 0.13  ! Vegetation Roughness: Vegetation height ratio
    NL%VH2DH           = 0.63  ! Displacement height : vegetation height ratio
+   NL%RIBMAX          = 1.00  ! Maximum bulk Richardson number (ignored if ISFCLYRM = 1)
+   NL%LEAF_MAXWHC     = 0.11  ! Maximum water that can be intercepted          [ kg/m2leaf]
    !---------------------------------------------------------------------------------------!
 
    NL%IPERCOL         = 0     ! Percolation scheme:
@@ -628,19 +654,25 @@
 ! Met driver control                                                                       !
 !------------------------------------------------------------------------------------------!
 
-   NL%IMETTYPE  = 1          ! 0 = ASCII, 1 = HDF5
+   NL%IMETTYPE  = 1           ! 0 = ASCII, 1 = HDF5
 
-   NL%ISHUFFLE  = 0          ! How to choose an year outside the met data range:
-                             ! 0. Sequentially cycle over years
-                             ! 1. Randomly pick the years, using the same sequence
-                             ! 2. Randomly pick the years, choosing a different 
-                             !    sequence each time the model is run.
+   NL%ISHUFFLE  = 0           ! How to choose an year outside the met data range:
+                              ! 0. Sequentially cycle over years
+                              ! 1. Randomly pick the years, using the same sequence
+                              ! 2. Randomly pick the years, choosing a different 
+                              !    sequence each time the model is run.
 
-   NL%METCYC1         = 2002 ! First year of met data
-   NL%METCYCF         = 2005 ! Last year of met data
-   
+   NL%METCYC1         = 2002  ! First year of met data
+   NL%METCYCF         = 2005  ! Last year of met data
+
+   NL%IMETAVG         = 0     ! Type of average of the input fluxes:
+                              ! 0 -- No average, the values are instantaneous
+                              ! 1 -- Averages ending at the reference time
+                              ! 2 -- Averages beginning at the reference time
+                              ! 3 -- Averages centred at the reference time
+
    NL%INITIAL_CO2     = 278.0 ! Initial value for CO2 in case no CO2 is provided at the 
-                             ! meteorological driver dataset
+                              ! meteorological driver dataset
 
 
 !----- For phenology prescribed from observations, we also need to recycle over years. ----!

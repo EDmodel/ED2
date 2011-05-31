@@ -184,7 +184,7 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
                    ,targetp%soil_fracliq(nzg),targetp%sfcwater_tempk(k)                    &
                    ,targetp%sfcwater_fracliq(k),targetp%can_prss,targetp%can_shv           &
                    ,targetp%ground_shv,targetp%ground_ssh,targetp%ground_temp              &
-                   ,targetp%ground_fliq)
+                   ,targetp%ground_fliq,targetp%ggsoil)
    !---------------------------------------------------------------------------------------!
 
 
@@ -790,7 +790,7 @@ subroutine update_diagnostic_vars(initp, csite,ipa)
                       ,initp%soil_fracliq(nzg),initp%sfcwater_tempk(k)                     &
                       ,initp%sfcwater_fracliq(k),initp%can_prss,initp%can_shv              &
                       ,initp%ground_shv,initp%ground_ssh,initp%ground_temp                 &
-                      ,initp%ground_fliq)
+                      ,initp%ground_fliq,initp%ggsoil)
    end if
    !---------------------------------------------------------------------------------------!
 
@@ -2185,8 +2185,8 @@ subroutine adjust_veg_properties(initp,hdid,csite,ipa)
                                    , rk4max_veg_temp    & ! intent(in)
                                    , hcapcani           & ! intent(in)
                                    , wcapcani           & ! intent(in)
-                                   , rk4dry_veg_lwater  & ! intent(in)
-                                   , rk4fullveg_lwater  & ! intent(in)
+                                   , rk4leaf_drywhc     & ! intent(in)
+                                   , rk4leaf_maxwhc     & ! intent(in)
                                    , print_detailed     ! ! intent(in)
    use ed_state_vars        , only : sitetype           & ! structure
                                    , patchtype          ! ! structure
@@ -2260,8 +2260,8 @@ subroutine adjust_veg_properties(initp,hdid,csite,ipa)
          !   Now we find the maximum leaf water possible.                                  !
          !---------------------------------------------------------------------------------!
          rk4min_leaf_water = rk4min_veg_lwater * initp%tai(ico)
-         min_leaf_water    = rk4dry_veg_lwater * initp%tai(ico)
-         max_leaf_water    = rk4fullveg_lwater * initp%tai(ico)
+         min_leaf_water    = rk4leaf_drywhc    * initp%tai(ico)
+         max_leaf_water    = rk4leaf_maxwhc    * initp%tai(ico)
          !---------------------------------------------------------------------------------!
 
 
@@ -2648,9 +2648,9 @@ subroutine print_csiteipa(csite, ipa)
 
    write(unit=*,fmt='(80a)') ('-',k=1,80)
 
-   write (unit=*,fmt='(a,1x,2(i2.2,a),i4.4,1x,f12.0,1x,a)')                                &
+   write (unit=*,fmt='(a,1x,2(i2.2,a),i4.4,1x,3(i2.2,a))')                                 &
          'Time:',current_time%month,'/',current_time%date,'/',current_time%year            &
-                ,current_time%time,'UTC'
+                ,current_time%hour,':',current_time%min,':',current_time%sec,' UTC'
    write(unit=*,fmt='(a,1x,es12.4)') 'Attempted step size:',csite%htry(ipa)
    write (unit=*,fmt='(a,1x,i6)')    'Ncohorts: ',cpatch%ncohorts
  
@@ -2668,10 +2668,19 @@ subroutine print_csiteipa(csite, ipa)
               ,cpatch%veg_water(ico)
       end if
    end do
-   write (unit=*,fmt='(2(a7,1x),11(a12,1x))')                                              &
+   write (unit=*,fmt='(2(a7,1x),6(a12,1x))')                                               &
          '    PFT','KRDEPTH','         LAI','     FS_OPEN','         FSW','         FSN'   &
-                            ,'         GPP','   LEAF_RESP','   ROOT_RESP',' GROWTH_RESP'   &
-                            ,'   STOR_RESP','  VLEAF_RESP'
+                            ,'         GPP','   LEAF_RESP'
+   do ico = 1,cpatch%ncohorts
+      if (cpatch%resolvable(ico)) then
+         write(unit=*,fmt='(2(i7,1x),6(es12.4,1x))') cpatch%pft(ico), cpatch%krdepth(ico)  &
+              ,cpatch%lai(ico),cpatch%fs_open(ico),cpatch%fsw(ico),cpatch%fsn(ico)         &
+              ,cpatch%gpp(ico),cpatch%leaf_respiration(ico)
+      end if
+   end do
+   write (unit=*,fmt='(2(a7,1x),5(a12,1x))')                                               &
+         '    PFT','KRDEPTH','         LAI','   ROOT_RESP',' GROWTH_RESP','   STOR_RESP'   &
+                            ,'  VLEAF_RESP'
    do ico = 1,cpatch%ncohorts
       if (cpatch%resolvable(ico)) then
          growth_resp  = cpatch%growth_respiration(ico)  * cpatch%nplant(ico)               &
@@ -2681,10 +2690,9 @@ subroutine print_csiteipa(csite, ipa)
          vleaf_resp   = cpatch%vleaf_respiration(ico)  * cpatch%nplant(ico)                &
                       / (day_sec * umol_2_kgC)
 
-         write(unit=*,fmt='(2(i7,1x),11(es12.4,1x))') cpatch%pft(ico), cpatch%krdepth(ico) &
-              ,cpatch%lai(ico),cpatch%fs_open(ico),cpatch%fsw(ico),cpatch%fsn(ico)         &
-              ,cpatch%gpp(ico),cpatch%leaf_respiration(ico),cpatch%root_respiration(ico)   &
-              ,growth_resp,storage_resp,vleaf_resp
+         write(unit=*,fmt='(2(i7,1x),5(es12.4,1x))') cpatch%pft(ico), cpatch%krdepth(ico)  &
+              ,cpatch%lai(ico),cpatch%root_respiration(ico),growth_resp,storage_resp       &
+              ,vleaf_resp
       end if
    end do
    write (unit=*,fmt='(a)'  ) ' '
@@ -2781,7 +2789,8 @@ subroutine print_rk4patch(y,csite,ipa)
                                     , patchtype             ! ! structure
    use grid_coms             , only : nzg                   & ! intent(in)
                                     , nzs                   ! ! intent(in)
-   use ed_misc_coms             , only : current_time          ! ! intent(in)
+   use ed_misc_coms          , only : current_time          ! ! intent(in)
+   use consts_coms           , only : pio1808               ! ! intent(in)
    use therm_lib8            , only : qtk8                  & ! subroutine
                                     , qwtk8                 ! ! subroutine
    implicit none
@@ -2804,15 +2813,17 @@ subroutine print_rk4patch(y,csite,ipa)
 
    write(unit=*,fmt='(80a)') ('-',k=1,80)
 
-   write (unit=*,fmt='(a,1x,2(i2.2,a),i4.4,1x,f12.0,1x,a)')                                &
+   write (unit=*,fmt='(a,1x,2(i2.2,a),i4.4,1x,3(i2.2,a))')                                 &
          'Time:',current_time%month,'/',current_time%date,'/',current_time%year            &
-                ,current_time%time,'s'
+                ,current_time%hour,':',current_time%min,':',current_time%sec,' UTC'
    write(unit=*,fmt='(a,1x,es12.4)') 'Attempted step size:',csite%htry(ipa)
    write (unit=*,fmt='(a,1x,i6)')    'Ncohorts: ',cpatch%ncohorts
    write (unit=*,fmt='(80a)') ('-',k=1,80)
 
    write (unit=*,fmt='(80a)')         ('-',k=1,80)
    write (unit=*,fmt='(a)')           ' ATMOSPHERIC CONDITIONS: '
+   write (unit=*,fmt='(a,1x,es12.4)') ' Longitude             : ',rk4site%lon
+   write (unit=*,fmt='(a,1x,es12.4)') ' Latitude              : ',rk4site%lat
    write (unit=*,fmt='(a,1x,es12.4)') ' Air temperature       : ',rk4site%atm_tmp
    write (unit=*,fmt='(a,1x,es12.4)') ' Air potential temp.   : ',rk4site%atm_theta
    write (unit=*,fmt='(a,1x,es12.4)') ' Air theta_Eiv         : ',rk4site%atm_theiv
@@ -2827,6 +2838,8 @@ subroutine print_rk4patch(y,csite,ipa)
    write (unit=*,fmt='(a,1x,es12.4)') ' Precip. depth flux    : ',rk4site%dpcpg
    write (unit=*,fmt='(a,1x,es12.4)') ' Downward SW radiation : ',rk4site%rshort
    write (unit=*,fmt='(a,1x,es12.4)') ' Downward LW radiation : ',rk4site%rlong
+   write (unit=*,fmt='(a,1x,es12.4)') ' Zenith angle (deg)    : ',acos(rk4site%cosz)       &
+                                                                 / pio1808
 
    write (unit=*,fmt='(80a)') ('=',k=1,80)
    write (unit=*,fmt='(a)'  ) 'Cohort information (only those resolvable are shown): '
@@ -2885,6 +2898,17 @@ subroutine print_rk4patch(y,csite,ipa)
          write(unit=*,fmt='(2(i7,1x),7(es12.4,1x))') cpatch%pft(ico),cpatch%krdepth(ico)   &
                ,y%lai(ico),cpatch%hite(ico),y%gbh(ico),y%gbw(ico),y%gsw_closed(ico)        &
                ,y%gsw_open(ico),cpatch%fs_open(ico)
+      end if
+   end do
+   write (unit=*,fmt='(80a)') ('-',k=1,80)
+   write (unit=*,fmt='(2(a7,1x),6(a12,1x))')                                               &
+              '    PFT','KRDEPTH','         LAI','      HEIGHT','    RSHORT_V'             &
+                  ,'     RLONG_V','  PAR_V_BEAM','  PAR_V_DIFF'
+   do ico = 1,cpatch%ncohorts
+      if (y%resolvable(ico)) then
+         write(unit=*,fmt='(2(i7,1x),6(es12.4,1x))') cpatch%pft(ico),cpatch%krdepth(ico)   &
+               ,y%lai(ico),cpatch%hite(ico),y%rshort_v(ico),y%rlong_v(ico)                 &
+               ,cpatch%par_v_beam(ico),cpatch%par_v_diffuse(ico)
       end if
    end do
    write (unit=*,fmt='(80a)') ('=',k=1,80)

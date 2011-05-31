@@ -664,8 +664,8 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
                                     , ccapcani             & ! intent(in)
                                     , any_resolvable       & ! intent(in)
                                     , tiny_offset          & ! intent(in)
-                                    , rk4dry_veg_lwater    & ! intent(in)
-                                    , rk4fullveg_lwater    & ! intent(in)
+                                    , rk4leaf_drywhc       & ! intent(in)
+                                    , rk4leaf_maxwhc       & ! intent(in)
                                     , checkbudget          & ! intent(in)
                                     , print_detailed       & ! intent(in)
                                     , supersat_ok          & ! intent(in)
@@ -694,7 +694,8 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
                                     , tsupercool8          & ! intent(in)
                                     , cice8                & ! intent(in)
                                     , cliq8                & ! intent(in)
-                                    , epi8                 ! ! intent(in)
+                                    , epi8                 & ! intent(in)
+                                    , huge_num8            ! ! intent(in)
    use soil_coms             , only : soil8                & ! intent(in)
                                     , dslzi8               & ! intent(in)
                                     , dewmax               ! ! intent(in)
@@ -801,7 +802,7 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
    !---------------------------------------------------------------------------------------!
    !     Calculate fraction of closed canopy.                                              !
    !---------------------------------------------------------------------------------------!
-   closedcan_frac = max(0.d0,min(1.d0,initp%opencan_frac))
+   closedcan_frac = max(0.d0,min(1.d0,1.d0-initp%opencan_frac))
    !---------------------------------------------------------------------------------------!
 
 
@@ -970,16 +971,21 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
 
       !----- Set flux flag. ---------------------------------------------------------------!
       initp%flag_wflxgc = 4
-   else if (initp%ground_shv <= initp%can_shv) then
+   else if (initp%ggsoil /= huge_num8) then
       !------------------------------------------------------------------------------------!
-      !     In case the ground specific humidity is negative despite that the saturation   !
-      ! is positive, we impose the flux to be zero to avoid bogus dew fluxes.              !
+      !    Evaporation will happen, and but water will come from the top most layer.  Wflx !
+      ! cannot be used because the ground specific humidity is not the saturation specific !
+      ! humidity at the soil temperature only, it depends on the canopy specific humidity  !
+      ! itself and the soil moisture.                                                      !
       !------------------------------------------------------------------------------------!
+      wflxgc     = initp%ggnet * initp%ggsoil * initp%can_rhos                             &
+                 * (initp%ground_shv - initp%can_shv) / (initp%ggnet + initp%ggsoil)  
+      !----- Adjusting the flux accordingly to the surface fraction (no phase bias). ------!
+      qwflxgc    = wflxgc * ( alvi8 - initp%ground_fliq * alli8)
+      !----- Set condensation fluxes to zero. ---------------------------------------------!
       dewgndflx  = 0.d0
       qdewgndflx = 0.d0
       ddewgndflx = 0.d0
-      wflxgc     = 0.d0
-      qwflxgc    = 0.d0
 
       !----- Set flux flag. ---------------------------------------------------------------!
       initp%flag_wflxgc = 5
@@ -990,9 +996,9 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
       ! humidity at the soil temperature only, it depends on the canopy specific humidity  !
       ! itself and the soil moisture.                                                      !
       !------------------------------------------------------------------------------------!
-      wflxgc = max(0.d0, initp%ggnet * initp%can_rhos * (initp%ground_shv - initp%can_shv))
+      wflxgc     = initp%ggnet * initp%can_rhos * (initp%ground_shv - initp%can_shv)
       !----- Adjusting the flux accordingly to the surface fraction (no phase bias). ------!
-      qwflxgc = wflxgc * ( alvi8 - initp%ground_fliq * alli8)
+      qwflxgc    = wflxgc * ( alvi8 - initp%ground_fliq * alli8)
       !----- Set condensation fluxes to zero. ---------------------------------------------!
       dewgndflx  = 0.d0
       qdewgndflx = 0.d0
@@ -1074,8 +1080,8 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
          ! possible. Here we use TAI because the intercepted area should be proportional   !
          ! to the projected area.                                                          !
          !---------------------------------------------------------------------------------!
-         min_leaf_water = rk4dry_veg_lwater * initp%tai(ico)
-         max_leaf_water = rk4fullveg_lwater * initp%tai(ico)
+         min_leaf_water = rk4leaf_drywhc * initp%tai(ico)
+         max_leaf_water = rk4leaf_maxwhc * initp%tai(ico)
 
          !------ Calculate fraction of leaves covered with water. -------------------------!
          if(initp%veg_water(ico) > min_leaf_water)then

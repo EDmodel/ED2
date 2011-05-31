@@ -24,6 +24,7 @@ subroutine read_ednl(iunit,filename)
                                    , imettype                  & ! intent(out)
                                    , metcyc1                   & ! intent(out)
                                    , metcycf                   & ! intent(out)
+                                   , imetavg                   & ! intent(out)
                                    , lapse_scheme              ! ! intent(out)
    use mem_polygons         , only : n_poi                     & ! intent(out)
                                    , poi_lat                   & ! intent(out)
@@ -108,13 +109,14 @@ subroutine read_ednl(iunit,filename)
                                    , iallom                    ! ! intent(out)
    use canopy_air_coms      , only : icanturb                  & ! intent(out)
                                    , isfclyrm                  & ! intent(out)
+                                   , ied_grndvap               & ! intent(out)
                                    , i_blyr_condct             ! ! intent(out)
    use grid_coms            , only : timmax                    & ! intent(out)
                                    , time                      ! ! intent(out)
    use optimiz_coms         , only : ioptinpt                  ! ! intent(out)
    use rk4_coms             , only : rk4_tolerance             & ! intent(out)
                                    , ibranch_thermo            ! ! intent(out)
-   use canopy_radiation_coms, only : crown_mod                 ! ! intent(out)
+   use canopy_layer_coms    , only : crown_mod                 ! ! intent(out)
    !----- Coupled ED-BRAMS modules. -------------------------------------------------------!
    use mem_edcp             , only : co2_offset                ! ! intent(out)
    !----- BRAMS modules. ------------------------------------------------------------------!
@@ -158,6 +160,7 @@ subroutine read_ednl(iunit,filename)
                                    , isfcl                           & ! intent(in)
                                    , nvegpat                         & ! intent(in)
                                    , istar                           & ! intent(in)
+                                   , igrndvap                        & ! intent(in)
                                    , leaf_zrough      => zrough      & ! intent(in)
                                    , leaf_bpower      => betapower   & ! intent(in)
                                    , leaf_isoilbc     => isoilbc     & ! intent(in)
@@ -169,7 +172,9 @@ subroutine read_ednl(iunit,filename)
                                    , leaf_gamh        => gamh        & ! intent(in)
                                    , leaf_tprandtl    => tprandtl    & ! intent(in)
                                    , leaf_vh2vr       => vh2vr       & ! intent(in)
-                                   , leaf_vh2dh       => vh2dh       ! ! intent(in)
+                                   , leaf_vh2dh       => vh2dh       & ! intent(in)
+                                   , leaf_ribmax      => ribmax      & ! intent(in)
+                                   , leaf_leaf_maxwhc => leaf_maxwhc ! ! intent(in)
    use mem_radiate          , only : radfrq                          ! ! intent(in)
    use consts_coms          , only : day_sec                         ! ! intent(in)
    implicit none
@@ -327,7 +332,7 @@ subroutine read_ednl(iunit,filename)
                        ,nzg,nzs,isoilflg,nslcon,slz,slmstr,stgoff,leaf_zrough,ngrids       &
                        ,leaf_bpower,leaf_ustmin,leaf_ggfact,leaf_isoilbc,leaf_ipercol      &
                        ,leaf_runoff_time,leaf_gamm,leaf_gamh,leaf_tprandtl,leaf_vh2vr      &
-                       ,leaf_vh2dh)
+                       ,leaf_vh2dh,leaf_ribmax,leaf_leaf_maxwhc)
    !---------------------------------------------------------------------------------------!
    !      The following variables can be defined in the regular ED2IN file for stand-alone !
    ! runs, but they cannot be changed in the coupled simulation (or they are never used    !
@@ -348,6 +353,7 @@ subroutine read_ednl(iunit,filename)
    imettype = 1             ! BRAMS is the meteorology driver...
    metcyc1  = 0000          ! BRAMS is the meteorology driver...
    metcycf  = 0000          ! BRAMS is the meteorology driver...
+   imetavg  = 0             ! BRAMS is the meteorology driver...
    ioptinpt = ''            ! It will be used once optimization is 
                             !    implemented in ED-2.1.
    unitfast  = 0            ! Since BRAMS uses frqanl and frqhist in seconds, there is no
@@ -372,9 +378,10 @@ subroutine read_ednl(iunit,filename)
    !      These are ED2 variables that have the same function as certain BRAMS namelist    !
    ! variables under a different name.                                                     !
    !---------------------------------------------------------------------------------------!
-   frqfast  = frqanl
-   frqstate = frqhis
-   isfclyrm = istar
+   frqfast     = frqanl
+   frqstate    = frqhis
+   isfclyrm    = istar
+   ied_grndvap = igrndvap
    !---------------------------------------------------------------------------------------!
 
 
@@ -473,7 +480,7 @@ subroutine copy_in_bramsnl(expnme_b,runtype_b,itimez_b,idatez_b,imonthz_b,iyearz
                           ,iclobber_b,nzg_b,nzs_b,isoilflg_b,nslcon_b,slz_b,slmstr_b       &
                           ,stgoff_b,zrough_b,ngrids_b,betapower_b,ustmin_b,ggfact_b        &
                           ,isoilbc_b,ipercol_b,runoff_time_b,gamm_b,gamh_b,tprandtl_b      &
-                          ,vh2vr_b,vh2dh_b)
+                          ,vh2vr_b,vh2dh_b,ribmax_b,leaf_maxwhc_b)
    use consts_coms    , only : vonk              ! ! intent(in)
    use ed_misc_coms   , only : expnme            & ! intent(out)
                              , runtype           & ! intent(out)
@@ -524,7 +531,9 @@ subroutine copy_in_bramsnl(expnme_b,runtype_b,itimez_b,idatez_b,imonthz_b,iyearz
                              , tprandtl          & ! intent(out)
                              , vkopr             & ! intent(out)
                              , vh2vr             & ! intent(out)
-                             , vh2dh             ! ! intent(out)
+                             , vh2dh             & ! intent(out)
+                             , ribmax            & ! intent(out)
+                             , leaf_maxwch       ! ! intent(out)
    use rk4_coms       , only : ipercol           ! ! intent(out)
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
@@ -578,6 +587,8 @@ subroutine copy_in_bramsnl(expnme_b,runtype_b,itimez_b,idatez_b,imonthz_b,iyearz
    real                      , intent(in) :: tprandtl_b    ! Turbulent Prandtl number
    real                      , intent(in) :: vh2vr_b       ! Veg. Height => Veg. Roughness
    real                      , intent(in) :: vh2dh_b       ! Veg. Height => Displacement h.
+   real                      , intent(in) :: ribmax_b      ! Maximum bulk Richardson number
+   real                      , intent(in) :: leaf_maxwhc   ! Leaf max. water holding cap.
    !---------------------------------------------------------------------------------------!
 
 
@@ -641,6 +652,9 @@ subroutine copy_in_bramsnl(expnme_b,runtype_b,itimez_b,idatez_b,imonthz_b,iyearz
 
    vh2vr       = vh2vr_b
    vh2dh       = vh2dh_b
+
+   ribmax      = ribmax_b
+   leaf_maxwhc = leaf_maxwhc_b
    !---------------------------------------------------------------------------------------!
 
    return

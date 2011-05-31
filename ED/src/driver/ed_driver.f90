@@ -136,7 +136,7 @@ subroutine ed_driver()
    end if
 
    !----- TEMPORARY THING... We eliminate all patches but the one to be debugged. ---------!
-   ! call exterminate_patches_except(1)
+   !call exterminate_patches_except(1)
    !---------------------------------------------------------------------------------------!
 
 

@@ -70,6 +70,7 @@ subroutine copy_nl(copy_type)
                                    , metcyc1                   & ! intent(out)
                                    , metcycf                   & ! intent(out)
                                    , imettype                  & ! intent(out)
+                                   , imetavg                   & ! intent(out)
                                    , initial_co2               & ! intent(out)
                                    , lapse_scheme              ! ! intent(out)
    use mem_polygons         , only : n_poi                     & ! intent(out)
@@ -186,6 +187,7 @@ subroutine copy_nl(copy_type)
    use ed_misc_coms         , only : attach_metadata           ! ! intent(out)
    use canopy_air_coms      , only : icanturb                  & ! intent(out)
                                    , isfclyrm                  & ! intent(out)
+                                   , ied_grndvap               & ! intent(out)
                                    , i_blyr_condct             & ! intent(out)
                                    , ustmin                    & ! intent(out)
                                    , ggfact                    & ! intent(out)
@@ -194,9 +196,11 @@ subroutine copy_nl(copy_type)
                                    , tprandtl                  & ! intent(out)
                                    , vkopr                     & ! intent(out)
                                    , vh2vr                     & ! intent(out)
-                                   , vh2dh                     ! ! intent(out)
+                                   , vh2dh                     & ! intent(out)
+                                   , ribmax                    & ! intent(out)
+                                   , leaf_maxwhc               ! ! intent(out)
    use optimiz_coms         , only : ioptinpt                  ! ! intent(out)
-   use canopy_radiation_coms, only : crown_mod                 ! ! intent(out)
+   use canopy_layer_coms    , only : crown_mod                 ! ! intent(out)
    use rk4_coms             , only : ibranch_thermo            & ! intent(out)
                                    , ipercol                   & ! intent(out)
                                    , rk4_tolerance             ! ! intent(out)
@@ -327,11 +331,14 @@ subroutine copy_nl(copy_type)
       icanturb                  = nl%icanturb
       i_blyr_condct             = nl%i_blyr_condct
       isfclyrm                  = nl%isfclyrm
+      ied_grndvap               = nl%ied_grndvap
       gamm                      = nl%gamm
       gamh                      = nl%gamh
       tprandtl                  = nl%tprandtl
       vh2vr                     = nl%vh2vr
       vh2dh                     = nl%vh2dh
+      ribmax                    = nl%ribmax
+      leaf_maxwhc               = nl%leaf_maxwhc
       ipercol                   = nl%ipercol
 
       include_these_pft         = nl%include_these_pft
@@ -358,6 +365,7 @@ subroutine copy_nl(copy_type)
       ishuffle                  = nl%ishuffle
       metcyc1                   = nl%metcyc1
       metcycf                   = nl%metcycf
+      imetavg                   = nl%imetavg
       initial_co2               = nl%initial_co2
       
       iphenys1                  = nl%iphenys1

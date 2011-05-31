@@ -29,7 +29,6 @@ subroutine load_ed_ecosystem_params()
    call init_physiology_params()
    call init_met_params()
    call init_lapse_params()
-   call init_can_rad_params()
    call init_hydro_coms()
    call init_soil_coms()
    call init_phen_coms()
@@ -127,6 +126,8 @@ subroutine load_ed_ecosystem_params()
 
    !----- This must be done after defining some PFT parameters. ---------------------------!
    call init_can_air_params()
+   call init_can_rad_params()
+   call init_can_lyr_params()
 
    !---------------------------------------------------------------------------------------!
    !     This should be always the last one, since it depends on variables assigned in     !
@@ -248,6 +249,7 @@ subroutine init_met_params()
                              , rshort_max   & ! intent(out)
                              , rlong_min    & ! intent(out)
                              , rlong_max    & ! intent(out)
+                             , dt_radinterp & ! intent(out)
                              , atm_tmp_min  & ! intent(out)
                              , atm_tmp_max  & ! intent(out)
                              , atm_shv_min  & ! intent(out)
@@ -267,7 +269,7 @@ subroutine init_met_params()
 
    !----- Minimum and maximum acceptable shortwave radiation [W/m²]. ----------------------!
    rshort_min  = 0.
-   rshort_max  = 1400.
+   rshort_max  = 1500.
    !----- Minimum and maximum acceptable longwave radiation [W/m²]. -----------------------!
    rlong_min   = 40.
    rlong_max   = 600.
@@ -304,6 +306,18 @@ subroutine init_met_params()
    atm_rhv_min = 5.e-3 ! 0.5%
    atm_rhv_max = 1.0   ! 100.0%.  Although canopy air space can experience super-
                        !    saturation, we don't allow the air above to be super-saturated.
+   !---------------------------------------------------------------------------------------!
+
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Time step used to perform the daytime average of the secant of the zenith angle.  !
+   !---------------------------------------------------------------------------------------!
+   dt_radinterp = 30.0    ! Value in seconds.
+   !---------------------------------------------------------------------------------------!
+
+
    return
 end subroutine init_met_params
 !==========================================================================================!
@@ -385,9 +399,7 @@ subroutine init_can_rad_params()
                                     , rshort_twilight_min         & ! intent(out)
                                     , cosz_min                    & ! intent(out)
                                     , cosz_min8                   ! ! intent(out)
-   use ed_max_dims              , only : n_pft                    ! ! intent(out)
-   use pft_coms              , only : phenology                   ! ! intent(out)
-
+   use consts_coms           , only : pio180                      ! ! intent(out)
    implicit none
    !----- Local variables -----------------------------------------------------------------!
    real :: leaf_scatter_vis_temperate
@@ -447,9 +459,10 @@ subroutine init_can_rad_params()
    ! day time hours only.                                                                  !
    !---------------------------------------------------------------------------------------!
    rshort_twilight_min = 0.5
-   cosz_min            = 0.03
+   cosz_min            = cos(89.5*pio180)
    cosz_min8           = dble(cosz_min)
    !---------------------------------------------------------------------------------------!
+
 
    return
 end subroutine init_can_rad_params
@@ -481,8 +494,9 @@ subroutine init_can_air_params()
                              , vkopr                 & ! intent(in)
                              , vh2vr                 & ! intent(in)
                              , vh2dh                 & ! intent(in)
-                             , dry_veg_lwater        & ! intent(out)
-                             , fullveg_lwater        & ! intent(out)
+                             , ribmax                & ! intent(out)
+                             , leaf_drywhc           & ! intent(out)
+                             , leaf_maxwhc           & ! intent(out)
                              , rb_inter              & ! intent(out)
                              , rb_slope              & ! intent(out)
                              , veg_height_min        & ! intent(out)
@@ -500,8 +514,6 @@ subroutine init_can_air_params()
                              , ggfact8               & ! intent(out)
                              , ez8                   & ! intent(out)
                              , vh2dh8                & ! intent(out)
-                             , ncanmax               & ! intent(out)
-                             , dz_m97                & ! intent(out)
                              , cdrag0                & ! intent(out)
                              , pm0                   & ! intent(out)
                              , c1_m97                & ! intent(out)
@@ -511,15 +523,6 @@ subroutine init_can_air_params()
                              , alpha1_m97            & ! intent(out)
                              , alpha2_m97            & ! intent(out)
                              , psi_m97               & ! intent(out)
-                             , zztop                 & ! intent(out)
-                             , zzmid                 & ! intent(out)
-                             , lad                   & ! intent(out)
-                             , dladdz                & ! intent(out)
-                             , cdrag                 & ! intent(out)
-                             , pshelter              & ! intent(out)
-                             , cumldrag              & ! intent(out)
-                             , windm97               & ! intent(out)
-                             , dz_m978               & ! intent(out)
                              , cdrag08               & ! intent(out)
                              , pm08                  & ! intent(out)
                              , c1_m978               & ! intent(out)
@@ -529,20 +532,11 @@ subroutine init_can_air_params()
                              , alpha1_m978           & ! intent(out)
                              , alpha2_m978           & ! intent(out)
                              , psi_m978              & ! intent(out)
-                             , zztop8                & ! intent(out)
-                             , zzmid8                & ! intent(out)
-                             , lad8                  & ! intent(out)
-                             , dladdz8               & ! intent(out)
-                             , cdrag8                & ! intent(out)
-                             , pshelter8             & ! intent(out)
-                             , cumldrag8             & ! intent(out)
-                             , windm978              & ! intent(out)
                              , bl79                  & ! intent(out)
                              , csm                   & ! intent(out)
                              , csh                   & ! intent(out)
                              , dl79                  & ! intent(out)
                              , bbeta                 & ! intent(out)
-                             , ribmaxod95            & ! intent(out)
                              , abh91                 & ! intent(out)
                              , bbh91                 & ! intent(out)
                              , cbh91                 & ! intent(out)
@@ -556,7 +550,6 @@ subroutine init_can_air_params()
                              , atetf                 & ! intent(out)
                              , z0moz0h               & ! intent(out)
                              , z0hoz0m               & ! intent(out)
-                             , ribmaxbh91            & ! intent(out)
                              , bl798                 & ! intent(out)
                              , csm8                  & ! intent(out)
                              , csh8                  & ! intent(out)
@@ -564,8 +557,7 @@ subroutine init_can_air_params()
                              , bbeta8                & ! intent(out)
                              , gamm8                 & ! intent(out)
                              , gamh8                 & ! intent(out)
-                             , ribmaxod958           & ! intent(out)
-                             , ribmaxbh918           & ! intent(out)
+                             , ribmax8               & ! intent(out)
                              , tprandtl8             & ! intent(out)
                              , vkopr8                & ! intent(out)
                              , abh918                & ! intent(out)
@@ -608,7 +600,11 @@ subroutine init_can_air_params()
                              , beta_re08             & ! intent(out)
                              , beta_g18              & ! intent(out)
                              , beta_g28              & ! intent(out)
-                             , beta_gr08             ! ! intent(out)
+                             , beta_gr08             & ! intent(out)
+                             , ggsoil0               & ! intent(out)
+                             , kksoil                & ! intent(out)
+                             , ggsoil08              & ! intent(out)
+                             , kksoil8               ! ! intent(out)
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
    integer :: ican
@@ -616,20 +612,11 @@ subroutine init_can_air_params()
 
 
    !---------------------------------------------------------------------------------------!
-   !    Maximum leaf water that plants can hold.  Should leaf water exceed this number,    !
-   ! water will be no longer intercepted by the leaves, and any value in excess of this    !
-   ! will be promptly removed through shedding or throughfall.  This value is in           !
-   ! kg/[m2 tree], so it will be scaled by (LAI+WAI) where needed be.                      !
-   !---------------------------------------------------------------------------------------!
-   fullveg_lwater = 0.11
-   !---------------------------------------------------------------------------------------!
-
-   !---------------------------------------------------------------------------------------!
    !    Minimum leaf water content to be considered.  Values smaller than this will be     !
    ! flushed to zero.  This value is in kg/[m2 tree], so it will be scaled by (LAI+WAI)    !
    ! where needed be.                                                                      !
    !---------------------------------------------------------------------------------------!
-   dry_veg_lwater = 5.e-4 * fullveg_lwater
+   leaf_drywhc = 5.e-4 * leaf_maxwhc
    !---------------------------------------------------------------------------------------!
 
    !---------------------------------------------------------------------------------------!
@@ -679,7 +666,6 @@ subroutine init_can_air_params()
    dl79        = 5.0    ! ???
    !----- Oncley and Dudhia (1995) model. -------------------------------------------------!
    bbeta       = 5.0           ! Beta 
-   ribmaxod95  = 0.20          ! Maximum bulk Richardson number
    !----- Beljaars and Holtslag (1991) model. ---------------------------------------------!
    abh91       = -1.00         ! -a from equation  (28) and (32)
    bbh91       = -twothirds    ! -b from equation  (28) and (32)
@@ -694,7 +680,6 @@ subroutine init_can_air_params()
    atetf       = ate   * fbh91 ! a * e * f
    z0moz0h     = 1.0           ! z0(M)/z0(h)
    z0hoz0m     = 1. / z0moz0h  ! z0(M)/z0(h)
-   ribmaxbh91  = 0.20          ! Maximum bulk Richardson number
    !---------------------------------------------------------------------------------------!
 
 
@@ -765,10 +750,6 @@ subroutine init_can_air_params()
    !---------------------------------------------------------------------------------------!
    !     Define the variables that are going to be used by Massman (1997).                 !
    !---------------------------------------------------------------------------------------!
-   !----- Discrete step size in canopy elevation [m]. -------------------------------------!
-   dz_m97     = minval(hgt_min)
-   !----- Number of canopy layers. --------------------------------------------------------!
-   ncanmax    = ceiling(maxval(hgt_max)/dz_m97)
    !----- Fluid drag coefficient for turbulent flow in leaves. ----------------------------!
    cdrag0    = 0.2
    !----- Sheltering factor of fluid drag on canopies. ------------------------------------!
@@ -796,24 +777,22 @@ subroutine init_can_air_params()
 
 
    !---------------------------------------------------------------------------------------!
-   !     Allocate the scratch arrays.                                                      !
+   !   Soil conductance terms, from:                                                       !
+   !                                                                                       !
+   ! Passerat de Silans, A., 1986: Transferts de masse et de chaleur dans un sol stratifié !
+   !     soumis à une excitation amtosphérique naturelle. Comparaison: Modèles-expérience. !
+   !     Thesis, Institut National Polytechnique de Grenoble. (P86)                        !
+   !                                                                                       !
+   ! retrieved from:                                                                       !
+   ! Mahfouf, J. F., J. Noilhan, 1991: Comparative study of various formulations of        !
+   !     evaporation from bare soil using in situ data. J. Appl. Meteorol., 30, 1354-1365. !
+   !     (MN91)                                                                            !
+   !                                                                                       !
+   !     Please notice that the values are inverted because we compute conductance, not    !
+   ! resistance.                                                                           !
    !---------------------------------------------------------------------------------------!
-   allocate(zztop    (0:ncanmax))
-   allocate(zzmid    (  ncanmax))
-   allocate(lad      (  ncanmax))
-   allocate(dladdz   (  ncanmax))
-   allocate(cdrag    (  ncanmax))
-   allocate(pshelter (  ncanmax))
-   allocate(cumldrag (  ncanmax))
-   allocate(windm97  (  ncanmax))
-   allocate(zztop8   (0:ncanmax))
-   allocate(zzmid8   (  ncanmax))
-   allocate(lad8     (  ncanmax))
-   allocate(dladdz8  (  ncanmax))
-   allocate(cdrag8   (  ncanmax))
-   allocate(pshelter8(  ncanmax))
-   allocate(cumldrag8(  ncanmax))
-   allocate(windm978 (  ncanmax))
+   ggsoil0 = 1. / 38113.
+   kksoil  = 13.515
    !---------------------------------------------------------------------------------------!
 
 
@@ -834,8 +813,7 @@ subroutine init_can_air_params()
    bbeta8                = dble(bbeta               )
    gamm8                 = dble(gamm                )
    gamh8                 = dble(gamh                )
-   ribmaxod958           = dble(ribmaxod95          )
-   ribmaxbh918           = dble(ribmaxbh91          )
+   ribmax8               = dble(ribmax              )
    tprandtl8             = dble(tprandtl            )
    vkopr8                = dble(vkopr               )
    abh918                = dble(abh91               )
@@ -865,7 +843,6 @@ subroutine init_can_air_params()
    beta_g18              = dble(beta_g1             )
    beta_g28              = dble(beta_g2             )
    beta_gr08             = dble(beta_gr0            )
-   dz_m978               = dble(dz_m97              )
    cdrag08               = dble(cdrag0              )
    pm08                  = dble(pm0                 )
    c1_m978               = dble(c1_m97              )
@@ -875,27 +852,95 @@ subroutine init_can_air_params()
    alpha1_m978           = dble(alpha1_m97          )
    alpha2_m978           = dble(alpha2_m97          )
    psi_m978              = dble(psi_m97             )
+   ggsoil08              = dble(ggsoil0             )
+   kksoil8               = dble(kksoil              )
    !---------------------------------------------------------------------------------------!
-
-
-
-   !---------------------------------------------------------------------------------------!
-   !     Find the maximum height of each layer.                                            !
-   !---------------------------------------------------------------------------------------!
-   do ican = 0,ncanmax
-      zztop(ican)  = real(ican) * dz_m97
-      zztop8(ican) = dble(ican) * dz_m978
-   end do
-   do ican = 1,ncanmax
-      zzmid (ican) = 0.5   * (zztop (ican-1) + zztop (ican))
-      zzmid8(ican) = 5.d-1 * (zztop8(ican-1) + zztop8(ican))
-   end do
-   !---------------------------------------------------------------------------------------!
-
-
 
    return
 end subroutine init_can_air_params
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!     This sub-routine initialises some of the canopy layer variables.  These are used     !
+! by sub-routines that need to calculate the canopy properties by layers rather than by    !
+! cohorts (or when both must be considered).                                               !
+!------------------------------------------------------------------------------------------!
+subroutine init_can_lyr_params()
+   use canopy_layer_coms, only : ncanlyr                     & ! intent(out)
+                               , ncanlyrp1                   & ! intent(out)
+                               , ncanlyrt2                   & ! intent(out)
+                               , zztop0                      & ! intent(out)
+                               , zztop08                     & ! intent(out)
+                               , zztop0i                     & ! intent(out)
+                               , zztop0i8                    & ! intent(out)
+                               , ehgt                        & ! intent(out)
+                               , ehgt8                       & ! intent(out)
+                               , ehgti                       & ! intent(out)
+                               , ehgti8                      & ! intent(out)
+                               , dzcan                       & ! intent(out)
+                               , dzcan8                      & ! intent(out)
+                               , zztop                       & ! intent(out)
+                               , zzmid                       & ! intent(out)
+                               , zzbot                       & ! intent(out)
+                               , zztop8                      & ! intent(out)
+                               , zzmid8                      & ! intent(out)
+                               , zzbot8                      & ! intent(out)
+                               , alloc_canopy_layer          ! ! subroutine
+   use pft_coms         , only : hgt_min                     & ! intent(in)
+                               , hgt_max                     ! ! intent(in)
+   use consts_coms      , only : onethird                    & ! intent(in)
+                               , onethird8                   ! ! intent(in)
+   implicit none
+   !----- Local variables. ----------------------------------------------------------------!
+   integer    :: ilyr
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !----- Find the layer thickness and the number of layers needed. -----------------------!
+   ncanlyr   = 50
+   ncanlyrp1 = ncanlyr + 1
+   ncanlyrt2 = ncanlyr * 2
+   zztop0    = onethird  * minval(hgt_min)
+   zztop08   = onethird8 * dble(minval(hgt_min))
+   zztop0i   = 1.   / zztop0
+   zztop0i8  = 1.d0 / zztop08
+   ehgt      = log(maxval(hgt_max)/zztop0)        / log(real(ncanlyr))
+   ehgt8     = log(dble(maxval(hgt_max))/zztop08) / log(dble(ncanlyr))
+   ehgti     = 1./ ehgt
+   ehgti8    = 1.d0 / ehgt8
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !----- Allocate the variables. ---------------------------------------------------------!
+   call alloc_canopy_layer()
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !----- Define the layer heights. -------------------------------------------------------!
+   do ilyr =1,ncanlyr
+      zztop (ilyr) = zztop0 * real(ilyr  ) ** ehgt
+      zzbot (ilyr) = zztop0 * real(ilyr-1) ** ehgt
+      dzcan (ilyr) = zztop(ilyr) - zzbot(ilyr)
+      zzmid (ilyr) = 0.5 * (zzbot(ilyr) + zztop(ilyr))
+      zztop8(ilyr) = zztop0  * dble(ilyr  ) ** ehgt8
+      zzbot8(ilyr) = zztop08 * dble(ilyr-1) ** ehgt8
+      dzcan8(ilyr) = zztop8(ilyr) - zzbot8(ilyr)
+      zzmid8(ilyr) = 5.d-1 * (zzbot8(ilyr) + zztop8(ilyr))
+   end do
+   !---------------------------------------------------------------------------------------!
+
+   return
+end subroutine init_can_lyr_params
 !==========================================================================================!
 !==========================================================================================!
 
@@ -970,7 +1015,7 @@ subroutine init_pft_photo_params()
    Vm_high_temp(17)          =  45.0  + thioff ! C3
 
    !------ Vm0 is the maximum photosynthesis capacity in µmol/m2/s. -----------------------!
-   Vm0(1)                    = 12.5            * 1.5
+   Vm0(1)                    = 12.5            * 1.50
    Vm0(2)                    = 18.8            * vmfact
    Vm0(3)                    = 12.5            * vmfact
    Vm0(4)                    = 6.25            * vmfact
@@ -982,12 +1027,12 @@ subroutine init_pft_photo_params()
    Vm0(10)                   = 15.625 * 1.1171 * vmfact
    Vm0(11)                   = 6.25   * 1.1171 * vmfact
    Vm0(12:13)                = 18.3            * vmfact
-   Vm0(14:15)                = 12.5            * 1.5
+   Vm0(14:15)                = 12.5            * 1.50
    Vm0(16)                   = 21.875          * vmfact
    Vm0(17)                   = 15.625 * 0.7264
 
    !----- Define the stomatal slope (aka the M factor). -----------------------------------!
-   stomatal_slope(1)         =  6.4
+   stomatal_slope(1)         =  6.4    
    stomatal_slope(2)         =  8.0    * mfact
    stomatal_slope(3)         =  8.0    * mfact
    stomatal_slope(4)         =  8.0    * mfact
@@ -1000,8 +1045,8 @@ subroutine init_pft_photo_params()
    stomatal_slope(11)        =  6.3949 * mfact
    stomatal_slope(12)        =  8.0    * mfact
    stomatal_slope(13)        =  8.0    * mfact
-   stomatal_slope(14)        =  6.4
-   stomatal_slope(15)        =  6.4
+   stomatal_slope(14)        =  6.4    
+   stomatal_slope(15)        =  6.4    
    stomatal_slope(16)        =  8.0    * mfact
    stomatal_slope(17)        =  6.4
  
@@ -1344,10 +1389,10 @@ subroutine init_pft_mort_params()
    mort3(11) = 0.00428
    mort3(12) = 0.066
    mort3(13) = 0.066
-   mort3(14) = 0.037
-   mort3(15) = 0.037
-   mort3(16) = 0.06167
-   mort3(17) = 0.0043
+   mort3(14) = 0.15 * (1. - rho(16) / rho(4))
+   mort3(15) = 0.15 * (1. - rho(16) / rho(4))
+   mort3(16) = 0.15 * (1. - rho(16) / rho(4))
+   mort3(17) = 0.0043 ! Same as pines
 
 
 
@@ -1492,8 +1537,12 @@ subroutine init_pft_alloc_params()
                           , b2Bs_small            & ! intent(out)
                           , b1Bs_big              & ! intent(out)
                           , b2Bs_big              & ! intent(out)
-                          , B1Ca                  & ! intent(out)
-                          , B2Ca                  & ! intent(out)
+                          , b1Ca                  & ! intent(out)
+                          , b2Ca                  & ! intent(out)
+                          , b1Rd                  & ! intent(out)
+                          , b2Rd                  & ! intent(out)
+                          , b1Vol                 & ! intent(out)
+                          , b2Vol                 & ! intent(out)
                           , bdead_crit            & ! intent(out)
                           , b1Bl                  & ! intent(out)
                           , b2Bl                  & ! intent(out)
@@ -1510,7 +1559,8 @@ subroutine init_pft_alloc_params()
                           , conijn_d              ! ! intent(out)
    use allometry   , only : h2dbh                 & ! function
                           , dbh2bd                ! ! function
-   use consts_coms , only : twothirds             ! ! intent(in)
+   use consts_coms , only : twothirds             & ! intent(in)
+                          , pi1                   ! ! intent(in)
    use ed_max_dims , only : n_pft                 & ! intent(in)
                           , str_len               ! ! intent(in)
    use ed_misc_coms, only : iallom                ! ! intent(in)
@@ -1546,15 +1596,19 @@ subroutine init_pft_alloc_params()
    !               spatial patterns in Amazonian forest biomass.  Glob. Change Biol., 10,  !
    !               545-562.                                                                !
    !                                                                                       !
-   !            These parameters were obtaining by splitting balive and bdead at the same  !
-   !            ratio as the original ED-2.1 allometry, and optimising a function of the   !
-   !            form B? = (rho / a3) * exp [a1 + a2 * ln(DBH)]                             !
+   !     The "a" parameters were obtaining by splitting balive and bdead at the same ratio !
+   ! as the original ED-2.1 allometry, and optimising a function of the form               !
+   ! B? = (rho / a3) * exp [a1 + a2 * ln(DBH)]                                             !
+   !     The "z" parameters were obtaining by using the original balive and computing      !
+   ! bdead as the difference between the total biomass and the original balive.            !
    !---------------------------------------------------------------------------------------!
    real, dimension(3)    , parameter :: aleaf       = (/ -1.259299,  1.679213,  4.985562 /)
    real, dimension(3)    , parameter :: adead_small = (/ -1.494639,  2.453309,  1.597272 /)
    real, dimension(3)    , parameter :: adead_big   = (/  2.105856,  2.423031, 50.198984 /)
+   real, dimension(3)    , parameter :: zdead_small = (/ -1.113827,  2.440483,  2.180632 /)
+   real, dimension(3)    , parameter :: zdead_big   = (/ 0.1362546,  2.421739,  6.9483532/)
    !----- Other constants. ----------------------------------------------------------------!
-   logical               , parameter :: write_allom = .true.
+   logical               , parameter :: write_allom = .false.
    character(len=str_len), parameter :: allom_file  = 'allom_param.txt'
    !---------------------------------------------------------------------------------------!
 
@@ -1592,15 +1646,15 @@ subroutine init_pft_alloc_params()
    ! used only for branch area purposes.                                                   !
    !---------------------------------------------------------------------------------------!
    !---- [KIM] new tropical parameters. ---------------------------------------------------!
-   rho(1)     = 0.32   ! 0.40
+   rho(1)     = 0.20   ! 0.40
    rho(2)     = 0.53   ! 0.40
    rho(3)     = 0.71   ! 0.60
    rho(4)     = 0.90   ! 0.87
-   rho(5)     = 0.32   ! Copied from C4 grass
+   rho(5)     = 0.20   ! Copied from C4 grass
    rho(6:11)  = 0.00   ! Currently not used
-   rho(12:13) = 0.32
-   rho(14:15) = 0.32
-   rho(16)    = 0.32
+   rho(12:13) = 0.20
+   rho(14:15) = 0.20
+   rho(16)    = 0.20
    rho(17)    = 0.48
    !---------------------------------------------------------------------------------------!
 
@@ -1831,7 +1885,7 @@ subroutine init_pft_alloc_params()
    do ipft=1,n_pft
       if (is_tropical(ipft)) then
          select case(iallom)
-         case (0)
+         case (0,2:4)
             !---- ED-2.1 allometry. -------------------------------------------------------!
             b1Bl(ipft) = exp(a1 + c1l * b1Ht(ipft) + d1l * log(rho(ipft)))
             aux        = ( (a2l - a1) + b1Ht(ipft) * (c2l - c1l) + log(rho(ipft))          &
@@ -1909,6 +1963,13 @@ subroutine init_pft_alloc_params()
             b1Bs_big(ipft)   = C2B * exp(adead_big(1))   * rho(ipft) / adead_big(3)
             b2Bs_big(ipft)   = adead_big(2)
 
+         case (2:4)
+            !---- Based an alternative modification of Chave et al. (2001) allometry. -----!
+            b1Bs_small(ipft) = C2B * exp(zdead_small(1)) * rho(ipft) / zdead_small(3)
+            b2Bs_small(ipft) = zdead_small(2)
+            b1Bs_big(ipft)   = C2B * exp(zdead_big(1))   * rho(ipft) / zdead_big(3)
+            b2Bs_big(ipft)   = zdead_big(2)
+
          end select
       end if
 
@@ -1927,6 +1988,54 @@ subroutine init_pft_alloc_params()
    b1Ca(1:17) = 2.490154
    !----- Slope.  -------------------------------------------------------------------------!
    b2Ca(1:17) = 0.8068806
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !     DBH-Root depth allometry.  Check which allometry to use.  Notice that b?Rd have   !
+   ! different meanings depending on the allometry, whilst b?Vol are not used when iallom  !
+   ! is 3.                                                                                 !
+   !---------------------------------------------------------------------------------------!
+   select case (iallom)
+   case (0:2)
+      b1Rd(1)     = - 0.700
+      b1Rd(2:4)   = - 0.545 / log10(exp(1.))
+      b1Rd(5)     = - 0.700
+      b1Rd(6:11)  = - 0.545 / log10(exp(1.))
+      b1Rd(12:16) = - 0.700
+      b1Rd(17)    = - 0.545 / log10(exp(1.))
+
+      b2Rd(1)     = 0.000
+      b2Rd(2:4)   = 0.277
+      b2Rd(5)     = 0.000
+      b2Rd(6:11)  = 0.277
+      b2Rd(12:16) = 0.000
+      b2Rd(17)    = 0.277
+
+      b1Vol(1:17)  = 0.65 * pi1 * 0.11 * 0.11
+      b2Vol(1:17)  = 2.0
+   case (3)
+      !------------------------------------------------------------------------------------!
+      !     Based on Kenzo et al. (2009), but we had to apply some correction to make it   !
+      ! dependent on DBH rather than Diameter at 0m.                                       !
+      ! Source: Kenzo, T., and co-authors: 2009.  Development of allometric relationships  !
+      !            for accurate estimation of above- and below-ground biomass in tropical  !
+      !            secondary forests in Sarawak, Malaysia. J. Trop. Ecology, 25, 371-386.  !
+      !------------------------------------------------------------------------------------!
+      b1Vol(1:17) = 0.0
+      b2Vol(1:17) = 0.0
+      b1Rd(1:17)  = -0.2185333
+      b2Rd(1:17)  =  0.5436442
+   case (4)
+      !------------------------------------------------------------------------------------!
+      !     This is just a test, not based on any paper.  This is simply a fit that would  !
+      ! put the roots 0.5m deep for plants 0.15m-tall and 5 m for plants 35-m tall.        !
+      !------------------------------------------------------------------------------------!
+      b1Vol(1:17) = 0.0
+      b2Vol(1:17) = 0.0
+      b1Rd(1:17)  = -1.1140580
+      b2Rd(1:17)  =  0.4223014
+   end select
    !---------------------------------------------------------------------------------------!
 
    if (write_allom) then
@@ -2073,8 +2182,8 @@ subroutine init_pft_leaf_params()
    use rk4_coms       , only : ibranch_thermo       ! ! intent(in)
    use pft_coms       , only : phenology            & ! intent(out)
                              , clumping_factor      & ! intent(out)
-                             , b1Tht                & ! intent(out)
-                             , b2Tht                & ! intent(out)
+                             , b1Cl                 & ! intent(out)
+                             , b2Cl                 & ! intent(out)
                              , c_grn_leaf_dry       & ! intent(out)
                              , c_ngrn_biom_dry      & ! intent(out)
                              , wat_dry_ratio_grn    & ! intent(out)
@@ -2147,23 +2256,26 @@ subroutine init_pft_leaf_params()
                  * (-0.06191 + 2.36e-4 * t3ple - 1.33e-2 * wat_dry_ratio_ngrn(1:17))
 
    !---------------------------------------------------------------------------------------!
-   !     These are used to compute the height of the first branch, which we assume it is   !
-   ! also the relative crown depth.                                                        !
+   !     These are used to compute the crown length, which will then be used to find the   !
+   ! height of the bottom of the crown.  This allometry is based on:                       !
+   !                                                                                       !
+   ! Poorter L., L. Bongers, F. Bongers, 2006: Architecture of 54 moist-forest tree        !
+   !     species: traits, trade-offs, and functional groups. Ecology, 87, 1289-1301.       !
    !---------------------------------------------------------------------------------------!
    !----- Intercept. ----------------------------------------------------------------------!
-   b1Tht(1)     = 0.01 ! 0.01
-   b1Tht(2:4)   = 0.70 ! 0.4359
-   b1Tht(5)     = 0.01 ! 0.01
-   b1Tht(6:11)  = 0.70 ! 0.4359
-   b1Tht(12:16) = 0.01 ! 0.01
-   b1Tht(17)    = 0.70 ! 0.4359
+   b1Cl(1)     = 0.99
+   b1Cl(2:4)   = 0.3106775
+   b1Cl(5)     = 0.99
+   b1Cl(6:11)  = 0.3106775
+   b1Cl(12:16) = 0.99
+   b1Cl(17)    = 0.3106775
    !----- Slope. ----------------------------------------------------------------------!
-   b2Tht(1)     = 1.0 ! 1.0
-   b2Tht(2:4)   = 1.0 ! 0.878
-   b2Tht(5)     = 1.0 ! 1.0
-   b2Tht(6:11)  = 1.0 ! 0.878
-   b2Tht(12:16) = 1.0 ! 1.0
-   b2Tht(17)    = 1.0 ! 0.878
+   b2Cl(1)     = 1.0
+   b2Cl(2:4)   = 1.098
+   b2Cl(5)     = 1.0
+   b2Cl(6:11)  = 1.098
+   b2Cl(12:16) = 1.0
+   b2Cl(17)    = 1.098
    !---------------------------------------------------------------------------------------!
 
    return
@@ -2183,37 +2295,46 @@ end subroutine init_pft_leaf_params
 subroutine init_pft_repro_params()
 
    use pft_coms , only : r_fract            & ! intent(out)
+                       , st_fract           & ! intent(out)
                        , seed_rain          & ! intent(out)
                        , nonlocal_dispersal & ! intent(out)
                        , repro_min_h        ! ! intent(out)
    implicit none
 
-   r_fract(1)                = 1.0
-   r_fract(2:4)              = 0.3
-   r_fract(5)                = 1.0
-   r_fract(6:11)             = 0.3
-   r_fract(12:15)            = 0.3
-   r_fract(16)               = 1.0
-   r_fract(17)               = 0.3
+   r_fract(1)              = 0.3
+   r_fract(2:4)            = 0.3
+   r_fract(5)              = 0.3
+   r_fract(6:11)           = 0.3
+   r_fract(12:15)          = 0.3
+   r_fract(16)             = 0.3
+   r_fract(17)             = 0.3
 
-   seed_rain(1:17)           = 0.01
+   st_fract(1)             = 0.0
+   st_fract(2:4)           = 0.0
+   st_fract(5)             = 0.0
+   st_fract(6:11)          = 0.0
+   st_fract(12:15)         = 0.0
+   st_fract(16)            = 0.0
+   st_fract(17)            = 0.0
 
-   nonlocal_dispersal(1:5)   = 1.0
-   nonlocal_dispersal(6:7)   = 0.766
-   nonlocal_dispersal(8)     = 0.001
-   nonlocal_dispersal(9)     = 1.0
-   nonlocal_dispersal(10)    = 0.325
-   nonlocal_dispersal(11)    = 0.074
-   nonlocal_dispersal(16)    = 1.0
-   nonlocal_dispersal(17)    = 0.766
+   seed_rain(1:17)         = 0.01
 
-   repro_min_h(1)            = 0.0
-   repro_min_h(2:4)          = 5.0
-   repro_min_h(5)            = 0.0
-   repro_min_h(6:11)         = 5.0
-   repro_min_h(12:15)        = 0.0
-   repro_min_h(16)           = 0.0
-   repro_min_h(17)           = 5.0
+   nonlocal_dispersal(1:5) = 1.0
+   nonlocal_dispersal(6:7) = 0.766
+   nonlocal_dispersal(8)   = 0.001
+   nonlocal_dispersal(9)   = 1.0
+   nonlocal_dispersal(10)  = 0.325
+   nonlocal_dispersal(11)  = 0.074
+   nonlocal_dispersal(16)  = 1.0
+   nonlocal_dispersal(17)  = 0.766
+
+   repro_min_h(1)          = 0.0
+   repro_min_h(2:4)        = 5.0
+   repro_min_h(5)          = 0.0
+   repro_min_h(6:11)       = 5.0
+   repro_min_h(12:15)      = 0.0
+   repro_min_h(16)         = 0.0
+   repro_min_h(17)         = 5.0
 
    return
 end subroutine init_pft_repro_params
@@ -3113,8 +3234,8 @@ subroutine init_rk4_params()
    use soil_coms      , only : water_stab_thresh      & ! intent(in)
                              , snowmin                & ! intent(in)
                              , tiny_sfcwater_mass     ! ! intent(in)
-   use canopy_air_coms, only : dry_veg_lwater         & ! intent(in)
-                             , fullveg_lwater         ! ! intent(in)
+   use canopy_air_coms, only : leaf_drywhc            & ! intent(in)
+                             , leaf_maxwhc            ! ! intent(in)
    use met_driver_coms, only : prss_min               & ! intent(in)
                              , prss_max               ! ! intent(in)
    use consts_coms    , only : wdnsi8                 ! ! intent(in)
@@ -3137,8 +3258,8 @@ subroutine init_rk4_params()
                              , rk4water_stab_thresh   & ! intent(out)
                              , rk4tiny_sfcw_mass      & ! intent(out)
                              , rk4tiny_sfcw_depth     & ! intent(out)
-                             , rk4dry_veg_lwater      & ! intent(out)
-                             , rk4fullveg_lwater      & ! intent(out)
+                             , rk4leaf_drywhc         & ! intent(out)
+                             , rk4leaf_maxwhc         & ! intent(out)
                              , rk4snowmin             & ! intent(out)
                              , rk4min_can_temp        & ! intent(out)
                              , rk4max_can_temp        & ! intent(out)
@@ -3161,7 +3282,7 @@ subroutine init_rk4_params()
                              , rk4min_virt_moist      & ! intent(out)
                              , effarea_heat           & ! intent(out)
                              , effarea_evap           & ! intent(out)
-                             , effarea_transp          & ! intent(out)
+                             , effarea_transp         & ! intent(out)
                              , leaf_intercept         & ! intent(out)
                              , force_idealgas         & ! intent(out)
                              , supersat_ok            & ! intent(out)
@@ -3179,8 +3300,8 @@ subroutine init_rk4_params()
    !---------------------------------------------------------------------------------------!
    rk4water_stab_thresh  = dble(water_stab_thresh )
    rk4tiny_sfcw_mass     = dble(tiny_sfcwater_mass)
-   rk4dry_veg_lwater     = dble(dry_veg_lwater    )
-   rk4fullveg_lwater     = dble(fullveg_lwater    )
+   rk4leaf_drywhc        = dble(leaf_drywhc       )
+   rk4leaf_maxwhc        = dble(leaf_maxwhc       )
    rk4snowmin            = dble(snowmin           )
    rk4tiny_sfcw_depth    = rk4tiny_sfcw_mass  * wdnsi8
    !---------------------------------------------------------------------------------------!
@@ -3252,7 +3373,7 @@ subroutine init_rk4_params()
    rk4max_can_shv    =  4.6000d-2 ! Maximum canopy    specific humidity         [kg/kg_air]
    rk4max_can_rhv    =  1.1000d0  ! Maximum canopy    relative humidity (**)    [      ---]
    rk4min_can_co2    =  1.0000d1  ! Minimum canopy    CO2 mixing ratio          [ µmol/mol]
-   rk4max_can_co2    =  2.0000d3  ! Maximum canopy    CO2 mixing ratio          [ µmol/mol]
+   rk4max_can_co2    =  5.0000d3  ! Maximum canopy    CO2 mixing ratio          [ µmol/mol]
    rk4min_soil_temp  =  1.8400d2  ! Minimum soil      temperature               [        K]
    rk4max_soil_temp  =  3.5100d2  ! Maximum soil      temperature               [        K]
    rk4min_veg_temp   =  1.8400d2  ! Minimum leaf      temperature               [        K]
@@ -3278,7 +3399,7 @@ subroutine init_rk4_params()
    !     Minimum water mass at the leaf surface.  This is given in kg/m²leaf rather than   !
    ! kg/m²ground, so we scale it with LAI.                                                 !
    !---------------------------------------------------------------------------------------!
-   rk4min_veg_lwater = -rk4dry_veg_lwater         ! Minimum leaf water mass     [kg/m²leaf]
+   rk4min_veg_lwater = -rk4leaf_drywhc            ! Minimum leaf water mass     [kg/m²leaf]
    !---------------------------------------------------------------------------------------!
 
 

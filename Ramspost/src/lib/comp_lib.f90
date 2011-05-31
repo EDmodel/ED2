@@ -2069,8 +2069,7 @@ subroutine RAMS_reduced_prop(nx,ny,nz,np,ng,which,topt,theta_atm,rvap_atm,co2_at
                         , csm        & ! intent(in)
                         , csh        & ! intent(in)
                         , dl79       & ! intent(in)
-                        , ribmaxod95 & ! intent(in)
-                        , ribmaxbh91 & ! intent(in)
+                        , ribmax     & ! intent(in)
                         , tprandtl   & ! intent(in)
                         , z0moz0h    & ! intent(in)
                         , z0hoz0m    & ! intent(in)
@@ -2129,6 +2128,7 @@ subroutine RAMS_reduced_prop(nx,ny,nz,np,ng,which,topt,theta_atm,rvap_atm,co2_at
    real              :: ured         ! Wind reduced to the level of interest.
    real              :: redp         ! Output variable for this patch.
    real              :: validarea    ! Total area where we have results.
+   real              :: stabcorr     ! Correction for very stable cases.
    !----- Local variables, used by L79. ---------------------------------------------------!
    real              :: a2r          ! Drag coefficient in neutral conditions
    real              :: a2o          ! Drag coefficient in neutral conditions
@@ -2198,6 +2198,15 @@ subroutine RAMS_reduced_prop(nx,ny,nz,np,ng,which,topt,theta_atm,rvap_atm,co2_at
             !------------------------------------------------------------------------------!
 
 
+            !------ Check whether we must correct the bulk Richardson number and stars. ---!
+            if (rib(x,y,p) > ribmax .and. myistar /= 1 .and. is_ed2) then
+               stabcorr   = ribmax / rib(x,y,p)
+               rib(x,y,p) = ribmax
+            else
+               stabcorr   = 1.0
+            end if
+
+
             !------------------------------------------------------------------------------!
             !     Find some variables common to all methods.  Notice that, unlike          !
             ! leaf_stars, we here use the output height, not the reference height.         !
@@ -2262,9 +2271,9 @@ subroutine RAMS_reduced_prop(nx,ny,nz,np,ng,which,topt,theta_atm,rvap_atm,co2_at
                   !----- Finding the coefficient to scale the other stars. ----------------!
                   c3 = a2r * uref * fhr / ustar(x,y,p)
                   !----- Computing the other scales. --------------------------------------!
-                  rstar(x,y,p) = c3 * (rvap_atm (x,y,2) - rvap_can (x,y,p)   )
-                  tstar(x,y,p) = c3 * (theta_atm(x,y,2) - theta_can(x,y,p)   )
-                  cstar(x,y,p) = c3 * (co2_atm  (x,y,2) - co2_can  (x,y,p)   )
+                  rstar(x,y,p) = c3 * (rvap_atm (x,y,2) - rvap_can (x,y,p)   ) * stabcorr
+                  tstar(x,y,p) = c3 * (theta_atm(x,y,2) - theta_can(x,y,p)   ) * stabcorr
+                  cstar(x,y,p) = c3 * (co2_atm  (x,y,2) - co2_can  (x,y,p)   ) * stabcorr
 
                   !----- Compute zeta from u* and T* --------------------------------------!
                   zeta(x,y,p)  = grav * vonk * c3 * (thetav_atm - thetav_can)              &
@@ -2287,8 +2296,6 @@ subroutine RAMS_reduced_prop(nx,ny,nz,np,ng,which,topt,theta_atm,rvap_atm,co2_at
                !    approximation given by OD95.                                           !
                !---------------------------------------------------------------------------!
                if (is_ed2) then 
-                  !----- Make sure that the bulk Richardson number is not above ribmax. ---!
-                  rib(x,y,p) = min(rib(x,y,p),ribmaxod95)
 
                   !----- We now compute the stability correction functions. ---------------!
                   if (stable) then
@@ -2317,9 +2324,9 @@ subroutine RAMS_reduced_prop(nx,ny,nz,np,ng,which,topt,theta_atm,rvap_atm,co2_at
                   c3    = vonk / (tprandtl * (lnzroz0m - psih(zeta(x,y,p),stable,myistar)  &
                                                       + psih(zeta0m,stable,myistar)     ))
                   !----- Computing the other scales. --------------------------------------!
-                  rstar(x,y,p) = c3 * (rvap_atm (x,y,2) - rvap_can (x,y,p)   )
-                  tstar(x,y,p) = c3 * (theta_atm(x,y,2) - theta_can(x,y,p)   )
-                  cstar(x,y,p) = c3 * (co2_atm  (x,y,2) - co2_can  (x,y,p)   )
+                  rstar(x,y,p) = c3 * (rvap_atm (x,y,2) - rvap_can (x,y,p)   ) * stabcorr
+                  tstar(x,y,p) = c3 * (theta_atm(x,y,2) - theta_can(x,y,p)   ) * stabcorr
+                  cstar(x,y,p) = c3 * (co2_atm  (x,y,2) - co2_can  (x,y,p)   ) * stabcorr
                end if
                !---------------------------------------------------------------------------!
 
@@ -2343,7 +2350,6 @@ subroutine RAMS_reduced_prop(nx,ny,nz,np,ng,which,topt,theta_atm,rvap_atm,co2_at
                !---------------------------------------------------------------------------!
                if (is_ed2) then 
                   !----- Make sure that the bulk Richardson number is not above ribmax. ---!
-                  rib(x,y,p)  = min(rib(x,y,p),ribmaxbh91)
                   zeta(x,y,p) = zoobukhov(rib(x,y,p),zref,rough(x,y,p),zroz0m,lnzroz0m     &
                                          ,zroz0h,lnzroz0h,stable,myistar)
                end if
@@ -2365,9 +2371,9 @@ subroutine RAMS_reduced_prop(nx,ny,nz,np,ng,which,topt,theta_atm,rvap_atm,co2_at
                   c3    = vonk / (tprandtl * (lnzroz0m - psih(zeta(x,y,p),stable,myistar)  &
                                                        + psih(zeta0m,stable,myistar)     ))
                   !----- Computing the other scales. --------------------------------------!
-                  rstar(x,y,p) = c3 * (rvap_atm (x,y,2) - rvap_can (x,y,p)   )
-                  tstar(x,y,p) = c3 * (theta_atm(x,y,2) - theta_can(x,y,p)   )
-                  cstar(x,y,p) = c3 * (co2_atm  (x,y,2) - co2_can  (x,y,p)   )
+                  rstar(x,y,p) = c3 * (rvap_atm (x,y,2) - rvap_can (x,y,p)   ) * stabcorr
+                  tstar(x,y,p) = c3 * (theta_atm(x,y,2) - theta_can(x,y,p)   ) * stabcorr
+                  cstar(x,y,p) = c3 * (co2_atm  (x,y,2) - co2_can  (x,y,p)   ) * stabcorr
                end if
                !---------------------------------------------------------------------------!
 

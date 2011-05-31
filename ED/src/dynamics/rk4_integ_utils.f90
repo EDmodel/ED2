@@ -220,7 +220,7 @@ end subroutine odeint
 !------------------------------------------------------------------------------------------!
 subroutine copy_met_2_rk4site(mzg,vels,atm_theiv,atm_theta,atm_tmp,atm_shv,atm_co2,zoff    &
                              ,exner,pcpg,qpcpg,dpcpg,prss,rshort,rlong,geoht,lsl           &
-                             ,ntext_soil,green_leaf_factor,lon,lat)
+                             ,ntext_soil,green_leaf_factor,lon,lat,cosz)
    use ed_max_dims    , only : n_pft         ! ! intent(in)
    use rk4_coms       , only : rk4site       ! ! structure
    use canopy_air_coms, only : ubmin8        ! ! intent(in)
@@ -249,6 +249,7 @@ subroutine copy_met_2_rk4site(mzg,vels,atm_theiv,atm_theta,atm_tmp,atm_shv,atm_c
    real   , dimension(n_pft), intent(in) :: green_leaf_factor
    real                     , intent(in) :: lon
    real                     , intent(in) :: lat
+   real                     , intent(in) :: cosz
    !----- Local variables. ----------------------------------------------------------------!
    integer             :: ipft
    !---------------------------------------------------------------------------------------!
@@ -276,6 +277,7 @@ subroutine copy_met_2_rk4site(mzg,vels,atm_theiv,atm_theta,atm_tmp,atm_shv,atm_c
    rk4site%geoht                 = dble(geoht               )
    rk4site%lon                   = dble(lon                 )
    rk4site%lat                   = dble(lat                 )
+   rk4site%cosz                  = dble(cosz                )
    rk4site%green_leaf_factor(:)  = dble(green_leaf_factor(:))
    !---------------------------------------------------------------------------------------!
 
@@ -481,7 +483,7 @@ subroutine get_yscal(y,dy,htry,yscal,cpatch)
                                    , huge_offset           & ! intent(in)
                                    , rk4water_stab_thresh  & ! intent(in)
                                    , rk4tiny_sfcw_mass     & ! intent(in)
-                                   , rk4dry_veg_lwater     & ! intent(in)
+                                   , rk4leaf_drywhc        & ! intent(in)
                                    , checkbudget           ! ! intent(in)
    use grid_coms            , only : nzg                   & ! intent(in)
                                    , nzs                   ! ! intent(in)
@@ -648,7 +650,7 @@ subroutine get_yscal(y,dy,htry,yscal,cpatch)
          yscal%veg_energy(ico) = abs(y%veg_energy(ico)) + abs(dy%veg_energy(ico) * htry)
          yscal%veg_temp(ico)   = abs(y%veg_temp(ico))
          yscal%veg_water(ico)  = max(abs(y%veg_water(ico)) + abs(dy%veg_water(ico) * htry) &
-                                    ,rk4dry_veg_lwater * y%tai(ico))
+                                    ,rk4leaf_drywhc * y%tai(ico))
       else
          yscal%veg_water(ico)  = huge_offset
          yscal%veg_energy(ico) = huge_offset
