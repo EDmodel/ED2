@@ -339,7 +339,7 @@ subroutine sfcrad_ed(cosz,cosaoi,csite,mzg,mzs,ntext_soil,maxcohort,tuco        
      
       fcpct = csite%soil_water(mzg,ipa) / soil(ntext_soil(mzg))%slmsts 
 
-      !----- Finding the ground albedo as a function of soil water relative moisture. -----!
+      !----- Find the ground albedo as a function of soil water relative moisture. --------!
       alg = max(.14,.31-.34*fcpct)
       
       !------------------------------------------------------------------------------------!

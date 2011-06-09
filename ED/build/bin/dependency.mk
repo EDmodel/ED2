@@ -5,7 +5,7 @@ ed_driver.o: fuse_fiss_utils.mod grid_coms.mod soil_coms.mod
 ed_met_driver.o: canopy_air_coms.mod canopy_radiation_coms.mod consts_coms.mod
 ed_met_driver.o: ed_max_dims.mod ed_misc_coms.mod ed_state_vars.mod
 ed_met_driver.o: grid_coms.mod hdf5_utils.mod mem_polygons.mod
-ed_met_driver.o: met_driver_coms.mod therm_lib.mod
+ed_met_driver.o: met_driver_coms.mod pft_coms.mod therm_lib.mod
 ed_model.o: consts_coms.mod disturb_coms.mod ed_misc_coms.mod ed_node_coms.mod
 ed_model.o: ed_state_vars.mod grid_coms.mod mem_polygons.mod rk4_coms.mod
 ed_model.o: rk4_driver.mod

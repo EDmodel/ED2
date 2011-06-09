@@ -131,6 +131,7 @@ module ename_coms
       integer                                           :: integration_scheme
       real                                              :: rk4_tolerance
       integer                                           :: ibranch_thermo
+      integer                                           :: iphysiol
       integer                                           :: istoma_scheme
       integer                                           :: iallom
       integer                                           :: iphen_scheme
@@ -142,6 +143,8 @@ module ename_coms
       real                                              :: mfact
       real                                              :: kfact
       real                                              :: gamfact
+      real                                              :: d0fact
+      real                                              :: alphafact
       real                                              :: thetacrit
       real                                              :: lwfact
       real                                              :: thioff
@@ -348,6 +351,7 @@ module ename_coms
       enl%integration_scheme        = undef_integer
       enl%rk4_tolerance             = undef_real
       enl%ibranch_thermo            = undef_integer
+      enl%iphysiol                  = undef_integer
       enl%istoma_scheme             = undef_integer
       enl%iallom                    = undef_integer
       enl%iphen_scheme              = undef_integer
@@ -359,6 +363,8 @@ module ename_coms
       enl%mfact                     = undef_real
       enl%kfact                     = undef_real
       enl%gamfact                   = undef_real
+      enl%d0fact                    = undef_real
+      enl%alphafact                 = undef_real
       enl%thetacrit                 = undef_real
       enl%lwfact                    = undef_real
       enl%thioff                    = undef_real

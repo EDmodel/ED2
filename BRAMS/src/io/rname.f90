@@ -56,6 +56,8 @@ subroutine NAMEOUT
 
   use turb_coms, only : nna, nnb, nnc
 
+  use leaf_coms, only : ribmax, leaf_maxwhc
+
   implicit none
 
   integer :: ng,np,k,m

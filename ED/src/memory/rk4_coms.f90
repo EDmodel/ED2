@@ -79,13 +79,6 @@ module rk4_coms
       real(kind=8), dimension(:), pointer :: soil_tempk   ! Specific humidity     [      K]
       real(kind=8), dimension(:), pointer :: soil_fracliq ! Liquid fraction       [   ----]
       real(kind=8), dimension(:), pointer :: soil_water   ! Water content         [  m³/m³]
-      real(kind=8), dimension(:), pointer :: soil_restz   ! Resistance term       [    m/s]
-      real(kind=8), dimension(:), pointer :: psiplusz     ! Water potential       [      m]
-      real(kind=8), dimension(:), pointer :: soilair99    ! 99% of field capacity [  m³/m³]
-      real(kind=8), dimension(:), pointer :: soilair01    !  1% above wilting pt. [  m³/m³]
-      real(kind=8), dimension(:), pointer :: soil_liq     ! Liquid fraction       [  kg/m²]
-      real(kind=8), dimension(:), pointer :: available_liquid_water !             [  kg/m²]
-      real(kind=8), dimension(:), pointer :: extracted_water        !             [  kg/m²]
       !------------------------------------------------------------------------------------!
 
 
@@ -98,7 +91,6 @@ module rk4_coms
       real(kind=8), dimension(:), pointer :: sfcwater_energy  ! Internal energy   [   J/m²]
       real(kind=8), dimension(:), pointer :: sfcwater_tempk   ! Temperature       [      K]
       real(kind=8), dimension(:), pointer :: sfcwater_fracliq ! Liquid fraction   [   ----]
-      real(kind=8), dimension(:), pointer :: sfcwater_restz   ! Resistance term   [   ----]
       !------------------------------------------------------------------------------------!
 
 
@@ -322,6 +314,39 @@ module rk4_coms
 
 
 
+
+   !---------------------------------------------------------------------------------------!
+   !    Structure with auxiliary gridded variables that will be used by the derivatives.   !
+   !---------------------------------------------------------------------------------------!
+   type rk4auxtype
+      !----- Total potential [m]. ---------------------------------------------------------!
+      real(kind=8), dimension(:), pointer :: psiplusz
+      !----- Hydraulic conductivity [m/s]. ------------------------------------------------!
+      real(kind=8), dimension(:), pointer :: hydcond
+      !----- Liquid water above wilting point [m³/m³]. ------------------------------------!
+      real(kind=8), dimension(:), pointer :: soil_liq_wilt
+      !----- Liquid water available for photosynthesis [kg/m²]. ---------------------------!
+      real(kind=8), dimension(:), pointer :: available_liquid_water
+      !----- Extracted water by transpiration [kg/m²]. ------------------------------------!
+      real(kind=8), dimension(:), pointer :: extracted_water
+      !----- Heat resistance [Km²s/J]. ----------------------------------------------------!
+      real(kind=8), dimension(:), pointer :: rfactor
+      !----- Sensible heat flux at staggered layer (k = k-1/2) [W/m²]. --------------------!
+      real(kind=8), dimension(:), pointer :: hfluxgsc
+      !----- Water flux at staggered layers (k = k-1/2) [kg/m²/s]. ------------------------!
+      real(kind=8), dimension(:), pointer :: w_flux
+      !----- Latent heat flux at staggered layers (k=k-1/2) [W/m²]. -----------------------!
+      real(kind=8), dimension(:), pointer :: qw_flux
+      !----- Depth flux at staggered layers (k=k-1/2) [m/s]. ------------------------------!
+      real(kind=8), dimension(:), pointer :: d_flux
+      !----- Tests to check if the soil is too dry or too wet. ----------------------------!
+      logical     , dimension(:), pointer :: drysoil
+      logical     , dimension(:), pointer :: satsoil
+   end type rk4auxtype
+   !---------------------------------------------------------------------------------------!
+
+
+
    !---------------------------------------------------------------------------------------!
    ! Structure with all the necessary buffers.                                             !
    !---------------------------------------------------------------------------------------!
@@ -346,6 +371,7 @@ module rk4_coms
    !----- This is the actual integration buffer structure. --------------------------------!
    type(integration_vars) :: integration_buff
    type(rk4sitetype)      :: rk4site
+   type(rk4auxtype)       :: rk4aux
    !=======================================================================================!
    !=======================================================================================!
 
@@ -698,35 +724,27 @@ module rk4_coms
 
       call nullify_rk4_patch(y)
 
-      allocate(y%soil_energy(nzg))
-      allocate(y%soil_water(nzg))
-      allocate(y%soil_fracliq(nzg))
-      allocate(y%soil_tempk(nzg))
-      allocate(y%available_liquid_water(nzg))
-      allocate(y%extracted_water(nzg))
-      allocate(y%psiplusz(nzg))
-      allocate(y%soilair99(nzg))
-      allocate(y%soilair01(nzg))
-      allocate(y%soil_liq(nzg))
-      allocate(y%soil_restz(nzg))
+      allocate(y%soil_energy            (0:nzg))
+      allocate(y%soil_water             (0:nzg))
+      allocate(y%soil_fracliq           (0:nzg))
+      allocate(y%soil_tempk             (0:nzg))
 
-      allocate(y%sfcwater_energy(nzs))
-      allocate(y%sfcwater_mass(nzs))
-      allocate(y%sfcwater_depth(nzs))
-      allocate(y%sfcwater_fracliq(nzs))
-      allocate(y%sfcwater_tempk(nzs))
-      allocate(y%sfcwater_restz(nzs))
+      allocate(y%sfcwater_energy          (nzs))
+      allocate(y%sfcwater_mass            (nzs))
+      allocate(y%sfcwater_depth           (nzs))
+      allocate(y%sfcwater_fracliq         (nzs))
+      allocate(y%sfcwater_tempk           (nzs))
 
       !------------------------------------------------------------------------------------!
       !     Diagnostics - for now we will always allocate the diagnostics, even if they    !
       !                   aren't used.                                                     !
       !------------------------------------------------------------------------------------!
-      allocate(y%avg_sensible_gg(nzg))
-      allocate(y%avg_smoist_gg(nzg))
-      allocate(y%avg_transloss(nzg))
-      allocate(y%flx_sensible_gg(nzg))
-      allocate(y%flx_smoist_gg(nzg))
-      allocate(y%flx_transloss(nzg))
+      allocate(y%avg_sensible_gg          (nzg))
+      allocate(y%avg_smoist_gg            (nzg))
+      allocate(y%avg_transloss            (nzg))
+      allocate(y%flx_sensible_gg          (nzg))
+      allocate(y%flx_smoist_gg            (nzg))
+      allocate(y%flx_transloss            (nzg))
 
       call zero_rk4_patch(y)
 
@@ -754,20 +772,12 @@ module rk4_coms
       nullify(y%soil_water)
       nullify(y%soil_fracliq)
       nullify(y%soil_tempk)
-      nullify(y%available_liquid_water)
-      nullify(y%extracted_water)
-      nullify(y%psiplusz)
-      nullify(y%soilair99)
-      nullify(y%soilair01)
-      nullify(y%soil_liq)
-      nullify(y%soil_restz)
 
       nullify(y%sfcwater_energy)
       nullify(y%sfcwater_mass)
       nullify(y%sfcwater_depth)
       nullify(y%sfcwater_fracliq)
       nullify(y%sfcwater_tempk)
-      nullify(y%sfcwater_restz)
 
       !------------------------------------------------------------------------------------!
       !     Diagnostics - for now we will always allocate the diagnostics, even if they    !
@@ -924,20 +934,12 @@ module rk4_coms
       if(associated(y%soil_tempk            ))   y%soil_tempk(:)                  = 0.d0
       if(associated(y%soil_fracliq          ))   y%soil_fracliq(:)                = 0.d0
       if(associated(y%soil_water            ))   y%soil_water(:)                  = 0.d0
-      if(associated(y%available_liquid_water))   y%available_liquid_water(:)      = 0.d0
-      if(associated(y%extracted_water       ))   y%extracted_water(:)             = 0.d0
-      if(associated(y%psiplusz              ))   y%psiplusz(:)                    = 0.d0
-      if(associated(y%soilair99             ))   y%soilair99(:)                   = 0.d0
-      if(associated(y%soilair01             ))   y%soilair01(:)                   = 0.d0
-      if(associated(y%soil_liq              ))   y%soil_liq(:)                    = 0.d0
-      if(associated(y%soil_restz            ))   y%soil_restz(:)                  = 0.d0
      
       if(associated(y%sfcwater_depth        ))   y%sfcwater_depth(:)              = 0.d0
       if(associated(y%sfcwater_mass         ))   y%sfcwater_mass(:)               = 0.d0
       if(associated(y%sfcwater_energy       ))   y%sfcwater_energy(:)             = 0.d0
       if(associated(y%sfcwater_tempk        ))   y%sfcwater_tempk(:)              = 0.d0
       if(associated(y%sfcwater_fracliq      ))   y%sfcwater_fracliq(:)            = 0.d0
-      if(associated(y%sfcwater_restz        ))   y%sfcwater_restz(:)              = 0.d0
 
       if(associated(y%avg_smoist_gg         ))   y%avg_smoist_gg(:)               = 0.d0
       if(associated(y%avg_transloss         ))   y%avg_transloss(:)               = 0.d0
@@ -971,20 +973,12 @@ module rk4_coms
       if (associated(y%soil_water))              deallocate(y%soil_water)
       if (associated(y%soil_fracliq))            deallocate(y%soil_fracliq)
       if (associated(y%soil_tempk))              deallocate(y%soil_tempk)
-      if (associated(y%available_liquid_water))  deallocate(y%available_liquid_water)
-      if (associated(y%extracted_water))         deallocate(y%extracted_water)
-      if (associated(y%psiplusz))                deallocate(y%psiplusz)
-      if (associated(y%soilair99))               deallocate(y%soilair99)
-      if (associated(y%soilair01))               deallocate(y%soilair01)
-      if (associated(y%soil_liq))                deallocate(y%soil_liq)
-      if (associated(y%soil_restz))              deallocate(y%soil_restz)
 
       if (associated(y%sfcwater_energy))         deallocate(y%sfcwater_energy)
       if (associated(y%sfcwater_mass))           deallocate(y%sfcwater_mass)
       if (associated(y%sfcwater_depth))          deallocate(y%sfcwater_depth)
       if (associated(y%sfcwater_fracliq))        deallocate(y%sfcwater_fracliq)
       if (associated(y%sfcwater_tempk))          deallocate(y%sfcwater_tempk)
-      if (associated(y%sfcwater_restz))          deallocate(y%sfcwater_restz)
 
       ! Diagnostics
       if (associated(y%avg_smoist_gg))           deallocate(y%avg_smoist_gg)
@@ -1367,6 +1361,187 @@ module rk4_coms
 
       return
    end subroutine norm_rk4_fluxes
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !    This subroutine will allocate the auxiliary variables.                             !
+   !---------------------------------------------------------------------------------------!
+   subroutine allocate_rk4_aux(mzg,mzs)
+      implicit none
+      !----- Arguments --------------------------------------------------------------------!
+      integer            , intent(in) :: mzg
+      integer            , intent(in) :: mzs
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------ Nullify the structure for a safe allocation. --------------------------------!
+      call nullify_rk4_aux()
+      !------------------------------------------------------------------------------------!
+
+      allocate(rk4aux%psiplusz                (    0:mzg) )
+      allocate(rk4aux%hydcond                 (    0:mzg) )
+      allocate(rk4aux%drysoil                 (    0:mzg) )
+      allocate(rk4aux%satsoil                 (    0:mzg) )
+      allocate(rk4aux%soil_liq_wilt           (      mzg) )
+      allocate(rk4aux%available_liquid_water  (      mzg) )
+      allocate(rk4aux%extracted_water         (      mzg) )
+      allocate(rk4aux%rfactor                 (  mzg+mzs) )
+      allocate(rk4aux%hfluxgsc                (mzg+mzs+1) )
+      allocate(rk4aux%w_flux                  (mzg+mzs+1) )
+      allocate(rk4aux%qw_flux                 (mzg+mzs+1) )
+      allocate(rk4aux%d_flux                  (    mzs+1) )
+
+
+      !------ Flush the variables within this structure to zero. --------------------------!
+      call zero_rk4_aux()
+      !------------------------------------------------------------------------------------!
+
+      return
+   end subroutine allocate_rk4_aux
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !    This subroutine will nullify the auxiliary pointers for a safe allocation.         !
+   !---------------------------------------------------------------------------------------!
+   subroutine nullify_rk4_aux()
+      implicit none
+
+      nullify(rk4aux%psiplusz                )
+      nullify(rk4aux%hydcond                 )
+      nullify(rk4aux%drysoil                 )
+      nullify(rk4aux%satsoil                 )
+      nullify(rk4aux%soil_liq_wilt           )
+      nullify(rk4aux%available_liquid_water  )
+      nullify(rk4aux%extracted_water         )
+      nullify(rk4aux%rfactor                 )
+      nullify(rk4aux%hfluxgsc                )
+      nullify(rk4aux%w_flux                  )
+      nullify(rk4aux%qw_flux                 )
+      nullify(rk4aux%d_flux                  )
+
+      return
+   end subroutine nullify_rk4_aux
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !    This subroutine will flush all auxiliary variables to zero.                        !
+   !---------------------------------------------------------------------------------------!
+   subroutine zero_rk4_aux()
+      implicit none
+
+      if (associated(rk4aux%psiplusz              ))                                       &
+         rk4aux%psiplusz              (:) = 0.d0
+
+      if (associated(rk4aux%hydcond               ))                                       &
+         rk4aux%hydcond               (:) = 0.d0
+
+      if (associated(rk4aux%drysoil               ))                                       &
+         rk4aux%drysoil               (:) = .false.
+
+      if (associated(rk4aux%satsoil               ))                                       &
+         rk4aux%satsoil               (:) = .false.
+
+      if (associated(rk4aux%soil_liq_wilt         ))                                       &
+         rk4aux%soil_liq_wilt         (:) = 0.d0
+
+      if (associated(rk4aux%available_liquid_water))                                       &
+         rk4aux%available_liquid_water(:) = 0.d0
+
+      if (associated(rk4aux%extracted_water       ))                                       &
+         rk4aux%extracted_water       (:) = 0.d0
+
+      if (associated(rk4aux%rfactor               ))                                       &
+         rk4aux%rfactor               (:) = 0.d0
+
+      if (associated(rk4aux%hfluxgsc              ))                                       &
+         rk4aux%hfluxgsc              (:) = 0.d0
+
+      if (associated(rk4aux%w_flux                ))                                       &
+         rk4aux%w_flux                (:) = 0.d0
+
+      if (associated(rk4aux%qw_flux               ))                                       &
+         rk4aux%qw_flux               (:) = 0.d0
+
+      if (associated(rk4aux%d_flux                ))                                       &
+         rk4aux%d_flux                (:) = 0.d0
+
+      return
+   end subroutine zero_rk4_aux
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !    This subroutine will deallocate the auxiliary variables.                           !
+   !---------------------------------------------------------------------------------------!
+   subroutine deallocate_rk4_aux()
+      implicit none
+
+      if (associated(rk4aux%psiplusz              ))                                       &
+         deallocate(rk4aux%psiplusz              )
+
+      if (associated(rk4aux%hydcond               ))                                       &
+         deallocate(rk4aux%hydcond               )
+
+      if (associated(rk4aux%drysoil               ))                                       &
+         deallocate(rk4aux%drysoil               )
+
+      if (associated(rk4aux%satsoil               ))                                       &
+         deallocate(rk4aux%satsoil               )
+
+      if (associated(rk4aux%soil_liq_wilt         ))                                       &
+         deallocate(rk4aux%soil_liq_wilt         )
+
+      if (associated(rk4aux%available_liquid_water))                                       &
+         deallocate(rk4aux%available_liquid_water)
+
+      if (associated(rk4aux%extracted_water       ))                                       &
+         deallocate(rk4aux%extracted_water       )
+
+      if (associated(rk4aux%rfactor               ))                                       &
+         deallocate(rk4aux%rfactor               )
+
+      if (associated(rk4aux%hfluxgsc              ))                                       &
+         deallocate(rk4aux%hfluxgsc              )
+
+      if (associated(rk4aux%w_flux                ))                                       &
+         deallocate(rk4aux%w_flux                )
+
+      if (associated(rk4aux%qw_flux               ))                                       &
+         deallocate(rk4aux%qw_flux               )
+
+      if (associated(rk4aux%d_flux                ))                                       &
+         deallocate(rk4aux%d_flux                )
+
+      return
+   end subroutine deallocate_rk4_aux
    !=======================================================================================!
    !=======================================================================================!
 

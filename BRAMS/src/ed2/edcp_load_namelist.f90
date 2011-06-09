@@ -39,13 +39,16 @@ subroutine read_ednl(iunit,filename)
                                    , edres                     & ! intent(out)
                                    , maxpatch                  & ! intent(out)
                                    , maxcohort                 ! ! intent(out)
-   use physiology_coms      , only : istoma_scheme             & ! intent(out)
+   use physiology_coms      , only : iphysiol                  & ! intent(out)
+                                   , istoma_scheme             & ! intent(out)
                                    , h2o_plant_lim             & ! intent(out)
                                    , n_plant_lim               & ! intent(out)
                                    , vmfact                    & ! intent(out)
                                    , mfact                     & ! intent(out)
                                    , kfact                     & ! intent(out)
                                    , gamfact                   & ! intent(out)
+                                   , d0fact                    & ! intent(out)
+                                   , alphafact                 & ! intent(out)
                                    , lwfact                    & ! intent(out)
                                    , thioff                    & ! intent(out)
                                    , quantum_efficiency_t      ! ! intent(out)
@@ -193,15 +196,15 @@ subroutine read_ednl(iunit,filename)
                        ,ied_init_mode,edres,sfilin,veg_database,soil_database,lu_database  &
                        ,plantation_file,lu_rescale_file,thsums_database,soilstate_db       &
                        ,soildepth_db,isoilstateinit,isoildepthflg,integration_scheme       &
-                       ,rk4_tolerance,ibranch_thermo,istoma_scheme,iallom,iphen_scheme     &
-                       ,radint,radslp,repro_scheme,lapse_scheme,crown_mod,decomp_scheme    &
-                       ,h2o_plant_lim,vmfact,mfact,kfact,gamfact,thetacrit,lwfact,thioff   &
-                       ,quantum_efficiency_t,n_plant_lim,n_decomp_lim,include_fire         &
-                       ,sm_fire,ianth_disturb,icanturb,i_blyr_condct,include_these_pft     &
-                       ,agri_stock,plantation_stock,pft_1st_check,maxpatch,maxcohort       &
-                       ,treefall_disturbance_rate,time2canopy,iprintpolys,npvars,printvars &
-                       ,pfmtstr,ipmin,ipmax,iphenys1,iphenysf,iphenyf1,iphenyff,iedcnfgf   &
-                       ,event_file,phenpath
+                       ,rk4_tolerance,ibranch_thermo,iphysiol,istoma_scheme,iallom         &
+                       ,iphen_scheme,radint,radslp,repro_scheme,lapse_scheme,crown_mod     &
+                       ,decomp_scheme,h2o_plant_lim,vmfact,mfact,kfact,gamfact,d0fact      &
+                       ,alphafact,thetacrit,lwfact,thioff,quantum_efficiency_t,n_plant_lim &
+                       ,n_decomp_lim,include_fire,sm_fire,ianth_disturb,icanturb           &
+                       ,i_blyr_condct,include_these_pft,agri_stock,plantation_stock        &
+                       ,pft_1st_check,maxpatch,maxcohort,treefall_disturbance_rate         &
+                       ,time2canopy,iprintpolys,npvars,printvars,pfmtstr,ipmin,ipmax       &
+                       ,iphenys1,iphenysf,iphenyf1,iphenyff,iedcnfgf,event_file,phenpath
 
    !----- Initialise some database variables with a non-sense path. -----------------------!
    soil_database   (:) = undef_path
@@ -263,6 +266,7 @@ subroutine read_ednl(iunit,filename)
       write (unit=*,fmt=*) ' integration_scheme        =',integration_scheme
       write (unit=*,fmt=*) ' rk4_tolerance             =',rk4_tolerance
       write (unit=*,fmt=*) ' ibranch_thermo            =',ibranch_thermo
+      write (unit=*,fmt=*) ' iphysiol                  =',iphysiol
       write (unit=*,fmt=*) ' istoma_scheme             =',istoma_scheme
       write (unit=*,fmt=*) ' iallom                    =',iallom
       write (unit=*,fmt=*) ' iphen_scheme              =',iphen_scheme
@@ -277,6 +281,8 @@ subroutine read_ednl(iunit,filename)
       write (unit=*,fmt=*) ' mfact                     =',mfact
       write (unit=*,fmt=*) ' kfact                     =',kfact
       write (unit=*,fmt=*) ' gamfact                   =',gamfact
+      write (unit=*,fmt=*) ' d0fact                    =',d0fact
+      write (unit=*,fmt=*) ' alphafact                 =',alphafact
       write (unit=*,fmt=*) ' thetacrit                 =',thetacrit
       write (unit=*,fmt=*) ' lwfact                    =',lwfact
       write (unit=*,fmt=*) ' thioff                    =',thioff
@@ -533,7 +539,7 @@ subroutine copy_in_bramsnl(expnme_b,runtype_b,itimez_b,idatez_b,imonthz_b,iyearz
                              , vh2vr             & ! intent(out)
                              , vh2dh             & ! intent(out)
                              , ribmax            & ! intent(out)
-                             , leaf_maxwch       ! ! intent(out)
+                             , leaf_maxwhc       ! ! intent(out)
    use rk4_coms       , only : ipercol           ! ! intent(out)
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
@@ -588,7 +594,7 @@ subroutine copy_in_bramsnl(expnme_b,runtype_b,itimez_b,idatez_b,imonthz_b,iyearz
    real                      , intent(in) :: vh2vr_b       ! Veg. Height => Veg. Roughness
    real                      , intent(in) :: vh2dh_b       ! Veg. Height => Displacement h.
    real                      , intent(in) :: ribmax_b      ! Maximum bulk Richardson number
-   real                      , intent(in) :: leaf_maxwhc   ! Leaf max. water holding cap.
+   real                      , intent(in) :: leaf_maxwhc_b ! Leaf max. water holding cap.
    !---------------------------------------------------------------------------------------!
 
 

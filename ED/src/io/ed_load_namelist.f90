@@ -86,13 +86,16 @@ subroutine copy_nl(copy_type)
                                    , edres                     & ! intent(out)
                                    , maxpatch                  & ! intent(out)
                                    , maxcohort                 ! ! intent(out)
-   use physiology_coms      , only : istoma_scheme             & ! intent(out)
+   use physiology_coms      , only : iphysiol                  & ! intent(out)
+                                   , istoma_scheme             & ! intent(out)
                                    , h2o_plant_lim             & ! intent(out)
                                    , n_plant_lim               & ! intent(out)
                                    , vmfact                    & ! intent(out)
                                    , mfact                     & ! intent(out)
                                    , kfact                     & ! intent(out)
                                    , gamfact                   & ! intent(out)
+                                   , d0fact                    & ! intent(out)
+                                   , alphafact                 & ! intent(out)
                                    , lwfact                    & ! intent(out)
                                    , thioff                    & ! intent(out)
                                    , quantum_efficiency_T      ! ! intent(out)
@@ -302,6 +305,7 @@ subroutine copy_nl(copy_type)
       integration_scheme        = nl%integration_scheme
       rk4_tolerance             = nl%rk4_tolerance
       ibranch_thermo            = nl%ibranch_thermo
+      iphysiol                  = nl%iphysiol
       istoma_scheme             = nl%istoma_scheme
       iallom                    = nl%iallom
       iphen_scheme              = nl%iphen_scheme
@@ -313,6 +317,8 @@ subroutine copy_nl(copy_type)
       mfact                     = nl%mfact
       kfact                     = nl%kfact
       gamfact                   = nl%gamfact
+      d0fact                    = nl%d0fact
+      alphafact                 = nl%alphafact
       thetacrit                 = nl%thetacrit
       lwfact                    = nl%lwfact
       thioff                    = nl%thioff

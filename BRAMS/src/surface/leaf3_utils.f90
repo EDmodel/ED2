@@ -80,7 +80,7 @@ subroutine leaf_stars(theta_atm,theiv_atm,shv_atm,rvap_atm,co2_atm              
    real              :: delz         !
    real              :: d_vel        !
    real              :: vel_new      !
-   real              :: stabcorr     ! Correction for too stable cases (Rib > Ribmax)
+   real              :: uuse         ! Wind for too stable cases (Rib > Ribmax)
    !----- Local variables, used by L79. ---------------------------------------------------!
    real              :: a2           ! Drag coefficient in neutral conditions
    real              :: c1           ! a2 * vels
@@ -122,10 +122,10 @@ subroutine leaf_stars(theta_atm,theiv_atm,shv_atm,rvap_atm,co2_atm              
    ! than ustar, so the flux doesn't increase for stabler cases (it remains constant).     !
    !---------------------------------------------------------------------------------------!
    if (rib > ribmax .and. istar /= 1) then
-      stabcorr = ribmax / rib
-      rib      = ribmax
+      uuse = sqrt(rib/ribmax) * uref
+      rib  = ribmax
    else
-      stabcorr = 1.0
+      uuse = uref
    end if
    !---------------------------------------------------------------------------------------!
 
@@ -144,7 +144,7 @@ subroutine leaf_stars(theta_atm,theiv_atm,shv_atm,rvap_atm,co2_atm              
 
       !----- Compute the a-square factor and the coefficient to find theta*. --------------!
       a2   = (vonk / lnzoz0m) ** 2.
-      c1   = a2 * uref
+      c1   = a2 * uuse
 
       if (stable) then
          !---------------------------------------------------------------------------------!
@@ -165,10 +165,10 @@ subroutine leaf_stars(theta_atm,theiv_atm,shv_atm,rvap_atm,co2_atm              
          fm = (1.0 - 2.0 * bl79 * rib / (1.0 + 2.0 * cm))
          fh = (1.0 - 3.0 * bl79 * rib / (1.0 + 3.0 * ch))
       end if
-      r_aer = 1. / (a2 * uref * fh)
+      r_aer = 1. / (a2 * uuse * fh)
 
       !----- Finding ustar, making sure it is not too small. ------------------------------!
-      ustar = max(ustmin,sqrt(c1 * uref * fm))
+      ustar = max(ustmin,sqrt(c1 * uuse * fm))
 
       !----- Finding the coefficient to scale the other stars. ----------------------------!
       c3 = c1 * fh / ustar
@@ -202,10 +202,10 @@ subroutine leaf_stars(theta_atm,theiv_atm,shv_atm,rvap_atm,co2_atm              
       !----- Finding the aerodynamic resistance similarly to L79. -------------------------!
       r_aer = tprandtl * (lnzoz0m - psih(zeta,stable) + psih(zeta0m,stable))               &
                        * (lnzoz0m - psim(zeta,stable) + psim(zeta0m,stable))               &
-                       / (vonk * vonk * uref)
+                       / (vonk * vonk * uuse)
 
       !----- Finding ustar, making sure it is not too small. ------------------------------!
-      ustar = max (ustmin, vonk * uref                                                     &
+      ustar = max (ustmin, vonk * uuse                                                     &
                          / (lnzoz0m - psim(zeta,stable) + psim(zeta0m,stable)))
 
       !----- Finding the coefficient to scale the other stars. ----------------------------!
@@ -232,10 +232,10 @@ subroutine leaf_stars(theta_atm,theiv_atm,shv_atm,rvap_atm,co2_atm              
       !----- Finding the aerodynamic resistance similarly to L79. -------------------------!
       r_aer = tprandtl * (lnzoz0h - psih(zeta,stable) + psih(zeta0h,stable))               &
                        * (lnzoz0m - psim(zeta,stable) + psim(zeta0m,stable))               &
-                       / (vonk * vonk * uref)
+                       / (vonk * vonk * uuse)
 
       !----- Finding ustar, making sure it is not too small. ------------------------------!
-      ustar = max (ustmin, vonk * uref                                                     &
+      ustar = max (ustmin, vonk * uuse                                                     &
                          / (lnzoz0m - psim(zeta,stable) + psim(zeta0m,stable)))
 
 
@@ -246,11 +246,11 @@ subroutine leaf_stars(theta_atm,theiv_atm,shv_atm,rvap_atm,co2_atm              
    end select
 
    !----- Finding all stars. --------------------------------------------------------------!
-   tstar = c3 *    (theta_atm - theta_can) * stabcorr
-   estar = c3 * log(theiv_atm / theiv_can) * stabcorr
-   qstar = c3 *    (shv_atm   - shv_can  ) * stabcorr
-   rstar = c3 *    (rvap_atm  - rvap_can ) * stabcorr
-   cstar = c3 *    (co2_atm   - co2_can  ) * stabcorr
+   tstar = c3 *    (theta_atm - theta_can)
+   estar = c3 * log(theiv_atm / theiv_can)
+   qstar = c3 *    (shv_atm   - shv_can  )
+   rstar = c3 *    (rvap_atm  - rvap_can )
+   cstar = c3 *    (co2_atm   - co2_can  )
 
    if (abs(tstar) < 1.e-7) tstar = 0.
    if (abs(estar) < 1.e-7) estar = 0.

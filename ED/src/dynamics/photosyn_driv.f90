@@ -122,7 +122,7 @@ subroutine canopy_photosynthesis(csite,cmet,mzg,ipa,ed_ktrans,lsl,ntext_soil    
    if (las) then
       !----- We now loop over PFTs, not cohorts, skipping those we are not using. ---------!
       do ipft = 1, n_pft
-         if (include_pft(ipft) == 1)then
+         if (include_pft(ipft)) then
 
             !------------------------------------------------------------------------------!
             !    Scale photosynthetically active radiation per unit of leaf.               !
@@ -282,19 +282,6 @@ subroutine canopy_photosynthesis(csite,cmet,mzg,ipa,ed_ktrans,lsl,ntext_soil    
                cpatch%fsw(ico) = cpatch%water_supply(ico)                                  &
                                / max( 1.0e-20                                              &
                                     , cpatch%water_supply(ico) + cpatch%psi_open(ico))
-            case (2)
-               !---------------------------------------------------------------------------!
-               !    New method to determine the fraction of open stomata, this function    !
-               ! allows almost 100% of the stomata to remain open when demand is equal     !
-               ! to supply, about 50% when demand is twice the supply, and almost 0% and   !
-               ! demand becomes larger than three times the supply.                        !
-               !---------------------------------------------------------------------------!
-               if (cpatch%water_supply(ico) > 1.e-20) then
-                  cpatch%fsw(ico) = 0.5 * ( 1. - tanh( 2. * (cpatch%psi_open(ico)          &
-                                                            /cpatch%water_supply(ico)-2.)))
-               else
-                  cpatch%fsw(ico) = 0.0
-               end if
             end select
             !------------------------------------------------------------------------------!
 

@@ -1,6 +1,7 @@
 !==========================================================================================!
 !==========================================================================================!
 !     This module contains the Photosynthesis model.  The references are:                  !
+!                                                                                          !
 ! - M09 - Medvigy, D.M., S. C. Wofsy, J. W. Munger, D. Y. Hollinger, P. R. Moorcroft,      !
 !         2009: Mechanistic scaling of ecosystem function and dynamics in space and time:  !
 !         Ecosystem Demography model version 2.  J. Geophys. Res., 114, G01002,            !
@@ -18,6 +19,18 @@
 ! - L95 - Leuning, R., F. M. Kelliher, D. G. G. de Pury, E. D. Schulze, 1995: Leaf         !
 !         nitrogen, photosynthesis, conductance, and transpiration: scaling from leaves to !
 !         canopies. Plant, Cell, and Environ., 18, 1183-1200.                              !
+! - F80 - Farquhar, G. D., S. von Caemmerer, J. A. Berry, 1980: A biochemical model of     !
+!         photosynthetic  CO2 assimilation in leaves of C3 species. Planta, 149, 78-90.    !
+! - C91 - Collatz, G. J., J. T. Ball, C. Grivet, J. A. Berry, 1991: Physiology and         !
+!         environmental regulation of stomatal conductance, photosynthesis and transpir-   !
+!         ation: a model that includes a laminar boundary layer, Agric. and Forest         !
+!         Meteorol., 54, 107-136.                                                          !
+! - C92 - Collatz, G. J., M. Ribas-Carbo, J. A. Berry, 1992: Coupled photosynthesis-       !
+!         stomatal conductance model for leaves of C4 plants.  Aust. J. Plant Physiol.,    !
+!         19, 519-538.                                                                     !
+! - E78 - Ehleringer, J. R., 1978: Implications of quantum yield differences on the        !
+!         distributions of C3 and C4 grasses.  Oecologia, 31, 255-267.                     !
+!                                                                                          !
 !------------------------------------------------------------------------------------------!
 module farq_leuning
 
@@ -82,6 +95,17 @@ module farq_leuning
                                 , Vm0                      & ! intent(in)
                                 , vm_low_temp              & ! intent(in)
                                 , vm_high_temp             & ! intent(in)
+                                , vm_hor                   & ! intent(in)
+                                , vm_q10                   & ! intent(in)
+                                , vm_decay_a               & ! intent(in)
+                                , vm_decay_b               & ! intent(in)
+                                , vm_decay_e               & ! intent(in)
+                                , Rd0                      & ! intent(in)
+                                , rd_low_temp              & ! intent(in)
+                                , rd_high_temp             & ! intent(in)
+                                , rd_hor                   & ! intent(in)
+                                , rd_q10                   & ! intent(in)
+                                , rd_decay_e               & ! intent(in)
                                 , cuticular_cond           & ! intent(in)
                                 , dark_respiration_factor  & ! intent(in)
                                 , stomatal_slope           & ! intent(in)
@@ -91,14 +115,11 @@ module farq_leuning
                                 , vm_amp                   & ! intent(in)
                                 , vm_min                   ! ! intent(in)
       use physiology_coms, only : istoma_scheme            & ! intent(in)
-                                , compp_refkin8            & ! intent(in)
-                                , compp_ecoeff8            & ! intent(in)
                                 , c34smin_lint_co28        & ! intent(in)
                                 , c34smax_lint_co28        & ! intent(in)
                                 , gbh_2_gbw8               & ! intent(in)
                                 , gbw_2_gbc8               & ! intent(in)
-                                , o2_ref8                  & ! intent(in)
-                                , quantum_efficiency_T     ! ! intent(in)
+                                , o2_ref8                  ! ! intent(in)
       use therm_lib8     , only : rslif8                   ! ! function
       use consts_coms    , only : mmh2oi8                  & ! intent(in)
                                 , mmh2o8                   & ! intent(in)
@@ -148,51 +169,6 @@ module farq_leuning
 
       !----- Initialise limit_flag to night time value. -----------------------------------!
       limit_flag = 0
-
-
-      !------------------------------------------------------------------------------------!
-      !     Load physiological parameters that are PFT-dependent to the thispft structure. !
-      ! Convert all variables to mol and Kelvin, when needed.                              !
-      !------------------------------------------------------------------------------------!
-      thispft%photo_pathway = photosyn_pathway(ipft)
-      thispft%D0            = dble(D0(ipft))
-      thispft%b             = dble(cuticular_cond(ipft)) * umol_2_mol8
-      thispft%gamma         = dble(dark_respiration_factor(ipft))
-      thispft%m             = dble(stomatal_slope(ipft))
-      thispft%vm_low_temp   = dble(vm_low_temp(ipft))  + t008
-      thispft%vm_high_temp  = dble(vm_high_temp(ipft)) + t008
-      
-      !------------------------------------------------------------------------------------!
-      !    Is alpha (quantum efficiency) temperature dependent?  If so, calculate after    !
-      !    Ehlringer and Ollebjorkman 1977, if not use default value from ed_params                                                   !
-      !------------------------------------------------------------------------------------!
-      select case(quantum_efficiency_T)
-      case(1)
-           select case (thispft%photo_pathway)
-           case (4)
-               thispft%alpha         = dble(quantum_efficiency(ipft))       
-           case (3)       
-               thispft%alpha         = dble(-0.0016*(dble(veg_temp)-t008)+0.1040)
-           end select
-      case default
-            thispft%alpha         = dble(quantum_efficiency(ipft))      
-      end select
-      
-      !------------------------------------------------------------------------------------!
-      !     Find Vm0 for photosynthesis and respiration, depending on whether this PFT     !
-      ! has a light-controlled phenology or not.  Convert the resulting Vm into mol/m²/s.  !
-      !------------------------------------------------------------------------------------!
-      select case(phenology(ipft))
-      case (3)
-         !------ Light-controlled phenology. ----------------------------------------------!
-         thispft%vm0_photo = dble(vm_amp / (1.0 + (llspan/vm_tran)**vm_slop) + vm_min)     &
-                           * umol_2_mol8
-         thispft%vm0_resp  = dble(vm_bar) * umol_2_mol8
-      case default
-         !------ Other phenologies, no distinction on Vm0. --------------------------------!
-         thispft%vm0_photo = dble(vm0(ipft)) * umol_2_mol8
-         thispft%vm0_resp  = dble(vm0(ipft)) * umol_2_mol8
-      end select
       !------------------------------------------------------------------------------------!
 
 
@@ -228,26 +204,66 @@ module farq_leuning
       met%blyr_cond_h2o = dble(gbw)  * mmdryi8 * effarea_transp(ipft)
       met%blyr_cond_co2 = gbw_2_gbc8 * met%blyr_cond_h2o
       !------------------------------------------------------------------------------------!
-      !  7. Find the compensation point (Gamma) for this temperature.  I am not sure about !
-      !     this one, but from F96's paragraph after equation (7), it seems C4 grasses     !
-      !     should have the compensation point set to 0.                                   !
+
+
+
       !------------------------------------------------------------------------------------!
-      select case (thispft%photo_pathway)
+      !     Load physiological parameters that are PFT-dependent to the thispft structure. !
+      ! Convert all variables to mol and Kelvin, when needed.                              !
+      !------------------------------------------------------------------------------------!
+      thispft%photo_pathway = photosyn_pathway(ipft)
+      thispft%D0            = dble(D0(ipft))
+      thispft%b             = dble(cuticular_cond(ipft)) * umol_2_mol8
+      thispft%m             = dble(stomatal_slope(ipft))
+      thispft%vm_low_temp   = dble(vm_low_temp(ipft))  + t008
+      thispft%vm_high_temp  = dble(vm_high_temp(ipft)) + t008
+      thispft%vm_hor        = dble(vm_hor(ipft))
+      thispft%vm_q10        = dble(vm_q10(ipft))
+      thispft%vm_decay_a    = dble(vm_decay_a(ipft))
+      thispft%vm_decay_b    = dble(vm_decay_b(ipft))
+      thispft%vm_decay_e    = dble(vm_decay_e(ipft))
+      thispft%rd_low_temp   = dble(rd_low_temp(ipft))  + t008
+      thispft%rd_high_temp  = dble(rd_high_temp(ipft)) + t008
+      thispft%rd_hor        = dble(rd_hor(ipft))
+      thispft%rd_q10        = dble(rd_q10(ipft))
+      thispft%rd_decay_e    = dble(rd_decay_e(ipft))
+      thispft%alpha0        = dble(quantum_efficiency(ipft))
+      !------------------------------------------------------------------------------------!
+
+
+
+
+      !------------------------------------------------------------------------------------!
+      !     Find Vm0 for photosynthesis and respiration, depending on whether this PFT     !
+      ! has a light-controlled phenology or not.  Convert the resulting Vm into mol/m²/s.  !
+      !------------------------------------------------------------------------------------!
+      select case(phenology(ipft))
       case (3)
-         met%compp    = met%can_o2                                                         &
-                      / (2.d0 * arrhenius(met%leaf_temp,compp_refkin8,compp_ecoeff8))
-      case (4)
-         met%compp    = 0.d0
+         !------ Light-controlled phenology. ----------------------------------------------!
+         thispft%vm0 = dble(vm_amp / (1.0 + (llspan/vm_tran)**vm_slop) + vm_min)           &
+                     * umol_2_mol8
+         thispft%rd0 = dble(vm_bar) * umol_2_mol8 * dble(dark_respiration_factor(ipft))
+      case default
+         !------ Other phenologies, no distinction on Vm0. --------------------------------!
+         thispft%vm0 = dble(vm0(ipft)) * umol_2_mol8
+         thispft%rd0 = dble(rd0(ipft)) * umol_2_mol8
       end select
       !------------------------------------------------------------------------------------!
 
 
 
       !------------------------------------------------------------------------------------!
-      !     Compute the maximum capacity of Rubisco to perform the carboxylase function    !
-      ! (M09's Vm function).                                                               !
+      !     Compute the photosynthesis and leaf respiration parameters that depend on      !
+      ! temperature, according to the parameters defined in the "thispft" structure and    !
+      ! the functional form chosen by the user.  The variables that are defined there are: !
+      ! - alpha     - the quantum yield, which may be a function of temperature.           !
+      ! - Vm        - the maximum capacity of Rubisco to perform the carboxylase function. !
+      ! - leaf_resp - the leaf respiration.                                                !
+      ! - compp     - the CO2 compensation point for gross photosynthesis (Gamma*)         !
+      ! - kco2      - Michaelis-Mentel coefficient for CO2                                 !
+      ! - ko2       - Michaelis-Mentel coefficient for O2.                                 !
       !------------------------------------------------------------------------------------!
-      call comp_maxcap_rubisco(ipft,leaf_aging_factor,green_leaf_factor)
+      call comp_photo_tempfun(ipft,leaf_aging_factor,green_leaf_factor)
       !------------------------------------------------------------------------------------!
 
 
@@ -299,7 +315,7 @@ module farq_leuning
       !----- Maximum Rubisco capacity to perform the carboxylase function [µmol/m²/s]. ----!
       vmout           = sngloff(aparms%vm             * mol_2_umol8 , tiny_offset)
       !----- Gross photosynthesis compensation point, convert it to [µmol/mol]. -----------!
-      comppout        = sngloff(met%compp             * mol_2_umol8 , tiny_offset)
+      comppout        = sngloff(aparms%compp          * mol_2_umol8 , tiny_offset)
       !------------------------------------------------------------------------------------!
       return
    end subroutine lphysiol_full
@@ -319,22 +335,47 @@ module farq_leuning
    ! average reference value of the Vm function (Vm0).  The output variables are stored in !
    ! the aparms structure, as they are going to be used in other sub-routines. Both Vm and !
    ! the reference value Vm0 have units of µmol/m²/s                                       !
+   !     Compute the photosynthesis and leaf respiration parameters that depend on temper- !
+   ! ature, according to the parameters defined in the "thispft" structure and the         !
+   ! functional form chosen by the user.  The variables that are defined there are:        !
+   ! - alpha     - the quantum yield, which may be a function of temperature.              !
+   ! - Vm        - the maximum capacity of Rubisco to perform the carboxylase function.    !
+   ! - leaf_resp - the leaf respiration.                                                   !
+   ! - compp     - the CO2 compensation point for gross photosynthesis (Gamma*)            !
+   ! - kco2      - Michaelis-Mentel coefficient for CO2                                    !
+   ! - ko2       - Michaelis-Mentel coefficient for O2.                                    !
    !---------------------------------------------------------------------------------------!
-   subroutine comp_maxcap_rubisco(ipft,leaf_aging_factor,green_leaf_factor)
-      use physiology_coms, only : vm_ecoeff8       & ! intent(in)
-                                , vm_tempcoeff8    ! ! intent(in)
-      use c34constants   , only : met              & ! intent(in) 
-                                , aparms           & ! intent(in)
-                                , thispft          ! ! intent(in)
-      use consts_coms    , only : lnexp_min8       & ! intent(in)
-                                , lnexp_max8       ! ! intent(in)
+   subroutine comp_photo_tempfun(ipft,leaf_aging_factor,green_leaf_factor)
+      use physiology_coms, only : iphysiol              & ! intent(in)
+                                , quantum_efficiency_T  & ! intent(in)
+                                , qyield08              & ! intent(in)
+                                , qyield18              & ! intent(in)
+                                , qyield28              & ! intent(in)
+                                , ehleringer_alpha0c8   & ! intent(in)
+                                , compp_refval8         & ! intent(out)
+                                , compp_hor8            & ! intent(out)
+                                , compp_q108            & ! intent(out)
+                                , kco2_refval8          & ! intent(out)
+                                , kco2_hor8             & ! intent(out)
+                                , kco2_q108             & ! intent(out)
+                                , ko2_refval8           & ! intent(out)
+                                , ko2_hor8              & ! intent(out)
+                                , ko2_q108              ! ! intent(out)
+      use c34constants   , only : met                   & ! intent(in) 
+                                , aparms                & ! intent(in)
+                                , thispft               ! ! intent(in)
+      use consts_coms    , only : lnexp_min8            & ! intent(in)
+                                , lnexp_max8            & ! intent(in)
+                                , rmol8                 & ! intent(in)
+                                , t008                  ! ! intent(in)
       implicit none
       !------ Arguments. ------------------------------------------------------------------!
       integer     , intent(in) :: ipft              ! PFT type.                 [      ---]
       real(kind=4), intent(in) :: leaf_aging_factor ! Ageing factor             [      ---]
       real(kind=4), intent(in) :: green_leaf_factor ! Greeness (prescr. phen.)  [      ---]
       !------ Local variables. ------------------------------------------------------------!
-      real(kind=8)             :: vm_resp           ! Vm  for leaf respiration  [ mol/m²/s]
+      real(kind=8)             :: vm_nocorr         ! Vm  with no correction    [ mol/m²/s]
+      real(kind=8)             :: rd_nocorr         ! Rd  with no correction    [ mol/m²/s]
       real(kind=8)             :: lnexplow          ! Low temperature exponent  [      ---]
       real(kind=8)             :: lnexphigh         ! High temperature exponent [      ---]
       real(kind=8)             :: tlow_fun          ! Low temperature bound     [      ---]
@@ -353,45 +394,206 @@ module farq_leuning
       else
          greeness = 1.d0
       end if
-
-
-
-      !------------------------------------------------------------------------------------!
-      !    Compute the functions that will control the Vm function for low and high tem-   !
-      ! perature.  In order to avoid floating point exceptions, we check whether the       !
-      ! temperature will make the exponential too large or too small.                      !
-      !------------------------------------------------------------------------------------!
-      !----- Low temperature. -------------------------------------------------------------!
-      lnexplow  = vm_tempcoeff8 * (thispft%vm_low_temp  - met%leaf_temp)
-      lnexplow  = max(lnexp_min8,min(lnexp_max8,lnexplow))
-      tlow_fun  = 1.d0 +  exp(lnexplow)
-      !----- High temperature. ------------------------------------------------------------!
-      lnexphigh = vm_tempcoeff8 * (met%leaf_temp - thispft%vm_high_temp)
-      lnexphigh = max(lnexp_min8,min(lnexp_max8,lnexphigh))
-      thigh_fun = 1.d0 + exp(lnexphigh)
-      !------------------------------------------------------------------------------------!
-
-
-
-      !----- Compute Vm for photosynthesis, using M09's equation (B3). --------------------!
-      aparms%vm = greeness * arrhenius(met%leaf_temp,thispft%vm0_photo,vm_ecoeff8)         &
-                / (tlow_fun * thigh_fun)
       !------------------------------------------------------------------------------------!
 
 
 
       !------------------------------------------------------------------------------------!
-      !     Compute Vm and the leaf respiration.  The vm_resp factor will be different     !
-      ! from vm_photo only for the light-controlled phenology case.                        !
+      !    Decide whether to make alpha dependent on temperature or not.  This is only     !
+      ! done for C3 plants, C4 plants always have constant alpha in our model.             !
       !------------------------------------------------------------------------------------!
-      vm_resp          = greeness * arrhenius(met%leaf_temp,thispft%vm0_resp,vm_ecoeff8)   &
-                       / (tlow_fun * thigh_fun)
-      aparms%leaf_resp = vm_resp * thispft%gamma
+      select case (thispft%photo_pathway)
+      case (3)
+         select case(quantum_efficiency_T)
+         case (0)
+            !----- The user wants constant alpha for C3 plants. ---------------------------!
+            aparms%alpha = thispft%alpha0
+
+         case (1)
+            !------------------------------------------------------------------------------!
+            !    The user wants alpha as a function of temperature.  The equation below is !
+            ! equation 2 from E78, modified to take in temperature in Kelvin.              !
+            !------------------------------------------------------------------------------!
+            if (met%leaf_temp > t008) then
+               aparms%alpha = qyield08                                                     &
+                            + met%leaf_temp * (qyield18   + qyield28 * met%leaf_temp)
+            else
+               !---------------------------------------------------------------------------!
+               !     We don't apply the equation when the temperature is below freezing.   !
+               ! If this is the case, we use the value at 0 degC instead.                  !
+               !---------------------------------------------------------------------------!
+               aparms%alpha = ehleringer_alpha0c8
+            end if
+            !------------------------------------------------------------------------------!
+         end select
+
+      case (4)
+         aparms%alpha = thispft%alpha0
+
+      end select
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !     Here we decide which temperature-dependence to use, the "Arrhenius" form as in !
+      ! F96, or the power law as in C91.                                                   !
+      !------------------------------------------------------------------------------------!
+      select case (iphysiol)
+      case (0,1)
+         !---------------------------------------------------------------------------------!
+         !     We go for the "Arrhenius" form, like in F96 and M01.                        !
+         !---------------------------------------------------------------------------------!
+
+
+         !----- Find Vm using the Arrhenius equation, with no correction. -----------------!
+         vm_nocorr = greeness * arrhenius(met%leaf_temp,thispft%vm0,thispft%vm_hor)
+         !---------------------------------------------------------------------------------!
+
+
+         !---------------------------------------------------------------------------------!
+         !    Compute the functions that will control the Vm function for low and high     !
+         ! temperature.  In order to avoid floating point exceptions, we check whether the !
+         ! temperature will make the exponential too large or too small.                   !
+         !---------------------------------------------------------------------------------!
+         !----- Low temperature. ----------------------------------------------------------!
+         lnexplow  = thispft%vm_decay_e * (thispft%vm_low_temp  - met%leaf_temp)
+         lnexplow  = max(lnexp_min8,min(lnexp_max8,lnexplow))
+         tlow_fun  = 1.d0 +  exp(lnexplow)
+         !----- High temperature. ---------------------------------------------------------!
+         lnexphigh = thispft%vm_decay_e * (met%leaf_temp - thispft%vm_high_temp)
+         lnexphigh = max(lnexp_min8,min(lnexp_max8,lnexphigh))
+         thigh_fun = 1.d0 + exp(lnexphigh)
+         !---------------------------------------------------------------------------------!
+
+
+         !------ Correct Vm. --------------------------------------------------------------!
+         aparms%vm = vm_nocorr / (tlow_fun * thigh_fun)
+         !---------------------------------------------------------------------------------!
+
+
+         !----- Find Rd using the Arrhenius equation, with no correction. -----------------!
+         rd_nocorr = greeness * arrhenius(met%leaf_temp,thispft%rd0,thispft%rd_hor)
+         !---------------------------------------------------------------------------------!
+
+
+         !---------------------------------------------------------------------------------!
+         !    Compute the functions that will control the rd function for low and high     !
+         ! temperature.  In order to avoid floating point exceptions, we check whether the !
+         ! temperature will make the exponential too large or too small.                   !
+         !---------------------------------------------------------------------------------!
+         !----- Low temperature. ----------------------------------------------------------!
+         lnexplow  = thispft%rd_decay_e * (thispft%rd_low_temp  - met%leaf_temp)
+         lnexplow  = max(lnexp_min8,min(lnexp_max8,lnexplow))
+         tlow_fun  = 1.d0 +  exp(lnexplow)
+         !----- High temperature. ---------------------------------------------------------!
+         lnexphigh = thispft%rd_decay_e * (met%leaf_temp - thispft%rd_high_temp)
+         lnexphigh = max(lnexp_min8,min(lnexp_max8,lnexphigh))
+         thigh_fun = 1.d0 + exp(lnexphigh)
+         !---------------------------------------------------------------------------------!
+
+
+         !------ Correct rd. --------------------------------------------------------------!
+         aparms%leaf_resp = rd_nocorr / (tlow_fun * thigh_fun)
+         !---------------------------------------------------------------------------------!
+
+
+         !---------------------------------------------------------------------------------!
+         !    If this is a C3 plant, find the compensation point, and the Michaelis-Mentel !
+         ! constants for CO2 and O2.  Otherwise, assign zeroes for compensation point and  !
+         ! the Michaelis-Mentel constant for CO2.  The oxygen one should have no impact,   !
+         ! but we always assign it to avoid divisions by zero.                             !
+         !---------------------------------------------------------------------------------!
+         select case (thispft%photo_pathway)
+         case (3)
+            aparms%compp = arrhenius(met%leaf_temp,compp_refval8,compp_hor8)
+            aparms%kco2  = arrhenius(met%leaf_temp,kco2_refval8 ,kco2_hor8 )
+         case (4)
+            aparms%compp = 0.d0
+            aparms%kco2  = 0.d0
+         end select
+         aparms%ko2   = arrhenius(met%leaf_temp,ko2_refval8,ko2_hor8)
+         !---------------------------------------------------------------------------------!
+
+
+
+
+      case (2,3)
+         !---------------------------------------------------------------------------------!
+         !     We go for the power law, as in C91/C92.                                     !
+         !---------------------------------------------------------------------------------!
+
+
+         !----- Find Vm using the Collatz equation, with no correction. -------------------!
+         vm_nocorr = greeness * collatz(met%leaf_temp,thispft%vm0,thispft%vm_q10)
+         !---------------------------------------------------------------------------------!
+
+
+         !---------------------------------------------------------------------------------!
+         !    Compute the functions that will control the Vm function for high temper-     !
+         ! ature.  In order to avoid floating point exceptions, we check whether the       !
+         ! temperature will make the exponential too small or too large.                   !
+         !---------------------------------------------------------------------------------!
+         !----- High temperature. ---------------------------------------------------------!
+         lnexphigh = ( - thispft%vm_decay_a + thispft%vm_decay_b * met%leaf_temp)             &
+                   / (rmol8 * met%leaf_temp)
+         lnexphigh = max(lnexp_min8,min(lnexp_max8,lnexphigh))
+         thigh_fun = 1 + exp(lnexphigh)
+         !---------------------------------------------------------------------------------!
+
+
+         !------ Correct Vm. --------------------------------------------------------------!
+         aparms%vm = vm_nocorr / thigh_fun
+         !---------------------------------------------------------------------------------!
+
+
+         !----- Find Rd using the Collatz equation, with no correction. -------------------!
+         rd_nocorr = greeness * collatz(met%leaf_temp,thispft%rd0,thispft%rd_q10)
+         !---------------------------------------------------------------------------------!
+
+
+         !---------------------------------------------------------------------------------!
+         !    Compute the functions that will control the rd function for low and high     !
+         ! temperature.  In order to avoid floating point exceptions, we check whether the !
+         ! temperature will make the exponential too large or too small.                   !
+         !---------------------------------------------------------------------------------!
+         !----- Low temperature. ----------------------------------------------------------!
+         lnexplow  = thispft%rd_decay_e * (thispft%rd_low_temp  - met%leaf_temp)
+         lnexplow  = max(lnexp_min8,min(lnexp_max8,lnexplow))
+         tlow_fun  = 1.d0 +  exp(lnexplow)
+         !----- High temperature. ---------------------------------------------------------!
+         lnexphigh = thispft%rd_decay_e * (met%leaf_temp - thispft%rd_high_temp)
+         lnexphigh = max(lnexp_min8,min(lnexp_max8,lnexphigh))
+         thigh_fun = 1.d0 + exp(lnexphigh)
+         !---------------------------------------------------------------------------------!
+
+         !------ Correct rd. --------------------------------------------------------------!
+         aparms%leaf_resp = rd_nocorr / (tlow_fun * thigh_fun)
+         !---------------------------------------------------------------------------------!
+
+
+         !---------------------------------------------------------------------------------!
+         !    If this is a C3 plant, find the compensation point, and the Michaelis-Mentel !
+         ! constants for CO2 and O2.  Otherwise, assign zeroes for compensation point and  !
+         ! the Michaelis-Mentel constant for CO2.  The oxygen one should have no impact,   !
+         ! but we always assign it to avoid divisions by zero.                             !
+         !---------------------------------------------------------------------------------!
+         select case (thispft%photo_pathway)
+         case (3)
+            aparms%compp = collatz(met%leaf_temp,compp_refval8,compp_q108)
+            aparms%kco2  = collatz(met%leaf_temp,kco2_refval8 ,kco2_q108 )
+         case (4)
+            aparms%compp = 0.d0
+            aparms%kco2  = 0.d0
+         end select
+         aparms%ko2   = collatz(met%leaf_temp,ko2_refval8,ko2_q108)
+         !---------------------------------------------------------------------------------!
+      end select
       !------------------------------------------------------------------------------------!
 
 
       return
-   end subroutine comp_maxcap_rubisco
+   end subroutine comp_photo_tempfun
    !=======================================================================================!
    !=======================================================================================!
 
@@ -680,7 +882,7 @@ module farq_leuning
          !     Carbon demand is positive, look for a solution.                             !
          !---------------------------------------------------------------------------------!
          !----- Find auxiliary coefficients to compute the quadratic terms. ---------------!
-         qterm1 = (met%can_co2 - met%compp) * met%blyr_cond_co2 - answer%co2_demand
+         qterm1 = (met%can_co2 - aparms%compp) * met%blyr_cond_co2 - answer%co2_demand
          qterm2 = (thispft%d0 + met%lint_shv - met%can_shv) * met%blyr_cond_h2o
          qterm3 = thispft%m * answer%co2_demand * thispft%d0 * met%blyr_cond_co2
          !----- Find the coefficients for the quadratic equation. -------------------------!
@@ -1116,18 +1318,11 @@ module farq_leuning
       use c34constants   , only : aparms       & ! intent(inout)
                                 , thispft      & ! intent(in)
                                 , met          ! ! intent(in)
-      use physiology_coms, only : kco2_prefac8 & ! intent(in)
-                                , kco2_ecoeff8 & ! intent(in)
-                                , ko2_prefac8  & ! intent(in)
-                                , ko2_ecoeff8  & ! intent(in)
-                                , klowco28     ! ! intent(in)
+      use physiology_coms, only : klowco28     ! ! intent(in)
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
       character(len=*), intent(in) :: whichlim      ! A flag telling which case we are
                                                     !   about to solve
-      !----- Local variables. -------------------------------------------------------------!
-      real(kind=8)                 :: kco2          ! K1 term from M01's equation A1
-      real(kind=8)                 :: ko2           ! K2 term from M01's equation A1
       !------------------------------------------------------------------------------------!
 
 
@@ -1155,20 +1350,18 @@ module farq_leuning
             select case (trim(whichlim))
             case ('LIGHT')
                !---- Light-limited case. --------------------------------------------------!
-               aparms%rho   =  thispft%alpha * met%par
-               aparms%sigma = -thispft%alpha * met%par * met%compp
+               aparms%rho   =  aparms%alpha * met%par
+               aparms%sigma = -aparms%alpha * met%par * aparms%compp
                aparms%xi    = 1.d0
-               aparms%tau   = 2.d0 * met%compp
+               aparms%tau   = 2.d0 * aparms%compp
                aparms%nu    = -aparms%leaf_resp
 
             case ('RUBISCO')
                !----- Rubisco-limited rate of photosynthesis case. ------------------------!
                aparms%rho   =  aparms%vm
-               aparms%sigma = -aparms%vm * met%compp
+               aparms%sigma = -aparms%vm * aparms%compp
                aparms%xi    = 1.d0
-               kco2         = arrhenius(met%leaf_temp, kco2_prefac8, kco2_ecoeff8)
-               ko2          = arrhenius(met%leaf_temp, ko2_prefac8, ko2_ecoeff8)
-               aparms%tau   = kco2 * (1.d0 + met%can_o2 / ko2)
+               aparms%tau   = aparms%kco2 * (1.d0 + met%can_o2 / aparms%ko2)
                aparms%nu    = -aparms%leaf_resp
             !------------------------------------------------------------------------------!
 
@@ -1190,7 +1383,7 @@ module farq_leuning
             case ('LIGHT')
                !----- Light-limited case. -------------------------------------------------!
                aparms%rho   = 0.d0
-               aparms%sigma = thispft%alpha * met%par
+               aparms%sigma = aparms%alpha * met%par
                aparms%xi    = 0.d0
                aparms%tau   = 1.d0
                aparms%nu    = - aparms%leaf_resp
@@ -1241,6 +1434,7 @@ module farq_leuning
    !---------------------------------------------------------------------------------------!
    subroutine iter_solver_step(newton,lint_co2,fun,deriv)
       use c34constants, only : thispft & ! intent(in)
+                             , aparms  & ! intent(in)
                              , met     ! ! intent(in)
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
@@ -1274,7 +1468,7 @@ module farq_leuning
       !     Find the function components, then the function evaluation.                    !
       !------------------------------------------------------------------------------------!
       efun1 = (stom_cond_h2o - thispft%b) / (thispft%m * co2_demand)
-      efun2 = (met%can_co2 - met%compp - co2_demand/met%blyr_cond_co2)
+      efun2 = (met%can_co2 - aparms%compp - co2_demand/met%blyr_cond_co2)
       efun3 = 1.d0 + ( met%blyr_cond_h2o * (met%lint_shv - met%can_shv)                    &
                      / (thispft%d0 * (met%blyr_cond_h2o + stom_cond_h2o)))
       fun   = efun1 * efun2 * efun3 - 1.d0
@@ -1609,8 +1803,8 @@ module farq_leuning
       !     The actual bounds are slightly squeezed so the edges will not be at the the    !
       ! singularities.                                                                     !
       !------------------------------------------------------------------------------------!
-      cimin = ciroot1 + 1.d-3 * (ciroot2 - ciroot1)
-      cimax = ciroot2 - 1.d-3 * (ciroot2 - ciroot1)
+      cimin = ciroot1 + 1.d-5 * (ciroot2 - ciroot1)
+      cimax = ciroot2 - 1.d-5 * (ciroot2 - ciroot1)
       !------------------------------------------------------------------------------------!
 
 
@@ -1648,19 +1842,19 @@ module farq_leuning
    !=======================================================================================!
    !=======================================================================================!
    !      This is the Arrhenius function, written as a function of a reference temper-     !
-   ! ature, given by tarrh8.  The output variable will have the same unit as the pre-      !
-   ! factor coefficient.                                                                   !
+   ! ature, given by tphysref8.  The output variable will have the same unit as the        !
+   ! reference value.                                                                      !
    !---------------------------------------------------------------------------------------!
-   real(kind=8) function arrhenius(temp,prefactor,expcoeff)
-      use physiology_coms, only : tarrhi8    ! ! intent(in)
+   real(kind=8) function arrhenius(temp,refval,hor)
+      use physiology_coms, only : tphysrefi8 ! ! intent(in)  
       use consts_coms    , only : lnexp_min8 ! ! intent(in)
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
-      real(kind=8), intent(in) :: temp      ! Temperature                           [    K]
-      real(kind=8), intent(in) :: prefactor ! Pre-factor coefficient                [  any]
-      real(kind=8), intent(in) :: expcoeff  ! Exponential coefficient               [    K]
+      real(kind=8), intent(in) :: temp   ! Temperature                              [    K]
+      real(kind=8), intent(in) :: refval ! Reference value at T=Tphysref            [  any]
+      real(kind=8), intent(in) :: hor    ! "Activation energy" / Gas constant       [    K]
       !----- Local variables. -------------------------------------------------------------!
-      real(kind=8)             :: lnexp     ! Term that will go to the exponential  [  ---]
+      real(kind=8)             :: lnexp  ! Term that will go to the exponential     [  ---]
       !------------------------------------------------------------------------------------!
 
 
@@ -1669,7 +1863,7 @@ module farq_leuning
       !     Find the term that goes to the exponential term, and check its size.  This is  !
       ! to avoid floating point exceptions due to overflow or underflow.                   !
       !------------------------------------------------------------------------------------!
-      lnexp = expcoeff * (tarrhi8 - 1.d0/temp)
+      lnexp = hor * (tphysrefi8 - 1.d0/temp)
       !------------------------------------------------------------------------------------!
 
 
@@ -1681,12 +1875,46 @@ module farq_leuning
       if (lnexp < lnexp_min8) then
          arrhenius = 0.d0
       else
-         arrhenius = prefactor * exp(lnexp)
+         arrhenius = refval * exp(lnexp)
       end if
       !------------------------------------------------------------------------------------!
 
       return
    end function arrhenius
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !      This is the temperature-dependence for the physiology parameters, represented as !
+   ! in function, written as a in Collatz et al. (1991).                                   !
+   ! The output variable will have the same unit as the reference value at tphysref.       !
+   !---------------------------------------------------------------------------------------!
+   real(kind=8) function collatz(temp,refval,q10)
+      use physiology_coms, only : tphysref8  & ! intent(in)
+                                , fcoll8     ! ! intent(in)
+      implicit none
+      !----- Arguments. -------------------------------------------------------------------!
+      real(kind=8), intent(in) :: temp      ! Temperature                           [    K]
+      real(kind=8), intent(in) :: refval    ! Pre-factor coefficient                [  any]
+      real(kind=8), intent(in) :: q10       ! Exponential coefficient               [    K]
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !     If the exponential factor is tiny, make it zero, otherwise compute the actual  !
+      ! function.                                                                          !
+      !------------------------------------------------------------------------------------!
+      collatz = refval * q10 ** (fcoll8 * (temp - tphysref8))
+      !------------------------------------------------------------------------------------!
+
+      return
+   end function collatz
    !=======================================================================================!
    !=======================================================================================!
 
@@ -1707,9 +1935,9 @@ module farq_leuning
       use physiology_coms, only : gsw_2_gsc8
       implicit none
       
-      find_twilight_min = ( thispft%gamma * aparms%vm * (met%can_co2 + 2.d0 * met%compp)   &
-                                                      / (met%can_co2 -        met%compp) ) &
-                        / thispft%alpha
+      find_twilight_min = ( aparms%leaf_resp  * (met%can_co2 + 2.d0 * aparms%compp) )      &
+                        / ( aparms%alpha      * (met%can_co2 -        aparms%compp) )
+                        
 
       return
    end function find_twilight_min

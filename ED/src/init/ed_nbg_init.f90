@@ -160,9 +160,9 @@ subroutine init_nbg_cohorts(csite,lsl,ipa_a,ipa_z)
          !---------------------------------------------------------------------------------!
          select case (csite%dist_type(ipa))
          case (1)   !---- Agriculture. ----------------------------------------------------!
-            mypfts = sum(include_pft_ag)
+            mypfts = count(include_pft_ag)
          case (2,3) !---- Secondary or primary forest. ------------------------------------!
-            mypfts= sum(include_pft)
+            mypfts = count(include_pft)
          end select
          !---------------------------------------------------------------------------------!
       end select
@@ -181,14 +181,14 @@ subroutine init_nbg_cohorts(csite,lsl,ipa_a,ipa_z)
          select case (csite%dist_type(ipa))
          case (1)
             !----- Agriculture, only the ones allowed are included. -----------------------!
-            if (include_pft_ag(ipft) == 1) then
+            if (include_pft_ag(ipft)) then
                ico = ico + 1
             else
                cycle pftloop
             end if
          case (2,3)
             !----- Forest, only the ones allowed are included. ----------------------------!
-            if (include_pft(ipft) == 1) then
+            if (include_pft(ipft)) then
                ico = ico + 1
             else
                cycle pftloop
@@ -330,7 +330,7 @@ subroutine init_cohorts_by_layers(csite,lsl,ipa_a,ipa_z)
    patchloop: do ipa=ipa_a,ipa_z
       cpatch => csite%patch(ipa)
 
-      if (sum(include_pft) /= 1) then
+      if (count (include_pft) /= 1) then
          call fatal_error('Multi-layer run cannot be run with more than 1 PFT...'          &
                          ,'init_cohorts_by_layers','ed_nbg_init.f90')
       end if

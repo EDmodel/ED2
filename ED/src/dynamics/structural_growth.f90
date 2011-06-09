@@ -840,7 +840,7 @@ subroutine compute_C_and_N_storage(cgrid,ipy, soil_C, soil_N, veg_C, veg_N)
 
          !----- Loop over PFT so we account for veg carbon/nitrogen in repro arrays. ------!
          pftloop: do ipft = 1, n_pft
-            if (include_pft(ipft) == 1) then
+            if (include_pft(ipft)) then
                veg_C8 = veg_C8 + dble(csite%repro(ipft,ipa)) * area_factor
                veg_N8 = veg_N8 + dble(csite%repro(ipft,ipa))                               &
                                / dble(c2n_recruit(ipft)) * area_factor

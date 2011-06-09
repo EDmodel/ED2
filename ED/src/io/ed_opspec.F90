@@ -1047,13 +1047,16 @@ subroutine ed_opspec_misc
                                     , maxpatch                     & ! intent(in)
                                     , maxcohort                    ! ! intent(in)
    use grid_coms             , only : ngrids                       ! ! intent(in)
-   use physiology_coms       , only : istoma_scheme                & ! intent(in)
+   use physiology_coms       , only : iphysiol                     & ! intent(in)
+                                    , istoma_scheme                & ! intent(in)
                                     , h2o_plant_lim                & ! intent(in)
                                     , n_plant_lim                  & ! intent(in)
                                     , vmfact                       & ! intent(in)
                                     , mfact                        & ! intent(in)
                                     , kfact                        & ! intent(in)
                                     , gamfact                      & ! intent(in)
+                                    , d0fact                       & ! intent(in)
+                                    , alphafact                    & ! intent(in)
                                     , lwfact                       & ! intent(in)
                                     , thioff                       & ! intent(in)
                                     , quantum_efficiency_T         ! ! intent(in)
@@ -1298,9 +1301,9 @@ end do
       ifaterr = ifaterr +1
    end if
 
-   if (isoilbc < 0 .or. isoilbc > 3) then
+   if (isoilbc < 0 .or. isoilbc > 4) then
       write (reason,fmt='(a,1x,i4,a)')                                                     &
-        'Invalid ISOILBC, it must be between 0 and 3. Yours is set to',isoilbc,'...'
+        'Invalid ISOILBC, it must be between 0 and 4. Yours is set to',isoilbc,'...'
       call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
    end if
@@ -1342,6 +1345,14 @@ end do
    end select
    !---------------------------------------------------------------------------------------!
 
+   if (iphysiol < 0 .or. iphysiol > 3) then
+      write (reason,fmt='(a,1x,i4,a)')                                                     &
+                    'Invalid IPHYSIOL, it must be between 0 and 3. Yours is set to'        &
+                    ,iphysiol,'...'
+      call opspec_fatal(reason,'opspec_misc')
+      ifaterr = ifaterr +1
+   end if
+
    if (istoma_scheme < 0 .or. istoma_scheme > 1) then
       write (reason,fmt='(a,1x,i4,a)')                                                     &
                     'Invalid ISTOMA_SCHEME, it must be between 0 and 1. Yours is set to'   &
@@ -1381,9 +1392,9 @@ end do
       call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
    end if  
-   if (h2o_plant_lim < 0 .or. h2o_plant_lim > 2) then
+   if (h2o_plant_lim < 0 .or. h2o_plant_lim > 1) then
       write (reason,fmt='(a,1x,i4,a)')                                                     &
-                    'Invalid H2O_PLANT_LIM, it must be between 0 and 2. Yours is set to'   &
+                    'Invalid H2O_PLANT_LIM, it must be between 0 and 1. Yours is set to'   &
                     ,h2o_plant_lim,'...'
       call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
@@ -1417,6 +1428,22 @@ end do
       write (reason,fmt='(a,1x,es12.5,a)')                                                 &
                     'Invalid GAMFACT, it must be between 0 and 100. Yours is set to'       &
                     ,gamfact,'...'
+      call opspec_fatal(reason,'opspec_misc')
+      ifaterr = ifaterr +1
+   end if
+   
+   if (d0fact < 0.01 .or. d0fact > 100.) then
+      write (reason,fmt='(a,1x,es12.5,a)')                                                 &
+                    'Invalid D0FACT, it must be between 0.01 and 100. Yours is set to'     &
+                    ,d0fact,'...'
+      call opspec_fatal(reason,'opspec_misc')
+      ifaterr = ifaterr +1
+   end if
+   
+   if (alphafact < 0.1 .or. d0fact > 10.) then
+      write (reason,fmt='(a,1x,es12.5,a)')                                                 &
+                    'Invalid ALPHAFACT, it must be between 0.1 and 10. Yours is set to'    &
+                    ,alphafact,'...'
       call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
    end if
@@ -1493,7 +1520,7 @@ end do
    end if
 
    select case (icanturb)
-   case (0:5)
+   case (0:3)
       continue
    case default
       write (reason,fmt='(a,1x,i4,a)') &
@@ -1525,9 +1552,9 @@ end do
       ifaterr = ifaterr +1
    end if
 
-   if (ipercol < 0 .or. ipercol > 1) then
+   if (ipercol < 0 .or. ipercol > 2) then
       write (reason,fmt='(a,1x,i4,a)')                                                     &
-        'Invalid IPERCOL, it must be either 0 or 1. Yours is set to',ipercol,'...'
+        'Invalid IPERCOL, it must be between 0 and 2. Yours is set to',ipercol,'...'
       call opspec_fatal(reason,'opspec_misc')  
       ifaterr = ifaterr +1
    end if

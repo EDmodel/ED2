@@ -150,6 +150,13 @@ module leaf_coms
             , ts_town          & ! Urban temperature
             , g_urban          ! ! Urban something... 
 
+   !----- These are used for the soil bottom boundary condition. --------------------------!
+   real    :: slzt_0
+   real    :: soil_water_0
+   real    :: soil_fracliq_0
+   real    :: psiplusz_0
+   real    :: hydcond_0
+
    real, allocatable, dimension(:) ::  &
               dslz                 & ! soil layer thickness at T point
             , dslzi                & ! (1. / soil layer thickness at T point)
@@ -171,6 +178,7 @@ module leaf_coms
             , soilair99            & ! 99% of of available airspace in soil [m]
             , soilair01            & !  1% of of available airspace in soil [m]
             , soil_liq             & ! soil liquid water content [m]
+            , hydcond              & ! hydraulic conductivity    [m/s]
 
             , rfactor              & ! soil, sfcwater thermal resistance    
             , hfluxgsc             & ! sensible heat flux between soil, sfcwater, canopy
@@ -199,7 +207,7 @@ module leaf_coms
    real, dimension(nstyp)           :: slden,slcpd,slbs,slcond,sfldcap,slcons,slmsts,slpots
    real, dimension(nstyp)           :: ssand,sclay,sorgan,sporo,soilwp,soilcp,slfc,emisg
    real, dimension(nstyp)           :: slcons00,slcons0,fhydraul
-   real, dimension(nstyp)           :: soilcond0,soilcond1,soilcond2
+   real, dimension(nstyp)           :: soilcond0,soilcond1,soilcond2,slcons1_0
    real, dimension(nzgmax,nstyp)    :: slcons1
    !---------------------------------------------------------------------------------------!
 
@@ -443,6 +451,7 @@ module leaf_coms
       allocate (soilair99           (nzg)      )
       allocate (soilair01           (nzg)      )
       allocate (soil_liq            (nzg)      )
+      allocate (hydcond             (nzg)      )
 
       allocate (rfactor             (nzg+nzs)  )
       allocate (hfluxgsc            (nzg+nzs+1))
@@ -666,7 +675,8 @@ module leaf_coms
       half_soilair     (:)   = 0.
       soilair99        (:)   = 0.
       soilair01        (:)   = 0.
-      soil_liq         (:)   = 0
+      soil_liq         (:)   = 0.
+      hydcond          (:)   = 0.
 
       rfactor          (:)   = 0.
       hfluxgsc         (:)   = 0.

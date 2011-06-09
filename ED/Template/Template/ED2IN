@@ -321,10 +321,12 @@
    NL%ISOILDEPTHFLG  = 0  ! 0 -- use NZG, SLZ for each grid cell
                           ! 1 -- read file to get soil depth for each grid cell
 
-   NL%ISOILBC        = 1  ! Soil boundary condition at lowest soil level
-                          ! 0 - Bedrock;
-                          ! 1 - Free drainage.
-                          ! 2 - Half drainage.
+   NL%ISOILBC        = mysoilbc  ! Soil boundary condition at lowest soil level
+                          ! 0 - Bedrock.  No downward flow out of the bottom layer.
+                          ! 1 - Free drainage (gravitational flow).
+                          ! 2 - Super drainage (layer beneath permanently dry).
+                          ! 3 - Assume layer beneath at field capacity.
+                          ! 4 - Aquifer.  Assume layer beneath to be permanently saturated.
 !------------------------------------------------------------------------------------------!
 
 
@@ -345,6 +347,25 @@
                                  !   valid range is between 1.e-7 and 1.e-1, but recommended
                                  !   values are between 1.e-4 and 1.e-2
 
+   !---------------------------------------------------------------------------------------!
+   !    NL%IPHYSIOL.  This variable will determine the functional form that will control   !
+   ! how the various parameters will vary with temperature, and how the CO2 compensation   !
+   ! point for gross photosynthesis (Gamma*) will be found.  Options are:                  !
+   !                                                                                       !
+   ! 0 -- Original ED-2.1, we use the "Arrhenius" function as in Foley et al. (1996) and   !
+   !      Moorcroft et al. (2001).  Gamma* is found using the parameters for tau as in     !
+   !      Foley et al. (1996).                                                             !
+   ! 1 -- Modified ED-2.1.  In this case Gamma* is found using the Michaelis-Mentel        !
+   !      coefficients for CO2 and O2, as in Farquhar et al. (1980) and in CLM.            !
+   ! 2 -- Collatz et al. (1991).  We use the power (Q10) equations, with Collatz et al.    !
+   !      parameters for compensation point, and the Michaelis-Mentel coefficients.  The   !
+   !      leaf respiration correction for high and low temperatures are the same as in     !
+   !      Moorcroft et al. (2001), but the correction for Vm is done like in Collatz.      !
+   ! 3 -- Same as 2, except that we find Gamma* as in Farquhar et al. (1980) and in CLM.   !
+   !---------------------------------------------------------------------------------------!
+   NL%IPHYSIOL = myphysiol
+   !---------------------------------------------------------------------------------------!
+
    NL%IBRANCH_THERMO = 0      ! This determines whether branches should be included in
                               !    the vegetation thermodynamics or not.  This is under
                               !    development, not fully tested.
@@ -359,12 +380,7 @@
 
    NL%IALLOM          = myallom  ! Which allometry to use (this affects tropical PFTs only)
                               !  0 -- original ED-2.1
-                              !  1 -- Baker et al. (2004), equation 2, keeping the same
-                              !       balive:bdead ratio
-                              !  2 -- Baker et al. (2004), equation 2, keeping the same
-                              !       balive as in ED-2.1
-                              !  3 -- Same as 2, but using a DBH-> Root depth equation
-                              !       based on Kenzo et al. (2009)
+                              !  1 -- Baker et al. (2004), equation 2
 
    !---------------------------------------------------------------------------------------!
    !     The following variable controls the phenology scheme.  Even within each scheme,   !
@@ -442,6 +458,10 @@
    NL%MFACT           = mymfact   ! Factor for changing stomatal slope (M)
    NL%KFACT           = mykfact   ! Factor for changing the water conductance (Kw)
    NL%GAMFACT         = mygamfact ! Factor for changing the dark respiration factor (gamma)
+   NL%D0FACT          = myd0fact  ! Factor for changing the transpiration control (D0)
+   NL%ALPHAFACT       = myalphafact ! Factor for changing the quantum yield of C3 plants
+                                    !     This is only applied when QUANTUM_EFFICIENCY_T 
+                                    !     is 0
    NL%THETACRIT       = mythcrit  ! Leaf drought phenology threshold.  This is the relative
                                   !     soil moisture above the wilting point below which 
                                   !     the drought-deciduous plants will start shedding 
@@ -552,7 +572,7 @@
    NL%LEAF_MAXWHC     = mymaxwhc    ! Maximum water that can be intercepted    [ kg/m2leaf]
    !---------------------------------------------------------------------------------------!
 
-   NL%IPERCOL         = 0     ! Percolation scheme:
+   NL%IPERCOL         = mypercol     ! Percolation scheme:
                               !  0 - Original method, from LEAF-3.  Shed liquid in excess 
                               !      of a 1:9 liquid-to-ice ratio through percolation.
                               !  1 - Alternative "free" water calculation.  

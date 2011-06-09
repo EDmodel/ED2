@@ -79,7 +79,7 @@ module pft_coms
    !---------------------------------------------------------------------------------------!
    !    This is the list of PFTs that are included.  0 means off, 1 means on.              !
    !---------------------------------------------------------------------------------------!
-   integer, dimension(n_pft) :: include_pft
+   logical, dimension(n_pft) :: include_pft
 
    !---------------------------------------------------------------------------------------!
    !    This is the list of grass PFTs that may be included in agricultural patches.  Only !
@@ -92,7 +92,7 @@ module pft_coms
    !    This flag specifies what non-agricutural PFTs (i.e., grass)  can grow on agri-     !
    ! culture patches.  Set to 1 if you want to include this PFT on agriculture patches     !
    !---------------------------------------------------------------------------------------!
-   integer, dimension(n_pft) :: include_pft_ag
+   logical, dimension(n_pft) :: include_pft_ag
 
    !---------------------------------------------------------------------------------------!
    !    The following logical flags will tell whether the PFTs are tropical and also       !
@@ -126,8 +126,41 @@ module pft_coms
    !----- Temperature [°C] above which leaf metabolic activity begins to rapidly decline. -!
    real, dimension(n_pft) :: Vm_high_temp 
 
+   !----- Decay factor for the exponential correction. ------------------------------------!
+   real, dimension(n_pft) :: Vm_decay_e 
+
    !----- Maximum photosynthetic capacity at a reference temperature [µmol/m2/s]. ---------!
    real, dimension(n_pft) :: Vm0 
+
+   !----- Exponent for Vm in the Arrhenius equation [K]. ----------------------------------!
+   real, dimension(n_pft) :: Vm_hor 
+
+   !----- Base (Q10 term) for Vm in Collatz equation [K]. ---------------------------------!
+   real, dimension(n_pft) :: Vm_q10
+
+   !----- The a term for the Vm decline correction for high temperature, as in Collatz. ---!
+   real, dimension(n_pft) :: Vm_decay_a
+
+   !----- The b term for the Vm decline correction for high temperature, as in Collatz. ---!
+   real, dimension(n_pft) :: Vm_decay_b
+
+   !----- Temperature [°C] below which leaf metabolic activity begins to rapidly decline. -!
+   real, dimension(n_pft) :: Rd_low_temp 
+
+   !----- Temperature [°C] above which leaf metabolic activity begins to rapidly decline. -!
+   real, dimension(n_pft) :: Rd_high_temp 
+
+   !----- Decay factor for the exponential correction. ------------------------------------!
+   real, dimension(n_pft) :: Rd_decay_e 
+
+   !----- Maximum respiration factor at the reference temperature [µmol/m2/s]. ------------!
+   real, dimension(n_pft) :: Rd0
+
+   !----- Exponent for Rd in the Arrhenius equation [K]. ----------------------------------!
+   real, dimension(n_pft) :: Rd_hor 
+
+   !----- Base (Q10 term) for respiration in Collatz equation [K]. ------------------------!
+   real, dimension(n_pft) :: Rd_q10
 
    !----- Slope of the Ball/Berry stomatal conductance-photosynthesis relationship. -------!
    real, dimension(n_pft) :: stomatal_slope

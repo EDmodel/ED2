@@ -14,7 +14,8 @@ subroutine ed_init_atm()
                                     , isoilstateinit    & ! intent(in)
                                     , soil              & ! intent(in)
                                     , slmstr            & ! intent(in)
-                                    , stgoff            ! ! intent(in)
+                                    , stgoff            & ! intent(in)
+                                    , ed_soil_idx2water ! ! intent(in)
    use consts_coms           , only : tsupercool        & ! intent(in)
                                     , cliqvlme          & ! intent(in)
                                     , cicevlme          & ! intent(in)
@@ -230,11 +231,7 @@ subroutine ed_init_atm()
                      if (csite%soil_tempk(k,ipa) > t3ple) then
                         nsoil=cpoly%ntext_soil(k,isi)
                         csite%soil_fracliq(k,ipa) = 1.0
-                        csite%soil_water(k,ipa)   = min(soil(nsoil)%slmsts                 &
-                                                   ,max(soil(nsoil)%soilcp                 &
-                                                       , slmstr(k) * ( soil(nsoil)%slmsts  &
-                                                                     - soil(nsoil)%soilwp) &
-                                                       + soil(nsoil)%soilwp))
+                        csite%soil_water(k,ipa)   = ed_soil_idx2water(slmstr(k),nsoil)
                         csite%soil_energy(k,ipa)  = soil(nsoil)%slcpd                      &
                                                   * csite%soil_tempk(k,ipa)                &
                                                   + csite%soil_water(k,ipa) * cliqvlme     &
@@ -242,11 +239,7 @@ subroutine ed_init_atm()
                      else
                         nsoil=cpoly%ntext_soil(k,isi)
                         csite%soil_fracliq(k,ipa) = 0.0
-                        csite%soil_water(k,ipa)   = min(soil(nsoil)%slmsts                 &
-                                                   ,max(soil(nsoil)%soilcp                 &
-                                                       , slmstr(k) * ( soil(nsoil)%slmsts  &
-                                                                     - soil(nsoil)%soilwp) &
-                                                       + soil(nsoil)%soilwp))
+                        csite%soil_water(k,ipa)   = ed_soil_idx2water(slmstr(k),nsoil)
                         csite%soil_energy(k,ipa)  = soil(nsoil)%slcpd                      &
                                                   * csite%soil_tempk(k,ipa)                &
                                                   + csite%soil_water(k,ipa)                &

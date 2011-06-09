@@ -1266,7 +1266,7 @@ subroutine adjust_sfcw_properties(nzg,nzs,initp,hdid,csite,ipa)
          !---------------------------------------------------------------------------------!
          wmass_perc  = max(0.d0, wmass_try * (fliq_try - 1.d-1) / 9.d-1)
          !---------------------------------------------------------------------------------!
-      case (1)
+      case (1,2)
          !---------------------------------------------------------------------------------!
          !    Alternative "free" water calculation.                                        !
          !    Anderson (1976), NOAA Tech Report NWS 19.                                    !

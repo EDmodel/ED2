@@ -1044,18 +1044,11 @@ subroutine copy_rk4_patch(sourcep, targetp, cpatch)
    targetp%cwd_rh           = sourcep%cwd_rh
    targetp%rh               = sourcep%rh
 
-   do k=rk4site%lsl,nzg
-      
+   do k=rk4site%lsl,nzg      
       targetp%soil_water            (k) = sourcep%soil_water            (k)
       targetp%soil_energy           (k) = sourcep%soil_energy           (k)
       targetp%soil_tempk            (k) = sourcep%soil_tempk            (k)
       targetp%soil_fracliq          (k) = sourcep%soil_fracliq          (k)
-      targetp%available_liquid_water(k) = sourcep%available_liquid_water(k)
-      targetp%extracted_water       (k) = sourcep%extracted_water       (k)
-      targetp%psiplusz              (k) = sourcep%psiplusz              (k)
-      targetp%soilair99             (k) = sourcep%soilair99             (k)
-      targetp%soilair01             (k) = sourcep%soilair01             (k)
-      targetp%soil_liq              (k) = sourcep%soil_liq              (k)
    end do
 
    targetp%nlev_sfcwater   = sourcep%nlev_sfcwater
@@ -1200,7 +1193,8 @@ end subroutine copy_rk4_patch
 ! and initialize it as well.                                                               !
 !------------------------------------------------------------------------------------------!
 subroutine initialize_rk4patches(init)
-
+   use soil_coms     , only : nzg                   & ! intent(in)
+                            , nzs                   ! ! intent(in)
    use ed_state_vars , only : edgrid_g              & ! intent(inout)
                             , edtype                & ! structure
                             , polygontype           & ! structure
@@ -1209,7 +1203,8 @@ subroutine initialize_rk4patches(init)
    use rk4_coms      , only : integration_buff      & ! structure
                             , deallocate_rk4_coh    & ! structure
                             , allocate_rk4_patch    & ! structure
-                            , allocate_rk4_coh      ! ! structure
+                            , allocate_rk4_coh      & ! structure
+                            , allocate_rk4_aux      ! ! structure
    use ed_misc_coms  , only : integration_scheme    ! ! intent(in)
    use grid_coms     , only : ngrids                ! ! intent(in)
    implicit none
@@ -1244,6 +1239,10 @@ subroutine initialize_rk4patches(init)
       call allocate_rk4_patch(integration_buff%dydx  )
       call allocate_rk4_patch(integration_buff%yerr  )
       call allocate_rk4_patch(integration_buff%ytemp )
+
+      !------ Allocate and initialise the auxiliary structure. ----------------------------!
+      call allocate_rk4_aux(nzg,nzs)
+
 
       !------------------------------------------------------------------------------------!
       !     The following structures are allocated/deallocated depending on the            !

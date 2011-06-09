@@ -114,14 +114,16 @@ module canopy_air_coms
 
    !=======================================================================================!
    !=======================================================================================!
-   !     Parameters for Massman (1997) canopy turbulence.                                  !
+   !     Parameters for Massman (1997) and Massman and Weil (1999) canopy turbulence       !
+   ! closures.                                                                             !
+   !                                                                                       !
+   ! Massman, W. J., 1997: An analytical one-dimensional model of momentum transfer by     !
+   !    vegetation of arbitrary structure.  Boundary Layer Meteorology, 83, 407-421.       !
+   !                                                                                       !
+   ! Massman, W. J., and J. C. Weil, 1999: An analytical one-dimension second-order clos-  !
+   !    ure model turbulence statistics and the Lagrangian time scale within and above     !
+   !    plant canopies of arbitrary structure.  Boundary Layer Meteorology, 91, 81-107.    !
    !---------------------------------------------------------------------------------------!
-    
-   !---------------------------------------------------------------------------------------!
-   !----- Number of canopy layers. --------------------------------------------------------!
-   integer       :: ncanmax
-   !----- Discrete step size in canopy elevation [m]. -------------------------------------!
-   real(kind=4)  :: dz_m97
    !----- Fluid drag coefficient for turbulent flow in leaves at the top. -----------------!
    real(kind=4)  :: cdrag0
    !----- Sheltering factor of fluid drag at the top of the canopy. -----------------------!
@@ -134,12 +136,24 @@ module canopy_air_coms
    real(kind=4)  :: kvwake
    !---------------------------------------------------------------------------------------!
    !     Alpha factors to produce the profile of sheltering factor and within canopy drag, !
-   ! as suggested by Massman.                                                              !
+   ! as suggested by Massman (1997) and Massman and Weil (1999).                           !
    !---------------------------------------------------------------------------------------!
-   real(kind=4)  :: alpha1_m97
-   real(kind=4)  :: alpha2_m97
+   real(kind=4)  :: alpha_m97
+   real(kind=4)  :: alpha_mw99
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Parameters for Massman and Weil (1999).                                           !
+   !  Gamma and nu are the parameters that close equation 10 in Massman and Weil (1999).   !
+   !  VERY IMPORTANT: If you mess with gamma, you must recompute nu!                       !
+   !---------------------------------------------------------------------------------------!
+   real(kind=4), dimension(3) :: gamma_mw99
+   real(kind=4), dimension(3) :: nu_mw99
    !----- Parameter to represent the Roughness sublayer effect. ---------------------------!
-   real(kind=4)  :: psi_m97
+   real(kind=4)               :: infunc
+   !---------------------------------------------------------------------------------------!
 
    !----- Double precision version of all variables above. --------------------------------!
    real(kind=8)                            :: dz_m978
@@ -149,9 +163,11 @@ module canopy_air_coms
    real(kind=8)                            :: c2_m978
    real(kind=8)                            :: c3_m978
    real(kind=8)                            :: kvwake8
-   real(kind=8)                            :: alpha1_m978
-   real(kind=8)                            :: alpha2_m978
-   real(kind=8)                            :: psi_m978
+   real(kind=8)                            :: alpha_m97_8
+   real(kind=8)                            :: alpha_mw99_8
+   real(kind=8), dimension(3)              :: gamma_mw99_8
+   real(kind=8), dimension(3)              :: nu_mw99_8
+   real(kind=8)                            :: infunc_8
    !=======================================================================================!
    !=======================================================================================!
 

@@ -18,6 +18,7 @@ subroutine read_ed10_ed20_history_file
                              , q                   & ! intent(in)
                              , qsw                 & ! intent(in)
                              , hgt_min             & ! intent(in)
+                             , is_grass            & ! intent(in)
                              , include_pft         & ! intent(in)
                              , include_pft_ag      & ! intent(in)
                              , phenology           & ! intent(in)
@@ -577,7 +578,7 @@ subroutine read_ed10_ed20_history_file
                   !    Here we test whether the PFT of this cohort is expected to be       !
                   ! included.                                                              !
                   !------------------------------------------------------------------------!
-                  if (include_pft(ipft(ic)) == 0) then
+                  if (.not. include_pft(ipft(ic))) then
                      !----- This PFT wasn't expected... -----------------------------------!
                      select case (pft_1st_check)
                      case (0)
@@ -593,10 +594,10 @@ subroutine read_ed10_ed20_history_file
                         write (unit=*,fmt='(a,1x,i5,1x,a)')                                &
                              'I found a cohort with PFT=',ipft(ic)                         &
                             ,'... Including this PFT in your include_these_pft...'
-                        include_pft(ipft(ic))               = 1
-                        include_these_pft(sum(include_pft)) = ipft(ic)
+                        include_pft(ipft(ic))                 = .true.
+                        include_these_pft(count(include_pft)) = ipft(ic)
                         call sort_up(include_these_pft,n_pft)
-                        if (ipft(ic) == 1 .or. ipft(ic) == 5) include_pft_ag(ipft(ic)) = 1
+                        if (is_grass(ipft(ic))) include_pft_ag(ipft(ic)) = .true.
 
                      case (2)
                         !----- Ignore the cohort. -----------------------------------------!

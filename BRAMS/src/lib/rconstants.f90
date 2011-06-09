@@ -349,6 +349,8 @@ Module rconstants
    real(kind=8), parameter :: volmoll8        = dble(volmoll       )
    real(kind=8), parameter :: mmdry8          = dble(mmdry         )
    real(kind=8), parameter :: mmh2o8          = dble(mmh2o         )
+   real(kind=8), parameter :: mmo28           = dble(mmo2          )
+   real(kind=8), parameter :: mmo38           = dble(mmo3          )
    real(kind=8), parameter :: mmco28          = dble(mmco2         )
    real(kind=8), parameter :: mmdoc8          = dble(mmdoc         )
    real(kind=8), parameter :: mmcod8          = dble(mmcod         )

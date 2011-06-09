@@ -91,27 +91,26 @@ subroutine load_ed_ecosystem_params()
 
    !---------------------------------------------------------------------------------------!
    !    Include_pft: flag specifying to whether you want to include a plant functional     !
-   !                 type (1) or whether you want it excluded (0) from the simulation.     !
+   !                 type (T) or whether you want it excluded (F) from the simulation.     !
    !---------------------------------------------------------------------------------------!
-   include_pft = 0
-   include_pft_ag = 0
+   include_pft    = .false.
+   include_pft_ag = .false.
    do p=1,n_pft
-      if (include_these_pft(p) > 0 .and. include_these_pft(p) <= n_pft) then
-         include_pft(include_these_pft(p)) = 1
+      if (include_these_pft(p) >  0 .and. include_these_pft(p) <= n_pft) then
+         include_pft(include_these_pft(p)) = .true.
       end if
    end do
 
    !----- Grasses can grow anywhere, including agricultural patches -----------------------!
    p=1
    do while (grass_pft(p) > 0 .and. grass_pft(p) <= n_pft)
-      if (include_pft(grass_pft(p)) == 1) include_pft_ag(grass_pft(p)) = 1
+      include_pft_ag(grass_pft(p)) = include_pft(grass_pft(p))
       p = p+1
    end do
-   if (sum(include_pft_ag) == 0 .and. ianth_disturb == 1) then
-!!      call fatal_error ('No grass included in include_these_pft,'//&
-      call warning ('No grass included in include_these_pft,'//&
-                       &' you should have at least one kind of grass...'                   &
-                       ,'load_ecosystem_params','ed_params.f90')
+   if (count(include_pft_ag) == 0 .and. ianth_disturb == 1) then
+      call warning ('No grass included in include_these_pft,'//                            &
+                    ' you should have at least one kind of grass...'                       &
+                   ,'load_ecosystem_params','ed_params.f90')
    end if
 
    !----- Assign many PFT-dependent parameters. -------------------------------------------!
@@ -459,7 +458,7 @@ subroutine init_can_rad_params()
    ! day time hours only.                                                                  !
    !---------------------------------------------------------------------------------------!
    rshort_twilight_min = 0.5
-   cosz_min            = cos(89.5*pio180)
+   cosz_min            = cos(89.*pio180) !cos(89.5*pio180)
    cosz_min8           = dble(cosz_min)
    !---------------------------------------------------------------------------------------!
 
@@ -520,18 +519,22 @@ subroutine init_can_air_params()
                              , c2_m97                & ! intent(out)
                              , c3_m97                & ! intent(out)
                              , kvwake                & ! intent(out)
-                             , alpha1_m97            & ! intent(out)
-                             , alpha2_m97            & ! intent(out)
-                             , psi_m97               & ! intent(out)
+                             , alpha_m97             & ! intent(out)
+                             , alpha_mw99            & ! intent(out)
+                             , gamma_mw99            & ! intent(out)
+                             , nu_mw99               & ! intent(out)
+                             , infunc                & ! intent(out)
                              , cdrag08               & ! intent(out)
                              , pm08                  & ! intent(out)
                              , c1_m978               & ! intent(out)
                              , c2_m978               & ! intent(out)
                              , c3_m978               & ! intent(out)
                              , kvwake8               & ! intent(out)
-                             , alpha1_m978           & ! intent(out)
-                             , alpha2_m978           & ! intent(out)
-                             , psi_m978              & ! intent(out)
+                             , alpha_m97_8           & ! intent(out)
+                             , alpha_mw99_8          & ! intent(out)
+                             , gamma_mw99_8          & ! intent(out)
+                             , nu_mw99_8             & ! intent(out)
+                             , infunc_8              & ! intent(out)
                              , bl79                  & ! intent(out)
                              , csm                   & ! intent(out)
                              , csh                   & ! intent(out)
@@ -641,7 +644,7 @@ subroutine init_can_air_params()
    !                        the canopy air space.                                          !
    !---------------------------------------------------------------------------------------!
    veg_height_min        = minval(hgt_min) ! alternative: minval(hgt_min) 
-   minimum_canopy_depth  = 5.0             ! alternative: minval(hgt_min) 
+   minimum_canopy_depth  = veg_height_min  ! alternative: minval(hgt_min) 
 
    !----- This is the dimensionless exponential wind atenuation factor. -------------------!
    exar  = 2.5
@@ -656,7 +659,7 @@ subroutine init_can_air_params()
    !----- This is the minimum wind speed for boundary layer conductivity. -----------------!
    ugbmin    = 0.10
    !----- This is the minimum wind scale under stable and unstable conditions. ------------!
-   ubmin     = 0.65
+   ubmin     = 0.10
    !---------------------------------------------------------------------------------------!
 
    !----- Louis (1979) model. -------------------------------------------------------------!
@@ -748,7 +751,15 @@ subroutine init_can_air_params()
 
 
    !---------------------------------------------------------------------------------------!
-   !     Define the variables that are going to be used by Massman (1997).                 !
+   !     Define the variables that are going to be used by Massman (1997) and Massman and  !
+   ! Weil (1999).  Full reference:                                                         !
+   !                                                                                       !
+   ! Massman, W. J., 1997: An analytical one-dimensional model of momentum transfer by     !
+   !    vegetation of arbitrary structure.  Boundary Layer Meteorology, 83, 407-421.       !
+   !                                                                                       !
+   ! Massman, W. J., and J. C. Weil, 1999: An analytical one-dimension second-order clos-  !
+   !    ure model turbulence statistics and the Lagrangian time scale within and above     !
+   !    plant canopies of arbitrary structure.  Boundary Layer Meteorology, 91, 81-107.    !
    !---------------------------------------------------------------------------------------!
    !----- Fluid drag coefficient for turbulent flow in leaves. ----------------------------!
    cdrag0    = 0.2
@@ -759,19 +770,28 @@ subroutine init_can_air_params()
    c2_m97    = 0.264
    c3_m97    = 15.1
    !----- Eddy diffusivity due to Von Karman Wakes in gravity flows. ----------------------!
-   kvwake    = 0.0 ! 0.001
+   kvwake    = 0.001
    !---------------------------------------------------------------------------------------!
    !     Alpha factors to produce the profile of sheltering factor and within canopy drag, !
-   ! as suggested by Massman.                                                              !
+   ! as suggested by Massman (1997) and Massman and Weil (1999).                           !
    !---------------------------------------------------------------------------------------!
-   alpha1_m97 = 0.40
-   alpha2_m97 = 0.00
+   alpha_m97  = 5.00
+   alpha_mw99 = 0.03
    !---------------------------------------------------------------------------------------!
    !      Parameter to represent the roughness sublayer effect.  According to Massman,     !
    ! assuming this to be zero means that the sublayer effects will be ignored.  Otherwise  !
    ! Raupach (1994) tried values up to 0.316.                                              !
    !---------------------------------------------------------------------------------------!
-   psi_m97    = 0.316
+   infunc    = 0.193
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !  Gamma and nu are the parameters that close equation 10 in Massman and Weil (1999).   !
+   !  VERY IMPORTANT: If you mess with gamma, you must recompute nu!                       !
+   !---------------------------------------------------------------------------------------!
+   gamma_mw99 = (/2.4, 1.9, 1.25/)
+   nu_mw99    = (/0.3024,3.4414,36.1476/)
    !---------------------------------------------------------------------------------------!
 
 
@@ -849,9 +869,11 @@ subroutine init_can_air_params()
    c2_m978               = dble(c2_m97              )
    c3_m978               = dble(c3_m97              )
    kvwake8               = dble(kvwake              )
-   alpha1_m978           = dble(alpha1_m97          )
-   alpha2_m978           = dble(alpha2_m97          )
-   psi_m978              = dble(psi_m97             )
+   alpha_m97_8           = dble(alpha_m97           )
+   alpha_mw99_8          = dble(alpha_mw99          )
+   gamma_mw99_8          = dble(gamma_mw99          )
+   nu_mw99_8             = dble(nu_mw99             )
+   infunc_8              = dble(infunc              )
    ggsoil08              = dble(ggsoil0             )
    kksoil8               = dble(kksoil              )
    !---------------------------------------------------------------------------------------!
@@ -905,7 +927,7 @@ subroutine init_can_lyr_params()
 
 
    !----- Find the layer thickness and the number of layers needed. -----------------------!
-   ncanlyr   = 50
+   ncanlyr   = 100
    ncanlyrp1 = ncanlyr + 1
    ncanlyrt2 = ncanlyr * 2
    zztop0    = onethird  * minval(hgt_min)
@@ -953,30 +975,46 @@ end subroutine init_can_lyr_params
 !==========================================================================================!
 subroutine init_pft_photo_params()
 
-   use ed_max_dims    , only : n_pft                ! ! intent(in)
-   use pft_coms       , only : D0                   & ! intent(out)
-                             , Vm_low_temp          & ! intent(out)
-                             , Vm_high_temp         & ! intent(out)
-                             , Vm0                  & ! intent(out)
-                             , stomatal_slope       & ! intent(out)
-                             , leaf_width           & ! intent(out)
-                             , cuticular_cond       & ! intent(out)
-                             , quantum_efficiency   & ! intent(out)
-                             , photosyn_pathway     & ! intent(out)
-                             , water_conductance    ! ! intent(out)
-   use consts_coms    , only : t00                  & ! intent(in)
-                             , twothirds            & ! intent(in)
-                             , umol_2_mol           & ! intent(in)
-                             , yr_sec               ! ! intent(in)
-   use physiology_coms , only: vmfact               & ! intent(in)
-                             , mfact                & ! intent(in)
-                             , kfact                & ! intent(in)
-                             , lwfact               & ! intent(in)
-                             , thioff               ! ! intent(in)
+   use ed_max_dims    , only : n_pft                   ! ! intent(in)
+   use pft_coms       , only : D0                      & ! intent(out)
+                             , Vm_low_temp             & ! intent(out)
+                             , Vm_high_temp            & ! intent(out)
+                             , Vm_decay_e              & ! intent(out)
+                             , Vm_decay_a              & ! intent(out)
+                             , Vm_decay_b              & ! intent(out)
+                             , Vm0                     & ! intent(out)
+                             , Vm_hor                  & ! intent(out)
+                             , Vm_q10                  & ! intent(out)
+                             , Rd_low_temp             & ! intent(out)
+                             , Rd_high_temp            & ! intent(out)
+                             , Rd_decay_e              & ! intent(out)
+                             , Rd0                     & ! intent(out)
+                             , Rd_hor                  & ! intent(out)
+                             , Rd_q10                  & ! intent(out)
+                             , stomatal_slope          & ! intent(out)
+                             , leaf_width              & ! intent(out)
+                             , cuticular_cond          & ! intent(out)
+                             , quantum_efficiency      & ! intent(out)
+                             , photosyn_pathway        & ! intent(out)
+                             , dark_respiration_factor & ! intent(out)
+                             , water_conductance       ! ! intent(out)
+   use consts_coms    , only : t00                     & ! intent(in)
+                             , twothirds               & ! intent(in)
+                             , umol_2_mol              & ! intent(in)
+                             , yr_sec                  ! ! intent(in)
+   use physiology_coms , only: iphysiol                & ! intent(in)
+                             , vmfact                  & ! intent(in)
+                             , mfact                   & ! intent(in)
+                             , gamfact                 & ! intent(in)
+                             , d0fact                  & ! intent(in)
+                             , alphafact               & ! intent(in)
+                             , kfact                   & ! intent(in)
+                             , lwfact                  & ! intent(in)
+                             , thioff                  ! ! intent(in)
    implicit none
    !---------------------------------------------------------------------------------------!
 
-   D0(1:17)                  = 0.01            ! same for all PFTs
+   D0(1:17)                  = 0.01 * d0fact   ! same for all PFTs
 
    Vm_low_temp(1)            = 5.0             ! c4 grass
    Vm_low_temp(2)            = 5.0             ! early tropical
@@ -996,7 +1034,7 @@ subroutine init_pft_photo_params()
    Vm_low_temp(16)           = 5.0             ! subtropical C3 grass
    Vm_low_temp(17)           = 5.0             ! Araucaria
 
-   Vm_high_temp(1)           = 100.0  + thioff ! C4
+   Vm_high_temp(1)           =  50.0  + thioff ! C4
    Vm_high_temp(2)           =  45.0  + thioff ! C3
    Vm_high_temp(3)           =  45.0  + thioff ! C3
    Vm_high_temp(4)           =  45.0  + thioff ! C3
@@ -1009,13 +1047,26 @@ subroutine init_pft_photo_params()
    Vm_high_temp(11)          =  45.0  + thioff ! C3
    Vm_high_temp(12)          =  45.0  + thioff ! C3
    Vm_high_temp(13)          =  45.0  + thioff ! C3
-   Vm_high_temp(14)          = 100.0  + thioff ! C4
-   Vm_high_temp(15)          = 100.0  + thioff ! C4
+   Vm_high_temp(14)          =  50.0  + thioff ! C4
+   Vm_high_temp(15)          =  50.0  + thioff ! C4
    Vm_high_temp(16)          =  45.0  + thioff ! C3
    Vm_high_temp(17)          =  45.0  + thioff ! C3
 
+   !---------------------------------------------------------------------------------------!
+   !    Vm_decay_e is the correction term for high and low temperatures when running the   !
+   ! original ED-2.1 correction as in Moorcroft et al. (2001).                             !
+   !    Vm_decay_a and Vm_decay_b are the correction terms when running the Collatz et al. !
+   ! (1991).  When running Collatz, this is used for both C3 and C4 photosynthesis.        !
+   !---------------------------------------------------------------------------------------!
+   Vm_decay_e(1:17)          = 0.4     !                                          [    ---]
+   Vm_decay_a(1:17)          = 220000. !                                          [  J/mol]
+   Vm_decay_b(1:17)          = 690.    !                                          [J/mol/K]
+   !---------------------------------------------------------------------------------------!
+
+
+
    !------ Vm0 is the maximum photosynthesis capacity in µmol/m2/s. -----------------------!
-   Vm0(1)                    = 12.5            * 1.50
+   Vm0(1)                    = 12.5
    Vm0(2)                    = 18.8            * vmfact
    Vm0(3)                    = 12.5            * vmfact
    Vm0(4)                    = 6.25            * vmfact
@@ -1027,12 +1078,81 @@ subroutine init_pft_photo_params()
    Vm0(10)                   = 15.625 * 1.1171 * vmfact
    Vm0(11)                   = 6.25   * 1.1171 * vmfact
    Vm0(12:13)                = 18.3            * vmfact
-   Vm0(14:15)                = 12.5            * 1.50
+   Vm0(14:15)                = 12.5            
    Vm0(16)                   = 21.875          * vmfact
    Vm0(17)                   = 15.625 * 0.7264
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !      Vm_hor is the Arrhenius "activation energy" divided by the universal gas         !
+   ! constant.  Vm_q10 is the base for the Collatz approach.                               !
+   !---------------------------------------------------------------------------------------!
+   vm_hor(1:17)              = 3000.
+   !----- Here we distinguish between C3 and C4 photosynthesis as in Collatz et al 91/92. -!
+   vm_q10(1)                 = 2.0
+   vm_q10(2:13)              = 2.4
+   vm_q10(14:15)             = 2.0
+   vm_q10(16:17)             = 2.4
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !    Dark_respiration_factor is the lower-case gamma in Moorcroft et al. (2001).        !
+   !---------------------------------------------------------------------------------------!
+   dark_respiration_factor(1)     = 0.05
+   dark_respiration_factor(2)     = 0.02  * gamfact
+   dark_respiration_factor(3)     = 0.02  * gamfact
+   dark_respiration_factor(4)     = 0.02  * gamfact
+   dark_respiration_factor(5)     = 0.02
+   dark_respiration_factor(6)     = 0.02
+   dark_respiration_factor(7)     = 0.02
+   dark_respiration_factor(8)     = 0.02
+   dark_respiration_factor(9)     = 0.02
+   dark_respiration_factor(10)    = 0.02
+   dark_respiration_factor(11)    = 0.02
+   dark_respiration_factor(12)    = 0.02
+   dark_respiration_factor(13)    = 0.02
+   dark_respiration_factor(14)    = 0.05
+   dark_respiration_factor(15)    = 0.05
+   dark_respiration_factor(16)    = 0.02  * gamfact
+   dark_respiration_factor(17)    = 0.02  * gamfact
+   !---------------------------------------------------------------------------------------!
+
+
+   !----- Currently we assume most parameters to be the same as the Vm ones. --------------!
+   Rd_low_temp (1:17) = Vm_low_temp (1:17)
+   Rd_high_temp(1:17) = Vm_high_temp(1:17)
+   Rd_decay_e  (1:17) = Vm_decay_e  (1:17)
+   Rd_hor      (1:17) = Vm_hor      (1:17)
+   Rd_q10      (1:17) = 2.0
+ 
+   !---------------------------------------------------------------------------------------!
+   !    Respiration terms.  Here we must check whether this will run Foley-based or        !
+   ! Collatz-based photosynthesis, because the respiration/Vm ratio is constant in the     !
+   ! former but not in the latter.                                                         !
+   !---------------------------------------------------------------------------------------!
+   select case (iphysiol)
+   case (0,1)
+      !------ This should be simply gamma times Vm0. --------------------------------------!
+      Rd0         (1:17) = dark_respiration_factor(1:17) * Vm0(1:17)
+
+   case (2,3)
+      !------------------------------------------------------------------------------------!
+      !     Collatz-based method.  They have the gamma at 25 C, but because the Q10 bases  !
+      ! are different for Vm and respiration (at least for C3), we must convert it to the  !
+      ! ratio at 15C.                                                                      !
+      !------------------------------------------------------------------------------------!
+      Rd0         (1:17) = dark_respiration_factor(1:17) * Vm0(1:17)                       &
+                         * Vm_q10(1:17) / Rd_q10(1:17)
+   end select
+   !---------------------------------------------------------------------------------------!
+
+
 
    !----- Define the stomatal slope (aka the M factor). -----------------------------------!
-   stomatal_slope(1)         =  6.4    
+   stomatal_slope(1)         =  5.0
    stomatal_slope(2)         =  8.0    * mfact
    stomatal_slope(3)         =  8.0    * mfact
    stomatal_slope(4)         =  8.0    * mfact
@@ -1045,46 +1165,46 @@ subroutine init_pft_photo_params()
    stomatal_slope(11)        =  6.3949 * mfact
    stomatal_slope(12)        =  8.0    * mfact
    stomatal_slope(13)        =  8.0    * mfact
-   stomatal_slope(14)        =  6.4    
-   stomatal_slope(15)        =  6.4    
+   stomatal_slope(14)        =  5.0
+   stomatal_slope(15)        =  5.0
    stomatal_slope(16)        =  8.0    * mfact
    stomatal_slope(17)        =  6.4
  
-   cuticular_cond(1)         = 10000.0    ! 10000.0
-   cuticular_cond(2)         = 10000.0    ! 10000.0
-   cuticular_cond(3)         = 10000.0    ! 10000.0
-   cuticular_cond(4)         = 10000.0    ! 10000.0
-   cuticular_cond(5)         = 10000.0    ! 10000.0
-   cuticular_cond(6)         = 1000.0 
-   cuticular_cond(7)         = 1000.0 
-   cuticular_cond(8)         = 1000.0 
+   cuticular_cond(1)         = 10000.0
+   cuticular_cond(2)         = 10000.0
+   cuticular_cond(3)         = 10000.0
+   cuticular_cond(4)         = 10000.0
+   cuticular_cond(5)         = 10000.0
+   cuticular_cond(6)         = 1000.0
+   cuticular_cond(7)         = 1000.0
+   cuticular_cond(8)         = 1000.0
    cuticular_cond(9)         = 20000.0
    cuticular_cond(10)        = 20000.0
    cuticular_cond(11)        = 20000.0
-   cuticular_cond(12)        = 20000.0    ! 10000.0
-   cuticular_cond(13)        = 20000.0    ! 10000.0
-   cuticular_cond(14)        = 10000.0    ! 10000.0
-   cuticular_cond(15)        = 10000.0    ! 10000.0
+   cuticular_cond(12)        = 10000.0
+   cuticular_cond(13)        = 10000.0
+   cuticular_cond(14)        = 10000.0
+   cuticular_cond(15)        = 10000.0
    cuticular_cond(16)        = 10000.0
-   cuticular_cond(17)        = 1000.0 
+   cuticular_cond(17)        = 1000.0
 
    quantum_efficiency(1)     = 0.053
-   quantum_efficiency(2)     = 0.08
-   quantum_efficiency(3)     = 0.08
-   quantum_efficiency(4)     = 0.08
-   quantum_efficiency(5)     = 0.08
-   quantum_efficiency(6)     = 0.08
-   quantum_efficiency(7)     = 0.08
-   quantum_efficiency(8)     = 0.08
-   quantum_efficiency(9)     = 0.08
-   quantum_efficiency(10)    = 0.08
-   quantum_efficiency(11)    = 0.08
-   quantum_efficiency(12)    = 0.08
-   quantum_efficiency(13)    = 0.08
+   quantum_efficiency(2)     = 0.08  * alphafact
+   quantum_efficiency(3)     = 0.08  * alphafact
+   quantum_efficiency(4)     = 0.08  * alphafact
+   quantum_efficiency(5)     = 0.08  * alphafact
+   quantum_efficiency(6)     = 0.08  * alphafact
+   quantum_efficiency(7)     = 0.08  * alphafact
+   quantum_efficiency(8)     = 0.08  * alphafact
+   quantum_efficiency(9)     = 0.08  * alphafact
+   quantum_efficiency(10)    = 0.08  * alphafact
+   quantum_efficiency(11)    = 0.08  * alphafact
+   quantum_efficiency(12)    = 0.08  * alphafact
+   quantum_efficiency(13)    = 0.08  * alphafact
    quantum_efficiency(14)    = 0.053
    quantum_efficiency(15)    = 0.053
-   quantum_efficiency(16)    = 0.08
-   quantum_efficiency(17)    = 0.08
+   quantum_efficiency(16)    = 0.08  * alphafact
+   quantum_efficiency(17)    = 0.08  * alphafact
 
    !---------------------------------------------------------------------------------------!
    !     The KW parameter. Medvigy et al. (2009) and Moorcroft et al. (2001) give the      !
@@ -1176,11 +1296,9 @@ end subroutine init_decomp_params
 !==========================================================================================!
 subroutine init_pft_resp_params()
 
-   use physiology_coms, only : gamfact                   ! ! intent(in)
    use pft_coms       , only : growth_resp_factor        & ! intent(out)
                              , leaf_turnover_rate        & ! intent(out)
                              , root_turnover_rate        & ! intent(out)
-                             , dark_respiration_factor   & ! intent(out)
                              , storage_turnover_rate     & ! intent(out)
                              , root_respiration_factor   ! ! intent(out)
    use decomp_coms    , only : f_labile                  ! ! intent(out)
@@ -1242,24 +1360,6 @@ subroutine init_pft_resp_params()
    root_turnover_rate(15)         = 2.0
    root_turnover_rate(16)         = 2.0
    root_turnover_rate(17)         = onesixth
-
-   dark_respiration_factor(1)     = 0.06
-   dark_respiration_factor(2)     = 0.02  * gamfact
-   dark_respiration_factor(3)     = 0.02  * gamfact
-   dark_respiration_factor(4)     = 0.02  * gamfact
-   dark_respiration_factor(5)     = 0.02
-   dark_respiration_factor(6)     = 0.02
-   dark_respiration_factor(7)     = 0.02
-   dark_respiration_factor(8)     = 0.02
-   dark_respiration_factor(9)     = 0.02
-   dark_respiration_factor(10)    = 0.02
-   dark_respiration_factor(11)    = 0.02
-   dark_respiration_factor(12)    = 0.02
-   dark_respiration_factor(13)    = 0.02
-   dark_respiration_factor(14)    = 0.04
-   dark_respiration_factor(15)    = 0.04
-   dark_respiration_factor(16)    = 0.02  * gamfact
-   dark_respiration_factor(17)    = 0.025 * gamfact
 
    storage_turnover_rate(1)       = 0.00 ! 0.25
    storage_turnover_rate(2)       = 0.00 ! 0.25
@@ -1982,12 +2082,18 @@ subroutine init_pft_alloc_params()
 
 
    !---------------------------------------------------------------------------------------!
-   !     DBH-crown allometry.                                                              !
+   !     DBH-crown allometry.  Here we use Dietze and Clark (2008) parameters for the      !
+   ! temperate PFTs and Poorter et al. (2006) for the tropical PFTs.  The Poorter et al.   !
+   ! coefficients are converted to be functions of DBH rather than height.                 !
    !---------------------------------------------------------------------------------------!
    !----- Intercept. ----------------------------------------------------------------------!
-   b1Ca(1:17) = 2.490154
+   b1Ca(1:4)   = exp(-1.853) * exp(b1Ht(1:4)) ** 1.888
+   b1Ca(5:13)  = 2.490154
+   b1Ca(14:17) = exp(-1.853) * exp(b1Ht(14:17)) ** 1.888
    !----- Slope.  -------------------------------------------------------------------------!
-   b2Ca(1:17) = 0.8068806
+   b2Ca(1:4)   = b2Ht(1:4) * 1.888
+   b2Ca(5:13)  = 0.8068806
+   b2Ca(14:17) = b2Ht(14:17) * 1.888
    !---------------------------------------------------------------------------------------!
 
 
@@ -2601,54 +2707,115 @@ end subroutine init_disturb_params
 
 !==========================================================================================!
 !==========================================================================================!
+!    This subroutine initialises various PFT-independent variables for the leaf physiology !
+! model.  Some useful references for this sub-routine:                                     !
+!                                                                                          !
+! - M09 - Medvigy, D.M., S. C. Wofsy, J. W. Munger, D. Y. Hollinger, P. R. Moorcroft,      !
+!         2009: Mechanistic scaling of ecosystem function and dynamics in space and time:  !
+!         Ecosystem Demography model version 2.  J. Geophys. Res., 114, G01002,            !
+!         doi:10.1029/2008JG000812.                                                        !
+! - M06 - Medvigy, D.M., 2006: The State of the Regional Carbon Cycle: results from a      !
+!         constrained coupled ecosystem-atmosphere model, 2006.  Ph.D. dissertation,       !
+!         Harvard University, Cambridge, MA, 322pp.                                        !
+! - M01 - Moorcroft, P. R., G. C. Hurtt, S. W. Pacala, 2001: A method for scaling          !
+!         vegetation dynamics: the ecosystem demography model, Ecological Monographs, 71,  !
+!         557-586.                                                                         !
+! - F96 - Foley, J. A., I. Colin Prentice, N. Ramankutty, S. Levis, D. Pollard, S. Sitch,  !
+!         A. Haxeltime, 1996: An integrated biosphere model of land surface processes,     !
+!         terrestrial carbon balance, and vegetation dynamics. Glob. Biogeochem. Cycles,   !
+!         10, 603-602.                                                                     !
+! - L95 - Leuning, R., F. M. Kelliher, D. G. G. de Pury, E. D. Schulze, 1995: Leaf         !
+!         nitrogen, photosynthesis, conductance, and transpiration: scaling from leaves to !
+!         canopies. Plant, Cell, and Environ., 18, 1183-1200.                              !
+! - F80 - Farquhar, G. D., S. von Caemmerer, J. A. Berry, 1980: A biochemical model of     !
+!         photosynthetic  CO2 assimilation in leaves of C3 species. Planta, 149, 78-90.    !
+! - C91 - Collatz, G. J., J. T. Ball, C. Grivet, J. A. Berry, 1991: Physiology and         !
+!         environmental regulation of stomatal conductance, photosynthesis and transpir-   !
+!         ation: a model that includes a laminar boundary layer, Agric. and Forest         !
+!         Meteorol., 54, 107-136.                                                          !
+! - C92 - Collatz, G. J., M. Ribas-Carbo, J. A. Berry, 1992: Coupled photosynthesis-       !
+!         stomatal conductance model for leaves of C4 plants.  Aust. J. Plant Physiol.,    !
+!         19, 519-538.                                                                     !
+! - E78 - Ehleringer, J. R., 1978: Implications of quantum yield differences on the        !
+!         distributions of C3 and C4 grasses.  Oecologia, 31, 255-267.                     !
+!                                                                                          !
+!------------------------------------------------------------------------------------------!
 subroutine init_physiology_params()
-   use physiology_coms, only : c34smin_lint_co2  & ! intent(out)
-                             , c34smax_lint_co2  & ! intent(out)
-                             , c34smax_gsw       & ! intent(out)
-                             , gbh_2_gbw         & ! intent(out)
-                             , gbw_2_gbc         & ! intent(out)
-                             , gsw_2_gsc         & ! intent(out)
-                             , gsc_2_gsw         & ! intent(out)
-                             , tarrh             & ! intent(out)
-                             , tarrhi            & ! intent(out)
-                             , compp_refkin      & ! intent(out)
-                             , compp_ecoeff      & ! intent(out)
-                             , vm_ecoeff         & ! intent(out)
-                             , vm_tempcoeff      & ! intent(out)
-                             , kco2_prefac       & ! intent(out)
-                             , kco2_ecoeff       & ! intent(out)
-                             , ko2_prefac        & ! intent(out)
-                             , ko2_ecoeff        & ! intent(out)
-                             , klowco2           & ! intent(out)
-                             , o2_ref            & ! intent(out)
-                             , par_twilight_min  & ! intent(out)
-                             , c34smin_lint_co28 & ! intent(out)
-                             , c34smax_lint_co28 & ! intent(out)
-                             , c34smax_gsw8      & ! intent(out)
-                             , gbh_2_gbw8        & ! intent(out)
-                             , gbw_2_gbc8        & ! intent(out)
-                             , gsw_2_gsc8        & ! intent(out)
-                             , gsc_2_gsw8        & ! intent(out)
-                             , tarrh8            & ! intent(out)
-                             , tarrhi8           & ! intent(out)
-                             , compp_refkin8     & ! intent(out)
-                             , compp_ecoeff8     & ! intent(out)
-                             , vm_ecoeff8        & ! intent(out)
-                             , vm_tempcoeff8     & ! intent(out)
-                             , kco2_prefac8      & ! intent(out)
-                             , kco2_ecoeff8      & ! intent(out)
-                             , ko2_prefac8       & ! intent(out)
-                             , ko2_ecoeff8       & ! intent(out)
-                             , klowco28          & ! intent(out)
-                             , par_twilight_min8 & ! intent(out)
-                             , o2_ref8           & ! intent(out)
-                             , print_photo_debug & ! intent(out)
-                             , photo_prefix      ! ! intent(out)
-   use consts_coms    , only : umol_2_mol        & ! intent(in)
-                             , t00               & ! intent(in)
-                             , mmdoc             & ! intent(in)
-                             , Watts_2_Ein       ! ! intent(in)
+   use physiology_coms, only : iphysiol            & ! intent(out)
+                             , c34smin_lint_co2    & ! intent(out)
+                             , c34smax_lint_co2    & ! intent(out)
+                             , c34smax_gsw         & ! intent(out)
+                             , gbh_2_gbw           & ! intent(out)
+                             , gbw_2_gbc           & ! intent(out)
+                             , gsw_2_gsc           & ! intent(out)
+                             , gsc_2_gsw           & ! intent(out)
+                             , kookc               & ! intent(out)
+                             , tphysref            & ! intent(out)
+                             , tphysrefi           & ! intent(out)
+                             , fcoll               & ! intent(out)
+                             , compp_refval        & ! intent(out)
+                             , compp_hor           & ! intent(out)
+                             , compp_q10           & ! intent(out)
+                             , kco2_refval         & ! intent(out)
+                             , kco2_hor            & ! intent(out)
+                             , kco2_q10            & ! intent(out)
+                             , ko2_refval          & ! intent(out)
+                             , ko2_hor             & ! intent(out)
+                             , ko2_q10             & ! intent(out)
+                             , klowco2             & ! intent(out)
+                             , o2_ref              & ! intent(out)
+                             , par_twilight_min    & ! intent(out)
+                             , qyield0             & ! intent(out)
+                             , qyield1             & ! intent(out)
+                             , qyield2             & ! intent(out)
+                             , ehleringer_alpha0c  & ! intent(out)
+                             , c34smin_lint_co28   & ! intent(out)
+                             , c34smax_lint_co28   & ! intent(out)
+                             , c34smax_gsw8        & ! intent(out)
+                             , gbh_2_gbw8          & ! intent(out)
+                             , gbw_2_gbc8          & ! intent(out)
+                             , gsw_2_gsc8          & ! intent(out)
+                             , gsc_2_gsw8          & ! intent(out)
+                             , kookc8              & ! intent(out)
+                             , tphysref8           & ! intent(out)
+                             , tphysrefi8          & ! intent(out)
+                             , fcoll8              & ! intent(out)
+                             , compp_refval8       & ! intent(out)
+                             , compp_hor8          & ! intent(out)
+                             , compp_q108          & ! intent(out)
+                             , kco2_refval8        & ! intent(out)
+                             , kco2_hor8           & ! intent(out)
+                             , kco2_q108           & ! intent(out)
+                             , ko2_refval8         & ! intent(out)
+                             , ko2_hor8            & ! intent(out)
+                             , ko2_q108            & ! intent(out)
+                             , klowco28            & ! intent(out)
+                             , par_twilight_min8   & ! intent(out)
+                             , o2_ref8             & ! intent(out)
+                             , qyield08            & ! intent(out)
+                             , qyield18            & ! intent(out)
+                             , qyield28            & ! intent(out)
+                             , ehleringer_alpha0c8 & ! intent(out)
+                             , print_photo_debug   & ! intent(out)
+                             , photo_prefix        ! ! intent(out)
+   use consts_coms    , only : umol_2_mol          & ! intent(in)
+                             , t00                 & ! intent(in)
+                             , mmdoc               & ! intent(in)
+                             , mmcod               & ! intent(in)
+                             , mmo2                & ! intent(in)
+                             , mmdryi              & ! intent(in)
+                             , Watts_2_Ein         & ! intent(in)
+                             , prefsea             ! ! intent(in)
    implicit none
+   !------ Local constants. ---------------------------------------------------------------!
+   real, parameter :: ehl0           =  8.10e-2 ! Intercept                    (E78, eqn 2)
+   real, parameter :: ehl1           = -5.30e-5 ! Linear coefficient           (E78, eqn 2)
+   real, parameter :: ehl2           = -1.90e-5 ! Quadratic coefficient        (E78, eqn 2)
+   real, parameter :: tau_refval_f96 =  4500.   ! Reference tau                (F96)
+   real, parameter :: tau_refval_c91 =  2600.   ! Reference tau                (C91)
+   real, parameter :: tau_hor        = -5000.   ! "Activation energy" for tau  (F96)
+   real, parameter :: tau_q10        =  0.57    ! "Q10" term for tau           (C91)  
+   !---------------------------------------------------------------------------------------!
 
 
 
@@ -2663,12 +2830,15 @@ subroutine init_physiology_params()
 
 
    !---------------------------------------------------------------------------------------!
-   !     Many parameters in the model are temperature-dependent and utilise a modified     !
-   ! Arrhenius function to determine this dependence.  For that to work, reference values  !
-   ! at a given temperature (tarrh, in Kelvin). 
+   !     Many parameters in the model are temperature-dependent and we must provide a      !
+   ! reference value and shape parameters.  Here we define this reference temperature.     !
+   ! IMPORTANT: Some schemes use 15 C (F96-based in particular), whilst others use 25 C    !
+   ! (C91-based in particular).  Be sure to make the necessary conversions of these        !
+   ! references otherwise you may have surprises.                                          !
    !---------------------------------------------------------------------------------------!
-   tarrh        = 15.0+t00
-   tarrhi       = 1./tarrh
+   tphysref     = 15.0+t00
+   tphysrefi    = 1./tphysref
+   fcoll        = 0.10
    !---------------------------------------------------------------------------------------!
 
 
@@ -2681,43 +2851,105 @@ subroutine init_physiology_params()
    !---------------------------------------------------------------------------------------!
 
 
+
    !---------------------------------------------------------------------------------------!
-   !     The next two variables are the parameters for the compensation point.             !
+   !     This parameter is from F80, and is the ratio between the turnover number for the  !
+   ! oxylase function and the turnover number for the carboxylase function.                !
    !---------------------------------------------------------------------------------------!
-   compp_refkin =  4500.  ! Reference ratio of "kinetic parameters describing the
-                          !    partioning of enzyme activity to carboxylase or
-                          !    oxylase function" (F96)                           [    ----]
-   compp_ecoeff = -5000.  ! "Activation energy" parameter                        [       K]
+   kookc        = 0.21
    !---------------------------------------------------------------------------------------!
 
 
 
    !---------------------------------------------------------------------------------------!
-   !      The next two variables are the parameter for the maximum capacity of Rubisco to  !
-   ! perform the carboxylase function.  The reference value is PFT-dependent and the       !
-   ! values are assigned in init_pft_photo_params.                                         !
+   !      Define the Michaelis-Mentel constants for CO2 and O2, and the CO2 compensation   !
+   ! point without accounting leaf respiration (Gamma*).  Here we define the reference     !
+   ! value and the compensation point parameters in a slightly different way depending on  !
+   ! whether to use F96-based or C91-based physiology, and whether to use the              !
+   ! pre-determined parameters or functions of the Michaelis-Mentel constant parameters.   !
    !---------------------------------------------------------------------------------------!
-   vm_ecoeff    = 3000.     ! Reference exponential coeff. for carboxylase fctn. [       K]
-   vm_tempcoeff = 0.4       ! Coefficient to control the temperature dependence  [     ---]
-   !---------------------------------------------------------------------------------------!
+   !----- Common parameters. --------------------------------------------------------------!
+   kco2_hor = 6000.  ! "Activation energy" for CO2 Michaelis-Mentel constant     [       K]
+   kco2_q10 = 2.1    ! Q10 term for CO2 Michaelis-Mentel constant                [     ---]
+   ko2_hor  = 1400.  ! "Activation energy" for O2 Michaelis-Mentel constants     [       K]
+   ko2_q10  = 1.2    ! Q10 term for O2 Michaelis-Mentel constant                 [     ---]
+   select case (iphysiol)
+   case (0)
+      !----- Use default CO2 and O2 reference values from F96. ----------------------------!
+      kco2_refval   = 150. * umol_2_mol ! Reference Michaelis-Mentel CO2 coeff.  [ mol/mol]
+      ko2_refval    = 0.250             ! Reference Michaelis-Mentel O2 coeff.   [ mol/mol]
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !   Use the default CO2 compensation point values from F96/M01, based on tau.        !
+      !   Gamma* = [O2] / (2. * tau)                                                       !
+      !------------------------------------------------------------------------------------!
+      compp_refval  = o2_ref / (2. * tau_refval_f96) ! Reference value           [ mol/mol]
+      compp_hor     = -tau_hor                       ! "Activation energy"       [       K]
+      compp_q10     = 1. / tau_q10                   ! "Q10" term                [     ---]
+      !------------------------------------------------------------------------------------!
+
+   case (1)
+      !----- Use default CO2 and O2 reference values from F96. ----------------------------!
+      kco2_refval   = 150. * umol_2_mol ! Reference Michaelis-Mentel CO2 coeff.  [ mol/mol]
+      ko2_refval    = 0.250             ! Reference Michaelis-Mentel O2 coeff.   [ mol/mol]
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !   Find the CO2 compensation point values using an approach similar to F80 and CLM. !
+      !   Gamma* = (ko/kc) * [O2] * KCO2 / (2. * KO2)                                                       !
+      !------------------------------------------------------------------------------------!
+      compp_refval  = kookc * o2_ref * kco2_refval / ko2_refval ! Ref. value     [ mol/mol]
+      compp_hor     = kco2_hor - ko2_hor                        ! "Act. energy"  [       K]
+      compp_q10     = kco2_q10 / ko2_q10                        ! "Q10" term     [     ---]
+      !------------------------------------------------------------------------------------!
+
+   case (2)
+      !------------------------------------------------------------------------------------!
+      !    Use default CO2 and O2 reference values from C91.  Here we must convert the     !
+      ! reference values from Pa to mol/mol, and the reference must be set to 15 C.        !
+      !------------------------------------------------------------------------------------!
+      !------ Reference Michaelis-Mentel CO2 coefficient [mol/mol]. -----------------------! 
+      kco2_refval   = 30. * mmcod / prefsea / kco2_q10
+      !------ Reference Michaelis-Mentel O2 coefficient [mol/mol]. ------------------------! 
+      ko2_refval    = 3.e4 * mmo2 * mmdryi / prefsea / ko2_q10
+      !------------------------------------------------------------------------------------!
 
 
 
-   !---------------------------------------------------------------------------------------!
-   !      The following terms are used to find the Michaelis-Menten coefficient for CO2.   !
-   !---------------------------------------------------------------------------------------!
-   kco2_prefac    = 150. * umol_2_mol ! Reference CO2 concentration              [ mol/mol]
-   kco2_ecoeff    = 6000.             ! Reference exponential coefficient        [       K]
+      !------------------------------------------------------------------------------------!
+      !   Use the default CO2 compensation point values from C91, based on tau.            !
+      !   Gamma* = [O2] / (2. * tau)                                                       !
+      !------------------------------------------------------------------------------------!
+      compp_refval  = o2_ref * tau_q10 / (2. * tau_refval_c91) ! Reference value [ mol/mol]
+      compp_hor     = - tau_hor                                ! "Activation en. [       K]
+      compp_q10     = 1. / tau_q10                             ! "Q10" term      [     ---]
+      !------------------------------------------------------------------------------------!
+   case (3)
+      !------------------------------------------------------------------------------------!
+      !    Use default CO2 and O2 reference values from C91.  Here we must convert the     !
+      ! reference values from Pa to mol/mol, and the reference must be set to 15 C.        !
+      !------------------------------------------------------------------------------------!
+      !------ Reference Michaelis-Mentel CO2 coefficient [mol/mol]. -----------------------! 
+      kco2_refval   = 30. * mmcod / prefsea / kco2_q10
+      !------ Reference Michaelis-Mentel O2 coefficient [mol/mol]. ------------------------! 
+      ko2_refval    = 3.e4 * mmo2 * mmdryi / prefsea / ko2_q10
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !   Use the default CO2 compensation point values from C91, based on tau.            !
+      !   Gamma* = [O2] / (2. * tau)                                                       !
+      !------------------------------------------------------------------------------------!
+      compp_refval  = kookc * o2_ref * kco2_refval / ko2_refval ! Ref. value     [ mol/mol]
+      compp_hor     = kco2_hor - ko2_hor                        ! "Act. energy"  [       K]
+      compp_q10     = kco2_q10 / ko2_q10                        ! "Q10" term     [     ---]
+      !------------------------------------------------------------------------------------!
+   end select
    !---------------------------------------------------------------------------------------! 
-
-
-
-   !---------------------------------------------------------------------------------------! 
-   !     These terms are used to find the Michaelis-Mentencoefficient for O2.              !
-   !---------------------------------------------------------------------------------------!
-   ko2_prefac    = 0.250     ! Reference O2 concentration.                        [ mol/mol]
-   ko2_ecoeff    =  1400.    ! Reference exponential coefficient                  [       K]
-   !---------------------------------------------------------------------------------------!
 
 
 
@@ -2751,29 +2983,51 @@ subroutine init_physiology_params()
    !---------------------------------------------------------------------------------------!
 
 
+
+   !---------------------------------------------------------------------------------------!
+   !     This is the quantum yield response curve, using equation 2 from E78:              !
+   !     The coefficients here are different because his function used temperature in      !
+   ! Celsius and here we give the coefficients for temperature in Kelvin.  We don't use    !
+   ! this equation for temperatures below 0C, instead we find the equivalent at 0 Celsius  !
+   ! and assume it is constant below this temperature.                                     !
+   !---------------------------------------------------------------------------------------!
+   qyield0            = ehl0 - ehl1 * t00 + ehl2 * t00 * t00
+   qyield1            = ehl1 - 2. * ehl2 * t00
+   qyield2            = ehl2
+   ehleringer_alpha0c = ehl0
+   !---------------------------------------------------------------------------------------!
+
+
    !---------------------------------------------------------------------------------------!
    !    Find the double precision version of the variables above.                          !
    !---------------------------------------------------------------------------------------!
-   c34smin_lint_co28 = dble(c34smin_lint_co2)
-   c34smax_lint_co28 = dble(c34smax_lint_co2)
-   c34smax_gsw8      = dble(c34smax_gsw     )
-   gbh_2_gbw8        = dble(gbh_2_gbw       )
-   gbw_2_gbc8        = dble(gbw_2_gbc       )
-   gsw_2_gsc8        = dble(gsw_2_gsc       )
-   gsc_2_gsw8        = dble(gsc_2_gsw       )
-   tarrh8            = dble(tarrh           )
-   tarrhi8           = dble(tarrhi          )
-   compp_refkin8     = dble(compp_refkin    )
-   compp_ecoeff8     = dble(compp_ecoeff    )
-   vm_ecoeff8        = dble(vm_ecoeff       )
-   vm_tempcoeff8     = dble(vm_tempcoeff    )
-   kco2_prefac8      = dble(kco2_prefac     )
-   kco2_ecoeff8      = dble(kco2_ecoeff     )
-   ko2_prefac8       = dble(ko2_prefac      )
-   ko2_ecoeff8       = dble(ko2_ecoeff      )
-   klowco28          = dble(klowco2         )
-   o2_ref8           = dble(o2_ref          )
-   par_twilight_min8 = dble(par_twilight_min)
+   c34smin_lint_co28   = dble(c34smin_lint_co2  )
+   c34smax_lint_co28   = dble(c34smax_lint_co2  )
+   c34smax_gsw8        = dble(c34smax_gsw       )
+   gbh_2_gbw8          = dble(gbh_2_gbw         )
+   gbw_2_gbc8          = dble(gbw_2_gbc         )
+   gsw_2_gsc8          = dble(gsw_2_gsc         )
+   gsc_2_gsw8          = dble(gsc_2_gsw         )
+   kookc8              = dble(kookc             )
+   tphysref8           = dble(tphysref          )
+   tphysrefi8          = dble(tphysrefi         )
+   fcoll8              = dble(fcoll             )
+   compp_refval8       = dble(compp_refval      )
+   compp_hor8          = dble(compp_hor         )
+   compp_q108          = dble(compp_q10         )
+   kco2_refval8        = dble(kco2_refval       )
+   kco2_hor8           = dble(kco2_hor          )
+   kco2_q108           = dble(kco2_q10          )
+   ko2_refval8         = dble(ko2_refval        )
+   ko2_hor8            = dble(ko2_hor           )
+   ko2_q108            = dble(ko2_q10           )
+   klowco28            = dble(klowco2           )
+   o2_ref8             = dble(o2_ref            )
+   par_twilight_min8   = dble(par_twilight_min  )
+   qyield08            = dble(qyield0           )
+   qyield18            = dble(qyield1           )
+   qyield28            = dble(qyield2           )
+   ehleringer_alpha0c8 = dble(ehleringer_alpha0c)
    !---------------------------------------------------------------------------------------!
 
 
@@ -2862,7 +3116,9 @@ subroutine init_soil_coms
                              , infiltration_method   & ! intent(out)
                              , soil_rough8           & ! intent(out)
                              , snow_rough8           & ! intent(out)
-                             , betapower8            ! ! intent(out)
+                             , betapower8            & ! intent(out)
+                             , freezecoef            & ! intent(out)
+                             , freezecoef8           ! ! intent(out)
 
    use grid_coms      , only : ngrids                ! ! intent(in)
    use consts_coms    , only : grav                  & ! intent(in)
@@ -2874,9 +3130,19 @@ subroutine init_soil_coms
    integer            :: nsoil
    integer            :: ifm
    !----- Local constants. ----------------------------------------------------------------!
-   real   , parameter :: fieldcp_K  = 0.1 ! hydraulic conduct. at field capacity   [mm/day]
-   real   , parameter :: soilcp_MPa = 3.1 ! soil-water potential for air dry soil  [   MPa]
-   real   , parameter :: soilwp_MPa = 1.5 ! soil-water potential at wilting point  [   MPa]
+   real   , parameter :: fieldcp_K  = 0.1     ! hydraulic conduct. at field cap.   [mm/day]
+   real   , parameter :: soilcp_MPa = 3.1     ! soil-water pot. for air dry soil   [   MPa]
+   real   , parameter :: soilwp_MPa = 1.5     ! soil-water pot. at wil. point      [   MPa]
+   real   , parameter :: sand_hcapv = 2.128e6 ! Sand vol. heat capacity            [J/m3/K]
+   real   , parameter :: clay_hcapv = 2.385e6 ! Clay vol. heat capacity            [J/m3/K]
+   real   , parameter :: silt_hcapv = 2.286e6 ! Silt vol. heat capacity (*)        [J/m3/K]
+   real   , parameter :: air_hcapv  = 1.212e6 ! Air vol. heat capacity             [J/m3/K]
+   !---------------------------------------------------------------------------------------!
+   ! (*) If anyone has the heat capacity for silt, please feel free to add it in here, I   !
+   !     didn't find any.  Apparently no one knows, and I've seen in other models that     !
+   !     people just assume either the same as sand or the average.  Here I'm just using   !
+   !     halfway.  I think the most important thing is to take into account the soil and   !
+   !     the air, which are the most different.                                            !
    !---------------------------------------------------------------------------------------!
 
 
@@ -2888,6 +3154,7 @@ subroutine init_soil_coms
    snow_rough          = 0.001  ! Snowcover roughness height                     [       m]
    tiny_sfcwater_mass  = 1.0e-3 ! Minimum allowed mass in temporary layers       [   kg/m2]
    infiltration_method = 0      ! Infiltration method, used in rk4_derivs        [     0|1]
+   freezecoef          = 7.0    ! Coeff. for infiltration of frozen water        [     ---]
    !---------------------------------------------------------------------------------------!
 
 
@@ -2910,57 +3177,57 @@ subroutine init_soil_coms
    !---------------------------------------------------------------------------------------!
    soil = (/                                                                               &
       !----- 1. Sand. ---------------------------------------------------------------------!
-       soil_class( -0.049831046,     0.373250,     3.295000, 1421830.,  0.026183447        &
+       soil_class( -0.049831046,     0.373250,     3.295000, 1584640.,  0.026183447        &
                  ,  0.032636854,  2.446421e-5,  0.000500000,   0.3000,       4.8000        &
                  ,      -2.7000,  0.132130936,        0.920,    0.030,        0.050        &
                  ,        1200.,        1600.                                      )       &
       !----- 2. Loamy sand. ---------------------------------------------------------------!
-      ,soil_class( -0.067406224,     0.385630,     3.794500, 1395530.,  0.041560499        &
+      ,soil_class( -0.067406224,     0.385630,     3.794500, 1584809.,  0.041560499        &
                  ,  0.050323046,  1.776770e-5,  0.000600000,   0.3000,       4.6600        &
                  ,      -2.6000,  0.155181959,        0.825,    0.060,        0.115        &
                  ,        1250.,        1600.                                      )       &
       !----- 3. Sandy loam. ---------------------------------------------------------------!
-      ,soil_class( -0.114261521,     0.407210,     4.629000, 1350750.,  0.073495043        &
+      ,soil_class( -0.114261521,     0.407210,     4.629000, 1587042.,  0.073495043        &
                  ,  0.085973722,  1.022660e-5,  0.000769000,   0.2900,       4.2700        &
                  ,      -2.3100,  0.194037750,        0.660,    0.110,        0.230        &
                  ,        1300.,        1600.                                      )       &
       !----- 4. Silt loam. ----------------------------------------------------------------!
-      ,soil_class( -0.566500112,     0.470680,     5.552000, 1264080.,  0.150665475        &
+      ,soil_class( -0.566500112,     0.470680,     5.552000, 1568225.,  0.150665475        &
                  ,  0.171711257,  2.501101e-6,  0.000010600,   0.2700,       3.4700        &
                  ,      -1.7400,  0.273082063,        0.200,    0.160,        0.640        &
                  ,        1400.,        1600.                                      )       &
       !----- 5. Loam. ---------------------------------------------------------------------!
-      ,soil_class( -0.260075834,     0.440490,     5.646000,  1289630,  0.125192234        &
+      ,soil_class( -0.260075834,     0.440490,     5.646000, 1588082.,  0.125192234        &
                  ,  0.142369513,  4.532431e-6,  0.002200000,   0.2800,       3.6300        &
                  ,      -1.8500,  0.246915025,        0.410,    0.170,        0.420        &
                  ,        1350.,        1600.                                      )       &
       !----- 6. Sandy clay loam. ----------------------------------------------------------!
-      ,soil_class( -0.116869181,     0.411230,     7.162000, 1272490.,  0.136417267        &
+      ,soil_class( -0.116869181,     0.411230,     7.162000, 1636224.,  0.136417267        &
                  ,  0.150969505,  6.593731e-6,  0.001500000,   0.2800,       3.7800        &
                  ,      -1.9600,  0.249629687,        0.590,    0.270,        0.140        &
                  ,        1350.,        1600.                                      )       &
       !----- 7. Silty clay loam. ----------------------------------------------------------!
-      ,soil_class( -0.627769194,     0.478220,     8.408000, 1173020.,  0.228171947        &
+      ,soil_class( -0.627769194,     0.478220,     8.408000, 1621562.,  0.228171947        &
                  ,  0.248747504,  1.435262e-6,  0.000107000,   0.2600,       2.7300        &
                  ,      -1.2000,  0.333825332,        0.100,    0.340,        0.560        &
                  ,        1500.,        1600.                                      )       &
       !----- 8. Clayey loam. --------------------------------------------------------------!
-      ,soil_class( -0.281968114,     0.446980,     8.342000, 1204260.,  0.192624431        &
+      ,soil_class( -0.281968114,     0.446980,     8.342000, 1636911.,  0.192624431        &
                  ,  0.210137962,  2.717260e-6,  0.002200000,   0.2700,       3.2300        &
                  ,      -1.5600,  0.301335491,        0.320,    0.340,        0.340        &
                  ,        1450.,        1600.                                      )       &
       !----- 9. Sandy clay. ---------------------------------------------------------------!
-      ,soil_class( -0.121283019,     0.415620,     9.538000, 1198500.,  0.182198910        &
+      ,soil_class( -0.121283019,     0.415620,     9.538000, 1673422.,  0.182198910        &
                  ,  0.196607427,  4.314507e-6,  0.000002167,   0.2700,       3.3200        &
                  ,      -1.6300,  0.286363001,        0.520,    0.420,        0.060        &
                  ,        1450.,        1600.                                      )       &
       !----- 10. Silty clay. --------------------------------------------------------------!
-      ,soil_class( -0.601312179,     0.479090,    10.461000, 1111830.,  0.263228486        &
+      ,soil_class( -0.601312179,     0.479090,    10.461000, 1652723.,  0.263228486        &
                  ,  0.282143846,  1.055191e-6,  0.000001033,   0.2500,       2.5800        &
                  ,      -1.0900,  0.360319788,        0.060,    0.470,        0.470        &
                  ,        1650.,        1600.                                      )       &
       !----- 11. Clay. --------------------------------------------------------------------!
-      ,soil_class( -0.299226464,     0.454400,    12.460000, 1076200.,  0.259868987        &
+      ,soil_class( -0.299226464,     0.454400,    12.460000, 1692037.,  0.259868987        &
                  ,  0.275459057,  1.307770e-6,  0.000001283,   0.2500,       2.4000        &
                  ,      -0.9600,  0.353255209,        0.200,    0.600,        0.200        &
                  ,        1700.,        1600.                                      )       &
@@ -2975,22 +3242,22 @@ subroutine init_soil_coms
                  ,       0.0000,  0.000000001,       0.0000,   0.0000,       0.0000        &
                  ,           0.,           0.                                      )       &
       !----- 14. Silt. --------------------------------------------------------------------!
-      ,soil_class( -1.047128548,     0.492500,     3.862500, 1293300.,  0.112299080        &
+      ,soil_class( -1.047128548,     0.492500,     3.862500, 1510052.,  0.112299080        &
                  ,  0.135518820,  2.046592e-6,  0.000010600,   0.2700,       3.4700        &
                  ,      -1.7400,  0.245247642,        0.075,    0.050,        0.875        &
                  ,        1400.,        1600.                                      )       &
       !----- 15. Heavy clay. --------------------------------------------------------------!
-      ,soil_class( -0.322106879,     0.461200,    15.630000,  976600.,  0.296806035        &
+      ,soil_class( -0.322106879,     0.461200,    15.630000, 1723619.,  0.296806035        &
                  ,  0.310916364,  7.286705e-7,  0.000001283,   0.2500,       2.4000        &
                  ,      -0.9600,  0.382110712,        0.100,    0.800,        0.100        &
                  ,        1700.,        1600.                                      )       &
       !----- 16. Clayey sand. -------------------------------------------------------------!
-      ,soil_class( -0.176502150,     0.432325,    11.230000, 1133075.,  0.221886929        &
+      ,soil_class( -0.176502150,     0.432325,    11.230000, 1688353.,  0.221886929        &
                  ,  0.236704039,  2.426785e-6,  0.000001283,   0.2500,       2.4000        &
                  ,      -0.9600,  0.320146708,        0.375,    0.525,        0.100        &
                  ,        1700.,        1600.                                      )       &
       !----- 17. Clayey silt. -------------------------------------------------------------!
-      ,soil_class( -0.438278332,     0.467825,    11.305000, 1097575.,  0.261376708        &
+      ,soil_class( -0.438278332,     0.467825,    11.305000, 1670103.,  0.261376708        &
                  ,  0.278711303,  1.174982e-6,  0.000001283,   0.2500,       2.4000        &
                  ,      -0.9600,  0.357014719,        0.125,    0.525,        0.350        &
                  ,        1700.,        1600.                                      )       &
@@ -3020,6 +3287,8 @@ subroutine init_soil_coms
          !----- Hydraulic conductivity at saturation [ m/s ]. -----------------------------!
          soil(nslcon)%slcons  = (10.**(-0.60 + 1.26*slxsand - 0.64*slxclay))               &
                               * 0.0254/hr_sec
+         !----- Hydraulic conductivity at saturation at top [ m/s ], for TOPMODEL style. --!
+         
          !----- Soil moisture at saturation [ m^3/m^3 ]. ----------------------------------!
          soil(nslcon)%slmsts  = (50.5 - 14.2*slxsand - 3.7*slxclay) / 100.
          !----- Soil field capacity[ m^3/m^3 ]. -------------------------------------------!
@@ -3029,12 +3298,29 @@ subroutine init_soil_coms
          !----- Dry soil capacity (at -3.1MPa) [ m^3/m^3 ]. -------------------------------!
          soil(nslcon)%soilcp  = soil(nslcon)%slmsts                                        &
                               *  ( -1.*soil(nslcon)%slpots / (soilcp_MPa * 1000. / grav))  &
-                              ** (1. / soil(nslcon)%slbs)                                         
+                              ** (1. / soil(nslcon)%slbs)
          !----- Wilting point capacity (at -1.5MPa) [ m^3/m^3 ]. --------------------------!
          soil(nslcon)%soilwp  = soil(nslcon)%slmsts                                        &
                               *  ( -1.*soil(nslcon)%slpots / (soilwp_MPa * 1000. / grav))  &
                               ** ( 1. / soil(nslcon)%slbs)
          !---------------------------------------------------------------------------------!
+
+         !---------------------------------------------------------------------------------!
+         !     Heat capacity.  Here we take the volume average amongst silt, clay, and     !
+         ! sand, and consider the contribution of air sitting in.  In order to keep it     !
+         ! simple, we assume that the air fraction won't change, although in reality its   !
+         ! contribution should be a function of soil moisture.  Here we use the amount of  !
+         ! air in case the soil moisture was halfway between dry air and saturated, so the !
+         ! error is not too biased.                                                        !
+         !---------------------------------------------------------------------------------!
+         soil(nslcon)%slcpd   = (1. - soil(nslcon)%slmsts)                                 &
+                              * ( soil(nslcon)%xsand * sand_hcapv                          &
+                                + soil(nslcon)%xsilt * silt_hcapv                          &
+                                + soil(nslcon)%xclay * clay_hcapv )                        &
+                              + 0.5 * (soil(nslcon)%soilcp + soil(nslcon)%slmsts)          &
+                              * air_hcapv
+         !---------------------------------------------------------------------------------!
+
       end if
    end do
    !---------------------------------------------------------------------------------------!
@@ -3068,6 +3354,7 @@ subroutine init_soil_coms
    betapower8  = dble(betapower)
    soil_rough8 = dble(soil_rough)
    snow_rough8 = dble(snow_rough)
+   freezecoef8 = dble(freezecoef)
    return
 end subroutine init_soil_coms
 !==========================================================================================!
@@ -3372,8 +3659,8 @@ subroutine init_rk4_params()
    rk4min_can_shv    =  1.0000d-8 ! Minimum canopy    specific humidity         [kg/kg_air]
    rk4max_can_shv    =  4.6000d-2 ! Maximum canopy    specific humidity         [kg/kg_air]
    rk4max_can_rhv    =  1.1000d0  ! Maximum canopy    relative humidity (**)    [      ---]
-   rk4min_can_co2    =  1.0000d1  ! Minimum canopy    CO2 mixing ratio          [ µmol/mol]
-   rk4max_can_co2    =  5.0000d3  ! Maximum canopy    CO2 mixing ratio          [ µmol/mol]
+   rk4min_can_co2    =  6.0000d1  ! Minimum canopy    CO2 mixing ratio          [ µmol/mol]
+   rk4max_can_co2    =  5.0000d4  ! Maximum canopy    CO2 mixing ratio          [ µmol/mol]
    rk4min_soil_temp  =  1.8400d2  ! Minimum soil      temperature               [        K]
    rk4max_soil_temp  =  3.5100d2  ! Maximum soil      temperature               [        K]
    rk4min_veg_temp   =  1.8400d2  ! Minimum leaf      temperature               [        K]

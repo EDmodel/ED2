@@ -230,6 +230,7 @@ end subroutine load_ecosystem_state
 ! ises some RK4 variables that depend on the soil grid.                                    !
 !------------------------------------------------------------------------------------------!
 subroutine sfcdata_ed()
+   use rk4_coms    , only : ipercol           ! ! intent(in)
    use grid_coms   , only : nzg               & ! intent(in)
                           , nzs               ! ! intent(in)
    use soil_coms   , only : ed_nstyp          & ! intent(in)
@@ -274,6 +275,8 @@ subroutine sfcdata_ed()
    real                   :: refdepth
    real                   :: thik
    real                   :: stretch
+   real                   :: slz0
+   real                   :: ezg
    !---------------------------------------------------------------------------------------!
 
 
@@ -294,7 +297,15 @@ subroutine sfcdata_ed()
       slzt8   (k) = dble(slzt   (k))
    end do
 
-   do k = 2,nzg
+   !----- Find the exponential increase factor. -------------------------------------------!
+   ezg  = log(slz(1)/slz(nzg)) / log(real(nzg))
+   slz0 = slz(1) * (real(nzg+1)/real(nzg))**ezg
+
+
+   slzt (0) = .5 * (slz0 + slz(1))
+   slzt8(0) = dble(slzt(0))
+
+   do k = 1,nzg
       dslzt    (k) = slzt(k) - slzt(k-1)
       dslzti   (k) = 1. / dslzt(k)
       dslztidt (k) = dslzti(k) * dtlsm
@@ -303,16 +314,9 @@ subroutine sfcdata_ed()
       dslztidt8(k) = dble(dslztidt(k))
    end do
 
-   !----- These must be defined for free drainage bc (RGK) --------------------------------!
-   dslzt    (1) = 2.0*slz(1) - slzt(1)
-   dslzti   (1) = 1./dslzt(1)
-   dslztidt (1) = dslzti(1) * dtlsm
-   dslzt8   (1) = dble(dslzt   (1))
-   dslzti8  (1) = dble(dslzti  (1))
-   dslztidt8(1) = dble(dslztidt(1))
 
    !----- Soil constants. -----------------------------------------------------------------!
-   refdepth = -2.0
+   refdepth = -0.5
 
    do nnn = 1,ed_nstyp
       if (nnn /= 13) then
@@ -320,10 +324,22 @@ subroutine sfcdata_ed()
       else
          fhydraul(nnn) = 0.
       end if
-      do k = 1,nzg
-         slcons1(k,nnn) = soil(nnn)%slcons     ! ORIGINAL form - const with depth
-   !     slcons1(k,nnn) = soilparms(5,nnn)  &  ! TOPMODEL form - large at surface
-   !        * exp(slz(k) * fhydraul(nnn))      !    and exp decrease with depth
+      do k = 0,nzg
+      
+         select case (ipercol)
+         case (0,1)
+            !----- Original form, constant with depth.  -----------------------------------!
+            slcons1(k,nnn) = soil(nnn)%slcons
+         case (2)
+            !------------------------------------------------------------------------------!
+            !    TOPMODEL form, similar to CLM.  Here we use the same definition of slcons !
+            ! from Cosby et al. (1984) because it has a stronger spread and it accounts    !
+            ! for sand and clay contents.                                                  !
+            !------------------------------------------------------------------------------!
+            slcons1(k,nnn) = soil(nnn)%slcons * exp ( - slzt(k) / refdepth)
+         end select
+
+         !------ Find the double precision. -----------------------------------------------!
          slcons18(k,nnn) = dble(slcons1(k,nnn))
       end do
 

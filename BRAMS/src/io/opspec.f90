@@ -1035,15 +1035,15 @@ subroutine opspec3
      ifaterr = ifaterr + 1
   end if
 
-  if (isoilbc < 0 .or. isoilbc > 3) then
+  if (isoilbc < 0 .or. isoilbc > 4) then
      write (unit=*,fmt='(a,1x,i4,a)')                                                      &
-       'Invalid ISOILBC, it must be between 0 and 3. Yours is set to',isoilbc,'...'
+       'Invalid ISOILBC, it must be between 0 and 4. Yours is set to',isoilbc,'...'
      ifaterr = ifaterr +1
   end if
  
-  if (ipercol < 0 .or. ipercol > 1) then
+  if (ipercol < 0 .or. ipercol > 2) then
      write (unit=*,fmt='(a,1x,i4,a)')                                                      &
-       'Invalid IPERCOL, it must be between 0 and 1. Yours is set to',ipercol,'...'
+       'Invalid IPERCOL, it must be between 0 and 2. Yours is set to',ipercol,'...'
      ifaterr = ifaterr +1
   end if
    
@@ -1199,20 +1199,33 @@ subroutine opspec3
   end select
 
   do k=1,nzg
-     if (slz(k) .gt. -.001) then
-        print*, 'fatal - soil level',k,' not (enough) below ground'  &
-             ,' level'
+     if (slz(k) > -.001) then
+        write (unit=*,fmt='(a,200(es12.5,1x))') 'SLZ = ',slz(1:nzg)
+        write (unit=*,fmt='(a,1x,i5,1x,a,a)') 'FATAL - soil level',k,'is greater than '    &
+                                             ,'-0.001 m.  Make it deeper...'
         ifaterr=ifaterr+1
      endif
   enddo
 
+
   do k=1,nzg-1
-     if (slz(k)-slz(k+1) .gt. .001) then
-        print*, 'fatal - soil level',k,' not (enough) deeper than'  &
-             ,' soil level',k+1
+     if (slz(k)-slz(k+1) > .001) then
+        write (unit=*,fmt='(a)') ' FATAL - Soil layers must be defined from bottom to top.'
+        write (unit=*,fmt='(a,1x,i5,1x,a,1x,es12.5)') '   * Layer=',k  ,' SLZ =',slz(k  )
+        write (unit=*,fmt='(a,1x,i5,1x,a,1x,es12.5)') '   * Layer=',k+1,' SLZ =',slz(k+1)
         ifaterr=ifaterr+1
-     endif
-  enddo
+     end if
+  end do
+
+
+  do k=1,nzg
+     if (slmstr(k) < -1. .or. slmstr(k) > 2.) then
+        write (unit=*,fmt='(a,200(es12.5,1x))') 'SLMSTR = ',slmstr(1:nzg)
+        write (unit=*,fmt='(a,1x,i5,1x,a)') ' FATAL - Soil moisture index in layer',k      &
+                                           ,'is outside the allowed range [-1.0;2.0].'
+        ifaterr=ifaterr+1
+     end if
+  end do
 
   ! if the soil model will be run with no radiation, make a suggestion
   !   that the radiation be turned on. (severity - f )

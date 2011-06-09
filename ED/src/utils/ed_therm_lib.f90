@@ -300,13 +300,19 @@ module ed_therm_lib
          !---------------------------------------------------------------------------------!
          !     Determine Beta, following NP89.  However, because we want evaporation to be !
          ! shut down when the soil approaches the dry air soil moisture, we offset both    !
-         ! the soil moisture and field capacity to the soil moisture above dry air soil.   !
+         ! the soil moisture and field capacity to the soil moisture above wilting point.  !
          ! This is necessary to avoid evaporation to be large just slightly above the dry  !
          ! air soil, which was happening especially for those soil types rich in clay.     !
          !---------------------------------------------------------------------------------!
-         smterm     = (topsoil_water - soil(nsoil)%soilcp)                                 &
-                    / (soil(nsoil)%sfldcap - soil(nsoil)%soilcp)
-         beta       = (.5 * (1. - cos (min(1.,smterm) * pi1))) ** betapower
+         if (topsoil_water >= soil(nsoil)%sfldcap) then
+            beta   = 1.
+         elseif (topsoil_water <= soil(nsoil)%soilwp) then
+            beta   = 0.
+         else
+            smterm = (topsoil_water       - soil(nsoil)%soilwp)                            &
+                   / (soil(nsoil)%sfldcap - soil(nsoil)%soilwp)         
+            beta   = (.5 * (1. - cos (smterm * pi1))) ** betapower      
+         end if
          !---------------------------------------------------------------------------------!
 
 
@@ -475,16 +481,24 @@ module ed_therm_lib
 
 
 
+
+
          !---------------------------------------------------------------------------------!
          !     Determine Beta, following NP89.  However, because we want evaporation to be !
          ! shut down when the soil approaches the dry air soil moisture, we offset both    !
-         ! the soil moisture and field capacity to the soil moisture above dry air soil.   !
+         ! the soil moisture and field capacity to the soil moisture above wilting point.  !
          ! This is necessary to avoid evaporation to be large just slightly above the dry  !
          ! air soil, which was happening especially for those soil types rich in clay.     !
          !---------------------------------------------------------------------------------!
-         smterm     = (topsoil_water - soil8(nsoil)%soilcp)                                &
-                    / (soil8(nsoil)%sfldcap - soil8(nsoil)%soilcp)
-         beta       = (5.d-1 * (1.d0 - cos (min(1.d0,smterm) * pi18))) ** betapower8
+         if (topsoil_water >= soil8(nsoil)%sfldcap) then
+            beta   = 1.d0
+         elseif (topsoil_water <= soil8(nsoil)%soilwp) then
+            beta   = 0.d0
+         else
+            smterm = (topsoil_water        - soil8(nsoil)%soilwp)                          &
+                   / (soil8(nsoil)%sfldcap - soil8(nsoil)%soilwp)
+            beta   = (5.d-1 * (1.d0 - cos (smterm * pi18))) ** betapower8
+         end if
          !---------------------------------------------------------------------------------!
 
 

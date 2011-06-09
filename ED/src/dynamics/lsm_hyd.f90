@@ -1836,7 +1836,7 @@ subroutine updateHydroParms (cgrid)
            n4    = 0.0   
            sigma = 0.0
            do ico=1,cpatch%ncohorts
-              if(include_pft_ag(cpatch%pft(ico)) == 1) then
+              if(include_pft_ag(cpatch%pft(ico))) then
                  !! update non-woody correction
                  n4 = n4 + 0.01*cpatch%LAI(ico)/GrassLAImax
               else

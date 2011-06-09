@@ -802,6 +802,9 @@ subroutine update_met_drivers(cgrid)
                                    , tsupercool        & ! intent(in)
                                    , pio180            & ! intent(in)
                                    , tiny_num          ! ! intent(in)
+   use pft_coms             , only : include_pft       & ! intent(in)
+                                   , hgt_max           ! ! intent(in)
+   use ed_max_dims          , only : n_pft             ! ! intent(in)
    use therm_lib            , only : rslif             & ! function
                                    , ptrh2rvapil       & ! function
                                    , thetaeiv          & ! function
@@ -824,7 +827,9 @@ subroutine update_met_drivers(cgrid)
    integer                    :: mprev
    integer                    :: iformat
    integer                    :: iv
-   integer                    :: ipy,isi
+   integer                    :: ipy
+   integer                    :: isi
+   integer                    :: ipft
    real                       :: wnext
    real                       :: wprev
    real                       :: dtnext
@@ -845,6 +850,7 @@ subroutine update_met_drivers(cgrid)
    real(kind=4)               :: fperp_next       ! Perpendicular flux - next
    logical                    :: night_next
    logical                    :: night_prev
+   logical                    :: height_fine      ! The ref. height is high enough   [ T|F]
    !----- External functions --------------------------------------------------------------!
    logical         , external :: isleap           ! Check whether the year is leap or not.
    real(kind=4)    , external :: ed_zen           ! Cosine of zenith angle
@@ -936,6 +942,32 @@ subroutine update_met_drivers(cgrid)
             case('hgt')     !----- Air pressure. ------------------------------ [      m] -!
                do ipy = 1,cgrid%npolygons
                   cgrid%met(ipy)%geoht = cgrid%metinput(ipy)%hgt(mprev)
+
+                  !------------------------------------------------------------------------!
+                  !    The reference height must be always above the top cohort.  We never !
+                  ! know when this may happen, but if there is a risk of the reference     !
+                  ! height becoming lower than the top cohort, stop the run and explain it !
+                  ! to the user.                                                           !
+                  !------------------------------------------------------------------------!
+                  do ipft = 1,n_pft
+                     if (include_pft(ipft) .and. cgrid%met(ipy)%geoht <= hgt_max(ipft))    &
+                     then
+                        write (unit=*,fmt='(a)') '----------------------------------------'
+                        write(unit=*,fmt='(a,1x,i12)')                                     &
+                                                 ' - Polygon        =',ipy
+                        write(unit=*,fmt='(a,1x,i12)')                                     &
+                                                 ' - PFT            =',ipft
+                        write (unit=*,fmt='(a,1x,es12.5)')                                 &
+                                                 ' - Ref. Height    =',cgrid%met(ipy)%geoht
+                        write (unit=*,fmt='(a,1x,es12.5)')                                 &
+                                                 ' - PFT max height =',hgt_max(ipft)
+                        write (unit=*,fmt='(a)') '----------------------------------------'
+                        call fatal_error('Reference height must be higher than PFT '//     &
+                                         'maximum height!!','update_met_drivers'           &
+                                        ,'ed_met_driver.f90')
+                     end if
+                  end do
+                  !------------------------------------------------------------------------!
                end do
 
             case('ugrd')    !----- Zonal wind. -------------------------------- [    m/s] -!
@@ -1120,6 +1152,31 @@ subroutine update_met_drivers(cgrid)
                   cgrid%met(ipy)%geoht = cgrid%metinput(ipy)%hgt(mnext) * wnext            &
                                        + cgrid%metinput(ipy)%hgt(mprev) * wprev
                end do
+               !---------------------------------------------------------------------------!
+               !    The reference height must be always above the top cohort.  We never    !
+               ! know when this may happen, but if there is a risk of the reference height !
+               ! becoming lower than the top cohort, stop the run and explain it to the    !
+               ! user.                                                                     !
+               !---------------------------------------------------------------------------!
+               do ipft = 1,n_pft
+                  if (include_pft(ipft) .and. cgrid%met(ipy)%geoht <= hgt_max(ipft))       &
+                  then
+                     write (unit=*,fmt='(a)') '----------------------------------------'
+                     write(unit=*,fmt='(a,1x,i12)')                                        &
+                                              ' - Polygon        =',ipy
+                     write(unit=*,fmt='(a,1x,i12)')                                        &
+                                              ' - PFT            =',ipft
+                     write (unit=*,fmt='(a,1x,es12.5)')                                    &
+                                              ' - Ref. Height    =',cgrid%met(ipy)%geoht
+                     write (unit=*,fmt='(a,1x,es12.5)')                                    &
+                                              ' - PFT max height =',hgt_max(ipft)
+                     write (unit=*,fmt='(a)') '----------------------------------------'
+                     call fatal_error('Reference height must be higher than PFT '//        &
+                                      'maximum height!!','update_met_drivers'              &
+                                     ,'ed_met_driver.f90')
+                  end if
+               end do
+               !---------------------------------------------------------------------------!
 
             case('ugrd')    !----- Zonal wind. -------------------------------- [    m/s] -!
                !---------------------------------------------------------------------------!
