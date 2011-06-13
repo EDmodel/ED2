@@ -308,6 +308,7 @@ subroutine event_harvest(agb_frac8,bgb_frac8,fol_frac8,stor_frac8)
   type(polygontype), pointer :: cpoly
   type(sitetype),pointer :: csite
   type(patchtype),pointer :: cpatch
+  logical, external :: is_resolvable
 
   agb_frac = real(agb_frac8)
   bgb_frac = real(bgb_frac8)
@@ -369,6 +370,7 @@ subroutine event_harvest(agb_frac8,bgb_frac8,fol_frac8,stor_frac8)
                  cpatch%bstorage(ico) = max(0.0,bstore_new)
                  if(bleaf_new .le. tiny(1.0)) then
                     cpatch%phenology_status(ico) = 2
+                    cpatch%elongf(ico)           = 0.0
                     !----- No leaves, then set it to zero. --------------------------------!
                     cpatch%bleaf(ico)      = 0.0
                  else
@@ -411,9 +413,11 @@ subroutine event_harvest(agb_frac8,bgb_frac8,fol_frac8,stor_frac8)
                                                    ,cpatch%bsapwood(ico))
                  call update_veg_energy_cweh(csite,ipa,ico,old_hcapveg)
 
-                 !----- Updating patch heat capacity. ----------------------------------!
-                 csite%hcapveg(ipa) = csite%hcapveg(ipa)                                &
+                 !----- Updating patch heat capacity. -------------------------------------!
+                 csite%hcapveg(ipa) = csite%hcapveg(ipa)                                   &
                                     + cpatch%hcapveg(ico) - old_hcapveg
+                 cpatch%resolvable(ico) = is_resolvable(csite,ipa,ico                      &
+                                                       ,cpoly%green_leaf_factor(:,isi))
 
               enddo
              
@@ -745,22 +749,23 @@ subroutine event_till(rval8)
 
 
                  !! update biomass pools
-                 cpatch%balive(ico)     = 0.0
-                 cpatch%broot(ico)      = 0.0
-                 cpatch%bsapwood(ico)   = 0.0
-                 cpatch%bdead(ico)      = 0.0
-                 cpatch%bstorage(ico)   = 0.0
-                 cpatch%nplant(ico)     = 0.0
-                 cpatch%lai(ico)        = 0.0
-                 cpatch%wpa(ico)        = 0.0
-                 cpatch%wai(ico)        = 0.0
-                 cpatch%crown_area(ico) = 0.0
-                 cpatch%bleaf(ico)      = 0.0
-                 cpatch%veg_energy(ico) = 0.0
-                 cpatch%veg_water(ico)  = 0.0
-                 cpatch%veg_fliq(ico)   = 0.0
-                 cpatch%veg_temp(ico)   = csite%can_temp(ipa)
+                 cpatch%balive(ico)           = 0.0
+                 cpatch%broot(ico)            = 0.0
+                 cpatch%bsapwood(ico)         = 0.0
+                 cpatch%bdead(ico)            = 0.0
+                 cpatch%bstorage(ico)         = 0.0
+                 cpatch%nplant(ico)           = 0.0
+                 cpatch%lai(ico)              = 0.0
+                 cpatch%wpa(ico)              = 0.0
+                 cpatch%wai(ico)              = 0.0
+                 cpatch%crown_area(ico)       = 0.0
+                 cpatch%bleaf(ico)            = 0.0
+                 cpatch%veg_energy(ico)       = 0.0
+                 cpatch%veg_water(ico)        = 0.0
+                 cpatch%veg_fliq(ico)         = 0.0
+                 cpatch%veg_temp(ico)         = csite%can_temp(ipa)
                  cpatch%phenology_status(ico) = 2
+                 cpatch%elongf(ico)           = 0.0
                  
               enddo
               !! remove small cohorts

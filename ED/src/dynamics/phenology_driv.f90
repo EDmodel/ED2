@@ -194,6 +194,7 @@ subroutine update_phenology(doy, cpoly, isi, lat)
    real                                  :: salloci
    !----- External functions. -------------------------------------------------------------!
    real                     , external   :: daylength
+   logical                  , external   :: is_resolvable
    !----- Variables used only for debugging purposes. -------------------------------------!
    logical                  , parameter  :: printphen=.false.
    logical, dimension(n_pft), save       :: first_time=.true.
@@ -316,6 +317,7 @@ subroutine update_phenology(doy, cpoly, isi, lat)
                                                * (1.0 / c2n_leaf(ipft) - 1.0 / c2n_storage)
                   cpatch%bleaf(ico)            = 0.0
                   cpatch%phenology_status(ico) = 2
+                  cpatch%elongf(ico)           = 0.
                   cpatch%cb(13,ico)            = cpatch%cb(13,ico)                         &
                                                - cpatch%leaf_drop(ico)
                   cpatch%cb_max(13,ico)        = cpatch%cb_max(13,ico)                     &
@@ -388,10 +390,11 @@ subroutine update_phenology(doy, cpoly, isi, lat)
 
                !----- Set status flag. ----------------------------------------------------!
                if (bl_max == 0.0) then
-                  cpatch%phenology_status(ico) = 2 
+                  cpatch%phenology_status(ico) = 2
+                  cpatch%elongf(ico) = 0. 
                end if
                
-            elseif(cpatch%phenology_status(ico) == 2 .and. leaf_out_cold) then
+            elseif (cpatch%phenology_status(ico) == 2 .and. leaf_out_cold) then
                !---------------------------------------------------------------------------!
                !      Update the phenology status (1 means that leaves are growing),       !
                !---------------------------------------------------------------------------!
@@ -454,8 +457,9 @@ subroutine update_phenology(doy, cpoly, isi, lat)
                cpatch%bleaf(ico)     = bl_max
                
                if (cpatch%bleaf(ico) == 0.0) then
-               !   No leaves                                                               !
-                         cpatch%phenology_status(ico) = 2
+                  !----- No leaves. -------------------------------------------------------!
+                  cpatch%phenology_status(ico) = 2
+                  cpatch%elongf(ico) = 0.
                end if
                
                cpatch%cb(13,ico)     = cpatch%cb(13,ico)     - cpatch%leaf_drop(ico)
@@ -497,6 +501,8 @@ subroutine update_phenology(doy, cpoly, isi, lat)
                                            ,cpatch%bsapwood(ico))
          csite%hcapveg(ipa)  = csite%hcapveg(ipa) + cpatch%hcapveg(ico) - old_hcapveg
          call update_veg_energy_cweh(csite,ipa,ico,old_hcapveg)
+         cpatch%resolvable(ico) = is_resolvable(csite,ipa,ico                              &
+                                               ,cpoly%green_leaf_factor(:,isi))
 
          !----- Printing some debugging stuff if the code is set for it. ------------------!
          if (printphen) then

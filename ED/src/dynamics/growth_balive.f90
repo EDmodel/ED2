@@ -64,6 +64,8 @@ module growth_balive
       real                          :: nitrogen_uptake
       real                          :: N_uptake_pot
       real                          :: temp_dep
+      !----- External functions. ----------------------------------------------------------!
+      logical          , external   :: is_resolvable
       !------------------------------------------------------------------------------------!
 
 
@@ -265,6 +267,9 @@ module growth_balive
                   !----- Likewise, the total heat capacity must be updated. ---------------!
                   csite%hcapveg(ipa) = csite%hcapveg(ipa) + cpatch%hcapveg(ico)            &
                                      - old_hcapveg
+                  !----- Update the status regarding stability. ---------------------------!
+                  cpatch%resolvable(ico) = is_resolvable(csite,ipa,ico                     &
+                                                        ,cpoly%green_leaf_factor(:,isi))
                   !------------------------------------------------------------------------!
                end do
                
@@ -941,6 +946,7 @@ module growth_balive
                else
                   cpatch%broot(ico) = cpatch%broot(ico) - (increment - cpatch%bleaf(ico))
                   cpatch%bleaf(ico) = 0.0
+                  cpatch%elongf(ico) = 0.0
                   cpatch%phenology_status(ico) = 2
                end if
 

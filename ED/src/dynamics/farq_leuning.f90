@@ -534,16 +534,24 @@ module farq_leuning
          ! ature.  In order to avoid floating point exceptions, we check whether the       !
          ! temperature will make the exponential too small or too large.                   !
          !---------------------------------------------------------------------------------!
+         !----- Low temperature. ----------------------------------------------------------!
+         lnexplow  = thispft%vm_decay_e * (thispft%vm_low_temp  - met%leaf_temp)
+         lnexplow  = max(lnexp_min8,min(lnexp_max8,lnexplow))
+         tlow_fun  = 1.d0 +  exp(lnexplow)
          !----- High temperature. ---------------------------------------------------------!
-         lnexphigh = ( - thispft%vm_decay_a + thispft%vm_decay_b * met%leaf_temp)             &
-                   / (rmol8 * met%leaf_temp)
+         !lnexphigh = ( - thispft%vm_decay_a + thispft%vm_decay_b * met%leaf_temp)             &
+         !          / (rmol8 * met%leaf_temp)
+         !lnexphigh = max(lnexp_min8,min(lnexp_max8,lnexphigh))
+         !thigh_fun = 1.d0 + exp(lnexphigh)
+         !----- High temperature. ---------------------------------------------------------!
+         lnexphigh = thispft%vm_decay_e * (met%leaf_temp - thispft%vm_high_temp)
          lnexphigh = max(lnexp_min8,min(lnexp_max8,lnexphigh))
-         thigh_fun = 1 + exp(lnexphigh)
+         thigh_fun = 1.d0 + exp(lnexphigh)
          !---------------------------------------------------------------------------------!
 
 
          !------ Correct Vm. --------------------------------------------------------------!
-         aparms%vm = vm_nocorr / thigh_fun
+         aparms%vm = vm_nocorr / (tlow_fun * thigh_fun)
          !---------------------------------------------------------------------------------!
 
 

@@ -457,6 +457,7 @@ subroutine pheninit_balive_bstorage(mzg,csite,ipa,ico,ntext_soil,green_leaf_fact
       cpatch%phenology_status(ico) = -1
    else
       cpatch%phenology_status(ico) = 2
+      cpatch%elongf(ico)           = 0.
    end if
    !---------------------------------------------------------------------------------------!
 
@@ -467,7 +468,13 @@ subroutine pheninit_balive_bstorage(mzg,csite,ipa,ico,ntext_soil,green_leaf_fact
    salloci              = 1.0 / salloc
    bleaf_max            = dbh2bl(cpatch%dbh(ico),cpatch%pft(ico))
    balive_max           = bleaf_max * salloc
-   cpatch%bleaf(ico)    = bleaf_max * cpatch%elongf(ico) 
+   select case (cpatch%phenology_status(ico))
+   case (2)
+      cpatch%bleaf(ico)  = 0.
+      cpatch%elongf(ico) = 0.
+   case default
+      cpatch%bleaf(ico) = bleaf_max * cpatch%elongf(ico) 
+   end select
    cpatch%broot(ico)    = balive_max * q(ipft)   * salloci
    cpatch%bsapwood(ico) = balive_max * qsw(ipft) * cpatch%hite(ico) * salloci
    cpatch%balive(ico)   = cpatch%bleaf(ico) + cpatch%broot(ico) + cpatch%bsapwood(ico)

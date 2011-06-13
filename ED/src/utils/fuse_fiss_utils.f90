@@ -137,8 +137,8 @@ module fuse_fiss_utils
          if ( csize < min_cohort_size(ipft) ) then
             !----- Cohort is indeed too small, it won't remain ----------------------------!
             remain_table(ico) = .false.
-            elim_nplant = elim_nplant + cpatch%nplant(ico)
-            elim_lai    = elim_lai    + cpatch%lai(ico)
+            elim_nplant = elim_nplant + cpatch%nplant(ico) * csite%area(ipa)
+            elim_lai    = elim_lai    + cpatch%lai(ico)    * csite%area(ipa)
 
             !----- Update litter pools ----------------------------------------------------!
             csite%fsc_in(ipa) = csite%fsc_in(ipa) + cpatch%nplant(ico)                     &
@@ -1780,11 +1780,7 @@ module fuse_fiss_utils
       !    LAI must be zero if phenology status is 2.  This is probably done correctly     !
       ! throughout the code, but being safe here.                                          !
       !------------------------------------------------------------------------------------!
-      if (cpatch%phenology_status(recc) < 2) then
-         cpatch%lai(recc) = cpatch%lai(recc) + cpatch%lai(donc)
-      else
-         cpatch%lai(recc) = 0.
-      end if
+      cpatch%lai(recc) = cpatch%lai(recc) + cpatch%lai(donc)
       !------------------------------------------------------------------------------------!
 
       return
@@ -2162,8 +2158,8 @@ module fuse_fiss_utils
                   ! necessary in this loop as both patches are empty, but we do it anyway  !
                   ! just to be consistent.                                                 !
                   !------------------------------------------------------------------------!
-                  elim_nplant_tot = elim_nplant_tot + elim_nplant * csite%area(recp)
-                  elim_lai_tot    = elim_lai_tot    + elim_lai    * csite%area(recp)
+                  elim_nplant_tot = elim_nplant_tot + elim_nplant
+                  elim_lai_tot    = elim_lai_tot    + elim_lai
                   !------------------------------------------------------------------------!
 
 
@@ -2423,8 +2419,8 @@ module fuse_fiss_utils
                         ! necessary in this loop as both patches are empty, but we do it   !
                         ! anyway just to be consistent.                                    !
                         !------------------------------------------------------------------!
-                        elim_nplant_tot = elim_nplant_tot + elim_nplant * csite%area(recp)
-                        elim_lai_tot    = elim_lai_tot    + elim_lai    * csite%area(recp)
+                        elim_nplant_tot = elim_nplant_tot + elim_nplant
+                        elim_lai_tot    = elim_lai_tot    + elim_lai
                         !------------------------------------------------------------------!
 
 
@@ -2748,8 +2744,8 @@ module fuse_fiss_utils
                   ! LAI because we want to make sure that the fusion routine conserves the !
                   ! total plant density and LAI that remained in the polygon.              !
                   !------------------------------------------------------------------------!
-                  elim_nplant_tot = elim_nplant_tot + elim_nplant * csite%area(recp)
-                  elim_lai_tot    = elim_lai_tot    + elim_lai    * csite%area(recp)
+                  elim_nplant_tot = elim_nplant_tot + elim_nplant
+                  elim_lai_tot    = elim_lai_tot    + elim_lai
                   !------------------------------------------------------------------------!
 
 

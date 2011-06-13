@@ -43,7 +43,6 @@ module rk4_driver
       integer                                 :: isi
       integer                                 :: ipa
       integer                                 :: iun
-      integer, dimension(:)     , allocatable :: ed_ktrans
       integer                                 :: nsteps
       real                                    :: wcurr_loss2atm
       real                                    :: ecurr_loss2atm
@@ -60,10 +59,6 @@ module rk4_driver
       !----- Functions --------------------------------------------------------------------!
       real                      , external    :: walltime
       !------------------------------------------------------------------------------------!
-
-
-      !----- Allocate the auxiliary variables. --------------------------------------------!
-      allocate(ed_ktrans(nzg))
 
       polygonloop: do ipy = 1,cgrid%npolygons
          cpoly => cgrid%polygon(ipy)
@@ -153,7 +148,7 @@ module rk4_driver
 
 
                !----- Get photosynthesis, stomatal conductance, and transpiration. --------!
-               call canopy_photosynthesis(csite,cmet,nzg,ipa,ed_ktrans,cpoly%lsl(isi)      &
+               call canopy_photosynthesis(csite,cmet,nzg,ipa,cpoly%lsl(isi)                &
                                          ,cpoly%ntext_soil(:,isi)                          &
                                          ,cpoly%leaf_aging_factor(:,isi)                   &
                                          ,cpoly%green_leaf_factor(:,isi))
@@ -198,9 +193,6 @@ module rk4_driver
          end do siteloop
 
       end do polygonloop
-
-      !----- De-allocate scratch variables. -----------------------------------------------!
-      deallocate (ed_ktrans)
 
       return
    end subroutine rk4_timestep

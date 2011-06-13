@@ -63,6 +63,8 @@ subroutine structural_growth(cgrid, month)
    real                          :: cb_act
    real                          :: cb_max
    real                          :: old_hcapveg
+   !----- External functions. -------------------------------------------------------------!
+   logical          , external   :: is_resolvable
    !---------------------------------------------------------------------------------------!
 
    polyloop: do ipy = 1,cgrid%npolygons
@@ -196,6 +198,8 @@ subroutine structural_growth(cgrid, month)
                                                  ,cpatch%phenology_status(ico)             &
                                                  ,cpatch%bsapwood(ico))
                call update_veg_energy_cweh(csite,ipa,ico,old_hcapveg)
+               cpatch%resolvable(ico) = is_resolvable(csite,ipa,ico                        &
+                                                     ,cpoly%green_leaf_factor(:,isi))
                !----- Likewise, update the patch heat capacity ----------------------------!
                csite%hcapveg(ipa) = csite%hcapveg(ipa) + cpatch%hcapveg(ico) - old_hcapveg
                !---------------------------------------------------------------------------!

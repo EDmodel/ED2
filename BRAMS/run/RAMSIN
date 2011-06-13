@@ -1094,6 +1094,9 @@
                               !      FSW = 1           
                               ! 1 -- Original ED-1.0/ED-2.0 method
                               !      FSW = 1/ (1 + D/S)
+                              ! 2 -- Alternative method based on CLM, uses water potential,
+                              !      but ignores the root biomass.
+
 
    !---------------------------------------------------------------------------------------!
    !    These are factors that multiply some of the ED-2.1 default parameters.  Setting    !

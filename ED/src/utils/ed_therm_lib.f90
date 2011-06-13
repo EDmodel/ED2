@@ -83,26 +83,17 @@ module ed_therm_lib
          bwood = wood_biomass(bdead,balive,pft,hite, bsapwood)
       end select
 
-      select case (phen_status)
-      case (2)
-         !---------------------------------------------------------------------------------!
-         !     If phenology is 2 (i.e., no leaves), then the heat capacity is only due to  !
-         ! the wood (it will be 0 in case wood is excluded).                               !
-         !---------------------------------------------------------------------------------!
-         calc_hcapveg = nplant * C2B * bwood * spheat_wood
-      case default
-         !---------------------------------------------------------------------------------!
-         !     If phenology is either 0 or 1 (with leaves), then the heat capacity is the  !
-         ! sum of the heat capacity due to wood and leaves.                                !
-         !---------------------------------------------------------------------------------!
-         !----- Finding the leaf specific heat. -------------------------------------------!
-         spheat_leaf = (c_grn_leaf_dry(pft) + wat_dry_ratio_grn(pft) * cliq)               &
-                     / (1. + wat_dry_ratio_grn(pft))
-         !----- Then the heat capacity. ---------------------------------------------------!
-         calc_hcapveg = nplant * C2B                                                       &
-                      * ( bwood * spheat_wood * (1. + wat_dry_ratio_ngrn(pft))             &
-                        + bleaf * spheat_leaf * (1. + wat_dry_ratio_grn(pft) ) )
-      end select
+      !------------------------------------------------------------------------------------!
+      !     The heat capacity is the sum of the heat capacity due to wood and leaves.      !
+      !------------------------------------------------------------------------------------!
+      !----- Find the leaf specific heat. -------------------------------------------------!
+      spheat_leaf = (c_grn_leaf_dry(pft) + wat_dry_ratio_grn(pft) * cliq)                  &
+                  / (1. + wat_dry_ratio_grn(pft))
+      !----- Then the heat capacity. ------------------------------------------------------!
+      calc_hcapveg = nplant * C2B                                                          &
+                   * ( bwood * spheat_wood * (1. + wat_dry_ratio_ngrn(pft))                &
+                     + bleaf * spheat_leaf * (1. + wat_dry_ratio_grn(pft) ) )
+      !------------------------------------------------------------------------------------!
 
       return
    end function calc_hcapveg

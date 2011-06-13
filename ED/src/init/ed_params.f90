@@ -1016,10 +1016,10 @@ subroutine init_pft_photo_params()
 
    D0(1:17)                  = 0.01 * d0fact   ! same for all PFTs
 
-   Vm_low_temp(1)            = 5.0             ! c4 grass
-   Vm_low_temp(2)            = 5.0             ! early tropical
-   Vm_low_temp(3)            = 5.0             ! mid tropical
-   Vm_low_temp(4)            = 5.0             ! late tropical
+   Vm_low_temp(1)            = 8.0             ! c4 grass
+   Vm_low_temp(2)            = 8.0             ! early tropical
+   Vm_low_temp(3)            = 8.0             ! mid tropical
+   Vm_low_temp(4)            = 8.0             ! late tropical
    Vm_low_temp(5)            = 4.7137          ! c3 grass
    Vm_low_temp(6)            = 4.7137          ! northern pines ! 5.0
    Vm_low_temp(7)            = 4.7137          ! southern pines ! 5.0
@@ -1029,12 +1029,12 @@ subroutine init_pft_photo_params()
    Vm_low_temp(11)           = 4.7137          ! late hardwoods
    Vm_low_temp(12)           = 4.7137          ! c3 pasture
    Vm_low_temp(13)           = 4.7137          ! c3 crop
-   Vm_low_temp(14)           = 5.0             ! c4 pasture
-   Vm_low_temp(15)           = 5.0             ! c4 crop
-   Vm_low_temp(16)           = 5.0             ! subtropical C3 grass
-   Vm_low_temp(17)           = 5.0             ! Araucaria
+   Vm_low_temp(14)           = 8.0             ! c4 pasture
+   Vm_low_temp(15)           = 8.0             ! c4 crop
+   Vm_low_temp(16)           = 4.7137          ! subtropical C3 grass
+   Vm_low_temp(17)           = 4.7137          ! Araucaria
 
-   Vm_high_temp(1)           =  50.0  + thioff ! C4
+   Vm_high_temp(1)           =  45.0  + thioff ! C4
    Vm_high_temp(2)           =  45.0  + thioff ! C3
    Vm_high_temp(3)           =  45.0  + thioff ! C3
    Vm_high_temp(4)           =  45.0  + thioff ! C3
@@ -1047,8 +1047,8 @@ subroutine init_pft_photo_params()
    Vm_high_temp(11)          =  45.0  + thioff ! C3
    Vm_high_temp(12)          =  45.0  + thioff ! C3
    Vm_high_temp(13)          =  45.0  + thioff ! C3
-   Vm_high_temp(14)          =  50.0  + thioff ! C4
-   Vm_high_temp(15)          =  50.0  + thioff ! C4
+   Vm_high_temp(14)          =  45.0  + thioff ! C4
+   Vm_high_temp(15)          =  45.0  + thioff ! C4
    Vm_high_temp(16)          =  45.0  + thioff ! C3
    Vm_high_temp(17)          =  45.0  + thioff ! C3
 
@@ -1066,7 +1066,7 @@ subroutine init_pft_photo_params()
 
 
    !------ Vm0 is the maximum photosynthesis capacity in µmol/m2/s. -----------------------!
-   Vm0(1)                    = 12.5
+   Vm0(1)                    = 12.5            * vmfact
    Vm0(2)                    = 18.8            * vmfact
    Vm0(3)                    = 12.5            * vmfact
    Vm0(4)                    = 6.25            * vmfact
@@ -1078,7 +1078,7 @@ subroutine init_pft_photo_params()
    Vm0(10)                   = 15.625 * 1.1171 * vmfact
    Vm0(11)                   = 6.25   * 1.1171 * vmfact
    Vm0(12:13)                = 18.3            * vmfact
-   Vm0(14:15)                = 12.5            
+   Vm0(14:15)                = 12.5            * vmfact
    Vm0(16)                   = 21.875          * vmfact
    Vm0(17)                   = 15.625 * 0.7264
    !---------------------------------------------------------------------------------------!
@@ -1101,7 +1101,7 @@ subroutine init_pft_photo_params()
    !---------------------------------------------------------------------------------------!
    !    Dark_respiration_factor is the lower-case gamma in Moorcroft et al. (2001).        !
    !---------------------------------------------------------------------------------------!
-   dark_respiration_factor(1)     = 0.05
+   dark_respiration_factor(1)     = 0.04
    dark_respiration_factor(2)     = 0.02  * gamfact
    dark_respiration_factor(3)     = 0.02  * gamfact
    dark_respiration_factor(4)     = 0.02  * gamfact
@@ -1114,8 +1114,8 @@ subroutine init_pft_photo_params()
    dark_respiration_factor(11)    = 0.02
    dark_respiration_factor(12)    = 0.02
    dark_respiration_factor(13)    = 0.02
-   dark_respiration_factor(14)    = 0.05
-   dark_respiration_factor(15)    = 0.05
+   dark_respiration_factor(14)    = 0.04
+   dark_respiration_factor(15)    = 0.04
    dark_respiration_factor(16)    = 0.02  * gamfact
    dark_respiration_factor(17)    = 0.02  * gamfact
    !---------------------------------------------------------------------------------------!
@@ -1489,8 +1489,8 @@ subroutine init_pft_mort_params()
    mort3(11) = 0.00428
    mort3(12) = 0.066
    mort3(13) = 0.066
-   mort3(14) = 0.15 * (1. - rho(16) / rho(4))
-   mort3(15) = 0.15 * (1. - rho(16) / rho(4))
+   mort3(14) = 0.15 * (1. - rho(14) / rho(4))
+   mort3(15) = 0.15 * (1. - rho(15) / rho(4))
    mort3(16) = 0.15 * (1. - rho(16) / rho(4))
    mort3(17) = 0.0043 ! Same as pines
 
@@ -1573,11 +1573,11 @@ subroutine init_pft_mort_params()
    !---------------------------------------------------------------------------------------!
 
 
-   seedling_mortality(1)    = 0.60
+   seedling_mortality(1)    = 0.95
    seedling_mortality(2:4)  = 0.95 
-   seedling_mortality(5)    = 0.60
+   seedling_mortality(5)    = 0.95
    seedling_mortality(6:15) = 0.95 
-   seedling_mortality(16)   = 0.60 
+   seedling_mortality(16)   = 0.95 
    seedling_mortality(17)   = 0.95 
 
    treefall_s_gtht          = 0.0
@@ -1598,7 +1598,7 @@ subroutine init_pft_mort_params()
    plant_min_temp(10:11)    = t00-20.0
    plant_min_temp(12:13)    = t00-80.0
    plant_min_temp(14:15)    = t00+2.5
-   plant_min_temp(16)       = t00-5.0
+   plant_min_temp(16)       = t00-10.0
    plant_min_temp(17)       = t00-10.0
 
    return
@@ -1755,7 +1755,7 @@ subroutine init_pft_alloc_params()
    rho(12:13) = 0.20
    rho(14:15) = 0.20
    rho(16)    = 0.20
-   rho(17)    = 0.48
+   rho(17)    = 0.55
    !---------------------------------------------------------------------------------------!
 
    !----- Specific leaf area [m² leaf / kg C] ---------------------------------------------!

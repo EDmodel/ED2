@@ -142,6 +142,8 @@ subroutine init_nbg_cohorts(csite,lsl,ipa_a,ipa_z)
    integer                            :: ipft              ! PFT counter
    real                               :: salloc            ! balive/bleaf when on allom.
    real                               :: salloci           ! 1./salloc
+   !----- External functions. -------------------------------------------------------------!
+   logical               , external   :: is_resolvable
    !---------------------------------------------------------------------------------------!
 
    !----- Patch loop. ---------------------------------------------------------------------!
@@ -251,7 +253,8 @@ subroutine init_nbg_cohorts(csite,lsl,ipa_a,ipa_z)
                                               ,cpatch%hite(ico),cpatch%pft(ico)            &
                                               ,cpatch%phenology_status(ico)                &
                                               ,cpatch%bsapwood(ico))
- 
+
+
          !----- Update total patch-level above-ground biomass -----------------------------!
          csite%plant_ag_biomass(ipa) = csite%plant_ag_biomass(ipa)                         &
                                      + cpatch%nplant(ico) * cpatch%agb(ico)
@@ -303,7 +306,7 @@ subroutine init_cohorts_by_layers(csite,lsl,ipa_a,ipa_z)
                                  , dbh2bl             & ! function
                                  , ed_biomass         & ! function
                                  , area_indices       ! ! subroutine
-   use fuse_fiss_utils    , only : sort_cohorts    ! ! subroutine
+   use fuse_fiss_utils    , only : sort_cohorts       ! ! subroutine
 
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
@@ -406,7 +409,7 @@ subroutine init_cohorts_by_layers(csite,lsl,ipa_a,ipa_z)
                                               ,cpatch%hite(ico),cpatch%pft(ico)            &
                                               ,cpatch%phenology_status(ico)                &
                                               ,cpatch%bsapwood(ico))
- 
+         cpatch%resolvable(ico) = .false.
          !----- Update total patch-level above-ground biomass -----------------------------!
          csite%plant_ag_biomass(ipa) = csite%plant_ag_biomass(ipa)                         &
                                      + cpatch%nplant(ico) * cpatch%agb(ico)

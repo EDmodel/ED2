@@ -46,32 +46,33 @@ subroutine ed_init_atm()
    use canopy_struct_dynamics, only : canopy_turbulence ! ! subroutine
    implicit none
    !----- Local variables. ----------------------------------------------------------------!
-   type(edtype)        , pointer :: cgrid
-   type(polygontype)   , pointer :: cpoly
-   type(met_driv_state), pointer :: cmet
-   type(sitetype)      , pointer :: csite
-   type(patchtype)     , pointer :: cpatch
-   integer                       :: igr
-   integer                       :: ipy
-   integer                       :: isi
-   integer                       :: ipa
-   integer                       :: ico
-   integer                       :: k
-   integer                       :: nsoil
-   integer                       :: nls
-   integer                       :: nlsw1
-   integer                       :: ncohorts
-   integer                       :: npatches
-   integer                       :: ix
-   integer                       :: iy
-   integer                       :: ping,ierr
-   real                          :: site_area_i
-   real                          :: poly_area_i
-   real                          :: poly_lai
-   real                          :: poly_nplant
-   real                          :: elim_nplant
-   real                          :: elim_lai
-   real                          :: rvaux
+   type(edtype)        , pointer  :: cgrid
+   type(polygontype)   , pointer  :: cpoly
+   type(met_driv_state), pointer  :: cmet
+   type(sitetype)      , pointer  :: csite
+   type(patchtype)     , pointer  :: cpatch
+   integer                        :: igr
+   integer                        :: ipy
+   integer                        :: isi
+   integer                        :: ipa
+   integer                        :: ico
+   integer                        :: k
+   integer                        :: nsoil
+   integer                        :: nls
+   integer                        :: nlsw1
+   integer                        :: ncohorts
+   integer                        :: npatches
+   integer                        :: ix
+   integer                        :: iy
+   integer                        :: ping,ierr
+   real                           :: site_area_i
+   real                           :: poly_area_i
+   real                           :: poly_lai
+   real                           :: poly_nplant
+   real                           :: elim_nplant
+   real                           :: elim_lai
+   real                           :: rvaux
+   logical             , external :: is_resolvable
    !----- Add the MPI common block. -------------------------------------------------------!
    include 'mpif.h'
    !---------------------------------------------------------------------------------------!
@@ -158,6 +159,9 @@ subroutine ed_init_atm()
                                                        ,cpatch%phenology_status(ico)       &
                                                        ,cpatch%bsapwood(ico))
                   cpatch%veg_energy(ico) = cpatch%hcapveg(ico) * cpatch%veg_temp(ico)
+                  cpatch%resolvable(ico) = is_resolvable(csite,ipa,ico                     &
+                                                        ,cpoly%green_leaf_factor(:,isi))
+
                   csite%hcapveg    (ipa) = csite%hcapveg (ipa) + cpatch%hcapveg (ico)
                   !----- Initialise the leaf surface and intercellular properties. --------!
                   cpatch%lsfc_shv_open(ico)   = cmet%atm_shv
