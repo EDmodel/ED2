@@ -318,12 +318,6 @@ module ed_state_vars
      real, pointer, dimension(:) :: diffext_level
      real, pointer, dimension(:) :: dmean_diffext_level
      real, pointer, dimension(:) :: mmean_diffext_level
-     real, pointer, dimension(:) :: norm_par_beam
-     real, pointer, dimension(:) :: dmean_norm_par_beam
-     real, pointer, dimension(:) :: mmean_norm_par_beam
-     real, pointer, dimension(:) :: norm_par_diff
-     real, pointer, dimension(:) :: dmean_norm_par_diff
-     real, pointer, dimension(:) :: mmean_norm_par_diff
 
      ! Light extinction of this cohort, its diurnal and monthly means
      real, pointer, dimension(:) :: lambda_light
@@ -581,6 +575,7 @@ module ed_state_vars
      real , pointer, dimension(:) :: ggbare
      real , pointer, dimension(:) :: ggveg
      real , pointer, dimension(:) :: ggnet
+     real , pointer, dimension(:) :: ggsoil
 
      ! Mean light extinction coefficient, its diurnal and monthly cycle.
      real , pointer, dimension(:) :: lambda_light
@@ -653,6 +648,12 @@ module ed_state_vars
 
      ! Net roughness length (m)
      real,    pointer,dimension(:)  :: rough
+
+     ! Maximum PAR possibly attained in this patch.  This is found by calling the radiation
+     ! scheme for a single cohort (the tallest that can be solved).
+     real,    pointer, dimension(:) :: par_v_max
+     real,    pointer, dimension(:) :: par_v_beam_max
+     real,    pointer, dimension(:) :: par_v_diffuse_max
 
      ! Photosynthetic rates for different PFTs, if they were at the top 
      ! of the canopy (umol/m2 leaf/s).  Used by mortality function.
@@ -1727,6 +1728,8 @@ module ed_state_vars
      real, pointer, dimension(:)   :: dmean_can_prss      ! (npolygons)
      real, pointer, dimension(:)   :: dmean_can_theta     ! (npolygons)
      real, pointer, dimension(:)   :: dmean_can_theiv     ! (npolygons)
+     real, pointer, dimension(:)   :: dmean_gnd_temp      ! (npolygons)
+     real, pointer, dimension(:)   :: dmean_gnd_shv       ! (npolygons)
      real, pointer, dimension(:)   :: dmean_veg_energy    ! (npolygons)
      real, pointer, dimension(:)   :: dmean_veg_water     ! (npolygons)
      real, pointer, dimension(:)   :: dmean_veg_hcap      ! (npolygons)
@@ -1770,6 +1773,8 @@ module ed_state_vars
      real, pointer, dimension(:,:)   :: qmean_can_prss       ! (ndcycle,npolygons)
      real, pointer, dimension(:,:)   :: qmean_can_theta      ! (ndcycle,npolygons)
      real, pointer, dimension(:,:)   :: qmean_can_theiv      ! (ndcycle,npolygons)
+     real, pointer, dimension(:,:)   :: qmean_gnd_temp       ! (ndcycle,npolygons)
+     real, pointer, dimension(:,:)   :: qmean_gnd_shv        ! (ndcycle,npolygons)
      real, pointer, dimension(:,:)   :: qmean_veg_energy     ! (ndcycle,npolygons)
      real, pointer, dimension(:,:)   :: qmean_veg_water      ! (ndcycle,npolygons)
      real, pointer, dimension(:,:)   :: qmean_veg_hcap       ! (ndcycle,npolygons)
@@ -1884,6 +1889,8 @@ module ed_state_vars
      real, pointer, dimension(:)   :: mmean_can_prss      ! (npolygons)
      real, pointer, dimension(:)   :: mmean_can_theta     ! (npolygons)
      real, pointer, dimension(:)   :: mmean_can_theiv     ! (npolygons)
+     real, pointer, dimension(:)   :: mmean_gnd_temp      ! (npolygons)
+     real, pointer, dimension(:)   :: mmean_gnd_shv       ! (npolygons)
      real, pointer, dimension(:)   :: mmean_veg_energy    ! (npolygons)
      real, pointer, dimension(:)   :: mmean_veg_water     ! (npolygons)
      real, pointer, dimension(:)   :: mmean_veg_temp      ! (npolygons)
@@ -1896,21 +1903,27 @@ module ed_state_vars
      real, pointer, dimension(:)   :: mmean_atm_prss      ! (npolygons)
      real, pointer, dimension(:)   :: mmean_atm_vels      ! (npolygons)
 
-     !-------------------------------------------------------------------!
-     ! These variables serve two purposes. During the run they carry the !
-     ! monthly square sum, and at the time of the monthly output, it     !
-     ! is converted to standard deviation.                               !
-     ! This needs to be stored at the history run, and thus it will have !
-     ! different meaning if one looks at the -S- and -E- files.          !
-     !-------------------------------------------------------------------!
-     real, pointer, dimension(:) :: stdev_gpp
-     real, pointer, dimension(:) :: stdev_evap
-     real, pointer, dimension(:) :: stdev_transp
-     real, pointer, dimension(:) :: stdev_sensible
-     real, pointer, dimension(:) :: stdev_nep
-     real, pointer, dimension(:) :: stdev_rh
+     !-------------------------------------------------------------------------------------!
+     ! These variables have the monthly mean square,  We save this instead of the standard !
+     ! deviation because we can aggregate several months afterwards.                       !
+     !-------------------------------------------------------------------------------------!
+     real, pointer, dimension(:) :: mmsqu_gpp
+     real, pointer, dimension(:) :: mmsqu_leaf_resp
+     real, pointer, dimension(:) :: mmsqu_root_resp
+     real, pointer, dimension(:) :: mmsqu_plresp
+     real, pointer, dimension(:) :: mmsqu_nee
+     real, pointer, dimension(:) :: mmsqu_nep
+     real, pointer, dimension(:) :: mmsqu_rh
+     real, pointer, dimension(:) :: mmsqu_sensible_ac
+     real, pointer, dimension(:) :: mmsqu_sensible_vc
+     real, pointer, dimension(:) :: mmsqu_sensible_gc
+     real, pointer, dimension(:) :: mmsqu_evap
+     real, pointer, dimension(:) :: mmsqu_transp
+     real, pointer, dimension(:) :: mmsqu_vapor_ac
+     real, pointer, dimension(:) :: mmsqu_vapor_vc
+     real, pointer, dimension(:) :: mmsqu_vapor_gc
 
-     
+
      !----- Disturbance rates. ----------------------------------------------!
      real, pointer, dimension(:,:,:) :: disturbance_rates
 
@@ -2332,6 +2345,8 @@ contains
           allocate(cgrid%dmean_can_prss       (             npolygons))
           allocate(cgrid%dmean_can_theta      (             npolygons))
           allocate(cgrid%dmean_can_theiv      (             npolygons))
+          allocate(cgrid%dmean_gnd_temp       (             npolygons))
+          allocate(cgrid%dmean_gnd_shv        (             npolygons))
           allocate(cgrid%dmean_veg_energy     (             npolygons))
           allocate(cgrid%dmean_veg_water      (             npolygons))
           allocate(cgrid%dmean_veg_hcap       (             npolygons))
@@ -2404,6 +2419,8 @@ contains
           allocate(cgrid%mmean_can_prss       (             npolygons))
           allocate(cgrid%mmean_can_theta      (             npolygons))
           allocate(cgrid%mmean_can_theiv      (             npolygons))
+          allocate(cgrid%mmean_gnd_temp       (             npolygons))
+          allocate(cgrid%mmean_gnd_shv        (             npolygons))
           allocate(cgrid%mmean_veg_energy     (             npolygons))
           allocate(cgrid%mmean_veg_water      (             npolygons))
           allocate(cgrid%mmean_veg_temp       (             npolygons))
@@ -2421,12 +2438,22 @@ contains
           allocate(cgrid%bseeds_pft           (n_pft       ,npolygons))
           allocate(cgrid%agb_pft              (n_pft       ,npolygons))
           allocate(cgrid%ba_pft               (n_pft       ,npolygons))
-          allocate(cgrid%stdev_gpp            (             npolygons))
-          allocate(cgrid%stdev_evap           (             npolygons))
-          allocate(cgrid%stdev_transp         (             npolygons))
-          allocate(cgrid%stdev_sensible       (             npolygons))
-          allocate(cgrid%stdev_nep            (             npolygons))
-          allocate(cgrid%stdev_rh             (             npolygons))
+          allocate(cgrid%mmsqu_gpp            (             npolygons))
+          allocate(cgrid%mmsqu_leaf_resp      (             npolygons))
+          allocate(cgrid%mmsqu_root_resp      (             npolygons))
+          allocate(cgrid%mmsqu_plresp         (             npolygons))
+          allocate(cgrid%mmsqu_nee            (             npolygons))
+          allocate(cgrid%mmsqu_nep            (             npolygons))
+          allocate(cgrid%mmsqu_rh             (             npolygons))
+          allocate(cgrid%mmsqu_sensible_ac    (             npolygons))
+          allocate(cgrid%mmsqu_sensible_vc    (             npolygons))
+          allocate(cgrid%mmsqu_sensible_gc    (             npolygons))
+          allocate(cgrid%mmsqu_evap           (             npolygons))
+          allocate(cgrid%mmsqu_transp         (             npolygons))
+          allocate(cgrid%mmsqu_vapor_ac       (             npolygons))
+          allocate(cgrid%mmsqu_vapor_vc       (             npolygons))
+          allocate(cgrid%mmsqu_vapor_gc       (             npolygons))
+
           allocate(cgrid%disturbance_rates    (n_dist_types,n_dist_types,npolygons))
 
        end if
@@ -2470,6 +2497,8 @@ contains
           allocate(cgrid%qmean_can_prss       (     ndcycle, npolygons))
           allocate(cgrid%qmean_can_theta      (     ndcycle, npolygons))
           allocate(cgrid%qmean_can_theiv      (     ndcycle, npolygons))
+          allocate(cgrid%qmean_gnd_temp       (     ndcycle, npolygons))
+          allocate(cgrid%qmean_gnd_shv        (     ndcycle, npolygons))
           allocate(cgrid%qmean_veg_energy     (     ndcycle, npolygons))
           allocate(cgrid%qmean_veg_water      (     ndcycle, npolygons))
           allocate(cgrid%qmean_veg_temp       (     ndcycle, npolygons))
@@ -2750,6 +2779,7 @@ contains
     allocate(csite%ggbare(npatches))
     allocate(csite%ggveg(npatches))
     allocate(csite%ggnet(npatches))
+    allocate(csite%ggsoil(npatches))
     allocate(csite%lambda_light(npatches))
     allocate(csite%cohort_count(npatches))
     allocate(csite%pname(npatches))
@@ -2773,6 +2803,9 @@ contains
     allocate(csite%ground_temp(npatches))
     allocate(csite%ground_fliq(npatches))
     allocate(csite%rough(npatches))
+    allocate(csite%par_v_max(npatches))
+    allocate(csite%par_v_beam_max(npatches))
+    allocate(csite%par_v_diffuse_max(npatches))
     allocate(csite%A_o_max(n_pft,npatches)) 
     allocate(csite%A_c_max(n_pft,npatches)) 
 
@@ -3038,8 +3071,6 @@ contains
     allocate(cpatch%light_level_diff(ncohorts))
     allocate(cpatch%beamext_level(ncohorts))
     allocate(cpatch%diffext_level(ncohorts))
-    allocate(cpatch%norm_par_beam(ncohorts))
-    allocate(cpatch%norm_par_diff(ncohorts))
     allocate(cpatch%lambda_light(ncohorts))
     allocate(cpatch%par_v(ncohorts))
     allocate(cpatch%par_v_beam(ncohorts))
@@ -3085,8 +3116,6 @@ contains
        allocate(cpatch%dmean_light_level_diff(ncohorts))
        allocate(cpatch%dmean_beamext_level(ncohorts))
        allocate(cpatch%dmean_diffext_level(ncohorts))
-       allocate(cpatch%dmean_norm_par_beam(ncohorts))
-       allocate(cpatch%dmean_norm_par_diff(ncohorts))
        allocate(cpatch%dmean_lambda_light(ncohorts))
        allocate(cpatch%dmean_fs_open(ncohorts))
        allocate(cpatch%dmean_fsw(ncohorts))
@@ -3118,8 +3147,6 @@ contains
        allocate(cpatch%mmean_light_level_diff(ncohorts))
        allocate(cpatch%mmean_beamext_level(ncohorts))
        allocate(cpatch%mmean_diffext_level(ncohorts))
-       allocate(cpatch%mmean_norm_par_beam(ncohorts))
-       allocate(cpatch%mmean_norm_par_diff(ncohorts))
        allocate(cpatch%mmean_lambda_light(ncohorts))
        allocate(cpatch%mmean_fs_open(ncohorts))
        allocate(cpatch%mmean_fsw(ncohorts))
@@ -3428,6 +3455,8 @@ contains
      nullify(cgrid%dmean_can_prss          )
      nullify(cgrid%dmean_can_theta         )
      nullify(cgrid%dmean_can_theiv         )
+     nullify(cgrid%dmean_gnd_temp          )
+     nullify(cgrid%dmean_gnd_shv           )
      nullify(cgrid%dmean_veg_energy        )
      nullify(cgrid%dmean_veg_water         )
      nullify(cgrid%dmean_veg_hcap          )
@@ -3487,6 +3516,8 @@ contains
      nullify(cgrid%mmean_can_prss          )
      nullify(cgrid%mmean_can_theta         )
      nullify(cgrid%mmean_can_theiv         )
+     nullify(cgrid%mmean_gnd_temp          )
+     nullify(cgrid%mmean_gnd_shv           )
      nullify(cgrid%mmean_veg_energy        )
      nullify(cgrid%mmean_veg_water         )
      nullify(cgrid%mmean_veg_hcap          )
@@ -3507,12 +3538,23 @@ contains
      nullify(cgrid%bseeds_pft              )
      nullify(cgrid%agb_pft                 )
      nullify(cgrid%ba_pft                  )
-     nullify(cgrid%stdev_gpp               )
-     nullify(cgrid%stdev_evap              )
-     nullify(cgrid%stdev_transp            )
-     nullify(cgrid%stdev_sensible          )
-     nullify(cgrid%stdev_nep               )
-     nullify(cgrid%stdev_rh                )
+
+     nullify(cgrid%mmsqu_gpp               )
+     nullify(cgrid%mmsqu_leaf_resp         )
+     nullify(cgrid%mmsqu_root_resp         )
+     nullify(cgrid%mmsqu_plresp            )
+     nullify(cgrid%mmsqu_nee               )
+     nullify(cgrid%mmsqu_nep               )
+     nullify(cgrid%mmsqu_rh                )
+     nullify(cgrid%mmsqu_sensible_ac       )
+     nullify(cgrid%mmsqu_sensible_vc       )
+     nullify(cgrid%mmsqu_sensible_gc       )
+     nullify(cgrid%mmsqu_evap              )
+     nullify(cgrid%mmsqu_transp            )
+     nullify(cgrid%mmsqu_vapor_ac          )
+     nullify(cgrid%mmsqu_vapor_vc          )
+     nullify(cgrid%mmsqu_vapor_gc          )
+
      nullify(cgrid%disturbance_rates       )
      nullify(cgrid%workload                )
 
@@ -3546,6 +3588,8 @@ contains
      nullify(cgrid%qmean_can_prss       )
      nullify(cgrid%qmean_can_theta      )
      nullify(cgrid%qmean_can_theiv      )
+     nullify(cgrid%qmean_gnd_temp       )
+     nullify(cgrid%qmean_gnd_shv        )
      nullify(cgrid%qmean_veg_energy     )
      nullify(cgrid%qmean_veg_water      )
      nullify(cgrid%qmean_veg_temp       )
@@ -3800,6 +3844,7 @@ contains
     nullify(csite%ggbare)
     nullify(csite%ggveg)
     nullify(csite%ggnet)
+    nullify(csite%ggsoil)
     nullify(csite%lambda_light)
     nullify(csite%dmean_lambda_light)
     nullify(csite%mmean_lambda_light)
@@ -3826,6 +3871,9 @@ contains
     nullify(csite%ground_temp)
     nullify(csite%ground_fliq)
     nullify(csite%rough)
+    nullify(csite%par_v_max) 
+    nullify(csite%par_v_beam_max) 
+    nullify(csite%par_v_diffuse_max) 
     nullify(csite%A_o_max) 
     nullify(csite%A_c_max) 
     nullify(csite%old_stoma_data_max)
@@ -4109,12 +4157,6 @@ contains
     nullify(cpatch%lambda_light)
     nullify(cpatch%dmean_lambda_light)
     nullify(cpatch%mmean_lambda_light)
-    nullify(cpatch%norm_par_beam)
-    nullify(cpatch%dmean_norm_par_beam)
-    nullify(cpatch%mmean_norm_par_beam)
-    nullify(cpatch%norm_par_diff)
-    nullify(cpatch%dmean_norm_par_diff)
-    nullify(cpatch%mmean_norm_par_diff)
     nullify(cpatch%dmean_par_v)
     nullify(cpatch%dmean_par_v_beam)
     nullify(cpatch%dmean_par_v_diff)
@@ -4463,6 +4505,8 @@ contains
        if(associated(cgrid%dmean_can_prss          )) deallocate(cgrid%dmean_can_prss          )
        if(associated(cgrid%dmean_can_theta         )) deallocate(cgrid%dmean_can_theta         )
        if(associated(cgrid%dmean_can_theiv         )) deallocate(cgrid%dmean_can_theiv         )
+       if(associated(cgrid%dmean_gnd_temp          )) deallocate(cgrid%dmean_gnd_temp          )
+       if(associated(cgrid%dmean_gnd_shv           )) deallocate(cgrid%dmean_gnd_shv           )
        if(associated(cgrid%dmean_veg_energy        )) deallocate(cgrid%dmean_veg_energy        )
        if(associated(cgrid%dmean_veg_water         )) deallocate(cgrid%dmean_veg_water         )
        if(associated(cgrid%dmean_veg_hcap          )) deallocate(cgrid%dmean_veg_hcap          )
@@ -4523,6 +4567,8 @@ contains
        if(associated(cgrid%mmean_can_prss          )) deallocate(cgrid%mmean_can_prss          )
        if(associated(cgrid%mmean_can_theta         )) deallocate(cgrid%mmean_can_theta         )
        if(associated(cgrid%mmean_can_theiv         )) deallocate(cgrid%mmean_can_theiv         )
+       if(associated(cgrid%mmean_gnd_temp          )) deallocate(cgrid%mmean_gnd_temp          )
+       if(associated(cgrid%mmean_gnd_shv           )) deallocate(cgrid%mmean_gnd_shv           )
        if(associated(cgrid%mmean_veg_energy        )) deallocate(cgrid%mmean_veg_energy        )
        if(associated(cgrid%mmean_veg_water         )) deallocate(cgrid%mmean_veg_water         )
        if(associated(cgrid%mmean_veg_hcap          )) deallocate(cgrid%mmean_veg_hcap          )
@@ -4543,12 +4589,24 @@ contains
        if(associated(cgrid%bseeds_pft              )) deallocate(cgrid%bseeds_pft              )
        if(associated(cgrid%agb_pft                 )) deallocate(cgrid%agb_pft                 )
        if(associated(cgrid%ba_pft                  )) deallocate(cgrid%ba_pft                  )
-       if(associated(cgrid%stdev_gpp               )) deallocate(cgrid%stdev_gpp               )
-       if(associated(cgrid%stdev_evap              )) deallocate(cgrid%stdev_evap              )
-       if(associated(cgrid%stdev_transp            )) deallocate(cgrid%stdev_transp            )
-       if(associated(cgrid%stdev_sensible          )) deallocate(cgrid%stdev_sensible          )
-       if(associated(cgrid%stdev_nep               )) deallocate(cgrid%stdev_nep               )
-       if(associated(cgrid%stdev_rh                )) deallocate(cgrid%stdev_rh                )
+
+
+       if(associated(cgrid%mmsqu_gpp               )) deallocate(cgrid%mmsqu_gpp               )
+       if(associated(cgrid%mmsqu_leaf_resp         )) deallocate(cgrid%mmsqu_leaf_resp         )
+       if(associated(cgrid%mmsqu_root_resp         )) deallocate(cgrid%mmsqu_root_resp         )
+       if(associated(cgrid%mmsqu_plresp            )) deallocate(cgrid%mmsqu_plresp            )
+       if(associated(cgrid%mmsqu_nee               )) deallocate(cgrid%mmsqu_nee               )
+       if(associated(cgrid%mmsqu_nep               )) deallocate(cgrid%mmsqu_nep               )
+       if(associated(cgrid%mmsqu_rh                )) deallocate(cgrid%mmsqu_rh                )
+       if(associated(cgrid%mmsqu_sensible_ac       )) deallocate(cgrid%mmsqu_sensible_ac       )
+       if(associated(cgrid%mmsqu_sensible_vc       )) deallocate(cgrid%mmsqu_sensible_vc       )
+       if(associated(cgrid%mmsqu_sensible_gc       )) deallocate(cgrid%mmsqu_sensible_gc       )
+       if(associated(cgrid%mmsqu_evap              )) deallocate(cgrid%mmsqu_evap              )
+       if(associated(cgrid%mmsqu_transp            )) deallocate(cgrid%mmsqu_transp            )
+       if(associated(cgrid%mmsqu_vapor_ac          )) deallocate(cgrid%mmsqu_vapor_ac          )
+       if(associated(cgrid%mmsqu_vapor_vc          )) deallocate(cgrid%mmsqu_vapor_vc          )
+       if(associated(cgrid%mmsqu_vapor_gc          )) deallocate(cgrid%mmsqu_vapor_gc          )
+
        if(associated(cgrid%disturbance_rates       )) deallocate(cgrid%disturbance_rates       )
        if(associated(cgrid%workload                )) deallocate(cgrid%workload                )
 
@@ -4582,6 +4640,8 @@ contains
     if(associated(cgrid%qmean_can_prss       )) deallocate(cgrid%qmean_can_prss       )
     if(associated(cgrid%qmean_can_theta      )) deallocate(cgrid%qmean_can_theta      )
     if(associated(cgrid%qmean_can_theiv      )) deallocate(cgrid%qmean_can_theiv      )
+    if(associated(cgrid%qmean_gnd_temp       )) deallocate(cgrid%qmean_gnd_temp       )
+    if(associated(cgrid%qmean_gnd_shv        )) deallocate(cgrid%qmean_gnd_shv        )
     if(associated(cgrid%qmean_veg_energy     )) deallocate(cgrid%qmean_veg_energy     )
     if(associated(cgrid%qmean_veg_water      )) deallocate(cgrid%qmean_veg_water      )
     if(associated(cgrid%qmean_veg_temp       )) deallocate(cgrid%qmean_veg_temp       )
@@ -4837,6 +4897,7 @@ contains
     if(associated(csite%ggbare                       )) deallocate(csite%ggbare                       )
     if(associated(csite%ggveg                        )) deallocate(csite%ggveg                        )
     if(associated(csite%ggnet                        )) deallocate(csite%ggnet                        )
+    if(associated(csite%ggsoil                       )) deallocate(csite%ggsoil                       )
     if(associated(csite%lambda_light                 )) deallocate(csite%lambda_light                 )
     if(associated(csite%dmean_lambda_light           )) deallocate(csite%dmean_lambda_light           )
     if(associated(csite%mmean_lambda_light           )) deallocate(csite%mmean_lambda_light           )
@@ -4863,6 +4924,9 @@ contains
     if(associated(csite%ground_temp                  )) deallocate(csite%ground_temp                  )
     if(associated(csite%ground_fliq                  )) deallocate(csite%ground_fliq                  )
     if(associated(csite%rough                        )) deallocate(csite%rough                        )
+    if(associated(csite%par_v_max                    )) deallocate(csite%par_v_max                    )
+    if(associated(csite%par_v_beam_max               )) deallocate(csite%par_v_beam_max               )
+    if(associated(csite%par_v_diffuse_max            )) deallocate(csite%par_v_diffuse_max            )
     if(associated(csite%A_o_max                      )) deallocate(csite%A_o_max                      )
     if(associated(csite%A_c_max                      )) deallocate(csite%A_c_max                      )
 
@@ -5150,12 +5214,6 @@ contains
     if(associated(cpatch%lambda_light))           deallocate(cpatch%lambda_light)
     if(associated(cpatch%dmean_lambda_light))     deallocate(cpatch%dmean_lambda_light)
     if(associated(cpatch%mmean_lambda_light))     deallocate(cpatch%mmean_lambda_light)
-    if(associated(cpatch%norm_par_beam))          deallocate(cpatch%norm_par_beam)
-    if(associated(cpatch%dmean_norm_par_beam))    deallocate(cpatch%dmean_norm_par_beam)
-    if(associated(cpatch%mmean_norm_par_beam))    deallocate(cpatch%mmean_norm_par_beam)
-    if(associated(cpatch%norm_par_diff))          deallocate(cpatch%norm_par_diff)
-    if(associated(cpatch%dmean_norm_par_diff))    deallocate(cpatch%dmean_norm_par_diff)
-    if(associated(cpatch%mmean_norm_par_diff))    deallocate(cpatch%mmean_norm_par_diff)
     if(associated(cpatch%par_v))                  deallocate(cpatch%par_v)
     if(associated(cpatch%par_v_beam))             deallocate(cpatch%par_v_beam)
     if(associated(cpatch%par_v_diffuse))          deallocate(cpatch%par_v_diffuse)
@@ -5315,6 +5373,7 @@ contains
          osite%ggbare(opa)                      = isite%ggbare(ipa)
          osite%ggveg(opa)                       = isite%ggveg(ipa)
          osite%ggnet(opa)                       = isite%ggnet(ipa)
+         osite%ggsoil(opa)                      = isite%ggsoil(ipa)
          osite%lambda_light(opa)                = isite%lambda_light(ipa)
          osite%lai(opa)                         = isite%lai(ipa)
          osite%wpa(opa)                         = isite%wpa(ipa)
@@ -5435,6 +5494,9 @@ contains
          osite%avg_veg_temp(opa)                = isite%avg_veg_temp(ipa)
          osite%avg_veg_fliq(opa)                = isite%avg_veg_fliq(ipa)
          osite%avg_veg_water(opa)               = isite%avg_veg_water(ipa)
+         osite%par_v_max(opa)                   = isite%par_v_max(ipa)
+         osite%par_v_beam_max(opa)              = isite%par_v_beam_max(ipa)
+         osite%par_v_diffuse_max(opa)           = isite%par_v_diffuse_max(ipa)
 
          !----- Copy the temporary surface water variables. -------------------------------!
          do k=1,nzs
@@ -5609,6 +5671,7 @@ contains
     siteout%ggbare(1:inc)               = pack(sitein%ggbare,logmask)
     siteout%ggveg(1:inc)                = pack(sitein%ggveg,logmask)
     siteout%ggnet(1:inc)                = pack(sitein%ggnet,logmask)
+    siteout%ggsoil(1:inc)               = pack(sitein%ggsoil,logmask)
     siteout%lambda_light(1:inc)         = pack(sitein%lambda_light,logmask)
     siteout%lai(1:inc)                  = pack(sitein%lai,logmask)
     siteout%wpa(1:inc)                  = pack(sitein%wpa,logmask)
@@ -5729,8 +5792,9 @@ contains
     siteout%avg_veg_temp(1:inc)         = pack(sitein%avg_veg_temp,logmask)
     siteout%avg_veg_fliq(1:inc)         = pack(sitein%avg_veg_fliq,logmask)
     siteout%avg_veg_water(1:inc)        = pack(sitein%avg_veg_water,logmask)
-  
-
+    siteout%par_v_max(1:inc)            = pack(sitein%par_v_max,logmask)
+    siteout%par_v_beam_max(1:inc)       = pack(sitein%par_v_beam_max,logmask)
+    siteout%par_v_diffuse_max(1:inc)    = pack(sitein%par_v_diffuse_max,logmask)
 
     ! Water layers 1:nzs
     
@@ -5955,8 +6019,6 @@ contains
     patchout%light_level_diff(1:inc) = pack(patchin%light_level_diff,mask)
     patchout%beamext_level(1:inc)      = pack(patchin%beamext_level,mask)
     patchout%diffext_level(1:inc)      = pack(patchin%diffext_level,mask)
-    patchout%norm_par_beam(1:inc)    = pack(patchin%norm_par_beam,mask)
-    patchout%norm_par_diff(1:inc)    = pack(patchin%norm_par_diff,mask)
     patchout%lambda_light(1:inc)     = pack(patchin%lambda_light,mask)
     patchout%par_v(1:inc)            = pack(patchin%par_v,mask)
     patchout%par_v_beam(1:inc)       = pack(patchin%par_v_beam,mask)
@@ -6047,8 +6109,6 @@ contains
        patchout%dmean_light_level_diff(1:inc) = pack(patchin%dmean_light_level_diff,mask)
        patchout%dmean_beamext_level   (1:inc) = pack(patchin%dmean_beamext_level   ,mask)
        patchout%dmean_diffext_level   (1:inc) = pack(patchin%dmean_diffext_level   ,mask)
-       patchout%dmean_norm_par_beam   (1:inc) = pack(patchin%dmean_norm_par_beam   ,mask)
-       patchout%dmean_norm_par_diff   (1:inc) = pack(patchin%dmean_norm_par_diff   ,mask)
        patchout%dmean_gpp             (1:inc) = pack(patchin%dmean_gpp             ,mask)
        patchout%dmean_nppleaf         (1:inc) = pack(patchin%dmean_nppleaf         ,mask)
        patchout%dmean_nppfroot        (1:inc) = pack(patchin%dmean_nppfroot        ,mask)
@@ -6080,8 +6140,6 @@ contains
        patchout%mmean_light_level_diff(1:inc) = pack(patchin%mmean_light_level_diff,mask)
        patchout%mmean_beamext_level   (1:inc) = pack(patchin%mmean_beamext_level   ,mask)
        patchout%mmean_diffext_level   (1:inc) = pack(patchin%mmean_diffext_level   ,mask)
-       patchout%mmean_norm_par_beam   (1:inc) = pack(patchin%mmean_norm_par_beam   ,mask)
-       patchout%mmean_norm_par_diff   (1:inc) = pack(patchin%mmean_norm_par_diff   ,mask)
        patchout%mmean_gpp             (1:inc) = pack(patchin%mmean_gpp             ,mask)
        patchout%mmean_nppleaf         (1:inc) = pack(patchin%mmean_nppleaf         ,mask)
        patchout%mmean_nppfroot        (1:inc) = pack(patchin%mmean_nppfroot        ,mask)
@@ -6227,8 +6285,6 @@ contains
        patchout%light_level_diff(iout) = patchin%light_level_diff(iin)
        patchout%beamext_level(iout)    = patchin%beamext_level(iin)
        patchout%diffext_level(iout)    = patchin%diffext_level(iin)
-       patchout%norm_par_beam(iout)    = patchin%norm_par_beam(iin)
-       patchout%norm_par_diff(iout)    = patchin%norm_par_diff(iin)
        patchout%lambda_light(iout)     = patchin%lambda_light(iin)
        patchout%par_v(iout)            = patchin%par_v(iin)
        patchout%par_v_beam(iout)       = patchin%par_v_beam(iin)
@@ -6298,8 +6354,6 @@ contains
           patchout%dmean_light_level_diff  (iout) = patchin%dmean_light_level_diff  (iin)
           patchout%dmean_beamext_level     (iout) = patchin%dmean_beamext_level     (iin)
           patchout%dmean_diffext_level     (iout) = patchin%dmean_diffext_level     (iin)
-          patchout%dmean_norm_par_beam     (iout) = patchin%dmean_norm_par_beam     (iin)
-          patchout%dmean_norm_par_diff     (iout) = patchin%dmean_norm_par_diff     (iin)
           patchout%dmean_lambda_light      (iout) = patchin%dmean_lambda_light      (iin)
           patchout%dmean_gpp               (iout) = patchin%dmean_gpp               (iin)
           patchout%dmean_nppleaf           (iout) = patchin%dmean_nppleaf           (iin)
@@ -6331,8 +6385,6 @@ contains
           patchout%mmean_light_level_diff  (iout) = patchin%mmean_light_level_diff  (iin)
           patchout%mmean_beamext_level     (iout) = patchin%mmean_beamext_level     (iin)
           patchout%mmean_diffext_level     (iout) = patchin%mmean_diffext_level     (iin)
-          patchout%mmean_norm_par_beam     (iout) = patchin%mmean_norm_par_beam     (iin)
-          patchout%mmean_norm_par_diff     (iout) = patchin%mmean_norm_par_diff     (iin)
           patchout%mmean_gpp               (iout) = patchin%mmean_gpp               (iin)
           patchout%mmean_nppleaf           (iout) = patchin%mmean_nppleaf           (iin)
           patchout%mmean_nppfroot          (iout) = patchin%mmean_nppfroot          (iin)
@@ -6768,8 +6820,12 @@ contains
    subroutine filltab_globtype(igr)
 
       use ed_var_tables, only : vtable_edio_r       & ! sub-routine
+                              , vtable_edio_r_sca   & ! sub-rouitne
                               , vtable_edio_i_sca   ! ! sub-rouitne
-      use soil_coms    , only : slz                 ! ! intent(in)
+      use soil_coms    , only : slz                 & ! intent(in)
+                              , slxclay             & ! intent(in)
+                              , slxsand             & ! intent(in)
+                              , isoilflg            ! ! intent(in)
 
 
       implicit none
@@ -6857,6 +6913,30 @@ contains
       call vtable_edio_i_sca(ndcycle,nvar,igr,1,0                                              &
                             ,var_len,var_len_global,max_ptrs                               &
                             ,'NDCYCLE :90:hist:anal:dail:mont:dcyc:year')
+
+      nvar=nvar+1
+      call vtable_edio_i_sca(isoilflg(igr),nvar,igr,0,0                                    &
+                            ,var_len,var_len_global,max_ptrs                               &
+                            ,'ISOILFLG :90:hist:anal:dail:mont:dcyc:year')
+      call vtable_edio_i_sca(isoilflg(igr),nvar,igr,1,0                                    &
+                            ,var_len,var_len_global,max_ptrs                               &
+                            ,'ISOILFLG :90:hist:anal:dail:mont:dcyc:year')
+
+      nvar=nvar+1
+      call vtable_edio_r_sca(slxsand,nvar,igr,0,0                                          &
+                            ,var_len,var_len_global,max_ptrs                               &
+                            ,'SLXSAND :90:hist:anal:dail:mont:dcyc:year')
+      call vtable_edio_r_sca(slxsand,nvar,igr,1,0                                          &
+                            ,var_len,var_len_global,max_ptrs                               &
+                            ,'SLXSAND :90:hist:anal:dail:mont:dcyc:year')
+
+      nvar=nvar+1
+      call vtable_edio_r_sca(slxclay,nvar,igr,0,0                                          &
+                            ,var_len,var_len_global,max_ptrs                               &
+                            ,'SLXCLAY :90:hist:anal:dail:mont:dcyc:year')
+      call vtable_edio_r_sca(slxclay,nvar,igr,1,0                                          &
+                            ,var_len,var_len_global,max_ptrs                               &
+                            ,'SLXCLAY :90:hist:anal:dail:mont:dcyc:year')
 
 
       !------------------------------------------------------------------------------------!
@@ -8399,6 +8479,20 @@ contains
          call metadata_edio(nvar,igr,'Daily mean canopy air theta_Eiv','[K]','ipoly') 
       end if
       
+      if(associated(cgrid%dmean_gnd_temp)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,cgrid%dmean_gnd_temp,nvar,igr,init,cgrid%pyglob_id, &
+              var_len,var_len_global,max_ptrs,'DMEAN_GND_TEMP :11:hist:dail') 
+         call metadata_edio(nvar,igr,'Daily mean of ground temperature','[K]','ipoly') 
+      end if
+      
+      if(associated(cgrid%dmean_gnd_shv)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,cgrid%dmean_gnd_shv,nvar,igr,init,cgrid%pyglob_id, &
+              var_len,var_len_global,max_ptrs,'DMEAN_GND_SHV :11:hist:dail') 
+         call metadata_edio(nvar,igr,'Daily mean of ground specific humidity','[kg/kg]','ipoly') 
+      end if
+      
       if(associated(cgrid%dmean_veg_energy)) then
          nvar=nvar+1
          call vtable_edio_r(npts,cgrid%dmean_veg_energy,nvar,igr,init,cgrid%pyglob_id, &
@@ -8742,11 +8836,18 @@ contains
          call metadata_edio(nvar,igr,'Monthly mean canopy air theta_Eiv','[K]','ipoly') 
       end if
       
-      if(associated(cgrid%mmean_veg_water)) then
+      if(associated(cgrid%mmean_gnd_temp)) then
          nvar=nvar+1
-         call vtable_edio_r(npts,cgrid%mmean_veg_water,nvar,igr,init,cgrid%pyglob_id, &
-              var_len,var_len_global,max_ptrs,'MMEAN_VEG_WATER :11:hist:mont:dcyc') 
-         call metadata_edio(nvar,igr,'Monthly mean vegetation surface water','[kg/m2]','ipoly') 
+         call vtable_edio_r(npts,cgrid%mmean_gnd_temp,nvar,igr,init,cgrid%pyglob_id, &
+              var_len,var_len_global,max_ptrs,'MMEAN_GND_TEMP :11:hist:mont:dcyc') 
+         call metadata_edio(nvar,igr,'Monthly mean ground temperature','[K]','ipoly') 
+      end if
+      
+      if(associated(cgrid%mmean_gnd_shv)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,cgrid%mmean_gnd_shv,nvar,igr,init,cgrid%pyglob_id, &
+              var_len,var_len_global,max_ptrs,'MMEAN_GND_SHV :11:hist:mont:dcyc') 
+         call metadata_edio(nvar,igr,'Monthly mean ground specific humidity','[kg/kg]','ipoly') 
       end if
       
       if(associated(cgrid%mmean_veg_energy)) then
@@ -8861,48 +8962,105 @@ contains
          call metadata_edio(nvar,igr,'Monthly mean of residual energy ','[J/m2/s]','ipoly') 
       end if
 
-      if(associated(cgrid%stdev_gpp)) then
+
+
+      if(associated(cgrid%mmsqu_gpp)) then
          nvar=nvar+1
-         call vtable_edio_r(npts,cgrid%stdev_gpp,nvar,igr,init,cgrid%pyglob_id, &
-              var_len,var_len_global,max_ptrs,'STDEV_GPP :11:hist:mont:dcyc') 
+         call vtable_edio_r(npts,cgrid%mmsqu_gpp,nvar,igr,init,cgrid%pyglob_id, &
+              var_len,var_len_global,max_ptrs,'MMSQU_GPP :11:hist:mont:dcyc') 
          call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
       end if
-      
-      if(associated(cgrid%stdev_evap)) then
+
+      if(associated(cgrid%mmsqu_leaf_resp)) then
          nvar=nvar+1
-         call vtable_edio_r(npts,cgrid%stdev_evap,nvar,igr,init,cgrid%pyglob_id, &
-              var_len,var_len_global,max_ptrs,'STDEV_EVAP :11:hist:mont:dcyc') 
+         call vtable_edio_r(npts,cgrid%mmsqu_leaf_resp,nvar,igr,init,cgrid%pyglob_id, &
+              var_len,var_len_global,max_ptrs,'MMSQU_LEAF_RESP :11:hist:mont:dcyc') 
          call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
       end if
-      
-      if(associated(cgrid%stdev_transp)) then
+
+      if(associated(cgrid%mmsqu_root_resp)) then
          nvar=nvar+1
-         call vtable_edio_r(npts,cgrid%stdev_transp,nvar,igr,init,cgrid%pyglob_id, &
-              var_len,var_len_global,max_ptrs,'STDEV_TRANSP :11:hist:mont:dcyc') 
+         call vtable_edio_r(npts,cgrid%mmsqu_root_resp,nvar,igr,init,cgrid%pyglob_id, &
+              var_len,var_len_global,max_ptrs,'MMSQU_ROOT_RESP :11:hist:mont:dcyc') 
          call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
       end if
-      
-      if(associated(cgrid%stdev_sensible)) then
+
+      if(associated(cgrid%mmsqu_plresp)) then
          nvar=nvar+1
-         call vtable_edio_r(npts,cgrid%stdev_sensible,nvar,igr,init,cgrid%pyglob_id, &
-              var_len,var_len_global,max_ptrs,'STDEV_SENSIBLE :11:hist:mont:dcyc') 
+         call vtable_edio_r(npts,cgrid%mmsqu_plresp,nvar,igr,init,cgrid%pyglob_id, &
+              var_len,var_len_global,max_ptrs,'MMSQU_PLRESP :11:hist:mont:dcyc') 
          call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
       end if
-      
-      if(associated(cgrid%stdev_nep)) then
+
+      if(associated(cgrid%mmsqu_nee)) then
          nvar=nvar+1
-         call vtable_edio_r(npts,cgrid%stdev_nep,nvar,igr,init,cgrid%pyglob_id, &
-              var_len,var_len_global,max_ptrs,'STDEV_NEP :11:hist:mont:dcyc') 
+         call vtable_edio_r(npts,cgrid%mmsqu_nee,nvar,igr,init,cgrid%pyglob_id, &
+              var_len,var_len_global,max_ptrs,'MMSQU_NEE :11:hist:mont:dcyc') 
          call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
       end if
-      
-      if(associated(cgrid%stdev_rh)) then
+
+      if(associated(cgrid%mmsqu_rh)) then
          nvar=nvar+1
-         call vtable_edio_r(npts,cgrid%stdev_rh,nvar,igr,init,cgrid%pyglob_id, &
-              var_len,var_len_global,max_ptrs,'STDEV_RH :11:hist:mont:dcyc') 
+         call vtable_edio_r(npts,cgrid%mmsqu_rh,nvar,igr,init,cgrid%pyglob_id, &
+              var_len,var_len_global,max_ptrs,'MMSQU_RH :11:hist:mont:dcyc') 
          call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
       end if
-      
+
+      if(associated(cgrid%mmsqu_sensible_ac)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,cgrid%mmsqu_sensible_ac,nvar,igr,init,cgrid%pyglob_id, &
+              var_len,var_len_global,max_ptrs,'MMSQU_SENSIBLE_AC :11:hist:mont:dcyc') 
+         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+      end if
+
+      if(associated(cgrid%mmsqu_sensible_vc)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,cgrid%mmsqu_sensible_vc,nvar,igr,init,cgrid%pyglob_id, &
+              var_len,var_len_global,max_ptrs,'MMSQU_SENSIBLE_VC :11:hist:mont:dcyc') 
+         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+      end if
+
+      if(associated(cgrid%mmsqu_sensible_gc)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,cgrid%mmsqu_sensible_gc,nvar,igr,init,cgrid%pyglob_id, &
+              var_len,var_len_global,max_ptrs,'MMSQU_SENSIBLE_GC :11:hist:mont:dcyc') 
+         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+      end if
+
+      if(associated(cgrid%mmsqu_evap)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,cgrid%mmsqu_evap,nvar,igr,init,cgrid%pyglob_id, &
+              var_len,var_len_global,max_ptrs,'MMSQU_EVAP :11:hist:mont:dcyc') 
+         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+      end if
+
+      if(associated(cgrid%mmsqu_transp)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,cgrid%mmsqu_transp,nvar,igr,init,cgrid%pyglob_id, &
+              var_len,var_len_global,max_ptrs,'MMSQU_TRANSP :11:hist:mont:dcyc') 
+         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+      end if
+
+      if(associated(cgrid%mmsqu_vapor_ac)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,cgrid%mmsqu_vapor_ac,nvar,igr,init,cgrid%pyglob_id, &
+              var_len,var_len_global,max_ptrs,'MMSQU_VAPOR_AC :11:hist:mont:dcyc') 
+         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+      end if
+
+      if(associated(cgrid%mmsqu_vapor_vc)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,cgrid%mmsqu_vapor_vc,nvar,igr,init,cgrid%pyglob_id, &
+              var_len,var_len_global,max_ptrs,'MMSQU_VAPOR_VC :11:hist:mont:dcyc') 
+         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+      end if
+
+      if(associated(cgrid%mmsqu_vapor_gc)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,cgrid%mmsqu_vapor_gc,nvar,igr,init,cgrid%pyglob_id, &
+              var_len,var_len_global,max_ptrs,'MMSQU_VAPOR_GC :11:hist:mont:dcyc') 
+         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+      end if
 
       !------------------------------------------------------------------------------------!
       !------------------------------------------------------------------------------------!
@@ -9142,6 +9300,20 @@ contains
          nvar=nvar+1
          call vtable_edio_r(npts,cgrid%qmean_can_theiv,nvar,igr,init,cgrid%pyglob_id, &
               var_len,var_len_global,max_ptrs,'QMEAN_CAN_THEIV :-11:hist:dcyc') 
+         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+      end if
+
+      if(associated(cgrid%qmean_gnd_temp)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,cgrid%qmean_gnd_temp,nvar,igr,init,cgrid%pyglob_id, &
+              var_len,var_len_global,max_ptrs,'QMEAN_GND_TEMP :-11:hist:dcyc') 
+         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+      end if
+
+      if(associated(cgrid%qmean_gnd_shv)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,cgrid%qmean_gnd_shv,nvar,igr,init,cgrid%pyglob_id, &
+              var_len,var_len_global,max_ptrs,'QMEAN_GND_SHV :-11:hist:dcyc') 
          call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
       end if
 
@@ -10831,28 +11003,35 @@ contains
          nvar=nvar+1
            call vtable_edio_r(npts,csite%opencan_frac,nvar,igr,init,csite%paglob_id, &
            var_len,var_len_global,max_ptrs,'OPENCAN_FRAC :31:hist')
-           call metadata_edio(nvar,igr,'Fraction of open canopy','[m]','NA') 
+           call metadata_edio(nvar,igr,'Fraction of open canopy','[---]','NA') 
       end if
      
       if (associated(csite%ggbare)) then
          nvar=nvar+1
            call vtable_edio_r(npts,csite%ggbare,nvar,igr,init,csite%paglob_id, &
            var_len,var_len_global,max_ptrs,'GGBARE :31:hist')
-           call metadata_edio(nvar,igr,'Bare ground conductance','[m]','NA') 
+           call metadata_edio(nvar,igr,'Bare ground conductance','[m/s]','NA') 
       end if
 
       if (associated(csite%ggveg)) then
          nvar=nvar+1
            call vtable_edio_r(npts,csite%ggveg,nvar,igr,init,csite%paglob_id, &
            var_len,var_len_global,max_ptrs,'GGVEG :31:hist')
-           call metadata_edio(nvar,igr,'Vegetated ground conductance','[m]','NA') 
+           call metadata_edio(nvar,igr,'Vegetated ground conductance','[m/s]','NA') 
       end if
 
       if (associated(csite%ggnet)) then
          nvar=nvar+1
            call vtable_edio_r(npts,csite%ggnet,nvar,igr,init,csite%paglob_id, &
            var_len,var_len_global,max_ptrs,'GGNET :31:hist')
-           call metadata_edio(nvar,igr,'Net ground conductance','[m]','NA') 
+           call metadata_edio(nvar,igr,'Net ground conductance','[m/s]','NA') 
+      end if
+
+      if (associated(csite%ggsoil)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,csite%ggsoil,nvar,igr,init,csite%paglob_id, &
+           var_len,var_len_global,max_ptrs,'GGSOIL :31:hist')
+           call metadata_edio(nvar,igr,'Soil conductance for evaporation','[m/s]','NA') 
       end if
 
       if (associated(csite%lambda_light)) then
@@ -11529,6 +11708,29 @@ contains
          call vtable_edio_r(npts,csite%wpwp,nvar,igr,init,csite%paglob_id, &
               var_len,var_len_global,max_ptrs,'WPWP :31:hist') 
          call metadata_edio(nvar,igr,'Vertical flux of W-direction momentum','[kg m^-1 s^-2]','ipatch')
+      end if
+      
+      if (associated(csite%par_v_max)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,csite%par_v_max,nvar,igr,init,csite%paglob_id, &
+              var_len,var_len_global,max_ptrs,'PAR_V_MAX :31:hist') 
+         call metadata_edio(nvar,igr,'Maximum PAR - not an output variable','[W/m2]','ipatch')
+      end if
+      
+      if (associated(csite%par_v_beam_max)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,csite%par_v_beam_max,nvar,igr,init,csite%paglob_id, &
+              var_len,var_len_global,max_ptrs,'PAR_V_BEAM_MAX :31:hist') 
+         call metadata_edio(nvar,igr,'Maximum direct PAR - not an output variable' &
+                           ,'[W/m2]','ipatch')
+      end if
+      
+      if (associated(csite%par_v_diffuse_max)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,csite%par_v_diffuse_max,nvar,igr,init,csite%paglob_id, &
+              var_len,var_len_global,max_ptrs,'PAR_V_DIFFUSE_MAX :31:hist') 
+         call metadata_edio(nvar,igr,'Maximum diffuse PAR - not an output variable' &
+                           ,'[W/m2]','ipatch')
       end if
       
       if (associated(csite%avg_carbon_ac)) then
@@ -12550,20 +12752,6 @@ contains
          call metadata_edio(nvar,igr,'diff extinction level','[NA]','icohort') 
       end if
 
-      if (associated(cpatch%norm_par_beam)) then
-         nvar=nvar+1
-           call vtable_edio_r(npts,cpatch%norm_par_beam,nvar,igr,init,cpatch%coglob_id, &
-           var_len,var_len_global,max_ptrs,'NORM_PAR_BEAM :41:hist:anal') 
-         call metadata_edio(nvar,igr,'Relative light level, beam fraction','[NA]','icohort') 
-      end if
-
-      if (associated(cpatch%norm_par_diff)) then
-         nvar=nvar+1
-           call vtable_edio_r(npts,cpatch%norm_par_diff,nvar,igr,init,cpatch%coglob_id, &
-           var_len,var_len_global,max_ptrs,'NORM_PAR_DIFF :41:hist:anal') 
-         call metadata_edio(nvar,igr,'Relative light level, diffuse fraction','[NA]','icohort') 
-      end if
-
       if (associated(cpatch%dmean_light_level)) then
          nvar=nvar+1
            call vtable_edio_r(npts,cpatch%dmean_light_level,nvar,igr,init,cpatch%coglob_id, &
@@ -12599,20 +12787,6 @@ contains
          call metadata_edio(nvar,igr,'Diurnal mean of diff extinction level ','[NA]','icohort') 
       end if
 
-      if (associated(cpatch%dmean_norm_par_beam)) then
-         nvar=nvar+1
-           call vtable_edio_r(npts,cpatch%dmean_norm_par_beam,nvar,igr,init,cpatch%coglob_id, &
-           var_len,var_len_global,max_ptrs,'DMEAN_NORM_PAR_BEAM :41:hist:dail') 
-         call metadata_edio(nvar,igr,'Diurnal mean of Relative light level (beam)','[NA]','icohort') 
-      end if
-
-      if (associated(cpatch%dmean_norm_par_diff)) then
-         nvar=nvar+1
-           call vtable_edio_r(npts,cpatch%dmean_norm_par_diff,nvar,igr,init,cpatch%coglob_id, &
-           var_len,var_len_global,max_ptrs,'DMEAN_NORM_PAR_DIFF :41:hist:dail') 
-         call metadata_edio(nvar,igr,'Diurnal mean of Relative light level (diffuse)','[NA]','icohort') 
-      end if
-
       if (associated(cpatch%mmean_light_level)) then
          nvar=nvar+1
            call vtable_edio_r(npts,cpatch%mmean_light_level,nvar,igr,init,cpatch%coglob_id, &
@@ -12646,20 +12820,6 @@ contains
            call vtable_edio_r(npts,cpatch%mmean_diffext_level,nvar,igr,init,cpatch%coglob_id, &
            var_len,var_len_global,max_ptrs,'MMEAN_DIFFEXT_LEVEL :41:hist:mont:dcyc') 
          call metadata_edio(nvar,igr,'Diurnal mean of diff extinction level ','[NA]','icohort') 
-      end if
-
-      if (associated(cpatch%mmean_norm_par_beam)) then
-         nvar=nvar+1
-           call vtable_edio_r(npts,cpatch%mmean_norm_par_beam,nvar,igr,init,cpatch%coglob_id, &
-           var_len,var_len_global,max_ptrs,'MMEAN_NORM_PAR_BEAM :41:hist:mont:dcyc') 
-         call metadata_edio(nvar,igr,'Monthly mean of Relative light level (beam)','[NA]','icohort') 
-      end if
-
-      if (associated(cpatch%mmean_norm_par_diff)) then
-         nvar=nvar+1
-           call vtable_edio_r(npts,cpatch%mmean_norm_par_diff,nvar,igr,init,cpatch%coglob_id, &
-           var_len,var_len_global,max_ptrs,'MMEAN_NORM_PAR_DIFF :41:hist:mont:dcyc') 
-         call metadata_edio(nvar,igr,'Monthly mean of Relative light level (diff)','[NA]','icohort') 
       end if
 
       if (associated(cpatch%lambda_light)) then

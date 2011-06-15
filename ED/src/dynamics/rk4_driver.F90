@@ -43,7 +43,6 @@ module rk4_driver
       integer                                 :: isi
       integer                                 :: ipa
       integer                                 :: iun
-      integer, dimension(:)     , allocatable :: ed_ktrans
       integer                                 :: nsteps
       real                                    :: wcurr_loss2atm
       real                                    :: ecurr_loss2atm
@@ -60,10 +59,6 @@ module rk4_driver
       !----- Functions --------------------------------------------------------------------!
       real                      , external    :: walltime
       !------------------------------------------------------------------------------------!
-
-
-      !----- Allocate the auxiliary variables. --------------------------------------------!
-      allocate(ed_ktrans(nzg))
 
       polygonloop: do ipy = 1,cgrid%npolygons
          cpoly => cgrid%polygon(ipy)
@@ -140,7 +135,7 @@ module rk4_driver
                                       ,cmet%prss,cmet%rshort,cmet%rlong,cmet%geoht         &
                                       ,cpoly%lsl(isi),cpoly%ntext_soil(:,isi)              &
                                       ,cpoly%green_leaf_factor(:,isi)                      &
-                                      ,cgrid%lon(ipy),cgrid%lat(ipy))
+                                      ,cgrid%lon(ipy),cgrid%lat(ipy),cgrid%cosz(ipy))
 
                !----- Compute current storage terms. --------------------------------------!
                call update_budget(csite,cpoly%lsl(isi),ipa,ipa)
@@ -150,15 +145,10 @@ module rk4_driver
                !---------------------------------------------------------------------------!
                call copy_patch_init(csite,ipa,integration_buff%initp)
 
-               !---------------------------------------------------------------------------!
-               !     Calculate the canopy geometry, and the scalar transport coefficients. !
-               !---------------------------------------------------------------------------!
-               call canopy_turbulence8(csite,integration_buff%initp,ipa)
-
 
 
                !----- Get photosynthesis, stomatal conductance, and transpiration. --------!
-               call canopy_photosynthesis(csite,cmet,nzg,ipa,ed_ktrans,cpoly%lsl(isi)      &
+               call canopy_photosynthesis(csite,cmet,nzg,ipa,cpoly%lsl(isi)                &
                                          ,cpoly%ntext_soil(:,isi)                          &
                                          ,cpoly%leaf_aging_factor(:,isi)                   &
                                          ,cpoly%green_leaf_factor(:,isi))
@@ -203,9 +193,6 @@ module rk4_driver
          end do siteloop
 
       end do polygonloop
-
-      !----- De-allocate scratch variables. -----------------------------------------------!
-      deallocate (ed_ktrans)
 
       return
    end subroutine rk4_timestep
@@ -391,6 +378,8 @@ module rk4_driver
       csite%can_co2(ipa)          = sngloff(initp%can_co2         ,tiny_offset)
       csite%can_rhos(ipa)         = sngloff(initp%can_rhos        ,tiny_offset)
       csite%can_depth(ipa)        = sngloff(initp%can_depth       ,tiny_offset)
+      csite%veg_displace(ipa)     = sngloff(initp%veg_displace    ,tiny_offset)
+      csite%rough(ipa)            = sngloff(initp%rough           ,tiny_offset)
       csite%snowfac(ipa)          = sngloff(initp%snowfac         ,tiny_offset)
       csite%total_sfcw_depth(ipa) = sngloff(initp%total_sfcw_depth,tiny_offset)
 

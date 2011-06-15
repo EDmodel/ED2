@@ -137,8 +137,8 @@ module fuse_fiss_utils
          if ( csize < min_cohort_size(ipft) ) then
             !----- Cohort is indeed too small, it won't remain ----------------------------!
             remain_table(ico) = .false.
-            elim_nplant = elim_nplant + cpatch%nplant(ico)
-            elim_lai    = elim_lai    + cpatch%lai(ico)
+            elim_nplant = elim_nplant + cpatch%nplant(ico) * csite%area(ipa)
+            elim_lai    = elim_lai    + cpatch%lai(ico)    * csite%area(ipa)
 
             !----- Update litter pools ----------------------------------------------------!
             csite%fsc_in(ipa) = csite%fsc_in(ipa) + cpatch%nplant(ico)                     &
@@ -349,7 +349,7 @@ module fuse_fiss_utils
                                      , patchtype           ! ! Structure
       use pft_coms            , only : rho                 & ! intent(in)
                                      , b1Ht                & ! intent(in)
-                                     , max_dbh             & ! intent(in)
+                                     , hgt_max             & ! intent(in)
                                      , sla                 & ! intent(in)
                                      , hgt_ref             ! ! intent(in)
       use fusion_fission_coms , only : fusetol_h           & ! intent(in)
@@ -359,6 +359,7 @@ module fuse_fiss_utils
                                      , coh_tolerance_max   ! ! intent(in)
       use ed_max_dims         , only : n_pft               ! ! intent(in)
       use mem_polygons        , only : maxcohort           ! ! intent(in)
+      use canopy_layer_coms   , only : crown_mod           ! ! intent(in)
       use allometry           , only : dbh2h               & ! function
                                      , dbh2bl              ! ! function
       implicit none
@@ -373,7 +374,6 @@ module fuse_fiss_utils
       type(patchtype)        , pointer     :: temppatch      ! Scratch patch
       integer                              :: donc,recc,ico3 ! Counters
       logical                              :: fusion_test    ! Flag: proceed with fusion?
-      real                                 :: hite_threshold ! Height threshold
       real                                 :: newn           ! new nplants of merged coh.
       real                                 :: lai_max        ! Maximum LAI the fused 
                                                              !    cohort could have.
@@ -410,14 +410,12 @@ module fuse_fiss_utils
       nshort    = 0
       ntall     = 0
       do ico3 = 1,cpatch%ncohorts
-         !----- Get fusion height threshold -----------------------------------------------!
-         if (rho(cpatch%pft(ico3)) == 0.0)then
-            hite_threshold = b1Ht(cpatch%pft(ico3)) !+hgt_ref(cpatch%(ico3))
-         else
-            hite_threshold = dbh2h(cpatch%pft(ico3),max_dbh(cpatch%pft(ico3)))
-         end if
-
-         if (cpatch%hite(ico3) < (0.95 * hite_threshold) ) then
+         !---------------------------------------------------------------------------------!
+         !    Get fusion height threshold.  Height is a good predictor when plants are     !
+         ! growing in height, but it approaches the maximum height DBH becomes the only    !
+         ! possible predictor because height saturates.                                    !
+         !---------------------------------------------------------------------------------!
+         if (cpatch%hite(ico3) < (0.95 * hgt_max(cpatch%pft(ico3))) ) then
             mean_hite = mean_hite + cpatch%hite(ico3)
             nshort    = nshort + 1
          else
@@ -444,15 +442,12 @@ module fuse_fiss_utils
                if (.not. fuse_table(recc)) cycle recloop ! This one is gone, move to next.
                                                          ! Hope it never happens...
 
-               !----- Get fusion height threshold. ----------------------------------------!
-               if(rho(cpatch%pft(donc)) == 0.0) then
-                  hite_threshold = b1Ht(cpatch%pft(donc))
-               else
-                  hite_threshold = dbh2h(cpatch%pft(donc), max_dbh(cpatch%pft(donc)))
-               end if
-
-               !----- Test for similarity -------------------------------------------------!
-               if (cpatch%hite(donc) >= (0.95 * hite_threshold )) then
+               !---------------------------------------------------------------------------!
+               !     Test for similarity.  Again, we use height to assess similarity only  !
+               ! when the cohort is not approaching the maximum height.  If this is the    !
+               ! case, then we use DBH to test.                                            !
+               !---------------------------------------------------------------------------!
+               if (cpatch%hite(donc) >= (0.95 * hgt_max(cpatch%pft(donc))) ) then
                   mean_dbh=0.5*(cpatch%dbh(donc)+cpatch%dbh(recc))
                   fusion_test = ( abs(cpatch%dbh(donc) - cpatch%dbh(recc)))/mean_dbh       &
                               < fusetol * tolerance_mult
@@ -476,7 +471,6 @@ module fuse_fiss_utils
                   ! leaves fully flushed, this is the same as adding the individual LAIs,  !
                   ! but if they are not, we need to consider that LAI may grow...          !
                   !------------------------------------------------------------------------!
-
                   lai_max = ( cpatch%nplant(recc)                                          &
                             * dbh2bl(cpatch%dbh(recc),cpatch%pft(recc))                    &
                             + cpatch%nplant(donc)                                          &
@@ -541,21 +535,10 @@ module fuse_fiss_utils
                      recalcloop: do ico3 = 1,cpatch%ncohorts
                         if (.not. fuse_table(ico3)) cycle recalcloop
                         !----- Get fusion height threshold --------------------------------!
-                        if (rho(cpatch%pft(ico3)) == 0.0) then
-                           hite_threshold = b1Ht(cpatch%pft(ico3))
-                        else
-                           hite_threshold = dbh2h(cpatch%pft(ico3)                         &
-                                                 , max_dbh(cpatch%pft(ico3)))
-                        end if
-                        if (cpatch%hite(ico3) < (0.95 * hite_threshold )) then
+                        if (cpatch%hite(ico3) < (0.95 * hgt_max(cpatch%pft(ico3))) ) then
                            mean_hite = mean_hite + cpatch%hite(ico3)
                            nshort = nshort+1
                         else
-                           if(cpatch%dbh(ico3).eq.0. ) then
-                              print*,"dbh(ico3) is zero",cpatch%dbh(ico3)
-                              call fatal_error('Zero DBH!','fuse_cohorts'&
-                                              &,'fuse_fiss_utils.f90')
-                           end if
                            mean_dbh = mean_dbh + cpatch%dbh(ico3)
                            ntall=ntall+1
                         end if
@@ -626,7 +609,8 @@ module fuse_fiss_utils
 
    !=======================================================================================!
    !=======================================================================================!
-   !   This subroutine will split two cohorts if its LAI has become too large.             !
+   !   This subroutine will split two cohorts if its LAI has become too large.  This is    !
+   ! only necessary when we solve radiation cohort by cohort rather than layer by layer.   !
    !---------------------------------------------------------------------------------------!
    subroutine split_cohorts(cpatch, green_leaf_factor, lsl)
 
@@ -641,6 +625,7 @@ module fuse_fiss_utils
       use ed_misc_coms         , only : iqoutput               & ! intent(in)
                                       , imoutput               & ! intent(in)
                                       , idoutput               ! ! intent(in)
+      use canopy_layer_coms    , only : crown_mod              ! ! intent(in)
       implicit none
       !----- Constants --------------------------------------------------------------------!
       real                   , parameter   :: epsilon=0.0001    ! Tweak factor...
@@ -933,8 +918,6 @@ module fuse_fiss_utils
       cpatch%lambda_light(idt)         = cpatch%lambda_light(isc)
       cpatch%beamext_level(idt)        = cpatch%beamext_level(isc)
       cpatch%diffext_level(idt)        = cpatch%diffext_level(isc)
-      cpatch%norm_par_beam(idt)        = cpatch%norm_par_beam(isc)
-      cpatch%norm_par_diff(idt)        = cpatch%norm_par_diff(isc)
       cpatch%gbh(idt)                  = cpatch%gbh(isc)
       cpatch%gbw(idt)                  = cpatch%gbw(isc)
       cpatch%A_open(idt)               = cpatch%A_open(isc)
@@ -1012,8 +995,6 @@ module fuse_fiss_utils
          cpatch%dmean_light_level_diff(idt) = cpatch%dmean_light_level_diff(isc)
          cpatch%dmean_beamext_level   (idt) = cpatch%dmean_beamext_level   (isc)
          cpatch%dmean_diffext_level   (idt) = cpatch%dmean_diffext_level   (isc)
-         cpatch%dmean_norm_par_beam   (idt) = cpatch%dmean_norm_par_beam   (isc)
-         cpatch%dmean_norm_par_diff   (idt) = cpatch%dmean_norm_par_diff   (isc)
       end if
 
       if (imoutput > 0 .or. iqoutput > 0) then
@@ -1050,8 +1031,6 @@ module fuse_fiss_utils
          cpatch%mmean_growth_resp       (idt) = cpatch%mmean_growth_resp       (isc)
          cpatch%mmean_storage_resp      (idt) = cpatch%mmean_storage_resp      (isc)
          cpatch%mmean_vleaf_resp        (idt) = cpatch%mmean_vleaf_resp        (isc)
-         cpatch%mmean_norm_par_beam     (idt) = cpatch%mmean_norm_par_beam     (isc)
-         cpatch%mmean_norm_par_diff     (idt) = cpatch%mmean_norm_par_diff     (isc)
          cpatch%mmean_mort_rate       (:,idt) = cpatch%mmean_mort_rate       (:,isc)
       end if
 
@@ -1093,8 +1072,7 @@ module fuse_fiss_utils
                                , qsw                    ! ! intent(in), lookup table
       use therm_lib     , only : qwtk                   & ! subroutine
                                , rslif                  ! ! function
-      use allometry     , only : calc_root_depth        & ! function
-                               , assign_root_depth      & ! function
+      use allometry     , only : dbh2krdepth            & ! function
                                , bd2dbh                 & ! function
                                , dbh2h                  ! ! function
       use ed_max_dims   , only : n_mort                 ! ! intent(in)
@@ -1119,7 +1097,6 @@ module fuse_fiss_utils
       real                         :: newlaii           ! Inverse of new LAI
       real                         :: cb_act            !
       real                         :: cb_max            !
-      real                         :: root_depth        !
       !------------------------------------------------------------------------------------!
 
 
@@ -1355,12 +1332,6 @@ module fuse_fiss_utils
       cpatch%diffext_level(recc)    = ( cpatch%diffext_level(recc) *cpatch%nplant(recc)    &
                                       + cpatch%diffext_level(donc) *cpatch%nplant(donc) )  &
                                     * newni
-      cpatch%norm_par_beam(recc)    = ( cpatch%norm_par_beam(recc) *cpatch%nplant(recc)    &
-                                      + cpatch%norm_par_beam(donc) *cpatch%nplant(donc))   &
-                                    * newni
-      cpatch%norm_par_diff(recc)    = ( cpatch%norm_par_diff(recc) *cpatch%nplant(recc)    &
-                                      + cpatch%norm_par_diff(donc) *cpatch%nplant(donc))   &
-                                    * newni
       !------------------------------------------------------------------------------------!
 
 
@@ -1477,19 +1448,25 @@ module fuse_fiss_utils
       !------------------------------------------------------------------------------------!
       cpatch%turnover_amp(recc)  = ( cpatch%turnover_amp(recc) * cpatch%nplant(recc)       &
                                    + cpatch%turnover_amp(donc) * cpatch%nplant(donc) )     &
-                                 *newni   
+                                 * newni
 
       cpatch%llspan(recc)        = ( cpatch%llspan(recc)       * cpatch%nplant(recc)       &
                                    + cpatch%llspan(donc)       * cpatch%nplant(donc) )     &
-                                 *newni
+                                 * newni
 
-      cpatch%vm_bar(recc)        = (cpatch%vm_bar(recc) * cpatch%nplant(recc)                    &
-           + cpatch%vm_bar(donc) * cpatch%nplant(donc) ) *newni   
-      cpatch%sla(recc)  = (cpatch%sla(recc) * cpatch%nplant(recc)                          &
-           + cpatch%sla(donc) * cpatch%nplant(donc) ) *newni   
+      cpatch%vm_bar(recc)        = ( cpatch%vm_bar(recc) * cpatch%nplant(recc)             &
+                                   + cpatch%vm_bar(donc) * cpatch%nplant(donc) )           &
+                                 * newni
+
+      cpatch%sla(recc)           = ( cpatch%sla(recc) * cpatch%nplant(recc)                &
+                                   + cpatch%sla(donc) * cpatch%nplant(donc) ) * newni
     
-      root_depth = calc_root_depth(cpatch%hite(recc), cpatch%dbh(recc), cpatch%pft(recc))
-      cpatch%krdepth(recc) = assign_root_depth(root_depth, lsl)
+      cpatch%krdepth(recc)       = dbh2krdepth(cpatch%hite(recc),cpatch%dbh(recc)          &
+                                              ,cpatch%pft(recc),lsl)
+      !------------------------------------------------------------------------------------!
+
+
+
 
       !------------------------------------------------------------------------------------!
       !    Now that we have daily and monthly means going to the cohort level, we must     !
@@ -1515,14 +1492,6 @@ module fuse_fiss_utils
          cpatch%dmean_diffext_level     (recc) = ( cpatch%dmean_diffext_level(recc)        &
                                                  * cpatch%nplant(recc)                     &
                                                  + cpatch%dmean_diffext_level(donc)        &
-                                                 * cpatch%nplant(donc) ) * newni
-         cpatch%dmean_norm_par_beam     (recc) = ( cpatch%dmean_norm_par_beam(recc)        &
-                                                 * cpatch%nplant(recc)                     &
-                                                 + cpatch%dmean_norm_par_beam(donc)        &
-                                                 * cpatch%nplant(donc) ) * newni
-         cpatch%dmean_norm_par_diff     (recc) = ( cpatch%dmean_norm_par_diff(recc)        &
-                                                 * cpatch%nplant(recc)                     &
-                                                 + cpatch%dmean_norm_par_diff(donc)        &
                                                  * cpatch%nplant(donc) ) * newni
          cpatch%dmean_lambda_light      (recc) = ( cpatch%dmean_lambda_light(recc)         &
                                                  * cpatch%nplant(recc)                     &
@@ -1624,14 +1593,6 @@ module fuse_fiss_utils
          cpatch%mmean_diffext_level   (recc) = ( cpatch%mmean_diffext_level(recc)          &
                                                * cpatch%nplant(recc)                       &
                                                + cpatch%mmean_diffext_level(donc)          &
-                                               * cpatch%nplant(donc) ) * newni
-         cpatch%mmean_norm_par_beam(recc)    = ( cpatch%mmean_norm_par_beam(recc)          &
-                                               * cpatch%nplant(recc)                       &
-                                               + cpatch%mmean_norm_par_beam(donc)          &
-                                               * cpatch%nplant(donc) ) * newni
-         cpatch%mmean_norm_par_diff(recc)    = ( cpatch%mmean_norm_par_diff(recc)          &
-                                               * cpatch%nplant(recc)                       &
-                                               + cpatch%mmean_norm_par_diff(donc)          &
                                                * cpatch%nplant(donc) ) * newni
          cpatch%mmean_lambda_light    (recc) = ( cpatch%mmean_lambda_light(recc)           &
                                                * cpatch%nplant(recc)                       &
@@ -1819,11 +1780,7 @@ module fuse_fiss_utils
       !    LAI must be zero if phenology status is 2.  This is probably done correctly     !
       ! throughout the code, but being safe here.                                          !
       !------------------------------------------------------------------------------------!
-      if (cpatch%phenology_status(recc) < 2) then
-         cpatch%lai(recc) = cpatch%lai(recc) + cpatch%lai(donc)
-      else
-         cpatch%lai(recc) = 0.
-      end if
+      cpatch%lai(recc) = cpatch%lai(recc) + cpatch%lai(donc)
       !------------------------------------------------------------------------------------!
 
       return
@@ -1981,6 +1938,7 @@ module fuse_fiss_utils
       logical                             :: sunny_recp      ! Receptor patch bin too sunny
       logical                             :: dark_donp       ! Donor patch bin too small
       logical                             :: dark_recp       ! Receptor patch bin too small
+      logical                             :: same_age        ! Patches with same age
       real                                :: diff            ! Absolute difference in prof.
       real                                :: refv            ! Reference value of bin
       real                                :: norm            ! Normalised difference
@@ -2008,7 +1966,6 @@ module fuse_fiss_utils
       integer                             :: tot_ncohorts    ! Total # of cohorts
       !----- Locally saved variables. --------------------------------------------------------!
       logical                   , save    :: first_time = .true.
-      logical                             :: same_age   
       !------------------------------------------------------------------------------------!
 
 
@@ -2116,31 +2073,31 @@ module fuse_fiss_utils
 
 
             !------------------------------------------------------------------------------!
-            !     First loop.  Here we will fuse all empty patches.  This will be done     !
-            ! once and will be done even when npatches is less than maxpatch.              !
+            !     This loop will check whether there is at least two patches with exact    !
+            ! same age.  This is common in initialisation with site-level measurements.    !
+            ! In this case we want to merge any patch, regardless on their "age position", !
+            ! which doesn't mean anything in this case.                                    !
             !------------------------------------------------------------------------------!
             same_age=.false.
-            
-            
             donloop_check: do donp=csite%npatches,2,-1
                recloop_check: do recp=donp-1,1,-1
-
-                        same_age = csite%age(recp) == csite%age(donp)&
-                                 .and. csite%dist_type(recp) == csite%dist_type(donp)
-                        if (print_fuse_details) then
-                              open (unit=72,file=trim(fuse_fout),status='old',action='write'           &
-                                                    ,position='append')
-                              write(unit=72,fmt='(a,1x,l1)') '     * same_age is ',same_age
-                              close(unit=72,status='keep')
-                        end if
-                        
-                        if (same_age) exit donloop_check
-                       
-                  
+                  same_age = csite%age(recp)       == csite%age(donp) .and.                &
+                             csite%dist_type(recp) == csite%dist_type(donp)
+                  if (print_fuse_details) then
+                        open (unit=72,file=trim(fuse_fout),status='old',action='write'     &
+                                              ,position='append')
+                        write(unit=72,fmt='(a,1x,l1)') '     * same_age is ',same_age
+                        close(unit=72,status='keep')
+                  end if
+                  !----- At least two patches have the same age. --------------------------!
+                  if (same_age) exit donloop_check
               end do recloop_check
             end do donloop_check
+            !------------------------------------------------------------------------------!
 
 
+
+            !------------------------------------------------------------------------------!
             donloope: do donp=csite%npatches,2,-1
                donpatch => csite%patch(donp)
                
@@ -2201,8 +2158,8 @@ module fuse_fiss_utils
                   ! necessary in this loop as both patches are empty, but we do it anyway  !
                   ! just to be consistent.                                                 !
                   !------------------------------------------------------------------------!
-                  elim_nplant_tot = elim_nplant_tot + elim_nplant * csite%area(recp)
-                  elim_lai_tot    = elim_lai_tot    + elim_lai    * csite%area(recp)
+                  elim_nplant_tot = elim_nplant_tot + elim_nplant
+                  elim_lai_tot    = elim_lai_tot    + elim_lai
                   !------------------------------------------------------------------------!
 
 
@@ -2239,279 +2196,288 @@ module fuse_fiss_utils
             !     Second loop.  Here we will fuse all patches with the same age and        !
             ! disturbance type.                                                            !
             !------------------------------------------------------------------------------!
-            
-            if ( same_age) then
-            !----- Start with no multiplication factor. -----------------------------------!
-            dark_toler   = dark_cumlai_max
-            sunny_toler  = sunny_cumlai_min
-            light_toler  = light_toler_min
 
-            mainfuseloopa: do ifus=0,niter_patfus
-               npatches_old = count(fuse_table)
-               npatches_new = npatches_old
+            if (same_age) then
+               !----- Start with no multiplication factor. --------------------------------!
+               dark_toler   = dark_cumlai_max
+               sunny_toler  = sunny_cumlai_min
+               light_toler  = light_toler_min
 
-               !---------------------------------------------------------------------------!
-               !    Inform that the upcoming fusions are going to be with populated        !
-               ! patches, and record the tolerance used.                                   !
-               !---------------------------------------------------------------------------!
-               if (print_fuse_details) then
-                  open (unit=72,file=trim(fuse_fout),status='old',action='write'           &
-                                                     ,position='append')
-                  write(unit=72,fmt='(a,1x,3(a,1x,es9.2,1x))')                             &
-                                  '   + Looking for similar populated patches of same age' &
-                                             ,' - Sunny Tolerance =',sunny_toler           &
-                                             ,' - Dark Tolerance  =',dark_toler            &
-                                             ,' - Rel. Tolerance  =',light_toler
-                  close(unit=72,status='keep')
-               end if
-               !---------------------------------------------------------------------------!
-
-            donloopa: do donp=csite%npatches,2,-1
-               donpatch => csite%patch(donp)
-               
-               !----- If patch is not empty, or has already been fused, move on. ----------!
-               if ( (.not. fuse_table(donp)) .or. donpatch%ncohorts == 0) cycle donloopa
-
-
-               !---------------------------------------------------------------------------!
-               !     If we reach this point, it means that the donor patch is populated and!
-               ! hasn't been fused yet: look for other patches with the same age and merge !
-               ! them.                                                                     !
-               !---------------------------------------------------------------------------!
-               if (print_fuse_details) then
-                  open (unit=72,file=trim(fuse_fout),status='old',action='write'           &
-                                                    ,position='append')
-                  write(unit=72,fmt='(a,i6,a)') '     * Patch ',donp,' is populated.'
-                  close(unit=72,status='keep')
-               end if
-               recloopa: do recp=donp-1,1,-1
-                  recpatch => csite%patch(recp)
+               mainfuseloopa: do ifus=0,niter_patfus
+                  npatches_old = count(fuse_table)
+                  npatches_new = npatches_old
 
                   !------------------------------------------------------------------------!
-                  !     Skip the patch if it isn't empty, or it has already been fused, or !
-                  ! if the donor and receptor have different disturbance types.            !
+                  !    Inform that the upcoming fusions are going to be with populated     !
+                  ! patches, and record the tolerance used.                                !
                   !------------------------------------------------------------------------!
-                  if ( (.not. fuse_table(recp))                       .or.                 &
-                       recpatch%ncohorts == 0                         .or.                 &
-                       csite%dist_type(donp) /= csite%dist_type(recp) .or.                 &
-                       csite%age(donp)      /=  csite%age(recp)    ) then
-                     cycle recloopa
-                  end if
-                  !------------------------------------------------------------------------!
-
-                  !------------------------------------------------------------------------!
-                  !     Find the LAI that corresponds to 80% of the maximum LAI, to avoid  !
-                  ! relaxing too much for forests.                                         !
-                  !------------------------------------------------------------------------!
-                  dark_lai80 = 0.40 * ( sum(csite%cumlai_profile(:,1,recp))                &
-                                      + sum(csite%cumlai_profile(:,1,donp)) )
-
-
-                  !------------------------------------------------------------------------!
-                  !     Compare the size profile for each PFT.  Here we compare the        !
-                  ! maximum LAI for each PFT and height bin.  We switched the classes from !
-                  ! DBH to height because different PFTs may have different heights for a  !
-                  ! given DBH, so we want to make sure the light profile is right.         !
-                  !------------------------------------------------------------------------!
-                  hgtloopa: do ihgt=1,ff_nhgt
-                     cumlai_recp = sum(csite%cumlai_profile(:,ihgt,recp))
-                     cumlai_donp = sum(csite%cumlai_profile(:,ihgt,donp))
-
-                     !---------------------------------------------------------------------!
-                     !    Check whether these bins contain some LAI.  We don't need to     !
-                     ! check the cohorts if the understorey is too dark, so once both      !
-                     ! patches becomes very dark (very high LAI), we stop checking the     !
-                     ! profiles.                                                           !
-                     !---------------------------------------------------------------------!
-                     dark_donp = cumlai_donp > dark_toler
-                     dark_recp = cumlai_recp > dark_toler
-                     !---------------------------------------------------------------------!
-
-
-
-                     !---------------------------------------------------------------------!
-                     if (dark_recp .and. dark_donp) then
-
-                        if (print_fuse_details) then
-                           open  (unit=72,file=trim(fuse_fout),status='old',action='write' &
-                                                              ,position='append')
-                           write (unit=72,fmt='(1(a,1x,i6,1x),4(a,1x,es9.2,1x)'//          &
-                                              ',2(a,1x,l1,1x))')                           &
-                              '       * IHGT=',ihgt                                        &
-                             ,'CUMLAI_RECP =',cumlai_recp,'CUMLAI_DONP =',cumlai_donp      &
-                             ,'DARK_TOLER =',dark_toler,'DARK_LAI80 =',dark_lai80          &
-                             ,'DARK_RECP =',dark_recp,'DARK_DONP =',dark_donp
-                           close (unit=72,status='keep')
-                        end if
-                        cycle hgtloopa
-                     end if
-                     !---------------------------------------------------------------------!
-
-
-
-                     
-                     !---------------------------------------------------------------------!
-                     !    Check whether these bins contain some LAI.  Bins that have       !
-                     ! tiny cumulative LAI may differ by a lot in the relative scale,      !
-                     ! but the actual value is so small that we don't really care          !
-                     ! whether they are relatively different.                              !
-                     !---------------------------------------------------------------------!
-                     sunny_donp = cumlai_donp <= sunny_toler
-                     sunny_recp = cumlai_recp <= sunny_toler
-                     !---------------------------------------------------------------------!
-
-
-
-
-
-                     !---------------------------------------------------------------------!
-                     !    If both patches have little or no biomass in this bin, don't     !
-                     ! even bother checking the difference.                                !
-                     !---------------------------------------------------------------------!
-                     if (sunny_donp .and. sunny_recp) then
-                        if (print_fuse_details) then
-                           open  (unit=72,file=trim(fuse_fout),status='old',action='write' &
-                                                              ,position='append')
-                           write (unit=72,fmt='(1(a,1x,i6,1x),3(a,1x,es9.2,1x)'//          &
-                                              ',2(a,1x,l1,1x))')                           &
-                              '       * IHGT=',ihgt                                        &
-                             ,'CUMLAI_RECP =',cumlai_recp,'CUMLAI_DONP =',cumlai_donp      &
-                             ,'SUNNY_TOLER =',sunny_toler,'SUNNY_RECP =',sunny_recp        &
-                             ,'SUNNY_RECP =',sunny_donp
-                           close (unit=72,status='keep')
-                        end if
-                        cycle hgtloopa
-                     end if
-                     !---------------------------------------------------------------------!
-
-
-                     !---------------------------------------------------------------------!
-                     !    Find the normalised difference in the density of this PFT and    !
-                     ! size.  If one of the patches is missing any member of the           !
-                     ! profile the norm will be set to 2.0, which is the highest value     !
-                     ! that the norm can be.                                               !
-                     !---------------------------------------------------------------------!
-                     llevel_donp = exp(- 0.5 * cumlai_donp)
-                     llevel_recp = exp(- 0.5 * cumlai_recp)
-                     
-                     diff = abs(llevel_donp - llevel_recp )
-                     refv =    (llevel_donp + llevel_recp ) * 0.5
-                     norm = diff / refv
-                     fuse_flag = norm <= light_toler
-                     !---------------------------------------------------------------------!
-
-
-
-                     !---------------------------------------------------------------------!
-                     if (print_fuse_details) then
-                        open  (unit=72,file=trim(fuse_fout),status='old',action='write'    &
-                                                           ,position='append')
-                        write (unit=72,fmt='(1(a,1x,i6,1x),7(a,1x,es9.2,1x)'//             &
-                                           ',1(a,1x,l1,1x))')                              &
-                           '       * IHGT=',ihgt                                           &
-                          ,'CLAI_RECP =',cumlai_recp,'CLAI_DONP =',cumlai_donp             &
-                          ,'LL_RECP =',llevel_recp,'LL_DONP =',llevel_donp                 &
-                          ,'DIFF =',diff,'REFV =',refv,'NORM =',norm                       &
-                          ,'FUSE_FLAG =',fuse_flag
-                        close (unit=72,status='keep')
-                     end if
-                     !---------------------------------------------------------------------!
-
-
-
-                     !---------------------------------------------------------------------!
-                     !     If fuse_flag is false, the patches aren't similar, move to      !
-                     ! the next donor patch.                                               !
-                     !---------------------------------------------------------------------!
-                     if (.not. fuse_flag) cycle recloopa
-                     !---------------------------------------------------------------------!
-                  end do hgtloopa
-                  !------------------------------------------------------------------------!
-                  !------------------------------------------------------------------------!
-                  !     Take an average of the patch properties of donpatch and recpatch,  !
-                  ! and assign the average recpatch.                                       !
-                  !------------------------------------------------------------------------!
-                  call fuse_2_patches(csite,donp,recp,nzg,nzs,cpoly%met(isi)%prss          &
-                                     ,cpoly%lsl(isi),cpoly%ntext_soil(:,isi)               &
-                                     ,cpoly%green_leaf_factor(:,isi),elim_nplant,elim_lai)
-
-
-                  !----- Record the fusion if requested by the user. ----------------------!
                   if (print_fuse_details) then
                      open (unit=72,file=trim(fuse_fout),status='old',action='write'        &
                                                         ,position='append')
-                     write(unit=72,fmt='(2(a,i6),a)') '     * Patches ',donp,' and ',recp  &
-                                                     ,' were fused.'
+                     write(unit=72,fmt='(a,1x,3(a,1x,es9.2,1x))')                          &
+                                  '   + Looking for similar populated patches of same age' &
+                                 ,' - Sunny Tolerance =',sunny_toler                       &
+                                 ,' - Dark Tolerance  =',dark_toler                        &
+                                 ,' - Rel. Tolerance  =',light_toler
                      close(unit=72,status='keep')
                   end if
                   !------------------------------------------------------------------------!
 
-
-                  !------------------------------------------------------------------------!
-                  !    Update total eliminated nplant and LAI.  This is actually not       !
-                  ! necessary in this loop as both patches are empty, but we do it anyway  !
-                  ! just to be consistent.                                                 !
-                  !------------------------------------------------------------------------!
-                  elim_nplant_tot = elim_nplant_tot + elim_nplant * csite%area(recp)
-                  elim_lai_tot    = elim_lai_tot    + elim_lai    * csite%area(recp)
-                  !------------------------------------------------------------------------!
+                  donloopa: do donp=csite%npatches,2,-1
+                     donpatch => csite%patch(donp)
+                     
+                     !----- If patch is not empty, or has already been fused, move on. ----!
+                     if ( (.not. fuse_table(donp)) .or. donpatch%ncohorts == 0) then
+                        cycle donloopa
+                     end if
 
 
+                     !---------------------------------------------------------------------!
+                     !     If we reach this point, it means that the donor patch is        !
+                     ! populated and hasn't been fused yet: look for other patches with    !
+                     ! the same age and merge them.                                        !
+                     !---------------------------------------------------------------------!
+                     if (print_fuse_details) then
+                        open (unit=72,file=trim(fuse_fout),status='old',action='write'     &
+                                                          ,position='append')
+                        write(unit=72,fmt='(a,i6,a)') '     * Patch ',donp,' is populated.'
+                        close(unit=72,status='keep')
+                     end if
+                     recloopa: do recp=donp-1,1,-1
+                        recpatch => csite%patch(recp)
+
+                        !------------------------------------------------------------------!
+                        !     Skip the patch if it isn't empty, or it has already been     !
+                        ! fused, or if the donor and receptor have different disturbance   !
+                        ! types.                                                           !
+                        !------------------------------------------------------------------!
+                        if ( (.not. fuse_table(recp))                       .or.           &
+                             recpatch%ncohorts == 0                         .or.           &
+                             csite%dist_type(donp) /= csite%dist_type(recp) .or.           &
+                             csite%age(donp)      /=  csite%age(recp)    ) then
+                           cycle recloopa
+                        end if
+                        !------------------------------------------------------------------!
+
+                        !------------------------------------------------------------------!
+                        !     Find the LAI that corresponds to 80% of the maximum LAI, to  !
+                        ! avoid relaxing too much for forests.                             !
+                        !------------------------------------------------------------------!
+                        dark_lai80 = 0.40 * ( sum(csite%cumlai_profile(:,1,recp))          &
+                                            + sum(csite%cumlai_profile(:,1,donp)) )
+
+
+                        !------------------------------------------------------------------!
+                        !     Compare the size profile for each PFT.  Here we compare the  !
+                        ! maximum LAI for each PFT and height bin.  We switched the        !
+                        ! classes from DBH to height because different PFTs may have       !
+                        ! different heights for a given DBH, so we want to make sure the   !
+                        ! light profile is right.                                          !
+                        !------------------------------------------------------------------!
+                        hgtloopa: do ihgt=1,ff_nhgt
+                           cumlai_recp = sum(csite%cumlai_profile(:,ihgt,recp))
+                           cumlai_donp = sum(csite%cumlai_profile(:,ihgt,donp))
+
+                           !---------------------------------------------------------------!
+                           !    Check whether these bins contain some LAI.  We don't need  !
+                           ! to check the cohorts if the understorey is too dark, so once  !
+                           ! both patches becomes very dark (very high LAI), we stop       !
+                           ! checking the profiles.                                        !
+                           !---------------------------------------------------------------!
+                           dark_donp = cumlai_donp > dark_toler
+                           dark_recp = cumlai_recp > dark_toler
+                           !---------------------------------------------------------------!
+
+
+
+                           !---------------------------------------------------------------!
+                           if (dark_recp .and. dark_donp) then
+
+                              if (print_fuse_details) then
+                                 open  (unit=72,file=trim(fuse_fout),status='old'          &
+                                               ,action='write',position='append')
+                                 write (unit=72,fmt='(1(a,1x,i6,1x),4(a,1x,es9.2,1x)'//    &
+                                                    ',2(a,1x,l1,1x))')                     &
+                                    '       * IHGT =',ihgt                                 &
+                                            ,'CUMLAI_RECP =',cumlai_recp                   &
+                                            ,'CUMLAI_DONP =',cumlai_donp                   &
+                                            ,'DARK_TOLER =',dark_toler                     &
+                                            ,'DARK_LAI80 =',dark_lai80                     &
+                                            ,'DARK_RECP =',dark_recp                       &
+                                            ,'DARK_DONP =',dark_donp
+                                 close (unit=72,status='keep')
+                              end if
+                              cycle hgtloopa
+                           end if
+                           !---------------------------------------------------------------!
+
+
+
+                           
+                           !---------------------------------------------------------------!
+                           !    Check whether these bins contain some LAI.  Bins that have !
+                           ! tiny cumulative LAI may differ by a lot in the relative       !
+                           ! scale, but the actual value is so small that we don't really  !
+                           ! care whether they are relatively different.                   !
+                           !---------------------------------------------------------------!
+                           sunny_donp = cumlai_donp <= sunny_toler
+                           sunny_recp = cumlai_recp <= sunny_toler
+                           !---------------------------------------------------------------!
+
+
+
+
+
+                           !---------------------------------------------------------------!
+                           !    If both patches have little or no biomass in this bin,     !
+                           ! don't even bother checking the difference.                    !
+                           !---------------------------------------------------------------!
+                           if (sunny_donp .and. sunny_recp) then
+                              if (print_fuse_details) then
+                                 open  (unit=72,file=trim(fuse_fout),status='old'          &
+                                               ,action='write',position='append')
+                                 write (unit=72,fmt='(1(a,1x,i6,1x),3(a,1x,es9.2,1x)'//    &
+                                                    ',2(a,1x,l1,1x))')                     &
+                                    '       * IHGT=',ihgt                                  &
+                                            ,'CUMLAI_RECP =',cumlai_recp                   &
+                                            ,'CUMLAI_DONP =',cumlai_donp                   &
+                                            ,'SUNNY_TOLER =',sunny_toler                   &
+                                            ,'SUNNY_RECP =',sunny_recp                     &
+                                            ,'SUNNY_RECP =',sunny_donp
+                                 close (unit=72,status='keep')
+                              end if
+                              cycle hgtloopa
+                           end if
+                           !---------------------------------------------------------------!
+
+
+                           !---------------------------------------------------------------!
+                           !    Find the normalised difference in the density of this PFT  !
+                           ! and size.  If one of the patches is missing any member of the !
+                           ! profile the norm will be set to 2.0, which is the highest     !
+                           ! value that the norm can be.                                   !
+                           !---------------------------------------------------------------!
+                           llevel_donp = exp(- 0.5 * cumlai_donp)
+                           llevel_recp = exp(- 0.5 * cumlai_recp)
+                           
+                           diff = abs(llevel_donp - llevel_recp )
+                           refv =    (llevel_donp + llevel_recp ) * 0.5
+                           norm = diff / refv
+                           fuse_flag = norm <= light_toler
+                           !---------------------------------------------------------------!
+
+
+
+                           !---------------------------------------------------------------!
+                           if (print_fuse_details) then
+                              open  (unit=72,file=trim(fuse_fout),status='old'             &
+                                            ,action='write',position='append')
+                              write (unit=72,fmt='(1(a,1x,i6,1x),7(a,1x,es9.2,1x)'//       &
+                                                 ',1(a,1x,l1,1x))')                        &
+                                 '       * IHGT=',ihgt                                     &
+                                ,'CLAI_RECP =',cumlai_recp,'CLAI_DONP =',cumlai_donp       &
+                                ,'LL_RECP =',llevel_recp,'LL_DONP =',llevel_donp           &
+                                ,'DIFF =',diff,'REFV =',refv,'NORM =',norm                 &
+                                ,'FUSE_FLAG =',fuse_flag
+                              close (unit=72,status='keep')
+                           end if
+                           !---------------------------------------------------------------!
+
+
+
+                           !---------------------------------------------------------------!
+                           !     If fuse_flag is false, the patches aren't similar, move   !
+                           ! to the next donor patch.                                      !
+                           !---------------------------------------------------------------!
+                           if (.not. fuse_flag) cycle recloopa
+                           !---------------------------------------------------------------!
+                        end do hgtloopa
+                        !------------------------------------------------------------------!
+                        !------------------------------------------------------------------!
+                        !     Take an average of the patch properties of donpatch and      !
+                        ! recpatch, and assign the average recpatch.                       !
+                        !------------------------------------------------------------------!
+                        call fuse_2_patches(csite,donp,recp,nzg,nzs,cpoly%met(isi)%prss    &
+                                           ,cpoly%lsl(isi),cpoly%ntext_soil(:,isi)         &
+                                           ,cpoly%green_leaf_factor(:,isi),elim_nplant     &
+                                           ,elim_lai)
+
+
+                        !----- Record the fusion if requested by the user. ----------------!
+                        if (print_fuse_details) then
+                           open (unit=72,file=trim(fuse_fout),status='old',action='write'  &
+                                                              ,position='append')
+                           write(unit=72,fmt='(2(a,i6),a)') '     * Patches ',donp,' and ' &
+                                                                   ,recp,' were fused.'
+                           close(unit=72,status='keep')
+                        end if
+                        !------------------------------------------------------------------!
+
+
+                        !------------------------------------------------------------------!
+                        !    Update total eliminated nplant and LAI.  This is actually not !
+                        ! necessary in this loop as both patches are empty, but we do it   !
+                        ! anyway just to be consistent.                                    !
+                        !------------------------------------------------------------------!
+                        elim_nplant_tot = elim_nplant_tot + elim_nplant
+                        elim_lai_tot    = elim_lai_tot    + elim_lai
+                        !------------------------------------------------------------------!
+
+
+
+                        !------------------------------------------------------------------!
+                        !     Recalculate the pft size profile for the averaged patch at   !
+                        ! recp.  Again, this is not really necessary as the receptor patch !
+                        ! is empty, but just to be consistent...                           !
+                        !------------------------------------------------------------------!
+                        call patch_pft_size_profile(csite,recp)
+                        !------------------------------------------------------------------!
+
+
+
+                        !------------------------------------------------------------------!
+                        !     The patch at index donp will be eliminated and should not be !
+                        ! checked for fusion again; we switch the fuse_table flag to       !
+                        ! .false. so next time we reach this patch we will skip it.        !
+                        !------------------------------------------------------------------!
+                        fuse_table(donp) = .false.
+                        !------------------------------------------------------------------!
+                        !------------------------------------------------------------------!
+                        !     Update the number of valid patches.                          !
+                        !------------------------------------------------------------------!
+                        npatches_new = npatches_new - 1
+                        !------------------------------------------------------------------!
+
+                        !------ We are done with donp, so we quit the recp loop. ----------!
+                        exit recloopa
+                     end do recloopa
+                  end do donloopa
+
 
                   !------------------------------------------------------------------------!
-                  !     Recalculate the pft size profile for the averaged patch at recp.   !
-                  ! Again, this is not really necessary as the receptor patch is empty,    !
-                  ! but just to be consistent...                                           !
+                  !      Check how many patches are valid.  If the total number of patches !
+                  ! is less than the target, or if we have reached the maximum tolerance   !
+                  ! and the patch fusion still can't find similar patches, we quit the     !
+                  ! fusion loop.                                                           !
                   !------------------------------------------------------------------------!
-                  call patch_pft_size_profile(csite,recp)
-                  !------------------------------------------------------------------------!
-
-
-
-                  !------------------------------------------------------------------------!
-                  !     The patch at index donp will be eliminated and should not be       !
-                  ! checked for fusion again; we switch the fuse_table flag to .false. so  !
-                  ! next time we reach this patch we will skip it.                         !
-                  !------------------------------------------------------------------------!
-                  fuse_table(donp) = .false.
-                  !------------------------------------------------------------------------!
-                  !------------------------------------------------------------------------!
-                  !     Update the number of valid patches.                                !
-                  !------------------------------------------------------------------------!
-                  npatches_new = npatches_new - 1
+                  if (npatches_new <= abs(maxpatch)) exit mainfuseloopa
                   !------------------------------------------------------------------------!
 
-                  !------ We are done with donp, so we quit the recp loop. ----------------!
-                  exit recloopa
-
-               end do recloopa
-            end do donloopa
-            
-
-               !---------------------------------------------------------------------------!
-               !      Check how many patches are valid.  If the total number of patches is !
-               ! less than the target, or if we have reached the maximum tolerance and the !
-               ! patch fusion still can't find similar patches, we quit the fusion loop.   !
-               !---------------------------------------------------------------------------!
-               if (npatches_new <= abs(maxpatch)) exit mainfuseloopa
-               !---------------------------------------------------------------------------!
-
-               !----- Increment tolerance -------------------------------------------------!
-               sunny_toler =     sunny_toler * sunny_cumlai_mult
-               dark_toler  = max(dark_toler  * dark_cumlai_mult , dark_lai80 )
-               light_toler =     light_toler * light_toler_mult
-               !---------------------------------------------------------------------------!
-            end do mainfuseloopa
-
+                  !----- Increment tolerance ----------------------------------------------!
+                  sunny_toler =     sunny_toler * sunny_cumlai_mult
+                  dark_toler  = max(dark_toler  * dark_cumlai_mult , dark_lai80 )
+                  light_toler =     light_toler * light_toler_mult
+                  !------------------------------------------------------------------------!
+               end do mainfuseloopa
             end if
             !------------------------------------------------------------------------------!
 
 
-            !------------------------------------------------------------------------------!
 
 
+
             !------------------------------------------------------------------------------!
-            !     Third patch loop. Now that all empty patches have been fused, we will   !
+            !     Third patch loop. Now that all empty patches have been fused, we will    !
             ! look for populated patches that have similar size and PFT structure, using   !
             ! the following algorithm:                                                     !
             !                                                                              !
@@ -2778,8 +2744,8 @@ module fuse_fiss_utils
                   ! LAI because we want to make sure that the fusion routine conserves the !
                   ! total plant density and LAI that remained in the polygon.              !
                   !------------------------------------------------------------------------!
-                  elim_nplant_tot = elim_nplant_tot + elim_nplant * csite%area(recp)
-                  elim_lai_tot    = elim_lai_tot    + elim_lai    * csite%area(recp)
+                  elim_nplant_tot = elim_nplant_tot + elim_nplant
+                  elim_lai_tot    = elim_lai_tot    + elim_lai
                   !------------------------------------------------------------------------!
 
 
@@ -3086,6 +3052,10 @@ module fuse_fiss_utils
       csite%ggnet(recp)              = newareai *                                          &
                                      ( csite%ggnet(donp)              * csite%area(donp)   &
                                      + csite%ggnet(recp)              * csite%area(recp) )
+
+      csite%ggsoil(recp)             = newareai *                                          &
+                                     ( csite%ggsoil(donp)             * csite%area(donp)   &
+                                     + csite%ggsoil(recp)             * csite%area(recp) )
 
       csite%hcapveg(recp)            = newareai *                                          &
                                      ( csite%hcapveg(donp)            * csite%area(donp)   &
@@ -3677,7 +3647,6 @@ module fuse_fiss_utils
       ! + csite%total_sfcw_depth(recp)                                                     !
       ! + csite%snowfac(recp)                                                              !
       ! + csite%opencan_frac(recp)                                                         !
-      ! + csite%ggnet(recp)                                                                !
       !------------------------------------------------------------------------------------!
       call update_patch_derived_props(csite,lsl, prss,recp)
       !------------------------------------------------------------------------------------!

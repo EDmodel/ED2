@@ -79,7 +79,7 @@ module pft_coms
    !---------------------------------------------------------------------------------------!
    !    This is the list of PFTs that are included.  0 means off, 1 means on.              !
    !---------------------------------------------------------------------------------------!
-   integer, dimension(n_pft) :: include_pft
+   logical, dimension(n_pft) :: include_pft
 
    !---------------------------------------------------------------------------------------!
    !    This is the list of grass PFTs that may be included in agricultural patches.  Only !
@@ -92,7 +92,7 @@ module pft_coms
    !    This flag specifies what non-agricutural PFTs (i.e., grass)  can grow on agri-     !
    ! culture patches.  Set to 1 if you want to include this PFT on agriculture patches     !
    !---------------------------------------------------------------------------------------!
-   integer, dimension(n_pft) :: include_pft_ag
+   logical, dimension(n_pft) :: include_pft_ag
 
    !---------------------------------------------------------------------------------------!
    !    The following logical flags will tell whether the PFTs are tropical and also       !
@@ -126,8 +126,41 @@ module pft_coms
    !----- Temperature [°C] above which leaf metabolic activity begins to rapidly decline. -!
    real, dimension(n_pft) :: Vm_high_temp 
 
+   !----- Decay factor for the exponential correction. ------------------------------------!
+   real, dimension(n_pft) :: Vm_decay_e 
+
    !----- Maximum photosynthetic capacity at a reference temperature [µmol/m2/s]. ---------!
    real, dimension(n_pft) :: Vm0 
+
+   !----- Exponent for Vm in the Arrhenius equation [K]. ----------------------------------!
+   real, dimension(n_pft) :: Vm_hor 
+
+   !----- Base (Q10 term) for Vm in Collatz equation [K]. ---------------------------------!
+   real, dimension(n_pft) :: Vm_q10
+
+   !----- The a term for the Vm decline correction for high temperature, as in Collatz. ---!
+   real, dimension(n_pft) :: Vm_decay_a
+
+   !----- The b term for the Vm decline correction for high temperature, as in Collatz. ---!
+   real, dimension(n_pft) :: Vm_decay_b
+
+   !----- Temperature [°C] below which leaf metabolic activity begins to rapidly decline. -!
+   real, dimension(n_pft) :: Rd_low_temp 
+
+   !----- Temperature [°C] above which leaf metabolic activity begins to rapidly decline. -!
+   real, dimension(n_pft) :: Rd_high_temp 
+
+   !----- Decay factor for the exponential correction. ------------------------------------!
+   real, dimension(n_pft) :: Rd_decay_e 
+
+   !----- Maximum respiration factor at the reference temperature [µmol/m2/s]. ------------!
+   real, dimension(n_pft) :: Rd0
+
+   !----- Exponent for Rd in the Arrhenius equation [K]. ----------------------------------!
+   real, dimension(n_pft) :: Rd_hor 
+
+   !----- Base (Q10 term) for respiration in Collatz equation [K]. ------------------------!
+   real, dimension(n_pft) :: Rd_q10
 
    !----- Slope of the Ball/Berry stomatal conductance-photosynthesis relationship. -------!
    real, dimension(n_pft) :: stomatal_slope
@@ -354,11 +387,20 @@ module pft_coms
    real, dimension(n_pft) :: leaf_width
 
    !---------------------------------------------------------------------------------------!
-   !     The fraction of the total depth of the canopy where the levaes reside, assuming   !
-   ! they are uniformly distributed in this zone.                                          !
+   !     Parameters to find the crown length, which will be used to find the height of the !
+   ! bottom of the crown.                                                                  !
    !---------------------------------------------------------------------------------------!
-   real, dimension(n_pft) :: crown_depth_fraction  
-   
+   real, dimension(n_pft) :: b1Cl
+   real, dimension(n_pft) :: b2Cl
+
+   !---------------------------------------------------------------------------------------!
+   !     Parameters to find the volume and the root depth.                                 !
+   !---------------------------------------------------------------------------------------!
+   real, dimension(n_pft) :: b1Vol
+   real, dimension(n_pft) :: b2Vol
+   real, dimension(n_pft) :: b1Rd
+   real, dimension(n_pft) :: b2Rd
+
    !---------------------------------------------------------------------------------------!
    !    Fraction of vertical branches.  Values are from Poorter et al. (2006):             !
    !                                                                                       !
@@ -439,15 +481,20 @@ module pft_coms
    !----- Maximum height of an individual [m]. --------------------------------------------!
    real   , dimension(n_pft)    :: hgt_max
    !----- Minimum biomass density [kgC/m²] required to form a new recruit. ----------------!
-   real, dimension(n_pft) :: min_recruit_size
+   real   , dimension(n_pft) :: min_recruit_size
+   !---------------------------------------------------------------------------------------!
+   !    Fraction of (positive) carbon balance devoted to storage (unwise to set this to    !
+   ! anything other than zero unless storage turnover rate is adjusted accordingly).       !
+   !---------------------------------------------------------------------------------------!
+   real   , dimension(n_pft) :: st_fract
    !----- Fraction of (positive) carbon balance devoted to reproduction. ------------------!
-   real, dimension(n_pft) :: r_fract
+   real   , dimension(n_pft) :: r_fract
    !----- External input of seeds [kgC/m²/year]. ------------------------------------------!
-   real, dimension(n_pft) :: seed_rain
+   real   , dimension(n_pft) :: seed_rain
    !----- Fraction of seed dispersal that is gridcell-wide. -------------------------------!
-   real, dimension(n_pft) :: nonlocal_dispersal !  
+   real   , dimension(n_pft) :: nonlocal_dispersal !  
    !----- Minimum height plants need to attain before allocating to reproduction. ---------!
-   real, dimension(n_pft) :: repro_min_h 
+   real   , dimension(n_pft) :: repro_min_h 
    !=======================================================================================!
    !=======================================================================================!
 

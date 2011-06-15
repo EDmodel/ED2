@@ -212,7 +212,7 @@ module allometry
             !----- No upper bound in the allometry. ---------------------------------------!
             dbh2ca = b1Ca(ipft) * dbh ** b2Ca(ipft)
 
-         case (1)
+         case default
             !----- Impose a maximum crown area. -------------------------------------------!
             dbh2ca = b1Ca(ipft) * min(dbh,max_dbh(ipft)) ** b2Ca(ipft)
 
@@ -234,54 +234,70 @@ module allometry
 
    !=======================================================================================!
    !=======================================================================================!
-   real function calc_root_depth(h,dbh,ipft)
-      use consts_coms, only: pi1
+   integer function dbh2krdepth(hgt,dbh,ipft,lsl)
+      use ed_misc_coms, only : iallom   ! ! intent(in)
+      use grid_coms   , only : nzg      ! ! intent(in)
+      use soil_coms   , only : slz      ! ! intent(in)
+      use consts_coms , only : pi1      ! ! intent(in)
+      use pft_coms    , only : b1Vol    & ! intent(in)
+                             , b2Vol    & ! intent(in)
+                             , b1Rd     & ! intent(in)
+                             , b2Rd     ! ! intent(in)
       implicit none 
       !----- Arguments --------------------------------------------------------------------!
-      real   , intent(in) :: h
+      real   , intent(in) :: hgt
       real   , intent(in) :: dbh
       integer, intent(in) :: ipft
+      integer, intent(in) :: lsl
       !----- Local variables --------------------------------------------------------------!
       real                :: volume
+      real                :: root_depth
+      integer             :: k
       !------------------------------------------------------------------------------------!
 
-      select case (ipft)
-      case(1,5) !----- Grasses get a fixed rooting depth of 70 cm. ------------------------!
-         calc_root_depth = -0.70
-      case default
-         volume           = h * 0.65 * pi1 * (dbh*0.11)*(dbh*0.11)
-         calc_root_depth = -10.0**(0.545 + 0.277*log10(volume))
+
+      !----- Grasses get a fixed rooting depth of 70 cm. ----------------------------------!
+      select case (iallom)
+      case (0:2)
+         !---------------------------------------------------------------------------------!
+         !    Original ED-2.1 (I don't know the source for this equation, though).         !
+         !---------------------------------------------------------------------------------!
+         volume     = b1Vol(ipft) * hgt * dbh ** b2Vol(ipft)
+         root_depth = b1Rd(ipft)  * volume ** b2Rd(ipft)
+
+      case (3)
+         !---------------------------------------------------------------------------------!
+         !     This equation is based on Kenzo et al (2009), figure 4e, although a         !
+         ! correction was needed to make root depth a function of DBH rather than basal    !
+         ! diameter.                                                                       !
+         ! Source: Kenzo, T., and co-authors: 2009.  Development of allometric relation-   !
+         !            ships for accurate estimation of above- and below-ground biomass in  !
+         !            tropical secondary forests in Sarawak, Malaysia. J. Trop. Ecology,   !
+         !            25, 371-386.                                                         !
+         !---------------------------------------------------------------------------------!
+         root_depth = b1Rd(ipft)  * dbh ** b2Rd(ipft)
+
+      case (4)
+         !---------------------------------------------------------------------------------!
+         !    This is just a test allometry, that imposes root depth to be 0.5 m for       !
+         ! plants that are 0.15-m tall, and 5.0 m for plants that are 35-m tall.           !
+         !---------------------------------------------------------------------------------!
+         root_depth = b1Rd(ipft) * hgt ** b2Rd(ipft)
       end select
 
-      return
-   end function calc_root_depth
-   !=======================================================================================!
-   !=======================================================================================!
 
-
-
-
-
-
-   !=======================================================================================!
-   !=======================================================================================!
-   integer function assign_root_depth(rd, lsl)
-      use grid_coms, only: nzg
-      use soil_coms, only: slz
-      implicit none
-      !----- Arguments --------------------------------------------------------------------!
-      real    , intent(in) :: rd
-      integer , intent(in) :: lsl
-      !----- Local variables --------------------------------------------------------------!
-      integer :: k
       !------------------------------------------------------------------------------------!
-      
-      assign_root_depth = nzg
+      !     Root depth is the maximum root depth if the soil is that deep.  Find what is   !
+      ! the deepest soil layer this root can go.                                           !
+      !------------------------------------------------------------------------------------!
+      dbh2krdepth = nzg
       do k=nzg,lsl+1,-1
-         if (rd < slz(k)) assign_root_depth = k-1
+         if (root_depth < slz(k)) dbh2krdepth = k-1
       end do
+      !------------------------------------------------------------------------------------!
+
       return
-   end function assign_root_depth
+   end function dbh2krdepth
    !=======================================================================================!
    !=======================================================================================!
 
@@ -292,19 +308,28 @@ module allometry
 
    !=======================================================================================!
    !=======================================================================================!
-   !    This function finds the trunk height, based on Antonarakis (2008) estimation for   !
-   ! secondary forests.                                                                    !
+   !    This function finds the trunk height.  Currently this is based on the following    !
+   ! reference, which is for a site in Bolivia:                                            !
+   !                                                                                       !
+   ! Poorter L., L. Bongers, F. Bongers, 2006: Architecture of 54 moist-forest tree        !
+   !     species: traits, trade-offs, and functional groups. Ecology, 87, 1289-1301.       !
    !---------------------------------------------------------------------------------------!
-   real function h2trunkh(h)
+   real function h2crownbh(height,ipft)
+      use pft_coms, only : b1Cl & ! intent(in)
+                         , b2Cl ! ! intent(in)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
-      real , intent(in) :: h
+      real   , intent(in) :: height
+      integer, intent(in) :: ipft
+      !----- Local variables. -------------------------------------------------------------!
+      real                :: crown_length
       !------------------------------------------------------------------------------------!
       
-      h2trunkh = 0.4359 * h ** 0.878
+      crown_length = b1Cl(ipft) * height ** b2Cl(ipft)
+      h2crownbh    = max(0.05,height - crown_length)
 
       return
-   end function h2trunkh
+   end function h2crownbh
    !=======================================================================================!
    !=======================================================================================!
 
@@ -465,7 +490,7 @@ module allometry
       !----- Use curve fit based on Conijn (1995) model. ----------------------------------!
       case (1) 
          !---------------------------------------------------------------------------------!
-         !     Finding the total wood biomass and the fraction corresponding to branches.  !
+         !     Find the total wood biomass and the fraction corresponding to branches.     !
          !---------------------------------------------------------------------------------!
          bwood   = wood_biomass(bdead, balive, pft, hite, bsapwood)
          if (is_grass(pft)) then
@@ -482,7 +507,7 @@ module allometry
       !----- Use  Järvelä (2004) method. --------------------------------------------------!
       case (2) 
          !----- Now we check the first branching height, that will be the trunk height. ---!
-         blength = h2trunkh(hite)
+         blength = h2crownbh(hite,pft)
          !----- Main branch diameter is DBH (in meters) -----------------------------------!
          bdiamet = dbh * 0.01
          !----- Minimum branch diameter (in meters) ---------------------------------------!

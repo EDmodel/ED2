@@ -3,7 +3,7 @@
 !     This subroutine will control the photosynthesis scheme (Farquar and Leuning).  This  !
 ! is called every step, but not every sub-step.                                            !
 !------------------------------------------------------------------------------------------!
-subroutine canopy_photosynthesis(csite,cmet,mzg,ipa,ed_ktrans,lsl,ntext_soil               &
+subroutine canopy_photosynthesis(csite,cmet,mzg,ipa,lsl,ntext_soil                         &
                                 ,leaf_aging_factor,green_leaf_factor)
    use ed_state_vars  , only : sitetype          & ! structure
                              , patchtype         ! ! structure
@@ -12,12 +12,16 @@ subroutine canopy_photosynthesis(csite,cmet,mzg,ipa,ed_ktrans,lsl,ntext_soil    
                              , water_conductance & ! intent(in)
                              , include_pft       ! ! intent(in)
    use soil_coms      , only : soil              & ! intent(in)
-                             , dslz              ! ! intent(in)
+                             , slz               & ! intent(in)
+                             , dslz              & ! intent(in)
+                             , freezecoef        ! ! intent(in)
    use consts_coms    , only : t00               & ! intent(in)
                              , epi               & ! intent(in)
                              , wdnsi             & ! intent(in)
                              , wdns              & ! intent(in)
-                             , kgCday_2_umols    ! ! intent(in)
+                             , kgCday_2_umols    & ! intent(in)
+                             , lnexp_min         ! ! intent(in)
+   use ed_misc_coms   , only : current_time      ! ! intent(in)
    use met_driver_coms, only : met_driv_state    ! ! structure
    use physiology_coms, only : print_photo_debug & ! intent(in)
                              , h2o_plant_lim     ! ! intent(in)
@@ -32,7 +36,6 @@ subroutine canopy_photosynthesis(csite,cmet,mzg,ipa,ed_ktrans,lsl,ntext_soil    
    integer, dimension(mzg)   , intent(in)  :: ntext_soil        ! Soil class
    real   , dimension(n_pft) , intent(in)  :: leaf_aging_factor ! 
    real   , dimension(n_pft) , intent(in)  :: green_leaf_factor ! 
-   integer, dimension(mzg)   , intent(out) :: ed_ktrans         ! 
    !----- Local variables -----------------------------------------------------------------!
    type(patchtype)           , pointer     :: cpatch             ! Current site
    integer                                 :: ico                ! Current cohort #
@@ -40,11 +43,15 @@ subroutine canopy_photosynthesis(csite,cmet,mzg,ipa,ed_ktrans,lsl,ntext_soil    
    integer                                 :: ipft
    integer                                 :: k1
    integer                                 :: k2
+   integer                                 :: kroot
    integer                                 :: nsoil
    integer                                 :: limit_flag
-   logical, dimension(mzg)                 :: root_depth_indices ! 
+   logical, dimension(mzg+1)               :: root_depth_indices ! 
    logical                                 :: las
-   real   , dimension(mzg)                 :: available_liquid_water
+   real   , dimension(mzg+1)               :: avg_frozen_water
+   real   , dimension(mzg+1)               :: avg_liquid_water
+   real   , dimension(mzg+1)               :: available_liquid_water
+   real   , dimension(mzg+1)               :: wilting_factor
    real                                    :: leaf_par
    real                                    :: leaf_resp
    real                                    :: d_gsw_open
@@ -61,6 +68,11 @@ subroutine canopy_photosynthesis(csite,cmet,mzg,ipa,ed_ktrans,lsl,ntext_soil    
    real                                    :: compp
    real                                    :: broot_tot
    real                                    :: broot_loc
+   real                                    :: wgpfrac
+   real                                    :: avg_fracliq
+   real                                    :: psi_wilting
+   real                                    :: psi_layer
+   real                                    :: freezecor
    real                                    :: pss_available_water
    !---------------------------------------------------------------------------------------!
 
@@ -80,16 +92,69 @@ subroutine canopy_photosynthesis(csite,cmet,mzg,ipa,ed_ktrans,lsl,ntext_soil    
 
 
    !----- Calculate liquid water available for transpiration. -----------------------------!
-   nsoil = ntext_soil(mzg)
-   available_liquid_water(mzg) = wdns * dslz(mzg) * csite%soil_fracliq(mzg,ipa)            &
-                               * max(0.0, csite%soil_water(mzg,ipa) - soil(nsoil)%soilwp )
-   do k1 = mzg-1, lsl, -1
+   available_liquid_water(mzg+1) = 0.
+   do k1 = mzg, lsl, -1
       nsoil = ntext_soil(k1)
       available_liquid_water(k1) = available_liquid_water(k1+1)                            &
                                  + wdns * dslz(k1) * csite%soil_fracliq(k1,ipa)            &
                                  * max(0.0, csite%soil_water(k1,ipa) - soil(nsoil)%soilwp )
    end do
    !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !     If we are solving H2O_PLANT_LIM = 2, then we must account for the water potential !
+   ! as in CLM.                                                                            !
+   !---------------------------------------------------------------------------------------!
+   select case (h2o_plant_lim)
+   case (2)
+
+      !----- Find the average liquid and frozen water. ------------------------------------!
+      avg_liquid_water(:) = 0.0
+      avg_frozen_water(:) = 0.0
+      do k1=mzg,lsl,-1
+         avg_frozen_water(k1) = avg_frozen_water(k1+1)                                     &
+                              + dslz(k1) * (1. - csite%soil_fracliq(k1,ipa))               &
+                              * csite%soil_water(k1,ipa)
+         avg_liquid_water(k1) = avg_liquid_water(k1+1)                                     &
+                              + dslz(k1) * csite%soil_fracliq(k1,ipa)                      &
+                              * csite%soil_water(k1,ipa)
+      end do
+      avg_frozen_water(lsl:mzg) = avg_frozen_water(lsl:mzg) / (- slz(lsl:mzg))
+      avg_liquid_water(lsl:mzg) = avg_liquid_water(lsl:mzg) / (- slz(lsl:mzg))
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !    Compute the soil potential for transpiration for each layer as in CLM.          !
+      !------------------------------------------------------------------------------------!
+      wilting_factor(:) = 0.0
+      do k1=lsl,mzg
+         nsoil = ntext_soil(k1)
+         if (avg_liquid_water(k1) > soil(nsoil)%soilwp) then
+            !----- Find the average soil wetness. -----------------------------------------!
+            wgpfrac = avg_liquid_water(k1) / soil(nsoil)%slmsts
+            avg_fracliq  = avg_liquid_water(k1)                                            &
+                         / (avg_liquid_water(k1) + avg_frozen_water(k1))
+
+            !----- Apply correction in case the soil is partially frozen. -----------------!
+            freezecor    = 10. ** max(lnexp_min,- freezecoef * (1.0 - avg_fracliq))
+            psi_wilting  = soil(nsoil)%slpots                                              &
+                         / (soil(nsoil)%soilwp / soil(nsoil)%slmsts) ** soil(nsoil)%slbs
+            psi_layer    = soil(nsoil)%slpots / wgpfrac ** soil(nsoil)%slbs
+
+            !----- Find the wilting factor which will control the dry soil correction. ----!
+            wilting_factor(k1) = max( 0., min(1., (psi_wilting - psi_layer         )       &
+                                                / (psi_wilting - soil(nsoil)%slpots) ) )
+         end if
+      end do
+      !------------------------------------------------------------------------------------!
+   end select
+   !---------------------------------------------------------------------------------------!
+
+
+
 
    !---------------------------------------------------------------------------------------!
    !     Initialize the array of maximum photosynthesis rates used in the mortality        !
@@ -122,12 +187,12 @@ subroutine canopy_photosynthesis(csite,cmet,mzg,ipa,ed_ktrans,lsl,ntext_soil    
    if (las) then
       !----- We now loop over PFTs, not cohorts, skipping those we are not using. ---------!
       do ipft = 1, n_pft
-         if (include_pft(ipft) == 1)then
+         if (include_pft(ipft)) then
 
             !------------------------------------------------------------------------------!
             !    Scale photosynthetically active radiation per unit of leaf.               !
             !------------------------------------------------------------------------------!
-            leaf_par = cpatch%par_v(tuco) / cpatch%lai(tuco)
+            leaf_par = csite%par_v_max(ipa) / cpatch%lai(tuco)
 
             !------------------------------------------------------------------------------!
             !    Call the photosynthesis for maximum photosynthetic rates.  The units      !
@@ -284,17 +349,13 @@ subroutine canopy_photosynthesis(csite,cmet,mzg,ipa,ed_ktrans,lsl,ntext_soil    
                                     , cpatch%water_supply(ico) + cpatch%psi_open(ico))
             case (2)
                !---------------------------------------------------------------------------!
-               !    New method to determine the fraction of open stomata, this function    !
-               ! allows almost 100% of the stomata to remain open when demand is equal     !
-               ! to supply, about 50% when demand is twice the supply, and almost 0% and   !
-               ! demand becomes larger than three times the supply.                        !
+               !     Somewhat based on CLM, but we reduce the total amount of available    !
+               ! water by the fraction of root biomass belonging to this cohort.  We don't !
+               ! have the root profile up to now, assume they are evenly distributed       !
+               ! through all layers that have roots.                                       !
                !---------------------------------------------------------------------------!
-               if (cpatch%water_supply(ico) > 1.e-20) then
-                  cpatch%fsw(ico) = 0.5 * ( 1. - tanh( 2. * (cpatch%psi_open(ico)          &
-                                                            /cpatch%water_supply(ico)-2.)))
-               else
-                  cpatch%fsw(ico) = 0.0
-               end if
+               cpatch%fsw(ico) = wilting_factor(cpatch%krdepth(ico))
+
             end select
             !------------------------------------------------------------------------------!
 
@@ -389,36 +450,6 @@ subroutine canopy_photosynthesis(csite,cmet,mzg,ipa,ed_ktrans,lsl,ntext_soil    
    !else
    !  Add nothing, the contribution of this time is zero since no cohort can transpire... 
    end if
-
-   !---------------------------------------------------------------------------------------!
-   !     For plants of a given rooting depth, determine soil level from which transpired   !
-   ! water is to be extracted.                                                             !
-   !---------------------------------------------------------------------------------------!
-   ed_ktrans(:) = 0
-   do k1 = lsl, mzg
-      !---- Assign a very large negative, so it will update it at least once. -------------!
-      swp = -huge(1.)
-      if (root_depth_indices(k1)) then
-         do k2 = k1, mzg
-            nsoil = ntext_soil(k2)
-            !------------------------------------------------------------------------------!
-            !      Find slpotv using the available liquid water, since ice is unavailable  !
-            ! for transpiration.                                                           !
-            !------------------------------------------------------------------------------!
-            slpotv = soil(nsoil)%slpots * csite%soil_fracliq(k2,ipa)                       &
-                   * (soil(nsoil)%slmsts / csite%soil_water(k2,ipa)) ** soil(nsoil)%slbs
-
-            !------------------------------------------------------------------------------!
-            !      Find layer in root zone with highest slpotv AND soil_water above        !
-            ! minimum soilwp.  Set ktrans to this layer.                                   !
-            !------------------------------------------------------------------------------!
-            if (slpotv > swp .and. csite%soil_water(k2,ipa) > soil(nsoil)%soilwp) then
-               swp = slpotv
-               ed_ktrans(k1) = k2
-            end if
-         end do
-      end if
-   end do
 
    return
 end subroutine canopy_photosynthesis

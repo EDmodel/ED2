@@ -14,7 +14,8 @@ subroutine ed_init_atm()
                                     , isoilstateinit    & ! intent(in)
                                     , soil              & ! intent(in)
                                     , slmstr            & ! intent(in)
-                                    , stgoff            ! ! intent(in)
+                                    , stgoff            & ! intent(in)
+                                    , ed_soil_idx2water ! ! intent(in)
    use consts_coms           , only : tsupercool        & ! intent(in)
                                     , cliqvlme          & ! intent(in)
                                     , cicevlme          & ! intent(in)
@@ -45,32 +46,33 @@ subroutine ed_init_atm()
    use canopy_struct_dynamics, only : canopy_turbulence ! ! subroutine
    implicit none
    !----- Local variables. ----------------------------------------------------------------!
-   type(edtype)        , pointer :: cgrid
-   type(polygontype)   , pointer :: cpoly
-   type(met_driv_state), pointer :: cmet
-   type(sitetype)      , pointer :: csite
-   type(patchtype)     , pointer :: cpatch
-   integer                       :: igr
-   integer                       :: ipy
-   integer                       :: isi
-   integer                       :: ipa
-   integer                       :: ico
-   integer                       :: k
-   integer                       :: nsoil
-   integer                       :: nls
-   integer                       :: nlsw1
-   integer                       :: ncohorts
-   integer                       :: npatches
-   integer                       :: ix
-   integer                       :: iy
-   integer                       :: ping,ierr
-   real                          :: site_area_i
-   real                          :: poly_area_i
-   real                          :: poly_lai
-   real                          :: poly_nplant
-   real                          :: elim_nplant
-   real                          :: elim_lai
-   real                          :: rvaux
+   type(edtype)        , pointer  :: cgrid
+   type(polygontype)   , pointer  :: cpoly
+   type(met_driv_state), pointer  :: cmet
+   type(sitetype)      , pointer  :: csite
+   type(patchtype)     , pointer  :: cpatch
+   integer                        :: igr
+   integer                        :: ipy
+   integer                        :: isi
+   integer                        :: ipa
+   integer                        :: ico
+   integer                        :: k
+   integer                        :: nsoil
+   integer                        :: nls
+   integer                        :: nlsw1
+   integer                        :: ncohorts
+   integer                        :: npatches
+   integer                        :: ix
+   integer                        :: iy
+   integer                        :: ping,ierr
+   real                           :: site_area_i
+   real                           :: poly_area_i
+   real                           :: poly_lai
+   real                           :: poly_nplant
+   real                           :: elim_nplant
+   real                           :: elim_lai
+   real                           :: rvaux
+   logical             , external :: is_resolvable
    !----- Add the MPI common block. -------------------------------------------------------!
    include 'mpif.h'
    !---------------------------------------------------------------------------------------!
@@ -157,6 +159,9 @@ subroutine ed_init_atm()
                                                        ,cpatch%phenology_status(ico)       &
                                                        ,cpatch%bsapwood(ico))
                   cpatch%veg_energy(ico) = cpatch%hcapveg(ico) * cpatch%veg_temp(ico)
+                  cpatch%resolvable(ico) = is_resolvable(csite,ipa,ico                     &
+                                                        ,cpoly%green_leaf_factor(:,isi))
+
                   csite%hcapveg    (ipa) = csite%hcapveg (ipa) + cpatch%hcapveg (ico)
                   !----- Initialise the leaf surface and intercellular properties. --------!
                   cpatch%lsfc_shv_open(ico)   = cmet%atm_shv
@@ -172,8 +177,6 @@ subroutine ed_init_atm()
                   cpatch%lint_shv(ico) = rslif(csite%can_prss(ipa),cpatch%veg_temp(ico))
                   cpatch%lint_shv(ico) = cpatch%lint_shv(ico) / (1. + cpatch%lint_shv(ico))
                end do cohortloop1
-               !----- Initialise vegetation wind and turbulence parameters. ---------------!
-               call canopy_turbulence(cpoly,isi,ipa)
             end do patchloop1
          end do siteloop1
       end do polyloop1
@@ -232,11 +235,7 @@ subroutine ed_init_atm()
                      if (csite%soil_tempk(k,ipa) > t3ple) then
                         nsoil=cpoly%ntext_soil(k,isi)
                         csite%soil_fracliq(k,ipa) = 1.0
-                        csite%soil_water(k,ipa)   = min(soil(nsoil)%slmsts                 &
-                                                   ,max(soil(nsoil)%soilcp                 &
-                                                       , slmstr(k) * ( soil(nsoil)%slmsts  &
-                                                                     - soil(nsoil)%soilwp) &
-                                                       + soil(nsoil)%soilwp))
+                        csite%soil_water(k,ipa)   = ed_soil_idx2water(slmstr(k),nsoil)
                         csite%soil_energy(k,ipa)  = soil(nsoil)%slcpd                      &
                                                   * csite%soil_tempk(k,ipa)                &
                                                   + csite%soil_water(k,ipa) * cliqvlme     &
@@ -244,11 +243,7 @@ subroutine ed_init_atm()
                      else
                         nsoil=cpoly%ntext_soil(k,isi)
                         csite%soil_fracliq(k,ipa) = 0.0
-                        csite%soil_water(k,ipa)   = min(soil(nsoil)%slmsts                 &
-                                                   ,max(soil(nsoil)%soilcp                 &
-                                                       , slmstr(k) * ( soil(nsoil)%slmsts  &
-                                                                     - soil(nsoil)%soilwp) &
-                                                       + soil(nsoil)%soilwp))
+                        csite%soil_water(k,ipa)   = ed_soil_idx2water(slmstr(k),nsoil)
                         csite%soil_energy(k,ipa)  = soil(nsoil)%slcpd                      &
                                                   * csite%soil_tempk(k,ipa)                &
                                                   + csite%soil_water(k,ipa)                &
@@ -280,7 +275,7 @@ subroutine ed_init_atm()
                                  ,csite%sfcwater_fracliq(nlsw1,ipa),csite%can_prss(ipa)    &
                                  ,csite%can_shv(ipa),csite%ground_shv(ipa)                 &
                                  ,csite%ground_ssh(ipa),csite%ground_temp(ipa)             &
-                                 ,csite%ground_fliq(ipa))
+                                 ,csite%ground_fliq(ipa),csite%ggsoil(ipa))
                else
                   !----- Compute patch-level LAI, vegetation height, and roughness. -------!
                   call update_patch_derived_props(csite,cpoly%lsl(isi),cmet%prss,ipa)
@@ -294,9 +289,11 @@ subroutine ed_init_atm()
                                  ,csite%sfcwater_fracliq(nlsw1,ipa),csite%can_prss(ipa)    &
                                  ,csite%can_shv(ipa),csite%ground_shv(ipa)                 &
                                  ,csite%ground_ssh(ipa),csite%ground_temp(ipa)             &
-                                 ,csite%ground_fliq(ipa))
+                                 ,csite%ground_fliq(ipa),csite%ggsoil(ipa))
                end if
 
+               !----- Initialise vegetation wind and turbulence parameters. ---------------!
+               call canopy_turbulence(cpoly,isi,ipa)
 
                !----- Computing the storage terms for CO2, energy, and water budgets. -----!
                call update_budget(csite,cpoly%lsl(isi),ipa,ipa)

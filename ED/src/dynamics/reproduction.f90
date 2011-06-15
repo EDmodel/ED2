@@ -174,7 +174,7 @@ subroutine reproduction(cgrid, month)
                !    Check to make sure we are including the PFT and that it is not too     !
                ! cold.                                                                     !
                !---------------------------------------------------------------------------!
-               if(include_pft(ipft)           == 1                          .and.          &
+               if(include_pft(ipft)                                         .and.          &
                   cpoly%min_monthly_temp(isi) >= plant_min_temp(ipft) - 5.0 .and.          &
                   repro_scheme == 1 ) then
 
@@ -182,7 +182,7 @@ subroutine reproduction(cgrid, month)
                   !     Make sure that this is not agriculture or that it is okay for this !
                   ! PFT to be in an agriculture patch.                                     !
                   !------------------------------------------------------------------------!
-                  if(csite%dist_type(ipa) /= 1 .or. include_pft_ag(ipft) == 1) then
+                  if(csite%dist_type(ipa) /= 1 .or. include_pft_ag(ipft)) then
 
                      !---------------------------------------------------------------------!
                      !    We assign the recruit in the temporary recruitment structure.    !
@@ -198,7 +198,7 @@ subroutine reproduction(cgrid, month)
                      rectest%nplant   = csite%repro(ipft,ipa)                              &
                                       / (rectest%balive + rectest%bdead)
 
-                     if(include_pft(ipft) == 1) then
+                     if(include_pft(ipft)) then
                         rectest%nplant = rectest%nplant + seed_rain(ipft)
                      end if
 

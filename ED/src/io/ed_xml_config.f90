@@ -201,12 +201,12 @@ recursive subroutine read_ed_xml_config(filename)
         if(myPFT .le. n_pft .and. myPFT .ge. 1) then
            call getConfigINT('include_pft','pft',i,ival,texist)
            if(texist) then
-              include_pft(myPFT) = ival
+              include_pft(myPFT) = ival == 1
 !           else
 !              include_pft(myPFT) = 1  !! if a PFT is defined, assume it's meant to be included
            endif
            call getConfigINT('include_pft_ag','pft',i,ival,texist)
-           if(texist) include_pft_ag(myPFT) = ival
+           if(texist) include_pft_ag(myPFT) = ival == 1
            call getConfigSTRING('name','pft',i,cval,texist)
            call getConfigREAL  ('SLA','pft',i,rval,texist)
            if(texist) SLA(myPFT) = real(rval)
@@ -947,7 +947,7 @@ subroutine write_ed_xml_config
   use canopy_radiation_coms
   use decomp_coms
   use ed_misc_coms, only: sfilout
-
+  integer :: ival
   character(512) :: xfilout 
 
   write(xfilout,"(a)") trim(sfilout)//".xml"
@@ -958,13 +958,23 @@ subroutine write_ed_xml_config
 
   !************   PFT  *****************
   do i=1,n_pft
-     if(include_pft(i) == 1) then !! loop over included PFT's
+     if(include_pft(i)) then !! loop over included PFT's
 
         call libxml2f90_ll_opentag("pft")
      
         call putConfigINT("num",i)
-        call putConfigINT("include_pft_ag",include_pft_ag(i))
-        call putConfigINT("include_pft",include_pft(i))
+        if (include_pft_ag(i)) then
+           ival = 1
+        else
+           ival = 0
+        end if
+        call putConfigINT("include_pft_ag",ival)
+        if (include_pft(i)) then
+           ival = 1
+        else
+           ival = 0
+        end if
+        call putConfigINT("include_pft",ival)
         
         call putConfigREAL("SLA",SLA(i))
         call putConfigREAL("b1Bl",b1Bl(i))

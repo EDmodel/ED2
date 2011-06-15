@@ -142,6 +142,8 @@ subroutine init_nbg_cohorts(csite,lsl,ipa_a,ipa_z)
    integer                            :: ipft              ! PFT counter
    real                               :: salloc            ! balive/bleaf when on allom.
    real                               :: salloci           ! 1./salloc
+   !----- External functions. -------------------------------------------------------------!
+   logical               , external   :: is_resolvable
    !---------------------------------------------------------------------------------------!
 
    !----- Patch loop. ---------------------------------------------------------------------!
@@ -160,9 +162,9 @@ subroutine init_nbg_cohorts(csite,lsl,ipa_a,ipa_z)
          !---------------------------------------------------------------------------------!
          select case (csite%dist_type(ipa))
          case (1)   !---- Agriculture. ----------------------------------------------------!
-            mypfts = sum(include_pft_ag)
+            mypfts = count(include_pft_ag)
          case (2,3) !---- Secondary or primary forest. ------------------------------------!
-            mypfts= sum(include_pft)
+            mypfts = count(include_pft)
          end select
          !---------------------------------------------------------------------------------!
       end select
@@ -181,14 +183,14 @@ subroutine init_nbg_cohorts(csite,lsl,ipa_a,ipa_z)
          select case (csite%dist_type(ipa))
          case (1)
             !----- Agriculture, only the ones allowed are included. -----------------------!
-            if (include_pft_ag(ipft) == 1) then
+            if (include_pft_ag(ipft)) then
                ico = ico + 1
             else
                cycle pftloop
             end if
          case (2,3)
             !----- Forest, only the ones allowed are included. ----------------------------!
-            if (include_pft(ipft) == 1) then
+            if (include_pft(ipft)) then
                ico = ico + 1
             else
                cycle pftloop
@@ -251,7 +253,8 @@ subroutine init_nbg_cohorts(csite,lsl,ipa_a,ipa_z)
                                               ,cpatch%hite(ico),cpatch%pft(ico)            &
                                               ,cpatch%phenology_status(ico)                &
                                               ,cpatch%bsapwood(ico))
- 
+
+
          !----- Update total patch-level above-ground biomass -----------------------------!
          csite%plant_ag_biomass(ipa) = csite%plant_ag_biomass(ipa)                         &
                                      + cpatch%nplant(ico) * cpatch%agb(ico)
@@ -303,7 +306,7 @@ subroutine init_cohorts_by_layers(csite,lsl,ipa_a,ipa_z)
                                  , dbh2bl             & ! function
                                  , ed_biomass         & ! function
                                  , area_indices       ! ! subroutine
-   use fuse_fiss_utils    , only : sort_cohorts    ! ! subroutine
+   use fuse_fiss_utils    , only : sort_cohorts       ! ! subroutine
 
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
@@ -330,7 +333,7 @@ subroutine init_cohorts_by_layers(csite,lsl,ipa_a,ipa_z)
    patchloop: do ipa=ipa_a,ipa_z
       cpatch => csite%patch(ipa)
 
-      if (sum(include_pft) /= 1) then
+      if (count (include_pft) /= 1) then
          call fatal_error('Multi-layer run cannot be run with more than 1 PFT...'          &
                          ,'init_cohorts_by_layers','ed_nbg_init.f90')
       end if
@@ -406,7 +409,7 @@ subroutine init_cohorts_by_layers(csite,lsl,ipa_a,ipa_z)
                                               ,cpatch%hite(ico),cpatch%pft(ico)            &
                                               ,cpatch%phenology_status(ico)                &
                                               ,cpatch%bsapwood(ico))
- 
+         cpatch%resolvable(ico) = .false.
          !----- Update total patch-level above-ground biomass -----------------------------!
          csite%plant_ag_biomass(ipa) = csite%plant_ag_biomass(ipa)                         &
                                      + cpatch%nplant(ico) * cpatch%agb(ico)

@@ -6,13 +6,56 @@
 module met_driver_coms
 
    use ed_max_dims, only: str_len
-   integer, parameter :: metname_len = 128
-   integer, parameter :: metvars_len =  16
-   logical            :: have_co2
-   logical            :: have_latlon   ! Does the H5 data have lat-lon grids or does the 
-                                       ! user specify  its spacing directly?
-   real               :: initial_co2
-   integer            :: lapse_scheme  ! which variant of lapse rate correction to use
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Namelist variables.                                                               !
+   !---------------------------------------------------------------------------------------!
+   character(len=str_len) :: ed_met_driver_db ! Header of the meteorological driver.
+   integer                :: imettype         ! Type of variable (not used)
+   integer                :: metcyc1          ! First year of the meteorological driver
+   integer                :: metcycf          ! Last year of the meteorological
+   integer                :: ishuffle         ! How the years should be shuffled if the
+                                              !    simulation year is outside the range
+                                              ! 0 -- No shuffling, use it sequentially
+                                              ! 1 -- Randomly pick the years, using the
+                                              !      same sequence (doesn't always work, 
+                                              !      it will be like option 2 in case
+                                              !      it doesn't).
+                                              ! 2 -- Randomly pick the years, using a 
+                                              !      different sequence each time the 
+                                              !      model is run.
+   integer                :: imetavg          ! Type of average of the input fluxes:
+                                              ! 0 -- No average, the values are 
+                                              !      instantaneous
+                                              ! 1 -- Averages ending at the reference time
+                                              ! 2 -- Averages beginning at the reference 
+                                              !      time
+                                              ! 3 -- Averages centred at the reference time
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Variables used to interpolate and assign some input variables.                    !
+   !---------------------------------------------------------------------------------------!
+   integer, parameter :: metname_len = 128    !
+   integer, parameter :: metvars_len =  16    !
+   logical            :: have_co2             ! Do the H5 data have CO2, or did the user
+                                              !    specify it with initial_co2?
+   logical            :: have_latlon          ! Do the H5 data have lat-lon grids or 
+                                              !    does the user specify its spacing 
+                                              !    directly?
+   real               :: initial_co2          ! CO2 in case the meteorological forcing 
+                                              !    doesn't have one.
+   integer            :: lapse_scheme         ! Which variant of lapse rate correction 
+                                              ! to use
+   real               :: dt_radinterp         ! Time step used to perform the daytime 
+                                              !    average of the secant of the zenith
+                                              !    angle. 
+   !---------------------------------------------------------------------------------------!
+
+
 
    !---------------------------------------------------------------------------------------!
    !      Values for simple climate change scenarios                                       !
@@ -24,7 +67,13 @@ module met_driver_coms
    real               :: prec_slope
    integer            :: humid_scenario    ! 0 = constant sh
                                            ! 1 = constant RH
+   !---------------------------------------------------------------------------------------!
 
+
+
+   !---------------------------------------------------------------------------------------!
+   !      Variables that define the meteorological dataset.                                !
+   !---------------------------------------------------------------------------------------!
    integer :: nformats
    character(len=metname_len), allocatable, dimension(:)   :: met_names
    character(len=metvars_len), allocatable, dimension(:,:) :: met_vars
@@ -38,14 +87,10 @@ module met_driver_coms
    real                      , allocatable, dimension(:,:) :: met_frq
    integer                   , allocatable, dimension(:,:) :: met_interp
    integer                   , allocatable, dimension(:)   :: metyears
-   integer                                                 :: ishuffle
-   integer                                                 :: metcyc1
-   integer                                                 :: metcycf
-   character(len=str_len)                                  :: ed_met_driver_db
-   integer                                                 :: imettype
    logical                   , allocatable, dimension(:)   :: no_ll
    real                      , allocatable, dimension(:,:) :: lat2d
    real                      , allocatable, dimension(:,:) :: lon2d
+   !---------------------------------------------------------------------------------------!
 
 
    !---------------------------------------------------------------------------------------!
@@ -127,5 +172,8 @@ module met_driver_coms
    real :: vels_max
    real :: geoht_min
    real :: geoht_max
+   !---------------------------------------------------------------------------------------!
 
 end module met_driver_coms
+!==========================================================================================!
+!==========================================================================================!

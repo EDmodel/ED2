@@ -305,7 +305,7 @@
    ISSTFLG  = 1,1,1,           ! 1 - Read from standard Lat/Lon data file
    IVEGTFLG = 1,1,1,           ! 2 - Fill data in "leaf3_init"
    ISOILFLG = 1,1,1,           ! 3 - Read ED database, if the database exists and if this
-   NDVIFLG  = 2,2,2,           !     is an EDBRAMS run.  Otherwise, it will read from 
+   NDVIFLG  = 1,1,1,           !     is an EDBRAMS run.  Otherwise, it will read from 
                                !     standard Lat/Lon data file.
 
    NOFILFLG = 2,2,2,           ! 2 - Fill data in "leaf3_init"
@@ -324,9 +324,9 @@
    !---------------------------------------------------------------------------------------!
    ITOPTFN  = '/n/Moorcroft_Lab/Lab/data/brams_data/topo/EL',
    ISSTFN   = '/n/Moorcroft_Lab/Lab/data/brams_data/weeklysst/2009/W',
-   IVEGTFN  = '/n/Moorcroft_Lab/Lab/data/brams_data/veg_usgs/VUSGS_',
+   IVEGTFN  = '/n/Moorcroft_Lab/Lab/data/brams_data/veg_defsce/bau2002/BAU-2002_',
    ISOILFN  = '/n/Moorcroft_Lab/Lab/data/brams_data/soil_brams406/Quesada+RADAM+IGBP/Quesada+RADAM+IGBP_',
-    NDVIFN  = '/n/Moorcroft_Lab/Lab/data/brams_data/ndvi-modis/N',
+    NDVIFN  = '/n/Moorcroft_Lab/Lab/data/brams_data/lai-modis/2001LAI',
      
 ! Topography scheme
 
@@ -443,7 +443,7 @@
    !           velocity and sigma-w and assuming normal distribution, so this option works !
    !           only when IDIFFK is 1 or 7.                                                 !
    !---------------------------------------------------------------------------------------!
-   CAP_MAXS  =   -2.,
+   CAP_MAXS  =   -25.,
    !---------------------------------------------------------------------------------------!
 
    !---------------------------------------------------------------------------------------!
@@ -577,7 +577,19 @@
                              !  5 - The parametrisation of Oncley and Dudhia, but using 
                              !      z/L estimation as in Beljaars and Holtslag
 
-   USTMIN   = 0.10,          ! Minimum u* (m/s)
+   IGRNDVAP   = 0,           ! Methods to find the ground -> canopy conductance:
+                             ! In all cases the beta term is modified so it approaches
+                             !    zero as soil moisture goes to dry air soil. 
+                             !  0. Modified Lee Pielke (1992), adding field capacity, but 
+                             !     using beta factor without the square, like in 
+                             !     Noilhan and Planton (1989).  This is the closest to
+                             !     the original ED-2.0
+                             !  1. Test # 1 of Mahfouf and Noilhan (1991)
+                             !  2. Test # 2 of Mahfouf and Noilhan (1991)
+                             !  3. Test # 3 of Mahfouf and Noilhan (1991)
+                             !  4. Test # 4 of Mahfouf and Noilhan (1991)
+
+   USTMIN   = 0.01,          ! Minimum u* (m/s)
    
 
    !---------------------------------------------------------------------------------------!
@@ -588,6 +600,8 @@
    TPRANDTL        = 0.74,  ! Turbulent Prandtl number
    VH2VR           = 0.13,  ! Vegetation Roughness: Vegetation height ratio
    VH2DH           = 0.63,  ! Displacement height : vegetation height ratio
+   RIBMAX          = 1.00,  ! Maximum bulk Richardson number (ignored if ISTAR = 1)
+   LEAF_MAXWHC     = 0.11,  ! Maximum water that can be intercepted            [ kg/m2leaf]
    !---------------------------------------------------------------------------------------!
 
    ICO2    = 1,              ! CO2 prognostic level
@@ -658,12 +672,28 @@
    USMODEL_IN = '/n/moorcroft_scratch/mlongo/EDBRAMS/bbarca/surfa/lesmo',  ! File prefix with pre-calculated data by BRAMS
 
 
-   SLZ     =  -8.00, -6.50, -5.50, -4.50, -3.50, -2.80, -2.20, -1.70,
-              -1.20, -0.80, -0.50, -0.30, -0.20, -0.12, -0.06, -0.02, ! Soil grid levels
-   SLMSTR  =   0.60,  0.60,  0.60,  0.60,  0.60,  0.60,  0.60,  0.60,
-               0.60,  0.60,  0.60,  0.60,  0.60,  0.60,  0.60,  0.60, ! Initial soil moisture
-   STGOFF  =   0.00,  0.00,  0.00,  0.00,  0.00,  0.00,  0.00,  0.00, 
-               0.00,  0.00,  0.00,  0.00,  0.00,  0.00,  0.00,  0.00, ! From lowest atmospheric level
+   !---------------------------------------------------------------------------------------!
+   !    Soil grid and initial conditions if no file is provided:                           !
+   !                                                                                       !
+   ! SLZ     - soil depth in m.  Values must be negative and go from the deepest layer to  !
+   !           the top.                                                                    !
+   ! SLMSTR  - this is the initial soil moisture, now given as the soil moisture index.    !
+   !           Values can be fraction, in which case they will be linearly interpolated    !
+   !           between the special points (e.g. 0.5 will put soil moisture half way        !
+   !           between the wilting point and field capacity).                              !
+   !              -1 = dry air soil moisture                                               !
+   !               0 = wilting point                                                       !
+   !               1 = field capacity                                                      !
+   !               2 = porosity (saturation)                                               !
+   ! STGOFF  - initial temperature offset (soil temperature = air temperature + offset)    !
+   !---------------------------------------------------------------------------------------!
+   SLZ     = -8.000, -6.738, -5.608, -4.604, -3.721, -2.952, -2.291, -1.731,
+             -1.265, -0.887, -0.588, -0.362, -0.200, -0.093, -0.032, -0.005,
+   SLMSTR  =   1.00,   1.00,   1.00,   1.00,   1.00,   1.00,   1.00,   1.00,
+               1.00,   1.00,   1.00,   1.00,   1.00,   1.00,   1.00,   1.00,
+   STGOFF  =   0.00,   0.00,   0.00,   0.00,   0.00,   0.00,   0.00,   0.00,
+               0.00,   0.00,   0.00,   0.00,   0.00,   0.00,   0.00,   0.00,
+   !---------------------------------------------------------------------------------------!
 
    BETAPOWER = 1.,               ! Power to be applied to the beta term that
                                  !     controls the ground evaporation.
@@ -671,22 +701,23 @@
                                  !     conductance
 
    
-   ISOILBC  =   1,            ! Soil boundary condition at lowest soil level
-                              ! 0 - Bedrock;
-                              ! 1 - Free drainage.
-                              ! 2 - Half drainage.
+   ISOILBC  =   1,        ! Soil boundary condition at lowest soil level
+                          ! 0 - Bedrock.  No downward flow out of the bottom layer.
+                          ! 1 - Free drainage (gravitational flow).
+                          ! 2 - Super drainage (layer beneath permanently dry).
+                          ! 3 - Assume layer beneath at field capacity.
+                          ! 4 - Aquifer.  Assume layer beneath to be permanently saturated.
 
    IPERCOL         = 1,       ! Percolation scheme:
                               !  0 - Original method, from LEAF-3.  Shed liquid in excess 
                               !      of a 1:9 liquid-to-ice ratio through percolation.
                               !  1 - Alternative "free" water calculation.  
                               !      Anderson (1976), NOAA Tech Report NWS 19.
+                              !  2 - Same as 1, but we also apply conductivity profile
+                              !      (decreases with depth even for constant soil moisture)
 
-   RUNOFF_TIME     = 14400.0, ! the forest could get saturated and 
-                              ! develop a sfcwater pool of meters or 
-                              ! more.  In many cases, this is not realistic.
-                              ! This is the time scale in seconds for 
-                              ! this water to disappear.  If you want no runoff
+   RUNOFF_TIME     = 3600.0,  ! This is the time scale in seconds for temporary surface
+                              ! water to disappear.  If you want no runoff
                               ! to happen at all, set runoff_time = 0.
 
 
@@ -781,7 +812,7 @@
 ! Main time step parameters                                               !
 !-------------------------------------------------------------------------!
 
-   DTLSM  = 120.0,    ! Basic time step [s]. In principle, this should be
+   DTLSM  = 600.0,    ! Basic time step [s]. In principle, this should be
                       ! always the same as dtlong.  If time is a problem,
                       ! try making it larger, but not much larger so to 
                       ! avoid problems...
@@ -956,14 +987,42 @@
                               !  1  --  Use Conijn (1995) numbers;
                               !  2  --  Use parameterization from Jarvela (2004);
 
+   !---------------------------------------------------------------------------------------!
+   !    NL%IPHYSIOL.  This variable will determine the functional form that will control   !
+   ! how the various parameters will vary with temperature, and how the CO2 compensation   !
+   ! point for gross photosynthesis (Gamma*) will be found.  Options are:                  !
+   !                                                                                       !
+   ! 0 -- Original ED-2.1, we use the "Arrhenius" function as in Foley et al. (1996) and   !
+   !      Moorcroft et al. (2001).  Gamma* is found using the parameters for tau as in     !
+   !      Foley et al. (1996).                                                             !
+   ! 1 -- Modified ED-2.1.  In this case Gamma* is found using the Michaelis-Mentel        !
+   !      coefficients for CO2 and O2, as in Farquhar et al. (1980) and in CLM.            !
+   ! 2 -- Collatz et al. (1991).  We use the power (Q10) equations, with Collatz et al.    !
+   !      parameters for compensation point, and the Michaelis-Mentel coefficients.  The   !
+   !      leaf respiration correction for high and low temperatures are the same as in     !
+   !      Moorcroft et al. (2001), but the correction for Vm is done like in Collatz.      !
+   ! 3 -- Same as 2, except that we find Gamma* as in Farquhar et al. (1980) and in CLM.   !
+   !---------------------------------------------------------------------------------------!
+   IPHYSIOL = 0,
+   !---------------------------------------------------------------------------------------!
+
    ISTOMA_SCHEME   = 0,       ! This is the scheme used to compute stomatal 
                               ! conductance and photosynthesis.  Set to 0 to do 
                               ! the full, exact calculation each time.  Set to 1 
                               ! to do the 'small perturbation' scheme.
 
-   IALLOM          = 0,       ! Which allometry to use (this affects tropical PFTs only)
+   IALLOM          = 2,       ! Which allometry to use (this affects tropical PFTs only)
                               !  0 -- original ED-2.1
-                              !  1 -- Baker et al. (2004), equation 2
+                              !  1 -- Baker et al. (2004), equation 2, keeping the same
+                              !       balive:bdead ratio
+                              !  2 -- Baker et al. (2004), equation 2, keeping the same
+                              !       balive as in ED-2.1
+                              !  3 -- Same as 2, but using a DBH-> Root depth equation
+                              !       based on Kenzo et al. (2009)
+                              !  4 -- Same as 2, but with an experimental root depth
+                              !       that makes canopy trees to have root depths of 5m
+                              !       and grasses/seedlings at 0.5 to have root depth of
+                              !       0.5 m 
 
    !---------------------------------------------------------------------------------------!
    !     The following variable controls the phenology scheme.  Even within each scheme,   !
@@ -1018,6 +1077,10 @@
                               ! canopy radiation model                    
                               !  0  - ED1 default (continuous horizontal) 
                               !  1  - finite radius mixing model (Dietze) 
+                              !  2  - finite radius with horizontal competition for
+                              !       light (radiation is solved layer by layer rather
+                              !       than cohort by cohort).  This is still under
+                              !       development, ideas are welcome.
 
    DECOMP_SCHEME   = 0,       ! Specifies soil decomposition temperature dependence
                               ! 0 -- original exponential
@@ -1031,17 +1094,21 @@
                               !      FSW = 1           
                               ! 1 -- Original ED-1.0/ED-2.0 method
                               !      FSW = 1/ (1 + D/S)
-                              ! 2 -- Alternative method:
-                              !      FSW = ½ - ½ * tanh[2*(D/S - 2)]
+                              ! 2 -- Alternative method based on CLM, uses water potential,
+                              !      but ignores the root biomass.
+
 
    !---------------------------------------------------------------------------------------!
    !    These are factors that multiply some of the ED-2.1 default parameters.  Setting    !
    ! them to 1.0 will make them the default.  These are applied for all PFTs.              !
    !---------------------------------------------------------------------------------------!
-   VMFACT          = 2.,    ! Factor for changing Vm0 from the default
-   MFACT           = 1.,    ! Factor for changing stomatal slope (M)
-   KFACT           = 2.,    ! Factor for changing the water conductance (Kw)
-   GAMFACT         = 0.50,  ! Factor for changing the dark respiration factor (gamma)
+   VMFACT          = 1.6,   ! Factor for changing Vm0 from the default
+   MFACT           = 1.0,   ! Factor for changing stomatal slope (M)
+   KFACT           = 3.,    ! Factor for changing the water conductance (Kw)
+   GAMFACT         = 0.75,  ! Factor for changing the dark respiration factor (gamma)
+   D0FACT          = 1.20,  ! Factor for changing the transpiration control (D0)
+   ALPHAFACT       = 0.875, ! Factor for changing the quantum yield of C3 plants
+                            !     This is only applied when QUANTUM_EFFICIENCY_T is 0
    THETACRIT       = 0.20,  ! Leaf drought phenology threshold.  This is the relative 
                             !     soil moisture above the wilting point below which the
                             !     drought-deciduous plants will start shedding their 
@@ -1056,8 +1123,8 @@
 
    QUANTUM_EFFICIENCY_T = 0,  ! Which quantum efficiency should I use
                               ! 0 ---- original ED-2.1
-                              ! 1 ---- Temperature dependent quantum efficiency
-                              !        after Ehlringer and Ollebjorkman 1977
+                              ! 1 ---- Temperature dependent quantum efficiency after 
+                              !        Ehleringer (1978)
 
    N_PLANT_LIM     = 0,       ! Determines whether plant photosynthesis can be 
                               ! limited by nitrogen
@@ -1088,27 +1155,17 @@
                               ! anthropogenic disturbances such as agriculture, 
                               ! abandonment, and harvesting.
 
-   ICANTURB        = 3,       ! Canopy roughness scheme
-                              ! -2. This method scales the wind at the top of the canopy
-                              !     but it will assume constant winds throughout all 
-                              !     cohorts in the understorey.
-                              ! -1. This is the original ED-2.0 scheme, which scales the
-                              !     canopy winds by LAI and has a simplified roughness
-                              !     scheme.
-                              !  0. is the default scheme
-                              !  1. will rescale reference wind-speed if it
-                              !     the reference height is (inapropriately)
-                              !     below the canopy
-                              !  2. This uses the method of Massman 
-                              !     1997 and the bulk Richardson number of 
-                              !     instability.  This method will not work 
-                              !     when zref<h
-                              !  3. This computes the roughness as a combination of bare
-                              !     ground and vegetated ground using the open canopy 
-                              !     fraction as the weighting factor.  Once the roughness
-                              !     is found, the ground conductance is determined using
-                              !     a single value of roughness that is a function of the
-                              !     surface layer profile properties.
+   ICANTURB        = 0,       ! Canopy roughness scheme
+                              !  0. Based on Leuning et al. (1995), wind is computed using
+                              !     the similarity theory for the top cohort, and they are
+                              !     extinguished with cumulative LAI.  The only difference 
+                              !     is that we use local LAI and average by crown area.
+                              !  1. is the default ED-2.1 scheme, except that it uses the 
+                              !     zero-plane displacement height. 
+                              !  2. This uses the method of Massman (1997) using constant
+                              !     drag and no sheltering. 
+                              !  3. Similar to 2, but it uses a second-order closure based
+                              !     on Massman and Weil (1999)
 
    I_BLYR_CONDCT   = 0,       !  0. The Nusselt number for forced convection is estimated
                               !     using the average winds, with no corrections
@@ -1159,10 +1216,13 @@
                                                                  
                                          
 !------------------------------------------------------------------------------------------!
-! Commonly changed parameters                                                              !
+! Disturbance rate parameters                                                              !
 !------------------------------------------------------------------------------------------!
 
    TREEFALL_DISTURBANCE_RATE  = 0.014,  ! Treefall disturbance rate, 1/years
+   TIME2CANOPY    =     0.0,             ! Minimum patch age for treefall disturbance to 
+                                         !    happen.  If TREEFALL_DISTURBANCE_RATE = 0.,
+                                         !    this value will be ignored. 
 !------------------------------------------------------------------------------------------!
 
 !-------------------------------------------------------------------------!

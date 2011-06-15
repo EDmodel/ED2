@@ -14,6 +14,7 @@ OBJ_MODEL =                        \
 	average_utils.o            \
 	budget_utils.o             \
 	canopy_air_coms.o          \
+	canopy_layer_coms.o        \
 	canopy_radiation_coms.o    \
 	canopy_struct_dynamics.o   \
 	c34constants.o             \

@@ -1021,13 +1021,16 @@ subroutine ed_opspec_misc
    use canopy_air_coms       , only : icanturb                     & ! intent(in)
                                     , i_blyr_condct                & ! intent(in)
                                     , isfclyrm                     & ! intent(in)
+                                    , ied_grndvap                  & ! intent(in)
                                     , ustmin                       & ! intent(in)
                                     , ggfact                       & ! intent(in)
                                     , gamm                         & ! intent(in)
                                     , gamh                         & ! intent(in)
                                     , tprandtl                     & ! intent(in)
                                     , vh2vr                        & ! intent(in)
-                                    , vh2dh                        ! ! intent(in)
+                                    , vh2dh                        & ! intent(in)
+                                    , ribmax                       & ! intent(in)
+                                    , leaf_maxwhc                  ! ! intent(in)
    use soil_coms             , only : ed_nstyp                     & ! intent(in)
                                     , isoilflg                     & ! intent(in)
                                     , nslcon                       & ! intent(in)
@@ -1044,13 +1047,16 @@ subroutine ed_opspec_misc
                                     , maxpatch                     & ! intent(in)
                                     , maxcohort                    ! ! intent(in)
    use grid_coms             , only : ngrids                       ! ! intent(in)
-   use physiology_coms       , only : istoma_scheme                & ! intent(in)
+   use physiology_coms       , only : iphysiol                     & ! intent(in)
+                                    , istoma_scheme                & ! intent(in)
                                     , h2o_plant_lim                & ! intent(in)
                                     , n_plant_lim                  & ! intent(in)
                                     , vmfact                       & ! intent(in)
                                     , mfact                        & ! intent(in)
                                     , kfact                        & ! intent(in)
                                     , gamfact                      & ! intent(in)
+                                    , d0fact                       & ! intent(in)
+                                    , alphafact                    & ! intent(in)
                                     , lwfact                       & ! intent(in)
                                     , thioff                       & ! intent(in)
                                     , quantum_efficiency_T         ! ! intent(in)
@@ -1068,14 +1074,14 @@ subroutine ed_opspec_misc
                                     , pft_1st_check                & ! intent(in)
                                     , agri_stock                   & ! intent(in)
                                     , plantation_stock             ! ! intent(in)
-   use canopy_radiation_coms , only : crown_mod                    ! ! intent(in)
+   use canopy_layer_coms     , only : crown_mod                    ! ! intent(in)
    use rk4_coms              , only : ibranch_thermo               & ! intent(in)
                                     , ipercol                      & ! intent(in)
                                     , rk4_tolerance                ! ! intent(in)
-
 #if defined(COUPLED)
 #else
-   use met_driver_coms, only : ishuffle
+   use met_driver_coms       , only : ishuffle                     & ! intent(in)
+                                    , imetavg                      ! ! intent(in)
 #endif
 
    implicit none
@@ -1295,9 +1301,9 @@ end do
       ifaterr = ifaterr +1
    end if
 
-   if (isoilbc < 0 .or. isoilbc > 3) then
+   if (isoilbc < 0 .or. isoilbc > 4) then
       write (reason,fmt='(a,1x,i4,a)')                                                     &
-        'Invalid ISOILBC, it must be between 0 and 3. Yours is set to',isoilbc,'...'
+        'Invalid ISOILBC, it must be between 0 and 4. Yours is set to',isoilbc,'...'
       call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
    end if
@@ -1339,6 +1345,14 @@ end do
    end select
    !---------------------------------------------------------------------------------------!
 
+   if (iphysiol < 0 .or. iphysiol > 3) then
+      write (reason,fmt='(a,1x,i4,a)')                                                     &
+                    'Invalid IPHYSIOL, it must be between 0 and 3. Yours is set to'        &
+                    ,iphysiol,'...'
+      call opspec_fatal(reason,'opspec_misc')
+      ifaterr = ifaterr +1
+   end if
+
    if (istoma_scheme < 0 .or. istoma_scheme > 1) then
       write (reason,fmt='(a,1x,i4,a)')                                                     &
                     'Invalid ISTOMA_SCHEME, it must be between 0 and 1. Yours is set to'   &
@@ -1347,9 +1361,9 @@ end do
       ifaterr = ifaterr +1
    end if
 
-   if (iallom < 0 .or. iallom > 1) then
+   if (iallom < 0 .or. iallom > 4) then
       write (reason,fmt='(a,1x,i4,a)')                                                     &
-                    'Invalid IALLOM, it must be between 0 and 1. Yours is set to'          &
+                    'Invalid IALLOM, it must be between 0 and 4. Yours is set to'          &
                     ,iallom,'...'
       call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
@@ -1414,6 +1428,22 @@ end do
       write (reason,fmt='(a,1x,es12.5,a)')                                                 &
                     'Invalid GAMFACT, it must be between 0 and 100. Yours is set to'       &
                     ,gamfact,'...'
+      call opspec_fatal(reason,'opspec_misc')
+      ifaterr = ifaterr +1
+   end if
+   
+   if (d0fact < 0.01 .or. d0fact > 100.) then
+      write (reason,fmt='(a,1x,es12.5,a)')                                                 &
+                    'Invalid D0FACT, it must be between 0.01 and 100. Yours is set to'     &
+                    ,d0fact,'...'
+      call opspec_fatal(reason,'opspec_misc')
+      ifaterr = ifaterr +1
+   end if
+   
+   if (alphafact < 0.1 .or. d0fact > 10.) then
+      write (reason,fmt='(a,1x,es12.5,a)')                                                 &
+                    'Invalid ALPHAFACT, it must be between 0.1 and 10. Yours is set to'    &
+                    ,alphafact,'...'
       call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
    end if
@@ -1490,11 +1520,11 @@ end do
    end if
 
    select case (icanturb)
-   case (-2:3)
+   case (0:3)
       continue
    case default
       write (reason,fmt='(a,1x,i4,a)') &
-        'Invalid ICANTURB, it must be between -2 and 3. Yours is set to',icanturb,'...'
+        'Invalid ICANTURB, it must be between 0 and 3. Yours is set to',icanturb,'...'
       call opspec_fatal(reason,'opspec_misc')  
       ifaterr = ifaterr +1
    end select
@@ -1514,9 +1544,17 @@ end do
       ifaterr = ifaterr +1
    end if
 
-   if (ipercol < 0 .or. ipercol > 1) then
+   if (ied_grndvap < 0 .or. ied_grndvap > 4) then
+      write (reason,fmt='(a,1x,i4,a)') &
+        'Invalid IED_GRNDVAP, it must be between 0 and 4.  Yours is set to',ied_grndvap    &
+       ,'...'
+      call opspec_fatal(reason,'opspec_misc')  
+      ifaterr = ifaterr +1
+   end if
+
+   if (ipercol < 0 .or. ipercol > 2) then
       write (reason,fmt='(a,1x,i4,a)')                                                     &
-        'Invalid IPERCOL, it must be either 0 or 1. Yours is set to',ipercol,'...'
+        'Invalid IPERCOL, it must be between 0 and 2. Yours is set to',ipercol,'...'
       call opspec_fatal(reason,'opspec_misc')  
       ifaterr = ifaterr +1
    end if
@@ -1641,14 +1679,6 @@ end do
     
    
     
-   if (Time2Canopy < 0.0) then
-      write (reason,fmt='(a,1x,es14.7,a)')                                                 &
-             'Invalid TIME2CANOPY, it can''t be negative.  Yours is set to'  &
-             ,Time2Canopy,'...'
-      call opspec_fatal(reason,'opspec_misc')
-      ifaterr = ifaterr +1
-   end if
-       
    if (runoff_time < 0.0) then
       write (reason,fmt='(a,1x,es14.7,a)')                                                 &
             'Invalid RUNOFF_TIME, it can''t be negative. Yours is set to',runoff_time,'...'
@@ -1720,6 +1750,22 @@ end do
       ifaterr = ifaterr +1
    end if
 
+   if (ribmax < 0.01 .or. ribmax > 20.) then
+      write (reason,fmt='(a,1x,es14.7,a)')                                                 &
+            'Invalid RIBMAX, it must be between 0.01 and 20..  Yours is set to'            &
+           ,ribmax,'...'
+      call opspec_fatal(reason,'opspec_misc')  
+      ifaterr = ifaterr +1
+   end if
+
+   if (leaf_maxwhc < 0.0 .or. leaf_maxwhc > 10.) then
+      write (reason,fmt='(a,1x,es14.7,a)')                                                 &
+            'Invalid LEAF_MAXWHC, it must be between 0.0 and 10..  Yours is set to'        &
+           ,leaf_maxwhc,'...'
+      call opspec_fatal(reason,'opspec_misc')  
+      ifaterr = ifaterr +1
+   end if
+
 #if defined(COUPLED)
 #else
    if (ishuffle < 0 .and. ishuffle > 2) then
@@ -1729,6 +1775,14 @@ end do
       ifaterr = ifaterr +1
       call opspec_fatal(reason,'opspec_misc')
    end if
+   if (imetavg < 0 .and. imetavg > 3) then
+      write (reason,fmt='(a,1x,i4,a)')                                                     &
+                    'Invalid IMETAVG, it must be between 0 and 3.  Yours is set to'        &
+                    ,imetavg,'...'
+      ifaterr = ifaterr +1
+      call opspec_fatal(reason,'opspec_misc')
+   end if
+
 #endif
 
    !----- Stop the run if there are any fatal errors. -------------------------------------!
@@ -1736,8 +1790,8 @@ end do
       write (unit=*,fmt='(a)')       ' -----------ED_OPSPEC_MISC --------------------------'
       write (unit=*,fmt='(a,1x,i5)') ' Fatal errors:',ifaterr
       write (unit=*,fmt='(a)')       ' ----------------------------------------------------'
-      call fatal_error('Fatal errors at namelist - Misc settings '&
-                     & ,'ed_opspec_misc','ed_opspec.f90')
+      call fatal_error('Fatal errors at namelist - Misc settings '                         &
+                      ,'ed_opspec_misc','ed_opspec.f90')
    end if
 
    return

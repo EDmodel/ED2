@@ -6,8 +6,7 @@
 !------------------------------------------------------------------------------------------!
 subroutine init_ed_cohort_vars(cpatch,ico, lsl)
    use ed_state_vars , only : patchtype           ! ! structure
-   use allometry     , only : calc_root_depth     & ! function
-                            , assign_root_depth   ! ! function
+   use allometry     , only : dbh2krdepth         ! ! function
    use pft_coms      , only : leaf_turnover_rate  & ! intent(in)
                             , Vm0                 & ! intent(in)
                             , sla                 ! ! intent(in)
@@ -23,8 +22,6 @@ subroutine init_ed_cohort_vars(cpatch,ico, lsl)
    type(patchtype), target     :: cpatch     ! Current patch
    integer        , intent(in) :: ico        ! Index of the current cohort
    integer        , intent(in) :: lsl        ! Lowest soil level layer
-   !----- Local variables. ----------------------------------------------------------------!
-   real                        :: root_depth ! Root depth.
    !---------------------------------------------------------------------------------------!
 
 
@@ -60,8 +57,6 @@ subroutine init_ed_cohort_vars(cpatch,ico, lsl)
    cpatch%light_level_diff(ico)  = 0.0
    cpatch%beamext_level   (ico)  = 0.0
    cpatch%diffext_level   (ico)  = 0.0
-   cpatch%norm_par_beam   (ico)  = 0.0
-   cpatch%norm_par_diff   (ico)  = 0.0
    cpatch%lambda_light(ico)      = 0.0
 
    cpatch%gpp(ico)                 = 0.0
@@ -164,8 +159,7 @@ subroutine init_ed_cohort_vars(cpatch,ico, lsl)
    !---------------------------------------------------------------------------------------!
    !      The root depth should be the actual level for the roots.                         !
    !---------------------------------------------------------------------------------------!
-   root_depth          = calc_root_depth(cpatch%hite(ico),cpatch%dbh(ico), cpatch%pft(ico))
-   cpatch%krdepth(ico) = assign_root_depth(root_depth, lsl)
+   cpatch%krdepth(ico) = dbh2krdepth(cpatch%hite(ico),cpatch%dbh(ico),cpatch%pft(ico),lsl)
    !---------------------------------------------------------------------------------------!
 
 
@@ -230,8 +224,6 @@ subroutine init_ed_cohort_vars(cpatch,ico, lsl)
       cpatch%mmean_light_level_diff (ico) = 0.0
       cpatch%mmean_beamext_level    (ico) = 0.0
       cpatch%mmean_diffext_level    (ico) = 0.0
-      cpatch%mmean_norm_par_beam    (ico) = 0.0
-      cpatch%mmean_norm_par_diff    (ico) = 0.0
       cpatch%mmean_fs_open          (ico) = 0.0
       cpatch%mmean_fsw              (ico) = 0.0
       cpatch%mmean_fsn              (ico) = 0.0
@@ -272,8 +264,6 @@ subroutine init_ed_cohort_vars(cpatch,ico, lsl)
       cpatch%dmean_light_level_diff (ico) = 0.0
       cpatch%dmean_beamext_level    (ico) = 0.0
       cpatch%dmean_diffext_level    (ico) = 0.0
-      cpatch%dmean_norm_par_beam    (ico) = 0.0
-      cpatch%dmean_norm_par_diff    (ico) = 0.0
       cpatch%dmean_fsw              (ico) = 0.0
       cpatch%dmean_fsn              (ico) = 0.0
       cpatch%dmean_fs_open          (ico) = 0.0
@@ -428,6 +418,10 @@ subroutine init_ed_patch_vars(csite,ip1,ip2,lsl)
    csite%today_A_decomp(ip1:ip2) = 0.0
    csite%today_Af_decomp(ip1:ip2) = 0.0
 
+   csite%par_v_max        (ip1:ip2) = 0.0
+   csite%par_v_beam_max   (ip1:ip2) = 0.0
+   csite%par_v_diffuse_max(ip1:ip2) = 0.0
+
    csite%repro(1:n_pft,ip1:ip2) = 0.0
    csite%A_o_max(1:n_pft,ip1:ip2) = 0.0
    csite%A_c_max(1:n_pft,ip1:ip2) = 0.0
@@ -574,6 +568,7 @@ subroutine init_ed_patch_vars(csite,ip1,ip2,lsl)
    csite%ggbare(ip1:ip2) = 0.0
    csite%ggveg (ip1:ip2) = 0.0
    csite%ggnet (ip1:ip2) = 0.0
+   csite%ggsoil(ip1:ip2) = 0.0
 
    csite%old_stoma_data_max(:,ip1:ip2)%recalc = 1
    csite%old_stoma_data_max(:,ip1:ip2)%T_L = 0.0
@@ -859,7 +854,7 @@ subroutine new_patch_sfc_props(csite,ipa,mzg,mzs,ntext_soil)
                   ,csite%soil_fracliq(mzg,ipa),csite%sfcwater_tempk(k,ipa)                 &
                   ,csite%sfcwater_fracliq(k,ipa),csite%can_prss(ipa)                       &
                   ,csite%can_shv(ipa),csite%ground_shv(ipa),csite%ground_ssh(ipa)          &
-                  ,csite%ground_temp(ipa),csite%ground_fliq(ipa))
+                  ,csite%ground_temp(ipa),csite%ground_fliq(ipa),csite%ggsoil(ipa))
    !---------------------------------------------------------------------------------------! 
 
    return

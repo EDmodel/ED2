@@ -220,7 +220,7 @@ end subroutine odeint
 !------------------------------------------------------------------------------------------!
 subroutine copy_met_2_rk4site(mzg,vels,atm_theiv,atm_theta,atm_tmp,atm_shv,atm_co2,zoff    &
                              ,exner,pcpg,qpcpg,dpcpg,prss,rshort,rlong,geoht,lsl           &
-                             ,ntext_soil,green_leaf_factor,lon,lat)
+                             ,ntext_soil,green_leaf_factor,lon,lat,cosz)
    use ed_max_dims    , only : n_pft         ! ! intent(in)
    use rk4_coms       , only : rk4site       ! ! structure
    use canopy_air_coms, only : ubmin8        ! ! intent(in)
@@ -249,6 +249,7 @@ subroutine copy_met_2_rk4site(mzg,vels,atm_theiv,atm_theta,atm_tmp,atm_shv,atm_c
    real   , dimension(n_pft), intent(in) :: green_leaf_factor
    real                     , intent(in) :: lon
    real                     , intent(in) :: lat
+   real                     , intent(in) :: cosz
    !----- Local variables. ----------------------------------------------------------------!
    integer             :: ipft
    !---------------------------------------------------------------------------------------!
@@ -276,6 +277,7 @@ subroutine copy_met_2_rk4site(mzg,vels,atm_theiv,atm_theta,atm_tmp,atm_shv,atm_c
    rk4site%geoht                 = dble(geoht               )
    rk4site%lon                   = dble(lon                 )
    rk4site%lat                   = dble(lat                 )
+   rk4site%cosz                  = dble(cosz                )
    rk4site%green_leaf_factor(:)  = dble(green_leaf_factor(:))
    !---------------------------------------------------------------------------------------!
 
@@ -481,7 +483,7 @@ subroutine get_yscal(y,dy,htry,yscal,cpatch)
                                    , huge_offset           & ! intent(in)
                                    , rk4water_stab_thresh  & ! intent(in)
                                    , rk4tiny_sfcw_mass     & ! intent(in)
-                                   , rk4dry_veg_lwater     & ! intent(in)
+                                   , rk4leaf_drywhc        & ! intent(in)
                                    , checkbudget           ! ! intent(in)
    use grid_coms            , only : nzg                   & ! intent(in)
                                    , nzs                   ! ! intent(in)
@@ -648,7 +650,7 @@ subroutine get_yscal(y,dy,htry,yscal,cpatch)
          yscal%veg_energy(ico) = abs(y%veg_energy(ico)) + abs(dy%veg_energy(ico) * htry)
          yscal%veg_temp(ico)   = abs(y%veg_temp(ico))
          yscal%veg_water(ico)  = max(abs(y%veg_water(ico)) + abs(dy%veg_water(ico) * htry) &
-                                    ,rk4dry_veg_lwater * y%tai(ico))
+                                    ,rk4leaf_drywhc * y%tai(ico))
       else
          yscal%veg_water(ico)  = huge_offset
          yscal%veg_energy(ico) = huge_offset
@@ -1042,18 +1044,11 @@ subroutine copy_rk4_patch(sourcep, targetp, cpatch)
    targetp%cwd_rh           = sourcep%cwd_rh
    targetp%rh               = sourcep%rh
 
-   do k=rk4site%lsl,nzg
-      
+   do k=rk4site%lsl,nzg      
       targetp%soil_water            (k) = sourcep%soil_water            (k)
       targetp%soil_energy           (k) = sourcep%soil_energy           (k)
       targetp%soil_tempk            (k) = sourcep%soil_tempk            (k)
       targetp%soil_fracliq          (k) = sourcep%soil_fracliq          (k)
-      targetp%available_liquid_water(k) = sourcep%available_liquid_water(k)
-      targetp%extracted_water       (k) = sourcep%extracted_water       (k)
-      targetp%psiplusz              (k) = sourcep%psiplusz              (k)
-      targetp%soilair99             (k) = sourcep%soilair99             (k)
-      targetp%soilair01             (k) = sourcep%soilair01             (k)
-      targetp%soil_liq              (k) = sourcep%soil_liq              (k)
    end do
 
    targetp%nlev_sfcwater   = sourcep%nlev_sfcwater
@@ -1198,7 +1193,8 @@ end subroutine copy_rk4_patch
 ! and initialize it as well.                                                               !
 !------------------------------------------------------------------------------------------!
 subroutine initialize_rk4patches(init)
-
+   use soil_coms     , only : nzg                   & ! intent(in)
+                            , nzs                   ! ! intent(in)
    use ed_state_vars , only : edgrid_g              & ! intent(inout)
                             , edtype                & ! structure
                             , polygontype           & ! structure
@@ -1207,7 +1203,8 @@ subroutine initialize_rk4patches(init)
    use rk4_coms      , only : integration_buff      & ! structure
                             , deallocate_rk4_coh    & ! structure
                             , allocate_rk4_patch    & ! structure
-                            , allocate_rk4_coh      ! ! structure
+                            , allocate_rk4_coh      & ! structure
+                            , allocate_rk4_aux      ! ! structure
    use ed_misc_coms  , only : integration_scheme    ! ! intent(in)
    use grid_coms     , only : ngrids                ! ! intent(in)
    implicit none
@@ -1242,6 +1239,10 @@ subroutine initialize_rk4patches(init)
       call allocate_rk4_patch(integration_buff%dydx  )
       call allocate_rk4_patch(integration_buff%yerr  )
       call allocate_rk4_patch(integration_buff%ytemp )
+
+      !------ Allocate and initialise the auxiliary structure. ----------------------------!
+      call allocate_rk4_aux(nzg,nzs)
+
 
       !------------------------------------------------------------------------------------!
       !     The following structures are allocated/deallocated depending on the            !

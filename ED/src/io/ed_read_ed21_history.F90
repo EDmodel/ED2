@@ -16,6 +16,7 @@ subroutine read_ed21_history_file
                              , q                       & ! intent(in)
                              , qsw                     & ! intent(in)
                              , hgt_min                 & ! intent(in)
+                             , is_grass                & ! intent(in)
                              , include_pft             & ! intent(in)
                              , include_pft_ag          & ! intent(in)
                              , phenology               & ! intent(in)
@@ -600,7 +601,7 @@ subroutine read_ed21_history_file
                         ! if this is a valid PFT.  If not, then we must decide what we     !
                         ! should do...                                                     !
                         !------------------------------------------------------------------!
-                        if (include_pft(cpatch%pft(ico)) == 0) then
+                        if (.not. include_pft(cpatch%pft(ico))) then
                            select case(pft_1st_check)
                            case (0)
                               !----- Stop the run. ----------------------------------------!
@@ -616,13 +617,13 @@ subroutine read_ed21_history_file
                               write (unit=*,fmt='(a,1x,i5,1x,a)')                          &
                                     'I found a cohort with PFT=',cpatch%pft(ico)           &
                                    ,'... Including this PFT in your include_these_pft...'
-                              include_pft(cpatch%pft(ico))        = 1
-                              include_these_pft(sum(include_pft)) = cpatch%pft(ico)
+                              include_pft(cpatch%pft(ico))          = .true.
+                              include_these_pft(count(include_pft)) = cpatch%pft(ico)
 
                               call sort_up(include_these_pft,n_pft)
 
-                              if (cpatch%pft(ico) == 1 .or. cpatch%pft(ico) == 5) then
-                                 include_pft_ag(cpatch%pft(ico)) = 1
+                              if (is_grass(cpatch%pft(ico))) then
+                                 include_pft_ag(cpatch%pft(ico)) = .true.
                               end if
 
                            case (2)
@@ -798,6 +799,7 @@ subroutine read_ed21_history_unstruct
                              , q                       & ! intent(in)
                              , qsw                     & ! intent(in)
                              , hgt_min                 & ! intent(in)
+                             , is_grass                & ! intent(in)
                              , include_pft             & ! intent(in)
                              , include_pft_ag          & ! intent(in)
                              , phenology               & ! intent(in)
@@ -1599,7 +1601,7 @@ subroutine read_ed21_history_unstruct
                            ! if this is a valid PFT.  If not, then we must decide what we  !
                            ! should do...                                                  !
                            !---------------------------------------------------------------!
-                           if (include_pft(cpatch%pft(ico)) == 0) then
+                           if (.not. include_pft(cpatch%pft(ico))) then
                               select case(pft_1st_check)
                               case (0)
                                  !----- Stop the run. -------------------------------------!
@@ -1615,13 +1617,13 @@ subroutine read_ed21_history_unstruct
                                  write (unit=*,fmt='(a,1x,i5,1x,a)')                       &
                                       'I found a cohort with PFT=',cpatch%pft(ico)         &
                                      ,'... Including this PFT in your include_these_pft...'
-                                 include_pft(cpatch%pft(ico))        = 1
-                                 include_these_pft(sum(include_pft)) = cpatch%pft(ico)
+                                 include_pft(cpatch%pft(ico))          = .true.
+                                 include_these_pft(count(include_pft)) = cpatch%pft(ico)
 
                                  call sort_up(include_these_pft,n_pft)
 
-                                 if (cpatch%pft(ico) == 1 .or. cpatch%pft(ico) == 5) then
-                                    include_pft_ag(cpatch%pft(ico)) = 1
+                                 if (is_grass(cpatch%pft(ico))) then
+                                    include_pft_ag(cpatch%pft(ico)) = .true.
                                  end if
 
                               case (2)

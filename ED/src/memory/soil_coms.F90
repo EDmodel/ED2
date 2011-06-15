@@ -67,6 +67,8 @@ module soil_coms
    real         :: tiny_sfcwater_mass  ! Min. mass allowed in temporary layers   [   kg/m2]
    real         :: snowmin             ! Min. snow mass needed to create new lyr [   kg/m2]
    integer      :: infiltration_method ! Infiltration scheme (for rk4_derivs)    [     0|1]
+   real         :: freezecoef          ! Coeff. for infiltration of frozen water [     ---]
+   real(kind=8) :: freezecoef8         ! Coeff. for infiltration of frozen water [     ---]
    !---------------------------------------------------------------------------------------!
 
 
@@ -238,28 +240,28 @@ module soil_coms
       implicit none
 
 
-      allocate (slcons1(nzg,ed_nstyp))
+      allocate (slcons1(0:nzg,ed_nstyp))
 
-      allocate (slz8     (nzg))
-      allocate (dslz     (nzg))
-      allocate (dslzo2   (nzg))
-      allocate (dslzi    (nzg))
-      allocate (dslzidt  (nzg))
-      allocate (slzt     (nzg))
-      allocate (dslzt    (nzg))
-      allocate (dslzti   (nzg))
-      allocate (dslztidt (nzg))
+      allocate (slz8     (  nzg))
+      allocate (dslz     (  nzg))
+      allocate (dslzo2   (  nzg))
+      allocate (dslzi    (  nzg))
+      allocate (dslzidt  (  nzg))
+      allocate (slzt     (0:nzg))
+      allocate (dslzt    (  nzg))
+      allocate (dslzti   (  nzg))
+      allocate (dslztidt (  nzg))
 
-      allocate (slcons18(nzg,ed_nstyp))
+      allocate (slcons18(0:nzg,ed_nstyp))
 
-      allocate (dslz8     (nzg))
-      allocate (dslzo28   (nzg))
-      allocate (dslzi8    (nzg))
-      allocate (dslzidt8  (nzg))
-      allocate (slzt8     (nzg))
-      allocate (dslzt8    (nzg))
-      allocate (dslzti8   (nzg))
-      allocate (dslztidt8 (nzg))
+      allocate (dslz8     (  nzg))
+      allocate (dslzo28   (  nzg))
+      allocate (dslzi8    (  nzg))
+      allocate (dslzidt8  (  nzg))
+      allocate (slzt8     (0:nzg))
+      allocate (dslzt8    (  nzg))
+      allocate (dslzti8   (  nzg))
+      allocate (dslztidt8 (  nzg))
 
       return
    end subroutine alloc_soilgrid
@@ -364,6 +366,48 @@ module soil_coms
    end function find_soil_class
    !=======================================================================================!
    !=======================================================================================!
-end Module soil_coms
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !      This sub-routines converts the soil moisture index into soil moisture.           !
+   !  This scale is piece-wise linear, and dependent on the soil texture.                  !
+   !  -1. = dry air soil moisture (soilcp)                                                 !
+   !   0. = wilting point         (soilwp)                                                 !
+   !   1. = field capacity        (sfldcap)                                                !
+   !   2. = porosity/saturation   (slmsts)                                                 !
+   !---------------------------------------------------------------------------------------!
+   real(kind=4) function ed_soil_idx2water(soil_index,ntext)
+      implicit none
+      !----- Arguments. -------------------------------------------------------------------!
+      real(kind=4), intent(in) :: soil_index
+      integer     , intent(in) :: ntext
+      !----- Local variables. -------------------------------------------------------------!
+      real(kind=4)             :: soil_water
+      !------------------------------------------------------------------------------------!
+
+
+      if (soil_index < 0.0) then
+         soil_water = soil(ntext)%soilcp                                                   &
+                    + (soil_index + 1.0) * (soil(ntext)%soilwp  - soil(ntext)%soilcp )
+      elseif (soil_index < 1.0) then
+         soil_water = soil(ntext)%soilwp                                                   &
+                    +  soil_index        * (soil(ntext)%sfldcap - soil(ntext)%soilwp )
+      else
+         soil_water = soil(ntext)%sfldcap                                                  &
+                    + (soil_index - 1.0) * (soil(ntext)%slmsts  - soil(ntext)%sfldcap)
+      end if
+
+      ed_soil_idx2water = soil_water
+
+      return
+   end function ed_soil_idx2water
+   !==========================================================================================!
+   !==========================================================================================!
+end module soil_coms
 !==========================================================================================!
 !==========================================================================================!

@@ -8,6 +8,9 @@ Module ed_misc_coms
       integer :: year
       integer :: month
       integer :: date
+      integer :: hour
+      integer :: min
+      integer :: sec
       real    :: time
       integer :: ifirst
    end type simtime

@@ -853,6 +853,7 @@ subroutine read_nl(filename)
                                  , isfcl                   & ! intent(out)
                                  , dtleaf                  & ! intent(out)
                                  , istar                   & ! intent(out)
+                                 , igrndvap                & ! intent(out)
                                  , nslcon                  & ! intent(out)
                                  , nvegpat                 & ! intent(out)
                                  , nvgcon                  & ! intent(out)
@@ -873,7 +874,9 @@ subroutine read_nl(filename)
                                  , tprandtl                & ! intent(out)
                                  , vkopr                   & ! intent(out)
                                  , vh2vr                   & ! intent(out)
-                                 , vh2dh                   ! ! intent(out)
+                                 , vh2dh                   & ! intent(out)
+                                 , ribmax                  & ! intent(out)
+                                 , leaf_maxwhc             ! ! intent(out)
    use mem_oda            , only : frqoda                  & ! intent(out)
                                  , if_oda                  & ! intent(out)
                                  , oda_sfc_tel             & ! intent(out)
@@ -1109,15 +1112,16 @@ subroutine read_nl(filename)
 
    namelist /MODEL_OPTIONS/       naddsc,icorflg,iexev,imassflx,ibnd,jbnd,cphas,lsflg,nfpt &
                                  ,distim,iswrtyp,ilwrtyp,icumfdbk,radfrq,lonrad,npatch     &
-                                 ,nvegpat,isfcl,dtleaf,istar,ustmin,gamm,gamh,tprandtl     &
-                                 ,vh2vr,vh2dh,ico2,co2con,nvgcon,pctlcon,nslcon,drtcon     &
-                                 ,zrough,albedo,seatmp,dthcon,soil_moist,soil_moist_fail   &
-                                 ,usdata_in,usmodel_in,slz,slmstr,stgoff,betapower,ggfact  &
-                                 ,isoilbc,ipercol,runoff_time,if_urban_canopy,idiffk       &
-                                 ,ibruvais,ibotflx,ihorgrad,csx,csz,xkhkm,zkhkm,nna,nnb    &
-                                 ,nnc,akmin,akmax,hgtmin,hgtmax,level,icloud,irain,ipris   &
-                                 ,isnow,iaggr,igraup,ihail,cparm,rparm,pparm,sparm,aparm   &
-                                 ,gparm,hparm,gnu
+                                 ,nvegpat,isfcl,dtleaf,istar,igrndvap,ustmin,gamm,gamh     &
+                                 ,tprandtl,vh2vr,vh2dh,ribmax,leaf_maxwhc,ico2,co2con      &
+                                 ,nvgcon,pctlcon,nslcon,drtcon,zrough,albedo,seatmp,dthcon &
+                                 ,soil_moist,soil_moist_fail,usdata_in,usmodel_in,slz      &
+                                 ,slmstr,stgoff,betapower,ggfact,isoilbc,ipercol           &
+                                 ,runoff_time,if_urban_canopy,idiffk,ibruvais,ibotflx      &
+                                 ,ihorgrad,csx,csz,xkhkm,zkhkm,nna,nnb,nnc,akmin,akmax     &
+                                 ,hgtmin,hgtmax,level,icloud,irain,ipris,isnow,iaggr       &
+                                 ,igraup,ihail,cparm,rparm,pparm,sparm,aparm,gparm,hparm   &
+                                 ,gnu
 
    namelist /MODEL_SOUND/         ipsflg,itsflg,irtsflg,iusflg,hs,ps,ts,rts,us,vs,co2s
 
@@ -1769,12 +1773,15 @@ subroutine read_nl(filename)
       write (unit=*,fmt=*) ' isfcl           =',isfcl
       write (unit=*,fmt=*) ' dtleaf          =',dtleaf
       write (unit=*,fmt=*) ' istar           =',istar
+      write (unit=*,fmt=*) ' igrndvap        =',igrndvap
       write (unit=*,fmt=*) ' ustmin          =',ustmin
       write (unit=*,fmt=*) ' gamm            =',gamm
       write (unit=*,fmt=*) ' gamh            =',gamh
       write (unit=*,fmt=*) ' tprandtl        =',tprandtl
       write (unit=*,fmt=*) ' vh2vr           =',vh2vr
       write (unit=*,fmt=*) ' vh2dh           =',vh2dh
+      write (unit=*,fmt=*) ' ribmax          =',ribmax
+      write (unit=*,fmt=*) ' leaf_maxwhc     =',leaf_maxwhc
       write (unit=*,fmt=*) ' ico2            =',ico2
       write (unit=*,fmt=*) ' co2con          =',co2con
       write (unit=*,fmt=*) ' nvgcon          =',nvgcon
