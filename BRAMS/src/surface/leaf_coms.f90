@@ -26,15 +26,16 @@ module leaf_coms
                        , twothirds ! ! intent(in)
 
    !----- Parameters that are initialised from RAMSIN. ------------------------------------! 
-   real    :: ustmin      ! Minimum ustar                                       [      m/s]
-   real    :: ggfact      ! Factor to multiply the ground->canopy conductance.
-   real    :: gamm        ! Gamma used by Businger et al. (1971) - momentum.
-   real    :: gamh        ! Gamma used by Businger et al. (1971) - heat.
-   real    :: tprandtl    ! Turbulent Prandtl number.
-   real    :: vh2vr       ! Vegetation roughness:vegetation height ratio
-   real    :: vh2dh       ! Displacement height:vegetation height ratio
-   real    :: ribmax      ! Maximum bulk Richardson number
-   real    :: leaf_maxwhc ! Leaf maximum water holding capacity                 [kg/m2leaf]
+   real    :: ustmin          ! Minimum ustar                                   [      m/s]
+   real    :: ggfact          ! Factor to multiply ground->canopy conductance.
+   real    :: gamm            ! Gamma used by Businger et al. (1971) - momentum.
+   real    :: gamh            ! Gamma used by Businger et al. (1971) - heat.
+   real    :: tprandtl        ! Turbulent Prandtl number.
+   real    :: vh2vr           ! Vegetation roughness:vegetation height ratio
+   real    :: vh2dh           ! Displacement height:vegetation height ratio
+   real    :: ribmax          ! Maximum bulk Richardson number
+   real    :: leaf_maxwhc     ! Leaf maximum water holding capacity             [kg/m2leaf]
+   real    :: min_patch_area  !  Minimum patch area to consider
    !---------------------------------------------------------------------------------------!
 
 
@@ -224,10 +225,6 @@ module leaf_coms
 
    !----- Other variables -----------------------------------------------------------------!
    real                             :: cmin,corg,cwat,cair,cka,ckw
-   !---------------------------------------------------------------------------------------!
-
-   !----- Minimum patch area to consider. -------------------------------------------------!
-   real, parameter :: tiny_parea     = 0.001   
    !---------------------------------------------------------------------------------------!
 
    !----- Roughness -----------------------------------------------------------------------!

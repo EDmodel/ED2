@@ -262,7 +262,7 @@ end
 subroutine varf_file_inv (varpref,iyear1,imonth1,idate1,itime1)
 
 use mem_varinit
-
+use grid_dims, only : str_len
 implicit none
 
 character(len=*) :: varpref
@@ -272,8 +272,9 @@ integer :: nc,nf,lnf,nvftot
 integer :: inyear,inmonth,indate,inhour
 
 
-character(len=128), dimension(maxnudfiles) :: fnames
-character(len=128) :: vpref
+character(len=str_len), dimension(maxnudfiles) :: fnames
+character(len=str_len) :: vpref
+character(len=str_len) :: thisfile
 character(len=14)  :: itotdate
 real(kind=8) :: secs_init,secs_varf
 
@@ -286,9 +287,8 @@ call date_abs_secs2(iyear1,imonth1,idate1,itime1*100,secs_init)
 nc=len_trim(varpref)
 nvftot=-1
 vpref=varpref
-
-call RAMS_filelist(fnames,trim(vpref)  &
-         //'*.tag',nvftot)
+thisfile = trim(vpref)//'*.tag'
+call RAMS_filelist(fnames,thisfile,nvftot)
 
 if(nvftot > maxnudfiles) then
    print*,'too many varf files',nvftot,maxnudfiles

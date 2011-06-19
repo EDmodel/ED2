@@ -324,6 +324,7 @@ subroutine spatial_averages
                                     , qtk                & ! subroutine
                                     , idealdenssh        ! ! function
    use soil_coms             , only : tiny_sfcwater_mass & ! intent(in)
+                                    , isoilbc            & ! intent(in)
                                     , soil               & ! intent(in)
                                     , dslz               ! ! intent(in)
    use c34constants          , only : n_stoma_atts       ! ! intent(in)
@@ -354,6 +355,7 @@ subroutine spatial_averages
    real                           :: snowarea
    real                           :: dslzsum_i
    real                           :: rdepth
+   real                           :: soil_mstpot
    !---------------------------------------------------------------------------------------!
 
    !----- Time scale for output.  We will use the inverse more often. ---------------------!
@@ -513,6 +515,10 @@ subroutine spatial_averages
             cpoly%avg_soil_water(:,isi)  = matmul(csite%soil_water     ,csite%area)        &
                                          * site_area_i
 
+            !------------------------------------------------------------------------------!
+            !     Initialise soil moisture potential.                                      !
+            !------------------------------------------------------------------------------!
+            cpoly%avg_soil_mstpot(:,isi) = 0.0
 
             do k=cpoly%lsl(isi),nzg
                !---------------------------------------------------------------------------!
@@ -523,6 +529,7 @@ subroutine spatial_averages
                !---------------------------------------------------------------------------!
                site_avg_soil_hcap(k) = 0.
                dslzsum_i = 1./ sum(dslz(cpoly%lsl(isi):nzg))
+
                do ipa=1,csite%npatches
                   nsoil = cpoly%ntext_soil(k,isi)
                   site_avg_soil_hcap(k) = site_avg_soil_hcap(k)                            &
@@ -533,6 +540,14 @@ subroutine spatial_averages
                        + ((csite%soil_water(k,ipa) - soil(nsoil)%soilwp))                  &
                        / (soil(nsoil)%slmsts - soil(nsoil)%soilwp)                         &
                        * dslz(k) * dslzsum_i * csite%area(ipa) * site_area_i
+
+                  !------ Integrate the average soil moisture potential. ------------------!
+                  soil_mstpot = soil(nsoil)%slpots                                         &
+                              * (soil(nsoil)%slmsts / csite%soil_water(k,ipa))             &
+                              ** soil(nsoil)%slbs
+                  cpoly%avg_soil_mstpot(k,isi) = cpoly%avg_soil_mstpot(k,isi)              &
+                                               + soil_mstpot * csite%area(ipa)             &
+                                               * site_area_i
                end do
                !----- Also integrate the polygon-level average. ---------------------------!
                poly_avg_soil_hcap(k) = poly_avg_soil_hcap(k)                               &
@@ -542,14 +557,42 @@ subroutine spatial_averages
                call qwtk(cpoly%avg_soil_energy(k,isi),cpoly%avg_soil_water(k,isi)*wdns     &
                         ,site_avg_soil_hcap(k),cpoly%avg_soil_temp(k,isi)                  &
                         ,cpoly%avg_soil_fracliq(k,isi))
-
-
-                               
             end do
+            
+            !------------------------------------------------------------------------------! 
+            !     For layers beneath the lowest soil level, assign a default soil          !
+            ! potential and soil moisture consistent with the boundary condition.          !
+            !------------------------------------------------------------------------------!
+            select case (isoilbc)
+            case (0,1)
+               !----- Copy the potential from bottommost layer ----------------------------!
+               do k=1,cpoly%lsl(isi)-1
+                  cpoly%avg_soil_mstpot(k,isi) = cpoly%avg_soil_mstpot(cpoly%lsl(isi),isi)
+               end do
+
+            case (2)
+               !----- Super-drainage, assume dry air soil beneath. ------------------------!
+               do k=1,cpoly%lsl(isi)-1
+                  nsoil = cpoly%ntext_soil(k,isi)
+                  if (nsoil /= 13) then
+                     cpoly%avg_soil_mstpot(k,isi) = soil(nsoil)%slpots                     &
+                                                  * ( soil(nsoil)%slmsts                   &
+                                                    / soil(nsoil)%soilcp )                 &
+                                                  ** soil(nsoil)%slbs
+                  end if
+               end do
+            case (3)
+               !----- Aquifer, assume saturated soil moisture. ----------------------------!
+               do k=1,cpoly%lsl(isi)-1
+                  nsoil = cpoly%ntext_soil(k,isi)
+                  cpoly%avg_soil_mstpot(k,isi) = soil(nsoil)%slpots
+               end do
+               !---------------------------------------------------------------------------!
+            end select
             !------------------------------------------------------------------------------!
 
 
-            !------------------------------------------------------------------------------!
+
             !------------------------------------------------------------------------------!
             !    Temporary water/snow layer must be averaged differently, since each patch !
             ! may or may not have the layer, and the number of layers may vary from patch  !
@@ -1047,20 +1090,22 @@ subroutine spatial_averages
          !    Similar to the site level, average mass, heat capacity and energy then find  !
          ! the average temperature and liquid water fraction.                              !
          !---------------------------------------------------------------------------------!
-         cgrid%avg_sensible_gg(:,ipy) = matmul(cpoly%avg_sensible_gg, cpoly%area)          &
-                                      * poly_area_i
-         cgrid%avg_smoist_gg(:,ipy)   = matmul(cpoly%avg_smoist_gg  , cpoly%area)          &
-                                      * poly_area_i
-         cgrid%avg_transloss(:,ipy)   = matmul(cpoly%avg_transloss  , cpoly%area)          &
-                                      * poly_area_i
-         cgrid%aux_s(:,ipy)           = matmul(cpoly%aux_s          , cpoly%area)          &
-                                      * poly_area_i
-         cgrid%avg_soil_energy(:,ipy) = matmul(cpoly%avg_soil_energy, cpoly%area)          &
-                                      * poly_area_i
-         cgrid%avg_soil_water(:,ipy)  = matmul(cpoly%avg_soil_water , cpoly%area)          &
-                                      * poly_area_i
-         cgrid%avg_soil_rootfrac(:,ipy) = matmul(cpoly%avg_soil_water,cpoly%area)          &
-                                      * poly_area_i
+         cgrid%avg_sensible_gg  (:,ipy) = matmul(cpoly%avg_sensible_gg  , cpoly%area)      &
+                                        * poly_area_i
+         cgrid%avg_smoist_gg    (:,ipy) = matmul(cpoly%avg_smoist_gg    , cpoly%area)      &
+                                        * poly_area_i
+         cgrid%avg_transloss    (:,ipy) = matmul(cpoly%avg_transloss    , cpoly%area)      &
+                                        * poly_area_i
+         cgrid%aux_s            (:,ipy) = matmul(cpoly%aux_s            , cpoly%area)      &
+                                        * poly_area_i
+         cgrid%avg_soil_energy  (:,ipy) = matmul(cpoly%avg_soil_energy  , cpoly%area)      &
+                                        * poly_area_i
+         cgrid%avg_soil_water   (:,ipy) = matmul(cpoly%avg_soil_water   , cpoly%area)      &
+                                        * poly_area_i
+         cgrid%avg_soil_mstpot  (:,ipy) = matmul(cpoly%avg_soil_mstpot  , cpoly%area)      &
+                                        * poly_area_i
+         cgrid%avg_soil_rootfrac(:,ipy) = matmul(cpoly%avg_soil_rootfrac, cpoly%area)      &
+                                        * poly_area_i
 
 
          do k=cgrid%lsl(ipy),nzg

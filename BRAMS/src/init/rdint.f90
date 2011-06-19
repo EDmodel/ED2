@@ -876,7 +876,8 @@ subroutine read_nl(filename)
                                  , vh2vr                   & ! intent(out)
                                  , vh2dh                   & ! intent(out)
                                  , ribmax                  & ! intent(out)
-                                 , leaf_maxwhc             ! ! intent(out)
+                                 , leaf_maxwhc             & ! intent(out)
+                                 , min_patch_area          ! ! intent(out)
    use mem_oda            , only : frqoda                  & ! intent(out)
                                  , if_oda                  & ! intent(out)
                                  , oda_sfc_tel             & ! intent(out)
@@ -1112,14 +1113,14 @@ subroutine read_nl(filename)
 
    namelist /MODEL_OPTIONS/       naddsc,icorflg,iexev,imassflx,ibnd,jbnd,cphas,lsflg,nfpt &
                                  ,distim,iswrtyp,ilwrtyp,icumfdbk,radfrq,lonrad,npatch     &
-                                 ,nvegpat,isfcl,dtleaf,istar,igrndvap,ustmin,gamm,gamh     &
-                                 ,tprandtl,vh2vr,vh2dh,ribmax,leaf_maxwhc,ico2,co2con      &
-                                 ,nvgcon,pctlcon,nslcon,drtcon,zrough,albedo,seatmp,dthcon &
-                                 ,soil_moist,soil_moist_fail,usdata_in,usmodel_in,slz      &
-                                 ,slmstr,stgoff,betapower,ggfact,isoilbc,ipercol           &
-                                 ,runoff_time,if_urban_canopy,idiffk,ibruvais,ibotflx      &
-                                 ,ihorgrad,csx,csz,xkhkm,zkhkm,nna,nnb,nnc,akmin,akmax     &
-                                 ,hgtmin,hgtmax,level,icloud,irain,ipris,isnow,iaggr       &
+                                 ,nvegpat,min_patch_area,isfcl,dtleaf,istar,igrndvap       &
+                                 ,ustmin,gamm,gamh,tprandtl,vh2vr,vh2dh,ribmax,leaf_maxwhc &
+                                 ,ico2,co2con,nvgcon,pctlcon,nslcon,drtcon,zrough,albedo   &
+                                 ,seatmp,dthcon,soil_moist,soil_moist_fail,usdata_in       &
+                                 ,usmodel_in,slz,slmstr,stgoff,betapower,ggfact,isoilbc    &
+                                 ,ipercol,runoff_time,if_urban_canopy,idiffk,ibruvais      &
+                                 ,ibotflx,ihorgrad,csx,csz,xkhkm,zkhkm,nna,nnb,nnc,akmin   &
+                                 ,akmax,hgtmin,hgtmax,level,icloud,irain,ipris,isnow,iaggr &
                                  ,igraup,ihail,cparm,rparm,pparm,sparm,aparm,gparm,hparm   &
                                  ,gnu
 
@@ -1770,6 +1771,7 @@ subroutine read_nl(filename)
       write (unit=*,fmt=*) ' lonrad          =',lonrad
       write (unit=*,fmt=*) ' npatch          =',npatch
       write (unit=*,fmt=*) ' nvegpat         =',nvegpat
+      write (unit=*,fmt=*) ' min_patch_area  =',min_patch_area
       write (unit=*,fmt=*) ' isfcl           =',isfcl
       write (unit=*,fmt=*) ' dtleaf          =',dtleaf
       write (unit=*,fmt=*) ' istar           =',istar
@@ -2001,11 +2003,8 @@ subroutine read_nl(filename)
    call date_2_seconds (iyearh,imonthh,idateh,itimeh*100,iyeara,imontha,idatea,itimea*100  &
                        ,timstr)
 
-   !---- If this is a coupled run, make npatch = 2 and nvegpat= 1 -------------------------!
-   if (isfcl == 5) then
-      npatch = 2
-      nvegpat = 1
-   else !---- Not an ED-BRAMS run, and isoilflg/ivegtflg are set to 3, switch them by 1. --!
+   if (isfcl /= 5) then
+      !---- Not an ED-BRAMS run, and isoilflg/ivegtflg are set to 3, switch them by 1. ----!
       where (isoilflg == 3) 
          isoilflg = 1
       end where

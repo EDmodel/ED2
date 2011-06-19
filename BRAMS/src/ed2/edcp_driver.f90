@@ -70,12 +70,6 @@ subroutine ed_coup_driver()
    fast_diagnostics = checkbudget   .or. ifoutput /= 0 .or. idoutput /= 0 .or.             &
                       iqoutput /= 0 .or. imoutput /= 0 .or. ioutput  /= 0 .or.             &
                       iyoutput /= 0
-
-   !---------------------------------------------------------------------------------------!
-   !     Set the ED model parameters.                                                      !
-   !---------------------------------------------------------------------------------------!
-   if (mynum == nnodetot) write (unit=*,fmt='(a)') ' [+] Load_Ed_Ecosystem_Params...'
-   call load_ed_ecosystem_params()
    
    !---------------------------------------------------------------------------------------!
    !     Overwrite the parameters in case a XML file is provided.                          !
@@ -429,7 +423,7 @@ subroutine set_polygon_coordinates_edcp()
          cgrid%lat(ipy)              = work_v(ifm)%glat(ipy)
 
          !----- Soil texture class. -------------------------------------------------------!
-         cgrid%ntext_soil(1:nzg,ipy) = work_v(ifm)%ntext(ipy)
+         cgrid%ntext_soil(1:nzg,ipy) = work_v(ifm)%ntext(1,ipy)
 
 
          !---------------------------------------------------------------------------------!
@@ -470,8 +464,7 @@ end subroutine set_polygon_coordinates_edcp
 subroutine alloc_edcp_driver(ngrds,nmxp,nmyp)
    use mem_edcp , only : ed_fluxf_g        & ! intent(inout)
                        , ed_fluxp_g        & ! intent(inout)
-                       , wgrid_g           & ! intent(inout)
-                       , wgridm_g          & ! intent(inout)
+                       , ed_fluxpm_g       & ! intent(inout)
                        , ed_precip_g       & ! intent(inout)
                        , ed_precipm_g      & ! intent(inout)
                        , alloc_edprecip    & ! sub-routine
@@ -480,8 +473,9 @@ subroutine alloc_edcp_driver(ngrds,nmxp,nmyp)
                        , alloc_edflux      & ! sub-routine
                        , zero_edflux       & ! sub-routine
                        , filltab_edflux    ! ! sub-routine
-   use mem_leaf , only : dtleaf            ! ! intent(in) 
+   use mem_leaf , only : dtleaf            ! ! intent(in)
    use leaf_coms, only : ustmin            ! ! intent(in)
+   use mem_grid , only : npatch            ! ! intent(in)
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
    integer                  , intent(in) :: ngrds
@@ -493,9 +487,8 @@ subroutine alloc_edcp_driver(ngrds,nmxp,nmyp)
 
 
    !----- Allocate the actual structures. -------------------------------------------------!
-   allocate(wgrid_g     (ngrds))
-   allocate(wgridm_g    (ngrds))
    allocate(ed_fluxp_g  (ngrds))
+   allocate(ed_fluxpm_g (ngrds))
    allocate(ed_fluxf_g  (ngrds))
    allocate(ed_precip_g (ngrds))
    allocate(ed_precipm_g(ngrds))
@@ -507,17 +500,15 @@ subroutine alloc_edcp_driver(ngrds,nmxp,nmyp)
    ! the same size as the leaf arrays.                                                     !
    !---------------------------------------------------------------------------------------!
    do ng = 1, ngrds
-      call alloc_edflux  (ed_fluxf_g  (ng), nmxp(ng), nmyp(ng))
-      call alloc_edflux  (ed_fluxp_g  (ng), nmxp(ng), nmyp(ng))
-      call alloc_edflux  (wgrid_g     (ng), nmxp(ng), nmyp(ng))
-      call alloc_edflux  (wgridm_g    (ng),        1,        1)
+      call alloc_edflux  (ed_fluxf_g  (ng), nmxp(ng), nmyp(ng), npatch)
+      call alloc_edflux  (ed_fluxp_g  (ng), nmxp(ng), nmyp(ng), npatch)
+      call alloc_edflux  (ed_fluxpm_g (ng),        1,        1,      1)
       call alloc_edprecip(ed_precip_g (ng), nmxp(ng), nmyp(ng))
       call alloc_edprecip(ed_precipm_g(ng),        1,        1)
       !----- Assign zeroes to the newly allocated matrices. -------------------------------!
       call zero_edflux  (ed_fluxf_g  (ng), ustmin, dtleaf)
       call zero_edflux  (ed_fluxp_g  (ng), ustmin, dtleaf)
-      call zero_edflux  (wgrid_g     (ng), ustmin, dtleaf)
-      call zero_edflux  (wgridm_g    (ng), ustmin, dtleaf)
+      call zero_edflux  (ed_fluxpm_g (ng), ustmin, dtleaf)
       call zero_edprecip(ed_precip_g (ng))
       call zero_edprecip(ed_precipm_g(ng))
       !------------------------------------------------------------------------------------!
@@ -528,7 +519,7 @@ subroutine alloc_edcp_driver(ngrds,nmxp,nmyp)
       !      Fill the variable tables, and do not bother making average arrays.  We don't  !
       ! need it.                                                                           !
       !------------------------------------------------------------------------------------!
-      call filltab_edflux   (wgrid_g    (ng),wgridm_g    (ng),0,nmxp(ng),nmyp(ng),ng)
+      call filltab_edflux   (ed_fluxp_g (ng),ed_fluxpm_g (ng),0,nmxp(ng),nmyp(ng),npatch,ng)
       call filltab_ed_precip(ed_precip_g(ng),ed_precipm_g(ng),0,nmxp(ng),nmyp(ng),ng)
       !------------------------------------------------------------------------------------!
    end do

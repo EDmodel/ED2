@@ -790,25 +790,38 @@ subroutine sort3(a,b,c,n)
    end do
    return
 end subroutine sort3
+!==========================================================================================!
+!==========================================================================================!
 
-!******************************************************************************************!
 
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!     This sub-routine sorts the elements of vector a from smallest to largest.            !
+!------------------------------------------------------------------------------------------!
 subroutine sort_up(a,n)
    implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
    integer , intent(in)                  :: n
    integer , intent(inout), dimension(n) :: a
+   !----- Local variables. ----------------------------------------------------------------!
    logical ,                dimension(n) :: unlocked
    integer                               :: atmp
-   integer                               :: imin,k
+   integer                               :: imin
+   integer                               :: k
+   !---------------------------------------------------------------------------------------!
 
-   unlocked=.true.
+   unlocked(:) = .true.
 
    do k=1,n
-      imin=minloc(a,1,unlocked)
-      atmp=a(imin)
-      a(imin)=a(k)
-      a(k)=atmp
-      unlocked(k)=.false.
+      imin        = minloc(a,1,unlocked)
+      atmp        = a(imin)
+      a(imin)     = a(k)
+      a(k)        = atmp
+      unlocked(k) = .false.
    end do
    return
 end subroutine sort_up
@@ -822,22 +835,63 @@ end subroutine sort_up
 
 !==========================================================================================!
 !==========================================================================================!
+!     This sub-routine sorts the elements of vector a from largest to smallest.            !
+!------------------------------------------------------------------------------------------!
+subroutine sort_down(a,n)
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   integer , intent(in)                  :: n
+   integer , intent(inout), dimension(n) :: a
+   !----- Local variables. ----------------------------------------------------------------!
+   logical ,                dimension(n) :: unlocked
+   integer                               :: atmp
+   integer                               :: imax
+   integer                               :: k
+   !---------------------------------------------------------------------------------------!
+
+   unlocked(:) = .true.
+
+   do k=1,n
+      imax        = maxloc(a,1,unlocked)
+      atmp        = a(imax)
+      a(imax)     = a(k)
+      a(k)        = atmp
+      unlocked(k) = .false.
+   end do
+   return
+end subroutine sort_down
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!     This sub-routine ranks the elements of vector a from smallest to largest.            !
+!------------------------------------------------------------------------------------------!
 subroutine rank_up(nmax,variable,ranking)
    implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
    integer , intent(in)                    :: nmax
    real    , intent(in)  , dimension(nmax) :: variable
    integer , intent(out) , dimension(nmax) :: ranking
+   !----- Local variables. ----------------------------------------------------------------!
    logical ,               dimension(nmax) :: unlocked
-   integer                                 :: n,nmin
+   integer                                 :: n
+   integer                                 :: locmin
+   !---------------------------------------------------------------------------------------!
 
-   unlocked=.true.
-
-   ranking=0
+   unlocked(:) = .true.
+   ranking (:) = 0
    do n=1,nmax
-     nmin=minloc(variable,1,unlocked)
-     unlocked(nmin)=.false.
-     ranking(nmin)=n
+     locmin           = minloc(variable,1,unlocked)
+     unlocked(locmin) = .false.
+     ranking (locmin) = n
    end do
+
    return
 end subroutine rank_up
 !==========================================================================================!
@@ -850,11 +904,51 @@ end subroutine rank_up
 
 !==========================================================================================!
 !==========================================================================================!
+!     This sub-routine ranks the elements of vector a from largest to smallest.            !
+!------------------------------------------------------------------------------------------!
+subroutine rank_down(nmax,variable,ranking)
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   integer , intent(in)                    :: nmax
+   real    , intent(in)  , dimension(nmax) :: variable
+   integer , intent(out) , dimension(nmax) :: ranking
+   !----- Local variables. ----------------------------------------------------------------!
+   logical ,               dimension(nmax) :: unlocked
+   integer                                 :: n
+   integer                                 :: locmax
+   !---------------------------------------------------------------------------------------!
+
+   unlocked(:) = .true.
+   ranking (:) = 0
+   do n=1,nmax
+     locmax           = maxloc(variable,1,unlocked)
+     unlocked(locmax) = .false.
+     ranking (locmax) = n
+   end do
+
+   return
+end subroutine rank_down
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!     This function finds the element of the rank array that has a given rank.             !
+!------------------------------------------------------------------------------------------!
 integer function find_rank(ranking,nmax,rankarray)
    implicit none
-   integer, intent(in)                  :: ranking,nmax
+   !----- Arguments. ----------------------------------------------------------------------!
+   integer, intent(in)                  :: ranking
+   integer, intent(in)                  :: nmax
    integer, intent(in), dimension(nmax) :: rankarray
+   !----- Local variables. ----------------------------------------------------------------!
    integer                              :: n
+   !---------------------------------------------------------------------------------------!
    find_rank=-1
    do n=1,nmax
       if (rankarray(n) == ranking) then

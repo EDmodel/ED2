@@ -358,6 +358,7 @@ subroutine reset_averaged_vars(cgrid)
       cgrid%avg_transp           (ipy) = 0.0
       cgrid%avg_soil_temp      (:,ipy) = 0.0
       cgrid%avg_soil_water     (:,ipy) = 0.0
+      cgrid%avg_soil_mstpot    (:,ipy) = 0.0
       cgrid%avg_soil_energy    (:,ipy) = 0.0
       cgrid%avg_soil_fracliq   (:,ipy) = 0.0
       cgrid%avg_soil_rootfrac  (:,ipy) = 0.0
@@ -446,6 +447,7 @@ subroutine reset_averaged_vars(cgrid)
 
          cpoly%avg_soil_temp(:,isi)      = 0.0
          cpoly%avg_soil_water(:,isi)     = 0.0
+         cpoly%avg_soil_mstpot(:,isi)    = 0.0
          cpoly%avg_soil_energy(:,isi)    = 0.0
          cpoly%avg_soil_fracliq(:,isi)   = 0.0
          cpoly%avg_soil_rootfrac(:,isi)  = 0.0
@@ -1224,6 +1226,8 @@ subroutine integrate_ed_daily_output_flux(cgrid)
                                         + cgrid%avg_soil_temp(k,ipy) 
          cgrid%dmean_soil_water(k,ipy)  = cgrid%dmean_soil_water(k,ipy)                    &
                                         + cgrid%avg_soil_water(k,ipy)
+         cgrid%dmean_soil_mstpot(k,ipy) = cgrid%dmean_soil_mstpot(k,ipy)                   &
+                                        + cgrid%avg_soil_mstpot(k,ipy)
          cgrid%dmean_transloss(k,ipy)   = cgrid%dmean_transloss(k,ipy)                     &
                                         + cgrid%avg_transloss(k,ipy)
        end do
@@ -1326,6 +1330,8 @@ subroutine integrate_ed_daily_output_flux(cgrid)
                                               + cgrid%avg_soil_temp                (k,ipy)
             cgrid%qmean_soil_water(k,it,ipy)  = cgrid%qmean_soil_water          (k,it,ipy) &
                                               + cgrid%avg_soil_water               (k,ipy)
+            cgrid%qmean_soil_mstpot(k,it,ipy) = cgrid%qmean_soil_mstpot         (k,it,ipy) &
+                                              + cgrid%avg_soil_mstpot              (k,ipy)
          end do
 
          !----- Integrate the mean sum of squares. ----------------------------------------!
@@ -1933,9 +1939,10 @@ subroutine normalize_ed_daily_output_vars(cgrid)
       ! frqsum/day_sec.                                                                    !
       !------------------------------------------------------------------------------------!
       do k=1,nzg
-         cgrid%dmean_soil_temp (k,ipy) = cgrid%dmean_soil_temp (k,ipy) * frqsum_o_daysec
-         cgrid%dmean_soil_water(k,ipy) = cgrid%dmean_soil_water(k,ipy) * frqsum_o_daysec
-         cgrid%dmean_transloss(k,ipy)  = cgrid%dmean_transloss(k,ipy)  * frqsum_o_daysec
+         cgrid%dmean_soil_temp  (k,ipy) = cgrid%dmean_soil_temp  (k,ipy) * frqsum_o_daysec
+         cgrid%dmean_soil_water (k,ipy) = cgrid%dmean_soil_water (k,ipy) * frqsum_o_daysec
+         cgrid%dmean_soil_mstpot(k,ipy) = cgrid%dmean_soil_mstpot(k,ipy) * frqsum_o_daysec
+         cgrid%dmean_transloss  (k,ipy) = cgrid%dmean_transloss  (k,ipy) * frqsum_o_daysec
       end do
       !----- Precipitation and runoff. ----------------------------------------------------!
       cgrid%dmean_pcpg     (ipy)  = cgrid%dmean_pcpg     (ipy) * frqsum_o_daysec ! kg/m2/s
@@ -2344,6 +2351,7 @@ subroutine zero_ed_daily_output_vars(cgrid)
       cgrid%dmean_nep            (ipy) = 0.
       cgrid%dmean_soil_temp    (:,ipy) = 0.
       cgrid%dmean_soil_water   (:,ipy) = 0.
+      cgrid%dmean_soil_mstpot  (:,ipy) = 0.
       cgrid%dmean_transloss    (:,ipy) = 0.
       cgrid%dmean_gpp_dbh      (:,ipy) = 0.
       cgrid%dmean_fs_open        (ipy) = 0.
@@ -2515,6 +2523,8 @@ subroutine integrate_ed_monthly_output_vars(cgrid)
                                       + cgrid%dmean_soil_temp   (:,ipy)
       cgrid%mmean_soil_water  (:,ipy) = cgrid%mmean_soil_water  (:,ipy)                    &
                                       + cgrid%dmean_soil_water  (:,ipy)
+      cgrid%mmean_soil_mstpot (:,ipy) = cgrid%mmean_soil_mstpot (:,ipy)                    &
+                                      + cgrid%dmean_soil_mstpot (:,ipy)
       cgrid%mmean_transloss   (:,ipy) = cgrid%mmean_transloss   (:,ipy)                    &
                                       + cgrid%dmean_transloss   (:,ipy)
       cgrid%mmean_gpp_dbh     (:,ipy) = cgrid%mmean_gpp_dbh     (:,ipy)                    &
@@ -2866,6 +2876,7 @@ subroutine normalize_ed_monthly_output_vars(cgrid)
       cgrid%mmean_vleaf_resp     (ipy) = cgrid%mmean_vleaf_resp     (ipy) * ndaysi
       cgrid%mmean_soil_temp    (:,ipy) = cgrid%mmean_soil_temp    (:,ipy) * ndaysi
       cgrid%mmean_soil_water   (:,ipy) = cgrid%mmean_soil_water   (:,ipy) * ndaysi
+      cgrid%mmean_soil_mstpot  (:,ipy) = cgrid%mmean_soil_mstpot  (:,ipy) * ndaysi
       cgrid%mmean_transloss    (:,ipy) = cgrid%mmean_transloss    (:,ipy) * ndaysi
       cgrid%mmean_gpp_dbh      (:,ipy) = cgrid%mmean_gpp_dbh      (:,ipy) * ndaysi
       cgrid%mmean_veg_energy     (ipy) = cgrid%mmean_veg_energy     (ipy) * ndaysi
@@ -3298,6 +3309,7 @@ subroutine normalize_ed_monthly_output_vars(cgrid)
             cgrid%qmean_vapor_ac      (t,ipy) = cgrid%qmean_vapor_ac      (t,ipy)  * ndaysi
             cgrid%qmean_soil_temp   (:,t,ipy) = cgrid%qmean_soil_temp   (:,t,ipy)  * ndaysi
             cgrid%qmean_soil_water  (:,t,ipy) = cgrid%qmean_soil_water  (:,t,ipy)  * ndaysi
+            cgrid%qmean_soil_mstpot (:,t,ipy) = cgrid%qmean_soil_mstpot (:,t,ipy)  * ndaysi
             cgrid%qmsqu_gpp           (t,ipy) = cgrid%qmsqu_gpp           (t,ipy)  * ndaysi
             cgrid%qmsqu_leaf_resp     (t,ipy) = cgrid%qmsqu_leaf_resp     (t,ipy)  * ndaysi
             cgrid%qmsqu_root_resp     (t,ipy) = cgrid%qmsqu_root_resp     (t,ipy)  * ndaysi
@@ -3396,6 +3408,7 @@ subroutine zero_ed_monthly_output_vars(cgrid)
       cgrid%mmean_vleaf_resp         (ipy) = 0.
       cgrid%mmean_soil_temp        (:,ipy) = 0.
       cgrid%mmean_soil_water       (:,ipy) = 0.
+      cgrid%mmean_soil_mstpot      (:,ipy) = 0.
       cgrid%mmean_transloss        (:,ipy) = 0.
       cgrid%mmean_gpp_dbh          (:,ipy) = 0.
       cgrid%mmean_veg_energy         (ipy) = 0.
@@ -3572,6 +3585,7 @@ subroutine zero_ed_monthly_output_vars(cgrid)
          cgrid%qmean_vapor_ac      (:,ipy) = 0.0
          cgrid%qmean_soil_temp   (:,:,ipy) = 0.0
          cgrid%qmean_soil_water  (:,:,ipy) = 0.0
+         cgrid%qmean_soil_mstpot (:,:,ipy) = 0.0
          cgrid%qmsqu_gpp           (:,ipy) = 0.0
          cgrid%qmsqu_leaf_resp     (:,ipy) = 0.0
          cgrid%qmsqu_root_resp     (:,ipy) = 0.0

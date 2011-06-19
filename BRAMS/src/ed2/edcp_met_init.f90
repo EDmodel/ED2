@@ -85,10 +85,16 @@ subroutine leaf2ed_soil_moist_energy(cgrid,ifm)
    type(patchtype)      , pointer     :: cpatch          ! Alias for current patch
    integer                            :: ntext           ! Alias for ED-2 soil text. class
    integer, dimension(:), allocatable :: lsoil_text      ! LEAF-3 soil texture class
-   integer                            :: ipy,isi,ipa,ico ! Counters for all structures
+   integer                            :: ipy             ! Counters for polygons
+   integer                            :: isi             ! Counters for sites
+   integer                            :: ipa             ! Counters for patches
+   integer                            :: ico             ! Counters for cohorts
    integer                            :: k               ! Counter for soil layers
-   integer                            :: ix,iy           ! Counter for lon/lat
-   integer                            :: ksn, ksnw1      ! Alias for # of pond/snow layers
+   integer                            :: ix              ! Counter for longitude
+   integer                            :: iy              ! Counter for latitude
+   integer                            :: ilp             ! Counter for LEAF-3 patch
+   integer                            :: ksn             ! Alias for # of pond/snow layers
+   integer                            :: ksnw1           ! Alias for # of pond/snow layers
    real   , dimension(:), allocatable :: lsoil_temp      ! LEAF-3 soil temperature
    real   , dimension(:), allocatable :: lsoil_fliq      ! LEAF-3 soil liquid fraction
    real                               :: fice            ! soil ice fraction
@@ -104,30 +110,45 @@ subroutine leaf2ed_soil_moist_energy(cgrid,ifm)
    polyloop: do ipy=1,cgrid%npolygons
       ix = cgrid%ilon(ipy)
       iy = cgrid%ilat(ipy)
-      
-      !------------------------------------------------------------------------------------!
-      !    Determine initial soil temperature and liquid fraction.  The reason we find     !
-      ! this for LEAF-3 instead of simply copying the soil energy and water to ED-2 is     !
-      ! that depending on the way the user set up his or her RAMSIN, soil types may not    !
-      ! match and this could put ED-2.1 in an inconsistent initial state.                  !
-      !------------------------------------------------------------------------------------!
-      do k=1,nzg
-         lsoil_text(k) =nint(leaf_g(ifm)%soil_text(k,ix,iy,2))
-         call qwtk(leaf_g(ifm)%soil_energy(k,ix,iy,2)                                      &
-                  ,leaf_g(ifm)%soil_water(k,ix,iy,2)*wdns                                  &
-                  ,slcpd(lsoil_text(k)),lsoil_temp(k),lsoil_fliq(k))
-      end do
 
       cpoly => cgrid%polygon(ipy)
 
       !----- Loop over sites --------------------------------------------------------------!
       siteloop: do isi=1,cpoly%nsites
+
+         !---------------------------------------------------------------------------------!
+         !     ILP is the LEAF-3 "patch", which is offset by one because the first one is  !
+         ! always water.                                                                   !
+         !---------------------------------------------------------------------------------!
+         ilp = isi + 1
+         !---------------------------------------------------------------------------------!
+
+
+         !------ Alias for current site. --------------------------------------------------!
          csite => cpoly%site(isi)
-         
+         !---------------------------------------------------------------------------------!
+
+
+
+         !---------------------------------------------------------------------------------!
+         !    Determine initial soil temperature and liquid fraction.  The reason we find  !
+         ! this for LEAF-3 instead of simply copying the soil energy and water to ED-2 is  !
+         ! that depending on the way the user set up his or her RAMSIN, soil types may not !
+         ! match and this could put ED-2.1 in an inconsistent initial state.               !
+         !---------------------------------------------------------------------------------!
+         do k=1,nzg
+            lsoil_text(k) =nint(leaf_g(ifm)%soil_text(k,ix,iy,ilp))
+            call qwtk(leaf_g(ifm)%soil_energy(k,ix,iy,ilp)                                 &
+                     ,leaf_g(ifm)%soil_water(k,ix,iy,ilp)*wdns                             &
+                     ,slcpd(lsoil_text(k)),lsoil_temp(k),lsoil_fliq(k))
+         end do
+         !---------------------------------------------------------------------------------!
+
+
          !----- Loop over patches ---------------------------------------------------------!
          patchloop: do ipa=1,csite%npatches
             cpatch => csite%patch(ipa)
-  
+
             do k=1,nzg
             
                ntext = cpoly%ntext_soil(k,isi)
@@ -137,7 +158,7 @@ subroutine leaf2ed_soil_moist_energy(cgrid,ifm)
                !---------------------------------------------------------------------------!
                csite%soil_water(k,ipa) = max(soil(ntext)%soilcp                            &
                                             ,min(soil(ntext)%slmsts                        &
-                                                ,leaf_g(ifm)%soil_water(k,ix,iy,2) ) )
+                                                ,leaf_g(ifm)%soil_water(k,ix,iy,ilp) ) )
 
                !---------------------------------------------------------------------------!
                !   Soil temperature and liquid fraction. Simply use what we found a few    !

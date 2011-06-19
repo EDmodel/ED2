@@ -102,7 +102,7 @@ subroutine oda_file_inv (iyear1,imonth1,idate1,itime1  &
                         ,iyear2,imonth2,idate2,itime2)
 
 use mem_oda
-
+use grid_dims, only : str_len
 implicit none
 
 integer :: iyear1,imonth1,idate1,itime1,iyear2,imonth2,idate2,itime2
@@ -113,7 +113,8 @@ integer :: inyear,inmonth,indate,inhour
 
 
 character(len=4) :: cdummy(2)
-character(len=128), dimension(maxodafiles) :: fnames
+character(len=str_len), dimension(maxodafiles) :: fnames
+character(len=str_len) :: thisfile
 character(len=14)  :: itotdate,itotdate_start,itotdate_end
 
 !          Go through upper air and surface input files
@@ -128,7 +129,8 @@ if(oda_upaprefix(1:1) /= ' ' .and. oda_upaprefix(1:1) /= char(0) ) then
 
    nc=len_trim(oda_upaprefix)
    nupatot=-1
-   call RAMS_filelist(fnames,oda_upaprefix(1:nc)//'*00',nupatot)
+   thisfile = oda_upaprefix(1:nc)//'*00'
+   call RAMS_filelist(fnames,thisfile,nupatot)
 
    if(nupatot > maxodafiles) then
       print*,'too many oda upper air files'
@@ -167,7 +169,8 @@ if(oda_sfcprefix(1:1) /= ' '.and. oda_sfcprefix(1:1) /= char(0) ) then
 
    nc=len_trim(oda_sfcprefix)
    nsfctot=-1
-   call RAMS_filelist(fnames,oda_sfcprefix(1:nc)//'*00',nsfctot)
+   thisfile = oda_sfcprefix(1:nc)//'*00'
+   call RAMS_filelist(fnames,thisfile,nsfctot)
 
    if(nsfctot > maxodafiles) then
       print*,'too many oda surface air files'

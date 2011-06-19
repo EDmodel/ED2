@@ -29,7 +29,9 @@ subroutine simple_lake_model()
    use io_params              , only : ssttime1          & ! intent(in)
                                      , ssttime2          & ! intent(in)
                                      , iupdsst           ! ! intent(in)
-   use mem_edcp               , only : wgrid_g           ! ! structure
+   use mem_edcp               , only : ed_fluxf_g        & ! structure
+                                     , ed_fluxp_g        & ! structure
+                                     , edtime2           ! ! intent(in)
    use mem_leaf               , only : leaf_g            & ! structure
                                      , dtleaf            ! ! intent(in)
    use mem_radiate            , only : radiate_g         ! ! structure
@@ -84,7 +86,7 @@ subroutine simple_lake_model()
    if (iupdsst == 0) then
       timefac_sst = 0. !----- This will force it to use the initial value only. -----------!
    else
-      timefac_sst = sngl((time - ssttime1(ngrid)) / (ssttime2(ngrid) - ssttime1(ngrid)))
+      timefac_sst = sngl((edtime2 - ssttime1(ngrid)) / (ssttime2(ngrid) - ssttime1(ngrid)))
    end if
    !---------------------------------------------------------------------------------------!
 
@@ -150,7 +152,7 @@ subroutine simple_lake_model()
          !---------------------------------------------------------------------------------!
          !     Integrate the state variables and fluxes.                                   !
          !---------------------------------------------------------------------------------!
-         call integrate_lake(dtlt,wgrid_g(ngrid)%rk4step(i,j))
+         call integrate_lake(dtlt,ed_fluxp_g(ngrid)%rk4step(i,j,1))
          !---------------------------------------------------------------------------------!
 
 
@@ -567,12 +569,13 @@ subroutine copy_lake_brams(i,j,ifm,mzg,mzs,initp)
    use consts_coms           , only : alvl8        & ! intent(in)
                                     , cliq8        & ! intent(in)
                                     , tsupercool8  & ! intent(in)
-                                    , cliq         ! ! intent(in)
+                                    , cliq         & ! intent(in)
+                                    , grav         ! ! intent(in)
    use canopy_air_coms       , only : ubmin8       ! ! intent(in)
    use lake_coms             , only : lakesitetype & ! structure
                                     , lakemet      & ! intent(in)
                                     , tiny_lakeoff ! ! intent(in)
-   use mem_edcp              , only : wgrid_g      ! ! intent(in)
+   use mem_edcp              , only : ed_fluxf_g   ! ! intent(in)
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
    integer           , intent(in) :: i
@@ -585,39 +588,43 @@ subroutine copy_lake_brams(i,j,ifm,mzg,mzs,initp)
    integer                        :: k
    !----- External functions. -------------------------------------------------------------!
    real              , external   :: sngloff
+   !----- Local constants -----------------------------------------------------------------!
+   real             , parameter   :: z0fac_water  = 0.016/grav
+   real             , parameter   :: z0_min_water = 0.0001
    !---------------------------------------------------------------------------------------!
 
    !---------------------------------------------------------------------------------------!
    !     Transfer model scalars back to global arrays.                                     !
    !---------------------------------------------------------------------------------------!
    !----- Stars. --------------------------------------------------------------------------!
-   wgrid_g(ifm)%ustar (i,j) = sngloff(initp%ustar  ,tiny_lakeoff)
-   wgrid_g(ifm)%tstar (i,j) = sngloff(initp%tstar  ,tiny_lakeoff)
-   wgrid_g(ifm)%cstar (i,j) = sngloff(initp%cstar  ,tiny_lakeoff)
-   wgrid_g(ifm)%zeta  (i,j) = sngloff(initp%zeta   ,tiny_lakeoff)
-   wgrid_g(ifm)%ribulk(i,j) = sngloff(initp%ribulk ,tiny_lakeoff)
+   ed_fluxf_g(ifm)%ustar (i,j,1) = sngloff(initp%ustar  ,tiny_lakeoff)
+   ed_fluxf_g(ifm)%tstar (i,j,1) = sngloff(initp%tstar  ,tiny_lakeoff)
+   ed_fluxf_g(ifm)%cstar (i,j,1) = sngloff(initp%cstar  ,tiny_lakeoff)
+   ed_fluxf_g(ifm)%zeta  (i,j,1) = sngloff(initp%zeta   ,tiny_lakeoff)
+   ed_fluxf_g(ifm)%ribulk(i,j,1) = sngloff(initp%ribulk ,tiny_lakeoff)
    !----- Water vapour:  we must convert specific humidity back to mixing ratio. ----------!
-   wgrid_g(ifm)%rstar (i,j) = sngloff( initp%qstar                                       &
-                                       / ((1.d0-lakemet%atm_shv)*(1.d0 - initp%can_shv))   &
-                                       , tiny_lakeoff)
+   ed_fluxf_g(ifm)%rstar (i,j,1) = sngloff( initp%qstar                                    &
+                                          / ( (1.d0-lakemet%atm_shv)                       &
+                                            * (1.d0 - initp%can_shv))                      &
+                                         , tiny_lakeoff)
    !---------------------------------------------------------------------------------------!
 
 
 
    !----- Fluxes towards the free atmosphere. ---------------------------------------------!
-   wgrid_g(ifm)%sflux_u(i,j) = sngloff(initp%avg_sflux_u ,tiny_lakeoff)
-   wgrid_g(ifm)%sflux_v(i,j) = sngloff(initp%avg_sflux_v ,tiny_lakeoff)
-   wgrid_g(ifm)%sflux_w(i,j) = sngloff(initp%avg_sflux_w ,tiny_lakeoff)
-   wgrid_g(ifm)%sflux_t(i,j) = sngloff(initp%avg_sflux_t ,tiny_lakeoff)
-   wgrid_g(ifm)%sflux_r(i,j) = sngloff(initp%avg_sflux_r ,tiny_lakeoff)
-   wgrid_g(ifm)%sflux_c(i,j) = sngloff(initp%avg_sflux_c ,tiny_lakeoff)
+   ed_fluxf_g(ifm)%sflux_u(i,j,1) = sngloff(initp%avg_sflux_u ,tiny_lakeoff)
+   ed_fluxf_g(ifm)%sflux_v(i,j,1) = sngloff(initp%avg_sflux_v ,tiny_lakeoff)
+   ed_fluxf_g(ifm)%sflux_w(i,j,1) = sngloff(initp%avg_sflux_w ,tiny_lakeoff)
+   ed_fluxf_g(ifm)%sflux_t(i,j,1) = sngloff(initp%avg_sflux_t ,tiny_lakeoff)
+   ed_fluxf_g(ifm)%sflux_r(i,j,1) = sngloff(initp%avg_sflux_r ,tiny_lakeoff)
+   ed_fluxf_g(ifm)%sflux_c(i,j,1) = sngloff(initp%avg_sflux_c ,tiny_lakeoff)
    !---------------------------------------------------------------------------------------!
 
 
 
    !----- Radiation-related variables. ----------------------------------------------------!
-   wgrid_g(ifm)%albedt (i,j) = sngloff(initp%avg_albedt  ,tiny_lakeoff)
-   wgrid_g(ifm)%rlongup(i,j) = sngloff(initp%avg_rlongup ,tiny_lakeoff)
+   ed_fluxf_g(ifm)%albedt (i,j,1) = sngloff(initp%avg_albedt  ,tiny_lakeoff)
+   ed_fluxf_g(ifm)%rlongup(i,j,1) = sngloff(initp%avg_rlongup ,tiny_lakeoff)
    !---------------------------------------------------------------------------------------!
 
 
@@ -666,6 +673,15 @@ subroutine copy_lake_brams(i,j,ifm,mzg,mzs,initp)
       leaf_g(ifm)%sfcwater_depth  (1,i,j,1) = 0.
    end do
    !---------------------------------------------------------------------------------------!
+
+
+   !----- Find roughness scales for water bodies ------------------------------------------!
+   leaf_g(ifm)%patch_rough(i,j,1) = max(z0fac_water * leaf_g(ifm)%ustar(i,j,1) ** 2        &
+                                       ,z0_min_water)
+   leaf_g(ifm)%soil_rough (i,j,1) = 0.0
+   leaf_g(ifm)%veg_rough  (i,j,1) = 0.0
+   !---------------------------------------------------------------------------------------!
+
 
 
 

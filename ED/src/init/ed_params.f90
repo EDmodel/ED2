@@ -175,26 +175,43 @@ subroutine init_ed_misc_coms
 
    !----- Flags that allow components of subgrid heterogeneity to be turned on/off --------!
    vary_elev = 1
-   vary_rad = 1
-   vary_hyd = 1
+   vary_rad  = 1
+   vary_hyd  = 1
+   !---------------------------------------------------------------------------------------!
+
 
    !----- Number of years to ignore demography when starting a run. -----------------------!
    burnin = 0
+   !---------------------------------------------------------------------------------------!
+
 
    !----- Month to output the yearly files. -----------------------------------------------!
    outputMonth = 6
+   !---------------------------------------------------------------------------------------!
+
 
    !----- Year to read when parsing pss/css with multiple years. --------------------------!
    restart_target_year = 2000
+   !---------------------------------------------------------------------------------------!
+
 
    !----- Flag specifying whether to search for a target year in pss/css. -----------------!
    use_target_year = 0    
+   !---------------------------------------------------------------------------------------!
+
+
 
    !----- Maximum age [yr] to split into classes. -----------------------------------------!
    maxage = 200.
+   !---------------------------------------------------------------------------------------!
+
+
 
    !----- Maximum DBH [cm] to be split into classes. --------------------------------------!
    maxdbh = 100.
+   !---------------------------------------------------------------------------------------!
+
+
 
    !---------------------------------------------------------------------------------------!
    !     The inverse of bin classes will depend on max??? and n_???, leaving one class for !
@@ -202,13 +219,18 @@ subroutine init_ed_misc_coms
    !---------------------------------------------------------------------------------------!
    dagei = real(n_age-1) / maxage
    ddbhi = real(n_dbh-1) / maxdbh
+   !---------------------------------------------------------------------------------------!
+
+
 
    !---------------------------------------------------------------------------------------!
    !    Maximum distance to the current polygon that we still consider the file grid point !
    ! to be representative of the polygon.  The value below is 1.25 degree at the Equator.  !
    !---------------------------------------------------------------------------------------!
-   max_thsums_dist     = 1.25 * erad * pio180
+   max_thsums_dist    = 1.25 * erad * pio180
    !---------------------------------------------------------------------------------------!
+
+
 
    !---------------------------------------------------------------------------------------!
    !      Alternative method for mixing 1 grid and POI's.  Only use the grid if their is   !
@@ -218,6 +240,8 @@ subroutine init_ed_misc_coms
    !---------------------------------------------------------------------------------------!
    max_poi99_dist     = 5.0 * erad * pio180
    !---------------------------------------------------------------------------------------!
+
+
 
    !---------------------------------------------------------------------------------------!
    !      This variable is used for the history start initialisation.  This sets the       !
@@ -1066,7 +1090,7 @@ subroutine init_pft_photo_params()
 
 
    !------ Vm0 is the maximum photosynthesis capacity in µmol/m2/s. -----------------------!
-   Vm0(1)                    = 12.5            * vmfact
+   Vm0(1)                    = 12.5
    Vm0(2)                    = 18.8            * vmfact
    Vm0(3)                    = 12.5            * vmfact
    Vm0(4)                    = 6.25            * vmfact
@@ -1078,7 +1102,7 @@ subroutine init_pft_photo_params()
    Vm0(10)                   = 15.625 * 1.1171 * vmfact
    Vm0(11)                   = 6.25   * 1.1171 * vmfact
    Vm0(12:13)                = 18.3            * vmfact
-   Vm0(14:15)                = 12.5            * vmfact
+   Vm0(14:15)                = 12.5
    Vm0(16)                   = 21.875          * vmfact
    Vm0(17)                   = 15.625 * 0.7264
    !---------------------------------------------------------------------------------------!

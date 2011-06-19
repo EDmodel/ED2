@@ -86,7 +86,10 @@
    NL%N_POI    =    1   ! number of polygons of interest (POIs).  This could be zero.
                 
    NL%POI_LAT  = -2.609075  ! list of the latitudes of the POIs (degrees north)
-   NL%POI_LON  = -60.2093  ! list of the longitudes of the POIs (degrees east)
+   NL%POI_LON  = -60.2093   ! list of the longitudes of the POIs (degrees east)
+
+   NL%POI_RES  = 1.00       ! grid resolution for POIs (degrees)
+                            ! This is used only to define the soil types.
 !------------------------------------------------------------------------------------------!
 
 !------------------------------------------------------------------------------------------!
@@ -173,6 +176,7 @@
 
    !---------------------------------------------------------------------------------------!
    ! IED_INIT_MODE determines how the ecosystem should be initialized.                     !
+   !-1 -
    ! 0 - Start from near-bare ground (only a few seedling from every PFT included in this  !
    !     run).                                                                             !
    ! 1 - This will use history files from ED-1.0 to initialise the ecosystem state (like   !
@@ -428,7 +432,13 @@
    
    NL%REPRO_SCHEME    = 1     ! This specifies the reproduction scheme:
                               !  0 -- reproduction off (useful for short runs)
-                              !  1 -- original ED1 default
+                              !  1 -- original ED1 default.  Seeds are exchanged between
+                              !       patches belonging to the same site, but they can't
+                              !       go outside their original site.
+                              !  2 -- similar to 1, but now seeds are exchanged between
+                              !       patches belonging to the same polygon, even if they
+                              !       are in different sites.  They can't go outside their
+                              !       original polygon, though.
 
    NL%LAPSE_SCHEME    = 0     ! This specifies the met lapse rate scheme:
                               !  0 -- lapse rates off
@@ -479,10 +489,6 @@
    NL%THIOFF          = 0.    ! Offset to be added to the Vm_high_temp
    NL%GGFACT          = 1.    ! Factor to multiply the ground to canopy conductancd
    !---------------------------------------------------------------------------------------!
-
-   NL%ICOMPPT         = 0     ! Which compensation point should I use 
-                              ! 0 -- original ED-2.1
-                              ! other options coming soon
 
    NL%QUANTUM_EFFICIENCY_T = 0 ! Which quantum efficiency should I use
                               ! 0 ---- original ED-2.1
@@ -613,18 +619,26 @@
                         !
                         ! This option is ignored in near bare ground runs.
 
-!----- Patch and cohort dimension settings ------------------------------------------------!
-   NL%MAXPATCH  =  20 ! If number of patches in a given site exceeds NL%MAXPATCH, 
-                      !    force patch fusion.  If NL%MAXPATCH is 0, then
-                      !    fusion will never happen.  If MAXPATCH is negative, then the 
-                      !    absolute value is used only during the initialization, and  
-                      !    fusion will never happen again. 
-   NL%MAXCOHORT =  80 ! If number of cohorts in a given patch exceeds NL%MAXCOHORT, 
-                      !    force cohort fusion.  If NL%MAXCOHORT is 0, then
-                      !    fusion will never happen.  If MAXCOHORT is negative, then the 
-                      !    absolute value is used only during the initialization, and  
-                      !    fusion will never happen again. 
-                      ! 
+!----- Site, patch and cohort dimension settings ------------------------------------------!
+   NL%MAXSITE   =   6       ! This is the strict maximum number of sites that each polygon
+                            !    can contain.  Currently this is used only when the user 
+                            !    wants to run the same polygon with multiple soil types.  
+                            !    If there aren't that many different soil types with a
+                            !    minimum area (check MIN_SITE_AREA below), then the model 
+                            !    will allocate just the amount needed.
+   NL%MAXPATCH  =  20       ! If number of patches in a given site exceeds NL%MAXPATCH, 
+                            !    force patch fusion.  If NL%MAXPATCH is 0, then
+                            !    fusion will never happen.  If MAXPATCH is negative, then 
+                            !    the absolute value is used only during the initialization, 
+                            !    and fusion will never happen again. 
+   NL%MAXCOHORT =  80       ! If number of cohorts in a given patch exceeds NL%MAXCOHORT, 
+                            !    force cohort fusion.  If NL%MAXCOHORT is 0, then
+                            !    fusion will never happen.  If MAXCOHORT is negative, then 
+                            !    the absolute value is used only during the initialization, 
+                            !    and fusion will never happen again. 
+   NL%MIN_SITE_AREA = 0.005 ! This is the minimum fraction area of a given soil type that
+                            !    allows a site to be created (ignored if IED_INIT_MODE is 
+                            !    set to 3).
 !------------------------------------------------------------------------------------------!
 
 

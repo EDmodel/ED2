@@ -845,6 +845,7 @@ subroutine read_ed21_history_unstruct
    use disturb_coms   , only : ianth_disturb           & ! intent(in)
                              , lu_rescale_file         & ! intent(in)
                              , min_new_patch_area      ! ! intent(in)
+   use soil_coms      , only : soil                    ! ! intent(in)
 
    implicit none
 
@@ -852,6 +853,7 @@ subroutine read_ed21_history_unstruct
    !----- Local variables. ----------------------------------------------------------------!
    type(edtype)          , pointer                              :: cgrid
    type(polygontype)     , pointer                              :: cpoly
+   type(polygontype)     , pointer                              :: tpoly
    type(sitetype)        , pointer                              :: csite
    type(patchtype)       , pointer                              :: cpatch
    character(len=str_len), dimension(maxlist)                   :: full_list
@@ -876,6 +878,13 @@ subroutine read_ed21_history_unstruct
    integer                                                      :: isi
    integer                                                      :: ipa
    integer                                                      :: ico
+   integer                                                      :: isi_best
+   integer                                                      :: isi_try
+   integer                                                      :: nsoil
+   integer                                                      :: nsoil_try
+   integer                                                      :: nsites_inp
+   integer                                                      :: textdist_try
+   integer                                                      :: textdist_min
    integer                                                      :: xclosest
    integer                                                      :: nflist
    integer                                                      :: nhisto
@@ -1314,9 +1323,16 @@ subroutine read_ed21_history_unstruct
                               ,iparallel,.false.)
             !------------------------------------------------------------------------------!
 
-            
-            !----- Allocate the vector of sites in the polygon. ---------------------------!
-            call allocate_polygontype(cpoly,pysi_n(py_index))     
+
+
+
+            !------------------------------------------------------------------------------!
+            !     Site level.  Here we allocate a temporary site that will grab the        !
+            ! soil type information.  We then copy the data with the closest soil texture  !
+            ! properties to the definite site, preserving the previously assigned area.    !
+            !------------------------------------------------------------------------------!
+            nsites_inp = pysi_n(py_index)
+            call allocate_polygontype(tpoly,nsites_inp)
             !------------------------------------------------------------------------------!
 
 
@@ -1335,55 +1351,40 @@ subroutine read_ed21_history_unstruct
             !----- Load 1D dataset. -------------------------------------------------------!
             dsetrank = 1_8
             globdims(1) = int(dset_nsites_global,8)
-            chnkdims(1) = int(cpoly%nsites,8)
+            chnkdims(1) = int(tpoly%nsites,8)
             chnkoffs(1) = int(pysi_id(py_index) - 1,8)
-            memdims(1)  = int(cpoly%nsites,8)
-            memsize(1)  = int(cpoly%nsites,8)
+            memdims(1)  = int(tpoly%nsites,8)
+            memsize(1)  = int(tpoly%nsites,8)
             memoffs(1)  = 0_8
-            
-            call hdf_getslab_r(cpoly%area       ,'AREA_SI '    ,dsetrank,iparallel,.true.)
-            call hdf_getslab_r(cpoly%moist_f    ,'MOIST_F '    ,dsetrank,iparallel,.true.)
-            call hdf_getslab_r(cpoly%moist_W    ,'MOIST_W '    ,dsetrank,iparallel,.true.)
-            call hdf_getslab_r(cpoly%elevation  ,'ELEVATION '  ,dsetrank,iparallel,.true.)
-            call hdf_getslab_r(cpoly%slope      ,'SLOPE '      ,dsetrank,iparallel,.true.)
-            call hdf_getslab_r(cpoly%aspect     ,'ASPECT '     ,dsetrank,iparallel,.true.)
-            call hdf_getslab_r(cpoly%TCI        ,'TCI '        ,dsetrank,iparallel,.true.)
-            call hdf_getslab_i(cpoly%patch_count,'PATCH_COUNT ',dsetrank,iparallel,.true.)
 
-            !----- Load 2D dataset. -------------------------------------------------------!
-            if (cpoly%nsites > 1) then
-               !---------------------------------------------------------------------------!
-               !      Multiple-site run, load the site-level soil texture.                 !
-               !---------------------------------------------------------------------------!
-               call hdf_getslab_i(cpoly%lsl     ,'LSL_SI '     ,dsetrank,iparallel,.true.)
-               dsetrank     = 2_8
-               globdims(1)  = int(dset_nzg,8)
-               chnkdims(1)  = int(dset_nzg,8)
-               memdims(1)   = int(dset_nzg,8)
-               memsize(1)   = int(dset_nzg,8)
-               chnkoffs(1)  = 0_8
-               memoffs(1)   = 0_8
-               globdims(2)  = int(dset_nsites_global,8)
-               chnkdims(2)  = int(cpoly%nsites,8)
-               chnkoffs(2)  = int(pysi_id(py_index) - 1,8)
-               memdims(2)   = int(cpoly%nsites,8)
-               memsize(2)   = int(cpoly%nsites,8)
-               memoffs(2)   = 0_8
-               call hdf_getslab_i(cpoly%ntext_soil,'NTEXT_SOIL_SI ',dsetrank               &
-                                 ,iparallel,.true.)
-            else
-               !----- Single-site, copy the polygon-level. --------------------------------!
-               do k=1,nzg
-                  cpoly%ntext_soil(k,1) = cgrid%ntext_soil(k,ipy)
-               end do
+            call hdf_getslab_r(tpoly%area       ,'AREA_SI '    ,dsetrank,iparallel,.true.)
+            call hdf_getslab_r(tpoly%moist_f    ,'MOIST_F '    ,dsetrank,iparallel,.true.)
+            call hdf_getslab_r(tpoly%moist_W    ,'MOIST_W '    ,dsetrank,iparallel,.true.)
+            call hdf_getslab_r(tpoly%elevation  ,'ELEVATION '  ,dsetrank,iparallel,.true.)
+            call hdf_getslab_r(tpoly%slope      ,'SLOPE '      ,dsetrank,iparallel,.true.)
+            call hdf_getslab_r(tpoly%aspect     ,'ASPECT '     ,dsetrank,iparallel,.true.)
+            call hdf_getslab_r(tpoly%TCI        ,'TCI '        ,dsetrank,iparallel,.true.)
+            call hdf_getslab_i(tpoly%patch_count,'PATCH_COUNT ',dsetrank,iparallel,.true.)
 
-               !---------------------------------------------------------------------------!
-               !     The soil layer in this case is user defined, so take this from the    !
-               ! grid level variable, and not from the dataset.                            !
-               !---------------------------------------------------------------------------!
-               cpoly%lsl(1)  = cgrid%lsl(ipy)
-               !---------------------------------------------------------------------------!
-            end if
+            !----- Load 2D dataset, currently just the soil texture. ----------------------!
+            call hdf_getslab_i(tpoly%lsl        ,'LSL_SI '     ,dsetrank,iparallel,.true.)
+            dsetrank     = 2_8
+            globdims(1)  = int(dset_nzg,8)
+            chnkdims(1)  = int(dset_nzg,8)
+            memdims(1)   = int(dset_nzg,8)
+            memsize(1)   = int(dset_nzg,8)
+            chnkoffs(1)  = 0_8
+            memoffs(1)   = 0_8
+            globdims(2)  = int(dset_nsites_global,8)
+            chnkdims(2)  = int(tpoly%nsites,8)
+            chnkoffs(2)  = int(pysi_id(py_index) - 1,8)
+            memdims(2)   = int(tpoly%nsites,8)
+            memsize(2)   = int(tpoly%nsites,8)
+            memoffs(2)   = 0_8
+            call hdf_getslab_i(tpoly%ntext_soil,'NTEXT_SOIL_SI ',dsetrank,iparallel,.true.)
+            !------------------------------------------------------------------------------!
+
+
 
 
             !------------------------------------------------------------------------------!
@@ -1391,6 +1392,54 @@ subroutine read_ed21_history_unstruct
             !------------------------------------------------------------------------------!
             siteloop: do isi = 1,cpoly%nsites
                csite => cpoly%site(isi)
+
+               nsoil = cpoly%ntext_soil(nzg,isi)
+
+               !---------------------------------------------------------------------------!
+               !     Loop over the sites, pick up the closest one.                         !
+               !---------------------------------------------------------------------------!
+               textdist_min = huge(1.)
+               do isi_try = 1, tpoly%nsites
+                  nsoil_try = tpoly%ntext_soil(dset_nzg,isi_try)
+                  
+                  !------------------------------------------------------------------------!
+                  !     Find the "distance" between the two sites based on the sand and    !
+                  ! clay contents.                                                         !
+                  !------------------------------------------------------------------------!
+                  textdist_try = (soil(nsoil_try)%xsand - soil(nsoil)%xsand) ** 2          &
+                               + (soil(nsoil_try)%xclay - soil(nsoil)%xclay) ** 2
+                  !------------------------------------------------------------------------!
+
+
+                  !------------------------------------------------------------------------!
+                  !     Hold this site in case the "distance" is the minimum so far.       !
+                  !------------------------------------------------------------------------!
+                  if (textdist_try < textdist_min) then
+                     isi_best = isi_try
+                     textdist_min = textdist_try
+                  end if
+                  !------------------------------------------------------------------------!
+               end do
+               !---------------------------------------------------------------------------!
+
+
+               !---------------------------------------------------------------------------!
+               !      Copy the variables we just loaded for the temporary site to the      !
+               ! actual site, with two exceptions: area and lowest soil layer.  This is    !
+               ! because we are not running a history run, so these values are likely to   !
+               ! be different and we want them to be based on the user settings rather     !
+               ! than the old run setting.                                                 !
+               !---------------------------------------------------------------------------!
+               cpoly%moist_f     (isi) = tpoly%moist_f     (isi_best)
+               cpoly%moist_w     (isi) = tpoly%moist_w     (isi_best)
+               cpoly%elevation   (isi) = tpoly%elevation   (isi_best)
+               cpoly%slope       (isi) = tpoly%slope       (isi_best)
+               cpoly%aspect      (isi) = tpoly%aspect      (isi_best)
+               cpoly%TCI         (isi) = tpoly%TCI         (isi_best)
+               cpoly%patch_count (isi) = tpoly%patch_count (isi_best)
+               !---------------------------------------------------------------------------!
+
+
 
                !----- Reset the HDF5 auxiliary variables before moving to the next level. -!
                globdims = 0_8
@@ -1401,7 +1450,7 @@ subroutine read_ed21_history_unstruct
                memsize  = 1_8
 
                !----- Calculate the index of this site data in the HDF5 file. -------------!
-               si_index = pysi_id(py_index) + isi - 1
+               si_index = pysi_id(py_index) + isi_best - 1
 
                if (sipa_n(si_index) > 0) then
 

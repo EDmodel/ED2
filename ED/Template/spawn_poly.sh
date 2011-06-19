@@ -6,7 +6,7 @@ desc=`basename ${here}`
 sitemet='/n/moorcroft_scratch/nlevine/data/ed2_data/site_met_driver'
 hvdmet='/n/home11/aantonarakis/EDrelease65/run/'
 bioinit='/n/moorcroft_scratch/nlevine/data/ed2_data/site_bio_data'
-sheffield='/n/moorcroft_scratch/kzhang/Sheffield_Met_Data/southam_shef_driver/SHEF_NCEP_DRIVER_DS314'
+sheffield='SHEF_NCEP_DRIVER_DS314'
 lonlat=${here}'/joborder.txt'
 
 #----- History run variables. -------------------------------------------------------------#
@@ -382,7 +382,7 @@ do
       iphen=2
       ;;
    *)
-      metdriverdb=${sheffield}
+      metdriverdb=${here}/${polyname}/${sheffield}
       metcyc1=1969
       metcycf=2008
       imetavg=0

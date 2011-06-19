@@ -1,232 +1,293 @@
-!############################# Change Log ##################################
-! 5.0.0
-!
-!###########################################################################
-!  Copyright (C)  1990, 1995, 1999, 2000, 2003 - All Rights Reserved
-!  Regional Atmospheric Modeling System - RAMS
-!###########################################################################
+!==========================================================================================!
+!======================================= Change Log =======================================!
+! 5.0.0                                                                                    !
+!                                                                                          !
+!==========================================================================================!
+!  Copyright (C)  1990, 1995, 1999, 2000, 2003 - All Rights Reserved                       !
+!  Regional Atmospheric Modeling System - RAMS                                             !
+!==========================================================================================!
+!==========================================================================================!
 
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!     This subroutine initialises the topography map.                                      !
+!------------------------------------------------------------------------------------------!
 subroutine toptnest(ngra,ngrb)
 
-  use mem_mksfc
-  use mem_grid
-  use io_params
+   use mem_mksfc
+   use mem_grid
+   use io_params
 
-  implicit none
+   implicit none
+   !------ Arguments. ---------------------------------------------------------------------!
+   integer, intent(in) :: ngra
+   integer, intent(in) :: ngrb
+   !------ Local variables. ---------------------------------------------------------------!
+   integer             :: ifm
+   integer             :: icm
+   integer             :: ipat
+   integer             :: i
+   integer             :: j
+   integer             :: k
+   integer             :: indfm
+   integer             :: ivtime
+   integer             :: nc1
+   integer             :: mynum
+   !---------------------------------------------------------------------------------------!
 
-  integer :: ngra,ngrb 
+   do ifm = ngra,ngrb
+      icm = nxtnest(ifm)
 
-  integer :: ifm,icm,ipat,i,j,k,indfm,ivtime,nc1,mynum
+      !----- Initialize TOPOGRAPHY in toptinit. -------------------------------------------!
+      call toptinit(nnxp(ifm),nnyp(ifm),ifm,sfcfile_p(ifm)%topt,sfcfile_p(ifm)%topzo)
+      !------------------------------------------------------------------------------------!
 
-  do ifm = ngra,ngrb
-     icm = nxtnest(ifm)
-     ! Initialize TOPOGRAPHY in toptinit.
+      if (icm >= 1 .and. itoptflg(ifm) == 0) then
 
-     call toptinit(nnxp(ifm),nnyp(ifm),ifm  &
-          ,sfcfile_p(ifm)%topt,sfcfile_p(ifm)%topzo)
+         !----- Interpolate TOPO from coarser grid. ---------------------------------------!
+         call fillscr(1,maxnxp,maxnyp,1,nnxp(icm),nnyp(icm),1,1,scr1,sfcfile_p(icm)%topt)
+         call eintp(scr1,scr2,1,maxnxp,maxnyp,1,nnxp(ifm),nnyp(ifm),ifm,2,'t',0,0)
+         call fillvar(1,maxnxp,maxnyp,1,nnxp(ifm),nnyp(ifm),1,1,scr2,sfcfile_p(ifm)%topt)
+         !---------------------------------------------------------------------------------!
 
-     if (icm .ge. 1 .and. itoptflg(ifm) .eq. 0) then
 
-        ! Interpolate TOPO from coarser grid:
-        call fillscr(1,maxnxp,maxnyp,1,nnxp(icm),nnyp(icm),1,1  &
-             ,scr1,sfcfile_p(icm)%topt)
-        call eintp(scr1,scr2,1,maxnxp,maxnyp  &
-             ,1,nnxp(ifm),nnyp(ifm),ifm,2,'t',0,0)
-        call fillvar(1,maxnxp,maxnyp,1,nnxp(ifm),nnyp(ifm),1,1  &
-             ,scr2,sfcfile_p(ifm)%topt)
+         !----- Interpolate TOPO ZO from coarser grid. ------------------------------------!
+         call fillscr(1,maxnxp,maxnyp,1,nnxp(icm),nnyp(icm),1,1,scr1,sfcfile_p(icm)%topzo)
+         call eintp(scr1,scr2,1,maxnxp,maxnyp,1,nnxp(ifm),nnyp(ifm),ifm,2,'t',0,0)
+         call fillvar(1,maxnxp,maxnyp,1,nnxp(ifm),nnyp(ifm),1,1,scr2,sfcfile_p(ifm)%topzo)
+         !---------------------------------------------------------------------------------!
 
-        ! Interpolate TOPO ZO from coarser grid:
-        call fillscr(1,maxnxp,maxnyp,1,nnxp(icm),nnyp(icm),1,1  &
-             ,scr1,sfcfile_p(icm)%topzo)
-        call eintp(scr1,scr2,1,maxnxp,maxnyp  &
-             ,1,nnxp(ifm),nnyp(ifm),ifm,2,'t',0,0)
-        call fillvar(1,maxnxp,maxnyp,1,nnxp(ifm),nnyp(ifm),1,1  &
-             ,scr2,sfcfile_p(ifm)%topzo)
+      elseif (itoptflg(ifm) == 1) then
 
-     elseif (itoptflg(ifm) .eq. 1) then
+         !----- Interpolate TOPO from standard dataset. -----------------------------------!
+         call geodat(nnxp(ifm),nnyp(ifm),sfcfile_p(ifm)%topt,itoptfn(ifm),itoptfn(ifm)     &
+                    ,vt2da,vt2db,ifm,'TOP')
+         !---------------------------------------------------------------------------------!
 
-        ! Interpolate TOPO from standard dataset:
-        call geodat(nnxp(ifm),nnyp(ifm),sfcfile_p(ifm)%topt  &
-             ,itoptfn(ifm),itoptfn(ifm),vt2da,vt2db,ifm,'TOP')
-        ! Interpolate TOPO ZO from standard dataset:
-        call geodat(nnxp(ifm),nnyp(ifm),sfcfile_p(ifm)%topzo  &
-             ,itoptfn(ifm),itoptfn(ifm),vt2da,vt2db,ifm,'ZOT')
 
-     elseif (itoptflg(ifm) .eq. 3) then
+         !----- Interpolate TOPO ZO from standard dataset. --------------------------------!
+         call geodat(nnxp(ifm),nnyp(ifm),sfcfile_p(ifm)%topzo,itoptfn(ifm),itoptfn(ifm)    &
+                    ,vt2da,vt2db,ifm,'ZOT')
+         !---------------------------------------------------------------------------------!
 
-        ! Interpolate TOPO from dted dataset:
-        call geodat(nnxp(ifm),nnyp(ifm),sfcfile_p(ifm)%topt  &
-             ,itoptfn(ifm),itoptfn(ifm),vt2da,vt2db,ifm,'TOD')
+      elseif (itoptflg(ifm) == 3) then
 
-        ! Interpolate TOPO ZO from dted dataset:
-        call geodat(nnxp(ifm),nnyp(ifm),sfcfile_p(ifm)%topzo  &
-             ,itoptfn(ifm),itoptfn(ifm),vt2da,vt2db,ifm,'ZOD')
+         !----- Interpolate TOPO from dted dataset. ---------------------------------------!
+         call geodat(nnxp(ifm),nnyp(ifm),sfcfile_p(ifm)%topt,itoptfn(ifm),itoptfn(ifm)     &
+                    ,vt2da,vt2db,ifm,'TOD')
+         !---------------------------------------------------------------------------------!
 
-     endif
+         !----- Interpolate TOPO ZO from dted dataset. ------------------------------------!
+         call geodat(nnxp(ifm),nnyp(ifm),sfcfile_p(ifm)%topzo,itoptfn(ifm),itoptfn(ifm)    &
+                    ,vt2da,vt2db,ifm,'ZOD')
+         !---------------------------------------------------------------------------------!
 
-     ! If desired, override current values of TOPOGRAPHY in ruser.f subroutine.
+      end if
+      !------------------------------------------------------------------------------------!
 
-     call toptinit_user(nnxp(ifm),nnyp(ifm),ifm  &
-          ,sfcfile_p(ifm)%topt ,sfcfile_p(ifm)%topzo)
 
-  enddo
 
-  if (ngra .eq. ngrb) return
+      !------------------------------------------------------------------------------------!
+      !    If desired, replace current values of TOPOGRAPHY by some made up by the user/   !
+      ! developer in ruser.f90 files.  The default is to not change anything.              !
+      !------------------------------------------------------------------------------------!
+      call toptinit_user(nnxp(ifm),nnyp(ifm),ifm,sfcfile_p(ifm)%topt ,sfcfile_p(ifm)%topzo)
+      !------------------------------------------------------------------------------------!
 
-  ! In case topography data have been independently reassigned on any grid,
-  ! average fine mesh topography sequentially to the coarser grids.
+   end do
+   !---------------------------------------------------------------------------------------!
 
-  do ifm = ngrb,ngra,-1
-     if (nxtnest(ifm) .gt. ngridsh .and. ifm .ge. 2) then
-        icm = nxtnest(ifm)
 
-        call fdback(sfcfile_p(icm)%topt,sfcfile_p(ifm)%topt  &
-             ,vt2da,scr2,1,nnxp(icm),nnyp(icm)  &
-             ,1,nnxp(ifm),nnyp(ifm),ifm,'terr',vt2db)
 
-     endif
-  enddo
 
-  ! In case terrain heights have been independently reassigned on
-  ! any grid, interpolate coarse grid terrain heights to a temporary
-  ! fine mesh array.  Fill the fine mesh boundary terrain heights
-  ! from the temporary array.
+   if (ngra /= ngrb) then
 
-  do ifm = ngra,ngrb
-     icm = nxtnest(ifm)
-     if (icm .ge. 1) then
-        call fillscr(1,nxpmax,nypmax,1,nnxp(icm),nnyp(icm),1,1  &
-             ,scr1,sfcfile_p(icm)%topt)
+      !------------------------------------------------------------------------------------!
+      !      In case topography data have been independently reassigned on any grid,       !
+      ! average fine mesh topography sequentially to the coarser grids.                    !
+      !------------------------------------------------------------------------------------!
+      do ifm = ngrb,ngra,-1
+         if (nxtnest(ifm) > ngridsh .and. ifm >= 2) then
+            icm = nxtnest(ifm)
+            call fdback(sfcfile_p(icm)%topt,sfcfile_p(ifm)%topt,vt2da,scr2,1,nnxp(icm)     &
+                       ,nnyp(icm),1,nnxp(ifm),nnyp(ifm),ifm,'terr',vt2db)
+         end if
+      end do
+      !------------------------------------------------------------------------------------!
 
-        call eintp(scr1,scr2,1,nxpmax,nypmax  &
-             ,1,nnxp(ifm),nnyp(ifm),ifm,2,'t',0,0)
-        call fillvar(1,nxpmax,nypmax,1,nnxp(ifm),nnyp(ifm),1,1  &
-             ,scr2,scr1)
 
-        nc1 = jdim * (nstraty(ifm) + 1)
-        call ae2(nnxp(ifm),nnyp(ifm),2+nstratx(ifm)  &
-             ,nnxp(ifm)-1-nstratx(ifm),1+nc1,nnyp(ifm)-nc1  &
-             ,scr1,sfcfile_p(ifm)%topt)
-        call ae1(nnxp(ifm)*nnyp(ifm),sfcfile_p(ifm)%topt,scr1)
+      !------------------------------------------------------------------------------------!
+      !      In case terrain heights have been independently reassigned on any grid,       !
+      ! interpolate coarse grid terrain heights to a temporary fine mesh array.  Fill the  !
+      ! fine mesh boundary terrain heights from the temporary array.                       !
+      !------------------------------------------------------------------------------------!
+      do ifm = ngra,ngrb
+         icm = nxtnest(ifm)
+         if (icm >= 1) then
+            call fillscr(1,nxpmax,nypmax,1,nnxp(icm),nnyp(icm),1,1,scr1,sfcfile_p(icm)%topt)
+            call eintp(scr1,scr2,1,nxpmax,nypmax,1,nnxp(ifm),nnyp(ifm),ifm,2,'t',0,0)
+            call fillvar(1,nxpmax,nypmax,1,nnxp(ifm),nnyp(ifm),1,1,scr2,scr1)
 
-     endif
-  enddo
-  return
+            nc1 = jdim * (nstraty(ifm) + 1)
+            call ae2(nnxp(ifm),nnyp(ifm),2+nstratx(ifm),nnxp(ifm)-1-nstratx(ifm),1+nc1     &
+                    ,nnyp(ifm)-nc1,scr1,sfcfile_p(ifm)%topt)
+            call ae1(nnxp(ifm)*nnyp(ifm),sfcfile_p(ifm)%topt,scr1)
+         end if
+      end do
+   end if
+
+   return
 end subroutine toptnest
+!==========================================================================================!
+!==========================================================================================!
 
-!*************************************************************************
 
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!      This sub-routine will set up the patch areas, land use classes and soil textural    !
+! classes for this run.                                                                    !
+!------------------------------------------------------------------------------------------!
 subroutine geonest_file(ifm)
+   use mem_mksfc
+   use mem_grid
+   use io_params
+   use mem_leaf
 
-  use mem_mksfc
-  use mem_grid
-  use io_params
-  use mem_leaf
-
-  implicit none
-
-  integer :: ifm 
-
-  integer :: icm,ipat,i,j,k,indfm,ivtime,nc1,mynum
-
-  icm = nxtnest(ifm)
-
-  ! Initialize PATCH AREA, LANDUSE CLASS, and SOIL TEXTURAL CLASS
-  ! in subroutine sfcinit.
-
-  call sfcinit_file(nnxp(ifm),nnyp(ifm),nzg,npatch,ifm      &
-       ,sfcfile_p(ifm)%patch_area   &
-       ,sfcfile_p(ifm)%leaf_class   &
-       ,sfcfile_p(ifm)%soil_text)
-
-
-  print*, ' '
-  print*,'====================================================='
-  print*,'Starting landuse data input on grid ',ifm
-  print*,'====================================================='
-
-  if (icm .ge. 1 .and. ivegtflg(ifm) .eq. 0) then
-
-     ! Assign PATCH AREAS and PATCH CLASSES from coarser grid:
-
-     do ipat = 1,npatch
-        do j = 1,nnyp(ifm)
-           do i = 1,nnxp(ifm)
-
-              sfcfile_p(ifm)%patch_area(i,j,ipat) =  &
-                   sfcfile_p(icm)%patch_area(ipm(i,ifm),jpm(j,ifm),ipat)
-              sfcfile_p(ifm)%leaf_class(i,j,ipat) =  &
-                   sfcfile_p(icm)%leaf_class(ipm(i,ifm),jpm(j,ifm),ipat)
-
-           enddo
-        enddo
-     enddo
+   implicit none
+   !------ Arguments. ---------------------------------------------------------------------!
+   integer, intent(in) :: ifm 
+   !------ Local variables. ---------------------------------------------------------------!
+   integer             :: icm
+   integer             :: ipat
+   integer             :: i
+   integer             :: j
+   integer             :: k
+   integer             :: ic
+   integer             :: jc
+   integer             :: indfm
+   integer             :: ivtime
+   integer             :: nc1
+   integer             :: mynum
+   !---------------------------------------------------------------------------------------!
 
 
-  elseif (ivegtflg(ifm) .eq. 1) then
-
-     ! Assign PATCH AREAS and PATCH CLASSES from standard dataset:
-
-     call landuse_opqr(nnxp(ifm),nnyp(ifm),nzg,npatch,nvegpat  &
-          ,ivegtflg(ifm),ivegtfn(ifm),isoilflg(ifm),isoilfn(ifm) &
-          ,ndviflg(ifm),ndvifn(ifm),vndvifil(1,ifm)  &
-          ,'veg',platn(ifm),plonn(ifm)        &
-          ,sfcfile_p(ifm)%soil_text  &
-          ,sfcfile_p(ifm)%patch_area   &
-          ,sfcfile_p(ifm)%leaf_class   &
-          ,sfcfile_p(ifm)%veg_ndvif)
+   !----- Alias for coarser mesh. ---------------------------------------------------------!
+   icm = nxtnest(ifm)
 
 
-  endif
 
-  if (icm .ge. 1 .and. isoilflg(ifm) .eq. 0) then
-
-     ! Assign SOIL TEXTURE CLASS from coarser grid
-
-     do ipat = 2,npatch
-        do k = 1,nzg
-           do j = 1,nnyp(ifm)
-              do i = 1,nnxp(ifm)
-                 sfcfile_p(ifm)%soil_text(k,i,j,ipat) =  &
-                      sfcfile_p(icm)%soil_text(k,ipm(i,ifm),jpm(j,ifm),ipat)
-              enddo
-           enddo
-        enddo
-     enddo
-
-  elseif (isoilflg(ifm) .eq. 1) then
-
-     ! Assign SOIL TEXTURE CLASS from standard dataset:
-
-     call landuse_opqr(nnxp(ifm),nnyp(ifm),nzg,npatch,nvegpat  &
-          ,ivegtflg(ifm),ivegtfn(ifm),isoilflg(ifm),isoilfn(ifm) &
-          ,ndviflg(ifm),ndvifn(ifm),vndvifil(1,ifm)  &
-          ,'soil',platn(ifm),plonn(ifm)        &
-          ,sfcfile_p(ifm)%soil_text  &
-          ,sfcfile_p(ifm)%patch_area   &
-          ,sfcfile_p(ifm)%leaf_class   &
-          ,sfcfile_p(ifm)%veg_ndvif)
-
-  endif
-
-  ! If desired, override current values of PATCH AREA, PATCH CLASS, 
-  ! LEAF-2 VEGETATION CLASS, SOIL TEXTURAL CLASS, and/or
-  ! NDVI in ruser.f subroutines.
-
-  call sfcinit_file_user(nnxp(ifm),nnyp(ifm),nzg,npatch,ifm &
-       ,sfcfile_p(ifm)%patch_area  &
-       ,sfcfile_p(ifm)%leaf_class  &
-       ,sfcfile_p(ifm)%soil_text  )
-
-  ! As a final initialization step, eliminate any land patch area that is less 
-  ! than 1% of the total grid cell area.  Set its area to zero, and compensate
-  ! by enlarging areas of remaining patches.
-
-  call patch_minsize(nnxp(ifm),nnyp(ifm),npatch  &
-       ,sfcfile_p(ifm)%patch_area)
+   !---------------------------------------------------------------------------------------!
+   !      Assign initial, horizontally homogeneous values for patch area, land use class,  !
+   ! and soil textural class in subroutine sfcinit.                                        !
+   !---------------------------------------------------------------------------------------!
+   write (unit=*,fmt='(a)')         '-----------------------------------------------------'
+   write (unit=*,fmt='(a,1x,i5,a)') ' - Initialising patch properties on grid',ifm,'...'
+   write (unit=*,fmt='(a)')         '-----------------------------------------------------'
+   write (unit=*,fmt='(a)')         ' '
+   call sfcinit_file(nnxp(ifm),nnyp(ifm),nzg,npatch,ifm,sfcfile_p(ifm)%patch_area          &
+                    ,sfcfile_p(ifm)%leaf_class,sfcfile_p(ifm)%soil_text)
+   !---------------------------------------------------------------------------------------!
 
 
-  return
+   write (unit=*,fmt='(a)')         '-----------------------------------------------------'
+   write (unit=*,fmt='(a,1x,i5,a)') ' - Starting land use properties on grid',ifm,'...'
+   write (unit=*,fmt='(a)')         '-----------------------------------------------------'
+   write (unit=*,fmt='(a)')         ' '
+
+   if (icm >= 1 .and. ivegtflg(ifm) == 0) then
+
+      !----- Assign patch areas and patch classes from coarser grid. ----------------------!
+      do ipat = 1,npatch
+         do j = 1,nnyp(ifm)
+            do i = 1,nnxp(ifm)
+               ic = ipm(i,ifm)
+               jc = ipm(j,ifm)
+
+               sfcfile_p(ifm)%patch_area(i,j,ipat) = sfcfile_p(icm)%patch_area(ic,jc,ipat)
+               sfcfile_p(ifm)%leaf_class(i,j,ipat) = sfcfile_p(icm)%leaf_class(ic,jc,ipat)
+            end do
+         end do
+      end do
+      !------------------------------------------------------------------------------------!
+
+
+   elseif (ivegtflg(ifm) == 1) then
+
+      !----- Assign PATCH AREAS and PATCH CLASSES from standard dataset. ------------------!
+      call landuse_opqr(nnxp(ifm),nnyp(ifm),nzg,npatch,nvegpat,ivegtflg(ifm),ivegtfn(ifm)  &
+                       ,isoilflg(ifm),isoilfn(ifm),ndviflg(ifm),ndvifn(ifm)                &
+                       ,vndvifil(1,ifm),'veg',platn(ifm),plonn(ifm)                        &
+                       ,sfcfile_p(ifm)%soil_text,sfcfile_p(ifm)%patch_area                 &
+                       ,sfcfile_p(ifm)%leaf_class,sfcfile_p(ifm)%veg_ndvif)
+      !------------------------------------------------------------------------------------!
+   end if
+
+
+   write (unit=*,fmt='(a)')         '-----------------------------------------------------'
+   write (unit=*,fmt='(a,1x,i5,a)') ' - Starting soil texture properties on grid',ifm,'...'
+   write (unit=*,fmt='(a)')         '-----------------------------------------------------'
+   write (unit=*,fmt='(a)')         ' '
+
+   if (icm >= 1 .and. isoilflg(ifm) == 0) then
+
+      !----- Assign soil texture class from coarser grid. ---------------------------------!
+      do ipat = 2,npatch
+         do k = 1,nzg
+            do j = 1,nnyp(ifm)
+               do i = 1,nnxp(ifm)
+                  ic = ipm(i,ifm)
+                  jc = ipm(j,ifm)
+                  sfcfile_p(ifm)%soil_text(k,i,j,ipat) =                                   &
+                                                     sfcfile_p(icm)%soil_text(k,ic,ic,ipat)
+               end do
+            end do
+         end do
+      end do
+      !------------------------------------------------------------------------------------!
+
+   elseif (isoilflg(ifm) == 1) then
+
+      !----- Assign soil texture class from standard dataset. -----------------------------!
+      call landuse_opqr(nnxp(ifm),nnyp(ifm),nzg,npatch,nvegpat,ivegtflg(ifm),ivegtfn(ifm)  &
+                       ,isoilflg(ifm),isoilfn(ifm),ndviflg(ifm),ndvifn(ifm)                &
+                       ,vndvifil(1,ifm),'soil',platn(ifm),plonn(ifm)                       &
+                       ,sfcfile_p(ifm)%soil_text,sfcfile_p(ifm)%patch_area                 &
+                       ,sfcfile_p(ifm)%leaf_class,sfcfile_p(ifm)%veg_ndvif)
+      !------------------------------------------------------------------------------------!
+   end if
+   !---------------------------------------------------------------------------------------!
+
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !      If desired, override current values of patch area, land use class, soil texture  !
+   !  class, and NDVI in ruser.f90 subroutines.                                            !
+   !---------------------------------------------------------------------------------------!
+   call sfcinit_file_user(nnxp(ifm),nnyp(ifm),nzg,npatch,ifm,sfcfile_p(ifm)%patch_area     &
+                         ,sfcfile_p(ifm)%leaf_class,sfcfile_p(ifm)%soil_text)
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !      As a final initialization step, eliminate any land patch area that is less than  !
+   ! 1% of the total grid cell area.  Set its area to zero, and compensate by enlarging    !
+   ! areas of remaining patches.                                                           !
+   !---------------------------------------------------------------------------------------!
+   call patch_minsize(nnxp(ifm),nnyp(ifm),npatch,sfcfile_p(ifm)%patch_area)
+   !---------------------------------------------------------------------------------------!
+
+   return
 end subroutine geonest_file
 !==========================================================================================!
 !==========================================================================================!
@@ -488,50 +549,49 @@ end subroutine geonest_nofile
 
 !==========================================================================================!
 !==========================================================================================!
-subroutine patch_interp(icm,ifm,nc1,nc2,nc3,nc4,nf1,nf2,nf3,nf4 &
-     ,ac,af,pareac,pareaf,avgc,avgf,slabc,slabf)
+subroutine patch_interp(icm,ifm,nc1,nc2,nc3,nc4,nf1,nf2,nf3,nf4,ac,af,pareac,pareaf,avgc   &
+                       ,avgf,slabc,slabf)
+   use mem_scratch
 
-  use mem_scratch
+   implicit none
 
-  implicit none
+   integer :: icm,ifm,nc1,nc2,nc3,nc4,nf1,nf2,nf3,nf4
+   real :: ac(nc1,nc2,nc3,nc4), af(nf1,nf2,nf3,nf4)
+   real :: pareac(nc2,nc3,nc4), pareaf(nf2,nf3,nf4)
+   real :: avgc(nc1,nc2,nc3),   avgf(nf1,nf2,nf3)
+   real :: slabc(nc2,nc3), slabf(nf2,nf3)
 
-  integer :: icm,ifm,nc1,nc2,nc3,nc4,nf1,nf2,nf3,nf4
-  real :: ac(nc1,nc2,nc3,nc4), af(nf1,nf2,nf3,nf4)
-  real :: pareac(nc2,nc3,nc4), pareaf(nf2,nf3,nf4)
-  real :: avgc(nc1,nc2,nc3),   avgf(nf1,nf2,nf3)
-  real :: slabc(nc2,nc3), slabf(nf2,nf3)
+   integer :: k,i,j
 
-  integer :: k,i,j
+   ! Average coarse grid field over all land patches
 
-  ! Average coarse grid field over all land patches
+   call patch_land_average(nc1,nc2,nc3,nc4,pareac,ac,avgc)
 
-  call patch_land_average(nc1,nc2,nc3,nc4,pareac,ac,avgc)
+   ! Interpolate patch-averaged to fine grid
 
-  ! Interpolate patch-averaged to fine grid
+   do k=1,nc1    ! nc1 and nf1 are the same
 
-  do k=1,nc1    ! nc1 and nf1 are the same
+      do j=1,nc3
+         do i=1,nc2
+            slabc(i,j)=avgc(k,i,j)
+         enddo
+      enddo
 
-     do j=1,nc3
-        do i=1,nc2
-           slabc(i,j)=avgc(k,i,j)
-        enddo
-     enddo
+      call fmint2d(icm,ifm,'t',slabc,slabf)
 
-     call fmint2d(icm,ifm,'t',slabc,slabf)
+      do j=1,nf3
+         do i=1,nf2
+            avgf(k,i,j)=slabf(i,j)
+         enddo
+      enddo
 
-     do j=1,nf3
-        do i=1,nf2
-           avgf(k,i,j)=slabf(i,j)
-        enddo
-     enddo
+   enddo
 
-  enddo
+   ! Fill fine grid field back into all land patches
 
-  ! Fill fine grid field back into all land patches
+   call patch_land_unaverage(nf1,nf2,nf3,nf4,avgf,af)
 
-  call patch_land_unaverage(nf1,nf2,nf3,nf4,avgf,af)
-
-  return
+   return
 end subroutine patch_interp
 
 
@@ -584,7 +644,7 @@ end subroutine fmint5
 !==========================================================================================!
 !==========================================================================================!
 subroutine patch_minsize(nx,ny,np,patch_area)
-   use leaf_coms, only : tiny_parea ! ! intent(in)
+   use leaf_coms, only : min_patch_area ! ! intent(in)
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
    integer                  , intent(in)    :: nx
@@ -599,7 +659,7 @@ subroutine patch_minsize(nx,ny,np,patch_area)
    yloop: do y=1,ny
       xloop: do x=1,nx
          !----- First ensure that the water patch has at least 0.1% of the area. ----------!
-         if (patch_area(x,y,1) < tiny_parea) patch_area(x,y,1) = tiny_parea
+         if (patch_area(x,y,1) < min_patch_area) patch_area(x,y,1) = min_patch_area
 
          !---------------------------------------------------------------------------------!
          !     Then we loop over the other patches, eliminating those that are tiny or     !
@@ -607,9 +667,9 @@ subroutine patch_minsize(nx,ny,np,patch_area)
          !---------------------------------------------------------------------------------!
          parea_tot = patch_area(x,y,1)
          elimploop: do p=2,np
-            if (patch_area(x,y,p) > 0. .and. patch_area(x,y,p) < tiny_parea) then
+            if (patch_area(x,y,p) > 0. .and. patch_area(x,y,p) < min_patch_area) then
                patch_area(x,y,p) = 0.
-            elseif (patch_area(x,y,p) < 0. .or. patch_area(x,y,p) > 1. + tiny_parea) then
+            elseif (patch_area(x,y,p) < 0. .or. patch_area(x,y,p) > 1.001) then
                patch_area(x,y,p) = 0.
             end if
             parea_tot = parea_tot + patch_area(x,y,p)

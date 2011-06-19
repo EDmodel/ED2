@@ -20,7 +20,8 @@ subroutine ed_node_decomp(init,standalone,masterworks)
                           , mj0               & ! intent(in)
                           , mibcon            ! ! intent(in)
    use ed_para_coms, only : nmachs            ! ! intent(in)
-   use mem_polygons, only : n_ed_region       ! ! intent(in)
+   use mem_polygons, only : n_ed_region       & ! intent(in)
+                          , maxsite           ! ! intent(in)
    use ed_work_vars, only : work_e            & ! intent(in)
                           , work_v            & ! intent(in)
                           , ed_alloc_work     & ! subroutine
@@ -63,7 +64,7 @@ subroutine ed_node_decomp(init,standalone,masterworks)
       mmyp(ngr) = nnyp(ngr)
 
       call ed_nullify_work(work_e(ngr))
-      call ed_alloc_work(work_e(ngr),nnxp(ngr),nnyp(ngr))
+      call ed_alloc_work(work_e(ngr),nnxp(ngr),nnyp(ngr),maxsite)
    end do
 
    call get_grid()
@@ -186,8 +187,11 @@ subroutine get_work(ifm,nxp,nyp)
                           , isoilflg       & ! intent(in)
                           , nslcon         ! ! intent(in)
    use mem_polygons, only : n_poi          & ! intent(in)
+                          , poi_res        & ! intent(in)
                           , grid_res       & ! intent(in)
-                          , grid_type      ! ! intent(in)
+                          , grid_type      & ! intent(in)
+                          , maxsite        ! ! intent(in)
+   use ed_misc_coms, only : min_site_area  ! ! intent(in)
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
    integer, intent(in) :: ifm
@@ -197,9 +201,10 @@ subroutine get_work(ifm,nxp,nyp)
    integer :: npoly
    real   , dimension(:,:), allocatable :: lat_list
    real   , dimension(:,:), allocatable :: lon_list
-   integer, dimension(:)  , allocatable :: leaf_class_list
-   integer, dimension(:)  , allocatable :: ntext_soil_list
-   integer, dimension(:)  , allocatable :: ipcent_land
+   integer, dimension(:,:), allocatable :: leaf_class_list
+   integer, dimension(:,:), allocatable :: ntext_soil_list
+   real   , dimension(:,:), allocatable :: ipcent_land
+   real   , dimension(:,:), allocatable :: ipcent_soil
    integer                              :: datsoil
    integer                              :: ipy
    integer                              :: i
@@ -208,20 +213,22 @@ subroutine get_work(ifm,nxp,nyp)
    integer                              :: jtoff
    integer                              :: iloff
    integer                              :: iroff
-   !----- Local constants. ----------------------------------------------------------------!
-   integer                , parameter   :: min_land_pcent =  5 ! Mininum percentage of land
-                                                               !   that a polygon must have
-                                                               !   to be considered in the
-                                                               !   regional run.
-   real                   , parameter   :: poi_edge_deg = 0.05 ! 100th of a degree, about 
-                                                               !   5.5 km at the Equator.
+   integer                              :: itext
+   real                                 :: maxwork
    !---------------------------------------------------------------------------------------!
 
+
+   !----- Assume that every grid cell will become a polygon. ------------------------------!
    npoly = nxp*nyp
-   allocate(lat_list(3,npoly))
-   allocate(lon_list(3,npoly))
-   allocate(leaf_class_list(npoly))
-   allocate(ipcent_land(npoly))
+   allocate(lat_list       (      3,npoly))
+   allocate(lon_list       (      3,npoly))
+   allocate(leaf_class_list(maxsite,npoly))
+   allocate(ntext_soil_list(maxsite,npoly))
+   allocate(ipcent_land    (maxsite,npoly))
+   allocate(ipcent_soil    (maxsite,npoly))
+   !---------------------------------------------------------------------------------------!
+
+
 
    !---------------------------------------------------------------------------------------!
    !     Fill lat/lon lists.  The longitude and latitude are initially assigned as arrays. !
@@ -230,20 +237,21 @@ subroutine get_work(ifm,nxp,nyp)
    ! 1 means grid centre, 2 means Northwestern corner, and 3 means Southeastern corner.    !
    !---------------------------------------------------------------------------------------!
    if (n_poi > 0 .and. ifm <= n_poi) then
+
       ipy = 0
-      do i=1,nxp
-         do j = 1,nyp
+      do j = 1,nyp
+         do i=1,nxp
             ipy = ipy + 1
 
             !----- Grid mid-point. --------------------------------------------------------!
             lon_list(1,ipy) = work_e(ifm)%glon(i,j)
             lat_list(1,ipy) = work_e(ifm)%glat(i,j)
             !----- Northwestern corner. ---------------------------------------------------!
-            lon_list(2,ipy) = work_e(ifm)%glon(i,j) - poi_edge_deg
-            lat_list(2,ipy) = work_e(ifm)%glat(i,j) + poi_edge_deg
+            lon_list(2,ipy) = work_e(ifm)%glon(i,j) - 0.5 * poi_res(ifm)
+            lat_list(2,ipy) = work_e(ifm)%glat(i,j) + 0.5 * poi_res(ifm)
             !----- Southeastern corner. ---------------------------------------------------!
-            lon_list(3,ipy) = work_e(ifm)%glon(i,j) + poi_edge_deg
-            lat_list(3,ipy) = work_e(ifm)%glat(i,j) - poi_edge_deg
+            lon_list(3,ipy) = work_e(ifm)%glon(i,j) + 0.5 * poi_res(ifm)
+            lat_list(3,ipy) = work_e(ifm)%glat(i,j) - 0.5 * poi_res(ifm)
 
             !----- Adjusting the longitudes to be between -180 and 180. -------------------!
             if (lon_list(1,ipy) >=  180.) lon_list(1,ipy) = lon_list(1,ipy) - 360.
@@ -258,8 +266,8 @@ subroutine get_work(ifm,nxp,nyp)
       end do
    else
       ipy = 0
-      do i=1,nxp
-         do j = 1,nyp
+      do j = 1,nyp
+         do i=1,nxp
             ipy = ipy + 1
 
             !----- Grid mid-point. --------------------------------------------------------!
@@ -334,61 +342,82 @@ subroutine get_work(ifm,nxp,nyp)
 
          end do
       end do
-
    end if
 
    !----- Generate the land/sea mask. -----------------------------------------------------!
    write(unit=*,fmt=*) ' => Generating the land/sea mask.'
 
-   call leaf_database(trim(veg_database(ifm)),npoly,'leaf_class',lat_list,lon_list         &
-                     ,ipcent_land)
+   call leaf_database(trim(veg_database(ifm)),maxsite,npoly,'leaf_class'                   &
+                     ,lat_list,lon_list,leaf_class_list,ipcent_land)
 
    if (isoilflg(ifm) == 1) then
-      allocate(ntext_soil_list(npoly))
-      call leaf_database(trim(soil_database(ifm)),npoly,'soil_text',lat_list,lon_list      &
-                        ,ntext_soil_list)
+      call leaf_database(trim(soil_database(ifm)),maxsite,npoly,'soil_text'                &
+                        ,lat_list,lon_list,ntext_soil_list,ipcent_soil)
+   else
+      !------------------------------------------------------------------------------------!
+      !   Allow for only one site by making the first site with the default soil type and  !
+      ! area 1., and the others with area 0.                                               !
+      !------------------------------------------------------------------------------------!
+      ntext_soil_list        (:,:) = nslcon
+      ipcent_soil            (:,:) = 0.
+      ipcent_soil            (1,:) = 1.
+      !------------------------------------------------------------------------------------!
    end if
- 
+   !---------------------------------------------------------------------------------------!
+
+
+
    !----- Re-map the land cover classes. --------------------------------------------------!
-   ipy = 0
-   do i=1,nxp
-      do j = 1,nyp
+   ipy     = 0
+   maxwork = epsilon(0.0)
+   do j = 1,nyp
+      do i=1,nxp
          ipy = ipy + 1
-         work_e(ifm)%land(i,j) = ipcent_land(ipy) > min_land_pcent
+         work_e(ifm)%land(i,j) = ipcent_land(1,ipy) > min_site_area
 
          if (work_e(ifm)%land(i,j)) then
-            work_e(ifm)%work(i,j)     = 1.0
-            work_e(ifm)%landfrac(i,j) = 0.01 * real(ipcent_land(ipy))
+            work_e(ifm)%landfrac(i,j) = ipcent_land(1,ipy)
 
-            select case (isoilflg(ifm))
-            case (1)  !----- Set from data base or LEAF-3. --------------------------------!
-               datsoil = ntext_soil_list(ipy)
+            work_e(ifm)%work(i,j) = 0.0
+            do itext = 1,maxsite
+               if (ipcent_soil(itext,ipy) > min_site_area) then
+                  work_e(ifm)%work(i,j) = work_e(ifm)%work(i,j) + 1.
+               end if
+               work_e(ifm)%soilfrac(itext,i,j) = ipcent_soil(itext,ipy)
+               work_e(ifm)%ntext   (itext,i,j) = ntext_soil_list (itext,ipy)
+            end do
+            maxwork = max(maxwork,work_e(ifm)%work(i,j))
 
-               !---------------------------------------------------------------------------!
-               !     This is to prevent datsoil to be zero when the polygon was assumed    !
-               ! land.                                                                     !
-               !---------------------------------------------------------------------------!
-               if (datsoil == 0) datsoil=nslcon
-               work_e(ifm)%ntext(i,j) = datsoil
-            case (2) !! set from ED2IN/RAMSIN
-               work_e(ifm)%ntext(i,j) = nslcon
-            end select
          else
-            !----- Making this grid point 100% water ---------------------------------------!
-            work_e(ifm)%landfrac(i,j)  = 0.
-            work_e(ifm)%work(i,j)      = epsilon(0.0)
-            work_e(ifm)%ntext(i,j)     = 0
+            !----- Making this grid point 100% water --------------------------------------!
+            work_e(ifm)%landfrac  (i,j) = 0.
+            work_e(ifm)%work      (i,j) = epsilon(0.0)
+            work_e(ifm)%ntext   (:,i,j) = 0
+            work_e(ifm)%soilfrac(:,i,j) = 0.
          end if
       end do
    end do
+   !---------------------------------------------------------------------------------------!
 
-  
-  
-   deallocate(lat_list)
-   deallocate(lon_list)
+
+
+   !----- Normalise the workload. ---------------------------------------------------------!
+   do j=1,nyp
+      do i=1,nxp
+         work_e(ifm)%work(i,j) = work_e(ifm)%work(i,j) / maxwork
+      end do
+   end do
+   !---------------------------------------------------------------------------------------!
+
+
+   !------ De-allocate the temporary arrays. ----------------------------------------------!
+   deallocate(lat_list       )
+   deallocate(lon_list       )
    deallocate(leaf_class_list)
-   deallocate(ipcent_land)
-   if (allocated(ntext_soil_list)) deallocate (ntext_soil_list)
+   deallocate(ntext_soil_list)
+   deallocate(ipcent_land    )
+   deallocate(ipcent_soil    )
+   !---------------------------------------------------------------------------------------!
 
    return
 end subroutine get_work
@@ -411,19 +440,22 @@ subroutine ed_parvec_work(ifm,nxp,nyp)
                            , ed_nullify_work_vec ! ! subroutine
    use soil_coms    , only : nslcon              & ! intent(in)
                            , ed_nstyp            ! ! intent(in)
+   use mem_polygons , only : maxsite             ! ! intent(in)
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
    integer, intent(in) :: ifm
    integer, intent(in) :: nxp
    integer, intent(in) :: nyp
    !----- Local variables. ----------------------------------------------------------------!
-   integer :: poly
-   integer :: i
-   integer :: j
+   integer             :: poly
+   integer             :: i
+   integer             :: j
+   integer             :: itext
    !---------------------------------------------------------------------------------------!
 
+
+
    !----- Compute total work load over each row and over entire domain. -------------------!
-  
    npolys_run(ifm) = 0
    do j = 1,nyp
       do i = 1,nxp
@@ -432,10 +464,17 @@ subroutine ed_parvec_work(ifm,nxp,nyp)
          end if
       end do
    end do
-  
+   !---------------------------------------------------------------------------------------!
+
+
+
    !----- Allocate the polygon vectors. ---------------------------------------------------!
    call ed_nullify_work_vec(work_v(ifm))
-   call ed_alloc_work_vec(work_v(ifm),npolys_run(ifm))
+   call ed_alloc_work_vec(work_v(ifm),npolys_run(ifm),maxsite)
+   !---------------------------------------------------------------------------------------!
+
+
+
 
    !----- Copy variables to the vector version of the work structure. ---------------------!
    poly = 0
@@ -443,23 +482,25 @@ subroutine ed_parvec_work(ifm,nxp,nyp)
       do i = 1,nxp
          
          if(work_e(ifm)%land(i,j)) then
+
             poly = poly + 1
-            
-            work_v(ifm)%glon(poly)     = work_e(ifm)%glon(i,j)
-            work_v(ifm)%glat(poly)     = work_e(ifm)%glat(i,j)
+
+            work_v(ifm)%glon    (poly) = work_e(ifm)%glon(i,j)
+            work_v(ifm)%glat    (poly) = work_e(ifm)%glat(i,j)
             work_v(ifm)%landfrac(poly) = work_e(ifm)%landfrac(i,j)
-            work_v(ifm)%work(poly)     = work_e(ifm)%work(i,j)
-            if (work_e(ifm)%ntext(i,j) >= 1 .and. work_e(ifm)%ntext(i,j) <= ed_nstyp) then
-               work_v(ifm)%ntext(poly)    = work_e(ifm)%ntext(i,j)
-            else
-               work_v(ifm)%ntext(poly)    = nslcon
-            end if
-            work_v(ifm)%xid(poly)      = i
-            work_v(ifm)%yid(poly)      = j
+            work_v(ifm)%work    (poly) = work_e(ifm)%work(i,j)
+            work_v(ifm)%xid     (poly) = i
+            work_v(ifm)%yid     (poly) = j
+
+            do itext=1,maxsite
+               work_v(ifm)%ntext   (itext,poly) = work_e(ifm)%ntext   (itext,i,j)
+               work_v(ifm)%soilfrac(itext,poly) = work_e(ifm)%soilfrac(itext,i,j)
+            end do
          end if
       end do
    end do
-  
+   !---------------------------------------------------------------------------------------!
+
    return
 end subroutine ed_parvec_work
 !==========================================================================================!
