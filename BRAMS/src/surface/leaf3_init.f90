@@ -457,7 +457,7 @@ end subroutine snowinit
 subroutine sfcinit_file(n2,n3,mzg,npat,ifm,patch_area,leaf_class,soil_text)
    use mem_leaf
    use rconstants
-   use leaf_coms , only : tiny_parea
+   use leaf_coms , only : min_patch_area
 
    implicit none
    !------ Arguments. ---------------------------------------------------------------------!
@@ -479,7 +479,7 @@ subroutine sfcinit_file(n2,n3,mzg,npat,ifm,patch_area,leaf_class,soil_text)
 
 
    !----- Re-define the percentage of land cover, so it's always bounded. -----------------!
-   pctlcon = max(0.,min(pctlcon, 1. - tiny_parea))
+   pctlcon = max(0.,min(pctlcon, 1. - min_patch_area))
 
 
    !---------------------------------------------------------------------------------------!
@@ -970,7 +970,7 @@ end subroutine sfcinit_nofile
 !      This subroutine maps the input datp classes to a smaller set datq which represents  !
 ! the full set of LEAF-2 or LEAF-3 classes for which LSP values are defined.               !
 !------------------------------------------------------------------------------------------!
-subroutine datp_datq(datp,datq)
+subroutine leaf_datp_datq(datp,datq)
    use teb_spm_start, only : teb_spm ! intent(in)
 
    implicit none
@@ -1019,14 +1019,16 @@ subroutine datp_datq(datp,datq)
    !     Convert the data.  In the unlikely case that the dataset lies outside the range,  !
    ! re-assign it to ocean.                                                                !
    !---------------------------------------------------------------------------------------!
-   if (nint(datp) >= 0. .and. nint(datp) <= 95. ) then
+   select case (nint(datp))
+   case (0:95)
       datq = oge2leaf3(nint(datp))
-   else
+   case default
       datq = 0
-   end if
+   end select
+   !---------------------------------------------------------------------------------------!
 
    return
-end subroutine datp_datq
+end subroutine leaf_datp_datq
 !==========================================================================================!
 !==========================================================================================!
 
@@ -1039,8 +1041,12 @@ end subroutine datp_datq
 !==========================================================================================!
 !      This subroutine maps the input datp soil classes to a smaller set datsoil which     !
 ! represents the full set of LEAF-2 classes for which soil parameter values are defined.   !
+! This sub-routine is now deprecated as we converted the soil types in the input files to  !
+! have the same classification.                                                            !
+!      This is currently deprecated, because the input files should have indices already   !
+! converted to the LEAF-3 classes.                                                         !
 !------------------------------------------------------------------------------------------!
-subroutine datp_datsoil(datp,datsoil)
+subroutine leaf_datp_datsoil(datp,datsoil)
 
 
    implicit none
@@ -1110,6 +1116,6 @@ subroutine datp_datsoil(datp,datsoil)
    datsoil = fao2leaf3(nint(datp))
 
    return
-end subroutine datp_datsoil
+end subroutine leaf_datp_datsoil
 !==========================================================================================!
 !==========================================================================================!

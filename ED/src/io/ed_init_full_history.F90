@@ -1088,6 +1088,10 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
    if(associated(cgrid%dmean_soil_water)) &
       call hdf_getslab_r(cgrid%dmean_soil_water(:,ipy) ,'DMEAN_SOIL_WATER ' ,&
       dsetrank,iparallel,.false.)
+
+   if(associated(cgrid%dmean_soil_mstpot)) &
+      call hdf_getslab_r(cgrid%dmean_soil_mstpot(:,ipy),'DMEAN_SOIL_MSTPOT ' ,&
+      dsetrank,iparallel,.false.)
       
    if(associated(cgrid%dmean_transloss)) &
       call hdf_getslab_r(cgrid%dmean_transloss(:,ipy) ,'DMEAN_TRANSLOSS ' ,&
@@ -1099,6 +1103,10 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
 
    if(associated(cgrid%mmean_soil_water)) &
       call hdf_getslab_r(cgrid%mmean_soil_water(:,ipy) ,'MMEAN_SOIL_WATER ' ,&
+      dsetrank,iparallel,.false.)
+
+   if(associated(cgrid%mmean_soil_mstpot)) &
+      call hdf_getslab_r(cgrid%mmean_soil_mstpot(:,ipy),'MMEAN_SOIL_MSTPOT ' ,&
       dsetrank,iparallel,.false.)
 
    if(associated(cgrid%mmean_transloss)) &
@@ -1479,6 +1487,10 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
 
    if(associated(cgrid%qmean_soil_water)) &
       call hdf_getslab_r(cgrid%qmean_soil_water(:,:,ipy) ,'QMEAN_SOIL_WATER ' ,&
+      dsetrank,iparallel,.false.)
+
+   if(associated(cgrid%qmean_soil_mstpot)) &
+      call hdf_getslab_r(cgrid%qmean_soil_mstpot(:,:,ipy),'QMEAN_SOIL_MSTPOT' ,&
       dsetrank,iparallel,.false.)
 
 

@@ -714,13 +714,13 @@ end subroutine leaf_can_diag
 ! before the time step iteration loop.                                                     !
 !------------------------------------------------------------------------------------------!
 subroutine leaf_veg_diag(veg_energy,veg_water,veg_hcap)
-   use leaf_coms , only : can_temp     & ! intent(in)
-                        , tiny_parea   & ! intent(in)
-                        , veg_temp     & ! intent(out)
-                        , veg_fliq     & ! intent(out)
-                        , resolvable   ! ! intent(in)
-   use rconstants, only : t3ple        ! ! intent(in)
-   use therm_lib , only : qwtk         ! ! function
+   use leaf_coms , only : can_temp         & ! intent(in)
+                        , min_patch_area   & ! intent(in)
+                        , veg_temp         & ! intent(out)
+                        , veg_fliq         & ! intent(out)
+                        , resolvable       ! ! intent(in)
+   use rconstants, only : t3ple            ! ! intent(in)
+   use therm_lib , only : qwtk             ! ! function
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
    real   , intent(inout) :: veg_energy

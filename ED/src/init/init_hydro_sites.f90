@@ -54,17 +54,13 @@ subroutine read_site_file(cgrid,igr)
 
       cpoly => cgrid%polygon(ipy)
 
-      if (ied_init_mode == 3) then
-         call create_ed10_ed20_fname(cgrid%lat(ipy), edres, cgrid%lon(ipy) &
-                                    ,trim(sfilin(igr)),pss_name,css_name,site_name)
-         !! check if site file exists
-         inquire(file=trim(site_name),exist=fexist)
-         if(.not.fexist) then
-            print*,"error opening site file ",site_name
-            print*,"setting ied_init_mode to 2 and loading as single site"
-         end if
-      else
-         fexist = .false.
+      call create_ed10_ed20_fname(cgrid%lat(ipy), edres, cgrid%lon(ipy) &
+                                 ,trim(sfilin(igr)),pss_name,css_name,site_name)
+      !! check if site file exists
+      inquire(file=trim(site_name),exist=fexist)
+      if(.not.fexist) then
+         print*,"error opening site file ",site_name
+         print*,"setting ied_init_mode to 2 and loading as single site"
       end if
 
       

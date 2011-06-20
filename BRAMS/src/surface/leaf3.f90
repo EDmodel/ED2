@@ -75,7 +75,7 @@ subroutine leaf3_timestep()
                              , pcpgl             & ! intent(out)
                              , estar             & ! intent(out)
                              , qstar             & ! intent(out)
-                             , tiny_parea        & ! intent(out)
+                             , min_patch_area    & ! intent(out)
                              , g_urban           & ! intent(out)
                              , emis_town         & ! intent(out)
                              , alb_town          & ! intent(out)
@@ -305,7 +305,9 @@ subroutine leaf3_timestep()
             !------------------------------------------------------------------------------!
             !    If this patch is not to be solved, skip it.                               !
             !------------------------------------------------------------------------------!
-            if (ip /= 1 .and. leaf_g(ngrid)%patch_area(i,j,ip) < tiny_parea) cycle patloop1
+            if (ip /= 1 .and. leaf_g(ngrid)%patch_area(i,j,ip) < min_patch_area) then
+               cycle patloop1
+            end if
 
             !------------------------------------------------------------------------------!
             !      This will reset some variables, so we make sure they are properly       !
@@ -610,7 +612,7 @@ subroutine leaf3_timestep()
                      !     For soil model patches, update temperature and moisture of      !
                      ! soil, vegetation, and canopy                                        !
                      !---------------------------------------------------------------------!
-                     if (leaf_g(ngrid)%patch_area(i,j,ip) >= tiny_parea) then
+                     if (leaf_g(ngrid)%patch_area(i,j,ip) >= min_patch_area) then
                         call leaf_prognostic(ngrid,i,j,ip)
                      end if
                      !---------------------------------------------------------------------!

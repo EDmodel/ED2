@@ -1594,35 +1594,35 @@ end subroutine leaf_atmo1d
 ! leaf is not solved.                                                                      !
 !------------------------------------------------------------------------------------------!
 subroutine leaf0(m2,m3,mpat,i,j,can_theta,can_rvap,can_co2,can_prss,can_theiv,patch_area)
-   use mem_leaf  , only : dthcon        & ! intent(in)
-                        , drtcon        & ! intent(in)
-                        , pctlcon       ! ! intent(in)
-   use leaf_coms , only : atm_theta     & ! intent(in)
-                        , atm_rvap      & ! intent(in)
-                        , atm_co2       & ! intent(in)
-                        , atm_prss      & ! intent(in)
-                        , atm_shv       & ! intent(in)
-                        , geoht         & ! intent(in)
-                        , tiny_parea    & ! intent(in)
-                        , can_depth_min & ! intent(in)
-                        , can_shv       & ! intent(out)
-                        , can_rsat      & ! intent(out)
-                        , can_rhv       & ! intent(out)
-                        , can_exner     & ! intent(out)
-                        , can_temp      & ! intent(out)
-                        , can_lntheta   & ! intent(out)
-                        , can_rhos      ! ! intent(out)
-   use rconstants, only : cp            & ! intent(in)
-                        , cpi           & ! intent(in)
-                        , ep            & ! intent(in)
-                        , p00           & ! intent(in)
-                        , p00i          & ! intent(in)
-                        , rocp          & ! intent(in)
-                        , cpor          ! ! intent(in)
-   use therm_lib , only : thetaeiv      & ! function
-                        , rslif         & ! function
-                        , reducedpress  & ! function
-                        , idealdenssh   ! ! function
+   use mem_leaf  , only : dthcon         & ! intent(in)
+                        , drtcon         & ! intent(in)
+                        , pctlcon        ! ! intent(in)
+   use leaf_coms , only : atm_theta      & ! intent(in)
+                        , atm_rvap       & ! intent(in)
+                        , atm_co2        & ! intent(in)
+                        , atm_prss       & ! intent(in)
+                        , atm_shv        & ! intent(in)
+                        , geoht          & ! intent(in)
+                        , min_patch_area & ! intent(in)
+                        , can_depth_min  & ! intent(in)
+                        , can_shv        & ! intent(out)
+                        , can_rsat       & ! intent(out)
+                        , can_rhv        & ! intent(out)
+                        , can_exner      & ! intent(out)
+                        , can_temp       & ! intent(out)
+                        , can_lntheta    & ! intent(out)
+                        , can_rhos       ! ! intent(out)
+   use rconstants, only : cp             & ! intent(in)
+                        , cpi            & ! intent(in)
+                        , ep             & ! intent(in)
+                        , p00            & ! intent(in)
+                        , p00i           & ! intent(in)
+                        , rocp           & ! intent(in)
+                        , cpor           ! ! intent(in)
+   use therm_lib , only : thetaeiv       & ! function
+                        , rslif          & ! function
+                        , reducedpress   & ! function
+                        , idealdenssh    ! ! function
 
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
@@ -1669,7 +1669,7 @@ subroutine leaf0(m2,m3,mpat,i,j,can_theta,can_rvap,can_co2,can_prss,can_theiv,pa
 
 
    !----- Impose area to be bounded. ------------------------------------------------------!
-   patch_area(i,j,1) = min(1.0,max(tiny_parea,1.0-pctlcon))
+   patch_area(i,j,1) = min(1.0,max(min_patch_area,1.0-pctlcon))
    patch_area(i,j,2) = 1.0 - patch_area(i,j,1)
    !---------------------------------------------------------------------------------------!
 
@@ -1691,7 +1691,7 @@ end subroutine leaf0
 subroutine leaf3_roughness(ip,veg_fracarea,patch_area,ustar,topzo,veg_rough,soil_rough     &
                           ,patch_rough)
    use mem_leaf , only : isfcl          ! ! intent(in)
-   use leaf_coms, only : tiny_parea     & ! intent(in)
+   use leaf_coms, only : min_patch_area & ! intent(in)
                        , z0fac_water    & ! intent(in)
                        , min_waterrough & ! intent(in)
                        , snowfac        & ! intent(in)
@@ -1743,10 +1743,10 @@ end subroutine leaf3_roughness
 !------------------------------------------------------------------------------------------!
 subroutine normal_accfluxes(m2,m3,mpat,ia,iz,ja,jz,atm_rhos,patch_area,sflux_u,sflux_v     &
                            ,sflux_w,sflux_t,sflux_r,sflux_c,albedt,rlongup)
-   use leaf_coms  , only : dtll_factor & ! intent(in)
-                         , tiny_parea  ! ! intent(in)
-   use mem_radiate, only : iswrtyp     & ! intent(in)
-                         , ilwrtyp     ! ! intent(in)
+   use leaf_coms  , only : dtll_factor    & ! intent(in)
+                         , min_patch_area ! ! intent(in)
+   use mem_radiate, only : iswrtyp        & ! intent(in)
+                         , ilwrtyp        ! ! intent(in)
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
    integer                       , intent(in)    :: m2
@@ -1788,7 +1788,7 @@ subroutine normal_accfluxes(m2,m3,mpat,ia,iz,ja,jz,atm_rhos,patch_area,sflux_u,s
 
          solarea = patch_area(i,j,1)
          do p=2,mpat
-            if (patch_area(i,j,p) >= tiny_parea) solarea = solarea + patch_area(i,j,p)
+            if (patch_area(i,j,p) >= min_patch_area) solarea = solarea + patch_area(i,j,p)
          end do
          solarea_i = 1.0 / solarea
 
@@ -1826,12 +1826,12 @@ end subroutine normal_accfluxes
 !------------------------------------------------------------------------------------------!
 subroutine leaf_solve_veg(ip,mzs,leaf_class,veg_height,patch_area,veg_fracarea,veg_tai     &
                          ,sfcwater_nlev,sfcwater_depth,initial)
-   use leaf_coms, only : tiny_parea  & ! intent(in)
-                       , tai_max     & ! intent(in)
-                       , tai_min     & ! intent(in)
-                       , snowfac_max & ! intent(in)
-                       , snowfac     & ! intent(inout)
-                       , resolvable  ! ! intent(inout)
+   use leaf_coms, only : min_patch_area  & ! intent(in)
+                       , tai_max         & ! intent(in)
+                       , tai_min         & ! intent(in)
+                       , snowfac_max     & ! intent(in)
+                       , snowfac         & ! intent(inout)
+                       , resolvable      ! ! intent(inout)
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
    integer                , intent(in) :: ip

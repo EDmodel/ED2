@@ -121,6 +121,7 @@ module ename_coms
       real                                              :: grid_res
       real                  , dimension(max_poi)        :: poi_lat
       real                  , dimension(max_poi)        :: poi_lon
+      real                  , dimension(max_poi)        :: poi_res
       real                  , dimension(max_ed_regions) :: ed_reg_latmin
       real                  , dimension(max_ed_regions) :: ed_reg_latmax
       real                  , dimension(max_ed_regions) :: ed_reg_lonmin
@@ -208,8 +209,10 @@ module ename_coms
       character(len=str_len)                            :: event_file
 
       !----- Variables that control the sought number of patches and cohorts. -------------!
+      integer                                           :: maxsite
       integer                                           :: maxpatch
       integer                                           :: maxcohort
+      real                                              :: min_site_area
 
       !----- Directory for optimizer inputs. ----------------------------------------------!
       character(len=str_len)                            :: ioptinpt
@@ -342,6 +345,7 @@ module ename_coms
       enl%grid_res                  = undef_real
       enl%poi_lat                   = (/ (undef_real, i=1,max_poi) /)
       enl%poi_lon                   = (/ (undef_real, i=1,max_poi) /)
+      enl%poi_res                   = (/ (undef_real, i=1,max_poi) /)
       enl%ed_reg_latmin             = (/ (undef_real,i=1,max_ed_regions) /)
       enl%ed_reg_latmax             = (/ (undef_real,i=1,max_ed_regions) /)
       enl%ed_reg_lonmin             = (/ (undef_real,i=1,max_ed_regions) /)
@@ -424,10 +428,11 @@ module ename_coms
       enl%phenpath                  = undef_path
       enl%event_file                = undef_path
 
+      enl%maxsite                   = undef_integer
       enl%maxpatch                  = undef_integer
       enl%maxcohort                 = undef_integer
-       
-   
+      enl%min_site_area             = undef_real
+
       enl%ioptinpt                  = undef_path
       enl%zrough                    = undef_real
       enl%edres                     = undef_real 

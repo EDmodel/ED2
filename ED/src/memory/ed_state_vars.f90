@@ -1287,6 +1287,7 @@ module ed_state_vars
      real,pointer,dimension(:) :: avg_can_depth
 
      real,pointer,dimension(:,:) :: avg_soil_energy
+     real,pointer,dimension(:,:) :: avg_soil_mstpot
      real,pointer,dimension(:,:) :: avg_soil_water
      real,pointer,dimension(:,:) :: avg_soil_temp
      real,pointer,dimension(:,:) :: avg_soil_fracliq
@@ -1568,6 +1569,7 @@ module ed_state_vars
      real,pointer,dimension(:) :: avg_can_depth
 
      real,pointer,dimension(:,:) :: avg_soil_energy
+     real,pointer,dimension(:,:) :: avg_soil_mstpot
      real,pointer,dimension(:,:) :: avg_soil_water
      real,pointer,dimension(:,:) :: avg_soil_temp
      real,pointer,dimension(:,:) :: avg_soil_fracliq
@@ -1717,6 +1719,7 @@ module ed_state_vars
      
      real, pointer, dimension(:,:) :: dmean_soil_temp      !(nzg,npolygons)
      real, pointer, dimension(:,:) :: dmean_soil_water     !(nzg,npolygons)
+     real, pointer, dimension(:,:) :: dmean_soil_mstpot    !(nzg,npolygons)
      real, pointer, dimension(:,:) :: dmean_transloss     !(nzg,npolygons)
      real, pointer, dimension(:)   :: dmean_fs_open
      real, pointer, dimension(:)   :: dmean_fsw
@@ -1763,6 +1766,7 @@ module ed_state_vars
 
      real, pointer, dimension(:,:,:) :: qmean_soil_temp      ! (nzg,ndcycle,npolygons)
      real, pointer, dimension(:,:,:) :: qmean_soil_water     ! (nzg,ndcycle,npolygons)
+     real, pointer, dimension(:,:,:) :: qmean_soil_mstpot    ! (nzg,ndcycle,npolygons)
      real, pointer, dimension(:,:)   :: qmean_fs_open        ! (ndcycle,npolygons)
      real, pointer, dimension(:,:)   :: qmean_fsw            ! (ndcycle,npolygons)
      real, pointer, dimension(:,:)   :: qmean_fsn            ! (ndcycle,npolygons)
@@ -1877,6 +1881,7 @@ module ed_state_vars
      real, pointer, dimension(:)   :: mmean_vleaf_resp     ! [ kgC/m²/yr]
      real, pointer, dimension(:,:) :: mmean_soil_temp      !(nzg,npolygons)
      real, pointer, dimension(:,:) :: mmean_soil_water     !(nzg,npolygons)
+     real, pointer, dimension(:,:) :: mmean_soil_mstpot    !(nzg,npolygons)
      real, pointer, dimension(:,:) :: mmean_transloss     !(nzg,npolygons)
      real, pointer, dimension(:)   :: mmean_fs_open
      real, pointer, dimension(:)   :: mmean_fsw
@@ -2189,6 +2194,7 @@ contains
        allocate(cgrid%avg_can_theiv(npolygons))
        allocate(cgrid%avg_can_depth   (npolygons))
        allocate(cgrid%avg_soil_energy(nzg,npolygons))
+       allocate(cgrid%avg_soil_mstpot(nzg,npolygons))
        allocate(cgrid%avg_soil_water(nzg,npolygons))
        allocate(cgrid%avg_soil_temp (nzg,npolygons))
        allocate(cgrid%avg_soil_fracliq (nzg,npolygons))
@@ -2333,6 +2339,7 @@ contains
           allocate(cgrid%dmean_nep            (             npolygons))
           allocate(cgrid%dmean_soil_temp      (nzg,         npolygons))
           allocate(cgrid%dmean_soil_water     (nzg,         npolygons))
+          allocate(cgrid%dmean_soil_mstpot    (nzg,         npolygons))
           allocate(cgrid%dmean_transloss      (nzg,         npolygons))
           allocate(cgrid%dmean_fs_open        (             npolygons))
           allocate(cgrid%dmean_fsw            (             npolygons))
@@ -2404,6 +2411,7 @@ contains
           allocate(cgrid%mmean_vleaf_resp     (             npolygons))
           allocate(cgrid%mmean_soil_temp      (nzg,         npolygons))
           allocate(cgrid%mmean_soil_water     (nzg,         npolygons))
+          allocate(cgrid%mmean_soil_mstpot    (nzg,         npolygons))
           allocate(cgrid%mmean_transloss      (nzg,         npolygons))
           allocate(cgrid%mmean_fs_open        (             npolygons))
           allocate(cgrid%mmean_fsw            (             npolygons))
@@ -2487,6 +2495,7 @@ contains
           allocate(cgrid%qmean_root_resp      (     ndcycle, npolygons))
           allocate(cgrid%qmean_soil_temp      (nzg, ndcycle, npolygons))
           allocate(cgrid%qmean_soil_water     (nzg, ndcycle, npolygons))
+          allocate(cgrid%qmean_soil_mstpot    (nzg, ndcycle, npolygons))
           allocate(cgrid%qmean_fs_open        (     ndcycle, npolygons))
           allocate(cgrid%qmean_fsw            (     ndcycle, npolygons))
           allocate(cgrid%qmean_fsn            (     ndcycle, npolygons))
@@ -2677,6 +2686,7 @@ contains
     allocate(cpoly%avg_can_theiv           (nsites))
     allocate(cpoly%avg_can_depth           (nsites))
     allocate(cpoly%avg_soil_energy     (nzg,nsites))
+    allocate(cpoly%avg_soil_mstpot     (nzg,nsites))
     allocate(cpoly%avg_soil_water      (nzg,nsites))
     allocate(cpoly%avg_soil_temp       (nzg,nsites))
     allocate(cpoly%avg_soil_fracliq    (nzg,nsites))
@@ -3307,6 +3317,7 @@ contains
        nullify(cgrid%avg_can_theiv           )
        nullify(cgrid%avg_can_depth           )
        nullify(cgrid%avg_soil_energy         )
+       nullify(cgrid%avg_soil_mstpot         )
        nullify(cgrid%avg_soil_water          )
        nullify(cgrid%avg_soil_temp           )
        nullify(cgrid%avg_soil_fracliq        )
@@ -3443,6 +3454,7 @@ contains
      nullify(cgrid%dmean_nep               )
      nullify(cgrid%dmean_soil_temp         )
      nullify(cgrid%dmean_soil_water        )
+     nullify(cgrid%dmean_soil_mstpot       )
      nullify(cgrid%dmean_transloss         )
      nullify(cgrid%dmean_fs_open           )
      nullify(cgrid%dmean_fsw               )
@@ -3494,6 +3506,7 @@ contains
      nullify(cgrid%mmean_nep               )
      nullify(cgrid%mmean_soil_temp         )
      nullify(cgrid%mmean_soil_water        )
+     nullify(cgrid%mmean_soil_mstpot       )
      nullify(cgrid%mmean_transloss         )
      nullify(cgrid%mmean_fs_open           )
      nullify(cgrid%mmean_fsw               )
@@ -3578,6 +3591,7 @@ contains
      nullify(cgrid%qmean_root_resp      )
      nullify(cgrid%qmean_soil_temp      )
      nullify(cgrid%qmean_soil_water     )
+     nullify(cgrid%qmean_soil_mstpot    )
      nullify(cgrid%qmean_fs_open        )
      nullify(cgrid%qmean_fsw            )
      nullify(cgrid%qmean_fsn            )
@@ -3756,6 +3770,7 @@ contains
     nullify(cpoly%avg_can_theiv )
     nullify(cpoly%avg_can_depth )
     nullify(cpoly%avg_soil_energy)
+    nullify(cpoly%avg_soil_mstpot)
     nullify(cpoly%avg_soil_water)
     nullify(cpoly%avg_soil_temp )
     nullify(cpoly%avg_soil_fracliq )
@@ -4350,6 +4365,7 @@ contains
        if(associated(cgrid%avg_can_theiv           )) deallocate(cgrid%avg_can_theiv           )
        if(associated(cgrid%avg_can_depth           )) deallocate(cgrid%avg_can_depth           )
        if(associated(cgrid%avg_soil_energy         )) deallocate(cgrid%avg_soil_energy         )
+       if(associated(cgrid%avg_soil_mstpot         )) deallocate(cgrid%avg_soil_mstpot         )
        if(associated(cgrid%avg_soil_water          )) deallocate(cgrid%avg_soil_water          )
        if(associated(cgrid%avg_soil_temp           )) deallocate(cgrid%avg_soil_temp           )
        if(associated(cgrid%avg_soil_fracliq        )) deallocate(cgrid%avg_soil_fracliq        )
@@ -4493,6 +4509,7 @@ contains
        if(associated(cgrid%dmean_nep               )) deallocate(cgrid%dmean_nep               )
        if(associated(cgrid%dmean_soil_temp         )) deallocate(cgrid%dmean_soil_temp         )
        if(associated(cgrid%dmean_soil_water        )) deallocate(cgrid%dmean_soil_water        )
+       if(associated(cgrid%dmean_soil_mstpot       )) deallocate(cgrid%dmean_soil_mstpot       )
        if(associated(cgrid%dmean_transloss         )) deallocate(cgrid%dmean_transloss         )
        if(associated(cgrid%dmean_fs_open           )) deallocate(cgrid%dmean_fs_open           )
        if(associated(cgrid%dmean_fsw               )) deallocate(cgrid%dmean_fsw               )
@@ -4545,6 +4562,7 @@ contains
        if(associated(cgrid%mmean_nep               )) deallocate(cgrid%mmean_nep               )
        if(associated(cgrid%mmean_soil_temp         )) deallocate(cgrid%mmean_soil_temp         )
        if(associated(cgrid%mmean_soil_water        )) deallocate(cgrid%mmean_soil_water        )
+       if(associated(cgrid%mmean_soil_mstpot       )) deallocate(cgrid%mmean_soil_mstpot       )
        if(associated(cgrid%dmean_transloss         )) deallocate(cgrid%dmean_transloss         )
        if(associated(cgrid%mmean_fs_open           )) deallocate(cgrid%mmean_fs_open           )
        if(associated(cgrid%mmean_fsw               )) deallocate(cgrid%mmean_fsw               )
@@ -4629,6 +4647,7 @@ contains
     if(associated(cgrid%qmean_leaf_resp      )) deallocate(cgrid%qmean_leaf_resp      )
     if(associated(cgrid%qmean_root_resp      )) deallocate(cgrid%qmean_root_resp      )
     if(associated(cgrid%qmean_soil_temp      )) deallocate(cgrid%qmean_soil_temp      )
+    if(associated(cgrid%qmean_soil_mstpot    )) deallocate(cgrid%qmean_soil_mstpot    )
     if(associated(cgrid%qmean_soil_water     )) deallocate(cgrid%qmean_soil_water     )
     if(associated(cgrid%qmean_fs_open        )) deallocate(cgrid%qmean_fs_open        )
     if(associated(cgrid%qmean_fsw            )) deallocate(cgrid%qmean_fsw            )
@@ -4808,6 +4827,7 @@ contains
     if(associated(cpoly%avg_can_theiv               )) deallocate(cpoly%avg_can_theiv               )
     if(associated(cpoly%avg_can_depth               )) deallocate(cpoly%avg_can_depth               )
     if(associated(cpoly%avg_soil_energy             )) deallocate(cpoly%avg_soil_energy             )
+    if(associated(cpoly%avg_soil_mstpot             )) deallocate(cpoly%avg_soil_mstpot             )
     if(associated(cpoly%avg_soil_water              )) deallocate(cpoly%avg_soil_water              )
     if(associated(cpoly%avg_soil_temp               )) deallocate(cpoly%avg_soil_temp               )
     if(associated(cpoly%avg_soil_fracliq            )) deallocate(cpoly%avg_soil_fracliq            )
@@ -9638,6 +9658,13 @@ contains
          call metadata_edio(nvar,igr,'Polygon Average Volumetric Soil Water','[m/m]','ipoly - nzg') 
       end if
       
+      if (associated(cgrid%avg_soil_mstpot)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,cgrid%avg_soil_mstpot,nvar,igr,init,cgrid%pyglob_id, &
+              var_len,var_len_global,max_ptrs,'AVG_SOIL_MSTPOT :12:hist:anal:opti') 
+         call metadata_edio(nvar,igr,'Polygon Average Soil Moisture Potential','[m]','ipoly - nzg') 
+      end if
+      
       if (associated(cgrid%avg_soil_temp)) then
          nvar=nvar+1
          call vtable_edio_r(npts,cgrid%avg_soil_temp,nvar,igr,init,cgrid%pyglob_id, &
@@ -9675,6 +9702,13 @@ contains
          call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
       end if
       
+      if(associated(cgrid%dmean_soil_mstpot)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,cgrid%dmean_soil_mstpot,nvar,igr,init,cgrid%pyglob_id, &
+              var_len,var_len_global,max_ptrs,'DMEAN_SOIL_MSTPOT :12:hist:dail') 
+         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+      end if
+      
       if(associated(cgrid%dmean_transloss)) then
          nvar=nvar+1
          call vtable_edio_r(npts,cgrid%dmean_transloss,nvar,igr,init,cgrid%pyglob_id, &
@@ -9693,6 +9727,13 @@ contains
          nvar=nvar+1
          call vtable_edio_r(npts,cgrid%mmean_soil_water,nvar,igr,init,cgrid%pyglob_id, &
               var_len,var_len_global,max_ptrs,'MMEAN_SOIL_WATER :12:hist:mont:dcyc')
+         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA')
+      end if
+
+      if(associated(cgrid%mmean_soil_mstpot)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,cgrid%mmean_soil_mstpot,nvar,igr,init,cgrid%pyglob_id, &
+              var_len,var_len_global,max_ptrs,'MMEAN_SOIL_MSTPOT :12:hist:mont:dcyc')
          call metadata_edio(nvar,igr,'No metadata available','[NA]','NA')
       end if
       
@@ -9759,6 +9800,13 @@ contains
          nvar=nvar+1
          call vtable_edio_r(npts,cgrid%qmean_soil_water,nvar,igr,init,cgrid%pyglob_id, &
               var_len,var_len_global,max_ptrs,'QMEAN_SOIL_WATER :-12:hist:dcyc') 
+         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+      end if
+
+      if(associated(cgrid%qmean_soil_mstpot)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,cgrid%qmean_soil_mstpot,nvar,igr,init,cgrid%pyglob_id, &
+              var_len,var_len_global,max_ptrs,'QMEAN_SOIL_MSTPOT :-12:hist:dcyc') 
          call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
       end if
       !------------------------------------------------------------------------------------!

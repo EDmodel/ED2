@@ -592,7 +592,10 @@ subroutine opspec3
           vh2vr,            & ! intent(in)
           vh2dh,            & ! intent(in)
           ribmax,           & ! intent(in)
-          leaf_maxwhc       ! ! intent(in)
+          leaf_maxwhc,      & ! intent(in)
+          min_patch_area,   & ! intent(in)
+          nstyp,            & ! intent(in)
+          nvtyp             ! ! intent(in)
           
   use therm_lib , only:  &
           level          ! ! intent(in)
@@ -1154,7 +1157,10 @@ subroutine opspec3
   endif
 
   if (isfcl == 0 .and. npatch /= 2) then
-     print*, ' fatal  - when isfcl = 0, npatch must be 2. '
+     print*, ' fatal  - when isfcl = 0, npatch must be 2.'
+     ifaterr = ifaterr + 1
+  else if (npatch < 2) then
+     print*, ' fatal - npatch must be at least 2.'
      ifaterr = ifaterr + 1
   endif
 
@@ -1164,7 +1170,42 @@ subroutine opspec3
           ,' model.'
      ifaterr=ifaterr+1
   endif
-  
+
+  !----------------------------------------------------------------------------------------!
+  !     Check whether the number of patches make sense.                                    !
+  !----------------------------------------------------------------------------------------!
+  select case (isfcl)
+  case (1,2)
+     if (npatch > nvtyp+1) then
+        print *, ' fatal - Running LEAF-3, and NPATCH is greater than the number of '//    &
+                          'vegetation types.'
+        ifaterr=ifaterr+1
+     end if
+  case (5)
+     if (npatch > nstyp+1) then
+        print *, ' fatal - Running ED-2, and NPATCH is greater than the number of '//      &
+                          'vegetation types.'
+        ifaterr=ifaterr+1
+     end if
+     if (nvegpat /= npatch - 1) then
+        print *, ' fatal - Running ED-2, NVEGPAT must be equal to NPATCH-1'
+        ifaterr=ifaterr+1
+     end if
+  end select
+  !----------------------------------------------------------------------------------------!
+
+
+
+  !----------------------------------------------------------------------------------------!
+  !     Check whether the minimum area is reasonable.                                      !
+  !----------------------------------------------------------------------------------------!
+  if (min_patch_area < 0.0001 .or. min_patch_area > 0.1) then
+     print *, ' fatal - MIN_PATCH_AREA must be between 0.0001 and 0.1'
+     ifaterr = ifaterr + 1
+  end if
+  !----------------------------------------------------------------------------------------!
+
+
   !----- Check CO2 settings. --------------------------------------------------------------!
   select case (ico2)
   case (0,1)

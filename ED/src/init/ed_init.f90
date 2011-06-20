@@ -22,12 +22,14 @@ subroutine set_polygon_coordinates()
       npoly=gdpy(mynum,ifm)
 
       ploop: do ipy=1,npoly
-         edgrid_g(ifm)%lon(ipy)              = work_v(ifm)%glon(ipy)
-         edgrid_g(ifm)%lat(ipy)              = work_v(ifm)%glat(ipy)
-         edgrid_g(ifm)%ntext_soil(1:nzg,ipy) = work_v(ifm)%ntext(ipy)
-         edgrid_g(ifm)%xatm(ipy)             = work_v(ifm)%xid(ipy)
-         edgrid_g(ifm)%yatm(ipy)             = work_v(ifm)%yid(ipy)
+         edgrid_g(ifm)%lon(ipy)              = work_v(ifm)%glon   (ipy)
+         edgrid_g(ifm)%lat(ipy)              = work_v(ifm)%glat   (ipy)
+         edgrid_g(ifm)%xatm(ipy)             = work_v(ifm)%xid    (ipy)
+         edgrid_g(ifm)%yatm(ipy)             = work_v(ifm)%yid    (ipy)
 
+         !----- Assign the commonest soil type to the polygon. ----------------------------!
+         edgrid_g(ifm)%ntext_soil(1:nzg,ipy) = work_v(ifm)%ntext(1,ipy)
+         !---------------------------------------------------------------------------------!
       end do ploop
 
       
@@ -37,6 +39,190 @@ subroutine set_polygon_coordinates()
     
    return
 end subroutine set_polygon_coordinates
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!    This subroutine assigns the site areas and the soil types when not running with       !
+! ied_init_node 3 or 4.                                                                    !
+!------------------------------------------------------------------------------------------!
+subroutine set_site_defprops()
+   use grid_coms     , only : ngrids               & ! intent(in)
+                            , nzg                  ! ! intent(in)
+   use ed_work_vars  , only : work_v               ! ! structure
+   use ed_node_coms  , only : mynum                ! ! intent(in)
+   use ed_state_vars , only : edgrid_g             & ! structure
+                            , edtype               & ! structure
+                            , polygontype          & ! structure
+                            , allocate_polygontype ! ! subroutine
+   use soil_coms     , only : soil                 & ! intent(in)
+                            , slz                  ! ! intent(in)
+   use mem_polygons  , only : maxsite              ! ! intent(in)
+   use ed_misc_coms  , only : min_site_area        ! ! intent(in)
+   implicit none 
+   !----- Local variables -----------------------------------------------------------------!
+   type(edtype)     , pointer :: cgrid
+   type(polygontype), pointer :: cpoly
+   integer                    :: ifm
+   integer                    :: ipy
+   integer                    :: isi
+   integer                    :: itext
+   integer                    :: npoly
+   integer                    :: nsite
+   integer                    :: k
+   real                       :: sc
+   real                       :: zmin
+   real                       :: fa
+   real                       :: fb
+   real                       :: te
+   real                       :: t0
+   real                       :: k0
+   real                       :: text_area
+   real                       :: text_area_i
+   !---------------------------------------------------------------------------------------!
+
+
+
+   gridloop: do ifm=1,ngrids
+      cgrid => edgrid_g(ifm)
+
+      polyloop: do ipy=1,cgrid%npolygons
+      
+         !----- Initialise load adjacency with dummy value. -------------------------------!
+         cgrid%load_adjacency(ipy) = 0
+
+         !----- Alias to current polygon. -------------------------------------------------!
+         cpoly => cgrid%polygon(ipy)
+
+         !---------------------------------------------------------------------------------!
+         !    Find the total usable area and the number of sites that will be allocated.   !
+         !---------------------------------------------------------------------------------!
+         nsite     = min(maxsite, count(work_v(ifm)%soilfrac(:,ipy) > min_site_area))
+         text_area = sum(work_v(ifm)%soilfrac(1:nsite,ipy))
+         !----- Sanity check. -------------------------------------------------------------!
+         if (nsite == 0 .or. text_area <= 0.) then
+            write (unit=*,fmt='(a)'          ) '------------------------------------------'
+            write (unit=*,fmt='(a,1x,i12)'   ) ' + NSITE     = ',nsite
+            write (unit=*,fmt='(a,1x,es12.5)') ' + TEXT_AREA = ',text_area
+            write (unit=*,fmt='(a,1x,es12.5)') ' + MIN_VALID = ',min_site_area
+            write (unit=*,fmt='(a,1x,es12.5)') ' + MIN_AREA  = '                           &
+                                              ,minval(work_v(ifm)%soilfrac(:,ipy))
+            write (unit=*,fmt='(a,1x,es12.5)') ' + MAX_AREA  = '                           &
+                                              ,maxval(work_v(ifm)%soilfrac(:,ipy))
+            write (unit=*,fmt='(a)'          ) '------------------------------------------'
+            call fatal_error('Invalid number of sites!','set_site_defprops'                &
+                            ,'ed_init.f90')
+         else
+            text_area_i = 1. / text_area
+         end if
+
+
+         !------ Allocate the number of sites that have enough area. ----------------------!
+         call allocate_polygontype(cpoly,nsite)
+
+         !---------------------------------------------------------------------------------!
+         !     Populate the sites.                                                         !
+         !---------------------------------------------------------------------------------!
+         isi = 0
+         siteloop: do itext=1,maxsite
+            if (work_v(ifm)%soilfrac(itext,ipy) > min_site_area) then
+               !----- Update counter. -----------------------------------------------------!
+               isi = isi +1
+
+               !---------------------------------------------------------------------------!
+               !     Initialise area, using the soil texture area scaled by the total be-  !
+               ! ing used.                                                                 !
+               !---------------------------------------------------------------------------!
+               cpoly%area(isi) = work_v(ifm)%soilfrac(itext,ipy) * text_area_i
+               !---------------------------------------------------------------------------!
+
+
+               !------ Initialise the lowest soil layer. ----------------------------------!
+               cpoly%lsl(isi) = cgrid%lsl(ipy)
+               !---------------------------------------------------------------------------!
+
+
+               !---------------------------------------------------------------------------!
+               !     Use the soil type and populate the site-level soil texture.           !
+               !---------------------------------------------------------------------------!
+               do k=1,nzg
+                  cpoly%ntext_soil(k,isi) = work_v(ifm)%ntext(itext,ipy)
+               end do
+               !---------------------------------------------------------------------------!
+
+
+               !---------------------------------------------------------------------------!
+               !       Set soil moisture decay function, based on second layer's K value.  !
+               ! We use the second layer instead of the top in case top is organic/peat.   !
+               !---------------------------------------------------------------------------!
+               sc = cpoly%ntext_soil(nzg-1,isi)
+               cpoly%moist_f(isi) = -log(soil(sc)%slcons / soil(sc)%slcons0) / 2.0
+               !---------------------------------------------------------------------------!
+
+
+
+
+               !----- Derive adjustments to f. --------------------------------------------!
+               zmin = slz(cpoly%lsl(isi))
+               fa   = -1.0/zmin !! should be 1/(depth to bedrock)
+               if(cpoly%moist_f(isi)*zmin < 0.0) then
+                  fb = cpoly%moist_f(isi)/(1.0-exp(cpoly%moist_f(isi)*zmin))
+                  cpoly%moist_f(isi) = max(fa,fb)
+               else
+                  cpoly%moist_f(isi) = fa
+               endif
+
+               cpoly%sitenum(isi)   = 1
+               cpoly%elevation(isi) = 0.0
+               cpoly%slope(isi)     = 0.0
+               cpoly%aspect(isi)    = 0.0
+               cpoly%TCI(isi)       = 0.0
+            end if
+         end do siteloop
+
+         !----- This should not happen in this sub-routine, but in case things change... --!
+         if (cgrid%load_adjacency(ipy) /= 0) then
+            call calc_flow_routing(cgrid,ipy)
+         end if
+         !---------------------------------------------------------------------------------!
+
+         !---------------------------------------------------------------------------------!
+         !     Not sure what these things do, just copying from hydrology...               !
+         !---------------------------------------------------------------------------------!
+         !----- Part 1. -------------------------------------------------------------------!
+         Te = 0.0 
+         do isi = 1,cpoly%nsites
+            sc = cpoly%ntext_soil(nzg-1,isi)
+            K0 = soil(sc)%slcons0
+            T0 = K0 / cpoly%moist_f(isi)
+            Te = Te + T0*cpoly%area(isi)
+         end do
+         cgrid%Te(ipy) = Te
+         !----- Part 2. -------------------------------------------------------------------!
+         cgrid%wbar(ipy) = 0.0
+         do isi = 1,cpoly%nsites
+            sc = cpoly%ntext_soil(nzg-1,isi)
+            K0 = soil(sc)%slcons0
+            T0 = K0 / cpoly%moist_f(isi)
+            cpoly%moist_W(isi) = cpoly%TCI(isi) + log(Te) - log(T0)
+            cgrid%wbar(ipy)    = cgrid%wbar(ipy) + cpoly%moist_W(isi) * cpoly%area(isi)
+         end do
+         !---------------------------------------------------------------------------------!
+      end do polyloop
+      !------------------------------------------------------------------------------------!
+
+   end do gridloop
+   !---------------------------------------------------------------------------------------!
+
+
+   return
+end subroutine set_site_defprops
 !==========================================================================================!
 !==========================================================================================!
 
@@ -137,12 +323,15 @@ subroutine load_ecosystem_state()
       call MPI_Recv(ping,1,MPI_INTEGER,recvnum,100,MPI_COMM_WORLD,MPI_STATUS_IGNORE,ierr)
   
    select case (ied_init_mode)
-   case (4)
-      continue
-   case default
+   case (3)
+      !----- Hydrology run.  Use specific scheme. -----------------------------------------!
       do igr = 1,ngrids
          call read_site_file(edgrid_g(igr),igr)
       end do
+   case (4)
+      continue
+   case default
+         call set_site_defprops()
    end select
   
    if (mynum < nnodetot) call MPI_Send(ping,1,MPI_INTEGER,sendnum,100,MPI_COMM_WORLD,ierr)

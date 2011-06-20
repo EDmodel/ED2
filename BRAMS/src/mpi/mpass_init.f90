@@ -138,7 +138,8 @@ subroutine masterput_nl(master_num)
                                  , vh2vr                       & ! intent(in)
                                  , vh2dh                       & ! intent(in)
                                  , ribmax                      & ! intent(in)
-                                 , leaf_maxwhc                 ! ! intent(in)
+                                 , leaf_maxwhc                 & ! intent(in)
+                                 , min_patch_area              ! ! intent(in)
    implicit none
    !----- External variable declaration ---------------------------------------------------!
    include 'interface.h'
@@ -299,6 +300,7 @@ subroutine masterput_nl(master_num)
    call MPI_Bcast(VH2DH,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(RIBMAX,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(LEAF_MAXWHC,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(MIN_PATCH_AREA,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(GGFACT,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(ISOILBC,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(IPERCOL,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
@@ -953,7 +955,8 @@ subroutine nodeget_nl
                                  , vh2vr                       & ! intent(out)
                                  , vh2dh                       & ! intent(out)
                                  , ribmax                      & ! intent(out)
-                                 , leaf_maxwhc                 ! ! intent(out)
+                                 , leaf_maxwhc                 & ! intent(out)
+                                 , min_patch_area              ! ! intent(out)
    implicit none
    !----- External variable declaration ---------------------------------------------------!
    include 'interface.h'
@@ -1109,6 +1112,7 @@ subroutine nodeget_nl
    call MPI_Bcast(VH2DH,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(RIBMAX,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(LEAF_MAXWHC,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(MIN_PATCH_AREA,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(GGFACT,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(ISOILBC,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(IPERCOL,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)

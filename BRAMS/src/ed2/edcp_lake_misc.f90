@@ -2,7 +2,6 @@
 !==========================================================================================!
 subroutine copy_lake_init(i,j,ifm,initp)
    use mem_leaf              , only : leaf_g           ! ! intent(in)
-   use mem_edcp              , only : wgrid_g          ! ! intent(in)
    use lake_coms             , only : lakesitetype     & ! structure
                                     , lakemet          & ! intent(in)
                                     , wcapcan          & ! intent(in)

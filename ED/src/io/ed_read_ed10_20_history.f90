@@ -448,31 +448,36 @@ subroutine read_ed10_ed20_history_file
             end do
 
          case default
-            !----- We can assume one site per polygon. ------------------------------------!
-            csite => cpoly%site(1)
+            !------------------------------------------------------------------------------!
+            !      We don't have information on sites, assume all sites to be the same.    !
+            !------------------------------------------------------------------------------!
+            do isi = 1, cpoly%nsites
+               csite => cpoly%site(isi)
 
-            !----- Allocate the patches in this site. -------------------------------------!
-            call allocate_sitetype(csite,npatches)
+               !----- Allocate the patches in this site. ----------------------------------!
+               call allocate_sitetype(csite,npatches)
 
-            do ip=1,npatches
-               csite%dist_type         (ip) = trk (ip) + 1
-               csite%age               (ip) = age (ip)
-               csite%area              (ip) = area(ip)
-               csite%fast_soil_C       (ip) = fsc (ip)
-               csite%slow_soil_C       (ip) = ssc (ip)
-               csite%structural_soil_C (ip) = stsc(ip)
-               csite%structural_soil_L (ip) = stsl(ip)
-               csite%mineralized_soil_N(ip) = msn (ip)
-               csite%fast_soil_N       (ip) = fsn (ip)
-               csite%pname             (ip) = trim(pname(ip))
-               csite%sum_dgd           (ip) = 0.0+tiny(1.)
-               csite%sum_chd           (ip) = 0.0+tiny(1.)
-               csite%plantation        (ip) = 0
-               csite%cohort_count      (ip) = 0
+               do ip=1,npatches
+                  csite%dist_type         (ip) = trk (ip) + 1
+                  csite%age               (ip) = age (ip)
+                  csite%area              (ip) = area(ip)
+                  csite%fast_soil_C       (ip) = fsc (ip)
+                  csite%slow_soil_C       (ip) = ssc (ip)
+                  csite%structural_soil_C (ip) = stsc(ip)
+                  csite%structural_soil_L (ip) = stsl(ip)
+                  csite%mineralized_soil_N(ip) = msn (ip)
+                  csite%fast_soil_N       (ip) = fsn (ip)
+                  csite%pname             (ip) = trim(pname(ip))
+                  csite%sum_dgd           (ip) = 0.0+tiny(1.)
+                  csite%sum_chd           (ip) = 0.0+tiny(1.)
+                  csite%plantation        (ip) = 0
+                  csite%cohort_count      (ip) = 0
+               end do
+
+               !---- Initialize the cohort counts per patch. ------------------------------!
+               csite%cohort_count(:) = 0
+               !---------------------------------------------------------------------------!
             end do
-
-            !---- Initialize the cohort counts per patch. ---------------------------------!
-            csite%cohort_count(:) = 0
          end select
          
          close(unit=12,status='keep')

@@ -9,7 +9,7 @@
 subroutine ISAN_file_inv (iyear1,imonth1,idate1,itime1,timmax)
 
 use isan_coms
-
+use grid_dims, only : str_len
 implicit none
 
 integer :: iyear1,imonth1,idate1,itime1
@@ -30,7 +30,8 @@ real(kind=8) :: tinc
 
 character(len=14) :: itotdate_fg(maxisfiles),itotdate_up(maxisfiles)  &
             ,itotdate_sf(maxisfiles),itotdates(4*maxisfiles),idate_end
-character(len=128), dimension(maxisfiles) :: fnames_fg,fnames_up,fnames_sf
+character(len=str_len), dimension(maxisfiles) :: fnames_fg,fnames_up,fnames_sf
+character(len=str_len) :: thisfile
 character(len=8) :: jnk
 
 ! Define variables -------------------------------------------------------
@@ -47,12 +48,17 @@ if(igridfl.ne.0) then
 
     nfgfiles=-1
       nc=len_trim(iapr)
-      if(guess1st.eq.'PRESS')  &
-           call RAMS_filelist(fnames_fg,iapr(1:nc)//'*00',nfgfiles)
-      if(guess1st.eq.'NC') &
-           call RAMS_filelist(fnames_fg,iapr(1:nc)//'*nc',nfgfiles)
-      if(guess1st.eq.'RAMS')  &
-           call RAMS_filelist(fnames_fg,iapr(1:nc)//'*-head.txt',nfgfiles)
+      select case (trim(guess1st))
+      case ('PRESS')
+         thisfile = iapr(1:nc)//'*00'
+         call RAMS_filelist(fnames_fg,thisfile,nfgfiles)
+      case ('NC')
+         thisfile = iapr(1:nc)//'*nc'
+         call RAMS_filelist(fnames_fg,thisfile,nfgfiles)
+      case ('RAMS')
+         thisfile = iapr(1:nc)//'*-head.txt'
+         call RAMS_filelist(fnames_fg,thisfile,nfgfiles)
+      end select 
 
 !      do nf=1,nfgfiles
 !         print*,'reading fg:',nc,nfgfiles,fnames_fg(nf)
@@ -105,7 +111,8 @@ if(igridfl.ne.3) then
 
     nupfiles=-1
       nc=len_trim(iarawi)
-    call RAMS_filelist(fnames_up,iarawi(1:nc)//'*00',nupfiles)
+      thisfile = iarawi(1:nc)//'*00'
+      call RAMS_filelist(fnames_up,thisfile,nupfiles)
 
       if(nupfiles.gt.maxisfiles) then
          print*,'too many upper air files'
@@ -133,7 +140,8 @@ if(igridfl.ne.3) then
 
     nsffiles=-1
       nc=len_trim(iasrfce)
-      call RAMS_filelist(fnames_sf,iasrfce(1:nc)//'*00',nsffiles)
+      thisfile = iasrfce(1:nc)//'*00'
+      call RAMS_filelist(fnames_sf,thisfile,nsffiles)
 
       if(nsffiles.gt.maxisfiles) then
          print*,'too many surface air files'

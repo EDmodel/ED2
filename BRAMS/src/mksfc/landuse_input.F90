@@ -109,112 +109,173 @@ end subroutine patch_latlon
 ! landuse-class-defined patch is assigned to that patch.  If ndvi data is used, the        !
 ! average value for each landuse-class-defined patch is assigned to that patch.            !
 !------------------------------------------------------------------------------------------!
-subroutine landuse_opqr(n2,n3,mzg,npat,nvegpat  &
-   ,ivegtflg,ivegtfn,isoilflg,isoilfn,ndviflg,ndvifn,cndvifil   &
-   ,iaction,platn,plonn     &
-   ,soil_text,patch_area,leaf_class,veg_ndvif)
+subroutine landuse_opqr(n2,n3,mzg,npat,nvegpat,ivegtflg,ivegtfn,isoilflg,isoilfn           &
+                       ,ndviflg,ndvifn,cndvifil,iaction,platn,plonn,soil_text,patch_area   &
+                       ,leaf_class,veg_ndvif)
 
    use mem_mksfc
    use rconstants
-   use mem_leaf , only : nslcon      ! ! intent(in)
-   use leaf_coms, only : tiny_parea  & ! intent(in)
-                       , nstyp       & ! intent(in)
-                       , nvtyp       & ! intent(in)
-                       , nvtyp_teb   ! ! intent(in)
-   use io_params, only : iuselai     ! ! intent(in)
-
+   use mem_leaf , only : nslcon          & ! intent(in)
+                       , isfcl           ! ! intent(in)
+   use leaf_coms, only : min_patch_area  & ! intent(in)
+                       , nstyp           & ! intent(in)
+                       , nvtyp           & ! intent(in)
+                       , nvtyp_teb       ! ! intent(in)
+   use io_params, only : iuselai         ! ! intent(in)
+   use grid_dims, only : str_len         ! ! intent(in)
    implicit none
-   integer :: n2,n3,mzg,npat,nvegpat
-   character(len=*) :: iaction,ivegtfn,isoilfn,ndvifn,cndvifil
-   integer :: ivegtflg,isoilflg,ndviflg,ing_prt,nn,nmiss
-   real :: platn,plonn
-   real, dimension(mzg,n2,n3,npat) :: soil_text
-   real, dimension(n2,n3,npat) :: patch_area,leaf_class,veg_ndvif
-   integer, parameter :: maxmiss=1000
-   character(len=80) :: fnmiss(maxmiss)
-   character(len=256) :: h5name
-   integer :: i,j
-   real :: checksum
-   real :: parea_tot
+   !----- Local parameters. ---------------------------------------------------------------!
+   integer                                           , parameter     :: maxdatq =   32
+   !----- Arguments. ----------------------------------------------------------------------!
+   integer                                           , intent(in)    :: n2
+   integer                                           , intent(in)    :: n3
+   integer                                           , intent(in)    :: mzg
+   integer                                           , intent(in)    :: npat
+   integer                                           , intent(in)    :: nvegpat
+   character(len=*)                                  , intent(in)    :: iaction
+   character(len=*)                                  , intent(in)    :: ivegtfn
+   character(len=*)                                  , intent(in)    :: isoilfn
+   character(len=*)                                  , intent(in)    :: ndvifn
+   character(len=*)                                  , intent(in)    :: cndvifil
+   integer                                           , intent(in)    :: ivegtflg
+   integer                                           , intent(in)    :: isoilflg
+   integer                                           , intent(in)    :: ndviflg
+   real                                              , intent(in)    :: platn
+   real                                              , intent(in)    :: plonn
+   real, dimension(mzg,n2,n3,npat)                   , intent(inout) :: soil_text
+   real, dimension(n2,n3,npat)                       , intent(inout) :: patch_area
+   real, dimension(n2,n3,npat)                       , intent(inout) :: leaf_class
+   real, dimension(n2,n3,npat)                       , intent(inout) :: veg_ndvif
+   !----- Local variables. ----------------------------------------------------------------!
+   character(len=str_len), dimension(maxndvidata)                    :: fnmiss
+   character(len=str_len)                                            :: h5name
+   integer               , dimension(0:maxdatq)                      :: sumpix
+   integer               , dimension(0:maxdatq,2)                    :: ngrdpix
+   integer               , dimension(0:maxdatq,nstyp)                :: datq_soil
+   integer               , dimension(0:maxdatq,nstyp)                :: soil_tab
+   real                  , dimension(0:maxdatq)                      :: datq_ndvi
+   real                  , dimension(0:maxdatq)                      :: sumndvi
+   integer                                                           :: ing_prt
+   integer                                                           :: nn
+   integer                                                           :: nmiss
+   integer                                                           :: i
+   integer                                                           :: j
+   integer                                                           :: datq
+   integer                                                           :: lsp
+   integer                                                           :: datq_pat
+   integer                                                           :: datsoil
+   integer                                                           :: soil_count
+   integer                                                           :: nlev_soil
+   integer                                                           :: jr
+   integer                                                           :: jp
+   integer                                                           :: ir
+   integer                                                           :: ip
+   integer                                                           :: iqv
+   integer                                                           :: ing
+   integer                                                           :: maxdq
+   integer                                                           :: jng
+   integer                                                           :: jng1
+   integer                                                           :: ngstor1
+   integer                                                           :: ngstor2
+   integer                                                           :: npatpixs
+   integer                                                           :: nwat
+   integer                                                           :: ipat
+   integer                                                           :: idatq
+   integer                                                           :: isoil
+   integer                                                           :: jsoil
+   integer                                                           :: k
+   integer                                                           :: no_veg
+   integer                                                           :: iblksizo_veg
+   integer                                                           :: isbego_veg
+   integer                                                           :: iwbego_veg
+   integer                                                           :: no_soil
+   integer                                                           :: iblksizo_soil
+   integer                                                           :: isbego_soil
+   integer                                                           :: iwbego_soil
+   integer                                                           :: no_ndvi
+   integer                                                           :: iblksizo_ndvi
+   integer                                                           :: isbego_ndvi
+   integer                                                           :: iwbego_ndvi
+   real                                                              :: checksum
+   real                                                              :: parea_tot
+   real                                                              :: deltallo_veg
+   real                                                              :: deltallo_soil
+   real                                                              :: deltallo_ndvi
+   real                                                              :: offlat_veg
+   real                                                              :: offlat_soil
+   real                                                              :: offlat_ndvi
+   real                                                              :: offlon_veg
+   real                                                              :: offlon_soil
+   real                                                              :: offlon_ndvi
+   real                                                              :: xp
+   real                                                              :: yp
+   real                                                              :: fracwat
+   real                                                              :: plpp
+   !---------------------------------------------------------------------------------------!
 
-   integer, parameter :: maxdatq=32
-
-   integer :: datq,lsp,ngrdpix(0:maxdatq,2),datq_pat  &
-             ,datsoil,soil_count,nlev_soil      &
-             ,jr,jp,ir,ip,iqv,ing,maxdq,jng,jng1,ngstor1    &
-             ,ngstor2,npatpixs,nwat,ipat,idatq,isoil,jsoil,k      &
-             ,no_veg ,iblksizo_veg ,isbego_veg ,iwbego_veg   &
-             ,no_soil,iblksizo_soil,isbego_soil,iwbego_soil  &
-             ,no_ndvi,iblksizo_ndvi,isbego_ndvi,iwbego_ndvi
-
-   integer, dimension(0:maxdatq) :: sumpix
-   integer, dimension(0:maxdatq,nstyp) :: datq_soil,soil_tab
-
-   real :: deltallo_veg ,deltallo_soil ,deltallo_ndvi  &
-          ,offlat_veg   ,offlat_soil   ,offlat_ndvi    &
-          ,offlon_veg   ,offlon_soil   ,offlon_ndvi    &
-          ,xp,yp,fracwat,plpp
-
-   real, dimension(0:maxdatq) :: datq_ndvi,sumndvi
 
 
-   nmiss=0
+   !------ Initialise some counters. ------------------------------------------------------!
+   nmiss    = 0
+   checksum = 0
+   !---------------------------------------------------------------------------------------!
 
-   !print*,n2,n3,mzg,npat,nvegpat,npq
-   !print*,iaction,platn,plonn
-   checksum=0
 
-   if (iaction .eq. 'veg') then
 
-      call read_header(ivegtfn,iblksizo_veg,no_veg,isbego_veg  &
-         ,iwbego_veg,offlat_veg,offlon_veg,deltallo_veg,'veg',h5name)
+   select case (trim(iaction))
+   case ('veg')
+
+      !------------------------------------------------------------------------------------!
+      !     Read in the header and data files.                                             !
+      !------------------------------------------------------------------------------------!
+      call read_header(ivegtfn,iblksizo_veg,no_veg,isbego_veg,iwbego_veg,offlat_veg        &
+                      ,offlon_veg,deltallo_veg,'veg',h5name)
          
-      call fill_datp(n2,n3,no_veg,iblksizo_veg,isbego_veg,iwbego_veg  &
-         ,platn,plonn,offlat_veg,offlon_veg,deltallo_veg,ivegtfn,iaction  &
-         ,nmiss,fnmiss,h5name)
-
-   ! 9/30/97:  Carry out the first translation of the input DATP values into a
-   ! condensed set called DATQ_patch.  The range of DATQ_patch values represents
-   ! the total variety of land surface conditions (patches) to be allowed for 
-   ! the present simulation, and may be a broader class than the LEAF-2 
-   ! vegetation classes for which all the vegetation physical parameters are 
-   ! defined.  For example, two different DATQ_patch classes may be mapped to 
-   ! the same LEAF-2 vegetation class, but be initialized with different soil 
-   ! moistures or soil types, and therefore require different patches.
-
-   ! Fill datq_patch (patch class) values from input landuse dataset.
-   ! Currently, this data serves as the primary criterion for defining patches.
-
-   !   print*,(datp(i,i,10,10),i=1,npq)
+      call fill_datp(n2,n3,no_veg,iblksizo_veg,isbego_veg,iwbego_veg,platn,plonn           &
+                    ,offlat_veg,offlon_veg,deltallo_veg,ivegtfn,iaction,nmiss,fnmiss,h5name)
+      !------------------------------------------------------------------------------------!
 
 
-      do jr = 1,n3
-         do ir = 1,n2
+
+      !------------------------------------------------------------------------------------!
+      !     Carry out the first translation of the input DATP values into a condensed set  !
+      ! called DATQ_patch.  The range of DATQ_patch values represents the total variety of !
+      ! land surface conditions (patches) to be allowed for the present simulation, and    !
+      ! may be a broader class than the LEAF-2 vegetation classes for which all the        !
+      ! vegetation physical parameters are defined.  For example, two different DATQ_patch !
+      ! classes may be mapped to the same LEAF-2 vegetation class, but be initialized with !
+      ! different soil moistures or soil types, and therefore require different patches.   !
+      !     Fill datq_patch (patch class) values from input landuse dataset.  Currently,   !
+      ! this data serves as the primary criterion for defining patches if running LEAF,    !
+      ! but not if running ED, in which case soil will overwrite the patch areas.          !
+      !------------------------------------------------------------------------------------!
+      jvegloop: do jr = 1,n3
+         ivegloop: do ir = 1,n2
 
             do iqv = 0,maxdatq
-               ngrdpix(iqv,1) = 0     ! Initialize counter for datq pixels
-               ngrdpix(iqv,2) = iqv   ! Initialize array of consecutive datq values 
+               ngrdpix(iqv,1) = 0     ! Initialise counter for datq pixels
+               ngrdpix(iqv,2) = iqv   ! Initialise array of consecutive datq values 
             enddo
 
+            !------------------------------------------------------------------------------!
+            !     Count the pixels for this grid point.                                    !
+            !------------------------------------------------------------------------------!
             do jp = 1,npq
                do ip = 1,npq
 
-   !write(6,202) ip,jp,ir,jr,datp(ip,jp,ir,jr)
-   !202 format('pp2',4i5,f5.1)
-
-                  call datp_datq(datp(ip,jp,ir,jr),datq_patch(ip,jp,ir,jr))
+                  call leaf_datp_datq(datp(ip,jp,ir,jr),datq_patch(ip,jp,ir,jr))
                   datq = datq_patch(ip,jp,ir,jr)
                   ngrdpix(datq,1) = ngrdpix(datq,1) + 1
+               end do
+            end do
+            !------------------------------------------------------------------------------!
 
-   !write(6,203) ip,jp,ir,jr,datp(ip,jp,ir,jr),datq_patch(ip,jp,ir,jr)  &
-   !    ,ngrdpix(datq,1)
-   !203 format('pp3',4i5,f5.1,2i5)
 
-               enddo
-            enddo
 
-   ! Sort values of ngrdpix by prevalence for non-water patches (datq .ge. 2)
 
+            !------------------------------------------------------------------------------!
+            !    Sort values of ngrdpix by prevalence for non-water patches (datq >= 2).   !
+            !------------------------------------------------------------------------------!
             do ing = 2,maxdatq
                maxdq = -1
                do jng = ing,maxdatq
@@ -222,48 +283,41 @@ subroutine landuse_opqr(n2,n3,mzg,npat,nvegpat  &
                      jng1 = jng
                      maxdq = ngrdpix(jng,1)
                   endif
-               enddo
+               end do
                ngstor1 = ngrdpix(ing,1)
                ngstor2 = ngrdpix(ing,2)
                ngrdpix(ing,1) = ngrdpix(jng1,1)
                ngrdpix(ing,2) = ngrdpix(jng1,2)
                ngrdpix(jng1,1) = ngstor1
                ngrdpix(jng1,2) = ngstor2
-               
-            enddo
+            end do
+            !------------------------------------------------------------------------------!
 
-            !do ing_prt = 1,maxdatq
-            !    write(6,204)ir,jr,ing_prt,ngrdpix(ing_prt,1),ngrdpix(ing_prt,2)
-            !204 format('ppx',5i5)
-            !enddo
-            
-            ! Fill patches numbered 2 through nvegpat+1 with the nvegpat most prevalent
-            !    nonwater landuse types.  Count pixels for these patches for normalization
-            !    of total grid cell area
 
+
+
+            !------------------------------------------------------------------------------!
+            !    Fill patches numbered 2 through nvegpat+1 with the nvegpat most prevalent !
+            ! nonwater landuse types.  Count pixels for these patches for normalization of !
+            ! total grid cell area.                                                        !
+            !------------------------------------------------------------------------------!
             npatpixs = 1
-            nwat = ngrdpix(0,1) + ngrdpix(1,1)
-
-            if (nwat .lt. npq*npq) then
-
+            nwat     = ngrdpix(0,1) + ngrdpix(1,1)
+            if (nwat < npq*npq) then
                npatpixs = 0
-               do ipat = 2,nvegpat+1
+               do ipat  = 2,nvegpat+1
 
-                  datq = ngrdpix(ipat,2)
+                  datq                   = ngrdpix(ipat,2)
                   leaf_class(ir,jr,ipat) = float(datq)
-                  npatpixs = npatpixs + ngrdpix(ipat,1)
+                  npatpixs               = npatpixs + ngrdpix(ipat,1)
+               end do
+            end if
 
+            fracwat             = float(nwat) / float(npq * npq)
+            plpp                = (1. - fracwat) / float(npatpixs)
+            patch_area(ir,jr,1) = max(min_patch_area,fracwat)
 
-                  !write(6,205) ir,jr,ipat,datq,leaf_class(ir,jr,ipat),npatpixs
-                  !205 format('ppy',4i5,f10.2,i5)
-               enddo
-            endif
-
-            fracwat = float(nwat) / float(npq * npq)
-            plpp = (1. - fracwat) / float(npatpixs)
-            patch_area(ir,jr,1) = max(tiny_parea,fracwat)
-
-            if (ngrdpix(0,1) .ge. ngrdpix(1,1)) then
+            if (ngrdpix(0,1) >= ngrdpix(1,1)) then
                leaf_class(ir,jr,1) = 0.
             else
                leaf_class(ir,jr,1) = 1.
@@ -271,7 +325,7 @@ subroutine landuse_opqr(n2,n3,mzg,npat,nvegpat  &
 
             do ipat = 2,nvegpat+1
                patch_area(ir,jr,ipat) = plpp * float(ngrdpix(ipat,1))
-               if (patch_area(ir,jr,ipat) < tiny_parea) patch_area(ir,jr,ipat) = 0.
+               if (patch_area(ir,jr,ipat) < min_patch_area) patch_area(ir,jr,ipat) = 0.
             end do
 
             !----- Rescale the patch areas, eliminating those tiny patches. ---------------!
@@ -282,160 +336,327 @@ subroutine landuse_opqr(n2,n3,mzg,npat,nvegpat  &
             do ipat = 1,nvegpat+1
                patch_area(ir,jr,ipat) = patch_area(ir,jr,ipat) / parea_tot
             end do
-         end do
-      enddo
+         end do ivegloop
+      end do jvegloop
+      !------------------------------------------------------------------------------------!
 
-   elseif (iaction .eq. 'soil') then
+   case ('soil')
 
-      call read_header(isoilfn,iblksizo_soil,no_soil,isbego_soil  &
-         ,iwbego_soil,offlat_soil,offlon_soil,deltallo_soil,'soil',h5name)
-         
-      call fill_datp(n2,n3,no_soil,iblksizo_soil,isbego_soil,iwbego_soil  &
-         ,platn,plonn,offlat_soil,offlon_soil,deltallo_soil,isoilfn,iaction  &
-         ,nmiss,fnmiss,h5name)
 
-      do jr = 1,n3
-         do ir = 1,n2
+      !------------------------------------------------------------------------------------!
+      !     Read in the header and data files.                                             !
+      !------------------------------------------------------------------------------------!
+      call read_header(isoilfn,iblksizo_soil,no_soil,isbego_soil,iwbego_soil,offlat_soil   &
+                      ,offlon_soil,deltallo_soil,'soil',h5name)
+
+      call fill_datp(n2,n3,no_soil,iblksizo_soil,isbego_soil,iwbego_soil,platn,plonn       &
+                    ,offlat_soil,offlon_soil,deltallo_soil,isoilfn,iaction,nmiss,fnmiss    &
+                    ,h5name)
+      !------------------------------------------------------------------------------------!
+
+
+
+
+      !------------------------------------------------------------------------------------!
+      jsoilloop: do jr = 1,n3
+         isoilloop: do ir = 1,n2
             if (patch_area(ir,jr,1) < 1.0) then
 
+               !---------------------------------------------------------------------------!
+               !    Here we initialise both ngrdpix and datq_soil, because we will assign  !
+               ! patches differently depending on the surface model (LEAF or ED).          !
+               !---------------------------------------------------------------------------!
                do idatq = 0,maxdatq
+                  ngrdpix(idatq,1) = 0     ! Initialise counter for datq pixels
+                  ngrdpix(idatq,2) = idatq ! Initialise array of consecutive datq values 
                   do isoil = 1,nstyp
-                     datq_soil(idatq,isoil) = 0     ! Initialize counter for datq pixels
-                  enddo
-               enddo
+                     datq_soil(idatq,isoil) = 0  ! Initialise counter for datq pixels
+                  end do
+               end do
+               !---------------------------------------------------------------------------!
 
+
+
+
+               !---------------------------------------------------------------------------!
+               !     Count the pixels for this grid point.                                 !
+               !---------------------------------------------------------------------------!
                do jp = 1,npq
                   do ip = 1,npq
-                     
-                     ! Fill datq_soil values as secondary criterion.  This is for finding dominant
-                     ! soil class for each datq class.
 
-                     !call datp_datsoil(datp(ip,jp,ir,jr),datsoil)
-                     datsoil = nint(datp(ip,jp,ir,jr))
-                     if (datsoil == 0) datsoil = nslcon
+                     !---------------------------------------------------------------------!
+                     !      Fill datq_soil values as secondary criterion if running LEAF,  !
+                     ! and fill ngrdpix as a primary criterion if running ED.              !
+                     !---------------------------------------------------------------------!
+                     datsoil  = nint(datp(ip,jp,ir,jr))
 
                      datq_pat = datq_patch(ip,jp,ir,jr)
 
-                     datq_soil(datq_pat,datsoil)  &
-                        = datq_soil(datq_pat,datsoil) + 1
-    
+                     datq_soil(datq_pat,datsoil) = datq_soil(datq_pat,datsoil) + 1
+                     ngrdpix(datsoil,1)          = ngrdpix(datsoil,1) + 1
+                  end do
+               end do
+               !---------------------------------------------------------------------------!
 
-                     !write(6,440)  ip,jp,ir,jr,datp(ip,jp,ir,jr),datsoil,datq_pat  &
-                     !   ,datq_soil(datq_pat,datsoil)
-                     !440 format('action veg ',4i4,f6.1,i5,i5,i5)
 
-                  enddo
-               enddo
 
-               do ipat = 2,nvegpat+1
 
-                  if (patch_area(ir,jr,ipat) >= tiny_parea) then   
+               !---------------------------------------------------------------------------!
+               !     Here we will do different things depending on whether we are running  !
+               ! LEAF-3 or ED-2.                                                           !
+               !---------------------------------------------------------------------------!
+               select case (isfcl)
+               case (1,2)
+                  !------------------------------------------------------------------------!
+                  !     LEAF-3.   In this case we select the commonest soil class for each !
+                  ! vegetation type, as they may be correlated.                            !
+                  !------------------------------------------------------------------------!
+                  do ipat = 2,nvegpat+1
 
-                     datq_pat = nint(leaf_class(ir,jr,ipat))
+                     if (patch_area(ir,jr,ipat) >= min_patch_area) then
 
-   ! Find isoil value for which soil_tab(datq_pat,isoil) is a maximum
+                        datq_pat = nint(leaf_class(ir,jr,ipat))
 
-                     
-                     soil_count = 0
-                     do isoil = 1,nstyp
-                        if (datq_soil(datq_pat,isoil) .gt. soil_count) then
-                           soil_count = datq_soil(datq_pat,isoil)
-                           jsoil = isoil
+                        !------------------------------------------------------------------!
+                        !      Find isoil value for which datq_soil(datq_pat,isoil) is a   !
+                        ! maximum.                                                         !
+                        !------------------------------------------------------------------!
+                        soil_count = 0
+                        do isoil = 1,nstyp
+                           if (datq_soil(datq_pat,isoil) > soil_count) then
+                              soil_count = datq_soil(datq_pat,isoil)
+                              jsoil      = isoil
+                           end if
+                        end do
+
+                        checksum = checksum + float(jsoil)
+                        !------------------------------------------------------------------!
+
+
+
+                        !------------------------------------------------------------------!
+                        !      For now, assume single level of input soil data (e.g., FAO) !
+                        ! and fill all soil levels with this value.                        !
+                        !------------------------------------------------------------------!
+                        do k = 1,mzg
+                           if (jsoil /= 0) then
+                              soil_text(k,ir,jr,ipat) = float(jsoil)
+                           else
+                              soil_text(k,ir,jr,ipat) = float(nslcon)
+                           end if
+                        end do
+                        !------------------------------------------------------------------!
+                     end if
+                  end do
+                  !------------------------------------------------------------------------!
+
+               case (5)
+                  !------------------------------------------------------------------------!
+                  !     ED-2 run.   In this case soil texture will be the primary          !
+                  ! criterion to determine the patches.   We must organise the counter     !
+                  ! array so it goes from the commonest soil class to the rarest one.  We  !
+                  ! must also redefine the patch area (which will be the site area).       !
+                  !------------------------------------------------------------------------!
+
+
+
+
+
+                  !------------------------------------------------------------------------!
+                  !    Sort values of ngrdpix by prevalence for non-water patches          !
+                  ! (datq >= 1).                                                           !
+                  !------------------------------------------------------------------------!
+                  do ing = 1,maxdatq
+                     maxdq = -1
+                     do jng = ing,maxdatq
+                        if (ngrdpix(jng,1) .gt. maxdq) then
+                           jng1 = jng
+                           maxdq = ngrdpix(jng,1)
                         endif
-                     enddo
+                     end do
+                     ngstor1 = ngrdpix(ing,1)
+                     ngstor2 = ngrdpix(ing,2)
+                     ngrdpix(ing,1) = ngrdpix(jng1,1)
+                     ngrdpix(ing,2) = ngrdpix(jng1,2)
+                     ngrdpix(jng1,1) = ngstor1
+                     ngrdpix(jng1,2) = ngstor2
+                  end do
+                  !------------------------------------------------------------------------!
 
-                     checksum=checksum+float(jsoil)
+
+
+
+                  !------------------------------------------------------------------------!
+                  !    Fill patches numbered 2 through nvegpat+1 with the nvegpat most     !
+                  ! prevalent nonwater landuse types.  Count pixels for these patches for  !
+                  ! normalization of total grid cell area.                                 !
+                  !------------------------------------------------------------------------!
+                  npatpixs = 1
+                  nwat     = ngrdpix(0,1)
+                  if (nwat < npq*npq) then
+                     npatpixs = 0
+                     do ipat  = 2,nvegpat+1
+
+                        datq                   = ngrdpix(ipat-1,2)
+                        !------------------------------------------------------------------!
+                        !      For now, assume single level of input soil data (e.g., FAO) !
+                        ! and fill all soil levels with this value.                        !
+                        !------------------------------------------------------------------!
+                        do k=1,mzg
+                           soil_text(k,ir,jr,ipat) = float(datq)
+                        end do
+                        !------------------------------------------------------------------!
+
+                        npatpixs               = npatpixs + ngrdpix(ipat-1,1)
+                     end do
                      
-   ! For now, assume single level of input soil data (e.g., FAO) and
-   ! fill all soil levels with this value.
+                     !---------------------------------------------------------------------!
+                     !     PLPP will scale the soil class so the sum of water + land       !
+                     ! patches adds up to one.                                             !
+                     !---------------------------------------------------------------------!
+                     plpp = (1. - patch_area(ir,jr,1)) / real(npatpixs)
+                     
+                     !---------------------------------------------------------------------!
+                     !     Find the area of each patch, and discard the leaf class         !
+                     ! information by copying the second patch to the least common ones.   !
+                     !---------------------------------------------------------------------!
+                     do ipat=2,nvegpat+1
+                        leaf_class(ir,jr,ipat) = leaf_class(ir,jr,2)
+                        patch_area(ir,jr,ipat) = plpp * real(ngrdpix(ipat-1,1))
+                        if (patch_area(ir,jr,ipat) < min_patch_area) then
+                           patch_area(ir,jr,ipat) = 0.
+                        end if
+                     end do
+                     !---------------------------------------------------------------------!
 
-                     do k = 1,mzg
-                        if (jsoil /= 0) soil_text(k,ir,jr,ipat) = float(jsoil)
-                     enddo
+                  else
+                     !---------------------------------------------------------------------!
+                     !     The soil dataset indicated that all pixels were water, even     !
+                     ! though the vegetation dataset had land.  If this is the case,       !
+                     ! assign only one leaf patch/ed site with the default soil type and   !
+                     ! set the others areas to zero.                                       !
+                     !---------------------------------------------------------------------!
+                     do k=1,mzg
+                        soil_text(k,ir,jr,2) = nslcon
+                     end do
+                     patch_area(ir,jr,2) = 1. - patch_area(ir,jr,1)
+                     do ipat = 3, nvegpat+1
+                        do k=1, mzg
+                           soil_text(k,ir,jr,ipat) = nslcon
+                        end do
+                        patch_area(ir,jr,ipat) = 0.
+                     end do
+                  end if
+                  !------------------------------------------------------------------------!
 
-                  endif
-               enddo
-            endif
-         enddo
-      enddo
+
+                  !----- Rescale the patch areas, eliminating those tiny patches. ---------!
+                  parea_tot = 0.
+                  do ipat = 1,nvegpat+1
+                     parea_tot = parea_tot + patch_area(ir,jr,ipat)
+                  end do
+                  do ipat = 1,nvegpat+1
+                     patch_area(ir,jr,ipat) = patch_area(ir,jr,ipat) / parea_tot
+                  end do
+                  !------------------------------------------------------------------------!
+
+               end select
+            end if
+         end do isoilloop
+      end do jsoilloop
 
 
 
-   elseif (iaction .eq. 'ndvi') then
+   case ('ndvi')
 
-      call read_header(ndvifn,iblksizo_ndvi,no_ndvi,isbego_ndvi  &
-           ,iwbego_ndvi,offlat_ndvi,offlon_ndvi,deltallo_ndvi,'ndvi',h5name)
+      !------------------------------------------------------------------------------------!
+      !     Read in the header and NDVI data files.                                        !
+      !------------------------------------------------------------------------------------!
+      call read_header(ndvifn,iblksizo_ndvi,no_ndvi,isbego_ndvi,iwbego_ndvi,offlat_ndvi    &
+                      ,offlon_ndvi,deltallo_ndvi,'ndvi',h5name)
+      call fill_datp  (n2,n3,no_ndvi,iblksizo_ndvi,isbego_ndvi,iwbego_ndvi,platn,plonn     &
+                      ,offlat_ndvi,offlon_ndvi,deltallo_ndvi,cndvifil,iaction,nmiss,fnmiss &
+                      ,h5name)
+      !------------------------------------------------------------------------------------!
 
-      call fill_datp(n2,n3,no_ndvi,iblksizo_ndvi,isbego_ndvi,iwbego_ndvi  &
-           ,platn,plonn,offlat_ndvi,offlon_ndvi,deltallo_ndvi,cndvifil,iaction  &
-           ,nmiss,fnmiss,h5name)
 
-      do jr = 1,n3
-         do ir = 1,n2
+      jndviloop: do jr = 1,n3
+         indviloop: do ir = 1,n2
             if (patch_area(ir,jr,1) < 1.0) then
 
                do idatq = 0,maxdatq
-                  sumndvi(idatq) = 0.  ! initialize ndvi sum
-                  sumpix(idatq) = 0    ! initialize ndvi pixel count
-               enddo
+                  sumndvi(idatq) = 0.   ! Initialise ndvi sum
+                  sumpix(idatq)  = 0    ! Initialise ndvi pixel count
+               end do
 
                do jp = 1,npq
                   do ip = 1,npq
 
-   ! Fill datq_ndvi values to compute average value for each datq class.
-
-
-
-                     datq_pat = datq_patch(ip,jp,ir,jr)
+                     !---------------------------------------------------------------------!
+                     !     Fill datq_ndvi values to compute average value for each datq    !
+                     ! class.                                                              !
+                     !---------------------------------------------------------------------!
+                     datq_pat          = datq_patch(ip,jp,ir,jr)
                      sumndvi(datq_pat) = sumndvi(datq_pat) + datp(ip,jp,ir,jr)
-                     sumpix(datq_pat) = sumpix(datq_pat) + 1
+                     sumpix(datq_pat)  = sumpix(datq_pat) + 1
+                  end do
+               end do
 
-                  enddo
-               enddo
 
+               !---------------------------------------------------------------------------!
+               !     Fill in the NDVI (or LAI) arrays using the average NDVI (or LAI) for  !
+               ! each class.                                                               !
+               !---------------------------------------------------------------------------!
                do ipat = 2,nvegpat+1
+                  datq_pat = nint(leaf_class(ir,jr,ipat))
 
-                     datq_pat = nint(leaf_class(ir,jr,ipat))
-
-                     if(iuselai.eq.1) then
-                        if (sumpix(datq_pat) == 0.) then
-                           veg_ndvif(ir,jr,ipat) =  0.0
-                        else
-                           veg_ndvif(ir,jr,ipat) =  sumndvi(datq_pat)/ sumpix(datq_pat)
-                        end if
+                  select case (iuselai)
+                  case (1)
+                     !----- LAI data. -----------------------------------------------------!
+                     if (sumpix(datq_pat) == 0.) then
+                        veg_ndvif(ir,jr,ipat) =  0.0
                      else
-                        if (sumpix(datq_pat) == 0.) then
-                           veg_ndvif(ir,jr,ipat) =  0.05
-                        else
-                           veg_ndvif(ir,jr,ipat) =  max(.05,sumndvi(datq_pat)/ sumpix(datq_pat))
-                        end if
+                        veg_ndvif(ir,jr,ipat) =  sumndvi(datq_pat)/ sumpix(datq_pat)
                      end if
-               enddo
+                  case default
+                     !----- NDVI data, make sure it's never zero (singularity). -----------!
+                     if (sumpix(datq_pat) == 0.) then
+                        veg_ndvif(ir,jr,ipat) =  0.05
+                     else
+                        veg_ndvif(ir,jr,ipat) =  max( 0.05                                 &
+                                                    , sumndvi(datq_pat)/ sumpix(datq_pat))
+                     end if
+                  end select
+               end do
+            end if
+         end do indviloop
+      end do jndviloop
 
-            endif
-         enddo
-      enddo
+   end select
 
-   endif
-
-   if(nmiss.gt.0) then
-      print*,'-----------------------------------------------------'
-      print*,'Input surface characteristic data file processing:',iaction
-      print*,'-----------------------------------------------------'
-      print*,'  Input data blocks not found (data assumed to be ocean or default):'
+   if (nmiss > 0) then
+      write (unit=*,fmt='(a)')      '-----------------------------------------------------'
+      write (unit=*,fmt='(a,1x,a)') '  The following blocks for ',trim(iaction)            &
+                                    ,' were missing.'
       do nn=1,nmiss
-         print*,trim(trim(fnmiss(nn)))
-      enddo
-      print*,'-----------------------------------------------------'
-   endif
-
-
-
+         write (unit=*,fmt='(a,1x,a)')  '  - ',trim(fnmiss(nn))
+      end do
+      write (unit=*,fmt='(a)')      '  Data were assumed ocean or default in these areas.'
+      write (unit=*,fmt='(a)')      '-----------------------------------------------------'
+      write (unit=*,fmt='(a)')      ' '
+   end if
    return
 end subroutine landuse_opqr
+!==========================================================================================!
+!==========================================================================================!
 
-!********************************************************************
 
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
 subroutine read_header(ofn,iblksizo,no,isbego,iwbego,offlat,offlon,deltallo  &
    ,ifield,h5name)
 

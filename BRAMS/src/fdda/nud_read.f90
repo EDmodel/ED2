@@ -94,7 +94,7 @@ end
 subroutine nud_file_inv (hfilin,iyear1,imonth1,idate1,itime1)
 
 use mem_varinit
-
+use grid_dims, only : str_len
 implicit none
 
 character(len=*) :: hfilin
@@ -104,8 +104,8 @@ integer :: nc,nf,lnf,nhftot
 integer :: inyear,inmonth,indate,inhour
 
 
-character(len=128), dimension(maxnudfiles) :: fnames
-character(len=128) :: hpref,hpref2
+character(len=str_len), dimension(maxnudfiles) :: fnames
+character(len=str_len) :: hpref,hpref2,thisfile
 character(len=14)  :: itotdate
 real(kind=8) :: secs_init,secs_nud
 
@@ -118,9 +118,8 @@ call date_abs_secs2(iyear1,imonth1,idate1,itime1*100,secs_init)
 nc=len_trim(hfilin)
 nhftot=-1
 hpref=hfilin(1:nc)
-
-call RAMS_filelist(fnames,trim(hpref)  &
-         //'*-head.txt',nhftot)
+thisfile = trim(hpref)//'*-head.txt'
+call RAMS_filelist(fnames,thisfile,nhftot)
 
 if(nhftot > maxnudfiles) then
    print*,'too many nud history files'

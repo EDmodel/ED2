@@ -235,6 +235,7 @@ subroutine ndvi_file_inv (ndvifilin,ierr)
 
 use mem_grid
 use io_params
+use grid_dims, only : str_len
 
 implicit none
 
@@ -245,7 +246,8 @@ integer :: nc,nf,lnf,nftot,ng
 integer :: inyear,inmonth,indate,inhour
 
 
-character(len=128), dimension(maxndvifiles) :: fnames
+character(len=str_len), dimension(maxndvifiles) :: fnames
+character(len=str_len) :: thisfile
 character(len=14)  :: itotdate
 character(len=1)  :: cgrid
 real(kind=8) :: secs_init,secs_file
@@ -266,7 +268,8 @@ do ng = 1, ngrids
    
    nftot = -1
    write(cgrid,'(i1)') ng
-   call RAMS_filelist(fnames,trim(ndvifilin)//'-N-*-g'//cgrid//'.vfm',nftot)
+   thisfile = trim(ndvifilin)//'-N-*-g'//cgrid//'.vfm'
+   call RAMS_filelist(fnames,thisfile,nftot)
    
    if(nftot <= 0) then
       print*,'No ndvi files for grid '//cgrid

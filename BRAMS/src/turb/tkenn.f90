@@ -108,7 +108,7 @@ subroutine nakanishi(m1,m2,m3,m4,ia,iz,ja,jz,jd,tkep,tket,vt3dd,vt3de,vt3dh,vt3d
                             , onethird             & ! intent(in)
                             , lnexp_max            ! ! intent(in)
    use leaf_coms     , only : ustmin               & ! intent(in)
-                            , tiny_parea           ! ! intent(in)
+                            , min_patch_area       ! ! intent(in)
    use turb_coms     , only : a1      => nna1      & ! intent(in)
                             , a2      => nna2      & ! intent(in)
                             , b1      => nnb1      & ! intent(in)
@@ -242,7 +242,7 @@ subroutine nakanishi(m1,m2,m3,m4,ia,iz,ja,jz,jd,tkep,tket,vt3dd,vt3de,vt3dh,vt3d
          ustarw=0.
          tstarw=0.
          patchloop: do p=1,m4
-            if (patch_area(i,j,p) < tiny_parea) cycle patchloop
+            if (patch_area(i,j,p) < min_patch_area) cycle patchloop
             z0w    =    z0w + patchz0(i,j,p) * patch_area(i,j,p)
             ustarw = ustarw + ustar(i,j,p)   * patch_area(i,j,p)
             tstarw = tstarw + tstar(i,j,p)   * patch_area(i,j,p)

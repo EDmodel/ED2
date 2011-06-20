@@ -47,7 +47,7 @@ subroutine master_ed_init(iparallel)
       call MPI_Bcast(layer_index,nlat_lyr*nlon_lyr,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
 
    else
-      !----- Setting up a serial run. -----------------------------------------------------!
+      !----- Set up a serial run. ---------------------------------------------------------!
       mynum  = 1
       nmachs = 1
       call copy_in_bramsmpi(mainnum,mchnum,mynum,nmachs,machs,iparallel)
@@ -251,7 +251,7 @@ subroutine init_master_work(ipara)
                            , py_off              & ! intent(out)
                            , allocate_edglobals  & ! sub-routine
                            , allocate_edtype     ! ! sub-routine
-
+   use mem_polygons , only : maxsite             ! ! intent(in)
    implicit none
    !----- Included variables. -------------------------------------------------------------!
    include 'mpif.h'
@@ -331,7 +331,7 @@ subroutine init_master_work(ipara)
          !----- Allocate the arrays of the work structure. --------------------------------!
          write(unit=*,fmt='(a)')       ' - Nullify and allocate work_e.'
          call ed_nullify_work(work_e(ifm))
-         call ed_alloc_work(work_e(ifm),xmax,ymax)
+         call ed_alloc_work(work_e(ifm),xmax,ymax,maxsite)
 
          write(unit=*,fmt='(a)')       ' - Assign the grid co-ordinates.'
          jloop: do jl=1,ymax
@@ -354,10 +354,11 @@ subroutine init_master_work(ipara)
                ! state should be grabbed from the neighbour node (or copied from the       !
                ! next-to-the-edge polygon in case of the true edge).                       !
                !---------------------------------------------------------------------------!
-               work_e(ifm)%work    (il,jl)  = 0.
-               work_e(ifm)%land    (il,jl)  = .false.
-               work_e(ifm)%landfrac(il,jl)  = 0.
-               work_e(ifm)%ntext   (il,jl)  = 0.
+               work_e(ifm)%work    (il,jl)   = 0.
+               work_e(ifm)%land    (il,jl)   = .false.
+               work_e(ifm)%landfrac(il,jl)   = 0.
+               work_e(ifm)%ntext   (:,il,jl) = 0.
+               work_e(ifm)%soilfrac(:,il,jl) = 0.
                !---------------------------------------------------------------------------!
             end do iloop
          end do jloop
@@ -398,22 +399,24 @@ subroutine init_master_work(ipara)
 
             !----- Send the matrices. -----------------------------------------------------!
             write(unit=*,fmt='(a)')       ' - Send the matrices to the node.'
-            call MPI_Send(work_e(ifm)%glat    ,xmax*ymax,MPI_REAL   ,machnum(nm),65        &
-                         ,MPI_COMM_WORLD,ierr)
-            call MPI_Send(work_e(ifm)%glon    ,xmax*ymax,MPI_REAL   ,machnum(nm),66        &
-                         ,MPI_COMM_WORLD,ierr)
-            call MPI_Send(work_e(ifm)%work    ,xmax*ymax,MPI_REAL   ,machnum(nm),67        &
-                         ,MPI_COMM_WORLD,ierr)
-            call MPI_Send(work_e(ifm)%land    ,xmax*ymax,MPI_LOGICAL,machnum(nm),68        &
-                         ,MPI_COMM_WORLD,ierr)
-            call MPI_Send(work_e(ifm)%landfrac,xmax*ymax,MPI_REAL   ,machnum(nm),69        &
-                         ,MPI_COMM_WORLD,ierr)
-            call MPI_Send(work_e(ifm)%ntext   ,xmax*ymax,MPI_INTEGER,machnum(nm),70        &
-                         ,MPI_COMM_WORLD,ierr)
-            call MPI_Send(work_e(ifm)%xatm    ,xmax*ymax,MPI_INTEGER,machnum(nm),71        &
-                         ,MPI_COMM_WORLD,ierr)
-            call MPI_Send(work_e(ifm)%yatm    ,xmax*ymax,MPI_INTEGER,machnum(nm),72        &
-                         ,MPI_COMM_WORLD,ierr)
+            call MPI_Send(work_e(ifm)%glat    ,        xmax*ymax,MPI_REAL   ,machnum(nm)   &
+                         ,65,MPI_COMM_WORLD,ierr)
+            call MPI_Send(work_e(ifm)%glon    ,        xmax*ymax,MPI_REAL   ,machnum(nm)   &
+                         ,66,MPI_COMM_WORLD,ierr)
+            call MPI_Send(work_e(ifm)%work    ,        xmax*ymax,MPI_REAL   ,machnum(nm)   &
+                         ,67,MPI_COMM_WORLD,ierr)
+            call MPI_Send(work_e(ifm)%land    ,        xmax*ymax,MPI_LOGICAL,machnum(nm)   &
+                         ,68,MPI_COMM_WORLD,ierr)
+            call MPI_Send(work_e(ifm)%landfrac,        xmax*ymax,MPI_REAL   ,machnum(nm)   &
+                         ,69,MPI_COMM_WORLD,ierr)
+            call MPI_Send(work_e(ifm)%xatm    ,        xmax*ymax,MPI_INTEGER,machnum(nm)   &
+                         ,70,MPI_COMM_WORLD,ierr)
+            call MPI_Send(work_e(ifm)%yatm    ,        xmax*ymax,MPI_INTEGER,machnum(nm)   &
+                         ,71,MPI_COMM_WORLD,ierr)
+            call MPI_Send(work_e(ifm)%ntext   ,maxsite*xmax*ymax,MPI_INTEGER,machnum(nm)   &
+                         ,72,MPI_COMM_WORLD,ierr)
+            call MPI_Send(work_e(ifm)%soilfrac,maxsite*xmax*ymax,MPI_REAL   ,machnum(nm)   &
+                         ,73,MPI_COMM_WORLD,ierr)
 
             !------------------------------------------------------------------------------!
             !     De-allocate the internal matrices, so we can re-allocate them for the    !
@@ -482,6 +485,7 @@ subroutine init_node_work()
                            , py_off                 & ! intent(inout)
                            , allocate_edglobals     & ! sub-routine
                            , allocate_edtype        ! ! sub-routine
+   use mem_polygons , only : maxsite                ! ! sub-routine
    implicit none
    !----- Included variables. -------------------------------------------------------------!
    include 'mpif.h'
@@ -531,24 +535,26 @@ subroutine init_node_work()
 
             !----- Allocate the work structure before receiving the sub-domain. -----------!
             call ed_nullify_work(work_e(ifm))
-            call ed_alloc_work(work_e(ifm),mmxp(ifm),mmyp(ifm))
+            call ed_alloc_work(work_e(ifm),mmxp(ifm),mmyp(ifm),maxsite)
 
-            call MPI_Recv(work_e(ifm)%glat    ,mmxp(ifm)*mmyp(ifm),MPI_REAL   ,mainnum,65  &
-                         ,MPI_COMM_WORLD,status,ierr)
-            call MPI_Recv(work_e(ifm)%glon    ,mmxp(ifm)*mmyp(ifm),MPI_REAL   ,mainnum,66  &
-                         ,MPI_COMM_WORLD,status,ierr)
-            call MPI_Recv(work_e(ifm)%work    ,mmxp(ifm)*mmyp(ifm),MPI_REAL   ,mainnum,67  &
-                         ,MPI_COMM_WORLD,status,ierr)
-            call MPI_Recv(work_e(ifm)%land    ,mmxp(ifm)*mmyp(ifm),MPI_LOGICAL,mainnum,68  &
-                         ,MPI_COMM_WORLD,status,ierr)
-            call MPI_Recv(work_e(ifm)%landfrac,mmxp(ifm)*mmyp(ifm),MPI_REAL   ,mainnum,69  &
-                         ,MPI_COMM_WORLD,status,ierr)
-            call MPI_Recv(work_e(ifm)%ntext,mmxp(ifm)*mmyp(ifm),MPI_INTEGER   ,mainnum,70  &
-                         ,MPI_COMM_WORLD,status,ierr)
-            call MPI_Recv(work_e(ifm)%xatm,mmxp(ifm)*mmyp(ifm),MPI_INTEGER    ,mainnum,71  &
-                         ,MPI_COMM_WORLD,status,ierr)
-            call MPI_Recv(work_e(ifm)%yatm,mmxp(ifm)*mmyp(ifm),MPI_INTEGER    ,mainnum,72  &
-                         ,MPI_COMM_WORLD,status,ierr)
+            call MPI_Recv(work_e(ifm)%glat    ,        mmxp(ifm)*mmyp(ifm),MPI_REAL        &
+                         ,mainnum,65,MPI_COMM_WORLD,status,ierr)
+            call MPI_Recv(work_e(ifm)%glon    ,        mmxp(ifm)*mmyp(ifm),MPI_REAL        &
+                         ,mainnum,66,MPI_COMM_WORLD,status,ierr)
+            call MPI_Recv(work_e(ifm)%work    ,        mmxp(ifm)*mmyp(ifm),MPI_REAL        &
+                         ,mainnum,67,MPI_COMM_WORLD,status,ierr)
+            call MPI_Recv(work_e(ifm)%land    ,        mmxp(ifm)*mmyp(ifm),MPI_LOGICAL     &
+                         ,mainnum,68,MPI_COMM_WORLD,status,ierr)
+            call MPI_Recv(work_e(ifm)%landfrac,        mmxp(ifm)*mmyp(ifm),MPI_REAL        &
+                         ,mainnum,69,MPI_COMM_WORLD,status,ierr)
+            call MPI_Recv(work_e(ifm)%xatm    ,        mmxp(ifm)*mmyp(ifm),MPI_INTEGER     &
+                         ,mainnum,70,MPI_COMM_WORLD,status,ierr)
+            call MPI_Recv(work_e(ifm)%yatm    ,        mmxp(ifm)*mmyp(ifm),MPI_INTEGER     &
+                         ,mainnum,71,MPI_COMM_WORLD,status,ierr)
+            call MPI_Recv(work_e(ifm)%ntext   ,maxsite*mmxp(ifm)*mmyp(ifm),MPI_INTEGER     &
+                         ,mainnum,72,MPI_COMM_WORLD,status,ierr)
+            call MPI_Recv(work_e(ifm)%soilfrac,maxsite*mmxp(ifm)*mmyp(ifm),MPI_REAL        &
+                         ,mainnum,73,MPI_COMM_WORLD,status,ierr)
             write(unit=*,fmt='(a)')       ' - Matrices arrived here, thanks!'
          end if
       end do

@@ -2,31 +2,34 @@
 !==========================================================================================!
 subroutine ed_mem_alloc(proc_type)
 
-   use ed_max_dims            , only: n_pft,                  & ! intent(in)
-                                   n_dist_types,           & ! intent(in)
-                                   n_dbh,                  & ! intent(in)
-                                   maxvars,                & ! intent(in)
-                                   maxgrds                 ! ! intent(in)
-   use ed_mem_grid_dim_defs, only: define_grid_dim_pointer ! ! subroutine
-   use ed_state_vars       , only: gdpy,                   & ! intent(in)  
-                                   edgrid_g,               & ! intent(out)
-                                   allocate_edglobals,     & ! subroutine
-                                   nullify_edtype,         & ! subroutine
-                                   allocate_edtype         ! ! subroutine
-   use grid_coms          , only : nnxp,                   & ! intent(in)
-                                   nnyp,                   & ! intent(in)
-                                   ngrids                  ! ! intent(in)
-   use mem_polygons       , only : grid_type
-   use ed_work_vars       , only : work_e,                 & ! intent(out)
-                                   ed_alloc_work,          & ! subroutine
-                                   ed_nullify_work         ! ! subroutine
-   use ed_node_coms       , only : mmxp, mmyp, mynum
+   use ed_max_dims         , only : n_pft                   & ! intent(in)
+                                  , n_dist_types            & ! intent(in)
+                                  , n_dbh                   & ! intent(in)
+                                  , maxvars                 & ! intent(in)
+                                  , maxgrds                 ! ! intent(in)
+   use ed_mem_grid_dim_defs, only : define_grid_dim_pointer ! ! subroutine
+   use ed_state_vars       , only : gdpy                    & ! intent(in)
+                                  , edgrid_g                & ! intent(out)
+                                  , allocate_edglobals      & ! subroutine
+                                  , nullify_edtype          & ! subroutine
+                                  , allocate_edtype         ! ! subroutine
+   use grid_coms           , only : nnxp                    & ! intent(in)
+                                  , nnyp                    & ! intent(in)
+                                  , ngrids                  ! ! intent(in)
+   use mem_polygons        , only : maxsite                 ! ! intent(in)
+   use ed_work_vars        , only : work_e                  & ! intent(out)
+                                  , ed_alloc_work           & ! subroutine
+                                  , ed_nullify_work         ! ! subroutine
+   use ed_node_coms        , only : mmxp                    & ! intent(in)
+                                  , mmyp                    & ! intent(in)
+                                  , mynum                   ! ! intent(in)
 
    implicit none
 !----- Arguments: -------------------------------------------------------------------------!
    integer       , intent(in)                :: proc_type
 !----- Local Variables: -------------------------------------------------------------------!
-   integer       , pointer    , dimension(:) :: nmxp,nmyp
+   integer       , pointer    , dimension(:) :: nmxp
+   integer       , pointer    , dimension(:) :: nmyp
    integer                                   :: ng
 !------------------------------------------------------------------------------------------!
 
@@ -44,7 +47,8 @@ subroutine ed_mem_alloc(proc_type)
       !  This is the call for a initial compute node process
       nmxp => mmxp
       nmyp => mmyp
-   case default 
+   case default
+      write (unit=*,fmt='(a,1x,i6)') ' - PROC_TYPE :',proc_type
       call fatal_error('Invalid proc_type','ed_mem_alloc','ed_mem_alloc.f90')
    end select
 
@@ -59,7 +63,7 @@ subroutine ed_mem_alloc(proc_type)
    allocate(work_e(ngrids))
    do ng = 1,ngrids
       call ed_nullify_work(work_e(ng))
-      call ed_alloc_work(work_e(ng),nmxp(ng),nmyp(ng))
+      call ed_alloc_work(work_e(ng),nmxp(ng),nmyp(ng),maxsite)
    end do
    
 !------------------------------------------------------------------------------------------!

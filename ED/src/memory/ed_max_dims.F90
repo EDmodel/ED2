@@ -7,15 +7,17 @@
 module ed_max_dims
 
 #if defined(COUPLED)
-   use grid_dims, only: brams_maxgrds => maxgrds &
-                      , brams_nxpmax  => nxpmax  &
-                      , brams_nypmax  => nypmax  &
-                      , brams_nzpmax  => nzpmax  &
-                      , brams_nzgmax  => nzgmax  &
-                      , brams_maxdim  => maxdim  &
-                      , brams_maxdimp => maxdimp &
-                      , brams_nxyzpm  => nxyzpm  &
-                      , brams_maxmach => maxmach
+   use grid_dims, only : brams_maxgrds  => maxgrds   & ! intent(in)
+                       , brams_nxpmax   => nxpmax    & ! intent(in)
+                       , brams_nypmax   => nypmax    & ! intent(in)
+                       , brams_nzpmax   => nzpmax    & ! intent(in)
+                       , brams_nzgmax   => nzgmax    & ! intent(in)
+                       , brams_maxdim   => maxdim    & ! intent(in)
+                       , brams_maxdimp  => maxdimp   & ! intent(in)
+                       , brams_nxyzpm   => nxyzpm    & ! intent(in)
+                       , brams_maxmach  => maxmach   & ! intent(in)
+                       , brams_maxfiles => maxfiles  & ! intent(in)
+                       , brams_str_len  => str_len   ! ! intent(in)
 #endif
 
    implicit none
@@ -31,13 +33,11 @@ module ed_max_dims
    !   NYPMAX  - Maximum number of points in y-direction                                   !
    !   NZPMAX  - Maximum number of points in z-direction                                   !
    !   NZGMAX  - Maximum number of soil levels                                             !
-   !   NZSMAX  - Maximum number of snow/water levels                                       !
    !   MAXDIM  - the largest of NXPMAX,NYPMAX,NZPMAX+10,NZGMAX                             !
    !   MAXDIMP - MAXDIM + 2                                                                !
    !   NXYZPM  - Maximum number of volume points                                           !
    !   MAXMACH - Maximum number of cores on a parallel run.                                !
    !---------------------------------------------------------------------------------------!
-
 #if defined(COUPLED)
    integer, parameter :: maxgrds = brams_maxgrds
    integer, parameter :: nxpmax  = brams_nxpmax 
@@ -59,9 +59,14 @@ module ed_max_dims
    integer, parameter :: nxyzpm  = nzpmax * nxpmax * nypmax
    integer, parameter :: maxmach = 3000
 #endif
+   !---------------------------------------------------------------------------------------!
+
+
 
    !----- Maximum number of temporary water layers. ---------------------------------------!
    integer, parameter :: nzsmax=10
+   !---------------------------------------------------------------------------------------!
+
 
 
    !---------------------------------------------------------------------------------------!
@@ -70,6 +75,8 @@ module ed_max_dims
    ! there was no distinction between sites and polygons.  max_poi is the maximum allowed. !
    !---------------------------------------------------------------------------------------!
    integer, parameter :: max_poi = 10
+   !---------------------------------------------------------------------------------------!
+
 
    !---------------------------------------------------------------------------------------!
    !     Suppose you want to run ED for a few rectangular regions.  You can run for a      !
@@ -77,18 +84,32 @@ module ed_max_dims
    ! POIs.  The maximum number of regions is max_ed_regions.                               !
    !---------------------------------------------------------------------------------------!
    integer, parameter :: max_ed_regions = 10
+   !---------------------------------------------------------------------------------------!
+
 
    !----- Maximum number of atmospheric grid cells that can fit in one ED polygon. --------!
    integer, parameter :: ed_maxatm = 625
+   !---------------------------------------------------------------------------------------!
+
 
    !----- Maximum file name length. -------------------------------------------------------!
-   integer, parameter :: str_len=300
-   
+#if defined(COUPLED)
+   integer, parameter :: str_len = brams_str_len
+#else
+   integer, parameter :: str_len = 300
+#endif
+   !---------------------------------------------------------------------------------------!
+
+
    !----- Maximum variables string length. ------------------------------------------------!
    integer, parameter :: str_len_short=32
+   !---------------------------------------------------------------------------------------!
+
 
    !----- Maximum number of sites within a polygon. ---------------------------------------!
    integer, parameter :: max_site = 1
+   !---------------------------------------------------------------------------------------!
+
 
    !---------------------------------------------------------------------------------------!
    !    Number of Plant Function Types (PFTs).                                             !
@@ -112,6 +133,7 @@ module ed_max_dims
    ! 17 - Araucaria                                                                        !
    !---------------------------------------------------------------------------------------!
    integer, parameter :: n_pft = 17
+   !---------------------------------------------------------------------------------------!
 
 
    !---------------------------------------------------------------------------------------!
@@ -127,6 +149,9 @@ module ed_max_dims
    ! 11 - ]100cm;Infinity[                                                                 !
    !---------------------------------------------------------------------------------------!
    integer, parameter :: n_dbh = 11 
+   !---------------------------------------------------------------------------------------!
+
+
 
    !---------------------------------------------------------------------------------------!
    ! Number of patch AGE bins for output quantities                                        !
@@ -141,6 +166,9 @@ module ed_max_dims
    ! 21 - ]200yr;Infinity[                                                                 !
    !---------------------------------------------------------------------------------------!
    integer, parameter :: n_age = 21 
+   !---------------------------------------------------------------------------------------!
+
+
 
    !---------------------------------------------------------------------------------------!
    ! Number of disturbance types:                                                          !
@@ -150,6 +178,9 @@ module ed_max_dims
    ! 3 - primary forest.                                                                   !
    !---------------------------------------------------------------------------------------!
    integer, parameter :: n_dist_types = 3 
+   !---------------------------------------------------------------------------------------!
+
+
 
    !---------------------------------------------------------------------------------------!
    ! Number of mortality types:                                                            !
@@ -160,12 +191,21 @@ module ed_max_dims
    ! 4. Mortality due to cold weather.                                                     !
    !---------------------------------------------------------------------------------------!
    integer, parameter :: n_mort = 4 
+   !---------------------------------------------------------------------------------------!
+
+
 
    !----- Maximum number of model variables. ----------------------------------------------!
    integer, parameter :: maxvars = 250
+   !---------------------------------------------------------------------------------------!
+
+
 
    !----- Maximum number meteorological driver xfiles. ------------------------------------!
    integer, parameter :: max_met_vars = 22
+   !---------------------------------------------------------------------------------------!
+
+
 
    !---------------------------------------------------------------------------------------!
    !      For restart runs, this is the maximum number of certain variables that can be    !
@@ -176,21 +216,38 @@ module ed_max_dims
    !  MAX_WATER    - maximum number of soil water levels (not assigned to polygons).       !
    !---------------------------------------------------------------------------------------!
    integer, parameter :: huge_polygon = nxpmax * nypmax
-   integer, parameter :: huge_patch   = 3500
-   integer, parameter :: huge_cohort  = 35000
+   integer, parameter :: huge_patch   = 3600
+   integer, parameter :: huge_cohort  = 36000
    integer, parameter :: max_water    = 100
+   !---------------------------------------------------------------------------------------!
+
+
 
    !----- Maximum number of land use polygons that can be read by filelist. ---------------!
-   integer, parameter :: huge_lu = 30000
+   integer, parameter :: huge_lu = 36000
+   !---------------------------------------------------------------------------------------!
+
+
 
    !----- The maximum number of printable variables. --------------------------------------!
    integer, parameter :: maxpvars = 50
+   !---------------------------------------------------------------------------------------!
+
+
 
    !----- Maximum number of files that can be read by filelist. ---------------------------!
-   integer, parameter :: maxfiles = 30000
+#if defined(COUPLED)
+   integer, parameter :: maxfiles = brams_maxfiles
+#else
+   integer, parameter :: maxfiles = 36000
+#endif
+   !---------------------------------------------------------------------------------------!
+
+
 
    !----- Maximum number of files (site+patch+cohort). ------------------------------------!
    integer, parameter :: maxlist = 3 * maxfiles
+   !---------------------------------------------------------------------------------------!
 
    !---------------------------------------------------------------------------------------!
    !     Although these aren't maximum dimensions, these are used to initialise the name-  !
@@ -202,6 +259,7 @@ module ed_max_dims
    character(len=str_len), parameter :: undef_character = 'nothing'
    character(len=str_len), parameter :: undef_path      = '/nowhere'
    logical               , parameter :: undef_logical   = .false.
+   !---------------------------------------------------------------------------------------!
 
 end module ed_max_dims
 !==========================================================================================!

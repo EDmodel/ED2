@@ -76,6 +76,7 @@ subroutine copy_nl(copy_type)
    use mem_polygons         , only : n_poi                     & ! intent(out)
                                    , poi_lat                   & ! intent(out)
                                    , poi_lon                   & ! intent(out)
+                                   , poi_res                   & ! intent(out)
                                    , n_ed_region               & ! intent(out)
                                    , ed_reg_latmin             & ! intent(out)
                                    , ed_reg_latmax             & ! intent(out)
@@ -84,6 +85,7 @@ subroutine copy_nl(copy_type)
                                    , grid_res                  & ! intent(out)
                                    , grid_type                 & ! intent(out)
                                    , edres                     & ! intent(out)
+                                   , maxsite                   & ! intent(out)
                                    , maxpatch                  & ! intent(out)
                                    , maxcohort                 ! ! intent(out)
    use physiology_coms      , only : iphysiol                  & ! intent(out)
@@ -170,7 +172,8 @@ subroutine copy_nl(copy_type)
                                    , unitfast                  & ! intent(out)
                                    , unitstate                 & ! intent(out)
                                    , event_file                & ! intent(out)
-                                   , iallom                    ! ! intent(out)
+                                   , iallom                    & ! intent(out)
+                                   , min_site_area             ! ! intent(out)
    use grid_coms            , only : time                      & ! intent(out)
                                    , centlon                   & ! intent(out)
                                    , centlat                   & ! intent(out)
@@ -297,6 +300,7 @@ subroutine copy_nl(copy_type)
       grid_type                 = nl%grid_type
       poi_lat                   = nl%poi_lat
       poi_lon                   = nl%poi_lon
+      poi_res                   = nl%poi_res
       ed_reg_latmin             = nl%ed_reg_latmin
       ed_reg_latmax             = nl%ed_reg_latmax
       ed_reg_lonmin             = nl%ed_reg_lonmin
@@ -382,8 +386,10 @@ subroutine copy_nl(copy_type)
       iedcnfgf                  = nl%iedcnfgf
       event_file                = nl%event_file
       phenpath                  = nl%phenpath
+      maxsite                   = nl%maxsite
       maxpatch                  = nl%maxpatch
       maxcohort                 = nl%maxcohort
+      min_site_area             = nl%min_site_area
       ioptinpt                  = nl%ioptinpt
       zrough                    = nl%zrough
       

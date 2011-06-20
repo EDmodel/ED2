@@ -36,11 +36,6 @@ subroutine ed_timestep()
    !----- External function. --------------------------------------------------------------!
    real                       , external   :: walltime
    !---------------------------------------------------------------------------------------!
-   
-   !---------------------------------------------------------------------------------------!
-   !     Now the solve the water fluxes.  This is called every time step.                  !
-   !---------------------------------------------------------------------------------------!
-   call simple_lake_model()
      
    !----- Now we check whether this is the time to call ED. -------------------------------!
    if ( mod(time+dble(dtlt),dble(dtlsm)) < dble(dtlt) .or. first_time(ngrid) ) then
@@ -69,11 +64,13 @@ subroutine ed_timestep()
       call copy_fluxes_future_2_past(ngrid)
       call copy_atm2lsm(ngrid,.false.)
       
-      !----- Call the actual model driver. ------------------------------------------------!
-      call ed_coup_model(ngrid)
 
       edtime1  = time
       edtime2  = time + dble(dtlsm)
+
+      !----- Call the actual model driver, for water, and for land. -----------------------!
+      call simple_lake_model()
+      call ed_coup_model(ngrid)
 
       !----- Copy the fluxes from ED to LEAF. ---------------------------------------------!
       call copy_fluxes_lsm2atm(ngrid)

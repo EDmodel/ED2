@@ -21,19 +21,17 @@ module leaf_coms
                        , twothirds ! ! intent(in)
 
    !----- Values that are read in rcio. ---------------------------------------------------!
-   real :: ustmin   ! Minimum ustar                                              [     m/s]
-   real :: gamm     ! Gamma used by Businger et al. (1971) - momentum.
-   real :: gamh     ! Gamma used by Businger et al. (1971) - heat.
-   real :: tprandtl ! Turbulent Prandtl number.
-   real :: vkopr    ! von Karman / turbulent Prandtl
-   real :: ribmax   ! Maximum bulk Richardson number
+   real :: ustmin         ! Minimum ustar                                        [     m/s]
+   real :: gamm           ! Gamma used by Businger et al. (1971) - momentum.
+   real :: gamh           ! Gamma used by Businger et al. (1971) - heat.
+   real :: tprandtl       ! Turbulent Prandtl number.
+   real :: vkopr          ! von Karman / turbulent Prandtl
+   real :: ribmax         ! Maximum bulk Richardson number
+   real :: min_patch_area ! Minimum patch area to consider. 
    !---------------------------------------------------------------------------------------!
 
 
 
-   !----- Minimum patch area to consider. -------------------------------------------------!
-   real, parameter :: tiny_parea     = 0.001   
-   !---------------------------------------------------------------------------------------!
 
    !---------------------------------------------------------------------------------------!
    !     Speed-related minimum values we will consider.                                    !

@@ -158,8 +158,21 @@ Module ed_misc_coms
    !---------------------------------------------------------------------------------------!
 
 
+   !----- Minimum site area that we will allocate (unused if ied_init_mode is 3 or 4). ----!
+   real    :: min_site_area
+   !---------------------------------------------------------------------------------------!
+
+
    !----- Namelist option for allometry scheme. -------------------------------------------!
    integer :: iallom ! 0 -- Original ED-2.1 allometry
                      ! 1 -- DBH -> AGB Tree allometry based on Baker et al. (2004)
+                     !      keep original ED-2.1 Bl/Bd ratio
+                     ! 2 -- DBH -> AGB Tree allometry based on Baker et al. (2004)
+                     !      keep original ED-2.1 Bl
+                     ! 3 -- Same as 2, root profile as in Kenzo et al. (2008)
+                     ! 4 -- Same as 2, root profile defined in a simple equation that
+                     !      puts roots at 0.5 m when the height is 0.15m, and 5.0 m when
+                     !      the height is 35.0m.
+   !---------------------------------------------------------------------------------------!
 
 end module ed_misc_coms

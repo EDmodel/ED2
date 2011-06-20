@@ -79,6 +79,7 @@ end
 subroutine cu_file_inv (iyear1,imonth1,idate1,itime1)
 
 use mem_cuparm
+use grid_dims, only : str_len
 
 implicit none
 
@@ -88,7 +89,8 @@ integer :: nc,nf,lnf,nhftot
 integer :: inyear,inmonth,indate,inhour
 
 
-character(len=128), dimension(maxcufiles) :: fnames
+character(len=str_len), dimension(maxcufiles) :: fnames
+character(len=str_len) :: thisfile
 character(len=14)  :: itotdate
 real(kind=8) :: secs_init,secs_cu
 
@@ -99,9 +101,8 @@ call date_abs_secs2(iyear1,imonth1,idate1,itime1*100,secs_init)
 ! Go through and make inventory
 
 nhftot=-1
-
-call RAMS_filelist(fnames,cu_prefix(1:len_trim(cu_prefix))  &
-         //'*.vfm',nhftot)
+thisfile = cu_prefix(1:len_trim(cu_prefix))//'*.vfm'
+call RAMS_filelist(fnames,thisfile,nhftot)
 
 if(nhftot > maxcufiles) then
    print*,'too many cu files'
@@ -165,7 +166,7 @@ implicit none
 
 integer :: iswap,ncu
 
-character (len=128) :: cunamein
+character (len=str_len) :: cunamein
 character (len=1) :: cng
 integer :: ngr,nc,npts,ifm,icm
 integer,save :: iun=10

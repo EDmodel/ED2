@@ -51,12 +51,14 @@ subroutine ed_driver()
 
 
 
+
    !---------------------------------------------------------------------------------------!
-   !      Set the ED model parameters                                                      !
+   !      Set most ED model parameters that do not come from the namelist (ED2IN).         !
    !---------------------------------------------------------------------------------------!
    if (mynum == nnodetot) write (unit=*,fmt='(a)') ' [+] Load_Ed_Ecosystem_Params...'
    call load_ed_ecosystem_params()
    !---------------------------------------------------------------------------------------!
+
 
 
 

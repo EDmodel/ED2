@@ -607,12 +607,15 @@ compmmean03 = list( vnam   = "et"
 
 #----- Annual mean. -----------------------------------------------------------------------#
 nsoilclim  = 3
-soilclim01 = list(vnam="soil.water",desc = "Soil moisture"        ,unit = "m3/m3"
-                                   ,csch = "imuitas"              ,plt  = TRUE)
-soilclim02 = list(vnam="soil.temp" ,desc = "Soil temperature"     ,unit = "C"
-                                   ,csch = "muitas"               ,plt  = TRUE)
-soilclim03 = list(vnam="soil.index",desc = "Soil moisture index"  ,unit = "--"
-                                   ,csch = "imuitas"              ,plt  = TRUE)
+soilclim01 = list(vnam="soil.water" ,desc = "Soil moisture"
+                 ,unit = "m3/m3"    ,csch = "imuitas"
+                 ,pnlog=FALSE       ,plt  = TRUE)
+soilclim02 = list(vnam="soil.temp"  ,desc = "Soil temperature"
+                 ,unit = "C"        ,csch = "muitas"
+                 ,pnlog=FALSE       ,plt  = TRUE)
+soilclim03 = list(vnam="soil.mstpot",desc = "(Negative) Soil moisture potential"
+                 ,unit = "m"        ,csch = "muitas"
+                 ,pnlog=TRUE        ,plt  = TRUE)
 #------------------------------------------------------------------------------------------#
 
 
@@ -1074,7 +1077,7 @@ for (place in myplaces){
 
              soil.water          = matrix(data=0,nrow=totmon,ncol=nzg)
              soil.temp           = matrix(data=0,nrow=totmon,ncol=nzg)
-             soil.index          = matrix(data=0,nrow=totmon,ncol=nzg)
+             soil.mstpot         = matrix(data=0,nrow=totmon,ncol=nzg)
 
           }#end if
           #--------------------------------------------------------------------------------#
@@ -1139,9 +1142,9 @@ for (place in myplaces){
 
 
           #------ Read in soil properties. ------------------------------------------------#
-          soil.temp[m,]  = mymont$MMEAN.SOIL.TEMP - t00
-          soil.water[m,] = mymont$MMEAN.SOIL.WATER
-          soil.index[m,] = soil.scale(soil.water[m,],soil.prop)
+          soil.temp  [m,] =   mymont$MMEAN.SOIL.TEMP - t00
+          soil.water [m,] =   mymont$MMEAN.SOIL.WATER
+          soil.mstpot[m,] = - mymont$MMEAN.SOIL.MSTPOT
           #--------------------------------------------------------------------------------#
 
 
@@ -1209,12 +1212,16 @@ for (place in myplaces){
           #--------------------------------------------------------------------------------#
 
 
+          #---- Read in the site-level area. ----------------------------------------------#
+          areasi     = mymont$AREA.SI
+          npatches   = mymont$SIPA.N
+          #--------------------------------------------------------------------------------#
+
 
           #----- Read a few patch-level variables. ----------------------------------------#
-          areapa     = mymont$AREA
+          areapa     = mymont$AREA * rep(areasi,times=npatches)
           lupa       = mymont$DIST.TYPE
           agepa      = mymont$AGE
-          npatches   = mymont$SIPA.N
           #--------------------------------------------------------------------------------#
 
 
@@ -1646,23 +1653,23 @@ for (place in myplaces){
    #---------------------------------------------------------------------------------------#
    print ("    - Finding the monthly mean...")
    print ("      * Aggregating the monthly mean...")
-   mont12mn            = list()
-   mont12mn$gpp        = tapply(X=gpp          ,INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mont12mn$plresp     = tapply(X=plresp       ,INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mont12mn$hetresp    = tapply(X=hetresp      ,INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mont12mn$nee        = tapply(X=nee          ,INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mont12mn$sens       = tapply(X=sens         ,INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mont12mn$hflxvc     = tapply(X=hflxvc       ,INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mont12mn$hflxgc     = tapply(X=hflxgc       ,INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mont12mn$et         = tapply(X=et           ,INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mont12mn$latent     = tapply(X=latent       ,INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mont12mn$wflxvc     = tapply(X=wflxvc       ,INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mont12mn$wflxgc     = tapply(X=wflxgc       ,INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mont12mn$evap       = tapply(X=evap         ,INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mont12mn$transp     = tapply(X=transp       ,INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mont12mn$soil.temp  = qapply(mat=soil.temp  ,index=mfac,bycol=T,func=mean,na.rm=T)
-   mont12mn$soil.water = qapply(mat=soil.water ,index=mfac,bycol=T,func=mean,na.rm=T)
-   mont12mn$soil.index = soil.scale(mont12mn$soil.water,soil.prop)
+   mont12mn             = list()
+   mont12mn$gpp         = tapply(X=gpp          ,INDEX=mfac,FUN=mean,na.rm=TRUE)
+   mont12mn$plresp      = tapply(X=plresp       ,INDEX=mfac,FUN=mean,na.rm=TRUE)
+   mont12mn$hetresp     = tapply(X=hetresp      ,INDEX=mfac,FUN=mean,na.rm=TRUE)
+   mont12mn$nee         = tapply(X=nee          ,INDEX=mfac,FUN=mean,na.rm=TRUE)
+   mont12mn$sens        = tapply(X=sens         ,INDEX=mfac,FUN=mean,na.rm=TRUE)
+   mont12mn$hflxvc      = tapply(X=hflxvc       ,INDEX=mfac,FUN=mean,na.rm=TRUE)
+   mont12mn$hflxgc      = tapply(X=hflxgc       ,INDEX=mfac,FUN=mean,na.rm=TRUE)
+   mont12mn$et          = tapply(X=et           ,INDEX=mfac,FUN=mean,na.rm=TRUE)
+   mont12mn$latent      = tapply(X=latent       ,INDEX=mfac,FUN=mean,na.rm=TRUE)
+   mont12mn$wflxvc      = tapply(X=wflxvc       ,INDEX=mfac,FUN=mean,na.rm=TRUE)
+   mont12mn$wflxgc      = tapply(X=wflxgc       ,INDEX=mfac,FUN=mean,na.rm=TRUE)
+   mont12mn$evap        = tapply(X=evap         ,INDEX=mfac,FUN=mean,na.rm=TRUE)
+   mont12mn$transp      = tapply(X=transp       ,INDEX=mfac,FUN=mean,na.rm=TRUE)
+   mont12mn$soil.temp   = qapply(mat=soil.temp  ,index=mfac,bycol=T,func=mean,na.rm=T)
+   mont12mn$soil.water  = qapply(mat=soil.water ,index=mfac,bycol=T,func=mean,na.rm=T)
+   mont12mn$soil.mstpot = qapply(mat=soil.mstpot,index=mfac,bycol=T,func=mean,na.rm=T)
 
    #----- Find the mean sum of squares. ---------------------------------------------------#
    print ("      * Aggregating the monthly mean sum of squares...")
@@ -2616,6 +2623,7 @@ for (place in myplaces){
       description = thisclim$desc
       unit        = thisclim$unit
       vcscheme    = thisclim$csch
+      pnlog       = thisclim$pnlog
       plotit      = thisclim$plt
 
       if (plotit){
@@ -2658,9 +2666,15 @@ for (place in myplaces){
                                  , soilaxis
                                  , slz[nzg]*(slz[nzg]/slz[nzg-1]) ))
 
-         vrange  = range(varbuff,na.rm=TRUE)
-         vlevels = pretty(x=vrange,n=ncolshov)
-         vnlev   = length(vlevels)
+         if (pnlog){
+            vrange  = range(varbuff,na.rm=TRUE)
+            vlevels = pretty.log(x=vrange,n=ncolshov)
+            vnlev   = length(vlevels)
+         }else{
+            vrange  = range(varbuff,na.rm=TRUE)
+            vlevels = pretty(x=vrange,n=ncolshov)
+            vnlev   = length(vlevels)
+         }#end if
 
          #----- Loop over formats. --------------------------------------------------------#
          for (o in 1:nout){
@@ -2681,6 +2695,7 @@ for (place in myplaces){
                      ,plot.title=title(main=letitre,xlab="Month",ylab="Soil depth [m]"
                                       ,cex.main=0.7)
                      ,key.title=title(main=unit,cex.main=0.8)
+                     ,key.log=pnlog
                      ,plot.axes={axis(side=1,at=monat,labels=monlab)
                                  axis(side=2,at=zat,labels=znice)
                                  if (hovgrid){

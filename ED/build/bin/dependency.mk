@@ -137,7 +137,7 @@ ed_read_ed10_20_history.o: pft_coms.mod
 ed_read_ed21_history.o: allometry.mod consts_coms.mod disturb_coms.mod
 ed_read_ed21_history.o: ed_max_dims.mod ed_misc_coms.mod ed_state_vars.mod
 ed_read_ed21_history.o: fuse_fiss_utils.mod grid_coms.mod  hdf5_coms.mod
-ed_read_ed21_history.o: pft_coms.mod
+ed_read_ed21_history.o: pft_coms.mod soil_coms.mod
 ed_xml_config.o: canopy_radiation_coms.mod decomp_coms.mod disturb_coms.mod
 ed_xml_config.o: ed_max_dims.mod ed_misc_coms.mod fusion_fission_coms.mod
 ed_xml_config.o: grid_coms.mod hydrology_coms.mod met_driver_coms.mod

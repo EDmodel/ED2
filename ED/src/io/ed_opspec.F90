@@ -14,257 +14,344 @@
 
 !==========================================================================================!
 !==========================================================================================!
-subroutine ed_opspec_grid
-!------------------------------------------------------------------------------------------!
 !   This subroutine checks the grid definition for ED, like grid size, dimensions and if   !
 ! the provided numbers are allowed.                                                        !
 !------------------------------------------------------------------------------------------!
-  use ed_max_dims , only : maxgrds,nxpmax,nypmax,nzpmax,nzgmax,nzsmax,max_poi              &
-                         , max_ed_regions
-  use grid_coms   , only : nnxp,nnyp,ngrids,polelat,polelon,centlat,centlon,deltax,deltay  &
-                         , nstratx,nstraty,nzg,nzs
-  use mem_polygons, only : n_ed_region,n_poi,grid_type,grid_res,poi_lat,poi_lon            &
-                         , ed_reg_latmin,ed_reg_latmax,ed_reg_lonmin,ed_reg_lonmax
-  use soil_coms   , only : slz
+subroutine ed_opspec_grid
+   use ed_max_dims , only : maxgrds             & ! intent(in)
+                          , nxpmax              & ! intent(in)
+                          , nypmax              & ! intent(in)
+                          , nzpmax              & ! intent(in)
+                          , nzgmax              & ! intent(in)
+                          , nzsmax              & ! intent(in)
+                          , max_poi             & ! intent(in)
+                          , max_ed_regions      ! ! intent(in)
+   use grid_coms   , only : nnxp                & ! intent(in)
+                          , nnyp                & ! intent(in)
+                          , ngrids              & ! intent(in)
+                          , polelat             & ! intent(in)
+                          , polelon             & ! intent(in)
+                          , centlat             & ! intent(in)
+                          , centlon             & ! intent(in)
+                          , deltax              & ! intent(in)
+                          , deltay              & ! intent(in)
+                          , nstratx             & ! intent(in)
+                          , nstraty             & ! intent(in)
+                          , nzg                 & ! intent(in)
+                          , nzs                 ! ! intent(in)
+   use mem_polygons, only : n_ed_region         & ! intent(in)
+                          , n_poi               & ! intent(in)
+                          , grid_type           & ! intent(in)
+                          , grid_res            & ! intent(in)
+                          , poi_lat             & ! intent(in)
+                          , poi_lon             & ! intent(in)
+                          , poi_res             & ! intent(in)
+                          , ed_reg_latmin       & ! intent(in)
+                          , ed_reg_latmax       & ! intent(in)
+                          , ed_reg_lonmin       & ! intent(in)
+                          , ed_reg_lonmax       ! ! intent(in)
+   use soil_coms   , only : slz                 ! ! intent(in)
 
-  implicit none
-
-  integer :: ifaterr, ifm,k
-  character(len=222)           :: reason
-
-  ifaterr=0
-
-  ! Check whether the number of grids is okay.
-  if (ngrids < 1) then
-     write(reason,'(a,1x,i4,a)') &
-          'Number of grids needs to be positive. (Yours is ',ngrids,').'
-     call opspec_fatal(reason,'opspec_grid')
-     ifaterr=ifaterr+1
-  elseif (ngrids > maxgrds) then
-     write(reason,'(2(a,1x,i4,a))')  &
-          'Number of grids cannot be larger than ',maxgrds,'.',' (Yours is ',ngrids,').'
-     call opspec_fatal(reason,'opspec_grid')  
-     ifaterr=ifaterr+1
-  endif
-
-  ! Check whether you are trying to run POI and regional simultaneously. 
-  ! This is currently forbidden.
-  if ((.not. (n_poi > 0 .and. n_ed_region == 0)) .and. (.not. (n_poi == 0 .and. n_ed_region > 0))) then
-     write(reason,'(a,1x,i4,1x,a,1x,i4,1x,a)')  &
-          'One of n_poi or n_ed_region needs to be zero.( Yours: n_poi='                   &
-          ,n_poi,', n_ed_region=',n_ed_region,').'
-     call opspec_fatal(reason,'opspec_grid')  
-     ifaterr=ifaterr+1
-  elseif (n_poi < 0) then
-     write(reason,'(a,1x,i4,a)') &
-        'N_POI needs to be non-negative. Yours is currently set to ',n_poi,'.'
-     call opspec_fatal(reason,'opspec_grid')  
-     ifaterr=ifaterr+1
-  elseif (n_ed_region < 0) then
-     write(reason,'(a,1x,i4,a)') &
-        'N_ED_REGION needs to be non-negative. Yours is currently set to ',n_ed_region,'.'
-     call opspec_fatal(reason,'opspec_grid')  
-     ifaterr=ifaterr+1
-  elseif (n_poi > max_poi) then
-     write(reason,'(a,1x,i4,a,1x,i4,a)') &
-        'N_POI cannot be greater than',max_poi,'. Yours is currently set to ',n_poi,'.'
-     call opspec_fatal(reason,'opspec_grid')  
-     ifaterr=ifaterr+1
-  elseif (n_ed_region> max_ed_regions) then
-     write(reason,'(a,1x,i4,a,1x,i4,a)') &
-        'N_ED_REGION cannot be greater than',max_ed_regions,'. Yours is currently set to ',n_ed_region,'.'
-     call opspec_fatal(reason,'opspec_grid')  
-     ifaterr=ifaterr+1
-  end if
-
-  ! Check whether the number of grid points makes sense for ED regions
-  do ifm=1,n_ed_region
-     if (nnxp(ifm) > nxpmax) then
-        write(reason,'(3(a,1x,i4,a))')  &
-             'Number of x-points cannot be greater than ',nxpmax,'.',' (Yours is',nnxp(ifm),' ','in grid',ifm,').'
-        call opspec_fatal(reason,'opspec_grid')  
-        ifaterr=ifaterr+1
-     end if
-     if (nnyp(ifm) > nypmax) then
-        write(reason,'(3(a,1x,i4,a))')  &
-             'Number of y-points cannot be greater than ',nypmax,'.',' (Yours is',nnyp(ifm),' ','in grid',ifm,').'
-        call opspec_fatal(reason,'opspec_grid')  
-        ifaterr=ifaterr+1
-     end if
-     if (nstratx(ifm) < 1) then
-        write (reason,'(a,1x,i4,1x,a,1x,i4,a)') &
-              'Nest x ratio should be at least 1. Your nstratx for grid',ifm,'is currently set to',nstratx(ifm),'.'
-        call opspec_fatal(reason,'opspec_grid')  
-        ifaterr=ifaterr+1        
-     endif
-     if (nstraty(ifm) < 1) then
-        write (reason,'(a,1x,i4,1x,a,1x,i4,a)') &
-              'Nest y ratio should be at least 1. Your nstraty for grid',ifm,'is currently set to',nstratx(ifm),'.'
-        call opspec_fatal(reason,'opspec_grid')  
-        ifaterr=ifaterr+1        
-     endif
-  end do
-
-  !  Check whether ED has allowable values to define the grids
-  if (n_ed_region > 0) then
-     if (grid_type < 0 .or. grid_type > 1) then
-        write (reason,'(a,1x,i4,a)') &
-              'Grid_type should be either 0 or 1 for regional runs. Yours is currently set to',grid_type,'.'
-        call opspec_fatal(reason,'opspec_grid')  
-        ifaterr=ifaterr+1
-     end if
-     if (grid_type == 0) then
-        do ifm=1,n_ed_region
-           if (ed_reg_latmin(ifm) < -90. .or. ed_reg_latmin(ifm) > 90. ) then
-              write (reason,'(a,1x,i4,a,1x,es14.7,a)') &
-                    'ED_REG_LATMIN is outside [-90.;90.] for region ',ifm,'. Yours is currently set to',ed_reg_latmin(ifm),'...'
-              call opspec_fatal(reason,'opspec_grid')  
-              ifaterr=ifaterr+1
-           end if
-           if (ed_reg_latmax(ifm) < -90. .or. ed_reg_latmax(ifm) > 90. ) then
-              write (reason,'(a,1x,i4,a,1x,es14.7,a)') &
-                    'ED_REG_LATMAX is outside [-90.;90.] for region ',ifm,'. Yours is currently set to',ed_reg_latmax(ifm),'...'
-              call opspec_fatal(reason,'opspec_grid')  
-              ifaterr=ifaterr+1
-           end if
-           if (ed_reg_lonmin(ifm) < -180. .or. ed_reg_lonmin(ifm) > 180. ) then
-              write (reason,'(a,1x,i4,a,1x,es14.7,a)') &
-                    'ED_REG_LONMIN is outside [-180.;180.] for region ',ifm,'. Yours is currently set to',ed_reg_latmin(ifm),'...'
-              call opspec_fatal(reason,'opspec_grid')  
-              ifaterr=ifaterr+1
-           end if
-           if (ed_reg_lonmax(ifm) < -180. .or. ed_reg_lonmax(ifm) > 180. ) then
-              write (reason,'(a,1x,i4,a,1x,es14.7,a)') &
-                    'ED_REG_LONMAX is outside [-180.;180.] for region ',ifm,'. Yours is currently set to',ed_reg_latmax(ifm),'...'
-              call opspec_fatal(reason,'opspec_grid')  
-              ifaterr=ifaterr+1
-           end if
-        end do
-        if (grid_res <= 0.) then
-           write (reason,'(a,1x,es14.7,a)') &
-                 'GRID_RES must be positive. Yours is currently set to',grid_res,'...'
-           call opspec_fatal(reason,'opspec_grid')  
-           ifaterr=ifaterr+1
-        end if
-     elseif (grid_type == 1) then
-        if (deltax <= 0.) then
-           write (reason,'(a,1x,es14.7,a)') &
-                 'DELTAX must be positive. Yours is currently set to',deltax,'...'
-           call opspec_fatal(reason,'opspec_grid')  
-           ifaterr=ifaterr+1
-        end if
-        if (deltay <= 0.) then
-           write (reason,'(a,1x,es14.7,a)') &
-                 'DELTAY must be positive. Yours is currently set to',deltax,'...'
-           call opspec_fatal(reason,'opspec_grid')  
-           ifaterr=ifaterr+1
-        end if
-        if (polelat < -90. .or. polelat > 90.) then
-           write (reason,'(a,1x,i4,a)') &
-                 'POLELAT is outside [-90.;90.].',' Yours is currently set to',polelat,'...'
-           call opspec_fatal(reason,'opspec_grid')  
-           ifaterr=ifaterr+1
-        end if
-        if (polelon < -180. .or. polelon > 180.) then
-           write (reason,'(a,1x,i4,a)') &
-                 'POLELON is outside [-180.;180.].',' Yours is currently set to',polelon,'...'
-           call opspec_fatal(reason,'opspec_grid')  
-           ifaterr=ifaterr+1
-        end if
-        do ifm=1,n_ed_region
-           if (centlat(ifm) < -90. .or. centlat(ifm) > 90. ) then
-              write (reason,'(a,1x,i4,a,1x,es14.7,a)') &
-                    'CENTLAT is outside [-90.;90.] for region ',ifm,'. Yours is currently set to',centlat(ifm),'...'
-              call opspec_fatal(reason,'opspec_grid')  
-              ifaterr=ifaterr+1
-           end if
-           if (centlon(ifm) < -180. .or. centlon(ifm) > 180. ) then
-              write (reason,'(a,1x,i4,a,1x,es14.7,a)') &
-                    'CENTLON is outside [-180.;180.] for region ',ifm,'. Yours is currently set to',centlon(ifm),'...'
-              call opspec_fatal(reason,'opspec_grid')  
-              ifaterr=ifaterr+1
-           end if
-        end do
-     end if
-  end if
-
-  
-  if (n_poi > 0)then
-     do ifm=1,n_poi
-        if (poi_lat(ifm) < -90. .or. poi_lat(ifm) > 90. ) then
-           write (reason,'(a,1x,i4,a,1x,es14.7,a)') &
-                 'POI_LAT is outside [-90.;90.] for POI #',ifm,'. Yours is currently set to',poi_lat(ifm),'...'
-           call opspec_fatal(reason,'opspec_grid')  
-           ifaterr=ifaterr+1
-        end if
-        if (poi_lon(ifm) < -180. .or. poi_lon(ifm) > 180. ) then
-           write (reason,'(a,1x,i4,a,1x,es14.7,a)') &
-                 'POI_LON is outside [-180.;180.] for POI #',ifm,'. Yours is currently set to',poi_lon(ifm),'...'
-           call opspec_fatal(reason,'opspec_grid')  
-           ifaterr=ifaterr+1
-        end if
-     end do
-
-  end if
-
-  ! Check whether ED soil is okay
-  ! check whether the number of soil levels is outside the allowed range
-  if (nzg < 2) then
-     write (reason,'(a,1x,i4,a)') &
-           'Too few soil layers. Set it to at least 2. Your nzg is currently set to',nzg,'.'
-     call opspec_fatal(reason,'opspec_grid')  
-     ifaterr=ifaterr+1        
-  elseif (nzg > nzgmax) then 
-     write (reason,'(2(a,1x,i5,a))') &
-           'The number of soil layers cannot be greater than ',nzgmax,'.',' Your nzg is currently set to',nzg,'.'
-     call opspec_fatal(reason,'opspec_grid') 
-     ifaterr=ifaterr+1 
-  end if
-  do k=1,nzg
-     if (slz(k) > -.001) then
-        write (reason,'(a,1x,i4,1x,a,1x,es14.7,a)') &
-              'Your soil level #',k,'is not enough below ground. It is currently set to'   &
-              ,slz(k),', make it deeper than -0.001...'
-        call opspec_fatal(reason,'opspec_grid')  
-        ifaterr=ifaterr+1        
-     endif
-  enddo
-
-  do k=1,nzg-1
-     if (slz(k)-slz(k+1) > .001) then
-        write (reason,'(2(a,1x,i4,1x),a,1x,es14.7,1x,a,1x,es14.7,a)') &
-              'Soil layers #',k,'and',k+1,'are not enough apart (i.e. > 0.001) . They are currently set as '   &
-              ,slz(k),'and',slz(k+1),'...'
-        call opspec_fatal(reason,'opspec_grid')  
-        ifaterr=ifaterr+1        
-     endif
-  enddo
+   implicit none
+   !----- Local variables. ----------------------------------------------------------------!
+   integer            :: ifaterr
+   integer            :: ifm
+   integer            :: k
+   character(len=222) :: reason
+   !---------------------------------------------------------------------------------------!
 
 
-  ! Check whether ED snow layers is okay
-  ! check whether the number of soil levels is outside the allowed range
-  if (nzs < 1) then
-     write (reason,'(a,1x,i4,a)') &
-           'Too few maximum # of snow layers. Set it to at least 1. Your nzs is currently set to',nzs,'.'
-     call opspec_fatal(reason,'opspec_grid')  
-     ifaterr=ifaterr+1        
-  elseif (nzs > nzsmax) then 
-     write (reason,'(2(a,1x,i5,a))') &
-           'The number of snow layers cannot be greater than ',nzsmax,'.',' Your nzs is currently set to',nzs,'.'
-     call opspec_fatal(reason,'opspec_grid') 
-     ifaterr=ifaterr+1 
-  end if
+
+   !----- Start assuming everything will be fine. -----------------------------------------!
+   ifaterr = 0
+   !---------------------------------------------------------------------------------------!
 
 
-  ! stop the run if there are any fatal errors.
-  if (ifaterr > 0) then
-     write (unit=*,fmt='(a)')       ' -----------ED_OPSPEC_GRID --------------------------'
-     write (unit=*,fmt='(a,1x,i5)') ' Fatal errors:',ifaterr
-     write (unit=*,fmt='(a)')       ' ----------------------------------------------------'
-     call fatal_error('Fatal errors at namelist - Grid settings '&
-                    & ,'ed_opspec_grid','ed_opspec.f90')
-  end if
-  return
+   !----- Check whether the number of grids is reasonable. --------------------------------!
+   if (ngrids < 1) then
+      write(reason,'(a,1x,i4,a)') &
+           'Number of grids needs to be positive. (Yours is ',ngrids,').'
+      call opspec_fatal(reason,'opspec_grid')
+      ifaterr=ifaterr+1
+   elseif (ngrids > maxgrds) then
+      write(reason,'(2(a,1x,i4,a))')  &
+           'Number of grids cannot be larger than ',maxgrds,'.',' (Yours is ',ngrids,').'
+      call opspec_fatal(reason,'opspec_grid')  
+      ifaterr=ifaterr+1
+   end if
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !      Check whether we are trying to run POI and regional simultaneously.  This is     !
+   ! currently forbidden.                                                                  !
+   !---------------------------------------------------------------------------------------!
+   if ((.not. (n_poi > 0 .and. n_ed_region == 0)) .and.                                    &
+       (.not. (n_poi == 0 .and. n_ed_region > 0))       ) then
+      write(reason,'(a,1x,i4,1x,a,1x,i4,1x,a)')                                            &
+            'One of n_poi or n_ed_region needs to be zero.( Yours: n_poi='                 &
+           ,n_poi,', n_ed_region=',n_ed_region,').'
+      call opspec_fatal(reason,'opspec_grid')  
+      ifaterr=ifaterr+1
+
+   elseif (n_poi < 0) then
+      write(reason,'(a,1x,i4,a)')                                                          &
+         'N_POI needs to be non-negative. Yours is currently set to ',n_poi,'.'
+      call opspec_fatal(reason,'opspec_grid')  
+      ifaterr=ifaterr+1
+
+   elseif (n_ed_region < 0) then
+      write(reason,'(a,1x,i4,a)')                                                          &
+         'N_ED_REGION needs to be non-negative. Yours is currently set to ',n_ed_region,'.'
+      call opspec_fatal(reason,'opspec_grid')  
+      ifaterr=ifaterr+1
+
+   elseif (n_poi > max_poi) then
+      write(reason,'(a,1x,i4,a,1x,i4,a)')                                                  &
+         'N_POI cannot be greater than',max_poi,'. Yours is currently set to ',n_poi,'.'
+      call opspec_fatal(reason,'opspec_grid')  
+      ifaterr=ifaterr+1
+
+   elseif (n_ed_region> max_ed_regions) then
+      write(reason,'(a,1x,i4,a,1x,i4,a)')                                                  &
+          'N_ED_REGION cannot be greater than',max_ed_regions                              &
+         ,'. Yours is currently set to ',n_ed_region,'.'
+      call opspec_fatal(reason,'opspec_grid')  
+      ifaterr=ifaterr+1
+   end if
+   !---------------------------------------------------------------------------------------!
+
+
+
+
+   !----- Check whether the number of grid points makes sense for ED regions. -------------!
+   do ifm=1,n_ed_region
+      if (nnxp(ifm) > nxpmax) then
+         write(reason,'(3(a,1x,i4,a))')                                                    &
+              'Number of x-points cannot be greater than ',nxpmax,'.',' (Yours is'         &
+             ,nnxp(ifm),' ','in grid',ifm,').'
+         call opspec_fatal(reason,'opspec_grid')  
+         ifaterr=ifaterr+1
+      end if
+      if (nnyp(ifm) > nypmax) then
+         write(reason,'(3(a,1x,i4,a))')                                                    &
+              'Number of y-points cannot be greater than ',nypmax,'.',' (Yours is'         &
+             ,nnyp(ifm),' ','in grid',ifm,').'
+         call opspec_fatal(reason,'opspec_grid')  
+         ifaterr=ifaterr+1
+      end if
+      if (nstratx(ifm) < 1) then
+         write (reason,'(a,1x,i4,1x,a,1x,i4,a)')                                           &
+               'Nest x ratio should be at least 1. Your nstratx for grid',ifm              &
+              ,'is currently set to',nstratx(ifm),'.'
+         call opspec_fatal(reason,'opspec_grid')  
+         ifaterr=ifaterr+1        
+      end if
+      if (nstraty(ifm) < 1) then
+         write (reason,'(a,1x,i4,1x,a,1x,i4,a)')                                           &
+               'Nest y ratio should be at least 1. Your nstraty for grid',ifm              &
+              ,'is currently set to',nstratx(ifm),'.'
+         call opspec_fatal(reason,'opspec_grid')  
+         ifaterr=ifaterr+1        
+      end if
+   end do
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !-----  Check whether ED has reasonable values to define the grids. --------------------!
+   if (n_ed_region > 0) then
+      if (grid_type < 0 .or. grid_type > 1) then
+         write (reason,'(a,2x,a,1x,i4,a)')                                                 &
+               'Grid_type should be either 0 or 1 for regional runs.'                      &
+              ,'Yours is currently set to',grid_type,'.'
+         call opspec_fatal(reason,'opspec_grid')  
+         ifaterr=ifaterr+1
+      end if
+      if (grid_type == 0) then
+         do ifm=1,n_ed_region
+            if (ed_reg_latmin(ifm) < -90. .or. ed_reg_latmin(ifm) > 90. ) then
+               write (reason,'(a,1x,i4,a,1x,es14.7,a)')                                    &
+                     'ED_REG_LATMIN is outside [-90.;90.] for region ',ifm                 &
+                    ,'. Yours is currently set to',ed_reg_latmin(ifm),'...'
+               call opspec_fatal(reason,'opspec_grid')  
+               ifaterr=ifaterr+1
+            end if
+            if (ed_reg_latmax(ifm) < -90. .or. ed_reg_latmax(ifm) > 90. ) then
+               write (reason,'(a,1x,i4,a,1x,es14.7,a)')                                    &
+                     'ED_REG_LATMAX is outside [-90.;90.] for region ',ifm                 &
+                    ,'. Yours is currently set to',ed_reg_latmax(ifm),'...'
+               call opspec_fatal(reason,'opspec_grid')  
+               ifaterr=ifaterr+1
+            end if
+            if (ed_reg_lonmin(ifm) < -180. .or. ed_reg_lonmin(ifm) > 180. ) then
+               write (reason,'(a,1x,i4,a,1x,es14.7,a)')                                    &
+                     'ED_REG_LONMIN is outside [-180.;180.] for region ',ifm               &
+                    ,'. Yours is currently set to',ed_reg_latmin(ifm),'...'
+               call opspec_fatal(reason,'opspec_grid')  
+               ifaterr=ifaterr+1
+            end if
+            if (ed_reg_lonmax(ifm) < -180. .or. ed_reg_lonmax(ifm) > 180. ) then
+               write (reason,'(a,1x,i4,a,1x,es14.7,a)')                                    &
+                     'ED_REG_LONMAX is outside [-180.;180.] for region ',ifm               &
+                    ,'. Yours is currently set to',ed_reg_latmax(ifm),'...'
+               call opspec_fatal(reason,'opspec_grid')  
+               ifaterr=ifaterr+1
+            end if
+         end do
+         if (grid_res <= 0.) then
+            write (reason,'(a,1x,es14.7,a)')                                               &
+                  'GRID_RES must be positive. Yours is currently set to',grid_res,'...'
+            call opspec_fatal(reason,'opspec_grid')  
+            ifaterr=ifaterr+1
+         end if
+      elseif (grid_type == 1) then
+         if (deltax <= 0.) then
+            write (reason,'(a,1x,es14.7,a)')                                               &
+                  'DELTAX must be positive. Yours is currently set to',deltax,'...'
+            call opspec_fatal(reason,'opspec_grid')  
+            ifaterr=ifaterr+1
+         end if
+         if (deltay <= 0.) then
+            write (reason,'(a,1x,es14.7,a)')                                               &
+                  'DELTAY must be positive. Yours is currently set to',deltax,'...'
+            call opspec_fatal(reason,'opspec_grid')  
+            ifaterr=ifaterr+1
+         end if
+         if (polelat < -90. .or. polelat > 90.) then
+            write (reason,'(a,1x,i4,a)')                                                   &
+                  'POLELAT is outside [-90.;90.].',' Yours is currently set to'            &
+                 ,polelat,'...'
+            call opspec_fatal(reason,'opspec_grid')  
+            ifaterr=ifaterr+1
+         end if
+         if (polelon < -180. .or. polelon > 180.) then
+            write (reason,'(a,1x,i4,a)')                                                   &
+                  'POLELON is outside [-180.;180.].',' Yours is currently set to'          &
+                 ,polelon,'...'
+            call opspec_fatal(reason,'opspec_grid')  
+            ifaterr=ifaterr+1
+         end if
+         do ifm=1,n_ed_region
+            if (centlat(ifm) < -90. .or. centlat(ifm) > 90. ) then
+               write (reason,'(a,1x,i4,a,1x,es14.7,a)')                                    &
+                     'CENTLAT is outside [-90.;90.] for region ',ifm                       &
+                    ,'. Yours is currently set to',centlat(ifm),'...'
+               call opspec_fatal(reason,'opspec_grid')  
+               ifaterr=ifaterr+1
+            end if
+            if (centlon(ifm) < -180. .or. centlon(ifm) > 180. ) then
+               write (reason,'(a,1x,i4,a,1x,es14.7,a)')                                    &
+                     'CENTLON is outside [-180.;180.] for region ',ifm                     &
+                    ,'. Yours is currently set to',centlon(ifm),'...'
+               call opspec_fatal(reason,'opspec_grid')  
+               ifaterr=ifaterr+1
+            end if
+         end do
+      end if
+   end if
+   !---------------------------------------------------------------------------------------!
+
+
+
+
+   !----- Check whether the grid specifications for POI runs are good. --------------------!
+   if (n_poi > 0)then
+      do ifm=1,n_poi
+         if (poi_lat(ifm) < -90. .or. poi_lat(ifm) > 90. ) then
+            write (reason,'(a,1x,i4,a,1x,es14.7,a)')                                       &
+                  'POI_LAT is outside [-90.;90.] for POI #',ifm                            &
+                 ,'. Yours is currently set to',poi_lat(ifm),'...'
+            call opspec_fatal(reason,'opspec_grid')  
+            ifaterr=ifaterr+1
+         end if
+         if (poi_lon(ifm) < -180. .or. poi_lon(ifm) > 180. ) then
+            write (reason,'(a,1x,i4,a,1x,es14.7,a)')                                       &
+                  'POI_LON is outside [-180.;180.] for POI #',ifm                          &
+                  ,'. Yours is currently set to',poi_lon(ifm),'...'
+            call opspec_fatal(reason,'opspec_grid')  
+            ifaterr=ifaterr+1
+         end if
+         if (poi_res(ifm) < 0.001 .or. poi_res(ifm) > 5.) then
+            write (reason,'(a,1x,i4,a,1x,es14.7,a)')                                       &
+                  'POI_RES is outside [0.001;5.] range for POI #'                          &
+                 ,ifm,'. Yours is currently set to',poi_res(ifm),'...'
+            call opspec_fatal(reason,'opspec_grid')  
+            ifaterr=ifaterr+1
+         end if
+      end do
+
+   end if
+
+   !---------------------------------------------------------------------------------------!
+   !      Check whether ED soil layers are reasonable, i.e, enough layers, sorted from the !
+   ! deepest to the shallowest.                                                            !
+   !---------------------------------------------------------------------------------------!
+   if (nzg < 2) then
+      write (reason,'(a,1x,i4,a)')                                                         &
+            'Too few soil layers.  Set it to at least 2. Your nzg is currently set to'     &
+           ,nzg,'...'
+      call opspec_fatal(reason,'opspec_grid')  
+      ifaterr=ifaterr+1        
+   elseif (nzg > nzgmax) then 
+      write (reason,'(2(a,1x,i5,a))')                                                      &
+            'The number of soil layers cannot be greater than ',nzgmax,'.'                 &
+           ,' Your nzg is currently set to',nzg,'.'
+      call opspec_fatal(reason,'opspec_grid') 
+      ifaterr=ifaterr+1 
+   end if
+   do k=1,nzg
+      if (slz(k) > -.001) then
+         write (reason,'(a,1x,i4,1x,a,1x,es14.7,a)')                                       &
+               'Your soil level #',k,'is not enough below ground. It is currently set to'  &
+               ,slz(k),', make it deeper than -0.001...'
+         call opspec_fatal(reason,'opspec_grid')  
+         ifaterr=ifaterr+1        
+      end if
+   end do
+
+   do k=1,nzg-1
+      if (slz(k)-slz(k+1) > .001) then
+         write (reason,'(2(a,1x,i4,1x),a,2x,a,1x,es14.7,1x,a,1x,es14.7,a)')                &
+               'Soil layers #',k,'and',k+1,'are not enough apart (i.e. > 0.001).'          &
+              ,'They are currently set as ',slz(k),'and',slz(k+1),'...'
+         call opspec_fatal(reason,'opspec_grid')  
+         ifaterr=ifaterr+1        
+      end if
+   end do
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Check whether ED snow layers are well set, i.e., the number of soil levels is     !
+   ! within the allowed range.                                                             !
+   !---------------------------------------------------------------------------------------!
+   if (nzs < 1) then
+      write (reason,'(a,2x,a,1x,i4,a)')                                                    &
+            'Too few maximum # of snow layers. Set it to at least 1.'                      &
+           ,'Your nzs is currently set to',nzs,'.'
+      call opspec_fatal(reason,'opspec_grid')  
+      ifaterr=ifaterr+1        
+   elseif (nzs > nzsmax) then 
+      write (reason,'(2(a,1x,i5,a))')                                                      &
+            'The number of snow layers cannot be greater than ',nzsmax,'.'                 &
+           ,' Your nzs is currently set to',nzs,'.'
+      call opspec_fatal(reason,'opspec_grid') 
+      ifaterr=ifaterr+1 
+   end if
+   !---------------------------------------------------------------------------------------!
+
+
+   !----- Stop the run in case there is any fatal error. ----------------------------------!
+   if (ifaterr > 0) then
+      write (unit=*,fmt='(a)')       ' -----------ED_OPSPEC_GRID -------------------------'
+      write (unit=*,fmt='(a,1x,i5)') ' Fatal errors:',ifaterr
+      write (unit=*,fmt='(a)')       ' ---------------------------------------------------'
+      call fatal_error('Fatal errors at namelist - Grid settings '                         &
+                      ,'ed_opspec_grid','ed_opspec.f90')
+   end if
+   !---------------------------------------------------------------------------------------!
+   return
 end subroutine ed_opspec_grid
 !==========================================================================================!
 !==========================================================================================!
@@ -296,7 +383,7 @@ subroutine ed_opspec_par
            'Number of nodes cannot be larger than ',maxmach,'.',' (Yours is ',nmachs+1,').'
       call opspec_fatal(reason,'opspec_par')  
       ifaterr=ifaterr+1
-   endif
+   end if
    do ifm=1,ngrids
       if (n_ed_region > 0 .and. nnxp(ifm)*nnyp(ifm) < (nmachs +1)) then
          write (reason,'(3(a,1x,i5,1x),a)')                                                 &
@@ -1017,7 +1104,8 @@ subroutine ed_opspec_misc
                                     , runtype                      & ! intent(in)
                                     , ied_init_mode                & ! intent(in)
                                     , integration_scheme           & ! intent(in)
-                                    , iallom                       ! ! intent(in)
+                                    , iallom                       & ! intent(in)
+                                    , min_site_area                ! ! intent(in)
    use canopy_air_coms       , only : icanturb                     & ! intent(in)
                                     , i_blyr_condct                & ! intent(in)
                                     , isfclyrm                     & ! intent(in)
@@ -1042,10 +1130,7 @@ subroutine ed_opspec_misc
                                     , zrough                       & ! intent(in)
                                     , betapower                    & ! intent(in)
                                     , runoff_time                  ! ! intent(in)
-   use mem_polygons          , only : n_poi                        & ! intent(in)
-                                    , n_ed_region                  & ! intent(in)
-                                    , maxpatch                     & ! intent(in)
-                                    , maxcohort                    ! ! intent(in)
+   use mem_polygons          , only : maxsite                      ! ! intent(in)
    use grid_coms             , only : ngrids                       ! ! intent(in)
    use physiology_coms       , only : iphysiol                     & ! intent(in)
                                     , istoma_scheme                & ! intent(in)
@@ -1096,50 +1181,63 @@ subroutine ed_opspec_misc
    !----- IFATERR will count the number of bad set ups. -----------------------------------!
    ifaterr=0
 
+
+   if (maxsite < 1 .and. maxsite > ed_nstyp) then
+      write (reason,fmt='(a,1x,i5,a,2x,a,1x,i5,a)')                                        &
+         'Invalid MAXSITE, it must be between 1 and ed_nstyp (',ed_nstyp,').'              &
+        ,'Yours is set to ',maxsite,'...'
+   end if
+
+   if (min_site_area < 0.0001 .or. min_site_area > 0.10) then
+      write (reason,fmt='(a,2x,a,1x,es12.5,a)')                                            &
+         'Invalid MIN_SITE_AREA, it must be between 0.0001 and 0.10.'                      &
+        ,'Yours is set to ',min_site_area,'...'
+   end if
+
    if (ifoutput /= 0 .and. ifoutput /= 3) then
-      write (reason,fmt='(a,1x,i4,a)') &
+      write (reason,fmt='(a,1x,i4,a)')                                                     &
         'Invalid IFOUTPUT, it must be 0 (none) or 3 (HDF5). Yours is set to',ifoutput,'...'
       call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
    end if
    if (idoutput /= 0 .and. idoutput /= 3) then
-      write (reason,fmt='(a,1x,i4,a)') &
+      write (reason,fmt='(a,1x,i4,a)')                                                     &
         'Invalid IDOUTPUT, it must be 0 (none) or 3 (HDF5). Yours is set to',idoutput,'...'
       call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
    end if
    if (imoutput /= 0 .and. imoutput /= 3) then
-      write (reason,fmt='(a,1x,i4,a)') &
+      write (reason,fmt='(a,1x,i4,a)')                                                     &
         'Invalid IMOUTPUT, it must be 0 (none) or 3 (HDF5). Yours is set to',imoutput,'...'
       call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
    end if
    if (iqoutput /= 0 .and. iqoutput /= 3) then
-      write (reason,fmt='(a,1x,i4,a)') &
+      write (reason,fmt='(a,1x,i4,a)')                                                     &
         'Invalid IQOUTPUT, it must be 0 (none) or 3 (HDF5). Yours is set to',iqoutput,'...'
       call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
    end if
    if (iyoutput /= 0 .and. iyoutput /= 3) then
-      write (reason,fmt='(a,1x,i4,a)') &
+      write (reason,fmt='(a,1x,i4,a)')                                                     &
         'Invalid IYOUTPUT, it must be 0 (none) or 3 (HDF5). Yours is set to',iyoutput,'...'
       call opspec_fatal(reason,'opspec_misc')  
       ifaterr = ifaterr +1
    end if
    if (itoutput /= 0 .and. itoutput /= 3) then
-      write (reason,fmt='(a,1x,i4,a)') &
+      write (reason,fmt='(a,1x,i4,a)')                                                     &
         'Invalid ITOUTPUT, it must be 0 (none) or 3 (HDF5). Yours is set to',itoutput,'...'
       call opspec_fatal(reason,'opspec_misc')  
       ifaterr = ifaterr +1
    end if
    if (isoutput /= 0 .and. isoutput /= 3) then
-      write (reason,fmt='(a,1x,i4,a)') &
+      write (reason,fmt='(a,1x,i4,a)')                                                     &
         'Invalid ISOUTPUT, it must be 0 (none) or 3 (HDF5). Yours is set to',isoutput,'...'
       call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
    end if
    if (iclobber < 0 .or. iclobber > 1) then
-      write (reason,fmt='(a,1x,i4,a)') &
+      write (reason,fmt='(a,1x,i4,a)')                                                     &
         'Invalid ICLOBBER, it must be 0 or 1. Yours is set to',iclobber,'...'
       call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
