@@ -652,6 +652,7 @@ subroutine copy_fluxes_future_2_past(ifm)
    ed_fluxp_g(ifm)%sflux_t = ed_fluxf_g(ifm)%sflux_t
    ed_fluxp_g(ifm)%sflux_r = ed_fluxf_g(ifm)%sflux_r
    ed_fluxp_g(ifm)%sflux_c = ed_fluxf_g(ifm)%sflux_c
+   ed_fluxp_g(ifm)%rk4step = ed_fluxf_g(ifm)%rk4step
 
    return
 end subroutine copy_fluxes_future_2_past

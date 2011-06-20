@@ -83,10 +83,6 @@ subroutine ed_1st_master (ipara, nnodestotal,nslaves, headnode_num, name_name)
    call ed_opspec_times()
    call ed_opspec_misc()
 
-
-   !----- Load ecosystem parameters, now this is done before the MPI stuff. ---------------!
-   call load_ed_ecosystem_params()
-
    !----- Read the met_driver namelist. ---------------------------------------------------!
    call read_met_driver_head()
    

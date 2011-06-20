@@ -119,7 +119,6 @@ subroutine set_site_defprops()
             call fatal_error('Invalid number of sites!','set_site_defprops'                &
                             ,'ed_init.f90')
          else
-            write (unit=*,fmt='(a,1x,i6,a)') ' Allocating ',nsite,' sites...'
             text_area_i = 1. / text_area
          end if
 

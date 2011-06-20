@@ -300,7 +300,7 @@ subroutine masterput_ednl(mainnum)
    !---------------------------------------------------------------------------------------!
    !      We should only need the grid sizes, because we expect to import the coordinates  !
    ! and sizes to allocate our polygons.  The geometry is handled by BRAMS, but we want to !
-   ! ensure that the variables are correctly set in the nodes should they are ever needed. !
+   ! ensure that the variables are correctly set in the nodes should they be ever needed.  !
    !---------------------------------------------------------------------------------------!
    call MPI_Bcast(nnxp,maxgrds,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(nnyp,maxgrds,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
@@ -644,7 +644,7 @@ subroutine nodeget_ednl(master_num)
    !---------------------------------------------------------------------------------------!
    !      We should only need the grid sizes, because we expect to import the coordinates  !
    ! and sizes to allocate our polygons.  The geometry is handled by BRAMS, but we want to !
-   ! ensure that the variables are correctly set in the nodes should they are ever needed. !
+   ! ensure that the variables are correctly set in the nodes should they be ever needed.  !
    !---------------------------------------------------------------------------------------!
    call MPI_Bcast(nnxp,maxgrds,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(nnyp,maxgrds,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)

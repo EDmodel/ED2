@@ -47,13 +47,10 @@ subroutine master_ed_init(iparallel)
       call MPI_Bcast(layer_index,nlat_lyr*nlon_lyr,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
 
    else
-      !----- Setting up a serial run. -----------------------------------------------------!
+      !----- Set up a serial run. ---------------------------------------------------------!
       mynum  = 1
       nmachs = 1
       call copy_in_bramsmpi(mainnum,mchnum,mynum,nmachs,machs,iparallel)
-
-      !----- Set the ED model parameters. -------------------------------------------------!
-      call load_ed_ecosystem_params()
 
       !----- Initialize the work arrays. --------------------------------------------------!
       call init_master_work(iparallel)
@@ -122,9 +119,6 @@ subroutine node_ed_init
    !----- First we must transfer over the parallel information from BRAMS to ED2. ---------!
    call copy_in_bramsmpi(master_num,mchnum,mynum,nmachs,machs,1)
    
-
-   !----- Set the ED model parameters. ----------------------------------------------------!
-   call load_ed_ecosystem_params()
 
    !----- Calculate the polygon list on the current node. ---------------------------------!
    call init_node_work()

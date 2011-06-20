@@ -1040,23 +1040,23 @@ subroutine init_pft_photo_params()
 
    D0(1:17)                  = 0.01 * d0fact   ! same for all PFTs
 
-   Vm_low_temp(1)            = 8.0             ! c4 grass
-   Vm_low_temp(2)            = 8.0             ! early tropical
-   Vm_low_temp(3)            = 8.0             ! mid tropical
-   Vm_low_temp(4)            = 8.0             ! late tropical
-   Vm_low_temp(5)            = 4.7137          ! c3 grass
-   Vm_low_temp(6)            = 4.7137          ! northern pines ! 5.0
-   Vm_low_temp(7)            = 4.7137          ! southern pines ! 5.0
-   Vm_low_temp(8)            = 4.7137          ! late conifers  ! 5.0
-   Vm_low_temp(9)            = 4.7137          ! early hardwoods
-   Vm_low_temp(10)           = 4.7137          ! mid hardwoods
-   Vm_low_temp(11)           = 4.7137          ! late hardwoods
-   Vm_low_temp(12)           = 4.7137          ! c3 pasture
-   Vm_low_temp(13)           = 4.7137          ! c3 crop
-   Vm_low_temp(14)           = 8.0             ! c4 pasture
-   Vm_low_temp(15)           = 8.0             ! c4 crop
-   Vm_low_temp(16)           = 4.7137          ! subtropical C3 grass
-   Vm_low_temp(17)           = 4.7137          ! Araucaria
+   Vm_low_temp(1)            = 13.0             ! c4 grass
+   Vm_low_temp(2)            =  8.0             ! early tropical
+   Vm_low_temp(3)            =  8.0             ! mid tropical
+   Vm_low_temp(4)            =  8.0             ! late tropical
+   Vm_low_temp(5)            =  4.7137          ! c3 grass
+   Vm_low_temp(6)            =  4.7137          ! northern pines ! 5.0
+   Vm_low_temp(7)            =  4.7137          ! southern pines ! 5.0
+   Vm_low_temp(8)            =  4.7137          ! late conifers  ! 5.0
+   Vm_low_temp(9)            =  4.7137          ! early hardwoods
+   Vm_low_temp(10)           =  4.7137          ! mid hardwoods
+   Vm_low_temp(11)           =  4.7137          ! late hardwoods
+   Vm_low_temp(12)           =  4.7137          ! c3 pasture
+   Vm_low_temp(13)           =  4.7137          ! c3 crop
+   Vm_low_temp(14)           = 13.0             ! c4 pasture
+   Vm_low_temp(15)           = 13.0             ! c4 crop
+   Vm_low_temp(16)           =  4.7137          ! subtropical C3 grass
+   Vm_low_temp(17)           =  4.7137          ! Araucaria
 
    Vm_high_temp(1)           =  45.0  + thioff ! C4
    Vm_high_temp(2)           =  45.0  + thioff ! C3
@@ -1090,8 +1090,8 @@ subroutine init_pft_photo_params()
 
 
    !------ Vm0 is the maximum photosynthesis capacity in µmol/m2/s. -----------------------!
-   Vm0(1)                    = 12.5
-   Vm0(2)                    = 18.8            * vmfact
+   Vm0(1)                    = 12.5            * 1.60
+   Vm0(2)                    = 18.75           * vmfact
    Vm0(3)                    = 12.5            * vmfact
    Vm0(4)                    = 6.25            * vmfact
    Vm0(5)                    = 18.3            * vmfact
@@ -1102,9 +1102,9 @@ subroutine init_pft_photo_params()
    Vm0(10)                   = 15.625 * 1.1171 * vmfact
    Vm0(11)                   = 6.25   * 1.1171 * vmfact
    Vm0(12:13)                = 18.3            * vmfact
-   Vm0(14:15)                = 12.5
-   Vm0(16)                   = 21.875          * vmfact
-   Vm0(17)                   = 15.625 * 0.7264
+   Vm0(14:15)                = 12.5            * 1.20
+   Vm0(16)                   = 25.0            * vmfact
+   Vm0(17)                   = 15.625
    !---------------------------------------------------------------------------------------!
 
 
@@ -1125,23 +1125,23 @@ subroutine init_pft_photo_params()
    !---------------------------------------------------------------------------------------!
    !    Dark_respiration_factor is the lower-case gamma in Moorcroft et al. (2001).        !
    !---------------------------------------------------------------------------------------!
-   dark_respiration_factor(1)     = 0.04
-   dark_respiration_factor(2)     = 0.02  * gamfact
-   dark_respiration_factor(3)     = 0.02  * gamfact
-   dark_respiration_factor(4)     = 0.02  * gamfact
-   dark_respiration_factor(5)     = 0.02
-   dark_respiration_factor(6)     = 0.02
-   dark_respiration_factor(7)     = 0.02
-   dark_respiration_factor(8)     = 0.02
-   dark_respiration_factor(9)     = 0.02
-   dark_respiration_factor(10)    = 0.02
-   dark_respiration_factor(11)    = 0.02
-   dark_respiration_factor(12)    = 0.02
-   dark_respiration_factor(13)    = 0.02
-   dark_respiration_factor(14)    = 0.04
-   dark_respiration_factor(15)    = 0.04
-   dark_respiration_factor(16)    = 0.02  * gamfact
-   dark_respiration_factor(17)    = 0.02  * gamfact
+   dark_respiration_factor(1)     = 0.035
+   dark_respiration_factor(2)     = 0.020 * gamfact
+   dark_respiration_factor(3)     = 0.020 * gamfact
+   dark_respiration_factor(4)     = 0.020 * gamfact
+   dark_respiration_factor(5)     = 0.020
+   dark_respiration_factor(6)     = 0.020
+   dark_respiration_factor(7)     = 0.020
+   dark_respiration_factor(8)     = 0.020
+   dark_respiration_factor(9)     = 0.020
+   dark_respiration_factor(10)    = 0.020
+   dark_respiration_factor(11)    = 0.020
+   dark_respiration_factor(12)    = 0.020
+   dark_respiration_factor(13)    = 0.020
+   dark_respiration_factor(14)    = 0.035
+   dark_respiration_factor(15)    = 0.035
+   dark_respiration_factor(16)    = 0.020 * gamfact
+   dark_respiration_factor(17)    = 0.025
    !---------------------------------------------------------------------------------------!
 
 
@@ -1150,7 +1150,7 @@ subroutine init_pft_photo_params()
    Rd_high_temp(1:17) = Vm_high_temp(1:17)
    Rd_decay_e  (1:17) = Vm_decay_e  (1:17)
    Rd_hor      (1:17) = Vm_hor      (1:17)
-   Rd_q10      (1:17) = 2.0
+   Rd_q10      (1:17) = Vm_q10      (1:17)
  
    !---------------------------------------------------------------------------------------!
    !    Respiration terms.  Here we must check whether this will run Foley-based or        !
@@ -1199,18 +1199,18 @@ subroutine init_pft_photo_params()
    cuticular_cond(3)         = 10000.0
    cuticular_cond(4)         = 10000.0
    cuticular_cond(5)         = 10000.0
-   cuticular_cond(6)         = 1000.0
-   cuticular_cond(7)         = 1000.0
-   cuticular_cond(8)         = 1000.0
+   cuticular_cond(6)         =  1000.0
+   cuticular_cond(7)         =  1000.0
+   cuticular_cond(8)         =  1000.0
    cuticular_cond(9)         = 20000.0
    cuticular_cond(10)        = 20000.0
    cuticular_cond(11)        = 20000.0
    cuticular_cond(12)        = 10000.0
    cuticular_cond(13)        = 10000.0
-   cuticular_cond(14)        = 10000.0
-   cuticular_cond(15)        = 10000.0
+   cuticular_cond(14)        =  8000.0
+   cuticular_cond(15)        =  8000.0
    cuticular_cond(16)        = 10000.0
-   cuticular_cond(17)        = 1000.0
+   cuticular_cond(17)        =  1000.0
 
    quantum_efficiency(1)     = 0.053
    quantum_efficiency(2)     = 0.08  * alphafact
@@ -1779,7 +1779,7 @@ subroutine init_pft_alloc_params()
    rho(12:13) = 0.20
    rho(14:15) = 0.20
    rho(16)    = 0.20
-   rho(17)    = 0.55
+   rho(17)    = 0.54
    !---------------------------------------------------------------------------------------!
 
    !----- Specific leaf area [m² leaf / kg C] ---------------------------------------------!

@@ -821,7 +821,8 @@ subroutine read_ed21_history_unstruct
                              , edgrid_g                & ! variable type
                              , allocate_polygontype    & ! subroutine
                              , allocate_sitetype       & ! subroutine
-                             , allocate_patchtype      ! ! subroutine
+                             , allocate_patchtype      & ! subroutine
+                             , deallocate_polygontype  ! ! subroutine
    use grid_coms      , only : ngrids                  & ! intent(in)
                              , nzg                     ! ! intent(in)
    use consts_coms    , only : pio4                    ! ! intent(in)
@@ -864,14 +865,15 @@ subroutine read_ed21_history_unstruct
    integer               , dimension(maxfiles)                  :: ngridpoly
    integer               , dimension(huge_polygon)              :: pyfile_list
    integer               , dimension(huge_polygon)              :: pyindx_list
-   integer               , dimension(:)           , allocatable :: pclosest
-   integer               , dimension(:)           , allocatable :: psrcfile
-   integer               , dimension(:)           , allocatable :: pysi_n
-   integer               , dimension(:)           , allocatable :: pysi_id
-   integer               , dimension(:)           , allocatable :: sipa_n
-   integer               , dimension(:)           , allocatable :: sipa_id
-   integer               , dimension(:)           , allocatable :: paco_n
-   integer               , dimension(:)           , allocatable :: paco_id
+   integer               , dimension(  :)         , allocatable :: pclosest
+   integer               , dimension(  :)         , allocatable :: psrcfile
+   integer               , dimension(  :)         , allocatable :: pysi_n
+   integer               , dimension(  :)         , allocatable :: pysi_id
+   integer               , dimension(  :)         , allocatable :: sipa_n
+   integer               , dimension(  :)         , allocatable :: sipa_id
+   integer               , dimension(  :)         , allocatable :: paco_n
+   integer               , dimension(  :)         , allocatable :: paco_id
+   integer               , dimension(:,:)         , allocatable :: this_ntext
    integer                                                      :: year
    integer                                                      :: igr
    integer                                                      :: ipy
@@ -883,8 +885,6 @@ subroutine read_ed21_history_unstruct
    integer                                                      :: nsoil
    integer                                                      :: nsoil_try
    integer                                                      :: nsites_inp
-   integer                                                      :: textdist_try
-   integer                                                      :: textdist_min
    integer                                                      :: xclosest
    integer                                                      :: nflist
    integer                                                      :: nhisto
@@ -926,6 +926,8 @@ subroutine read_ed21_history_unstruct
    real                  , dimension(huge_polygon)              :: nlat_rscl
    real                  , dimension(n_dist_types,huge_polygon) :: newarea
    real                  , dimension(n_dist_types)              :: oldarea
+   real                                                         :: textdist_try
+   real                                                         :: textdist_min
    real                                                         :: dummy
    real                                                         :: elim_nplant
    real                                                         :: elim_lai
@@ -1332,6 +1334,10 @@ subroutine read_ed21_history_unstruct
             ! properties to the definite site, preserving the previously assigned area.    !
             !------------------------------------------------------------------------------!
             nsites_inp = pysi_n(py_index)
+            nullify(tpoly)
+            allocate(tpoly)
+            allocate (this_ntext(dset_nzg,nsites_inp))
+
             call allocate_polygontype(tpoly,nsites_inp)
             !------------------------------------------------------------------------------!
 
@@ -1381,7 +1387,19 @@ subroutine read_ed21_history_unstruct
             memdims(2)   = int(tpoly%nsites,8)
             memsize(2)   = int(tpoly%nsites,8)
             memoffs(2)   = 0_8
-            call hdf_getslab_i(tpoly%ntext_soil,'NTEXT_SOIL_SI ',dsetrank,iparallel,.true.)
+            call hdf_getslab_i(this_ntext,'NTEXT_SOIL_SI ',dsetrank,iparallel,.true.)
+
+            !------------------------------------------------------------------------------!
+            !      The input file may have different number of soil layers than this       !
+            ! simulation.  This is not a problem at this point because the soil maps don't !
+            ! have soil texture profiles, but it may become an issue for sites with        !
+            ! different soil types along the profile.  Feel free to improve the code...    !
+            ! For the time being, we assume here that there is only one soil type, so all  !
+            ! that we need is to save one layer for each site.                             !
+            !------------------------------------------------------------------------------!
+            do isi_try=1,nsites_inp
+               tpoly%ntext_soil(nzg,isi_try) = this_ntext(dset_nzg,isi_try)
+            end do
             !------------------------------------------------------------------------------!
 
 
@@ -1400,7 +1418,7 @@ subroutine read_ed21_history_unstruct
                !---------------------------------------------------------------------------!
                textdist_min = huge(1.)
                do isi_try = 1, tpoly%nsites
-                  nsoil_try = tpoly%ntext_soil(dset_nzg,isi_try)
+                  nsoil_try = tpoly%ntext_soil(nzg,isi_try)
                   
                   !------------------------------------------------------------------------!
                   !     Find the "distance" between the two sites based on the sand and    !
@@ -1778,6 +1796,12 @@ subroutine read_ed21_history_unstruct
             call init_ed_site_vars(cpoly,cgrid%lat(ipy))
             !------------------------------------------------------------------------------!
 
+            !----- Deallocate the temporary polygon and soil structure. -------------------!
+            call deallocate_polygontype(tpoly)
+            deallocate(tpoly)
+            deallocate(this_ntext          )
+            !------------------------------------------------------------------------------!
+
          end do polyloop
 
          !----- Close the dataset. --------------------------------------------------------!
@@ -1790,9 +1814,9 @@ subroutine read_ed21_history_unstruct
                             ,'read_ed21_history_file','ed_read_ed21_history.F90')
          end if
 
-         deallocate(paco_n   ,paco_id  )
-         deallocate(sipa_n   ,sipa_id  )
-         deallocate(pysi_n   ,pysi_id  )
+         deallocate(paco_n    ,paco_id  )
+         deallocate(sipa_n    ,sipa_id  )
+         deallocate(pysi_n    ,pysi_id  )
       end do rstfileloop
 
       !----- Initialise the other polygon-level variables. --------------------------------!

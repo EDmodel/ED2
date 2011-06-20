@@ -70,7 +70,21 @@ subroutine ed_coup_driver()
    fast_diagnostics = checkbudget   .or. ifoutput /= 0 .or. idoutput /= 0 .or.             &
                       iqoutput /= 0 .or. imoutput /= 0 .or. ioutput  /= 0 .or.             &
                       iyoutput /= 0
-   
+   !---------------------------------------------------------------------------------------!
+
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !      Set most ED model parameters that do not come from the namelist (RAMSIN).        !
+   !---------------------------------------------------------------------------------------!
+   if (mynum == nnodetot) write (unit=*,fmt='(a)') ' [+] Load_Ed_Ecosystem_Params...'
+   call load_ed_ecosystem_params()
+   !---------------------------------------------------------------------------------------!
+
+
+
+
    !---------------------------------------------------------------------------------------!
    !     Overwrite the parameters in case a XML file is provided.                          !
    !---------------------------------------------------------------------------------------!
