@@ -193,7 +193,7 @@ bplot20 = list(vnam="rlong"     ,desc="Downward Longwave radiation"     ,unit="W
 bplot21 = list(vnam="gnd.shv"   ,desc="Ground specific humidity"        ,unit="g/kg"
                                 ,plt=T)
 #----- Similar to Hovmoller diagrams. -----------------------------------------------------#
-nhov = 30
+nhov = 32
 hovdi01 = list(vnam="gpp"       ,desc="Gross Primary productivity"      ,unit="kgC/m2/yr"
                                 ,csch="atlas"                           ,plt=T)
 hovdi02 = list(vnam="plresp"    ,desc="Plant respiration"               ,unit="kgC/m2/yr"
@@ -253,6 +253,10 @@ hovdi28 = list(vnam="ldrop"     ,desc="Leaf drop"                       ,unit="k
 hovdi29 = list(vnam="rshort"    ,desc="Downward shortwave radiation"    ,unit="W/m2"
                                 ,csch="icloudy"                         ,plt=T)
 hovdi30 = list(vnam="rlong"     ,desc="Downward longwave radiation"     ,unit="W/m2"
+                                ,csch="cloudy"                          ,plt=T)
+hovdi31 = list(vnam="rshort.gnd",desc="Abs. gnd. shortwave radiation"   ,unit="W/m2"
+                                ,csch="icloudy"                         ,plt=T)
+hovdi32 = list(vnam="rlong.gnd" ,desc="Abs. gnd. longwave radiation"    ,unit="W/m2"
                                 ,csch="cloudy"                          ,plt=T)
 #----- Time series with several variables in it. ------------------------------------------#
 ntser=9
@@ -361,7 +365,7 @@ tser09 = list(vnam   = c("ncoh.global")
 
 
 #----- "Climatology of the mean diurnal cycle with several variables in it. ---------------#
-nclim=8
+nclim=10
 clim01 = list(vnam   = c("gpp","plresp","hetresp","nep","nee")
              ,desc   = c("GPP","Plant resp.","Het. resp.","NEP","NEE")
              ,colour = c("chartreuse","goldenrod","sienna","forestgreen","deepskyblue")
@@ -450,11 +454,33 @@ clim08 = list(vnam   = c("fs.open")
              ,unit   = "---"
              ,legpos = "bottomleft"
              ,plt    = TRUE)
+clim09 = list(vnam   = c("rshort","rshort.gnd")
+             ,desc   = c("Down Top canopy","Abs. Ground")
+             ,colour = c("deepskyblue","darkorange3")
+             ,lwd    = c(2.5,2.5)
+             ,type   = ptype
+             ,plog   = ""
+             ,prefix = "rshort"
+             ,theme  = "Short wave radiation"
+             ,unit   = "W/m2"
+             ,legpos = "topleft"
+             ,plt    = TRUE)
+clim10 = list(vnam   = c("rlong","rlong.gnd")
+             ,desc   = c("Down Top canopy","Abs. Ground")
+             ,colour = c("deepskyblue","darkorange3")
+             ,lwd    = c(2.5,2.5)
+             ,type   = ptype
+             ,plog   = ""
+             ,prefix = "rlong"
+             ,theme  = "Long wave radiation"
+             ,unit   = "W/m2"
+             ,legpos = "topleft"
+             ,plt    = TRUE)
 #------------------------------------------------------------------------------------------#
 
 
 #----- Similar to Hovmoller diagrams, but with month/year in the y axis and hour in x. ----#
-nhdcyc  = 24
+nhdcyc  = 26
 hdcyc01 = list(vnam="gpp"       ,desc="Gross Primary productivity"      ,unit="kgC/m2/yr"
                                 ,csch="atlas"                           ,plt=T)
 hdcyc02 = list(vnam="plresp"    ,desc="Plant respiration"               ,unit="kgC/m2/yr"
@@ -502,6 +528,10 @@ hdcyc22 = list(vnam="nee"       ,desc="Net ecosystem exchange"          ,unit="k
 hdcyc23 = list(vnam="rshort"    ,desc="Downward shortwave radiation"    ,unit="W/m2"
                                 ,csch="icloudy"                         ,plt=T)
 hdcyc24 = list(vnam="rlong"     ,desc="Downward longwave radiation"     ,unit="W/m2"
+                                ,csch="cloudy"                          ,plt=T)
+hdcyc25 = list(vnam="rshort.gnd",desc="Abs. gnd. shortwave radiation"   ,unit="W/m2"
+                                ,csch="icloudy"                         ,plt=T)
+hdcyc26 = list(vnam="rlong.gnd" ,desc="Abs. gnd. longwave radiation"    ,unit="W/m2"
                                 ,csch="cloudy"                          ,plt=T)
 #------------------------------------------------------------------------------------------#
 
@@ -904,6 +934,8 @@ for (place in myplaces){
    et            = NULL
    rshort        = NULL
    rlong         = NULL
+   rshort.gnd    = NULL
+   rlong.gnd     = NULL
    npat.global   = NULL
    ncoh.global   = NULL
    mmsqu.gpp     = NULL
@@ -1059,6 +1091,8 @@ for (place in myplaces){
              dcycmean$rain       = matrix(data=0,nrow=totmon,ncol=ndcycle)
              dcycmean$rshort     = matrix(data=0,nrow=totmon,ncol=ndcycle)
              dcycmean$rlong      = matrix(data=0,nrow=totmon,ncol=ndcycle)
+             dcycmean$rshort.gnd = matrix(data=0,nrow=totmon,ncol=ndcycle)
+             dcycmean$rlong.gnd  = matrix(data=0,nrow=totmon,ncol=ndcycle)
 
              dcycmsqu            = list()
              dcycmsqu$gpp        = matrix(data=0,nrow=totmon,ncol=ndcycle)
@@ -1120,23 +1154,25 @@ for (place in myplaces){
           mmsqu.evap    = c(mmsqu.evap   ,mymont$MMSQU.EVAP      * day.sec * day.sec )
           mmsqu.transp  = c(mmsqu.transp ,mymont$MMSQU.TRANSP    * day.sec * day.sec )
 
-          atm.temp  = c(atm.temp  ,mymont$MMEAN.ATM.TEMP - t00                       )
-          atm.shv   = c(atm.shv   ,mymont$MMEAN.ATM.SHV  * kg2g                      )
-          atm.co2   = c(atm.co2   ,mymont$MMEAN.ATM.CO2                              )
+          atm.temp   = c(atm.temp  ,mymont$MMEAN.ATM.TEMP - t00                       )
+          atm.shv    = c(atm.shv   ,mymont$MMEAN.ATM.SHV  * kg2g                      )
+          atm.co2    = c(atm.co2   ,mymont$MMEAN.ATM.CO2                              )
 
-          can.temp  = c(can.temp  ,mymont$MMEAN.CAN.TEMP - t00                       )
-          can.shv   = c(can.shv   ,mymont$MMEAN.CAN.SHV  * kg2g                      )
-          can.co2   = c(can.co2   ,mymont$MMEAN.CAN.CO2                              )
+          can.temp   = c(can.temp  ,mymont$MMEAN.CAN.TEMP - t00                       )
+          can.shv    = c(can.shv   ,mymont$MMEAN.CAN.SHV  * kg2g                      )
+          can.co2    = c(can.co2   ,mymont$MMEAN.CAN.CO2                              )
 
-          gnd.temp   = c(gnd.temp  , mymont$MMEAN.GND.TEMP - t00                     )
-          gnd.shv    = c(gnd.shv   , mymont$MMEAN.GND.SHV  * kg2g                    )
+          gnd.temp   = c(gnd.temp  ,mymont$MMEAN.GND.TEMP - t00                       )
+          gnd.shv    = c(gnd.shv   ,mymont$MMEAN.GND.SHV  * kg2g                      )
 
-          veg.temp  = c(veg.temp,mymont$MMEAN.VEG.TEMP - t00                         )
-          rain      = c(rain,mymont$MMEAN.PCPG*ddd     * day.sec                     )
+          veg.temp   = c(veg.temp  ,mymont$MMEAN.VEG.TEMP - t00                       )
+          rain       = c(rain      ,mymont$MMEAN.PCPG*ddd     * day.sec               )
 
-          fs.open   = c(fs.open ,mymont$MMEAN.FS.OPEN                                )
-          rshort    = c(rshort  ,mymont$MMEAN.RSHORT                                 )
-          rlong     = c(rlong   ,mymont$MMEAN.RLONG                                  )
+          fs.open    = c(fs.open   ,mymont$MMEAN.FS.OPEN                              )
+          rshort     = c(rshort    ,mymont$MMEAN.RSHORT                               )
+          rlong      = c(rlong     ,mymont$MMEAN.RLONG                                )
+          rshort.gnd = c(rshort.gnd,mymont$MMEAN.RSHORT.GND                           )
+          rlong.gnd  = c(rlong.gnd ,mymont$MMEAN.RLONG.GND                            )
           #--------------------------------------------------------------------------------#
 
 
@@ -1195,6 +1231,8 @@ for (place in myplaces){
           dcycmean$rain       [m,] = mymont$QMEAN.PCPG               * day.sec
           dcycmean$rshort     [m,] = mymont$QMEAN.RSHORT
           dcycmean$rlong      [m,] = mymont$QMEAN.RLONG
+          dcycmean$rshort.gnd [m,] = mymont$QMEAN.RSHORT.GND
+          dcycmean$rlong.gnd  [m,] = mymont$QMEAN.RLONG.GND
 
           dcycmsqu$gpp        [m,] = mymont$QMSQU.GPP
           dcycmsqu$plresp     [m,] = mymont$QMSQU.PLRESP
@@ -1769,6 +1807,8 @@ for (place in myplaces){
    dcyc12mn$rain       = qapply(dcycmean$rain      ,index=mfac,bycol=T,func=mean,na.rm=T)
    dcyc12mn$rshort     = qapply(dcycmean$rshort    ,index=mfac,bycol=T,func=mean,na.rm=T)
    dcyc12mn$rlong      = qapply(dcycmean$rlong     ,index=mfac,bycol=T,func=mean,na.rm=T)
+   dcyc12mn$rshort.gnd = qapply(dcycmean$rshort.gnd,index=mfac,bycol=T,func=mean,na.rm=T)
+   dcyc12mn$rlong.gnd  = qapply(dcycmean$rlong.gnd ,index=mfac,bycol=T,func=mean,na.rm=T)
    #----- Find the mean sum of squares. ---------------------------------------------------#
    print ("    - Aggregating the monthly mean sum of squares...")
    dcyc12sq            = list()

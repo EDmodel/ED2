@@ -1334,10 +1334,9 @@ subroutine read_ed21_history_unstruct
             ! properties to the definite site, preserving the previously assigned area.    !
             !------------------------------------------------------------------------------!
             nsites_inp = pysi_n(py_index)
-            nullify(tpoly)
-            allocate(tpoly)
+            nullify  (tpoly)
+            allocate (tpoly)
             allocate (this_ntext(dset_nzg,nsites_inp))
-
             call allocate_polygontype(tpoly,nsites_inp)
             !------------------------------------------------------------------------------!
 

@@ -194,7 +194,8 @@ module rk4_coms
       !     Fast time flux diagnostic variables.  These variables may be turned off under  !
       ! different conditions.                                                              !
       !------------------------------------------------------------------------------------!
-      real(kind=8) :: avg_netrad        ! Net radiation
+      real(kind=8) :: avg_rshort_gnd  ! Total absorbed SW radiation
+      real(kind=8) :: avg_rlong_gnd   ! Net absorbed LW radiation
       !----- Water fluxes -----------------------------------------------------------------!
       real(kind=8) :: avg_vapor_vc ! Leaf       -> canopy air:  evap./cond. flux
       real(kind=8) :: avg_dew_cg   ! Canopy     -> ground    :  condensation flux
@@ -895,7 +896,8 @@ module rk4_coms
       y%avg_vapor_ac                   = 0.d0
       y%avg_transp                     = 0.d0
       y%avg_evap                       = 0.d0
-      y%avg_netrad                     = 0.d0
+      y%avg_rshort_gnd                 = 0.d0
+      y%avg_rlong_gnd                  = 0.d0
       y%avg_sensible_vc                = 0.d0
       y%avg_qwshed_vg                  = 0.d0
       y%avg_qintercepted               = 0.d0

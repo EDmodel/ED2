@@ -406,32 +406,33 @@ module rk4_driver
       ! check this before copying.                                                         !
       !------------------------------------------------------------------------------------!
       if (fast_diagnostics) then
-
-         csite%avg_vapor_vc(ipa)         =sngloff(initp%avg_vapor_vc      ,tiny_offset)
-         csite%avg_dew_cg(ipa)           =sngloff(initp%avg_dew_cg        ,tiny_offset)
-         csite%avg_vapor_gc(ipa)         =sngloff(initp%avg_vapor_gc      ,tiny_offset)
-         csite%avg_wshed_vg(ipa)         =sngloff(initp%avg_wshed_vg      ,tiny_offset)
-         csite%avg_intercepted(ipa)      =sngloff(initp%avg_intercepted   ,tiny_offset)
-         csite%avg_throughfall(ipa)      =sngloff(initp%avg_throughfall   ,tiny_offset)
-         csite%avg_vapor_ac(ipa)         =sngloff(initp%avg_vapor_ac      ,tiny_offset)
-         csite%avg_transp(ipa)           =sngloff(initp%avg_transp        ,tiny_offset)
-         csite%avg_evap(ipa)             =sngloff(initp%avg_evap          ,tiny_offset)
-         csite%avg_drainage(ipa)         =sngloff(initp%avg_drainage      ,tiny_offset)
-         csite%avg_drainage_heat(ipa)    =sngloff(initp%avg_drainage_heat ,tiny_offset)
-         csite%avg_netrad(ipa)           =sngloff(initp%avg_netrad        ,tiny_offset)
-         csite%avg_sensible_vc(ipa)      =sngloff(initp%avg_sensible_vc   ,tiny_offset)
-         csite%avg_qwshed_vg(ipa)        =sngloff(initp%avg_qwshed_vg     ,tiny_offset)
-         csite%avg_qintercepted(ipa)     =sngloff(initp%avg_qintercepted  ,tiny_offset)
-         csite%avg_qthroughfall(ipa)     =sngloff(initp%avg_qthroughfall  ,tiny_offset)
-         csite%avg_sensible_gc(ipa)      =sngloff(initp%avg_sensible_gc   ,tiny_offset)
-         csite%avg_sensible_ac(ipa)      =sngloff(initp%avg_sensible_ac   ,tiny_offset)
-         csite%avg_carbon_ac(ipa)        =sngloff(initp%avg_carbon_ac     ,tiny_offset)
+         csite%avg_vapor_vc        (ipa) = sngloff(initp%avg_vapor_vc       ,tiny_offset)
+         csite%avg_dew_cg          (ipa) = sngloff(initp%avg_dew_cg         ,tiny_offset)
+         csite%avg_vapor_gc        (ipa) = sngloff(initp%avg_vapor_gc       ,tiny_offset)
+         csite%avg_wshed_vg        (ipa) = sngloff(initp%avg_wshed_vg       ,tiny_offset)
+         csite%avg_intercepted     (ipa) = sngloff(initp%avg_intercepted    ,tiny_offset)
+         csite%avg_throughfall     (ipa) = sngloff(initp%avg_throughfall    ,tiny_offset)
+         csite%avg_vapor_ac        (ipa) = sngloff(initp%avg_vapor_ac       ,tiny_offset)
+         csite%avg_transp          (ipa) = sngloff(initp%avg_transp         ,tiny_offset)
+         csite%avg_evap            (ipa) = sngloff(initp%avg_evap           ,tiny_offset)
+         csite%avg_drainage        (ipa) = sngloff(initp%avg_drainage       ,tiny_offset)
+         csite%avg_drainage_heat   (ipa) = sngloff(initp%avg_drainage_heat  ,tiny_offset)
+         csite%avg_rshort_gnd      (ipa) = sngloff(initp%avg_rshort_gnd     ,tiny_offset)
+         csite%avg_rlong_gnd       (ipa) = sngloff(initp%avg_rlong_gnd      ,tiny_offset)
+         csite%avg_sensible_vc     (ipa) = sngloff(initp%avg_sensible_vc    ,tiny_offset)
+         csite%avg_qwshed_vg       (ipa) = sngloff(initp%avg_qwshed_vg      ,tiny_offset)
+         csite%avg_qintercepted    (ipa) = sngloff(initp%avg_qintercepted   ,tiny_offset)
+         csite%avg_qthroughfall    (ipa) = sngloff(initp%avg_qthroughfall   ,tiny_offset)
+         csite%avg_sensible_gc     (ipa) = sngloff(initp%avg_sensible_gc    ,tiny_offset)
+         csite%avg_sensible_ac     (ipa) = sngloff(initp%avg_sensible_ac    ,tiny_offset)
+         csite%avg_carbon_ac       (ipa) = sngloff(initp%avg_carbon_ac      ,tiny_offset)
          do k = rk4site%lsl, nzg
-            csite%avg_sensible_gg(k,ipa) =sngloff(initp%avg_sensible_gg(k)   ,tiny_offset)
-            csite%avg_smoist_gg(k,ipa)   =sngloff(initp%avg_smoist_gg(k)     ,tiny_offset)
-            csite%avg_transloss(k,ipa)   =sngloff(initp%avg_transloss(k)     ,tiny_offset)
+            csite%avg_sensible_gg(k,ipa) = sngloff(initp%avg_sensible_gg(k) ,tiny_offset)
+            csite%avg_smoist_gg  (k,ipa) = sngloff(initp%avg_smoist_gg  (k) ,tiny_offset)
+            csite%avg_transloss  (k,ipa) = sngloff(initp%avg_transloss  (k) ,tiny_offset)
          end do
       end if
+      !------------------------------------------------------------------------------------!
 
       if(checkbudget) then
          co2budget_loss2atm    = sngloff(initp%co2budget_loss2atm   ,tiny_offset)

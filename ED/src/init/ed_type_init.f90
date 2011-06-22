@@ -496,7 +496,8 @@ subroutine init_ed_patch_vars(csite,ip1,ip2,lsl)
    csite%avg_vapor_ac      (ip1:ip2)  = 0.0
    csite%avg_transp        (ip1:ip2)  = 0.0
    csite%avg_evap          (ip1:ip2)  = 0.0
-   csite%avg_netrad        (ip1:ip2)  = 0.0
+   csite%avg_rshort_gnd    (ip1:ip2)  = 0.0
+   csite%avg_rlong_gnd     (ip1:ip2)  = 0.0
    csite%avg_runoff        (ip1:ip2)  = 0.0
    csite%avg_drainage      (ip1:ip2)  = 0.0
    csite%avg_drainage_heat (ip1:ip2)  = 0.0

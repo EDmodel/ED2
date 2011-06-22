@@ -207,7 +207,8 @@ module leaf_coms
    !----- Soil properties -----------------------------------------------------------------!
    real, dimension(nstyp)           :: slden,slcpd,slbs,slcond,sfldcap,slcons,slmsts,slpots
    real, dimension(nstyp)           :: ssand,sclay,sorgan,sporo,soilwp,soilcp,slfc,emisg
-   real, dimension(nstyp)           :: slcons00,slcons0,fhydraul
+   real, dimension(nstyp)           :: slcons00,slcons0,fhydraul,xsilt,xsand,xclay
+   real, dimension(nstyp)           :: albwet,albdry
    real, dimension(nstyp)           :: soilcond0,soilcond1,soilcond2,slcons1_0
    real, dimension(nzgmax,nstyp)    :: slcons1
    !---------------------------------------------------------------------------------------!

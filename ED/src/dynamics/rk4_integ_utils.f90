@@ -395,7 +395,8 @@ subroutine inc_rk4_patch(rkp, inc, fac, cpatch)
       rkp%avg_evap           = rkp%avg_evap           + fac * inc%avg_evap
       rkp%avg_drainage       = rkp%avg_drainage       + fac * inc%avg_drainage
       rkp%avg_drainage_heat  = rkp%avg_drainage_heat  + fac * inc%avg_drainage_heat
-      rkp%avg_netrad         = rkp%avg_netrad         + fac * inc%avg_netrad
+      rkp%avg_rshort_gnd     = rkp%avg_rshort_gnd     + fac * inc%avg_rshort_gnd
+      rkp%avg_rlong_gnd      = rkp%avg_rlong_gnd      + fac * inc%avg_rlong_gnd
       rkp%avg_sensible_vc    = rkp%avg_sensible_vc    + fac * inc%avg_sensible_vc
       rkp%avg_qwshed_vg      = rkp%avg_qwshed_vg      + fac * inc%avg_qwshed_vg
       rkp%avg_qintercepted   = rkp%avg_qintercepted   + fac * inc%avg_qintercepted
@@ -430,7 +431,8 @@ subroutine inc_rk4_patch(rkp, inc, fac, cpatch)
       rkp%flx_evap           = rkp%flx_evap           + fac * inc%avg_evap
       rkp%flx_drainage       = rkp%flx_drainage       + fac * inc%avg_drainage
       rkp%flx_drainage_heat  = rkp%flx_drainage_heat  + fac * inc%avg_drainage_heat
-      rkp%flx_netrad         = rkp%flx_netrad         + fac * inc%avg_netrad
+      rkp%flx_netrad         = rkp%flx_netrad                                              &
+                             + fac * ( inc%avg_rshort_gnd + inc%avg_rlong_gnd ) 
       rkp%flx_sensible_vc    = rkp%flx_sensible_vc    + fac * inc%avg_sensible_vc
       rkp%flx_qwshed_vg      = rkp%flx_qwshed_vg      + fac * inc%avg_qwshed_vg
       rkp%flx_qintercepted   = rkp%flx_qintercepted   + fac * inc%avg_qintercepted
@@ -1114,20 +1116,21 @@ subroutine copy_rk4_patch(sourcep, targetp, cpatch)
    if (fast_diagnostics) then
       targetp%avg_carbon_ac          = sourcep%avg_carbon_ac
       targetp%avg_vapor_vc           = sourcep%avg_vapor_vc
-      targetp%avg_dew_cg             = sourcep%avg_dew_cg  
+      targetp%avg_dew_cg             = sourcep%avg_dew_cg
       targetp%avg_vapor_gc           = sourcep%avg_vapor_gc
       targetp%avg_wshed_vg           = sourcep%avg_wshed_vg
       targetp%avg_intercepted        = sourcep%avg_intercepted
       targetp%avg_throughfall        = sourcep%avg_throughfall
       targetp%avg_vapor_ac           = sourcep%avg_vapor_ac
-      targetp%avg_transp             = sourcep%avg_transp  
-      targetp%avg_evap               = sourcep%avg_evap   
-      targetp%avg_netrad             = sourcep%avg_netrad   
-      targetp%avg_sensible_vc        = sourcep%avg_sensible_vc  
-      targetp%avg_qwshed_vg          = sourcep%avg_qwshed_vg    
+      targetp%avg_transp             = sourcep%avg_transp
+      targetp%avg_evap               = sourcep%avg_evap
+      targetp%avg_rshort_gnd         = sourcep%avg_rshort_gnd
+      targetp%avg_rlong_gnd          = sourcep%avg_rlong_gnd
+      targetp%avg_sensible_vc        = sourcep%avg_sensible_vc
+      targetp%avg_qwshed_vg          = sourcep%avg_qwshed_vg
       targetp%avg_qintercepted       = sourcep%avg_qintercepted
       targetp%avg_qthroughfall       = sourcep%avg_qthroughfall
-      targetp%avg_sensible_gc        = sourcep%avg_sensible_gc  
+      targetp%avg_sensible_gc        = sourcep%avg_sensible_gc
       targetp%avg_sensible_ac        = sourcep%avg_sensible_ac
       targetp%avg_drainage           = sourcep%avg_drainage
       targetp%avg_drainage_heat      = sourcep%avg_drainage_heat

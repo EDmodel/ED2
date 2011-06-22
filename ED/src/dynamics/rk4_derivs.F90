@@ -1020,8 +1020,8 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
       ! humidity at the soil temperature only, it depends on the canopy specific humidity  !
       ! itself and the soil moisture.                                                      !
       !------------------------------------------------------------------------------------!
-      wflxgc     = initp%ggnet * initp%ggsoil * initp%can_rhos                             &
-                 * (initp%ground_shv - initp%can_shv) / (initp%ggnet + initp%ggsoil)  
+      wflxgc     = initp%ggnet * initp%can_rhos * (initp%ground_shv - initp%can_shv)       &
+                 * ( initp%ggsoil / (initp%ggnet + initp%ggsoil) )
       !----- Adjusting the flux accordingly to the surface fraction (no phase bias). ------!
       qwflxgc    = wflxgc * ( alvi8 - initp%ground_fliq * alli8)
       !----- Set condensation fluxes to zero. ---------------------------------------------!
@@ -1360,19 +1360,40 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
       dinitp%avg_qthroughfall  = qthroughfall_tot            ! Throughfall,   Atmo->Grnd
 
    end if
+   !---------------------------------------------------------------------------------------!
+
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !      Update the absorbed shortwave radiation and the net radiation.                   !
+   !---------------------------------------------------------------------------------------!
    if (fast_diagnostics .or. checkbudget .or. print_detailed) then
-      dinitp%avg_netrad = dble(csite%rlong_g(ipa)) + dble(csite%rlong_s(ipa))              &
-                        + dble(csite%rshort_g(ipa))
+      !----- Average shortwave radiation. -------------------------------------------------!
+      dinitp%avg_rshort_gnd    = dble(csite%rshort_g(ipa))
       do k=1,initp%nlev_sfcwater
-         dinitp%avg_netrad = dinitp%avg_netrad + dble(csite%rshort_s(k,ipa))
+         dinitp%avg_rshort_gnd = dinitp%avg_rshort_gnd + dble(csite%rshort_s(k,ipa))
       end do
+      !------------------------------------------------------------------------------------!
+
+      !----- Average longwave radiation. --------------------------------------------------!
+      dinitp%avg_rlong_gnd = dble(csite%rlong_g(ipa)) + dble(csite%rlong_s(ipa))
+      !------------------------------------------------------------------------------------!
    end if
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Update the budget variables.                                                      !
+   !---------------------------------------------------------------------------------------!
    if (checkbudget) then
       dinitp%co2budget_loss2atm = - cflxac
       dinitp%ebudget_loss2atm   = - eflxac
       dinitp%wbudget_loss2atm   = - wflxac
       dinitp%co2budget_storage  = dinitp%co2budget_storage + cflxgc + cflxvc_tot + cflxac
-      dinitp%ebudget_storage    = dinitp%ebudget_storage   + eflxac + dinitp%avg_netrad
+      dinitp%ebudget_storage    = dinitp%ebudget_storage   + eflxac                        &
+                                + dinitp%avg_rshort_gnd    + dinitp%avg_rlong_gnd
       dinitp%wbudget_storage    = dinitp%wbudget_storage   + wflxac
    end if
    !---------------------------------------------------------------------------------------!

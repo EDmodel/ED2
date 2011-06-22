@@ -1541,6 +1541,7 @@ subroutine copy_avgvars_to_leaf(ifm)
       siteloop: do isi = 1,cpoly%nsites
          !----- Pointer for the current site. ---------------------------------------------!
          csite => cpoly%site(isi)
+         site_area_i = 1. / sum(csite%area)
          !---------------------------------------------------------------------------------!
 
 

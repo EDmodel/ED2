@@ -756,6 +756,14 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
   if (associated(cgrid%dmean_rlong       ))                                                &
        call hdf_getslab_r(cgrid%dmean_rlong       (ipy:ipy) ,'DMEAN_RLONG        '         &
        ,dsetrank,iparallel,.false.)
+  
+  if (associated(cgrid%dmean_rshort_gnd  ))                                                &
+       call hdf_getslab_r(cgrid%dmean_rshort_gnd  (ipy:ipy) ,'DMEAN_RSHORT_GND     '       &
+       ,dsetrank,iparallel,.false.)
+  
+  if (associated(cgrid%dmean_rlong_gnd   ))                                                &
+       call hdf_getslab_r(cgrid%dmean_rlong_gnd   (ipy:ipy) ,'DMEAN_RLONG_GND    '         &
+       ,dsetrank,iparallel,.false.)
 
   if (associated(cgrid%dmean_atm_shv        ))                                             &
      call hdf_getslab_r(cgrid%dmean_atm_shv        (ipy:ipy) ,'DMEAN_ATM_SHV         '     &
@@ -956,6 +964,14 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
   
   if (associated(cgrid%mmean_rlong       ))                                                &
        call hdf_getslab_r(cgrid%mmean_rlong       (ipy:ipy) ,'MMEAN_RLONG        '         &
+       ,dsetrank,iparallel,.false.)
+
+  if (associated(cgrid%mmean_rshort_gnd   ))                                               &
+       call hdf_getslab_r(cgrid%mmean_rshort_gnd   (ipy:ipy) ,'MMEAN_RSHORT_GND    '       &
+       ,dsetrank,iparallel,.false.)
+  
+  if (associated(cgrid%mmean_rlong_gnd   ))                                                &
+       call hdf_getslab_r(cgrid%mmean_rlong_gnd   (ipy:ipy) ,'MMEAN_RLONG_GND    '         &
        ,dsetrank,iparallel,.false.)
   
   if (associated(cgrid%mmean_atm_temp       ))                                             &
@@ -1275,6 +1291,14 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
   
   if (associated(cgrid%qmean_rlong       ))                                                &
      call hdf_getslab_r(cgrid%qmean_rlong       (:,ipy)   ,'QMEAN_RLONG        '           &
+       ,dsetrank,iparallel,.false.)
+  
+  if (associated(cgrid%qmean_rshort_gnd   ))                                               &
+     call hdf_getslab_r(cgrid%qmean_rshort_gnd   (:,ipy)   ,'QMEAN_RSHORT_GND    '         &
+       ,dsetrank,iparallel,.false.)
+  
+  if (associated(cgrid%qmean_rlong_gnd   ))                                                &
+     call hdf_getslab_r(cgrid%qmean_rlong_gnd   (:,ipy)   ,'QMEAN_RLONG_GND    '           &
        ,dsetrank,iparallel,.false.)
 
   if (associated(cgrid%qmean_atm_shv        ))                                             &

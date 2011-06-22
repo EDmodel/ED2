@@ -448,6 +448,8 @@ subroutine spatial_averages
 
 
             !----- Average fast time flux dynamics over sites. ----------------------------!
+            cpoly%avg_rshort_gnd(isi)= sum(csite%avg_rshort_gnd* csite%area ) * site_area_i
+            cpoly%avg_rlong_gnd(isi) = sum(csite%avg_rlong_gnd * csite%area ) * site_area_i
             cpoly%avg_carbon_ac(isi) = sum(csite%avg_carbon_ac * csite%area ) * site_area_i
             cpoly%avg_vapor_vc(isi)  = sum(csite%avg_vapor_vc  * csite%area ) * site_area_i
             cpoly%avg_dew_cg(isi)    = sum(csite%avg_dew_cg    * csite%area ) * site_area_i
@@ -671,43 +673,43 @@ subroutine spatial_averages
                                               * site_area_i * poly_area_i
 
                   cgrid%avg_nppleaf(ipy)      = cgrid%avg_nppleaf(ipy)                     &
-                                              + sum(cpatch%dmean_nppleaf                   &
+                                              + sum(cpatch%today_nppleaf                   &
                                               * cpatch%nplant)                             &
                                               * csite%area(ipa)*cpoly%area(isi)            &
                                               * site_area_i * poly_area_i
                                               
                   cgrid%avg_nppfroot(ipy)     = cgrid%avg_nppfroot(ipy)                    &
-                                              + sum(cpatch%dmean_nppfroot                  &
+                                              + sum(cpatch%today_nppfroot                  &
                                               * cpatch%nplant)                             &
                                               * csite%area(ipa)*cpoly%area(isi)            &
                                               * site_area_i * poly_area_i
                                               
                   cgrid%avg_nppsapwood(ipy)   = cgrid%avg_nppsapwood(ipy)                  &
-                                              + sum(cpatch%dmean_nppsapwood                &
+                                              + sum(cpatch%today_nppsapwood                &
                                               * cpatch%nplant)                             &
                                               * csite%area(ipa)*cpoly%area(isi)            &
                                               * site_area_i * poly_area_i
                                               
                   cgrid%avg_nppcroot(ipy)     = cgrid%avg_nppcroot(ipy)                    &
-                                              + sum(cpatch%dmean_nppcroot                  &
+                                              + sum(cpatch%today_nppcroot                  &
                                               * cpatch%nplant)                             &
                                               * csite%area(ipa)*cpoly%area(isi)            &
                                               * site_area_i * poly_area_i
                                               
                   cgrid%avg_nppseeds(ipy)     = cgrid%avg_nppseeds(ipy)                    &
-                                              + sum(cpatch%dmean_nppseeds                  &
+                                              + sum(cpatch%today_nppseeds                  &
                                               * cpatch%nplant)                             &
                                               * csite%area(ipa)*cpoly%area(isi)            &
                                               * site_area_i * poly_area_i
                                               
                   cgrid%avg_nppwood(ipy)      = cgrid%avg_nppwood(ipy)                     &
-                                              + sum(cpatch%dmean_nppwood                   &
+                                              + sum(cpatch%today_nppwood                   &
                                               * cpatch%nplant)                             &
                                               * csite%area(ipa)*cpoly%area(isi)            &
                                               * site_area_i * poly_area_i
                                               
                   cgrid%avg_nppdaily(ipy)     = cgrid%avg_nppdaily(ipy)                    &
-                                              + sum(cpatch%dmean_nppdaily                  &
+                                              + sum(cpatch%today_nppdaily                  &
                                               * cpatch%nplant)                             &
                                               * csite%area(ipa)*cpoly%area(isi)            &
                                               * site_area_i * poly_area_i
@@ -826,7 +828,7 @@ subroutine spatial_averages
                !----- Net radiation. ------------------------------------------------------!
                cgrid%avg_lai_ebalvars(lai_index,1,ipy) =                                   &
                       cgrid%avg_lai_ebalvars(lai_index,1,ipy)                              &
-                    + csite%avg_netrad(ipa)                                                &
+                    + (csite%avg_rshort_gnd(ipa) + csite%avg_rlong_gnd(ipa))               &
                     * csite%area(ipa)*cpoly%area(isi)                                      &
                     * site_area_i * poly_area_i
 
@@ -1039,6 +1041,8 @@ subroutine spatial_averages
          cgrid%wpa(ipy)  = sum(cpoly%wpa  * cpoly%area ) * poly_area_i
          cgrid%wai(ipy)  = sum(cpoly%wai  * cpoly%area ) * poly_area_i
          !----- Average fast time flux dynamics over polygons. ----------------------------!
+         cgrid%avg_rshort_gnd(ipy)   = sum(cpoly%avg_rshort_gnd   *cpoly%area)*poly_area_i
+         cgrid%avg_rlong_gnd(ipy)    = sum(cpoly%avg_rlong_gnd    *cpoly%area)*poly_area_i
          cgrid%avg_carbon_ac(ipy)    = sum(cpoly%avg_carbon_ac    *cpoly%area)*poly_area_i
          cgrid%avg_vapor_vc(ipy)     = sum(cpoly%avg_vapor_vc     *cpoly%area)*poly_area_i
          cgrid%avg_dew_cg(ipy)       = sum(cpoly%avg_dew_cg       *cpoly%area)*poly_area_i

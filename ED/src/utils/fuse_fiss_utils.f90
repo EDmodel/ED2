@@ -3178,6 +3178,14 @@ module fuse_fiss_utils
       ! output will have the values.  Other variables will probably be scaled here as      !
       ! well.                                                                              !
       !------------------------------------------------------------------------------------!
+      csite%avg_rshort_gnd(recp)      = newareai *                                         &
+                                      ( csite%avg_rshort_gnd(donp)    * csite%area(donp)   &
+                                      + csite%avg_rshort_gnd(recp)    * csite%area(recp) )
+
+      csite%avg_rlong_gnd(recp)       = newareai *                                         &
+                                      ( csite%avg_rlong_gnd(donp)     * csite%area(donp)   &
+                                      + csite%avg_rlong_gnd(recp)     * csite%area(recp) )
+
       csite%avg_carbon_ac(recp)       = newareai *                                         &
                                       ( csite%avg_carbon_ac(donp)     * csite%area(donp)   &
                                       + csite%avg_carbon_ac(recp)     * csite%area(recp) )

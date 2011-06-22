@@ -515,6 +515,9 @@ do
       fns)
          thissfilin=${bioinit}'/fns.'
          ;;
+      s77)
+         thissfilin=${bioinit}'/k77.'
+         ;;
       *)
          echo ' Polygon: '${polyname}
          echo ' IATA: '${polyiata}

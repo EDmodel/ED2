@@ -195,7 +195,8 @@ subroutine normalize_averaged_vars(cgrid,frqsum,dtlsm)
             !     The following variables are integrated over time, we must divide them by !
             ! the total time.                                                              !
             !------------------------------------------------------------------------------!
-            csite%avg_netrad(ipa)       = csite%avg_netrad(ipa)        * frqsumi
+            csite%avg_rshort_gnd(ipa)   = csite%avg_rshort_gnd(ipa)    * frqsumi
+            csite%avg_rlong_gnd(ipa)    = csite%avg_rlong_gnd(ipa)     * frqsumi
             csite%aux(ipa)              = csite%aux(ipa)               * frqsumi
             csite%avg_vapor_vc(ipa)     = csite%avg_vapor_vc(ipa)      * frqsumi
             csite%avg_dew_cg(ipa)       = csite%avg_dew_cg(ipa)        * frqsumi
@@ -501,7 +502,8 @@ subroutine reset_averaged_vars(cgrid)
             csite%avg_vapor_ac(ipa)         = 0.0
             csite%avg_transp(ipa)           = 0.0
             csite%avg_evap(ipa)             = 0.0
-            csite%avg_netrad(ipa)           = 0.0
+            csite%avg_rshort_gnd(ipa)       = 0.0
+            csite%avg_rlong_gnd(ipa)        = 0.0
             csite%avg_smoist_gg(:,ipa)      = 0.0
             csite%avg_transloss(:,ipa)      = 0.0
             csite%avg_runoff(ipa)           = 0.0
@@ -1238,6 +1240,11 @@ subroutine integrate_ed_daily_output_flux(cgrid)
       cgrid%dmean_sensible_ac(ipy) = cgrid%dmean_sensible_ac(ipy)                          &
                                    + cgrid%avg_sensible_ac(ipy)
 
+      cgrid%dmean_rshort_gnd (ipy) = cgrid%dmean_rshort_gnd (ipy)                          &
+                                   + cgrid%avg_rshort_gnd   (ipy)
+      cgrid%dmean_rlong_gnd  (ipy) = cgrid%dmean_rlong_gnd  (ipy)                          &
+                                   + cgrid%avg_rlong_gnd    (ipy)
+
       !------ Integrate the NEE with the conventional NEE sign (< 0 = uptake). ------------!
       cgrid%dmean_nee       (ipy) = cgrid%dmean_nee         (ipy)                          &
                                   - cgrid%avg_carbon_ac     (ipy) * umols_2_kgCyr
@@ -1308,6 +1315,10 @@ subroutine integrate_ed_daily_output_flux(cgrid)
                                              + cgrid%avg_sensible_gc                 (ipy)
          cgrid%qmean_sensible_ac    (it,ipy) = cgrid%qmean_sensible_ac            (it,ipy) &
                                              + cgrid%avg_sensible_ac                 (ipy)
+         cgrid%qmean_rshort_gnd     (it,ipy) = cgrid%qmean_rshort_gnd             (it,ipy) &
+                                             + cgrid%avg_rshort_gnd                  (ipy)
+         cgrid%qmean_rlong_gnd      (it,ipy) = cgrid%qmean_rlong_gnd              (it,ipy) &
+                                             + cgrid%avg_rlong_gnd                   (ipy)
          cgrid%qmean_pcpg           (it,ipy) = cgrid%qmean_pcpg                   (it,ipy) &
                                              + cgrid%avg_pcpg                        (ipy)
          cgrid%qmean_evap           (it,ipy) = cgrid%qmean_evap                   (it,ipy) &
@@ -1964,6 +1975,8 @@ subroutine normalize_ed_daily_output_vars(cgrid)
       cgrid%dmean_sensible_vc(ipy)  = cgrid%dmean_sensible_vc(ipy)  * frqsum_o_daysec
       cgrid%dmean_sensible_gc(ipy)  = cgrid%dmean_sensible_gc(ipy)  * frqsum_o_daysec
       cgrid%dmean_sensible_ac(ipy)  = cgrid%dmean_sensible_ac(ipy)  * frqsum_o_daysec
+      cgrid%dmean_rshort_gnd (ipy)  = cgrid%dmean_rshort_gnd (ipy)  * frqsum_o_daysec
+      cgrid%dmean_rlong_gnd  (ipy)  = cgrid%dmean_rlong_gnd  (ipy)  * frqsum_o_daysec
 
       !------------------------------------------------------------------------------------!
       !      Carbon flux variables should be total flux integrated over the day at this    !
@@ -2339,7 +2352,9 @@ subroutine zero_ed_daily_output_vars(cgrid)
       cgrid%dmean_sensible_vc    (ipy) = 0.
       cgrid%dmean_sensible_gc    (ipy) = 0.
       cgrid%dmean_sensible_ac    (ipy) = 0.
- 
+      cgrid%dmean_rshort_gnd     (ipy) = 0.
+      cgrid%dmean_rlong_gnd      (ipy) = 0.
+
       cgrid%dmean_nee            (ipy) = 0.
       cgrid%dmean_plresp         (ipy) = 0.
       cgrid%dmean_rh             (ipy) = 0.
@@ -2504,6 +2519,10 @@ subroutine integrate_ed_monthly_output_vars(cgrid)
                                       + cgrid%dmean_sensible_gc   (ipy)
       cgrid%mmean_sensible_vc   (ipy) = cgrid%mmean_sensible_vc   (ipy)                    &
                                       + cgrid%dmean_sensible_vc   (ipy)
+      cgrid%mmean_rshort_gnd    (ipy) = cgrid%mmean_rshort_gnd    (ipy)                    &
+                                      + cgrid%dmean_rshort_gnd    (ipy)
+      cgrid%mmean_rlong_gnd     (ipy) = cgrid%mmean_rlong_gnd     (ipy)                    &
+                                      + cgrid%dmean_rlong_gnd     (ipy)
       cgrid%mmean_nee           (ipy) = cgrid%mmean_nee           (ipy)                    &
                                       + cgrid%dmean_nee           (ipy)
       cgrid%mmean_nep           (ipy) = cgrid%mmean_nep           (ipy)                    &
@@ -2865,6 +2884,8 @@ subroutine normalize_ed_monthly_output_vars(cgrid)
       cgrid%mmean_sensible_ac    (ipy) = cgrid%mmean_sensible_ac    (ipy) * ndaysi
       cgrid%mmean_sensible_gc    (ipy) = cgrid%mmean_sensible_gc    (ipy) * ndaysi
       cgrid%mmean_sensible_vc    (ipy) = cgrid%mmean_sensible_vc    (ipy) * ndaysi
+      cgrid%mmean_rshort_gnd     (ipy) = cgrid%mmean_rshort_gnd     (ipy) * ndaysi
+      cgrid%mmean_rlong_gnd      (ipy) = cgrid%mmean_rlong_gnd      (ipy) * ndaysi
       cgrid%mmean_nee            (ipy) = cgrid%mmean_nee            (ipy) * ndaysi
       cgrid%mmean_nep            (ipy) = cgrid%mmean_nep            (ipy) * ndaysi
       cgrid%mmean_plresp         (ipy) = cgrid%mmean_plresp         (ipy) * ndaysi
@@ -3298,6 +3319,8 @@ subroutine normalize_ed_monthly_output_vars(cgrid)
             cgrid%qmean_sensible_vc   (t,ipy) = cgrid%qmean_sensible_vc   (t,ipy)  * ndaysi
             cgrid%qmean_sensible_gc   (t,ipy) = cgrid%qmean_sensible_gc   (t,ipy)  * ndaysi
             cgrid%qmean_sensible_ac   (t,ipy) = cgrid%qmean_sensible_ac   (t,ipy)  * ndaysi
+            cgrid%qmean_rshort_gnd    (t,ipy) = cgrid%qmean_rshort_gnd    (t,ipy)  * ndaysi
+            cgrid%qmean_rlong_gnd     (t,ipy) = cgrid%qmean_rlong_gnd     (t,ipy)  * ndaysi
             cgrid%qmean_nee           (t,ipy) = cgrid%qmean_nee           (t,ipy)  * ndaysi
             cgrid%qmean_pcpg          (t,ipy) = cgrid%qmean_pcpg          (t,ipy)  * ndaysi
             cgrid%qmean_evap          (t,ipy) = cgrid%qmean_evap          (t,ipy)  * ndaysi
@@ -3397,6 +3420,8 @@ subroutine zero_ed_monthly_output_vars(cgrid)
       cgrid%mmean_sensible_ac        (ipy) = 0.
       cgrid%mmean_sensible_gc        (ipy) = 0.
       cgrid%mmean_sensible_vc        (ipy) = 0.
+      cgrid%mmean_rshort_gnd         (ipy) = 0.
+      cgrid%mmean_rlong_gnd          (ipy) = 0.
       cgrid%mmean_nee                (ipy) = 0.
       cgrid%mmean_nep                (ipy) = 0.
       cgrid%mmean_plresp             (ipy) = 0.
@@ -3574,6 +3599,8 @@ subroutine zero_ed_monthly_output_vars(cgrid)
          cgrid%qmean_sensible_vc   (:,ipy) = 0.0
          cgrid%qmean_sensible_gc   (:,ipy) = 0.0
          cgrid%qmean_sensible_ac   (:,ipy) = 0.0
+         cgrid%qmean_rshort_gnd    (:,ipy) = 0.0
+         cgrid%qmean_rlong_gnd     (:,ipy) = 0.0
          cgrid%qmean_nee           (:,ipy) = 0.0
          cgrid%qmean_pcpg          (:,ipy) = 0.0
          cgrid%qmean_evap          (:,ipy) = 0.0

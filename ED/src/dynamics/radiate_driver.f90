@@ -184,6 +184,7 @@ subroutine sfcrad_ed(cosz,cosaoi,csite,mzg,mzs,ntext_soil,maxcohort,tuco        
    integer                                      :: ipa
    integer                                      :: ico
    integer                                      :: cohort_count
+   integer                                      :: nsoil
    integer                                      :: k
    real                                         :: fcpct
    real                                         :: alg
@@ -334,14 +335,50 @@ subroutine sfcrad_ed(cosz,cosaoi,csite,mzg,mzs,ntext_soil,maxcohort,tuco        
 
       csite%rshort_s_diffuse(:,ipa) = 0.0
       csite%rshort_s_beam(:,ipa)    = 0.0
+      !------------------------------------------------------------------------------------!
 
-      !----- Soil water fraction. ---------------------------------------------------------!
-     
-      fcpct = csite%soil_water(mzg,ipa) / soil(ntext_soil(mzg))%slmsts 
 
-      !----- Find the ground albedo as a function of soil water relative moisture. --------!
-      alg = max(.14,.31-.34*fcpct)
-      
+
+
+      !------------------------------------------------------------------------------------!
+      !     Find the ground albedo as a function of soil water relative moisture of the    !
+      ! top layer.                                                                         !
+      !------------------------------------------------------------------------------------!
+      ! nsoil = ntext_soil(mzg)
+      ! select case (nsoil)
+      ! case (13)
+      !    !----- Bedrock, no soil moisture, use dry soil albedo. -------------------------!
+      !    alg = soil(nsoil)%albdry
+      ! case default
+      !    !-------------------------------------------------------------------------------!
+      !    !     Find relative soil moisture.  Not sure about this one, but I am assuming  !
+      !    ! that albedo won't change below the dry air soil moisture, and that should be  !
+      !    ! the dry value.                                                                !
+      !    !-------------------------------------------------------------------------------!
+      !    fcpct = max(0., min(1., (csite%soil_water(mzg,ipa) - soil(nsoil)%soilcp)        &
+      !                          / (soil(nsoil)%slmsts        - soil(nsoil)%soilcp) ) )
+      !    alg   = soil(nsoil)%albdry + fcpct * (soil(nsoil)%albwet - soil(nsoil)%albdry)
+      ! end select
+      nsoil = ntext_soil(mzg)
+      select case (nsoil)
+      case (13)
+         !----- Bedrock, use constants soil value for granite. ----------------------------!
+         alg = soil(nsoil)%albdry
+      case (12)
+         !----- Peat, follow McCumber and Pielke (1981). ----------------------------------!
+         fcpct = csite%soil_water(mzg,ipa) / soil(nsoil)%slmsts
+         alg   = max (0.07, 0.14 * (1.0 - fcpct))
+      case default
+         !----- Other soils, follow McCumber and Pielke (1981). ---------------------------!
+         fcpct = csite%soil_water(mzg,ipa) / soil(nsoil)%slmsts
+         alg   = max (0.14, 0.31 - 0.34 * fcpct)
+      end select
+      !------------------------------------------------------------------------------------!
+
+
+
+
+
       !------------------------------------------------------------------------------------!
       !     Deciding what is our surface temperature.  When the soil is exposed, then that !
       ! is the surface temperature.  Otherwise, we pick the temporary surface water or     !
