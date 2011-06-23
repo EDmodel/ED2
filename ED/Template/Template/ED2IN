@@ -444,6 +444,18 @@
                               !  1  - finite radius mixing model (Dietze)
                               !  2  - finite radius mixing model + horizontal competition
 
+   !---------------------------------------------------------------------------------------!
+   ! ICAN_SWRAD -- This variable specifies which canopy radiation model to use for short-  !
+   !               wave radiation within the canopy:                                       !
+   !               0.  Beers law.  Added back just for theroretical tests, don't use it if !
+   !                   you are unsure.  This cannot be used with CROWN_MOD = 2.            !
+   !               1.  Two-stream model.  The default and recommended method.              !
+   !                                                                                       !
+   !               In either case longwave will be solved using two-stream model.          !
+   !---------------------------------------------------------------------------------------!
+   NL%ICAN_SWRAD      = mycanswrad
+   !---------------------------------------------------------------------------------------!
+
    NL%DECOMP_SCHEME   = 0     ! Specifies soil decomposition temperature dependence
                               ! 0 -- original exponential
                               ! 1 -- Lloyd and Taylor (1994) model

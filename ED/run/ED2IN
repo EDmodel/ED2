@@ -276,8 +276,8 @@
    !               2 = porosity (saturation)                                               !
    ! STGOFF  - initial temperature offset (soil temperature = air temperature + offset)    !
    !---------------------------------------------------------------------------------------!
-   NL%SLZ     = -8.000, -6.738, -5.608, -4.604, -3.721, -2.952, -2.291, -1.731,
-                -1.265, -0.887, -0.588, -0.362, -0.200, -0.093, -0.032, -0.005
+   NL%SLZ     = -8.000, -6.959, -5.995, -5.108, -4.296, -3.560, -2.897, -2.307,
+                -1.789, -1.340, -0.961, -0.648, -0.400, -0.215, -0.089, -0.020
    NL%SLMSTR  =   1.00,   1.00,   1.00,   1.00,   1.00,   1.00,   1.00,   1.00,
                   1.00,   1.00,   1.00,   1.00,   1.00,   1.00,   1.00,   1.00
    NL%STGOFF  =   0.00,   0.00,   0.00,   0.00,   0.00,   0.00,   0.00,   0.00,
@@ -454,6 +454,18 @@
                               !       light (radiation is solved layer by layer rather
                               !       than cohort by cohort).  This is still under
                               !       development, ideas are welcome.
+
+   !---------------------------------------------------------------------------------------!
+   ! ICAN_SWRAD -- This variable specifies which canopy radiation model to use for short-  !
+   !               wave radiation within the canopy:                                       !
+   !               0.  Beers law.  Added back just for theroretical tests, don't use it if !
+   !                   you are unsure.  This cannot be used with CROWN_MOD = 2.            !
+   !               1.  Two-stream model.  The default and recommended method.              !
+   !                                                                                       !
+   !               In either case longwave will be solved using two-stream model.          !
+   !---------------------------------------------------------------------------------------!
+   NL%ICAN_SWRAD      = 1
+   !---------------------------------------------------------------------------------------!
 
    NL%DECOMP_SCHEME   = 0     ! Specifies soil decomposition temperature dependence
                               ! 0 -- original exponential

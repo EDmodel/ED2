@@ -1160,6 +1160,7 @@ subroutine ed_opspec_misc
                                     , agri_stock                   & ! intent(in)
                                     , plantation_stock             ! ! intent(in)
    use canopy_layer_coms     , only : crown_mod                    ! ! intent(in)
+   use canopy_radiation_coms , only : ican_swrad                   ! ! intent(in)
    use rk4_coms              , only : ibranch_thermo               & ! intent(in)
                                     , ipercol                      & ! intent(in)
                                     , rk4_tolerance                ! ! intent(in)
@@ -1736,6 +1737,18 @@ end do
    end if
 
    if (crown_mod < 0 .or. crown_mod > 2) then
+      write (reason,fmt='(a,1x,i4,a)')                                                     &
+                    'Invalid CROWN_MOD, it must be between 0 and 2.  Yours is set to'  &
+                    ,crown_mod,'...'
+      ifaterr = ifaterr +1
+      call opspec_fatal(reason,'opspec_misc')
+   end if
+
+   if (ican_swrad == 0 .and. crown_mod == 2) then
+      write (reason,fmt='(a)') 'You cannot run with ICAN_SWRAD = 0 and CROWN_MOD = 2.'
+      ifaterr = ifaterr +1
+      call opspec_fatal(reason,'opspec_misc')
+   elseif (ican_swrad <0 .or. ican_swrad > 1) then
       write (reason,fmt='(a,1x,i4,a)')                                                     &
                     'Invalid CROWN_MOD, it must be between 0 and 2.  Yours is set to'  &
                     ,crown_mod,'...'

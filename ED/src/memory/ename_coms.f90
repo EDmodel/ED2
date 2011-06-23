@@ -139,6 +139,7 @@ module ename_coms
       integer                                           :: repro_scheme
       integer                                           :: lapse_scheme
       integer                                           :: crown_mod
+      integer                                           :: ican_swrad
       integer                                           :: h2o_plant_lim
       real                                              :: vmfact
       real                                              :: mfact
@@ -362,6 +363,7 @@ module ename_coms
       enl%repro_scheme              = undef_integer
       enl%lapse_scheme              = undef_integer
       enl%crown_mod                 = undef_integer
+      enl%ican_swrad                = undef_integer
       enl%h2o_plant_lim             = undef_integer
       enl%vmfact                    = undef_real
       enl%mfact                     = undef_real

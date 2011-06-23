@@ -3052,8 +3052,8 @@ subroutine print_rk4_state(initp,fluxp,csite,ipa,elapsed,hdid)
    real(kind=8)                       :: sfc_temp
    real(kind=8)                       :: elapsec
    !----- Local constants. ----------------------------------------------------------------!
-   character(len=10), parameter :: phfmt='(68(a,1x))'
-   character(len=48), parameter :: pbfmt='(3(i13,1x),3(es13.6,1x),3(i13,1x),59(es13.6,1x))'
+   character(len=10), parameter :: phfmt='(69(a,1x))'
+   character(len=48), parameter :: pbfmt='(3(i13,1x),3(es13.6,1x),3(i13,1x),60(es13.6,1x))'
    character(len=10), parameter :: chfmt='(40(a,1x))'
    character(len=48), parameter :: cbfmt='(3(i13,1x),2(es13.6,1x),2(i13,1x),33(es13.6,1x))'
    !----- Locally saved variables. --------------------------------------------------------!
@@ -3191,12 +3191,13 @@ subroutine print_rk4_state(initp,fluxp,csite,ipa,elapsed,hdid)
                                , '       SOILWP', '       SOILFC', '       SLMSTS'         &
                                , '        USTAR', '        TSTAR', '        QSTAR'         &
                                , '        CSTAR', '         ZETA', '      RI_BULK'         &
-                               , '       NETRAD', '       WFLXVC', '       DEWGND'         &
-                               , '       WFLXGC', '       WFLXAC', '       TRANSP'         &
-                               , '        WSHED', '    INTERCEPT', '  THROUGHFALL'         &
-                               , '       HFLXGC', '       HFLXVC', '       HFLXAC'         &
-                               , '       CFLXAC', '        CWDRH', '       SOILRH'         &
-                               , '          GPP', '       PLRESP'
+                               , '   GND.RSHORT', '    GND.RLONG', '       WFLXVC'         &
+                               , '       DEWGND', '       WFLXGC', '       WFLXAC'         &
+                               , '       TRANSP', '        WSHED', '    INTERCEPT'         &
+                               , '  THROUGHFALL', '       HFLXGC', '       HFLXVC'         &
+                               , '       HFLXAC', '       CFLXAC', '        CWDRH'         &
+                               , '       SOILRH', '          GPP', '       PLRESP'
+                               
                                
                                
       close (unit=83,status='keep')
@@ -3227,12 +3228,13 @@ subroutine print_rk4_state(initp,fluxp,csite,ipa,elapsed,hdid)
                    , soil8(nsoil)%soilwp   , soil8(nsoil)%sfldcap  , soil8(nsoil)%slmsts   &
                    , initp%ustar           , initp%tstar           , initp%qstar           &
                    , initp%cstar           , initp%zeta            , initp%ribulk          &
-                   , fluxp%flx_netrad      , fluxp%flx_vapor_vc    , fluxp%flx_dew_cg      &
-                   , fluxp%flx_vapor_gc    , fluxp%flx_vapor_ac    , fluxp%flx_transp      &
-                   , fluxp%flx_wshed_vg    , fluxp%flx_intercepted , fluxp%flx_throughfall &
-                   , fluxp%flx_sensible_gc , fluxp%flx_sensible_vc , fluxp%flx_sensible_ac &
-                   , fluxp%flx_carbon_ac   , initp%cwd_rh          , soil_rh               &
-                   , sum_gpp               , sum_plresp
+                   , fluxp%flx_rshort_gnd  , fluxp%flx_rlong_gnd   , fluxp%flx_vapor_vc    &
+                   , fluxp%flx_dew_cg      , fluxp%flx_vapor_gc    , fluxp%flx_vapor_ac    &
+                   , fluxp%flx_transp      , fluxp%flx_wshed_vg    , fluxp%flx_intercepted &
+                   , fluxp%flx_throughfall , fluxp%flx_sensible_gc , fluxp%flx_sensible_vc &
+                   , fluxp%flx_sensible_ac , fluxp%flx_carbon_ac   , initp%cwd_rh          &
+                   , soil_rh               , sum_gpp               , sum_plresp
+                   
    close(unit=83,status='keep')
    !---------------------------------------------------------------------------------------!
 

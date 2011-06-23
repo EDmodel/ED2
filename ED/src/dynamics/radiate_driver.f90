@@ -155,7 +155,8 @@ subroutine sfcrad_ed(cosz,cosaoi,csite,mzg,mzs,ntext_soil,maxcohort,tuco        
    use ed_state_vars        , only : sitetype             & ! structure
                                    , patchtype            ! ! structure
    use canopy_layer_coms    , only : crown_mod            ! ! intent(in)
-   use canopy_radiation_coms, only : rshort_twilight_min  & ! intent(in)
+   use canopy_radiation_coms, only : ican_swrad           & ! intent(in)
+                                   , rshort_twilight_min  & ! intent(in)
                                    , cosz_min             & ! intent(in)
                                    , visible_fraction_dir & ! intent(in)
                                    , visible_fraction_dif ! ! intent(in)
@@ -513,21 +514,48 @@ subroutine sfcrad_ed(cosz,cosaoi,csite,mzg,mzs,ntext_soil,maxcohort,tuco        
             select case (crown_mod)
             case (0,1)
                !---------------------------------------------------------------------------!
-               !    No vertical distribution / horizontal competition of canopy.           !
+               !    No vertical distribution / horizontal competition of canopy.  There is !
+               ! a chance that the user wants to use Beers' law, so we must check here.    !
                !---------------------------------------------------------------------------!
-               call sw_twostream_clump(algs,cosz,cosaoi,cohort_count                       &
-                                      ,pft_array(1:cohort_count),TAI_array(1:cohort_count) &
-                                      ,CA_array(1:cohort_count)                            &
-                                      ,par_v_beam_array(1:cohort_count)                    &
-                                      ,par_v_diffuse_array(1:cohort_count)                 &
-                                      ,rshort_v_beam_array(1:cohort_count)                 &
-                                      ,rshort_v_diffuse_array(1:cohort_count)              &
-                                      ,downward_par_below_beam,downward_par_below_diffuse  &
-                                      ,upward_par_above_beam,upward_par_above_diffuse      &
-                                      ,downward_nir_below_beam,downward_nir_below_diffuse  &
-                                      ,upward_nir_above_beam,upward_nir_above_diffuse      &
-                                      ,beam_level_array,diff_level_array                   &
-                                      ,lambda_array,lambda_tot)
+               select case (ican_swrad)
+               case (0)
+                  call sw_beers_clump    (algs,cosz,cosaoi,cohort_count                    &
+                                         ,pft_array(1:cohort_count)                        &
+                                         ,TAI_array(1:cohort_count)                        &
+                                         ,CA_array(1:cohort_count)                         &
+                                         ,par_v_beam_array(1:cohort_count)                 &
+                                         ,par_v_diffuse_array(1:cohort_count)              &
+                                         ,rshort_v_beam_array(1:cohort_count)              &
+                                         ,rshort_v_diffuse_array(1:cohort_count)           &
+                                         ,downward_par_below_beam                          &
+                                         ,downward_par_below_diffuse                       &
+                                         ,upward_par_above_beam,upward_par_above_diffuse   &
+                                         ,downward_nir_below_beam                          &
+                                         ,downward_nir_below_diffuse                       &
+                                         ,upward_nir_above_beam,upward_nir_above_diffuse   &
+                                         ,beam_level_array,diff_level_array                &
+                                         ,lambda_array,lambda_tot)
+               case (1)
+                  call sw_twostream_clump(algs,cosz,cosaoi,cohort_count                    &
+                                         ,pft_array(1:cohort_count)                        &
+                                         ,TAI_array(1:cohort_count)                        &
+                                         ,CA_array(1:cohort_count)                         &
+                                         ,par_v_beam_array(1:cohort_count)                 &
+                                         ,par_v_diffuse_array(1:cohort_count)              &
+                                         ,rshort_v_beam_array(1:cohort_count)              &
+                                         ,rshort_v_diffuse_array(1:cohort_count)           &
+                                         ,downward_par_below_beam                          &
+                                         ,downward_par_below_diffuse                       &
+                                         ,upward_par_above_beam,upward_par_above_diffuse   &
+                                         ,downward_nir_below_beam                          &
+                                         ,downward_nir_below_diffuse                       &
+                                         ,upward_nir_above_beam,upward_nir_above_diffuse   &
+                                         ,beam_level_array,diff_level_array                &
+                                         ,lambda_array,lambda_tot)
+               end select
+               !---------------------------------------------------------------------------!
+
+
 
                !---------------------------------------------------------------------------!
                !    Since there is no horizontal competition, assuming that the maximum    !
@@ -1100,6 +1128,164 @@ subroutine angle_of_incid(aoi,cosz,solar_hour_aspect,slope,terrain_aspect)
 
    return
 end subroutine angle_of_incid
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!     This sub-routine solves the within canopy radiation for short wave radiation, using  !
+! the simplified Beers law.  It will take into account the crown area and/or branches in   !
+! case the user wants so.                                                                  !
+!     This sub-routine is added for very simple tests only, and it shouldn't be used for   !
+! long-term simulations.                                                                   !
+!------------------------------------------------------------------------------------------!
+subroutine sw_beers_clump(salb,scosz,scosaoi,ncoh,pft,TAI,canopy_area                      &
+                         ,PAR_beam_flip,PAR_diffuse_flip,SW_abs_beam_flip                  &
+                         ,SW_abs_diffuse_flip,DW_vislo_beam,DW_vislo_diffuse               &
+                         ,UW_vishi_beam,UW_vishi_diffuse,DW_nirlo_beam                     &
+                         ,DW_nirlo_diffuse,UW_nirhi_beam,UW_nirhi_diffuse                  &
+                         ,beam_level,diff_level,lambda_coh,lambda_tot)
+
+   use ed_max_dims          , only : n_pft                   ! ! intent(in)
+   use pft_coms             , only : clumping_factor         & ! intent(in)
+                                   , phenology               ! ! intent(in)
+   use canopy_radiation_coms, only : visible_fraction_dir    & ! intent(in)
+                                   , visible_fraction_dif    & ! intent(in)
+                                   , cosz_min8               ! ! intent(in)
+   use consts_coms          , only : tiny_num8               ! ! intent(in)
+   implicit none
+   !----- Arguments -----------------------------------------------------------------------!
+   integer, dimension(ncoh)     , intent(in)    :: pft
+   integer                      , intent(in)    :: ncoh
+   real(kind=8), dimension(ncoh), intent(in)    :: TAI
+   real(kind=8), dimension(ncoh), intent(in)    :: canopy_area
+   real(kind=4)                 , intent(in)    :: salb
+   real(kind=4)                 , intent(in)    :: scosz
+   real(kind=4)                 , intent(in)    :: scosaoi
+   real(kind=4), dimension(ncoh), intent(out)   :: PAR_beam_flip
+   real(kind=4), dimension(ncoh), intent(out)   :: PAR_diffuse_flip
+   real(kind=4), dimension(ncoh), intent(out)   :: SW_abs_beam_flip
+   real(kind=4), dimension(ncoh), intent(out)   :: SW_abs_diffuse_flip
+   real(kind=4)                 , intent(out)   :: UW_vishi_beam
+   real(kind=4)                 , intent(out)   :: UW_vishi_diffuse
+   real(kind=4)                 , intent(out)   :: UW_nirhi_beam
+   real(kind=4)                 , intent(out)   :: UW_nirhi_diffuse
+   real(kind=4)                 , intent(out)   :: DW_vislo_beam
+   real(kind=4)                 , intent(out)   :: DW_vislo_diffuse
+   real(kind=4)                 , intent(out)   :: DW_nirlo_beam
+   real(kind=4)                 , intent(out)   :: DW_nirlo_diffuse
+   real(kind=8), dimension(ncoh), intent(out)   :: beam_level
+   real(kind=8), dimension(ncoh), intent(out)   :: diff_level
+   real(kind=8), dimension(ncoh), intent(out)   :: lambda_coh
+   real(kind=8)                 , intent(out)   :: lambda_tot
+   !----- Local variables -----------------------------------------------------------------!
+   integer                                      :: il
+   integer                                      :: ipft
+   real(kind=8)                                 :: lambda
+   real(kind=8)                                 :: cosz
+   real(kind=8)                                 :: cosaoi
+   real(kind=8)                                 :: alb
+   real(kind=8)                                 :: abscoh
+   real(kind=8), dimension(ncoh)                :: beam_bot
+   real(kind=8), dimension(ncoh)                :: beam_bot_crown
+   real(kind=8), dimension(ncoh)                :: eff_tai
+   !----- External functions. -------------------------------------------------------------!
+   real(kind=4)                 , external      :: sngloff
+   !---------------------------------------------------------------------------------------!
+
+   
+   !----- Convert input variables to double precision. ------------------------------------!
+   alb    = dble(salb)
+   cosz   = max(cosz_min8,dble(scosz))
+   cosaoi = max(cosz_min8,dble(scosaoi))
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !----- Lambda is the extinction coefficient. -------------------------------------------!
+   lambda     = 5.d-1/cosaoi
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !    Find the light extinction coefficients.                                            !
+   !---------------------------------------------------------------------------------------!
+   lambda_tot = 0.0d0
+   do il=1,ncoh
+      ipft           = pft(il)
+      lambda_tot     = lambda_tot + clumping_factor(ipft)
+      lambda_coh(il) = lambda * clumping_factor(ipft) / canopy_area(il)
+      eff_tai   (il) = clumping_factor(ipft) * tai(il)
+   end do
+   lambda_tot = lambda_tot * lambda / dble(ncoh)
+   !---------------------------------------------------------------------------------------!
+
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !    Find the light extinction curve.                                                   !
+   !---------------------------------------------------------------------------------------!
+   beam_bot_crown(ncoh)  = exp(-lambda * eff_tai(ncoh) / canopy_area(ncoh))
+   beam_level(ncoh)      = exp(-5.d-1 * lambda * eff_tai(ncoh) / canopy_area(ncoh))
+   beam_bot  (ncoh)      = (1.d0 - canopy_area(ncoh))                                      &
+                         + canopy_area(ncoh) * beam_bot_crown(ncoh)
+   do il=ncoh-1,1,-1
+      beam_bot_crown(il) = beam_bot(il+1) * exp(-lambda*eff_tai(il)/canopy_area(il))
+      beam_bot      (il) = beam_bot(il+1)*(1.d0-canopy_area(il))                           &
+                         + canopy_area(il)*beam_bot_crown(il)
+      beam_level    (il) = beam_bot(il+1)                                                  &
+                         * exp(-5.d-1*lambda*eff_tai(il)/canopy_area(il))                  &
+                         * canopy_area(il)                                                 &
+                         + (1.d0-canopy_area(il)) * beam_bot(il+1)
+   end do
+   !---------------------------------------------------------------------------------------!
+
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !    Currently we simply use the light extinction curve to determine PAR and total      !
+   ! shortwave radiation.                                                                  !
+   !---------------------------------------------------------------------------------------!
+   do il=1,ncoh-1
+      diff_level         (il) = beam_level(il)
+      abscoh                  = beam_bot(il+1) - beam_bot(il)
+      PAR_beam_flip      (il) = sngloff(visible_fraction_dir * abscoh,tiny_num8)
+      PAR_diffuse_flip   (il) = sngloff(visible_fraction_dif * abscoh,tiny_num8)
+      SW_abs_beam_flip   (il) = sngloff(abscoh,tiny_num8)
+      SW_abs_diffuse_flip(il) = sngloff(abscoh,tiny_num8)
+   end do
+   abscoh                     = 1.d0 - beam_bot(ncoh)
+   PAR_beam_flip       (ncoh) = sngloff(visible_fraction_dir * abscoh,tiny_num8)
+   PAR_diffuse_flip    (ncoh) = sngloff(visible_fraction_dif * abscoh,tiny_num8)
+   SW_abs_beam_flip    (ncoh) = sngloff(abscoh,tiny_num8)
+   SW_abs_diffuse_flip (ncoh) = sngloff(abscoh,tiny_num8)
+   !---------------------------------------------------------------------------------------!
+
+
+
+
+
+   !----- Copy to the output variables. ---------------------------------------------------!
+   DW_vislo_beam    = sngloff(        visible_fraction_dir        * beam_bot(1), tiny_num8)
+   DW_vislo_diffuse = sngloff(        visible_fraction_dif        * beam_bot(1), tiny_num8)
+   UW_vishi_beam    = sngloff(        visible_fraction_dir  * alb * beam_bot(1), tiny_num8)
+   UW_vishi_diffuse = sngloff(        visible_fraction_dif  * alb * beam_bot(1), tiny_num8)
+   DW_nirlo_beam    = sngloff((1.d0 - visible_fraction_dir)       * beam_bot(1), tiny_num8)
+   DW_nirlo_diffuse = sngloff((1.d0 - visible_fraction_dir)       * beam_bot(1), tiny_num8)
+   UW_nirhi_beam    = sngloff((1.d0 - visible_fraction_dir) * alb * beam_bot(1), tiny_num8)
+   UW_nirhi_diffuse = sngloff((1.d0 - visible_fraction_dir) * alb * beam_bot(1), tiny_num8)
+   !---------------------------------------------------------------------------------------!
+
+   return
+end subroutine sw_beers_clump
 !==========================================================================================!
 !==========================================================================================!
 

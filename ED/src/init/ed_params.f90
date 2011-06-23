@@ -405,11 +405,11 @@ subroutine init_can_rad_params()
    use canopy_radiation_coms , only : leaf_reflect_nir            & ! intent(out)
                                     , leaf_trans_nir              & ! intent(out)
                                     , leaf_scatter_nir            & ! intent(out)
-                                    , leaf_reflect_vis_temperate  & ! intent(out)
-                                    , leaf_trans_vis_temperate    & ! intent(out)
+                                    , leaf_reflect_vis            & ! intent(out)
+                                    , leaf_trans_vis              & ! intent(out)
                                     , leaf_scatter_vis            & ! intent(out)
-                                    , leaf_reflect_vis_tropics    & ! intent(out)
-                                    , leaf_trans_vis_tropics      & ! intent(out)
+                                    , leaf_reflect_vis            & ! intent(out)
+                                    , leaf_trans_vis              & ! intent(out)
                                     , diffuse_backscatter_vis     & ! intent(out)
                                     , diffuse_backscatter_nir     & ! intent(out)
                                     , emis_v                      & ! intent(out)
@@ -424,50 +424,98 @@ subroutine init_can_rad_params()
                                     , cosz_min8                   ! ! intent(out)
    use consts_coms           , only : pio180                      ! ! intent(out)
    implicit none
-   !----- Local variables -----------------------------------------------------------------!
-   real :: leaf_scatter_vis_temperate
-   real :: leaf_scatter_vis_tropics
-   real :: diffuse_bscat_vis_temp
-   real :: diffuse_bscat_vis_trop
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Leaf angle distribution parameter (dimensionless).  Let mu' be the cosine of leaf !
+   ! angle and G(mu') be the distribution of mu'.  Then, mubar = (integral from 0 to 1)    !
+   ! (d mu'   mu' / G(mu')).  See, for example, Dickinson 1983.                            !
+   !---------------------------------------------------------------------------------------!
+   mubar                      = 1.0d0 
    !---------------------------------------------------------------------------------------!
 
-   mubar                      = 1.0d0 
 
+
+
+   !---------------------------------------------------------------------------------------!
+   !      The following parameters are used to split the shortwave radiation into visible  !
+   ! and near-infrared radiation.                                                          !
+   !---------------------------------------------------------------------------------------!
    visible_fraction           = 0.45
    visible_fraction_dir       = 0.43
    visible_fraction_dif       = 0.52
-   leaf_reflect_nir           = 0.577
-   leaf_trans_nir             = 0.248
+   !---------------------------------------------------------------------------------------!
 
-   leaf_scatter_nir           = leaf_reflect_nir + leaf_trans_nir
 
-   leaf_scatter_vis_temperate = leaf_reflect_vis_temperate + leaf_trans_vis_temperate
 
-   leaf_scatter_vis_tropics   = leaf_reflect_vis_tropics   + leaf_trans_vis_tropics
+   !---------------------------------------------------------------------------------------!
+   !      Leaf reflectance.                                                                !
+   !---------------------------------------------------------------------------------------!
+   !----- Visible (PAR). ------------------------------------------------------------------!
+   leaf_reflect_vis(  1:4) = 0.062
+   leaf_reflect_vis( 5:13) = 0.110
+   leaf_reflect_vis(14:16) = 0.062
+   leaf_reflect_vis(   17) = 0.110
+   !----- Near infrared. ------------------------------------------------------------------!
+   leaf_reflect_nir(  1:4) = 0.577
+   leaf_reflect_nir( 5:13) = 0.577
+   leaf_reflect_nir(14:16) = 0.577
+   leaf_reflect_nir(   17) = 0.577
+   !---------------------------------------------------------------------------------------!
 
-   diffuse_bscat_vis_temp  = (2.0 * leaf_reflect_vis_temperate - leaf_trans_vis_temperate) &
-                           / (3.0 * leaf_scatter_vis_temperate)
 
-   diffuse_bscat_vis_trop  = (2.0 * leaf_reflect_vis_tropics   - leaf_trans_vis_tropics)   &
-                           / (3.0 * leaf_scatter_vis_tropics)
 
-   diffuse_backscatter_nir = (2.0 * leaf_reflect_nir - leaf_trans_nir)                     &
-                           / (3.0 * leaf_scatter_nir)
+   !---------------------------------------------------------------------------------------!
+   !      Leaf transmittance.                                                              !
+   !---------------------------------------------------------------------------------------!
+   !----- Visible (PAR). ------------------------------------------------------------------!
+   leaf_trans_vis(  1:4) = 0.028
+   leaf_trans_vis( 5:13) = 0.160
+   leaf_trans_vis(14:16) = 0.028
+   leaf_trans_vis(   17) = 0.160
+   !----- Near infrared. ------------------------------------------------------------------!
+   leaf_trans_nir(  1:4) = 0.248
+   leaf_trans_nir( 5:13) = 0.248
+   leaf_trans_nir(14:16) = 0.248
+   leaf_trans_nir(   17) = 0.248
+   !---------------------------------------------------------------------------------------!
 
-   leaf_scatter_vis(1:4)   = leaf_scatter_vis_tropics
-   leaf_scatter_vis(5:11)  = leaf_scatter_vis_temperate
-   leaf_scatter_vis(12:13) = leaf_scatter_vis_temperate
-   leaf_scatter_vis(14:15) = leaf_scatter_vis_tropics
-   leaf_scatter_vis(16)    = leaf_scatter_vis_tropics
-   leaf_scatter_vis(17)    = leaf_scatter_vis_temperate
 
-   diffuse_backscatter_vis(1:4)   = diffuse_bscat_vis_trop
-   diffuse_backscatter_vis(5:11)  = diffuse_bscat_vis_temp
-   diffuse_backscatter_vis(12:13) = diffuse_bscat_vis_temp
-   diffuse_backscatter_vis(14:15) = diffuse_bscat_vis_trop
-   diffuse_backscatter_vis(16)    = diffuse_bscat_vis_trop
-   diffuse_backscatter_vis(17)    = diffuse_bscat_vis_temp
 
+
+   !---------------------------------------------------------------------------------------!
+   !      Leaf scattering coefficient.  For all PFTs it is just the sum of reflectance and !
+   ! transmittance.                                                                        !
+   !---------------------------------------------------------------------------------------!
+   !----- Visible (PAR). ------------------------------------------------------------------!
+   leaf_scatter_vis(1:17) = leaf_reflect_vis(1:17) + leaf_trans_vis(1:17)
+   !----- Near infrared. ------------------------------------------------------------------!
+   leaf_scatter_nir(1:17) = leaf_reflect_nir(1:17) + leaf_trans_nir(1:17)
+   !---------------------------------------------------------------------------------------!
+
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !      Leaf back-scattering coefficient.                                                !
+   !---------------------------------------------------------------------------------------!
+   !----- Visible (PAR). ------------------------------------------------------------------!
+   diffuse_backscatter_vis(1:17) = (2.0 * leaf_reflect_vis(1:17) - leaf_trans_vis(1:17))   &
+                                 / (3.0 * leaf_scatter_vis(1:17))
+   !----- Near infrared. ------------------------------------------------------------------!
+   diffuse_backscatter_nir(1:17) = (2.0 * leaf_reflect_nir(1:17) - leaf_trans_nir(1:17))   &
+                                 / (3.0 * leaf_scatter_nir(1:17))
+   !---------------------------------------------------------------------------------------!
+
+
+
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !      Emissivity.                                                                      !
+   !---------------------------------------------------------------------------------------!
    emis_v(1)     = 9.60d-1
    emis_v(2:4)   = 9.50d-1
    emis_v(5)     = 9.60d-1
@@ -476,6 +524,10 @@ subroutine init_can_rad_params()
    emis_v(12:15) = 9.60d-1
    emis_v(16)    = 9.60d-1
    emis_v(17)    = 9.70d-1
+   !---------------------------------------------------------------------------------------!
+
+
+
 
    !---------------------------------------------------------------------------------------!
    !     These variables are the thresholds for things that should be computed during the  !
@@ -2129,11 +2181,11 @@ subroutine init_pft_alloc_params()
    select case (iallom)
    case (0:2)
       b1Rd(1)     = - 0.700
-      b1Rd(2:4)   = - 0.545 / log10(exp(1.))
+      b1Rd(2:4)   = - exp(0.545 * log(10.))
       b1Rd(5)     = - 0.700
-      b1Rd(6:11)  = - 0.545 / log10(exp(1.))
+      b1Rd(6:11)  = - exp(0.545 * log(10.))
       b1Rd(12:16) = - 0.700
-      b1Rd(17)    = - 0.545 / log10(exp(1.))
+      b1Rd(17)    = - exp(0.545 * log(10.))
 
       b2Rd(1)     = 0.000
       b2Rd(2:4)   = 0.277

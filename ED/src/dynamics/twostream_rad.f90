@@ -140,8 +140,8 @@ subroutine sw_twostream_clump(salb,scosz,scosaoi,ncoh,pft,TAI,canopy_area       
          end do
       case (2) !----- Near infrared (or NIR). ---------------------------------------------!
          do ipft = 1,n_pft
-            leaf_scatter(ipft)        = dble(leaf_scatter_nir)
-            diffuse_backscatter(ipft) = dble(diffuse_backscatter_nir)
+            leaf_scatter(ipft)        = dble(leaf_scatter_nir(ipft))
+            diffuse_backscatter(ipft) = dble(diffuse_backscatter_nir(ipft))
          end do
       end select
       
@@ -399,8 +399,13 @@ subroutine sw_twostream_clump(salb,scosz,scosaoi,ncoh,pft,TAI,canopy_area       
       SW_abs_beam_flip(il)    = max(0.0,SW_abs_beam_flip(il)    )
       SW_abs_diffuse_flip(il) = max(0.0,SW_abs_diffuse_flip(il) )
    end do
-   
-   !----- Copying to the output variables. ------------------------------------------------!
+   !---------------------------------------------------------------------------------------!
+
+
+
+
+
+   !----- Copy to the output variables. ---------------------------------------------------!
    DW_vislo_beam    = max(0.0,sngl(downward_vis_beam(1)))       * visible_fraction_dir
    DW_vislo_diffuse = max(0.0,sngl(downward_vis_diffuse(1)))    * visible_fraction_dif
    UW_vishi_beam    = max(0.0,sngl(upward_vis_beam(ncoh+1)))    * visible_fraction_dir
@@ -409,7 +414,8 @@ subroutine sw_twostream_clump(salb,scosz,scosaoi,ncoh,pft,TAI,canopy_area       
    DW_nirlo_diffuse = max(0.0,sngl(downward_nir_diffuse(1)))    * (1.-visible_fraction_dif)
    UW_nirhi_beam    = max(0.0,sngl(upward_nir_beam(ncoh+1)))    * (1.-visible_fraction_dir)
    UW_nirhi_diffuse = max(0.0,sngl(upward_nir_diffuse(ncoh+1))) * (1.-visible_fraction_dif)
-   
+   !---------------------------------------------------------------------------------------!
+
    return
 end subroutine sw_twostream_clump
 !==========================================================================================!
@@ -788,8 +794,8 @@ subroutine sw_twostream_layer(salb,scosz,scosaoi,ncoh,pft,TAI,canopy_area,hgttop
          end do
       case (2) !----- Near infrared (or NIR). ---------------------------------------------!
          do ipft = 1,n_pft
-            leaf_scatter(ipft)        = dble(leaf_scatter_nir)
-            diffuse_backscatter(ipft) = dble(diffuse_backscatter_nir)
+            leaf_scatter(ipft)        = dble(leaf_scatter_nir(ipft))
+            diffuse_backscatter(ipft) = dble(diffuse_backscatter_nir(ipft))
          end do
       end select
       

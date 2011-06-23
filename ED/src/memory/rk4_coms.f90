@@ -229,7 +229,8 @@ module rk4_coms
       !     Fast time flux variables for each time step.  These variables will be defined  !
       ! only when the user is debugging.                                                   !
       !------------------------------------------------------------------------------------!
-      real(kind=8) :: flx_netrad        ! Net radiation
+      real(kind=8) :: flx_rshort_gnd    ! Absorbed SW radiation
+      real(kind=8) :: flx_rlong_gnd     ! Absorbed LW radiation
       !----- Water fluxes -----------------------------------------------------------------!
       real(kind=8) :: flx_vapor_vc      ! Leaf       -> canopy air:  evap./cond. flux
       real(kind=8) :: flx_dew_cg        ! Canopy     -> ground    :  condensation flux
@@ -919,7 +920,8 @@ module rk4_coms
       y%flx_vapor_ac                   = 0.d0
       y%flx_transp                     = 0.d0
       y%flx_evap                       = 0.d0
-      y%flx_netrad                     = 0.d0
+      y%flx_rshort_gnd                 = 0.d0
+      y%flx_rlong_gnd                  = 0.d0
       y%flx_sensible_vc                = 0.d0
       y%flx_qwshed_vg                  = 0.d0
       y%flx_qintercepted               = 0.d0
@@ -1269,7 +1271,8 @@ module rk4_coms
       y%flx_vapor_ac                   = 0.d0
       y%flx_transp                     = 0.d0
       y%flx_evap                       = 0.d0
-      y%flx_netrad                     = 0.d0
+      y%flx_rshort_gnd                 = 0.d0
+      y%flx_rlong_gnd                  = 0.d0
       y%flx_sensible_vc                = 0.d0
       y%flx_qwshed_vg                  = 0.d0
       y%flx_qintercepted               = 0.d0
@@ -1331,7 +1334,8 @@ module rk4_coms
       y%flx_vapor_ac      = y%flx_vapor_ac      * hdidi
       y%flx_transp        = y%flx_transp        * hdidi
       y%flx_evap          = y%flx_evap          * hdidi
-      y%flx_netrad        = y%flx_netrad        * hdidi
+      y%flx_rshort_gnd    = y%flx_rshort_gnd    * hdidi
+      y%flx_rlong_gnd     = y%flx_rlong_gnd     * hdidi
       y%flx_sensible_vc   = y%flx_sensible_vc   * hdidi
       y%flx_qwshed_vg     = y%flx_qwshed_vg     * hdidi
       y%flx_qintercepted  = y%flx_qintercepted  * hdidi

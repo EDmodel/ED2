@@ -51,10 +51,12 @@ phovdi01 = list(vnam   = c("gpp","plresp","hetresp","cflxac")
                ,unit   = "umol/m2/s"
                ,legpos = "topleft"
                ,plt    = TRUE)
-phovdi02 = list(vnam   = c("met.rshort","met.rlong","netrad","qwflxca","hflxca")
-               ,desc   = c("Down SW","Down LW","Net Radiation","Latent","Sensible")
-               ,colour = c("goldenrod","lawngreen","deepskyblue","midnightblue","firebrick")
-               ,lwd    = c(1.5,1.5,1.5,1.5,1.5)
+phovdi02 = list(vnam   = c("met.rshort","met.rlong","gnd.rshort"
+                          ,"gnd.rlong","qwflxca","hflxca")
+               ,desc   = c("Met SW","Met LW","Ground SW","Ground LW","Latent","Sensible")
+               ,colour = c("goldenrod","limegreen","deepskyblue","chartreuse"
+                          ,"midnightblue","firebrick")
+               ,lwd    = c(1.5,1.5,1.5,1.5,1.5,1.5)
                ,type   = ptype
                ,plog   = ""
                ,prefix = "eneflux"

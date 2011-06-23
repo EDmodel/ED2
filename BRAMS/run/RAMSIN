@@ -39,7 +39,7 @@ $MODEL_GRIDS
    !               change IMONTHH, IDATEH,... and HFILIN, but do NOT change IMONTHA,       !
    !               IDATEA,...                                                              !
    !---------------------------------------------------------------------------------------!
-   RUNTYPE  = 'INITIAL',
+   RUNTYPE  = 'MAKESFC',
    !---------------------------------------------------------------------------------------!
 
 
@@ -1443,8 +1443,8 @@ $MODEL_OPTIONS
       !               2 = porosity (saturation)                                            !
       ! STGOFF  - initial temperature offset (soil temperature = air temperature + offset) !
       !------------------------------------------------------------------------------------!
-      SLZ    = -6.000, -4.338, -3.018, -2.001, -1.245,
-               -0.710, -0.357, -0.147, -0.042, -0.005,
+      SLZ    = -6.000, -4.662, -3.452, -2.480, -1.693,
+               -1.078, -0.620, -0.304, -0.111, -0.020,
       SLMSTR =   1.00,   1.00,   1.00,   1.00,   1.00,
                  1.00,   1.00,   1.00,   1.00,   1.00,
       STGOFF =   0.00,   0.00,   0.00,   0.00,   0.00,
@@ -2190,6 +2190,21 @@ $ED2_INFO
    !                   welcome.                                                            !
    !---------------------------------------------------------------------------------------!
    CROWN_MOD       = 1,
+   !---------------------------------------------------------------------------------------!
+
+
+
+
+   !---------------------------------------------------------------------------------------!
+   ! ICAN_SWRAD -- This variable specifies which canopy radiation model to use for short-  !
+   !               wave radiation within the canopy:                                       !
+   !               0.  Beers law.  Added back just for theroretical tests, don't use it if !
+   !                   you are unsure.  This cannot be used with CROWN_MOD = 2.            !
+   !               1.  Two-stream model.  The default and recommended method.              !
+   !                                                                                       !
+   !               In either case longwave will be solved using two-stream model.          !
+   !---------------------------------------------------------------------------------------!
+   ICAN_SWRAD      = 1,
    !---------------------------------------------------------------------------------------!
 
 

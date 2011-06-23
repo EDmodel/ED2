@@ -431,8 +431,8 @@ subroutine inc_rk4_patch(rkp, inc, fac, cpatch)
       rkp%flx_evap           = rkp%flx_evap           + fac * inc%avg_evap
       rkp%flx_drainage       = rkp%flx_drainage       + fac * inc%avg_drainage
       rkp%flx_drainage_heat  = rkp%flx_drainage_heat  + fac * inc%avg_drainage_heat
-      rkp%flx_netrad         = rkp%flx_netrad                                              &
-                             + fac * ( inc%avg_rshort_gnd + inc%avg_rlong_gnd ) 
+      rkp%flx_rshort_gnd     = rkp%flx_rshort_gnd     + fac * inc%avg_rshort_gnd
+      rkp%flx_rlong_gnd      = rkp%flx_rlong_gnd      + fac * inc%avg_rlong_gnd
       rkp%flx_sensible_vc    = rkp%flx_sensible_vc    + fac * inc%avg_sensible_vc
       rkp%flx_qwshed_vg      = rkp%flx_qwshed_vg      + fac * inc%avg_qwshed_vg
       rkp%flx_qintercepted   = rkp%flx_qintercepted   + fac * inc%avg_qintercepted
@@ -1137,28 +1137,29 @@ subroutine copy_rk4_patch(sourcep, targetp, cpatch)
 
       do k=rk4site%lsl,nzg
          targetp%avg_sensible_gg(k) = sourcep%avg_sensible_gg(k)
-         targetp%avg_smoist_gg(k)   = sourcep%avg_smoist_gg(k)  
-         targetp%avg_transloss(k)   = sourcep%avg_transloss(k)  
+         targetp%avg_smoist_gg(k)   = sourcep%avg_smoist_gg(k)
+         targetp%avg_transloss(k)   = sourcep%avg_transloss(k)
       end do
    end if
 
    if (print_detailed) then
       targetp%flx_carbon_ac          = sourcep%flx_carbon_ac
       targetp%flx_vapor_vc           = sourcep%flx_vapor_vc
-      targetp%flx_dew_cg             = sourcep%flx_dew_cg  
+      targetp%flx_dew_cg             = sourcep%flx_dew_cg
       targetp%flx_vapor_gc           = sourcep%flx_vapor_gc
       targetp%flx_wshed_vg           = sourcep%flx_wshed_vg
       targetp%flx_intercepted        = sourcep%flx_intercepted
       targetp%flx_throughfall        = sourcep%flx_throughfall
       targetp%flx_vapor_ac           = sourcep%flx_vapor_ac
-      targetp%flx_transp             = sourcep%flx_transp  
-      targetp%flx_evap               = sourcep%flx_evap   
-      targetp%flx_netrad             = sourcep%flx_netrad   
-      targetp%flx_sensible_vc        = sourcep%flx_sensible_vc  
-      targetp%flx_qwshed_vg          = sourcep%flx_qwshed_vg    
+      targetp%flx_transp             = sourcep%flx_transp
+      targetp%flx_evap               = sourcep%flx_evap
+      targetp%flx_rshort_gnd         = sourcep%flx_rshort_gnd
+      targetp%flx_rlong_gnd          = sourcep%flx_rlong_gnd
+      targetp%flx_sensible_vc        = sourcep%flx_sensible_vc
+      targetp%flx_qwshed_vg          = sourcep%flx_qwshed_vg
       targetp%flx_qintercepted       = sourcep%flx_qintercepted
       targetp%flx_qthroughfall       = sourcep%flx_qthroughfall
-      targetp%flx_sensible_gc        = sourcep%flx_sensible_gc  
+      targetp%flx_sensible_gc        = sourcep%flx_sensible_gc
       targetp%flx_sensible_ac        = sourcep%flx_sensible_ac
       targetp%flx_drainage           = sourcep%flx_drainage
       targetp%flx_drainage_heat      = sourcep%flx_drainage_heat

@@ -108,6 +108,7 @@ do
    isoilbc=`echo ${oi}   | awk '{print $52}'`
    ipercol=`echo ${oi}   | awk '{print $53}'`
    iphysiol=`echo ${oi}  | awk '{print $54}'`
+   icanswrad=`echo ${oi} | awk '{print $55}'`
    #---------------------------------------------------------------------------------------#
 
    bkill -J ${desc}-${polyname} -q ${queue}
