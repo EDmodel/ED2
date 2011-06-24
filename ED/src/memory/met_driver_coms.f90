@@ -32,6 +32,12 @@ module met_driver_coms
                                               ! 2 -- Averages beginning at the reference 
                                               !      time
                                               ! 3 -- Averages centred at the reference time
+   integer                :: imetrad          ! How should I use the radiation data?
+                                              ! 0 -- As is
+                                              ! 1 -- Add them together, then use SiB method
+                                              !      to break it down
+                                              ! 2 -- Add them together, then use Weiss and
+                                              !      Norman (1985) method.
    !---------------------------------------------------------------------------------------!
 
 

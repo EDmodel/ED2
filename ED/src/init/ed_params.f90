@@ -414,9 +414,10 @@ subroutine init_can_rad_params()
                                     , diffuse_backscatter_nir     & ! intent(out)
                                     , emis_v                      & ! intent(out)
                                     , mubar                       & ! intent(out)
-                                    , visible_fraction            & ! intent(out)
-                                    , visible_fraction_dir        & ! intent(out)
-                                    , visible_fraction_dif        & ! intent(out)
+                                    , fvis_beam_def               & ! intent(out)
+                                    , fvis_diff_def               & ! intent(out)
+                                    , fnir_beam_def               & ! intent(out)
+                                    , fnir_diff_def               & ! intent(out)
                                     , leaf_reflect_nir            & ! intent(out)
                                     , leaf_trans_nir              & ! intent(out)
                                     , rshort_twilight_min         & ! intent(out)
@@ -442,9 +443,10 @@ subroutine init_can_rad_params()
    !      The following parameters are used to split the shortwave radiation into visible  !
    ! and near-infrared radiation.                                                          !
    !---------------------------------------------------------------------------------------!
-   visible_fraction           = 0.45
-   visible_fraction_dir       = 0.43
-   visible_fraction_dif       = 0.52
+   fvis_beam_def = 0.43
+   fvis_diff_def = 0.52
+   fnir_beam_def = 1.0 - fvis_beam_def
+   fnir_diff_def = 1.0 - fvis_diff_def
    !---------------------------------------------------------------------------------------!
 
 

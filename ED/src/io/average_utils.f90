@@ -844,19 +844,41 @@ subroutine integrate_ed_daily_output_state(cgrid)
                                     + sss_gnd_shv   * poly_area_i
 
       !------------------------------------------------------------------------------------!
-      !    Variables already at edtype level, simple integration only.                     !
+      !    Meteorological forcing variables:  even though we read in at polygon level,     !
+      ! here we run the site-level weighted average, because this is what ED really uses.  !
       !------------------------------------------------------------------------------------!
-      cgrid%dmean_atm_temp(ipy) = cgrid%dmean_atm_temp(ipy) + cgrid%met(ipy)%atm_tmp
-      cgrid%dmean_rshort(ipy)   = cgrid%dmean_rshort(ipy)   + cgrid%met(ipy)%nir_beam      &
-                                                            + cgrid%met(ipy)%nir_diffuse   &
-                                                            + cgrid%met(ipy)%par_beam      &
-                                                            + cgrid%met(ipy)%par_diffuse
+      do isi=1,cpoly%nsites
+         cgrid%dmean_atm_temp(ipy)      = cgrid%dmean_atm_temp(ipy)                        &
+                                        + cpoly%met(isi)%atm_tmp                           &
+                                        * cpoly%area(isi) * poly_area_i
+         cgrid%dmean_rshort(ipy)        = cgrid%dmean_rshort(ipy)                          &
+                                        + ( cpoly%met(isi)%nir_beam                        &
+                                          + cpoly%met(isi)%nir_diffuse                     &
+                                          + cpoly%met(isi)%par_beam                        &
+                                          + cpoly%met(isi)%par_diffuse )                   &
+                                        * cpoly%area(isi) * poly_area_i
+         cgrid%dmean_rshort_diff(ipy)   = cgrid%dmean_rshort_diff(ipy)                     &
+                                        + ( cpoly%met(isi)%nir_diffuse                     &
+                                          + cpoly%met(isi)%par_diffuse )                   &
+                                        * cpoly%area(isi) * poly_area_i
+         cgrid%dmean_rlong(ipy)         = cgrid%dmean_rlong(ipy)                           &
+                                        + cpoly%met(isi)%rlong                             &
+                                        * cpoly%area(isi) * poly_area_i
+         cgrid%dmean_atm_shv (ipy)      = cgrid%dmean_atm_shv (ipy)                        &
+                                        + cpoly%met(isi)%atm_shv                           &
+                                        * cpoly%area(isi) * poly_area_i
+         cgrid%dmean_atm_co2 (ipy)      = cgrid%dmean_atm_co2 (ipy)                        &
+                                        + cpoly%met(isi)%atm_co2                           &
+                                        * cpoly%area(isi) * poly_area_i
+         cgrid%dmean_atm_prss(ipy)      = cgrid%dmean_atm_prss(ipy)                        &
+                                        + cpoly%met(isi)%prss                              &
+                                        * cpoly%area(isi) * poly_area_i
+         cgrid%dmean_atm_vels(ipy)      = cgrid%dmean_atm_vels(ipy)                        &
+                                        + cpoly%met(isi)%vels                              &
+                                        * cpoly%area(isi) * poly_area_i
+      end do
+      !------------------------------------------------------------------------------------!
 
-      cgrid%dmean_rlong(ipy)    = cgrid%dmean_rlong(ipy)    + cgrid%met(ipy)%rlong
-      cgrid%dmean_atm_shv (ipy) = cgrid%dmean_atm_shv (ipy) + cgrid%met(ipy)%atm_shv
-      cgrid%dmean_atm_co2 (ipy) = cgrid%dmean_atm_co2 (ipy) + cgrid%met(ipy)%atm_co2
-      cgrid%dmean_atm_prss(ipy) = cgrid%dmean_atm_prss(ipy) + cgrid%met(ipy)%prss
-      cgrid%dmean_atm_vels(ipy) = cgrid%dmean_atm_vels(ipy) + cgrid%met(ipy)%vels
     
       if(site_lai > tiny(1.))then
          cgrid%avg_lma(ipy) = site_lma/site_lai
@@ -886,24 +908,41 @@ subroutine integrate_ed_daily_output_state(cgrid)
                                             + sss_gnd_temp  * poly_area_i
          cgrid%qmean_gnd_shv       (it,ipy) = cgrid%qmean_gnd_shv                 (it,ipy) &
                                             + sss_gnd_shv   * poly_area_i
-         !------ Meteorological variables. ------------------------------------------------!
-         cgrid%qmean_atm_temp      (it,ipy) = cgrid%qmean_atm_temp                (it,ipy) &
-                                            + cgrid%met(ipy)%atm_tmp
-         cgrid%qmean_rshort        (it,ipy) = cgrid%qmean_rshort                  (it,ipy) &
-                                            + cgrid%met(ipy)%nir_beam                      &
-                                            + cgrid%met(ipy)%nir_diffuse                   &
-                                            + cgrid%met(ipy)%par_beam                      &
-                                            + cgrid%met(ipy)%par_diffuse
-         cgrid%qmean_rlong         (it,ipy) = cgrid%qmean_rlong                   (it,ipy) &
-                                            + cgrid%met(ipy)%rlong
-         cgrid%qmean_atm_shv       (it,ipy) = cgrid%qmean_atm_shv                 (it,ipy) &
-                                            + cgrid%met(ipy)%atm_shv
-         cgrid%qmean_atm_co2       (it,ipy) = cgrid%qmean_atm_co2                 (it,ipy) &
-                                            + cgrid%met(ipy)%atm_co2
-         cgrid%qmean_atm_prss      (it,ipy) = cgrid%qmean_atm_prss                (it,ipy) &
-                                            + cgrid%met(ipy)%prss
-         cgrid%qmean_atm_vels      (it,ipy) = cgrid%qmean_atm_vels                (it,ipy) &
-                                            + cgrid%met(ipy)%vels
+         !---------------------------------------------------------------------------------!
+         !    Meteorological forcing variables:  even though we read in at polygon level,  !
+         ! here we run the site-level weighted average, because this is what ED really     !
+         ! uses.                                                                           !
+         !---------------------------------------------------------------------------------!
+         do isi=1,cpoly%nsites
+            cgrid%qmean_atm_temp      (it,ipy) = cgrid%qmean_atm_temp             (it,ipy) &
+                                               + cpoly%met(isi)%atm_tmp                    &
+                                               * cpoly%area(isi) * poly_area_i
+            cgrid%qmean_rshort        (it,ipy) = cgrid%qmean_rshort               (it,ipy) &
+                                               + ( cpoly%met(isi)%nir_beam                 &
+                                                 + cpoly%met(isi)%nir_diffuse              &
+                                                 + cpoly%met(isi)%par_beam                 &
+                                                 + cpoly%met(isi)%par_diffuse )            &
+                                               * cpoly%area(isi) * poly_area_i
+            cgrid%qmean_rshort_diff   (it,ipy) = cgrid%qmean_rshort_diff          (it,ipy) &
+                                               + ( cpoly%met(isi)%nir_diffuse              &
+                                                 + cpoly%met(isi)%par_diffuse )            &
+                                               * cpoly%area(isi) * poly_area_i
+            cgrid%qmean_rlong         (it,ipy) = cgrid%qmean_rlong                (it,ipy) &
+                                               + cpoly%met(isi)%rlong                      &
+                                               * cpoly%area(isi) * poly_area_i
+            cgrid%qmean_atm_shv       (it,ipy) = cgrid%qmean_atm_shv              (it,ipy) &
+                                               + cpoly%met(isi)%atm_shv                    &
+                                               * cpoly%area(isi) * poly_area_i
+            cgrid%qmean_atm_co2       (it,ipy) = cgrid%qmean_atm_co2              (it,ipy) &
+                                               + cpoly%met(isi)%atm_co2                    &
+                                               * cpoly%area(isi) * poly_area_i
+            cgrid%qmean_atm_prss      (it,ipy) = cgrid%qmean_atm_prss             (it,ipy) &
+                                               + cpoly%met(isi)%prss                       &
+                                               * cpoly%area(isi) * poly_area_i
+            cgrid%qmean_atm_vels      (it,ipy) = cgrid%qmean_atm_vels             (it,ipy) &
+                                               + cpoly%met(isi)%vels                       &
+                                               * cpoly%area(isi) * poly_area_i
+         end do
       end if
    end do polyloop
       
@@ -1926,6 +1965,7 @@ subroutine normalize_ed_daily_output_vars(cgrid)
       cgrid%dmean_gnd_shv (ipy)     = cgrid%dmean_gnd_shv (ipy)     * dtlsm_o_daysec
       cgrid%dmean_atm_temp(ipy)     = cgrid%dmean_atm_temp(ipy)     * dtlsm_o_daysec
       cgrid%dmean_rshort(ipy)       = cgrid%dmean_rshort(ipy)       * dtlsm_o_daysec
+      cgrid%dmean_rshort_diff(ipy)  = cgrid%dmean_rshort_diff(ipy)  * dtlsm_o_daysec
       cgrid%dmean_rlong(ipy)        = cgrid%dmean_rlong(ipy)        * dtlsm_o_daysec
       cgrid%dmean_atm_shv(ipy)      = cgrid%dmean_atm_shv(ipy)      * dtlsm_o_daysec
       cgrid%dmean_atm_co2(ipy)      = cgrid%dmean_atm_co2(ipy)      * dtlsm_o_daysec
@@ -2387,6 +2427,7 @@ subroutine zero_ed_daily_output_vars(cgrid)
       cgrid%dmean_gnd_shv        (ipy) = 0.
       cgrid%dmean_atm_temp       (ipy) = 0.
       cgrid%dmean_rshort         (ipy) = 0.
+      cgrid%dmean_rshort_diff    (ipy) = 0.
       cgrid%dmean_rlong          (ipy) = 0.
       cgrid%dmean_atm_shv        (ipy) = 0.
       cgrid%dmean_atm_co2        (ipy) = 0.
@@ -2580,8 +2621,10 @@ subroutine integrate_ed_monthly_output_vars(cgrid)
                                       + cgrid%dmean_atm_temp      (ipy)
       cgrid%mmean_rshort        (ipy) = cgrid%mmean_rshort        (ipy)                    &
                                       + cgrid%dmean_rshort        (ipy)
+      cgrid%mmean_rshort_diff   (ipy) = cgrid%mmean_rshort_diff   (ipy)                    &
+                                      + cgrid%dmean_rshort_diff   (ipy)
       cgrid%mmean_rlong         (ipy) = cgrid%mmean_rlong         (ipy)                    &
-                                      + cgrid%dmean_rlong        (ipy)
+                                      + cgrid%dmean_rlong         (ipy)
 
       cgrid%mmean_atm_shv       (ipy) = cgrid%mmean_atm_shv       (ipy)                    &
                                       + cgrid%dmean_atm_shv       (ipy)
@@ -2912,6 +2955,7 @@ subroutine normalize_ed_monthly_output_vars(cgrid)
       cgrid%mmean_gnd_shv        (ipy) = cgrid%mmean_gnd_shv        (ipy) * ndaysi
       cgrid%mmean_atm_temp       (ipy) = cgrid%mmean_atm_temp       (ipy) * ndaysi
       cgrid%mmean_rshort         (ipy) = cgrid%mmean_rshort         (ipy) * ndaysi
+      cgrid%mmean_rshort_diff    (ipy) = cgrid%mmean_rshort_diff    (ipy) * ndaysi
       cgrid%mmean_rlong          (ipy) = cgrid%mmean_rlong          (ipy) * ndaysi
       cgrid%mmean_atm_shv        (ipy) = cgrid%mmean_atm_shv        (ipy) * ndaysi
       cgrid%mmean_atm_co2        (ipy) = cgrid%mmean_atm_co2        (ipy) * ndaysi
@@ -3300,6 +3344,8 @@ subroutine normalize_ed_monthly_output_vars(cgrid)
                                               * ndaysi * dtlsm_o_frqfast
             cgrid%qmean_rshort        (t,ipy) = cgrid%qmean_rshort        (t,ipy)          &
                                               * ndaysi * dtlsm_o_frqfast
+            cgrid%qmean_rshort_diff   (t,ipy) = cgrid%qmean_rshort_diff   (t,ipy)          &
+                                              * ndaysi * dtlsm_o_frqfast
             cgrid%qmean_rlong         (t,ipy) = cgrid%qmean_rlong         (t,ipy)          &
                                               * ndaysi * dtlsm_o_frqfast
             cgrid%qmean_atm_shv       (t,ipy) = cgrid%qmean_atm_shv       (t,ipy)          &
@@ -3451,6 +3497,7 @@ subroutine zero_ed_monthly_output_vars(cgrid)
       cgrid%mmean_gnd_shv            (ipy) = 0.
       cgrid%mmean_atm_temp           (ipy) = 0.
       cgrid%mmean_rshort             (ipy) = 0.
+      cgrid%mmean_rshort_diff        (ipy) = 0.
       cgrid%mmean_rlong              (ipy) = 0.
       cgrid%mmean_atm_shv            (ipy) = 0.
       cgrid%mmean_atm_co2            (ipy) = 0.
@@ -3585,6 +3632,7 @@ subroutine zero_ed_monthly_output_vars(cgrid)
          cgrid%qmean_gnd_shv       (:,ipy) = 0.0
          cgrid%qmean_atm_temp      (:,ipy) = 0.0
          cgrid%qmean_rshort        (:,ipy) = 0.0
+         cgrid%qmean_rshort_diff   (:,ipy) = 0.0
          cgrid%qmean_rlong         (:,ipy) = 0.0
          cgrid%qmean_atm_shv       (:,ipy) = 0.0
          cgrid%qmean_atm_co2       (:,ipy) = 0.0

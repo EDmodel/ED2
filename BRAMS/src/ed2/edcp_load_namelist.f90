@@ -25,6 +25,7 @@ subroutine read_ednl(iunit,filename)
                                    , metcyc1                               & ! intent(out)
                                    , metcycf                               & ! intent(out)
                                    , imetavg                               & ! intent(out)
+                                   , imetrad                               & ! intent(out)
                                    , lapse_scheme                          ! ! intent(out)
    use mem_polygons         , only : n_poi                                 & ! intent(out)
                                    , poi_lat                               & ! intent(out)
@@ -209,8 +210,8 @@ subroutine read_ednl(iunit,filename)
                        ,icanturb,i_blyr_condct,include_these_pft,agri_stock                &
                        ,plantation_stock,pft_1st_check,maxpatch,maxcohort                  &
                        ,treefall_disturbance_rate,time2canopy,iprintpolys,npvars,printvars &
-                       ,pfmtstr,ipmin,ipmax,iphenys1,iphenysf,iphenyf1,iphenyff,iedcnfgf   &
-                       ,event_file,phenpath
+                       ,pfmtstr,ipmin,ipmax,imetrad,iphenys1,iphenysf,iphenyf1,iphenyff    &
+                       ,iedcnfgf,event_file,phenpath
 
    !----- Initialise some database variables with a non-sense path. -----------------------!
    soil_database   (:) = undef_path
@@ -318,6 +319,7 @@ subroutine read_ednl(iunit,filename)
                                                           ,i=1,size(pfmtstr))
       write (unit=*,fmt=*) ' ipmin                     =',ipmin
       write (unit=*,fmt=*) ' ipmax                     =',ipmax
+      write (unit=*,fmt=*) ' imetrad                   =',imetrad
       write (unit=*,fmt=*) ' iphenys1                  =',iphenys1
       write (unit=*,fmt=*) ' iphenysf                  =',iphenysf
       write (unit=*,fmt=*) ' iphenyf1                  =',iphenyf1

@@ -753,6 +753,10 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
        call hdf_getslab_r(cgrid%dmean_rshort       (ipy:ipy) ,'DMEAN_RSHORT        '       &
        ,dsetrank,iparallel,.false.)
   
+  if (associated(cgrid%dmean_rshort_diff  ))                                               &
+       call hdf_getslab_r(cgrid%dmean_rshort_diff  (ipy:ipy) ,'DMEAN_RSHORT_DIFF   '       &
+       ,dsetrank,iparallel,.false.)
+  
   if (associated(cgrid%dmean_rlong       ))                                                &
        call hdf_getslab_r(cgrid%dmean_rlong       (ipy:ipy) ,'DMEAN_RLONG        '         &
        ,dsetrank,iparallel,.false.)
@@ -961,7 +965,11 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
   if (associated(cgrid%mmean_rshort       ))                                               &
        call hdf_getslab_r(cgrid%mmean_rshort       (ipy:ipy) ,'MMEAN_RSHORT        '       &
        ,dsetrank,iparallel,.false.)
-  
+
+  if (associated(cgrid%mmean_rshort_diff  ))                                               &
+       call hdf_getslab_r(cgrid%mmean_rshort_diff  (ipy:ipy) ,'MMEAN_RSHORT_DIFF   '       &
+       ,dsetrank,iparallel,.false.)
+
   if (associated(cgrid%mmean_rlong       ))                                                &
        call hdf_getslab_r(cgrid%mmean_rlong       (ipy:ipy) ,'MMEAN_RLONG        '         &
        ,dsetrank,iparallel,.false.)
@@ -1287,6 +1295,10 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
   
   if (associated(cgrid%qmean_rshort       ))                                               &
      call hdf_getslab_r(cgrid%qmean_rshort       (:,ipy)   ,'QMEAN_RSHORT        '         &
+       ,dsetrank,iparallel,.false.)
+  
+  if (associated(cgrid%qmean_rshort_diff  ))                                               &
+     call hdf_getslab_r(cgrid%qmean_rshort_diff  (:,ipy)   ,'QMEAN_RSHORT_DIFF   '         &
        ,dsetrank,iparallel,.false.)
   
   if (associated(cgrid%qmean_rlong       ))                                                &

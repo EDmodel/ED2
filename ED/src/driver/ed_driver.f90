@@ -137,8 +137,14 @@ subroutine ed_driver()
       !------------------------------------------------------------------------------------!
    end if
 
-   !----- TEMPORARY THING... We eliminate all patches but the one to be debugged. ---------!
-   !call exterminate_patches_except(1)
+   !---------------------------------------------------------------------------------------!
+   !      TEMPORARY THING... We eliminate all patches but the one to be debugged.          !
+   ! Special cases:                                                                        !
+   !  0 -- Keep all patches.                                                               !
+   ! -1 -- Keep the one with the highest LAI                                               !
+   ! -2 -- Keep the one with the lowest LAI                                                !
+   !---------------------------------------------------------------------------------------!
+   !call exterminate_patches_except(-1)
    !---------------------------------------------------------------------------------------!
 
 
@@ -399,7 +405,19 @@ subroutine exterminate_patches_except(keeppa)
          siteloop: do isi=1,cpoly%nsites
             csite => cpoly%site(isi)
             
-            keepact = min(keeppa,csite%npatches)
+            select case(keeppa)
+            case (0)
+               return
+            case (-2)
+               !----- Keep the one with the lowest LAI. -----------------------------------!
+               keepact = minloc(csite%lai,dim=1)
+            case (-1)
+               !----- Keep the one with the highest LAI. ----------------------------------!
+               keepact = maxloc(csite%lai,dim=1)
+            case default
+               !----- Keep a fixed patch number. ------------------------------------------!
+               keepact = min(keeppa,csite%npatches)
+            end select
 
             patchloop: do ipa=1,csite%npatches
                if (ipa == keepact) then

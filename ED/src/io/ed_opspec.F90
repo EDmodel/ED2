@@ -1164,6 +1164,7 @@ subroutine ed_opspec_misc
    use rk4_coms              , only : ibranch_thermo               & ! intent(in)
                                     , ipercol                      & ! intent(in)
                                     , rk4_tolerance                ! ! intent(in)
+   use met_driver_coms       , only : imetrad                      ! ! intent(in)
 #if defined(COUPLED)
 #else
    use met_driver_coms       , only : ishuffle                     & ! intent(in)
@@ -1879,14 +1880,14 @@ end do
 
 #if defined(COUPLED)
 #else
-   if (ishuffle < 0 .and. ishuffle > 2) then
+   if (ishuffle < 0 .or. ishuffle > 2) then
       write (reason,fmt='(a,1x,i4,a)')                                                     &
                     'Invalid ISHUFFLE, it must be between 0 and 2.  Yours is set to'       &
                     ,ishuffle,'...'
       ifaterr = ifaterr +1
       call opspec_fatal(reason,'opspec_misc')
    end if
-   if (imetavg < 0 .and. imetavg > 3) then
+   if (imetavg < 0 .or. imetavg > 3) then
       write (reason,fmt='(a,1x,i4,a)')                                                     &
                     'Invalid IMETAVG, it must be between 0 and 3.  Yours is set to'        &
                     ,imetavg,'...'
@@ -1895,6 +1896,14 @@ end do
    end if
 
 #endif
+
+   if (imetrad < 0 .or. imetrad > 4) then
+      write (reason,fmt='(a,1x,i4,a)')                                                     &
+                    'Invalid IMETRAD, it must be between 0 and 4.  Yours is set to'        &
+                    ,imetrad,'...'
+      ifaterr = ifaterr +1
+      call opspec_fatal(reason,'opspec_misc')
+   end if
 
    !----- Stop the run if there are any fatal errors. -------------------------------------!
    if (ifaterr > 0) then

@@ -131,6 +131,7 @@ do
    ipercol=`echo ${oi}   | awk '{print $53}'`
    iphysiol=`echo ${oi}  | awk '{print $54}'`
    icanswrad=`echo ${oi} | awk '{print $55}'`
+   imetrad=`echo ${oi}   | awk '{print $56}'`
    #---------------------------------------------------------------------------------------#
 
 
@@ -604,7 +605,7 @@ do
    sed -i s@mypercol@${ipercol}@g          ${ED2IN}
    sed -i s@myphysiol@${iphysiol}@g        ${ED2IN}
    sed -i s@mycanswrad@${icanswrad}@g      ${ED2IN}
-
+   sed -i s@mymetrad@${imetrad}@g          ${ED2IN}
    #----- Change the srun.sh file. --------------------------------------------------------#
    srun=${here}'/'${polyname}'/srun.sh'
    sed -i s@pathhere@${here}@g     ${srun}

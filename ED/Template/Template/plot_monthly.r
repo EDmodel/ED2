@@ -149,115 +149,123 @@ fcpft15 = list(vnam="mcopftage",desc="Maintenance costs"         ,unit="kgC/m2/y
 fcpft16 = list(vnam="cbapftage",desc="Carbon balance"            ,unit="kgC/m2/yr"
                                ,cls="age",csch="muitas",plt=F)
 #----- Box plots --------------------------------------------------------------------------#
-nbox = 21
-bplot01 = list(vnam="gpp"       ,desc="Gross Primary productivity"      ,unit="kgC/m2/yr"
-                                ,plt=T)
-bplot02 = list(vnam="plresp"    ,desc="Plant respiration"               ,unit="kgC/m2/yr"
-                                ,plt=T)
-bplot03 = list(vnam="hetresp"   ,desc="Heterotrophic respiration"       ,unit="kgC/m2/yr"
-                                ,plt=T)
-bplot04 = list(vnam="nep"       ,desc="Net ecosystem production"        ,unit="kgC/m2/yr"
-                                ,plt=T)
-bplot05 = list(vnam="sens"      ,desc="Sensible heat flux"              ,unit="W/m2"     
-                                ,plt=T)
-bplot06 = list(vnam="evap"      ,desc="Evaporation  "                   ,unit="kg/m2/day"
-                                ,plt=T)
-bplot07 = list(vnam="transp"    ,desc="Transpiration"                   ,unit="kg/m2/day"
-                                ,plt=T)
-bplot08 = list(vnam="atm.temp"  ,desc="Atmospheric temperature"         ,unit="degC"
-                                ,plt=T)
-bplot09 = list(vnam="atm.shv"   ,desc="Atmospheric specific humidity"   ,unit="g/kg"
-                                ,plt=T)
-bplot10 = list(vnam="atm.co2"   ,desc="Atmospheric CO2 mixing ratio"    ,unit="umol/mol"
-                                ,plt=T)
-bplot11 = list(vnam="can.temp"  ,desc="Canopy air temperature"          ,unit="degC"
-                                ,plt=T)
-bplot12 = list(vnam="can.shv"   ,desc="Canopy air specific humidity"    ,unit="g/kg"
-                                ,plt=T)
-bplot13 = list(vnam="can.co2"   ,desc="Canopy air CO2 mixing ratio"     ,unit="umol/mol"
-                                ,plt=T)
-bplot14 = list(vnam="rain"      ,desc="Total monthly precipitation"     ,unit="mm"
-                                ,plt=T)
-bplot15 = list(vnam="veg.temp"  ,desc="Vegetation temperature"          ,unit="degC"
-                                ,plt=T)
-bplot16 = list(vnam="gnd.temp"  ,desc="Ground temperature"              ,unit="degC"
-                                ,plt=T)
-bplot17 = list(vnam="et"        ,desc="Evapotranspiration"              ,unit="kg/m2/day"
-                                ,plt=T)
-bplot18 = list(vnam="fs.open"   ,desc="Fraction of open stomata"        ,unit="---"
-                                ,plt=T)
-bplot19 = list(vnam="rshort"    ,desc="Downward Shortwave radiation"    ,unit="W/m2"
-                                ,plt=T)
-bplot20 = list(vnam="rlong"     ,desc="Downward Longwave radiation"     ,unit="W/m2"
-                                ,plt=T)
-bplot21 = list(vnam="gnd.shv"   ,desc="Ground specific humidity"        ,unit="g/kg"
-                                ,plt=T)
+nbox = 23
+bplot01 = list(vnam="gpp"        ,desc="Gross Primary productivity"      ,unit="kgC/m2/yr"
+                                 ,plt=T)
+bplot02 = list(vnam="plresp"     ,desc="Plant respiration"               ,unit="kgC/m2/yr"
+                                 ,plt=T)
+bplot03 = list(vnam="hetresp"    ,desc="Heterotrophic respiration"       ,unit="kgC/m2/yr"
+                                 ,plt=T)
+bplot04 = list(vnam="nep"        ,desc="Net ecosystem production"        ,unit="kgC/m2/yr"
+                                 ,plt=T)
+bplot05 = list(vnam="sens"       ,desc="Sensible heat flux"              ,unit="W/m2"
+                                 ,plt=T)
+bplot06 = list(vnam="evap"       ,desc="Evaporation  "                   ,unit="kg/m2/day"
+                                 ,plt=T)
+bplot07 = list(vnam="transp"     ,desc="Transpiration"                   ,unit="kg/m2/day"
+                                 ,plt=T)
+bplot08 = list(vnam="atm.temp"   ,desc="Atmospheric temperature"         ,unit="degC"
+                                 ,plt=T)
+bplot09 = list(vnam="atm.shv"    ,desc="Atmospheric specific humidity"   ,unit="g/kg"
+                                 ,plt=T)
+bplot10 = list(vnam="atm.co2"    ,desc="Atmospheric CO2 mixing ratio"    ,unit="umol/mol"
+                                 ,plt=T)
+bplot11 = list(vnam="can.temp"   ,desc="Canopy air temperature"          ,unit="degC"
+                                 ,plt=T)
+bplot12 = list(vnam="can.shv"    ,desc="Canopy air specific humidity"    ,unit="g/kg"
+                                 ,plt=T)
+bplot13 = list(vnam="can.co2"    ,desc="Canopy air CO2 mixing ratio"     ,unit="umol/mol"
+                                 ,plt=T)
+bplot14 = list(vnam="rain"       ,desc="Total monthly precipitation"     ,unit="mm"
+                                 ,plt=T)
+bplot15 = list(vnam="veg.temp"   ,desc="Vegetation temperature"          ,unit="degC"
+                                 ,plt=T)
+bplot16 = list(vnam="gnd.temp"   ,desc="Ground temperature"              ,unit="degC"
+                                 ,plt=T)
+bplot17 = list(vnam="et"         ,desc="Evapotranspiration"              ,unit="kg/m2/day"
+                                 ,plt=T)
+bplot18 = list(vnam="fs.open"    ,desc="Fraction of open stomata"        ,unit="---"
+                                 ,plt=T)
+bplot19 = list(vnam="rshort"     ,desc="Downward Shortwave radiation"    ,unit="W/m2"
+                                 ,plt=T)
+bplot20 = list(vnam="rlong"      ,desc="Downward Longwave radiation"     ,unit="W/m2"
+                                 ,plt=T)
+bplot21 = list(vnam="gnd.shv"    ,desc="Ground specific humidity"        ,unit="g/kg"
+                                 ,plt=T)
+bplot22 = list(vnam="rshort.beam",desc="Direct incident SW radiation"    ,unit="W/m2"
+                                 ,plt=T)
+bplot23 = list(vnam="rshort.diff",desc="Diffuse incident SW radiation"   ,unit="W/m2"
+                                 ,plt=T)
 #----- Similar to Hovmoller diagrams. -----------------------------------------------------#
-nhov = 32
-hovdi01 = list(vnam="gpp"       ,desc="Gross Primary productivity"      ,unit="kgC/m2/yr"
-                                ,csch="atlas"                           ,plt=T)
-hovdi02 = list(vnam="plresp"    ,desc="Plant respiration"               ,unit="kgC/m2/yr"
-                                ,csch="muitas"                          ,plt=T)
-hovdi03 = list(vnam="hetresp"   ,desc="Heterotrophic respiration"       ,unit="kgC/m2/yr"
-                                ,csch="muitas"                          ,plt=T)
-hovdi04 = list(vnam="npp"       ,desc="Net primary production"          ,unit="kgC/m2/yr"
-                                ,csch="muitas"                          ,plt=T)
-hovdi05 = list(vnam="sens"      ,desc="Sensible heat flux"              ,unit="W/m2"     
-                                ,csch="muitas"                          ,plt=T)
-hovdi06 = list(vnam="evap"      ,desc="Evaporation"                     ,unit="kg/m2/day"     
-                                ,csch="imuitas"                         ,plt=T)
-hovdi07 = list(vnam="transp"    ,desc="Transpiration"                   ,unit="kg/m2/day"     
-                                ,csch="imuitas"                         ,plt=T)
-hovdi08 = list(vnam="atm.temp"  ,desc="Atmospheric temperature"         ,unit="degC"     
-                                ,csch="muitas"                          ,plt=T)
-hovdi09 = list(vnam="atm.shv"   ,desc="Atmospheric specific humidity"   ,unit="g/kg"     
-                                ,csch="imuitas"                         ,plt=T)
-hovdi10 = list(vnam="atm.co2"   ,desc="Atmospheric CO2 mixing ratio"    ,unit="umol/mol" 
-                                ,csch="muitas"                          ,plt=F)
-hovdi11 = list(vnam="can.temp"  ,desc="Canopy air temperature"          ,unit="degC"     
-                                ,csch="muitas"                          ,plt=T)
-hovdi12 = list(vnam="can.shv"   ,desc="Canopy air specific humidity"    ,unit="g/kg"     
-                                ,csch="imuitas"                         ,plt=T)
-hovdi13 = list(vnam="can.co2"   ,desc="Canopy air CO2 mixing ratio"     ,unit="umol/mol" 
-                                ,csch="muitas"                          ,plt=T)
-hovdi14 = list(vnam="rain"      ,desc="Total monthly precipitation"     ,unit="mm"       
-                                ,csch="imuitas"                         ,plt=T)
-hovdi15 = list(vnam="veg.temp"  ,desc="Vegetation temperature"          ,unit="degC"     
-                                ,csch="muitas"                          ,plt=T)
-hovdi16 = list(vnam="gnd.temp"  ,desc="Ground temperature"              ,unit="degC"     
-                                ,csch="muitas"                          ,plt=T)
-hovdi17 = list(vnam="gnd.shv"   ,desc="Ground specific humidity"        ,unit="g/kg"     
-                                ,csch="imuitas"                         ,plt=T)
-hovdi18 = list(vnam="workload"  ,desc="Workload"                        ,unit="steps/day"
-                                ,csch="muitas"                          ,plt=T)
-hovdi19 = list(vnam="et"        ,desc="Evapotranspiration"              ,unit="kg/m2/day"     
-                                ,csch="imuitas"                         ,plt=T)
-hovdi20 = list(vnam="fs.open"   ,desc="Fraction of open stomata"        ,unit="---"     
-                                ,csch="imuitas"                         ,plt=T)
-hovdi21 = list(vnam="specwork"  ,desc="Specific workload"           ,unit="steps/patch/day"
-                                ,csch="muitas"                          ,plt=T)
-hovdi22 = list(vnam="wflxgc"    ,desc="Ground evaporation"              ,unit="kg/m2/day"     
-                                ,csch="imuitas"                         ,plt=T)
-hovdi23 = list(vnam="wflxvc"    ,desc="Leaf evaporation"                ,unit="kg/m2/day"     
-                                ,csch="imuitas"                         ,plt=T)
-hovdi24 = list(vnam="nep"       ,desc="Net ecosystem production"        ,unit="kgC/m2/yr"
-                                ,csch="muitas"                          ,plt=T)
-hovdi25 = list(vnam="nee"       ,desc="Net ecosystem exchange"          ,unit="kgC/m2/yr"
-                                ,csch="imuitas"                         ,plt=T)
-hovdi26 = list(vnam="cba"        ,desc="Carbon balance"                 ,unit="kgC/m2/day"
-                                ,csch="atlas"                           ,plt=T)
-hovdi27 = list(vnam="mco"       ,desc="Maintenance costs"               ,unit="kgC/m2/yr"
-                                ,csch="iatlas"                          ,plt=T)
-hovdi28 = list(vnam="ldrop"     ,desc="Leaf drop"                       ,unit="kgC/m2/yr"
-                                ,csch="iatlas"                          ,plt=T)
-hovdi29 = list(vnam="rshort"    ,desc="Downward shortwave radiation"    ,unit="W/m2"
-                                ,csch="icloudy"                         ,plt=T)
-hovdi30 = list(vnam="rlong"     ,desc="Downward longwave radiation"     ,unit="W/m2"
-                                ,csch="cloudy"                          ,plt=T)
-hovdi31 = list(vnam="rshort.gnd",desc="Abs. gnd. shortwave radiation"   ,unit="W/m2"
-                                ,csch="icloudy"                         ,plt=T)
-hovdi32 = list(vnam="rlong.gnd" ,desc="Abs. gnd. longwave radiation"    ,unit="W/m2"
-                                ,csch="cloudy"                          ,plt=T)
+nhov = 34
+hovdi01 = list(vnam="gpp"        ,desc="Gross Primary productivity"      ,unit="kgC/m2/yr"
+                                 ,csch="atlas"                           ,plt=T)
+hovdi02 = list(vnam="plresp"     ,desc="Plant respiration"               ,unit="kgC/m2/yr"
+                                 ,csch="muitas"                          ,plt=T)
+hovdi03 = list(vnam="hetresp"    ,desc="Heterotrophic respiration"       ,unit="kgC/m2/yr"
+                                 ,csch="muitas"                          ,plt=T)
+hovdi04 = list(vnam="npp"        ,desc="Net primary production"          ,unit="kgC/m2/yr"
+                                 ,csch="muitas"                          ,plt=T)
+hovdi05 = list(vnam="sens"       ,desc="Sensible heat flux"              ,unit="W/m2"
+                                 ,csch="muitas"                          ,plt=T)
+hovdi06 = list(vnam="evap"       ,desc="Evaporation"                     ,unit="kg/m2/day"
+                                 ,csch="imuitas"                         ,plt=T)
+hovdi07 = list(vnam="transp"     ,desc="Transpiration"                   ,unit="kg/m2/day"
+                                 ,csch="imuitas"                         ,plt=T)
+hovdi08 = list(vnam="atm.temp"   ,desc="Atmospheric temperature"         ,unit="degC"
+                                 ,csch="muitas"                          ,plt=T)
+hovdi09 = list(vnam="atm.shv"    ,desc="Atmospheric specific humidity"   ,unit="g/kg"
+                                 ,csch="imuitas"                         ,plt=T)
+hovdi10 = list(vnam="atm.co2"    ,desc="Atmospheric CO2 mixing ratio"    ,unit="umol/mol"
+                                 ,csch="muitas"                          ,plt=F)
+hovdi11 = list(vnam="can.temp"   ,desc="Canopy air temperature"          ,unit="degC"
+                                 ,csch="muitas"                          ,plt=T)
+hovdi12 = list(vnam="can.shv"    ,desc="Canopy air specific humidity"    ,unit="g/kg"
+                                 ,csch="imuitas"                         ,plt=T)
+hovdi13 = list(vnam="can.co2"    ,desc="Canopy air CO2 mixing ratio"     ,unit="umol/mol"
+                                 ,csch="muitas"                          ,plt=T)
+hovdi14 = list(vnam="rain"       ,desc="Total monthly precipitation"     ,unit="mm"
+                                 ,csch="imuitas"                         ,plt=T)
+hovdi15 = list(vnam="veg.temp"   ,desc="Vegetation temperature"          ,unit="degC"
+                                 ,csch="muitas"                          ,plt=T)
+hovdi16 = list(vnam="gnd.temp"   ,desc="Ground temperature"              ,unit="degC"
+                                 ,csch="muitas"                          ,plt=T)
+hovdi17 = list(vnam="gnd.shv"    ,desc="Ground specific humidity"        ,unit="g/kg"
+                                 ,csch="imuitas"                         ,plt=T)
+hovdi18 = list(vnam="workload"   ,desc="Workload"                        ,unit="steps/day"
+                                 ,csch="muitas"                          ,plt=T)
+hovdi19 = list(vnam="et"         ,desc="Evapotranspiration"              ,unit="kg/m2/day"
+                                 ,csch="imuitas"                         ,plt=T)
+hovdi20 = list(vnam="fs.open"    ,desc="Fraction of open stomata"        ,unit="---"
+                                 ,csch="imuitas"                         ,plt=T)
+hovdi21 = list(vnam="specwork"   ,desc="Specific workload"           ,unit="steps/patch/day"
+                                 ,csch="muitas"                          ,plt=T)
+hovdi22 = list(vnam="wflxgc"     ,desc="Ground evaporation"              ,unit="kg/m2/day"
+                                 ,csch="imuitas"                         ,plt=T)
+hovdi23 = list(vnam="wflxvc"     ,desc="Leaf evaporation"                ,unit="kg/m2/day"
+                                 ,csch="imuitas"                         ,plt=T)
+hovdi24 = list(vnam="nep"        ,desc="Net ecosystem production"        ,unit="kgC/m2/yr"
+                                 ,csch="muitas"                          ,plt=T)
+hovdi25 = list(vnam="nee"        ,desc="Net ecosystem exchange"          ,unit="kgC/m2/yr"
+                                 ,csch="imuitas"                         ,plt=T)
+hovdi26 = list(vnam="cba"         ,desc="Carbon balance"                 ,unit="kgC/m2/day"
+                                 ,csch="atlas"                           ,plt=T)
+hovdi27 = list(vnam="mco"        ,desc="Maintenance costs"               ,unit="kgC/m2/yr"
+                                 ,csch="iatlas"                          ,plt=T)
+hovdi28 = list(vnam="ldrop"      ,desc="Leaf drop"                       ,unit="kgC/m2/yr"
+                                 ,csch="iatlas"                          ,plt=T)
+hovdi29 = list(vnam="rshort"     ,desc="Downward shortwave radiation"    ,unit="W/m2"
+                                 ,csch="icloudy"                         ,plt=T)
+hovdi30 = list(vnam="rlong"      ,desc="Downward longwave radiation"     ,unit="W/m2"
+                                 ,csch="cloudy"                          ,plt=T)
+hovdi31 = list(vnam="rshort.gnd" ,desc="Abs. gnd. shortwave radiation"   ,unit="W/m2"
+                                 ,csch="icloudy"                         ,plt=T)
+hovdi32 = list(vnam="rlong.gnd"  ,desc="Abs. gnd. longwave radiation"    ,unit="W/m2"
+                                 ,csch="cloudy"                          ,plt=T)
+hovdi33 = list(vnam="rshort.beam",desc="Direct incident SW radiation"    ,unit="W/m2"
+                                 ,csch="icloudy"                         ,plt=T)
+hovdi34 = list(vnam="rshort.diff",desc="Diffuse incident SW radiation"   ,unit="W/m2"
+                                 ,csch="icloudy"                         ,plt=T)
 #----- Time series with several variables in it. ------------------------------------------#
 ntser=9
 tser01 = list(vnam   = c("gpp","plresp","hetresp","nee")
@@ -454,10 +462,10 @@ clim08 = list(vnam   = c("fs.open")
              ,unit   = "---"
              ,legpos = "bottomleft"
              ,plt    = TRUE)
-clim09 = list(vnam   = c("rshort","rshort.gnd")
-             ,desc   = c("Down Top canopy","Abs. Ground")
-             ,colour = c("deepskyblue","darkorange3")
-             ,lwd    = c(2.5,2.5)
+clim09 = list(vnam   = c("rshort","rshort.beam","rshort.diff","rshort.gnd")
+             ,desc   = c("Down Top canopy","Beam","Diffuse","Abs. Ground")
+             ,colour = c("deepskyblue","goldenrod","gray33","firebrick")
+             ,lwd    = c(2.5,2.5,2.5,2.5)
              ,type   = ptype
              ,plog   = ""
              ,prefix = "rshort"
@@ -933,6 +941,8 @@ for (place in myplaces){
    wflxvc        = NULL
    et            = NULL
    rshort        = NULL
+   rshort.beam   = NULL
+   rshort.diff   = NULL
    rlong         = NULL
    rshort.gnd    = NULL
    rlong.gnd     = NULL
@@ -1060,58 +1070,60 @@ for (place in myplaces){
              soil.prop  = soil.params(ntext,isoilflg,slxsand,slxclay)
 
              #----- Mean diurnal cycle. ---------------------------------------------------#
-             dcycmean            = list()
-             dcycmean$gpp        = matrix(data=0,nrow=totmon,ncol=ndcycle)
-             dcycmean$plresp     = matrix(data=0,nrow=totmon,ncol=ndcycle)
-             dcycmean$hetresp    = matrix(data=0,nrow=totmon,ncol=ndcycle)
-             dcycmean$nep        = matrix(data=0,nrow=totmon,ncol=ndcycle)
-             dcycmean$nee        = matrix(data=0,nrow=totmon,ncol=ndcycle)
-             dcycmean$sens       = matrix(data=0,nrow=totmon,ncol=ndcycle)
-             dcycmean$hflxvc     = matrix(data=0,nrow=totmon,ncol=ndcycle)
-             dcycmean$hflxgc     = matrix(data=0,nrow=totmon,ncol=ndcycle)
-             dcycmean$latent     = matrix(data=0,nrow=totmon,ncol=ndcycle)
-             dcycmean$et         = matrix(data=0,nrow=totmon,ncol=ndcycle)
-             dcycmean$wflxvc     = matrix(data=0,nrow=totmon,ncol=ndcycle)
-             dcycmean$wflxgc     = matrix(data=0,nrow=totmon,ncol=ndcycle)
-             dcycmean$evap       = matrix(data=0,nrow=totmon,ncol=ndcycle)
-             dcycmean$transp     = matrix(data=0,nrow=totmon,ncol=ndcycle)
-             dcycmean$atm.temp   = matrix(data=0,nrow=totmon,ncol=ndcycle)
-             dcycmean$can.temp   = matrix(data=0,nrow=totmon,ncol=ndcycle)
-             dcycmean$veg.temp   = matrix(data=0,nrow=totmon,ncol=ndcycle)
-             dcycmean$gnd.temp   = matrix(data=0,nrow=totmon,ncol=ndcycle)
-             dcycmean$atm.shv    = matrix(data=0,nrow=totmon,ncol=ndcycle)
-             dcycmean$can.shv    = matrix(data=0,nrow=totmon,ncol=ndcycle)
-             dcycmean$gnd.shv    = matrix(data=0,nrow=totmon,ncol=ndcycle)
-             dcycmean$atm.co2    = matrix(data=0,nrow=totmon,ncol=ndcycle)
-             dcycmean$can.co2    = matrix(data=0,nrow=totmon,ncol=ndcycle)
-             dcycmean$atm.prss   = matrix(data=0,nrow=totmon,ncol=ndcycle)
-             dcycmean$can.prss   = matrix(data=0,nrow=totmon,ncol=ndcycle)
-             dcycmean$atm.vels   = matrix(data=0,nrow=totmon,ncol=ndcycle)
-             dcycmean$fs.open    = matrix(data=0,nrow=totmon,ncol=ndcycle)
-             dcycmean$rain       = matrix(data=0,nrow=totmon,ncol=ndcycle)
-             dcycmean$rshort     = matrix(data=0,nrow=totmon,ncol=ndcycle)
-             dcycmean$rlong      = matrix(data=0,nrow=totmon,ncol=ndcycle)
-             dcycmean$rshort.gnd = matrix(data=0,nrow=totmon,ncol=ndcycle)
-             dcycmean$rlong.gnd  = matrix(data=0,nrow=totmon,ncol=ndcycle)
+             dcycmean             = list()
+             dcycmean$gpp         = matrix(data=0,nrow=totmon,ncol=ndcycle)
+             dcycmean$plresp      = matrix(data=0,nrow=totmon,ncol=ndcycle)
+             dcycmean$hetresp     = matrix(data=0,nrow=totmon,ncol=ndcycle)
+             dcycmean$nep         = matrix(data=0,nrow=totmon,ncol=ndcycle)
+             dcycmean$nee         = matrix(data=0,nrow=totmon,ncol=ndcycle)
+             dcycmean$sens        = matrix(data=0,nrow=totmon,ncol=ndcycle)
+             dcycmean$hflxvc      = matrix(data=0,nrow=totmon,ncol=ndcycle)
+             dcycmean$hflxgc      = matrix(data=0,nrow=totmon,ncol=ndcycle)
+             dcycmean$latent      = matrix(data=0,nrow=totmon,ncol=ndcycle)
+             dcycmean$et          = matrix(data=0,nrow=totmon,ncol=ndcycle)
+             dcycmean$wflxvc      = matrix(data=0,nrow=totmon,ncol=ndcycle)
+             dcycmean$wflxgc      = matrix(data=0,nrow=totmon,ncol=ndcycle)
+             dcycmean$evap        = matrix(data=0,nrow=totmon,ncol=ndcycle)
+             dcycmean$transp      = matrix(data=0,nrow=totmon,ncol=ndcycle)
+             dcycmean$atm.temp    = matrix(data=0,nrow=totmon,ncol=ndcycle)
+             dcycmean$can.temp    = matrix(data=0,nrow=totmon,ncol=ndcycle)
+             dcycmean$veg.temp    = matrix(data=0,nrow=totmon,ncol=ndcycle)
+             dcycmean$gnd.temp    = matrix(data=0,nrow=totmon,ncol=ndcycle)
+             dcycmean$atm.shv     = matrix(data=0,nrow=totmon,ncol=ndcycle)
+             dcycmean$can.shv     = matrix(data=0,nrow=totmon,ncol=ndcycle)
+             dcycmean$gnd.shv     = matrix(data=0,nrow=totmon,ncol=ndcycle)
+             dcycmean$atm.co2     = matrix(data=0,nrow=totmon,ncol=ndcycle)
+             dcycmean$can.co2     = matrix(data=0,nrow=totmon,ncol=ndcycle)
+             dcycmean$atm.prss    = matrix(data=0,nrow=totmon,ncol=ndcycle)
+             dcycmean$can.prss    = matrix(data=0,nrow=totmon,ncol=ndcycle)
+             dcycmean$atm.vels    = matrix(data=0,nrow=totmon,ncol=ndcycle)
+             dcycmean$fs.open     = matrix(data=0,nrow=totmon,ncol=ndcycle)
+             dcycmean$rain        = matrix(data=0,nrow=totmon,ncol=ndcycle)
+             dcycmean$rshort      = matrix(data=0,nrow=totmon,ncol=ndcycle)
+             dcycmean$rshort.beam = matrix(data=0,nrow=totmon,ncol=ndcycle)
+             dcycmean$rshort.diff = matrix(data=0,nrow=totmon,ncol=ndcycle)
+             dcycmean$rlong       = matrix(data=0,nrow=totmon,ncol=ndcycle)
+             dcycmean$rshort.gnd  = matrix(data=0,nrow=totmon,ncol=ndcycle)
+             dcycmean$rlong.gnd   = matrix(data=0,nrow=totmon,ncol=ndcycle)
 
-             dcycmsqu            = list()
-             dcycmsqu$gpp        = matrix(data=0,nrow=totmon,ncol=ndcycle)
-             dcycmsqu$plresp     = matrix(data=0,nrow=totmon,ncol=ndcycle)
-             dcycmsqu$hetresp    = matrix(data=0,nrow=totmon,ncol=ndcycle)
-             dcycmsqu$nep        = matrix(data=0,nrow=totmon,ncol=ndcycle)
-             dcycmsqu$nee        = matrix(data=0,nrow=totmon,ncol=ndcycle)
-             dcycmsqu$sens       = matrix(data=0,nrow=totmon,ncol=ndcycle)
-             dcycmsqu$hflxvc     = matrix(data=0,nrow=totmon,ncol=ndcycle)
-             dcycmsqu$hflxgc     = matrix(data=0,nrow=totmon,ncol=ndcycle)
-             dcycmsqu$et         = matrix(data=0,nrow=totmon,ncol=ndcycle)
-             dcycmsqu$latent     = matrix(data=0,nrow=totmon,ncol=ndcycle)
-             dcycmsqu$wflxvc     = matrix(data=0,nrow=totmon,ncol=ndcycle)
-             dcycmsqu$wflxgc     = matrix(data=0,nrow=totmon,ncol=ndcycle)
-             dcycmsqu$transp     = matrix(data=0,nrow=totmon,ncol=ndcycle)
+             dcycmsqu             = list()
+             dcycmsqu$gpp         = matrix(data=0,nrow=totmon,ncol=ndcycle)
+             dcycmsqu$plresp      = matrix(data=0,nrow=totmon,ncol=ndcycle)
+             dcycmsqu$hetresp     = matrix(data=0,nrow=totmon,ncol=ndcycle)
+             dcycmsqu$nep         = matrix(data=0,nrow=totmon,ncol=ndcycle)
+             dcycmsqu$nee         = matrix(data=0,nrow=totmon,ncol=ndcycle)
+             dcycmsqu$sens        = matrix(data=0,nrow=totmon,ncol=ndcycle)
+             dcycmsqu$hflxvc      = matrix(data=0,nrow=totmon,ncol=ndcycle)
+             dcycmsqu$hflxgc      = matrix(data=0,nrow=totmon,ncol=ndcycle)
+             dcycmsqu$et          = matrix(data=0,nrow=totmon,ncol=ndcycle)
+             dcycmsqu$latent      = matrix(data=0,nrow=totmon,ncol=ndcycle)
+             dcycmsqu$wflxvc      = matrix(data=0,nrow=totmon,ncol=ndcycle)
+             dcycmsqu$wflxgc      = matrix(data=0,nrow=totmon,ncol=ndcycle)
+             dcycmsqu$transp      = matrix(data=0,nrow=totmon,ncol=ndcycle)
 
-             soil.water          = matrix(data=0,nrow=totmon,ncol=nzg)
-             soil.temp           = matrix(data=0,nrow=totmon,ncol=nzg)
-             soil.mstpot         = matrix(data=0,nrow=totmon,ncol=nzg)
+             soil.water           = matrix(data=0,nrow=totmon,ncol=nzg)
+             soil.temp            = matrix(data=0,nrow=totmon,ncol=nzg)
+             soil.mstpot          = matrix(data=0,nrow=totmon,ncol=nzg)
 
           }#end if
           #--------------------------------------------------------------------------------#
@@ -1124,55 +1136,57 @@ for (place in myplaces){
 
 
           #----- Load the simple variables. -----------------------------------------------#
-          gpp       = c(gpp       ,   mymont$MMEAN.GPP                               )
-          plresp    = c(plresp    ,   mymont$MMEAN.PLRESP                            )
-          hetresp   = c(hetresp   ,   mymont$MMEAN.RH                                )
-          nep       = c(nep       ,   mymont$MMEAN.NEP                               )
-          npp       = c(npp       ,   mymont$MMEAN.GPP - mymont$MMEAN.PLRESP         )
-          nee       = c(nee       ,   mymont$MMEAN.NEE                               )
-          sens      = c(sens      , - mymont$MMEAN.SENSIBLE.AC                       )
-          hflxvc    = c(hflxvc    ,   mymont$MMEAN.SENSIBLE.VC                       )
-          hflxgc    = c(hflxgc    ,   mymont$MMEAN.SENSIBLE.GC                       )
-          latent    = c(latent    , - mymont$MMEAN.VAPOR.AC    * alvl                )
-          et        = c(et        , - mymont$MMEAN.VAPOR.AC    * day.sec             )
-          wflxvc    = c(wflxvc    ,   mymont$MMEAN.VAPOR.VC    * day.sec             )
-          wflxgc    = c(wflxgc    ,   mymont$MMEAN.VAPOR.GC    * day.sec             )
-          evap      = c(evap      ,   mymont$MMEAN.EVAP        * day.sec             )
-          transp    = c(transp    ,   mymont$MMEAN.TRANSP      * day.sec             )
+          gpp       = c(gpp              ,   mymont$MMEAN.GPP                            )
+          plresp    = c(plresp           ,   mymont$MMEAN.PLRESP                         )
+          hetresp   = c(hetresp          ,   mymont$MMEAN.RH                             )
+          nep       = c(nep              ,   mymont$MMEAN.NEP                            )
+          npp       = c(npp              ,   mymont$MMEAN.GPP - mymont$MMEAN.PLRESP      )
+          nee       = c(nee              ,   mymont$MMEAN.NEE                            )
+          sens      = c(sens             , - mymont$MMEAN.SENSIBLE.AC                    )
+          hflxvc    = c(hflxvc           ,   mymont$MMEAN.SENSIBLE.VC                    )
+          hflxgc    = c(hflxgc           ,   mymont$MMEAN.SENSIBLE.GC                    )
+          latent    = c(latent           , - mymont$MMEAN.VAPOR.AC    * alvl             )
+          et        = c(et               , - mymont$MMEAN.VAPOR.AC    * day.sec          )
+          wflxvc    = c(wflxvc           ,   mymont$MMEAN.VAPOR.VC    * day.sec          )
+          wflxgc    = c(wflxgc           ,   mymont$MMEAN.VAPOR.GC    * day.sec          )
+          evap      = c(evap             ,   mymont$MMEAN.EVAP        * day.sec          )
+          transp    = c(transp           ,   mymont$MMEAN.TRANSP      * day.sec          )
 
-          mmsqu.gpp     = c(mmsqu.gpp    ,mymont$MMSQU.GPP                           )
-          mmsqu.plresp  = c(mmsqu.plresp ,mymont$MMSQU.PLRESP                        )
-          mmsqu.hetresp = c(mmsqu.hetresp,mymont$MMSQU.RH                            )
-          mmsqu.nee     = c(mmsqu.nee    ,mymont$MMSQU.NEE                           )
-          mmsqu.sens    = c(mmsqu.sens   ,mymont$MMSQU.SENSIBLE.AC                   )
-          mmsqu.hflxvc  = c(mmsqu.hflxvc ,mymont$MMSQU.SENSIBLE.VC                   )
-          mmsqu.hflxgc  = c(mmsqu.hflxgc ,mymont$MMSQU.SENSIBLE.GC                   )
-          mmsqu.et      = c(mmsqu.et     ,mymont$MMSQU.VAPOR.AC  * day.sec * day.sec )
-          mmsqu.latent  = c(mmsqu.latent ,mymont$MMSQU.VAPOR.AC  * alvl    * alvl    )
-          mmsqu.wflxvc  = c(mmsqu.wflxvc ,mymont$MMSQU.VAPOR.VC  * day.sec * day.sec )
-          mmsqu.wflxgc  = c(mmsqu.wflxgc ,mymont$MMSQU.VAPOR.GC  * day.sec * day.sec )
-          mmsqu.evap    = c(mmsqu.evap   ,mymont$MMSQU.EVAP      * day.sec * day.sec )
-          mmsqu.transp  = c(mmsqu.transp ,mymont$MMSQU.TRANSP    * day.sec * day.sec )
+          mmsqu.gpp     = c(mmsqu.gpp    ,mymont$MMSQU.GPP                               )
+          mmsqu.plresp  = c(mmsqu.plresp ,mymont$MMSQU.PLRESP                            )
+          mmsqu.hetresp = c(mmsqu.hetresp,mymont$MMSQU.RH                                )
+          mmsqu.nee     = c(mmsqu.nee    ,mymont$MMSQU.NEE                               )
+          mmsqu.sens    = c(mmsqu.sens   ,mymont$MMSQU.SENSIBLE.AC                       )
+          mmsqu.hflxvc  = c(mmsqu.hflxvc ,mymont$MMSQU.SENSIBLE.VC                       )
+          mmsqu.hflxgc  = c(mmsqu.hflxgc ,mymont$MMSQU.SENSIBLE.GC                       )
+          mmsqu.et      = c(mmsqu.et     ,mymont$MMSQU.VAPOR.AC  * day.sec * day.sec     )
+          mmsqu.latent  = c(mmsqu.latent ,mymont$MMSQU.VAPOR.AC  * alvl    * alvl        )
+          mmsqu.wflxvc  = c(mmsqu.wflxvc ,mymont$MMSQU.VAPOR.VC  * day.sec * day.sec     )
+          mmsqu.wflxgc  = c(mmsqu.wflxgc ,mymont$MMSQU.VAPOR.GC  * day.sec * day.sec     )
+          mmsqu.evap    = c(mmsqu.evap   ,mymont$MMSQU.EVAP      * day.sec * day.sec     )
+          mmsqu.transp  = c(mmsqu.transp ,mymont$MMSQU.TRANSP    * day.sec * day.sec     )
 
-          atm.temp   = c(atm.temp  ,mymont$MMEAN.ATM.TEMP - t00                       )
-          atm.shv    = c(atm.shv   ,mymont$MMEAN.ATM.SHV  * kg2g                      )
-          atm.co2    = c(atm.co2   ,mymont$MMEAN.ATM.CO2                              )
+          atm.temp      = c(atm.temp     ,mymont$MMEAN.ATM.TEMP  - t00                   )
+          atm.shv       = c(atm.shv      ,mymont$MMEAN.ATM.SHV   * kg2g                  )
+          atm.co2       = c(atm.co2      ,mymont$MMEAN.ATM.CO2                           )
 
-          can.temp   = c(can.temp  ,mymont$MMEAN.CAN.TEMP - t00                       )
-          can.shv    = c(can.shv   ,mymont$MMEAN.CAN.SHV  * kg2g                      )
-          can.co2    = c(can.co2   ,mymont$MMEAN.CAN.CO2                              )
+          can.temp      = c(can.temp     ,mymont$MMEAN.CAN.TEMP  - t00                   )
+          can.shv       = c(can.shv      ,mymont$MMEAN.CAN.SHV   * kg2g                  )
+          can.co2       = c(can.co2      ,mymont$MMEAN.CAN.CO2                           )
 
-          gnd.temp   = c(gnd.temp  ,mymont$MMEAN.GND.TEMP - t00                       )
-          gnd.shv    = c(gnd.shv   ,mymont$MMEAN.GND.SHV  * kg2g                      )
+          gnd.temp      = c(gnd.temp     ,mymont$MMEAN.GND.TEMP  - t00                   )
+          gnd.shv       = c(gnd.shv      ,mymont$MMEAN.GND.SHV   * kg2g                  )
 
-          veg.temp   = c(veg.temp  ,mymont$MMEAN.VEG.TEMP - t00                       )
-          rain       = c(rain      ,mymont$MMEAN.PCPG*ddd     * day.sec               )
+          veg.temp      = c(veg.temp     ,mymont$MMEAN.VEG.TEMP  - t00                   )
+          rain          = c(rain         ,mymont$MMEAN.PCPG*ddd  * day.sec               )
 
-          fs.open    = c(fs.open   ,mymont$MMEAN.FS.OPEN                              )
-          rshort     = c(rshort    ,mymont$MMEAN.RSHORT                               )
-          rlong      = c(rlong     ,mymont$MMEAN.RLONG                                )
-          rshort.gnd = c(rshort.gnd,mymont$MMEAN.RSHORT.GND                           )
-          rlong.gnd  = c(rlong.gnd ,mymont$MMEAN.RLONG.GND                            )
+          fs.open       = c(fs.open      ,mymont$MMEAN.FS.OPEN                           )
+          rshort        = c(rshort       ,mymont$MMEAN.RSHORT                            )
+          rshort.beam   = c(rshort.beam  ,mymont$MMEAN.RSHORT - mymont$MMEAN.RSHORT.DIFF )
+          rshort.diff   = c(rshort.diff  ,mymont$MMEAN.RSHORT.DIFF                       )
+          rlong         = c(rlong        ,mymont$MMEAN.RLONG                             )
+          rshort.gnd    = c(rshort.gnd   ,mymont$MMEAN.RSHORT.GND                        )
+          rlong.gnd     = c(rlong.gnd    ,mymont$MMEAN.RLONG.GND                         )
           #--------------------------------------------------------------------------------#
 
 
@@ -1230,6 +1244,8 @@ for (place in myplaces){
           dcycmean$fs.open    [m,] = mymont$QMEAN.FS.OPEN
           dcycmean$rain       [m,] = mymont$QMEAN.PCPG               * day.sec
           dcycmean$rshort     [m,] = mymont$QMEAN.RSHORT
+          dcycmean$rshort.beam[m,] = mymont$QMEAN.RSHORT - mymont$QMEAN.RSHORT.DIFF
+          dcycmean$rshort.diff[m,] = mymont$QMEAN.RSHORT.DIFF
           dcycmean$rlong      [m,] = mymont$QMEAN.RLONG
           dcycmean$rshort.gnd [m,] = mymont$QMEAN.RSHORT.GND
           dcycmean$rlong.gnd  [m,] = mymont$QMEAN.RLONG.GND
@@ -1776,39 +1792,41 @@ for (place in myplaces){
    # deviation.                                                                            #
    #---------------------------------------------------------------------------------------#
    print ("    - Aggregating the monthly mean of the diurnal cycle...")
-   dcyc12mn            = list()
-   dcyc12mn$gpp        = qapply(dcycmean$gpp       ,index=mfac,bycol=T,func=mean,na.rm=T)
-   dcyc12mn$plresp     = qapply(dcycmean$plresp    ,index=mfac,bycol=T,func=mean,na.rm=T)
-   dcyc12mn$hetresp    = qapply(dcycmean$hetresp   ,index=mfac,bycol=T,func=mean,na.rm=T)
-   dcyc12mn$nep        = qapply(dcycmean$nep       ,index=mfac,bycol=T,func=mean,na.rm=T)
-   dcyc12mn$nee        = qapply(dcycmean$nee       ,index=mfac,bycol=T,func=mean,na.rm=T) 
-   dcyc12mn$sens       = qapply(dcycmean$sens      ,index=mfac,bycol=T,func=mean,na.rm=T) 
-   dcyc12mn$hflxvc     = qapply(dcycmean$hflxvc    ,index=mfac,bycol=T,func=mean,na.rm=T) 
-   dcyc12mn$hflxgc     = qapply(dcycmean$hflxgc    ,index=mfac,bycol=T,func=mean,na.rm=T) 
-   dcyc12mn$et         = qapply(dcycmean$et        ,index=mfac,bycol=T,func=mean,na.rm=T)
-   dcyc12mn$latent     = qapply(dcycmean$latent    ,index=mfac,bycol=T,func=mean,na.rm=T)
-   dcyc12mn$wflxvc     = qapply(dcycmean$wflxvc    ,index=mfac,bycol=T,func=mean,na.rm=T)
-   dcyc12mn$wflxgc     = qapply(dcycmean$wflxgc    ,index=mfac,bycol=T,func=mean,na.rm=T)
-   dcyc12mn$evap       = qapply(dcycmean$evap      ,index=mfac,bycol=T,func=mean,na.rm=T)
-   dcyc12mn$transp     = qapply(dcycmean$transp    ,index=mfac,bycol=T,func=mean,na.rm=T)
-   dcyc12mn$atm.temp   = qapply(dcycmean$atm.temp  ,index=mfac,bycol=T,func=mean,na.rm=T)
-   dcyc12mn$can.temp   = qapply(dcycmean$can.temp  ,index=mfac,bycol=T,func=mean,na.rm=T)
-   dcyc12mn$veg.temp   = qapply(dcycmean$veg.temp  ,index=mfac,bycol=T,func=mean,na.rm=T)
-   dcyc12mn$gnd.temp   = qapply(dcycmean$gnd.temp  ,index=mfac,bycol=T,func=mean,na.rm=T)
-   dcyc12mn$atm.shv    = qapply(dcycmean$atm.shv   ,index=mfac,bycol=T,func=mean,na.rm=T)
-   dcyc12mn$can.shv    = qapply(dcycmean$can.shv   ,index=mfac,bycol=T,func=mean,na.rm=T)
-   dcyc12mn$gnd.shv    = qapply(dcycmean$gnd.shv   ,index=mfac,bycol=T,func=mean,na.rm=T)
-   dcyc12mn$atm.co2    = qapply(dcycmean$atm.co2   ,index=mfac,bycol=T,func=mean,na.rm=T)
-   dcyc12mn$can.co2    = qapply(dcycmean$can.co2   ,index=mfac,bycol=T,func=mean,na.rm=T)
-   dcyc12mn$atm.prss   = qapply(dcycmean$atm.prss  ,index=mfac,bycol=T,func=mean,na.rm=T)
-   dcyc12mn$can.prss   = qapply(dcycmean$can.prss  ,index=mfac,bycol=T,func=mean,na.rm=T)
-   dcyc12mn$atm.vels   = qapply(dcycmean$atm.vels  ,index=mfac,bycol=T,func=mean,na.rm=T)
-   dcyc12mn$fs.open    = qapply(dcycmean$fs.open   ,index=mfac,bycol=T,func=mean,na.rm=T)
-   dcyc12mn$rain       = qapply(dcycmean$rain      ,index=mfac,bycol=T,func=mean,na.rm=T)
-   dcyc12mn$rshort     = qapply(dcycmean$rshort    ,index=mfac,bycol=T,func=mean,na.rm=T)
-   dcyc12mn$rlong      = qapply(dcycmean$rlong     ,index=mfac,bycol=T,func=mean,na.rm=T)
-   dcyc12mn$rshort.gnd = qapply(dcycmean$rshort.gnd,index=mfac,bycol=T,func=mean,na.rm=T)
-   dcyc12mn$rlong.gnd  = qapply(dcycmean$rlong.gnd ,index=mfac,bycol=T,func=mean,na.rm=T)
+   dcyc12mn             = list()
+   dcyc12mn$gpp         = qapply(dcycmean$gpp        ,index=mfac,bycol=T,func=mean,na.rm=T)
+   dcyc12mn$plresp      = qapply(dcycmean$plresp     ,index=mfac,bycol=T,func=mean,na.rm=T)
+   dcyc12mn$hetresp     = qapply(dcycmean$hetresp    ,index=mfac,bycol=T,func=mean,na.rm=T)
+   dcyc12mn$nep         = qapply(dcycmean$nep        ,index=mfac,bycol=T,func=mean,na.rm=T)
+   dcyc12mn$nee         = qapply(dcycmean$nee        ,index=mfac,bycol=T,func=mean,na.rm=T)
+   dcyc12mn$sens        = qapply(dcycmean$sens       ,index=mfac,bycol=T,func=mean,na.rm=T)
+   dcyc12mn$hflxvc      = qapply(dcycmean$hflxvc     ,index=mfac,bycol=T,func=mean,na.rm=T)
+   dcyc12mn$hflxgc      = qapply(dcycmean$hflxgc     ,index=mfac,bycol=T,func=mean,na.rm=T)
+   dcyc12mn$et          = qapply(dcycmean$et         ,index=mfac,bycol=T,func=mean,na.rm=T)
+   dcyc12mn$latent      = qapply(dcycmean$latent     ,index=mfac,bycol=T,func=mean,na.rm=T)
+   dcyc12mn$wflxvc      = qapply(dcycmean$wflxvc     ,index=mfac,bycol=T,func=mean,na.rm=T)
+   dcyc12mn$wflxgc      = qapply(dcycmean$wflxgc     ,index=mfac,bycol=T,func=mean,na.rm=T)
+   dcyc12mn$evap        = qapply(dcycmean$evap       ,index=mfac,bycol=T,func=mean,na.rm=T)
+   dcyc12mn$transp      = qapply(dcycmean$transp     ,index=mfac,bycol=T,func=mean,na.rm=T)
+   dcyc12mn$atm.temp    = qapply(dcycmean$atm.temp   ,index=mfac,bycol=T,func=mean,na.rm=T)
+   dcyc12mn$can.temp    = qapply(dcycmean$can.temp   ,index=mfac,bycol=T,func=mean,na.rm=T)
+   dcyc12mn$veg.temp    = qapply(dcycmean$veg.temp   ,index=mfac,bycol=T,func=mean,na.rm=T)
+   dcyc12mn$gnd.temp    = qapply(dcycmean$gnd.temp   ,index=mfac,bycol=T,func=mean,na.rm=T)
+   dcyc12mn$atm.shv     = qapply(dcycmean$atm.shv    ,index=mfac,bycol=T,func=mean,na.rm=T)
+   dcyc12mn$can.shv     = qapply(dcycmean$can.shv    ,index=mfac,bycol=T,func=mean,na.rm=T)
+   dcyc12mn$gnd.shv     = qapply(dcycmean$gnd.shv    ,index=mfac,bycol=T,func=mean,na.rm=T)
+   dcyc12mn$atm.co2     = qapply(dcycmean$atm.co2    ,index=mfac,bycol=T,func=mean,na.rm=T)
+   dcyc12mn$can.co2     = qapply(dcycmean$can.co2    ,index=mfac,bycol=T,func=mean,na.rm=T)
+   dcyc12mn$atm.prss    = qapply(dcycmean$atm.prss   ,index=mfac,bycol=T,func=mean,na.rm=T)
+   dcyc12mn$can.prss    = qapply(dcycmean$can.prss   ,index=mfac,bycol=T,func=mean,na.rm=T)
+   dcyc12mn$atm.vels    = qapply(dcycmean$atm.vels   ,index=mfac,bycol=T,func=mean,na.rm=T)
+   dcyc12mn$fs.open     = qapply(dcycmean$fs.open    ,index=mfac,bycol=T,func=mean,na.rm=T)
+   dcyc12mn$rain        = qapply(dcycmean$rain       ,index=mfac,bycol=T,func=mean,na.rm=T)
+   dcyc12mn$rshort      = qapply(dcycmean$rshort     ,index=mfac,bycol=T,func=mean,na.rm=T)
+   dcyc12mn$rshort.beam = qapply(dcycmean$rshort.beam,index=mfac,bycol=T,func=mean,na.rm=T)
+   dcyc12mn$rshort.diff = qapply(dcycmean$rshort.diff,index=mfac,bycol=T,func=mean,na.rm=T)
+   dcyc12mn$rlong       = qapply(dcycmean$rlong      ,index=mfac,bycol=T,func=mean,na.rm=T)
+   dcyc12mn$rshort.gnd  = qapply(dcycmean$rshort.gnd ,index=mfac,bycol=T,func=mean,na.rm=T)
+   dcyc12mn$rlong.gnd   = qapply(dcycmean$rlong.gnd  ,index=mfac,bycol=T,func=mean,na.rm=T)
    #----- Find the mean sum of squares. ---------------------------------------------------#
    print ("    - Aggregating the monthly mean sum of squares...")
    dcyc12sq            = list()

@@ -52,8 +52,7 @@ subroutine calc_met_lapse(cgrid,ipy)
          cpoly%met(isi)%nir_diffuse = cgrid%met(ipy)%nir_diffuse*(1.0-hillshade)
          cpoly%met(isi)%nir_beam    = cgrid%met(ipy)%nir_beam
          cpoly%met(isi)%vels        = cgrid%met(ipy)%vels
-         
-      end do      
+      end do
    else
       
       !----- Second pass, calculate lapse rate adjustment. --------------------------------!

@@ -50,10 +50,14 @@ subroutine copy_atm2lsm(ifm,init)
    use therm_lib            , only : thetaeiv      & ! intent(in)
                                    , rehuil        & ! intent(in)
                                    , ptrh2rvapil   ! ! intent(in)
-   use met_driver_coms      , only : rlong_min     & ! intent(in)
+   use met_driver_coms      , only : imetrad       & ! intent(in)
+                                   , rlong_min     & ! intent(in)
                                    , atm_rhv_min   & ! intent(in)
                                    , atm_rhv_max   ! ! intent(in)
-
+   use canopy_radiation_coms, only : fvis_beam_def & ! intent(in)
+                                   , fvis_diff_def & ! intent(in)
+                                   , fnir_beam_def & ! intent(in)
+                                   , fnir_diff_def ! ! intent(in)
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    integer                             , intent(in)  :: ifm
@@ -85,6 +89,10 @@ subroutine copy_atm2lsm(ifm,init)
    integer                                           :: k2v_1
    integer                                           :: k3v_1
    real             , dimension(:,:)   , allocatable :: rshortd
+   real             , dimension(:,:)   , allocatable :: par_beam
+   real             , dimension(:,:)   , allocatable :: par_diff
+   real             , dimension(:,:)   , allocatable :: nir_beam
+   real             , dimension(:,:)   , allocatable :: nir_diff
    real             , dimension(:,:)   , allocatable :: up_mean
    real             , dimension(:,:)   , allocatable :: vp_mean
    real             , dimension(:,:)   , allocatable :: pi0_mean
@@ -103,6 +111,7 @@ subroutine copy_atm2lsm(ifm,init)
    real                                              :: rvaux
    real                                              :: fice
    real                                              :: snden
+   real                                              :: press
    !---------------------------------------------------------------------------------------!
   
    !----- Assigning some aliases. ---------------------------------------------------------!
@@ -112,6 +121,10 @@ subroutine copy_atm2lsm(ifm,init)
 
    !----- Allocate the 2-D arrays. --------------------------------------------------------!
    allocate(rshortd    (m2,m3))
+   allocate(par_beam   (m2,m3))
+   allocate(par_diff   (m2,m3))
+   allocate(nir_beam   (m2,m3))
+   allocate(nir_diff   (m2,m3))
    allocate(up_mean    (m2,m3))
    allocate(vp_mean    (m2,m3))
    allocate(pi0_mean   (m2,m3))
@@ -156,14 +169,33 @@ subroutine copy_atm2lsm(ifm,init)
             end if
             if (iswrtyp == 3) then
                !----- We obtain the diffuse radiation straight from Harrington. -----------!
-               rshortd(i,j) = radiate_g(ifm)%rshort_diffuse(i,j)
+               rshortd(i,j)  = radiate_g(ifm)%rshort_diffuse(i,j)
+               nir_beam(i,j) = fnir_beam_def * (radiate_g(ifm)%rshort(i,j)-rshortd(i,j))
+               nir_diff(i,j) = fnir_diff_def * rshortd(i,j)
+               par_beam(i,j) = fvis_beam_def * (radiate_g(ifm)%rshort(i,j)-rshortd(i,j))
+               par_diff(i,j) = fvis_diff_def * rshortd(i,j)
+
             else
                !---------------------------------------------------------------------------!
-               !      The following subroutine calculates diffuse shortwave radiation.     !
-               ! This is a gross approximation that uses constant scattering coefficients. !   !
+               !      The following subroutine estimates the diffuse shortwave radiation.  !
+               ! This is a gross approximation that uses constant scattering coefficients. !
                !---------------------------------------------------------------------------!
-               call short2diff(radiate_g(ifm)%rshort(i,j),radiate_g(ifm)%cosz(i,j)         &
-                              ,rshortd(i,j))
+               select case (imetrad)
+               case (0,1)
+                  call short2diff_sib(radiate_g(ifm)%rshort(i,j),radiate_g(ifm)%cosz(i,j)  &
+                                     ,rshortd(i,j))
+                  nir_beam(i,j) = fnir_beam_def * (radiate_g(ifm)%rshort(i,j)-rshortd(i,j))
+                  nir_diff(i,j) = fnir_diff_def * rshortd(i,j)
+                  par_beam(i,j) = fvis_beam_def * (radiate_g(ifm)%rshort(i,j)-rshortd(i,j))
+                  par_diff(i,j) = fvis_diff_def * rshortd(i,j)
+               case (2)
+                  press = p00 * (cpi * pi0_mean(i,j))**cpor
+               
+                  call short_bdown_weissnorman(radiate_g(ifm)%rshort_diffuse(i,j),press    &
+                                              ,radiate_g(ifm)%cosz(i,j),par_beam(i,j)      &
+                                              ,par_diff(i,j),nir_beam(i,j),nir_diff(i,j)   &
+                                              ,rshortd(i,j) )
+               end select
             end if
          end do
       end do
@@ -251,14 +283,33 @@ subroutine copy_atm2lsm(ifm,init)
 
             if (iswrtyp == 3) then
                !----- We obtain the diffuse radiation straight from Harrington. -----------!
-               rshortd(i,j) = radiate_g(ifm)%rshort_diffuse(i,j)
+               rshortd(i,j)  = radiate_g(ifm)%rshort_diffuse(i,j)
+               nir_beam(i,j) = fnir_beam_def * (radiate_g(ifm)%rshort(i,j)-rshortd(i,j))
+               nir_diff(i,j) = fnir_diff_def * rshortd(i,j)
+               par_beam(i,j) = fvis_beam_def * (radiate_g(ifm)%rshort(i,j)-rshortd(i,j))
+               par_diff(i,j) = fvis_diff_def * rshortd(i,j)
+
             else
                !---------------------------------------------------------------------------!
-               !      The following subroutine calculates diffuse shortwave radiation.     !
-               ! This is a gross approximation that uses constant scattering coefficients. !   !
+               !      The following subroutine estimates the diffuse shortwave radiation.  !
+               ! This is a gross approximation that uses constant scattering coefficients. !
                !---------------------------------------------------------------------------!
-               call short2diff(radiate_g(ifm)%rshort(i,j),radiate_g(ifm)%cosz(i,j)         &
-                              ,rshortd(i,j))
+               select case (imetrad)
+               case (0,1)
+                  call short2diff_sib(radiate_g(ifm)%rshort(i,j),radiate_g(ifm)%cosz(i,j)  &
+                                     ,rshortd(i,j))
+                  nir_beam(i,j) = fnir_beam_def * (radiate_g(ifm)%rshort(i,j)-rshortd(i,j))
+                  nir_diff(i,j) = fnir_diff_def * rshortd(i,j)
+                  par_beam(i,j) = fvis_beam_def * (radiate_g(ifm)%rshort(i,j)-rshortd(i,j))
+                  par_diff(i,j) = fvis_diff_def * rshortd(i,j)
+               case (2)
+                  press = p00 * (cpi * pi0_mean(i,j))**cpor
+               
+                  call short_bdown_weissnorman(radiate_g(ifm)%rshort_diffuse(i,j),press    &
+                                              ,radiate_g(ifm)%cosz(i,j),par_beam(i,j)      &
+                                              ,par_diff(i,j),nir_beam(i,j),nir_diff(i,j)   &
+                                              ,rshortd(i,j) )
+               end select
             end if
         end do
       end do
@@ -276,15 +327,14 @@ subroutine copy_atm2lsm(ifm,init)
       k1w   = k2w - 1
 
       !------------------------------------------------------------------------------------!
-      !     Splitting the shortwave into direct and diffuse.  Also, assign 45% of the      !
-      ! total as near infrared, and the remaining as photosynthetically active radiation.  !
-      ! These could be probably better retrieved from the radiation model, need to check   !
-      ! that.                                                                              !
+      !     Save the radiation terms.                                                      !
       !------------------------------------------------------------------------------------!
-      cgrid%met(ipy)%nir_beam     =  0.57 * (radiate_g(ifm)%rshort(ix,iy)-rshortd(ix,iy))
-      cgrid%met(ipy)%nir_diffuse  =  0.48 * (rshortd(ix,iy))
-      cgrid%met(ipy)%par_beam     =  0.43 * (radiate_g(ifm)%rshort(ix,iy)-rshortd(ix,iy))
-      cgrid%met(ipy)%par_diffuse  =  0.52 * (rshortd(ix,iy))
+      cgrid%met(ipy)%rshort         =  radiate_g(ifm)%rshort(ix,iy)
+      cgrid%met(ipy)%rshort_diffuse =  rshortd              (ix,iy)
+      cgrid%met(ipy)%nir_beam       =  nir_beam             (ix,iy)
+      cgrid%met(ipy)%nir_diffuse    =  nir_diff             (ix,iy)
+      cgrid%met(ipy)%par_beam       =  par_beam             (ix,iy)
+      cgrid%met(ipy)%par_diffuse    =  par_diff             (ix,iy)
       !------------------------------------------------------------------------------------!
 
       cgrid%met(ipy)%rlong    = radiate_g(ifm)%rlong(ix,iy)
@@ -488,6 +538,10 @@ subroutine copy_atm2lsm(ifm,init)
 
    !----- Allocate the 2-D arrays. --------------------------------------------------------!
    deallocate(rshortd    )
+   deallocate(par_beam   )
+   deallocate(par_diff   )
+   deallocate(nir_beam   )
+   deallocate(nir_diff   )
    deallocate(up_mean    )
    deallocate(vp_mean    )
    deallocate(pi0_mean   )
@@ -1646,56 +1700,5 @@ subroutine copy_avgvars_to_leaf(ifm)
 
    return
 end subroutine copy_avgvars_to_leaf
-!==========================================================================================!
-!==========================================================================================!
-
-
-
-
-
-
-!==========================================================================================!
-!==========================================================================================!
-!     This subroutine is an adaptation from the SiB2 model (Sellars et al. 1986), and it   !
-! splits the radiation into diffuse and direct radiation.  This is currently used to       !
-! convert the radiation from BRAMS.  In the future, we should use the values that come     !
-! from the radiation schemes.                                                              !
-!------------------------------------------------------------------------------------------!
-subroutine short2diff(rshort_tot,cosz,rshort_diff)
-   use mem_radiate, only : rad_cosz_min & ! intent(in)
-                         , iswrtyp      ! ! intent(in)
-   implicit none
-   !----- Arguments. ----------------------------------------------------------------------!
-   real, intent(in)    :: rshort_tot  ! Surface incident shortwave radiation
-   real, intent(in)    :: cosz        ! Cosine of the zenith distance
-   real, intent(out)   :: rshort_diff ! Surface incident diffuse shortwave radiation.
-   !----- Local variables. ----------------------------------------------------------------!
-   real                :: stemp
-   real                :: cloud
-   real                :: difrat
-   real                :: vnrat
-   !----- Local constants. ----------------------------------------------------------------!
-   real, parameter     :: c1 = 580.
-   real, parameter     :: c2 = 464.
-   real, parameter     :: c3 = 499.
-   real, parameter     :: c4 = 963.
-   real, parameter     :: c5 = 1160.
-   !---------------------------------------------------------------------------------------!
-
-   if (cosz > rad_cosz_min) then
-
-      cloud       = min(1.,max(0.,(c5 * cosz - rshort_tot) / (c4 * cosz)))
-      difrat      = min(1.,max(0.,0.0604 / ( cosz -0.0223 ) + 0.0683))
-
-      difrat      = difrat + ( 1. - difrat ) * cloud
-      vnrat       = ( c1 - cloud*c2 ) / ( ( c1 - cloud*c3 ) + ( c1 - cloud*c2 ))
-
-      rshort_diff = difrat*vnrat*rshort_tot
-   else
-      rshort_diff = rshort_tot
-   end if
-
-   return
-end subroutine short2diff
 !==========================================================================================!
 !==========================================================================================!

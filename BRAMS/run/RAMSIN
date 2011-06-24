@@ -2473,6 +2473,25 @@ $ED2_INFO
    !---------------------------------------------------------------------------------------!
 
 
+   !---------------------------------------------------------------------------------------!
+   ! IMETRAD -- What should the model do with the input short wave radiation?              !
+   !            0.  Nothing, use it as is.                                                 !
+   !            1.  Add them together, then use the SiB method to break radiation down     !
+   !                into the four components (PAR direct, PAR diffuse, NIR direct,         !
+   !                NIR diffuse).                                                          !
+   !            2.  Add then together, then use the method by Weiss and Norman (1985) to   !
+   !                break radiation down to the four components.                           !
+   !            3.  Gloomy -- All radiation goes to diffuse.                               !
+   !            4.  Sesame street -- all radiation goes to direct, except at night.        !
+   !                                                                                       !
+   !      This option is used only when ISWRTYP is not 3.  In case it is, the split        !
+   ! between direct and diffuse is done by the Harrington scheme, and we just do a split   !
+   ! between NIR and PAR using some standard factors.                                      !
+   !---------------------------------------------------------------------------------------!
+   IMETRAD      = 0,
+   !---------------------------------------------------------------------------------------!
+
+
 
    !---------------------------------------------------------------------------------------!
    !     The following variables control the phenology prescribed from observations:       !

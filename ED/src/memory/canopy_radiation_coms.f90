@@ -30,8 +30,7 @@ module canopy_radiation_coms
 
 
    !---------------------------------------------------------------------------------------!
-   !     Fraction of solar radiation in the PAR band.  Used when you don't know the        !
-   ! direct/diffuse breakdown.                                                             !
+   !     Fraction of solar radiation in the PAR band.  Used every time step.               !
    !---------------------------------------------------------------------------------------!
    real :: visible_fraction
    !---------------------------------------------------------------------------------------!
@@ -42,10 +41,20 @@ module canopy_radiation_coms
    !---------------------------------------------------------------------------------------!
 
    !---------------------------------------------------------------------------------------!
+   !     Fraction of diffuse solar radiation in the PAR band.  Used every time step        !
+   !---------------------------------------------------------------------------------------!
+   real :: visible_fraction_dif
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
    !     Fraction of diffuse solar radiation in the PAR band.  Used when you don't know    !
    ! the direct/diffuse breakdown.                                                         !
    !---------------------------------------------------------------------------------------!
-   real :: visible_fraction_dif
+   real :: fvis_beam_def
+   real :: fvis_diff_def
+   real :: fnir_beam_def
+   real :: fnir_diff_def
    !---------------------------------------------------------------------------------------!
 
 

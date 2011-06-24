@@ -109,6 +109,7 @@ do
    ipercol=`echo ${oi}   | awk '{print $53}'`
    iphysiol=`echo ${oi}  | awk '{print $54}'`
    icanswrad=`echo ${oi} | awk '{print $55}'`
+   imetrad=`echo ${oi}   | awk '{print $56}'`
    #---------------------------------------------------------------------------------------#
 
    bkill -J ${desc}-${polyname} -q ${queue}

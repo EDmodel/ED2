@@ -345,6 +345,7 @@ OBJ_MODEL =                         \
 	physiology_coms.o           \
 	pft_coms.o                  \
 	radiate_driver.o            \
+	radiate_utils.o             \
 	reproduction.o              \
 	rk4_coms.o                  \
 	rk4_derivs.o                \

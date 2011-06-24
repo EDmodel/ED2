@@ -194,6 +194,7 @@ module ename_coms
       integer                                           :: metcyc1
       integer                                           :: metcycf
       integer                                           :: imetavg
+      integer                                           :: imetrad
       real                                              :: initial_co2
 
       !------ Options controlling prescribed phenology forcing. ---------------------------!
@@ -417,6 +418,7 @@ module ename_coms
       enl%metcyc1                   = undef_integer
       enl%metcycf                   = undef_integer
       enl%imetavg                   = undef_integer
+      enl%imetrad                   = undef_integer
       enl%initial_co2               = undef_real
 
       enl%iphenys1                  = undef_integer

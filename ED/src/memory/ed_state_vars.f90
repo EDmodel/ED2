@@ -1742,6 +1742,7 @@ module ed_state_vars
      real, pointer, dimension(:)   :: dmean_atm_prss      ! (npolygons)
      real, pointer, dimension(:)   :: dmean_atm_vels      ! (npolygons)
      real, pointer, dimension(:)   :: dmean_rshort        ! (npolygons)
+     real, pointer, dimension(:)   :: dmean_rshort_diff   ! (npolygons)
      real, pointer, dimension(:)   :: dmean_rlong         ! (npolygons)
      real, pointer, dimension(:)   :: dmean_rshort_gnd    ! (npolygons)
      real, pointer, dimension(:)   :: dmean_rlong_gnd     ! (npolygons)
@@ -1790,6 +1791,7 @@ module ed_state_vars
      real, pointer, dimension(:,:)   :: qmean_atm_prss       ! (ndcycle,npolygons)
      real, pointer, dimension(:,:)   :: qmean_atm_vels       ! (ndcycle,npolygons)
      real, pointer, dimension(:,:)   :: qmean_rshort         ! (ndcycle,npolygons)
+     real, pointer, dimension(:,:)   :: qmean_rshort_diff    ! (ndcycle,npolygons)
      real, pointer, dimension(:,:)   :: qmean_rlong          ! (ndcycle,npolygons)
      real, pointer, dimension(:,:)   :: qmean_rshort_gnd     ! (ndcycle,npolygons)
      real, pointer, dimension(:,:)   :: qmean_rlong_gnd      ! (ndcycle,npolygons)
@@ -1905,6 +1907,7 @@ module ed_state_vars
      real, pointer, dimension(:)   :: mmean_veg_hcap      ! (npolygons)
      real, pointer, dimension(:)   :: mmean_atm_temp      ! (npolygons)
      real, pointer, dimension(:)   :: mmean_rshort        ! (npolygons)
+     real, pointer, dimension(:)   :: mmean_rshort_diff   ! (npolygons)
      real, pointer, dimension(:)   :: mmean_rlong         ! (npolygons)
      real, pointer, dimension(:)   :: mmean_rshort_gnd    ! (npolygons)
      real, pointer, dimension(:)   :: mmean_rlong_gnd     ! (npolygons)
@@ -2371,6 +2374,7 @@ contains
           allocate(cgrid%dmean_atm_prss       (             npolygons))
           allocate(cgrid%dmean_atm_vels       (             npolygons))
           allocate(cgrid%dmean_rshort         (             npolygons))
+          allocate(cgrid%dmean_rshort_diff    (             npolygons))
           allocate(cgrid%dmean_rlong          (             npolygons))
           allocate(cgrid%dmean_rshort_gnd     (             npolygons))
           allocate(cgrid%dmean_rlong_gnd      (             npolygons))
@@ -2444,6 +2448,7 @@ contains
           allocate(cgrid%mmean_veg_hcap       (             npolygons))
           allocate(cgrid%mmean_atm_temp       (             npolygons))
           allocate(cgrid%mmean_rshort         (             npolygons))
+          allocate(cgrid%mmean_rshort_diff    (             npolygons))
           allocate(cgrid%mmean_rlong          (             npolygons))
           allocate(cgrid%mmean_rshort_gnd     (             npolygons))
           allocate(cgrid%mmean_rlong_gnd      (             npolygons))
@@ -2525,6 +2530,7 @@ contains
           allocate(cgrid%qmean_veg_hcap       (     ndcycle, npolygons))
           allocate(cgrid%qmean_atm_temp       (     ndcycle, npolygons))
           allocate(cgrid%qmean_rshort         (     ndcycle, npolygons))
+          allocate(cgrid%qmean_rshort_diff    (     ndcycle, npolygons))
           allocate(cgrid%qmean_rlong          (     ndcycle, npolygons))
           allocate(cgrid%qmean_rshort_gnd     (     ndcycle, npolygons))
           allocate(cgrid%qmean_rlong_gnd      (     ndcycle, npolygons))
@@ -3497,6 +3503,7 @@ contains
      nullify(cgrid%dmean_atm_prss          )
      nullify(cgrid%dmean_atm_vels          )
      nullify(cgrid%dmean_rshort            )
+     nullify(cgrid%dmean_rshort_diff       )
      nullify(cgrid%dmean_rlong             )
      nullify(cgrid%dmean_rshort_gnd        )
      nullify(cgrid%dmean_rlong_gnd         )
@@ -3557,6 +3564,7 @@ contains
      nullify(cgrid%mmean_veg_temp          )
      nullify(cgrid%mmean_atm_temp          )
      nullify(cgrid%mmean_rshort            )
+     nullify(cgrid%mmean_rshort_diff       )
      nullify(cgrid%mmean_rlong             )
      nullify(cgrid%mmean_rshort_gnd        )
      nullify(cgrid%mmean_rlong_gnd         )
@@ -3632,6 +3640,7 @@ contains
      nullify(cgrid%qmean_veg_hcap       )
      nullify(cgrid%qmean_atm_temp       )
      nullify(cgrid%qmean_rshort         )
+     nullify(cgrid%qmean_rshort_diff    )
      nullify(cgrid%qmean_rlong          )
      nullify(cgrid%qmean_rshort_gnd     )
      nullify(cgrid%qmean_rlong_gnd      )
@@ -4563,6 +4572,7 @@ contains
        if(associated(cgrid%dmean_atm_prss          )) deallocate(cgrid%dmean_atm_prss          )
        if(associated(cgrid%dmean_atm_vels          )) deallocate(cgrid%dmean_atm_vels          )
        if(associated(cgrid%dmean_rshort            )) deallocate(cgrid%dmean_rshort            )
+       if(associated(cgrid%dmean_rshort_diff       )) deallocate(cgrid%dmean_rshort_diff       )
        if(associated(cgrid%dmean_rlong             )) deallocate(cgrid%dmean_rlong             )
        if(associated(cgrid%dmean_rshort_gnd        )) deallocate(cgrid%dmean_rshort_gnd        )
        if(associated(cgrid%dmean_rlong_gnd         )) deallocate(cgrid%dmean_rlong_gnd         )
@@ -4624,6 +4634,7 @@ contains
        if(associated(cgrid%mmean_veg_temp          )) deallocate(cgrid%mmean_veg_temp          )
        if(associated(cgrid%mmean_atm_temp          )) deallocate(cgrid%mmean_atm_temp          )
        if(associated(cgrid%mmean_rshort            )) deallocate(cgrid%mmean_rshort            )
+       if(associated(cgrid%mmean_rshort_diff       )) deallocate(cgrid%mmean_rshort_diff       )
        if(associated(cgrid%mmean_rlong             )) deallocate(cgrid%mmean_rlong             )
        if(associated(cgrid%mmean_rshort_gnd        )) deallocate(cgrid%mmean_rshort_gnd        )
        if(associated(cgrid%mmean_rlong_gnd         )) deallocate(cgrid%mmean_rlong_gnd         )
@@ -4700,6 +4711,7 @@ contains
     if(associated(cgrid%qmean_veg_hcap       )) deallocate(cgrid%qmean_veg_hcap       )
     if(associated(cgrid%qmean_atm_temp       )) deallocate(cgrid%qmean_atm_temp       )
     if(associated(cgrid%qmean_rshort         )) deallocate(cgrid%qmean_rshort         )
+    if(associated(cgrid%qmean_rshort_diff    )) deallocate(cgrid%qmean_rshort_diff    )
     if(associated(cgrid%qmean_rlong          )) deallocate(cgrid%qmean_rlong          )
     if(associated(cgrid%qmean_rshort_gnd     )) deallocate(cgrid%qmean_rshort_gnd     )
     if(associated(cgrid%qmean_rlong_gnd      )) deallocate(cgrid%qmean_rlong_gnd      )
@@ -8636,6 +8648,13 @@ contains
               var_len,var_len_global,max_ptrs,'DMEAN_RSHORT :11:hist:dail') 
          call metadata_edio(nvar,igr,'Daily mean shortwave radiation','[w/m2]','ipoly') 
       end if
+
+      if(associated(cgrid%dmean_rshort_diff)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,cgrid%dmean_rshort_diff,nvar,igr,init,cgrid%pyglob_id, &
+              var_len,var_len_global,max_ptrs,'DMEAN_RSHORT_DIFF :11:hist:dail') 
+         call metadata_edio(nvar,igr,'Daily mean diffuse shortwave radiation','[w/m2]','ipoly') 
+      end if
       
       if(associated(cgrid%dmean_rlong)) then
          nvar=nvar+1
@@ -8964,6 +8983,13 @@ contains
          call vtable_edio_r(npts,cgrid%mmean_rshort,nvar,igr,init,cgrid%pyglob_id, &
               var_len,var_len_global,max_ptrs,'MMEAN_RSHORT :11:hist:mont:dcyc') 
          call metadata_edio(nvar,igr,'Monthly mean downwelling solar radiation','[w/m2]','ipoly') 
+      end if
+      
+      if(associated(cgrid%mmean_rshort_diff)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,cgrid%mmean_rshort_diff,nvar,igr,init,cgrid%pyglob_id, &
+              var_len,var_len_global,max_ptrs,'MMEAN_RSHORT_DIFF :11:hist:mont:dcyc') 
+         call metadata_edio(nvar,igr,'Monthly mean incoming diffuse solar radiation','[w/m2]','ipoly') 
       end if
       
       if(associated(cgrid%mmean_rlong)) then
@@ -9458,6 +9484,13 @@ contains
          nvar=nvar+1
          call vtable_edio_r(npts,cgrid%qmean_rshort,nvar,igr,init,cgrid%pyglob_id, &
               var_len,var_len_global,max_ptrs,'QMEAN_RSHORT :-11:hist:dcyc') 
+         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+      end if
+
+      if(associated(cgrid%qmean_rshort_diff)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,cgrid%qmean_rshort_diff,nvar,igr,init,cgrid%pyglob_id, &
+              var_len,var_len_global,max_ptrs,'QMEAN_RSHORT_DIFF :-11:hist:dcyc') 
          call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
       end if
 
@@ -12898,14 +12931,14 @@ contains
 
       if (associated(cpatch%beamext_level)) then
          nvar=nvar+1
-           call vtable_edio_r(npts,cpatch%light_level,nvar,igr,init,cpatch%coglob_id, &
+           call vtable_edio_r(npts,cpatch%beamext_level,nvar,igr,init,cpatch%coglob_id, &
            var_len,var_len_global,max_ptrs,'BEAMEXT_LEVEL :41:hist:anal') 
          call metadata_edio(nvar,igr,'Beam extinction level','[NA]','icohort') 
       end if
 
       if (associated(cpatch%diffext_level)) then
          nvar=nvar+1
-           call vtable_edio_r(npts,cpatch%light_level,nvar,igr,init,cpatch%coglob_id, &
+           call vtable_edio_r(npts,cpatch%diffext_level,nvar,igr,init,cpatch%coglob_id, &
            var_len,var_len_global,max_ptrs,'DIFFEXT_LEVEL :41:hist:anal') 
          call metadata_edio(nvar,igr,'diff extinction level','[NA]','icohort') 
       end if
