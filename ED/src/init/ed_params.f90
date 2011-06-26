@@ -444,8 +444,8 @@ subroutine init_can_rad_params()
    ! and near-infrared radiation.                                                          !
    !---------------------------------------------------------------------------------------!
    fvis_beam_def = 0.43
-   fvis_diff_def = 0.52
    fnir_beam_def = 1.0 - fvis_beam_def
+   fvis_diff_def = 0.52
    fnir_diff_def = 1.0 - fvis_diff_def
    !---------------------------------------------------------------------------------------!
 
@@ -453,34 +453,50 @@ subroutine init_can_rad_params()
 
    !---------------------------------------------------------------------------------------!
    !      Leaf reflectance.                                                                !
+   !      Values for temperate PFTs were left as they were.  Tropical and sub-tropical     !
+   ! PFTs use the parameters from CLM.  I checked the values against some published and    !
+   ! they seem similar at a first glance, at least closer than the original values, which  !
+   ! looked like the visible ignoring the green band.                                      !
    !---------------------------------------------------------------------------------------!
    !----- Visible (PAR). ------------------------------------------------------------------!
-   leaf_reflect_vis(  1:4) = 0.062
-   leaf_reflect_vis( 5:13) = 0.110
-   leaf_reflect_vis(14:16) = 0.062
-   leaf_reflect_vis(   17) = 0.110
+   leaf_reflect_vis(1)     = 0.11  ! 0.062
+   leaf_reflect_vis(2:4)   = 0.11  ! 0.062
+   leaf_reflect_vis(5:13)  = 0.11
+   leaf_reflect_vis(14:15) = 0.11
+   leaf_reflect_vis(16)    = 0.11  ! 0.062
+   leaf_reflect_vis(17)    = 0.09  ! 0.110
    !----- Near infrared. ------------------------------------------------------------------!
-   leaf_reflect_nir(  1:4) = 0.577
+   leaf_reflect_nir(1)     = 0.58
+   leaf_reflect_nir(2:4)   = 0.58
    leaf_reflect_nir( 5:13) = 0.577
-   leaf_reflect_nir(14:16) = 0.577
-   leaf_reflect_nir(   17) = 0.577
+   leaf_reflect_nir(14:15) = 0.58
+   leaf_reflect_nir(16)    = 0.58
+   leaf_reflect_nir(17)    = 0.46
    !---------------------------------------------------------------------------------------!
 
 
 
    !---------------------------------------------------------------------------------------!
    !      Leaf transmittance.                                                              !
+   !      Values for temperate PFTs were left as they were.  Tropical and sub-tropical     !
+   ! PFTs use the parameters from CLM.  I checked the values against some published and    !
+   ! they seem similar at a first glance, at least closer than the original values, which  !
+   ! looked like the visible ignoring the green band.                                      !
    !---------------------------------------------------------------------------------------!
    !----- Visible (PAR). ------------------------------------------------------------------!
-   leaf_trans_vis(  1:4) = 0.028
-   leaf_trans_vis( 5:13) = 0.160
-   leaf_trans_vis(14:16) = 0.028
-   leaf_trans_vis(   17) = 0.160
+   leaf_trans_vis(    1) = 0.070  ! 0.028
+   leaf_trans_vis(  2:4) = 0.050  ! 0.028
+   leaf_trans_vis( 5:13) = 0.160  ! 0.160
+   leaf_trans_vis(14:15) = 0.160  ! 0.028
+   leaf_trans_vis(   16) = 0.070  ! 0.160
+   leaf_trans_vis(   17) = 0.050  ! 0.160
    !----- Near infrared. ------------------------------------------------------------------!
-   leaf_trans_nir(  1:4) = 0.248
+   leaf_trans_nir(    1) = 0.25
+   leaf_trans_nir(  2:4) = 0.25
    leaf_trans_nir( 5:13) = 0.248
-   leaf_trans_nir(14:16) = 0.248
-   leaf_trans_nir(   17) = 0.248
+   leaf_trans_nir(14:15) = 0.248
+   leaf_trans_nir(   16) = 0.25
+   leaf_trans_nir(   17) = 0.18
    !---------------------------------------------------------------------------------------!
 
 
@@ -1144,20 +1160,20 @@ subroutine init_pft_photo_params()
 
 
    !------ Vm0 is the maximum photosynthesis capacity in µmol/m2/s. -----------------------!
-   Vm0(1)                    = 12.5            * 1.60
-   Vm0(2)                    = 18.75           * vmfact
-   Vm0(3)                    = 12.5            * vmfact
-   Vm0(4)                    = 6.25            * vmfact
-   Vm0(5)                    = 18.3            * vmfact
-   Vm0(6)                    = 15.625 * 0.7264 * vmfact
-   Vm0(7)                    = 15.625 * 0.7264 * vmfact
-   Vm0(8)                    = 6.25   * 0.7264 * vmfact
-   Vm0(9)                    = 18.25  * 1.1171 * vmfact
-   Vm0(10)                   = 15.625 * 1.1171 * vmfact
-   Vm0(11)                   = 6.25   * 1.1171 * vmfact
-   Vm0(12:13)                = 18.3            * vmfact
-   Vm0(14:15)                = 12.5            * 1.60
-   Vm0(16)                   = 21.875          * vmfact
+   Vm0(1)                    =   12.5 ! 12.5            * 1.60
+   Vm0(2)                    =  18.75 ! 18.75           * vmfact
+   Vm0(3)                    = 12.500 ! 12.5            * vmfact
+   Vm0(4)                    =   6.25 ! 6.25            * vmfact
+   Vm0(5)                    = 18.300          
+   Vm0(6)                    = 15.625 * 0.7264 
+   Vm0(7)                    = 15.625 * 0.7264 
+   Vm0(8)                    =  6.250 * 0.7264 
+   Vm0(9)                    = 18.250 * 1.1171 
+   Vm0(10)                   = 15.625 * 1.1171 
+   Vm0(11)                   =  6.250 * 1.1171 
+   Vm0(12:13)                = 18.300          
+   Vm0(14:15)                = 12.500 ! 12.5            * 1.60
+   Vm0(16)                   = 21.875 !21.875          * vmfact
    Vm0(17)                   = 15.625
    !---------------------------------------------------------------------------------------!
 

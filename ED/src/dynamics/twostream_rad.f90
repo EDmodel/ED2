@@ -10,7 +10,8 @@ subroutine sw_twostream_clump(salb,scosz,scosaoi,ncoh,pft,TAI,canopy_area       
                              ,SW_abs_diffuse_flip,DW_vislo_beam,DW_vislo_diffuse           &
                              ,UW_vishi_beam,UW_vishi_diffuse,DW_nirlo_beam                 &
                              ,DW_nirlo_diffuse,UW_nirhi_beam,UW_nirhi_diffuse              &
-                             ,beam_level,diff_level,lambda_coh,lambda_tot)
+                             ,beam_level,diff_level,light_level,light_beam_level           &
+                             ,light_diff_level,lambda_coh,lambda_tot)
 
    use ed_max_dims          , only : n_pft                   ! ! intent(in) 
    use pft_coms             , only : clumping_factor         & ! intent(in) 
@@ -19,96 +20,103 @@ subroutine sw_twostream_clump(salb,scosz,scosaoi,ncoh,pft,TAI,canopy_area       
                                    , diffuse_backscatter_vis & ! intent(in)
                                    , leaf_scatter_nir        & ! intent(in)
                                    , leaf_scatter_vis        & ! intent(in)
-                                   , visible_fraction_dir    & ! intent(in)
-                                   , visible_fraction_dif    & ! intent(in)
+                                   , par_beam_norm           & ! intent(in)
+                                   , par_diff_norm           & ! intent(in)
+                                   , nir_beam_norm           & ! intent(in)
+                                   , nir_diff_norm           & ! intent(in)
                                    , cosz_min8               ! ! intent(in)
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
-   integer, dimension(ncoh)     , intent(in)    :: pft
-   integer                      , intent(in)    :: ncoh
-   real(kind=8), dimension(ncoh), intent(in)    :: TAI
-   real(kind=8), dimension(ncoh), intent(in)    :: canopy_area
-   real                         , intent(in)    :: salb
-   real                         , intent(in)    :: scosz
-   real                         , intent(in)    :: scosaoi
-   real, dimension(ncoh)        , intent(out)   :: PAR_beam_flip
-   real, dimension(ncoh)        , intent(out)   :: PAR_diffuse_flip
-   real, dimension(ncoh)        , intent(out)   :: SW_abs_beam_flip
-   real, dimension(ncoh)        , intent(out)   :: SW_abs_diffuse_flip
-   real                         , intent(out)   :: UW_vishi_beam
-   real                         , intent(out)   :: UW_vishi_diffuse
-   real                         , intent(out)   :: UW_nirhi_beam
-   real                         , intent(out)   :: UW_nirhi_diffuse
-   real                         , intent(out)   :: DW_vislo_beam
-   real                         , intent(out)   :: DW_vislo_diffuse
-   real                         , intent(out)   :: DW_nirlo_beam
-   real                         , intent(out)   :: DW_nirlo_diffuse
-   real(kind=8), dimension(ncoh), intent(out)   :: beam_level
-   real(kind=8), dimension(ncoh), intent(out)   :: diff_level
-   real(kind=8), dimension(ncoh), intent(out)   :: lambda_coh
-   real(kind=8)                 , intent(out)   :: lambda_tot
+   integer, dimension(ncoh)       , intent(in)  :: pft
+   integer                        , intent(in)  :: ncoh
+   real(kind=8), dimension(ncoh)  , intent(in)  :: TAI
+   real(kind=8), dimension(ncoh)  , intent(in)  :: canopy_area
+   real                           , intent(in)  :: salb
+   real                           , intent(in)  :: scosz
+   real                           , intent(in)  :: scosaoi
+   real, dimension(ncoh)          , intent(out) :: PAR_beam_flip
+   real, dimension(ncoh)          , intent(out) :: PAR_diffuse_flip
+   real, dimension(ncoh)          , intent(out) :: SW_abs_beam_flip
+   real, dimension(ncoh)          , intent(out) :: SW_abs_diffuse_flip
+   real                           , intent(out) :: UW_vishi_beam
+   real                           , intent(out) :: UW_vishi_diffuse
+   real                           , intent(out) :: UW_nirhi_beam
+   real                           , intent(out) :: UW_nirhi_diffuse
+   real                           , intent(out) :: DW_vislo_beam
+   real                           , intent(out) :: DW_vislo_diffuse
+   real                           , intent(out) :: DW_nirlo_beam
+   real                           , intent(out) :: DW_nirlo_diffuse
+   real(kind=8), dimension(ncoh)  , intent(out) :: beam_level
+   real(kind=8), dimension(ncoh)  , intent(out) :: diff_level
+   real(kind=8), dimension(ncoh)  , intent(out) :: light_level
+   real(kind=8), dimension(ncoh)  , intent(out) :: light_beam_level
+   real(kind=8), dimension(ncoh)  , intent(out) :: light_diff_level
+   real(kind=8), dimension(ncoh)  , intent(out) :: lambda_coh
+   real(kind=8)                   , intent(out) :: lambda_tot
    !----- Local variables -----------------------------------------------------------------!
-   integer     , dimension(2*ncoh)        :: indx
-   integer                                :: il
-   integer                                :: ipft
-   integer                                :: ncoh2
-   integer                                :: iband
-   integer                                :: i
-   integer                                :: j
-   integer                                :: ind
-   real(kind=8), dimension(n_pft)         :: leaf_scatter
-   real(kind=8), dimension(n_pft)         :: diffuse_backscatter
-   real(kind=8), dimension(ncoh)          :: expkl_top
-   real(kind=8), dimension(ncoh)          :: expkl_bot
-   real(kind=8), dimension(ncoh)          :: expamk_top
-   real(kind=8), dimension(ncoh)          :: expamk_bot
-   real(kind=8), dimension(ncoh)          :: expapk_top
-   real(kind=8), dimension(ncoh)          :: expapk_bot
-   real(kind=8), dimension(ncoh)          :: A_top
-   real(kind=8), dimension(ncoh)          :: A_bot
-   real(kind=8), dimension(ncoh)          :: B_top
-   real(kind=8), dimension(ncoh)          :: B_bot
-   real(kind=8), dimension(ncoh)          :: C_top
-   real(kind=8), dimension(ncoh)          :: C_bot
-   real(kind=8), dimension(ncoh)          :: F_top
-   real(kind=8), dimension(ncoh)          :: F_bot
-   real(kind=8), dimension(ncoh)          :: G_top
-   real(kind=8), dimension(ncoh)          :: G_bot
-   real(kind=8), dimension(ncoh)          :: H_top
-   real(kind=8), dimension(ncoh)          :: H_bot
-   real(kind=8), dimension(ncoh)          :: beam_bot
-   real(kind=8), dimension(ncoh)          :: beam_bot_crown
-   real(kind=8), dimension(ncoh+1)        :: upward_vis_beam
-   real(kind=8), dimension(ncoh+1)        :: upward_vis_diffuse
-   real(kind=8), dimension(ncoh+1)        :: upward_nir_beam
-   real(kind=8), dimension(ncoh+1)        :: upward_nir_diffuse
-   real(kind=8), dimension(ncoh+1)        :: downward_nir_beam
-   real(kind=8), dimension(ncoh+1)        :: downward_nir_diffuse
-   real(kind=8), dimension(ncoh+1)        :: downward_vis_beam
-   real(kind=8), dimension(ncoh+1)        :: downward_vis_diffuse
-   real(kind=8), dimension(2*ncoh)        :: mastervec_beam
-   real(kind=8), dimension(2*ncoh)        :: masveccp_beam
-   real(kind=8), dimension(2*ncoh)        :: mastervec_diffuse
-   real(kind=8), dimension(2*ncoh)        :: masveccp_diffuse
-   real(kind=8), dimension(2*ncoh,2)      :: matal
-   real(kind=8), dimension(2*ncoh,5)      :: mastermat
-   real(kind=8), dimension(2*ncoh,2*ncoh) :: masmatcp
-   real(kind=8)                           :: alb
-   real(kind=8)                           :: cosz
-   real(kind=8)                           :: cosaoi
-   real(kind=8)                           :: lambda
-   real(kind=8)                           :: beam_backscatter
-   real(kind=8)                           :: eta
-   real(kind=8)                           :: zeta
-   real(kind=8)                           :: exk
-   real(kind=8)                           :: exki
-   real(kind=8)                           :: zetai
-   real(kind=8)                           :: d
-   real(kind=8)                           :: rhoo
-   real(kind=8)                           :: sigma
-   real(kind=8)                           :: source_bot
-   real(kind=8)                           :: source_top
-   real(kind=8), dimension(ncoh)          :: eff_tai
+   integer     , dimension(2*ncoh)              :: indx
+   integer                                      :: il
+   integer                                      :: ipft
+   integer                                      :: ncoh2
+   integer                                      :: iband
+   integer                                      :: i
+   integer                                      :: j
+   integer                                      :: ind
+   real(kind=8), dimension(n_pft)               :: leaf_scatter
+   real(kind=8), dimension(n_pft)               :: diffuse_backscatter
+   real(kind=8), dimension(ncoh)                :: expkl_top
+   real(kind=8), dimension(ncoh)                :: expkl_bot
+   real(kind=8), dimension(ncoh)                :: expamk_top
+   real(kind=8), dimension(ncoh)                :: expamk_bot
+   real(kind=8), dimension(ncoh)                :: expapk_top
+   real(kind=8), dimension(ncoh)                :: expapk_bot
+   real(kind=8), dimension(ncoh)                :: A_top
+   real(kind=8), dimension(ncoh)                :: A_bot
+   real(kind=8), dimension(ncoh)                :: B_top
+   real(kind=8), dimension(ncoh)                :: B_bot
+   real(kind=8), dimension(ncoh)                :: C_top
+   real(kind=8), dimension(ncoh)                :: C_bot
+   real(kind=8), dimension(ncoh)                :: F_top
+   real(kind=8), dimension(ncoh)                :: F_bot
+   real(kind=8), dimension(ncoh)                :: G_top
+   real(kind=8), dimension(ncoh)                :: G_bot
+   real(kind=8), dimension(ncoh)                :: H_top
+   real(kind=8), dimension(ncoh)                :: H_bot
+   real(kind=8), dimension(ncoh)                :: beam_bot
+   real(kind=8), dimension(ncoh)                :: beam_bot_crown
+   real(kind=8), dimension(ncoh)                :: eff_tai
+   real(kind=8), dimension(ncoh+1)              :: upward_vis_beam
+   real(kind=8), dimension(ncoh+1)              :: upward_vis_diffuse
+   real(kind=8), dimension(ncoh+1)              :: upward_nir_beam
+   real(kind=8), dimension(ncoh+1)              :: upward_nir_diffuse
+   real(kind=8), dimension(ncoh+1)              :: downward_nir_beam
+   real(kind=8), dimension(ncoh+1)              :: downward_nir_diffuse
+   real(kind=8), dimension(ncoh+1)              :: downward_vis_beam
+   real(kind=8), dimension(ncoh+1)              :: downward_vis_diffuse
+   real(kind=8), dimension(2*ncoh)              :: mastervec_beam
+   real(kind=8), dimension(2*ncoh)              :: masveccp_beam
+   real(kind=8), dimension(2*ncoh)              :: mastervec_diffuse
+   real(kind=8), dimension(2*ncoh)              :: masveccp_diffuse
+   real(kind=8), dimension(2*ncoh,2)            :: matal
+   real(kind=8), dimension(2*ncoh,5)            :: mastermat
+   real(kind=8), dimension(2*ncoh,2*ncoh)       :: masmatcp
+   real(kind=8)                                 :: alb
+   real(kind=8)                                 :: cosz
+   real(kind=8)                                 :: cosaoi
+   real(kind=8)                                 :: lambda
+   real(kind=8)                                 :: beam_backscatter
+   real(kind=8)                                 :: eta
+   real(kind=8)                                 :: zeta
+   real(kind=8)                                 :: exk
+   real(kind=8)                                 :: exki
+   real(kind=8)                                 :: zetai
+   real(kind=8)                                 :: d
+   real(kind=8)                                 :: rhoo
+   real(kind=8)                                 :: sigma
+   real(kind=8)                                 :: source_bot
+   real(kind=8)                                 :: source_top
+   real(kind=8)                                 :: beam_top
+   real(kind=8)                                 :: diff_top
    !---------------------------------------------------------------------------------------!
 
    
@@ -138,14 +146,22 @@ subroutine sw_twostream_clump(salb,scosz,scosaoi,ncoh,pft,TAI,canopy_area       
             leaf_scatter(ipft)        = dble(leaf_scatter_vis(ipft))
             diffuse_backscatter(ipft) = dble(diffuse_backscatter_vis(ipft))
          end do
+         beam_top = par_beam_norm
+         diff_top = par_diff_norm
       case (2) !----- Near infrared (or NIR). ---------------------------------------------!
          do ipft = 1,n_pft
             leaf_scatter(ipft)        = dble(leaf_scatter_nir(ipft))
             diffuse_backscatter(ipft) = dble(diffuse_backscatter_nir(ipft))
          end do
+         beam_top = nir_beam_norm
+         diff_top = nir_diff_norm
       end select
-      
       !------------------------------------------------------------------------------------!
+
+
+
+
+
       !------------------------------------------------------------------------------------!
       !     Calculate more factors for this band.  We start by calculating the forcings,   !
       ! using the effective tree area index, considering the leaf clumpiness and, if the   !
@@ -156,9 +172,9 @@ subroutine sw_twostream_clump(salb,scosz,scosaoi,ncoh,pft,TAI,canopy_area       
       ! canopy_area is one.).                                                              !
       !------------------------------------------------------------------------------------!
       !----- Start with the tallest cohort, moving downwards. -----------------------------!
-      beam_bot_crown(ncoh) = exp(-lambda*eff_tai(ncoh)/canopy_area(ncoh))
-      beam_level(ncoh)     = exp(-5.d-1*lambda*eff_tai(ncoh)/canopy_area(ncoh))
-      beam_bot(ncoh)       = (1.d0-canopy_area(ncoh))                                      &
+      beam_bot_crown(ncoh) = beam_top * exp(-lambda*eff_tai(ncoh)/canopy_area(ncoh))
+      beam_level(ncoh)     = beam_top * exp(-5.d-1*lambda*eff_tai(ncoh)/canopy_area(ncoh))
+      beam_bot(ncoh)       = beam_top * (1.d0-canopy_area(ncoh))                           &
                            + canopy_area(ncoh)*beam_bot_crown(ncoh)
       do il=ncoh-1,1,-1
          beam_bot_crown(il) = beam_bot(il+1) * exp(-lambda*eff_tai(il)/canopy_area(il))
@@ -234,7 +250,7 @@ subroutine sw_twostream_clump(salb,scosz,scosaoi,ncoh,pft,TAI,canopy_area       
       masmatcp(1,1)        = G_top(ncoh)
       masmatcp(1,2)        = H_top(ncoh)
       mastervec_beam(1)    = -F_top(ncoh)
-      mastervec_diffuse(1) = 1.0d0
+      mastervec_diffuse(1) = diff_top
       masveccp_beam(1)     = mastervec_beam(1)
       masveccp_diffuse(1)  = mastervec_diffuse(1)
 
@@ -334,8 +350,8 @@ subroutine sw_twostream_clump(salb,scosz,scosaoi,ncoh,pft,TAI,canopy_area       
                                       + C_top(ncoh) * mastervec_beam(2) + A_top(ncoh)
          upward_vis_diffuse(ncoh+1)   = B_top(ncoh) * mastervec_diffuse(1)                 &
                                       + C_top(ncoh) * mastervec_diffuse(2)
-         downward_vis_beam(ncoh+1)    = 1.0d0
-         downward_vis_diffuse(ncoh+1) = 1.0d0
+         downward_vis_beam(ncoh+1)    = beam_top
+         downward_vis_diffuse(ncoh+1) = diff_top
          downward_vis_beam(1)         = G_bot(1) * mastervec_beam(ncoh2-1)                 &
                                       + H_bot(1) * mastervec_beam(ncoh2) + F_bot(1)        &
                                       + beam_bot(1)
@@ -366,8 +382,8 @@ subroutine sw_twostream_clump(salb,scosz,scosaoi,ncoh,pft,TAI,canopy_area       
                                       + C_top(ncoh) * mastervec_beam(2) + A_top(ncoh)
          upward_nir_diffuse(ncoh+1)   = B_top(ncoh) * mastervec_diffuse(1)                 &
                                       + C_top(ncoh) * mastervec_diffuse(2)
-         downward_nir_beam(ncoh+1)    = 1.0d0
-         downward_nir_diffuse(ncoh+1) = 1.0d0
+         downward_nir_beam(ncoh+1)    = beam_top
+         downward_nir_diffuse(ncoh+1) = diff_top
          downward_nir_beam(1)         = G_bot(1) * mastervec_beam(ncoh2-1)                 &
                                       + H_bot(1) * mastervec_beam(ncoh2) + F_bot(1)        &
                                       + beam_bot(1)
@@ -379,19 +395,56 @@ subroutine sw_twostream_clump(salb,scosz,scosaoi,ncoh,pft,TAI,canopy_area       
    end do bandloop
    
    do il=1,ncoh
-      diff_level(il)          = downward_vis_diffuse(il+1)
-      PAR_beam_flip(il)       = visible_fraction_dir                                       &
-                              * sngl( downward_vis_beam(il+1)-downward_vis_beam(il)        &
-                                    + upward_vis_beam(il)-upward_vis_beam(il+1))
-      PAR_diffuse_flip(il)    = visible_fraction_dif                                       &
-                              * sngl( downward_vis_diffuse(il+1)-downward_vis_diffuse(il)  &
-                                    + upward_vis_diffuse(il)-upward_vis_diffuse(il+1))
-      SW_abs_beam_flip(il)    = PAR_beam_flip(il) + (1.0 - visible_fraction_dir)           &
-                              * sngl( downward_nir_beam(il+1)-downward_nir_beam(il)        &
-                                    + upward_nir_beam(il)-upward_nir_beam(il+1))
-      SW_abs_diffuse_flip(il) = PAR_diffuse_flip(il) + (1.0 - visible_fraction_dif)        &
-                              * sngl(downward_nir_diffuse(il+1) - downward_nir_diffuse(il) &
-                                    + upward_nir_diffuse(il) - upward_nir_diffuse(il+1))
+      !------------------------------------------------------------------------------------!
+      !     Find the light level of the visible band, which is the one that the plants     !
+      ! use, and the total light level, which includes the near-infrared.                  !
+      !------------------------------------------------------------------------------------!
+      diff_level(il)          = 5.d-1 * ( downward_vis_diffuse(il  )                       &
+                                        + downward_vis_diffuse(il+1) ) / par_diff_norm
+
+      beam_level(il)          = 5.d-1 * ( downward_vis_beam   (il  )                       &
+                                        + downward_vis_beam   (il+1) ) / par_beam_norm
+
+      light_level(il)         = 5.d-1 * ( downward_vis_diffuse(il  )                       &
+                                        + downward_vis_beam   (il  )                       &
+                                        + downward_nir_diffuse(il  )                       &
+                                        + downward_nir_beam   (il  )                       &
+                                        + downward_vis_diffuse(il+1)                       &
+                                        + downward_vis_beam   (il+1)                       &
+                                        + downward_nir_diffuse(il+1)                       &
+                                        + downward_nir_beam   (il+1) )
+
+      light_beam_level(il)    = 5.d-1 * ( downward_vis_beam   (il  )                       &
+                                        + downward_nir_beam   (il  )                       &
+                                        + downward_vis_beam   (il+1)                       &
+                                        + downward_nir_beam   (il+1) )                     &
+                              / ( par_beam_norm + nir_beam_norm )
+
+      light_diff_level(il)    = 5.d-1 * ( downward_vis_diffuse(il  )                       &
+                                        + downward_nir_diffuse(il  )                       &
+                                        + downward_vis_diffuse(il+1)                       &
+                                        + downward_nir_diffuse(il+1) )                     &
+                              / ( par_diff_norm + nir_beam_norm )
+      !------------------------------------------------------------------------------------!
+
+      PAR_beam_flip(il)       = sngl( downward_vis_beam    (il+1)                          &
+                                    - downward_vis_beam    (il  )                          &
+                                    + upward_vis_beam      (il  )                          &
+                                    - upward_vis_beam      (il+1)  )
+      PAR_diffuse_flip(il)    = sngl( downward_vis_diffuse (il+1)                          &
+                                    - downward_vis_diffuse (il  )                          &
+                                    + upward_vis_diffuse   (il  )                          &
+                                    - upward_vis_diffuse   (il+1)  )
+
+      SW_abs_beam_flip(il)    = PAR_beam_flip(il)    + sngl( downward_nir_beam   (il+1)    &
+                                                           - downward_nir_beam   (il  )    &
+                                                           + upward_nir_beam     (il  )    &
+                                                           - upward_nir_beam(il+1))
+
+      SW_abs_diffuse_flip(il) = PAR_diffuse_flip(il) + sngl( downward_nir_diffuse(il+1)    &
+                                                           - downward_nir_diffuse(il  )    &
+                                                           + upward_nir_diffuse  (il  )    &
+                                                           - upward_nir_diffuse  (il+1) )
 
       !----- Ensure that we don't get any negative radiation... ---------------------------!
       PAR_beam_flip(il)       = max(0.0,PAR_beam_flip(il)       )
@@ -406,14 +459,14 @@ subroutine sw_twostream_clump(salb,scosz,scosaoi,ncoh,pft,TAI,canopy_area       
 
 
    !----- Copy to the output variables. ---------------------------------------------------!
-   DW_vislo_beam    = max(0.0,sngl(downward_vis_beam(1)))       * visible_fraction_dir
-   DW_vislo_diffuse = max(0.0,sngl(downward_vis_diffuse(1)))    * visible_fraction_dif
-   UW_vishi_beam    = max(0.0,sngl(upward_vis_beam(ncoh+1)))    * visible_fraction_dir
-   UW_vishi_diffuse = max(0.0,sngl(upward_vis_diffuse(ncoh+1))) * visible_fraction_dif
-   DW_nirlo_beam    = max(0.0,sngl(downward_nir_beam(1)))       * (1.-visible_fraction_dir)
-   DW_nirlo_diffuse = max(0.0,sngl(downward_nir_diffuse(1)))    * (1.-visible_fraction_dif)
-   UW_nirhi_beam    = max(0.0,sngl(upward_nir_beam(ncoh+1)))    * (1.-visible_fraction_dir)
-   UW_nirhi_diffuse = max(0.0,sngl(upward_nir_diffuse(ncoh+1))) * (1.-visible_fraction_dif)
+   DW_vislo_beam    = max(0.0,sngl(downward_vis_beam        (1) ) )
+   DW_vislo_diffuse = max(0.0,sngl(downward_vis_diffuse     (1) ) )
+   UW_vishi_beam    = max(0.0,sngl(upward_vis_beam     (ncoh+1) ) )
+   UW_vishi_diffuse = max(0.0,sngl(upward_vis_diffuse  (ncoh+1) ) )
+   DW_nirlo_beam    = max(0.0,sngl(downward_nir_beam        (1) ) )
+   DW_nirlo_diffuse = max(0.0,sngl(downward_nir_diffuse     (1) ) )
+   UW_nirhi_beam    = max(0.0,sngl(upward_nir_beam     (ncoh+1) ) )
+   UW_nirhi_diffuse = max(0.0,sngl(upward_nir_diffuse  (ncoh+1) ) )
    !---------------------------------------------------------------------------------------!
 
    return
@@ -439,7 +492,8 @@ subroutine sw_twostream_layer(salb,scosz,scosaoi,ncoh,pft,TAI,canopy_area,hgttop
                              ,SW_abs_diffuse_flip,DW_vislo_beam,DW_vislo_diffuse           &
                              ,UW_vishi_beam,UW_vishi_diffuse,DW_nirlo_beam                 &
                              ,DW_nirlo_diffuse,UW_nirhi_beam,UW_nirhi_diffuse              &
-                             ,beam_level,diff_level,lambda_coh,lambda_tot)
+                             ,beam_level,diff_level,light_level,light_beam_level           &
+                             ,light_diff_level,lambda_coh,lambda_tot)
 
    use ed_max_dims          , only : n_pft                   ! ! intent(in)
    use pft_coms             , only : clumping_factor         & ! intent(in)
@@ -448,8 +502,10 @@ subroutine sw_twostream_layer(salb,scosz,scosaoi,ncoh,pft,TAI,canopy_area,hgttop
                                    , diffuse_backscatter_vis & ! intent(in)
                                    , leaf_scatter_nir        & ! intent(in)
                                    , leaf_scatter_vis        & ! intent(in)
-                                   , visible_fraction_dir    & ! intent(in)
-                                   , visible_fraction_dif    & ! intent(in)
+                                   , par_beam_norm           & ! intent(in)
+                                   , par_diff_norm           & ! intent(in)
+                                   , nir_beam_norm           & ! intent(in)
+                                   , nir_diff_norm           & ! intent(in)
                                    , cosz_min8               ! ! intent(in)
    use canopy_layer_coms    , only : dzcan8                  & ! intent(in)
                                    , zztop8                  & ! intent(in)
@@ -531,6 +587,9 @@ subroutine sw_twostream_layer(salb,scosz,scosaoi,ncoh,pft,TAI,canopy_area,hgttop
    real(kind=4)                  , intent(out) :: DW_nirlo_diffuse
    real(kind=8), dimension(ncoh) , intent(out) :: beam_level
    real(kind=8), dimension(ncoh) , intent(out) :: diff_level
+   real(kind=8), dimension(ncoh) , intent(out) :: light_level
+   real(kind=8), dimension(ncoh) , intent(out) :: light_beam_level
+   real(kind=8), dimension(ncoh) , intent(out) :: light_diff_level
    real(kind=8), dimension(ncoh) , intent(out) :: lambda_coh
    real(kind=8)                  , intent(out) :: lambda_tot
    !----- Local variables -----------------------------------------------------------------!
@@ -574,6 +633,8 @@ subroutine sw_twostream_layer(salb,scosz,scosaoi,ncoh,pft,TAI,canopy_area,hgttop
    real(kind=8)                                :: iota
    real(kind=8)                                :: source_bot
    real(kind=8)                                :: source_top
+   real(kind=8)                                :: beam_top
+   real(kind=8)                                :: diff_top
    !----- Variables that must be allocated every time. ------------------------------------!
    real(kind=8), dimension(:,:)  , allocatable :: extinct_full
    real(kind=8), dimension(:,:)  , allocatable :: extinct_half
@@ -792,11 +853,15 @@ subroutine sw_twostream_layer(salb,scosz,scosaoi,ncoh,pft,TAI,canopy_area,hgttop
             leaf_scatter(ipft)        = dble(leaf_scatter_vis(ipft))
             diffuse_backscatter(ipft) = dble(diffuse_backscatter_vis(ipft))
          end do
+         beam_top = par_beam_norm
+         diff_top = par_diff_norm
       case (2) !----- Near infrared (or NIR). ---------------------------------------------!
          do ipft = 1,n_pft
             leaf_scatter(ipft)        = dble(leaf_scatter_nir(ipft))
             diffuse_backscatter(ipft) = dble(diffuse_backscatter_nir(ipft))
          end do
+         beam_top = nir_beam_norm
+         diff_top = nir_diff_norm
       end select
       
       !------------------------------------------------------------------------------------!
@@ -808,12 +873,15 @@ subroutine sw_twostream_layer(salb,scosz,scosaoi,ncoh,pft,TAI,canopy_area,hgttop
       ! the total light passing through a layer (beam_bot).                                !
       !------------------------------------------------------------------------------------!
       !----- Start with the highest layer, moving downwards. ------------------------------!
-      beam_bot_crown(nactlyr) = sum(canfrac_lyr(:,nactlyr) * extinct_full(:,nactlyr))      &
+      beam_bot_crown(nactlyr) = beam_top                                                   &
+                              * sum(canfrac_lyr(:,nactlyr) * extinct_full(:,nactlyr))      &
                               / (1.d0 - opencan8(nactlyr) )
-      beam_bot      (nactlyr) = opencan8(nactlyr)                                          &
-                              + sum(canfrac_lyr(:,nactlyr) * extinct_full(:,nactlyr))
-      beam_mid      (nactlyr) = opencan8(nactlyr)                                          &
-                              + sum(canfrac_lyr(:,nactlyr) * extinct_half(:,nactlyr))
+      beam_bot      (nactlyr) = beam_top                                                   &
+                              * ( opencan8(nactlyr)                                        &
+                                + sum(canfrac_lyr(:,nactlyr) * extinct_full(:,nactlyr)) )
+      beam_mid      (nactlyr) = beam_top                                                   &
+                              * ( opencan8(nactlyr)                                        &
+                                + sum(canfrac_lyr(:,nactlyr) * extinct_half(:,nactlyr)) )
       do il = nactlyr-1,1,-1
          beam_bot_crown  (il) = beam_bot(il+1)                                             &
                               * sum(canfrac_lyr(:,il) * extinct_full(:,il))                &
@@ -928,7 +996,7 @@ subroutine sw_twostream_layer(salb,scosz,scosaoi,ncoh,pft,TAI,canopy_area,hgttop
       masmatcp(1,1)        = G_top(nactlyr)
       masmatcp(1,2)        = H_top(nactlyr)
       mastervec_beam(1)    = -F_top(nactlyr)
-      mastervec_diffuse(1) = 1.0d0
+      mastervec_diffuse(1) = diff_top
       masveccp_beam(1)     = mastervec_beam(1)
       masveccp_diffuse(1)  = mastervec_diffuse(1)
 
@@ -1009,7 +1077,7 @@ subroutine sw_twostream_layer(salb,scosz,scosaoi,ncoh,pft,TAI,canopy_area,hgttop
       case (1) !---- Visible (or PAR) band. -----------------------------------------------!
          do i=3,nactlyrt2-1,2
             ind                     = nint(real(nactlyrt2-i+1)*0.5)+1
-            upward_vis_beam(ind)    = A_bot(ind) + B_bot(ind) * mastervec_beam(i-2)        &
+            upward_vis_beam   (ind) = A_bot(ind) + B_bot(ind) * mastervec_beam(i-2)        &
                                     + C_bot(ind) * mastervec_beam(i-1)
             upward_vis_diffuse(ind) = B_bot(ind) * mastervec_diffuse(i-2)                  &
                                     + C_bot(ind) * mastervec_diffuse(i-1)
@@ -1017,32 +1085,32 @@ subroutine sw_twostream_layer(salb,scosz,scosaoi,ncoh,pft,TAI,canopy_area,hgttop
 
          do i=2,nactlyrt2-2,2
             ind                       = nint(real(nactlyrt2-i)*0.5)+1
-            downward_vis_beam(ind)    = beam_bot(ind) + F_bot(ind)                         &
+            downward_vis_beam   (ind) = beam_bot(ind) + F_bot(ind)                         &
                                       + H_bot(ind) * mastervec_beam(i)                     &
                                       + G_bot(ind) * mastervec_beam(i-1)
             downward_vis_diffuse(ind) = H_bot(ind) * mastervec_diffuse(i)                  &
                                       + G_bot(ind) * mastervec_diffuse(i-1)
          end do
 
-         upward_vis_beam(nactlyr+1)      = B_top(nactlyr) * mastervec_beam(1)              &
+         upward_vis_beam     (nactlyr+1) = B_top(nactlyr) * mastervec_beam(1)              &
                                          + C_top(nactlyr) * mastervec_beam(2)              &
                                          + A_top(nactlyr)
-         upward_vis_diffuse(nactlyr+1)   = B_top(nactlyr) * mastervec_diffuse(1)           &
+         upward_vis_diffuse  (nactlyr+1) = B_top(nactlyr) * mastervec_diffuse(1)           &
                                          + C_top(nactlyr) * mastervec_diffuse(2)
-         downward_vis_beam(nactlyr+1)    = 1.0d0
-         downward_vis_diffuse(nactlyr+1) = 1.0d0
-         downward_vis_beam(1)            = G_bot(1) * mastervec_beam(nactlyrt2-1)          &
+         downward_vis_beam   (nactlyr+1) = beam_top
+         downward_vis_diffuse(nactlyr+1) = diff_top
+         downward_vis_beam   (1)         = G_bot(1) * mastervec_beam(nactlyrt2-1)          &
                                          + H_bot(1) * mastervec_beam(nactlyrt2) + F_bot(1) &
                                          + beam_bot(1)
          downward_vis_diffuse(1)         = G_bot(1) * mastervec_diffuse(nactlyrt2-1)       &
                                          + H_bot(1) * mastervec_diffuse(nactlyrt2)
-         upward_vis_beam(1)              = alb * downward_vis_beam(1)
-         upward_vis_diffuse(1)           = alb * downward_vis_diffuse(1)
+         upward_vis_beam     (1)         = alb * downward_vis_beam(1)
+         upward_vis_diffuse  (1)         = alb * downward_vis_diffuse(1)
       case (2)
 
          do i=3,nactlyrt2-1,2
             ind                     = nint(real(nactlyrt2-i+1)*0.5)+1
-            upward_nir_beam(ind)    = A_bot(ind) + B_bot(ind) * mastervec_beam(i-2)        &
+            upward_nir_beam   (ind) = A_bot(ind) + B_bot(ind) * mastervec_beam(i-2)        &
                                     + C_bot(ind) * mastervec_beam(i-1)
             upward_nir_diffuse(ind) = B_bot(ind) * mastervec_diffuse(i-2)                  &
                                     + C_bot(ind) * mastervec_diffuse(i-1)
@@ -1050,20 +1118,20 @@ subroutine sw_twostream_layer(salb,scosz,scosaoi,ncoh,pft,TAI,canopy_area,hgttop
 
          do i=2,nactlyrt2-2,2
             ind                       = nint(real(nactlyrt2-i)*0.5)+1
-            downward_nir_beam(ind)    = beam_bot(ind) + F_bot(ind)                         &
+            downward_nir_beam   (ind) = beam_bot(ind) + F_bot(ind)                         &
                                       + H_bot(ind) * mastervec_beam(i)                     &
                                       + G_bot(ind) * mastervec_beam(i-1)
             downward_nir_diffuse(ind) = H_bot(ind) * mastervec_diffuse(i)                  &
                                       + G_bot(ind) * mastervec_diffuse(i-1)
          end do
 
-         upward_nir_beam(nactlyr+1)      = B_top(nactlyr) * mastervec_beam(1)              &
+         upward_nir_beam     (nactlyr+1) = B_top(nactlyr) * mastervec_beam(1)              &
                                          + C_top(nactlyr) * mastervec_beam(2)              &
                                          + A_top(nactlyr)
-         upward_nir_diffuse(nactlyr+1)   = B_top(nactlyr) * mastervec_diffuse(1)           &
+         upward_nir_diffuse  (nactlyr+1) = B_top(nactlyr) * mastervec_diffuse(1)           &
                                          + C_top(nactlyr) * mastervec_diffuse(2)
-         downward_nir_beam(nactlyr+1)    = 1.0d0
-         downward_nir_diffuse(nactlyr+1) = 1.0d0
+         downward_nir_beam   (nactlyr+1) = beam_top
+         downward_nir_diffuse(nactlyr+1) = diff_top
          downward_nir_beam(1)            = G_bot(1) * mastervec_beam(nactlyrt2-1)          &
                                          + H_bot(1) * mastervec_beam(nactlyrt2) + F_bot(1) &
                                          + beam_bot(1)
@@ -1075,20 +1143,25 @@ subroutine sw_twostream_layer(salb,scosz,scosaoi,ncoh,pft,TAI,canopy_area,hgttop
    end do bandloop
    
    do il=1,nactlyr
-      PAR_beam_layer(il)       = visible_fraction_dir                                      &
-                               * sngl( downward_vis_beam(il+1)-downward_vis_beam(il)       &
-                                     + upward_vis_beam(il)-upward_vis_beam(il+1))
-      PAR_diffuse_layer(il)    = visible_fraction_dif                                      &
-                               * sngl( downward_vis_diffuse(il+1)-downward_vis_diffuse(il) &
-                                     + upward_vis_diffuse(il)-upward_vis_diffuse(il+1))
-      SW_abs_beam_layer(il)    = PAR_beam_layer(il) + (1.0 - visible_fraction_dir)         &
-                               * sngl( downward_nir_beam(il+1)-downward_nir_beam(il)       &
-                                     + upward_nir_beam(il)-upward_nir_beam(il+1))
-      SW_abs_diffuse_layer(il) = PAR_diffuse_layer(il) + (1.0 - visible_fraction_dif)      &
-                               * sngl( downward_nir_diffuse(il+1)                          &
-                                     - downward_nir_diffuse(il)                            &
-                                     + upward_nir_diffuse(il)                              &
-                                     - upward_nir_diffuse(il+1) )
+
+      PAR_beam_layer(il)       = sngl( downward_vis_beam   (il+1)                          &
+                                     - downward_vis_beam   (il  )                          &
+                                     + upward_vis_beam     (il  )                          &
+                                     - upward_vis_beam     (il+1) )
+
+      PAR_diffuse_layer(il)    = sngl( downward_vis_diffuse(il+1)                          &
+                                     - downward_vis_diffuse(il  )                          &
+                                     + upward_vis_diffuse  (il  )                          &
+                                     - upward_vis_diffuse  (il+1) )
+
+      SW_abs_beam_layer(il)    = PAR_beam_layer(il)    + sngl( downward_nir_beam   (il+1)  &
+                                                             - downward_nir_beam   (il  )  &
+                                                             + upward_nir_beam     (il  )  &
+                                                             - upward_nir_beam     (il+1) )
+      SW_abs_diffuse_layer(il) = PAR_diffuse_layer(il) + sngl( downward_nir_diffuse(il+1)  &
+                                                             - downward_nir_diffuse(il  )  &
+                                                             + upward_nir_diffuse  (il  )  &
+                                                             - upward_nir_diffuse  (il+1) )
 
       !----- Ensure that we don't get any negative radiation... ---------------------------!
       PAR_beam_layer(il)       = max(0.0,PAR_beam_layer(il)       )
@@ -1098,22 +1171,14 @@ subroutine sw_twostream_layer(salb,scosz,scosaoi,ncoh,pft,TAI,canopy_area,hgttop
    end do
    
    !----- Copying to the output variables. ------------------------------------------------!
-   DW_vislo_beam    = max(0.0,sngl(downward_vis_beam(1)))                                  &
-                    * visible_fraction_dir
-   DW_vislo_diffuse = max(0.0,sngl(downward_vis_diffuse(1)))                               &
-                    * visible_fraction_dif
-   UW_vishi_beam    = max(0.0,sngl(upward_vis_beam(nactlyr+1)))                            &
-                    * visible_fraction_dir
-   UW_vishi_diffuse = max(0.0,sngl(upward_vis_diffuse(nactlyr+1)))                         &
-                    * visible_fraction_dif
-   DW_nirlo_beam    = max(0.0,sngl(downward_nir_beam(1)))                                  &
-                    * (1.-visible_fraction_dir)
-   DW_nirlo_diffuse = max(0.0,sngl(downward_nir_diffuse(1)))                               &
-                    * (1.-visible_fraction_dif)
-   UW_nirhi_beam    = max(0.0,sngl(upward_nir_beam(nactlyr+1)))                            &
-                    * (1.-visible_fraction_dir)
-   UW_nirhi_diffuse = max(0.0,sngl(upward_nir_diffuse(nactlyr+1)))                         &
-                    * (1.-visible_fraction_dif)
+   DW_vislo_beam    = max(0.0,sngl(downward_vis_beam           (1) ) )
+   DW_vislo_diffuse = max(0.0,sngl(downward_vis_diffuse        (1) ) )
+   UW_vishi_beam    = max(0.0,sngl(upward_vis_beam     (nactlyr+1) ) )
+   UW_vishi_diffuse = max(0.0,sngl(upward_vis_diffuse  (nactlyr+1) ) )
+   DW_nirlo_beam    = max(0.0,sngl(downward_nir_beam           (1) ) )
+   DW_nirlo_diffuse = max(0.0,sngl(downward_nir_diffuse        (1) ) )
+   UW_nirhi_beam    = max(0.0,sngl(upward_nir_beam     (nactlyr+1) ) )
+   UW_nirhi_diffuse = max(0.0,sngl(upward_nir_diffuse  (nactlyr+1) ) )
 
    !---------------------------------------------------------------------------------------!
    !     Integrate the total amount of energy for each cohort.                             !
@@ -1143,14 +1208,58 @@ subroutine sw_twostream_layer(salb,scosz,scosaoi,ncoh,pft,TAI,canopy_area,hgttop
    !---------------------------------------------------------------------------------------!
    !     Find the light level for beam and diffuse radiation.                              !
    !---------------------------------------------------------------------------------------!
-   beam_level(:) = 0.0
-   diff_level(:) = SW_abs_diffuse_flip(:)
+   beam_level       (:) = 0.0
+   diff_level       (:) = 0.0
+   light_level      (:) = 0.0
+   light_beam_level (:) = 0.0
+   light_diff_level (:) = 0.0
    do ico = 1,ncoh
       do il=kapartial(ico),kzpartial(ico)
-         beam_level(ico) = beam_level(ico)                                                 &
-                         + sngloff( beam_mid(il) * dzcanpop(il)                            &
-                                  / ( zztop8(kzpartial(ico)) - zzbot8(kapartial(ico)) )    &
-                                  , tiny_num8 )
+         diff_level(ico)  = diff_level(ico)                                                &
+                          + sngloff( 0.5 * ( downward_vis_diffuse  (il)                    &
+                                           + downward_vis_diffuse(il+1) )  * dzcanpop(il)  &
+                                   / ( (zztop8(kzpartial(ico)) - zzbot8(kapartial(ico)))   &
+                                     * par_diff_norm )                                     &
+                                   , tiny_num8 )
+         beam_level(ico)  = beam_level(ico)                                                &
+                          + sngloff( 0.5 * ( downward_vis_beam  (il)                       &
+                                           + downward_vis_beam(il+1) )  * dzcanpop(il)     &
+                                   / ( (zztop8(kzpartial(ico)) - zzbot8(kapartial(ico)))   &
+                                     * par_beam_norm )                                     &
+                                   , tiny_num8 )
+         light_level(ico) = light_level(ico)                                               &
+                          + sngloff( 0.5 * ( downward_vis_beam     (il)                    &
+                                           + downward_vis_diffuse  (il)                    &
+                                           + downward_nir_beam     (il)                    &
+                                           + downward_nir_diffuse  (il)                    &
+                                           + downward_vis_beam   (il+1)                    &
+                                           + downward_vis_diffuse(il+1)                    &
+                                           + downward_nir_beam   (il+1)                    &
+                                           + downward_nir_diffuse(il+1) )  * dzcanpop(il)  &
+                                   / ( zztop8(kzpartial(ico)) - zzbot8(kapartial(ico)) )   &
+                                   , tiny_num8 )
+
+         light_beam_level(ico) = light_beam_level(ico)                                     &
+                               + sngloff( 0.5 * ( downward_vis_beam     (il)               &
+                                                + downward_nir_beam     (il)               &
+                                                + downward_vis_beam   (il+1)               &
+                                                + downward_nir_beam   (il+1) )             &
+                                        * dzcanpop(il)                                     &
+                                        / ( ( zztop8(kzpartial(ico))                       &
+                                            - zzbot8(kapartial(ico)) )                     &
+                                          * (par_beam_norm + nir_beam_norm) )              &
+                                        , tiny_num8 )
+
+         light_diff_level(ico) = light_diff_level(ico)                                     &
+                               + sngloff( 0.5 * ( downward_vis_diffuse  (il)               &
+                                                + downward_nir_diffuse  (il)               &
+                                                + downward_vis_diffuse(il+1)               &
+                                                + downward_nir_diffuse(il+1) )             &
+                                        * dzcanpop(il)                                     &
+                                        / ( ( zztop8(kzpartial(ico))                       &
+                                            - zzbot8(kapartial(ico)) )                     &
+                                          * (par_diff_norm + nir_diff_norm) )              &
+                                        , tiny_num8 )
       end do
    end do
    !---------------------------------------------------------------------------------------!

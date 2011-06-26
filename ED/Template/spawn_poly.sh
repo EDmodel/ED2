@@ -5,7 +5,7 @@ there=`echo ${here} | sed s@/n/Moorcroft_Lab/Users@/n/moorcroft_scratch@g`
 desc=`basename ${here}`
 sitemet='/n/moorcroft_scratch/nlevine/data/ed2_data/site_met_driver'
 hvdmet='/n/home11/aantonarakis/EDrelease65/run/'
-bioinit='/n/moorcroft_scratch/nlevine/data/ed2_data/site_bio_data'
+bioinit='/n/moorcroft_data/mlongo/data/site_bio_data'
 sheffield='SHEF_NCEP_DRIVER_DS314'
 lonlat=${here}'/joborder.txt'
 

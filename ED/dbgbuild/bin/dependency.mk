@@ -180,6 +180,7 @@ physiology_coms.o: ed_max_dims.mod
 rk4_coms.o: consts_coms.mod ed_max_dims.mod ed_misc_coms.mod grid_coms.mod
 rk4_coms.o: soil_coms.mod therm_lib8.mod
 soil_coms.o: ed_max_dims.mod grid_coms.mod 
+~canopy_radiation_coms.o: ed_max_dims.mod
 ed_mpass_init.o: canopy_air_coms.mod canopy_layer_coms.mod
 ed_mpass_init.o: canopy_radiation_coms.mod decomp_coms.mod disturb_coms.mod
 ed_mpass_init.o: ed_max_dims.mod ed_misc_coms.mod ed_node_coms.mod
