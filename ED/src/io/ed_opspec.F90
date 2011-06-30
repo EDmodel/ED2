@@ -1873,9 +1873,9 @@ end do
       ifaterr = ifaterr +1
       call opspec_fatal(reason,'opspec_misc')
    end if
-   if (imetavg < 0 .and. imetavg > 3) then
+   if (imetavg < -1 .and. imetavg > 3) then
       write (reason,fmt='(a,1x,i4,a)')                                                     &
-                    'Invalid IMETAVG, it must be between 0 and 3.  Yours is set to'        &
+                    'Invalid IMETAVG, it must be between -1 and 3.  Yours is set to'        &
                     ,imetavg,'...'
       ifaterr = ifaterr +1
       call opspec_fatal(reason,'opspec_misc')

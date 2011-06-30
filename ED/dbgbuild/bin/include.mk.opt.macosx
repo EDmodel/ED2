@@ -21,7 +21,7 @@ MAKE=/usr/bin/make
 
 # libraries.
 
-BASE=$(ED_ROOT)/dbgbuild/
+BASE=$(ED_ROOT)/build/
 
 # Activate appropriate parts below, comment out others.
 
@@ -116,10 +116,11 @@ LOADER=mpif90
 #               If the compilation fails either at step 1 or 3, then your code has inter-  #
 #                  face problems. If it successfully compiles, then you can switch to B.   #
 #------------------------------------------------------------------------------------------#
-USE_INTERF=0
-F_OPTS=-O0 -Wall -ffpe-trap=invalid,zero,overflow,underflow,precision,denormal
-C_OPTS=-O0 -DUNDERSCORE -DLITTLE
-LOADER_OPTS=-O0
+#USE_INTERF=0
+#F_OPTS=-O0 -Wall -ffpe-trap=invalid,zero,overflow,underflow,precision,denormal \
+#       -ffree-line-length-none
+#C_OPTS=-O0 -DUNDERSCORE -DLITTLE
+#LOADER_OPTS=-O0 -ffree-line-length-none
 
 
 #------------------------------------------------------------------------------------------#
@@ -128,10 +129,10 @@ LOADER_OPTS=-O0
 #           problems, which means that this is an option suitable for end users, not de-   #
 #           velopers.                                                                      #
 #------------------------------------------------------------------------------------------#
-#USE_INTERF=1
-#F_OPTS= -O3 
-#C_OPTS= -O3 -DLITTLE
-#LOADER_OPTS= -O3 
+USE_INTERF=1
+F_OPTS= -O3 -ffree-line-length-none
+C_OPTS= -O3 -DLITTLE
+LOADER_OPTS= -O3 -ffixed-line-length-none
 #------------------------------------------------------------------------------------------#
 
 #---------------If using scritps 'mpicc' e 'mpif90'---------------'

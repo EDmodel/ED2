@@ -2129,11 +2129,11 @@ subroutine init_pft_alloc_params()
    select case (iallom)
    case (0:2)
       b1Rd(1)     = - 0.700
-      b1Rd(2:4)   = - 0.545 / log10(exp(1.))
+      b1Rd(2:4)   = - exp(0.545 * log(10.))
       b1Rd(5)     = - 0.700
-      b1Rd(6:11)  = - 0.545 / log10(exp(1.))
+      b1Rd(6:11)  = - exp(0.545 * log(10.))
       b1Rd(12:16) = - 0.700
-      b1Rd(17)    = - 0.545 / log10(exp(1.))
+      b1Rd(17)    = - exp(0.545 * log(10.))
 
       b2Rd(1)     = 0.000
       b2Rd(2:4)   = 0.277

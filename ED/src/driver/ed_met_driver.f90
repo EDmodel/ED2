@@ -1233,7 +1233,13 @@ subroutine update_met_drivers(cgrid)
                   ! no incoming radiation until we incorporate fireflies (or a good        !
                   ! twilight scheme) in the model.                                         !
                   !------------------------------------------------------------------------!
-                  if (cgrid%cosz(ipy) > cosz_min) then
+                  if (imetavg == -1) then
+                        fperp_next = cgrid%metinput(ipy)%nbdsf(mnext) 
+                        fperp_prev = cgrid%metinput(ipy)%nbdsf(mprev) 
+                        cgrid%met(ipy)%nir_beam =  fperp_next * wnext                     &
+                                                  + fperp_prev * wprev 
+                  
+                  elseif (cgrid%cosz(ipy) > cosz_min) then
 
                      !---------------------------------------------------------------------!
                      !     Define the normalisation factors for the previous and the next  !
@@ -1245,6 +1251,7 @@ subroutine update_met_drivers(cgrid)
                                                 ,prevmet_timea,dt_radinterp,0.)
                         secz_next = mean_daysecz(cgrid%lon(ipy),cgrid%lat(ipy)             &
                                                 ,nextmet_timea,dt_radinterp,0.)
+                        
                      case default
                         secz_prev = mean_daysecz(cgrid%lon(ipy),cgrid%lat(ipy)             &
                                                 ,prevmet_timea,dt_radinterp                &
@@ -1326,7 +1333,14 @@ subroutine update_met_drivers(cgrid)
                   ! no incoming radiation until we incorporate fireflies (or a good        !
                   ! twilight scheme) in the model.                                         !
                   !------------------------------------------------------------------------!
-                  if (cgrid%cosz(ipy) > cosz_min) then
+                   if (imetavg == -1) then
+                        fperp_next = cgrid%metinput(ipy)%nddsf(mnext) 
+                        fperp_prev = cgrid%metinput(ipy)%nddsf(mprev) 
+                        cgrid%met(ipy)%nir_diffuse = fperp_next * wnext                  &
+                                                     + fperp_prev * wprev 
+                  
+
+                   elseif (cgrid%cosz(ipy) > cosz_min) then
                      !---------------------------------------------------------------------!
                      !     Define the normalisation factors for the previous and the next  !
                      ! time.                                                               !
@@ -1416,7 +1430,14 @@ subroutine update_met_drivers(cgrid)
                   ! no incoming radiation until we incorporate fireflies (or a good        !
                   ! twilight scheme) in the model.                                         !
                   !------------------------------------------------------------------------!
-                  if (cgrid%cosz(ipy) > cosz_min) then
+                  !------------------------------------------------------------------------!
+                  if (imetavg == -1) then
+                        fperp_next = cgrid%metinput(ipy)%vbdsf(mnext) 
+                        fperp_prev = cgrid%metinput(ipy)%vbdsf(mprev) 
+                        cgrid%met(ipy)%par_beam = fperp_next * wnext                     &
+                                                  + fperp_prev * wprev
+
+                  elseif (cgrid%cosz(ipy) > cosz_min) then
                      !---------------------------------------------------------------------!
                      !     Define the normalisation factors for the previous and the next  !
                      ! time.                                                               !
@@ -1505,7 +1526,12 @@ subroutine update_met_drivers(cgrid)
                   ! no incoming radiation until we incorporate fireflies (or a good        !
                   ! twilight scheme) in the model.                                         !
                   !------------------------------------------------------------------------!
-                  if (cgrid%cosz(ipy) > cosz_min) then
+                  if (imetavg == -1) then
+                        fperp_next = cgrid%metinput(ipy)%vddsf(mnext)
+                        fperp_prev = cgrid%metinput(ipy)%vddsf(mprev) 
+                        cgrid%met(ipy)%par_diffuse = fperp_next * wnext                  &
+                                                     + fperp_prev * wprev
+                  elseif (cgrid%cosz(ipy) > cosz_min) then
                      !---------------------------------------------------------------------!
                      !     Define the normalisation factors for the previous and the next  !
                      ! time.                                                               !
