@@ -324,9 +324,9 @@ recursive subroutine read_ed_xml_config(filename)
            call getConfigREAL  ('leaf_scatter_vis','pft',i,rval,texist)
            if(texist) leaf_scatter_vis(myPFT) = real(rval)
            call getConfigREAL  ('diffuse_backscatter_vis','pft',i,rval,texist)
-           if(texist) diffuse_backscatter_vis(myPFT) = real(rval)
+           if(texist) leaf_backscatter_vis(myPFT) = real(rval)
            call getConfigREAL  ('emis_v','pft',i,rval,texist)
-           if(texist) emis_v(myPFT) = rval
+           if(texist) leaf_emis(myPFT) = rval
            
 
 !!! PFT VARIABLES THAT ARE ACTUALLY IN DECOMP
@@ -505,9 +505,9 @@ recursive subroutine read_ed_xml_config(filename)
         call getConfigREAL  ('leaf_trans_nir','radiation',i,rval,texist)
         if(texist) leaf_trans_nir = real(rval)
         call getConfigREAL  ('diffuse_backscatter_vis','radiation',i,rval,texist)
-        if(texist) diffuse_backscatter_vis = real(rval)
+        if(texist) leaf_backscatter_vis = real(rval)
         call getConfigREAL  ('diffuse_backscatter_nir','radiation',i,rval,texist)
-        if(texist) diffuse_backscatter_nir = real(rval)
+        if(texist) leaf_backscatter_nir = real(rval)
         
         
         call libxml2f90__ll_selecttag('UP','config',1) !move back up to top level
@@ -1020,9 +1020,9 @@ subroutine write_ed_xml_config
         call putConfigREAL("root_respiration_factor",root_respiration_factor(i))
         call putConfigREAL("seedling_mortality",seedling_mortality(i))
         call putConfigREAL("water_conductance",water_conductance(i))
-        call putConfigREAL("leaf_scatter_vis",leaf_scatter_vis(i))
-        call putConfigREAL("diffuse_backscatter_vis",diffuse_backscatter_vis(i))
-        call putConfigREAL8("emis_v",emis_v(i))
+        call putConfigREAL8("leaf_scatter_vis",leaf_scatter_vis(i))
+        call putConfigREAL8("diffuse_backscatter_vis",leaf_backscatter_vis(i))
+        call putConfigREAL8("emis_v",leaf_emis(i))
         call putConfigREAL("f_labile",f_labile(i))
         call libxml2f90_ll_closetag("pft")
      endif

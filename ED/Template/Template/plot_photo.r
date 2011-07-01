@@ -3,7 +3,8 @@ here           = "thispath"                                  # Current directory
 srcdir         = "/n/Moorcroft_Lab/Users/mlongo/util/Rsc" # Source  directory.
 outroot        = "thisoutroot" # Source  directory.
 myplaces       = c("thispoly")
-
+iphoto         = myphysiol
+iallom         = myallom
 
 #------------------------------------------------------------------------------------------#
 #     Initial and final times, they must be character vectors of size 2, the first one     #
@@ -66,10 +67,10 @@ hovdi02 = list(vnam   = c("parv","util.parv","parv.min")
               ,unit   = "umol/m2/s"
               ,legpos = "topleft"
               ,plt    = TRUE)
-hovdi03 = list(vnam   = c("atm.temp","can.temp","veg.temp","ground.temp")
-              ,desc   = c("Atmosphere","Canopy air","Leaf","Surface")
-              ,colour = c("deepskyblue","gray21","chartreuse","sienna")
-              ,lwd    = c(1.5,1.5,1.5,1.5)
+hovdi03 = list(vnam   = c("atm.temp","can.temp","leaf.temp","wood.temp","ground.temp")
+              ,desc   = c("Atmosphere","Canopy air","Leaf","Wood","Surface")
+              ,colour = c("deepskyblue","gray21","chartreuse","goldenrod","sienna")
+              ,lwd    = c(1.5,1.5,1.5,1.5,1.5)
               ,type   = ptype
               ,prefix = "temperature"
               ,theme  = "Temperature"
@@ -128,10 +129,11 @@ hovdi08 = list(vnam   = c("prec")
               ,unit   = "mm/hr"
               ,legpos = "topleft"
               ,plt    = TRUE)
-hovdi09 = list(vnam   = c("rbw","rsw","rsw.open","rsw.clos")
-              ,desc   = c("Boundary layer","Stomatal","Stomatal (open)","Stomatal (closed)")
-              ,colour = c("goldenrod","midnightblue","steelblue","sienna")
-              ,lwd    = c(1.5,1.5,1.5,1.5)
+hovdi09 = list(vnam   = c("wood.rbw","leaf.rbw","rsw","rsw.open","rsw.clos")
+              ,desc   = c("Wood Bnd. layer","Leaf Bnd. layer","Stomatal"
+                         ,"Stomatal (open)","Stomatal (closed)")
+              ,colour = c("goldenrod","limegreen","midnightblue","steelblue","sienna")
+              ,lwd    = c(1.5,1.5,1.5,1.5,1.5)
               ,type   = ptype
               ,prefix = "resist"
               ,theme  = "Resistance"
@@ -198,20 +200,21 @@ hovdi15 = list(vnam   = c("vm")
               ,unit   = "umol/m2/s"
               ,legpos = "topleft"
               ,plt    = TRUE)
-hovdi16 = list(vnam   = c("gbw","gsw","gsw.open","gsw.clos")
-              ,desc   = c("Boundary layer","Stomatal","Stomatal (open)","Stomatal (closed)")
-              ,colour = c("goldenrod","midnightblue","steelblue","sienna")
-              ,lwd    = c(1.5,1.5,1.5,1.5)
+hovdi16 = list(vnam   = c("wood.gbw","leaf.gbw","gsw","gsw.open","gsw.clos")
+              ,desc   = c("Wood Bnd. layer","Leaf Bnd. layer","Stomatal"
+                         ,"Stomatal (open)","Stomatal (closed)")
+              ,colour = c("goldenrod","limegreen","midnightblue","steelblue","sienna")
+              ,lwd    = c(1.5,1.5,1.5,1.5,1.5)
               ,type   = ptype
               ,prefix = "condct"
               ,theme  = "Conductance"
               ,unit   = "mol/m2_leaf/s"
               ,legpos = "topleft"
               ,plt    = TRUE)
-hovdi17 = list(vnam   = c("gbw.mmos","gsw.clos.mmos")
-              ,desc   = c("Boundary layer","Stomatal (closed)")
-              ,colour = c("goldenrod","sienna")
-              ,lwd    = c(1.5,1.5)
+hovdi17 = list(vnam   = c("wood.gbw.mmos","leaf.gbw.mmos","gsw.clos.mmos")
+              ,desc   = c("Wood Bnd. layer","Leaf Bnd. layer","Stomatal (closed)")
+              ,colour = c("goldenrod","limegreen","sienna")
+              ,lwd    = c(1.5,1.5,1.5)
               ,type   = ptype
               ,prefix = "condctmmos"
               ,theme  = "Conductance"
@@ -251,16 +254,21 @@ options(locatorBell=FALSE)
 
 
 
-#----- Loading some files with functions. -------------------------------------------------#
+#----- Load some files with global constants. ---------------------------------------------#
+source(paste(srcdir,"allometry.r",sep="/"))
+source(paste(srcdir,"rconstants.r",sep="/"))
+#----- Load some files with useful functions. ---------------------------------------------#
+source(paste(srcdir,"arrhenius.r",sep="/"))
 source(paste(srcdir,"atlas.r",sep="/"))
+source(paste(srcdir,"collatz.r",sep="/"))
 source(paste(srcdir,"globdims.r",sep="/"))
 source(paste(srcdir,"locations.r",sep="/"))
 source(paste(srcdir,"muitas.r",sep="/"))
+source(paste(srcdir,"pft.coms.r",sep="/"))
 source(paste(srcdir,"pretty.log.r",sep="/"))
 source(paste(srcdir,"pretty.time.r",sep="/"))
 source(paste(srcdir,"plotsize.r",sep="/"))
 source(paste(srcdir,"qapply.r",sep="/"))
-source(paste(srcdir,"rconstants.r",sep="/"))
 source(paste(srcdir,"sombreado.r",sep="/"))
 source(paste(srcdir,"southammap.r",sep="/"))
 source(paste(srcdir,"timeutils.r",sep="/"))
@@ -392,7 +400,7 @@ for (place in myplaces){
          when   = when[sel]
 
          #----- Save some variables that don't change over time. --------------------------#
-         pft    = ccohort$pft[1]
+         ipft   = ccohort$pft[1]
          height = signif(x=ccohort$height[1],digits=3)
 
 
@@ -409,13 +417,21 @@ for (place in myplaces){
             #------------------------------------------------------------------------------#
             #    Limitations due to different constrains.                                  #
             #------------------------------------------------------------------------------#
-            if (pft == 1){
+            if (ipft == 1){
                ccohort$light.lim   = ccohort$util.parv 
                ccohort$rubisco.lim = ccohort$vm
-               ccohort$low.co2.lim = 0.018 * ccohort$vm * ccohort$lint.co2.open
+               ccohort$low.co2.lim = ( klowco2 * ccohort$vm * ccohort$lint.co2.open
+                                     / mol.2.umol)
             }else{
-               kco2  = 150. * exp (6000. * (1./288.15 - 1./ccohort$veg.temp))
-               ko2   = 0.250 * exp(1400. * (1./288.15 - 1./ccohort$veg.temp))
+               if (iphoto %in% 0:1){
+                  kco2  = ( mol.2.umol 
+                          * arrhenius(ccohort$leaf.temp,kco2.ref.ibis,kco2.hor.ibis) )
+                  ko2   = arrhenius(ccohort$leaf.temp,ko2.ref.ibis,ko2.hor.ibis)
+               }else if (iphoto %in% 2:3){
+                  kco2  = ( mol.2.umol 
+                          * collatz(ccohort$leaf.temp,kco2.ref.coll,kco2.base.coll) )
+                  ko2   = arrhenius(ccohort$leaf.temp,ko2.ref.coll ,ko2.base.coll)
+               }#end if
 
                ccohort$light.lim   = ( ccohort$util.parv 
                                      * ( (ccohort$lint.co2.open - ccohort$compp)
@@ -433,17 +449,23 @@ for (place in myplaces){
                                       + ccohort$gsw.clos * (1. - ccohort$fs.open) )
 
             #----- Convert conductance to resistance [s/m] for plotting. ------------------#
-            ccohort$rbw             = ccohort$can.rhos * ccohort$can.shv / ccohort$gbw
+            ccohort$leaf.rbw        = ( ccohort$can.rhos * ccohort$can.shv 
+                                      / ccohort$leaf.gbw )
+            ccohort$wood.rbw        = ( ccohort$can.rhos * ccohort$can.shv 
+                                      / ccohort$wood.gbw )
             ccohort$rsw             = ccohort$can.rhos * ccohort$can.shv / ccohort$gsw
             ccohort$rsw.open        = ccohort$can.rhos * ccohort$can.shv / ccohort$gsw.open
             ccohort$rsw.clos        = ccohort$can.rhos * ccohort$can.shv / ccohort$gsw.clos
-            ccohort$rbw[!is.finite(ccohort$rbw)] = 0.
+            ccohort$leaf.rbw[!is.finite(ccohort$leaf.rbw)] = 0.
+            ccohort$wood.rbw[!is.finite(ccohort$wood.rbw)] = 0.
             ccohort$rsw[!is.finite(ccohort$rsw)] = 0.
             ccohort$rsw.open[!is.finite(ccohort$rsw.open)] = 0.
             ccohort$rsw.clos[!is.finite(ccohort$rsw.clos)] = 0.
 
             #----- Convert the conductances from kg_H2O/m2/s to mol/m2/s. -----------------#
-            ccohort$gbw.mmos         = ( ccohort$gbw      * 1000.
+            ccohort$leaf.gbw.mmos    = ( ccohort$leaf.gbw  * 1000.
+                                       / (ccohort$can.rhos * ccohort$can.shv) )
+            ccohort$wood.gbw.mmos    = ( ccohort$wood.gbw  * 1000.
                                        / (ccohort$can.rhos * ccohort$can.shv) )
             ccohort$gsw.mmos         = ( ccohort$gsw      * 1000.
                                        / (ccohort$can.rhos * ccohort$can.shv) )
@@ -453,7 +475,8 @@ for (place in myplaces){
                                        / (ccohort$can.rhos * ccohort$can.shv) )
 
             #----- Convert the conductances from kg_H2O/m2/s to mol/m2/s. -----------------#
-            ccohort$gbw             = ccohort$gbw      * mmh2oi
+            ccohort$leaf.gbw        = ccohort$leaf.gbw * mmh2oi
+            ccohort$wood.gbw        = ccohort$wood.gbw * mmh2oi
             ccohort$gsw             = ccohort$gsw      * mmh2oi
             ccohort$gsw.open        = ccohort$gsw.open * mmh2oi
             ccohort$gsw.clos        = ccohort$gsw.clos * mmh2oi
@@ -461,7 +484,8 @@ for (place in myplaces){
             #----- Temperatures in Celsius. -----------------------------------------------#
             ccohort$atm.temp        = ccohort$atm.temp     - t00
             ccohort$can.temp        = ccohort$can.temp     - t00
-            ccohort$veg.temp        = ccohort$veg.temp     - t00
+            ccohort$leaf.temp       = ccohort$leaf.temp    - t00
+            ccohort$wood.temp       = ccohort$wood.temp    - t00
             ccohort$ground.temp     = ccohort$ground.temp  - t00
 
             #----- Specific humidity in g/kg. ---------------------------------------------#
@@ -559,7 +583,7 @@ for (place in myplaces){
                      letitre = paste(theme," - ",thispoi$lieu, 
                                     " \n"," Time series: ",theme,
                                     " \n"," Patch - ",ipa,"     Cohort - ",ico,
-                                    " \n"," PFT: ",pftnames[pft], " - Height: ",height,"m",
+                                    " \n"," PFT: ",pftnames[ipft], " - Height: ",height,"m",
                                     sep="")
 
                      plot(x=when,y=ccohort[[vnames[1]]],type="n",main=letitre,xlab="Time"

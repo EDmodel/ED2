@@ -91,9 +91,11 @@ module canopy_radiation_coms
    !     Fraction of radiation that is reflected.                                          !
    !---------------------------------------------------------------------------------------!
    !----- Visible (PAR). ------------------------------------------------------------------!
-   real, dimension(n_pft) :: leaf_reflect_vis
+   real(kind=8), dimension(n_pft) :: leaf_reflect_vis
+   real(kind=8), dimension(n_pft) :: wood_reflect_vis
    !----- Near infrared. ------------------------------------------------------------------!
-   real, dimension(n_pft) :: leaf_reflect_nir
+   real(kind=8), dimension(n_pft) :: leaf_reflect_nir
+   real(kind=8), dimension(n_pft) :: wood_reflect_nir
    !---------------------------------------------------------------------------------------!
 
 
@@ -103,9 +105,11 @@ module canopy_radiation_coms
    !     Fraction of scattered PAR that is transmitted.                                    !
    !---------------------------------------------------------------------------------------!
    !----- Visible (PAR). ------------------------------------------------------------------!
-   real, dimension(n_pft) :: leaf_trans_vis
+   real(kind=8), dimension(n_pft) :: leaf_trans_vis
+   real(kind=8), dimension(n_pft) :: wood_trans_vis
    !----- Near infrared. ------------------------------------------------------------------!
-   real, dimension(n_pft) :: leaf_trans_nir
+   real(kind=8), dimension(n_pft) :: leaf_trans_nir
+   real(kind=8), dimension(n_pft) :: wood_trans_nir
    !---------------------------------------------------------------------------------------!
 
 
@@ -115,9 +119,11 @@ module canopy_radiation_coms
    !     Fraction of scattered PAR that is scattered.                                      !
    !---------------------------------------------------------------------------------------!
    !----- Visible (PAR). ------------------------------------------------------------------!
-   real, dimension(n_pft) :: leaf_scatter_vis
+   real(kind=8), dimension(n_pft) :: leaf_scatter_vis
+   real(kind=8), dimension(n_pft) :: wood_scatter_vis
    !----- Near infrared. ------------------------------------------------------------------!
-   real, dimension(n_pft) :: leaf_scatter_nir
+   real(kind=8), dimension(n_pft) :: leaf_scatter_nir
+   real(kind=8), dimension(n_pft) :: wood_scatter_nir
    !---------------------------------------------------------------------------------------!
 
 
@@ -127,16 +133,19 @@ module canopy_radiation_coms
    !     Fraction of scattered PAR that is back-scattered.                                 !
    !---------------------------------------------------------------------------------------!
    !----- Visible (PAR). ------------------------------------------------------------------!
-   real, dimension(n_pft) :: diffuse_backscatter_vis
+   real(kind=8), dimension(n_pft) :: leaf_backscatter_vis
+   real(kind=8), dimension(n_pft) :: wood_backscatter_vis
    !----- Near infrared. ------------------------------------------------------------------!
-   real, dimension(n_pft) :: diffuse_backscatter_nir
+   real(kind=8), dimension(n_pft) :: leaf_backscatter_nir
+   real(kind=8), dimension(n_pft) :: wood_backscatter_nir
    !---------------------------------------------------------------------------------------!
 
 
 
 
    !----- Emissivity of the vegetation. ---------------------------------------------------!
-   real(kind=8), dimension(n_pft) :: emis_v
+   real(kind=8), dimension(n_pft) :: leaf_emis
+   real(kind=8), dimension(n_pft) :: wood_emis
    !---------------------------------------------------------------------------------------!
 
 

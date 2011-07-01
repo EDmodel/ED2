@@ -199,7 +199,7 @@ subroutine leaf_stars(theta_atm,theiv_atm,shv_atm,rvap_atm,co2_atm              
       end if
       zeta0m = rough * zeta / (zref - dheight)
 
-      !----- Finding the aerodynamic resistance similarly to L79. -------------------------!
+      !----- Find the aerodynamic resistance similarly to L79. ----------------------------!
       r_aer = tprandtl * (lnzoz0m - psih(zeta,stable) + psih(zeta0m,stable))               &
                        * (lnzoz0m - psim(zeta,stable) + psim(zeta0m,stable))               &
                        / (vonk * vonk * uuse)

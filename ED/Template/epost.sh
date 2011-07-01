@@ -1,6 +1,6 @@
 #!/bin/bash
 here=`pwd`                    # ! Main path
-thisqueue='moorcroft_6100b'   # ! Queue where jobs should be submitted
+thisqueue='moorcroft2b'   # ! Queue where jobs should be submitted
 lonlat=${here}'/joborder.txt' # ! File with the job instructions
 #----- Outroot is the main output directory. ----------------------------------------------#
 outroot='/n/data/moorcroft_lab/mlongo/diary/simulations/figures/Template'
@@ -101,6 +101,7 @@ do
    iphysiol=`echo ${oi}  | awk '{print $54}'`
    icanswrad=`echo ${oi} | awk '{print $55}'`
    imetrad=`echo ${oi}   | awk '{print $56}'`
+   ibranch=`echo ${oi}   | awk '{print $57}'`
    #---------------------------------------------------------------------------------------#
 
 
@@ -190,10 +191,12 @@ do
       sed -i s@thisdatez@${datez}@g      ${here}/${polyname}/${script}
       sed -i s@thishourz@${hourz}@g      ${here}/${polyname}/${script}
       sed -i s@thisminuz@${minuz}@g      ${here}/${polyname}/${script}
+      sed -i s@myphysiol@${iphysiol}@g   ${here}/${polyname}/${script}
+      sed -i s@myallom@${iallom}@g       ${here}/${polyname}/${script}
 
       #----- Run R to get the plots. ------------------------------------------------------#
       comm="R CMD BATCH ${here}/${polyname}/${script} ${here}/${polyname}/${epostout}"
       bsub -q ${thisqueue} -J ${epostjob} -o ${polyname}/${epostlsf} "${comm}" 1> /dev/null 2> /dev/null
    done
 done
-
+#------------------------------------------------------------------------------------------#

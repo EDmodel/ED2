@@ -95,7 +95,6 @@ subroutine update_patch_derived_props(csite,lsl,prss,ipa)
    csite%lai(ipa)              = 0.0
    csite%wpa(ipa)              = 0.0
    csite%wai(ipa)              = 0.0
-   csite%hcapveg(ipa)          = 0.0
    weight_sum                  = 0.0
    csite%opencan_frac(ipa)     = 1.0
    csite%plant_ag_biomass(ipa) = 0.0
@@ -113,10 +112,6 @@ subroutine update_patch_derived_props(csite,lsl,prss,ipa)
       csite%lai(ipa)  = csite%lai(ipa)  + cpatch%lai(ico)
       csite%wpa(ipa)  = csite%wpa(ipa)  + cpatch%wpa(ico)
       csite%wai(ipa)  = csite%wai(ipa)  + cpatch%wai(ico)
-      !------------------------------------------------------------------------------------!
-
-      !----- Update the patch-level heat capacity. ----------------------------------------!
-      csite%hcapveg(ipa)  = csite%hcapveg(ipa)  + cpatch%hcapveg(ico)
       !------------------------------------------------------------------------------------!
 
 

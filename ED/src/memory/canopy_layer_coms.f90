@@ -84,6 +84,9 @@ module canopy_layer_coms
    real(kind=8), dimension(:,:) , allocatable :: matal
    real(kind=8), dimension(:,:) , allocatable :: mastermat
    real(kind=8), dimension(:,:) , allocatable :: masmatcp
+   real(kind=8), dimension(:)   , allocatable :: layer_scatter
+   real(kind=8), dimension(:)   , allocatable :: layer_backscatter
+   real(kind=8), dimension(:)   , allocatable :: layer_clumping
    real(kind=8), dimension(:)   , allocatable :: expkl_top
    real(kind=8), dimension(:)   , allocatable :: expkl_bot
    real(kind=8), dimension(:)   , allocatable :: expamk_top
@@ -125,6 +128,8 @@ module canopy_layer_coms
    real(kind=8), dimension(:)   , allocatable :: dzcanpop
    real(kind=8), dimension(:)   , allocatable :: mastervec_surf
    real(kind=8), dimension(:)   , allocatable :: mastervec_incid
+   real(kind=8), dimension(:)   , allocatable :: layer_emis
+   real(kind=8), dimension(:)   , allocatable :: layer_temp
    real(kind=8), dimension(:)   , allocatable :: explai
    real(kind=8), dimension(:)   , allocatable :: exmlai
    real(kind=8), dimension(:)   , allocatable :: downward_lw_incid
@@ -198,6 +203,9 @@ module canopy_layer_coms
       allocate(indx                 (ncanlyrt2)          )
       allocate(populated            (  ncanlyr)          )
       allocate(dzcanpop             (  ncanlyr)          )
+      allocate(layer_scatter        (  ncanlyr)          )
+      allocate(layer_backscatter    (  ncanlyr)          )
+      allocate(layer_clumping       (  ncanlyr)          )
       allocate(expkl_top            (  ncanlyr)          )
       allocate(expkl_bot            (  ncanlyr)          )
       allocate(expamk_top           (  ncanlyr)          )
@@ -236,6 +244,8 @@ module canopy_layer_coms
       allocate(SW_abs_beam_layer    (  ncanlyr)          )
       allocate(SW_abs_diffuse_layer (  ncanlyr)          )
 
+      allocate(layer_emis           (  ncanlyr)          )
+      allocate(layer_temp           (  ncanlyr)          )
       allocate(mastervec_surf       (ncanlyrt2)          )
       allocate(mastervec_incid      (ncanlyrt2)          )
       allocate(explai               (ncanlyrp1)          )
@@ -314,6 +324,9 @@ module canopy_layer_coms
          populated            (:)   = .false.
          opencan8             (:)   = 0.d0
          dzcanpop             (:)   = 0.d0
+         layer_scatter        (:)   = 0.d0
+         layer_backscatter    (:)   = 0.d0
+         layer_clumping       (:)   = 0.d0
          expkl_top            (:)   = 0.d0
          expkl_bot            (:)   = 0.d0
          expamk_top           (:)   = 0.d0
@@ -358,6 +371,8 @@ module canopy_layer_coms
       case ('lw_twostream_layer')
          indx                 (:)   = 0
          populated            (:)   = .false.
+         layer_emis           (:)   = 0.d0
+         layer_temp           (:)   = 0.d0
          mastervec_surf       (:)   = 0.d0
          mastervec_incid      (:)   = 0.d0
          explai               (:)   = 0.d0

@@ -66,12 +66,12 @@ phovdi02 = list(vnam   = c("met.rshort","met.rlong","gnd.rshort"
                ,unit   = "W/m2"
                ,legpos = "topleft"
                ,plt    = TRUE)
-phovdi03 = list(vnam   = c("qwflxgc","qwflxac","qwflxvc","qtransp","qdewgnd")
-               ,desc   = c("Ground->Canopy","Air->Canopy","Leaf->Canopy","Transpiration"
-                          ,"Dew")
-               ,colour = c("firebrick","midnightblue","chartreuse"
+phovdi03 = list(vnam   = c("qwflxgc","qwflxac","qwflxlc","qwflxwc","qtransp","qdewgnd")
+               ,desc   = c("Ground->Canopy","Air->Canopy","Leaf->Canopy","Wood->Canopy"
+                          ,"Transpiration","Dew")
+               ,colour = c("firebrick","midnightblue","chartreuse","goldenrod"
                           ,"darkolivegreen","deepskyblue")
-               ,lwd    = c(1.5,1.5,1.5,1.5,1.5)
+               ,lwd    = c(1.5,1.5,1.5,1.5,1.5,1.5)
                ,type   = ptype
                ,plog   = ""
                ,prefix = "h2oflux"
@@ -79,10 +79,10 @@ phovdi03 = list(vnam   = c("qwflxgc","qwflxac","qwflxvc","qtransp","qdewgnd")
                ,unit   = "kg/m2/day"
                ,legpos = "topleft"
                ,plt    = TRUE)
-phovdi04 = list(vnam   = c("hflxgc","hflxac","hflxvc")
-               ,desc   = c("Ground->Canopy","Air->Canopy","Leaf->Canopy")
-               ,colour = c("firebrick","midnightblue","chartreuse")
-               ,lwd    = c(1.5,1.5,1.5)
+phovdi04 = list(vnam   = c("hflxgc","hflxac","hflxlc","hflxwc")
+               ,desc   = c("Ground->Canopy","Air->Canopy","Leaf->Canopy","Wood->Canopy")
+               ,colour = c("firebrick","midnightblue","chartreuse","goldenrod")
+               ,lwd    = c(1.5,1.5,1.5,1.5)
                ,type   = ptype
                ,plog   = ""
                ,prefix = "sensflux"
@@ -90,10 +90,10 @@ phovdi04 = list(vnam   = c("hflxgc","hflxac","hflxvc")
                ,unit   = "W/m2"
                ,legpos = "topleft"
                ,plt    = TRUE)
-phovdi05 = list(vnam   = c("atm.temp","can.temp","veg.temp","sfc.temp")
-               ,desc   = c("Atmosphere","Canopy air","Leaf","Surface")
-               ,colour = c("deepskyblue","gray21","chartreuse","sienna")
-               ,lwd    = c(1.5,1.5,1.5,1.5)
+phovdi05 = list(vnam   = c("atm.temp","can.temp","leaf.temp","wood.temp","sfc.temp")
+               ,desc   = c("Atmosphere","Canopy air","Leaf","Wood","Surface")
+               ,colour = c("deepskyblue","gray21","chartreuse","goldenrod","sienna")
+               ,lwd    = c(1.5,1.5,1.5,1.5,1.5)
                ,type   = ptype
                ,plog   = ""
                ,prefix = "temperature"
@@ -511,7 +511,8 @@ for (place in myplaces){
       cpatch$hetresp         = cpatch$cwdrh        + cpatch$soilrh
 
       #----- Water flux in kg/m2/day. -----------------------------------------------------#
-      cpatch$qwflxvc         = cpatch$wflxvc       * day.sec
+      cpatch$qwflxlc         = cpatch$wflxlc       * day.sec
+      cpatch$qwflxwc         = cpatch$wflxwc       * day.sec
       cpatch$qwflxgc         = cpatch$wflxgc       * day.sec
       cpatch$qwflxac         = cpatch$wflxac       * day.sec
       cpatch$qtransp         = cpatch$transp       * day.sec
@@ -528,7 +529,8 @@ for (place in myplaces){
       #----- Temperatures in Celsius. -----------------------------------------------------#
       cpatch$atm.temp        = cpatch$atm.temp     - t00
       cpatch$can.temp        = cpatch$can.temp     - t00
-      cpatch$veg.temp        = cpatch$veg.temp     - t00
+      cpatch$leaf.temp       = cpatch$leaf.temp    - t00
+      cpatch$wood.temp       = cpatch$wood.temp    - t00
       cpatch$sfc.temp        = cpatch$sfc.temp     - t00
 
       #----- Specific humidity in g/kg. ---------------------------------------------------#

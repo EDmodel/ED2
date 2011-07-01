@@ -75,9 +75,9 @@ module farq_leuning
    !=======================================================================================!
    !      This is the main driver for the photosynthesis model.                            !
    !---------------------------------------------------------------------------------------!
-   subroutine lphysiol_full(can_prss,can_rhos,can_shv,can_co2,ipft,leaf_par,veg_temp       &
+   subroutine lphysiol_full(can_prss,can_rhos,can_shv,can_co2,ipft,leaf_par,leaf_temp      &
                            ,lint_shv,green_leaf_factor,leaf_aging_factor,llspan,vm_bar     &
-                           ,gbw,A_open,A_closed,gsw_open,gsw_closed,lsfc_shv_open          &
+                           ,leaf_gbw,A_open,A_closed,gsw_open,gsw_closed,lsfc_shv_open     &
                            ,lsfc_shv_closed,lsfc_co2_open,lsfc_co2_closed,lint_co2_open    &
                            ,lint_co2_closed,leaf_resp,vmout,comppout,limit_flag            &
                            ,old_st_data)
@@ -139,13 +139,13 @@ module farq_leuning
       real(kind=4), intent(in)    :: can_co2           ! Canopy air CO2         [ µmol/mol]
       integer     , intent(in)    :: ipft              ! Plant functional type  [      ---]
       real(kind=4), intent(in)    :: leaf_par          ! Absorbed PAR           [     W/m²]
-      real(kind=4), intent(in)    :: veg_temp          ! Vegetation temperature [        K]
+      real(kind=4), intent(in)    :: leaf_temp         ! Leaf temperature       [        K]
       real(kind=4), intent(in)    :: lint_shv          ! Leaf interc. sp. hum.  [    kg/kg]
       real(kind=4), intent(in)    :: green_leaf_factor ! Frac. of on-allom. gr. [      ---]
       real(kind=4), intent(in)    :: leaf_aging_factor ! Ageing parameter       [      ---]
       real(kind=4), intent(in)    :: llspan            ! Leaf life span         [     mnth]
       real(kind=4), intent(in)    :: vm_bar            ! Average Vm function    [µmol/m²/s]
-      real(kind=4), intent(in)    :: gbw               ! B.lyr. cnd. of H2O     [  kg/m²/s]
+      real(kind=4), intent(in)    :: leaf_gbw          ! B.lyr. cnd. of H2O     [  kg/m²/s]
       real(kind=4), intent(out)   :: A_open            ! Photosyn. rate (op.)   [µmol/m²/s]
       real(kind=4), intent(out)   :: A_closed          ! Photosyn. rate (cl.)   [µmol/m²/s]
       real(kind=4), intent(out)   :: gsw_open          ! St. cnd. of H2O  (op.) [  kg/m²/s]
@@ -179,9 +179,9 @@ module farq_leuning
       ! precision.                                                                         !
       !------------------------------------------------------------------------------------!
       !----- 1. Variables that remain with the same units. --------------------------------!
-      met%leaf_temp    = dble(veg_temp)
-      met%can_rhos     = dble(can_rhos)
-      met%can_prss     = dble(can_prss)
+      met%leaf_temp    = dble(leaf_temp)
+      met%can_rhos     = dble(can_rhos )
+      met%can_prss     = dble(can_prss )
       met%can_o2       = o2_ref8
       !----- 2. Convert specific humidity to mol/mol. -------------------------------------!
       met%can_shv      = epi8 * dble(can_shv) 
@@ -201,7 +201,7 @@ module farq_leuning
       !     the effective area for transpiration, depending on whether the leaves of this  !
       !     plant functional type are hypo-stomatous, symmetrical, or amphistomatous.      !
       !------------------------------------------------------------------------------------!
-      met%blyr_cond_h2o = dble(gbw)  * mmdryi8 * effarea_transp(ipft)
+      met%blyr_cond_h2o = dble(leaf_gbw)  * mmdryi8 * effarea_transp(ipft)
       met%blyr_cond_co2 = gbw_2_gbc8 * met%blyr_cond_h2o
       !------------------------------------------------------------------------------------!
 
@@ -1645,7 +1645,7 @@ module farq_leuning
                                 , aparms            & ! intent(in)
                                 , met               ! ! intent(in)
       use physiology_coms, only : gsw_2_gsc8        & ! intent(in)
-                                , gbw_2_gbc8               & ! intent(in)
+                                , gbw_2_gbc8        & ! intent(in)
                                 , c34smin_lint_co28 & ! intent(in)
                                 , c34smax_lint_co28 & ! intent(in)
                                 , c34smax_gsw8      ! ! intent(in)

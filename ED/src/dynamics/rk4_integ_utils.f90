@@ -359,8 +359,10 @@ subroutine inc_rk4_patch(rkp, inc, fac, cpatch)
 
   
    do ico = 1,cpatch%ncohorts
-      rkp%veg_water (ico) = rkp%veg_water (ico) + fac * inc%veg_water (ico)
-      rkp%veg_energy(ico) = rkp%veg_energy(ico) + fac * inc%veg_energy(ico)
+      rkp%leaf_water (ico) = rkp%leaf_water (ico) + fac * inc%leaf_water (ico)
+      rkp%leaf_energy(ico) = rkp%leaf_energy(ico) + fac * inc%leaf_energy(ico)
+      rkp%wood_water (ico) = rkp%wood_water (ico) + fac * inc%wood_water (ico)
+      rkp%wood_energy(ico) = rkp%wood_energy(ico) + fac * inc%wood_energy(ico)
 
       rkp%psi_open  (ico) = rkp%psi_open  (ico) + fac * inc%psi_open  (ico)
       rkp%psi_closed(ico) = rkp%psi_closed(ico) + fac * inc%psi_closed(ico)
@@ -384,7 +386,8 @@ subroutine inc_rk4_patch(rkp, inc, fac, cpatch)
    if (fast_diagnostics) then
       rkp%avg_carbon_ac      = rkp%avg_carbon_ac      + fac * inc%avg_carbon_ac
       
-      rkp%avg_vapor_vc       = rkp%avg_vapor_vc       + fac * inc%avg_vapor_vc
+      rkp%avg_vapor_lc       = rkp%avg_vapor_lc       + fac * inc%avg_vapor_lc
+      rkp%avg_vapor_wc       = rkp%avg_vapor_wc       + fac * inc%avg_vapor_wc
       rkp%avg_dew_cg         = rkp%avg_dew_cg         + fac * inc%avg_dew_cg
       rkp%avg_vapor_gc       = rkp%avg_vapor_gc       + fac * inc%avg_vapor_gc
       rkp%avg_wshed_vg       = rkp%avg_wshed_vg       + fac * inc%avg_wshed_vg
@@ -397,7 +400,8 @@ subroutine inc_rk4_patch(rkp, inc, fac, cpatch)
       rkp%avg_drainage_heat  = rkp%avg_drainage_heat  + fac * inc%avg_drainage_heat
       rkp%avg_rshort_gnd     = rkp%avg_rshort_gnd     + fac * inc%avg_rshort_gnd
       rkp%avg_rlong_gnd      = rkp%avg_rlong_gnd      + fac * inc%avg_rlong_gnd
-      rkp%avg_sensible_vc    = rkp%avg_sensible_vc    + fac * inc%avg_sensible_vc
+      rkp%avg_sensible_lc    = rkp%avg_sensible_lc    + fac * inc%avg_sensible_lc
+      rkp%avg_sensible_wc    = rkp%avg_sensible_wc    + fac * inc%avg_sensible_wc
       rkp%avg_qwshed_vg      = rkp%avg_qwshed_vg      + fac * inc%avg_qwshed_vg
       rkp%avg_qintercepted   = rkp%avg_qintercepted   + fac * inc%avg_qintercepted
       rkp%avg_qthroughfall   = rkp%avg_qthroughfall   + fac * inc%avg_qthroughfall
@@ -420,7 +424,8 @@ subroutine inc_rk4_patch(rkp, inc, fac, cpatch)
    if (print_detailed) then
       rkp%flx_carbon_ac      = rkp%flx_carbon_ac      + fac * inc%avg_carbon_ac
       
-      rkp%flx_vapor_vc       = rkp%flx_vapor_vc       + fac * inc%avg_vapor_vc
+      rkp%flx_vapor_lc       = rkp%flx_vapor_lc       + fac * inc%avg_vapor_lc
+      rkp%flx_vapor_wc       = rkp%flx_vapor_wc       + fac * inc%avg_vapor_wc
       rkp%flx_dew_cg         = rkp%flx_dew_cg         + fac * inc%avg_dew_cg
       rkp%flx_vapor_gc       = rkp%flx_vapor_gc       + fac * inc%avg_vapor_gc
       rkp%flx_wshed_vg       = rkp%flx_wshed_vg       + fac * inc%avg_wshed_vg
@@ -433,7 +438,8 @@ subroutine inc_rk4_patch(rkp, inc, fac, cpatch)
       rkp%flx_drainage_heat  = rkp%flx_drainage_heat  + fac * inc%avg_drainage_heat
       rkp%flx_rshort_gnd     = rkp%flx_rshort_gnd     + fac * inc%avg_rshort_gnd
       rkp%flx_rlong_gnd      = rkp%flx_rlong_gnd      + fac * inc%avg_rlong_gnd
-      rkp%flx_sensible_vc    = rkp%flx_sensible_vc    + fac * inc%avg_sensible_vc
+      rkp%flx_sensible_lc    = rkp%flx_sensible_lc    + fac * inc%avg_sensible_lc
+      rkp%flx_sensible_wc    = rkp%flx_sensible_wc    + fac * inc%avg_sensible_wc
       rkp%flx_qwshed_vg      = rkp%flx_qwshed_vg      + fac * inc%avg_qwshed_vg
       rkp%flx_qintercepted   = rkp%flx_qintercepted   + fac * inc%avg_qintercepted
       rkp%flx_qthroughfall   = rkp%flx_qthroughfall   + fac * inc%avg_qthroughfall
@@ -447,10 +453,14 @@ subroutine inc_rk4_patch(rkp, inc, fac, cpatch)
       end do
 
       do ico = 1,cpatch%ncohorts
-         rkp%cfx_hflxvc      (ico)  =       rkp%cfx_hflxvc      (ico)                      &
-                                    + fac * inc%cfx_hflxvc      (ico)
-         rkp%cfx_qwflxvc     (ico)  =       rkp%cfx_qwflxvc     (ico)                      &
-                                    + fac * inc%cfx_qwflxvc     (ico)
+         rkp%cfx_hflxlc      (ico)  =       rkp%cfx_hflxlc      (ico)                      &
+                                    + fac * inc%cfx_hflxlc      (ico)
+         rkp%cfx_hflxwc      (ico)  =       rkp%cfx_hflxwc      (ico)                      &
+                                    + fac * inc%cfx_hflxwc      (ico)
+         rkp%cfx_qwflxlc     (ico)  =       rkp%cfx_qwflxlc     (ico)                      &
+                                    + fac * inc%cfx_qwflxlc     (ico)
+         rkp%cfx_qwflxwc     (ico)  =       rkp%cfx_qwflxwc     (ico)                      &
+                                    + fac * inc%cfx_qwflxwc     (ico)
          rkp%cfx_qwshed      (ico)  =       rkp%cfx_qwshed      (ico)                      &
                                     + fac * inc%cfx_qwshed      (ico)
          rkp%cfx_qtransp     (ico)  =       rkp%cfx_qtransp     (ico)                      &
@@ -647,18 +657,46 @@ subroutine get_yscal(y,dy,htry,yscal,cpatch)
    !    Also, if the cohort has almost no water, make the scale less strict.               !
    !---------------------------------------------------------------------------------------!
    do ico = 1,cpatch%ncohorts
-      yscal%resolvable(ico) = y%resolvable(ico)
-      if (y%resolvable(ico)) then
-         yscal%veg_energy(ico) = abs(y%veg_energy(ico)) + abs(dy%veg_energy(ico) * htry)
-         yscal%veg_temp(ico)   = abs(y%veg_temp(ico))
-         yscal%veg_water(ico)  = max(abs(y%veg_water(ico)) + abs(dy%veg_water(ico) * htry) &
-                                    ,rk4leaf_drywhc * y%tai(ico))
+      yscal%leaf_resolvable(ico) = y%leaf_resolvable(ico)
+      if (y%leaf_resolvable(ico)) then
+         yscal%leaf_energy(ico) = abs( y%leaf_energy(ico))                                 &
+                                     + abs(dy%leaf_energy(ico) * htry)
+         yscal%leaf_temp(ico)   = abs( y%leaf_temp(ico))
+         yscal%leaf_water(ico)  = max( abs(y%leaf_water(ico))                              &
+                                     + abs(dy%leaf_water(ico)  * htry)                     &
+                                    , rk4leaf_drywhc * y%lai(ico))
       else
-         yscal%veg_water(ico)  = huge_offset
-         yscal%veg_energy(ico) = huge_offset
-         yscal%veg_temp(ico)   = huge_offset
+         yscal%leaf_water(ico)  = huge_offset
+         yscal%leaf_energy(ico) = huge_offset
+         yscal%leaf_temp(ico)   = huge_offset
       end if
    end do
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !    Scale for wood water and energy. In case the user doesn't want to solve branch     !
+   ! thermodynamics, the wood area index is too small, or the plant is buried in snow, we  !
+   ! assign huge values for typical scale, thus preventing unecessary small steps.         !
+   !    Also, if the cohort has almost no water, make the scale less strict.               !
+   !---------------------------------------------------------------------------------------!
+   do ico = 1,cpatch%ncohorts
+      yscal%wood_resolvable(ico) = y%wood_resolvable(ico)
+      if (y%wood_resolvable(ico)) then
+         yscal%wood_energy(ico) = abs( y%wood_energy(ico))                                 &
+                                     + abs(dy%wood_energy(ico) * htry)
+         yscal%wood_temp(ico)   = abs( y%wood_temp(ico))
+         yscal%wood_water(ico)  = max( abs(y%wood_water(ico))                              &
+                                     + abs(dy%wood_water(ico)  * htry)                     &
+                                    , rk4leaf_drywhc * y%wai(ico))
+      else
+         yscal%wood_water(ico)  = huge_offset
+         yscal%wood_energy(ico) = huge_offset
+         yscal%wood_temp(ico)   = huge_offset
+      end if
+   end do
+   !---------------------------------------------------------------------------------------!
 
    !---------------------------------------------------------------------------------------!
    !     Here we just need to make sure the user is checking mass, otherwise  these vari-  !
@@ -848,9 +886,9 @@ subroutine get_errmax(errmax,yerr,yscal,cpatch,y,ytemp)
    errh2oMAX  = 0.d0
    erreneMAX  = 0.d0
    do ico = 1,cpatch%ncohorts
-      if (yscal%resolvable(ico)) then
-         errh2o     = abs(yerr%veg_water (ico) / yscal%veg_water (ico))
-         errene     = abs(yerr%veg_energy(ico) / yscal%veg_energy(ico))
+      if (yscal%leaf_resolvable(ico)) then
+         errh2o     = abs(yerr%leaf_water (ico) / yscal%leaf_water (ico))
+         errene     = abs(yerr%leaf_energy(ico) / yscal%leaf_energy(ico))
          errmax     = max(errmax,errh2o,errene)
          errh2oMAX  = max(errh2oMAX ,errh2o )
          erreneMAX  = max(erreneMAX ,errene )
@@ -863,16 +901,39 @@ subroutine get_errmax(errmax,yerr,yscal,cpatch,y,ytemp)
    !---------------------------------------------------------------------------------------!
 
 
+
+   !---------------------------------------------------------------------------------------!
+   !     Get the worst error only amongst the cohorts in which wood properties were        !
+   ! computed.                                                                             !
+   !---------------------------------------------------------------------------------------!
+   errh2oMAX  = 0.d0
+   erreneMAX  = 0.d0
+   do ico = 1,cpatch%ncohorts
+      if (yscal%wood_resolvable(ico)) then
+         errh2o     = abs(yerr%wood_water (ico) / yscal%wood_water (ico))
+         errene     = abs(yerr%wood_energy(ico) / yscal%wood_energy(ico))
+         errmax     = max(errmax,errh2o,errene)
+         errh2oMAX  = max(errh2oMAX ,errh2o )
+         erreneMAX  = max(erreneMAX ,errene )
+      end if
+   end do
+   if(cpatch%ncohorts > 0 .and. record_err) then
+      if (errh2oMAX  > rk4eps) integ_err( 9,1) = integ_err( 9,1) + 1_8
+      if (erreneMAX  > rk4eps) integ_err(10,1) = integ_err(10,1) + 1_8
+   end if
+   !---------------------------------------------------------------------------------------!
+
+
    !---------------------------------------------------------------------------------------!
    !     Virtual pool.                                                                     !
    !---------------------------------------------------------------------------------------!
    err    = abs(yerr%virtual_energy/yscal%virtual_energy)
    errmax = max(errmax,err)
-   if(record_err .and. err > rk4eps) integ_err( 9,1) = integ_err( 9,1) + 1_8
+   if(record_err .and. err > rk4eps) integ_err(11,1) = integ_err(11,1) + 1_8
 
    err    = abs(yerr%virtual_water/yscal%virtual_water)
    errmax = max(errmax,err)
-   if(record_err .and. err > rk4eps) integ_err(10,1) = integ_err(10,1) + 1_8      
+   if(record_err .and. err > rk4eps) integ_err(12,1) = integ_err(12,1) + 1_8      
    !---------------------------------------------------------------------------------------!
 
 
@@ -885,35 +946,35 @@ subroutine get_errmax(errmax,yerr,yscal,cpatch,y,ytemp)
    if (checkbudget) then
       err    = abs(yerr%co2budget_storage/yscal%co2budget_storage)
       errmax = max(errmax,err)
-      if(record_err .and. err > rk4eps) integ_err(11,1) = integ_err(11,1) + 1_8
+      if(record_err .and. err > rk4eps) integ_err(13,1) = integ_err(13,1) + 1_8
 
       err    = abs(yerr%co2budget_loss2atm/yscal%co2budget_loss2atm)
       errmax = max(errmax,err)
-      if(record_err .and. err > rk4eps) integ_err(12,1) = integ_err(12,1) + 1_8
+      if(record_err .and. err > rk4eps) integ_err(14,1) = integ_err(14,1) + 1_8
 
       err    = abs(yerr%ebudget_loss2atm/yscal%ebudget_loss2atm)
       errmax = max(errmax,err)
-      if(record_err .and. err > rk4eps) integ_err(13,1) = integ_err(13,1) + 1_8
+      if(record_err .and. err > rk4eps) integ_err(15,1) = integ_err(15,1) + 1_8
 
       err    = abs(yerr%wbudget_loss2atm/yscal%wbudget_loss2atm)
       errmax = max(errmax,err)
-      if(record_err .and. err > rk4eps) integ_err(14,1) = integ_err(14,1) + 1_8
+      if(record_err .and. err > rk4eps) integ_err(16,1) = integ_err(16,1) + 1_8
 
       err    = abs(yerr%ebudget_loss2drainage/yscal%ebudget_loss2drainage)
       errmax = max(errmax,err)
-      if(record_err .and. err > rk4eps) integ_err(15,1) = integ_err(15,1) + 1_8
+      if(record_err .and. err > rk4eps) integ_err(17,1) = integ_err(17,1) + 1_8
 
       err    = abs(yerr%wbudget_loss2drainage/yscal%wbudget_loss2drainage)
       errmax = max(errmax,err)
-      if(record_err .and. err > rk4eps) integ_err(16,1) = integ_err(16,1) + 1_8
+      if(record_err .and. err > rk4eps) integ_err(18,1) = integ_err(18,1) + 1_8
 
       err    = abs(yerr%ebudget_storage/yscal%ebudget_storage)
       errmax = max(errmax,err)
-      if(record_err .and. err > rk4eps) integ_err(17,1) = integ_err(17,1) + 1_8
+      if(record_err .and. err > rk4eps) integ_err(19,1) = integ_err(19,1) + 1_8
 
       err    = abs(yerr%wbudget_storage/yscal%wbudget_storage)
       errmax = max(errmax,err)
-      if(record_err .and. err > rk4eps) integ_err(18,1) = integ_err(18,1) + 1_8
+      if(record_err .and. err > rk4eps) integ_err(20,1) = integ_err(20,1) + 1_8
    end if
    !---------------------------------------------------------------------------------------!
 
@@ -1065,40 +1126,56 @@ subroutine copy_rk4_patch(sourcep, targetp, cpatch)
    end do
 
    do k=1,cpatch%ncohorts
-      targetp%veg_energy  (k) = sourcep%veg_energy  (k)
-      targetp%veg_water   (k) = sourcep%veg_water   (k)
-      targetp%veg_temp    (k) = sourcep%veg_temp    (k)
-      targetp%veg_fliq    (k) = sourcep%veg_fliq    (k)
-      targetp%hcapveg     (k) = sourcep%hcapveg     (k)
-      targetp%veg_wind    (k) = sourcep%veg_wind    (k)
-      targetp%veg_reynolds(k) = sourcep%veg_reynolds(k)
-      targetp%veg_grashof (k) = sourcep%veg_grashof (k)
-      targetp%veg_nussfree(k) = sourcep%veg_nussfree(k)
-      targetp%veg_nussforc(k) = sourcep%veg_nussforc(k)
-      targetp%lint_shv    (k) = sourcep%lint_shv    (k)
-      targetp%nplant      (k) = sourcep%nplant      (k)
-      targetp%lai         (k) = sourcep%lai         (k)
-      targetp%wai         (k) = sourcep%wai         (k)
-      targetp%wpa         (k) = sourcep%wpa         (k)
-      targetp%tai         (k) = sourcep%tai         (k)
-      targetp%crown_area  (k) = sourcep%crown_area  (k)
-      targetp%elongf      (k) = sourcep%elongf      (k)
-      targetp%gbh         (k) = sourcep%gbh         (k)
-      targetp%gbw         (k) = sourcep%gbw         (k)
-      targetp%gsw_open    (k) = sourcep%gsw_open    (k)
-      targetp%gsw_closed  (k) = sourcep%gsw_closed  (k)
-      targetp%psi_open    (k) = sourcep%psi_open    (k)
-      targetp%psi_closed  (k) = sourcep%psi_closed  (k)
-      targetp%fs_open     (k) = sourcep%fs_open     (k)
-      targetp%resolvable  (k) = sourcep%resolvable  (k)
-      targetp%gpp         (k) = sourcep%gpp         (k)
-      targetp%leaf_resp   (k) = sourcep%leaf_resp   (k)
-      targetp%root_resp   (k) = sourcep%root_resp   (k)
-      targetp%growth_resp (k) = sourcep%growth_resp (k)
-      targetp%storage_resp(k) = sourcep%storage_resp(k)
-      targetp%vleaf_resp  (k) = sourcep%vleaf_resp  (k)
-      targetp%rshort_v    (k) = sourcep%rshort_v    (k)
-      targetp%rlong_v     (k) = sourcep%rlong_v     (k)
+      targetp%leaf_resolvable (k) = sourcep%leaf_resolvable (k)
+      targetp%leaf_energy     (k) = sourcep%leaf_energy     (k)
+      targetp%leaf_water      (k) = sourcep%leaf_water      (k)
+      targetp%leaf_temp       (k) = sourcep%leaf_temp       (k)
+      targetp%leaf_fliq       (k) = sourcep%leaf_fliq       (k)
+      targetp%leaf_hcap       (k) = sourcep%leaf_hcap       (k)
+      targetp%leaf_reynolds   (k) = sourcep%leaf_reynolds   (k)
+      targetp%leaf_grashof    (k) = sourcep%leaf_grashof    (k)
+      targetp%leaf_nussfree   (k) = sourcep%leaf_nussfree   (k)
+      targetp%leaf_nussforc   (k) = sourcep%leaf_nussforc   (k)
+      targetp%leaf_gbh        (k) = sourcep%leaf_gbh        (k)
+      targetp%leaf_gbw        (k) = sourcep%leaf_gbw        (k)
+      targetp%rshort_l        (k) = sourcep%rshort_l        (k)
+      targetp%rlong_l         (k) = sourcep%rlong_l         (k)
+
+      targetp%wood_resolvable (k) = sourcep%wood_resolvable (k)
+      targetp%wood_energy     (k) = sourcep%wood_energy     (k)
+      targetp%wood_water      (k) = sourcep%wood_water      (k)
+      targetp%wood_temp       (k) = sourcep%wood_temp       (k)
+      targetp%wood_fliq       (k) = sourcep%wood_fliq       (k)
+      targetp%wood_hcap       (k) = sourcep%wood_hcap       (k)
+      targetp%wood_reynolds   (k) = sourcep%wood_reynolds   (k)
+      targetp%wood_grashof    (k) = sourcep%wood_grashof    (k)
+      targetp%wood_nussfree   (k) = sourcep%wood_nussfree   (k)
+      targetp%wood_nussforc   (k) = sourcep%wood_nussforc   (k)
+      targetp%wood_gbh        (k) = sourcep%wood_gbh        (k)
+      targetp%wood_gbw        (k) = sourcep%wood_gbw        (k)
+      targetp%rshort_w        (k) = sourcep%rshort_w        (k)
+      targetp%rlong_w         (k) = sourcep%rlong_w         (k)
+
+      targetp%veg_wind        (k) = sourcep%veg_wind        (k)
+      targetp%lint_shv        (k) = sourcep%lint_shv        (k)
+      targetp%nplant          (k) = sourcep%nplant          (k)
+      targetp%lai             (k) = sourcep%lai             (k)
+      targetp%wai             (k) = sourcep%wai             (k)
+      targetp%wpa             (k) = sourcep%wpa             (k)
+      targetp%tai             (k) = sourcep%tai             (k)
+      targetp%crown_area      (k) = sourcep%crown_area      (k)
+      targetp%elongf          (k) = sourcep%elongf          (k)
+      targetp%gsw_open        (k) = sourcep%gsw_open        (k)
+      targetp%gsw_closed      (k) = sourcep%gsw_closed      (k)
+      targetp%psi_open        (k) = sourcep%psi_open        (k)
+      targetp%psi_closed      (k) = sourcep%psi_closed      (k)
+      targetp%fs_open         (k) = sourcep%fs_open         (k)
+      targetp%gpp             (k) = sourcep%gpp             (k)
+      targetp%leaf_resp       (k) = sourcep%leaf_resp       (k)
+      targetp%root_resp       (k) = sourcep%root_resp       (k)
+      targetp%growth_resp     (k) = sourcep%growth_resp     (k)
+      targetp%storage_resp    (k) = sourcep%storage_resp    (k)
+      targetp%vleaf_resp      (k) = sourcep%vleaf_resp      (k)
    end do
 
    if (checkbudget) then
@@ -1115,7 +1192,8 @@ subroutine copy_rk4_patch(sourcep, targetp, cpatch)
    end if
    if (fast_diagnostics) then
       targetp%avg_carbon_ac          = sourcep%avg_carbon_ac
-      targetp%avg_vapor_vc           = sourcep%avg_vapor_vc
+      targetp%avg_vapor_lc           = sourcep%avg_vapor_lc
+      targetp%avg_vapor_wc           = sourcep%avg_vapor_wc
       targetp%avg_dew_cg             = sourcep%avg_dew_cg
       targetp%avg_vapor_gc           = sourcep%avg_vapor_gc
       targetp%avg_wshed_vg           = sourcep%avg_wshed_vg
@@ -1126,7 +1204,8 @@ subroutine copy_rk4_patch(sourcep, targetp, cpatch)
       targetp%avg_evap               = sourcep%avg_evap
       targetp%avg_rshort_gnd         = sourcep%avg_rshort_gnd
       targetp%avg_rlong_gnd          = sourcep%avg_rlong_gnd
-      targetp%avg_sensible_vc        = sourcep%avg_sensible_vc
+      targetp%avg_sensible_lc        = sourcep%avg_sensible_lc
+      targetp%avg_sensible_wc        = sourcep%avg_sensible_wc
       targetp%avg_qwshed_vg          = sourcep%avg_qwshed_vg
       targetp%avg_qintercepted       = sourcep%avg_qintercepted
       targetp%avg_qthroughfall       = sourcep%avg_qthroughfall
@@ -1144,7 +1223,8 @@ subroutine copy_rk4_patch(sourcep, targetp, cpatch)
 
    if (print_detailed) then
       targetp%flx_carbon_ac          = sourcep%flx_carbon_ac
-      targetp%flx_vapor_vc           = sourcep%flx_vapor_vc
+      targetp%flx_vapor_lc           = sourcep%flx_vapor_lc
+      targetp%flx_vapor_wc           = sourcep%flx_vapor_wc
       targetp%flx_dew_cg             = sourcep%flx_dew_cg
       targetp%flx_vapor_gc           = sourcep%flx_vapor_gc
       targetp%flx_wshed_vg           = sourcep%flx_wshed_vg
@@ -1155,7 +1235,8 @@ subroutine copy_rk4_patch(sourcep, targetp, cpatch)
       targetp%flx_evap               = sourcep%flx_evap
       targetp%flx_rshort_gnd         = sourcep%flx_rshort_gnd
       targetp%flx_rlong_gnd          = sourcep%flx_rlong_gnd
-      targetp%flx_sensible_vc        = sourcep%flx_sensible_vc
+      targetp%flx_sensible_lc        = sourcep%flx_sensible_lc
+      targetp%flx_sensible_wc        = sourcep%flx_sensible_wc
       targetp%flx_qwshed_vg          = sourcep%flx_qwshed_vg
       targetp%flx_qintercepted       = sourcep%flx_qintercepted
       targetp%flx_qthroughfall       = sourcep%flx_qthroughfall
@@ -1171,8 +1252,10 @@ subroutine copy_rk4_patch(sourcep, targetp, cpatch)
       end do
       
       do k=1,cpatch%ncohorts
-         targetp%cfx_hflxvc      (k) = sourcep%cfx_hflxvc      (k)
-         targetp%cfx_qwflxvc     (k) = sourcep%cfx_qwflxvc     (k)
+         targetp%cfx_hflxlc      (k) = sourcep%cfx_hflxlc      (k)
+         targetp%cfx_hflxwc      (k) = sourcep%cfx_hflxwc      (k)
+         targetp%cfx_qwflxlc     (k) = sourcep%cfx_qwflxlc     (k)
+         targetp%cfx_qwflxwc     (k) = sourcep%cfx_qwflxwc     (k)
          targetp%cfx_qwshed      (k) = sourcep%cfx_qwshed      (k)
          targetp%cfx_qtransp     (k) = sourcep%cfx_qtransp     (k)
          targetp%cfx_qintercepted(k) = sourcep%cfx_qintercepted(k)

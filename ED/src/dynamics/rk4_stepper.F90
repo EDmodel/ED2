@@ -570,11 +570,14 @@ module rk4_stepper
       type(patchtype)    , pointer     :: cpatch
       integer                          :: k
       integer                          :: ksn
-      real(kind=8)                     :: rk4min_veg_water
+      real(kind=8)                     :: rk4min_leaf_water
+      real(kind=8)                     :: rk4min_wood_water
       integer                          :: ipa
       integer                          :: ico
       logical                          :: cflag7
       logical                          :: cflag8
+      logical                          :: cflag9
+      logical                          :: cflag10
       !------------------------------------------------------------------------------------!
 
 
@@ -777,49 +780,49 @@ module rk4_stepper
 
 
       !------------------------------------------------------------------------------------!
-      !     Check leaf temperature, but only for those cohorts with sufficient LAI.        !
+      !     Check leaf properties, but only for those cohorts with sufficient LAI.         !
       !------------------------------------------------------------------------------------!
       cpatch => csite%patch(ipa)
       cflag7 = .false.
       cflag8 = .false.
-      cohortloop: do ico = 1,cpatch%ncohorts
-         if (.not. y%resolvable(ico)) cycle cohortloop
+      leafloop: do ico = 1,cpatch%ncohorts
+         if (.not. y%leaf_resolvable(ico)) cycle leafloop
 
          !----- Find the minimum leaf surface water. --------------------------------------!
-         rk4min_veg_water = rk4min_veg_lwater * y%tai(ico)
+         rk4min_leaf_water = rk4min_veg_lwater * y%lai(ico)
 
          !----- Check leaf surface water. -------------------------------------------------!
-         if (y%veg_water(ico) < rk4min_veg_water) then
+         if (y%leaf_water(ico) < rk4min_leaf_water) then
             reject_step = .true.
             if(record_err) cflag7 = .true.
             if (print_problems) then
                write(unit=*,fmt='(a)')           '========================================'
                write(unit=*,fmt='(a)')           ' + Leaf surface water is off-track...'
                write(unit=*,fmt='(a)')           '========================================'
-               write(unit=*,fmt='(a,1x,i6)')     ' PFT:          ',cpatch%pft(ico)
-               write(unit=*,fmt='(a,1x,es12.4)') ' HEIGHT:       ',cpatch%hite(ico)
-               write(unit=*,fmt='(a,1x,es12.4)') ' LAI:          ',y%lai(ico)
-               write(unit=*,fmt='(a,1x,es12.4)') ' WAI:          ',y%wai(ico)
-               write(unit=*,fmt='(a,1x,es12.4)') ' WPA:          ',y%wpa(ico)
-               write(unit=*,fmt='(a,1x,es12.4)') ' TAI:          ',y%tai(ico)
-               write(unit=*,fmt='(a,1x,es12.4)') ' NPLANT:       ',y%nplant(ico)
-               write(unit=*,fmt='(a,1x,es12.4)') ' CROWN_AREA:   ',y%crown_area(ico)
-               write(unit=*,fmt='(a,1x,es12.4)') ' HCAPVEG:      ',y%hcapveg(ico)
-               write(unit=*,fmt='(a,1x,es12.4)') ' VEG_TEMP:     ',y%veg_temp(ico)
-               write(unit=*,fmt='(a,1x,es12.4)') ' VEG_FRACLIQ:  ',y%veg_fliq(ico)
-               write(unit=*,fmt='(a,1x,es12.4)') ' VEG_ENERGY:   ',y%veg_energy(ico)
-               write(unit=*,fmt='(a,1x,es12.4)') ' VEG_WATER:    ',y%veg_water(ico)
-               write(unit=*,fmt='(a,1x,es12.4)') ' VEG_WIND:     ',y%veg_wind(ico)
-               write(unit=*,fmt='(a,1x,es12.4)') ' LINT_SHV:     ',y%lint_shv(ico)
-               write(unit=*,fmt='(a,1x,es12.4)') ' MIN_VEG_WATER:',rk4min_veg_water
-               write(unit=*,fmt='(a,1x,es12.4)') ' GBH:          ',y%gbh(ico)
-               write(unit=*,fmt='(a,1x,es12.4)') ' GBW:          ',y%gbw(ico)
-               write(unit=*,fmt='(a,1x,es12.4)') ' REYNOLDS:     ',y%veg_reynolds(ico)
-               write(unit=*,fmt='(a,1x,es12.4)') ' GRASHOF:      ',y%veg_grashof(ico)
-               write(unit=*,fmt='(a,1x,es12.4)') ' NUSSELT_FREE: ',y%veg_nussfree(ico)
-               write(unit=*,fmt='(a,1x,es12.4)') ' NUSSELT_FORC: ',y%veg_nussforc(ico)
-               write(unit=*,fmt='(a,1x,es12.4)') ' D(VEG_EN)/Dt: ',dydx%veg_energy(ico)
-               write(unit=*,fmt='(a,1x,es12.4)') ' D(VEG_WAT)/Dt:',dydx%veg_water(ico)
+               write(unit=*,fmt='(a,1x,i6)')     ' PFT:           ',cpatch%pft(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' HEIGHT:        ',cpatch%hite(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' LAI:           ',y%lai(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' WAI:           ',y%wai(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' WPA:           ',y%wpa(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' TAI:           ',y%tai(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' NPLANT:        ',y%nplant(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' CROWN_AREA:    ',y%crown_area(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' LEAF_HCAP:     ',y%leaf_hcap(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' LEAF_TEMP:     ',y%leaf_temp(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' LEAF_FRACLIQ:  ',y%leaf_fliq(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' LEAF_ENERGY:   ',y%leaf_energy(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' LEAF_WATER:    ',y%leaf_water(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' VEG_WIND:      ',y%veg_wind(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' LINT_SHV:      ',y%lint_shv(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' MIN_LEAF_WATER:',rk4min_leaf_water
+               write(unit=*,fmt='(a,1x,es12.4)') ' LEAF_GBH:      ',y%leaf_gbh(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' LEAF_GBW:      ',y%leaf_gbw(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' LEAF_REYNOLDS: ',y%leaf_reynolds(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' LEAF_GRASHOF:  ',y%leaf_grashof(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' LEAF_NUFREE:   ',y%leaf_nussfree(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' LEAF_NUFORC:   ',y%leaf_nussforc(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' D(LEAF_EN)/Dt: ',dydx%leaf_energy(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' D(LEAF_WAT)/Dt:',dydx%leaf_water(ico)
                write(unit=*,fmt='(a)')           '========================================'
             elseif (.not. record_err) then
                return
@@ -827,45 +830,141 @@ module rk4_stepper
          end if
 
          !----- Check leaf temperature. ---------------------------------------------------!
-         if (y%veg_temp(ico) > rk4max_veg_temp .or. y%veg_temp(ico) < rk4min_veg_temp) then
+         if (y%leaf_temp(ico) > rk4max_veg_temp .or.                                       &
+             y%leaf_temp(ico) < rk4min_veg_temp      ) then
             reject_step = .true.
             if(record_err) cflag8 = .true.
             if (print_problems) then
                write(unit=*,fmt='(a)')           '========================================'
                write(unit=*,fmt='(a)')           ' + Leaf temperature is off-track...'
                write(unit=*,fmt='(a)')           '========================================'
-               write(unit=*,fmt='(a,1x,i6)')     ' PFT:          ',cpatch%pft(ico)
-               write(unit=*,fmt='(a,1x,es12.4)') ' HEIGHT:       ',cpatch%hite(ico)
-               write(unit=*,fmt='(a,1x,es12.4)') ' LAI:          ',y%lai(ico)
-               write(unit=*,fmt='(a,1x,es12.4)') ' WAI:          ',y%wai(ico)
-               write(unit=*,fmt='(a,1x,es12.4)') ' WPA:          ',y%wpa(ico)
-               write(unit=*,fmt='(a,1x,es12.4)') ' TAI:          ',y%tai(ico)
-               write(unit=*,fmt='(a,1x,es12.4)') ' NPLANT:       ',y%nplant(ico)
-               write(unit=*,fmt='(a,1x,es12.4)') ' CROWN_AREA:   ',y%crown_area(ico)
-               write(unit=*,fmt='(a,1x,es12.4)') ' HCAPVEG:      ',y%hcapveg(ico)
-               write(unit=*,fmt='(a,1x,es12.4)') ' VEG_TEMP:     ',y%veg_temp(ico)
-               write(unit=*,fmt='(a,1x,es12.4)') ' VEG_FRACLIQ:  ',y%veg_fliq(ico)
-               write(unit=*,fmt='(a,1x,es12.4)') ' VEG_ENERGY:   ',y%veg_energy(ico)
-               write(unit=*,fmt='(a,1x,es12.4)') ' VEG_WATER:    ',y%veg_water(ico)
-               write(unit=*,fmt='(a,1x,es12.4)') ' MIN_VEG_WATER:',rk4min_veg_water
-               write(unit=*,fmt='(a,1x,es12.4)') ' GBH:          ',y%gbh(ico)
-               write(unit=*,fmt='(a,1x,es12.4)') ' GBW:          ',y%gbw(ico)
-               write(unit=*,fmt='(a,1x,es12.4)') ' VEG_WIND:     ',y%veg_wind(ico)
-               write(unit=*,fmt='(a,1x,es12.4)') ' LINT_SHV:     ',y%lint_shv(ico)
-               write(unit=*,fmt='(a,1x,es12.4)') ' REYNOLDS:     ',y%veg_reynolds(ico)
-               write(unit=*,fmt='(a,1x,es12.4)') ' GRASHOF:      ',y%veg_grashof(ico)
-               write(unit=*,fmt='(a,1x,es12.4)') ' NUSSELT_FREE: ',y%veg_nussfree(ico)
-               write(unit=*,fmt='(a,1x,es12.4)') ' NUSSELT_FORC: ',y%veg_nussforc(ico)
-               write(unit=*,fmt='(a,1x,es12.4)') ' D(VEG_EN)/Dt: ',dydx%veg_energy(ico)
-               write(unit=*,fmt='(a,1x,es12.4)') ' D(VEG_WAT)/Dt:',dydx%veg_water(ico)
+               write(unit=*,fmt='(a,1x,i6)')     ' PFT:           ',cpatch%pft(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' HEIGHT:        ',cpatch%hite(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' LAI:           ',y%lai(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' WAI:           ',y%wai(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' WPA:           ',y%wpa(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' TAI:           ',y%tai(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' NPLANT:        ',y%nplant(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' CROWN_AREA:    ',y%crown_area(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' LEAF_HCAP:     ',y%leaf_hcap(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' LEAF_TEMP:     ',y%leaf_temp(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' LEAF_FRACLIQ:  ',y%leaf_fliq(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' LEAF_ENERGY:   ',y%leaf_energy(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' LEAF_WATER:    ',y%leaf_water(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' VEG_WIND:      ',y%veg_wind(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' LINT_SHV:      ',y%lint_shv(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' MIN_LEAF_WATER:',rk4min_leaf_water
+               write(unit=*,fmt='(a,1x,es12.4)') ' LEAF_GBH:      ',y%leaf_gbh(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' LEAF_GBW:      ',y%leaf_gbw(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' LEAF_REYNOLDS: ',y%leaf_reynolds(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' LEAF_GRASHOF:  ',y%leaf_grashof(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' LEAF_NUFREE:   ',y%leaf_nussfree(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' LEAF_NUFORC:   ',y%leaf_nussforc(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' D(LEAF_EN)/Dt: ',dydx%leaf_energy(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' D(LEAF_WAT)/Dt:',dydx%leaf_water(ico)
                write(unit=*,fmt='(a)')           '========================================'
             elseif (.not. record_err) then
                return
             end if
          end if
-      end do cohortloop
+      end do leafloop
       if(record_err .and. cflag7) integ_err(7,2) = integ_err(7,2) + 1_8
       if(record_err .and. cflag8) integ_err(8,2) = integ_err(8,2) + 1_8
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !     Check wood properties, but only for those cohorts with sufficient LAI.         !
+      !------------------------------------------------------------------------------------!
+      cpatch => csite%patch(ipa)
+      cflag9  = .false.
+      cflag10 = .false.
+      woodloop: do ico = 1,cpatch%ncohorts
+         if (.not. y%wood_resolvable(ico)) cycle woodloop
+
+         !----- Find the minimum wood surface water. --------------------------------------!
+         rk4min_wood_water = rk4min_veg_lwater * y%wai(ico)
+
+         !----- Check wood surface water. -------------------------------------------------!
+         if (y%wood_water(ico) < rk4min_wood_water) then
+            reject_step = .true.
+            if(record_err) cflag9 = .true.
+            if (print_problems) then
+               write(unit=*,fmt='(a)')           '========================================'
+               write(unit=*,fmt='(a)')           ' + Wood surface water is off-track...'
+               write(unit=*,fmt='(a)')           '========================================'
+               write(unit=*,fmt='(a,1x,i6)')     ' PFT:           ',cpatch%pft(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' HEIGHT:        ',cpatch%hite(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' LAI:           ',y%lai(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' WAI:           ',y%wai(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' WPA:           ',y%wpa(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' TAI:           ',y%tai(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' NPLANT:        ',y%nplant(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' CROWN_AREA:    ',y%crown_area(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' WOOD_HCAP:     ',y%wood_hcap(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' WOOD_TEMP:     ',y%wood_temp(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' WOOD_FRACLIQ:  ',y%wood_fliq(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' WOOD_ENERGY:   ',y%wood_energy(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' WOOD_WATER:    ',y%wood_water(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' VEG_WIND:      ',y%veg_wind(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' LINT_SHV:      ',y%lint_shv(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' MIN_WOOD_WATER:',rk4min_wood_water
+               write(unit=*,fmt='(a,1x,es12.4)') ' WOOD_GBH:      ',y%wood_gbh(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' WOOD_GBW:      ',y%wood_gbw(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' WOOD_REYNOLDS: ',y%wood_reynolds(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' WOOD_GRASHOF:  ',y%wood_grashof(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' WOOD_NUFREE:   ',y%wood_nussfree(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' WOOD_NUFORC:   ',y%wood_nussforc(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' D(WOOD_EN)/Dt: ',dydx%wood_energy(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' D(WOOD_WAT)/Dt:',dydx%wood_water(ico)
+               write(unit=*,fmt='(a)')           '========================================'
+            elseif (.not. record_err) then
+               return
+            end if
+         end if
+
+         !----- Check wood temperature. ---------------------------------------------------!
+         if (y%wood_temp(ico) > rk4max_veg_temp .or.                                       &
+             y%wood_temp(ico) < rk4min_veg_temp      ) then
+            reject_step = .true.
+            if(record_err) cflag10 = .true.
+            if (print_problems) then
+               write(unit=*,fmt='(a)')           '========================================'
+               write(unit=*,fmt='(a)')           ' + Wood temperature is off-track...'
+               write(unit=*,fmt='(a)')           '========================================'
+               write(unit=*,fmt='(a,1x,i6)')     ' PFT:           ',cpatch%pft(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' HEIGHT:        ',cpatch%hite(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' LAI:           ',y%lai(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' WAI:           ',y%wai(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' WPA:           ',y%wpa(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' TAI:           ',y%tai(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' NPLANT:        ',y%nplant(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' CROWN_AREA:    ',y%crown_area(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' WOOD_HCAP:     ',y%wood_hcap(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' WOOD_TEMP:     ',y%wood_temp(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' WOOD_FRACLIQ:  ',y%wood_fliq(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' WOOD_ENERGY:   ',y%wood_energy(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' WOOD_WATER:    ',y%wood_water(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' VEG_WIND:      ',y%veg_wind(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' LINT_SHV:      ',y%lint_shv(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' MIN_WOOD_WATER:',rk4min_wood_water
+               write(unit=*,fmt='(a,1x,es12.4)') ' WOOD_GBH:      ',y%wood_gbh(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' WOOD_GBW:      ',y%wood_gbw(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' WOOD_REYNOLDS: ',y%wood_reynolds(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' WOOD_GRASHOF:  ',y%wood_grashof(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' WOOD_NUFREE:   ',y%wood_nussfree(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' WOOD_NUFORC:   ',y%wood_nussforc(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' D(WOOD_EN)/Dt: ',dydx%wood_energy(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' D(WOOD_WAT)/Dt:',dydx%wood_water(ico)
+               write(unit=*,fmt='(a)')           '========================================'
+            elseif (.not. record_err) then
+               return
+            end if
+         end if
+      end do woodloop
+      if(record_err .and. cflag9 ) integ_err( 9,2) = integ_err( 9,2) + 1_8
+      if(record_err .and. cflag10) integ_err(10,2) = integ_err(10,2) + 1_8
       !------------------------------------------------------------------------------------!
 
 
@@ -877,7 +976,7 @@ module rk4_stepper
       !------------------------------------------------------------------------------------!
       if (y%virtual_water < rk4min_virt_water) then
          reject_step = .true.
-         if(record_err) integ_err(10,2) = integ_err(10,2) + 1_8
+         if(record_err) integ_err(12,2) = integ_err(12,2) + 1_8
          if (print_problems) then
             write(unit=*,fmt='(a)')           '==========================================='
             write(unit=*,fmt='(a)')           ' + Virtual layer mass is off-track...'
@@ -897,7 +996,7 @@ module rk4_stepper
              (y%virtual_tempk < rk4min_sfcw_temp .or. y%virtual_tempk > rk4max_sfcw_temp)) &
       then
          reject_step = .true.
-         if(record_err) integ_err(9,2) = integ_err(9,2) + 1_8
+         if(record_err) integ_err(11,2) = integ_err(11,2) + 1_8
          if (print_problems) then
             write(unit=*,fmt='(a)')           '==========================================='
             write(unit=*,fmt='(a)')           ' + Virtual layer temp. is off-track...'
@@ -1175,34 +1274,66 @@ module rk4_stepper
       cpatch => csite%patch(ipa)
       write (unit=*,fmt='(2(a5,1x),8(a12,1x))')                                            &
          '  COH','  PFT','         LAI','         WAI','         WPA','         TAI'       &
-                        ,'  VEG_ENERGY','OLD_VEG_ENER','    VEG_TEMP','OLD_VEG_TEMP'
+                        ,' LEAF_ENERGY',' OLD_LEAF_EN','   LEAF_TEMP','OLD_LEAF_TMP'
       do ico = 1,cpatch%ncohorts
-         if(y%resolvable(ico)) then
+         if(y%leaf_resolvable(ico)) then
             write(unit=*,fmt='(2(i5,1x),8(es12.4,1x))')                                    &
                ico,cpatch%pft(ico),y%lai(ico),y%wai(ico),y%wpa(ico),y%tai(ico)             &
-                  ,y%veg_energy(ico),cpatch%veg_energy(ico),y%veg_temp(ico)                &
-                  ,cpatch%veg_temp(ico)
+                  ,y%leaf_energy(ico),cpatch%leaf_energy(ico),y%leaf_temp(ico)             &
+                  ,cpatch%leaf_temp(ico)
          end if
       end do
       write(unit=*,fmt='(78a)') ('-',k=1,78)
 
       write(unit=*,fmt='(a)') ' '
       write(unit=*,fmt='(78a)') ('-',k=1,78)
-      write (unit=*,fmt='(2(a5,1x),9(a12,1x))') &
+      write (unit=*,fmt='(2(a5,1x),8(a12,1x))') &
          '  COH','  PFT','         LAI','         WAI','         WPA','         TAI'       &
-                        ,'   VEG_WATER',' OLD_VEG_H2O','    HEAT_CAP','RK4_HEAT_CAP'       &
-                        ,'     FRACLIQ'
+                        ,'  LEAF_WATER','OLD_LEAF_H2O','   LEAF_HCAP','   LEAF_FLIQ'
       do ico = 1,cpatch%ncohorts
-         if(y%resolvable(ico)) then
-            write(unit=*,fmt='(2(i5,1x),9(es12.4,1x))')                                    &
+         if(y%leaf_resolvable(ico)) then
+            write(unit=*,fmt='(2(i5,1x),8(es12.4,1x))')                                    &
                ico,cpatch%pft(ico),y%lai(ico),y%wai(ico),y%wpa(ico),y%tai(ico)             &
-                  ,y%veg_water(ico),cpatch%veg_water(ico),cpatch%hcapveg(ico)              &
-                  ,y%hcapveg(ico),y%veg_fliq(ico)
+                  ,y%leaf_water(ico),cpatch%leaf_water(ico),cpatch%leaf_hcap(ico)          &
+                  ,y%leaf_hcap(ico)
          end if
       end do
       write(unit=*,fmt='(78a)') ('-',k=1,78)
       write(unit=*,fmt='(a)') ' '
-     
+
+      write(unit=*,fmt='(a)') ' '
+      write(unit=*,fmt='(78a)') ('-',k=1,78)
+      cpatch => csite%patch(ipa)
+      write (unit=*,fmt='(2(a5,1x),8(a12,1x))')                                            &
+         '  COH','  PFT','         LAI','         WAI','         WPA','         TAI'       &
+                        ,' WOOD_ENERGY',' OLD_WOOD_EN','   WOOD_TEMP','OLD_WOOD_TMP'
+      do ico = 1,cpatch%ncohorts
+         if(y%wood_resolvable(ico)) then
+            write(unit=*,fmt='(2(i5,1x),8(es12.4,1x))')                                    &
+               ico,cpatch%pft(ico),y%lai(ico),y%wai(ico),y%wpa(ico),y%tai(ico)             &
+                  ,y%wood_energy(ico),cpatch%wood_energy(ico),y%wood_temp(ico)             &
+                  ,cpatch%wood_temp(ico)
+         end if
+      end do
+      write(unit=*,fmt='(78a)') ('-',k=1,78)
+
+      write(unit=*,fmt='(a)') ' '
+      write(unit=*,fmt='(78a)') ('-',k=1,78)
+      write (unit=*,fmt='(2(a5,1x),8(a12,1x))') &
+         '  COH','  PFT','         LAI','         WAI','         WPA','         TAI'       &
+                        ,'  WOOD_WATER','OLD_WOOD_H2O','   WOOD_HCAP','   WOOD_FLIQ'
+      do ico = 1,cpatch%ncohorts
+         if(y%wood_resolvable(ico)) then
+            write(unit=*,fmt='(2(i5,1x),8(es12.4,1x))')                                    &
+               ico,cpatch%pft(ico),y%lai(ico),y%wai(ico),y%wpa(ico),y%tai(ico)             &
+                  ,y%wood_water(ico),cpatch%wood_water(ico),cpatch%wood_hcap(ico)          &
+                  ,y%wood_hcap(ico)
+         end if
+      end do
+      write(unit=*,fmt='(78a)') ('-',k=1,78)
+      write(unit=*,fmt='(a)') ' '
+
+
       write(unit=*,fmt='(78a)') ('=',k=1,78)
       write(unit=*,fmt='(78a)') ('=',k=1,78)
       write(unit=*,fmt='(a)') ' '

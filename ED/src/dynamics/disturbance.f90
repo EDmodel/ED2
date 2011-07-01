@@ -333,8 +333,8 @@ module disturbance_utils
                                                       cpoly%basal_area(1:n_pft,1:n_dbh,isi)
 
                   !------------------------------------------------------------------------!
-                  !     Update the derived properties including veg_height, patch hcapveg, !
-                  ! patch-level LAI, WAI, WPA.                                             !
+                  !     Update the derived properties including veg_height, and patch-     !
+                  ! -level LAI, WAI, WPA.                                                  !
                   !------------------------------------------------------------------------!
                   call update_patch_derived_props(csite,cpoly%lsl(isi),cpoly%met(isi)%prss &
                                                  ,new_lu+onsp)
@@ -716,7 +716,6 @@ module disturbance_utils
       csite%sfcwater_mass        (1:nzs,np) = 0.0
       csite%sfcwater_energy      (1:nzs,np) = 0.0
       csite%sfcwater_depth       (1:nzs,np) = 0.0
-      csite%hcapveg                    (np) = 0.0
       csite%rough                      (np) = 0.0
       csite%fsc_in                     (np) = 0.0
       csite%ssc_in                     (np) = 0.0
@@ -991,28 +990,31 @@ module disturbance_utils
             tpatch%leaf_respiration   (nco) = tpatch%leaf_respiration (nco) * survival_fac
             tpatch%root_respiration   (nco) = tpatch%root_respiration (nco) * survival_fac
             tpatch%monthly_dndt       (nco) = tpatch%monthly_dndt     (nco) * survival_fac
-            tpatch%veg_water          (nco) = tpatch%veg_water        (nco) * survival_fac
-            tpatch%hcapveg            (nco) = tpatch%hcapveg          (nco) * survival_fac
-            tpatch%veg_energy         (nco) = tpatch%veg_energy       (nco) * survival_fac
+            tpatch%leaf_water         (nco) = tpatch%leaf_water       (nco) * survival_fac
+            tpatch%leaf_hcap          (nco) = tpatch%leaf_hcap        (nco) * survival_fac
+            tpatch%leaf_energy        (nco) = tpatch%leaf_energy      (nco) * survival_fac
+            tpatch%wood_water         (nco) = tpatch%wood_water       (nco) * survival_fac
+            tpatch%wood_hcap          (nco) = tpatch%wood_hcap        (nco) * survival_fac
+            tpatch%wood_energy        (nco) = tpatch%wood_energy      (nco) * survival_fac
             !----- Crown area shall not exceed 1. -----------------------------------------!
             tpatch%crown_area         (nco) = min(1.,tpatch%crown_area(nco) * survival_fac)
             !----- Carbon flux monthly means are extensive, we must convert them. ---------!
             if (idoutput > 0 .or. imoutput > 0 .or. iqoutput > 0) then
-               tpatch%dmean_par_v     (nco) = tpatch%dmean_par_v      (nco) * survival_fac
-               tpatch%dmean_par_v_beam(nco) = tpatch%dmean_par_v_beam (nco) * survival_fac
-               tpatch%dmean_par_v_diff(nco) = tpatch%dmean_par_v_diff (nco) * survival_fac
+               tpatch%dmean_par_l     (nco) = tpatch%dmean_par_l      (nco) * survival_fac
+               tpatch%dmean_par_l_beam(nco) = tpatch%dmean_par_l_beam (nco) * survival_fac
+               tpatch%dmean_par_l_diff(nco) = tpatch%dmean_par_l_diff (nco) * survival_fac
             end if
             if (imoutput > 0 .or. iqoutput > 0) then
-               tpatch%mmean_par_v     (nco) = tpatch%mmean_par_v      (nco) * survival_fac
-               tpatch%mmean_par_v_beam(nco) = tpatch%mmean_par_v_beam (nco) * survival_fac
-               tpatch%mmean_par_v_diff(nco) = tpatch%mmean_par_v_diff (nco) * survival_fac
+               tpatch%mmean_par_l     (nco) = tpatch%mmean_par_l      (nco) * survival_fac
+               tpatch%mmean_par_l_beam(nco) = tpatch%mmean_par_l_beam (nco) * survival_fac
+               tpatch%mmean_par_l_diff(nco) = tpatch%mmean_par_l_diff (nco) * survival_fac
             end if
             if (iqoutput > 0) then
-               tpatch%qmean_par_v     (:,nco) = tpatch%qmean_par_v      (:,nco)            &
+               tpatch%qmean_par_l     (:,nco) = tpatch%qmean_par_l      (:,nco)            &
                                               * survival_fac
-               tpatch%qmean_par_v_beam(:,nco) = tpatch%qmean_par_v_beam (:,nco)            &
+               tpatch%qmean_par_l_beam(:,nco) = tpatch%qmean_par_l_beam (:,nco)            &
                                               * survival_fac
-               tpatch%qmean_par_v_diff(:,nco) = tpatch%qmean_par_v_diff (:,nco)            &
+               tpatch%qmean_par_l_diff(:,nco) = tpatch%qmean_par_l_diff (:,nco)            &
                                               * survival_fac
             end if
          end if
@@ -1226,7 +1228,7 @@ module disturbance_utils
                                 , is_grass                 ! ! intent(in)
       use ed_misc_coms   , only : dtlsm                    ! ! intent(in)
       use fuse_fiss_utils, only : sort_cohorts             ! ! sub-routine
-      use ed_therm_lib   , only : calc_hcapveg             ! ! function
+      use ed_therm_lib   , only : calc_veg_hcap            ! ! function
       use consts_coms    , only : t3ple                    & ! intent(in)
                                 , pio4                     ! ! intent(in)
       use allometry      , only : h2dbh                    & ! function
@@ -1255,8 +1257,6 @@ module disturbance_utils
       real                                         :: salloci
       real                                         :: bleaf_max
       real                                         :: balive_max
-      !----- External functions. ----------------------------------------------------------!
-      logical                         , external   :: is_resolvable
       !------------------------------------------------------------------------------------!
 
 
@@ -1322,23 +1322,28 @@ module disturbance_utils
                        ,cpatch%crown_area(nc),cpatch%bsapwood(nc))
 
 
-      !----- Finding the new basal area and above-ground biomass. -------------------------!
+      !----- Find the new basal area and above-ground biomass. ----------------------------!
       cpatch%basarea(nc) = pio4 * cpatch%dbh(nc) * cpatch%dbh(nc)
       cpatch%agb(nc)     = ed_biomass(cpatch%bdead(nc),cpatch%balive(nc),cpatch%bleaf(nc)  &
                                      ,cpatch%pft(nc),cpatch%hite(nc) ,cpatch%bstorage(nc)  &
                                      ,cpatch%bsapwood(nc))
 
-      cpatch%veg_temp(nc)  = csite%can_temp(np)
-      cpatch%veg_water(nc) = 0.0
-      cpatch%veg_fliq(nc)  = 0.0
+      cpatch%leaf_temp(nc)  = csite%can_temp(np)
+      cpatch%leaf_water(nc) = 0.0
+      cpatch%leaf_fliq(nc)  = 0.0
+      cpatch%wood_temp(nc)  = csite%can_temp(np)
+      cpatch%wood_water(nc) = 0.0
+      cpatch%wood_fliq(nc)  = 0.0
 
-      !----- Because we assigned no water, the internal energy is simply hcapveg*T. -------!
-      cpatch%hcapveg(nc)    = calc_hcapveg(cpatch%bleaf(nc),cpatch%bdead(nc)               &
-                                          ,cpatch%balive(nc),cpatch%nplant(nc)             &
-                                          ,cpatch%hite(nc),cpatch%pft(nc)                  &
-                                          ,cpatch%phenology_status(nc),cpatch%bsapwood(nc))
-      cpatch%veg_energy(nc) = cpatch%hcapveg(nc) * cpatch%veg_temp(nc)
-      cpatch%resolvable(nc) = is_resolvable(csite,np,nc,green_leaf_factor)
+      !----- Because we assigned no water, the internal energy is simply hcap*T. ----------!
+      call calc_veg_hcap(cpatch%bleaf(nc),cpatch%bdead(nc),cpatch%bsapwood(nc)             &
+                        ,cpatch%nplant(nc),cpatch%pft(nc)                                  &
+                        ,cpatch%leaf_hcap(nc),cpatch%wood_hcap(nc))
+
+      cpatch%leaf_energy(nc) = cpatch%leaf_hcap(nc) * cpatch%leaf_temp(nc)
+      cpatch%wood_energy(nc) = cpatch%wood_hcap(nc) * cpatch%wood_temp(nc)
+
+      call is_resolvable(csite,np,nc,green_leaf_factor)
 
       !----- Should plantations be considered recruits? -----------------------------------!
       cpatch%new_recruit_flag(nc) = 1

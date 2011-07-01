@@ -563,7 +563,8 @@ module pft_coms
    !---------------------------------------------------------------------------------------!
    type recruittype
       integer :: pft
-      real    :: veg_temp
+      real    :: leaf_temp
+      real    :: wood_temp
       real    :: hite
       real    :: dbh
       real    :: bdead
@@ -593,14 +594,15 @@ module pft_coms
       !------------------------------------------------------------------------------------!
 
       do p=1,maxp
-         recruit(p)%pft      = 0
-         recruit(p)%veg_temp = 0.
-         recruit(p)%hite     = 0.
-         recruit(p)%dbh      = 0.
-         recruit(p)%bdead    = 0.
-         recruit(p)%bleaf    = 0.
-         recruit(p)%balive   = 0.
-         recruit(p)%nplant   = 0.
+         recruit(p)%pft       = 0
+         recruit(p)%leaf_temp = 0.
+         recruit(p)%wood_temp = 0.
+         recruit(p)%hite      = 0.
+         recruit(p)%dbh       = 0.
+         recruit(p)%bdead     = 0.
+         recruit(p)%bleaf     = 0.
+         recruit(p)%balive    = 0.
+         recruit(p)%nplant    = 0.
       end do
 
       return
@@ -624,14 +626,15 @@ module pft_coms
       type(recruittype), intent(out) :: rectarget
       !------------------------------------------------------------------------------------!
 
-      rectarget%pft      = recsource%pft
-      rectarget%veg_temp = recsource%veg_temp
-      rectarget%hite     = recsource%hite
-      rectarget%dbh      = recsource%dbh
-      rectarget%bdead    = recsource%bdead
-      rectarget%bleaf    = recsource%bleaf
-      rectarget%balive   = recsource%balive
-      rectarget%nplant   = recsource%nplant
+      rectarget%pft       = recsource%pft
+      rectarget%leaf_temp = recsource%leaf_temp
+      rectarget%wood_temp = recsource%wood_temp
+      rectarget%hite      = recsource%hite
+      rectarget%dbh       = recsource%dbh
+      rectarget%bdead     = recsource%bdead
+      rectarget%bleaf     = recsource%bleaf
+      rectarget%balive    = recsource%balive
+      rectarget%nplant    = recsource%nplant
 
       return
    end subroutine copy_recruit

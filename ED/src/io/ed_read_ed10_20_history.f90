@@ -137,9 +137,6 @@ subroutine read_ed10_ed20_history_file
    real                                                   :: dummy
    real                                                   :: area_tot
    real                                                   :: area_sum
-   real                                                   :: patch_lai
-   real                                                   :: patch_wpa
-   real                                                   :: patch_wai
    real                                                   :: poly_lai
    real                                                   :: site_lai
    real(kind=8)         , dimension(max_water)            :: dwater
@@ -753,7 +750,7 @@ subroutine read_ed10_ed20_history_file
                         !------------------------------------------------------------------!
                         cpatch%fsw(ic2)   = 1.0
                         cpatch%gpp(ic2)   = 0.0
-                        cpatch%par_v(ic2) = 0.0
+                        cpatch%par_l(ic2) = 0.0
 
                         !----- Update the patch level above-ground biomass. ---------------!
                         csite%plant_ag_biomass(ipa) = csite%plant_ag_biomass(ipa)          &

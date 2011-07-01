@@ -23,7 +23,7 @@ subroutine structural_growth(cgrid, month)
    use decomp_coms   , only : f_labile               ! ! intent(in)
    use ed_max_dims   , only : n_pft                  & ! intent(in)
                             , n_dbh                  ! ! intent(in)
-   use ed_therm_lib  , only : calc_hcapveg           & ! function
+   use ed_therm_lib  , only : calc_veg_hcap          & ! function
                             , update_veg_energy_cweh ! ! function
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
@@ -62,9 +62,8 @@ subroutine structural_growth(cgrid, month)
    real                          :: net_stem_N_uptake
    real                          :: cb_act
    real                          :: cb_max
-   real                          :: old_hcapveg
-   !----- External functions. -------------------------------------------------------------!
-   logical          , external   :: is_resolvable
+   real                          :: old_leaf_hcap
+   real                          :: old_wood_hcap
    !---------------------------------------------------------------------------------------!
 
    polyloop: do ipy = 1,cgrid%npolygons
@@ -191,17 +190,13 @@ subroutine structural_growth(cgrid, month)
                !      Internal energy is an extensive variable, we just account for the    !
                !      difference in the heat capacity to update it.                        !
                !---------------------------------------------------------------------------!
-               old_hcapveg = cpatch%hcapveg(ico)
-               cpatch%hcapveg(ico) = calc_hcapveg(cpatch%bleaf(ico),cpatch%bdead(ico)      &
-                                                 ,cpatch%balive(ico),cpatch%nplant(ico)    &
-                                                 ,cpatch%hite(ico),cpatch%pft(ico)         &
-                                                 ,cpatch%phenology_status(ico)             &
-                                                 ,cpatch%bsapwood(ico))
-               call update_veg_energy_cweh(csite,ipa,ico,old_hcapveg)
-               cpatch%resolvable(ico) = is_resolvable(csite,ipa,ico                        &
-                                                     ,cpoly%green_leaf_factor(:,isi))
-               !----- Likewise, update the patch heat capacity ----------------------------!
-               csite%hcapveg(ipa) = csite%hcapveg(ipa) + cpatch%hcapveg(ico) - old_hcapveg
+               old_leaf_hcap = cpatch%leaf_hcap(ico)
+               old_wood_hcap = cpatch%wood_hcap(ico)
+               call calc_veg_hcap(cpatch%bleaf(ico),cpatch%bdead(ico),cpatch%bsapwood(ico) &
+                                 ,cpatch%nplant(ico),cpatch%pft(ico)                       &
+                                 ,cpatch%leaf_hcap(ico),cpatch%wood_hcap(ico) )
+               call update_veg_energy_cweh(csite,ipa,ico,old_leaf_hcap,old_wood_hcap)
+               call is_resolvable(csite,ipa,ico,cpoly%green_leaf_factor(:,isi))
                !---------------------------------------------------------------------------!
 
 
@@ -283,9 +278,9 @@ subroutine structural_growth_eq_0(cgrid, month)
                             , c2n_stem               & ! intent(in)
                             , l2n_stem               ! ! intent(in)
    use decomp_coms   , only : f_labile               ! ! intent(in)
-   use ed_max_dims      , only : n_pft                  & ! intent(in)
+   use ed_max_dims   , only : n_pft                  & ! intent(in)
                             , n_dbh                  ! ! intent(in)
-   use ed_therm_lib  , only : calc_hcapveg           & ! function
+   use ed_therm_lib  , only : calc_veg_hcap          & ! function
                             , update_veg_energy_cweh ! ! function
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
@@ -324,7 +319,8 @@ subroutine structural_growth_eq_0(cgrid, month)
    real                          :: net_stem_N_uptake
    real                          :: cb_act
    real                          :: cb_max
-   real                          :: old_hcapveg
+   real                          :: old_leaf_hcap
+   real                          :: old_wood_hcap
    !---------------------------------------------------------------------------------------!
 
    polyloop: do ipy = 1,cgrid%npolygons

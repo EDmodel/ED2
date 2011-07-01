@@ -381,7 +381,7 @@ subroutine compute_budget(csite,lsl,pcpg,qpcpg,ipa,wcurr_loss2atm,ecurr_loss2atm
 
 
    !---------------------------------------------------------------------------------------!
-   !     Updating density and initial storage for next step.                               !
+   !     Update density and initial storage for next step.                                 !
    !---------------------------------------------------------------------------------------!
    csite%wbudget_initialstorage(ipa)   = wbudget_finalstorage
    csite%ebudget_initialstorage(ipa)   = ebudget_finalstorage
@@ -423,22 +423,23 @@ real function compute_water_storage(csite, lsl,ipa)
    compute_water_storage = 0.0
    cpatch => csite%patch(ipa)
 
-   !----- 1. Adding the water stored in the soil. -----------------------------------------!
+   !----- 1. Add the water stored in the soil. --------------------------------------------!
    do k = lsl, nzg
       compute_water_storage = compute_water_storage                                        &
                             + csite%soil_water(k,ipa) * dslz(k) * wdns
    end do
-   !----- 2. Adding the water stored in the temporary surface water/snow. -----------------!
+   !----- 2. Add the water stored in the temporary surface water/snow. --------------------!
    do k = 1, csite%nlev_sfcwater(ipa)
       compute_water_storage = compute_water_storage + csite%sfcwater_mass(k,ipa)
    end do
-   !----- 3. Adding the water vapour floating in the canopy air space. --------------------!
+   !----- 3. Add the water vapour floating in the canopy air space. -----------------------!
    compute_water_storage = compute_water_storage                                           &
                             + csite%can_shv(ipa) * csite%can_depth(ipa)                    &
                             * csite%can_rhos(ipa)
-   !----- 4. Adding the water over the leaf surface. --------------------------------------!
+   !----- 4. Add the water on the leaf and wood surfaces. ---------------------------------!
    do ico = 1,cpatch%ncohorts
-      compute_water_storage = compute_water_storage + cpatch%veg_water(ico)
+      compute_water_storage = compute_water_storage + cpatch%leaf_water(ico)
+      compute_water_storage = compute_water_storage + cpatch%wood_water(ico)
    end do
 
    return
@@ -472,15 +473,16 @@ real function compute_netrad(csite,ipa)
    cpatch => csite%patch(ipa)
 
    compute_netrad = 0.0
-   !----- 1. Adding the ground components -------------------------------------------------!
+   !----- 1. Add the ground components ----------------------------------------------------!
    compute_netrad = csite%rshort_g(ipa) + csite%rlong_g(ipa) + csite%rlong_s(ipa)
-   !----- 2. Adding the shortwave radiation that reaches each snow/water layer ------------!
+   !----- 2. Add the shortwave radiation that reaches each snow/water layer ---------------!
    do k = 1, csite%nlev_sfcwater(ipa)
       compute_netrad = compute_netrad + csite%rshort_s(k,ipa)
    end do
-   !----- 3. Adding the radiation components that interact with leaves. -------------------!
+   !----- 3. Add the radiation components that is absorbed by leaves and branches. --------!
    do ico = 1,cpatch%ncohorts
-      compute_netrad = compute_netrad + cpatch%rshort_v(ico) + cpatch%rlong_v(ico)
+      compute_netrad = compute_netrad + cpatch%rshort_l(ico) + cpatch%rlong_l(ico)
+      compute_netrad = compute_netrad + cpatch%rshort_w(ico) + cpatch%rlong_w(ico)
    end do
    return
 end function compute_netrad
@@ -551,7 +553,7 @@ real function compute_energy_storage(csite, lsl, ipa)
    !---------------------------------------------------------------------------------------!
    veg_storage = 0.0
    do ico = 1,cpatch%ncohorts
-      veg_storage = veg_storage + cpatch%veg_energy(ico)
+      veg_storage = veg_storage + cpatch%leaf_energy(ico) + cpatch%wood_energy(ico)
    end do
  
    !----- 5. Integrating the total energy in ED. ------------------------------------------!
@@ -619,7 +621,7 @@ subroutine sum_plant_cfluxes(csite,ipa, gpp, gpp_dbh,leaf_resp,root_resp,growth_
    !---------------------------------------------------------------------------------------!
    do ico = 1,cpatch%ncohorts
       !----- Adding GPP and leaf respiration only for those cohorts with enough leaves. ---!
-      if (cpatch%resolvable(ico)) then
+      if (cpatch%leaf_resolvable(ico)) then
          gpp = gpp + cpatch%gpp(ico)
          !----- Forest cohorts have dbh distribution, add them to gpp_dbh. ----------------!
          if (forest) then 

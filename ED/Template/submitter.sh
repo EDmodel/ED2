@@ -83,6 +83,7 @@ do
    iphysiol=`echo ${oi}  | awk '{print $54}'`
    icanswrad=`echo ${oi} | awk '{print $55}'`
    imetrad=`echo ${oi}   | awk '{print $56}'`
+   ibranch=`echo ${oi}   | awk '{print $57}'`
    #---------------------------------------------------------------------------------------#
 
 

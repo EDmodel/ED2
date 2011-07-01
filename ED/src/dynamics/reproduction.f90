@@ -37,7 +37,7 @@ subroutine reproduction(cgrid, month)
    use phenology_coms     , only : repro_scheme          ! ! intent(in)
    use mem_polygons       , only : maxcohort             ! ! intent(in)
    use consts_coms        , only : pio4                  ! ! intent(in)
-   use ed_therm_lib       , only : calc_hcapveg          ! ! function
+   use ed_therm_lib       , only : calc_veg_hcap         ! ! function
    use allometry          , only : dbh2bd                & ! function
                                  , dbh2bl                & ! function
                                  , h2dbh                 & ! function
@@ -67,8 +67,6 @@ subroutine reproduction(cgrid, month)
    real                                :: elim_lai
    !----- Saved variables -----------------------------------------------------------------!
    logical          , save             :: first_time = .true.
-   !----- External functions. -------------------------------------------------------------!
-   logical          , external         :: is_resolvable  ! The cohort can be resolved.
    !---------------------------------------------------------------------------------------!
 
 
@@ -148,16 +146,17 @@ subroutine reproduction(cgrid, month)
                      !---------------------------------------------------------------------!
                      !    We assign the recruit in the temporary recruitment structure.    !
                      !---------------------------------------------------------------------!
-                     rectest%pft      = ipft
-                     rectest%veg_temp = csite%can_temp(ipa)
-                     rectest%hite     = hgt_min(ipft)
-                     rectest%dbh      = h2dbh(rectest%hite, ipft)
-                     rectest%bdead    = dbh2bd(rectest%dbh, ipft)
-                     rectest%bleaf    = dbh2bl(rectest%dbh, ipft)
-                     rectest%balive   = rectest%bleaf                                      &
-                                      * (1.0 + q(ipft) + qsw(ipft) * rectest%hite)
-                     rectest%nplant   = csite%repro(ipft,ipa)                              &
-                                      / (rectest%balive + rectest%bdead)
+                     rectest%pft       = ipft
+                     rectest%leaf_temp = csite%can_temp(ipa)
+                     rectest%wood_temp = csite%can_temp(ipa)
+                     rectest%hite      = hgt_min(ipft)
+                     rectest%dbh       = h2dbh(rectest%hite, ipft)
+                     rectest%bdead     = dbh2bd(rectest%dbh, ipft)
+                     rectest%bleaf     = dbh2bl(rectest%dbh, ipft)
+                     rectest%balive    = rectest%bleaf                                     &
+                                       * (1.0 + q(ipft) + qsw(ipft) * rectest%hite)
+                     rectest%nplant    = csite%repro(ipft,ipa)                             &
+                                       / (rectest%balive + rectest%bdead)
 
                      if(include_pft(ipft)) then
                         rectest%nplant = rectest%nplant + seed_rain(ipft)
@@ -249,11 +248,14 @@ subroutine reproduction(cgrid, month)
 
 
                   !----- Assign temperature after init_ed_cohort_vars... ------------------!
-                  cpatch%veg_temp(ico)  = recruit(inew)%veg_temp
+                  cpatch%leaf_temp(ico)  = recruit(inew)%leaf_temp
+                  cpatch%wood_temp(ico)  = recruit(inew)%wood_temp
 
                   !----- Initialise the next variables with zeroes... ---------------------!
-                  cpatch%veg_water(ico) = 0.0
-                  cpatch%veg_fliq(ico)  = 0.0
+                  cpatch%leaf_water(ico) = 0.0
+                  cpatch%leaf_fliq (ico) = 0.0
+                  cpatch%wood_water(ico) = 0.0
+                  cpatch%wood_fliq (ico) = 0.0
                   !------------------------------------------------------------------------!
 
                   !------------------------------------------------------------------------!
@@ -284,14 +286,15 @@ subroutine reproduction(cgrid, month)
                                    ,cpatch%wpa(ico),cpatch%wai(ico)                        &
                                    ,cpatch%crown_area(ico),cpatch%bsapwood(ico))
                   !----- Find heat capacity and vegetation internal energy. ---------------!
-                  cpatch%hcapveg(ico) = calc_hcapveg(cpatch%bleaf(ico),cpatch%bdead(ico)   &
-                                                    ,cpatch%balive(ico),cpatch%nplant(ico) &
-                                                    ,cpatch%hite(ico),cpatch%pft(ico)      &
-                                                    ,cpatch%phenology_status(ico)          &
-                                                    ,cpatch%bsapwood(ico))
-                  cpatch%veg_energy(ico) = cpatch%hcapveg(ico) * cpatch%veg_temp(ico)
-                  cpatch%resolvable(ico) = is_resolvable(csite,ipa,ico                     &
-                                                        ,cpoly%green_leaf_factor(:,isi))
+                  call calc_veg_hcap(cpatch%bleaf(ico),cpatch%bdead(ico)                   &
+                                    ,cpatch%bsapwood(ico),cpatch%nplant(ico)               &
+                                    ,cpatch%pft(ico)                                       &
+                                    ,cpatch%leaf_hcap(ico),cpatch%wood_hcap(ico))
+
+                  cpatch%leaf_energy(ico) = cpatch%leaf_hcap(ico) * cpatch%leaf_temp(ico)
+                  cpatch%wood_energy(ico) = cpatch%wood_hcap(ico) * cpatch%wood_temp(ico)
+
+                  call is_resolvable(csite,ipa,ico,cpoly%green_leaf_factor(:,isi))
 
                   !----- Update number of cohorts in this site. ---------------------------!
                   csite%cohort_count(ipa) = csite%cohort_count(ipa) + 1

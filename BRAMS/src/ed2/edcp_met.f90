@@ -1641,9 +1641,12 @@ subroutine copy_avgvars_to_leaf(ifm)
 
 
          !----- Update vegetation properties. ---------------------------------------------!
-         leaf_g(ifm)%veg_water   (ix,iy,ilp)   = cpoly%avg_veg_water (isi)
-         leaf_g(ifm)%veg_hcap    (ix,iy,ilp)   = cpoly%avg_veg_hcap (isi)
-         leaf_g(ifm)%veg_energy  (ix,iy,ilp)   = cpoly%avg_veg_energy(isi)
+         leaf_g(ifm)%veg_water   (ix,iy,ilp)   = cpoly%avg_leaf_water  (isi)               &
+                                               + cpoly%avg_wood_water  (isi)
+         leaf_g(ifm)%veg_hcap    (ix,iy,ilp)   = cpoly%avg_leaf_hcap   (isi)               &
+                                               + cpoly%avg_wood_hcap   (isi)
+         leaf_g(ifm)%veg_energy  (ix,iy,ilp)   = cpoly%avg_leaf_energy (isi)               &
+                                               + cpoly%avg_wood_energy (isi)
          leaf_g(ifm)%veg_lai     (ix,iy,ilp)   = cpoly%lai(isi)
          leaf_g(ifm)%veg_tai     (ix,iy,ilp)   = cpoly%lai(isi) + cgrid%wai(isi)
 
@@ -1675,11 +1678,13 @@ subroutine copy_avgvars_to_leaf(ifm)
          !     Copy the fluxes, which will be used for output only.                        !
          !---------------------------------------------------------------------------------!
          leaf_g(ifm)%sensible_gc(ix,iy,ilp) = cpoly%avg_sensible_gc(isi)
-         leaf_g(ifm)%sensible_vc(ix,iy,ilp) = cpoly%avg_sensible_vc(isi)
+         leaf_g(ifm)%sensible_vc(ix,iy,ilp) = ( cpoly%avg_sensible_lc(isi)                 &
+                                              + cpoly%avg_sensible_wc(isi) )
          leaf_g(ifm)%evap_gc    (ix,iy,ilp) = ( cpoly%avg_vapor_gc(isi)                    &
-                                              - cpoly%avg_dew_cg(isi))   * alvl
-         leaf_g(ifm)%evap_vc    (ix,iy,ilp) = cpoly%avg_vapor_vc(isi)    * alvl
-         leaf_g(ifm)%transp     (ix,iy,ilp) = cpoly%avg_transp(isi)      * alvl
+                                              - cpoly%avg_dew_cg(isi))    * alvl
+         leaf_g(ifm)%evap_vc    (ix,iy,ilp) = ( cpoly%avg_vapor_lc(isi)                    &
+                                              + cpoly%avg_vapor_wc(isi) ) * alvl
+         leaf_g(ifm)%transp     (ix,iy,ilp) = cpoly%avg_transp(isi)       * alvl
          !---------------------------------------------------------------------------------!
 
 

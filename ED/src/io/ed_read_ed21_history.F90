@@ -593,7 +593,7 @@ subroutine read_ed21_history_file
                      cpatch%ddbh_dt              = 0.
                      cpatch%fsw                  = 1.0
                      cpatch%gpp                  = 0.0
-                     cpatch%par_v                = 0.0
+                     cpatch%par_l                = 0.0
                      
                      cohortloop: do ico=1,cpatch%ncohorts
                         !------------------------------------------------------------------!
@@ -1659,7 +1659,7 @@ subroutine read_ed21_history_unstruct
                         cpatch%ddbh_dt              = 0.
                         cpatch%fsw                  = 1.0
                         cpatch%gpp                  = 0.0
-                        cpatch%par_v                = 0.0
+                        cpatch%par_l                = 0.0
 
                         cohortloop: do ico=1,cpatch%ncohorts
                            !---------------------------------------------------------------!

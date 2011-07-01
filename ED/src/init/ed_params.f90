@@ -410,16 +410,25 @@ subroutine init_can_rad_params()
                                     , leaf_scatter_vis            & ! intent(out)
                                     , leaf_reflect_vis            & ! intent(out)
                                     , leaf_trans_vis              & ! intent(out)
-                                    , diffuse_backscatter_vis     & ! intent(out)
-                                    , diffuse_backscatter_nir     & ! intent(out)
-                                    , emis_v                      & ! intent(out)
+                                    , leaf_backscatter_vis        & ! intent(out)
+                                    , leaf_backscatter_nir        & ! intent(out)
+                                    , leaf_emis                   & ! intent(out)
+                                    , wood_reflect_nir            & ! intent(out)
+                                    , wood_trans_nir              & ! intent(out)
+                                    , wood_scatter_nir            & ! intent(out)
+                                    , wood_reflect_vis            & ! intent(out)
+                                    , wood_trans_vis              & ! intent(out)
+                                    , wood_scatter_vis            & ! intent(out)
+                                    , wood_reflect_vis            & ! intent(out)
+                                    , wood_trans_vis              & ! intent(out)
+                                    , wood_backscatter_vis        & ! intent(out)
+                                    , wood_backscatter_nir        & ! intent(out)
+                                    , wood_emis                   & ! intent(out)
                                     , mubar                       & ! intent(out)
                                     , fvis_beam_def               & ! intent(out)
                                     , fvis_diff_def               & ! intent(out)
                                     , fnir_beam_def               & ! intent(out)
                                     , fnir_diff_def               & ! intent(out)
-                                    , leaf_reflect_nir            & ! intent(out)
-                                    , leaf_trans_nir              & ! intent(out)
                                     , rshort_twilight_min         & ! intent(out)
                                     , cosz_min                    & ! intent(out)
                                     , cosz_min8                   ! ! intent(out)
@@ -459,19 +468,48 @@ subroutine init_can_rad_params()
    ! looked like the visible ignoring the green band.                                      !
    !---------------------------------------------------------------------------------------!
    !----- Visible (PAR). ------------------------------------------------------------------!
-   leaf_reflect_vis(1)     = 0.11  ! 0.062
-   leaf_reflect_vis(2:4)   = 0.11  ! 0.062
-   leaf_reflect_vis(5:13)  = 0.11
-   leaf_reflect_vis(14:15) = 0.11
-   leaf_reflect_vis(16)    = 0.11  ! 0.062
-   leaf_reflect_vis(17)    = 0.09  ! 0.110
+   leaf_reflect_vis(1)     = 1.3d-1 ! 6.2d-2
+   leaf_reflect_vis(2:4)   = 1.3d-1 ! 6.2d-2
+   leaf_reflect_vis(5)     = 1.1d-1 ! 6.2d-2
+   leaf_reflect_vis(6:11)  = 1.1d-1 ! 1.1d-1
+   leaf_reflect_vis(12:13) = 1.1d-1 ! 1.1d-1
+   leaf_reflect_vis(14:15) = 1.1d-1 ! 1.1d-1
+   leaf_reflect_vis(16)    = 1.3d-1 ! 0.062
+   leaf_reflect_vis(17)    = 9.0d-2 ! 9.0d-2
    !----- Near infrared. ------------------------------------------------------------------!
-   leaf_reflect_nir(1)     = 0.58
-   leaf_reflect_nir(2:4)   = 0.58
-   leaf_reflect_nir( 5:13) = 0.577
-   leaf_reflect_nir(14:15) = 0.58
-   leaf_reflect_nir(16)    = 0.58
-   leaf_reflect_nir(17)    = 0.46
+   leaf_reflect_nir(1)     = 6.30d-1
+   leaf_reflect_nir(2:4)   = 6.30d-1
+   leaf_reflect_nir(5)     = 5.77d-1
+   leaf_reflect_nir( 6:11) = 5.77d-1
+   leaf_reflect_nir(12:13) = 5.77d-1
+   leaf_reflect_nir(14:15) = 5.80d-1
+   leaf_reflect_nir(16)    = 6.30d-1
+   leaf_reflect_nir(17)    = 4.60d-1
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !      Wood reflectance, using CLM parameters.                                          !
+   !---------------------------------------------------------------------------------------!
+   !----- Visible (PAR). ------------------------------------------------------------------!
+   wood_reflect_vis(1)     = 3.60d-1
+   wood_reflect_vis(2:4)   = 1.60d-1
+   wood_reflect_vis(5)     = 3.60d-1
+   wood_reflect_vis(6:11)  = 1.60d-1
+   wood_reflect_vis(12:13) = 3.60d-1
+   wood_reflect_vis(14:15) = 3.60d-1
+   wood_reflect_vis(16)    = 3.60d-1
+   wood_reflect_vis(17)    = 1.60d-2
+   !----- Near infrared. ------------------------------------------------------------------!
+   wood_reflect_nir(1)     = 5.80d-1
+   wood_reflect_nir(2:4)   = 3.90d-1
+   wood_reflect_nir(5)     = 5.80d-1
+   wood_reflect_nir( 6:11) = 3.90d-1
+   wood_reflect_nir(12:13) = 5.80d-1
+   wood_reflect_nir(14:15) = 5.80d-1
+   wood_reflect_nir(16)    = 5.80d-1
+   wood_reflect_nir(17)    = 3.90d-1
    !---------------------------------------------------------------------------------------!
 
 
@@ -484,46 +522,81 @@ subroutine init_can_rad_params()
    ! looked like the visible ignoring the green band.                                      !
    !---------------------------------------------------------------------------------------!
    !----- Visible (PAR). ------------------------------------------------------------------!
-   leaf_trans_vis(    1) = 0.070  ! 0.028
-   leaf_trans_vis(  2:4) = 0.050  ! 0.028
-   leaf_trans_vis( 5:13) = 0.160  ! 0.160
-   leaf_trans_vis(14:15) = 0.160  ! 0.028
-   leaf_trans_vis(   16) = 0.070  ! 0.160
-   leaf_trans_vis(   17) = 0.050  ! 0.160
+   leaf_trans_vis(    1) = 2.80d-2  ! 7.00d-2
+   leaf_trans_vis(  2:4) = 2.80d-2  ! 5.00d-2
+   leaf_trans_vis(    5) = 1.60d-1  ! 0.160
+   leaf_trans_vis( 6:11) = 1.60d-1  ! 0.160
+   leaf_trans_vis(12:13) = 1.60d-1  ! 0.160
+   leaf_trans_vis(14:15) = 7.00d-2  ! 0.028
+   leaf_trans_vis(   16) = 2.80d-2  ! 7.00d-2
+   leaf_trans_vis(   17) = 5.00d-2  ! 0.160
    !----- Near infrared. ------------------------------------------------------------------!
-   leaf_trans_nir(    1) = 0.25
-   leaf_trans_nir(  2:4) = 0.25
-   leaf_trans_nir( 5:13) = 0.248
-   leaf_trans_nir(14:15) = 0.248
-   leaf_trans_nir(   16) = 0.25
-   leaf_trans_nir(   17) = 0.18
+   leaf_trans_nir(    1) = 2.48d-1
+   leaf_trans_nir(  2:4) = 2.48d-1
+   leaf_trans_nir(    5) = 2.48d-1
+   leaf_trans_nir( 6:11) = 2.48d-1
+   leaf_trans_nir(12:13) = 2.48d-1
+   leaf_trans_nir(14:15) = 2.48d-1
+   leaf_trans_nir(   16) = 2.48d-1
+   leaf_trans_nir(   17) = 1.80d-1
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !      Wood transmittance, using the parameters from CLM.                               !
+   !---------------------------------------------------------------------------------------!
+   !----- Visible (PAR). ------------------------------------------------------------------!
+   wood_trans_vis(    1) = 2.80d-2
+   wood_trans_vis(  2:4) = 1.00d-3
+   wood_trans_vis(    5) = 2.80d-2
+   wood_trans_vis( 6:11) = 1.00d-3
+   wood_trans_vis(12:13) = 2.20d-1
+   wood_trans_vis(14:15) = 2.20d-1
+   wood_trans_vis(   16) = 2.80d-2
+   wood_trans_vis(   17) = 1.00d-3
+   !----- Near infrared. ------------------------------------------------------------------!
+   wood_trans_nir(    1) = 2.48d-1
+   wood_trans_nir(  2:4) = 1.00d-3
+   wood_trans_nir(    5) = 2.48d-1
+   wood_trans_nir( 6:11) = 1.00d-3
+   wood_trans_nir(12:13) = 2.48d-1
+   wood_trans_nir(14:15) = 2.48d-1
+   wood_trans_nir(   16) = 2.48d-1
+   wood_trans_nir(   17) = 1.00d-3
    !---------------------------------------------------------------------------------------!
 
 
 
 
    !---------------------------------------------------------------------------------------!
-   !      Leaf scattering coefficient.  For all PFTs it is just the sum of reflectance and !
+   !      Scattering coefficient.  For all PFTs this is just the sum of reflectance and    !
    ! transmittance.                                                                        !
    !---------------------------------------------------------------------------------------!
    !----- Visible (PAR). ------------------------------------------------------------------!
    leaf_scatter_vis(1:17) = leaf_reflect_vis(1:17) + leaf_trans_vis(1:17)
+   wood_scatter_vis(1:17) = wood_reflect_vis(1:17) + wood_trans_vis(1:17)
    !----- Near infrared. ------------------------------------------------------------------!
    leaf_scatter_nir(1:17) = leaf_reflect_nir(1:17) + leaf_trans_nir(1:17)
+   wood_scatter_nir(1:17) = wood_reflect_nir(1:17) + wood_trans_nir(1:17)
    !---------------------------------------------------------------------------------------!
 
 
 
 
    !---------------------------------------------------------------------------------------!
-   !      Leaf back-scattering coefficient.                                                !
+   !      Back-scattering coefficients.                                                    !
    !---------------------------------------------------------------------------------------!
    !----- Visible (PAR). ------------------------------------------------------------------!
-   diffuse_backscatter_vis(1:17) = (2.0 * leaf_reflect_vis(1:17) - leaf_trans_vis(1:17))   &
-                                 / (3.0 * leaf_scatter_vis(1:17))
+   leaf_backscatter_vis(1:17) = (2.d0 * leaf_reflect_vis(1:17) - leaf_trans_vis(1:17))     &
+                              / (3.d0 * leaf_scatter_vis(1:17))
+   wood_backscatter_vis(1:17) = (2.d0 * wood_reflect_vis(1:17) - wood_trans_vis(1:17))     &
+                              / (3.d0 * wood_scatter_vis(1:17))
    !----- Near infrared. ------------------------------------------------------------------!
-   diffuse_backscatter_nir(1:17) = (2.0 * leaf_reflect_nir(1:17) - leaf_trans_nir(1:17))   &
-                                 / (3.0 * leaf_scatter_nir(1:17))
+   leaf_backscatter_nir(1:17) = (2.d0 * leaf_reflect_nir(1:17) - leaf_trans_nir(1:17))     &
+                              / (3.d0 * leaf_scatter_nir(1:17))
+   wood_backscatter_nir(1:17) = (2.d0 * wood_reflect_nir(1:17) - wood_trans_nir(1:17))     &
+                              / (3.d0 * wood_scatter_nir(1:17))
    !---------------------------------------------------------------------------------------!
 
 
@@ -534,14 +607,22 @@ subroutine init_can_rad_params()
    !---------------------------------------------------------------------------------------!
    !      Emissivity.                                                                      !
    !---------------------------------------------------------------------------------------!
-   emis_v(1)     = 9.60d-1
-   emis_v(2:4)   = 9.50d-1
-   emis_v(5)     = 9.60d-1
-   emis_v(6:8)   = 9.70d-1
-   emis_v(9:11)  = 9.50d-1
-   emis_v(12:15) = 9.60d-1
-   emis_v(16)    = 9.60d-1
-   emis_v(17)    = 9.70d-1
+   leaf_emis(1)     = 9.60d-1
+   leaf_emis(2:4)   = 9.50d-1
+   leaf_emis(5)     = 9.60d-1
+   leaf_emis(6:8)   = 9.70d-1
+   leaf_emis(9:11)  = 9.50d-1
+   leaf_emis(12:15) = 9.60d-1
+   leaf_emis(16)    = 9.60d-1
+   leaf_emis(17)    = 9.70d-1
+   wood_emis(1)     = 9.60d-1
+   wood_emis(2:4)   = 9.00d-1
+   wood_emis(5)     = 9.60d-1
+   wood_emis(6:8)   = 9.00d-1
+   wood_emis(9:11)  = 9.00d-1
+   wood_emis(12:15) = 9.60d-1
+   wood_emis(16)    = 9.60d-1
+   wood_emis(17)    = 9.00d-1
    !---------------------------------------------------------------------------------------!
 
 
@@ -678,6 +759,16 @@ subroutine init_can_air_params()
                              , nflat_lami            & ! intent(out)
                              , mflat_turb            & ! intent(out)
                              , mflat_lami            & ! intent(out)
+                             , ocyli_turb            & ! intent(out)
+                             , ocyli_lami            & ! intent(out)
+                             , acyli_turb            & ! intent(out)
+                             , acyli_lami            & ! intent(out)
+                             , bcyli_turb            & ! intent(out)
+                             , bcyli_lami            & ! intent(out)
+                             , ncyli_turb            & ! intent(out)
+                             , ncyli_lami            & ! intent(out)
+                             , mcyli_turb            & ! intent(out)
+                             , mcyli_lami            & ! intent(out)
                              , beta_r1               & ! intent(out)
                              , beta_r2               & ! intent(out)
                              , beta_re0              & ! intent(out)
@@ -692,6 +783,16 @@ subroutine init_can_air_params()
                              , nflat_lami8           & ! intent(out)
                              , mflat_turb8           & ! intent(out)
                              , mflat_lami8           & ! intent(out)
+                             , ocyli_turb8           & ! intent(out)
+                             , ocyli_lami8           & ! intent(out)
+                             , acyli_turb8           & ! intent(out)
+                             , acyli_lami8           & ! intent(out)
+                             , bcyli_turb8           & ! intent(out)
+                             , bcyli_lami8           & ! intent(out)
+                             , ncyli_turb8           & ! intent(out)
+                             , ncyli_lami8           & ! intent(out)
+                             , mcyli_turb8           & ! intent(out)
+                             , mcyli_lami8           & ! intent(out)
                              , beta_r18              & ! intent(out)
                              , beta_r28              & ! intent(out)
                              , beta_re08             & ! intent(out)
@@ -792,22 +893,38 @@ subroutine init_can_air_params()
 
 
    !---------------------------------------------------------------------------------------!
-   !      Parameters for the aerodynamic resistance between the leaf and the canopy air    !
-   ! space.  These are the A, B, n, and m parameters that define the Nusselt number for    !
-   ! forced and free convection, at equations 10.7 and 10.9.  The parameters are found at  !
-   ! the appendix A.5(a) and A.5(b).                                                       !
+   !      Parameters for the aerodynamic resistance between the leaf (flat surface) and    !
+   ! wood (kind of cylinder surface), and the canopy air space.  These are the A, B, n,    !
+   ! and m parameters that define the Nusselt number for forced and free convection, at    !
+   ! equations 10.7 and 10.9.  The parameters are found at the appendix A, table A.5(a)    !
+   ! and A.5(b).                                                                           !
    !                                                                                       !
    ! M08 - Monteith, J. L., M. H. Unsworth, 2008. Principles of Environmental Physics,     !
    !       3rd. edition, Academic Press, Amsterdam, 418pp.  (Mostly Chapter 10).           !
    !---------------------------------------------------------------------------------------!
-   aflat_turb = 0.600    ! A (forced convection), turbulent flow
-   aflat_lami = 0.032    ! A (forced convection), laminar   flow
-   bflat_turb = 0.500    ! B (free   convection), turbulent flow
-   bflat_lami = 0.130    ! B (free   convection), laminar   flow
-   nflat_turb = 0.500    ! n (forced convection), turbulent flow
-   nflat_lami = 0.800    ! n (forced convection), laminar   flow
-   mflat_turb = 0.250    ! m (free   convection), turbulent flow
-   mflat_lami = onethird ! m (free   convection), laminar   flow
+   aflat_lami = 0.600    ! A (forced convection), laminar   flow
+   nflat_lami = 0.500    ! n (forced convection), laminar   flow
+   aflat_turb = 0.032    ! A (forced convection), turbulent flow
+   nflat_turb = 0.800    ! n (forced convection), turbulent flow
+   bflat_lami = 0.500    ! B (free   convection), laminar   flow
+   mflat_lami = 0.250    ! m (free   convection), laminar   flow
+   bflat_turb = 0.130    ! B (free   convection), turbulent flow
+   mflat_turb = onethird ! m (free   convection), turbulent flow
+   ocyli_lami = 0.320    ! intercept (forced convection), laminar   flow
+   acyli_lami = 0.510    ! A (forced convection), laminar   flow
+   ncyli_lami = 0.520    ! n (forced convection), laminar   flow
+   ocyli_turb = 0.000    ! intercept (forced convection), turbulent flow
+   acyli_turb = 0.240    ! A (forced convection), turbulent flow
+   ncyli_turb = 0.600    ! n (forced convection), turbulent flow
+   bcyli_lami = 0.480    ! B (free   convection), laminar   flow
+   mcyli_lami = 0.250    ! m (free   convection), laminar   flow
+   bcyli_turb = 0.090    ! B (free   convection), turbulent flow
+   mcyli_turb = onethird ! m (free   convection), turbulent flow
+   !---------------------------------------------------------------------------------------!
+
+
+
+
    !---------------------------------------------------------------------------------------!
    !     Both free and forced convection tend to underestimate the Nusselt number under    !
    ! different conditions.  Based on M08 review on the subject, I wrote the following      !
@@ -943,14 +1060,24 @@ subroutine init_can_air_params()
    atetf8                = dble(atetf               )
    z0moz0h8              = dble(z0moz0h             )
    z0hoz0m8              = dble(z0hoz0m             )
-   aflat_turb8           = dble(aflat_turb          )
-   aflat_lami8           = dble(aflat_lami          )
-   bflat_turb8           = dble(bflat_turb          )
-   bflat_lami8           = dble(bflat_lami          )
-   nflat_turb8           = dble(nflat_turb          )
-   nflat_lami8           = dble(nflat_lami          )
-   mflat_turb8           = dble(mflat_turb          )
-   mflat_lami8           = dble(mflat_lami          )
+   aflat_lami8           = dble(aflat_lami          ) 
+   nflat_lami8           = dble(nflat_lami          ) 
+   aflat_turb8           = dble(aflat_turb          ) 
+   nflat_turb8           = dble(nflat_turb          ) 
+   bflat_lami8           = dble(bflat_lami          ) 
+   mflat_lami8           = dble(mflat_lami          ) 
+   bflat_turb8           = dble(bflat_turb          ) 
+   mflat_turb8           = dble(mflat_turb          ) 
+   ocyli_lami8           = dble(ocyli_lami          ) 
+   acyli_lami8           = dble(acyli_lami          ) 
+   ncyli_lami8           = dble(ncyli_lami          ) 
+   ocyli_turb8           = dble(ocyli_turb          ) 
+   acyli_turb8           = dble(acyli_turb          ) 
+   ncyli_turb8           = dble(ncyli_turb          ) 
+   bcyli_lami8           = dble(bcyli_lami          ) 
+   mcyli_lami8           = dble(mcyli_lami          ) 
+   bcyli_turb8           = dble(bcyli_turb          ) 
+   mcyli_turb8           = dble(mcyli_turb          ) 
    beta_r18              = dble(beta_r1             )
    beta_r28              = dble(beta_r2             )
    beta_re08             = dble(beta_re0            )
@@ -2193,9 +2320,13 @@ subroutine init_pft_alloc_params()
 
    !---------------------------------------------------------------------------------------!
    !     DBH-Root depth allometry.  Check which allometry to use.  Notice that b?Rd have   !
-   ! different meanings depending on the allometry, whilst b?Vol are not used when iallom  !
-   ! is 3.                                                                                 !
+   ! different meanings depending on the allometry. b?Vol is always defined because we     !
+   ! may want to estimate the standing volume for other reasons (e.g. the characteristic   !
+   ! diameter of branches).                                                                !
    !---------------------------------------------------------------------------------------!
+   b1Vol(1:17)  = 0.65 * pi1 * 0.11 * 0.11
+   b2Vol(1:17)  = 2.0
+
    select case (iallom)
    case (0:2)
       b1Rd(1)     = - 0.700
@@ -2211,9 +2342,6 @@ subroutine init_pft_alloc_params()
       b2Rd(6:11)  = 0.277
       b2Rd(12:16) = 0.000
       b2Rd(17)    = 0.277
-
-      b1Vol(1:17)  = 0.65 * pi1 * 0.11 * 0.11
-      b2Vol(1:17)  = 2.0
    case (3)
       !------------------------------------------------------------------------------------!
       !     Based on Kenzo et al. (2009), but we had to apply some correction to make it   !
@@ -2222,8 +2350,6 @@ subroutine init_pft_alloc_params()
       !            for accurate estimation of above- and below-ground biomass in tropical  !
       !            secondary forests in Sarawak, Malaysia. J. Trop. Ecology, 25, 371-386.  !
       !------------------------------------------------------------------------------------!
-      b1Vol(1:17) = 0.0
-      b2Vol(1:17) = 0.0
       b1Rd(1:17)  = -0.2185333
       b2Rd(1:17)  =  0.5436442
    case (4)
@@ -2231,8 +2357,6 @@ subroutine init_pft_alloc_params()
       !     This is just a test, not based on any paper.  This is simply a fit that would  !
       ! put the roots 0.5m deep for plants 0.15m-tall and 5 m for plants 35-m tall.        !
       !------------------------------------------------------------------------------------!
-      b1Vol(1:17) = 0.0
-      b2Vol(1:17) = 0.0
       b1Rd(1:17)  = -1.1140580
       b2Rd(1:17)  =  0.4223014
    end select
@@ -2429,14 +2553,14 @@ subroutine init_pft_leaf_params()
    end select
 
    clumping_factor(1)     = 1.000d0
-   clumping_factor(2:4)   = 7.350d-1
+   clumping_factor(2:4)   = 1.000d0 ! 7.350d-1
    clumping_factor(5)     = 8.400d-1
    clumping_factor(6:8)   = 7.350d-1
    clumping_factor(9:11)  = 8.400d-1
    clumping_factor(12:13) = 8.400d-1
    clumping_factor(14:15) = 1.000d0
-   clumping_factor(16)    = 8.400d-1
-   clumping_factor(17)    = 7.350d-1
+   clumping_factor(16)    = 1.000d0 ! 8.400d-1
+   clumping_factor(17)    = 1.000d0 ! 7.350d-1
 
    !---------------------------------------------------------------------------------------!
    !      The following parameters are second sources found in Gu et al. (2007)            !
@@ -3665,8 +3789,6 @@ subroutine init_rk4_params()
                              , toocold                & ! intent(out)
                              , toohot                 & ! intent(out)
                              , lai_to_cover           & ! intent(out)
-                             , hcapveg_ref            & ! intent(out)
-                             , min_height             & ! intent(out)
                              , rk4min_veg_temp        & ! intent(out)
                              , rk4water_stab_thresh   & ! intent(out)
                              , rk4tiny_sfcw_mass      & ! intent(out)
@@ -3746,17 +3868,6 @@ subroutine init_rk4_params()
                             !    the soil/litter layer unimpeded.
    !---------------------------------------------------------------------------------------!
 
-
-   !---------------------------------------------------------------------------------------!
-   !    These two parameter will scale the cohort heat capacity inside the RK4 integrator, !
-   ! to avoid having patches with heat capacity that is way too small to be computational- !
-   ! ly stable and resolvable in a fast way.  If you don't want this and want to use the   !
-   ! nominal heat capacity, the laziest way to turn this off is by setting hcapveg_ref to  !
-   ! a small number.  Don't set it to zero, otherwise you may have FPE issues.             !
-   !---------------------------------------------------------------------------------------!
-   hcapveg_ref         = 3.0d3            ! Reference heat capacity value          [J/m³/K]
-   min_height          = 1.5d0            ! Minimum vegetation height              [     m]
-   !---------------------------------------------------------------------------------------!
 
 
    !---------------------------------------------------------------------------------------!

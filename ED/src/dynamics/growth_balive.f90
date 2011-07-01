@@ -30,7 +30,7 @@ module growth_balive
                                  , phenology              ! ! intent(in)
       use physiology_coms , only : N_plant_lim            ! ! intent(in)
       use grid_coms       , only : nzg                    ! ! intent(in)
-      use ed_therm_lib    , only : calc_hcapveg           & ! function
+      use ed_therm_lib    , only : calc_veg_hcap          & ! function
                                  , update_veg_energy_cweh ! ! function
       use allometry       , only : area_indices           & ! subroutine
                                  , ed_biomass             ! ! function
@@ -60,12 +60,11 @@ module growth_balive
       real                          :: balive_in
       real                          :: nitrogen_supply
       real                          :: dndt
-      real                          :: old_hcapveg
+      real                          :: old_leaf_hcap
+      real                          :: old_wood_hcap
       real                          :: nitrogen_uptake
       real                          :: N_uptake_pot
       real                          :: temp_dep
-      !----- External functions. ----------------------------------------------------------!
-      logical          , external   :: is_resolvable
       !------------------------------------------------------------------------------------!
 
 
@@ -257,19 +256,15 @@ module growth_balive
                   !     It is likely that biomass has changed, therefore, update           !
                   ! vegetation energy and heat capacity.                                   !
                   !------------------------------------------------------------------------!
-                  old_hcapveg         = cpatch%hcapveg(ico)
-                  cpatch%hcapveg(ico) = calc_hcapveg(cpatch%bleaf(ico) ,cpatch%bdead(ico)  &
-                                                    ,cpatch%balive(ico),cpatch%nplant(ico) &
-                                                    ,cpatch%hite(ico),cpatch%pft(ico)      &
-                                                    ,cpatch%phenology_status(ico)          &
-                                                    ,cpatch%bsapwood(ico))
-                  call update_veg_energy_cweh(csite,ipa,ico,old_hcapveg)
-                  !----- Likewise, the total heat capacity must be updated. ---------------!
-                  csite%hcapveg(ipa) = csite%hcapveg(ipa) + cpatch%hcapveg(ico)            &
-                                     - old_hcapveg
-                  !----- Update the status regarding stability. ---------------------------!
-                  cpatch%resolvable(ico) = is_resolvable(csite,ipa,ico                     &
-                                                        ,cpoly%green_leaf_factor(:,isi))
+                  old_leaf_hcap         = cpatch%leaf_hcap(ico)
+                  old_wood_hcap         = cpatch%wood_hcap(ico)
+                  call calc_veg_hcap(cpatch%bleaf(ico) ,cpatch%bdead(ico)                  &
+                                    ,cpatch%bsapwood(ico),cpatch%nplant(ico)               &
+                                    ,cpatch%pft(ico)                                       &
+                                    ,cpatch%leaf_hcap(ico),cpatch%wood_hcap(ico))
+                  call update_veg_energy_cweh(csite,ipa,ico,old_leaf_hcap,old_wood_hcap)
+                  !----- Update the stability status. -------------------------------------!
+                  call is_resolvable(csite,ipa,ico,cpoly%green_leaf_factor(:,isi))
                   !------------------------------------------------------------------------!
                end do
                
@@ -318,7 +313,7 @@ module growth_balive
                                  , phenology              ! ! intent(in)
       use physiology_coms , only : N_plant_lim            ! ! intent(in)
       use grid_coms       , only : nzg                    ! ! intent(in)
-      use ed_therm_lib    , only : calc_hcapveg           & ! function
+      use ed_therm_lib    , only : calc_veg_hcap          & ! function
                                  , update_veg_energy_cweh ! ! function
       use allometry       , only : area_indices           & ! subroutine
                                  , ed_biomass             ! ! function
@@ -348,7 +343,8 @@ module growth_balive
       real                          :: balive_in
       real                          :: nitrogen_supply
       real                          :: dndt
-      real                          :: old_hcapveg
+      real                          :: old_leaf_hcap
+      real                          :: old_wood_hcap
       real                          :: nitrogen_uptake
       real                          :: N_uptake_pot
       !------------------------------------------------------------------------------------!

@@ -342,14 +342,14 @@ module leaf_coms
    ! M08 - Monteith, J. L., M. H. Unsworth, 2008. Principles of Environmental Physics,     !
    !       3rd. edition, Academic Press, Amsterdam, 418pp.  (Mostly Chapter 10).           !
    !---------------------------------------------------------------------------------------!
-   real(kind=4), parameter :: aflat_turb = 0.600    ! A (forced convection), turbulent flow
-   real(kind=4), parameter :: aflat_lami = 0.032    ! A (forced convection), laminar   flow
-   real(kind=4), parameter :: bflat_turb = 0.500    ! B (free   convection), turbulent flow
-   real(kind=4), parameter :: bflat_lami = 0.130    ! B (free   convection), laminar   flow
-   real(kind=4), parameter :: nflat_turb = 0.500    ! n (forced convection), turbulent flow
-   real(kind=4), parameter :: nflat_lami = 0.800    ! n (forced convection), laminar   flow
-   real(kind=4), parameter :: mflat_turb = 0.250    ! m (free   convection), turbulent flow
-   real(kind=4), parameter :: mflat_lami = onethird ! m (free   convection), laminar   flow
+   real(kind=4), parameter :: aflat_lami = 0.600    ! A (forced convection), laminar   flow
+   real(kind=4), parameter :: nflat_lami = 0.500    ! n (forced convection), laminar   flow
+   real(kind=4), parameter :: aflat_turb = 0.032    ! A (forced convection), turbulent flow
+   real(kind=4), parameter :: nflat_turb = 0.800    ! n (forced convection), turbulent flow
+   real(kind=4), parameter :: bflat_lami = 0.500    ! B (free   convection), laminar   flow
+   real(kind=4), parameter :: mflat_lami = 0.250    ! m (free   convection), laminar   flow
+   real(kind=4), parameter :: bflat_turb = 0.130    ! B (free   convection), turbulent flow
+   real(kind=4), parameter :: mflat_turb = onethird ! m (free   convection), turbulent flow
    !---------------------------------------------------------------------------------------!
 
 

@@ -299,7 +299,7 @@ subroutine first_phenology(cgrid)
                             , polygontype      & ! structure
                             , sitetype         & ! structure
                             , patchtype        ! ! structure
-   use ed_therm_lib  , only : calc_hcapveg     ! ! function
+   use ed_therm_lib  , only : calc_veg_hcap    ! ! function
    use allometry     , only : area_indices     ! ! subroutine
    use grid_coms     , only : nzg              ! ! intent(in)
    implicit none
@@ -313,8 +313,6 @@ subroutine first_phenology(cgrid)
    integer                       :: isi            ! Site counter
    integer                       :: ipa            ! Patch counter
    integer                       :: ico            ! Cohort counter
-   !----- External functions. -------------------------------------------------------------!
-   logical          , external   :: is_resolvable  ! The cohort can be resolved.
    !---------------------------------------------------------------------------------------!
 
 
@@ -347,15 +345,14 @@ subroutine first_phenology(cgrid)
                                 ,cpatch%bsapwood(ico)) 
                !---------------------------------------------------------------------------!
 
+
                !----- Find heat capacity and vegetation internal energy. ------------------!
-               cpatch%hcapveg(ico) = calc_hcapveg(cpatch%bleaf(ico),cpatch%bdead(ico)      &
-                                                 ,cpatch%balive(ico),cpatch%nplant(ico)    &
-                                                 ,cpatch%hite(ico),cpatch%pft(ico)         &
-                                                 ,cpatch%phenology_status(ico)             &
-                                                 ,cpatch%bsapwood(ico))
-               cpatch%veg_energy(ico) = cpatch%hcapveg(ico) * cpatch%veg_temp(ico)
-               cpatch%resolvable(ico) = is_resolvable(csite,ipa,ico                        &
-                                                     ,cpoly%green_leaf_factor(:,isi))
+               call calc_veg_hcap(cpatch%bleaf(ico),cpatch%bdead(ico),cpatch%bsapwood(ico) &
+                                 ,cpatch%nplant(ico),cpatch%pft(ico)                       &
+                                 ,cpatch%leaf_hcap(ico),cpatch%wood_hcap(ico) )
+               cpatch%leaf_energy(ico) = cpatch%leaf_hcap(ico) * cpatch%leaf_temp(ico)
+               cpatch%wood_energy(ico) = cpatch%wood_hcap(ico) * cpatch%wood_temp(ico)
+               call is_resolvable(csite,ipa,ico,cpoly%green_leaf_factor(:,isi))
                !---------------------------------------------------------------------------!
 
 
