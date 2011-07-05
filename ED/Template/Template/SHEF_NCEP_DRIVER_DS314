@@ -3,33 +3,33 @@
 /n/Moorcroft_Lab/Lab/data/ed2_data/southam_met_driver/SOUTHAM_OL1_
 52 46 1.875 1.9047 240.000 -59.9986
 6
-'lon'   'lat'    'ugrd'    'vgrd'      'sh'      'hgt'
-21600.0    21600.0   21600.0   21600.0  21600.0   70.0
-2         2           1         1          1         4
+'lon'      'lat'     'ugrd'    'vgrd'    'sh'      'hgt'
+21600.0    21600.0   21600.0   21600.0   21600.0   70.0
+2          2         1         1         1         4
 /n/moorcroft_data/data/southam_shef_driver/DS314.SA.UA-TSP_
 61 101 1.0 1.0 -90.5 -70.5
 4
-'lon'       'lat'    'pres'   'tmp'    
-10800.0    10800.0   10800.0  10800.0 
-2       2      1       1         
-/n/moorcroft_data/data/southam_shef_driver/DS314.SA.ODI.SW_
+'lon'    'lat'    'pres'     'tmp'
+10800.0  10800.0  10800.0    10800.0
+2        2        1          1
+/n/moorcroft_data/data/southam_shef_driver/DS314.SA.3hourly.SW_
 61 101 1.0 1.0 -90.5 -70.5
 6
-'lon'    'lat'   'vbdsf'   'vddsf'   'nbdsf'   'nddsf'
-2700.0   2700.0   2700.0    2700.0    2700.0    2700.0
-2        2         1         1         1         1
+'lon'    'lat'     'vbdsf'    'vddsf'    'nbdsf'    'nddsf'
+10800.0  10800.0   10800.0    10800.0    10800.0    10800.0
+2        2         1          1          1          1
 /n/moorcroft_data/data/southam_shef_driver/DS314.SA.LW_
 61 101 1.0 1.0 -90.5 -70.5
 3
-'lon'    'lat'     'dlwrf'
- 10800.0   10800.0   10800.0
-2           2         1
+'lon'     'lat'      'dlwrf'
+10800.0   10800.0    10800.0
+2         2          1
 /n/moorcroft_data/data/southam_shef_driver/DS314.SA.PCP001_
 61 101 1.0 1.0 -90.5 -70.5
 3
-'lon'  'lat'  'prate'
-3600.0  3600.0  3600.0
-2        2       0
+'lon'    'lat'    'prate'
+3600.0   3600.0   3600.0
+2        2        0
 
 
 

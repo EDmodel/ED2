@@ -889,16 +889,17 @@ subroutine copy_fluxes_lsm2atm(ifm)
          !---------------------------------------------------------------------------------!
          !   Include emission and reflected longwave in rlongup.                           !
          !---------------------------------------------------------------------------------!
-         fluxp%rlongup(ix,iy,ilp) = ( cpoly%rlongup(isi)                                   &
-                                    + cgrid%met(ipy)%rlong * cpoly%rlong_albedo(isi) )     &
+         fluxp%rlongup(ix,iy,ilp) = sum( csite%area  * ( csite%rlongup                     &
+                                                       + cpoly%met(isi)%rlong              &
+                                                       * csite%rlong_albedo  ) )           &
                                   * site_area_i
          !---------------------------------------------------------------------------------!
+
 
          !---------------------------------------------------------------------------------!
          !    Total albedo is the average between albedo for direct (beam) and diffuse.    !
          !---------------------------------------------------------------------------------!
-         fluxp%albedt(ix,iy,ilp)  = site_area_i * 0.5                                      &
-                                  * (cpoly%albedo_beam(isi) + cpoly%albedo_diffuse(isi) )
+         fluxp%albedt(ix,iy,ilp)  = sum(csite%area * csite%albedo) * site_area_i
          !---------------------------------------------------------------------------------!
       end do
    end do

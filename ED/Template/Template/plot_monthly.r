@@ -2525,7 +2525,19 @@ for (place in myplaces){
       plotit       = compnow$plt
 
       #----- Check whether there are observations for this particular site. ---------------#
-      obsnow      = paste("obs.",iata,sep="")
+      if (iata == "mao"){
+         obsnow = "obs.m34"
+      }else if(iata == "stm"){
+         obsnow = "obs.s67"
+      }else if(iata == "rao"){
+         obsnow = "obs.pdg"
+      }else if(iata == "jpr"){
+         obsnow = "obs.fns"
+      }else if(iata == "btr"){
+         obsnow = "obs.s77"
+      }else{
+         obsnow = paste("obs.",iata,sep="")
+      }#end if
       plotit       = plotit && obsnow %in% ls()
 
       if (plotit){
@@ -2668,8 +2680,25 @@ for (place in myplaces){
       plotit       = compnow$plt
 
       #----- Check whether there are observations for this particular site. ---------------#
-      obsnow      = paste("obs.",iata,sep="")
+      if (iata == "mao"){
+         obsnow = "obs.m34"
+      }else if(iata == "stm"){
+         obsnow = "obs.s67"
+      }else if(iata == "rao"){
+         obsnow = "obs.pdg"
+      }else if(iata == "jpr"){
+         obsnow = "obs.fns"
+      }else if(iata == "btr"){
+         obsnow = "obs.s77"
+      }else{
+         obsnow = paste("obs.",iata,sep="")
+      }#end if
+
       plotit       = plotit && obsnow %in% ls()
+
+
+
+
 
       if (plotit){
          #---------------------------------------------------------------------------------#

@@ -23,8 +23,8 @@
 
 !==========================================================================================!
 !==========================================================================================!
-!    This subroutine is the main driver for the full Exner prognostic equation. All terms  !
-! except the heat flux are computed through here. Heat flux is always computed             !
+!    This subroutine is the main driver for the full Exner prognostic equation.  All terms !
+! except the heat flux are computed through here. Heat flux is always computed.            !
 !------------------------------------------------------------------------------------------!
 subroutine exevolve(m1,m2,m3,ifm,ia,iz,ja,jz,izu,jzv,jdim,mynum,edt,key)
 
@@ -45,9 +45,11 @@ subroutine exevolve(m1,m2,m3,ifm,ia,iz,ja,jz,izu,jzv,jdim,mynum,edt,key)
    integer :: i,j,k
    !---------------------------------------------------------------------------------------!
 
+
    !---------------------------------------------------------------------------------------!
-   !     Copying the vapour and total mixing ratio to scratch arrays if this is not a      !
-   ! "dry" run. Otherwise, leave the values equal to zero, which will impose theta=theta_v !
+   !     Copy the vapour and total mixing ratio to scratch arrays if this in case this is  !
+   !  not a "dry" run.  Otherwise, leave the values equal to zero, which will impose       !
+   ! theta=theta_v                                                                         !
    !---------------------------------------------------------------------------------------!
    call azero2(m1*m2*m3,scratch%vt3dp,scratch%vt3dq)
    if (vapour_on) then
@@ -69,7 +71,7 @@ subroutine exevolve(m1,m2,m3,ifm,ia,iz,ja,jz,izu,jzv,jdim,mynum,edt,key)
       !------------------------------------------------------------------------------------!
       !   Advection + Compression.                                                         !
       !------------------------------------------------------------------------------------!
-      !----- Initialization ---------------------------------------------------------------!
+      !----- Initialisation ---------------------------------------------------------------!
       call azero(m1*m2*m3,mass_g(ifm)%thvlast)
 
       !----- Compute advective term -------------------------------------------------------!
@@ -156,9 +158,9 @@ end subroutine exevolve
 
 !==========================================================================================!
 !==========================================================================================!
-!    This subroutine finds the advection term. Note that this will work onl for terrain-   !
-! following coordinates. An adaptive version could be built based on the other advection   !
-! subroutines for adaptive coordinate.                                                     !
+!    This subroutine finds the advection term.  Notice that this works only for terrain-   !
+! following coordinates.  An adaptive version could be built based on the other advection  !
+! subroutines for adaptive coordinate, and you are welcome to add it.                      !
 !------------------------------------------------------------------------------------------!
 subroutine exadvlf(m1,m2,m3,ia,iz,ja,jz,izu,jzv,jdim,itopo,rtgu,fmapui,rtgv,fmapvi,f13t    &
                   ,f23t,rtgt,fmapt,dxt,dyt,uc,dn0u,vc,dn0v,dn0,wc,pc,pt)
@@ -272,7 +274,7 @@ end subroutine exadvlf
 
 !==========================================================================================!
 !==========================================================================================!
-!    This subroutine will compute the compression term of Medvigy's equation (12).         !
+!    This subroutine finds the compression term of Medvigy's equation (12).                !
 !------------------------------------------------------------------------------------------!
 subroutine excondiv(m1,m2,m3,ia,iz,ja,jz,izu,jzv,jdim,itopo,uc,vc,wc,pc,pt,dxt,dyt,rtgt    &
                    ,rtgu,rtgv,f13t,f23t,fmapt,fmapui,fmapvi )
@@ -293,7 +295,7 @@ subroutine excondiv(m1,m2,m3,ia,iz,ja,jz,izu,jzv,jdim,itopo,uc,vc,wc,pc,pt,dxt,d
    !---------------------------------------------------------------------------------------!
 
    !---------------------------------------------------------------------------------------!
-   ! Preparing fluxes. These are:  (transformed velocities) times (a) times (mapfactor)    !
+   !    Prepare fluxes. These are:  (transformed velocities) times (a) times (mapfactor)   !
    !---------------------------------------------------------------------------------------!
    do j=1,m3
       do i=1,m2
@@ -329,7 +331,7 @@ subroutine excondiv(m1,m2,m3,ia,iz,ja,jz,izu,jzv,jdim,itopo,uc,vc,wc,pc,pt,dxt,d
    end if
   
    !---------------------------------------------------------------------------------------!
-   !     Computing the contribution of the zonal gradient of zonal wind to Exner tendency. !
+   !     Find the contribution of the zonal gradient of zonal wind to Exner tendency.      !
    !---------------------------------------------------------------------------------------!
    do j=ja,jz
       do i=ia,izu
@@ -341,7 +343,7 @@ subroutine excondiv(m1,m2,m3,ia,iz,ja,jz,izu,jzv,jdim,itopo,uc,vc,wc,pc,pt,dxt,d
    end do
 
    !---------------------------------------------------------------------------------------!
-   !     Computing the contribution of the meridional gradient of meridional wind to Exner !
+   !     Find the contribution of the meridional gradient of meridional wind to Exner      !
    ! tendency.                                                                             !
    !---------------------------------------------------------------------------------------!
    do j=ja,jzv
@@ -354,7 +356,7 @@ subroutine excondiv(m1,m2,m3,ia,iz,ja,jz,izu,jzv,jdim,itopo,uc,vc,wc,pc,pt,dxt,d
    end do
 
    !---------------------------------------------------------------------------------------!
-   !     Computing the contribution of the vertical gradient of vertical velocity to Exner !
+   !     Find the contribution of the vertical gradient of vertical velocity to Exner      !
    ! tendency.                                                                             !
    !---------------------------------------------------------------------------------------!
    do j=ja,jz
@@ -379,7 +381,8 @@ end subroutine excondiv
 
 !==========================================================================================!
 !==========================================================================================!
-!   This subroutine will save the current value of theta-v for the advection term.         !
+!     This subroutine saves the current value of theta-v for the advection term in the     !
+! next time step.                                                                          !
 !------------------------------------------------------------------------------------------!
 subroutine fill_thvlast(m1,m2,m3,ia,iz,ja,jz,thvlast,theta,rtp,rv)
    use therm_lib, only : virtt
@@ -423,7 +426,7 @@ end subroutine fill_thvlast
 
 !==========================================================================================!
 !==========================================================================================!
-!   This is the small driver to compute the advection part of the heating term.            !
+!   This subroutine is the driver to find the advection part of the heating term.          !
 !------------------------------------------------------------------------------------------!
 subroutine advect_theta(m1,m2,m3,ia,iz,ja,jz,izu,jzv,jdim,mynum,edt,up,uc,vp,vc,wp,wc,pi0  &
                        ,pc,pt,theta,rtp,rv,dn0,dn0u,dn0v,rtgt,rtgu,rtgv,fmapt,fmapui       &
@@ -457,7 +460,7 @@ end subroutine advect_theta
 
 !==========================================================================================!
 !==========================================================================================!
-!    This subroutine will compute the virtual temperature tendency due to advection        !
+!    This subroutine determines the virtual temperature tendency due to advection          !
 ! (actually, its negative, since that's the contribution to the Exner function tendency).  !
 !------------------------------------------------------------------------------------------!
 subroutine exthvadv(m1,m2,m3,ia,iz,ja,jz,izu,jzv,jdim,mynum,edt,up,uc,vp,vc,wp,wc,theta    &
@@ -479,7 +482,7 @@ subroutine exthvadv(m1,m2,m3,ia,iz,ja,jz,izu,jzv,jdim,mynum,edt,up,uc,vp,vc,wp,w
    integer                                     :: i,j,k,isiz
    !---------------------------------------------------------------------------------------!
 
-   !----- Finding the total size of matrices ----------------------------------------------!
+   !----- Save the total size of matrices -------------------------------------------------!
    isiz=m1*m2*m3
    call azero3(m1*m2*m3,scratch%vt3da,scratch%vt3db,scratch%vt3dc)
    call prep_timeave(m1,m2,m3,edt,up,uc,vp,vc,wp,wc,scratch%vt3da,scratch%vt3db            &
@@ -508,8 +511,8 @@ subroutine exthvadv(m1,m2,m3,ia,iz,ja,jz,izu,jzv,jdim,mynum,edt,up,uc,vp,vc,wp,w
    call advtndc(m1,m2,m3,ia,iz,ja,jz,lnthetav,scratch%scr1,lnthvadv,edt,mynum)
    
    !---------------------------------------------------------------------------------------!
-   !     Switching the sign of the advection term... This is because we need to total      !
-   ! derivative of theta-V, which is the local change - advection.                         !
+   !     Switch the sign of the advection term.  This is because we need to total deriva-  !
+   ! tive of theta-V, which is the local change - advection.                               !
    !---------------------------------------------------------------------------------------!
    do j=1,m3
       do i=1,m2
@@ -531,7 +534,7 @@ end subroutine exthvadv
 
 !==========================================================================================!
 !==========================================================================================!
-!    Finding the mid-point between past and present for advection terms.                   !
+!    This subroutine finds the "mid-point" between past and present for advection terms.   !
 !------------------------------------------------------------------------------------------!
 subroutine prep_timeave(m1,m2,m3,edt,up,uc,vp,vc,wp,wc,vt3da,vt3db,vt3dc)
    implicit none
@@ -564,7 +567,7 @@ end subroutine prep_timeave
 
 !==========================================================================================!
 !==========================================================================================!
-!    Finding the log of virtual potential temperature.                                     !
+!    This finds the log of virtual potential temperature.                                  !
 !------------------------------------------------------------------------------------------!
 subroutine prep_lnthetv(m1,m2,m3,ia,iz,ja,jz,theta,rtp,rv,lnthetav)
    use therm_lib , only : virtt
@@ -595,8 +598,8 @@ end subroutine prep_lnthetv
 
 !==========================================================================================!
 !==========================================================================================!
-!    Adding the contribution of advection in the heating term to the Exner function        !
-! tendency.                                                                                !
+!    This subroutine adds the contribution of advection in the heating term to the Exner   !
+! function tendency.                                                                       !
 !------------------------------------------------------------------------------------------!
 subroutine exhtend_ad(m1,m2,m3,ia,iz,ja,jz,pi0,pc,pt,lnthvadv)
    use rconstants , only : rocv  ! intent(in)
@@ -641,7 +644,7 @@ end subroutine exhtend_ad
 
 !==========================================================================================!
 !==========================================================================================!
-!    This is a mini-driver for the tendency part of the heating term.                      !
+!    This is a driver for the tendency part of the heating term.                           !
 !------------------------------------------------------------------------------------------!
 subroutine storage_theta(m1,m2,m3,ifm,ia,iz,ja,jz,izu,jzv,mynum,edt,pi0,pc,rtp,rv,theta    &
                         ,thvlast,lnthvtend,pt)
@@ -654,9 +657,9 @@ subroutine storage_theta(m1,m2,m3,ifm,ia,iz,ja,jz,izu,jzv,mynum,edt,pi0,pc,rtp,r
    real    , dimension(m1,m2,m3) , intent(inout) :: pt
    !---------------------------------------------------------------------------------------!
   
-   !----- Computing the tendency of theta-V -----------------------------------------------!
+   !----- Find the tendency of theta-V ----------------------------------------------------!
    call prep_lnthvtend(m1,m2,m3,ifm,ia,iz,ja,jz,izu,jzv,edt,theta,thvlast,rtp,rv,lnthvtend)
-   !----- Computing the tendency part of the heating term ---------------------------------!
+   !----- Find the tendency part of the heating term --------------------------------------!
    call exhtend_st(m1,m2,m3,ia,iz,ja,jz,pi0,pc,rtp,theta,lnthvtend,rv,pt)
    
    return
@@ -723,7 +726,7 @@ end subroutine prep_lnthvtend
 
 !==========================================================================================!
 !==========================================================================================!
-!   This will compute the tendency part of the heating term.                               !
+!   This subroutine computes the tendency part of the heating term.                        !
 !------------------------------------------------------------------------------------------!
 subroutine exhtend_st(m1,m2,m3,ia,iz,ja,jz,pi0,pc,rtp,theta,lnthvtend,rv,pt)
    use rconstants , only : rocv  ! ! intent(in)

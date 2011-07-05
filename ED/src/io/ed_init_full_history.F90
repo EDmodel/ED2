@@ -2765,7 +2765,7 @@ subroutine fill_history_patch(cpatch,paco_index,ncohorts_global,green_leaf_facto
      call hdf_getslab_r(cpatch%par_l_diffuse,'PAR_L_DIFFUSE ',dsetrank,iparallel,.true.)
      call hdf_getslab_r(cpatch%rshort_l,'RSHORT_L ',dsetrank,iparallel,.true.)
      call hdf_getslab_r(cpatch%rshort_l_beam,'RSHORT_L_BEAM ',dsetrank,iparallel,.true.)
-     call hdf_getslab_r(cpatch%rshort_l_diffuse,'RSHORT_l_DIFFUSE ',dsetrank,iparallel,.true.)
+     call hdf_getslab_r(cpatch%rshort_l_diffuse,'RSHORT_L_DIFFUSE ',dsetrank,iparallel,.true.)
      call hdf_getslab_r(cpatch%rlong_l,'RLONG_L ',dsetrank,iparallel,.true.)
      call hdf_getslab_r(cpatch%rlong_l_surf,'RLONG_L_SURF ',dsetrank,iparallel,.true.)
      call hdf_getslab_r(cpatch%rlong_l_incid,'RLONG_L_INCID ',dsetrank,iparallel,.true.)

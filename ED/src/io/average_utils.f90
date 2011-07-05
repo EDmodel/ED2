@@ -3700,14 +3700,14 @@ subroutine normalize_ed_monthly_output_vars(cgrid)
                         ,cgrid%qmean_leaf_hcap(t,ipy),cgrid%qmean_leaf_temp(t,ipy)         &
                         ,veg_fliq)
             else
-               cgrid%qmean_leaf_temp(t,ipy) = 0.
+               cgrid%qmean_leaf_temp(t,ipy) = cgrid%qmean_can_temp (t,ipy)
             end if
             if (cgrid%qmean_wood_hcap(t,ipy) > 0.) then
                call qwtk(cgrid%qmean_wood_energy(t,ipy),cgrid%qmean_wood_water(t,ipy)      &
                         ,cgrid%qmean_wood_hcap(t,ipy),cgrid%qmean_wood_temp(t,ipy)         &
                         ,veg_fliq)
             else
-               cgrid%qmean_wood_temp(t,ipy) = 0.
+               cgrid%qmean_wood_temp(t,ipy) = cgrid%qmean_can_temp (t,ipy)
             end if
             !------------------------------------------------------------------------------!
          end do

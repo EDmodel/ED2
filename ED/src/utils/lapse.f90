@@ -180,28 +180,29 @@ end subroutine setLapseParms
 ! on the standard output, then print the banner that makes any user shiver...              !
 !------------------------------------------------------------------------------------------!
 subroutine met_sanity_check(cgrid,ipy)
-   use ed_state_vars        , only : edtype       & ! structure
-                                   , polygontype  ! ! structure
-   use met_driver_coms      , only : rshort_min   & ! intent(in)
-                                   , rshort_max   & ! intent(in)
-                                   , rlong_min    & ! intent(in)
-                                   , rlong_max    & ! intent(in)
-                                   , atm_tmp_min  & ! intent(in)
-                                   , atm_tmp_max  & ! intent(in)
-                                   , atm_shv_min  & ! intent(in)
-                                   , atm_shv_max  & ! intent(in)
-                                   , atm_rhv_min  & ! intent(in)
-                                   , atm_rhv_max  & ! intent(in)
-                                   , atm_co2_min  & ! intent(in)
-                                   , atm_co2_max  & ! intent(in)
-                                   , prss_min     & ! intent(in)
-                                   , prss_max     & ! intent(in)
-                                   , pcpg_min     & ! intent(in)
-                                   , pcpg_max     & ! intent(in)
-                                   , vels_min     & ! intent(in)
-                                   , vels_max     & ! intent(in)
-                                   , geoht_min    & ! intent(in)
-                                   , geoht_max    ! ! intent(in)
+   use ed_state_vars  , only : edtype       & ! structure
+                             , polygontype  ! ! structure
+   use met_driver_coms, only : rshort_min   & ! intent(in)
+                             , rshort_max   & ! intent(in)
+                             , rlong_min    & ! intent(in)
+                             , rlong_max    & ! intent(in)
+                             , atm_tmp_min  & ! intent(in)
+                             , atm_tmp_max  & ! intent(in)
+                             , atm_shv_min  & ! intent(in)
+                             , atm_shv_max  & ! intent(in)
+                             , atm_rhv_min  & ! intent(in)
+                             , atm_rhv_max  & ! intent(in)
+                             , atm_co2_min  & ! intent(in)
+                             , atm_co2_max  & ! intent(in)
+                             , prss_min     & ! intent(in)
+                             , prss_max     & ! intent(in)
+                             , pcpg_min     & ! intent(in)
+                             , pcpg_max     & ! intent(in)
+                             , vels_min     & ! intent(in)
+                             , vels_max     & ! intent(in)
+                             , geoht_min    & ! intent(in)
+                             , geoht_max    ! ! intent(in)
+   use ed_misc_coms   , only : current_time ! ! intent(in)
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
    type(edtype)     , target     :: cgrid
@@ -210,11 +211,14 @@ subroutine met_sanity_check(cgrid,ipy)
    type(polygontype), pointer    :: cpoly
    integer                       :: isi
    integer                       :: ifaterr
+   character(len=10)             :: now_date
+   character(len=12)             :: now_time
    !----- Local constants. ----------------------------------------------------------------!
    logical          , parameter  :: fixRad = .true.
    character(len=3) , parameter  :: fmtc = '(a)'
    character(len=9) , parameter  :: fmti = '(a,1x,i6)'
    character(len=13), parameter  :: fmtf = '(a,1x,es12.5)'
+   character(len=8) , parameter  :: fmtt = '(a,1x,a)'
    !---------------------------------------------------------------------------------------!
 
 
@@ -222,6 +226,11 @@ subroutine met_sanity_check(cgrid,ipy)
    ifaterr = 0
    cpoly => cgrid%polygon(ipy)
 
+   !----- Write the current date and time. ------------------------------------------------!
+   write(now_date,fmt='(2(i2.2,a),i4.4)') current_time%month,'/',current_time%date ,'/'    &
+                                         ,current_time%year
+   write(now_time,fmt='(3(i2.2,a))'     ) current_time%hour ,':',current_time%min  ,':'    &
+                                         ,current_time%sec,' UTC'
    siteloop: do isi=1,cpoly%nsites
       if (cpoly%met(isi)%geoht < geoht_min .or.                                            &
           cpoly%met(isi)%geoht > geoht_max) then
@@ -230,6 +239,8 @@ subroutine met_sanity_check(cgrid,ipy)
          write (unit=*,fmt=fmtc) ' '
          write (unit=*,fmt=fmti) ' - Polygon        :',ipy
          write (unit=*,fmt=fmti) ' - Site           :',isi
+         write (unit=*,fmt=fmtt) ' - Date           :',now_date
+         write (unit=*,fmt=fmtt) ' - Time           :',now_time
          write (unit=*,fmt=fmtf) ' - Longitude      :',cgrid%lon(ipy)
          write (unit=*,fmt=fmtf) ' - Latitude       :',cgrid%lat(ipy)
          write (unit=*,fmt=fmtf) ' - Site height    :',cpoly%met(isi)%geoht
@@ -248,6 +259,8 @@ subroutine met_sanity_check(cgrid,ipy)
          write (unit=*,fmt=fmtc) ' '
          write (unit=*,fmt=fmti) ' - Polygon        :',ipy
          write (unit=*,fmt=fmti) ' - Site           :',isi
+         write (unit=*,fmt=fmtt) ' - Date           :',now_date
+         write (unit=*,fmt=fmtt) ' - Time           :',now_time
          write (unit=*,fmt=fmtf) ' - Longitude      :',cgrid%lon(ipy)
          write (unit=*,fmt=fmtf) ' - Latitude       :',cgrid%lat(ipy)
          write (unit=*,fmt=fmtf) ' - Site temp.     :',cpoly%met(isi)%atm_tmp
@@ -266,6 +279,8 @@ subroutine met_sanity_check(cgrid,ipy)
          write (unit=*,fmt=fmtc) ' '
          write (unit=*,fmt=fmti) ' - Polygon        :',ipy
          write (unit=*,fmt=fmti) ' - Site           :',isi
+         write (unit=*,fmt=fmtt) ' - Date           :',now_date
+         write (unit=*,fmt=fmtt) ' - Time           :',now_time
          write (unit=*,fmt=fmtf) ' - Longitude      :',cgrid%lon(ipy)
          write (unit=*,fmt=fmtf) ' - Latitude       :',cgrid%lat(ipy)
          write (unit=*,fmt=fmtf) ' - Site spec. hum.:',cpoly%met(isi)%atm_shv
@@ -284,6 +299,8 @@ subroutine met_sanity_check(cgrid,ipy)
          write (unit=*,fmt=fmtc) ' '
          write (unit=*,fmt=fmti) ' - Polygon        :',ipy
          write (unit=*,fmt=fmti) ' - Site           :',isi
+         write (unit=*,fmt=fmtt) ' - Date           :',now_date
+         write (unit=*,fmt=fmtt) ' - Time           :',now_time
          write (unit=*,fmt=fmtf) ' - Longitude      :',cgrid%lon(ipy)
          write (unit=*,fmt=fmtf) ' - Latitude       :',cgrid%lat(ipy)
          write (unit=*,fmt=fmtf) ' - Site CO2       :',cpoly%met(isi)%atm_co2
@@ -302,6 +319,8 @@ subroutine met_sanity_check(cgrid,ipy)
          write (unit=*,fmt=fmtc) ' '
          write (unit=*,fmt=fmti) ' - Polygon        :',ipy
          write (unit=*,fmt=fmti) ' - Site           :',isi
+         write (unit=*,fmt=fmtt) ' - Date           :',now_date
+         write (unit=*,fmt=fmtt) ' - Time           :',now_time
          write (unit=*,fmt=fmtf) ' - Longitude      :',cgrid%lon(ipy)
          write (unit=*,fmt=fmtf) ' - Latitude       :',cgrid%lat(ipy)
          write (unit=*,fmt=fmtf) ' - Site press.    :',cpoly%met(isi)%prss
@@ -320,6 +339,8 @@ subroutine met_sanity_check(cgrid,ipy)
          write (unit=*,fmt=fmtc) ' '
          write (unit=*,fmt=fmti) ' - Polygon        :',ipy
          write (unit=*,fmt=fmti) ' - Site           :',isi
+         write (unit=*,fmt=fmtt) ' - Date           :',now_date
+         write (unit=*,fmt=fmtt) ' - Time           :',now_time
          write (unit=*,fmt=fmtf) ' - Longitude      :',cgrid%lon(ipy)
          write (unit=*,fmt=fmtf) ' - Latitude       :',cgrid%lat(ipy)
          write (unit=*,fmt=fmtf) ' - Site Precip    :',cpoly%met(isi)%pcpg
@@ -341,6 +362,8 @@ subroutine met_sanity_check(cgrid,ipy)
          write (unit=*,fmt=fmtc) ' '
          write (unit=*,fmt=fmti) ' - Polygon                :',ipy
          write (unit=*,fmt=fmti) ' - Site                   :',isi
+         write (unit=*,fmt=fmtt) ' - Date                   :',now_date
+         write (unit=*,fmt=fmtt) ' - Time                   :',now_time
          write (unit=*,fmt=fmtf) ' - Longitude              :',cgrid%lon(ipy)
          write (unit=*,fmt=fmtf) ' - Latitude               :',cgrid%lat(ipy)
          write (unit=*,fmt=fmtf) ' - Site kinetic energy    :',0.5 * cpoly%met(isi)%vels
@@ -355,6 +378,8 @@ subroutine met_sanity_check(cgrid,ipy)
          write (unit=*,fmt=fmtc) ' '
          write (unit=*,fmt=fmti) ' - Polygon        :',ipy
          write (unit=*,fmt=fmti) ' - Site           :',isi
+         write (unit=*,fmt=fmtt) ' - Date           :',now_date
+         write (unit=*,fmt=fmtt) ' - Time           :',now_time
          write (unit=*,fmt=fmtf) ' - Longitude      :',cgrid%lon(ipy)
          write (unit=*,fmt=fmtf) ' - Latitude       :',cgrid%lat(ipy)
          write (unit=*,fmt=fmtf) ' - Site wind      :',sqrt(cpoly%met(isi)%vels)
@@ -374,6 +399,8 @@ subroutine met_sanity_check(cgrid,ipy)
          write (unit=*,fmt=fmtc) ' '
          write (unit=*,fmt=fmti) ' - Polygon          :',ipy
          write (unit=*,fmt=fmti) ' - Site             :',isi
+         write (unit=*,fmt=fmtt) ' - Date             :',now_date
+         write (unit=*,fmt=fmtt) ' - Time             :',now_time
          write (unit=*,fmt=fmtf) ' - Longitude        :',cgrid%lon(ipy)
          write (unit=*,fmt=fmtf) ' - Latitude         :',cgrid%lat(ipy)
          write (unit=*,fmt=fmtf) ' - Site Longwave    :',cpoly%met(isi)%rlong
@@ -394,6 +421,8 @@ subroutine met_sanity_check(cgrid,ipy)
          write (unit=*,fmt=fmtc) ' '
          write (unit=*,fmt=fmti) ' - Polygon        :',ipy
          write (unit=*,fmt=fmti) ' - Site           :',isi
+         write (unit=*,fmt=fmtt) ' - Date           :',now_date
+         write (unit=*,fmt=fmtt) ' - Time           :',now_time
          write (unit=*,fmt=fmtf) ' - Longitude      :',cgrid%lon(ipy)
          write (unit=*,fmt=fmtf) ' - Latitude       :',cgrid%lat(ipy)
          write (unit=*,fmt=fmtf) ' - Site rshort    :',cpoly%met(isi)%par_diffuse
@@ -414,6 +443,8 @@ subroutine met_sanity_check(cgrid,ipy)
          write (unit=*,fmt=fmtc) ' '
          write (unit=*,fmt=fmti) ' - Polygon        :',ipy
          write (unit=*,fmt=fmti) ' - Site           :',isi
+         write (unit=*,fmt=fmtt) ' - Date           :',now_date
+         write (unit=*,fmt=fmtt) ' - Time           :',now_time
          write (unit=*,fmt=fmtf) ' - Longitude      :',cgrid%lon(ipy)
          write (unit=*,fmt=fmtf) ' - Latitude       :',cgrid%lat(ipy)
          write (unit=*,fmt=fmtf) ' - Site PAR       :',cpoly%met(isi)%par_beam
@@ -434,6 +465,8 @@ subroutine met_sanity_check(cgrid,ipy)
          write (unit=*,fmt=fmtc) ' '
          write (unit=*,fmt=fmti) ' - Polygon        :',ipy
          write (unit=*,fmt=fmti) ' - Site           :',isi
+         write (unit=*,fmt=fmtt) ' - Date           :',now_date
+         write (unit=*,fmt=fmtt) ' - Time           :',now_time
          write (unit=*,fmt=fmtf) ' - Longitude      :',cgrid%lon(ipy)
          write (unit=*,fmt=fmtf) ' - Latitude       :',cgrid%lat(ipy)
          write (unit=*,fmt=fmtf) ' - Site radNIR    :',cpoly%met(isi)%nir_diffuse
@@ -454,6 +487,8 @@ subroutine met_sanity_check(cgrid,ipy)
          write (unit=*,fmt=fmtc) ' '
          write (unit=*,fmt=fmti) ' - Polygon        :',ipy
          write (unit=*,fmt=fmti) ' - Site           :',isi
+         write (unit=*,fmt=fmtt) ' - Date           :',now_date
+         write (unit=*,fmt=fmtt) ' - Time           :',now_time
          write (unit=*,fmt=fmtf) ' - Longitude      :',cgrid%lon(ipy)
          write (unit=*,fmt=fmtf) ' - Latitude       :',cgrid%lat(ipy)
          write (unit=*,fmt=fmtf) ' - Site radNIR    :',cpoly%met(isi)%nir_beam
@@ -486,8 +521,12 @@ subroutine met_sanity_check(cgrid,ipy)
          write (unit=*,fmt=fmtc) ' '
          write (unit=*,fmt=fmti) ' - Polygon        :',ipy
          write (unit=*,fmt=fmti) ' - Site           :',isi
+         write (unit=*,fmt=fmtt) ' - Date           :',now_date
+         write (unit=*,fmt=fmtt) ' - Time           :',now_time
          write (unit=*,fmt=fmtf) ' - Longitude      :',cgrid%lon(ipy)
          write (unit=*,fmt=fmtf) ' - Latitude       :',cgrid%lat(ipy)
+         write (unit=*,fmt=fmtf) ' - PAR diffuse    :',cpoly%met(isi)%par_diffuse
+         write (unit=*,fmt=fmtf) ' - NIR diffuse    :',cpoly%met(isi)%nir_diffuse
          write (unit=*,fmt=fmtf) ' - Site rshortd   :',cpoly%met(isi)%rshort_diffuse
          write (unit=*,fmt=fmtf) ' - Polygon rshortd:',cgrid%met(ipy)%rshort_diffuse
          write (unit=*,fmt=fmtf) ' - Minimum OK     :',rshort_min
@@ -503,8 +542,14 @@ subroutine met_sanity_check(cgrid,ipy)
          write (unit=*,fmt=fmtc) ' '
          write (unit=*,fmt=fmti) ' - Polygon        :',ipy
          write (unit=*,fmt=fmti) ' - Site           :',isi
+         write (unit=*,fmt=fmtt) ' - Date           :',now_date
+         write (unit=*,fmt=fmtt) ' - Time           :',now_time
          write (unit=*,fmt=fmtf) ' - Longitude      :',cgrid%lon(ipy)
          write (unit=*,fmt=fmtf) ' - Latitude       :',cgrid%lat(ipy)
+         write (unit=*,fmt=fmtf) ' - PAR direct     :',cpoly%met(isi)%par_beam
+         write (unit=*,fmt=fmtf) ' - PAR diffuse    :',cpoly%met(isi)%par_diffuse
+         write (unit=*,fmt=fmtf) ' - NIR direct     :',cpoly%met(isi)%nir_beam
+         write (unit=*,fmt=fmtf) ' - NIR diffuse    :',cpoly%met(isi)%nir_diffuse
          write (unit=*,fmt=fmtf) ' - Site rshort    :',cpoly%met(isi)%rshort
          write (unit=*,fmt=fmtf) ' - Polygon rshort :',cgrid%met(ipy)%rshort
          write (unit=*,fmt=fmtf) ' - Minimum OK     :',rshort_min

@@ -388,7 +388,7 @@ do
       metdriverdb=${here}/${polyname}/${sheffield}
       metcyc1=1969
       metcycf=2008
-      imetavg=0
+      imetavg=2
       iphen=2
       ;;
    esac

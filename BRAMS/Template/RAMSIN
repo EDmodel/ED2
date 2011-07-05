@@ -39,7 +39,7 @@ $MODEL_GRIDS
    !               change IMONTHH, IDATEH,... and HFILIN, but do NOT change IMONTHA,       !
    !               IDATEA,...                                                              !
    !---------------------------------------------------------------------------------------!
-   RUNTYPE  = 'MAKESFC',
+   RUNTYPE  = 'INITIAL',  
    !---------------------------------------------------------------------------------------!
 
 
@@ -55,10 +55,10 @@ $MODEL_GRIDS
    !     Start of simulation or isentropic analysis processing. Information must be given  !
    ! in UTC time.                                                                          !
    !---------------------------------------------------------------------------------------!
-   IMONTHA  =    05,
-   IDATEA   =    01,
-   IYEARA   =  2009,
-   ITIMEA   =  0000,
+   IMONTHA  =  mymontha,
+   IDATEA   =  mydatea,
+   IYEARA   =  myyeara,
+   ITIMEA   =  mytimea,
    !---------------------------------------------------------------------------------------!
 
 
@@ -66,10 +66,10 @@ $MODEL_GRIDS
    !     End of simulation or isentropic analysis processing. Information must be given    !
    ! in UTC time.                                                                          !
    !---------------------------------------------------------------------------------------!
-   IMONTHZ  =    05,
-   IDATEZ   =    31,
-   IYEARZ   =  2009,
-   ITIMEZ   =  0000,
+   IMONTHZ  =  mymonthz,
+   IDATEZ   =  mydatez,
+   IYEARZ   =  myyearz,
+   ITIMEZ   =  mytimez,
    !---------------------------------------------------------------------------------------!
 
 
@@ -91,13 +91,14 @@ $MODEL_GRIDS
    !           into a single layer, so if you are running for places where it doesn't snow !
    !           a lot, leave this set to 1.  One value for all grids.                       ! 
    !---------------------------------------------------------------------------------------!
-   NGRIDS   = 1,
+   NGRIDS   =    1,
    NNXP     =  132,  68, 230,
    NNYP     =  114,  56, 161,
    NNZP     =   44,  44,  44,
    NZG      =   10,
    NZS      =    1,
    !---------------------------------------------------------------------------------------!
+
 
 
    !---------------------------------------------------------------------------------------!
@@ -193,7 +194,7 @@ $MODEL_GRIDS
 
    !---------------------------------------------------------------------------------------!
    !     Nest ratios.  This will divide the values given by DELTAX, DELTAY, and DELTAT for !
-   ! the nested grids.  The first value should be always one.                              !
+   ! the nested grids.  One value for each grid, and the first value should be always one. !
    !---------------------------------------------------------------------------------------!
    NSTRATX  = 1,3,          ! X direction
    NSTRATY  = 1,3,          ! Y direction
@@ -338,10 +339,9 @@ $END
 !==========================================================================================!
 !==========================================================================================!
 !      This namelist controls which initial and boundary atmospheric conditions will be    !
-! used by BRAMS, and how they will be used.  This is also the place where you can set the  !
-! output of your runs.                                                                     !
+! used by BRAMS, and how they will be used.                                                ! 
 !------------------------------------------------------------------------------------------!
-$MODEL_FILE_INFO
+ $MODEL_FILE_INFO
 
    !---------------------------------------------------------------------------------------!
    ! INITIAL - How should BRAMS initialise the atmospheric state for this simulation.      !
@@ -352,6 +352,21 @@ $MODEL_FILE_INFO
    !           3.  Initial conditions will come from history file given in HFILIN.         !
    !---------------------------------------------------------------------------------------!
    INITIAL  = 2,
+   !---------------------------------------------------------------------------------------!
+
+
+
+
+   !---------------------------------------------------------------------------------------!
+   ! NUD_TYPE -- Nudging is the lateral and top boundary conditions, but it is also a      !
+   !             function that may be applied in the middle of the domain so BRAMS         !
+   !             results don't drift away too much from the input data.  Options are:      !
+   !             0.  No nudging at all (not recommended unless for very short runs.        !
+   !             1.  Nudge from history files, provided by NUD_HFILE.  This is the same    !
+   !                 as a one-way nesting                                                  !
+   !             2.  Nudge from isentropic files provided by VARFPFX.                      !
+   !---------------------------------------------------------------------------------------!
+   NUD_TYPE = 2,
    !---------------------------------------------------------------------------------------!
 
 
@@ -368,12 +383,12 @@ $MODEL_FILE_INFO
    !              the model gives up and quit.                                             !
    ! NUD_HFILE -- This is the prefix for when NUD_TYPE is set to 1.                        !
    !---------------------------------------------------------------------------------------!
-   VARFPFX   = '/myoutpath/isean/mysimul',
+   VARFPFX   = 'myoutpath/isean/mysimul',
    VWAIT1    = 0.,
    VWAITTOT  = 0.,
-   NUD_HFILE = '/myoutpath/histo/mysimul',
+   NUD_HFILE = 'myoutpath/histo/mysimul',
    !---------------------------------------------------------------------------------------!
-
+     
 
 
    !---------------------------------------------------------------------------------------!
@@ -416,7 +431,6 @@ $MODEL_FILE_INFO
 
 
 
-
    !---------------------------------------------------------------------------------------!
    !    Nudging of condensed/frozen water.                                                 !
    !                                                                                       !
@@ -434,7 +448,7 @@ $MODEL_FILE_INFO
    ! WT_NUDGEC_GRID  --  Grid relative weights for nudging of condensed/frozen water.      !
    !---------------------------------------------------------------------------------------!
    NUD_COND       = 0,
-   COND_HFILE     = '/myoutpath/histo/mysimul-H-2001-07-21-000000-head.txt',
+   COND_HFILE     = 'myoutpath/histo/mysimul-H-2001-07-21-000000-head.txt',
    TCOND_BEG      = 0.,
    TCOND_END      = 21600.,
    T_NUDGE_RC     = 3600.,
@@ -472,12 +486,12 @@ $MODEL_FILE_INFO
    ! RODA_HGT      -- height [m] at which we transition from surface radii of influence to !
    !                  the upper air ones.                                                  !
    ! RODA_ZFACT    -- vertical factor related to dx/dz (more details on the manual)        !
-   ! ODA_SFC_TIL   -- time interpolation limit (TIL) for surface observations [seconds].   !
-   !                  If the future-past observation time is greater than this limit, do   !
-   !                  not use for interpolations.                                          !
+   ! ODA_SFC_TIL   -- time interpolation limit (TIL) for surface observations.  If the     !
+   !                  future-past observation time is greater than this limit, do not use  !
+   !                  to interpolate.                                                      !
    ! ODA_SFC_TEL   -- time extrapolate limit (TEL) for surface observations. If the        !
    !                  past or future observation is greater than TIL, but less than TEL,   !
-   !                  then use the observations.                                           !
+   !                  then use the obs.                                                    !
    ! ODA_UPA_TIL   -- same as ODA_SFC_TIL but for the upper air observations               !
    ! ODA_UPA_TEL   -- same as ODA_SFC_TEL but for the upper air observations               !
    !---------------------------------------------------------------------------------------!
@@ -545,7 +559,7 @@ $MODEL_FILE_INFO
 
    !---------------------------------------------------------------------------------------!
    !     History file information.  These variables are used to continue a simulation from !
-   ! a point other than the beginning.  Time must be in UTC.                               !
+   ! a point other than the beginning.                                                     !
    !                                                                                       !
    ! IMONTHH, IDATEH, IYEARH, ITIMEH -- the time of the history file.  This is the only    !
    !     place you need to change dates for a HISTORY run.  You may change IMONTHZ and     !
@@ -557,7 +571,7 @@ $MODEL_FILE_INFO
    IDATEH   = 01,
    IYEARH   = 2009,
    ITIMEH   = 0600,
-   HFILIN   = '/myoutpath/histo/mysimul',
+   HFILIN   = 'myoutpath/histo/mysimul',
    !---------------------------------------------------------------------------------------!
 
 
@@ -571,7 +585,7 @@ $MODEL_FILE_INFO
    ! PASTFN  -- In case IPASTIN is 1, this is the input analysis file name.                !
    !---------------------------------------------------------------------------------------!
    IPASTIN   = 0,
-   PASTFN    = '/myoutpath/analy/mysimul-A-2000-01-09-000000-head.txt',
+   PASTFN    = 'myoutpath/analy/mysimul-A-2000-01-09-000000-head.txt',
    !---------------------------------------------------------------------------------------!
 
 
@@ -598,8 +612,8 @@ $MODEL_FILE_INFO
    ! FRQANL   -- time interval between analysis files.                                     !
    !---------------------------------------------------------------------------------------!
    IOUTPUT  =  2,
-   HFILOUT  = '/myoutpath/histo/mysimul',
-   AFILOUT  = '/myoutpath/analy/mysimul',
+   HFILOUT  = 'myoutpath/histo/mysimul',
+   AFILOUT  = 'myoutpath/analy/mysimul',
    ICLOBBER =  1,
    IHISTDEL =  0,
    FRQHIS   = 86400.,
@@ -703,10 +717,10 @@ $MODEL_FILE_INFO
    ! SSTFPFX  -- File path and prefix for SST files                                        !
    ! NDVIFPFX -- File path and prefix for NDVI or LAI files (see IUSELAI).                 !
    !---------------------------------------------------------------------------------------!
-   TOPFILES = '/myoutpath/surfa/mysimul-topog',
-   SFCFILES = '/myoutpath/surfa/mysimul-surfa',
-   SSTFPFX  = '/myoutpath/surfa/mysimul-seast',
-   NDVIFPFX = '/myoutpath/surfa/mysimul-laidx',
+   TOPFILES = 'myoutpath/surfa/mysimul-topog',
+   SFCFILES = 'myoutpath/surfa/mysimul-surfa',
+   SSTFPFX  = 'myoutpath/surfa/mysimul-seast',
+   NDVIFPFX = 'myoutpath/surfa/mysimul-laidx',
    !---------------------------------------------------------------------------------------!
 
 
@@ -837,7 +851,7 @@ $MODEL_FILE_INFO
    ! COLTABFN -- path and file name for the collection table.                              !
    !---------------------------------------------------------------------------------------!
    MKCOLTAB = 1,
-   COLTABFN = '/myoutpath/micro/mysimul_4.0.6',
+   COLTABFN = 'myoutpath/micro/mysimul_4.0.6',
    !---------------------------------------------------------------------------------------!
 $END
 !==========================================================================================!
@@ -1021,7 +1035,6 @@ $END
 !------------------------------------------------------------------------------------------!
 $MODEL_OPTIONS
 
-
    !---------------------------------------------------------------------------------------!
    ! NADDSC -- number of additional scalar species (e.g., trace gases).  Remember that you !
    !           must change the code to properly initialise the variables.                  !
@@ -1184,8 +1197,8 @@ $MODEL_OPTIONS
       !                    will be the minimum SITE area (I know it's confusing, but the   !
       !                    definition of PATCH in LEAF is different from ED).              !
       !------------------------------------------------------------------------------------!
-      NPATCH         = 5,
-      NVEGPAT        = 4,
+      NPATCH         = mynpatch,
+      NVEGPAT        = mynvegpat,
       MIN_PATCH_AREA = 0.005,
       !------------------------------------------------------------------------------------!
 
@@ -1205,13 +1218,13 @@ $MODEL_OPTIONS
       !           5.  ED-2.  This is a full plant community model, but otherwise shares    !
       !               most of the biophysics with LEAF-3.  Useful when ecological response !
       !               and carbon balance are sought, but it runs a lot slower than LEAF-3. !
-      !               Additional setting on ED2_INFO namelist.                             !
+      !               Additional settings on ED2_INFO namelist.                            !
       ! DTLEAF -- Used only when ISFCL is 1 or 2, this is the nominal time step for        !
       !           LEAF-3 in seconds.  This should never be greater than 30 seconds, and it !
       !           must not exceed DTLONG.  In case DTLONG < DTLEAF, DTLONG will be used    !
       !           instead
       !------------------------------------------------------------------------------------!
-      ISFCL  =  1,
+      ISFCL  = myisfcl,
       DTLEAF = 6.,
       !------------------------------------------------------------------------------------!
 
@@ -1362,7 +1375,7 @@ $MODEL_OPTIONS
       !   5 -- loam               |  11 -- clay               |  17 -- clayey silt         !
       !   6 -- sandy clay loam    |  12 -- peat                                            !
       !------------------------------------------------------------------------------------!
-      NSLCON   = 8,
+      NSLCON   = 16,
       !------------------------------------------------------------------------------------!
 
 
@@ -1422,7 +1435,7 @@ $MODEL_OPTIONS
       SOIL_MOIST = 'i',
       SOIL_MOIST_FAIL = 's',
       USDATA_IN  = '/n/Moorcroft_Lab/Lab/data/brams_data/soilmoisture/mysmds/GL_SM.mysmds.',
-      USMODEL_IN = '/myoutpath/surfa/mysimul-lesmo',
+      USMODEL_IN = 'myoutpath/surfa/mysimul-lesmo',
       !------------------------------------------------------------------------------------!
 
 
@@ -1509,7 +1522,6 @@ $MODEL_OPTIONS
 
 
 
-
       !------------------------------------------------------------------------------------!
       ! RUNOFF_TIME -- In case a temporary surface water (TSW) is created, this is the     !
       !                "e-folding lifetime" of the TSW in seconds due to runoff.  If you   !
@@ -1526,14 +1538,6 @@ $MODEL_OPTIONS
       !------------------------------------------------------------------------------------!
       IF_URBAN_CANOPY =0,
       !------------------------------------------------------------------------------------!
-
-   !=======================================================================================!
-   !=======================================================================================!
-
-
-
-
-
 
    !=======================================================================================!
    !=======================================================================================!
@@ -1774,7 +1778,6 @@ $MODEL_OPTIONS
 
    !=======================================================================================!
    !=======================================================================================!
-
 $END
 !==========================================================================================!
 !==========================================================================================!
@@ -1829,7 +1832,7 @@ $ED2_INFO
    IFOUTPUT  =  0,
    IDOUTPUT  =  0,
    IMOUTPUT  =  0,
-   IQOUTPUT  =  0,
+   IQOUTPUT  =  3,
    IYOUTPUT  =  0,
    ITOUTPUT  =  0,
    ISOUTPUT  =  0,
@@ -1870,8 +1873,8 @@ $ED2_INFO
    ! FFILOUT -- Path and prefix for analysis files (all but history/restart).              !
    ! SFILOUT -- Path and prefix for history files.                                         !
    !---------------------------------------------------------------------------------------!
-   FFILOUT   = '/myoutpath/ecoss/mysimul',
-   SFILOUT   = '/myoutpath/ecort/mysimul',
+   FFILOUT   = 'myoutpath/ecoss/mysimul',
+   SFILOUT   = 'myoutpath/ecort/mysimul',
    !---------------------------------------------------------------------------------------!
 
 
@@ -2027,7 +2030,7 @@ $ED2_INFO
    !                  between 1.e-7 and 1.e-1, but recommended values are between 1.e-4    !
    !                  and 1.e-2.                                                           !
    !---------------------------------------------------------------------------------------!
-   RK4_TOLERANCE  = 0.001,
+   RK4_TOLERANCE  = 0.01,
    !---------------------------------------------------------------------------------------!
 
 
@@ -2097,7 +2100,7 @@ $ED2_INFO
    !               to have root depths of 5m and grasses/seedlings at 0.5 to have root     !
    !               depth of 0.5 m.                                                         !
    !---------------------------------------------------------------------------------------!
-   IALLOM          = 2,
+   IALLOM          = 4,
    !---------------------------------------------------------------------------------------!
 
 
@@ -2139,11 +2142,11 @@ $ED2_INFO
 
 
    !---------------------------------------------------------------------------------------!
-   !     Parameters that control the phenology response to radiation, used only when       !
-   ! IPHEN_SCHEME = 3.                                                                     !
-   !                                                                                       !
-   ! RADINT -- Intercept                                                                   !
-   ! RADSLP -- Slope.                                                                      !
+   !     Parameters that control the phenology response to radiation, used only when 
+   ! IPHEN_SCHEME = 3.
+   !
+   ! RADINT -- Intercept
+   ! RADSLP -- Slope.
    !---------------------------------------------------------------------------------------!
    RADINT = -11.3868,
    RADSLP =   0.0824,
@@ -2162,7 +2165,7 @@ $ED2_INFO
    !                     can't go outside their original polygon, though.  This is the     !
    !                     same as option 1 if there is only one site per polygon.           !
    !---------------------------------------------------------------------------------------!
-   REPRO_SCHEME    = 1,
+   REPRO_SCHEME    = 2,
    !---------------------------------------------------------------------------------------!
 
 
@@ -2257,11 +2260,11 @@ $ED2_INFO
    ! LWFACT    -- Factor for changing the leaf width (w)                                   !
    ! THIOFF    -- Offset to be added to the Vm_high_temp                                   !
    !---------------------------------------------------------------------------------------!
-   VMFACT          =   1.6,
-   MFACT           =   1.0,
+   VMFACT          =   1.2,
+   MFACT           = 1.125,
    KFACT           =   3.0,
    GAMFACT         =  0.75,
-   D0FACT          =  1.20,
+   D0FACT          =  1.50,
    ALPHAFACT       = 0.875,
    THETACRIT       =  0.20,
    LWFACT          =   1.0,
@@ -2335,17 +2338,17 @@ $ED2_INFO
 
 
    !---------------------------------------------------------------------------------------!
-   ! ICANTURB -- This flag controls the canopy roughness.                                  !
-   !             0.  Based on Leuning et al. (1995), wind is computed using the similarity !
-   !                 theory for the top cohort, and they are extinguished with cumulative  !
-   !                 LAI.  If using CROWN_MOD 1 or 2, this will use local LAI and average  !
-   !                 by crown area.                                                        !
-   !             1.  The default ED-2.1 scheme, except that it uses the zero-plane         !
-   !                 displacement height.                                                  !
-   !             2.  This uses the method of Massman (1997) using constant drag and no     !
-   !                 sheltering factor.                                                    !
-   !             3.  This is also based on Massman (1997), but with the option of varying  !
-   !                 the drag and sheltering within the canopy.                            !
+   ! ICANTURB -- This flag controls the canopy roughness.
+   !             0.  Based on Leuning et al. (1995), wind is computed using the similarity
+   !                 theory for the top cohort, and they are extinguished with cumulative 
+   !                 LAI.  If using CROWN_MOD 1 or 2, this will use local LAI and average 
+   !                 by crown area.
+   !             1.  The default ED-2.1 scheme, except that it uses the zero-plane 
+   !                 displacement height. 
+   !             2.  This uses the method of Massman (1997) using constant drag and no 
+   !                 sheltering factor.
+   !             3.  This is also based on Massman (1997), but with the option of varying 
+   !                 the drag and sheltering within the canopy.
    !---------------------------------------------------------------------------------------!
    ICANTURB        = 3,       
    !---------------------------------------------------------------------------------------!
@@ -2423,7 +2426,7 @@ $ED2_INFO
    !              cohorts are too different, then the actual number of cohorts in a patch  !
    !              may exceed MAXCOHORT.                                                    !
    !---------------------------------------------------------------------------------------!
-   MAXPATCH  =  20,
+   MAXPATCH  =  15,
    MAXCOHORT = 100,
    !---------------------------------------------------------------------------------------!
 
@@ -2476,6 +2479,7 @@ $ED2_INFO
    !---------------------------------------------------------------------------------------!
 
 
+
    !---------------------------------------------------------------------------------------!
    ! IMETRAD -- What should the model do with the input short wave radiation?              !
    !            0.  Nothing, use it as is.                                                 !
@@ -2484,8 +2488,6 @@ $ED2_INFO
    !                NIR diffuse).                                                          !
    !            2.  Add then together, then use the method by Weiss and Norman (1985) to   !
    !                break radiation down to the four components.                           !
-   !            3.  Gloomy -- All radiation goes to diffuse.                               !
-   !            4.  Sesame street -- all radiation goes to direct, except at night.        !
    !                                                                                       !
    !      This option is used only when ISWRTYP is not 3.  In case it is, the split        !
    ! between direct and diffuse is done by the Harrington scheme, and we just do a split   !
@@ -2525,7 +2527,7 @@ $ED2_INFO
    !---------------------------------------------------------------------------------------!
    IEDCNFGF   = 'config.xml',
    EVENT_FILE = '',
-   PHENPATH   = '/myoutpath/inputs',
+   PHENPATH   = 'myoutpath/inputs',
    !---------------------------------------------------------------------------------------!
 $END
 !==========================================================================================!

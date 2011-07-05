@@ -81,6 +81,9 @@ subroutine solar_radiation_breakdown(cgrid,ipy)
                                   ,cgrid%met(ipy)%nir_beam                                 &
                                   ,cgrid%met(ipy)%nir_diffuse                              &
                                   ,cgrid%met(ipy)%rshort_diffuse )
+      !----- Make sure the total radiation is preserved. ----------------------------------!
+      cgrid%met(ipy)%rshort = cgrid%met(ipy)%par_beam + cgrid%met(ipy)%par_diffuse         &
+                            + cgrid%met(ipy)%nir_beam + cgrid%met(ipy)%nir_diffuse
       !------------------------------------------------------------------------------------!
 
    case (3)
@@ -304,7 +307,7 @@ subroutine short_bdown_weissnorman(rshort_full,atm_prss,cosz,par_beam,par_diff,n
       !------------------------------------------------------------------------------------!
       !     Find the actual total for PAR and NIR, using equations 7 and 8.                !
       !------------------------------------------------------------------------------------!
-      ratio    = rshort_full / (par_full_pot + nir_full_pot)
+      ratio    = min(1.2, rshort_full / (par_full_pot + nir_full_pot))
       par_full = ratio * par_full_pot
       nir_full = ratio * nir_full_pot
       !------------------------------------------------------------------------------------!

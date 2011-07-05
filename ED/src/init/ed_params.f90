@@ -1235,7 +1235,15 @@ subroutine init_pft_photo_params()
    implicit none
    !---------------------------------------------------------------------------------------!
 
-   D0(1:17)                  = 0.01 * d0fact   ! same for all PFTs
+   D0(1)                     = 0.015  ! 0.010 * d0fact
+   D0(2:4)                   = 0.015  ! 0.010 * d0fact
+   D0(5)                     = 0.010
+   D0(6:8)                   = 0.010
+   D0(9:11)                  = 0.010
+   D0(12:13)                 = 0.010
+   D0(14:15)                 = 0.010
+   D0(16)                    = 0.015  ! 0.010 * d0fact
+   D0(17)                    = 0.015  ! 0.010 * d0fact
 
    Vm_low_temp(1)            = 13.0             ! c4 grass
    Vm_low_temp(2)            =  8.0             ! early tropical
@@ -1287,21 +1295,21 @@ subroutine init_pft_photo_params()
 
 
    !------ Vm0 is the maximum photosynthesis capacity in µmol/m2/s. -----------------------!
-   Vm0(1)                    =   12.5 ! 12.5            * 1.60
-   Vm0(2)                    =  18.75 ! 18.75           * vmfact
-   Vm0(3)                    = 12.500 ! 12.5            * vmfact
-   Vm0(4)                    =   6.25 ! 6.25            * vmfact
-   Vm0(5)                    = 18.300          
-   Vm0(6)                    = 15.625 * 0.7264 
-   Vm0(7)                    = 15.625 * 0.7264 
-   Vm0(8)                    =  6.250 * 0.7264 
-   Vm0(9)                    = 18.250 * 1.1171 
-   Vm0(10)                   = 15.625 * 1.1171 
-   Vm0(11)                   =  6.250 * 1.1171 
-   Vm0(12:13)                = 18.300          
-   Vm0(14:15)                = 12.500 ! 12.5            * 1.60
-   Vm0(16)                   = 21.875 !21.875          * vmfact
-   Vm0(17)                   = 15.625
+   Vm0(1)                    = 15.000 ! 12.500 * vmfact
+   Vm0(2)                    = 22.500 ! 18.750 * vmfact
+   Vm0(3)                    = 15.000 ! 12.500 * vmfact
+   Vm0(4)                    =  7.500 !  6.250 * vmfact
+   Vm0(5)                    = 18.300 
+   Vm0(6)                    = 11.350 ! 15.625 * 0.7264
+   Vm0(7)                    = 11.350 ! 15.625 * 0.7264
+   Vm0(8)                    =  4.540 !  6.250 * 0.7264
+   Vm0(9)                    = 20.387 ! 18.250 * 1.1171
+   Vm0(10)                   = 17.455 ! 15.625 * 1.1171
+   Vm0(11)                   =  6.981 !  6.250 * 1.1171
+   Vm0(12:13)                = 18.300 ! 18.300
+   Vm0(14:15)                = 15.000 ! 12.500 * vmfact
+   Vm0(16)                   = 26.250 ! 21.875 * vmfact
+   Vm0(17)                   = 18.750 ! 15.625 * vmfact
    !---------------------------------------------------------------------------------------!
 
 
@@ -1323,9 +1331,9 @@ subroutine init_pft_photo_params()
    !    Dark_respiration_factor is the lower-case gamma in Moorcroft et al. (2001).        !
    !---------------------------------------------------------------------------------------!
    dark_respiration_factor(1)     = 0.035
-   dark_respiration_factor(2)     = 0.020 * gamfact
-   dark_respiration_factor(3)     = 0.020 * gamfact
-   dark_respiration_factor(4)     = 0.020 * gamfact
+   dark_respiration_factor(2)     = 0.015 ! 0.020 * gamfact
+   dark_respiration_factor(3)     = 0.015 ! 0.020 * gamfact
+   dark_respiration_factor(4)     = 0.015 ! 0.020 * gamfact
    dark_respiration_factor(5)     = 0.020
    dark_respiration_factor(6)     = 0.020
    dark_respiration_factor(7)     = 0.020
@@ -1337,8 +1345,8 @@ subroutine init_pft_photo_params()
    dark_respiration_factor(13)    = 0.020
    dark_respiration_factor(14)    = 0.035
    dark_respiration_factor(15)    = 0.035
-   dark_respiration_factor(16)    = 0.020 * gamfact
-   dark_respiration_factor(17)    = 0.022
+   dark_respiration_factor(16)    = 0.015
+   dark_respiration_factor(17)    = 0.020
    !---------------------------------------------------------------------------------------!
 
 
@@ -1374,24 +1382,24 @@ subroutine init_pft_photo_params()
 
    !----- Define the stomatal slope (aka the M factor). -----------------------------------!
    stomatal_slope(1)         =  5.0
-   stomatal_slope(2)         =  8.0    * mfact
-   stomatal_slope(3)         =  8.0    * mfact
-   stomatal_slope(4)         =  8.0    * mfact
-   stomatal_slope(5)         =  8.0    * mfact
-   stomatal_slope(6)         =  6.3949 * mfact
-   stomatal_slope(7)         =  6.3949 * mfact
-   stomatal_slope(8)         =  6.3949 * mfact
-   stomatal_slope(9)         =  6.3949 * mfact
-   stomatal_slope(10)        =  6.3949 * mfact
-   stomatal_slope(11)        =  6.3949 * mfact
-   stomatal_slope(12)        =  8.0    * mfact
-   stomatal_slope(13)        =  8.0    * mfact
+   stomatal_slope(2)         =  9.0 ! 8.0    * mfact
+   stomatal_slope(3)         =  9.0 ! 8.0    * mfact
+   stomatal_slope(4)         =  9.0 ! 8.0    * mfact
+   stomatal_slope(5)         =  8.0
+   stomatal_slope(6)         =  6.3949
+   stomatal_slope(7)         =  6.3949
+   stomatal_slope(8)         =  6.3949
+   stomatal_slope(9)         =  6.3949
+   stomatal_slope(10)        =  6.3949
+   stomatal_slope(11)        =  6.3949
+   stomatal_slope(12)        =  8.0   
+   stomatal_slope(13)        =  8.0
    stomatal_slope(14)        =  5.0
    stomatal_slope(15)        =  5.0
-   stomatal_slope(16)        =  8.0    * mfact
+   stomatal_slope(16)        =  9.0
    stomatal_slope(17)        =  6.4
  
-   cuticular_cond(1)         = 10000.0
+   cuticular_cond(1)         =  8000.0
    cuticular_cond(2)         = 10000.0
    cuticular_cond(3)         = 10000.0
    cuticular_cond(4)         = 10000.0
@@ -1410,28 +1418,28 @@ subroutine init_pft_photo_params()
    cuticular_cond(17)        =  1000.0
 
    quantum_efficiency(1)     = 0.053
-   quantum_efficiency(2)     = 0.08  * alphafact
-   quantum_efficiency(3)     = 0.08  * alphafact
-   quantum_efficiency(4)     = 0.08  * alphafact
-   quantum_efficiency(5)     = 0.08  * alphafact
-   quantum_efficiency(6)     = 0.08  * alphafact
-   quantum_efficiency(7)     = 0.08  * alphafact
-   quantum_efficiency(8)     = 0.08  * alphafact
-   quantum_efficiency(9)     = 0.08  * alphafact
-   quantum_efficiency(10)    = 0.08  * alphafact
-   quantum_efficiency(11)    = 0.08  * alphafact
-   quantum_efficiency(12)    = 0.08  * alphafact
-   quantum_efficiency(13)    = 0.08  * alphafact
+   quantum_efficiency(2)     = 0.070 ! 0.08  * alphafact
+   quantum_efficiency(3)     = 0.070 ! 0.08  * alphafact
+   quantum_efficiency(4)     = 0.070 ! 0.08  * alphafact
+   quantum_efficiency(5)     = 0.080
+   quantum_efficiency(6)     = 0.080
+   quantum_efficiency(7)     = 0.080
+   quantum_efficiency(8)     = 0.080
+   quantum_efficiency(9)     = 0.080
+   quantum_efficiency(10)    = 0.080
+   quantum_efficiency(11)    = 0.080
+   quantum_efficiency(12)    = 0.080
+   quantum_efficiency(13)    = 0.080
    quantum_efficiency(14)    = 0.053
    quantum_efficiency(15)    = 0.053
-   quantum_efficiency(16)    = 0.08  * alphafact
-   quantum_efficiency(17)    = 0.08  * alphafact
+   quantum_efficiency(16)    = 0.070 ! 0.08  * alphafact
+   quantum_efficiency(17)    = 0.070 ! 0.08  * alphafact
 
    !---------------------------------------------------------------------------------------!
    !     The KW parameter. Medvigy et al. (2009) and Moorcroft et al. (2001) give the      !
    ! number in m²/yr/kg_C_root.  Here we must define it in m²/s/kg_C_root.                 !
    !---------------------------------------------------------------------------------------!
-   water_conductance(1:17) = 150. / yr_sec * kfact
+   water_conductance(1:17) = 450. / yr_sec ! 150. / yr_sec * kfact
    !---------------------------------------------------------------------------------------!
 
 
@@ -1443,23 +1451,23 @@ subroutine init_pft_photo_params()
    photosyn_pathway(16:17)   = 3
 
    !----- Leaf width [m].  This controls the boundary layer conductance. ------------------!
-   leaf_width( 1)    = 0.20 * lwfact
-   leaf_width( 2)    = 0.20 * lwfact
-   leaf_width( 3)    = 0.20 * lwfact
-   leaf_width( 4)    = 0.20 * lwfact
-   leaf_width( 5)    = 0.05 * lwfact
-   leaf_width( 6)    = 0.05 * lwfact
-   leaf_width( 7)    = 0.05 * lwfact
-   leaf_width( 8)    = 0.05 * lwfact
-   leaf_width( 9)    = 0.05 * lwfact
-   leaf_width(10)    = 0.05 * lwfact
-   leaf_width(11)    = 0.05 * lwfact
-   leaf_width(12)    = 0.05 * lwfact
-   leaf_width(13)    = 0.05 * lwfact
-   leaf_width(14)    = 0.20 * lwfact
-   leaf_width(15)    = 0.20 * lwfact
-   leaf_width(16)    = 0.20 * lwfact
-   leaf_width(17)    = 0.05 * lwfact
+   leaf_width( 1)    = 0.20
+   leaf_width( 2)    = 0.20
+   leaf_width( 3)    = 0.20
+   leaf_width( 4)    = 0.20
+   leaf_width( 5)    = 0.05
+   leaf_width( 6)    = 0.05
+   leaf_width( 7)    = 0.05
+   leaf_width( 8)    = 0.05
+   leaf_width( 9)    = 0.05
+   leaf_width(10)    = 0.05
+   leaf_width(11)    = 0.05
+   leaf_width(12)    = 0.05
+   leaf_width(13)    = 0.05
+   leaf_width(14)    = 0.20
+   leaf_width(15)    = 0.20
+   leaf_width(16)    = 0.20
+   leaf_width(17)    = 0.05
    !---------------------------------------------------------------------------------------!
 
    return

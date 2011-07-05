@@ -500,8 +500,8 @@ ed_init_atm.o: ed_node_coms.mod ed_state_vars.mod ed_therm_lib.mod
 ed_init_atm.o: fuse_fiss_utils.mod grid_coms.mod met_driver_coms.mod
 ed_init_atm.o: pft_coms.mod soil_coms.mod therm_lib.mod
 ed_nbg_init.o: allometry.mod consts_coms.mod ed_max_dims.mod ed_misc_coms.mod
-ed_nbg_init.o: ed_state_vars.mod ed_therm_lib.mod fuse_fiss_utils.mod
-ed_nbg_init.o: grid_coms.mod pft_coms.mod physiology_coms.mod
+ed_nbg_init.o: ed_state_vars.mod fuse_fiss_utils.mod grid_coms.mod pft_coms.mod
+ed_nbg_init.o: physiology_coms.mod
 ed_params.o: allometry.mod canopy_air_coms.mod canopy_layer_coms.mod
 ed_params.o: canopy_radiation_coms.mod consts_coms.mod decomp_coms.mod
 ed_params.o: disturb_coms.mod ed_max_dims.mod ed_misc_coms.mod
@@ -523,10 +523,9 @@ average_utils.o: ed_max_dims.mod ed_misc_coms.mod ed_state_vars.mod
 average_utils.o: grid_coms.mod pft_coms.mod therm_lib.mod
 ed_init_full_history.o: allometry.mod c34constants.mod consts_coms.mod
 ed_init_full_history.o: ed_max_dims.mod ed_misc_coms.mod ed_node_coms.mod
-ed_init_full_history.o: ed_state_vars.mod ed_therm_lib.mod
-ed_init_full_history.o: fusion_fission_coms.mod grid_coms.mod 
-ed_init_full_history.o: hdf5_coms.mod phenology_startup.mod soil_coms.mod
-ed_init_full_history.o: therm_lib.mod
+ed_init_full_history.o: ed_state_vars.mod fusion_fission_coms.mod grid_coms.mod
+ed_init_full_history.o:  hdf5_coms.mod phenology_startup.mod
+ed_init_full_history.o: soil_coms.mod therm_lib.mod
 ed_load_namelist.o: canopy_air_coms.mod canopy_layer_coms.mod
 ed_load_namelist.o: canopy_radiation_coms.mod consts_coms.mod decomp_coms.mod
 ed_load_namelist.o: disturb_coms.mod ed_max_dims.mod ed_misc_coms.mod
@@ -621,7 +620,7 @@ fuse_fiss_utils.o: pft_coms.mod soil_coms.mod therm_lib.mod
 great_circle.o: consts_coms.mod
 hdf5_utils.o: hdf5_coms.mod
 invmondays.o: ed_misc_coms.mod
-lapse.o: consts_coms.mod ed_state_vars.mod met_driver_coms.mod
+lapse.o: consts_coms.mod ed_misc_coms.mod ed_state_vars.mod met_driver_coms.mod
 numutils.o: consts_coms.mod therm_lib.mod
 radiate_utils.o: canopy_radiation_coms.mod consts_coms.mod ed_misc_coms.mod
 radiate_utils.o: ed_state_vars.mod met_driver_coms.mod
