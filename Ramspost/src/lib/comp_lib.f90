@@ -1752,7 +1752,7 @@ subroutine RAMS_comp_patchsum(nx,ny,nz,np,iovar)
             psum(x,y,z) = 0.
             totarea     = 0.
             ploop: do p = 1,np
-               if (pfarea(x,y,p) < min_patch_area) cycle ploop
+               if (pfarea(x,y,p) <= min_patch_area) cycle ploop
                
                psum(x,y,z) = psum(x,y,z) + pfarea(x,y,p) * patval(x,y,z,p)
                totarea     = totarea + pfarea(x,y,p)
@@ -2128,7 +2128,6 @@ subroutine RAMS_reduced_prop(nx,ny,nz,np,ng,which,topt,theta_atm,rvap_atm,co2_at
    real              :: ured         ! Wind reduced to the level of interest.
    real              :: redp         ! Output variable for this patch.
    real              :: validarea    ! Total area where we have results.
-   real              :: stabcorr     ! Correction for very stable cases.
    !----- Local variables, used by L79. ---------------------------------------------------!
    real              :: a2r          ! Drag coefficient in neutral conditions
    real              :: a2o          ! Drag coefficient in neutral conditions
@@ -2174,7 +2173,7 @@ subroutine RAMS_reduced_prop(nx,ny,nz,np,ng,which,topt,theta_atm,rvap_atm,co2_at
 
          ploop: do p = 1,np
             !----- Skip patch if the area is tiny. ----------------------------------------!
-            if (parea(x,y,p) < min_patch_area) cycle ploop
+            if (parea(x,y,p) <= min_patch_area) cycle ploop
 
             !----- Compute the virtual pot. temperature at the canopy air space (CAS). ----!
             thetav_can = virtt(theta_can(x,y,p),rvap_can(x,y,p),rvap_can(x,y,p))
@@ -2200,10 +2199,8 @@ subroutine RAMS_reduced_prop(nx,ny,nz,np,ng,which,topt,theta_atm,rvap_atm,co2_at
 
             !------ Check whether we must correct the bulk Richardson number and stars. ---!
             if (rib(x,y,p) > ribmax .and. myistar /= 1 .and. is_ed2) then
-               stabcorr   = ribmax / rib(x,y,p)
+               uref = sqrt(rib(x,y,p) / ribmax) * uref
                rib(x,y,p) = ribmax
-            else
-               stabcorr   = 1.0
             end if
 
 
@@ -2271,9 +2268,9 @@ subroutine RAMS_reduced_prop(nx,ny,nz,np,ng,which,topt,theta_atm,rvap_atm,co2_at
                   !----- Finding the coefficient to scale the other stars. ----------------!
                   c3 = a2r * uref * fhr / ustar(x,y,p)
                   !----- Computing the other scales. --------------------------------------!
-                  rstar(x,y,p) = c3 * (rvap_atm (x,y,2) - rvap_can (x,y,p)   ) * stabcorr
-                  tstar(x,y,p) = c3 * (theta_atm(x,y,2) - theta_can(x,y,p)   ) * stabcorr
-                  cstar(x,y,p) = c3 * (co2_atm  (x,y,2) - co2_can  (x,y,p)   ) * stabcorr
+                  rstar(x,y,p) = c3 * (rvap_atm (x,y,2) - rvap_can (x,y,p)   )
+                  tstar(x,y,p) = c3 * (theta_atm(x,y,2) - theta_can(x,y,p)   )
+                  cstar(x,y,p) = c3 * (co2_atm  (x,y,2) - co2_can  (x,y,p)   )
 
                   !----- Compute zeta from u* and T* --------------------------------------!
                   zeta(x,y,p)  = grav * vonk * c3 * (thetav_atm - thetav_can)              &
@@ -2324,9 +2321,9 @@ subroutine RAMS_reduced_prop(nx,ny,nz,np,ng,which,topt,theta_atm,rvap_atm,co2_at
                   c3    = vonk / (tprandtl * (lnzroz0m - psih(zeta(x,y,p),stable,myistar)  &
                                                       + psih(zeta0m,stable,myistar)     ))
                   !----- Computing the other scales. --------------------------------------!
-                  rstar(x,y,p) = c3 * (rvap_atm (x,y,2) - rvap_can (x,y,p)   ) * stabcorr
-                  tstar(x,y,p) = c3 * (theta_atm(x,y,2) - theta_can(x,y,p)   ) * stabcorr
-                  cstar(x,y,p) = c3 * (co2_atm  (x,y,2) - co2_can  (x,y,p)   ) * stabcorr
+                  rstar(x,y,p) = c3 * (rvap_atm (x,y,2) - rvap_can (x,y,p)   )
+                  tstar(x,y,p) = c3 * (theta_atm(x,y,2) - theta_can(x,y,p)   )
+                  cstar(x,y,p) = c3 * (co2_atm  (x,y,2) - co2_can  (x,y,p)   )
                end if
                !---------------------------------------------------------------------------!
 
@@ -2371,9 +2368,9 @@ subroutine RAMS_reduced_prop(nx,ny,nz,np,ng,which,topt,theta_atm,rvap_atm,co2_at
                   c3    = vonk / (tprandtl * (lnzroz0m - psih(zeta(x,y,p),stable,myistar)  &
                                                        + psih(zeta0m,stable,myistar)     ))
                   !----- Computing the other scales. --------------------------------------!
-                  rstar(x,y,p) = c3 * (rvap_atm (x,y,2) - rvap_can (x,y,p)   ) * stabcorr
-                  tstar(x,y,p) = c3 * (theta_atm(x,y,2) - theta_can(x,y,p)   ) * stabcorr
-                  cstar(x,y,p) = c3 * (co2_atm  (x,y,2) - co2_can  (x,y,p)   ) * stabcorr
+                  rstar(x,y,p) = c3 * (rvap_atm (x,y,2) - rvap_can (x,y,p)   )
+                  tstar(x,y,p) = c3 * (theta_atm(x,y,2) - theta_can(x,y,p)   )
+                  cstar(x,y,p) = c3 * (co2_atm  (x,y,2) - co2_can  (x,y,p)   )
                end if
                !---------------------------------------------------------------------------!
 

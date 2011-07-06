@@ -2590,7 +2590,8 @@ module fuse_fiss_utils
                   recp_found = .false.
                   recloopp: do recp=donp-1,1,-1
                      recp_found = csite%dist_type(donp) == csite%dist_type(recp) .and.     &
-                                  fuse_table(recp)
+                                  fuse_table(recp) .and.                                   &
+                                  (csite%dist_type(recp) == 1 .or. csite%age(recp) > 2.)
                      if (recp_found) then
                         recpatch => csite%patch(recp)
                         exit recloopp

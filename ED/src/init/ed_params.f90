@@ -1803,21 +1803,21 @@ subroutine init_pft_mort_params()
 
 
    seedling_mortality(1)    = 0.95
-   seedling_mortality(2:4)  = 0.95 
+   seedling_mortality(2:4)  = 0.95
    seedling_mortality(5)    = 0.95
-   seedling_mortality(6:15) = 0.95 
-   seedling_mortality(16)   = 0.95 
-   seedling_mortality(17)   = 0.95 
+   seedling_mortality(6:15) = 0.95
+   seedling_mortality(16)   = 0.95
+   seedling_mortality(17)   = 0.95
 
-   treefall_s_gtht          = 0.0
+   treefall_s_gtht(1:17)    = 0.0
 
    treefall_s_ltht(1)       = 0.25
-   treefall_s_ltht(2:4)     = 0.1
+   treefall_s_ltht(2:4)     = 0.10
    treefall_s_ltht(5)       = 0.25
-   treefall_s_ltht(6:11)    = 0.1
+   treefall_s_ltht(6:11)    = 0.10
    treefall_s_ltht(12:15)   = 0.25
    treefall_s_ltht(16)      = 0.25
-   treefall_s_ltht(17)      = 0.1
+   treefall_s_ltht(17)      = 0.10
 
    plant_min_temp(1:4)      = t00+2.5
    plant_min_temp(5:6)      = t00-80.0

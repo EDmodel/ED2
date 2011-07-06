@@ -1286,8 +1286,7 @@ subroutine transfer_ed2leaf(ifm,timel)
 
          leaf_g(ifm)%veg_rough   (ix,iy,ilp) = sum(csite%veg_rough(:)*csite%area(:))       &
                                              * site_area_i
-         leaf_g(ifm)%patch_rough (ix,iy,ilp) = leaf_g(ifm)%patch_rough(ix,iy,ilp)          &
-                                             + sum(csite%rough(:)*csite%area(:))           &
+         leaf_g(ifm)%patch_rough (ix,iy,ilp) = sum(csite%rough(:)*csite%area(:))           &
                                              * site_area_i
          !----- Not sure about this one, but this is consistent with LEAF-3 ---------------!
          leaf_g(ifm)%patch_rough (ix,iy,ilp) = max(leaf_g(ifm)%patch_rough(ix,iy,ilp)      &
