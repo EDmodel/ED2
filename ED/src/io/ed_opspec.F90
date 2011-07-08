@@ -1160,9 +1160,11 @@ subroutine ed_opspec_misc
                                     , agri_stock                   & ! intent(in)
                                     , plantation_stock             ! ! intent(in)
    use canopy_layer_coms     , only : crown_mod                    ! ! intent(in)
+   use canopy_radiation_coms , only : ican_swrad                   ! ! intent(in)
    use rk4_coms              , only : ibranch_thermo               & ! intent(in)
                                     , ipercol                      & ! intent(in)
                                     , rk4_tolerance                ! ! intent(in)
+   use met_driver_coms       , only : imetrad                      ! ! intent(in)
 #if defined(COUPLED)
 #else
    use met_driver_coms       , only : ishuffle                     & ! intent(in)
@@ -1416,9 +1418,9 @@ end do
       !------------------------------------------------------------------------------------!
       !   Check the branch thermodynamics.                                                 !
       !------------------------------------------------------------------------------------!
-      if (ibranch_thermo < 0 .or. ibranch_thermo > 2) then
+      if (ibranch_thermo < 0 .or. ibranch_thermo > 3) then
          write (reason,fmt='(a,1x,i4,a)')                                                  &
-                   'Invalid IBRANCH_THERMO, it must be between 0 and 2. Yours is set to'   &
+                   'Invalid IBRANCH_THERMO, it must be between 0 and 3. Yours is set to'   &
                    ,ibranch_thermo,'...'
          call opspec_fatal(reason,'opspec_misc')
          ifaterr = ifaterr +1
@@ -1627,9 +1629,9 @@ end do
       ifaterr = ifaterr +1
    end select
 
-   if (i_blyr_condct < -1 .or. i_blyr_condct > 2) then
+   if (i_blyr_condct < 0 .or. i_blyr_condct > 2) then
       write (reason,fmt='(a,1x,i4,a)') &
-            'Invalid I_BLYR_CONDCT, it must be between -1 and 2. Yours is set to'          &
+            'Invalid I_BLYR_CONDCT, it must be between 0 and 2. Yours is set to'           &
            ,i_blyr_condct,'...'
       call opspec_fatal(reason,'opspec_misc')  
       ifaterr = ifaterr +1
@@ -1736,6 +1738,18 @@ end do
    end if
 
    if (crown_mod < 0 .or. crown_mod > 2) then
+      write (reason,fmt='(a,1x,i4,a)')                                                     &
+                    'Invalid CROWN_MOD, it must be between 0 and 2.  Yours is set to'  &
+                    ,crown_mod,'...'
+      ifaterr = ifaterr +1
+      call opspec_fatal(reason,'opspec_misc')
+   end if
+
+   if (ican_swrad == 0 .and. crown_mod == 2) then
+      write (reason,fmt='(a)') 'You cannot run with ICAN_SWRAD = 0 and CROWN_MOD = 2.'
+      ifaterr = ifaterr +1
+      call opspec_fatal(reason,'opspec_misc')
+   elseif (ican_swrad <0 .or. ican_swrad > 1) then
       write (reason,fmt='(a,1x,i4,a)')                                                     &
                     'Invalid CROWN_MOD, it must be between 0 and 2.  Yours is set to'  &
                     ,crown_mod,'...'
@@ -1866,7 +1880,7 @@ end do
 
 #if defined(COUPLED)
 #else
-   if (ishuffle < 0 .and. ishuffle > 2) then
+   if (ishuffle < 0 .or. ishuffle > 2) then
       write (reason,fmt='(a,1x,i4,a)')                                                     &
                     'Invalid ISHUFFLE, it must be between 0 and 2.  Yours is set to'       &
                     ,ishuffle,'...'
@@ -1882,6 +1896,14 @@ end do
    end if
 
 #endif
+
+   if (imetrad < 0 .or. imetrad > 4) then
+      write (reason,fmt='(a,1x,i4,a)')                                                     &
+                    'Invalid IMETRAD, it must be between 0 and 4.  Yours is set to'        &
+                    ,imetrad,'...'
+      ifaterr = ifaterr +1
+      call opspec_fatal(reason,'opspec_misc')
+   end if
 
    !----- Stop the run if there are any fatal errors. -------------------------------------!
    if (ifaterr > 0) then

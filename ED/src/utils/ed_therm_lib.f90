@@ -23,13 +23,15 @@ module ed_therm_lib
    !                  and number of plants per square meter, and the conversion of carbon  !
    !                  to total biomass.  The right hand side of the main equation accounts !
    !                  for the mass of insterstitial water and its ability to hold energy.  !
-   ! + BDEAD        - the structural stem biomass of the cohort in kgC/plant.              !
-   ! + BALIVE       - the live tissue biomass of the cohort, in kgC/plant.                 !
+   ! + BDEAD        - the structural wood biomass of the cohort in kgC/plant.              !
+   ! + BSAPWOOD     - the sapwood biomass of the cohort, in kgC/plant.                     !
    ! + NPLANTS      - the number of plants per m2.                                         !
    ! + PFT          - the plant functional type of the current cohort, which may serve     !
    !                  for defining different parameterizations of specific heat capacity   !
-   ! + PHEN_STATUS  - this is probably redundant with the LAI check, but if phen_status is !
-   !                  2, it means no leaves exist so we set hcapveg to 0.                  !
+   !                                                                                       !
+   ! Ouputs:                                                                               !
+   ! + LEAF_HCAP    - the leaf heat capacity, in J/m2/K.                                   !
+   ! + WOOD_HCAP    - the wood heat capacity, in J/m2/K.                                   !
    !                                                                                       !
    ! These methods follow the ways of Gu et al. 2007, with the only difference that for    !
    ! non-green biomass we dropped the temperature dependence and assumed T=T3ple, just to  !
@@ -42,7 +44,7 @@ module ed_therm_lib
    !      energy storages on the land surface fluxes and radiative temperature.            !
    !      J. Geophys. Res., v. 112, doi: 10.1029/2006JD007425.                             !
    !---------------------------------------------------------------------------------------!
-   real function calc_hcapveg(bleaf,bdead,balive,nplant,hite,pft,phen_status, bsapwood)
+   subroutine calc_veg_hcap(bleaf,bdead,bsapwood,nplant,pft,leaf_hcap,wood_hcap)
       use consts_coms          , only : cliq                ! ! intent(in)
       use pft_coms             , only : c_grn_leaf_dry      & ! intent(in)
                                       , wat_dry_ratio_grn   & ! intent(in)
@@ -55,13 +57,12 @@ module ed_therm_lib
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       real    , intent(in)    :: bleaf         ! Biomass of leaves              [kgC/plant]
-      real    , intent(in)    :: bdead         ! Biomass of structural stem     [kgC/plant]
-      real    , intent(in)    :: balive        ! Biomass of live tissue         [kgC/plant]
+      real    , intent(in)    :: bdead         ! Biomass of structural wood     [kgC/plant]
       real    , intent(in)    :: bsapwood      ! Biomass of sapwood             [kgC/plant]
       real    , intent(in)    :: nplant        ! Number of plants               [ plant/m2]
-      real    , intent(in)    :: hite          ! Cohort mean height             [        m]
       integer , intent(in)    :: pft           ! Plant functional type          [     ----]
-      integer , intent(in)    :: phen_status   ! Phenology status               [     ----]
+      real    , intent(out)   :: leaf_hcap     ! Leaf heat capacity             [   J/m2/K]
+      real    , intent(out)   :: wood_hcap     ! Wood heat capacity             [   J/m2/K]
       !----- Local variables --------------------------------------------------------------!
       real                    :: bwood         ! Wood biomass                   [kgC/plant]
       real                    :: spheat_leaf   ! Leaf specific heat             [   J/kg/K]
@@ -77,26 +78,26 @@ module ed_therm_lib
          spheat_wood = 0.
          bwood       = 0.
       case default
-         !----- Finding branch/twig specific heat and biomass. ----------------------------!
+         !----- Find branch/twig specific heat and biomass. -------------------------------!
          spheat_wood = (c_ngrn_biom_dry(pft) + wat_dry_ratio_ngrn(pft) * cliq)             &
                      / (1. + wat_dry_ratio_ngrn(pft)) + delta_c(pft)
-         bwood = wood_biomass(bdead,balive,pft,hite, bsapwood)
+         bwood = wood_biomass(bdead, bsapwood,pft)
       end select
 
-      !------------------------------------------------------------------------------------!
-      !     The heat capacity is the sum of the heat capacity due to wood and leaves.      !
-      !------------------------------------------------------------------------------------!
       !----- Find the leaf specific heat. -------------------------------------------------!
       spheat_leaf = (c_grn_leaf_dry(pft) + wat_dry_ratio_grn(pft) * cliq)                  &
                   / (1. + wat_dry_ratio_grn(pft))
-      !----- Then the heat capacity. ------------------------------------------------------!
-      calc_hcapveg = nplant * C2B                                                          &
-                   * ( bwood * spheat_wood * (1. + wat_dry_ratio_ngrn(pft))                &
-                     + bleaf * spheat_leaf * (1. + wat_dry_ratio_grn(pft) ) )
+
+      !------------------------------------------------------------------------------------!
+      !     The heat capacity is specific heat times the plant density times the leaf/wood !
+      ! biomass.                                                                           !
+      !------------------------------------------------------------------------------------!
+      leaf_hcap = nplant * C2B * bleaf * spheat_leaf * (1. + wat_dry_ratio_grn (pft))
+      wood_hcap = nplant * C2B * bwood * spheat_wood * (1. + wat_dry_ratio_ngrn(pft))
       !------------------------------------------------------------------------------------!
 
       return
-   end function calc_hcapveg
+   end subroutine calc_veg_hcap
    !=======================================================================================!
    !=======================================================================================!
 
@@ -111,9 +112,18 @@ module ed_therm_lib
    ! changed. This routine should be used only when leaf or structural biomass has         !
    ! changed, it should never be used in fast time steps.                                  !
    !                                                                                       !
+   !     We look at leaf and wood separately, but the idea is the same.  When heat         !
+   ! capacity is zero (i.e., no leaves or not solving branchwood thermodynamics), we       !
+   ! cannot find the temperature using qwtk because it is a singularity.  Notice that this !
+   ! is different skipping when cohorts are not resolvable...  If the cohort is not        !
+   ! resolvable but still has some heat capacity, we should update internal energy using   !
+   ! the traditional method, and NEVER force the heat capacity to be zero, otherwise we    !
+   ! violate the fact that heat capacity is a linear function of mass and this will cause  !
+   ! problems during the fusion/splitting process.                                         !
+   !                                                                                       !
    !    The "cweh" mean "consistent water&energy&hcap" assumption                          !
    !---------------------------------------------------------------------------------------!
-   subroutine update_veg_energy_cweh(csite,ipa,ico,old_hcapveg)
+   subroutine update_veg_energy_cweh(csite,ipa,ico,old_leaf_hcap,old_wood_hcap)
       use ed_state_vars, only : sitetype   & ! Structure
                               , patchtype  ! ! Structure
       use therm_lib    , only : qwtk       ! ! subroutine
@@ -125,7 +135,8 @@ module ed_therm_lib
       type(sitetype) , target     :: csite
       integer        , intent(in) :: ipa
       integer        , intent(in) :: ico
-      real           , intent(in) :: old_hcapveg
+      real           , intent(in) :: old_leaf_hcap
+      real           , intent(in) :: old_wood_hcap
       !----- Local variables --------------------------------------------------------------!
       type(patchtype), pointer    :: cpatch
       real(kind=8)                :: new_energy
@@ -137,22 +148,17 @@ module ed_therm_lib
 
       cpatch => csite%patch(ipa)
 
+
       !------------------------------------------------------------------------------------!
-      !    When heat capacity is zero (i.e., no leaves and we are ignoring branches), we   !
-      ! cannot find the temperature using qwtk because it is a singularity.  Notice that   !
-      ! this is different skipping when cohorts are not resolvable... If the cohort is not !
-      ! resolvable but still has some heat capacity, we should update internal energy      !
-      ! using the traditional method, and NEVER force the heat capacity to be zero, other- !
-      ! wise we violate the fact that heat capacity is a linear function of mass and this  !
-      ! will cause problems during the fusion/splitting process.                           !
+      !     Leaves.  Check whether heat capacity is zero or not.                           !
       !------------------------------------------------------------------------------------!
-      if (cpatch%hcapveg(ico) == 0. ) then
-         cpatch%veg_energy(ico) = 0.
-         cpatch%veg_water(ico)  = 0.
-         cpatch%veg_fliq(ico)   = 0.
+      if (cpatch%leaf_hcap(ico) == 0. ) then
+         cpatch%leaf_energy(ico) = 0.
+         cpatch%leaf_water(ico)  = 0.
+         cpatch%leaf_fliq(ico)   = 0.
          if (cpatch%hite(ico) > csite%total_sfcw_depth(ipa)) then
             !----- Plant is exposed, set temperature to the canopy temperature. -----------!
-            cpatch%veg_temp(ico) = csite%can_temp(ipa)
+            cpatch%leaf_temp(ico) = csite%can_temp(ipa)
          else
             !----- Find the snow layer that is the closest to where the leaves would be. --!
             do k = csite%nlev_sfcwater(ipa), 1, -1
@@ -160,37 +166,123 @@ module ed_therm_lib
                   kclosest = k
                end if
             end do
-            cpatch%veg_temp(ico) = csite%sfcwater_tempk(kclosest,ipa)
+            cpatch%leaf_temp(ico) = csite%sfcwater_tempk(kclosest,ipa)
          end if
+         !---------------------------------------------------------------------------------!
 
-      !------------------------------------------------------------------------------------!
-      !    Cohort heat capacity is not zero. Since we track vegetation temperature and     !
-      ! liquid fraction of vegetation coating water, we can recalculate the internal       !
-      ! energy by just switching the old heat capacity by the new one.                     !
-      !------------------------------------------------------------------------------------!
       else
-         cpatch%veg_energy(ico) = cpatch%hcapveg(ico) * cpatch%veg_temp(ico)               &
-                                + cpatch%veg_water(ico)                                    &
-                                * ( cliq * cpatch%veg_fliq(ico)                            &
-                                  * (cpatch%veg_temp(ico) - tsupercool)                    &
-                                  + cice * (1.-cpatch%veg_fliq(ico)) * cpatch%veg_temp(ico))
+         !---------------------------------------------------------------------------------!
+         !     Heat capacity is not zero.  Since we track leaf temperature and liquid      !
+         ! fraction of water held by leaves, we can recalculate the internal energy by     !
+         ! just switching the old heat capacity by the new one.                            !
+         !---------------------------------------------------------------------------------!
+         cpatch%leaf_energy(ico) = cpatch%leaf_hcap(ico) * cpatch%leaf_temp(ico)           &
+                                 + cpatch%leaf_water(ico)                                  &
+                                 * ( cliq * cpatch%leaf_fliq(ico)                          &
+                                   * (cpatch%leaf_temp(ico) - tsupercool)                  &
+                                   + cice * (1.-cpatch%leaf_fliq(ico))                     &
+                                          * cpatch%leaf_temp(ico))
+         !---------------------------------------------------------------------------------!
+
+
 
          !----- This is a sanity check, it can be removed if it doesn't crash. ------------!
-         call qwtk(cpatch%veg_energy(ico),cpatch%veg_water(ico),cpatch%hcapveg(ico)        &
+         call qwtk(cpatch%leaf_energy(ico),cpatch%leaf_water(ico),cpatch%leaf_hcap(ico)    &
                   ,new_temp,new_fliq)
-      
-         if (abs(new_temp - cpatch%veg_temp(ico)) > 0.1) then
-            write (unit=*,fmt='(a)') ' ENERGY CONSERVATION FAILED!:'
-            write (unit=*,fmt='(a,1x,es12.5)') ' Old temperature:  ',cpatch%veg_temp(ico)
-            write (unit=*,fmt='(a,1x,es12.5)') ' New temperature:  ',new_temp
-            write (unit=*,fmt='(a,1x,es12.5)') ' Old heat capacity:',old_hcapveg
-            write (unit=*,fmt='(a,1x,es12.5)') ' New heat capacity:',cpatch%hcapveg(ico)
-            write (unit=*,fmt='(a,1x,es12.5)') ' Veg energy:       ',cpatch%veg_energy(ico)
-            write (unit=*,fmt='(a,1x,es12.5)') ' Veg water:        ',cpatch%veg_water(ico)
-            call fatal_error('Energy is leaking!!!','update_veg_energy_cweh'               &
+         !---------------------------------------------------------------------------------!
+
+
+
+         !---------------------------------------------------------------------------------!
+         !     In case the temperature is different, give the user the bad news...         !
+         !---------------------------------------------------------------------------------!
+         if (abs(new_temp - cpatch%leaf_temp(ico)) > 0.1) then
+            write(unit=*,fmt='(a)') '-----------------------------------------------------'
+            write(unit=*,fmt='(a)') ' LEAF ENERGY CONSERVATION FAILED!:'
+            write(unit=*,fmt='(a)') '-----------------------------------------------------'
+            write(unit=*,fmt='(a,1x,es12.5)') ' Old temperature:  ',cpatch%leaf_temp(ico)
+            write(unit=*,fmt='(a,1x,es12.5)') ' New temperature:  ',new_temp
+            write(unit=*,fmt='(a,1x,es12.5)') ' Old heat capacity:',old_leaf_hcap
+            write(unit=*,fmt='(a,1x,es12.5)') ' New heat capacity:',cpatch%leaf_hcap(ico)
+            write(unit=*,fmt='(a,1x,es12.5)') ' Leaf energy:      ',cpatch%leaf_energy(ico)
+            write(unit=*,fmt='(a,1x,es12.5)') ' Leaf water:       ',cpatch%leaf_water(ico)
+            write(unit=*,fmt='(a)') '-----------------------------------------------------'
+            call fatal_error('Leaf energy is leaking!!!','update_veg_energy_cweh'          &
                             &,'ed_therm_lib.f90')
          end if
       end if
+      !------------------------------------------------------------------------------------!
+
+
+
+
+
+      !------------------------------------------------------------------------------------!
+      !     Wood.  Check whether heat capacity is zero or not.                             !
+      !------------------------------------------------------------------------------------!
+      if (cpatch%wood_hcap(ico) == 0. ) then
+         cpatch%wood_energy(ico) = 0.
+         cpatch%wood_water(ico)  = 0.
+         cpatch%wood_fliq(ico)   = 0.
+         if (cpatch%hite(ico) > csite%total_sfcw_depth(ipa)) then
+            !----- Plant is exposed, set temperature to the canopy temperature. -----------!
+            cpatch%wood_temp(ico) = csite%can_temp(ipa)
+         else
+            !----- Find the snow layer that is the closest to where the leaves would be. --!
+            do k = csite%nlev_sfcwater(ipa), 1, -1
+               if (sum(csite%sfcwater_depth(1:k,ipa)) > cpatch%hite(ico)) then
+                  kclosest = k
+               end if
+            end do
+            cpatch%wood_temp(ico) = csite%sfcwater_tempk(kclosest,ipa)
+         end if
+         !---------------------------------------------------------------------------------!
+
+      else
+         !---------------------------------------------------------------------------------!
+         !     Heat capacity is not zero.  Since we track leaf temperature and liquid      !
+         ! fraction of water held by leaves, we can recalculate the internal energy by     !
+         ! just switching the old heat capacity by the new one.                            !
+         !---------------------------------------------------------------------------------!
+         cpatch%wood_energy(ico) = cpatch%wood_hcap(ico) * cpatch%wood_temp(ico)           &
+                                + cpatch%wood_water(ico)                                   &
+                                * ( cliq * cpatch%wood_fliq(ico)                           &
+                                  * (cpatch%wood_temp(ico) - tsupercool)                   &
+                                  + cice * (1.-cpatch%wood_fliq(ico))                      &
+                                         * cpatch%wood_temp(ico))
+         !---------------------------------------------------------------------------------!
+
+
+
+         !----- This is a sanity check, it can be removed if it doesn't crash. ------------!
+         call qwtk(cpatch%wood_energy(ico),cpatch%wood_water(ico),cpatch%wood_hcap(ico)    &
+                  ,new_temp,new_fliq)
+         !---------------------------------------------------------------------------------!
+
+
+
+
+         !---------------------------------------------------------------------------------!
+         !     In case the temperature is different, give the user the bad news...         !
+         !---------------------------------------------------------------------------------!
+         if (abs(new_temp - cpatch%wood_temp(ico)) > 0.1) then
+            write(unit=*,fmt='(a)') '-----------------------------------------------------'
+            write(unit=*,fmt='(a)') ' WOOD ENERGY CONSERVATION FAILED!:'
+            write(unit=*,fmt='(a)') '-----------------------------------------------------'
+            write(unit=*,fmt='(a,1x,es12.5)') ' Old temperature:  ',cpatch%wood_temp(ico)
+            write(unit=*,fmt='(a,1x,es12.5)') ' New temperature:  ',new_temp
+            write(unit=*,fmt='(a,1x,es12.5)') ' Old heat capacity:',old_wood_hcap
+            write(unit=*,fmt='(a,1x,es12.5)') ' New heat capacity:',cpatch%wood_hcap(ico)
+            write(unit=*,fmt='(a,1x,es12.5)') ' Wood energy:      ',cpatch%wood_energy(ico)
+            write(unit=*,fmt='(a,1x,es12.5)') ' Wood water:       ',cpatch%wood_water(ico)
+            write(unit=*,fmt='(a)') '-----------------------------------------------------'
+            call fatal_error('Wood energy is leaking!!!','update_veg_energy_cweh'          &
+                            &,'ed_therm_lib.f90')
+         end if
+         !---------------------------------------------------------------------------------!
+      end if
+      !------------------------------------------------------------------------------------!
+
 
       return
    end subroutine update_veg_energy_cweh

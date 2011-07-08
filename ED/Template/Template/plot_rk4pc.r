@@ -51,10 +51,12 @@ phovdi01 = list(vnam   = c("gpp","plresp","hetresp","cflxac")
                ,unit   = "umol/m2/s"
                ,legpos = "topleft"
                ,plt    = TRUE)
-phovdi02 = list(vnam   = c("met.rshort","met.rlong","netrad","qwflxca","hflxca")
-               ,desc   = c("Down SW","Down LW","Net Radiation","Latent","Sensible")
-               ,colour = c("goldenrod","lawngreen","deepskyblue","midnightblue","firebrick")
-               ,lwd    = c(1.5,1.5,1.5,1.5,1.5)
+phovdi02 = list(vnam   = c("met.rshort","met.rlong","gnd.rshort"
+                          ,"gnd.rlong","qwflxca","hflxca")
+               ,desc   = c("Met SW","Met LW","Ground SW","Ground LW","Latent","Sensible")
+               ,colour = c("goldenrod","limegreen","deepskyblue","chartreuse"
+                          ,"midnightblue","firebrick")
+               ,lwd    = c(1.5,1.5,1.5,1.5,1.5,1.5)
                ,type   = ptype
                ,plog   = ""
                ,prefix = "eneflux"
@@ -62,12 +64,12 @@ phovdi02 = list(vnam   = c("met.rshort","met.rlong","netrad","qwflxca","hflxca")
                ,unit   = "W/m2"
                ,legpos = "topleft"
                ,plt    = TRUE)
-phovdi03 = list(vnam   = c("qwflxgc","qwflxac","qwflxvc","qtransp","qdewgnd")
-               ,desc   = c("Ground->Canopy","Air->Canopy","Leaf->Canopy","Transpiration"
-                          ,"Dew")
-               ,colour = c("firebrick","midnightblue","chartreuse"
+phovdi03 = list(vnam   = c("qwflxgc","qwflxac","qwflxlc","qwflxwc","qtransp","qdewgnd")
+               ,desc   = c("Ground->Canopy","Air->Canopy","Leaf->Canopy","Wood->Canopy"
+                          ,"Transpiration","Dew")
+               ,colour = c("firebrick","midnightblue","chartreuse","goldenrod"
                           ,"darkolivegreen","deepskyblue")
-               ,lwd    = c(1.5,1.5,1.5,1.5,1.5)
+               ,lwd    = c(1.5,1.5,1.5,1.5,1.5,1.5)
                ,type   = ptype
                ,plog   = ""
                ,prefix = "h2oflux"
@@ -75,10 +77,10 @@ phovdi03 = list(vnam   = c("qwflxgc","qwflxac","qwflxvc","qtransp","qdewgnd")
                ,unit   = "kg/m2/day"
                ,legpos = "topleft"
                ,plt    = TRUE)
-phovdi04 = list(vnam   = c("hflxgc","hflxac","hflxvc")
-               ,desc   = c("Ground->Canopy","Air->Canopy","Leaf->Canopy")
-               ,colour = c("firebrick","midnightblue","chartreuse")
-               ,lwd    = c(1.5,1.5,1.5)
+phovdi04 = list(vnam   = c("hflxgc","hflxac","hflxlc","hflxwc")
+               ,desc   = c("Ground->Canopy","Air->Canopy","Leaf->Canopy","Wood->Canopy")
+               ,colour = c("firebrick","midnightblue","chartreuse","goldenrod")
+               ,lwd    = c(1.5,1.5,1.5,1.5)
                ,type   = ptype
                ,plog   = ""
                ,prefix = "sensflux"
@@ -86,10 +88,10 @@ phovdi04 = list(vnam   = c("hflxgc","hflxac","hflxvc")
                ,unit   = "W/m2"
                ,legpos = "topleft"
                ,plt    = TRUE)
-phovdi05 = list(vnam   = c("atm.temp","can.temp","veg.temp","sfc.temp")
-               ,desc   = c("Atmosphere","Canopy air","Leaf","Surface")
-               ,colour = c("deepskyblue","gray21","chartreuse","sienna")
-               ,lwd    = c(1.5,1.5,1.5,1.5)
+phovdi05 = list(vnam   = c("atm.temp","can.temp","leaf.temp","wood.temp","sfc.temp")
+               ,desc   = c("Atmosphere","Canopy air","Leaf","Wood","Surface")
+               ,colour = c("deepskyblue","gray21","chartreuse","goldenrod","sienna")
+               ,lwd    = c(1.5,1.5,1.5,1.5,1.5)
                ,type   = ptype
                ,plog   = ""
                ,prefix = "temperature"
@@ -318,7 +320,6 @@ phovdi25 = list(vnam   = c("rgbare","rgveg","rgnet","rgold")
                ,unit   = "s/m"
                ,legpos = "topleft"
                ,plt    = TRUE)
-
 #------------------------------------------------------------------------------------------#
 
 
@@ -328,7 +329,7 @@ phovdi25 = list(vnam   = c("rgbare","rgveg","rgnet","rgold")
 # plt to F.                                                                                #
 #------------------------------------------------------------------------------------------#
 #----- Time series plots. -----------------------------------------------------------------#
-nchov = 12
+nchov = 13
 chovdi01 = list(vnam   = c("gpp","leaf.resp","root.resp","growth.resp","storage.resp"
                           ,"vleaf.resp")
                ,desc   = c("GPP","R (Leaf)","R (root)","R (growth)","R (storage)"
@@ -343,11 +344,11 @@ chovdi01 = list(vnam   = c("gpp","leaf.resp","root.resp","growth.resp","storage.
                ,unit   = "umol/m2/s"
                ,legpos = "topleft"
                ,plt    = TRUE)
-chovdi02 = list(vnam   = c("atm.temp","can.temp","veg.temp","sfc.temp")
-               ,desc   = c("Atmosphere","Canopy air","Leaf","Surface")
-               ,colour = c("deepskyblue","gray21","chartreuse","sienna")
-               ,cohlev = c(FALSE,FALSE,TRUE,FALSE)
-               ,lwd    = c(1.5,1.5,1.5,1.5)
+chovdi02 = list(vnam   = c("atm.temp","can.temp","leaf.temp","wood.temp","sfc.temp")
+               ,desc   = c("Atmosphere","Canopy air","Leaf","Wood","Surface")
+               ,colour = c("deepskyblue","gray21","chartreuse","goldenrod","sienna")
+               ,cohlev = c(FALSE,FALSE,TRUE,TRUE,FALSE)
+               ,lwd    = c(1.5,1.5,1.5,1.5,1.5)
                ,type   = ptype
                ,prefix = "temperature"
                ,theme  = "Temperature"
@@ -365,11 +366,12 @@ chovdi03 = list(vnam   = c("atm.shv","can.shv","sfc.shv","lint.shv")
                ,unit   = "g/kg"
                ,legpos = "topleft"
                ,plt    = TRUE)
-chovdi04 = list(vnam   = c("rbw","rsw","rsw.open","rsw.clos")
-               ,desc   = c("Boundary layer","Stomatal","Stomatal (open)","Stomatal (closed)")
-               ,colour = c("goldenrod","midnightblue","steelblue","sienna")
-               ,cohlev = c(TRUE,TRUE,TRUE,TRUE)
-               ,lwd    = c(1.5,1.5,1.5,1.5)
+chovdi04 = list(vnam   = c("wood.rbw","leaf.rbw","rsw","rsw.open","rsw.clos")
+               ,desc   = c("Wood Bnd. layer","Leaf Bnd. layer","Stomatal"
+                          ,"Stomatal (open)","Stomatal (closed)")
+               ,colour = c("goldenrod","limegreen","midnightblue","steelblue","sienna")
+               ,cohlev = c(TRUE,TRUE,TRUE,TRUE,TRUE)
+               ,lwd    = c(1.5,1.5,1.5,1.5,1.5)
                ,type   = ptype
                ,prefix = "resist"
                ,theme  = "Resistance"
@@ -398,44 +400,44 @@ chovdi06 = list(vnam   = c("atm.vels","veg.wind","ustar")
                ,unit   = "m/s"
                ,legpos = "topleft"
                ,plt    = TRUE)
-chovdi07 = list(vnam   = c("gbw","gsw","gsw.open","gsw.clos")
-               ,desc   = c("Boundary layer","Stomatal","Stomatal (open)"
-                          ,"Stomatal (closed)")
-               ,colour = c("goldenrod","midnightblue","steelblue","sienna")
-               ,cohlev = c(TRUE,TRUE,TRUE,TRUE)
-               ,lwd    = c(1.5,1.5,1.5,1.5)
+chovdi07 = list(vnam   = c("wood.gbw","leaf.gbw","gsw","gsw.open","gsw.clos")
+               ,desc   = c("Wood Bnd. layer","Leaf Bnd. layer","Stomatal"
+                          ,"Stomatal (open)","Stomatal (closed)")
+               ,colour = c("goldenrod","limegreen","midnightblue","steelblue","sienna")
+               ,cohlev = c(TRUE,TRUE,TRUE,TRUE,TRUE)
+               ,lwd    = c(1.5,1.5,1.5,1.5,1.5)
                ,type   = ptype
                ,prefix = "condct"
                ,theme  = "Conductance"
                ,unit   = "mol/m2_leaf/s"
                ,legpos = "topleft"
                ,plt    = TRUE)
-chovdi08 = list(vnam   = c("gbw.mmos","gsw.clos.mmos")
-               ,desc   = c("Boundary layer","Stomatal (closed)")
-               ,colour = c("goldenrod","sienna")
-               ,cohlev = c(TRUE,TRUE)
-               ,lwd    = c(1.5,1.5)
+chovdi08 = list(vnam   = c("wood.gbw.mmos","leaf.gbw.mmos","gsw.clos.mmos")
+               ,desc   = c("Wood Bnd. layer","Leaf Bnd. layer","Stomatal (closed)")
+               ,colour = c("goldenrod","limegreen","sienna")
+               ,cohlev = c(TRUE,TRUE,TRUE)
+               ,lwd    = c(1.5,1.5,1.5)
                ,type   = ptype
                ,prefix = "condctmmos"
                ,theme  = "Conductance"
                ,unit   = "mm/s"
                ,legpos = "topleft"
                ,plt    = TRUE)
-chovdi09 = list(vnam   = c("veg.liquid","veg.frozen")
-               ,desc   = c("Liquid water","Ice")
-               ,colour = c("midnightblue","deepskyblue")
-               ,cohlev = c(TRUE,TRUE)
-               ,lwd    = c(1.5,1.5)
+chovdi09 = list(vnam   = c("leaf.liquid","leaf.frozen","wood.liquid","wood.frozen")
+               ,desc   = c("Liquid (Leaf)","Ice (Leaf)","Liquid (Wood)","Ice (Wood)")
+               ,colour = c("midnightblue","deepskyblue","sienna","goldenrod")
+               ,cohlev = c(TRUE,TRUE,TRUE,TRUE)
+               ,lwd    = c(1.5,1.5,1.5,1.5)
                ,type   = ptype
                ,prefix = "water"
-               ,theme  = "Water on leaf surface"
+               ,theme  = "Water on vegetation surface"
                ,unit   = "kg_h2o/m2"
                ,legpos = "topleft"
                ,plt    = TRUE)
-chovdi10 = list(vnam   = c("veg.energy")
-               ,desc   = c("Internal energy")
-               ,colour = c("forestgreen")
-               ,cohlev = c(TRUE)
+chovdi10 = list(vnam   = c("leaf.energy","wood.energy")
+               ,desc   = c("Leaf","Wood")
+               ,colour = c("forestgreen","goldenrod")
+               ,cohlev = c(TRUE,TRUE)
                ,lwd    = c(1.5,1.5)
                ,type   = ptype
                ,prefix = "energy"
@@ -443,18 +445,18 @@ chovdi10 = list(vnam   = c("veg.energy")
                ,unit   = "J/m2"
                ,legpos = "topleft"
                ,plt    = TRUE)
-chovdi11 = list(vnam   = c("veg.hcap","h2o.hcap")
-               ,desc   = c("Biomass","Water")
-               ,colour = c("lawngreen","deepskyblue")
-               ,cohlev = c(TRUE,TRUE)
-               ,lwd    = c(1.5,1.5)
+chovdi11 = list(vnam   = c("leaf.hcap","leaf.h2o.hcap","wood.hcap","wood.h2o.hcap")
+               ,desc   = c("Leaf","Leaf Water","Wood","Wood Water")
+               ,colour = c("lawngreen","deepskyblue","sienna","goldenrod")
+               ,cohlev = c(TRUE,TRUE,TRUE,TRUE)
+               ,lwd    = c(1.5,1.5,1.5,1.5)
                ,type   = ptype
                ,prefix = "hcap"
                ,theme  = "Heat capacity"
                ,unit   = "J/m2/K"
                ,legpos = "topleft"
                ,plt    = TRUE)
-chovdi12 = list(vnam   = c("rshort.v","rlong.v","hflxvc","qwflxvc","qwshed","qtransp"
+chovdi12 = list(vnam   = c("rshort.l","rlong.l","hflxlc","qwflxlc","qwshed","qtransp"
                           ,"qintercepted")
                ,desc   = c("Shortwave","Longwave","Sensible","Evaporation","Shedding"
                           ,"Transpiration","Intercepted")
@@ -463,7 +465,21 @@ chovdi12 = list(vnam   = c("rshort.v","rlong.v","hflxvc","qwflxvc","qwshed","qtr
                ,cohlev = c(TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE)
                ,lwd    = c(1.5,1.5,1.5,1.5,1.5,1.5,1.5)
                ,type   = ptype
-               ,prefix = "energy"
+               ,prefix = "leafenergy"
+               ,theme  = "Energy fluxes"
+               ,unit   = "W/m2"
+               ,legpos = "topleft"
+               ,plt    = TRUE)
+chovdi13 = list(vnam   = c("rshort.w","rlong.w","hflxwc","qwflxwc","qwshed","qtransp"
+                          ,"qintercepted")
+               ,desc   = c("Shortwave","Longwave","Sensible","Evaporation","Shedding"
+                          ,"Transpiration","Intercepted")
+               ,colour = c("yellow3","goldenrod","firebrick","midnightblue","royalblue"
+                          ,"lawngreen","deepskyblue")
+               ,cohlev = c(TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE)
+               ,lwd    = c(1.5,1.5,1.5,1.5,1.5,1.5,1.5)
+               ,type   = ptype
+               ,prefix = "woodenergy"
                ,theme  = "Energy fluxes"
                ,unit   = "W/m2"
                ,legpos = "topleft"
@@ -669,7 +685,8 @@ for (place in myplaces){
       cpatch$hetresp         = cpatch$cwdrh        + cpatch$soilrh
 
       #----- Water flux in kg/m2/day. -----------------------------------------------------#
-      cpatch$qwflxvc         = cpatch$wflxvc       * day.sec
+      cpatch$qwflxlc         = cpatch$wflxlc       * day.sec
+      cpatch$qwflxwc         = cpatch$wflxwc       * day.sec
       cpatch$qwflxgc         = cpatch$wflxgc       * day.sec
       cpatch$qwflxac         = cpatch$wflxac       * day.sec
       cpatch$qtransp         = cpatch$transp       * day.sec
@@ -686,7 +703,8 @@ for (place in myplaces){
       #----- Temperatures in Celsius. -----------------------------------------------------#
       cpatch$atm.temp        = cpatch$atm.temp     - t00
       cpatch$can.temp        = cpatch$can.temp     - t00
-      cpatch$veg.temp        = cpatch$veg.temp     - t00
+      cpatch$leaf.temp       = cpatch$leaf.temp    - t00
+      cpatch$wood.temp       = cpatch$wood.temp    - t00
       cpatch$sfc.temp        = cpatch$sfc.temp     - t00
 
       #----- Specific humidity in g/kg. ---------------------------------------------------#
@@ -833,8 +851,9 @@ for (place in myplaces){
       #------------------------------------------------------------------------------------#
       #    Create an output table with some cohort properties.                             #
       #------------------------------------------------------------------------------------#
-      cohtable        = data.frame(matrix(NA,nrow=mycohorts,ncol=7))
-      names(cohtable) = c("ico","solved","pft","nplant","height","lai","crown.area")
+      cohtable        = data.frame(matrix(NA,nrow=mycohorts,ncol=9))
+      names(cohtable) = c("ico","leaf.resolve","wood.resolve","pft","nplant","height"
+                         ,"lai","wai","crown.area")
 
       #------------------------------------------------------------------------------------#
       #    Cohort loop.                                                                    #
@@ -878,8 +897,9 @@ for (place in myplaces){
          ccohort              = data.frame(ccohort)
 
          #----- Fill in the table. --------------------------------------------------------#
-         cohtable[ico,] = c(ico,ccohort$resolvable[1],ccohort$pft[1],ccohort$nplant[1]
-                           ,ccohort$height[1],ccohort$tai[1],ccohort$crown.area[1])
+         cohtable[ico,] = c(ico,ccohort$leaf.resolve[1],ccohort$wood.resolve[1]
+                           ,ccohort$pft[1],ccohort$nplant[1],ccohort$height[1]
+                           ,ccohort$lai[1],ccohort$wai[1],ccohort$crown.area[1])
 
          #----- Reduce the size of the file to be the period of interest only. ------------#
          print(paste("          * Reduce data to the period of interest..."))
@@ -895,7 +915,7 @@ for (place in myplaces){
 
 
          #----- Skip this cohort if its nplant and LAI are tiny. --------------------------#
-         if (all(ccohort$resolvable == 1)){
+         if (all(ccohort$leaf.resolve == 1 | ccohort$wood.resolve == 1)){
 
 
             #----- Net water conductance. -------------------------------------------------#
@@ -903,44 +923,56 @@ for (place in myplaces){
                                       + ccohort$gsw.clos * (1. - ccohort$fs.open) )
 
             #----- Convert conductance to resistance [s/m] for plotting. ------------------#
-            ccohort$rbw             = cpatch$can.rhos * 0.001 * cpatch$can.shv / ccohort$gbw
+            ccohort$leaf.rbw        = ( cpatch$can.rhos * 0.001 * cpatch$can.shv 
+                                      / ccohort$leaf.gbw )
+            ccohort$wood.rbw        = ( cpatch$can.rhos * 0.001 * cpatch$can.shv 
+                                      / ccohort$wood.gbw )
             ccohort$rsw             = cpatch$can.rhos * 0.001 * cpatch$can.shv / ccohort$gsw
             ccohort$rsw.open        = cpatch$can.rhos * 0.001 * cpatch$can.shv / ccohort$gsw.open
             ccohort$rsw.clos        = cpatch$can.rhos * 0.001 * cpatch$can.shv / ccohort$gsw.clos
-            ccohort$rbw[!is.finite(ccohort$rbw)] = 0.
+            ccohort$leaf.rbw[!is.finite(ccohort$leaf.rbw)] = 0.
+            ccohort$wood.rbw[!is.finite(ccohort$wood.rbw)] = 0.
             ccohort$rsw[!is.finite(ccohort$rsw)] = 0.
             ccohort$rsw.open[!is.finite(ccohort$rsw.open)] = 0.
             ccohort$rsw.clos[!is.finite(ccohort$rsw.clos)] = 0.
 
             #----- Convert the conductances from kg_H2O/m2/s to mm/s. ---------------------#
-            ccohort$gbw.mmos         = ( ccohort$gbw      * 1000.
-                                       / (cpatch$can.rhos * 0.001 * cpatch$can.shv) )
-            ccohort$gsw.mmos         = ( ccohort$gsw      * 1000.
-                                       / (cpatch$can.rhos * 0.001 *  cpatch$can.shv) )
-            ccohort$gsw.open.mmos    = ( ccohort$gsw.open * 1000.
-                                       / (cpatch$can.rhos * 0.001 *  cpatch$can.shv) )
-            ccohort$gsw.clos.mmos    = ( ccohort$gsw.clos * 1000.
-                                       / (cpatch$can.rhos * 0.001 *  cpatch$can.shv) )
+            ccohort$leaf.gbw.mmos      = ( ccohort$leaf.gbw * 1000.
+                                         / (cpatch$can.rhos * 0.001 * cpatch$can.shv) )
+            ccohort$wood.gbw.mmos      = ( ccohort$wood.gbw * 1000.
+                                         / (cpatch$can.rhos * 0.001 * cpatch$can.shv) )
+            ccohort$gsw.mmos           = ( ccohort$gsw      * 1000.
+                                         / (cpatch$can.rhos * 0.001 *  cpatch$can.shv) )
+            ccohort$gsw.open.mmos      = ( ccohort$gsw.open * 1000.
+                                         / (cpatch$can.rhos * 0.001 *  cpatch$can.shv) )
+            ccohort$gsw.clos.mmos      = ( ccohort$gsw.clos * 1000.
+                                         / (cpatch$can.rhos * 0.001 *  cpatch$can.shv) )
 
             #----- Convert the conductances from kg_H2O/m2/s to mol/m2/s. -----------------#
-            ccohort$gbw             = ccohort$gbw      * mmh2oi
+            ccohort$leaf.gbw        = ccohort$leaf.gbw * mmh2oi
+            ccohort$wood.gbw        = ccohort$wood.gbw * mmh2oi
             ccohort$gsw             = ccohort$gsw      * mmh2oi
             ccohort$gsw.open        = ccohort$gsw.open * mmh2oi
             ccohort$gsw.clos        = ccohort$gsw.clos * mmh2oi
 
             #----- Temperatures in Celsius. -----------------------------------------------#
-            ccohort$veg.temp        = ccohort$veg.temp     - t00
+            ccohort$leaf.temp       = ccohort$leaf.temp     - t00
+            ccohort$wood.temp       = ccohort$wood.temp     - t00
 
             #----- Specific humidity in g/kg. ---------------------------------------------#
             ccohort$lint.shv        = ccohort$lint.shv      * 1000.
 
             #----- Water sitting on leaf surface. -----------------------------------------#
-            ccohort$veg.liquid      = ccohort$veg.water * ccohort$veg.fliq
-            ccohort$veg.frozen      = ccohort$veg.water * (1. - ccohort$veg.fliq)
+            ccohort$leaf.liquid      = ccohort$leaf.water * ccohort$leaf.fliq
+            ccohort$leaf.frozen      = ccohort$leaf.water * (1. - ccohort$leaf.fliq)
+            ccohort$wood.liquid      = ccohort$wood.water * ccohort$wood.fliq
+            ccohort$wood.frozen      = ccohort$wood.water * (1. - ccohort$wood.fliq)
 
             #----- Water heat capacity. ---------------------------------------------------#
-            ccohort$h2o.hcap        = ( ccohort$veg.liquid * cliq
-                                      + ccohort$veg.frozen * cice )
+            ccohort$leaf.h2o.hcap    = ( ccohort$leaf.liquid * cliq
+                                       + ccohort$leaf.frozen * cice )
+            ccohort$wood.h2o.hcap    = ( ccohort$wood.liquid * cliq
+                                       + ccohort$wood.frozen * cice )
 
 
             #------------------------------------------------------------------------------#

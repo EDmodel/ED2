@@ -139,6 +139,7 @@ module ename_coms
       integer                                           :: repro_scheme
       integer                                           :: lapse_scheme
       integer                                           :: crown_mod
+      integer                                           :: ican_swrad
       integer                                           :: h2o_plant_lim
       real                                              :: vmfact
       real                                              :: mfact
@@ -193,6 +194,7 @@ module ename_coms
       integer                                           :: metcyc1
       integer                                           :: metcycf
       integer                                           :: imetavg
+      integer                                           :: imetrad
       real                                              :: initial_co2
 
       !------ Options controlling prescribed phenology forcing. ---------------------------!
@@ -362,6 +364,7 @@ module ename_coms
       enl%repro_scheme              = undef_integer
       enl%lapse_scheme              = undef_integer
       enl%crown_mod                 = undef_integer
+      enl%ican_swrad                = undef_integer
       enl%h2o_plant_lim             = undef_integer
       enl%vmfact                    = undef_real
       enl%mfact                     = undef_real
@@ -415,6 +418,7 @@ module ename_coms
       enl%metcyc1                   = undef_integer
       enl%metcycf                   = undef_integer
       enl%imetavg                   = undef_integer
+      enl%imetrad                   = undef_integer
       enl%initial_co2               = undef_real
 
       enl%iphenys1                  = undef_integer

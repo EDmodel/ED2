@@ -86,9 +86,9 @@ hovdi02 = list(vnam   = c("sens","evap","transp")
               ,unit   = "W/m2"
               ,legpos = "topleft"
               ,plt    = TRUE)
-hovdi03 = list(vnam   = c("atm.temp","can.temp","veg.temp","soil.temp")
-              ,desc   = c("Atmosphere","Canopy air","Leaf","Soil (Top)")
-              ,colour = c("deepskyblue","gray21","chartreuse","sienna")
+hovdi03 = list(vnam   = c("atm.temp","can.temp","leaf.temp","wood.temp","soil.temp")
+              ,desc   = c("Atmosphere","Canopy air","Leaf","Wood","Soil (Top)")
+              ,colour = c("deepskyblue","gray21","chartreuse","goldenrod","sienna")
               ,prefix = "temperature"
               ,theme  = "Temperature"
               ,unit   = "degC"
@@ -284,7 +284,8 @@ for (ipy in 1:nplaces){
    p$transp       = NULL
    p$atm.temp     = NULL
    p$can.temp     = NULL
-   p$veg.temp     = NULL
+   p$leaf.temp    = NULL
+   p$wood.temp    = NULL
    p$atm.shv      = NULL
    p$can.shv      = NULL
    p$sens         = NULL
@@ -428,7 +429,8 @@ for (year in yeara:yearz){
              #                             myday$DMEAN.VLEAF.RESP  [ipy]            )
 
              p$sens       = c (p$sens  , myday$DMEAN.SENSIBLE.GC[ipy] 
-                                        + myday$DMEAN.SENSIBLE.VC[ipy])
+                                       + myday$DMEAN.SENSIBLE.LC[ipy]
+                                       + myday$DMEAN.SENSIBLE.WC[ipy])
              p$evap       = c (p$evap  ,myday$DMEAN.EVAP     [ipy]   * alvl        )
              p$transp     = c (p$transp,myday$DMEAN.TRANSP   [ipy]   * alvl        )
 
@@ -438,7 +440,8 @@ for (year in yeara:yearz){
              p$can.temp   = c (p$can.temp,myday$DMEAN.CAN.TEMP [ipy] - t00         )
              p$can.shv    = c (p$can.shv ,myday$DMEAN.CAN.SHV  [ipy] * 1000.       )
 
-             p$veg.temp   = c (p$veg.temp,myday$DMEAN.VEG.TEMP [ipy] - t00         )
+             p$leaf.temp  = c (p$leaf.temp,myday$DMEAN.LEAF.TEMP [ipy] - t00       )
+             p$wood.temp  = c (p$wood.temp,myday$DMEAN.WOOD.TEMP [ipy] - t00       )
              p$rain       = c (p$rain,myday$DMEAN.PCPG         [ipy] * day.sec     )
 
              #----- Read soil data, and only retrieve the top layer.  ---------------------#

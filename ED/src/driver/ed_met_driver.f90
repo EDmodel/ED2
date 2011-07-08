@@ -1629,7 +1629,7 @@ subroutine update_met_drivers(cgrid)
    polyloop: do ipy = 1,cgrid%npolygons
          
       !----- CO2 --------------------------------------------------------------------------!
-      if (.not.have_co2) cgrid%met(ipy)%atm_co2 = initial_co2
+      if (.not. have_co2) cgrid%met(ipy)%atm_co2 = initial_co2
 
       !----- Adjust meteorological variables for simple climate scenarios. ----------------!
       cgrid%met(ipy)%atm_tmp      = cpi * cgrid%met(ipy)%atm_theta * cgrid%met(ipy)%exner
@@ -1642,6 +1642,13 @@ subroutine update_met_drivers(cgrid)
          cgrid%met(ipy)%atm_theta = cp * cgrid%met(ipy)%atm_tmp / cgrid%met(ipy)%exner
       end if
       cgrid%met(ipy)%pcpg = max(0.0,prec_intercept + cgrid%met(ipy)%pcpg * prec_slope)
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !      Here we modify the short-wave radiation splitting if the user has some ideas. !
+      !------------------------------------------------------------------------------------!
+      call solar_radiation_breakdown(cgrid,ipy)
       !------------------------------------------------------------------------------------!
 
 

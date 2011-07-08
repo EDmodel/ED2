@@ -593,7 +593,7 @@ subroutine read_ed21_history_file
                      cpatch%ddbh_dt              = 0.
                      cpatch%fsw                  = 1.0
                      cpatch%gpp                  = 0.0
-                     cpatch%par_v                = 0.0
+                     cpatch%par_l                = 0.0
                      
                      cohortloop: do ico=1,cpatch%ncohorts
                         !------------------------------------------------------------------!
@@ -1334,10 +1334,9 @@ subroutine read_ed21_history_unstruct
             ! properties to the definite site, preserving the previously assigned area.    !
             !------------------------------------------------------------------------------!
             nsites_inp = pysi_n(py_index)
-            nullify(tpoly)
-            allocate(tpoly)
+            nullify  (tpoly)
+            allocate (tpoly)
             allocate (this_ntext(dset_nzg,nsites_inp))
-
             call allocate_polygontype(tpoly,nsites_inp)
             !------------------------------------------------------------------------------!
 
@@ -1660,7 +1659,7 @@ subroutine read_ed21_history_unstruct
                         cpatch%ddbh_dt              = 0.
                         cpatch%fsw                  = 1.0
                         cpatch%gpp                  = 0.0
-                        cpatch%par_v                = 0.0
+                        cpatch%par_l                = 0.0
 
                         cohortloop: do ico=1,cpatch%ncohorts
                            !---------------------------------------------------------------!

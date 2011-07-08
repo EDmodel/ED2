@@ -36,7 +36,7 @@ subroutine ed_init_atm()
                                     , sendnum           & ! intent(in)
                                     , recvnum           ! ! intent(in)
    use pft_coms              , only : sla               ! ! intent(in)
-   use ed_therm_lib          , only : calc_hcapveg      & ! subroutine
+   use ed_therm_lib          , only : calc_veg_hcap     & ! subroutine
                                     , ed_grndvap        ! ! subroutine
    use therm_lib             , only : thetaeiv          & ! function
                                     , idealdenssh       & ! function
@@ -72,7 +72,6 @@ subroutine ed_init_atm()
    real                           :: elim_nplant
    real                           :: elim_lai
    real                           :: rvaux
-   logical             , external :: is_resolvable
    !----- Add the MPI common block. -------------------------------------------------------!
    include 'mpif.h'
    !---------------------------------------------------------------------------------------!
@@ -140,29 +139,32 @@ subroutine ed_init_atm()
                ! here.  The correct value will be assigned later on this subroutine.       !
                !---------------------------------------------------------------------------!
                csite%soil_tempk(1,ipa) = -100.0
-               csite%hcapveg(ipa) = 0.
 
                cohortloop1: do ico = 1,cpatch%ncohorts
                   !------------------------------------------------------------------------!
-                  !      Initialize vegetation properties.  For now, set heat capacity for !
-                  ! stability.                                                             !
+                  !      Here we initialise both the leaf and wood properties, assuming    !
+                  ! thermal equilibrium with the canopy air space and no intercepted       !
+                  ! water sitting on top of leaves and branches.                           !
                   !------------------------------------------------------------------------!
-                  cpatch%veg_temp  (ico) = csite%can_temp(ipa)
-                  cpatch%veg_fliq  (ico) = 0.0
-                  cpatch%veg_water (ico) = 0.0
-                  cpatch%hcapveg   (ico) = calc_hcapveg(cpatch%bleaf(ico)                  &
-                                                       ,cpatch%bdead(ico)                  &
-                                                       ,cpatch%balive(ico)                 &
-                                                       ,cpatch%nplant(ico)                 &
-                                                       ,cpatch%hite(ico)                   &
-                                                       ,cpatch%pft(ico)                    &
-                                                       ,cpatch%phenology_status(ico)       &
-                                                       ,cpatch%bsapwood(ico))
-                  cpatch%veg_energy(ico) = cpatch%hcapveg(ico) * cpatch%veg_temp(ico)
-                  cpatch%resolvable(ico) = is_resolvable(csite,ipa,ico                     &
-                                                        ,cpoly%green_leaf_factor(:,isi))
+                  cpatch%leaf_temp   (ico) = csite%can_temp(ipa)
+                  cpatch%leaf_fliq   (ico) = 0.0
+                  cpatch%leaf_water  (ico) = 0.0
+                  cpatch%wood_temp   (ico) = csite%can_temp(ipa)
+                  cpatch%wood_fliq   (ico) = 0.0
+                  cpatch%wood_water  (ico) = 0.0
+                  
+                  
+                  call calc_veg_hcap(cpatch%bleaf(ico),cpatch%bdead(ico)                   &
+                                    ,cpatch%bsapwood(ico),cpatch%nplant(ico)               &
+                                    ,cpatch%pft(ico)                                       &
+                                    ,cpatch%leaf_hcap(ico),cpatch%wood_hcap(ico) )
 
-                  csite%hcapveg    (ipa) = csite%hcapveg (ipa) + cpatch%hcapveg (ico)
+                  cpatch%leaf_energy (ico) = cpatch%leaf_hcap(ico) * cpatch%leaf_temp(ico)
+                  cpatch%wood_energy (ico) = cpatch%wood_hcap(ico) * cpatch%wood_temp(ico)
+
+
+                  call is_resolvable(csite,ipa,ico,cpoly%green_leaf_factor(:,isi))
+
                   !----- Initialise the leaf surface and intercellular properties. --------!
                   cpatch%lsfc_shv_open(ico)   = cmet%atm_shv
                   cpatch%lsfc_shv_closed(ico) = cmet%atm_shv
@@ -174,7 +176,7 @@ subroutine ed_init_atm()
                   !      The intercellular specific humidity is assumed to be at           !
                   ! saturation.                                                            !
                   !------------------------------------------------------------------------!
-                  cpatch%lint_shv(ico) = rslif(csite%can_prss(ipa),cpatch%veg_temp(ico))
+                  cpatch%lint_shv(ico) = rslif(csite%can_prss(ipa),cpatch%leaf_temp(ico))
                   cpatch%lint_shv(ico) = cpatch%lint_shv(ico) / (1. + cpatch%lint_shv(ico))
                end do cohortloop1
             end do patchloop1

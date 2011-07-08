@@ -162,7 +162,7 @@ subroutine update_phenology(doy, cpoly, isi, lat)
                              , cice                     & ! intent(in)
                              , cliq                     & ! intent(in)
                              , alli                     ! ! intent(in)
-   use ed_therm_lib   , only : calc_hcapveg             & ! function
+   use ed_therm_lib   , only : calc_veg_hcap            & ! function
                              , update_veg_energy_cweh   ! ! subroutine
    use ed_max_dims    , only : n_pft                    ! ! intent(in)
    use ed_misc_coms   , only : current_time             ! ! intent(in)
@@ -190,11 +190,11 @@ subroutine update_phenology(doy, cpoly, isi, lat)
    real                                  :: daylight
    real                                  :: delta_bleaf
    real                                  :: bl_max
-   real                                  :: old_hcapveg
+   real                                  :: old_leaf_hcap
+   real                                  :: old_wood_hcap
    real                                  :: salloci
    !----- External functions. -------------------------------------------------------------!
    real                     , external   :: daylength
-   logical                  , external   :: is_resolvable
    !----- Variables used only for debugging purposes. -------------------------------------!
    logical                  , parameter  :: printphen=.false.
    logical, dimension(n_pft), save       :: first_time=.true.
@@ -493,16 +493,13 @@ subroutine update_phenology(doy, cpoly, isi, lat)
          !    The leaf biomass of the cohort has changed, update the vegetation energy -   !
          ! using a constant temperature assumption.                                        !
          !---------------------------------------------------------------------------------!
-         old_hcapveg         = cpatch%hcapveg(ico)
-         cpatch%hcapveg(ico) = calc_hcapveg(cpatch%bleaf(ico),cpatch%bdead(ico)            &
-                                           ,cpatch%balive(ico),cpatch%nplant(ico)          &
-                                           ,cpatch%hite(ico),cpatch%pft(ico)               &
-                                           ,cpatch%phenology_status(ico)                   &
-                                           ,cpatch%bsapwood(ico))
-         csite%hcapveg(ipa)  = csite%hcapveg(ipa) + cpatch%hcapveg(ico) - old_hcapveg
-         call update_veg_energy_cweh(csite,ipa,ico,old_hcapveg)
-         cpatch%resolvable(ico) = is_resolvable(csite,ipa,ico                              &
-                                               ,cpoly%green_leaf_factor(:,isi))
+         old_leaf_hcap       = cpatch%leaf_hcap(ico)
+         old_wood_hcap       = cpatch%wood_hcap(ico)
+         call calc_veg_hcap(cpatch%bleaf(ico),cpatch%bdead(ico),cpatch%bsapwood(ico)       &
+                           ,cpatch%nplant(ico),cpatch%pft(ico)                             &
+                           ,cpatch%leaf_hcap(ico),cpatch%wood_hcap(ico) )
+         call update_veg_energy_cweh(csite,ipa,ico,old_leaf_hcap,old_wood_hcap)
+         call is_resolvable(csite,ipa,ico,cpoly%green_leaf_factor(:,isi))
 
          !----- Printing some debugging stuff if the code is set for it. ------------------!
          if (printphen) then

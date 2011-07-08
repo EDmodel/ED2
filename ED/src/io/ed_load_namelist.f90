@@ -71,6 +71,7 @@ subroutine copy_nl(copy_type)
                                    , metcycf                   & ! intent(out)
                                    , imettype                  & ! intent(out)
                                    , imetavg                   & ! intent(out)
+                                   , imetrad                   & ! intent(out)
                                    , initial_co2               & ! intent(out)
                                    , lapse_scheme              ! ! intent(out)
    use mem_polygons         , only : n_poi                     & ! intent(out)
@@ -207,6 +208,7 @@ subroutine copy_nl(copy_type)
                                    , leaf_maxwhc               ! ! intent(out)
    use optimiz_coms         , only : ioptinpt                  ! ! intent(out)
    use canopy_layer_coms    , only : crown_mod                 ! ! intent(out)
+   use canopy_radiation_coms, only : ican_swrad                ! ! intent(out)
    use rk4_coms             , only : ibranch_thermo            & ! intent(out)
                                    , ipercol                   & ! intent(out)
                                    , rk4_tolerance             ! ! intent(out)
@@ -316,6 +318,7 @@ subroutine copy_nl(copy_type)
       repro_scheme              = nl%repro_scheme
       lapse_scheme              = nl%lapse_scheme
       crown_mod                 = nl%crown_mod
+      ican_swrad                = nl%ican_swrad
       h2o_plant_lim             = nl%h2o_plant_lim
       vmfact                    = nl%vmfact
       mfact                     = nl%mfact
@@ -376,6 +379,7 @@ subroutine copy_nl(copy_type)
       metcyc1                   = nl%metcyc1
       metcycf                   = nl%metcycf
       imetavg                   = nl%imetavg
+      imetrad                   = nl%imetrad
       initial_co2               = nl%initial_co2
       
       iphenys1                  = nl%iphenys1

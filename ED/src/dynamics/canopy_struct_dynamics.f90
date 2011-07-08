@@ -275,7 +275,7 @@ module canopy_struct_dynamics
 
 
       !---- Find the minimum leaf boundary layer heat conductance. ------------------------!
-      if (any(cpatch%resolvable)) then
+      if (any(cpatch%leaf_resolvable .or. cpatch%wood_resolvable)) then
          gbhmos_min = 1. / (rb_inter + rb_slope * (csite%lai(ipa) + csite%wai(ipa)))
       else
          gbhmos_min = 0.
@@ -577,20 +577,42 @@ module canopy_struct_dynamics
             !----- Calculate the wind speed at height z. ----------------------------------!
             ipft       = cpatch%pft(ico)
 
-            if (cpatch%resolvable(ico)) then
-
+            if (cpatch%leaf_resolvable(ico)) then
                !---------------------------------------------------------------------------!
                !    Find the aerodynamic conductances for heat and water at the leaf       !
                ! boundary layer.                                                           !
                !---------------------------------------------------------------------------!
-               call aerodynamic_conductances(ipft,cpatch%veg_wind(ico)                     &
-                                            ,cpatch%veg_temp(ico),csite%can_temp(ipa)      &
-                                            ,csite%can_shv(ipa),csite%can_rhos(ipa)        &
-                                            ,gbhmos_min,cpatch%gbh(ico),cpatch%gbw(ico))
+               call leaf_aerodynamic_conductances(ipft,cpatch%veg_wind(ico)                &
+                                                 ,cpatch%leaf_temp(ico)                    &
+                                                 ,csite%can_temp(ipa)                      &
+                                                 ,csite%can_shv(ipa)                       &
+                                                 ,csite%can_rhos(ipa)                      &
+                                                 ,gbhmos_min                               &
+                                                 ,cpatch%leaf_gbh(ico)                     &
+                                                 ,cpatch%leaf_gbw(ico))
                !---------------------------------------------------------------------------!
             else
-               cpatch%gbh(ico)      = 0.0
-               cpatch%gbw(ico)      = 0.0
+               cpatch%leaf_gbh(ico)      = 0.0
+               cpatch%leaf_gbw(ico)      = 0.0
+            end if
+            if (cpatch%wood_resolvable(ico)) then
+               !---------------------------------------------------------------------------!
+               !    Find the aerodynamic conductances for heat and water at the wood       !
+               ! boundary layer.                                                           !
+               !---------------------------------------------------------------------------!
+               call wood_aerodynamic_conductances(ipft,cpatch%dbh(ico),cpatch%hite(ico)    &
+                                                 ,cpatch%veg_wind(ico)                     &
+                                                 ,cpatch%wood_temp(ico)                    &
+                                                 ,csite%can_temp(ipa)                      &
+                                                 ,csite%can_shv(ipa)                       &
+                                                 ,csite%can_rhos(ipa)                      &
+                                                 ,gbhmos_min                               &
+                                                 ,cpatch%wood_gbh(ico)                     &
+                                                 ,cpatch%wood_gbw(ico))
+               !---------------------------------------------------------------------------!
+            else
+               cpatch%wood_gbh(ico)      = 0.0
+               cpatch%wood_gbw(ico)      = 0.0
             end if
          end do
          !---------------------------------------------------------------------------------!
@@ -722,21 +744,43 @@ module canopy_struct_dynamics
 
 
 
-            !------------------------------------------------------------------------------!
-            !    Find the aerodynamic conductances for heat and water at the leaf boundary !
-            ! layer.                                                                       !
-            !------------------------------------------------------------------------------!
-            if (cpatch%resolvable(ico)) then
-               call aerodynamic_conductances(ipft,cpatch%veg_wind(ico)                     &
-                                            ,cpatch%veg_temp(ico)                          &
-                                            ,csite%can_temp(ipa),csite%can_shv(ipa)        &
-                                            ,csite%can_rhos(ipa),gbhmos_min                &
-                                            ,cpatch%gbh(ico),cpatch%gbw(ico))
+            if (cpatch%leaf_resolvable(ico)) then
+               !---------------------------------------------------------------------------!
+               !    Find the aerodynamic conductances for heat and water at the leaf       !
+               ! boundary layer.                                                           !
+               !---------------------------------------------------------------------------!
+               call leaf_aerodynamic_conductances(ipft,cpatch%veg_wind(ico)                &
+                                                 ,cpatch%leaf_temp(ico)                    &
+                                                 ,csite%can_temp(ipa)                      &
+                                                 ,csite%can_shv(ipa)                       &
+                                                 ,csite%can_rhos(ipa)                      &
+                                                 ,gbhmos_min                               &
+                                                 ,cpatch%leaf_gbh(ico)                     &
+                                                 ,cpatch%leaf_gbw(ico))
+               !---------------------------------------------------------------------------!
             else
-               cpatch%gbh(ico) = 0.0
-               cpatch%gbw(ico) = 0.0
+               cpatch%leaf_gbh(ico)      = 0.0
+               cpatch%leaf_gbw(ico)      = 0.0
             end if
-            !------------------------------------------------------------------------------!
+            if (cpatch%wood_resolvable(ico)) then
+               !---------------------------------------------------------------------------!
+               !    Find the aerodynamic conductances for heat and water at the wood       !
+               ! boundary layer.                                                           !
+               !---------------------------------------------------------------------------!
+               call wood_aerodynamic_conductances(ipft,cpatch%dbh(ico),cpatch%hite(ico)    &
+                                                 ,cpatch%veg_wind(ico)                     &
+                                                 ,cpatch%wood_temp(ico)                    &
+                                                 ,csite%can_temp(ipa)                      &
+                                                 ,csite%can_shv(ipa)                       &
+                                                 ,csite%can_rhos(ipa)                      &
+                                                 ,gbhmos_min                               &
+                                                 ,cpatch%wood_gbh(ico)                     &
+                                                 ,cpatch%wood_gbw(ico))
+               !---------------------------------------------------------------------------!
+            else
+               cpatch%wood_gbh(ico)      = 0.0
+               cpatch%wood_gbw(ico)      = 0.0
+            end if
          end do
          !---------------------------------------------------------------------------------!
 
@@ -1045,18 +1089,44 @@ module canopy_struct_dynamics
 
 
 
+
             !------------------------------------------------------------------------------!
-            !    Find the aerodynamic conductances for heat and water at the leaf boundary !
-            ! layer.                                                                       !
-            !------------------------------------------------------------------------------!
-            if (cpatch%resolvable(ico)) then
-               call aerodynamic_conductances(ipft,cpatch%veg_wind(ico)                     &
-                                            ,cpatch%veg_temp(ico),csite%can_temp(ipa)      &
-                                            ,csite%can_shv(ipa),csite%can_rhos(ipa)        &
-                                            ,gbhmos_min,cpatch%gbh(ico),cpatch%gbw(ico))
+            if (cpatch%leaf_resolvable(ico)) then
+               !---------------------------------------------------------------------------!
+               !    Find the aerodynamic conductances for heat and water at the leaf       !
+               ! boundary layer.                                                           !
+               !---------------------------------------------------------------------------!
+               call leaf_aerodynamic_conductances(ipft,cpatch%veg_wind(ico)                &
+                                                 ,cpatch%leaf_temp(ico)                    &
+                                                 ,csite%can_temp(ipa)                      &
+                                                 ,csite%can_shv(ipa)                       &
+                                                 ,csite%can_rhos(ipa)                      &
+                                                 ,gbhmos_min                               &
+                                                 ,cpatch%leaf_gbh(ico)                     &
+                                                 ,cpatch%leaf_gbw(ico))
+               !---------------------------------------------------------------------------!
             else
-               cpatch%gbh(ico) = 0.0
-               cpatch%gbw(ico) = 0.0
+               cpatch%leaf_gbh(ico)      = 0.0
+               cpatch%leaf_gbw(ico)      = 0.0
+            end if
+            if (cpatch%wood_resolvable(ico)) then
+               !---------------------------------------------------------------------------!
+               !    Find the aerodynamic conductances for heat and water at the wood       !
+               ! boundary layer.                                                           !
+               !---------------------------------------------------------------------------!
+               call wood_aerodynamic_conductances(ipft,cpatch%dbh(ico),cpatch%hite(ico)    &
+                                                 ,cpatch%veg_wind(ico)                     &
+                                                 ,cpatch%wood_temp(ico)                    &
+                                                 ,csite%can_temp(ipa)                      &
+                                                 ,csite%can_shv(ipa)                       &
+                                                 ,csite%can_rhos(ipa)                      &
+                                                 ,gbhmos_min                               &
+                                                 ,cpatch%wood_gbh(ico)                     &
+                                                 ,cpatch%wood_gbw(ico))
+               !---------------------------------------------------------------------------!
+            else
+               cpatch%wood_gbh(ico)      = 0.0
+               cpatch%wood_gbw(ico)      = 0.0
             end if
             !------------------------------------------------------------------------------!
          end do
@@ -1314,8 +1384,7 @@ module canopy_struct_dynamics
       use ed_state_vars    , only : polygontype          & ! structure
                                   , sitetype             & ! structure
                                   , patchtype            ! ! structure
-      use rk4_coms         , only : ibranch_thermo       & ! intent(in)
-                                  , rk4patchtype         & ! structure
+      use rk4_coms         , only : rk4patchtype         & ! structure
                                   , rk4site              & ! intent(in)
                                   , tiny_offset          & ! intent(in)
                                   , ibranch_thermo       & ! intent(in)
@@ -1504,7 +1573,7 @@ module canopy_struct_dynamics
 
 
       !---- Find the minimum boundary layer heat conductance. -----------------------------!
-      if (any(initp%resolvable)) then
+      if (any(initp%leaf_resolvable .or. initp%wood_resolvable)) then
          gbhmos_min = 1.d0 / ( dble(rb_inter) + dble(rb_slope)                             &
                              * (dble(csite%lai(ipa)) + dble(csite%wai(ipa))))
       else
@@ -1792,33 +1861,63 @@ module canopy_struct_dynamics
 
             ipft  = cpatch%pft(ico)
 
-            if (initp%resolvable(ico)) then
 
-
+            !------ Leaf boundary layer conductance. --------------------------------------!
+            if (initp%leaf_resolvable(ico)) then
                !---------------------------------------------------------------------------!
                !    Find the aerodynamic conductances for heat and water at the leaf       !
                ! boundary layer.                                                           !
                !---------------------------------------------------------------------------!
-               call aerodynamic_conductances8(ipft,initp%veg_wind(ico),initp%veg_temp(ico) &
-                                             ,initp%can_temp,initp%can_shv,initp%can_rhos  &
-                                             ,gbhmos_min,initp%gbh(ico),initp%gbw(ico)     &
-                                             ,initp%veg_reynolds(ico)                      &
-                                             ,initp%veg_grashof(ico)                       &
-                                             ,initp%veg_nussfree(ico)                      &
-                                             ,initp%veg_nussforc(ico) )
-               cpatch%gbh(ico) = sngloff(initp%gbh(ico),tiny_offset)
-               cpatch%gbw(ico) = sngloff(initp%gbw(ico),tiny_offset)
+               call leaf_aerodynamic_conductances8(ipft,initp%veg_wind(ico)                &
+                                                  ,initp%leaf_temp(ico),initp%can_temp     &
+                                                  ,initp%can_shv,initp%can_rhos,gbhmos_min &
+                                                  ,initp%leaf_gbh(ico),initp%leaf_gbw(ico) &
+                                                  ,initp%leaf_reynolds(ico)                &
+                                                  ,initp%leaf_grashof(ico)                 &
+                                                  ,initp%leaf_nussfree(ico)                &
+                                                  ,initp%leaf_nussforc(ico) )
+               cpatch%leaf_gbh(ico) = sngloff(initp%leaf_gbh(ico),tiny_offset)
+               cpatch%leaf_gbw(ico) = sngloff(initp%leaf_gbw(ico),tiny_offset)
                !---------------------------------------------------------------------------!
             else
-               initp%veg_reynolds(ico) = 0.d0
-               initp%veg_grashof (ico) = 0.d0
-               initp%veg_nussfree(ico) = 0.d0
-               initp%veg_nussforc(ico) = 0.d0
-               initp%gbh(ico)          = 0.d0
-               initp%gbw(ico)          = 0.d0
-               cpatch%gbh(ico)         = 0.0
-               cpatch%gbw(ico)         = 0.0
+               initp%leaf_reynolds(ico) = 0.d0
+               initp%leaf_grashof (ico) = 0.d0
+               initp%leaf_nussfree(ico) = 0.d0
+               initp%leaf_nussforc(ico) = 0.d0
+               initp%leaf_gbh     (ico) = 0.d0
+               initp%leaf_gbw     (ico) = 0.d0
+               cpatch%leaf_gbh    (ico) = 0.0
+               cpatch%leaf_gbw    (ico) = 0.0
             end if
+            !------ Wood boundary layer conductance. --------------------------------------!
+            if (initp%wood_resolvable(ico)) then
+               !---------------------------------------------------------------------------!
+               !    Find the aerodynamic conductances for heat and water at the leaf       !
+               ! boundary layer.                                                           !
+               !---------------------------------------------------------------------------!
+               call wood_aerodynamic_conductances8(ipft,cpatch%dbh(ico),cpatch%hite(ico)   &
+                                                  ,initp%veg_wind(ico)                     &
+                                                  ,initp%wood_temp(ico),initp%can_temp     &
+                                                  ,initp%can_shv,initp%can_rhos,gbhmos_min &
+                                                  ,initp%wood_gbh(ico),initp%wood_gbw(ico) &
+                                                  ,initp%wood_reynolds(ico)                &
+                                                  ,initp%wood_grashof(ico)                 &
+                                                  ,initp%wood_nussfree(ico)                &
+                                                  ,initp%wood_nussforc(ico) )
+               cpatch%wood_gbh(ico) = sngloff(initp%wood_gbh(ico),tiny_offset)
+               cpatch%wood_gbw(ico) = sngloff(initp%wood_gbw(ico),tiny_offset)
+               !---------------------------------------------------------------------------!
+            else
+               initp%wood_reynolds(ico) = 0.d0
+               initp%wood_grashof (ico) = 0.d0
+               initp%wood_nussfree(ico) = 0.d0
+               initp%wood_nussforc(ico) = 0.d0
+               initp%wood_gbh     (ico) = 0.d0
+               initp%wood_gbw     (ico) = 0.d0
+               cpatch%wood_gbh    (ico) = 0.0
+               cpatch%wood_gbw    (ico) = 0.0
+            end if
+            !------------------------------------------------------------------------------!
          end do
 
 
@@ -1923,29 +2022,60 @@ module canopy_struct_dynamics
             initp%veg_wind(ico) = max(ugbmin8                                              &
                                      , uh * exp(-exar8 * (1.d0 - hmidcrown/ htop)))
 
-            !------------------------------------------------------------------------------!
-            !    Find the aerodynamic conductances for heat and water at the leaf boundary !
-            ! layer.                                                                       !
-            !------------------------------------------------------------------------------!
-            if (initp%resolvable(ico)) then
-               call aerodynamic_conductances8(ipft,initp%veg_wind(ico),initp%veg_temp(ico) &
-                                             ,initp%can_temp,initp%can_shv,initp%can_rhos  &
-                                             ,gbhmos_min,initp%gbh(ico),initp%gbw(ico)     &
-                                             ,initp%veg_reynolds(ico)                      &
-                                             ,initp%veg_grashof(ico)                       &
-                                             ,initp%veg_nussfree(ico)                      &
-                                             ,initp%veg_nussforc(ico))
-               cpatch%gbh(ico) = sngloff(initp%gbh(ico),tiny_offset)
-               cpatch%gbw(ico) = sngloff(initp%gbw(ico),tiny_offset)
+            !------ Leaf boundary layer conductance. --------------------------------------!
+            if (initp%leaf_resolvable(ico)) then
+               !---------------------------------------------------------------------------!
+               !    Find the aerodynamic conductances for heat and water at the leaf       !
+               ! boundary layer.                                                           !
+               !---------------------------------------------------------------------------!
+               call leaf_aerodynamic_conductances8(ipft,initp%veg_wind(ico)                &
+                                                  ,initp%leaf_temp(ico),initp%can_temp     &
+                                                  ,initp%can_shv,initp%can_rhos,gbhmos_min &
+                                                  ,initp%leaf_gbh(ico),initp%leaf_gbw(ico) &
+                                                  ,initp%leaf_reynolds(ico)                &
+                                                  ,initp%leaf_grashof(ico)                 &
+                                                  ,initp%leaf_nussfree(ico)                &
+                                                  ,initp%leaf_nussforc(ico) )
+               cpatch%leaf_gbh(ico) = sngloff(initp%leaf_gbh(ico),tiny_offset)
+               cpatch%leaf_gbw(ico) = sngloff(initp%leaf_gbw(ico),tiny_offset)
+               !---------------------------------------------------------------------------!
             else
-               initp%veg_reynolds(ico) = 0.d0
-               initp%veg_grashof (ico) = 0.d0
-               initp%veg_nussfree(ico) = 0.d0
-               initp%veg_nussforc(ico) = 0.d0
-               initp%gbh         (ico) = 0.d0
-               initp%gbw         (ico) = 0.d0
-               cpatch%gbh        (ico) = 0.0
-               cpatch%gbw        (ico) = 0.0
+               initp%leaf_reynolds(ico) = 0.d0
+               initp%leaf_grashof (ico) = 0.d0
+               initp%leaf_nussfree(ico) = 0.d0
+               initp%leaf_nussforc(ico) = 0.d0
+               initp%leaf_gbh     (ico) = 0.d0
+               initp%leaf_gbw     (ico) = 0.d0
+               cpatch%leaf_gbh    (ico) = 0.0
+               cpatch%leaf_gbw    (ico) = 0.0
+            end if
+            !------ Wood boundary layer conductance. --------------------------------------!
+            if (initp%wood_resolvable(ico)) then
+               !---------------------------------------------------------------------------!
+               !    Find the aerodynamic conductances for heat and water at the leaf       !
+               ! boundary layer.                                                           !
+               !---------------------------------------------------------------------------!
+               call wood_aerodynamic_conductances8(ipft,cpatch%dbh(ico),cpatch%hite(ico)   &
+                                                  ,initp%veg_wind(ico)                     &
+                                                  ,initp%wood_temp(ico),initp%can_temp     &
+                                                  ,initp%can_shv,initp%can_rhos,gbhmos_min &
+                                                  ,initp%wood_gbh(ico),initp%wood_gbw(ico) &
+                                                  ,initp%wood_reynolds(ico)                &
+                                                  ,initp%wood_grashof(ico)                 &
+                                                  ,initp%wood_nussfree(ico)                &
+                                                  ,initp%wood_nussforc(ico) )
+               cpatch%wood_gbh(ico) = sngloff(initp%wood_gbh(ico),tiny_offset)
+               cpatch%wood_gbw(ico) = sngloff(initp%wood_gbw(ico),tiny_offset)
+               !---------------------------------------------------------------------------!
+            else
+               initp%wood_reynolds(ico) = 0.d0
+               initp%wood_grashof (ico) = 0.d0
+               initp%wood_nussfree(ico) = 0.d0
+               initp%wood_nussforc(ico) = 0.d0
+               initp%wood_gbh     (ico) = 0.d0
+               initp%wood_gbw     (ico) = 0.d0
+               cpatch%wood_gbh    (ico) = 0.0
+               cpatch%wood_gbw    (ico) = 0.0
             end if
             !------------------------------------------------------------------------------!
          end do
@@ -2240,32 +2370,60 @@ module canopy_struct_dynamics
             initp%veg_wind(ico) = max( ugbmin8                                             &
                                      , uh * exp(-nn*(1.d0 - cumldrag8(k)/cumldrag8(zcan))))
             !------------------------------------------------------------------------------!
-
-
-
-            !------------------------------------------------------------------------------!
-            !    Find the aerodynamic conductances for heat and water at the leaf boundary !
-            ! layer.                                                                       !
-            !------------------------------------------------------------------------------!
-            if (initp%resolvable(ico)) then
-               call aerodynamic_conductances8(ipft,initp%veg_wind(ico),initp%veg_temp(ico) &
-                                             ,initp%can_temp,initp%can_shv,initp%can_rhos  &
-                                             ,gbhmos_min,initp%gbh(ico),initp%gbw(ico)     &
-                                             ,initp%veg_reynolds(ico)                      &
-                                             ,initp%veg_grashof(ico)                       &
-                                             ,initp%veg_nussfree(ico)                      &
-                                             ,initp%veg_nussforc(ico) )
-               cpatch%gbh(ico) = sngloff(initp%gbh(ico),tiny_offset)
-               cpatch%gbw(ico) = sngloff(initp%gbw(ico),tiny_offset)
+            !------ Leaf boundary layer conductance. --------------------------------------!
+            if (initp%leaf_resolvable(ico)) then
+               !---------------------------------------------------------------------------!
+               !    Find the aerodynamic conductances for heat and water at the leaf       !
+               ! boundary layer.                                                           !
+               !---------------------------------------------------------------------------!
+               call leaf_aerodynamic_conductances8(ipft,initp%veg_wind(ico)                &
+                                                  ,initp%leaf_temp(ico),initp%can_temp     &
+                                                  ,initp%can_shv,initp%can_rhos,gbhmos_min &
+                                                  ,initp%leaf_gbh(ico),initp%leaf_gbw(ico) &
+                                                  ,initp%leaf_reynolds(ico)                &
+                                                  ,initp%leaf_grashof(ico)                 &
+                                                  ,initp%leaf_nussfree(ico)                &
+                                                  ,initp%leaf_nussforc(ico) )
+               cpatch%leaf_gbh(ico) = sngloff(initp%leaf_gbh(ico),tiny_offset)
+               cpatch%leaf_gbw(ico) = sngloff(initp%leaf_gbw(ico),tiny_offset)
+               !---------------------------------------------------------------------------!
             else
-               initp%veg_reynolds(ico) = 0.d0
-               initp%veg_grashof (ico) = 0.d0
-               initp%veg_nussfree(ico) = 0.d0
-               initp%veg_nussforc(ico) = 0.d0
-               initp%gbh(ico)          = 0.d0
-               initp%gbw(ico)          = 0.d0
-               cpatch%gbh(ico)         = 0.0
-               cpatch%gbw(ico)         = 0.0
+               initp%leaf_reynolds(ico) = 0.d0
+               initp%leaf_grashof (ico) = 0.d0
+               initp%leaf_nussfree(ico) = 0.d0
+               initp%leaf_nussforc(ico) = 0.d0
+               initp%leaf_gbh     (ico) = 0.d0
+               initp%leaf_gbw     (ico) = 0.d0
+               cpatch%leaf_gbh    (ico) = 0.0
+               cpatch%leaf_gbw    (ico) = 0.0
+            end if
+            !------ Wood boundary layer conductance. --------------------------------------!
+            if (initp%wood_resolvable(ico)) then
+               !---------------------------------------------------------------------------!
+               !    Find the aerodynamic conductances for heat and water at the leaf       !
+               ! boundary layer.                                                           !
+               !---------------------------------------------------------------------------!
+               call wood_aerodynamic_conductances8(ipft,cpatch%dbh(ico),cpatch%hite(ico)   &
+                                                  ,initp%veg_wind(ico)                     &
+                                                  ,initp%wood_temp(ico),initp%can_temp     &
+                                                  ,initp%can_shv,initp%can_rhos,gbhmos_min &
+                                                  ,initp%wood_gbh(ico),initp%wood_gbw(ico) &
+                                                  ,initp%wood_reynolds(ico)                &
+                                                  ,initp%wood_grashof(ico)                 &
+                                                  ,initp%wood_nussfree(ico)                &
+                                                  ,initp%wood_nussforc(ico) )
+               cpatch%wood_gbh(ico) = sngloff(initp%wood_gbh(ico),tiny_offset)
+               cpatch%wood_gbw(ico) = sngloff(initp%wood_gbw(ico),tiny_offset)
+               !---------------------------------------------------------------------------!
+            else
+               initp%wood_reynolds(ico) = 0.d0
+               initp%wood_grashof (ico) = 0.d0
+               initp%wood_nussfree(ico) = 0.d0
+               initp%wood_nussforc(ico) = 0.d0
+               initp%wood_gbh     (ico) = 0.d0
+               initp%wood_gbw     (ico) = 0.d0
+               cpatch%wood_gbh    (ico) = 0.0
+               cpatch%wood_gbw    (ico) = 0.0
             end if
             !------------------------------------------------------------------------------!
          end do
@@ -3353,17 +3511,17 @@ module canopy_struct_dynamics
    ! - gbh is in J/(K m2 s), and                                                           !
    ! - gbw is in kg_H2O/m2/s.                                                              !
    !---------------------------------------------------------------------------------------!
-   subroutine aerodynamic_conductances(ipft,veg_wind,veg_temp,can_temp,can_shv,can_rhos    &
-                                      ,gbhmos_min,gbh,gbw)
+   subroutine leaf_aerodynamic_conductances(ipft,veg_wind,leaf_temp,can_temp,can_shv       &
+                                           ,can_rhos,gbhmos_min,leaf_gbh,leaf_gbw)
       use pft_coms       , only : leaf_width ! ! intent(in)
-      use canopy_air_coms, only : aflat_turb & ! intent(in)
-                                , aflat_lami & ! intent(in)
-                                , nflat_turb & ! intent(in)
+      use canopy_air_coms, only : aflat_lami & ! intent(in)
                                 , nflat_lami & ! intent(in)
-                                , bflat_turb & ! intent(in)
+                                , aflat_turb & ! intent(in)
+                                , nflat_turb & ! intent(in)
                                 , bflat_lami & ! intent(in)
-                                , mflat_turb & ! intent(in)
                                 , mflat_lami & ! intent(in)
+                                , bflat_turb & ! intent(in)
+                                , mflat_turb & ! intent(in)
                                 , beta_r1    & ! intent(in)
                                 , beta_r2    & ! intent(in)
                                 , beta_re0   & ! intent(in)
@@ -3379,13 +3537,13 @@ module canopy_struct_dynamics
       !----- Arguments. -------------------------------------------------------------------!
       integer                      :: ipft            ! Plant functional type   [      ---]
       real(kind=4)   , intent(in)  :: veg_wind        ! Wind at cohort height   [      m/s]
-      real(kind=4)   , intent(in)  :: veg_temp        ! Leaf temperature        [        K]
+      real(kind=4)   , intent(in)  :: leaf_temp       ! Leaf temperature        [        K]
       real(kind=4)   , intent(in)  :: can_temp        ! Canopy air temperature  [        K]
       real(kind=4)   , intent(in)  :: can_shv         ! Canopy air spec. hum.   [    kg/kg]
       real(kind=4)   , intent(in)  :: can_rhos        ! Canopy air density      [    kg/m³]
       real(kind=4)   , intent(in)  :: gbhmos_min      ! Min. Heat  conductance  [      m/s]
-      real(kind=4)   , intent(out) :: gbh             ! Heat  conductance       [ J/K/m²/s]
-      real(kind=4)   , intent(out) :: gbw             ! Water conductance       [  kg/m²/s]
+      real(kind=4)   , intent(out) :: leaf_gbh        ! Heat  conductance       [ J/K/m²/s]
+      real(kind=4)   , intent(out) :: leaf_gbw        ! Water conductance       [  kg/m²/s]
       !----- Local variables. -------------------------------------------------------------!
       real(kind=4)                 :: lwidth          ! Leaf width              [        m]
       real(kind=4)                 :: grashof         ! Grashof number          [      ---]
@@ -3428,7 +3586,7 @@ module canopy_struct_dynamics
       !     Find the conductance, in m/s,  associated with free convection.                !
       !------------------------------------------------------------------------------------!
       !----- 1. Find the Grashof number. --------------------------------------------------!
-      grashof         = gr_coeff  * abs(veg_temp - can_temp) * lwidth * lwidth * lwidth
+      grashof         = gr_coeff  * abs(leaf_temp - can_temp) * lwidth * lwidth * lwidth
       !----- 2. Compute the Nusselt number for both the laminar and turbulent case. -------!
       nusselt_lami    = bflat_lami * grashof ** mflat_lami
       nusselt_turb    = bflat_turb * grashof ** mflat_turb
@@ -3454,13 +3612,13 @@ module canopy_struct_dynamics
       ! E5.  For the ED purposes, the output variables are converted to the units of       !
       ! entropy and water fluxes [J/K/m²/s and kg/m²/s, respectively].                     !
       !------------------------------------------------------------------------------------!
-      gbh_mos = max(gbhmos_min, free_gbh_mos + forced_gbh_mos)
-      gbh     =             gbh_mos * can_rhos * cp
-      gbw     = gbh_2_gbw * gbh_mos * can_rhos
+      gbh_mos  = max(gbhmos_min, free_gbh_mos + forced_gbh_mos)
+      leaf_gbh =             gbh_mos * can_rhos * cp
+      leaf_gbw = gbh_2_gbw * gbh_mos * can_rhos
       !------------------------------------------------------------------------------------!
 
       return
-   end subroutine aerodynamic_conductances
+   end subroutine leaf_aerodynamic_conductances
    !=======================================================================================!
    !=======================================================================================!
 
@@ -3484,18 +3642,18 @@ module canopy_struct_dynamics
    ! - gbh is in J/(K m2 s), and                                                           !
    ! - gbw is in kg_H2O/m2/s.                                                              !
    !---------------------------------------------------------------------------------------!
-   subroutine aerodynamic_conductances8(ipft,veg_wind,veg_temp,can_temp,can_shv,can_rhos   &
-                                       ,gbhmos_min,gbh,gbw,reynolds,grashof,nusselt_free   &
-                                       ,nusselt_forced)
+   subroutine leaf_aerodynamic_conductances8(ipft,veg_wind,leaf_temp,can_temp,can_shv      &
+                                            ,can_rhos,gbhmos_min,leaf_gbh,leaf_gbw         &
+                                            ,reynolds,grashof,nusselt_free,nusselt_forced)
       use pft_coms       , only : leaf_width  ! ! intent(in)
-      use canopy_air_coms, only : aflat_turb8 & ! intent(in)
-                                , aflat_lami8 & ! intent(in)
-                                , nflat_turb8 & ! intent(in)
+      use canopy_air_coms, only : aflat_lami8 & ! intent(in)
                                 , nflat_lami8 & ! intent(in)
-                                , bflat_turb8 & ! intent(in)
+                                , aflat_turb8 & ! intent(in)
+                                , nflat_turb8 & ! intent(in)
                                 , bflat_lami8 & ! intent(in)
-                                , mflat_turb8 & ! intent(in)
                                 , mflat_lami8 & ! intent(in)
+                                , bflat_turb8 & ! intent(in)
+                                , mflat_turb8 & ! intent(in)
                                 , beta_lami8  & ! intent(in)
                                 , beta_turb8  & ! intent(in)
                                 , beta_r18    & ! intent(in)
@@ -3513,13 +3671,13 @@ module canopy_struct_dynamics
       !----- Arguments. -------------------------------------------------------------------!
       integer                      :: ipft            ! Plant functional type   [      ---]
       real(kind=8)   , intent(in)  :: veg_wind        ! Wind at cohort height   [      m/s]
-      real(kind=8)   , intent(in)  :: veg_temp        ! Leaf temperature        [        K]
+      real(kind=8)   , intent(in)  :: leaf_temp       ! Leaf temperature        [        K]
       real(kind=8)   , intent(in)  :: can_temp        ! Canopy air temperature  [        K]
       real(kind=8)   , intent(in)  :: can_shv         ! Canopy air spec. hum.   [    kg/kg]
       real(kind=8)   , intent(in)  :: can_rhos        ! Canopy air density      [    kg/m³]
       real(kind=8)   , intent(in)  :: gbhmos_min      ! Min. heat  conductance  [      m/s]
-      real(kind=8)   , intent(out) :: gbh             ! Heat  conductance       [ J/K/m²/s]
-      real(kind=8)   , intent(out) :: gbw             ! Water conductance       [  kg/m²/s]
+      real(kind=8)   , intent(out) :: leaf_gbh        ! Heat  conductance       [ J/K/m²/s]
+      real(kind=8)   , intent(out) :: leaf_gbw        ! Water conductance       [  kg/m²/s]
       real(kind=8)   , intent(out) :: grashof         ! Grashof number          [      ---]
       real(kind=8)   , intent(out) :: reynolds        ! Reynolds number         [      ---]
       real(kind=8)   , intent(out) :: nusselt_free    ! Nusselt number (free)   [      ---]
@@ -3563,7 +3721,7 @@ module canopy_struct_dynamics
       !     Find the conductance, in m/s,  associated with free convection.                !
       !------------------------------------------------------------------------------------!
       !----- 1. Find the Grashof number. --------------------------------------------------!
-      grashof         = gr_coeff8 * abs(veg_temp - can_temp) * lwidth * lwidth * lwidth
+      grashof         = gr_coeff8 * abs(leaf_temp - can_temp) * lwidth * lwidth * lwidth
       !----- 2. Compute the Nusselt number for both the laminar and turbulent case. -------!
       nusselt_lami    = bflat_lami8 * grashof ** mflat_lami8
       nusselt_turb    = bflat_turb8 * grashof ** mflat_turb8
@@ -3588,13 +3746,300 @@ module canopy_struct_dynamics
       ! E5.  For the ED purposes, the output variables are converted to the units of       !
       ! entropy and water fluxes [J/K/m²/s and kg/m²/s, respectively].                     !
       !------------------------------------------------------------------------------------!
-      gbh_mos = max(gbhmos_min, free_gbh_mos + forced_gbh_mos)
-      gbh     =              gbh_mos * can_rhos * cp8
-      gbw     = gbh_2_gbw8 * gbh_mos * can_rhos
+      gbh_mos  = max(gbhmos_min, free_gbh_mos + forced_gbh_mos)
+      leaf_gbh =              gbh_mos * can_rhos * cp8
+      leaf_gbw = gbh_2_gbw8 * gbh_mos * can_rhos
       !------------------------------------------------------------------------------------!
 
       return
-   end subroutine aerodynamic_conductances8
+   end subroutine leaf_aerodynamic_conductances8
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !     This sub-routine computes the aerodynamic conductance between wood and canopy     !
+   ! air space for both heat and water vapour, based on:                                   !
+   !                                                                                       !
+   ! L95 - Leuning, R., F. M. Kelliher, D. G. G. de Pury, E. D. Schulze, 1995: Leaf        !
+   !       nitrogen, photosynthesis, conductance and transpiration: scaling from leaves to !
+   !       canopies.  Plant, Cell and Environ., 18, 1183-1200.                             !
+   ! M08 - Monteith, J. L., M. H. Unsworth, 2008. Principles of Environmental Physics,     !
+   !       3rd. edition, Academic Press, Amsterdam, 418pp.  (Mostly Chapter 10).           !
+   !                                                                                       !
+   ! Notice that the units are somewhat different from L95.                                !
+   ! - gbh is in J/(K m2 s), and                                                           !
+   ! - gbw is in kg_H2O/m2/s.                                                              !
+   !---------------------------------------------------------------------------------------!
+   subroutine wood_aerodynamic_conductances(ipft,dbh,height,veg_wind,wood_temp,can_temp    &
+                                           ,can_shv,can_rhos,gbhmos_min,wood_gbh,wood_gbw)
+      use allometry      , only : dbh2vol    ! ! intent(in)
+      use canopy_air_coms, only : acyli_lami & ! intent(in)
+                                , ocyli_lami & ! intent(in)
+                                , ncyli_lami & ! intent(in)
+                                , acyli_turb & ! intent(in)
+                                , ocyli_turb & ! intent(in)
+                                , ncyli_turb & ! intent(in)
+                                , bcyli_lami & ! intent(in)
+                                , mcyli_lami & ! intent(in)
+                                , bcyli_turb & ! intent(in)
+                                , mcyli_turb & ! intent(in)
+                                , beta_r1    & ! intent(in)
+                                , beta_r2    & ! intent(in)
+                                , beta_re0   & ! intent(in)
+                                , beta_g1    & ! intent(in)
+                                , beta_g2    & ! intent(in)
+                                , beta_gr0   ! ! intent(in)
+      use consts_coms    , only : gr_coeff   & ! intent(in)
+                                , th_diffi   & ! intent(in)
+                                , th_diff    & ! intent(in)
+                                , cp         ! ! intent(in)
+      use physiology_coms, only : gbh_2_gbw  ! ! intent(in)
+      implicit none
+      !----- Arguments. -------------------------------------------------------------------!
+      integer                      :: ipft            ! Plant functional type   [      ---]
+      real(kind=4)   , intent(in)  :: dbh             ! Diameter at breast hgt. [       cm]
+      real(kind=4)   , intent(in)  :: height          ! Cohort height           [        m]
+      real(kind=4)   , intent(in)  :: veg_wind        ! Wind at cohort height   [      m/s]
+      real(kind=4)   , intent(in)  :: wood_temp       ! Wood temperature        [        K]
+      real(kind=4)   , intent(in)  :: can_temp        ! Canopy air temperature  [        K]
+      real(kind=4)   , intent(in)  :: can_shv         ! Canopy air spec. hum.   [    kg/kg]
+      real(kind=4)   , intent(in)  :: can_rhos        ! Canopy air density      [    kg/m³]
+      real(kind=4)   , intent(in)  :: gbhmos_min      ! Min. Heat  conductance  [      m/s]
+      real(kind=4)   , intent(out) :: wood_gbh        ! Heat  conductance       [ J/K/m²/s]
+      real(kind=4)   , intent(out) :: wood_gbw        ! Water conductance       [  kg/m²/s]
+      !----- Local variables. -------------------------------------------------------------!
+      real(kind=4)                 :: w_diam          ! Wood "diameter"         [        m]
+      real(kind=4)                 :: grashof         ! Grashof number          [      ---]
+      real(kind=4)                 :: reynolds        ! Reynolds number         [      ---]
+      real(kind=4)                 :: nusselt_lami    ! Nusselt number (laminar)[      ---]
+      real(kind=4)                 :: nusselt_turb    ! Nusselt number (turb.)  [      ---]
+      real(kind=4)                 :: nusselt         ! Nusselt number          [      ---]
+      real(kind=4)                 :: beta_forced     ! Correct.  term (forced) [      ---]
+      real(kind=4)                 :: beta_free       ! Correct.  term (free)   [      ---]
+      real(kind=4)                 :: forced_gbh_mos  ! Forced convection cond. [      m/s]
+      real(kind=4)                 :: free_gbh_mos    ! Free convection cond.   [      m/s]
+      real(kind=4)                 :: gbh_mos         ! Total convection cond.  [      m/s]
+      !----- External functions. ----------------------------------------------------------!
+      real(kind=4)   , external    :: cbrt            ! Cubic root.
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !      This is the characteristic diameter.  Even though branches are close to       !
+      ! cylinders but with different lengths and diameters.  Since the shape is rather     !
+      ! heterogeneous, we find the volume and use the cubic root as the characteristic     !
+      ! diameter.                                                                          !
+      !------------------------------------------------------------------------------------!
+      w_diam = 0.01 * cbrt(dbh2vol(height,dbh,ipft))
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !     Find the conductance, in m/s, associated with forced convection.               !
+      !------------------------------------------------------------------------------------!
+      !----- 1. Compute the Reynolds number. ----------------------------------------------!
+      reynolds        = veg_wind * w_diam * th_diffi
+      !----- 2. Compute the Nusselt number for both the laminar and turbulent case. -------!
+      nusselt_lami    = ocyli_lami + acyli_lami * reynolds ** ncyli_lami
+      nusselt_turb    = ocyli_turb + acyli_turb * reynolds ** ncyli_turb
+      !----- 3. Compute the correction term for the theoretical Nusselt numbers. ----------!
+      beta_forced     = beta_r1 + beta_r2 * tanh(log(reynolds/beta_re0))
+      !----- 4. The right Nusselt number is the largest. ----------------------------------!
+      nusselt         = beta_forced * max(nusselt_lami,nusselt_turb)
+      !----- 5. The conductance is given by MU08 - equation 10.4 --------------------------!
+      forced_gbh_mos  = th_diff * nusselt / w_diam
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !     Find the conductance, in m/s,  associated with free convection.                !
+      !------------------------------------------------------------------------------------!
+      !----- 1. Find the Grashof number. --------------------------------------------------!
+      grashof         = gr_coeff  * abs(wood_temp - can_temp) * w_diam * w_diam * w_diam
+      !----- 2. Compute the Nusselt number for both the laminar and turbulent case. -------!
+      nusselt_lami    = bcyli_lami * grashof ** mcyli_lami
+      nusselt_turb    = bcyli_turb * grashof ** mcyli_turb
+      !----- 3. Compute the correction term for the theoretical Nusselt numbers. ----------!
+      if (grashof == 0.0) then
+         beta_free    = beta_g1 - beta_g2
+      else
+         beta_free    = beta_g1 + beta_g2 * tanh(log(grashof/beta_gr0))
+      end if
+      !----- 4. The right Nusselt number is the largest. ----------------------------------!
+      nusselt         = beta_free * max(nusselt_lami,nusselt_turb)
+      !----- 5. The conductance is given by MU08 - equation 10.4 --------------------------!
+      free_gbh_mos    = th_diff * nusselt / w_diam
+      !------------------------------------------------------------------------------------!
+
+
+
+
+      !------------------------------------------------------------------------------------!
+      !     The heat conductance for the thermodynamic budget is the sum of conductances,  !
+      ! because we assume both forms of convection happen parallelly.  The conversion from !
+      ! heat to water conductance (in m/s) can be found in L95, page 1198, after equation  !
+      ! E5.  For the ED purposes, the output variables are converted to the units of       !
+      ! entropy and water fluxes [J/K/m²/s and kg/m²/s, respectively].                     !
+      !------------------------------------------------------------------------------------!
+      gbh_mos  = max(gbhmos_min, free_gbh_mos + forced_gbh_mos)
+      wood_gbh =             gbh_mos * can_rhos * cp
+      wood_gbw = gbh_2_gbw * gbh_mos * can_rhos
+      !------------------------------------------------------------------------------------!
+
+      return
+   end subroutine wood_aerodynamic_conductances
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !     This sub-routine computes the aerodynamic conductance between wood and canopy     !
+   ! air space for both heat and water vapour, based on:                                   !
+   !                                                                                       !
+   ! L95 - Leuning, R., F. M. Kelliher, D. G. G. de Pury, E. D. Schulze, 1995: Leaf        !
+   !       nitrogen, photosynthesis, conductance and transpiration: scaling from leaves to !
+   !       canopies.  Plant, Cell and Environ., 18, 1183-1200.                             !
+   ! M08 - Monteith, J. L., M. H. Unsworth, 2008. Principles of Environmental Physics,     !
+   !       3rd. edition, Academic Press, Amsterdam, 418pp.  (Mostly Chapter 10).           !
+   !                                                                                       !
+   ! Notice that the units are somewhat different from L95.                                !
+   ! - gbh is in J/(K m2 s), and                                                           !
+   ! - gbw is in kg_H2O/m2/s.                                                              !
+   !---------------------------------------------------------------------------------------!
+   subroutine wood_aerodynamic_conductances8(ipft,dbh,height,veg_wind,wood_temp,can_temp   &
+                                            ,can_shv,can_rhos,gbhmos_min,wood_gbh,wood_gbw &
+                                            ,reynolds,grashof,nusselt_free,nusselt_forced)
+      use allometry      , only : dbh2vol     ! ! intent(in)
+      use canopy_air_coms, only : ocyli_lami8 & ! intent(in)
+                                , acyli_lami8 & ! intent(in)
+                                , ncyli_lami8 & ! intent(in)
+                                , acyli_turb8 & ! intent(in)
+                                , ocyli_turb8 & ! intent(in)
+                                , ncyli_turb8 & ! intent(in)
+                                , bcyli_lami8 & ! intent(in)
+                                , mcyli_lami8 & ! intent(in)
+                                , bcyli_turb8 & ! intent(in)
+                                , mcyli_turb8 & ! intent(in)
+                                , beta_lami8  & ! intent(in)
+                                , beta_turb8  & ! intent(in)
+                                , beta_r18    & ! intent(in)
+                                , beta_r28    & ! intent(in)
+                                , beta_re08   & ! intent(in)
+                                , beta_g18    & ! intent(in)
+                                , beta_g28    & ! intent(in)
+                                , beta_gr08   ! ! intent(in)
+      use consts_coms    , only : gr_coeff8   & ! intent(in)
+                                , th_diffi8   & ! intent(in)
+                                , th_diff8    & ! intent(in)
+                                , cp8         ! ! intent(in)
+      use physiology_coms, only : gbh_2_gbw8  ! ! intent(in)
+      implicit none
+      !----- Arguments. -------------------------------------------------------------------!
+      integer                      :: ipft            ! Plant functional type   [      ---]
+      real(kind=4)   , intent(in)  :: dbh             ! Diameter at breast hgt. [       cm]
+      real(kind=4)   , intent(in)  :: height          ! Cohort height           [        m]
+      real(kind=8)   , intent(in)  :: veg_wind        ! Wind at cohort height   [      m/s]
+      real(kind=8)   , intent(in)  :: wood_temp       ! Wood temperature        [        K]
+      real(kind=8)   , intent(in)  :: can_temp        ! Canopy air temperature  [        K]
+      real(kind=8)   , intent(in)  :: can_shv         ! Canopy air spec. hum.   [    kg/kg]
+      real(kind=8)   , intent(in)  :: can_rhos        ! Canopy air density      [    kg/m³]
+      real(kind=8)   , intent(in)  :: gbhmos_min      ! Min. heat  conductance  [      m/s]
+      real(kind=8)   , intent(out) :: wood_gbh        ! Heat  conductance       [ J/K/m²/s]
+      real(kind=8)   , intent(out) :: wood_gbw        ! Water conductance       [  kg/m²/s]
+      real(kind=8)   , intent(out) :: grashof         ! Grashof number          [      ---]
+      real(kind=8)   , intent(out) :: reynolds        ! Reynolds number         [      ---]
+      real(kind=8)   , intent(out) :: nusselt_free    ! Nusselt number (free)   [      ---]
+      real(kind=8)   , intent(out) :: nusselt_forced  ! Nusselt number (forced) [      ---]
+      !----- Local variables. -------------------------------------------------------------!
+      real(kind=8)                 :: w_diam          ! Wood "diameter"         [        m]
+      real(kind=8)                 :: nusselt_lami    ! Nusselt number (laminar)[      ---]
+      real(kind=8)                 :: nusselt_turb    ! Nusselt number (turb.)  [      ---]
+      real(kind=8)                 :: beta_forced     ! Correct.  term (forced) [      ---]
+      real(kind=8)                 :: beta_free       ! Correct.  term (free)   [      ---]
+      real(kind=8)                 :: forced_gbh_mos  ! Forced convection cond. [      m/s]
+      real(kind=8)                 :: free_gbh_mos    ! Free convection cond.   [      m/s]
+      real(kind=8)                 :: gbh_mos         ! Total convection cond.  [      m/s]
+      !----- External functions. ----------------------------------------------------------!
+      real(kind=8)   , external    :: cbrt8           ! Cubic root.
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !      This is the characteristic diameter.  Even though branches are close to       !
+      ! cylinders but with different lengths and diameters.  Since the shape is rather     !
+      ! heterogeneous, we find the volume and use the cubic root as the characteristic     !
+      ! diameter.                                                                          !
+      !------------------------------------------------------------------------------------!
+      w_diam = 1.d-2 * cbrt8(dble(dbh2vol(height,dbh,ipft)))
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !     Find the conductance, in m/s, associated with forced convection.               !
+      !------------------------------------------------------------------------------------!
+      !----- 1. Compute the Reynolds number. ----------------------------------------------!
+      reynolds        = veg_wind * w_diam * th_diffi8
+      !----- 2. Compute the Nusselt number for both the laminar and turbulent case. -------!
+      nusselt_lami    = ocyli_lami8 + acyli_lami8 * reynolds ** ncyli_lami8
+      nusselt_turb    = ocyli_turb8 + acyli_turb8 * reynolds ** ncyli_turb8
+      !----- 3. Compute the correction term for the theoretical Nusselt numbers. ----------!
+      beta_forced     = beta_r18 + beta_r28 * tanh(log(reynolds/beta_re08))
+      !----- 4. The right Nusselt number is the largest of the both. ----------------------!
+      nusselt_forced  = beta_forced * max(nusselt_lami,nusselt_turb)
+      !----- 5. The conductance is given by MU08 - equation 10.4 --------------------------!
+      forced_gbh_mos  = th_diff8 * nusselt_forced / w_diam
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !     Find the conductance, in m/s,  associated with free convection.                !
+      !------------------------------------------------------------------------------------!
+      !----- 1. Find the Grashof number. --------------------------------------------------!
+      grashof         = gr_coeff8 * abs(wood_temp - can_temp) * w_diam * w_diam * w_diam
+      !----- 2. Compute the Nusselt number for both the laminar and turbulent case. -------!
+      nusselt_lami    = bcyli_lami8 * grashof ** mcyli_lami8
+      nusselt_turb    = bcyli_turb8 * grashof ** mcyli_turb8
+      !----- 3. Compute the correction term for the theoretical Nusselt numbers. ----------!
+      if (grashof == 0.d0) then
+         beta_free    = beta_g18 - beta_g28
+      else
+         beta_free    = beta_g18 + beta_g28 * tanh(log(grashof/beta_gr08))
+      end if
+      !----- 4. The right Nusselt number is the largest of the both. ----------------------!
+      nusselt_free    = beta_free * max(nusselt_lami,nusselt_turb)
+      !----- 5. The conductance is given by MU08 - equation 10.4 --------------------------!
+      free_gbh_mos    = th_diff8 * nusselt_free / w_diam
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !     The heat conductance for the thermodynamic budget is the sum of conductances,  !
+      ! because we assume both forms of convection happen parallelly.  The conversion from !
+      ! heat to water conductance (in m/s) can be found in L95, page 1198, after equation  !
+      ! E5.  For the ED purposes, the output variables are converted to the units of       !
+      ! entropy and water fluxes [J/K/m²/s and kg/m²/s, respectively].                     !
+      !------------------------------------------------------------------------------------!
+      gbh_mos  = max(gbhmos_min, free_gbh_mos + forced_gbh_mos)
+      wood_gbh =              gbh_mos * can_rhos * cp8
+      wood_gbw = gbh_2_gbw8 * gbh_mos * can_rhos
+      !------------------------------------------------------------------------------------!
+
+      return
+   end subroutine wood_aerodynamic_conductances8
    !=======================================================================================!
    !=======================================================================================!
 end module canopy_struct_dynamics

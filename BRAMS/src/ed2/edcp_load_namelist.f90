@@ -25,6 +25,7 @@ subroutine read_ednl(iunit,filename)
                                    , metcyc1                               & ! intent(out)
                                    , metcycf                               & ! intent(out)
                                    , imetavg                               & ! intent(out)
+                                   , imetrad                               & ! intent(out)
                                    , lapse_scheme                          ! ! intent(out)
    use mem_polygons         , only : n_poi                                 & ! intent(out)
                                    , poi_lat                               & ! intent(out)
@@ -123,6 +124,7 @@ subroutine read_ednl(iunit,filename)
    use rk4_coms             , only : rk4_tolerance                         & ! intent(out)
                                    , ibranch_thermo                        ! ! intent(out)
    use canopy_layer_coms    , only : crown_mod                             ! ! intent(out)
+   use canopy_radiation_coms, only : ican_swrad                            ! ! intent(out)
    !----- Coupled ED-BRAMS modules. -------------------------------------------------------!
    use mem_edcp             , only : co2_offset                            ! ! intent(out)
    !----- BRAMS modules. ------------------------------------------------------------------!
@@ -202,13 +204,14 @@ subroutine read_ednl(iunit,filename)
                        ,soildepth_db,isoilstateinit,isoildepthflg,integration_scheme       &
                        ,rk4_tolerance,ibranch_thermo,iphysiol,istoma_scheme,iallom         &
                        ,iphen_scheme,radint,radslp,repro_scheme,lapse_scheme,crown_mod     &
-                       ,decomp_scheme,h2o_plant_lim,vmfact,mfact,kfact,gamfact,d0fact      &
-                       ,alphafact,thetacrit,lwfact,thioff,quantum_efficiency_t,n_plant_lim &
-                       ,n_decomp_lim,include_fire,sm_fire,ianth_disturb,icanturb           &
-                       ,i_blyr_condct,include_these_pft,agri_stock,plantation_stock        &
-                       ,pft_1st_check,maxpatch,maxcohort,treefall_disturbance_rate         &
-                       ,time2canopy,iprintpolys,npvars,printvars,pfmtstr,ipmin,ipmax       &
-                       ,iphenys1,iphenysf,iphenyf1,iphenyff,iedcnfgf,event_file,phenpath
+                       ,ican_swrad,decomp_scheme,h2o_plant_lim,vmfact,mfact,kfact,gamfact  &
+                       ,d0fact,alphafact,thetacrit,lwfact,thioff,quantum_efficiency_t      &
+                       ,n_plant_lim,n_decomp_lim,include_fire,sm_fire,ianth_disturb        &
+                       ,icanturb,i_blyr_condct,include_these_pft,agri_stock                &
+                       ,plantation_stock,pft_1st_check,maxpatch,maxcohort                  &
+                       ,treefall_disturbance_rate,time2canopy,iprintpolys,npvars,printvars &
+                       ,pfmtstr,ipmin,ipmax,imetrad,iphenys1,iphenysf,iphenyf1,iphenyff    &
+                       ,iedcnfgf,event_file,phenpath
 
    !----- Initialise some database variables with a non-sense path. -----------------------!
    soil_database   (:) = undef_path
@@ -279,6 +282,7 @@ subroutine read_ednl(iunit,filename)
       write (unit=*,fmt=*) ' repro_scheme              =',repro_scheme
       write (unit=*,fmt=*) ' lapse_scheme              =',lapse_scheme
       write (unit=*,fmt=*) ' crown_mod                 =',crown_mod
+      write (unit=*,fmt=*) ' ican_swrad                =',ican_swrad
       write (unit=*,fmt=*) ' decomp_scheme             =',decomp_scheme
       write (unit=*,fmt=*) ' h2o_plant_lim             =',h2o_plant_lim
       write (unit=*,fmt=*) ' vmfact                    =',vmfact
@@ -315,6 +319,7 @@ subroutine read_ednl(iunit,filename)
                                                           ,i=1,size(pfmtstr))
       write (unit=*,fmt=*) ' ipmin                     =',ipmin
       write (unit=*,fmt=*) ' ipmax                     =',ipmax
+      write (unit=*,fmt=*) ' imetrad                   =',imetrad
       write (unit=*,fmt=*) ' iphenys1                  =',iphenys1
       write (unit=*,fmt=*) ' iphenysf                  =',iphenysf
       write (unit=*,fmt=*) ' iphenyf1                  =',iphenyf1

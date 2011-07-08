@@ -39,7 +39,7 @@ $MODEL_GRIDS
    !               change IMONTHH, IDATEH,... and HFILIN, but do NOT change IMONTHA,       !
    !               IDATEA,...                                                              !
    !---------------------------------------------------------------------------------------!
-   RUNTYPE  = 'INITIAL',
+   RUNTYPE  = 'MAKESFC',
    !---------------------------------------------------------------------------------------!
 
 
@@ -545,7 +545,7 @@ $MODEL_FILE_INFO
 
    !---------------------------------------------------------------------------------------!
    !     History file information.  These variables are used to continue a simulation from !
-   ! a point other than the beginning.                                                     !
+   ! a point other than the beginning.  Time must be in UTC.                               !
    !                                                                                       !
    ! IMONTHH, IDATEH, IYEARH, ITIMEH -- the time of the history file.  This is the only    !
    !     place you need to change dates for a HISTORY run.  You may change IMONTHZ and     !
@@ -1443,8 +1443,8 @@ $MODEL_OPTIONS
       !               2 = porosity (saturation)                                            !
       ! STGOFF  - initial temperature offset (soil temperature = air temperature + offset) !
       !------------------------------------------------------------------------------------!
-      SLZ    = -6.000, -4.338, -3.018, -2.001, -1.245,
-               -0.710, -0.357, -0.147, -0.042, -0.005,
+      SLZ    = -6.000, -4.662, -3.452, -2.480, -1.693,
+               -1.078, -0.620, -0.304, -0.111, -0.020,
       SLMSTR =   1.00,   1.00,   1.00,   1.00,   1.00,
                  1.00,   1.00,   1.00,   1.00,   1.00,
       STGOFF =   0.00,   0.00,   0.00,   0.00,   0.00,
@@ -1478,7 +1478,9 @@ $MODEL_OPTIONS
       !                layer is due to gradient of height only.                            !
       !            2.  Super drainage.  Soil moisture of the ficticious layer beneath the  !
       !                bottom is always at dry air soil moisture.                          !
-      !            3.  Aquifer.  Soil moisture of the ficticious layer beneath the bottom  !
+      !            3.  Half-way.  Assume that the fictious layer beneath the bottom is     !
+      !                always at field capacity.                                           !
+      !            4.  Aquifer.  Soil moisture of the ficticious layer beneath the bottom  !
       !                is always at saturation.                                            !
       !------------------------------------------------------------------------------------!
       ISOILBC  =   1,
@@ -2039,6 +2041,7 @@ $ED2_INFO
    !                   0.  No branches in energy/radiation;                                !
    !                   1.  Use Conijn (1995) numbers;                                      !
    !                   2.  Use parameterization from Jarvela (2004);                       !
+   !                   3.  Use the same allometry as Ahrends et al. (2010)                 !
    !---------------------------------------------------------------------------------------!
    IBRANCH_THERMO = 0,        
    !---------------------------------------------------------------------------------------!
@@ -2065,7 +2068,7 @@ $ED2_INFO
    !      Moorcroft et al. (2001), but the correction for Vm is done like in Collatz.      !
    ! 3 -- Same as 2, except that we find Gamma* as in Farquhar et al. (1980) and in CLM.   !
    !---------------------------------------------------------------------------------------!
-   IPHYSIOL = 0,
+   IPHYSIOL = 2,
    !---------------------------------------------------------------------------------------!
 
 
@@ -2136,11 +2139,11 @@ $ED2_INFO
 
 
    !---------------------------------------------------------------------------------------!
-   !     Parameters that control the phenology response to radiation, used only when 
-   ! IPHEN_SCHEME = 3.
-   !
-   ! RADINT -- Intercept
-   ! RADSLP -- Slope.
+   !     Parameters that control the phenology response to radiation, used only when       !
+   ! IPHEN_SCHEME = 3.                                                                     !
+   !                                                                                       !
+   ! RADINT -- Intercept                                                                   !
+   ! RADSLP -- Slope.                                                                      !
    !---------------------------------------------------------------------------------------!
    RADINT = -11.3868,
    RADSLP =   0.0824,
@@ -2190,6 +2193,21 @@ $ED2_INFO
    !                   welcome.                                                            !
    !---------------------------------------------------------------------------------------!
    CROWN_MOD       = 1,
+   !---------------------------------------------------------------------------------------!
+
+
+
+
+   !---------------------------------------------------------------------------------------!
+   ! ICAN_SWRAD -- This variable specifies which canopy radiation model to use for short-  !
+   !               wave radiation within the canopy:                                       !
+   !               0.  Beers law.  Added back just for theroretical tests, don't use it if !
+   !                   you are unsure.  This cannot be used with CROWN_MOD = 2.            !
+   !               1.  Two-stream model.  The default and recommended method.              !
+   !                                                                                       !
+   !               In either case longwave will be solved using two-stream model.          !
+   !---------------------------------------------------------------------------------------!
+   ICAN_SWRAD      = 1,
    !---------------------------------------------------------------------------------------!
 
 
@@ -2317,17 +2335,17 @@ $ED2_INFO
 
 
    !---------------------------------------------------------------------------------------!
-   ! ICANTURB -- This flag controls the canopy roughness.
-   !             0.  Based on Leuning et al. (1995), wind is computed using the similarity
-   !                 theory for the top cohort, and they are extinguished with cumulative 
-   !                 LAI.  If using CROWN_MOD 1 or 2, this will use local LAI and average 
-   !                 by crown area.
-   !             1.  The default ED-2.1 scheme, except that it uses the zero-plane 
-   !                 displacement height. 
-   !             2.  This uses the method of Massman (1997) using constant drag and no 
-   !                 sheltering factor.
-   !             3.  This is also based on Massman (1997), but with the option of varying 
-   !                 the drag and sheltering within the canopy.
+   ! ICANTURB -- This flag controls the canopy roughness.                                  !
+   !             0.  Based on Leuning et al. (1995), wind is computed using the similarity !
+   !                 theory for the top cohort, and they are extinguished with cumulative  !
+   !                 LAI.  If using CROWN_MOD 1 or 2, this will use local LAI and average  !
+   !                 by crown area.                                                        !
+   !             1.  The default ED-2.1 scheme, except that it uses the zero-plane         !
+   !                 displacement height.                                                  !
+   !             2.  This uses the method of Massman (1997) using constant drag and no     !
+   !                 sheltering factor.                                                    !
+   !             3.  This is also based on Massman (1997), but with the option of varying  !
+   !                 the drag and sheltering within the canopy.                            !
    !---------------------------------------------------------------------------------------!
    ICANTURB        = 3,       
    !---------------------------------------------------------------------------------------!
@@ -2455,6 +2473,25 @@ $ED2_INFO
    PFMTSTR      = 'f10.8','f5.1','f7.2','f9.5',
    IPMIN        = 1,       ! The first polygon index to print
    IPMAX        = 60,       ! The last polygon index to print
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   ! IMETRAD -- What should the model do with the input short wave radiation?              !
+   !            0.  Nothing, use it as is.                                                 !
+   !            1.  Add them together, then use the SiB method to break radiation down     !
+   !                into the four components (PAR direct, PAR diffuse, NIR direct,         !
+   !                NIR diffuse).                                                          !
+   !            2.  Add then together, then use the method by Weiss and Norman (1985) to   !
+   !                break radiation down to the four components.                           !
+   !            3.  Gloomy -- All radiation goes to diffuse.                               !
+   !            4.  Sesame street -- all radiation goes to direct, except at night.        !
+   !                                                                                       !
+   !      This option is used only when ISWRTYP is not 3.  In case it is, the split        !
+   ! between direct and diffuse is done by the Harrington scheme, and we just do a split   !
+   ! between NIR and PAR using some standard factors.                                      !
+   !---------------------------------------------------------------------------------------!
+   IMETRAD      = 0,
    !---------------------------------------------------------------------------------------!
 
 

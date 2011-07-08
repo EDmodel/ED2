@@ -22,7 +22,7 @@ legbg          = "white"         # Colour for legend background
 #     List of possible plots. In case you don't want some of them, simply switch plt to F. #
 #------------------------------------------------------------------------------------------#
 #----- Patch property plots. --------------------------------------------------------------#
-npatprop = 9
+npatprop = 11
 patprop01 = list(vnam="can.depth"     ,desc="Canopy depth"       ,unit="m"        ,lwd=2
                 ,colour="midnightblue",plt=TRUE)
 patprop02 = list(vnam="can.age"       ,desc="Patch age"          ,unit="yr"       ,lwd=2
@@ -31,23 +31,30 @@ patprop03 = list(vnam="can.area"      ,desc="Patch area"         ,unit="%"      
                 ,colour="lawngreen"   ,plt=TRUE)
 patprop04 = list(vnam="patch.lai"     ,desc="Patch LAI"          ,unit="m2/m2"    ,lwd=2
                 ,colour="forestgreen" ,plt=TRUE)
-patprop05 = list(vnam="patch.agb"     ,desc="Patch AGB"          ,unit="kgC/m2"   ,lwd=2
+patprop05 = list(vnam="patch.wai"     ,desc="Patch WAI"          ,unit="m2/m2"    ,lwd=2
+                ,colour="sienna"      ,plt=TRUE)
+patprop06 = list(vnam="patch.tai"     ,desc="Patch TAI"          ,unit="m2/m2"    ,lwd=2
+                ,colour="darkorange3" ,plt=TRUE)
+patprop07 = list(vnam="patch.agb"     ,desc="Patch AGB"          ,unit="kgC/m2"   ,lwd=2
                 ,colour="olivedrab"   ,plt=TRUE)
-patprop06 = list(vnam="patch.ba"      ,desc="Patch BA"           ,unit="m2"    ,lwd=2
+patprop08 = list(vnam="patch.ba"      ,desc="Patch BA"           ,unit="m2"    ,lwd=2
                 ,colour="olivedrab"   ,plt=TRUE)
-patprop07 = list(vnam="veg.height"    ,desc="Vegetation height"  ,unit="m"     ,lwd=2
+patprop09 = list(vnam="veg.height"    ,desc="Vegetation height"  ,unit="m"     ,lwd=2
                 ,colour="midnightblue",plt=TRUE)
-patprop08 = list(vnam="veg.displace"  ,desc="Displacement height",unit="m"     ,lwd=2
+patprop10 = list(vnam="veg.displace"  ,desc="Displacement height",unit="m"     ,lwd=2
                 ,colour="steelblue"   ,plt=TRUE)
-patprop09 = list(vnam="veg.rough"     ,desc="Roughness"          ,unit="m"     ,lwd=2
+patprop11 = list(vnam="veg.rough"     ,desc="Roughness"          ,unit="m"     ,lwd=2
                 ,colour="deepskyblue" ,plt=TRUE)
 #----- Cohort property plots. -------------------------------------------------------------#
-ncohprop = 5
+ncohprop = 8
 cohprop01 = list(vnam="lai"   ,desc="LAI"          ,unit="m2/m2"    ,plog=F,lwd=2,plt=T)
-cohprop02 = list(vnam="agb"   ,desc="AGB"          ,unit="kgC/plant",plog=T,lwd=2,plt=T)
-cohprop03 = list(vnam="height",desc="Height"       ,unit="m"        ,plog=F,lwd=2,plt=T)
-cohprop04 = list(vnam="nplant",desc="Plant density",unit="plant/m2" ,plog=T,lwd=2,plt=T)
-cohprop05 = list(vnam="ba"    ,desc="Basal area"   ,unit="m2"       ,plog=T,lwd=2,plt=T)
+cohprop02 = list(vnam="wai"   ,desc="WAI"          ,unit="m2/m2"    ,plog=F,lwd=2,plt=T)
+cohprop03 = list(vnam="tai"   ,desc="TAI"          ,unit="m2/m2"    ,plog=F,lwd=2,plt=T)
+cohprop04 = list(vnam="cai"   ,desc="CAI"          ,unit="m2/m2"    ,plog=F,lwd=2,plt=T)
+cohprop05 = list(vnam="agb"   ,desc="AGB"          ,unit="kgC/plant",plog=T,lwd=2,plt=T)
+cohprop06 = list(vnam="height",desc="Height"       ,unit="m"        ,plog=F,lwd=2,plt=T)
+cohprop07 = list(vnam="nplant",desc="Plant density",unit="plant/m2" ,plog=T,lwd=2,plt=T)
+cohprop08 = list(vnam="ba"    ,desc="Basal area"   ,unit="m2"       ,plog=T,lwd=2,plt=T)
 #------------------------------------------------------------------------------------------#
 
 
@@ -223,6 +230,8 @@ for (ipy in 1:nplaces){
    veg.displace = myhist$VEG.DISPLACE
    veg.rough    = myhist$VEG.ROUGH
    patch.lai    = rep(NA,times=npatches)
+   patch.wai    = rep(NA,times=npatches)
+   patch.tai    = rep(NA,times=npatches)
    patch.agb    = rep(NA,times=npatches)
    patch.ba     = rep(NA,times=npatches)
    patchidx     = seq(from=1,to=npatches,by=1)
@@ -240,14 +249,21 @@ for (ipy in 1:nplaces){
          cpatch[[ipa]]$pft    = myhist$PFT[icoa:icoz]
          cpatch[[ipa]]$nplant = myhist$NPLANT[icoa:icoz]
          cpatch[[ipa]]$lai    = myhist$LAI.CO[icoa:icoz]
+         cpatch[[ipa]]$wai    = myhist$WAI.CO[icoa:icoz]
+         cpatch[[ipa]]$tai    = cpatch[[ipa]]$lai + cpatch[[ipa]]$wai
+         cpatch[[ipa]]$cai    = myhist$CROWN.AREA[icoa:icoz]
          cpatch[[ipa]]$agb    = myhist$AGB.CO[icoa:icoz]
          cpatch[[ipa]]$ba     = myhist$BA.CO[icoa:icoz]
          cpatch[[ipa]]$height = myhist$HITE[icoa:icoz]
          patch.lai[ipa] = sum(cpatch[[ipa]]$lai)
+         patch.wai[ipa] = sum(cpatch[[ipa]]$wai)
+         patch.tai[ipa] = sum(cpatch[[ipa]]$tai)
          patch.agb[ipa] = sum(cpatch[[ipa]]$nplant * cpatch[[ipa]]$agb)
          patch.ba [ipa] = sum(cpatch[[ipa]]$nplant * cpatch[[ipa]]$ba)
       }else{
          patch.lai[ipa] = 0.
+         patch.wai[ipa] = 0.
+         patch.tai[ipa] = 0.
          patch.agb[ipa] = 0.
       }#end if
    }#end for

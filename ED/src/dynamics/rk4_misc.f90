@@ -21,8 +21,6 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
    use rk4_coms              , only : rk4patchtype           & ! structure
                                     , rk4site                & ! structure
                                     , rk4eps                 & ! intent(in)
-                                    , hcapveg_ref            & ! intent(in)
-                                    , min_height             & ! intent(in)
                                     , any_resolvable         & ! intent(out)
                                     , zoveg                  & ! intent(out)
                                     , zveg                   & ! intent(out)
@@ -57,8 +55,6 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
    type(patchtype)       , pointer    :: cpatch
    real(kind=8)                       :: rsat
    real(kind=8)                       :: sum_sfcw_mass
-   real(kind=8)                       :: hvegpat_min
-   real(kind=8)                       :: hcap_scale
    integer                            :: ico
    integer                            :: ipft
    integer                            :: k
@@ -230,27 +226,12 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
    any_resolvable = .false.
    do ico=1, cpatch%ncohorts
       !----- Copying the flag that determines whether this cohort is numerically stable. --!
-      targetp%resolvable(ico) = cpatch%resolvable(ico)
-      if (targetp%resolvable(ico)) any_resolvable = .true.
-   end do
-
-
-   !---------------------------------------------------------------------------------------!
-   !   Define the scale to increase the heat capacity.  This is done only for the old      !
-   ! ED-2.1 boundary layer conductance.                                                    !
-   !---------------------------------------------------------------------------------------!
-   select case (i_blyr_condct)
-   case (-1)
-      if (any_resolvable) then
-         hvegpat_min = hcapveg_ref * max(dble(cpatch%hite(1)),min_height)
-         hcap_scale  = max(1.d0,hvegpat_min / sourcesite%hcapveg(ipa))
-      else
-         hcap_scale  = 1.d0
+      targetp%leaf_resolvable(ico) = cpatch%leaf_resolvable(ico)
+      targetp%wood_resolvable(ico) = cpatch%wood_resolvable(ico)
+      if (targetp%leaf_resolvable(ico) .or. targetp%wood_resolvable(ico)) then
+         any_resolvable = .true.
       end if
-   case default
-      hcap_scale  = 1.d0
-   end select
-   !---------------------------------------------------------------------------------------!
+   end do
 
 
    !---------------------------------------------------------------------------------------!
@@ -275,32 +256,47 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
 
 
       !------------------------------------------------------------------------------------!
-      !     Check whether this is considered a "safe" one or not.  In case it is, we copy  !
-      ! the water, heat capacity, and energy then compute the temperature and the fraction !
-      ! of leaf water.  Otherwise, just fill with some safe values, but the cohort won't   !
-      ! be really solved.                                                                  !
+      !     Check whether the leaves of this cohort are considered "safe" or not.  In case !
+      ! it is, we copy the water, heat capacity, and energy then compute the temperature   !
+      ! and the fraction of leaf water.  Otherwise, just fill with some safe values, but   !
+      ! the leaves won't be really solved.                                                 !
       !------------------------------------------------------------------------------------!
-      if (targetp%resolvable(ico)) then
-         if (hcap_scale == 1.d0) then
-            targetp%veg_energy(ico) = dble(cpatch%veg_energy(ico))
-            targetp%veg_water (ico) = max(0.d0,dble(cpatch%veg_water (ico)))
-            targetp%hcapveg   (ico) = dble(cpatch%hcapveg   (ico))
-         else
-            targetp%hcapveg   (ico) = dble(cpatch%hcapveg(ico)) * hcap_scale
-            targetp%veg_water (ico) = dble(cpatch%veg_water(ico))
-            targetp%veg_energy(ico) = dble(cpatch%veg_energy(ico))                         &
-                                    + (targetp%hcapveg(ico)-dble(cpatch%hcapveg(ico)))     &
-                                    * dble(cpatch%veg_temp(ico))
-         end if
+      if (targetp%leaf_resolvable(ico)) then
+         targetp%leaf_energy(ico) = dble(cpatch%leaf_energy(ico))
+         targetp%leaf_water (ico) = max(0.d0,dble(cpatch%leaf_water (ico)))
+         targetp%leaf_hcap  (ico) = dble(cpatch%leaf_hcap  (ico))
 
-         call qwtk8(targetp%veg_energy(ico),targetp%veg_water(ico),targetp%hcapveg(ico)    &
-                   ,targetp%veg_temp(ico),targetp%veg_fliq(ico))
+         call qwtk8(targetp%leaf_energy(ico),targetp%leaf_water(ico)                       &
+                   ,targetp%leaf_hcap(ico),targetp%leaf_temp(ico),targetp%leaf_fliq(ico))
       else
-         targetp%veg_fliq  (ico) = dble(cpatch%veg_fliq  (ico))
-         targetp%veg_temp  (ico) = dble(cpatch%veg_temp  (ico))
-         targetp%veg_water (ico) = dble(cpatch%veg_water (ico))
-         targetp%hcapveg   (ico) = dble(cpatch%hcapveg   (ico))
-         targetp%veg_energy(ico) = targetp%hcapveg(ico) * targetp%veg_temp(ico)
+         targetp%leaf_fliq  (ico) = dble(cpatch%leaf_fliq  (ico))
+         targetp%leaf_temp  (ico) = dble(cpatch%leaf_temp  (ico))
+         targetp%leaf_water (ico) = dble(cpatch%leaf_water (ico))
+         targetp%leaf_hcap  (ico) = dble(cpatch%leaf_hcap  (ico))
+         targetp%leaf_energy(ico) = targetp%leaf_hcap(ico) * targetp%leaf_temp(ico)
+      end if
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !     Check whether the wood of this cohort is considered "safe" or not.  In case    !
+      ! it is, we copy the water, heat capacity, and energy then compute the temperature   !
+      ! and the fraction of leaf water.  Otherwise, just fill with some safe values, but   !
+      ! the wood won't be really solved.                                                   !
+      !------------------------------------------------------------------------------------!
+      if (targetp%wood_resolvable(ico)) then
+         targetp%wood_energy(ico) = dble(cpatch%wood_energy(ico))
+         targetp%wood_water (ico) = max(0.d0,dble(cpatch%wood_water (ico)))
+         targetp%wood_hcap  (ico) = dble(cpatch%wood_hcap  (ico))
+
+         call qwtk8(targetp%wood_energy(ico),targetp%wood_water(ico)                       &
+                   ,targetp%wood_hcap(ico),targetp%wood_temp(ico),targetp%wood_fliq(ico))
+      else
+         targetp%wood_fliq  (ico) = dble(cpatch%wood_fliq  (ico))
+         targetp%wood_temp  (ico) = dble(cpatch%wood_temp  (ico))
+         targetp%wood_water (ico) = dble(cpatch%wood_water (ico))
+         targetp%wood_hcap  (ico) = dble(cpatch%wood_hcap  (ico))
+         targetp%wood_energy(ico) = targetp%wood_hcap(ico) * targetp%wood_temp(ico)
       end if
       !------------------------------------------------------------------------------------!
 
@@ -310,7 +306,7 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
       !------------------------------------------------------------------------------------!
       !     Compute the leaf intercellular specific humidity, assumed to be at saturation. !
       !------------------------------------------------------------------------------------!
-      targetp%lint_shv(ico) = rslif8(targetp%can_prss,targetp%veg_temp(ico))
+      targetp%lint_shv(ico) = rslif8(targetp%can_prss,targetp%leaf_temp(ico))
       targetp%lint_shv(ico) = targetp%lint_shv(ico) / (1.d0 + targetp%lint_shv(ico))
       !------------------------------------------------------------------------------------!
 
@@ -325,8 +321,10 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
 
 
       !------ Copy the net absorbed radiation (short wave and long wave). -----------------!
-      targetp%rshort_v   (ico) = dble(cpatch%rshort_v (ico))
-      targetp%rlong_v    (ico) = dble(cpatch%rlong_v  (ico))
+      targetp%rshort_l   (ico) = dble(cpatch%rshort_l (ico))
+      targetp%rlong_l    (ico) = dble(cpatch%rlong_l  (ico))
+      targetp%rshort_w   (ico) = dble(cpatch%rshort_w (ico))
+      targetp%rlong_w    (ico) = dble(cpatch%rlong_w  (ico))
       !------------------------------------------------------------------------------------!
 
 
@@ -356,7 +354,8 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
       ! of one time step.                                                                  !
       !------------------------------------------------------------------------------------!
       targetp%avg_carbon_ac      = dble(sourcesite%avg_carbon_ac(ipa)     )
-      targetp%avg_vapor_vc       = dble(sourcesite%avg_vapor_vc(ipa)      )
+      targetp%avg_vapor_lc       = dble(sourcesite%avg_vapor_lc(ipa)      )
+      targetp%avg_vapor_wc       = dble(sourcesite%avg_vapor_wc(ipa)      )
       targetp%avg_dew_cg         = dble(sourcesite%avg_dew_cg(ipa)        )
       targetp%avg_vapor_gc       = dble(sourcesite%avg_vapor_gc(ipa)      )
       targetp%avg_wshed_vg       = dble(sourcesite%avg_wshed_vg(ipa)      )
@@ -367,8 +366,10 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
       targetp%avg_evap           = dble(sourcesite%avg_evap(ipa)          )
       targetp%avg_drainage       = dble(sourcesite%avg_drainage(ipa)      )
       targetp%avg_drainage_heat  = dble(sourcesite%avg_drainage_heat(ipa) )
-      targetp%avg_netrad         = dble(sourcesite%avg_netrad(ipa)        )
-      targetp%avg_sensible_vc    = dble(sourcesite%avg_sensible_vc(ipa)   )
+      targetp%avg_rshort_gnd     = dble(sourcesite%avg_rshort_gnd(ipa)    )
+      targetp%avg_rlong_gnd      = dble(sourcesite%avg_rlong_gnd(ipa)     )
+      targetp%avg_sensible_lc    = dble(sourcesite%avg_sensible_lc(ipa)   )
+      targetp%avg_sensible_wc    = dble(sourcesite%avg_sensible_wc(ipa)   )
       targetp%avg_qwshed_vg      = dble(sourcesite%avg_qwshed_vg(ipa)     )
       targetp%avg_qintercepted   = dble(sourcesite%avg_qintercepted(ipa)  )
       targetp%avg_qthroughfall   = dble(sourcesite%avg_qthroughfall(ipa)  )
@@ -566,14 +567,16 @@ subroutine update_diagnostic_vars(initp, csite,ipa)
    logical                          :: ok_theta
    logical                          :: ok_ground
    logical                          :: ok_sfcw
-   logical                          :: ok_veg
+   logical                          :: ok_leaf
+   logical                          :: ok_wood
    real(kind=8)                     :: soilhcap
    real(kind=8)                     :: int_sfcw_energy
    real(kind=8)                     :: int_virt_energy
    real(kind=8)                     :: energy_tot
    real(kind=8)                     :: wmass_tot
    real(kind=8)                     :: hcapdry_tot
-   real(kind=8)                     :: rk4min_veg_water
+   real(kind=8)                     :: rk4min_leaf_water
+   real(kind=8)                     :: rk4min_wood_water
    !---------------------------------------------------------------------------------------!
 
    !----- Then we define some logicals to make the code cleaner. --------------------------!
@@ -797,67 +800,130 @@ subroutine update_diagnostic_vars(initp, csite,ipa)
 
 
    !---------------------------------------------------------------------------------------!
-   !     Loop over cohorts to update the vegetation temperature and liquid fraction.       !
+   !     Loop over cohorts to update the leaf temperature and liquid fraction.             !
    !---------------------------------------------------------------------------------------!
-   ok_veg = .true.
+   ok_leaf = .true.
    cpatch => csite%patch(ipa)
-   cohortloop: do ico=1,cpatch%ncohorts
-      !----- Checking whether this is a prognostic cohort... ------------------------------!
-      if (initp%resolvable(ico)) then
+   leafloop: do ico=1,cpatch%ncohorts
+      !----- Check whether the leaves of this cohort are safe... --------------------------!
+      if (initp%leaf_resolvable(ico)) then
 
          !----- Find the minimum leaf water for this cohort. ------------------------------!
-         rk4min_veg_water = rk4min_veg_lwater * initp%tai(ico)
+         rk4min_leaf_water = rk4min_veg_lwater * initp%lai(ico)
 
          !---------------------------------------------------------------------------------!
          !     Update leaf temperature and liquid fraction only if leaf water makes sense. !
          !---------------------------------------------------------------------------------!
-         if (initp%veg_water(ico) < rk4min_veg_water) then
-            ok_veg = .false.
-            cycle cohortloop
+         if (initp%leaf_water(ico) < rk4min_leaf_water) then
+            ok_leaf = .false.
+            cycle leafloop
          else
-            call qwtk8(initp%veg_energy(ico),initp%veg_water(ico),initp%hcapveg(ico)       &
-                      ,initp%veg_temp(ico),initp%veg_fliq(ico))
-            if (initp%veg_temp(ico) < rk4min_veg_temp .or.                                 &
-                initp%veg_temp(ico) > rk4max_veg_temp) then
-               ok_veg = .false.
-               cycle cohortloop
+            call qwtk8(initp%leaf_energy(ico),initp%leaf_water(ico),initp%leaf_hcap(ico)   &
+                      ,initp%leaf_temp(ico),initp%leaf_fliq(ico))
+            if (initp%leaf_temp(ico) < rk4min_veg_temp .or.                                &
+                initp%leaf_temp(ico) > rk4max_veg_temp) then
+               ok_leaf = .false.
+               cycle leafloop
             else
                !---------------------------------------------------------------------------!
                !     Compute the leaf intercellular specific humidity, assumed to be at    !
                ! saturation.                                                               !
                !---------------------------------------------------------------------------!
-               initp%lint_shv(ico) = rslif8(initp%can_prss,initp%veg_temp(ico))
+               initp%lint_shv(ico) = rslif8(initp%can_prss,initp%leaf_temp(ico))
                initp%lint_shv(ico) = initp%lint_shv(ico) / (1.d0 + initp%lint_shv(ico))
+               !---------------------------------------------------------------------------!
             end if
          end if
+         !---------------------------------------------------------------------------------!
       else
          !---------------------------------------------------------------------------------!
          !     For plants with minimal foliage or very sparse patches, fix the leaf        !
-         ! temperature to the canopy air space and force veg_water to be zero.             !
+         ! temperature to the canopy air space and force leaf_water to be zero.            !
          !---------------------------------------------------------------------------------!
-         initp%veg_temp(ico)   = initp%can_temp
-         initp%veg_water(ico)  = 0.d0
-         initp%veg_energy(ico) = initp%hcapveg(ico) * initp%veg_temp(ico)
-         if (initp%veg_temp(ico) == t3ple8) then
-            initp%veg_fliq(ico) = 5.d-1
-         elseif (initp%veg_temp(ico) > t3ple8) then
-            initp%veg_fliq(ico) = 1.d0
+         initp%leaf_temp(ico)   = initp%can_temp
+         initp%leaf_water(ico)  = 0.d0
+         initp%leaf_energy(ico) = initp%leaf_hcap(ico) * initp%leaf_temp(ico)
+         if (initp%leaf_temp(ico) == t3ple8) then
+            initp%leaf_fliq(ico) = 5.d-1
+         elseif (initp%leaf_temp(ico) > t3ple8) then
+            initp%leaf_fliq(ico) = 1.d0
          else
-            initp%veg_fliq(ico) = 0.d0
+            initp%leaf_fliq(ico) = 0.d0
          end if
+         !---------------------------------------------------------------------------------!
+
+
+
+
+
          !---------------------------------------------------------------------------------!
          !     Compute the leaf intercellular specific humidity, assumed to be at          !
          ! saturation.                                                                     !
          !---------------------------------------------------------------------------------!
-         initp%lint_shv(ico) = rslif8(initp%can_prss,initp%veg_temp(ico))
+         initp%lint_shv(ico) = rslif8(initp%can_prss,initp%leaf_temp(ico))
          initp%lint_shv(ico) = initp%lint_shv(ico) / (1.d0 + initp%lint_shv(ico))
+         !---------------------------------------------------------------------------------!
       end if
-   end do cohortloop
+   end do leafloop
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Loop over cohorts to update the wood temperature and liquid fraction.             !
+   !---------------------------------------------------------------------------------------!
+   ok_wood = .true.
+   cpatch => csite%patch(ipa)
+   woodloop: do ico=1,cpatch%ncohorts
+      !----- Check whether the leaves of this cohort are safe... --------------------------!
+      if (initp%wood_resolvable(ico)) then
+
+         !----- Find the minimum leaf water for this cohort. ------------------------------!
+         rk4min_wood_water = rk4min_veg_lwater * initp%wai(ico)
+         !---------------------------------------------------------------------------------!
+
+
+
+         !---------------------------------------------------------------------------------!
+         !     Update wood temperature and liquid fraction only if wood water makes sense. !
+         !---------------------------------------------------------------------------------!
+         if (initp%wood_water(ico) < rk4min_wood_water) then
+            ok_wood = .false.
+            cycle woodloop
+         else
+            call qwtk8(initp%wood_energy(ico),initp%wood_water(ico),initp%wood_hcap(ico)   &
+                      ,initp%wood_temp(ico),initp%wood_fliq(ico))
+            if (initp%wood_temp(ico) < rk4min_veg_temp .or.                                &
+                initp%wood_temp(ico) > rk4max_veg_temp) then
+               ok_leaf = .false.
+               cycle woodloop
+            end if
+         end if
+         !---------------------------------------------------------------------------------!
+      else
+         !---------------------------------------------------------------------------------!
+         !     In case we are not solving branches, or for cohorts that are very sparse,   !
+         ! fix the wood temperature to the canopy air space and force wood_water to be     !
+         ! zero.                                                                           !
+         !---------------------------------------------------------------------------------!
+         initp%wood_temp(ico)   = initp%can_temp
+         initp%wood_water(ico)  = 0.d0
+         initp%wood_energy(ico) = initp%wood_hcap(ico) * initp%wood_temp(ico)
+         if (initp%wood_temp(ico) == t3ple8) then
+            initp%wood_fliq(ico) = 5.d-1
+         elseif (initp%wood_temp(ico) > t3ple8) then
+            initp%wood_fliq(ico) = 1.d0
+         else
+            initp%wood_fliq(ico) = 0.d0
+         end if
+         !---------------------------------------------------------------------------------!
+      end if
+   end do woodloop
    !---------------------------------------------------------------------------------------!
 
 
    !----- Compute canopy turbulence properties. -------------------------------------------!
-   if (ok_veg .and. ok_shv .and. ok_theta .and. ok_ground) then
+   if (ok_leaf .and. ok_wood .and. ok_shv .and. ok_theta .and. ok_ground) then
       call canopy_turbulence8(csite,initp,ipa)
    end if
    !---------------------------------------------------------------------------------------!
@@ -2215,26 +2281,47 @@ subroutine adjust_veg_properties(initp,hdid,csite,ipa)
    integer                             :: ico
    integer                             :: ksn
    real(kind=8)                        :: rk4min_leaf_water
+   real(kind=8)                        :: rk4min_wood_water
    real(kind=8)                        :: min_leaf_water
    real(kind=8)                        :: max_leaf_water
-   real(kind=8)                        :: veg_wshed
-   real(kind=8)                        :: veg_qwshed
-   real(kind=8)                        :: veg_dwshed
-   real(kind=8)                        :: veg_dew
-   real(kind=8)                        :: veg_qdew
-   real(kind=8)                        :: veg_boil
-   real(kind=8)                        :: veg_qboil
-   real(kind=8)                        :: veg_wshed_tot
-   real(kind=8)                        :: veg_qwshed_tot
-   real(kind=8)                        :: veg_dwshed_tot
-   real(kind=8)                        :: veg_dew_tot
-   real(kind=8)                        :: veg_qdew_tot
-   real(kind=8)                        :: veg_boil_tot
-   real(kind=8)                        :: veg_qboil_tot
-   real(kind=8)                        :: old_veg_energy
-   real(kind=8)                        :: old_veg_water
-   real(kind=8)                        :: old_veg_temp
-   real(kind=8)                        :: old_veg_fliq
+   real(kind=8)                        :: min_wood_water
+   real(kind=8)                        :: max_wood_water
+   real(kind=8)                        :: leaf_wshed
+   real(kind=8)                        :: leaf_qwshed
+   real(kind=8)                        :: leaf_dwshed
+   real(kind=8)                        :: leaf_dew
+   real(kind=8)                        :: leaf_qdew
+   real(kind=8)                        :: leaf_boil
+   real(kind=8)                        :: leaf_qboil
+   real(kind=8)                        :: leaf_wshed_tot
+   real(kind=8)                        :: leaf_qwshed_tot
+   real(kind=8)                        :: leaf_dwshed_tot
+   real(kind=8)                        :: leaf_dew_tot
+   real(kind=8)                        :: leaf_qdew_tot
+   real(kind=8)                        :: leaf_boil_tot
+   real(kind=8)                        :: leaf_qboil_tot
+   real(kind=8)                        :: wood_wshed
+   real(kind=8)                        :: wood_qwshed
+   real(kind=8)                        :: wood_dwshed
+   real(kind=8)                        :: wood_dew
+   real(kind=8)                        :: wood_qdew
+   real(kind=8)                        :: wood_boil
+   real(kind=8)                        :: wood_qboil
+   real(kind=8)                        :: wood_wshed_tot
+   real(kind=8)                        :: wood_qwshed_tot
+   real(kind=8)                        :: wood_dwshed_tot
+   real(kind=8)                        :: wood_dew_tot
+   real(kind=8)                        :: wood_qdew_tot
+   real(kind=8)                        :: wood_boil_tot
+   real(kind=8)                        :: wood_qboil_tot
+   real(kind=8)                        :: old_leaf_energy
+   real(kind=8)                        :: old_leaf_water
+   real(kind=8)                        :: old_leaf_temp
+   real(kind=8)                        :: old_leaf_fliq
+   real(kind=8)                        :: old_wood_energy
+   real(kind=8)                        :: old_wood_water
+   real(kind=8)                        :: old_wood_temp
+   real(kind=8)                        :: old_wood_fliq
    real(kind=8)                        :: hdidi
    !---------------------------------------------------------------------------------------!
 
@@ -2244,115 +2331,227 @@ subroutine adjust_veg_properties(initp,hdid,csite,ipa)
    hdidi = 1.d0 / hdid
 
    !----- Initialise the total shedding. --------------------------------------------------!
-   veg_wshed_tot  = 0.d0 
-   veg_qwshed_tot = 0.d0
-   veg_dwshed_tot = 0.d0
-   veg_dew_tot    = 0.d0 
-   veg_qdew_tot   = 0.d0
-   veg_boil_tot   = 0.d0 
-   veg_qboil_tot  = 0.d0
+   leaf_wshed_tot  = 0.d0 
+   leaf_qwshed_tot = 0.d0
+   leaf_dwshed_tot = 0.d0
+   leaf_dew_tot    = 0.d0 
+   leaf_qdew_tot   = 0.d0
+   leaf_boil_tot   = 0.d0 
+   leaf_qboil_tot  = 0.d0
+   wood_wshed_tot  = 0.d0 
+   wood_qwshed_tot = 0.d0
+   wood_dwshed_tot = 0.d0
+   wood_dew_tot    = 0.d0 
+   wood_qdew_tot   = 0.d0
+   wood_boil_tot   = 0.d0 
+   wood_qboil_tot  = 0.d0
 
    !----- Looping over cohorts ------------------------------------------------------------!
    cohortloop: do ico=1,cpatch%ncohorts
-      !----- Checking whether this is a prognostic cohort... ------------------------------!
-      if (initp%resolvable(ico)) then
+
+      !------------------------------------------------------------------------------------!
+      !    Check whether we can solve leaves in this cohort...                             !
+      !------------------------------------------------------------------------------------!
+      if (initp%leaf_resolvable(ico)) then
          !---------------------------------------------------------------------------------!
          !   Now we find the maximum leaf water possible.                                  !
          !---------------------------------------------------------------------------------!
-         rk4min_leaf_water = rk4min_veg_lwater * initp%tai(ico)
-         min_leaf_water    = rk4leaf_drywhc    * initp%tai(ico)
-         max_leaf_water    = rk4leaf_maxwhc    * initp%tai(ico)
+         rk4min_leaf_water = rk4min_veg_lwater * initp%lai(ico)
+         min_leaf_water    = rk4leaf_drywhc    * initp%lai(ico)
+         max_leaf_water    = rk4leaf_maxwhc    * initp%lai(ico)
          !---------------------------------------------------------------------------------!
 
 
 
          !---------------------------------------------------------------------------------!
          !    In case water is to be removed or added, we will need to update the          !
-         ! vegetation energy.  We want to preserve the temperature, though, because this   !
-         ! is happens as loss of internal energy (shedding) or latent heat (fast           !
+         ! leaf internal energy.  We want to preserve the temperature, though, because     !
+         ! this happens as loss of internal energy (shedding) or latent heat (fast         !
          ! dew/boiling).                                                                   !
-         !---------------------- ----------------------------------------------------------!
-         call qwtk8(initp%veg_energy(ico),initp%veg_water(ico),initp%hcapveg(ico)          &
-                   ,initp%veg_temp(ico),initp%veg_fliq(ico))
-         old_veg_energy = initp%veg_energy(ico)
-         old_veg_water  = initp%veg_water (ico)
-         old_veg_temp   = initp%veg_temp  (ico)
-         old_veg_fliq   = initp%veg_fliq  (ico)
+         !---------------------------------------------------------------------------------!
+         call qwtk8(initp%leaf_energy(ico),initp%leaf_water(ico),initp%leaf_hcap(ico)      &
+                   ,initp%leaf_temp(ico),initp%leaf_fliq(ico))
+         old_leaf_energy = initp%leaf_energy(ico)
+         old_leaf_water  = initp%leaf_water (ico)
+         old_leaf_temp   = initp%leaf_temp  (ico)
+         old_leaf_fliq   = initp%leaf_fliq  (ico)
          !---------------------------------------------------------------------------------!
 
-         if (initp%veg_water(ico) > max_leaf_water) then
+         if (initp%leaf_water(ico) > max_leaf_water) then
 
             !------------------------------------------------------------------------------!
             !    Too much water over these leaves, we shall shed the excess to the ground. !
             !------------------------------------------------------------------------------!
-            veg_wshed  = initp%veg_water(ico) - max_leaf_water
-            veg_qwshed = veg_wshed                                                         &
-                       * ( initp%veg_fliq(ico) * cliq8 * (initp%veg_temp(ico)-tsupercool8)                            &
-                         + (1.d0-initp%veg_fliq(ico)) * cice8 * initp%veg_temp(ico))
-            veg_dwshed = veg_wshed                                                         &
-                       * ( initp%veg_fliq(ico) * wdnsi8                                    &
-                         + (1.d0-initp%veg_fliq(ico))*fdnsi8)
+            leaf_wshed  = initp%leaf_water(ico) - max_leaf_water
+
+            leaf_qwshed = leaf_wshed                                                       &
+                        * ( initp%leaf_fliq(ico) * cliq8                                   &
+                          * (initp%leaf_temp(ico) - tsupercool8)                           &
+                          + (1.d0-initp%leaf_fliq(ico)) * cice8 * initp%leaf_temp(ico))
+
+            leaf_dwshed = leaf_wshed                                                       &
+                        * ( initp%leaf_fliq(ico) * wdnsi8                                  &
+                          + (1.d0-initp%leaf_fliq(ico)) * fdnsi8)
 
             !----- Add the contribution of this cohort to the total shedding. -------------!
-            veg_wshed_tot  = veg_wshed_tot  + veg_wshed
-            veg_qwshed_tot = veg_qwshed_tot + veg_qwshed
-            veg_dwshed_tot = veg_dwshed_tot + veg_dwshed
+            leaf_wshed_tot  = leaf_wshed_tot  + leaf_wshed
+            leaf_qwshed_tot = leaf_qwshed_tot + leaf_qwshed
+            leaf_dwshed_tot = leaf_dwshed_tot + leaf_dwshed
 
             !----- Update water mass and energy. ------------------------------------------!
-            initp%veg_water(ico)  = initp%veg_water(ico)  - veg_wshed
-            initp%veg_energy(ico) = initp%veg_energy(ico) - veg_qwshed
+            initp%leaf_water(ico)  = initp%leaf_water(ico)  - leaf_wshed
+            initp%leaf_energy(ico) = initp%leaf_energy(ico) - leaf_qwshed
 
             !----- Update fluxes if needed be. --------------------------------------------!
             if (print_detailed) then
-               initp%cfx_qwshed(ico) = initp%cfx_qwshed(ico) + veg_qwshed * hdidi
+               initp%cfx_qwshed(ico) = initp%cfx_qwshed(ico) + leaf_qwshed * hdidi
             end if
  
 
-         elseif (initp%veg_water(ico) < min_leaf_water) then
+         elseif (initp%leaf_water(ico) < min_leaf_water) then
             !------------------------------------------------------------------------------!
-            !    If veg_water is tiny and positive, exchange moisture with the air by      !
+            !    If leaf_water is tiny and positive, exchange moisture with the air by     !
             ! donating the total amount as "boiling" (fast evaporation or sublimation).    !
             ! In case the total is tiny but negative, exchange moisture with the air,      !
             ! "stealing" moisture as fast "dew/frost" condensation.                        !
             !------------------------------------------------------------------------------!
-            veg_boil  = max(0.d0,  initp%veg_water(ico))
-            veg_dew   = max(0.d0,- initp%veg_water(ico))
-            veg_qboil = veg_boil * (alvi8 - initp%veg_fliq(ico) * alli8)
-            veg_qdew  = veg_dew  * (alvi8 - initp%veg_fliq(ico) * alli8)
+            leaf_boil  = max(0.d0,  initp%leaf_water(ico))
+            leaf_dew   = max(0.d0,- initp%leaf_water(ico))
+            leaf_qboil = leaf_boil * (alvi8 - initp%leaf_fliq(ico) * alli8)
+            leaf_qdew  = leaf_dew  * (alvi8 - initp%leaf_fliq(ico) * alli8)
 
 
             !----- Add the contribution of this cohort to the total boiling. --------------!
-            veg_boil_tot  = veg_boil_tot  + veg_boil
-            veg_dew_tot   = veg_dew_tot   + veg_dew
-            veg_qboil_tot = veg_qboil_tot + veg_qboil
-            veg_qdew_tot  = veg_qdew_tot  + veg_qdew
+            leaf_boil_tot  = leaf_boil_tot  + leaf_boil
+            leaf_dew_tot   = leaf_dew_tot   + leaf_dew
+            leaf_qboil_tot = leaf_qboil_tot + leaf_qboil
+            leaf_qdew_tot  = leaf_qdew_tot  + leaf_qdew
 
             !----- Update cohort state variables. -----------------------------------------!
-            initp%veg_water(ico)  = 0.d0
-            initp%veg_energy(ico) = initp%veg_energy(ico)  + veg_qdew - veg_qboil
+            initp%leaf_water(ico)  = 0.d0
+            initp%leaf_energy(ico) = initp%leaf_energy(ico)  + leaf_qdew - leaf_qboil
 
             !----- Update fluxes if needed be. --------------------------------------------!
             if (print_detailed) then
-               initp%cfx_qwflxvc(ico) = initp%cfx_qwflxvc(ico)                             &
-                                      + (veg_qboil - veg_qdew) * hdidi
+               initp%cfx_qwflxlc(ico) = initp%cfx_qwflxlc(ico)                             &
+                                      + (leaf_qboil - leaf_qdew) * hdidi
             end if
          end if
       end if
+      !------------------------------------------------------------------------------------!
+
+
+
+
+      !------------------------------------------------------------------------------------!
+      !    Check whether we can solve wood in this cohort...                               !
+      !------------------------------------------------------------------------------------!
+      if (initp%wood_resolvable(ico)) then
+         !---------------------------------------------------------------------------------!
+         !   Now we find the maximum leaf water possible.                                  !
+         !---------------------------------------------------------------------------------!
+         rk4min_wood_water = rk4min_veg_lwater * initp%wai(ico)
+         min_wood_water    = rk4leaf_drywhc    * initp%wai(ico)
+         max_wood_water    = rk4leaf_maxwhc    * initp%wai(ico)
+         !---------------------------------------------------------------------------------!
+
+
+
+         !---------------------------------------------------------------------------------!
+         !    In case water is to be removed or added, we will need to update the          !
+         ! wood internal energy.  We want to preserve the temperature, though, because     !
+         ! this happens as loss of internal energy (shedding) or latent heat (fast         !
+         ! dew/boiling).                                                                   !
+         !---------------------------------------------------------------------------------!
+         call qwtk8(initp%wood_energy(ico),initp%wood_water(ico),initp%wood_hcap(ico)      &
+                   ,initp%wood_temp(ico),initp%wood_fliq(ico))
+         old_wood_energy = initp%wood_energy(ico)
+         old_wood_water  = initp%wood_water (ico)
+         old_wood_temp   = initp%wood_temp  (ico)
+         old_wood_fliq   = initp%wood_fliq  (ico)
+         !---------------------------------------------------------------------------------!
+
+         if (initp%wood_water(ico) > max_wood_water) then
+
+            !------------------------------------------------------------------------------!
+            !    Too much water over the wood, we shall shed the excess to the ground.     !
+            !------------------------------------------------------------------------------!
+            wood_wshed  = initp%wood_water(ico) - max_wood_water
+
+            wood_qwshed = wood_wshed                                                         &
+                       * ( initp%wood_fliq(ico) * cliq8                                    &
+                         * (initp%wood_temp(ico) - tsupercool8)                            &
+                         + (1.d0-initp%wood_fliq(ico)) * cice8 * initp%wood_temp(ico))
+
+            wood_dwshed = wood_wshed                                                         &
+                       * ( initp%wood_fliq(ico) * wdnsi8                                   &
+                         + (1.d0-initp%wood_fliq(ico)) * fdnsi8)
+
+            !----- Add the contribution of this cohort to the total shedding. -------------!
+            wood_wshed_tot  = wood_wshed_tot  + wood_wshed
+            wood_qwshed_tot = wood_qwshed_tot + wood_qwshed
+            wood_dwshed_tot = wood_dwshed_tot + wood_dwshed
+
+            !----- Update water mass and energy. ------------------------------------------!
+            initp%wood_water(ico)  = initp%wood_water(ico)  - wood_wshed
+            initp%wood_energy(ico) = initp%wood_energy(ico) - wood_qwshed
+
+            !----- Update fluxes if needed be. --------------------------------------------!
+            if (print_detailed) then
+               initp%cfx_qwshed(ico) = initp%cfx_qwshed(ico) + wood_qwshed * hdidi
+            end if
+ 
+
+         elseif (initp%wood_water(ico) < min_wood_water) then
+            !------------------------------------------------------------------------------!
+            !    If wood_water is tiny and positive, exchange moisture with the air by     !
+            ! donating the total amount as "boiling" (fast evaporation or sublimation).    !
+            ! In case the total is tiny but negative, exchange moisture with the air,      !
+            ! "stealing" moisture as fast "dew/frost" condensation.                        !
+            !------------------------------------------------------------------------------!
+            wood_boil  = max(0.d0,  initp%wood_water(ico))
+            wood_dew   = max(0.d0,- initp%wood_water(ico))
+            wood_qboil = wood_boil * (alvi8 - initp%wood_fliq(ico) * alli8)
+            wood_qdew  = wood_dew  * (alvi8 - initp%wood_fliq(ico) * alli8)
+
+
+            !----- Add the contribution of this cohort to the total boiling. --------------!
+            wood_boil_tot  = wood_boil_tot  + wood_boil
+            wood_dew_tot   = wood_dew_tot   + wood_dew
+            wood_qboil_tot = wood_qboil_tot + wood_qboil
+            wood_qdew_tot  = wood_qdew_tot  + wood_qdew
+
+            !----- Update cohort state variables. -----------------------------------------!
+            initp%wood_water(ico)  = 0.d0
+            initp%wood_energy(ico) = initp%wood_energy(ico)  + wood_qdew - wood_qboil
+
+            !----- Update fluxes if needed be. --------------------------------------------!
+            if (print_detailed) then
+               initp%cfx_qwflxwc(ico) = initp%cfx_qwflxwc(ico)                             &
+                                      + (wood_qboil - wood_qdew) * hdidi
+            end if
+         end if
+      end if
+      !------------------------------------------------------------------------------------!
    end do cohortloop
+   !---------------------------------------------------------------------------------------!
+
+
+
 
    !---------------------------------------------------------------------------------------!
-   !    The water that fell from the leaves must go somewhere... Here we decide which      !
-   ! place is the most suitable.  In case there is already a temporary surface water layer !
-   ! we can add the water there, otherwise we dump it into the virtual layer, which may    !
-   ! or may not become a temporary surface water layer.                                    !
+   !    The water that fell from the leaves and branches must go somewhere...  Here we     !
+   ! decide which place is the most suitable.  In case there is already a temporary        !
+   ! surface water layer we can add the water there, otherwise we dump it into the virtual !
+   ! layer, which may or may not become a temporary surface water layer.                   !
    !---------------------------------------------------------------------------------------!
    ksn = initp%nlev_sfcwater
    select case(initp%flag_sfcwater)
    case (0)
       !------ No temporary water, shed the water into the virtual layer. ------------------!
-      initp%virtual_water        = initp%virtual_water        + veg_wshed_tot
-      initp%virtual_energy       = initp%virtual_energy       + veg_qwshed_tot
-      initp%virtual_depth        = initp%virtual_depth        + veg_dwshed_tot
+      initp%virtual_water        = initp%virtual_water  + leaf_wshed_tot  + wood_wshed_tot
+      initp%virtual_energy       = initp%virtual_energy + leaf_qwshed_tot + wood_qwshed_tot
+      initp%virtual_depth        = initp%virtual_depth  + leaf_dwshed_tot + wood_dwshed_tot
       !------------------------------------------------------------------------------------!
 
    case default
@@ -2360,27 +2559,42 @@ subroutine adjust_veg_properties(initp,hdid,csite,ipa)
       !     There is a temporary water, shed the excess water to the temporary surface     !
       ! water layer.                                                                       !
       !------------------------------------------------------------------------------------!
-      initp%sfcwater_mass(ksn)   = initp%sfcwater_mass(ksn)   + veg_wshed_tot
-      initp%sfcwater_energy(ksn) = initp%sfcwater_energy(ksn) + veg_qwshed_tot
-      initp%sfcwater_depth(ksn)  = initp%sfcwater_depth(ksn)  + veg_dwshed_tot
+      initp%sfcwater_mass(ksn)   = initp%sfcwater_mass(ksn)                                &
+                                 + leaf_wshed_tot  + wood_wshed_tot
+      initp%sfcwater_energy(ksn) = initp%sfcwater_energy(ksn)                              &
+                                 + leaf_qwshed_tot + wood_qwshed_tot
+      initp%sfcwater_depth(ksn)  = initp%sfcwater_depth(ksn)                               &
+                                 + leaf_dwshed_tot + wood_dwshed_tot
       !------------------------------------------------------------------------------------!
 
    end select
 
    !----- Update the canopy air specific humidity. ----------------------------------------!
-   initp%can_shv  = initp%can_shv + (veg_boil_tot - veg_dew_tot)  * wcapcani
+   initp%can_shv  = initp%can_shv                                                          &
+                  + (leaf_boil_tot + wood_boil_tot - leaf_dew_tot - wood_dew_tot)          &
+                  * wcapcani
 
 
    !----- Updating output fluxes ----------------------------------------------------------!
    if (fast_diagnostics) then
-      initp%avg_wshed_vg  = initp%avg_wshed_vg  + veg_wshed_tot                * hdidi
-      initp%avg_qwshed_vg = initp%avg_qwshed_vg + veg_qwshed_tot               * hdidi
-      initp%avg_vapor_vc  = initp%avg_vapor_vc  + (veg_boil_tot - veg_dew_tot) * hdidi
+      initp%avg_wshed_vg  = initp%avg_wshed_vg                                             &
+                          + (leaf_wshed_tot + wood_wshed_tot)   * hdidi
+      initp%avg_qwshed_vg = initp%avg_qwshed_vg                                            &
+                          + (leaf_qwshed_tot + wood_qwshed_tot) * hdidi
+      initp%avg_vapor_lc  = initp%avg_vapor_lc                                             &
+                          + (leaf_boil_tot - leaf_dew_tot)      * hdidi
+      initp%avg_vapor_wc  = initp%avg_vapor_wc                                             &
+                          + (wood_boil_tot - wood_dew_tot)      * hdidi
    end if
    if (print_detailed) then
-      initp%flx_wshed_vg  = initp%flx_wshed_vg  + veg_wshed_tot                * hdidi
-      initp%flx_qwshed_vg = initp%flx_qwshed_vg + veg_qwshed_tot               * hdidi
-      initp%flx_vapor_vc  = initp%flx_vapor_vc  + (veg_boil_tot - veg_dew_tot) * hdidi
+      initp%flx_wshed_vg  = initp%flx_wshed_vg                                             &
+                          + (leaf_wshed_tot + wood_wshed_tot)   * hdidi
+      initp%flx_qwshed_vg = initp%flx_qwshed_vg                                            &
+                          + (leaf_qwshed_tot + wood_qwshed_tot) * hdidi
+      initp%flx_vapor_lc  = initp%flx_vapor_lc                                             &
+                          + (leaf_boil_tot - leaf_dew_tot)      * hdidi
+      initp%flx_vapor_wc  = initp%flx_vapor_wc                                             &
+                          + (wood_boil_tot - wood_dew_tot)      * hdidi
    end if
    !---------------------------------------------------------------------------------------!
 
@@ -2501,27 +2715,57 @@ subroutine print_errmax(errmax,yerr,yscal,cpatch,y,ytemp)
    write(unit=*,fmt='(80a)') ('-',k=1,80)
    write(unit=*,fmt='(a)'  ) 
    write(unit=*,fmt='(80a)') ('-',k=1,80)
-   write(unit=*,fmt='(a)'      ) ' Cohort_level variables (only the resolvable ones):'
+   write(unit=*,fmt='(a)'      ) ' Leaf-level variables (only the resolvable ones):'
    write(unit=*,fmt='(10(a,1x))')        'Name            ','   PFT','         LAI'        &
                                       ,'         WAI','         WPA','         TAI'        &
                                       ,'   Max.Error','   Abs.Error','       Scale'        &
                                       ,'Problem(T|F)'
    do ico = 1,cpatch%ncohorts
-      if (y%resolvable(ico)) then
-         errmax       = max(errmax,abs(yerr%veg_water(ico)/yscal%veg_water(ico)))
-         troublemaker = large_error(yerr%veg_water(ico),yscal%veg_water(ico))
-         write(unit=*,fmt=cohfmt) 'VEG_WATER:',cpatch%pft(ico),y%lai(ico),y%wai(ico)       &
-                                              ,y%wpa(ico),y%tai(ico),errmax                &
-                                              ,yerr%veg_water(ico),yscal%veg_water(ico)    &
-                                              ,troublemaker
+      if (y%leaf_resolvable(ico)) then
+         errmax       = max(errmax,abs(yerr%leaf_water(ico)/yscal%leaf_water(ico)))
+         troublemaker = large_error(yerr%leaf_water(ico),yscal%leaf_water(ico))
+         write(unit=*,fmt=cohfmt) 'LEAF_WATER:',cpatch%pft(ico),y%lai(ico),y%wai(ico)      &
+                                               ,y%wpa(ico),y%tai(ico),errmax               &
+                                               ,yerr%leaf_water(ico),yscal%leaf_water(ico) &
+                                               ,troublemaker
               
 
-         errmax       = max(errmax,abs(yerr%veg_energy(ico)/yscal%veg_energy(ico)))
-         troublemaker = large_error(yerr%veg_energy(ico),yscal%veg_energy(ico))
-         write(unit=*,fmt=cohfmt) 'VEG_ENERGY:',cpatch%pft(ico),cpatch%lai(ico),y%wai(ico) &
+         errmax       = max(errmax,abs(yerr%leaf_energy(ico)/yscal%leaf_energy(ico)))
+         troublemaker = large_error(yerr%leaf_energy(ico),yscal%leaf_energy(ico))
+         write(unit=*,fmt=cohfmt) 'LEAF_ENERGY:',cpatch%pft(ico),cpatch%lai(ico)            &
+                                                ,y%wai(ico),y%wpa(ico),y%tai(ico),errmax    &
+                                                ,yerr%leaf_energy(ico)                      &
+                                                ,yscal%leaf_energy(ico)                     &
+                                                ,troublemaker
+
+      end if
+   end do
+
+   write(unit=*,fmt='(80a)') ('-',k=1,80)
+   write(unit=*,fmt='(a)'  ) 
+   write(unit=*,fmt='(80a)') ('-',k=1,80)
+   write(unit=*,fmt='(a)'      ) ' Wood-level variables (only the resolvable ones):'
+   write(unit=*,fmt='(10(a,1x))')        'Name            ','   PFT','         LAI'        &
+                                      ,'         WAI','         WPA','         TAI'        &
+                                      ,'   Max.Error','   Abs.Error','       Scale'        &
+                                      ,'Problem(T|F)'
+   do ico = 1,cpatch%ncohorts
+      if (y%wood_resolvable(ico)) then
+         errmax       = max(errmax,abs(yerr%wood_water(ico)/yscal%wood_water(ico)))
+         troublemaker = large_error(yerr%wood_water(ico),yscal%wood_water(ico))
+         write(unit=*,fmt=cohfmt) 'WOOD_WATER:',cpatch%pft(ico),y%lai(ico),y%wai(ico)      &
                                                ,y%wpa(ico),y%tai(ico),errmax               &
-                                               ,yerr%veg_energy(ico),yscal%veg_energy(ico) &
+                                               ,yerr%wood_water(ico),yscal%wood_water(ico) &
                                                ,troublemaker
+              
+
+         errmax       = max(errmax,abs(yerr%wood_energy(ico)/yscal%wood_energy(ico)))
+         troublemaker = large_error(yerr%wood_energy(ico),yscal%wood_energy(ico))
+         write(unit=*,fmt=cohfmt) 'WOOD_ENERGY:',cpatch%pft(ico),cpatch%lai(ico)            &
+                                                ,y%wai(ico),y%wpa(ico),y%tai(ico),errmax    &
+                                                ,yerr%wood_energy(ico)                      &
+                                                ,yscal%wood_energy(ico)                     &
+                                                ,troublemaker
 
       end if
    end do
@@ -2655,24 +2899,24 @@ subroutine print_csiteipa(csite, ipa)
    write (unit=*,fmt='(a,1x,i6)')    'Ncohorts: ',cpatch%ncohorts
  
    write (unit=*,fmt='(80a)') ('-',k=1,80)
-   write (unit=*,fmt='(a)'  ) 'Cohort information (only the resolvable ones shown): '
+   write (unit=*,fmt='(a)'  ) 'Leaf information (only the resolvable ones shown): '
    write (unit=*,fmt='(80a)') ('-',k=1,80)
    write (unit=*,fmt='(2(a7,1x),8(a12,1x))')                                               &
          '    PFT','KRDEPTH','      NPLANT','         LAI','         DBH','       BDEAD'   &
-                            ,'      BALIVE','  VEG_ENERGY','    VEG_TEMP','   VEG_WATER'
+                            ,'       BLEAF',' LEAF_ENERGY','   LEAF_TEMP','  LEAF_WATER'
    do ico = 1,cpatch%ncohorts
-      if (cpatch%resolvable(ico)) then
-         write(unit=*,fmt='(2(i7,1x),8(es12.4,1x))') cpatch%pft(ico), cpatch%krdepth(ico) &
+      if (cpatch%leaf_resolvable(ico)) then
+         write(unit=*,fmt='(2(i7,1x),8(es12.4,1x))') cpatch%pft(ico), cpatch%krdepth(ico)  &
               ,cpatch%nplant(ico),cpatch%lai(ico),cpatch%dbh(ico),cpatch%bdead(ico)        &
-              ,cpatch%balive(ico),cpatch%veg_energy(ico),cpatch%veg_temp(ico)              &
-              ,cpatch%veg_water(ico)
+              ,cpatch%bleaf(ico),cpatch%leaf_energy(ico),cpatch%leaf_temp(ico)             &
+              ,cpatch%leaf_water(ico)
       end if
    end do
    write (unit=*,fmt='(2(a7,1x),6(a12,1x))')                                               &
          '    PFT','KRDEPTH','         LAI','     FS_OPEN','         FSW','         FSN'   &
                             ,'         GPP','   LEAF_RESP'
    do ico = 1,cpatch%ncohorts
-      if (cpatch%resolvable(ico)) then
+      if (cpatch%leaf_resolvable(ico)) then
          write(unit=*,fmt='(2(i7,1x),6(es12.4,1x))') cpatch%pft(ico), cpatch%krdepth(ico)  &
               ,cpatch%lai(ico),cpatch%fs_open(ico),cpatch%fsw(ico),cpatch%fsn(ico)         &
               ,cpatch%gpp(ico),cpatch%leaf_respiration(ico)
@@ -2682,7 +2926,7 @@ subroutine print_csiteipa(csite, ipa)
          '    PFT','KRDEPTH','         LAI','   ROOT_RESP',' GROWTH_RESP','   STOR_RESP'   &
                             ,'  VLEAF_RESP'
    do ico = 1,cpatch%ncohorts
-      if (cpatch%resolvable(ico)) then
+      if (cpatch%leaf_resolvable(ico)) then
          growth_resp  = cpatch%growth_respiration(ico)  * cpatch%nplant(ico)               &
                       / (day_sec * umol_2_kgC)
          storage_resp = cpatch%storage_respiration(ico) * cpatch%nplant(ico)               &
@@ -2697,6 +2941,22 @@ subroutine print_csiteipa(csite, ipa)
    end do
    write (unit=*,fmt='(a)'  ) ' '
    write (unit=*,fmt='(80a)') ('-',k=1,80)
+   write (unit=*,fmt='(80a)') ('-',k=1,80)
+   write (unit=*,fmt='(a)'  ) 'Wood information (only the resolvable ones shown): '
+   write (unit=*,fmt='(80a)') ('-',k=1,80)
+   write (unit=*,fmt='(2(a7,1x),8(a12,1x))')                                               &
+         '    PFT','KRDEPTH','      NPLANT','         WAI','         DBH','       BDEAD'   &
+                            ,'    BSAPWOOD',' WOOD_ENERGY','   WOOD_TEMP','  WOOD_WATER'
+   do ico = 1,cpatch%ncohorts
+      if (cpatch%wood_resolvable(ico)) then
+         write(unit=*,fmt='(2(i7,1x),8(es12.4,1x))') cpatch%pft(ico), cpatch%krdepth(ico)  &
+              ,cpatch%nplant(ico),cpatch%wai(ico),cpatch%dbh(ico),cpatch%bdead(ico)        &
+              ,cpatch%bsapwood(ico),cpatch%wood_energy(ico),cpatch%wood_temp(ico)          &
+              ,cpatch%wood_water(ico)
+      end if
+   end do
+   write (unit=*,fmt='(a)'  ) ' '
+   write (unit=*,fmt='(80a)') ('-',k=1,80)
 
    write (unit=*,fmt='(8(a12,1x))')  '   DIST_TYPE','         AGE','        AREA'          &
                                     ,'          RH','      CWD_RH','AVGDAILY_TMP'          &
@@ -2705,6 +2965,7 @@ subroutine print_csiteipa(csite, ipa)
          ,csite%area(ipa),csite%rh(ipa),csite%cwd_rh(ipa),csite%avg_daily_temp(ipa)        &
          ,csite%sum_chd(ipa),csite%sum_dgd(ipa)
 
+   write (unit=*,fmt='(a)'  ) ' '
    write (unit=*,fmt='(80a)') ('-',k=1,80)
 
    write (unit=*,fmt='(7(a12,1x))')  '  VEG_HEIGHT','   VEG_ROUGH','VEG_DISPLACE'          &
@@ -2842,16 +3103,16 @@ subroutine print_rk4patch(y,csite,ipa)
                                                                  / pio1808
 
    write (unit=*,fmt='(80a)') ('=',k=1,80)
-   write (unit=*,fmt='(a)'  ) 'Cohort information (only those resolvable are shown): '
+   write (unit=*,fmt='(a)'  ) 'Leaf information (only those resolvable are shown): '
    write (unit=*,fmt='(80a)') ('-',k=1,80)
    write (unit=*,fmt='(2(a7,1x),8(a12,1x))')                                               &
          '    PFT','KRDEPTH','      NPLANT','      HEIGHT','         DBH','       BDEAD'   &
-                            ,'      BALIVE','     FS_OPEN','         FSW','         FSN'
+                            ,'       BLEAF','     FS_OPEN','         FSW','         FSN'
    do ico = 1,cpatch%ncohorts
-      if (cpatch%resolvable(ico)) then
+      if (cpatch%leaf_resolvable(ico)) then
          write(unit=*,fmt='(2(i7,1x),8(es12.4,1x))') cpatch%pft(ico), cpatch%krdepth(ico)  &
               ,cpatch%nplant(ico),cpatch%hite(ico),cpatch%dbh(ico),cpatch%bdead(ico)       &
-              ,cpatch%balive(ico),cpatch%fs_open(ico),cpatch%fsw(ico),cpatch%fsn(ico)
+              ,cpatch%bleaf (ico),cpatch%fs_open(ico),cpatch%fsw(ico),cpatch%fsn(ico)
       end if
    end do
    write (unit=*,fmt='(80a)') ('-',k=1,80)
@@ -2859,7 +3120,7 @@ subroutine print_rk4patch(y,csite,ipa)
          '    PFT','KRDEPTH','         LAI','         GPP','   LEAF_RESP','   ROOT_RESP'   &
                             ,' GROWTH_RESP','   STOR_RESP','  VLEAF_RESP'
    do ico = 1,cpatch%ncohorts
-      if (cpatch%resolvable(ico)) then
+      if (cpatch%leaf_resolvable(ico)) then
          write(unit=*,fmt='(2(i7,1x),7(es12.4,1x))') cpatch%pft(ico), cpatch%krdepth(ico)  &
               ,y%lai(ico),y%gpp(ico),y%leaf_resp(ico),y%root_resp(ico),y%growth_resp(ico)  &
               ,y%storage_resp(ico),y%vleaf_resp(ico)
@@ -2867,48 +3128,100 @@ subroutine print_rk4patch(y,csite,ipa)
    end do
    write (unit=*,fmt='(80a)') ('-',k=1,80)
    write (unit=*,fmt='(2(a7,1x),9(a12,1x))')                                               &
-         '    PFT','KRDEPTH','         LAI','         WPA','         TAI','  VEG_ENERGY'   &
-             ,'   VEG_WATER','    VEG_HCAP','    VEG_TEMP','    VEG_FLIQ','    LINT_SHV'
+         '    PFT','KRDEPTH','         LAI','         WAI','         TAI',' LEAF_ENERGY'   &
+             ,'  LEAF_WATER','   LEAF_HCAP','   LEAF_TEMP','   LEAF_FLIQ','    LINT_SHV'
    do ico = 1,cpatch%ncohorts
-      if (y%resolvable(ico)) then
+      if (y%leaf_resolvable(ico)) then
          write(unit=*,fmt='(2(i7,1x),9(es12.4,1x))') cpatch%pft(ico), cpatch%krdepth(ico)  &
-               ,y%lai(ico),y%wpa(ico),y%tai(ico),y%veg_energy(ico),y%veg_water(ico)        &
-               ,y%hcapveg(ico),y%veg_temp(ico),y%veg_fliq(ico),y%lint_shv(ico)
+               ,y%lai(ico),y%wai(ico),y%tai(ico),y%leaf_energy(ico),y%leaf_water(ico)      &
+               ,y%leaf_hcap(ico),y%leaf_temp(ico),y%leaf_fliq(ico),y%lint_shv(ico)
       end if
    end do
    write (unit=*,fmt='(80a)') ('-',k=1,80)
    write (unit=*,fmt='(2(a7,1x),8(a12,1x))')                                               &
-              '    PFT','KRDEPTH','         LAI','      HEIGHT','    VEG_TEMP'             &
-                  ,'    VEG_WIND','    REYNOLDS','     GRASHOF','NUSSELT_FORC'             &
-                  ,'NUSSELT_FREE'
+              '    PFT','KRDEPTH','         LAI','      HEIGHT','   LEAF_TEMP'             &
+                  ,'    VEG_WIND','  LEAF_REYNO','LEAF_GRASHOF',' LEAF_NUFORC'             &
+                  ,' LEAF_NUFREE'
    do ico = 1,cpatch%ncohorts
-      if (y%resolvable(ico)) then
+      if (y%leaf_resolvable(ico)) then
          write(unit=*,fmt='(2(i7,1x),8(es12.4,1x))') cpatch%pft(ico),cpatch%krdepth(ico)   &
-               ,y%lai(ico),cpatch%hite(ico),y%veg_temp(ico),y%veg_wind(ico)                &
-               ,y%veg_reynolds(ico),y%veg_grashof(ico),y%veg_nussforc(ico)                 &
-               ,y%veg_nussfree(ico)
+               ,y%lai(ico),cpatch%hite(ico),y%leaf_temp(ico),y%veg_wind(ico)               &
+               ,y%leaf_reynolds(ico),y%leaf_grashof(ico),y%leaf_nussforc(ico)              &
+               ,y%leaf_nussfree(ico)
       end if
    end do
    write (unit=*,fmt='(80a)') ('-',k=1,80)
    write (unit=*,fmt='(2(a7,1x),7(a12,1x))')                                               &
-              '    PFT','KRDEPTH','         LAI','      HEIGHT','         GBH'             &
-                  ,'         GBW','  GSW_CLOSED','    GSW_OPEN','     FS_OPEN'
+              '    PFT','KRDEPTH','         LAI','      HEIGHT','    LEAF_GBH'             &
+                  ,'    LEAF_GBW','  GSW_CLOSED','    GSW_OPEN','     FS_OPEN'
    do ico = 1,cpatch%ncohorts
-      if (y%resolvable(ico)) then
+      if (y%leaf_resolvable(ico)) then
          write(unit=*,fmt='(2(i7,1x),7(es12.4,1x))') cpatch%pft(ico),cpatch%krdepth(ico)   &
-               ,y%lai(ico),cpatch%hite(ico),y%gbh(ico),y%gbw(ico),y%gsw_closed(ico)        &
-               ,y%gsw_open(ico),cpatch%fs_open(ico)
+               ,y%lai(ico),cpatch%hite(ico),y%leaf_gbh(ico),y%leaf_gbw(ico)                &
+               ,y%gsw_closed(ico),y%gsw_open(ico),cpatch%fs_open(ico)
       end if
    end do
    write (unit=*,fmt='(80a)') ('-',k=1,80)
    write (unit=*,fmt='(2(a7,1x),6(a12,1x))')                                               &
-              '    PFT','KRDEPTH','         LAI','      HEIGHT','    RSHORT_V'             &
-                  ,'     RLONG_V','  PAR_V_BEAM','  PAR_V_DIFF'
+              '    PFT','KRDEPTH','         LAI','      HEIGHT','    RSHORT_L'             &
+                  ,'     RLONG_L','  PAR_L_BEAM','  PAR_L_DIFF'
    do ico = 1,cpatch%ncohorts
-      if (y%resolvable(ico)) then
+      if (y%leaf_resolvable(ico)) then
          write(unit=*,fmt='(2(i7,1x),6(es12.4,1x))') cpatch%pft(ico),cpatch%krdepth(ico)   &
-               ,y%lai(ico),cpatch%hite(ico),y%rshort_v(ico),y%rlong_v(ico)                 &
-               ,cpatch%par_v_beam(ico),cpatch%par_v_diffuse(ico)
+               ,y%lai(ico),cpatch%hite(ico),y%rshort_l(ico),y%rlong_l(ico)                 &
+               ,cpatch%par_l_beam(ico),cpatch%par_l_diffuse(ico)
+      end if
+   end do
+   write (unit=*,fmt='(80a)') ('=',k=1,80)
+   write (unit=*,fmt='(a)'  ) ' '
+   write (unit=*,fmt='(a)'  ) ' '
+   write (unit=*,fmt='(a)'  ) ' '
+   write (unit=*,fmt='(80a)') ('=',k=1,80)
+   write (unit=*,fmt='(a)'  ) 'Wood information (only those resolvable are shown): '
+   write (unit=*,fmt='(80a)') ('-',k=1,80)
+   write (unit=*,fmt='(2(a7,1x),5(a12,1x))')                                               &
+         '    PFT','KRDEPTH','      NPLANT','      HEIGHT','         DBH','       BDEAD'   &
+                            ,'    BSAPWOOD'
+   do ico = 1,cpatch%ncohorts
+      if (cpatch%wood_resolvable(ico)) then
+         write(unit=*,fmt='(2(i7,1x),5(es12.4,1x))') cpatch%pft(ico), cpatch%krdepth(ico)  &
+              ,cpatch%nplant(ico),cpatch%hite(ico),cpatch%dbh(ico),cpatch%bdead(ico)       &
+              ,cpatch%bsapwood(ico)
+      end if
+   end do
+   write (unit=*,fmt='(80a)') ('-',k=1,80)
+   write (unit=*,fmt='(2(a7,1x),8(a12,1x))')                                               &
+         '    PFT','KRDEPTH','         LAI','         WAI','         TAI',' WOOD_ENERGY'   &
+             ,'  WOOD_WATER','   WOOD_HCAP','   WOOD_TEMP','   WOOD_FLIQ'
+   do ico = 1,cpatch%ncohorts
+      if (y%wood_resolvable(ico)) then
+         write(unit=*,fmt='(2(i7,1x),8(es12.4,1x))') cpatch%pft(ico), cpatch%krdepth(ico)  &
+               ,y%lai(ico),y%wai(ico),y%tai(ico),y%wood_energy(ico),y%wood_water(ico)      &
+               ,y%wood_hcap(ico),y%wood_temp(ico),y%wood_fliq(ico)
+      end if
+   end do
+   write (unit=*,fmt='(80a)') ('-',k=1,80)
+   write (unit=*,fmt='(2(a7,1x),8(a12,1x))')                                               &
+              '    PFT','KRDEPTH','         WAI','      HEIGHT','   LEAF_TEMP'             &
+                  ,'    VEG_WIND','  WOOD_REYNO','WOOD_GRASHOF',' WOOD_NUFORC'             &
+                  ,' WOOD_NUFREE'
+   do ico = 1,cpatch%ncohorts
+      if (y%wood_resolvable(ico)) then
+         write(unit=*,fmt='(2(i7,1x),8(es12.4,1x))') cpatch%pft(ico),cpatch%krdepth(ico)   &
+               ,y%wai(ico),cpatch%hite(ico),y%wood_temp(ico),y%veg_wind(ico)               &
+               ,y%wood_reynolds(ico),y%wood_grashof(ico),y%wood_nussforc(ico)              &
+               ,y%wood_nussfree(ico)
+      end if
+   end do
+   write (unit=*,fmt='(80a)') ('-',k=1,80)
+   write (unit=*,fmt='(2(a7,1x),6(a12,1x))')                                               &
+              '    PFT','KRDEPTH','         WAI','      HEIGHT','    WOOD_GBH'             &
+                  ,'    WOOD_GBW','    RSHORT_W','     RLONG_W'
+   do ico = 1,cpatch%ncohorts
+      if (y%wood_resolvable(ico)) then
+         write(unit=*,fmt='(2(i7,1x),6(es12.4,1x))') cpatch%pft(ico),cpatch%krdepth(ico)   &
+               ,y%wai(ico),cpatch%hite(ico),y%wood_gbh(ico),y%wood_gbw(ico)                &
+               ,y%rshort_w(ico),y%rlong_w(ico) 
       end if
    end do
    write (unit=*,fmt='(80a)') ('=',k=1,80)
@@ -3036,25 +3349,32 @@ subroutine print_rk4_state(initp,fluxp,csite,ipa,elapsed,hdid)
    integer                            :: nsoil
    integer                            :: ico
    integer                            :: jco
-   integer                            :: isresolved
+   integer                            :: leaf_resolve
+   integer                            :: wood_resolve
    logical                            :: isthere
-   real(kind=8)                       :: sum_veg_energy
-   real(kind=8)                       :: sum_veg_water
-   real(kind=8)                       :: sum_hcapveg
+   real(kind=8)                       :: sum_leaf_energy
+   real(kind=8)                       :: sum_leaf_water
+   real(kind=8)                       :: sum_leaf_hcap
+   real(kind=8)                       :: sum_wood_energy
+   real(kind=8)                       :: sum_wood_water
+   real(kind=8)                       :: sum_wood_hcap
    real(kind=8)                       :: sum_gpp
-   real(kind=8)                       :: sum_tai
+   real(kind=8)                       :: sum_lai
+   real(kind=8)                       :: sum_wai
    real(kind=8)                       :: sum_plresp
    real(kind=8)                       :: soil_rh
    real(kind=8)                       :: qintercepted
-   real(kind=8)                       :: avg_veg_temp
-   real(kind=8)                       :: avg_veg_fliq
+   real(kind=8)                       :: avg_leaf_temp
+   real(kind=8)                       :: avg_leaf_fliq
+   real(kind=8)                       :: avg_wood_temp
+   real(kind=8)                       :: avg_wood_fliq
    real(kind=8)                       :: sfc_temp
    real(kind=8)                       :: elapsec
    !----- Local constants. ----------------------------------------------------------------!
-   character(len=10), parameter :: phfmt='(68(a,1x))'
-   character(len=48), parameter :: pbfmt='(3(i13,1x),3(es13.6,1x),3(i13,1x),59(es13.6,1x))'
-   character(len=10), parameter :: chfmt='(40(a,1x))'
-   character(len=48), parameter :: cbfmt='(3(i13,1x),2(es13.6,1x),2(i13,1x),33(es13.6,1x))'
+   character(len=10), parameter :: phfmt='(74(a,1x))'
+   character(len=48), parameter :: pbfmt='(3(i13,1x),4(es13.6,1x),3(i13,1x),64(es13.6,1x))'
+   character(len=10), parameter :: chfmt='(57(a,1x))'
+   character(len=48), parameter :: cbfmt='(3(i13,1x),2(es13.6,1x),3(i13,1x),49(es13.6,1x))'
    !----- Locally saved variables. --------------------------------------------------------!
    logical          , save      :: first_time=.true.
    !---------------------------------------------------------------------------------------!
@@ -3103,48 +3423,81 @@ subroutine print_rk4_state(initp,fluxp,csite,ipa,elapsed,hdid)
    !---------------------------------------------------------------------------------------!
    !     First we loop over all cohorts and add the vegetation energy and water.           !
    !---------------------------------------------------------------------------------------!
-   sum_veg_energy = 0.d0
-   sum_veg_water  = 0.d0
-   sum_hcapveg    = 0.d0
-   sum_gpp        = 0.d0
-   sum_plresp     = 0.d0
-   sum_tai        = 0.d0
-   soil_rh        = initp%rh-initp%cwd_rh
+   sum_leaf_energy = 0.d0
+   sum_leaf_water  = 0.d0
+   sum_leaf_hcap   = 0.d0
+   sum_wood_energy = 0.d0
+   sum_wood_water  = 0.d0
+   sum_wood_hcap   = 0.d0
+   sum_gpp         = 0.d0
+   sum_plresp      = 0.d0
+   sum_lai         = 0.d0
+   sum_wai         = 0.d0
+   soil_rh         = initp%rh-initp%cwd_rh
    cpatch => csite%patch(ipa)
    do ico=1,cpatch%ncohorts
-      if (initp%resolvable(ico)) then
+      if (initp%leaf_resolvable(ico)) then
          !----- Integrate vegetation properties using m2gnd rather than plant. ------------!
-         sum_veg_energy = sum_veg_energy + initp%veg_energy(ico)
-         sum_veg_water  = sum_veg_water  + initp%veg_water(ico)
-         sum_hcapveg    = sum_hcapveg    + initp%hcapveg(ico)
-         sum_gpp        = sum_gpp        + initp%gpp(ico)
-         sum_plresp     = sum_plresp     + initp%leaf_resp(ico)                            &
-                                         + initp%root_resp(ico)                            &
-                                         + initp%growth_resp(ico)                          &
-                                         + initp%storage_resp(ico)                         &
-                                         + initp%vleaf_resp(ico)
+         sum_leaf_energy = sum_leaf_energy + initp%leaf_energy(ico)
+         sum_leaf_water  = sum_leaf_water  + initp%leaf_water(ico)
+         sum_leaf_hcap   = sum_leaf_hcap   + initp%leaf_hcap(ico)
+         sum_gpp         = sum_gpp         + initp%gpp(ico)
+         sum_plresp      = sum_plresp      + initp%leaf_resp(ico)                          &
+                                           + initp%root_resp(ico)                          &
+                                           + initp%growth_resp(ico)                        &
+                                           + initp%storage_resp(ico)                       &
+                                           + initp%vleaf_resp(ico)
+      end if
+      if (initp%wood_resolvable(ico)) then
+         !----- Integrate vegetation properties using m2gnd rather than plant. ------------!
+         sum_wood_energy = sum_wood_energy + initp%wood_energy(ico)
+         sum_wood_water  = sum_wood_water  + initp%wood_water(ico)
+         sum_wood_hcap   = sum_wood_hcap   + initp%wood_hcap(ico)
       end if
 
       !----- TAI.  We integrate all cohorts, including those that we skip. ----------------!
-      sum_tai = sum_tai + initp%tai(ico)
+      sum_lai = sum_lai + initp%lai(ico)
+      sum_wai = sum_wai + initp%wai(ico)
    end do
    !---------------------------------------------------------------------------------------!
 
+
+
    !---------------------------------------------------------------------------------------!
-   !     Then we find the average cohort temperature.  If none of the cohorts were solved, !
+   !     Then we find the average leaf temperature.  If none of the cohorts were solved,   !
    ! of if there is no vegetation, we assign the canopy air temperature.                   !
    !---------------------------------------------------------------------------------------!
-   if (sum_veg_energy == 0.d0) then
-      avg_veg_temp = initp%can_temp
+   if (sum_leaf_energy == 0.d0) then
+      avg_leaf_temp = initp%can_temp
       if (initp%can_temp == t3ple8) then
-         avg_veg_fliq = 5.d-1
+         avg_leaf_fliq = 5.d-1
       elseif (initp%can_temp > t3ple8) then
-         avg_veg_fliq = 1.d0
+         avg_leaf_fliq = 1.d0
       else
-         avg_veg_fliq = 0.d0
+         avg_leaf_fliq = 0.d0
       end if
    else
-      call qwtk8(sum_veg_energy,sum_veg_water,sum_hcapveg,avg_veg_temp,avg_veg_fliq)
+      call qwtk8(sum_leaf_energy,sum_leaf_water,sum_leaf_hcap,avg_leaf_temp,avg_leaf_fliq)
+   end if
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Then we find the average wood temperature.  If none of the cohorts were solved,   !
+   ! of if there is no vegetation, we assign the canopy air temperature.                   !
+   !---------------------------------------------------------------------------------------!
+   if (sum_wood_energy == 0.d0) then
+      avg_wood_temp = initp%can_temp
+      if (initp%can_temp == t3ple8) then
+         avg_wood_fliq = 5.d-1
+      elseif (initp%can_temp > t3ple8) then
+         avg_wood_fliq = 1.d0
+      else
+         avg_wood_fliq = 0.d0
+      end if
+   else
+      call qwtk8(sum_wood_energy,sum_wood_water,sum_wood_hcap,avg_wood_temp,avg_wood_fliq)
    end if
    !---------------------------------------------------------------------------------------!
 
@@ -3174,28 +3527,32 @@ subroutine print_rk4_state(initp,fluxp,csite,ipa,elapsed,hdid)
    if (.not. isthere) then
       open  (unit=83,file=trim(detail_fout),status='replace',action='write')
       write (unit=83,fmt=phfmt)  '         YEAR', '        MONTH', '          DAY'         &
-                               , '         TIME', '         HDID', '          TAI'         &
-                               , '          KSN', 'FLAG.SFCWATER', '  FLAG.WFLXGC'         &
-                               , '     ATM.PRSS', '     ATM.TEMP', '      ATM.SHV'         &
-                               , '      ATM.CO2', '     ATM.VELS', '    ATM.PRATE'         &
-                               , '   ATM.HEIGHT', '     ATM.RHOS', '   ATM.RELHUM'         &
-                               , '    ATM.THETA', '    ATM.THEIV', '   MET.RSHORT'         &
-                               , '    MET.RLONG', '     CAN.PRSS', '     CAN.TEMP'         &
-                               , '      CAN.SHV', '      CAN.CO2', '    CAN.DEPTH'         &
-                               , '     CAN.RHOS', '   CAN.RELHUM', '    CAN.THETA'         &
-                               , '    CAN.THEIV', '     SFC.TEMP', '      SFC.SHV'         &
-                               , '     VEG.TEMP', '    VEG.WATER', '       GGBARE'         &
+                               , '         TIME', '         HDID', '          LAI'         &
+                               , '          WAI', '          KSN', 'FLAG.SFCWATER'         &
+                               , '  FLAG.WFLXGC', '     ATM.PRSS', '     ATM.TEMP'         &
+                               , '      ATM.SHV', '      ATM.CO2', '     ATM.VELS'         &
+                               , '    ATM.PRATE', '   ATM.HEIGHT', '     ATM.RHOS'         &
+                               , '   ATM.RELHUM', '    ATM.THETA', '    ATM.THEIV'         &
+                               , '   MET.RSHORT', '    MET.RLONG', '     CAN.PRSS'         &
+                               , '     CAN.TEMP', '      CAN.SHV', '      CAN.CO2'         &
+                               , '    CAN.DEPTH', '     CAN.RHOS', '   CAN.RELHUM'         &
+                               , '    CAN.THETA', '    CAN.THEIV', '     SFC.TEMP'         &
+                               , '      SFC.SHV', '    LEAF.TEMP', '   LEAF.WATER'         &
+                               , '    WOOD.TEMP', '   WOOD.WATER', '       GGBARE'         &
                                , '        GGVEG', '        GGNET', '      OPENCAN'         &
                                , '    SOIL.TEMP', '   SOIL.WATER', '       SOILCP'         &
                                , '       SOILWP', '       SOILFC', '       SLMSTS'         &
                                , '        USTAR', '        TSTAR', '        QSTAR'         &
                                , '        CSTAR', '         ZETA', '      RI_BULK'         &
-                               , '       NETRAD', '       WFLXVC', '       DEWGND'         &
-                               , '       WFLXGC', '       WFLXAC', '       TRANSP'         &
-                               , '        WSHED', '    INTERCEPT', '  THROUGHFALL'         &
-                               , '       HFLXGC', '       HFLXVC', '       HFLXAC'         &
+                               , '   GND.RSHORT', '    GND.RLONG', '       WFLXLC'         &
+                               , '       WFLXWC', '       DEWGND', '       WFLXGC'         &
+                               , '       WFLXAC', '       TRANSP', '        WSHED'         &
+                               , '    INTERCEPT', '  THROUGHFALL', '       HFLXGC'         &
+                               , '       HFLXLC', '       HFLXWC', '       HFLXAC'         &
                                , '       CFLXAC', '        CWDRH', '       SOILRH'         &
                                , '          GPP', '       PLRESP'
+                               
+                               
                                
                                
       close (unit=83,status='keep')
@@ -3210,28 +3567,32 @@ subroutine print_rk4_state(initp,fluxp,csite,ipa,elapsed,hdid)
    open (unit=83,file=trim(detail_fout),status='old',action='write',position='append')
    write(unit=83,fmt=pbfmt)                                                                &
                      current_time%year     , current_time%month    , current_time%date     &
-                   , elapsec               , hdid                  , sum_tai               &
-                   , initp%nlev_sfcwater   , initp%flag_sfcwater   , initp%flag_wflxgc     &
-                   , rk4site%atm_prss      , rk4site%atm_tmp       , rk4site%atm_shv       &
-                   , rk4site%atm_co2       , rk4site%vels          , rk4site%pcpg          &
-                   , rk4site%geoht         , rk4site%atm_rhos      , rk4site%atm_rhv       &
-                   , rk4site%atm_theta     , rk4site%atm_theiv     , rk4site%rshort        &
-                   , rk4site%rlong         , initp%can_prss        , initp%can_temp        &
-                   , initp%can_shv         , initp%can_co2         , initp%can_depth       &
-                   , initp%can_rhos        , initp%can_rhv         , initp%can_theta       &
-                   , initp%can_theiv       , initp%ground_temp     , initp%ground_shv      &
-                   , avg_veg_temp          , sum_veg_water         , initp%ggbare          &
+                   , elapsec               , hdid                  , sum_lai               &
+                   , sum_wai               , initp%nlev_sfcwater   , initp%flag_sfcwater   &
+                   , initp%flag_wflxgc     , rk4site%atm_prss      , rk4site%atm_tmp       &
+                   , rk4site%atm_shv       , rk4site%atm_co2       , rk4site%vels          &
+                   , rk4site%pcpg          , rk4site%geoht         , rk4site%atm_rhos      &
+                   , rk4site%atm_rhv       , rk4site%atm_theta     , rk4site%atm_theiv     &
+                   , rk4site%rshort        , rk4site%rlong         , initp%can_prss        &
+                   , initp%can_temp        , initp%can_shv         , initp%can_co2         &
+                   , initp%can_depth       , initp%can_rhos        , initp%can_rhv         &
+                   , initp%can_theta       , initp%can_theiv       , initp%ground_temp     &
+                   , initp%ground_shv      , avg_leaf_temp         , sum_leaf_water        &
+                   , avg_wood_temp         , sum_wood_water        , initp%ggbare          &
                    , initp%ggveg           , initp%ggnet           , initp%opencan_frac    &
                    , initp%soil_tempk(nzg) , initp%soil_water(nzg) , soil8(nsoil)%soilcp   &
                    , soil8(nsoil)%soilwp   , soil8(nsoil)%sfldcap  , soil8(nsoil)%slmsts   &
                    , initp%ustar           , initp%tstar           , initp%qstar           &
                    , initp%cstar           , initp%zeta            , initp%ribulk          &
-                   , fluxp%flx_netrad      , fluxp%flx_vapor_vc    , fluxp%flx_dew_cg      &
-                   , fluxp%flx_vapor_gc    , fluxp%flx_vapor_ac    , fluxp%flx_transp      &
-                   , fluxp%flx_wshed_vg    , fluxp%flx_intercepted , fluxp%flx_throughfall &
-                   , fluxp%flx_sensible_gc , fluxp%flx_sensible_vc , fluxp%flx_sensible_ac &
+                   , fluxp%flx_rshort_gnd  , fluxp%flx_rlong_gnd   , fluxp%flx_vapor_lc    &
+                   , fluxp%flx_vapor_wc    , fluxp%flx_dew_cg      , fluxp%flx_vapor_gc    &
+                   , fluxp%flx_vapor_ac    , fluxp%flx_transp      , fluxp%flx_wshed_vg    &
+                   , fluxp%flx_intercepted , fluxp%flx_throughfall , fluxp%flx_sensible_gc &
+                   , fluxp%flx_sensible_lc , fluxp%flx_sensible_wc , fluxp%flx_sensible_ac &
                    , fluxp%flx_carbon_ac   , initp%cwd_rh          , soil_rh               &
                    , sum_gpp               , sum_plresp
+                   
+                   
    close(unit=83,status='keep')
    !---------------------------------------------------------------------------------------!
 
@@ -3243,10 +3604,15 @@ subroutine print_rk4_state(initp,fluxp,csite,ipa,elapsed,hdid)
    do ico=1, cpatch%ncohorts
 
       !----- Find the integer version of "resolvable". ------------------------------------!
-      if (initp%resolvable(ico)) then
-         isresolved = 1
+      if (initp%leaf_resolvable(ico)) then
+         leaf_resolve = 1
       else
-         isresolved = 0
+         leaf_resolve = 0
+      end if
+      if (initp%wood_resolvable(ico)) then
+         wood_resolve = 1
+      else
+         wood_resolve = 0
       end if
 
       !----- Copy intercepted water. ------------------------------------------------------!
@@ -3269,18 +3635,24 @@ subroutine print_rk4_state(initp,fluxp,csite,ipa,elapsed,hdid)
          write (unit=84,fmt=chfmt)                                                         &
                                  '         YEAR', '        MONTH', '          DAY'         &
                                , '         TIME', '         HDID', '          PFT'         &
-                               , '   RESOLVABLE', '       NPLANT', '       HEIGHT'         &
-                               , '          TAI', '   CROWN_AREA', '   VEG_ENERGY'         &
-                               , '    VEG_WATER', '     VEG_HCAP', '     VEG_TEMP'         &
-                               , '     VEG_FLIQ', '     VEG_WIND', '      FS_OPEN'         &
-                               , '     REYNOLDS', '      GRASHOF', ' NUSSELT_FREE'         &
-                               , ' NUSSELT_FORC', '     LINT_SHV', '          GBH'         &
-                               , '          GBW', '     GSW_OPEN', '     GSW_CLOS'         &
-                               , '          GPP', '    LEAF_RESP', '    ROOT_RESP'         &
-                               , '  GROWTH_RESP', ' STORAGE_RESP', '   VLEAF_RESP'         &
-                               , '     RSHORT_V', '      RLONG_V', '       HFLXVC'         &
-                               , '      QWFLXVC', '       QWSHED', '      QTRANSP'         &
-                               , ' QINTERCEPTED'
+                               , ' LEAF_RESOLVE', ' WOOD_RESOLVE', '       NPLANT'         &
+                               , '       HEIGHT', '          LAI', '          WAI'         &
+                               , '   CROWN_AREA', '  LEAF_ENERGY', '   LEAF_WATER'         &
+                               , '    LEAF_HCAP', '    LEAF_TEMP', '    LEAF_FLIQ'         &
+                               , '  WOOD_ENERGY', '   WOOD_WATER', '    WOOD_HCAP'         &
+                               , '    WOOD_TEMP', '    WOOD_FLIQ', '     VEG_WIND'         &
+                               , '      FS_OPEN', '   LEAF_REYNO', ' LEAF_GRASHOF'         &
+                               , '  LEAF_NUFREE', '  LEAF_NUFORC', '   WOOD_REYNO'         &
+                               , ' WOOD_GRASHOF', '  WOOD_NUFREE', '  WOOD_NUFORC'         &
+                               , '     LINT_SHV', '     LEAF_GBH', '     LEAF_GBW'         &
+                               , '     WOOD_GBH', '     WOOD_GBW', '     GSW_OPEN'         &
+                               , '     GSW_CLOS', '          GPP', '    LEAF_RESP'         &
+                               , '    ROOT_RESP', '  GROWTH_RESP', ' STORAGE_RESP'         &
+                               , '   VLEAF_RESP', '     RSHORT_L', '      RLONG_L'         &
+                               , '     RSHORT_W', '      RLONG_W', '       HFLXLC'         &
+                               , '       HFLXWC', '      QWFLXLC', '      QWFLXWC'         &
+                               , '       QWSHED', '      QTRANSP', ' QINTERCEPTED'
+                               
 
          close (unit=84,status='keep')
       end if
@@ -3294,22 +3666,27 @@ subroutine print_rk4_state(initp,fluxp,csite,ipa,elapsed,hdid)
       !------------------------------------------------------------------------------------!
       open (unit=84,file=trim(detail_fout),status='old',action='write',position='append')
       write(unit=84,fmt=cbfmt)                                                             &
-                 current_time%year      , current_time%month     , current_time%date       &
-               , elapsec                , hdid                   , cpatch%pft(ico)         &
-               , isresolved             , initp%nplant(ico)      , cpatch%hite(ico)        &
-               , initp%tai(ico)         , initp%crown_area(ico)  , initp%veg_energy(ico)   &
-               , initp%veg_water(ico)   , initp%hcapveg(ico)     , initp%veg_temp(ico)     &
-               , initp%veg_fliq(ico)    , initp%veg_wind(ico)    , initp%fs_open(ico)      &
-               , initp%veg_reynolds(ico), initp%veg_grashof(ico) , initp%veg_nussfree(ico) &
-               , initp%veg_nussforc(ico), initp%lint_shv(ico)    , initp%gbh(ico)          &
-               , initp%gbw(ico)         , initp%gsw_open(ico)    , initp%gsw_closed(ico)   &
-               , initp%gpp(ico)         , initp%leaf_resp(ico)   , initp%root_resp(ico)    &
-               , initp%growth_resp(ico) , initp%storage_resp(ico), initp%vleaf_resp(ico)   &
-               , initp%rshort_v(ico)    , initp%rlong_v(ico)     , fluxp%cfx_hflxvc(ico)   &
-               , fluxp%cfx_qwflxvc(ico) , fluxp%cfx_qwshed(ico)  , fluxp%cfx_qtransp(ico)  &
-               , qintercepted
+              current_time%year       , current_time%month      , current_time%date        &
+            , elapsec                 , hdid                    , cpatch%pft(ico)          &
+            , leaf_resolve            , wood_resolve            , initp%nplant(ico)        &
+            , cpatch%hite(ico)        , initp%lai(ico)          , initp%wai(ico)           &
+            , initp%crown_area(ico)   , initp%leaf_energy(ico)  , initp%leaf_water(ico)    &
+            , initp%leaf_hcap(ico)    , initp%leaf_temp(ico)    , initp%leaf_fliq(ico)     &
+            , initp%wood_energy(ico)  , initp%wood_water(ico)   , initp%wood_hcap(ico)     &
+            , initp%wood_temp(ico)    , initp%wood_fliq(ico)    , initp%veg_wind(ico)      &
+            , initp%fs_open(ico)      , initp%leaf_reynolds(ico), initp%leaf_grashof(ico)  &
+            , initp%leaf_nussfree(ico), initp%leaf_nussforc(ico), initp%wood_reynolds(ico) &
+            , initp%wood_grashof(ico) , initp%wood_nussfree(ico), initp%wood_nussforc(ico) &
+            , initp%lint_shv(ico)     , initp%leaf_gbh(ico)     , initp%leaf_gbw(ico)      &
+            , initp%wood_gbh(ico)     , initp%wood_gbw(ico)     , initp%gsw_open(ico)      &
+            , initp%gsw_closed(ico)   , initp%gpp(ico)          , initp%leaf_resp(ico)     &
+            , initp%root_resp(ico)    , initp%growth_resp(ico)  , initp%storage_resp(ico)  &
+            , initp%vleaf_resp(ico)   , initp%rshort_l(ico)     , initp%rlong_l(ico)       &
+            , initp%rshort_w(ico)     , initp%rlong_w(ico)      , fluxp%cfx_hflxlc(ico)    &
+            , fluxp%cfx_hflxwc(ico)   , fluxp%cfx_qwflxlc(ico)  , fluxp%cfx_qwflxwc(ico)   &
+            , fluxp%cfx_qwshed(ico)   , fluxp%cfx_qtransp(ico)  , qintercepted
       close(unit=84,status='keep')
-      !---------------------------------------------------------------------------------------!
+      !------------------------------------------------------------------------------------!
    end do
    !---------------------------------------------------------------------------------------!
    return

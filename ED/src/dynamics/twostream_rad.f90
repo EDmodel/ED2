@@ -5,115 +5,138 @@
 ! cases we consider the clumpiness effect (i.e., the fact that leaves and branches aren't  !
 ! randomly distributed).  The crown area will be also considered when the user wants it.   !
 !------------------------------------------------------------------------------------------!
-subroutine sw_twostream_clump(salb,scosz,scosaoi,ncoh,pft,TAI,canopy_area                  &
-                             ,PAR_beam_flip,PAR_diffuse_flip,SW_abs_beam_flip              &
-                             ,SW_abs_diffuse_flip,DW_vislo_beam,DW_vislo_diffuse           &
-                             ,UW_vishi_beam,UW_vishi_diffuse,DW_nirlo_beam                 &
-                             ,DW_nirlo_diffuse,UW_nirhi_beam,UW_nirhi_diffuse              &
-                             ,beam_level,diff_level,lambda_coh,lambda_tot)
+subroutine sw_twostream_clump(salbedo_par,salbedo_nir,scosz,scosaoi,ncoh,pft               &
+                             ,lai,wai,canopy_area                                          &
+                             ,par_beam_flip,par_diffuse_flip,sw_abs_beam_flip              &
+                             ,sw_abs_diffuse_flip,dw_vislo_beam,dw_vislo_diffuse           &
+                             ,uw_vishi_beam,uw_vishi_diffuse,dw_nirlo_beam                 &
+                             ,dw_nirlo_diffuse,uw_nirhi_beam,uw_nirhi_diffuse              &
+                             ,beam_level,diff_level,light_level,light_beam_level           &
+                             ,light_diff_level,lambda_coh,lambda_tot)
 
-   use ed_max_dims          , only : n_pft                   ! ! intent(in) 
-   use pft_coms             , only : clumping_factor         & ! intent(in) 
-                                   , phenology               ! ! intent(in) 
-   use canopy_radiation_coms, only : diffuse_backscatter_nir & ! intent(in)
-                                   , diffuse_backscatter_vis & ! intent(in)
+   use ed_max_dims          , only : n_pft                   ! ! intent(in)
+   use pft_coms             , only : clumping_factor         & ! intent(in)
+                                   , phenology               ! ! intent(in)
+   use canopy_radiation_coms, only : leaf_backscatter_nir    & ! intent(in)
+                                   , leaf_backscatter_vis    & ! intent(in)
                                    , leaf_scatter_nir        & ! intent(in)
                                    , leaf_scatter_vis        & ! intent(in)
-                                   , visible_fraction_dir    & ! intent(in)
-                                   , visible_fraction_dif    & ! intent(in)
+                                   , wood_backscatter_nir    & ! intent(in)
+                                   , wood_backscatter_vis    & ! intent(in)
+                                   , wood_scatter_nir        & ! intent(in)
+                                   , wood_scatter_vis        & ! intent(in)
+                                   , par_beam_norm           & ! intent(in)
+                                   , par_diff_norm           & ! intent(in)
+                                   , nir_beam_norm           & ! intent(in)
+                                   , nir_diff_norm           & ! intent(in)
                                    , cosz_min8               ! ! intent(in)
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
-   integer, dimension(ncoh)     , intent(in)    :: pft
-   integer                      , intent(in)    :: ncoh
-   real(kind=8), dimension(ncoh), intent(in)    :: TAI
-   real(kind=8), dimension(ncoh), intent(in)    :: canopy_area
-   real                         , intent(in)    :: salb
-   real                         , intent(in)    :: scosz
-   real                         , intent(in)    :: scosaoi
-   real, dimension(ncoh)        , intent(out)   :: PAR_beam_flip
-   real, dimension(ncoh)        , intent(out)   :: PAR_diffuse_flip
-   real, dimension(ncoh)        , intent(out)   :: SW_abs_beam_flip
-   real, dimension(ncoh)        , intent(out)   :: SW_abs_diffuse_flip
-   real                         , intent(out)   :: UW_vishi_beam
-   real                         , intent(out)   :: UW_vishi_diffuse
-   real                         , intent(out)   :: UW_nirhi_beam
-   real                         , intent(out)   :: UW_nirhi_diffuse
-   real                         , intent(out)   :: DW_vislo_beam
-   real                         , intent(out)   :: DW_vislo_diffuse
-   real                         , intent(out)   :: DW_nirlo_beam
-   real                         , intent(out)   :: DW_nirlo_diffuse
-   real(kind=8), dimension(ncoh), intent(out)   :: beam_level
-   real(kind=8), dimension(ncoh), intent(out)   :: diff_level
-   real(kind=8), dimension(ncoh), intent(out)   :: lambda_coh
-   real(kind=8)                 , intent(out)   :: lambda_tot
+   integer, dimension(ncoh)       , intent(in)  :: pft
+   integer                        , intent(in)  :: ncoh
+   real(kind=8), dimension(ncoh)  , intent(in)  :: lai
+   real(kind=8), dimension(ncoh)  , intent(in)  :: wai
+   real(kind=8), dimension(ncoh)  , intent(in)  :: canopy_area
+   real                           , intent(in)  :: salbedo_par
+   real                           , intent(in)  :: salbedo_nir
+   real                           , intent(in)  :: scosz
+   real                           , intent(in)  :: scosaoi
+   real, dimension(ncoh)          , intent(out) :: par_beam_flip
+   real, dimension(ncoh)          , intent(out) :: par_diffuse_flip
+   real, dimension(ncoh)          , intent(out) :: sw_abs_beam_flip
+   real, dimension(ncoh)          , intent(out) :: sw_abs_diffuse_flip
+   real                           , intent(out) :: uw_vishi_beam
+   real                           , intent(out) :: uw_vishi_diffuse
+   real                           , intent(out) :: uw_nirhi_beam
+   real                           , intent(out) :: uw_nirhi_diffuse
+   real                           , intent(out) :: dw_vislo_beam
+   real                           , intent(out) :: dw_vislo_diffuse
+   real                           , intent(out) :: dw_nirlo_beam
+   real                           , intent(out) :: dw_nirlo_diffuse
+   real(kind=8), dimension(ncoh)  , intent(out) :: beam_level
+   real(kind=8), dimension(ncoh)  , intent(out) :: diff_level
+   real(kind=8), dimension(ncoh)  , intent(out) :: light_level
+   real(kind=8), dimension(ncoh)  , intent(out) :: light_beam_level
+   real(kind=8), dimension(ncoh)  , intent(out) :: light_diff_level
+   real(kind=8), dimension(ncoh)  , intent(out) :: lambda_coh
+   real(kind=8)                   , intent(out) :: lambda_tot
    !----- Local variables -----------------------------------------------------------------!
-   integer     , dimension(2*ncoh)        :: indx
-   integer                                :: il
-   integer                                :: ipft
-   integer                                :: ncoh2
-   integer                                :: iband
-   integer                                :: i
-   integer                                :: j
-   integer                                :: ind
-   real(kind=8), dimension(n_pft)         :: leaf_scatter
-   real(kind=8), dimension(n_pft)         :: diffuse_backscatter
-   real(kind=8), dimension(ncoh)          :: expkl_top
-   real(kind=8), dimension(ncoh)          :: expkl_bot
-   real(kind=8), dimension(ncoh)          :: expamk_top
-   real(kind=8), dimension(ncoh)          :: expamk_bot
-   real(kind=8), dimension(ncoh)          :: expapk_top
-   real(kind=8), dimension(ncoh)          :: expapk_bot
-   real(kind=8), dimension(ncoh)          :: A_top
-   real(kind=8), dimension(ncoh)          :: A_bot
-   real(kind=8), dimension(ncoh)          :: B_top
-   real(kind=8), dimension(ncoh)          :: B_bot
-   real(kind=8), dimension(ncoh)          :: C_top
-   real(kind=8), dimension(ncoh)          :: C_bot
-   real(kind=8), dimension(ncoh)          :: F_top
-   real(kind=8), dimension(ncoh)          :: F_bot
-   real(kind=8), dimension(ncoh)          :: G_top
-   real(kind=8), dimension(ncoh)          :: G_bot
-   real(kind=8), dimension(ncoh)          :: H_top
-   real(kind=8), dimension(ncoh)          :: H_bot
-   real(kind=8), dimension(ncoh)          :: beam_bot
-   real(kind=8), dimension(ncoh)          :: beam_bot_crown
-   real(kind=8), dimension(ncoh+1)        :: upward_vis_beam
-   real(kind=8), dimension(ncoh+1)        :: upward_vis_diffuse
-   real(kind=8), dimension(ncoh+1)        :: upward_nir_beam
-   real(kind=8), dimension(ncoh+1)        :: upward_nir_diffuse
-   real(kind=8), dimension(ncoh+1)        :: downward_nir_beam
-   real(kind=8), dimension(ncoh+1)        :: downward_nir_diffuse
-   real(kind=8), dimension(ncoh+1)        :: downward_vis_beam
-   real(kind=8), dimension(ncoh+1)        :: downward_vis_diffuse
-   real(kind=8), dimension(2*ncoh)        :: mastervec_beam
-   real(kind=8), dimension(2*ncoh)        :: masveccp_beam
-   real(kind=8), dimension(2*ncoh)        :: mastervec_diffuse
-   real(kind=8), dimension(2*ncoh)        :: masveccp_diffuse
-   real(kind=8), dimension(2*ncoh,2)      :: matal
-   real(kind=8), dimension(2*ncoh,5)      :: mastermat
-   real(kind=8), dimension(2*ncoh,2*ncoh) :: masmatcp
-   real(kind=8)                           :: alb
-   real(kind=8)                           :: cosz
-   real(kind=8)                           :: cosaoi
-   real(kind=8)                           :: lambda
-   real(kind=8)                           :: beam_backscatter
-   real(kind=8)                           :: eta
-   real(kind=8)                           :: zeta
-   real(kind=8)                           :: exk
-   real(kind=8)                           :: exki
-   real(kind=8)                           :: zetai
-   real(kind=8)                           :: d
-   real(kind=8)                           :: rhoo
-   real(kind=8)                           :: sigma
-   real(kind=8)                           :: source_bot
-   real(kind=8)                           :: source_top
-   real(kind=8), dimension(ncoh)          :: eff_tai
+   integer     , dimension(2*ncoh)              :: indx
+   integer                                      :: il
+   integer                                      :: ipft
+   integer                                      :: ncoh2
+   integer                                      :: iband
+   integer                                      :: i
+   integer                                      :: j
+   integer                                      :: ind
+   real(kind=8), dimension(ncoh)                :: expkl_top
+   real(kind=8), dimension(ncoh)                :: expkl_bot
+   real(kind=8), dimension(ncoh)                :: expamk_top
+   real(kind=8), dimension(ncoh)                :: expamk_bot
+   real(kind=8), dimension(ncoh)                :: expapk_top
+   real(kind=8), dimension(ncoh)                :: expapk_bot
+   real(kind=8), dimension(ncoh)                :: a_top
+   real(kind=8), dimension(ncoh)                :: a_bot
+   real(kind=8), dimension(ncoh)                :: b_top
+   real(kind=8), dimension(ncoh)                :: b_bot
+   real(kind=8), dimension(ncoh)                :: c_top
+   real(kind=8), dimension(ncoh)                :: c_bot
+   real(kind=8), dimension(ncoh)                :: f_top
+   real(kind=8), dimension(ncoh)                :: f_bot
+   real(kind=8), dimension(ncoh)                :: g_top
+   real(kind=8), dimension(ncoh)                :: g_bot
+   real(kind=8), dimension(ncoh)                :: h_top
+   real(kind=8), dimension(ncoh)                :: h_bot
+   real(kind=8), dimension(ncoh)                :: beam_bot
+   real(kind=8), dimension(ncoh)                :: beam_bot_crown
+   real(kind=8), dimension(ncoh)                :: tai
+   real(kind=8), dimension(ncoh)                :: eff_tai
+   real(kind=8), dimension(ncoh)                :: cohort_scatter_vis
+   real(kind=8), dimension(ncoh)                :: cohort_backscatter_vis
+   real(kind=8), dimension(ncoh)                :: cohort_scatter_nir
+   real(kind=8), dimension(ncoh)                :: cohort_backscatter_nir
+   real(kind=8), dimension(ncoh)                :: cohort_scatter
+   real(kind=8), dimension(ncoh)                :: cohort_backscatter
+   real(kind=8), dimension(ncoh)                :: cohort_clumping
+   real(kind=8), dimension(ncoh+1)              :: upward_vis_beam
+   real(kind=8), dimension(ncoh+1)              :: upward_vis_diffuse
+   real(kind=8), dimension(ncoh+1)              :: upward_nir_beam
+   real(kind=8), dimension(ncoh+1)              :: upward_nir_diffuse
+   real(kind=8), dimension(ncoh+1)              :: downward_nir_beam
+   real(kind=8), dimension(ncoh+1)              :: downward_nir_diffuse
+   real(kind=8), dimension(ncoh+1)              :: downward_vis_beam
+   real(kind=8), dimension(ncoh+1)              :: downward_vis_diffuse
+   real(kind=8), dimension(2*ncoh)              :: mastervec_beam
+   real(kind=8), dimension(2*ncoh)              :: masveccp_beam
+   real(kind=8), dimension(2*ncoh)              :: mastervec_diffuse
+   real(kind=8), dimension(2*ncoh)              :: masveccp_diffuse
+   real(kind=8), dimension(2*ncoh,2)            :: matal
+   real(kind=8), dimension(2*ncoh,5)            :: mastermat
+   real(kind=8), dimension(2*ncoh,2*ncoh)       :: masmatcp
+   real(kind=8)                                 :: albedo
+   real(kind=8)                                 :: cosz
+   real(kind=8)                                 :: cosaoi
+   real(kind=8)                                 :: lambda
+   real(kind=8)                                 :: beam_backscatter
+   real(kind=8)                                 :: eta
+   real(kind=8)                                 :: zeta
+   real(kind=8)                                 :: iota
+   real(kind=8)                                 :: exk
+   real(kind=8)                                 :: exki
+   real(kind=8)                                 :: zetai
+   real(kind=8)                                 :: d
+   real(kind=8)                                 :: rhoo
+   real(kind=8)                                 :: sigma
+   real(kind=8)                                 :: source_bot
+   real(kind=8)                                 :: source_top
+   real(kind=8)                                 :: beam_top
+   real(kind=8)                                 :: diff_top
+   real(kind=8)                                 :: weight_leaf
+   real(kind=8)                                 :: weight_wood
    !---------------------------------------------------------------------------------------!
 
    
    !----- Convert input variable to double precision. -------------------------------------!
-   alb    = dble(salb)
    cosz   = max(cosz_min8,dble(scosz))
    cosaoi = max(cosz_min8,dble(scosaoi))
 
@@ -122,10 +145,25 @@ subroutine sw_twostream_clump(salb,scosz,scosaoi,ncoh,pft,TAI,canopy_area       
    lambda     = 5.d-1/cosaoi
    lambda_tot = 0.0d0
    do il=1,ncoh
-      ipft           = pft(il)
-      lambda_tot     = lambda_tot + clumping_factor(ipft)
-      lambda_coh(il) = lambda * clumping_factor(ipft) / canopy_area(il)
-      eff_tai(il)    = clumping_factor(ipft)*TAI(il)
+      ipft                       = pft(il)
+      lambda_tot                 = lambda_tot + clumping_factor(ipft)
+      tai                   (il) = lai(il) + wai(il)
+      eff_tai               (il) = clumping_factor(ipft) * lai(il) + wai(il)
+      cohort_clumping       (il) = eff_tai(il) / tai(il)
+      lambda_coh            (il) = lambda * cohort_clumping(il) / canopy_area(il)
+
+      !----- Find the scattering coefficients. --------------------------------------------!
+      weight_leaf                = clumping_factor(ipft) * lai(il) / eff_tai(il)
+      weight_wood                = 1.d0 - weight_leaf
+      cohort_scatter_vis    (il) = leaf_scatter_vis(ipft)     * weight_leaf                &
+                                 + wood_scatter_vis(ipft)     * weight_wood
+      cohort_scatter_nir    (il) = leaf_scatter_nir(ipft)     * weight_leaf                &
+                                 + wood_scatter_nir(ipft)     * weight_wood
+      cohort_backscatter_vis(il) = leaf_backscatter_vis(ipft) * weight_leaf                &
+                                 + wood_backscatter_vis(ipft) * weight_wood
+      cohort_backscatter_nir(il) = leaf_backscatter_nir(ipft) * weight_leaf                &
+                                 + wood_backscatter_nir(ipft) * weight_wood
+
    end do
    lambda_tot = lambda_tot * lambda / dble(ncoh)
    beam_backscatter = (5.d-1 + cosz) * (1.0d0 - cosz*log(1.0d0+1.0d0/cosz))
@@ -134,18 +172,28 @@ subroutine sw_twostream_clump(salb,scosz,scosaoi,ncoh,pft,TAI,canopy_area       
    bandloop: do iband = 1,2
       select case(iband)
       case (1) !----- Visible (or PAR). ---------------------------------------------------!
-         do ipft = 1,n_pft
-            leaf_scatter(ipft)        = dble(leaf_scatter_vis(ipft))
-            diffuse_backscatter(ipft) = dble(diffuse_backscatter_vis(ipft))
+         do il = 1,ncoh
+            cohort_scatter    (il) = cohort_scatter_vis    (il)
+            cohort_backscatter(il) = cohort_backscatter_vis(il)
          end do
+         beam_top = par_beam_norm
+         diff_top = par_diff_norm
+         albedo   = dble(salbedo_par)
       case (2) !----- Near infrared (or NIR). ---------------------------------------------!
-         do ipft = 1,n_pft
-            leaf_scatter(ipft)        = dble(leaf_scatter_nir)
-            diffuse_backscatter(ipft) = dble(diffuse_backscatter_nir)
+         do il = 1,ncoh
+            cohort_scatter    (il) = cohort_scatter_nir    (il)
+            cohort_backscatter(il) = cohort_backscatter_nir(il)
          end do
+         beam_top = nir_beam_norm
+         diff_top = nir_diff_norm
+         albedo   = dble(salbedo_nir)
       end select
-      
       !------------------------------------------------------------------------------------!
+
+
+
+
+
       !------------------------------------------------------------------------------------!
       !     Calculate more factors for this band.  We start by calculating the forcings,   !
       ! using the effective tree area index, considering the leaf clumpiness and, if the   !
@@ -156,10 +204,10 @@ subroutine sw_twostream_clump(salb,scosz,scosaoi,ncoh,pft,TAI,canopy_area       
       ! canopy_area is one.).                                                              !
       !------------------------------------------------------------------------------------!
       !----- Start with the tallest cohort, moving downwards. -----------------------------!
-      beam_bot_crown(ncoh) = exp(-lambda*eff_tai(ncoh)/canopy_area(ncoh))
-      beam_level(ncoh)     = exp(-5.d-1*lambda*eff_tai(ncoh)/canopy_area(ncoh))
-      beam_bot(ncoh)       = (1.d0-canopy_area(ncoh))                                      &
-                           + canopy_area(ncoh)*beam_bot_crown(ncoh)
+      beam_bot_crown(ncoh)  = beam_top * exp(-lambda*eff_tai(ncoh)/canopy_area(ncoh))
+      beam_level(ncoh)      = beam_top * exp(-5.d-1*lambda*eff_tai(ncoh)/canopy_area(ncoh))
+      beam_bot(ncoh)        = beam_top * (1.d0-canopy_area(ncoh))                          &
+                            + canopy_area(ncoh) * beam_bot_crown(ncoh)
       do il=ncoh-1,1,-1
          beam_bot_crown(il) = beam_bot(il+1) * exp(-lambda*eff_tai(il)/canopy_area(il))
          beam_bot(il)       = beam_bot(il+1)*(1.d0-canopy_area(il))                        & 
@@ -172,51 +220,52 @@ subroutine sw_twostream_clump(salb,scosz,scosaoi,ncoh,pft,TAI,canopy_area       
 
       do il=1,ncoh
          ipft  = pft(il)
-         eta   = clumping_factor(ipft)                                                     &
-               * (1.0d0 - (1.0d0-diffuse_backscatter(ipft)) * leaf_scatter(ipft))
-         zeta  = leaf_scatter(ipft) * diffuse_backscatter(ipft) * clumping_factor(ipft)
+         eta   = cohort_clumping(il)                                                       &
+               * (1.0d0 - (1.0d0-cohort_backscatter(il)) * cohort_scatter(il))
+         zeta  = cohort_scatter(il) * cohort_backscatter(il) * cohort_clumping(il)
+         sigma = cohort_clumping(il) * lambda
+         iota  = sigma * cohort_scatter(il) * beam_backscatter
+
+
+         !----- Find derived properties. --------------------------------------------------!
          exk   = sqrt(eta*eta - zeta*zeta)
          exki  = 1.0d0/exk
          zetai = 1.0d0/zeta
 
+
          !----- Sources. ------------------------------------------------------------------!
-         source_bot = clumping_factor(ipft)*lambda*leaf_scatter(ipft)                      &
-                    * beam_backscatter * beam_bot_crown(il)
-         source_top = source_bot * exp(lambda*eff_tai(il))
+         source_bot = iota * beam_bot_crown(il)
+         source_top = source_bot * exp(lambda * eff_tai(il))
 
          !----- Forcing coefficients. -----------------------------------------------------!
-         rhoo  = - (zeta + eta + clumping_factor(ipft)*lambda)                             &
-               * clumping_factor(ipft) * lambda                                            &
-               * leaf_scatter(ipft) * beam_backscatter                                     &
-               * beam_bot_crown(il)
-         sigma = clumping_factor(ipft) * lambda
+         rhoo  = - (zeta + eta + sigma) * source_bot
 
          !----- Calculate exponentials only once. -----------------------------------------!
-         expkl_bot(il)  = 1.0d0
-         expkl_top(il)  = exp(exk*TAI(il))
+         expkl_bot (il) = 1.0d0
+         expkl_top (il) = exp(exk * tai(il))
          expamk_bot(il) = 1.0d0
-         expamk_top(il) = exp((sigma-exk)*TAI(il))
+         expamk_top(il) = exp((sigma-exk) * tai(il))
          expapk_bot(il) = 1.0d0
-         expapk_top(il) = exp((sigma+exk)*TAI(il))
-         A_bot(il)      = -source_bot*zetai
-         A_top(il)      = -source_top*zetai                                                &
+         expapk_top(il) = exp((sigma+exk) * tai(il))
+         a_bot(il)      = -source_bot*zetai
+         a_top(il)      = -source_top*zetai                                                &
                         + 5.d-1*zetai*(eta*exki-1.0d0)*expkl_top(il)*rhoo/(sigma-exk)      &
                         * (expamk_top(il)-expamk_bot(il))                                  &
                         - 5.d-1*zetai*(eta*exki+1.0d0) / expkl_top(il)*rhoo/(sigma+exk)    &
                         * (expapk_top(il)-expapk_bot(il))
-         B_bot(il)      = 5.d-1*zetai*(eta*exki-1.0d0)
-         B_top(il)      = 5.d-1*zetai*(eta*exki-1.0d0)*expkl_top(il)
-         C_bot(il)      = -5.d-1*zetai*(eta*exki+1.0d0)
-         C_top(il)      = -5.d-1*zetai*(eta*exki+1.0d0)/expkl_top(il)
-         F_bot(il)      = 0.0d0
-         F_top(il)      = 5.d-1*exki*expkl_top(il)*rhoo/(sigma-exk)                        &
+         b_bot(il)      = 5.d-1*zetai*(eta*exki-1.0d0)
+         b_top(il)      = 5.d-1*zetai*(eta*exki-1.0d0)*expkl_top(il)
+         c_bot(il)      = -5.d-1*zetai*(eta*exki+1.0d0)
+         c_top(il)      = -5.d-1*zetai*(eta*exki+1.0d0)/expkl_top(il)
+         f_bot(il)      = 0.0d0
+         f_top(il)      = 5.d-1*exki*expkl_top(il)*rhoo/(sigma-exk)                        &
                         * (expamk_top(il)-expamk_bot(il))                                  &
                         - 5.d-1*exki/expkl_top(il)*rhoo/(sigma+exk)                        &
                         * (expapk_top(il)-expapk_bot(il))
-         G_bot(il)      = 5.d-1*exki
-         G_top(il)      = 5.d-1*exki*expkl_top(il)
-         H_bot(il)      = -5.d-1*exki
-         H_top(il)      = -5.d-1*exki/expkl_top(il)
+         g_bot(il)      = 5.d-1*exki
+         g_top(il)      = 5.d-1*exki*expkl_top(il)
+         h_bot(il)      = -5.d-1*exki
+         h_top(il)      = -5.d-1*exki/expkl_top(il)
       end do
 
       
@@ -231,45 +280,45 @@ subroutine sw_twostream_clump(salb,scosz,scosaoi,ncoh,pft,TAI,canopy_area       
          masveccp_diffuse(j)  = 0.0d0
       end do
 
-      masmatcp(1,1)        = G_top(ncoh)
-      masmatcp(1,2)        = H_top(ncoh)
-      mastervec_beam(1)    = -F_top(ncoh)
-      mastervec_diffuse(1) = 1.0d0
+      masmatcp(1,1)        = g_top(ncoh)
+      masmatcp(1,2)        = h_top(ncoh)
+      mastervec_beam(1)    = -f_top(ncoh)
+      mastervec_diffuse(1) = diff_top
       masveccp_beam(1)     = mastervec_beam(1)
       masveccp_diffuse(1)  = mastervec_diffuse(1)
 
       do i=2,ncoh2-2,2
-         masmatcp(i,i-1) = G_bot(nint(real(ncoh2-i+2)*0.5))
-         masmatcp(i,i)   = H_bot(nint(real(ncoh2-i+2)*0.5))
+         masmatcp(i,i-1) = g_bot(nint(real(ncoh2-i+2)*0.5))
+         masmatcp(i,i)   = h_bot(nint(real(ncoh2-i+2)*0.5))
 
-         masmatcp(i,i+1)      = -G_top(nint(real(ncoh2-i)*0.5))
-         masmatcp(i,i+2)      = -H_top(nint(real(ncoh2-i)*0.5))
-         mastervec_beam(i)    = -F_bot(nint(real(ncoh2-i+2)*0.5))                          &
-                              + F_top(nint(real(ncoh2-i)*0.5))
+         masmatcp(i,i+1)      = -g_top(nint(real(ncoh2-i)*0.5))
+         masmatcp(i,i+2)      = -h_top(nint(real(ncoh2-i)*0.5))
+         mastervec_beam(i)    = -f_bot(nint(real(ncoh2-i+2)*0.5))                          &
+                              + f_top(nint(real(ncoh2-i)*0.5))
          mastervec_diffuse(i) = 0.0d0
          masveccp_beam(i)     = mastervec_beam(i)
          masveccp_diffuse(i)  = mastervec_diffuse(i)
       end do
 
       do i=3,ncoh2-1,2
-         masmatcp(i,i-2)      = B_bot(nint(real(ncoh2-i+3)*0.5))
-         masmatcp(i,i-1)      = C_bot(nint(real(ncoh2-i+3)*0.5))
-         masmatcp(i,i)        = -B_top(nint(real(ncoh2-i+1)*0.5))
-         masmatcp(i,i+1)      = -C_top(nint(real(ncoh2-i+1)*0.5))
-         mastervec_beam(i)    = -A_bot(nint(real(ncoh2-i+3)*0.5))                          &
-                              + A_top(nint(real(ncoh2-i+1)*0.5))
+         masmatcp(i,i-2)      = b_bot(nint(real(ncoh2-i+3)*0.5))
+         masmatcp(i,i-1)      = c_bot(nint(real(ncoh2-i+3)*0.5))
+         masmatcp(i,i)        = -b_top(nint(real(ncoh2-i+1)*0.5))
+         masmatcp(i,i+1)      = -c_top(nint(real(ncoh2-i+1)*0.5))
+         mastervec_beam(i)    = -a_bot(nint(real(ncoh2-i+3)*0.5))                          &
+                              + a_top(nint(real(ncoh2-i+1)*0.5))
          masveccp_beam(i)     = mastervec_beam(i)
          mastervec_diffuse(i) = 0.0d0
          masveccp_diffuse(i)  = mastervec_diffuse(i)
       end do
-      masmatcp(ncoh2,ncoh2-1)  = B_bot(1)-alb*G_bot(1)
-      masmatcp(ncoh2,ncoh2)    = C_bot(1)-alb*H_bot(1)
-      mastervec_beam(ncoh2)    = -A_bot(1)+alb*beam_bot(1)
+      masmatcp(ncoh2,ncoh2-1)  =  b_bot(1) - albedo * g_bot(1)
+      masmatcp(ncoh2,ncoh2)    =  c_bot(1) - albedo * h_bot(1)
+      mastervec_beam(ncoh2)    = -a_bot(1) + albedo * beam_bot(1)
       masveccp_beam(ncoh2)     = mastervec_beam(ncoh2)
       mastervec_diffuse(ncoh2) = 0.0d0
       masveccp_diffuse(ncoh2)  = mastervec_diffuse(ncoh2)
       
-      !----- Prep for inversion. ----------------------------------------------------------!
+      !----- Prepare for inversion. -------------------------------------------------------!
       mastermat(1,1) = 0.d0
       mastermat(1,2) = 0.d0
       mastermat(1,3) = masmatcp(1,1)
@@ -312,104 +361,149 @@ subroutine sw_twostream_clump(salb,scosz,scosaoi,ncoh,pft,TAI,canopy_area       
                  ,masveccp_diffuse,mastervec_diffuse)
 
       select case (iband)
-      case (1) !---- Visible (or PAR) band. -----------------------------------------------!
+      case (1) 
+         !---- Visible (or PAR) band. -----------------------------------------------------!
          do i=3,ncoh2-1,2
             ind                     = nint(real(ncoh2-i+1)*0.5)+1
-            upward_vis_beam(ind)    = A_bot(ind) + B_bot(ind) * mastervec_beam(i-2)        &
-                                    + C_bot(ind) * mastervec_beam(i-1)
-            upward_vis_diffuse(ind) = B_bot(ind) * mastervec_diffuse(i-2)                  &
-                                    + C_bot(ind) * mastervec_diffuse(i-1)
+            upward_vis_beam(ind)    = a_bot(ind) + b_bot(ind) * mastervec_beam(i-2)        &
+                                    + c_bot(ind) * mastervec_beam(i-1)
+            upward_vis_diffuse(ind) = b_bot(ind) * mastervec_diffuse(i-2)                  &
+                                    + c_bot(ind) * mastervec_diffuse(i-1)
          end do
 
          do i=2,ncoh2-2,2
             ind                       = nint(real(ncoh2-i)*0.5)+1
-            downward_vis_beam(ind)    = beam_bot(ind) + F_bot(ind)                         &
-                                      + H_bot(ind) * mastervec_beam(i)                     &
-                                      + G_bot(ind) * mastervec_beam(i-1)
-            downward_vis_diffuse(ind) = H_bot(ind) * mastervec_diffuse(i)                  &
-                                      + G_bot(ind) * mastervec_diffuse(i-1)
+            downward_vis_beam(ind)    = beam_bot(ind) + f_bot(ind)                         &
+                                      + h_bot(ind) * mastervec_beam(i)                     &
+                                      + g_bot(ind) * mastervec_beam(i-1)
+            downward_vis_diffuse(ind) = h_bot(ind) * mastervec_diffuse(i)                  &
+                                      + g_bot(ind) * mastervec_diffuse(i-1)
          end do
 
-         upward_vis_beam(ncoh+1)      = B_top(ncoh) * mastervec_beam(1)                    &
-                                      + C_top(ncoh) * mastervec_beam(2) + A_top(ncoh)
-         upward_vis_diffuse(ncoh+1)   = B_top(ncoh) * mastervec_diffuse(1)                 &
-                                      + C_top(ncoh) * mastervec_diffuse(2)
-         downward_vis_beam(ncoh+1)    = 1.0d0
-         downward_vis_diffuse(ncoh+1) = 1.0d0
-         downward_vis_beam(1)         = G_bot(1) * mastervec_beam(ncoh2-1)                 &
-                                      + H_bot(1) * mastervec_beam(ncoh2) + F_bot(1)        &
+         upward_vis_beam(ncoh+1)      = b_top(ncoh) * mastervec_beam(1)                    &
+                                      + c_top(ncoh) * mastervec_beam(2) + a_top(ncoh)
+         upward_vis_diffuse(ncoh+1)   = b_top(ncoh) * mastervec_diffuse(1)                 &
+                                      + c_top(ncoh) * mastervec_diffuse(2)
+         downward_vis_beam(ncoh+1)    = beam_top
+         downward_vis_diffuse(ncoh+1) = diff_top
+         downward_vis_beam(1)         = g_bot(1) * mastervec_beam(ncoh2-1)                 &
+                                      + h_bot(1) * mastervec_beam(ncoh2) + f_bot(1)        &
                                       + beam_bot(1)
-         downward_vis_diffuse(1)      = G_bot(1) * mastervec_diffuse(ncoh2-1)              &
-                                      + H_bot(1) * mastervec_diffuse(ncoh2)
-         upward_vis_beam(1)           = alb * downward_vis_beam(1)
-         upward_vis_diffuse(1)        = alb * downward_vis_diffuse(1)
+         downward_vis_diffuse(1)      = g_bot(1) * mastervec_diffuse(ncoh2-1)              &
+                                      + h_bot(1) * mastervec_diffuse(ncoh2)
+         upward_vis_beam(1)           = albedo * downward_vis_beam(1)
+         upward_vis_diffuse(1)        = albedo * downward_vis_diffuse(1)
       case (2)
 
+         !---- Near infra-red. ------------------------------------------------------------!
          do i=3,ncoh2-1,2
             ind                     = nint(real(ncoh2-i+1)*0.5)+1
-            upward_nir_beam(ind)    = A_bot(ind) + B_bot(ind) * mastervec_beam(i-2)        &
-                                    + C_bot(ind) * mastervec_beam(i-1)
-            upward_nir_diffuse(ind) = B_bot(ind) * mastervec_diffuse(i-2)                  &
-                                    + C_bot(ind) * mastervec_diffuse(i-1)
+            upward_nir_beam(ind)    = a_bot(ind) + b_bot(ind) * mastervec_beam(i-2)        &
+                                    + c_bot(ind) * mastervec_beam(i-1)
+            upward_nir_diffuse(ind) = b_bot(ind) * mastervec_diffuse(i-2)                  &
+                                    + c_bot(ind) * mastervec_diffuse(i-1)
          end do
 
          do i=2,ncoh2-2,2
             ind                       = nint(real(ncoh2-i)*0.5)+1
-            downward_nir_beam(ind)    = beam_bot(ind) + F_bot(ind)                         &
-                                      + H_bot(ind) * mastervec_beam(i)                     &
-                                      + G_bot(ind) * mastervec_beam(i-1)
-            downward_nir_diffuse(ind) = H_bot(ind) * mastervec_diffuse(i)                  &
-                                      + G_bot(ind) * mastervec_diffuse(i-1)
+            downward_nir_beam(ind)    = beam_bot(ind) + f_bot(ind)                         &
+                                      + h_bot(ind) * mastervec_beam(i)                     &
+                                      + g_bot(ind) * mastervec_beam(i-1)
+            downward_nir_diffuse(ind) = h_bot(ind) * mastervec_diffuse(i)                  &
+                                      + g_bot(ind) * mastervec_diffuse(i-1)
          end do
 
-         upward_nir_beam(ncoh+1)      = B_top(ncoh) * mastervec_beam(1)                    &
-                                      + C_top(ncoh) * mastervec_beam(2) + A_top(ncoh)
-         upward_nir_diffuse(ncoh+1)   = B_top(ncoh) * mastervec_diffuse(1)                 &
-                                      + C_top(ncoh) * mastervec_diffuse(2)
-         downward_nir_beam(ncoh+1)    = 1.0d0
-         downward_nir_diffuse(ncoh+1) = 1.0d0
-         downward_nir_beam(1)         = G_bot(1) * mastervec_beam(ncoh2-1)                 &
-                                      + H_bot(1) * mastervec_beam(ncoh2) + F_bot(1)        &
+         upward_nir_beam(ncoh+1)      = b_top(ncoh) * mastervec_beam(1)                    &
+                                      + c_top(ncoh) * mastervec_beam(2) + a_top(ncoh)
+         upward_nir_diffuse(ncoh+1)   = b_top(ncoh) * mastervec_diffuse(1)                 &
+                                      + c_top(ncoh) * mastervec_diffuse(2)
+         downward_nir_beam(ncoh+1)    = beam_top
+         downward_nir_diffuse(ncoh+1) = diff_top
+         downward_nir_beam(1)         = g_bot(1) * mastervec_beam(ncoh2-1)                 &
+                                      + h_bot(1) * mastervec_beam(ncoh2) + f_bot(1)        &
                                       + beam_bot(1)
-         downward_nir_diffuse(1)      = G_bot(1) * mastervec_diffuse(ncoh2-1)              &
-                                      + H_bot(1) * mastervec_diffuse(ncoh2)
-         upward_nir_beam(1)           = alb*downward_nir_beam(1)
-         upward_nir_diffuse(1)        = alb*downward_nir_diffuse(1)
+         downward_nir_diffuse(1)      = g_bot(1) * mastervec_diffuse(ncoh2-1)              &
+                                      + h_bot(1) * mastervec_diffuse(ncoh2)
+         upward_nir_beam(1)           = albedo * downward_nir_beam(1)
+         upward_nir_diffuse(1)        = albedo * downward_nir_diffuse(1)
       end select
    end do bandloop
    
    do il=1,ncoh
-      diff_level(il)          = downward_vis_diffuse(il+1)
-      PAR_beam_flip(il)       = visible_fraction_dir                                       &
-                              * sngl( downward_vis_beam(il+1)-downward_vis_beam(il)        &
-                                    + upward_vis_beam(il)-upward_vis_beam(il+1))
-      PAR_diffuse_flip(il)    = visible_fraction_dif                                       &
-                              * sngl( downward_vis_diffuse(il+1)-downward_vis_diffuse(il)  &
-                                    + upward_vis_diffuse(il)-upward_vis_diffuse(il+1))
-      SW_abs_beam_flip(il)    = PAR_beam_flip(il) + (1.0 - visible_fraction_dir)           &
-                              * sngl( downward_nir_beam(il+1)-downward_nir_beam(il)        &
-                                    + upward_nir_beam(il)-upward_nir_beam(il+1))
-      SW_abs_diffuse_flip(il) = PAR_diffuse_flip(il) + (1.0 - visible_fraction_dif)        &
-                              * sngl(downward_nir_diffuse(il+1) - downward_nir_diffuse(il) &
-                                    + upward_nir_diffuse(il) - upward_nir_diffuse(il+1))
+      !------------------------------------------------------------------------------------!
+      !     Find the light level of the visible band, which is the one that the plants     !
+      ! use, and the total light level, which includes the near-infrared.                  !
+      !------------------------------------------------------------------------------------!
+      diff_level(il)          = 5.d-1 * ( downward_vis_diffuse(il  )                       &
+                                        + downward_vis_diffuse(il+1) ) / par_diff_norm
+
+      beam_level(il)          = 5.d-1 * ( downward_vis_beam   (il  )                       &
+                                        + downward_vis_beam   (il+1) ) / par_beam_norm
+
+      light_level(il)         = 5.d-1 * ( downward_vis_diffuse(il  )                       &
+                                        + downward_vis_beam   (il  )                       &
+                                        + downward_nir_diffuse(il  )                       &
+                                        + downward_nir_beam   (il  )                       &
+                                        + downward_vis_diffuse(il+1)                       &
+                                        + downward_vis_beam   (il+1)                       &
+                                        + downward_nir_diffuse(il+1)                       &
+                                        + downward_nir_beam   (il+1) )
+
+      light_beam_level(il)    = 5.d-1 * ( downward_vis_beam   (il  )                       &
+                                        + downward_nir_beam   (il  )                       &
+                                        + downward_vis_beam   (il+1)                       &
+                                        + downward_nir_beam   (il+1) )                     &
+                              / ( par_beam_norm + nir_beam_norm )
+
+      light_diff_level(il)    = 5.d-1 * ( downward_vis_diffuse(il  )                       &
+                                        + downward_nir_diffuse(il  )                       &
+                                        + downward_vis_diffuse(il+1)                       &
+                                        + downward_nir_diffuse(il+1) )                     &
+                              / ( par_diff_norm + nir_beam_norm )
+      !------------------------------------------------------------------------------------!
+
+      par_beam_flip(il)       = sngl( downward_vis_beam    (il+1)                          &
+                                    - downward_vis_beam    (il  )                          &
+                                    + upward_vis_beam      (il  )                          &
+                                    - upward_vis_beam      (il+1)  )
+      par_diffuse_flip(il)    = sngl( downward_vis_diffuse (il+1)                          &
+                                    - downward_vis_diffuse (il  )                          &
+                                    + upward_vis_diffuse   (il  )                          &
+                                    - upward_vis_diffuse   (il+1)  )
+
+      sw_abs_beam_flip(il)    = par_beam_flip(il)    + sngl( downward_nir_beam   (il+1)    &
+                                                           - downward_nir_beam   (il  )    &
+                                                           + upward_nir_beam     (il  )    &
+                                                           - upward_nir_beam(il+1))
+
+      sw_abs_diffuse_flip(il) = par_diffuse_flip(il) + sngl( downward_nir_diffuse(il+1)    &
+                                                           - downward_nir_diffuse(il  )    &
+                                                           + upward_nir_diffuse  (il  )    &
+                                                           - upward_nir_diffuse  (il+1) )
 
       !----- Ensure that we don't get any negative radiation... ---------------------------!
-      PAR_beam_flip(il)       = max(0.0,PAR_beam_flip(il)       )
-      PAR_diffuse_flip(il)    = max(0.0,PAR_diffuse_flip(il)    )
-      SW_abs_beam_flip(il)    = max(0.0,SW_abs_beam_flip(il)    )
-      SW_abs_diffuse_flip(il) = max(0.0,SW_abs_diffuse_flip(il) )
+      par_beam_flip(il)       = max(0.0,par_beam_flip(il)       )
+      par_diffuse_flip(il)    = max(0.0,par_diffuse_flip(il)    )
+      sw_abs_beam_flip(il)    = max(0.0,sw_abs_beam_flip(il)    )
+      sw_abs_diffuse_flip(il) = max(0.0,sw_abs_diffuse_flip(il) )
    end do
-   
-   !----- Copying to the output variables. ------------------------------------------------!
-   DW_vislo_beam    = max(0.0,sngl(downward_vis_beam(1)))       * visible_fraction_dir
-   DW_vislo_diffuse = max(0.0,sngl(downward_vis_diffuse(1)))    * visible_fraction_dif
-   UW_vishi_beam    = max(0.0,sngl(upward_vis_beam(ncoh+1)))    * visible_fraction_dir
-   UW_vishi_diffuse = max(0.0,sngl(upward_vis_diffuse(ncoh+1))) * visible_fraction_dif
-   DW_nirlo_beam    = max(0.0,sngl(downward_nir_beam(1)))       * (1.-visible_fraction_dir)
-   DW_nirlo_diffuse = max(0.0,sngl(downward_nir_diffuse(1)))    * (1.-visible_fraction_dif)
-   UW_nirhi_beam    = max(0.0,sngl(upward_nir_beam(ncoh+1)))    * (1.-visible_fraction_dir)
-   UW_nirhi_diffuse = max(0.0,sngl(upward_nir_diffuse(ncoh+1))) * (1.-visible_fraction_dif)
-   
+   !---------------------------------------------------------------------------------------!
+
+
+
+
+
+   !----- Copy to the output variables. ---------------------------------------------------!
+   dw_vislo_beam    = max(0.0,sngl(downward_vis_beam        (1) ) )
+   dw_vislo_diffuse = max(0.0,sngl(downward_vis_diffuse     (1) ) )
+   uw_vishi_beam    = max(0.0,sngl(upward_vis_beam     (ncoh+1) ) )
+   uw_vishi_diffuse = max(0.0,sngl(upward_vis_diffuse  (ncoh+1) ) )
+   dw_nirlo_beam    = max(0.0,sngl(downward_nir_beam        (1) ) )
+   dw_nirlo_diffuse = max(0.0,sngl(downward_nir_diffuse     (1) ) )
+   uw_nirhi_beam    = max(0.0,sngl(upward_nir_beam     (ncoh+1) ) )
+   uw_nirhi_diffuse = max(0.0,sngl(upward_nir_diffuse  (ncoh+1) ) )
+   !---------------------------------------------------------------------------------------!
+
    return
 end subroutine sw_twostream_clump
 !==========================================================================================!
@@ -428,22 +522,30 @@ end subroutine sw_twostream_clump
 ! randomly distributed).   In this case, we solve the canopy layer-by-layer rather than    !
 ! cohort-by-cohort.                                                                        !
 !------------------------------------------------------------------------------------------!
-subroutine sw_twostream_layer(salb,scosz,scosaoi,ncoh,pft,TAI,canopy_area,hgttop,hgtbot    &
-                             ,PAR_beam_flip,PAR_diffuse_flip,SW_abs_beam_flip              &
-                             ,SW_abs_diffuse_flip,DW_vislo_beam,DW_vislo_diffuse           &
-                             ,UW_vishi_beam,UW_vishi_diffuse,DW_nirlo_beam                 &
-                             ,DW_nirlo_diffuse,UW_nirhi_beam,UW_nirhi_diffuse              &
-                             ,beam_level,diff_level,lambda_coh,lambda_tot)
+subroutine sw_twostream_layer(salbedo_par,salbedo_nir,scosz,scosaoi,ncoh,pft               &
+                             ,lai,wai,canopy_area,hgttop,hgtbot                            &
+                             ,par_beam_flip,par_diffuse_flip,sw_abs_beam_flip              &
+                             ,sw_abs_diffuse_flip,dw_vislo_beam,dw_vislo_diffuse           &
+                             ,uw_vishi_beam,uw_vishi_diffuse,dw_nirlo_beam                 &
+                             ,dw_nirlo_diffuse,uw_nirhi_beam,uw_nirhi_diffuse              &
+                             ,beam_level,diff_level,light_level,light_beam_level           &
+                             ,light_diff_level,lambda_coh,lambda_tot)
 
    use ed_max_dims          , only : n_pft                   ! ! intent(in)
    use pft_coms             , only : clumping_factor         & ! intent(in)
                                    , phenology               ! ! intent(in)
-   use canopy_radiation_coms, only : diffuse_backscatter_nir & ! intent(in)
-                                   , diffuse_backscatter_vis & ! intent(in)
+   use canopy_radiation_coms, only : leaf_backscatter_nir    & ! intent(in)
+                                   , leaf_backscatter_vis    & ! intent(in)
                                    , leaf_scatter_nir        & ! intent(in)
                                    , leaf_scatter_vis        & ! intent(in)
-                                   , visible_fraction_dir    & ! intent(in)
-                                   , visible_fraction_dif    & ! intent(in)
+                                   , wood_backscatter_nir    & ! intent(in)
+                                   , wood_backscatter_vis    & ! intent(in)
+                                   , wood_scatter_nir        & ! intent(in)
+                                   , wood_scatter_vis        & ! intent(in)
+                                   , par_beam_norm           & ! intent(in)
+                                   , par_diff_norm           & ! intent(in)
+                                   , nir_beam_norm           & ! intent(in)
+                                   , nir_diff_norm           & ! intent(in)
                                    , cosz_min8               ! ! intent(in)
    use canopy_layer_coms    , only : dzcan8                  & ! intent(in)
                                    , zztop8                  & ! intent(in)
@@ -461,24 +563,27 @@ subroutine sw_twostream_layer(salb,scosz,scosaoi,ncoh,pft,TAI,canopy_area,hgttop
                                    , mastermat               & ! intent(inout)
                                    , masmatcp                & ! intent(inout)
                                    , opencan8                & ! intent(inout)
+                                   , layer_scatter           & ! intent(inout)
+                                   , layer_backscatter       & ! intent(inout)
+                                   , layer_clumping          & ! intent(inout)
                                    , expkl_top               & ! intent(inout)
                                    , expkl_bot               & ! intent(inout)
                                    , expamk_top              & ! intent(inout)
                                    , expamk_bot              & ! intent(inout)
                                    , expapk_top              & ! intent(inout)
                                    , expapk_bot              & ! intent(inout)
-                                   , A_top                   & ! intent(inout)
-                                   , A_bot                   & ! intent(inout)
-                                   , B_top                   & ! intent(inout)
-                                   , B_bot                   & ! intent(inout)
-                                   , C_top                   & ! intent(inout)
-                                   , C_bot                   & ! intent(inout)
-                                   , F_top                   & ! intent(inout)
-                                   , F_bot                   & ! intent(inout)
-                                   , G_top                   & ! intent(inout)
-                                   , G_bot                   & ! intent(inout)
-                                   , H_top                   & ! intent(inout)
-                                   , H_bot                   & ! intent(inout)
+                                   , a_top                   & ! intent(inout)
+                                   , a_bot                   & ! intent(inout)
+                                   , b_top                   & ! intent(inout)
+                                   , b_bot                   & ! intent(inout)
+                                   , c_top                   & ! intent(inout)
+                                   , c_bot                   & ! intent(inout)
+                                   , f_top                   & ! intent(inout)
+                                   , f_bot                   & ! intent(inout)
+                                   , g_top                   & ! intent(inout)
+                                   , g_bot                   & ! intent(inout)
+                                   , h_top                   & ! intent(inout)
+                                   , h_bot                   & ! intent(inout)
                                    , beam_bot                & ! intent(inout)
                                    , beam_mid                & ! intent(inout)
                                    , beam_bot_crown          & ! intent(inout)
@@ -494,37 +599,42 @@ subroutine sw_twostream_layer(salb,scosz,scosaoi,ncoh,pft,TAI,canopy_area,hgttop
                                    , masveccp_beam           & ! intent(inout)
                                    , mastervec_diffuse       & ! intent(inout)
                                    , masveccp_diffuse        & ! intent(inout)
-                                   , PAR_beam_layer          & ! intent(inout)
-                                   , PAR_diffuse_layer       & ! intent(inout)
-                                   , SW_abs_beam_layer       & ! intent(inout)
-                                   , SW_abs_diffuse_layer    & ! intent(inout)
+                                   , par_beam_layer          & ! intent(inout)
+                                   , par_diffuse_layer       & ! intent(inout)
+                                   , sw_abs_beam_layer       & ! intent(inout)
+                                   , sw_abs_diffuse_layer    & ! intent(inout)
                                    , zero_canopy_layer       ! ! subroutine
    use consts_coms          , only : tiny_num8               ! ! intent(in)
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    integer     , dimension(ncoh) , intent(in)  :: pft
    integer                       , intent(in)  :: ncoh
-   real(kind=8), dimension(ncoh) , intent(in)  :: TAI
+   real(kind=8), dimension(ncoh) , intent(in)  :: lai
+   real(kind=8), dimension(ncoh) , intent(in)  :: wai
    real(kind=8), dimension(ncoh) , intent(in)  :: canopy_area
    real(kind=8), dimension(ncoh) , intent(in)  :: hgttop
    real(kind=8), dimension(ncoh) , intent(in)  :: hgtbot
-   real(kind=4)                  , intent(in)  :: salb
+   real(kind=4)                  , intent(in)  :: salbedo_par
+   real(kind=4)                  , intent(in)  :: salbedo_nir
    real(kind=4)                  , intent(in)  :: scosz
    real(kind=4)                  , intent(in)  :: scosaoi
-   real(kind=4), dimension(ncoh) , intent(out) :: PAR_beam_flip
-   real(kind=4), dimension(ncoh) , intent(out) :: PAR_diffuse_flip
-   real(kind=4), dimension(ncoh) , intent(out) :: SW_abs_beam_flip
-   real(kind=4), dimension(ncoh) , intent(out) :: SW_abs_diffuse_flip
-   real(kind=4)                  , intent(out) :: UW_vishi_beam
-   real(kind=4)                  , intent(out) :: UW_vishi_diffuse
-   real(kind=4)                  , intent(out) :: UW_nirhi_beam
-   real(kind=4)                  , intent(out) :: UW_nirhi_diffuse
-   real(kind=4)                  , intent(out) :: DW_vislo_beam
-   real(kind=4)                  , intent(out) :: DW_vislo_diffuse
-   real(kind=4)                  , intent(out) :: DW_nirlo_beam
-   real(kind=4)                  , intent(out) :: DW_nirlo_diffuse
+   real(kind=4), dimension(ncoh) , intent(out) :: par_beam_flip
+   real(kind=4), dimension(ncoh) , intent(out) :: par_diffuse_flip
+   real(kind=4), dimension(ncoh) , intent(out) :: sw_abs_beam_flip
+   real(kind=4), dimension(ncoh) , intent(out) :: sw_abs_diffuse_flip
+   real(kind=4)                  , intent(out) :: uw_vishi_beam
+   real(kind=4)                  , intent(out) :: uw_vishi_diffuse
+   real(kind=4)                  , intent(out) :: uw_nirhi_beam
+   real(kind=4)                  , intent(out) :: uw_nirhi_diffuse
+   real(kind=4)                  , intent(out) :: dw_vislo_beam
+   real(kind=4)                  , intent(out) :: dw_vislo_diffuse
+   real(kind=4)                  , intent(out) :: dw_nirlo_beam
+   real(kind=4)                  , intent(out) :: dw_nirlo_diffuse
    real(kind=8), dimension(ncoh) , intent(out) :: beam_level
    real(kind=8), dimension(ncoh) , intent(out) :: diff_level
+   real(kind=8), dimension(ncoh) , intent(out) :: light_level
+   real(kind=8), dimension(ncoh) , intent(out) :: light_beam_level
+   real(kind=8), dimension(ncoh) , intent(out) :: light_diff_level
    real(kind=8), dimension(ncoh) , intent(out) :: lambda_coh
    real(kind=8)                  , intent(out) :: lambda_tot
    !----- Local variables -----------------------------------------------------------------!
@@ -544,13 +654,12 @@ subroutine sw_twostream_layer(salb,scosz,scosaoi,ncoh,pft,TAI,canopy_area,hgttop
    integer     , dimension(ncoh)               :: kzpartial
    integer     , dimension(ncoh)               :: kzfull
    integer     , dimension(ncoh)               :: nlyr_coh
-   real(kind=8), dimension(n_pft)              :: leaf_scatter
-   real(kind=8), dimension(n_pft)              :: diffuse_backscatter
-   real(kind=8)                                :: alb
+   real(kind=8)                                :: albedo
    real(kind=8)                                :: cosz
    real(kind=8)                                :: cosaoi
    real(kind=8)                                :: lambda
-   real(kind=8)                                :: tad
+   real(kind=8)                                :: lad
+   real(kind=8)                                :: wad
    real(kind=8)                                :: this_cai
    real(kind=8)                                :: this_tai
    real(kind=8)                                :: this_eff_tai
@@ -568,12 +677,20 @@ subroutine sw_twostream_layer(salb,scosz,scosaoi,ncoh,pft,TAI,canopy_area,hgttop
    real(kind=8)                                :: iota
    real(kind=8)                                :: source_bot
    real(kind=8)                                :: source_top
+   real(kind=8)                                :: beam_top
+   real(kind=8)                                :: diff_top
+   real(kind=8)                                :: weight_leaf
+   real(kind=8)                                :: weight_wood
    !----- Variables that must be allocated every time. ------------------------------------!
    real(kind=8), dimension(:,:)  , allocatable :: extinct_full
    real(kind=8), dimension(:,:)  , allocatable :: extinct_half
    real(kind=8), dimension(:,:)  , allocatable :: canfrac_lyr
    real(kind=8), dimension(:,:)  , allocatable :: tai_lyr
    real(kind=8), dimension(:,:)  , allocatable :: eff_tai_lyr
+   real(kind=8), dimension(:,:)  , allocatable :: scatter_vis_lyr
+   real(kind=8), dimension(:,:)  , allocatable :: backscatter_vis_lyr
+   real(kind=8), dimension(:,:)  , allocatable :: scatter_nir_lyr
+   real(kind=8), dimension(:,:)  , allocatable :: backscatter_nir_lyr
    !------ External functions. ------------------------------------------------------------!
    real(kind=4)                  , external    :: sngloff
    !---------------------------------------------------------------------------------------!
@@ -584,11 +701,15 @@ subroutine sw_twostream_layer(salb,scosz,scosaoi,ncoh,pft,TAI,canopy_area,hgttop
    !     These must be allocated and de-allocated every time as the number of cohorts is   !
    ! unbounded and may change.                                                             !
    !---------------------------------------------------------------------------------------!
-   allocate(extinct_full      (ncoh,ncanlyr))
-   allocate(extinct_half      (ncoh,ncanlyr))
-   allocate(canfrac_lyr       (ncoh,ncanlyr))
-   allocate(tai_lyr           (ncoh,ncanlyr))
-   allocate(eff_tai_lyr       (ncoh,ncanlyr))
+   allocate(extinct_full       (ncoh,ncanlyr))
+   allocate(extinct_half       (ncoh,ncanlyr))
+   allocate(canfrac_lyr        (ncoh,ncanlyr))
+   allocate(tai_lyr            (ncoh,ncanlyr))
+   allocate(eff_tai_lyr        (ncoh,ncanlyr))
+   allocate(scatter_vis_lyr    (ncoh,ncanlyr))
+   allocate(backscatter_vis_lyr(ncoh,ncanlyr))
+   allocate(scatter_nir_lyr    (ncoh,ncanlyr))
+   allocate(backscatter_nir_lyr(ncoh,ncanlyr))
    !---------------------------------------------------------------------------------------!
 
 
@@ -602,12 +723,15 @@ subroutine sw_twostream_layer(salb,scosz,scosaoi,ncoh,pft,TAI,canopy_area,hgttop
    canfrac_lyr           (:,:) = 0.d0
    tai_lyr               (:,:) = 0.d0
    eff_tai_lyr           (:,:) = 0.d0
+   scatter_vis_lyr       (:,:) = 0.d0
+   backscatter_vis_lyr   (:,:) = 0.d0
+   scatter_nir_lyr       (:,:) = 0.d0
+   backscatter_nir_lyr   (:,:) = 0.d0
    !---------------------------------------------------------------------------------------!
 
 
 
    !----- Convert input variable to double precision. -------------------------------------!
-   alb    = dble(salb)
    cosz   = max(cosz_min8,dble(scosz))
    cosaoi = max(cosz_min8,dble(scosaoi))
    !---------------------------------------------------------------------------------------!
@@ -667,7 +791,8 @@ subroutine sw_twostream_layer(salb,scosz,scosaoi,ncoh,pft,TAI,canopy_area,hgttop
       ipft = pft(ico)
 
       !------ Find the "tree" area density. -----------------------------------------------!
-      tad              = tai(ico) / (hgttop(ico) - hgtbot(ico))
+      lad              = lai(ico) / (hgttop(ico) - hgtbot(ico))
+      wad              = wai(ico) / (hgttop(ico) - hgtbot(ico))
 
       !------------------------------------------------------------------------------------!
       !    Integrate the extinction coefficients for partial layers.  Here we scale the    !
@@ -678,22 +803,49 @@ subroutine sw_twostream_layer(salb,scosz,scosaoi,ncoh,pft,TAI,canopy_area,hgttop
       ! index instead of leaf area index.                                                  !
       !------------------------------------------------------------------------------------!
       if (kapartial(ico) == kzpartial(ico)) then
-         il                    = kapartial(ico)
-         tai_lyr      (ico,il) = tai(ico)
-         eff_tai_lyr  (ico,il) = clumping_factor(ipft) * tai_lyr (ico,il)
-         this_ext              = lambda * eff_tai_lyr(ico,il) / canfrac_lyr(ico,il)
-         extinct_full (ico,il) = exp( - this_ext)
-         extinct_half (ico,il) = exp( - 5.d-1  * this_ext )
-         lambda_coh      (ico) = lambda_coh(ico) + this_ext 
+         il                          = kapartial(ico)
+         this_tai                    = lai (ico) + wai(ico)
+         this_eff_tai                = clumping_factor(ipft) * lai (ico) + wai(ico)
+         weight_leaf                 = (clumping_factor(ipft) * lai (ico)) / this_eff_tai
+         weight_wood                 = 1.d0 - weight_leaf
+
+         tai_lyr            (ico,il) = this_tai
+         eff_tai_lyr        (ico,il) = this_eff_tai
+         this_ext                    = lambda * eff_tai_lyr(ico,il) / canfrac_lyr(ico,il)
+         extinct_full       (ico,il) = exp( - this_ext)
+         extinct_half       (ico,il) = exp( - 5.d-1  * this_ext )
+         lambda_coh            (ico) = lambda_coh(ico) + this_ext
+         scatter_vis_lyr    (ico,il) = leaf_scatter_vis(ipft)     * weight_leaf            &
+                                     + wood_scatter_vis(ipft)     * weight_wood
+         backscatter_vis_lyr(ico,il) = leaf_backscatter_vis(ipft) * weight_leaf            &
+                                     + wood_backscatter_vis(ipft) * weight_wood
+         scatter_nir_lyr    (ico,il) = leaf_scatter_nir(ipft)     * weight_leaf            &
+                                     + wood_scatter_nir(ipft)     * weight_wood
+         backscatter_nir_lyr(ico,il) = leaf_backscatter_nir(ipft) * weight_leaf            &
+                                     + wood_backscatter_nir(ipft) * weight_wood
       else
          !------ Fully vegetated layers. --------------------------------------------------!
          do il=kafull(ico),kzfull(ico)
-            tai_lyr      (ico,il) = tad * dzcan8(il)
-            eff_tai_lyr  (ico,il) = clumping_factor(ipft) * tai_lyr (ico,il)
-            this_ext              = lambda * eff_tai_lyr(ico,il) / canfrac_lyr(ico,il)
-            extinct_full (ico,il) = exp( - this_ext)
-            extinct_half (ico,il) = exp( - 5.d-1 * this_ext)
-            lambda_coh      (ico) = lambda_coh(ico) + this_ext 
+            this_tai                    = (lad + wad) * dzcan8(il)
+            this_eff_tai                = (clumping_factor(ipft) * lad + wad) * dzcan8(il)
+            weight_leaf                 = (clumping_factor(ipft) * lad * dzcan8(il))       &
+                                        / this_eff_tai
+            weight_wood                 = 1.d0 - weight_leaf
+
+            tai_lyr            (ico,il) = this_tai
+            eff_tai_lyr        (ico,il) = this_eff_tai
+            this_ext                    = lambda * eff_tai_lyr(ico,il) / canfrac_lyr(ico,il)
+            extinct_full       (ico,il) = exp( - this_ext)
+            extinct_half       (ico,il) = exp( - 5.d-1 * this_ext)
+            lambda_coh            (ico) = lambda_coh(ico) + this_ext 
+            scatter_vis_lyr    (ico,il) = leaf_scatter_vis(ipft)     * weight_leaf         &
+                                        + wood_scatter_vis(ipft)     * weight_wood
+            backscatter_vis_lyr(ico,il) = leaf_backscatter_vis(ipft) * weight_leaf         &
+                                        + wood_backscatter_vis(ipft) * weight_wood
+            scatter_nir_lyr    (ico,il) = leaf_scatter_nir(ipft)     * weight_leaf         &
+                                        + wood_scatter_nir(ipft)     * weight_wood
+            backscatter_nir_lyr(ico,il) = leaf_backscatter_nir(ipft) * weight_leaf         &
+                                        + wood_backscatter_nir(ipft) * weight_wood
          end do
          !---------------------------------------------------------------------------------!
 
@@ -703,22 +855,54 @@ subroutine sw_twostream_layer(salb,scosz,scosaoi,ncoh,pft,TAI,canopy_area,hgttop
          ! partial and full indices are the same, otherwise we double account the layer.   !
          !---------------------------------------------------------------------------------!
          if (kapartial(ico) /= kafull(ico)) then
-            il                    = kapartial(ico)
-            tai_lyr      (ico,il) = tad * (zztop8(il)-hgtbot(ico))
-            eff_tai_lyr  (ico,il) = clumping_factor(ipft) * tai_lyr (ico,il)
-            this_ext              = lambda * eff_tai_lyr(ico,il) / canfrac_lyr(ico,il)
-            extinct_full (ico,il) = exp( - this_ext)
-            extinct_half (ico,il) = exp( - 5.d-1 * this_ext)
-            lambda_coh      (ico) = lambda_coh(ico) + this_ext 
+            il                          = kapartial(ico)
+            this_tai                    = (lad + wad) * (zztop8(il)-hgtbot(ico))
+            this_eff_tai                = (clumping_factor(ipft) * lad + wad)              &
+                                        * (zztop8(il)-hgtbot(ico))
+            weight_leaf                 = ( clumping_factor(ipft) * lad                    &
+                                          * (zztop8(il)-hgtbot(ico)) )                     &
+                                        / this_eff_tai
+            weight_wood                 = 1.d0 - weight_leaf
+
+            tai_lyr      (ico,il)       = this_tai
+            eff_tai_lyr  (ico,il)       = this_eff_tai
+            this_ext                    = lambda * eff_tai_lyr(ico,il) / canfrac_lyr(ico,il)
+            extinct_full (ico,il)       = exp( - this_ext)
+            extinct_half (ico,il)       = exp( - 5.d-1 * this_ext)
+            lambda_coh      (ico)       = lambda_coh(ico) + this_ext 
+            scatter_vis_lyr    (ico,il) = leaf_scatter_vis(ipft)     * weight_leaf         &
+                                        + wood_scatter_vis(ipft)     * weight_wood
+            backscatter_vis_lyr(ico,il) = leaf_backscatter_vis(ipft) * weight_leaf         &
+                                        + wood_backscatter_vis(ipft) * weight_wood
+            scatter_nir_lyr    (ico,il) = leaf_scatter_nir(ipft)     * weight_leaf         &
+                                        + wood_scatter_nir(ipft)     * weight_wood
+            backscatter_nir_lyr(ico,il) = leaf_backscatter_nir(ipft) * weight_leaf         &
+                                        + wood_backscatter_nir(ipft) * weight_wood
          end if
          if (kzpartial(ico) /= kzfull(ico)) then
-            il                    = kzpartial(ico)
-            tai_lyr      (ico,il) = tad * (hgttop(ico) - zzbot8(il))
-            eff_tai_lyr  (ico,il) = clumping_factor(ipft) * tai_lyr (ico,il)
-            this_ext              = lambda * eff_tai_lyr(ico,il) / canfrac_lyr(ico,il)
-            extinct_full (ico,il) = exp( - this_ext)
-            extinct_half (ico,il) = exp( - 5.d-1 * this_ext)
-            lambda_coh      (ico) = lambda_coh(ico) + this_ext 
+            il                          = kzpartial(ico)
+            this_tai                    = (lad + wad) * (hgttop(ico) - zzbot8(il))
+            this_eff_tai                = (clumping_factor(ipft) * lad + wad)              &
+                                        * (hgttop(ico) - zzbot8(il))
+            weight_leaf                 = ( clumping_factor(ipft) * lad                    &
+                                          * (hgttop(ico) - zzbot8(il)) )                   &
+                                        / this_eff_tai
+            weight_wood                 = 1.d0 - weight_leaf
+
+            tai_lyr      (ico,il)       = this_tai
+            eff_tai_lyr  (ico,il)       = this_eff_tai
+            this_ext                    = lambda * eff_tai_lyr(ico,il) / canfrac_lyr(ico,il)
+            extinct_full (ico,il)       = exp( - this_ext)
+            extinct_half (ico,il)       = exp( - 5.d-1 * this_ext)
+            lambda_coh      (ico)       = lambda_coh(ico) + this_ext 
+            scatter_vis_lyr    (ico,il) = leaf_scatter_vis(ipft)     * weight_leaf         &
+                                        + wood_scatter_vis(ipft)     * weight_wood
+            backscatter_vis_lyr(ico,il) = leaf_backscatter_vis(ipft) * weight_leaf         &
+                                        + wood_backscatter_vis(ipft) * weight_wood
+            scatter_nir_lyr    (ico,il) = leaf_scatter_nir(ipft)     * weight_leaf         &
+                                        + wood_scatter_nir(ipft)     * weight_wood
+            backscatter_nir_lyr(ico,il) = leaf_backscatter_nir(ipft) * weight_leaf         &
+                                        + wood_backscatter_nir(ipft) * weight_wood
          end if
       end if
       !------------------------------------------------------------------------------------!
@@ -729,8 +913,8 @@ subroutine sw_twostream_layer(salb,scosz,scosaoi,ncoh,pft,TAI,canopy_area,hgttop
 
 
    !------ Find the average extinction coefficients. --------------------------------------!
-   lambda_tot       = sum(lambda_coh(:)) / sum(tai(:))
-   lambda_coh       = lambda_coh(:) / tai(:)
+   lambda_tot       = sum(lambda_coh(:)) / sum(lai(:) + wai(:))
+   lambda_coh       = lambda_coh(:) / (lai(:) + wai(:))
    !---------------------------------------------------------------------------------------!
 
 
@@ -759,17 +943,25 @@ subroutine sw_twostream_layer(salb,scosz,scosaoi,ncoh,pft,TAI,canopy_area,hgttop
       dzcanpop(nactlyrp1:ncanlyr) = 0.d0
    end if
    do ico = 1,ncoh
-      tai_lyr      (ico,1:nactlyr) = pack(tai_lyr      (ico,:), populated)
-      eff_tai_lyr  (ico,1:nactlyr) = pack(eff_tai_lyr  (ico,:), populated)
-      canfrac_lyr  (ico,1:nactlyr) = pack(canfrac_lyr  (ico,:), populated)
-      extinct_full (ico,1:nactlyr) = pack(extinct_full (ico,:), populated)
-      extinct_half (ico,1:nactlyr) = pack(extinct_half (ico,:), populated)
+      tai_lyr            (ico,1:nactlyr) = pack(tai_lyr            (ico,:), populated)
+      eff_tai_lyr        (ico,1:nactlyr) = pack(eff_tai_lyr        (ico,:), populated)
+      canfrac_lyr        (ico,1:nactlyr) = pack(canfrac_lyr        (ico,:), populated)
+      extinct_full       (ico,1:nactlyr) = pack(extinct_full       (ico,:), populated)
+      extinct_half       (ico,1:nactlyr) = pack(extinct_half       (ico,:), populated)
+      scatter_vis_lyr    (ico,1:nactlyr) = pack(scatter_vis_lyr    (ico,:), populated)
+      backscatter_vis_lyr(ico,1:nactlyr) = pack(backscatter_vis_lyr(ico,:), populated)
+      scatter_nir_lyr    (ico,1:nactlyr) = pack(scatter_nir_lyr    (ico,:), populated)
+      backscatter_nir_lyr(ico,1:nactlyr) = pack(backscatter_nir_lyr(ico,:), populated)
       if (nactlyrp1 < ncanlyr) then
-         tai_lyr      (ico,nactlyrp1:ncanlyr) = 0.d0
-         eff_tai_lyr  (ico,nactlyrp1:ncanlyr) = 0.d0
-         canfrac_lyr  (ico,nactlyrp1:ncanlyr) = 0.d0
-         extinct_full (ico,nactlyrp1:ncanlyr) = 0.d0
-         extinct_half (ico,nactlyrp1:ncanlyr) = 0.d0
+         tai_lyr            (ico,nactlyrp1:ncanlyr) = 0.d0
+         eff_tai_lyr        (ico,nactlyrp1:ncanlyr) = 0.d0
+         canfrac_lyr        (ico,nactlyrp1:ncanlyr) = 0.d0
+         extinct_full       (ico,nactlyrp1:ncanlyr) = 0.d0
+         extinct_half       (ico,nactlyrp1:ncanlyr) = 0.d0
+         scatter_vis_lyr    (ico,nactlyrp1:ncanlyr) = 0.d0
+         backscatter_vis_lyr(ico,nactlyrp1:ncanlyr) = 0.d0
+         scatter_nir_lyr    (ico,nactlyrp1:ncanlyr) = 0.d0
+         backscatter_nir_lyr(ico,nactlyrp1:ncanlyr) = 0.d0
       end if
       !----- Count the number of layers that have leaves/branches for this cohort. --------!
       nlyr_coh       (ico) = count(canfrac_lyr(ico,:) > 0.d0)
@@ -782,15 +974,27 @@ subroutine sw_twostream_layer(salb,scosz,scosaoi,ncoh,pft,TAI,canopy_area,hgttop
    bandloop: do iband = 1,2
       select case(iband)
       case (1) !----- Visible (or PAR). ---------------------------------------------------!
-         do ipft = 1,n_pft
-            leaf_scatter(ipft)        = dble(leaf_scatter_vis(ipft))
-            diffuse_backscatter(ipft) = dble(diffuse_backscatter_vis(ipft))
+         do il = 1,nactlyr
+            layer_scatter(il)     = sum(scatter_vis_lyr(:,il)     * eff_tai_lyr(:,il))     &
+                                  / sum(eff_tai_lyr(:,il))
+            layer_backscatter(il) = sum(backscatter_vis_lyr(:,il) * eff_tai_lyr(:,il))     &
+                                  / sum(eff_tai_lyr(:,il))
+            layer_clumping   (il) = sum(eff_tai_lyr(:,il)) / sum(tai_lyr(:,il))
          end do
+         beam_top = par_beam_norm
+         diff_top = par_diff_norm
+         albedo   = dble(salbedo_par)
       case (2) !----- Near infrared (or NIR). ---------------------------------------------!
-         do ipft = 1,n_pft
-            leaf_scatter(ipft)        = dble(leaf_scatter_nir)
-            diffuse_backscatter(ipft) = dble(diffuse_backscatter_nir)
+         do il = 1,nactlyr
+            layer_scatter(il)     = sum(scatter_nir_lyr(:,il)     * eff_tai_lyr(:,il))     &
+                                  / sum(eff_tai_lyr(:,il))
+            layer_backscatter(il) = sum(backscatter_nir_lyr(:,il) * eff_tai_lyr(:,il))     &
+                                  / sum(eff_tai_lyr(:,il))
+            layer_clumping   (il) = sum(eff_tai_lyr(:,il)) / sum(tai_lyr(:,il))
          end do
+         beam_top = nir_beam_norm
+         diff_top = nir_diff_norm
+         albedo   = dble(salbedo_nir)
       end select
       
       !------------------------------------------------------------------------------------!
@@ -802,12 +1006,15 @@ subroutine sw_twostream_layer(salb,scosz,scosaoi,ncoh,pft,TAI,canopy_area,hgttop
       ! the total light passing through a layer (beam_bot).                                !
       !------------------------------------------------------------------------------------!
       !----- Start with the highest layer, moving downwards. ------------------------------!
-      beam_bot_crown(nactlyr) = sum(canfrac_lyr(:,nactlyr) * extinct_full(:,nactlyr))      &
+      beam_bot_crown(nactlyr) = beam_top                                                   &
+                              * sum(canfrac_lyr(:,nactlyr) * extinct_full(:,nactlyr))      &
                               / (1.d0 - opencan8(nactlyr) )
-      beam_bot      (nactlyr) = opencan8(nactlyr)                                          &
-                              + sum(canfrac_lyr(:,nactlyr) * extinct_full(:,nactlyr))
-      beam_mid      (nactlyr) = opencan8(nactlyr)                                          &
-                              + sum(canfrac_lyr(:,nactlyr) * extinct_half(:,nactlyr))
+      beam_bot      (nactlyr) = beam_top                                                   &
+                              * ( opencan8(nactlyr)                                        &
+                                + sum(canfrac_lyr(:,nactlyr) * extinct_full(:,nactlyr)) )
+      beam_mid      (nactlyr) = beam_top                                                   &
+                              * ( opencan8(nactlyr)                                        &
+                                + sum(canfrac_lyr(:,nactlyr) * extinct_half(:,nactlyr)) )
       do il = nactlyr-1,1,-1
          beam_bot_crown  (il) = beam_bot(il+1)                                             &
                               * sum(canfrac_lyr(:,il) * extinct_full(:,il))                &
@@ -826,36 +1033,15 @@ subroutine sw_twostream_layer(salb,scosz,scosaoi,ncoh,pft,TAI,canopy_area,hgttop
 
       !------------------------------------------------------------------------------------!
       srclyrloop: do il=1,nactlyr
-         !---------------------------------------------------------------------------------!
-         !     Find the terms by averaging them using the effective TAI as the weighting   !
-         ! factor.  This is not the best way of doing it, but it is the simplest I could   !
-         ! think, because it retains the fact that eta and zeta are constants within each  !
-         ! layer.  In addition, we average sigma and iota, coefficients related to         !
-         ! extinction and transmittance.                                                   !
-         !---------------------------------------------------------------------------------!
-         eta          = 0.d0
-         zeta         = 0.d0
-         sigma        = 0.d0
-         iota         = 0.d0
          this_tai     = sum(tai_lyr(:,il))
          this_eff_tai = sum(eff_tai_lyr(:,il))
-         do ico=1,ncoh
-            ipft       = pft(ico)
-            eta        = eta  + eff_tai_lyr(ico,il)                                        &
-                              * ( 1.0d0 - (1.0d0 - diffuse_backscatter(ipft))              &
-                                * leaf_scatter(ipft))
-            zeta       = zeta + eff_tai_lyr(ico,il)                                        &
-                              * leaf_scatter(ipft) * diffuse_backscatter(ipft)
-            sigma      = sigma + eff_tai_lyr(ico,il) * lambda
-            iota       = iota  + eff_tai_lyr(ico,il) * lambda * leaf_scatter(ipft)         &
-                               * beam_backscatter
-         end do
-         !----- Normalise eta, zeta, and sigma (but retain clumping factor in them). ------!
-         eta   =   eta / this_tai
-         zeta  =  zeta / this_tai
-         sigma = sigma / this_tai
-         iota  =  iota / this_tai
-         
+         eta          = layer_clumping(il)                                                 &
+                      * (1.0d0 - (1.0d0-layer_backscatter(il)) * layer_scatter(il))
+         zeta         = layer_scatter(il) * layer_backscatter(il) * layer_clumping(il)
+         sigma        = layer_clumping(il) * lambda
+         iota         = sigma * layer_scatter(il) * beam_backscatter
+
+
          !----- Find derived properties. --------------------------------------------------!
          exk   = sqrt(eta*eta - zeta*zeta)
          exki  = 1.0d0/exk
@@ -881,25 +1067,25 @@ subroutine sw_twostream_layer(salb,scosz,scosaoi,ncoh,pft,TAI,canopy_area,hgttop
          !---------------------------------------------------------------------------------!
          !     Find the terms for the integration.                                         !
          !---------------------------------------------------------------------------------!
-         A_bot(il)      = -source_bot*zetai
-         A_top(il)      = -source_top*zetai                                                &
+         a_bot(il)      = -source_bot*zetai
+         a_top(il)      = -source_top*zetai                                                &
                         + 5.d-1*zetai*(eta*exki-1.0d0)*expkl_top(il)*rhoo/(sigma-exk)      &
                         * (expamk_top(il)-expamk_bot(il))                                  &
                         - 5.d-1*zetai*(eta*exki+1.0d0) / expkl_top(il)*rhoo/(sigma+exk)    &
                         * (expapk_top(il)-expapk_bot(il))
-         B_bot(il)      = 5.d-1*zetai*(eta*exki-1.0d0)
-         B_top(il)      = 5.d-1*zetai*(eta*exki-1.0d0)*expkl_top(il)
-         C_bot(il)      = -5.d-1*zetai*(eta*exki+1.0d0)
-         C_top(il)      = -5.d-1*zetai*(eta*exki+1.0d0)/expkl_top(il)
-         F_bot(il)      = 0.0d0
-         F_top(il)      = 5.d-1*exki*expkl_top(il)*rhoo/(sigma-exk)                        &
+         b_bot(il)      = 5.d-1*zetai*(eta*exki-1.0d0)
+         b_top(il)      = 5.d-1*zetai*(eta*exki-1.0d0)*expkl_top(il)
+         c_bot(il)      = -5.d-1*zetai*(eta*exki+1.0d0)
+         c_top(il)      = -5.d-1*zetai*(eta*exki+1.0d0)/expkl_top(il)
+         f_bot(il)      = 0.0d0
+         f_top(il)      = 5.d-1*exki*expkl_top(il)*rhoo/(sigma-exk)                        &
                         * (expamk_top(il)-expamk_bot(il))                                  &
                         - 5.d-1*exki/expkl_top(il)*rhoo/(sigma+exk)                        &
                         * (expapk_top(il)-expapk_bot(il))
-         G_bot(il)      = 5.d-1*exki
-         G_top(il)      = 5.d-1*exki*expkl_top(il)
-         H_bot(il)      = -5.d-1*exki
-         H_top(il)      = -5.d-1*exki/expkl_top(il)
+         g_bot(il)      = 5.d-1*exki
+         g_top(il)      = 5.d-1*exki*expkl_top(il)
+         h_bot(il)      = -5.d-1*exki
+         h_top(il)      = -5.d-1*exki/expkl_top(il)
          !---------------------------------------------------------------------------------!
       end do srclyrloop
       !------------------------------------------------------------------------------------!
@@ -919,40 +1105,40 @@ subroutine sw_twostream_layer(salb,scosz,scosaoi,ncoh,pft,TAI,canopy_area,hgttop
       end do
       !------------------------------------------------------------------------------------!
 
-      masmatcp(1,1)        = G_top(nactlyr)
-      masmatcp(1,2)        = H_top(nactlyr)
-      mastervec_beam(1)    = -F_top(nactlyr)
-      mastervec_diffuse(1) = 1.0d0
+      masmatcp(1,1)        = g_top(nactlyr)
+      masmatcp(1,2)        = h_top(nactlyr)
+      mastervec_beam(1)    = -f_top(nactlyr)
+      mastervec_diffuse(1) = diff_top
       masveccp_beam(1)     = mastervec_beam(1)
       masveccp_diffuse(1)  = mastervec_diffuse(1)
 
       do i=2,nactlyrt2-2,2
-         masmatcp(i,i-1)      = G_bot(nint(real(nactlyrt2-i+2)*0.5))
-         masmatcp(i,i)        = H_bot(nint(real(nactlyrt2-i+2)*0.5))
+         masmatcp(i,i-1)      = g_bot(nint(real(nactlyrt2-i+2)*0.5))
+         masmatcp(i,i)        = h_bot(nint(real(nactlyrt2-i+2)*0.5))
 
-         masmatcp(i,i+1)      = - G_top(nint(real(nactlyrt2-i)*0.5))
-         masmatcp(i,i+2)      = - H_top(nint(real(nactlyrt2-i)*0.5))
-         mastervec_beam(i)    = - F_bot(nint(real(nactlyrt2-i+2)*0.5))                     &
-                                + F_top(nint(real(nactlyrt2-i)*0.5))
+         masmatcp(i,i+1)      = - g_top(nint(real(nactlyrt2-i)*0.5))
+         masmatcp(i,i+2)      = - h_top(nint(real(nactlyrt2-i)*0.5))
+         mastervec_beam(i)    = - f_bot(nint(real(nactlyrt2-i+2)*0.5))                     &
+                                + f_top(nint(real(nactlyrt2-i)*0.5))
          mastervec_diffuse(i) = 0.0d0
          masveccp_beam(i)     = mastervec_beam(i)
          masveccp_diffuse(i)  = mastervec_diffuse(i)
       end do
 
       do i=3,nactlyrt2-1,2
-         masmatcp(i,i-2)      = B_bot(nint(real(nactlyrt2-i+3)*0.5))
-         masmatcp(i,i-1)      = C_bot(nint(real(nactlyrt2-i+3)*0.5))
-         masmatcp(i,i)        = - B_top(nint(real(nactlyrt2-i+1)*0.5))
-         masmatcp(i,i+1)      = - C_top(nint(real(nactlyrt2-i+1)*0.5))
-         mastervec_beam(i)    = - A_bot(nint(real(nactlyrt2-i+3)*0.5))                     &
-                                + A_top(nint(real(nactlyrt2-i+1)*0.5))
+         masmatcp(i,i-2)      = b_bot(nint(real(nactlyrt2-i+3)*0.5))
+         masmatcp(i,i-1)      = c_bot(nint(real(nactlyrt2-i+3)*0.5))
+         masmatcp(i,i)        = - b_top(nint(real(nactlyrt2-i+1)*0.5))
+         masmatcp(i,i+1)      = - c_top(nint(real(nactlyrt2-i+1)*0.5))
+         mastervec_beam(i)    = - a_bot(nint(real(nactlyrt2-i+3)*0.5))                     &
+                                + a_top(nint(real(nactlyrt2-i+1)*0.5))
          masveccp_beam(i)     = mastervec_beam(i)
          mastervec_diffuse(i) = 0.0d0
          masveccp_diffuse(i)  = mastervec_diffuse(i)
       end do
-      masmatcp(nactlyrt2,nactlyrt2-1) = B_bot(1) - alb * G_bot(1)
-      masmatcp(nactlyrt2,nactlyrt2)   = C_bot(1) - alb * H_bot(1)
-      mastervec_beam(nactlyrt2)       = - A_bot(1)+alb * beam_bot(1)
+      masmatcp(nactlyrt2,nactlyrt2-1) =   b_bot(1) - albedo * g_bot(1)
+      masmatcp(nactlyrt2,nactlyrt2)   =   c_bot(1) - albedo * h_bot(1)
+      mastervec_beam(nactlyrt2)       = - a_bot(1) + albedo * beam_bot(1)
       masveccp_beam(nactlyrt2)        = mastervec_beam(nactlyrt2)
       mastervec_diffuse(nactlyrt2)    = 0.0d0
       masveccp_diffuse(nactlyrt2)     = mastervec_diffuse(nactlyrt2)
@@ -1000,133 +1186,137 @@ subroutine sw_twostream_layer(salb,scosz,scosaoi,ncoh,pft,TAI,canopy_area,hgttop
                  ,masveccp_diffuse,mastervec_diffuse)
 
       select case (iband)
-      case (1) !---- Visible (or PAR) band. -----------------------------------------------!
+      case (1) 
+         !---- Visible (or PAR) band. -----------------------------------------------------!
          do i=3,nactlyrt2-1,2
             ind                     = nint(real(nactlyrt2-i+1)*0.5)+1
-            upward_vis_beam(ind)    = A_bot(ind) + B_bot(ind) * mastervec_beam(i-2)        &
-                                    + C_bot(ind) * mastervec_beam(i-1)
-            upward_vis_diffuse(ind) = B_bot(ind) * mastervec_diffuse(i-2)                  &
-                                    + C_bot(ind) * mastervec_diffuse(i-1)
+            upward_vis_beam   (ind) = a_bot(ind) + b_bot(ind) * mastervec_beam(i-2)        &
+                                    + c_bot(ind) * mastervec_beam(i-1)
+            upward_vis_diffuse(ind) = b_bot(ind) * mastervec_diffuse(i-2)                  &
+                                    + c_bot(ind) * mastervec_diffuse(i-1)
          end do
 
          do i=2,nactlyrt2-2,2
             ind                       = nint(real(nactlyrt2-i)*0.5)+1
-            downward_vis_beam(ind)    = beam_bot(ind) + F_bot(ind)                         &
-                                      + H_bot(ind) * mastervec_beam(i)                     &
-                                      + G_bot(ind) * mastervec_beam(i-1)
-            downward_vis_diffuse(ind) = H_bot(ind) * mastervec_diffuse(i)                  &
-                                      + G_bot(ind) * mastervec_diffuse(i-1)
+            downward_vis_beam   (ind) = beam_bot(ind) + f_bot(ind)                         &
+                                      + h_bot(ind) * mastervec_beam(i)                     &
+                                      + g_bot(ind) * mastervec_beam(i-1)
+            downward_vis_diffuse(ind) = h_bot(ind) * mastervec_diffuse(i)                  &
+                                      + g_bot(ind) * mastervec_diffuse(i-1)
          end do
 
-         upward_vis_beam(nactlyr+1)      = B_top(nactlyr) * mastervec_beam(1)              &
-                                         + C_top(nactlyr) * mastervec_beam(2)              &
-                                         + A_top(nactlyr)
-         upward_vis_diffuse(nactlyr+1)   = B_top(nactlyr) * mastervec_diffuse(1)           &
-                                         + C_top(nactlyr) * mastervec_diffuse(2)
-         downward_vis_beam(nactlyr+1)    = 1.0d0
-         downward_vis_diffuse(nactlyr+1) = 1.0d0
-         downward_vis_beam(1)            = G_bot(1) * mastervec_beam(nactlyrt2-1)          &
-                                         + H_bot(1) * mastervec_beam(nactlyrt2) + F_bot(1) &
+         upward_vis_beam     (nactlyr+1) = b_top(nactlyr) * mastervec_beam(1)              &
+                                         + c_top(nactlyr) * mastervec_beam(2)              &
+                                         + a_top(nactlyr)
+         upward_vis_diffuse  (nactlyr+1) = b_top(nactlyr) * mastervec_diffuse(1)           &
+                                         + c_top(nactlyr) * mastervec_diffuse(2)
+         downward_vis_beam   (nactlyr+1) = beam_top
+         downward_vis_diffuse(nactlyr+1) = diff_top
+         downward_vis_beam   (1)         = g_bot(1) * mastervec_beam(nactlyrt2-1)          &
+                                         + h_bot(1) * mastervec_beam(nactlyrt2) + f_bot(1) &
                                          + beam_bot(1)
-         downward_vis_diffuse(1)         = G_bot(1) * mastervec_diffuse(nactlyrt2-1)       &
-                                         + H_bot(1) * mastervec_diffuse(nactlyrt2)
-         upward_vis_beam(1)              = alb * downward_vis_beam(1)
-         upward_vis_diffuse(1)           = alb * downward_vis_diffuse(1)
+         downward_vis_diffuse(1)         = g_bot(1) * mastervec_diffuse(nactlyrt2-1)       &
+                                         + h_bot(1) * mastervec_diffuse(nactlyrt2)
+         upward_vis_beam     (1)         = albedo * downward_vis_beam(1)
+         upward_vis_diffuse  (1)         = albedo * downward_vis_diffuse(1)
       case (2)
+         !---- Near-infrared band. --------------------------------------------------------!
 
          do i=3,nactlyrt2-1,2
             ind                     = nint(real(nactlyrt2-i+1)*0.5)+1
-            upward_nir_beam(ind)    = A_bot(ind) + B_bot(ind) * mastervec_beam(i-2)        &
-                                    + C_bot(ind) * mastervec_beam(i-1)
-            upward_nir_diffuse(ind) = B_bot(ind) * mastervec_diffuse(i-2)                  &
-                                    + C_bot(ind) * mastervec_diffuse(i-1)
+            upward_nir_beam   (ind) = a_bot(ind) + b_bot(ind) * mastervec_beam(i-2)        &
+                                    + c_bot(ind) * mastervec_beam(i-1)
+            upward_nir_diffuse(ind) = b_bot(ind) * mastervec_diffuse(i-2)                  &
+                                    + c_bot(ind) * mastervec_diffuse(i-1)
          end do
 
          do i=2,nactlyrt2-2,2
             ind                       = nint(real(nactlyrt2-i)*0.5)+1
-            downward_nir_beam(ind)    = beam_bot(ind) + F_bot(ind)                         &
-                                      + H_bot(ind) * mastervec_beam(i)                     &
-                                      + G_bot(ind) * mastervec_beam(i-1)
-            downward_nir_diffuse(ind) = H_bot(ind) * mastervec_diffuse(i)                  &
-                                      + G_bot(ind) * mastervec_diffuse(i-1)
+            downward_nir_beam   (ind) = beam_bot(ind) + f_bot(ind)                         &
+                                      + h_bot(ind) * mastervec_beam(i)                     &
+                                      + g_bot(ind) * mastervec_beam(i-1)
+            downward_nir_diffuse(ind) = h_bot(ind) * mastervec_diffuse(i)                  &
+                                      + g_bot(ind) * mastervec_diffuse(i-1)
          end do
 
-         upward_nir_beam(nactlyr+1)      = B_top(nactlyr) * mastervec_beam(1)              &
-                                         + C_top(nactlyr) * mastervec_beam(2)              &
-                                         + A_top(nactlyr)
-         upward_nir_diffuse(nactlyr+1)   = B_top(nactlyr) * mastervec_diffuse(1)           &
-                                         + C_top(nactlyr) * mastervec_diffuse(2)
-         downward_nir_beam(nactlyr+1)    = 1.0d0
-         downward_nir_diffuse(nactlyr+1) = 1.0d0
-         downward_nir_beam(1)            = G_bot(1) * mastervec_beam(nactlyrt2-1)          &
-                                         + H_bot(1) * mastervec_beam(nactlyrt2) + F_bot(1) &
+         upward_nir_beam     (nactlyr+1) = b_top(nactlyr) * mastervec_beam(1)              &
+                                         + c_top(nactlyr) * mastervec_beam(2)              &
+                                         + a_top(nactlyr)
+         upward_nir_diffuse  (nactlyr+1) = b_top(nactlyr) * mastervec_diffuse(1)           &
+                                         + c_top(nactlyr) * mastervec_diffuse(2)
+         downward_nir_beam   (nactlyr+1) = beam_top
+         downward_nir_diffuse(nactlyr+1) = diff_top
+         downward_nir_beam(1)            = g_bot(1) * mastervec_beam(nactlyrt2-1)          &
+                                         + h_bot(1) * mastervec_beam(nactlyrt2) + f_bot(1) &
                                          + beam_bot(1)
-         downward_nir_diffuse(1)         = G_bot(1) * mastervec_diffuse(nactlyrt2-1)       &
-                                         + H_bot(1) * mastervec_diffuse(nactlyrt2)
-         upward_nir_beam(1)              = alb*downward_nir_beam(1)
-         upward_nir_diffuse(1)           = alb*downward_nir_diffuse(1)
+         downward_nir_diffuse(1)         = g_bot(1) * mastervec_diffuse(nactlyrt2-1)       &
+                                         + h_bot(1) * mastervec_diffuse(nactlyrt2)
+         upward_nir_beam(1)              = albedo * downward_nir_beam(1)
+         upward_nir_diffuse(1)           = albedo * downward_nir_diffuse(1)
       end select
    end do bandloop
    
    do il=1,nactlyr
-      PAR_beam_layer(il)       = visible_fraction_dir                                      &
-                               * sngl( downward_vis_beam(il+1)-downward_vis_beam(il)       &
-                                     + upward_vis_beam(il)-upward_vis_beam(il+1))
-      PAR_diffuse_layer(il)    = visible_fraction_dif                                      &
-                               * sngl( downward_vis_diffuse(il+1)-downward_vis_diffuse(il) &
-                                     + upward_vis_diffuse(il)-upward_vis_diffuse(il+1))
-      SW_abs_beam_layer(il)    = PAR_beam_layer(il) + (1.0 - visible_fraction_dir)         &
-                               * sngl( downward_nir_beam(il+1)-downward_nir_beam(il)       &
-                                     + upward_nir_beam(il)-upward_nir_beam(il+1))
-      SW_abs_diffuse_layer(il) = PAR_diffuse_layer(il) + (1.0 - visible_fraction_dif)      &
-                               * sngl( downward_nir_diffuse(il+1)                          &
-                                     - downward_nir_diffuse(il)                            &
-                                     + upward_nir_diffuse(il)                              &
-                                     - upward_nir_diffuse(il+1) )
+
+      par_beam_layer(il)       = sngl( downward_vis_beam   (il+1)                          &
+                                     - downward_vis_beam   (il  )                          &
+                                     + upward_vis_beam     (il  )                          &
+                                     - upward_vis_beam     (il+1) )
+
+      par_diffuse_layer(il)    = sngl( downward_vis_diffuse(il+1)                          &
+                                     - downward_vis_diffuse(il  )                          &
+                                     + upward_vis_diffuse  (il  )                          &
+                                     - upward_vis_diffuse  (il+1) )
+
+      sw_abs_beam_layer(il)    = par_beam_layer(il)    + sngl( downward_nir_beam   (il+1)  &
+                                                             - downward_nir_beam   (il  )  &
+                                                             + upward_nir_beam     (il  )  &
+                                                             - upward_nir_beam     (il+1) )
+      sw_abs_diffuse_layer(il) = par_diffuse_layer(il) + sngl( downward_nir_diffuse(il+1)  &
+                                                             - downward_nir_diffuse(il  )  &
+                                                             + upward_nir_diffuse  (il  )  &
+                                                             - upward_nir_diffuse  (il+1) )
 
       !----- Ensure that we don't get any negative radiation... ---------------------------!
-      PAR_beam_layer(il)       = max(0.0,PAR_beam_layer(il)       )
-      PAR_diffuse_layer(il)    = max(0.0,PAR_diffuse_layer(il)    )
-      SW_abs_beam_layer(il)    = max(0.0,SW_abs_beam_layer(il)    )
-      SW_abs_diffuse_layer(il) = max(0.0,SW_abs_diffuse_layer(il) )
+      par_beam_layer(il)       = max(0.0,par_beam_layer(il)       )
+      par_diffuse_layer(il)    = max(0.0,par_diffuse_layer(il)    )
+      sw_abs_beam_layer(il)    = max(0.0,sw_abs_beam_layer(il)    )
+      sw_abs_diffuse_layer(il) = max(0.0,sw_abs_diffuse_layer(il) )
+      !------------------------------------------------------------------------------------!
    end do
    
    !----- Copying to the output variables. ------------------------------------------------!
-   DW_vislo_beam    = max(0.0,sngl(downward_vis_beam(1)))                                  &
-                    * visible_fraction_dir
-   DW_vislo_diffuse = max(0.0,sngl(downward_vis_diffuse(1)))                               &
-                    * visible_fraction_dif
-   UW_vishi_beam    = max(0.0,sngl(upward_vis_beam(nactlyr+1)))                            &
-                    * visible_fraction_dir
-   UW_vishi_diffuse = max(0.0,sngl(upward_vis_diffuse(nactlyr+1)))                         &
-                    * visible_fraction_dif
-   DW_nirlo_beam    = max(0.0,sngl(downward_nir_beam(1)))                                  &
-                    * (1.-visible_fraction_dir)
-   DW_nirlo_diffuse = max(0.0,sngl(downward_nir_diffuse(1)))                               &
-                    * (1.-visible_fraction_dif)
-   UW_nirhi_beam    = max(0.0,sngl(upward_nir_beam(nactlyr+1)))                            &
-                    * (1.-visible_fraction_dir)
-   UW_nirhi_diffuse = max(0.0,sngl(upward_nir_diffuse(nactlyr+1)))                         &
-                    * (1.-visible_fraction_dif)
+   dw_vislo_beam    = max(0.0,sngl(downward_vis_beam           (1) ) )
+   dw_vislo_diffuse = max(0.0,sngl(downward_vis_diffuse        (1) ) )
+   uw_vishi_beam    = max(0.0,sngl(upward_vis_beam     (nactlyr+1) ) )
+   uw_vishi_diffuse = max(0.0,sngl(upward_vis_diffuse  (nactlyr+1) ) )
+   dw_nirlo_beam    = max(0.0,sngl(downward_nir_beam           (1) ) )
+   dw_nirlo_diffuse = max(0.0,sngl(downward_nir_diffuse        (1) ) )
+   uw_nirhi_beam    = max(0.0,sngl(upward_nir_beam     (nactlyr+1) ) )
+   uw_nirhi_diffuse = max(0.0,sngl(upward_nir_diffuse  (nactlyr+1) ) )
+   !---------------------------------------------------------------------------------------!
+
+
+
 
    !---------------------------------------------------------------------------------------!
    !     Integrate the total amount of energy for each cohort.                             !
    !---------------------------------------------------------------------------------------!
-   PAR_beam_flip       (:) = 0.0
-   PAR_diffuse_flip    (:) = 0.0
-   SW_abs_beam_flip    (:) = 0.0
-   SW_abs_diffuse_flip (:) = 0.0
+   par_beam_flip       (:) = 0.0
+   par_diffuse_flip    (:) = 0.0
+   sw_abs_beam_flip    (:) = 0.0
+   sw_abs_diffuse_flip (:) = 0.0
    do il = 1, nactlyr
       this_eff_tai = sum(eff_tai_lyr(:,il))
       this_tai     = sum(tai_lyr    (:,il))
       do ico = 1,ncoh
-         PAR_beam_flip(ico)       = PAR_beam_flip(ico) + PAR_beam_layer(il)                &
+         par_beam_flip(ico)       = par_beam_flip(ico) + par_beam_layer(il)                &
                                   * sngloff(eff_tai_lyr(ico,il) / this_eff_tai,tiny_num8)
-         PAR_diffuse_flip(ico)    = PAR_diffuse_flip(ico) + PAR_diffuse_layer(il)          &
+         par_diffuse_flip(ico)    = par_diffuse_flip(ico) + par_diffuse_layer(il)          &
                                   * sngloff(tai_lyr(ico,il) / this_tai,tiny_num8)
-         SW_abs_beam_flip(ico)    = SW_abs_beam_flip(ico) + SW_abs_beam_layer(il)          &
+         sw_abs_beam_flip(ico)    = sw_abs_beam_flip(ico) + sw_abs_beam_layer(il)          &
                                   * sngloff(eff_tai_lyr(ico,il) / this_eff_tai,tiny_num8)
-         SW_abs_diffuse_flip(ico) = SW_abs_diffuse_flip(ico) + SW_abs_diffuse_layer(il)    &
+         sw_abs_diffuse_flip(ico) = sw_abs_diffuse_flip(ico) + sw_abs_diffuse_layer(il)    &
                                   * sngloff(tai_lyr(ico,il) / this_tai,tiny_num8)
       end do
    end do
@@ -1137,14 +1327,58 @@ subroutine sw_twostream_layer(salb,scosz,scosaoi,ncoh,pft,TAI,canopy_area,hgttop
    !---------------------------------------------------------------------------------------!
    !     Find the light level for beam and diffuse radiation.                              !
    !---------------------------------------------------------------------------------------!
-   beam_level(:) = 0.0
-   diff_level(:) = SW_abs_diffuse_flip(:)
+   beam_level       (:) = 0.0
+   diff_level       (:) = 0.0
+   light_level      (:) = 0.0
+   light_beam_level (:) = 0.0
+   light_diff_level (:) = 0.0
    do ico = 1,ncoh
       do il=kapartial(ico),kzpartial(ico)
-         beam_level(ico) = beam_level(ico)                                                 &
-                         + sngloff( beam_mid(il) * dzcanpop(il)                            &
-                                  / ( zztop8(kzpartial(ico)) - zzbot8(kapartial(ico)) )    &
-                                  , tiny_num8 )
+         diff_level(ico)  = diff_level(ico)                                                &
+                          + sngloff( 0.5 * ( downward_vis_diffuse  (il)                    &
+                                           + downward_vis_diffuse(il+1) )  * dzcanpop(il)  &
+                                   / ( (zztop8(kzpartial(ico)) - zzbot8(kapartial(ico)))   &
+                                     * par_diff_norm )                                     &
+                                   , tiny_num8 )
+         beam_level(ico)  = beam_level(ico)                                                &
+                          + sngloff( 0.5 * ( downward_vis_beam  (il)                       &
+                                           + downward_vis_beam(il+1) )  * dzcanpop(il)     &
+                                   / ( (zztop8(kzpartial(ico)) - zzbot8(kapartial(ico)))   &
+                                     * par_beam_norm )                                     &
+                                   , tiny_num8 )
+         light_level(ico) = light_level(ico)                                               &
+                          + sngloff( 0.5 * ( downward_vis_beam     (il)                    &
+                                           + downward_vis_diffuse  (il)                    &
+                                           + downward_nir_beam     (il)                    &
+                                           + downward_nir_diffuse  (il)                    &
+                                           + downward_vis_beam   (il+1)                    &
+                                           + downward_vis_diffuse(il+1)                    &
+                                           + downward_nir_beam   (il+1)                    &
+                                           + downward_nir_diffuse(il+1) )  * dzcanpop(il)  &
+                                   / ( zztop8(kzpartial(ico)) - zzbot8(kapartial(ico)) )   &
+                                   , tiny_num8 )
+
+         light_beam_level(ico) = light_beam_level(ico)                                     &
+                               + sngloff( 0.5 * ( downward_vis_beam     (il)               &
+                                                + downward_nir_beam     (il)               &
+                                                + downward_vis_beam   (il+1)               &
+                                                + downward_nir_beam   (il+1) )             &
+                                        * dzcanpop(il)                                     &
+                                        / ( ( zztop8(kzpartial(ico))                       &
+                                            - zzbot8(kapartial(ico)) )                     &
+                                          * (par_beam_norm + nir_beam_norm) )              &
+                                        , tiny_num8 )
+
+         light_diff_level(ico) = light_diff_level(ico)                                     &
+                               + sngloff( 0.5 * ( downward_vis_diffuse  (il)               &
+                                                + downward_nir_diffuse  (il)               &
+                                                + downward_vis_diffuse(il+1)               &
+                                                + downward_nir_diffuse(il+1) )             &
+                                        * dzcanpop(il)                                     &
+                                        / ( ( zztop8(kzpartial(ico))                       &
+                                            - zzbot8(kapartial(ico)) )                     &
+                                          * (par_diff_norm + nir_diff_norm) )              &
+                                        , tiny_num8 )
       end do
    end do
    !---------------------------------------------------------------------------------------!
@@ -1159,6 +1393,10 @@ subroutine sw_twostream_layer(salb,scosz,scosaoi,ncoh,pft,TAI,canopy_area,hgttop
    deallocate(canfrac_lyr         )
    deallocate(tai_lyr             )
    deallocate(eff_tai_lyr         )
+   deallocate(scatter_vis_lyr     )
+   deallocate(backscatter_vis_lyr )
+   deallocate(scatter_nir_lyr     )
+   deallocate(backscatter_nir_lyr )
    !---------------------------------------------------------------------------------------!
 
    return
@@ -1377,11 +1615,12 @@ end subroutine mprove
 ! the two stream approach considering the size distribution of cohorts, acknowledging the  !
 ! effect of leaves, and, if that's the user's will, the branches.                          !
 !------------------------------------------------------------------------------------------!
-subroutine lw_twostream(ncoh,semgs,sT_grnd, pft,TAI,canopy_area,T_veg,lw_v_surf,lw_v_incid &
-                       ,downward_lw_below_surf,downward_lw_below_incid                     &
-                       ,upward_lw_below_surf,upward_lw_below_incid,upward_lw_above_surf    &
-                       ,upward_lw_above_incid)
-   use canopy_radiation_coms , only : emis_v          & ! intent(in)
+subroutine lw_twostream(ncoh,semgs,sT_grnd, pft,lai,wai,canopy_area,leaf_temp,wood_temp    &
+                       ,lw_v_surf,lw_v_incid,downward_lw_below_surf                        &
+                       ,downward_lw_below_incid,upward_lw_below_surf                       &
+                       ,upward_lw_below_incid,upward_lw_above_surf,upward_lw_above_incid)
+   use canopy_radiation_coms , only : leaf_emis       & ! intent(in)
+                                    , wood_emis       & ! intent(in)
                                     , mubar           ! ! intent(in)
    use pft_coms              , only : clumping_factor ! ! intent(in)
    use consts_coms           , only : stefan8         & ! intent(in)
@@ -1393,8 +1632,10 @@ subroutine lw_twostream(ncoh,semgs,sT_grnd, pft,TAI,canopy_area,T_veg,lw_v_surf,
    real                         , intent(in)  :: semgs       ! Gnd. emmissivity
    real                         , intent(in)  :: st_grnd     ! Gnd. temperature
    integer     , dimension(ncoh), intent(in)  :: pft         ! Plant functional type
-   real(kind=8), dimension(ncoh), intent(in)  :: TAI         ! "Tree" Area Index
-   real(kind=8), dimension(ncoh), intent(in)  :: T_veg       ! Vegetation temperature
+   real(kind=8), dimension(ncoh), intent(in)  :: lai         ! Leaf Area Index
+   real(kind=8), dimension(ncoh), intent(in)  :: wai         ! Wood Area Index
+   real(kind=8), dimension(ncoh), intent(in)  :: leaf_temp   ! Leaf temperature
+   real(kind=8), dimension(ncoh), intent(in)  :: wood_temp   ! Leaf temperature
    real(kind=8), dimension(ncoh), intent(in)  :: canopy_area ! canopy area
    real        , dimension(ncoh), intent(out) :: lw_v_surf
    real        , dimension(ncoh), intent(out) :: lw_v_incid
@@ -1411,6 +1652,7 @@ subroutine lw_twostream(ncoh,semgs,sT_grnd, pft,TAI,canopy_area,T_veg,lw_v_surf,
    integer                                    :: i
    integer                                    :: j
    integer                                    :: ind
+   integer                                    :: ipft
    real(kind=8), dimension(2*ncoh,2*ncoh)     :: masmatcp
    real(kind=8), dimension(2*ncoh,5)          :: mastermat
    real(kind=8), dimension(2*ncoh,2)          :: matal
@@ -1444,6 +1686,9 @@ subroutine lw_twostream(ncoh,semgs,sT_grnd, pft,TAI,canopy_area,T_veg,lw_v_surf,
    real(kind=8)                               :: d
    real(kind=8)                               :: lw_v_surf_tmp
    real(kind=8)                               :: lw_v_incid_tmp
+   real(kind=8)                               :: cohort_emis
+   real(kind=8)                               :: cohort_temp
+   real(kind=8)                               :: cohort_tai
    !----- External functions. -------------------------------------------------------------!
    real(kind=4), external                     :: sngloff
    !---------------------------------------------------------------------------------------!
@@ -1456,38 +1701,43 @@ subroutine lw_twostream(ncoh,semgs,sT_grnd, pft,TAI,canopy_area,T_veg,lw_v_surf,
    ncoh2  = 2*ncoh
 
    do il=1,ncoh
-      zeta           = 2.0d0 * (1.0d0 - emis_v(pft(il))) / (3.0d0 * mubar)
-      eta            = (2.0d0 + emis_v(pft(il)))/(3.0d0 * mubar)
-      exk            = sqrt(eta*eta-zeta*zeta)
+      ipft           = pft(il)
+      cohort_tai     = lai(il) + wai(il)
+      cohort_emis    = (leaf_emis(ipft) * lai(il) + wood_emis(ipft) * wai(il)) / cohort_tai
+      cohort_temp    = (leaf_temp(il)   * lai(il) + wood_temp(il)   * wai(il)) / cohort_tai
+   
+      zeta           = 2.0d0 * (1.0d0 - cohort_emis) / (3.0d0 * mubar)
+      eta            = (2.0d0 + cohort_emis) / (3.0d0 * mubar)
+      exk            = sqrt(eta * eta - zeta * zeta)
       exki           = 1.0d0 / exk
       zetai          = 1.0d0 / zeta
-      source_lw(il)  = emis_v(pft(il)) * stefan8 *T_veg(il)**4
-      forcing_lw(il) = -(zeta + eta) * source_lw(il)
-      explai(il)     = exp( exk *TAI(il))
-      exmlai(il)     = exp(-exk *TAI(il))
+      source_lw (il) = cohort_emis * stefan8 * cohort_temp**4
+      forcing_lw(il) = - (zeta + eta) * source_lw(il)
+      explai    (il) = exp( exk * cohort_tai)
+      exmlai    (il) = exp(-exk * cohort_tai)
 
 
       !------------------------------------------------------------------------------------!
       !     Coefficient of lambda1 (and minus the coefficient of lambda2) for the bottom   !
       ! of a layer, downwelling radiation.                                                 !
       !------------------------------------------------------------------------------------!
-      A_dw(il) = 5.d-1 * exki
+      a_dw(il) = 5.d-1 * exki
 
       !----- Coefficient of lambda1, top of layer, downwelling radiation. -----------------!
-      B_dw(il) = 5.d-1*exki*explai(il)
+      b_dw(il) = 5.d-1*exki*explai(il)
 
       !----- Coefficient of lambda2, top of layer, downwelling radiation. -----------------!
-      C_dw(il) = -5.d-1*exki*exmlai(il)
+      c_dw(il) = -5.d-1*exki*exmlai(il)
 
       !----- Term of downwelling radiation not multiplying a lambda. ----------------------!
-      D_dw(il) = 5.d-1*(exki**2)*forcing_lw(il) * (explai(il) + exmlai(il) - 2.0d0)
+      d_dw(il) = 5.d-1*(exki**2)*forcing_lw(il) * (explai(il) + exmlai(il) - 2.0d0)
 
-      A_uw(il) =   5.d-1 * zetai * (eta * exki - 1.0d0)
-      B_uw(il) = - 5.d-1 * zetai * (eta * exki + 1.0d0)
-      C_uw(il) = - source_lw(il) * zetai
-      D_uw(il) = A_uw(il) * explai(il)
-      E_uw(il) = B_uw(il) * exmlai(il)
-      F_uw(il) = -source_lw(il) * zetai                                                    &
+      a_uw(il) =   5.d-1 * zetai * (eta * exki - 1.0d0)
+      b_uw(il) = - 5.d-1 * zetai * (eta * exki + 1.0d0)
+      c_uw(il) = - source_lw(il) * zetai
+      d_uw(il) = a_uw(il) * explai(il)
+      e_uw(il) = b_uw(il) * exmlai(il)
+      f_uw(il) = -source_lw(il) * zetai                                                    &
                + 5.d-1 * zetai * (eta*exki - 1.0d0) * explai(il)                           &
                * (forcing_lw(il) * exki * (1.0d0-exmlai(il)))                                 &
                - 5.d-1 * zetai * (eta*exki + 1.0d0) * exmlai(il)                           &
@@ -1505,33 +1755,33 @@ subroutine lw_twostream(ncoh,semgs,sT_grnd, pft,TAI,canopy_area,T_veg,lw_v_surf,
 
    !----- Vector is of the form: (lambda_N, lambda_{N-1},...,lambda_1). -------------------!
 
-   masmatcp(1,1)      = B_dw(ncoh)
-   masmatcp(1,2)      = C_dw(ncoh)
-   mastervec_surf(1)  =-D_dw(ncoh)
+   masmatcp(1,1)      = b_dw(ncoh)
+   masmatcp(1,2)      = c_dw(ncoh)
+   mastervec_surf(1)  =-d_dw(ncoh)
    mastervec_incid(1) = 1.0d0
 
    do i=2,ncoh2-2,2
       ind = nint(real(ncoh2-i)*0.5)
-      masmatcp(i,i-1)    = -A_dw(ind+1)
-      masmatcp(i,i)      =  A_dw(ind+1)
-      masmatcp(i,i+1)    =  B_dw(ind)
-      masmatcp(i,i+2)    =  C_dw(ind)
-      mastervec_surf(i)  = -D_dw(ind)
+      masmatcp(i,i-1)    = -a_dw(ind+1)
+      masmatcp(i,i)      =  a_dw(ind+1)
+      masmatcp(i,i+1)    =  b_dw(ind)
+      masmatcp(i,i+2)    =  c_dw(ind)
+      mastervec_surf(i)  = -d_dw(ind)
       mastervec_incid(i) = 0.0d0
    end do
 
    do i=3,ncoh2-1,2
       ind = nint(real(ncoh2-i+1)*0.5)
-      masmatcp(i,i-2)    = -A_uw(ind+1)
-      masmatcp(i,i-1)    = -B_uw(ind+1)
-      masmatcp(i,i)      =  D_uw(ind)
-      masmatcp(i,i+1)    =  E_uw(ind)
-      mastervec_surf(i)  =  C_uw(ind+1) - F_uw(ind)
+      masmatcp(i,i-2)    = -a_uw(ind+1)
+      masmatcp(i,i-1)    = -b_uw(ind+1)
+      masmatcp(i,i)      =  d_uw(ind)
+      masmatcp(i,i+1)    =  e_uw(ind)
+      mastervec_surf(i)  =  c_uw(ind+1) - f_uw(ind)
       mastervec_incid(i) =  0.0d0
    end do
-   masmatcp(ncoh2,ncoh2-1) = A_uw(1) - (1.d0 - emgs) * A_dw(1)
-   masmatcp(ncoh2,ncoh2)   = B_uw(1) + (1.d0 - emgs) * A_dw(1)
-   mastervec_surf(ncoh2)   = emgs * stefan8 * T_grnd**4 - C_uw(1)
+   masmatcp(ncoh2,ncoh2-1) = a_uw(1) - (1.d0 - emgs) * a_dw(1)
+   masmatcp(ncoh2,ncoh2)   = b_uw(1) + (1.d0 - emgs) * a_dw(1)
+   mastervec_surf(ncoh2)   = emgs * stefan8 * t_grnd**4 - c_uw(1)
    mastervec_incid(ncoh2)  = 0.0d0
 
    mastermat(1,1) = 0.d0
@@ -1574,7 +1824,7 @@ subroutine lw_twostream(ncoh,semgs,sT_grnd, pft,TAI,canopy_area,T_veg,lw_v_surf,
    do i=3,ncoh2-1,2
       ind = nint(real(ncoh2-i+1)*0.5)
       upward_lw_surf(ind+1)  = masmatcp(i,i) * mastervec_surf(i)                           &
-                             + masmatcp(i,i+1) * mastervec_surf(i+1) + F_uw(ind)
+                             + masmatcp(i,i+1) * mastervec_surf(i+1) + f_uw(ind)
       upward_lw_incid(ind+1) = masmatcp(i,i) * mastervec_incid(i)                          &
                              + masmatcp(i,i+1) * mastervec_incid(i+1)
    end do
@@ -1582,21 +1832,21 @@ subroutine lw_twostream(ncoh,semgs,sT_grnd, pft,TAI,canopy_area,T_veg,lw_v_surf,
    do i=2,ncoh2-2,2
       ind = nint(real(ncoh2-i)*0.5)
       downward_lw_surf(ind+1)  = masmatcp(i,i+1) * mastervec_surf(i+1)                     &
-                               + masmatcp(i,i+2) * mastervec_surf(i+2) + D_dw(ind)
+                               + masmatcp(i,i+2) * mastervec_surf(i+2) + d_dw(ind)
       downward_lw_incid(ind+1) = masmatcp(i,i+1) * mastervec_incid(i+1)                    &
                                + masmatcp(i,i+2) * mastervec_incid(i+2)
    end do
 
-   upward_lw_surf(ncoh+1)    = D_uw(ncoh) * mastervec_surf(1)                              &
-                             + E_uw(ncoh) * mastervec_surf(2) + F_uw(ncoh)
-   upward_lw_incid(ncoh+1)   = D_uw(ncoh) * mastervec_incid(1)                             &
-                             + E_uw(ncoh) * mastervec_incid(2)
+   upward_lw_surf(ncoh+1)    = d_uw(ncoh) * mastervec_surf(1)                              &
+                             + e_uw(ncoh) * mastervec_surf(2) + f_uw(ncoh)
+   upward_lw_incid(ncoh+1)   = d_uw(ncoh) * mastervec_incid(1)                             &
+                             + e_uw(ncoh) * mastervec_incid(2)
    downward_lw_surf(ncoh+1)  = 0.0d0
    downward_lw_incid(ncoh+1) = 1.0d0
-   downward_lw_surf(1)       = A_dw(1) * (mastervec_surf(ncoh2-1)  - mastervec_surf(ncoh2))
-   downward_lw_incid(1)      = A_dw(1) * (mastervec_incid(ncoh2-1) - mastervec_incid(ncoh2))
+   downward_lw_surf(1)       = a_dw(1) * (mastervec_surf(ncoh2-1)  - mastervec_surf(ncoh2))
+   downward_lw_incid(1)      = a_dw(1) * (mastervec_incid(ncoh2-1) - mastervec_incid(ncoh2))
    upward_lw_surf(1)         = (1.0d0-emgs) * downward_lw_surf(1)                          &
-                             + emgs * stefan8 * T_grnd**4
+                             + emgs * stefan8 * t_grnd**4
    upward_lw_incid(1)        = (1.0d0-emgs) * downward_lw_incid(1)
 
    do il = 1,ncoh
@@ -1631,12 +1881,13 @@ end subroutine lw_twostream
 ! the two stream approach considering the size distribution of cohorts, acknowledging the  !
 ! effect of leaves, and, if that's the user's will, the branches.                          !
 !------------------------------------------------------------------------------------------!
-subroutine lw_twostream_layer(ncoh,semgs,sT_grnd, pft,TAI,canopy_area,hgttop,hgtbot,T_veg  &
-                             ,lw_v_surf,lw_v_incid,downward_lw_below_surf                  &
-                             ,downward_lw_below_incid,upward_lw_below_surf                 &
-                             ,upward_lw_below_incid,upward_lw_above_surf                   &
-                             ,upward_lw_above_incid)
-   use canopy_radiation_coms , only : emis_v            & ! intent(in)
+subroutine lw_twostream_layer(ncoh,semgs,sT_grnd, pft,lai,wai,canopy_area,hgttop,hgtbot    &
+                             ,leaf_temp,wood_temp,lw_v_surf,lw_v_incid                     &
+                             ,downward_lw_below_surf,downward_lw_below_incid               &
+                             ,upward_lw_below_surf,upward_lw_below_incid                   &
+                             ,upward_lw_above_surf,upward_lw_above_incid)
+   use canopy_radiation_coms , only : leaf_emis         & ! intent(in)
+                                    , wood_emis         & ! intent(in)
                                     , mubar             ! ! intent(in)
    use pft_coms              , only : clumping_factor   ! ! intent(in)
    use consts_coms           , only : stefan8           & ! intent(in)
@@ -1654,6 +1905,8 @@ subroutine lw_twostream_layer(ncoh,semgs,sT_grnd, pft,TAI,canopy_area,hgttop,hgt
                                     , populated         & ! intent(out)
                                     , mastervec_surf    & ! intent(out)
                                     , mastervec_incid   & ! intent(out)
+                                    , layer_emis        & ! intent(out)
+                                    , layer_temp        & ! intent(out)
                                     , explai            & ! intent(out)
                                     , exmlai            & ! intent(out)
                                     , downward_lw_incid & ! intent(out)
@@ -1685,8 +1938,10 @@ subroutine lw_twostream_layer(ncoh,semgs,sT_grnd, pft,TAI,canopy_area,hgttop,hgt
    real                         , intent(in)  :: semgs       ! Gnd. emmissivity
    real                         , intent(in)  :: st_grnd     ! Gnd. temperature
    integer     , dimension(ncoh), intent(in)  :: pft         ! Plant functional type
-   real(kind=8), dimension(ncoh), intent(in)  :: TAI         ! "Tree" Area Index
-   real(kind=8), dimension(ncoh), intent(in)  :: T_veg       ! Vegetation temperature
+   real(kind=8), dimension(ncoh), intent(in)  :: lai         ! Leaf Area Index
+   real(kind=8), dimension(ncoh), intent(in)  :: wai         ! Wood Area Index
+   real(kind=8), dimension(ncoh), intent(in)  :: leaf_temp   ! Leaf temperature
+   real(kind=8), dimension(ncoh), intent(in)  :: wood_temp   ! Leaf temperature
    real(kind=8), dimension(ncoh), intent(in)  :: canopy_area ! canopy area
    real(kind=8), dimension(ncoh), intent(in)  :: hgttop      ! "Tree" Area Index
    real(kind=8), dimension(ncoh), intent(in)  :: hgtbot      ! "Tree" Area Index
@@ -1723,10 +1978,13 @@ subroutine lw_twostream_layer(ncoh,semgs,sT_grnd, pft,TAI,canopy_area,hgttop,hgt
    real(kind=8)                               :: d
    real(kind=8)                               :: lw_v_surf_tmp
    real(kind=8)                               :: lw_v_incid_tmp
-   real(kind=8)                               :: tad
+   real(kind=8)                               :: lad
+   real(kind=8)                               :: wad
    real(kind=8)                               :: this_tai
    !----- Variables that must be allocated every time. ------------------------------------!
    real(kind=8), dimension(:,:) , allocatable :: tai_lyr
+   real(kind=8), dimension(:,:) , allocatable :: emis_lyr
+   real(kind=8), dimension(:,:) , allocatable :: temp_lyr
    !----- External functions. -------------------------------------------------------------!
    real(kind=4), external                     :: sngloff
    !---------------------------------------------------------------------------------------!
@@ -1738,6 +1996,8 @@ subroutine lw_twostream_layer(ncoh,semgs,sT_grnd, pft,TAI,canopy_area,hgttop,hgt
    ! unbounded and may change.                                                             !
    !---------------------------------------------------------------------------------------!
    allocate(tai_lyr           (ncoh,ncanlyr))
+   allocate(emis_lyr          (ncoh,ncanlyr))
+   allocate(temp_lyr          (ncoh,ncanlyr))
    !---------------------------------------------------------------------------------------!
 
 
@@ -1747,6 +2007,8 @@ subroutine lw_twostream_layer(ncoh,semgs,sT_grnd, pft,TAI,canopy_area,hgttop,hgt
    !---------------------------------------------------------------------------------------!
    call zero_canopy_layer('lw_twostream_layer')
    tai_lyr               (:,:) = 0.d0
+   emis_lyr              (:,:) = 0.d0
+   temp_lyr              (:,:) = 0.d0
    !---------------------------------------------------------------------------------------!
 
 
@@ -1763,6 +2025,8 @@ subroutine lw_twostream_layer(ncoh,semgs,sT_grnd, pft,TAI,canopy_area,hgttop,hgt
    ! cohort.                                                                               !
    !---------------------------------------------------------------------------------------!
    do ico = 1,ncoh
+      ipft = pft(ico)
+
       !------ Find the layer bounds. ------------------------------------------------------!
       kapartial (ico) = min(ncanlyr,floor  ((hgtbot(ico) * zztop0i8)**ehgti8) + 1)
       kafull    (ico) = min(ncanlyr,ceiling((hgtbot(ico) * zztop0i8)**ehgti8) + 1)
@@ -1770,7 +2034,8 @@ subroutine lw_twostream_layer(ncoh,semgs,sT_grnd, pft,TAI,canopy_area,hgttop,hgt
       kzfull    (ico) = min(ncanlyr,floor  ((hgttop(ico) * zztop0i8)**ehgti8))
 
       !------ Find the "tree" area density. -----------------------------------------------!
-      tad             = tai(ico) / (hgttop(ico) - hgtbot(ico))
+      lad             = lai(ico) / (hgttop(ico) - hgtbot(ico))
+      wad             = wai(ico) / (hgttop(ico) - hgtbot(ico))
 
 
       !------------------------------------------------------------------------------------!
@@ -1783,12 +2048,20 @@ subroutine lw_twostream_layer(ncoh,semgs,sT_grnd, pft,TAI,canopy_area,hgttop,hgt
       if (kapartial(ico) == kzpartial(ico)) then
          il                 = kapartial(ico)
          populated     (il) = .true.
-         tai_lyr   (ico,il) = tai(ico)
+         tai_lyr   (ico,il) = lai(ico) + wai(ico)
+         emis_lyr  (ico,il) = (leaf_emis(ipft) * lai(ico) + wood_emis(ipft) * wai(ico))    &
+                            / tai_lyr   (ico,il)
+         temp_lyr  (ico,il) = (leaf_temp(ipft) * lai(ico) + wood_temp(ipft) * wai(ico))    &
+                            / tai_lyr   (ico,il)
       else 
          !------ Start with the fully vegetated layers. -----------------------------------!
          do il = kafull(ico),kzfull(ico)
             populated(il)         = .true.
-            tai_lyr      (ico,il) = tad * dzcan8(il)
+            tai_lyr      (ico,il) = (lad + wad) * dzcan8(il)
+            emis_lyr  (ico,il)    = (leaf_emis(ipft) * lad + wood_emis(ipft) * wad)        &
+                                  / (lad + wad)
+            temp_lyr  (ico,il)    = (leaf_temp(ipft) * lad + wood_temp(ipft) * wad)        &
+                                  / (lad + wad)
          end do
 
          !---------------------------------------------------------------------------------!
@@ -1798,12 +2071,20 @@ subroutine lw_twostream_layer(ncoh,semgs,sT_grnd, pft,TAI,canopy_area,hgttop,hgt
          if (kapartial(ico) /= kafull(ico)) then
             il                    = kapartial(ico)
             populated        (il) = .true.
-            tai_lyr      (ico,il) = tad * (zztop8(il)-hgtbot(ico))
+            tai_lyr      (ico,il) = (lad + wad) * dzcan8(il)
+            emis_lyr  (ico,il)    = (leaf_emis(ipft) * lad + wood_emis(ipft) * wad)        &
+                                  / (lad + wad)
+            temp_lyr  (ico,il)    = (leaf_temp(ipft) * lad + wood_temp(ipft) * wad)        &
+                                  / (lad + wad)
          end if
          if (kzpartial(ico) /= kzfull(ico)) then
             il                    = kzpartial(ico)
             populated        (il) = .true.
-            tai_lyr      (ico,il) = tad * (hgttop(ico) - zzbot8(il))
+            tai_lyr      (ico,il) = (lad + wad) * dzcan8(il)
+            emis_lyr  (ico,il)    = (leaf_emis(ipft) * lad + wood_emis(ipft) * wad)        &
+                                  / (lad + wad)
+            temp_lyr  (ico,il)    = (leaf_temp(ipft) * lad + wood_temp(ipft) * wad)        &
+                                  / (lad + wad)
          end if
       end if
       !------------------------------------------------------------------------------------!
@@ -1823,8 +2104,12 @@ subroutine lw_twostream_layer(ncoh,semgs,sT_grnd, pft,TAI,canopy_area,hgttop,hgt
    !----- Squeeze the arrays. -------------------------------------------------------------!
    do ico = 1,ncoh
       tai_lyr      (ico,1:nactlyr) = pack(tai_lyr      (ico,:), populated)
+      emis_lyr     (ico,1:nactlyr) = pack(emis_lyr     (ico,:), populated)
+      temp_lyr     (ico,1:nactlyr) = pack(temp_lyr     (ico,:), populated)
       if (nactlyrp1 < ncanlyr) then
          tai_lyr      (ico,nactlyrp1:ncanlyr) = 0.d0
+         emis_lyr     (ico,nactlyrp1:ncanlyr) = 0.d0
+         temp_lyr     (ico,nactlyrp1:ncanlyr) = 0.d0
       end if
       !----- Count the number of layers that have leaves/branches for this cohort. --------!
       nlyr_coh       (ico) = count(tai_lyr(ico,:) > 0.d0)
@@ -1841,29 +2126,17 @@ subroutine lw_twostream_layer(ncoh,semgs,sT_grnd, pft,TAI,canopy_area,hgttop,hgt
       ! not the best way of doing it, but it is the simplest I could think, because it     !
       ! retains the fact that eta and zeta are constants within each layer.                !
       !------------------------------------------------------------------------------------!
-      this_tai      = sum(tai_lyr(:,il))
-      eta           = 0.d0
-      zeta          = 0.d0
-      source_lw(il) = 0.d0
-      do ico = 1,ncoh
-         ipft = pft(ico)
-         eta           = eta  + tai_lyr(ico,il) * (2.d0 + emis_v(ipft)) / (3.d0 * mubar)
-         zeta          = zeta + tai_lyr(ico,il)                                            &
-                              * (2.d0 * (1.d0 - emis_v(ipft))) / (3.d0 * mubar)
-         source_lw(il) = source_lw(il)                                                     &
-                       + tai_lyr(ico,il) * emis_v(ipft) * stefan8 *T_veg(ico)**4
-      end do
-      !----- Normalise eta, zeta, and the LW source for this layer. -----------------------!
-      eta           = eta           / this_tai
-      zeta          = zeta          / this_tai
-      source_lw(il) = source_lw(il) / this_tai
+      this_tai       = sum(tai_lyr(:,il))
+      layer_emis(il) = sum(emis_lyr(:,il) * tai_lyr(:,il)) / this_tai 
+      layer_temp(il) = sum(temp_lyr(:,il) * tai_lyr(:,il)) / this_tai 
 
-
-      !----- Find derived properties. -----------------------------------------------------!
-      exk            = sqrt(eta*eta-zeta*zeta)
+      zeta           = 2.0d0 * (1.0d0 - layer_emis(il)) / (3.0d0 * mubar)
+      eta            = (2.0d0 + layer_emis(il)) / (3.0d0 * mubar)
+      exk            = sqrt(eta * eta - zeta * zeta)
       exki           = 1.0d0 / exk
       zetai          = 1.0d0 / zeta
-      forcing_lw(il) = -(zeta + eta) * source_lw(il)
+      source_lw (il) = layer_emis(il) * stefan8 * layer_temp(il)**4
+      forcing_lw(il) = - (zeta + eta) * source_lw(il)
       explai(il)     = exp( exk * this_tai)
       exmlai(il)     = exp(-exk * this_tai)
 
@@ -1872,23 +2145,23 @@ subroutine lw_twostream_layer(ncoh,semgs,sT_grnd, pft,TAI,canopy_area,hgttop,hgt
       !     Coefficient of lambda1 (and minus the coefficient of lambda2) for the bottom   !
       ! of a layer, downwelling radiation.                                                 !
       !------------------------------------------------------------------------------------!
-      A_dw(il) = 5.0d-1 * exki
+      a_dw(il) = 5.0d-1 * exki
 
       !----- Coefficient of lambda1, top of layer, downwelling radiation. -----------------!
-      B_dw(il) = 5.0d-1*exki*explai(il)
+      b_dw(il) = 5.0d-1*exki*explai(il)
 
       !----- Coefficient of lambda2, top of layer, downwelling radiation. -----------------!
-      C_dw(il) = -5.0d-1*exki*exmlai(il)
+      c_dw(il) = -5.0d-1*exki*exmlai(il)
 
       !----- Term of downwelling radiation not multiplying a lambda. ----------------------!
-      D_dw(il) = 5.d-1*(exki**2)*forcing_lw(il) * (explai(il) + exmlai(il) - 2.0d0)
+      d_dw(il) = 5.d-1*(exki**2)*forcing_lw(il) * (explai(il) + exmlai(il) - 2.0d0)
 
-      A_uw(il) =   5.d-1 * zetai * (eta * exki - 1.0d0)
-      B_uw(il) = - 5.d-1 * zetai * (eta * exki + 1.0d0)
-      C_uw(il) = - source_lw(il) * zetai
-      D_uw(il) = A_uw(il) * explai(il)
-      E_uw(il) = B_uw(il) * exmlai(il)
-      F_uw(il) = -source_lw(il) * zetai                                                       &
+      a_uw(il) =   5.d-1 * zetai * (eta * exki - 1.0d0)
+      b_uw(il) = - 5.d-1 * zetai * (eta * exki + 1.0d0)
+      c_uw(il) = - source_lw(il) * zetai
+      d_uw(il) = a_uw(il) * explai(il)
+      e_uw(il) = b_uw(il) * exmlai(il)
+      f_uw(il) = -source_lw(il) * zetai                                                       &
                + 5.d-1 * zetai * (eta*exki - 1.0d0) * explai(il)                           &
                * (forcing_lw(il) * exki * (1.0d0-exmlai(il)))                                 &
                - 5.d-1 * zetai * (eta*exki + 1.0d0) * exmlai(il)                           &
@@ -1912,33 +2185,33 @@ subroutine lw_twostream_layer(ncoh,semgs,sT_grnd, pft,TAI,canopy_area,hgttop,hgt
 
 
    !----- Vector is of the form: (lambda_N, lambda_{N-1},...,lambda_1). -------------------!
-   masmatcp(1,1)      = B_dw(nactlyr)
-   masmatcp(1,2)      = C_dw(nactlyr)
-   mastervec_surf(1)  =-D_dw(nactlyr)
+   masmatcp(1,1)      = b_dw(nactlyr)
+   masmatcp(1,2)      = c_dw(nactlyr)
+   mastervec_surf(1)  =-d_dw(nactlyr)
    mastervec_incid(1) = 1.0d0
 
    do i=2,nactlyrt2-2,2
       ind = nint(real(nactlyrt2-i)*0.5)
-      masmatcp(i,i-1)    = -A_dw(ind+1)
-      masmatcp(i,i)      =  A_dw(ind+1)
-      masmatcp(i,i+1)    =  B_dw(ind)
-      masmatcp(i,i+2)    =  C_dw(ind)
-      mastervec_surf(i)  = -D_dw(ind)
+      masmatcp(i,i-1)    = -a_dw(ind+1)
+      masmatcp(i,i)      =  a_dw(ind+1)
+      masmatcp(i,i+1)    =  b_dw(ind)
+      masmatcp(i,i+2)    =  c_dw(ind)
+      mastervec_surf(i)  = -d_dw(ind)
       mastervec_incid(i) = 0.0d0
    end do
 
    do i=3,nactlyrt2-1,2
       ind = nint(real(nactlyrt2-i+1)*0.5)
-      masmatcp(i,i-2)    = -A_uw(ind+1)
-      masmatcp(i,i-1)    = -B_uw(ind+1)
-      masmatcp(i,i)      =  D_uw(ind)
-      masmatcp(i,i+1)    =  E_uw(ind)
-      mastervec_surf(i)  =  C_uw(ind+1) - F_uw(ind)
+      masmatcp(i,i-2)    = -a_uw(ind+1)
+      masmatcp(i,i-1)    = -b_uw(ind+1)
+      masmatcp(i,i)      =  d_uw(ind)
+      masmatcp(i,i+1)    =  e_uw(ind)
+      mastervec_surf(i)  =  c_uw(ind+1) - f_uw(ind)
       mastervec_incid(i) =  0.0d0
    end do
-   masmatcp(nactlyrt2,nactlyrt2-1) = A_uw(1) - (1.d0 - emgs) * A_dw(1)
-   masmatcp(nactlyrt2,nactlyrt2)   = B_uw(1) + (1.d0 - emgs) * A_dw(1)
-   mastervec_surf(nactlyrt2)       = emgs * stefan8 * T_grnd**4 - C_uw(1)
+   masmatcp(nactlyrt2,nactlyrt2-1) = a_uw(1) - (1.d0 - emgs) * a_dw(1)
+   masmatcp(nactlyrt2,nactlyrt2)   = b_uw(1) + (1.d0 - emgs) * a_dw(1)
+   mastervec_surf(nactlyrt2)       = emgs * stefan8 * t_grnd**4 - c_uw(1)
    mastervec_incid(nactlyrt2)      = 0.0d0
 
    mastermat(1,1) = 0.d0
@@ -1981,7 +2254,7 @@ subroutine lw_twostream_layer(ncoh,semgs,sT_grnd, pft,TAI,canopy_area,hgttop,hgt
    do i=3,nactlyrt2-1,2
       ind = nint(real(nactlyrt2-i+1)*0.5)
       upward_lw_surf(ind+1)  = masmatcp(i,i) * mastervec_surf(i)                                  &
-                      + masmatcp(i,i+1) * mastervec_surf(i+1) + F_uw(ind)
+                      + masmatcp(i,i+1) * mastervec_surf(i+1) + f_uw(ind)
       upward_lw_incid(ind+1) = masmatcp(i,i) * mastervec_incid(i)                                 &
                       + masmatcp(i,i+1) * mastervec_incid(i+1)
    end do
@@ -1989,20 +2262,20 @@ subroutine lw_twostream_layer(ncoh,semgs,sT_grnd, pft,TAI,canopy_area,hgttop,hgt
    do i=2,nactlyrt2-2,2
       ind = nint(real(nactlyrt2-i)*0.5)
       downward_lw_surf(ind+1)  = masmatcp(i,i+1) * mastervec_surf(i+1)                              &
-                      + masmatcp(i,i+2) * mastervec_surf(i+2) + D_dw(ind)
+                      + masmatcp(i,i+2) * mastervec_surf(i+2) + d_dw(ind)
       downward_lw_incid(ind+1) = masmatcp(i,i+1) * mastervec_incid(i+1)                             &
                       + masmatcp(i,i+2) * mastervec_incid(i+2)
    end do
 
-   upward_lw_surf(nactlyr+1)    = D_uw(nactlyr) * mastervec_surf(1)                        &
-                                + E_uw(nactlyr) * mastervec_surf(2) + F_uw(nactlyr)
-   upward_lw_incid(nactlyr+1)   = D_uw(nactlyr) * mastervec_incid(1)                       &
-                                + E_uw(nactlyr) * mastervec_incid(2)
+   upward_lw_surf(nactlyr+1)    = d_uw(nactlyr) * mastervec_surf(1)                        &
+                                + e_uw(nactlyr) * mastervec_surf(2) + f_uw(nactlyr)
+   upward_lw_incid(nactlyr+1)   = d_uw(nactlyr) * mastervec_incid(1)                       &
+                                + e_uw(nactlyr) * mastervec_incid(2)
    downward_lw_surf(nactlyr+1)  = 0.0d0
    downward_lw_incid(nactlyr+1) = 1.0d0
-   downward_lw_surf(1)       = A_dw(1) * (mastervec_surf(nactlyrt2-1)  - mastervec_surf(nactlyrt2))
-   downward_lw_incid(1)      = A_dw(1) * (mastervec_incid(nactlyrt2-1) - mastervec_incid(nactlyrt2))
-   upward_lw_surf(1)       = (1.0d0-emgs) * downward_lw_surf(1) + emgs * stefan8 * T_grnd**4
+   downward_lw_surf(1)       = a_dw(1) * (mastervec_surf(nactlyrt2-1)  - mastervec_surf(nactlyrt2))
+   downward_lw_incid(1)      = a_dw(1) * (mastervec_incid(nactlyrt2-1) - mastervec_incid(nactlyrt2))
+   upward_lw_surf(1)       = (1.0d0-emgs) * downward_lw_surf(1) + emgs * stefan8 * t_grnd**4
    upward_lw_incid(1)      = (1.0d0-emgs) * downward_lw_incid(1)
 
    do il = 1,nactlyr
@@ -2039,6 +2312,8 @@ subroutine lw_twostream_layer(ncoh,semgs,sT_grnd, pft,TAI,canopy_area,hgttop,hgt
 
    !------ De-allocate the temporary structure. -------------------------------------------!
    deallocate(tai_lyr    )
+   deallocate(emis_lyr   )
+   deallocate(temp_lyr   )
    !---------------------------------------------------------------------------------------!
 
    return

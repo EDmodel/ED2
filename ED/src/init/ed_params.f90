@@ -405,77 +405,228 @@ subroutine init_can_rad_params()
    use canopy_radiation_coms , only : leaf_reflect_nir            & ! intent(out)
                                     , leaf_trans_nir              & ! intent(out)
                                     , leaf_scatter_nir            & ! intent(out)
-                                    , leaf_reflect_vis_temperate  & ! intent(out)
-                                    , leaf_trans_vis_temperate    & ! intent(out)
+                                    , leaf_reflect_vis            & ! intent(out)
+                                    , leaf_trans_vis              & ! intent(out)
                                     , leaf_scatter_vis            & ! intent(out)
-                                    , leaf_reflect_vis_tropics    & ! intent(out)
-                                    , leaf_trans_vis_tropics      & ! intent(out)
-                                    , diffuse_backscatter_vis     & ! intent(out)
-                                    , diffuse_backscatter_nir     & ! intent(out)
-                                    , emis_v                      & ! intent(out)
+                                    , leaf_reflect_vis            & ! intent(out)
+                                    , leaf_trans_vis              & ! intent(out)
+                                    , leaf_backscatter_vis        & ! intent(out)
+                                    , leaf_backscatter_nir        & ! intent(out)
+                                    , leaf_emis                   & ! intent(out)
+                                    , wood_reflect_nir            & ! intent(out)
+                                    , wood_trans_nir              & ! intent(out)
+                                    , wood_scatter_nir            & ! intent(out)
+                                    , wood_reflect_vis            & ! intent(out)
+                                    , wood_trans_vis              & ! intent(out)
+                                    , wood_scatter_vis            & ! intent(out)
+                                    , wood_reflect_vis            & ! intent(out)
+                                    , wood_trans_vis              & ! intent(out)
+                                    , wood_backscatter_vis        & ! intent(out)
+                                    , wood_backscatter_nir        & ! intent(out)
+                                    , wood_emis                   & ! intent(out)
                                     , mubar                       & ! intent(out)
-                                    , visible_fraction            & ! intent(out)
-                                    , visible_fraction_dir        & ! intent(out)
-                                    , visible_fraction_dif        & ! intent(out)
-                                    , leaf_reflect_nir            & ! intent(out)
-                                    , leaf_trans_nir              & ! intent(out)
+                                    , fvis_beam_def               & ! intent(out)
+                                    , fvis_diff_def               & ! intent(out)
+                                    , fnir_beam_def               & ! intent(out)
+                                    , fnir_diff_def               & ! intent(out)
                                     , rshort_twilight_min         & ! intent(out)
                                     , cosz_min                    & ! intent(out)
                                     , cosz_min8                   ! ! intent(out)
    use consts_coms           , only : pio180                      ! ! intent(out)
    implicit none
-   !----- Local variables -----------------------------------------------------------------!
-   real :: leaf_scatter_vis_temperate
-   real :: leaf_scatter_vis_tropics
-   real :: diffuse_bscat_vis_temp
-   real :: diffuse_bscat_vis_trop
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Leaf angle distribution parameter (dimensionless).  Let mu' be the cosine of leaf !
+   ! angle and G(mu') be the distribution of mu'.  Then, mubar = (integral from 0 to 1)    !
+   ! (d mu'   mu' / G(mu')).  See, for example, Dickinson 1983.                            !
+   !---------------------------------------------------------------------------------------!
+   mubar                      = 1.0d0 
    !---------------------------------------------------------------------------------------!
 
-   mubar                      = 1.0d0 
 
-   visible_fraction           = 0.45
-   visible_fraction_dir       = 0.43
-   visible_fraction_dif       = 0.52
-   leaf_reflect_nir           = 0.577
-   leaf_trans_nir             = 0.248
 
-   leaf_scatter_nir           = leaf_reflect_nir + leaf_trans_nir
 
-   leaf_scatter_vis_temperate = leaf_reflect_vis_temperate + leaf_trans_vis_temperate
+   !---------------------------------------------------------------------------------------!
+   !      The following parameters are used to split the shortwave radiation into visible  !
+   ! and near-infrared radiation.                                                          !
+   !---------------------------------------------------------------------------------------!
+   fvis_beam_def = 0.43
+   fnir_beam_def = 1.0 - fvis_beam_def
+   fvis_diff_def = 0.52
+   fnir_diff_def = 1.0 - fvis_diff_def
+   !---------------------------------------------------------------------------------------!
 
-   leaf_scatter_vis_tropics   = leaf_reflect_vis_tropics   + leaf_trans_vis_tropics
 
-   diffuse_bscat_vis_temp  = (2.0 * leaf_reflect_vis_temperate - leaf_trans_vis_temperate) &
-                           / (3.0 * leaf_scatter_vis_temperate)
 
-   diffuse_bscat_vis_trop  = (2.0 * leaf_reflect_vis_tropics   - leaf_trans_vis_tropics)   &
-                           / (3.0 * leaf_scatter_vis_tropics)
+   !---------------------------------------------------------------------------------------!
+   !      Leaf reflectance.                                                                !
+   !      Values for temperate PFTs were left as they were.  Tropical and sub-tropical     !
+   ! PFTs use the parameters from CLM.  I checked the values against some published and    !
+   ! they seem similar at a first glance, at least closer than the original values, which  !
+   ! looked like the visible ignoring the green band.                                      !
+   !---------------------------------------------------------------------------------------!
+   !----- Visible (PAR). ------------------------------------------------------------------!
+   leaf_reflect_vis(1)     = 1.3d-1 ! 6.2d-2
+   leaf_reflect_vis(2:4)   = 1.3d-1 ! 6.2d-2
+   leaf_reflect_vis(5)     = 1.1d-1 ! 6.2d-2
+   leaf_reflect_vis(6:11)  = 1.1d-1 ! 1.1d-1
+   leaf_reflect_vis(12:13) = 1.1d-1 ! 1.1d-1
+   leaf_reflect_vis(14:15) = 1.1d-1 ! 1.1d-1
+   leaf_reflect_vis(16)    = 1.3d-1 ! 0.062
+   leaf_reflect_vis(17)    = 9.0d-2 ! 9.0d-2
+   !----- Near infrared. ------------------------------------------------------------------!
+   leaf_reflect_nir(1)     = 6.30d-1
+   leaf_reflect_nir(2:4)   = 6.30d-1
+   leaf_reflect_nir(5)     = 5.77d-1
+   leaf_reflect_nir( 6:11) = 5.77d-1
+   leaf_reflect_nir(12:13) = 5.77d-1
+   leaf_reflect_nir(14:15) = 5.80d-1
+   leaf_reflect_nir(16)    = 6.30d-1
+   leaf_reflect_nir(17)    = 4.60d-1
+   !---------------------------------------------------------------------------------------!
 
-   diffuse_backscatter_nir = (2.0 * leaf_reflect_nir - leaf_trans_nir)                     &
-                           / (3.0 * leaf_scatter_nir)
 
-   leaf_scatter_vis(1:4)   = leaf_scatter_vis_tropics
-   leaf_scatter_vis(5:11)  = leaf_scatter_vis_temperate
-   leaf_scatter_vis(12:13) = leaf_scatter_vis_temperate
-   leaf_scatter_vis(14:15) = leaf_scatter_vis_tropics
-   leaf_scatter_vis(16)    = leaf_scatter_vis_tropics
-   leaf_scatter_vis(17)    = leaf_scatter_vis_temperate
 
-   diffuse_backscatter_vis(1:4)   = diffuse_bscat_vis_trop
-   diffuse_backscatter_vis(5:11)  = diffuse_bscat_vis_temp
-   diffuse_backscatter_vis(12:13) = diffuse_bscat_vis_temp
-   diffuse_backscatter_vis(14:15) = diffuse_bscat_vis_trop
-   diffuse_backscatter_vis(16)    = diffuse_bscat_vis_trop
-   diffuse_backscatter_vis(17)    = diffuse_bscat_vis_temp
+   !---------------------------------------------------------------------------------------!
+   !      Wood reflectance, using CLM parameters.                                          !
+   !---------------------------------------------------------------------------------------!
+   !----- Visible (PAR). ------------------------------------------------------------------!
+   wood_reflect_vis(1)     = 3.60d-1
+   wood_reflect_vis(2:4)   = 1.60d-1
+   wood_reflect_vis(5)     = 3.60d-1
+   wood_reflect_vis(6:11)  = 1.60d-1
+   wood_reflect_vis(12:13) = 3.60d-1
+   wood_reflect_vis(14:15) = 3.60d-1
+   wood_reflect_vis(16)    = 3.60d-1
+   wood_reflect_vis(17)    = 1.60d-2
+   !----- Near infrared. ------------------------------------------------------------------!
+   wood_reflect_nir(1)     = 5.80d-1
+   wood_reflect_nir(2:4)   = 3.90d-1
+   wood_reflect_nir(5)     = 5.80d-1
+   wood_reflect_nir( 6:11) = 3.90d-1
+   wood_reflect_nir(12:13) = 5.80d-1
+   wood_reflect_nir(14:15) = 5.80d-1
+   wood_reflect_nir(16)    = 5.80d-1
+   wood_reflect_nir(17)    = 3.90d-1
+   !---------------------------------------------------------------------------------------!
 
-   emis_v(1)     = 9.60d-1
-   emis_v(2:4)   = 9.50d-1
-   emis_v(5)     = 9.60d-1
-   emis_v(6:8)   = 9.70d-1
-   emis_v(9:11)  = 9.50d-1
-   emis_v(12:15) = 9.60d-1
-   emis_v(16)    = 9.60d-1
-   emis_v(17)    = 9.70d-1
+
+
+   !---------------------------------------------------------------------------------------!
+   !      Leaf transmittance.                                                              !
+   !      Values for temperate PFTs were left as they were.  Tropical and sub-tropical     !
+   ! PFTs use the parameters from CLM.  I checked the values against some published and    !
+   ! they seem similar at a first glance, at least closer than the original values, which  !
+   ! looked like the visible ignoring the green band.                                      !
+   !---------------------------------------------------------------------------------------!
+   !----- Visible (PAR). ------------------------------------------------------------------!
+   leaf_trans_vis(    1) = 2.80d-2  ! 7.00d-2
+   leaf_trans_vis(  2:4) = 2.80d-2  ! 5.00d-2
+   leaf_trans_vis(    5) = 1.60d-1  ! 0.160
+   leaf_trans_vis( 6:11) = 1.60d-1  ! 0.160
+   leaf_trans_vis(12:13) = 1.60d-1  ! 0.160
+   leaf_trans_vis(14:15) = 7.00d-2  ! 0.028
+   leaf_trans_vis(   16) = 2.80d-2  ! 7.00d-2
+   leaf_trans_vis(   17) = 5.00d-2  ! 0.160
+   !----- Near infrared. ------------------------------------------------------------------!
+   leaf_trans_nir(    1) = 2.48d-1
+   leaf_trans_nir(  2:4) = 2.48d-1
+   leaf_trans_nir(    5) = 2.48d-1
+   leaf_trans_nir( 6:11) = 2.48d-1
+   leaf_trans_nir(12:13) = 2.48d-1
+   leaf_trans_nir(14:15) = 2.48d-1
+   leaf_trans_nir(   16) = 2.48d-1
+   leaf_trans_nir(   17) = 1.80d-1
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !      Wood transmittance, using the parameters from CLM.                               !
+   !---------------------------------------------------------------------------------------!
+   !----- Visible (PAR). ------------------------------------------------------------------!
+   wood_trans_vis(    1) = 2.80d-2
+   wood_trans_vis(  2:4) = 1.00d-3
+   wood_trans_vis(    5) = 2.80d-2
+   wood_trans_vis( 6:11) = 1.00d-3
+   wood_trans_vis(12:13) = 2.20d-1
+   wood_trans_vis(14:15) = 2.20d-1
+   wood_trans_vis(   16) = 2.80d-2
+   wood_trans_vis(   17) = 1.00d-3
+   !----- Near infrared. ------------------------------------------------------------------!
+   wood_trans_nir(    1) = 2.48d-1
+   wood_trans_nir(  2:4) = 1.00d-3
+   wood_trans_nir(    5) = 2.48d-1
+   wood_trans_nir( 6:11) = 1.00d-3
+   wood_trans_nir(12:13) = 2.48d-1
+   wood_trans_nir(14:15) = 2.48d-1
+   wood_trans_nir(   16) = 2.48d-1
+   wood_trans_nir(   17) = 1.00d-3
+   !---------------------------------------------------------------------------------------!
+
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !      Scattering coefficient.  For all PFTs this is just the sum of reflectance and    !
+   ! transmittance.                                                                        !
+   !---------------------------------------------------------------------------------------!
+   !----- Visible (PAR). ------------------------------------------------------------------!
+   leaf_scatter_vis(1:17) = leaf_reflect_vis(1:17) + leaf_trans_vis(1:17)
+   wood_scatter_vis(1:17) = wood_reflect_vis(1:17) + wood_trans_vis(1:17)
+   !----- Near infrared. ------------------------------------------------------------------!
+   leaf_scatter_nir(1:17) = leaf_reflect_nir(1:17) + leaf_trans_nir(1:17)
+   wood_scatter_nir(1:17) = wood_reflect_nir(1:17) + wood_trans_nir(1:17)
+   !---------------------------------------------------------------------------------------!
+
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !      Back-scattering coefficients.                                                    !
+   !---------------------------------------------------------------------------------------!
+   !----- Visible (PAR). ------------------------------------------------------------------!
+   leaf_backscatter_vis(1:17) = (2.d0 * leaf_reflect_vis(1:17) - leaf_trans_vis(1:17))     &
+                              / (3.d0 * leaf_scatter_vis(1:17))
+   wood_backscatter_vis(1:17) = (2.d0 * wood_reflect_vis(1:17) - wood_trans_vis(1:17))     &
+                              / (3.d0 * wood_scatter_vis(1:17))
+   !----- Near infrared. ------------------------------------------------------------------!
+   leaf_backscatter_nir(1:17) = (2.d0 * leaf_reflect_nir(1:17) - leaf_trans_nir(1:17))     &
+                              / (3.d0 * leaf_scatter_nir(1:17))
+   wood_backscatter_nir(1:17) = (2.d0 * wood_reflect_nir(1:17) - wood_trans_nir(1:17))     &
+                              / (3.d0 * wood_scatter_nir(1:17))
+   !---------------------------------------------------------------------------------------!
+
+
+
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !      Emissivity.                                                                      !
+   !---------------------------------------------------------------------------------------!
+   leaf_emis(1)     = 9.60d-1
+   leaf_emis(2:4)   = 9.50d-1
+   leaf_emis(5)     = 9.60d-1
+   leaf_emis(6:8)   = 9.70d-1
+   leaf_emis(9:11)  = 9.50d-1
+   leaf_emis(12:15) = 9.60d-1
+   leaf_emis(16)    = 9.60d-1
+   leaf_emis(17)    = 9.70d-1
+   wood_emis(1)     = 9.60d-1
+   wood_emis(2:4)   = 9.00d-1
+   wood_emis(5)     = 9.60d-1
+   wood_emis(6:8)   = 9.00d-1
+   wood_emis(9:11)  = 9.00d-1
+   wood_emis(12:15) = 9.60d-1
+   wood_emis(16)    = 9.60d-1
+   wood_emis(17)    = 9.00d-1
+   !---------------------------------------------------------------------------------------!
+
+
+
 
    !---------------------------------------------------------------------------------------!
    !     These variables are the thresholds for things that should be computed during the  !
@@ -608,6 +759,16 @@ subroutine init_can_air_params()
                              , nflat_lami            & ! intent(out)
                              , mflat_turb            & ! intent(out)
                              , mflat_lami            & ! intent(out)
+                             , ocyli_turb            & ! intent(out)
+                             , ocyli_lami            & ! intent(out)
+                             , acyli_turb            & ! intent(out)
+                             , acyli_lami            & ! intent(out)
+                             , bcyli_turb            & ! intent(out)
+                             , bcyli_lami            & ! intent(out)
+                             , ncyli_turb            & ! intent(out)
+                             , ncyli_lami            & ! intent(out)
+                             , mcyli_turb            & ! intent(out)
+                             , mcyli_lami            & ! intent(out)
                              , beta_r1               & ! intent(out)
                              , beta_r2               & ! intent(out)
                              , beta_re0              & ! intent(out)
@@ -622,6 +783,16 @@ subroutine init_can_air_params()
                              , nflat_lami8           & ! intent(out)
                              , mflat_turb8           & ! intent(out)
                              , mflat_lami8           & ! intent(out)
+                             , ocyli_turb8           & ! intent(out)
+                             , ocyli_lami8           & ! intent(out)
+                             , acyli_turb8           & ! intent(out)
+                             , acyli_lami8           & ! intent(out)
+                             , bcyli_turb8           & ! intent(out)
+                             , bcyli_lami8           & ! intent(out)
+                             , ncyli_turb8           & ! intent(out)
+                             , ncyli_lami8           & ! intent(out)
+                             , mcyli_turb8           & ! intent(out)
+                             , mcyli_lami8           & ! intent(out)
                              , beta_r18              & ! intent(out)
                              , beta_r28              & ! intent(out)
                              , beta_re08             & ! intent(out)
@@ -722,22 +893,38 @@ subroutine init_can_air_params()
 
 
    !---------------------------------------------------------------------------------------!
-   !      Parameters for the aerodynamic resistance between the leaf and the canopy air    !
-   ! space.  These are the A, B, n, and m parameters that define the Nusselt number for    !
-   ! forced and free convection, at equations 10.7 and 10.9.  The parameters are found at  !
-   ! the appendix A.5(a) and A.5(b).                                                       !
+   !      Parameters for the aerodynamic resistance between the leaf (flat surface) and    !
+   ! wood (kind of cylinder surface), and the canopy air space.  These are the A, B, n,    !
+   ! and m parameters that define the Nusselt number for forced and free convection, at    !
+   ! equations 10.7 and 10.9.  The parameters are found at the appendix A, table A.5(a)    !
+   ! and A.5(b).                                                                           !
    !                                                                                       !
    ! M08 - Monteith, J. L., M. H. Unsworth, 2008. Principles of Environmental Physics,     !
    !       3rd. edition, Academic Press, Amsterdam, 418pp.  (Mostly Chapter 10).           !
    !---------------------------------------------------------------------------------------!
-   aflat_turb = 0.600    ! A (forced convection), turbulent flow
-   aflat_lami = 0.032    ! A (forced convection), laminar   flow
-   bflat_turb = 0.500    ! B (free   convection), turbulent flow
-   bflat_lami = 0.130    ! B (free   convection), laminar   flow
-   nflat_turb = 0.500    ! n (forced convection), turbulent flow
-   nflat_lami = 0.800    ! n (forced convection), laminar   flow
-   mflat_turb = 0.250    ! m (free   convection), turbulent flow
-   mflat_lami = onethird ! m (free   convection), laminar   flow
+   aflat_lami = 0.600    ! A (forced convection), laminar   flow
+   nflat_lami = 0.500    ! n (forced convection), laminar   flow
+   aflat_turb = 0.032    ! A (forced convection), turbulent flow
+   nflat_turb = 0.800    ! n (forced convection), turbulent flow
+   bflat_lami = 0.500    ! B (free   convection), laminar   flow
+   mflat_lami = 0.250    ! m (free   convection), laminar   flow
+   bflat_turb = 0.130    ! B (free   convection), turbulent flow
+   mflat_turb = onethird ! m (free   convection), turbulent flow
+   ocyli_lami = 0.320    ! intercept (forced convection), laminar   flow
+   acyli_lami = 0.510    ! A (forced convection), laminar   flow
+   ncyli_lami = 0.520    ! n (forced convection), laminar   flow
+   ocyli_turb = 0.000    ! intercept (forced convection), turbulent flow
+   acyli_turb = 0.240    ! A (forced convection), turbulent flow
+   ncyli_turb = 0.600    ! n (forced convection), turbulent flow
+   bcyli_lami = 0.480    ! B (free   convection), laminar   flow
+   mcyli_lami = 0.250    ! m (free   convection), laminar   flow
+   bcyli_turb = 0.090    ! B (free   convection), turbulent flow
+   mcyli_turb = onethird ! m (free   convection), turbulent flow
+   !---------------------------------------------------------------------------------------!
+
+
+
+
    !---------------------------------------------------------------------------------------!
    !     Both free and forced convection tend to underestimate the Nusselt number under    !
    ! different conditions.  Based on M08 review on the subject, I wrote the following      !
@@ -873,14 +1060,24 @@ subroutine init_can_air_params()
    atetf8                = dble(atetf               )
    z0moz0h8              = dble(z0moz0h             )
    z0hoz0m8              = dble(z0hoz0m             )
-   aflat_turb8           = dble(aflat_turb          )
-   aflat_lami8           = dble(aflat_lami          )
-   bflat_turb8           = dble(bflat_turb          )
-   bflat_lami8           = dble(bflat_lami          )
-   nflat_turb8           = dble(nflat_turb          )
-   nflat_lami8           = dble(nflat_lami          )
-   mflat_turb8           = dble(mflat_turb          )
-   mflat_lami8           = dble(mflat_lami          )
+   aflat_lami8           = dble(aflat_lami          ) 
+   nflat_lami8           = dble(nflat_lami          ) 
+   aflat_turb8           = dble(aflat_turb          ) 
+   nflat_turb8           = dble(nflat_turb          ) 
+   bflat_lami8           = dble(bflat_lami          ) 
+   mflat_lami8           = dble(mflat_lami          ) 
+   bflat_turb8           = dble(bflat_turb          ) 
+   mflat_turb8           = dble(mflat_turb          ) 
+   ocyli_lami8           = dble(ocyli_lami          ) 
+   acyli_lami8           = dble(acyli_lami          ) 
+   ncyli_lami8           = dble(ncyli_lami          ) 
+   ocyli_turb8           = dble(ocyli_turb          ) 
+   acyli_turb8           = dble(acyli_turb          ) 
+   ncyli_turb8           = dble(ncyli_turb          ) 
+   bcyli_lami8           = dble(bcyli_lami          ) 
+   mcyli_lami8           = dble(mcyli_lami          ) 
+   bcyli_turb8           = dble(bcyli_turb          ) 
+   mcyli_turb8           = dble(mcyli_turb          ) 
    beta_r18              = dble(beta_r1             )
    beta_r28              = dble(beta_r2             )
    beta_re08             = dble(beta_re0            )
@@ -1038,7 +1235,15 @@ subroutine init_pft_photo_params()
    implicit none
    !---------------------------------------------------------------------------------------!
 
-   D0(1:17)                  = 0.01 * d0fact   ! same for all PFTs
+   D0(1)                     = 0.015  ! 0.010 * d0fact
+   D0(2:4)                   = 0.015  ! 0.010 * d0fact
+   D0(5)                     = 0.010
+   D0(6:8)                   = 0.010
+   D0(9:11)                  = 0.010
+   D0(12:13)                 = 0.010
+   D0(14:15)                 = 0.010
+   D0(16)                    = 0.015  ! 0.010 * d0fact
+   D0(17)                    = 0.015  ! 0.010 * d0fact
 
    Vm_low_temp(1)            = 13.0             ! c4 grass
    Vm_low_temp(2)            =  8.0             ! early tropical
@@ -1090,21 +1295,21 @@ subroutine init_pft_photo_params()
 
 
    !------ Vm0 is the maximum photosynthesis capacity in µmol/m2/s. -----------------------!
-   Vm0(1)                    = 12.5            * 1.60
-   Vm0(2)                    = 18.75           * vmfact
-   Vm0(3)                    = 12.5            * vmfact
-   Vm0(4)                    = 6.25            * vmfact
-   Vm0(5)                    = 18.3            * vmfact
-   Vm0(6)                    = 15.625 * 0.7264 * vmfact
-   Vm0(7)                    = 15.625 * 0.7264 * vmfact
-   Vm0(8)                    = 6.25   * 0.7264 * vmfact
-   Vm0(9)                    = 18.25  * 1.1171 * vmfact
-   Vm0(10)                   = 15.625 * 1.1171 * vmfact
-   Vm0(11)                   = 6.25   * 1.1171 * vmfact
-   Vm0(12:13)                = 18.3            * vmfact
-   Vm0(14:15)                = 12.5            * 1.20
-   Vm0(16)                   = 25.0            * vmfact
-   Vm0(17)                   = 15.625
+   Vm0(1)                    = 15.000 ! 12.500 * vmfact
+   Vm0(2)                    = 22.500 ! 18.750 * vmfact
+   Vm0(3)                    = 15.000 ! 12.500 * vmfact
+   Vm0(4)                    =  7.500 !  6.250 * vmfact
+   Vm0(5)                    = 18.300 
+   Vm0(6)                    = 11.350 ! 15.625 * 0.7264
+   Vm0(7)                    = 11.350 ! 15.625 * 0.7264
+   Vm0(8)                    =  4.540 !  6.250 * 0.7264
+   Vm0(9)                    = 20.387 ! 18.250 * 1.1171
+   Vm0(10)                   = 17.455 ! 15.625 * 1.1171
+   Vm0(11)                   =  6.981 !  6.250 * 1.1171
+   Vm0(12:13)                = 18.300 ! 18.300
+   Vm0(14:15)                = 15.000 ! 12.500 * vmfact
+   Vm0(16)                   = 26.250 ! 21.875 * vmfact
+   Vm0(17)                   = 18.750 ! 15.625 * vmfact
    !---------------------------------------------------------------------------------------!
 
 
@@ -1126,9 +1331,9 @@ subroutine init_pft_photo_params()
    !    Dark_respiration_factor is the lower-case gamma in Moorcroft et al. (2001).        !
    !---------------------------------------------------------------------------------------!
    dark_respiration_factor(1)     = 0.035
-   dark_respiration_factor(2)     = 0.020 * gamfact
-   dark_respiration_factor(3)     = 0.020 * gamfact
-   dark_respiration_factor(4)     = 0.020 * gamfact
+   dark_respiration_factor(2)     = 0.015 ! 0.020 * gamfact
+   dark_respiration_factor(3)     = 0.015 ! 0.020 * gamfact
+   dark_respiration_factor(4)     = 0.015 ! 0.020 * gamfact
    dark_respiration_factor(5)     = 0.020
    dark_respiration_factor(6)     = 0.020
    dark_respiration_factor(7)     = 0.020
@@ -1140,8 +1345,8 @@ subroutine init_pft_photo_params()
    dark_respiration_factor(13)    = 0.020
    dark_respiration_factor(14)    = 0.035
    dark_respiration_factor(15)    = 0.035
-   dark_respiration_factor(16)    = 0.020 * gamfact
-   dark_respiration_factor(17)    = 0.025
+   dark_respiration_factor(16)    = 0.015
+   dark_respiration_factor(17)    = 0.020
    !---------------------------------------------------------------------------------------!
 
 
@@ -1177,24 +1382,24 @@ subroutine init_pft_photo_params()
 
    !----- Define the stomatal slope (aka the M factor). -----------------------------------!
    stomatal_slope(1)         =  5.0
-   stomatal_slope(2)         =  8.0    * mfact
-   stomatal_slope(3)         =  8.0    * mfact
-   stomatal_slope(4)         =  8.0    * mfact
-   stomatal_slope(5)         =  8.0    * mfact
-   stomatal_slope(6)         =  6.3949 * mfact
-   stomatal_slope(7)         =  6.3949 * mfact
-   stomatal_slope(8)         =  6.3949 * mfact
-   stomatal_slope(9)         =  6.3949 * mfact
-   stomatal_slope(10)        =  6.3949 * mfact
-   stomatal_slope(11)        =  6.3949 * mfact
-   stomatal_slope(12)        =  8.0    * mfact
-   stomatal_slope(13)        =  8.0    * mfact
+   stomatal_slope(2)         =  9.0 ! 8.0    * mfact
+   stomatal_slope(3)         =  9.0 ! 8.0    * mfact
+   stomatal_slope(4)         =  9.0 ! 8.0    * mfact
+   stomatal_slope(5)         =  8.0
+   stomatal_slope(6)         =  6.3949
+   stomatal_slope(7)         =  6.3949
+   stomatal_slope(8)         =  6.3949
+   stomatal_slope(9)         =  6.3949
+   stomatal_slope(10)        =  6.3949
+   stomatal_slope(11)        =  6.3949
+   stomatal_slope(12)        =  8.0   
+   stomatal_slope(13)        =  8.0
    stomatal_slope(14)        =  5.0
    stomatal_slope(15)        =  5.0
-   stomatal_slope(16)        =  8.0    * mfact
+   stomatal_slope(16)        =  9.0
    stomatal_slope(17)        =  6.4
  
-   cuticular_cond(1)         = 10000.0
+   cuticular_cond(1)         =  8000.0
    cuticular_cond(2)         = 10000.0
    cuticular_cond(3)         = 10000.0
    cuticular_cond(4)         = 10000.0
@@ -1213,28 +1418,28 @@ subroutine init_pft_photo_params()
    cuticular_cond(17)        =  1000.0
 
    quantum_efficiency(1)     = 0.053
-   quantum_efficiency(2)     = 0.08  * alphafact
-   quantum_efficiency(3)     = 0.08  * alphafact
-   quantum_efficiency(4)     = 0.08  * alphafact
-   quantum_efficiency(5)     = 0.08  * alphafact
-   quantum_efficiency(6)     = 0.08  * alphafact
-   quantum_efficiency(7)     = 0.08  * alphafact
-   quantum_efficiency(8)     = 0.08  * alphafact
-   quantum_efficiency(9)     = 0.08  * alphafact
-   quantum_efficiency(10)    = 0.08  * alphafact
-   quantum_efficiency(11)    = 0.08  * alphafact
-   quantum_efficiency(12)    = 0.08  * alphafact
-   quantum_efficiency(13)    = 0.08  * alphafact
+   quantum_efficiency(2)     = 0.070 ! 0.08  * alphafact
+   quantum_efficiency(3)     = 0.070 ! 0.08  * alphafact
+   quantum_efficiency(4)     = 0.070 ! 0.08  * alphafact
+   quantum_efficiency(5)     = 0.080
+   quantum_efficiency(6)     = 0.080
+   quantum_efficiency(7)     = 0.080
+   quantum_efficiency(8)     = 0.080
+   quantum_efficiency(9)     = 0.080
+   quantum_efficiency(10)    = 0.080
+   quantum_efficiency(11)    = 0.080
+   quantum_efficiency(12)    = 0.080
+   quantum_efficiency(13)    = 0.080
    quantum_efficiency(14)    = 0.053
    quantum_efficiency(15)    = 0.053
-   quantum_efficiency(16)    = 0.08  * alphafact
-   quantum_efficiency(17)    = 0.08  * alphafact
+   quantum_efficiency(16)    = 0.070 ! 0.08  * alphafact
+   quantum_efficiency(17)    = 0.070 ! 0.08  * alphafact
 
    !---------------------------------------------------------------------------------------!
    !     The KW parameter. Medvigy et al. (2009) and Moorcroft et al. (2001) give the      !
    ! number in m²/yr/kg_C_root.  Here we must define it in m²/s/kg_C_root.                 !
    !---------------------------------------------------------------------------------------!
-   water_conductance(1:17) = 150. / yr_sec * kfact
+   water_conductance(1:17) = 450. / yr_sec ! 150. / yr_sec * kfact
    !---------------------------------------------------------------------------------------!
 
 
@@ -1246,23 +1451,23 @@ subroutine init_pft_photo_params()
    photosyn_pathway(16:17)   = 3
 
    !----- Leaf width [m].  This controls the boundary layer conductance. ------------------!
-   leaf_width( 1)    = 0.20 * lwfact
-   leaf_width( 2)    = 0.20 * lwfact
-   leaf_width( 3)    = 0.20 * lwfact
-   leaf_width( 4)    = 0.20 * lwfact
-   leaf_width( 5)    = 0.05 * lwfact
-   leaf_width( 6)    = 0.05 * lwfact
-   leaf_width( 7)    = 0.05 * lwfact
-   leaf_width( 8)    = 0.05 * lwfact
-   leaf_width( 9)    = 0.05 * lwfact
-   leaf_width(10)    = 0.05 * lwfact
-   leaf_width(11)    = 0.05 * lwfact
-   leaf_width(12)    = 0.05 * lwfact
-   leaf_width(13)    = 0.05 * lwfact
-   leaf_width(14)    = 0.20 * lwfact
-   leaf_width(15)    = 0.20 * lwfact
-   leaf_width(16)    = 0.20 * lwfact
-   leaf_width(17)    = 0.05 * lwfact
+   leaf_width( 1)    = 0.20
+   leaf_width( 2)    = 0.20
+   leaf_width( 3)    = 0.20
+   leaf_width( 4)    = 0.20
+   leaf_width( 5)    = 0.05
+   leaf_width( 6)    = 0.05
+   leaf_width( 7)    = 0.05
+   leaf_width( 8)    = 0.05
+   leaf_width( 9)    = 0.05
+   leaf_width(10)    = 0.05
+   leaf_width(11)    = 0.05
+   leaf_width(12)    = 0.05
+   leaf_width(13)    = 0.05
+   leaf_width(14)    = 0.20
+   leaf_width(15)    = 0.20
+   leaf_width(16)    = 0.20
+   leaf_width(17)    = 0.05
    !---------------------------------------------------------------------------------------!
 
    return
@@ -1598,21 +1803,21 @@ subroutine init_pft_mort_params()
 
 
    seedling_mortality(1)    = 0.95
-   seedling_mortality(2:4)  = 0.95 
+   seedling_mortality(2:4)  = 0.95
    seedling_mortality(5)    = 0.95
-   seedling_mortality(6:15) = 0.95 
-   seedling_mortality(16)   = 0.95 
-   seedling_mortality(17)   = 0.95 
+   seedling_mortality(6:15) = 0.95
+   seedling_mortality(16)   = 0.95
+   seedling_mortality(17)   = 0.95
 
-   treefall_s_gtht          = 0.0
+   treefall_s_gtht(1:17)    = 0.0
 
    treefall_s_ltht(1)       = 0.25
-   treefall_s_ltht(2:4)     = 0.1
+   treefall_s_ltht(2:4)     = 0.10
    treefall_s_ltht(5)       = 0.25
-   treefall_s_ltht(6:11)    = 0.1
+   treefall_s_ltht(6:11)    = 0.10
    treefall_s_ltht(12:15)   = 0.25
    treefall_s_ltht(16)      = 0.25
-   treefall_s_ltht(17)      = 0.1
+   treefall_s_ltht(17)      = 0.10
 
    plant_min_temp(1:4)      = t00+2.5
    plant_min_temp(5:6)      = t00-80.0
@@ -2123,9 +2328,13 @@ subroutine init_pft_alloc_params()
 
    !---------------------------------------------------------------------------------------!
    !     DBH-Root depth allometry.  Check which allometry to use.  Notice that b?Rd have   !
-   ! different meanings depending on the allometry, whilst b?Vol are not used when iallom  !
-   ! is 3.                                                                                 !
+   ! different meanings depending on the allometry. b?Vol is always defined because we     !
+   ! may want to estimate the standing volume for other reasons (e.g. the characteristic   !
+   ! diameter of branches).                                                                !
    !---------------------------------------------------------------------------------------!
+   b1Vol(1:17)  = 0.65 * pi1 * 0.11 * 0.11
+   b2Vol(1:17)  = 2.0
+
    select case (iallom)
    case (0:2)
       b1Rd(1)     = - 0.700
@@ -2141,9 +2350,6 @@ subroutine init_pft_alloc_params()
       b2Rd(6:11)  = 0.277
       b2Rd(12:16) = 0.000
       b2Rd(17)    = 0.277
-
-      b1Vol(1:17)  = 0.65 * pi1 * 0.11 * 0.11
-      b2Vol(1:17)  = 2.0
    case (3)
       !------------------------------------------------------------------------------------!
       !     Based on Kenzo et al. (2009), but we had to apply some correction to make it   !
@@ -2152,8 +2358,6 @@ subroutine init_pft_alloc_params()
       !            for accurate estimation of above- and below-ground biomass in tropical  !
       !            secondary forests in Sarawak, Malaysia. J. Trop. Ecology, 25, 371-386.  !
       !------------------------------------------------------------------------------------!
-      b1Vol(1:17) = 0.0
-      b2Vol(1:17) = 0.0
       b1Rd(1:17)  = -0.2185333
       b2Rd(1:17)  =  0.5436442
    case (4)
@@ -2161,8 +2365,6 @@ subroutine init_pft_alloc_params()
       !     This is just a test, not based on any paper.  This is simply a fit that would  !
       ! put the roots 0.5m deep for plants 0.15m-tall and 5 m for plants 35-m tall.        !
       !------------------------------------------------------------------------------------!
-      b1Vol(1:17) = 0.0
-      b2Vol(1:17) = 0.0
       b1Rd(1:17)  = -1.1140580
       b2Rd(1:17)  =  0.4223014
    end select
@@ -2359,14 +2561,14 @@ subroutine init_pft_leaf_params()
    end select
 
    clumping_factor(1)     = 1.000d0
-   clumping_factor(2:4)   = 7.350d-1
+   clumping_factor(2:4)   = 1.000d0 ! 7.350d-1
    clumping_factor(5)     = 8.400d-1
    clumping_factor(6:8)   = 7.350d-1
    clumping_factor(9:11)  = 8.400d-1
    clumping_factor(12:13) = 8.400d-1
    clumping_factor(14:15) = 1.000d0
-   clumping_factor(16)    = 8.400d-1
-   clumping_factor(17)    = 7.350d-1
+   clumping_factor(16)    = 1.000d0 ! 8.400d-1
+   clumping_factor(17)    = 1.000d0 ! 7.350d-1
 
    !---------------------------------------------------------------------------------------!
    !      The following parameters are second sources found in Gu et al. (2007)            !
@@ -3196,95 +3398,95 @@ subroutine init_soil_coms
    !---------------------------------------------------------------------------------------!
    ! (1st line)          slpots        slmsts          slbs     slcpd        soilcp        !
    ! (2nd line)          soilwp        slcons       slcons0 soilcond0     soilcond1        !
-   ! (3rd line)       soilcond2       sfldcap         xsand     xclay         xsilt        !
-   ! (4th line)         xrobulk         slden                                              !
+   ! (3rd line)       soilcond2       sfldcap        albwet    albdry         xsand        !
+   ! (4th line)           xclay         xsilt       xrobulk     slden                      !
    !---------------------------------------------------------------------------------------!
    soil = (/                                                                               &
       !----- 1. Sand. ---------------------------------------------------------------------!
        soil_class( -0.049831046,     0.373250,     3.295000, 1584640.,  0.026183447        &
                  ,  0.032636854,  2.446421e-5,  0.000500000,   0.3000,       4.8000        &
-                 ,      -2.7000,  0.132130936,        0.920,    0.030,        0.050        &
-                 ,        1200.,        1600.                                      )       &
+                 ,      -2.7000,  0.132130936,        0.229,    0.352,        0.920        &
+                 ,        0.030,        0.050,        1200.,    1600.              )       &
       !----- 2. Loamy sand. ---------------------------------------------------------------!
       ,soil_class( -0.067406224,     0.385630,     3.794500, 1584809.,  0.041560499        &
                  ,  0.050323046,  1.776770e-5,  0.000600000,   0.3000,       4.6600        &
-                 ,      -2.6000,  0.155181959,        0.825,    0.060,        0.115        &
-                 ,        1250.,        1600.                                      )       &
+                 ,      -2.6000,  0.155181959,        0.212,    0.335,        0.825        &
+                 ,        0.060,        0.115,        1250.,    1600.              )       &
       !----- 3. Sandy loam. ---------------------------------------------------------------!
       ,soil_class( -0.114261521,     0.407210,     4.629000, 1587042.,  0.073495043        &
                  ,  0.085973722,  1.022660e-5,  0.000769000,   0.2900,       4.2700        &
-                 ,      -2.3100,  0.194037750,        0.660,    0.110,        0.230        &
-                 ,        1300.,        1600.                                      )       &
+                 ,      -2.3100,  0.194037750,        0.183,    0.307,        0.660        &
+                 ,        0.110,        0.230,        1300.,    1600.              )       &
       !----- 4. Silt loam. ----------------------------------------------------------------!
       ,soil_class( -0.566500112,     0.470680,     5.552000, 1568225.,  0.150665475        &
                  ,  0.171711257,  2.501101e-6,  0.000010600,   0.2700,       3.4700        &
-                 ,      -1.7400,  0.273082063,        0.200,    0.160,        0.640        &
-                 ,        1400.,        1600.                                      )       &
+                 ,      -1.7400,  0.273082063,        0.107,    0.250,        0.200        &
+                 ,        0.160,        0.640,        1400.,    1600.              )       &
       !----- 5. Loam. ---------------------------------------------------------------------!
       ,soil_class( -0.260075834,     0.440490,     5.646000, 1588082.,  0.125192234        &
                  ,  0.142369513,  4.532431e-6,  0.002200000,   0.2800,       3.6300        &
-                 ,      -1.8500,  0.246915025,        0.410,    0.170,        0.420        &
-                 ,        1350.,        1600.                                      )       &
+                 ,      -1.8500,  0.246915025,        0.140,    0.268,        0.410        &
+                 ,        0.170,        0.420,        1350.,    1600.              )       &
       !----- 6. Sandy clay loam. ----------------------------------------------------------!
       ,soil_class( -0.116869181,     0.411230,     7.162000, 1636224.,  0.136417267        &
                  ,  0.150969505,  6.593731e-6,  0.001500000,   0.2800,       3.7800        &
-                 ,      -1.9600,  0.249629687,        0.590,    0.270,        0.140        &
-                 ,        1350.,        1600.                                      )       &
+                 ,      -1.9600,  0.249629687,        0.163,    0.260,        0.590        &
+                 ,        0.270,        0.140,        1350.,    1600.              )       &
       !----- 7. Silty clay loam. ----------------------------------------------------------!
       ,soil_class( -0.627769194,     0.478220,     8.408000, 1621562.,  0.228171947        &
                  ,  0.248747504,  1.435262e-6,  0.000107000,   0.2600,       2.7300        &
-                 ,      -1.2000,  0.333825332,        0.100,    0.340,        0.560        &
-                 ,        1500.,        1600.                                      )       &
+                 ,      -1.2000,  0.333825332,        0.081,    0.195,        0.100        &
+                 ,        0.340,        0.560,        1500.,    1600.              )       &
       !----- 8. Clayey loam. --------------------------------------------------------------!
       ,soil_class( -0.281968114,     0.446980,     8.342000, 1636911.,  0.192624431        &
                  ,  0.210137962,  2.717260e-6,  0.002200000,   0.2700,       3.2300        &
-                 ,      -1.5600,  0.301335491,        0.320,    0.340,        0.340        &
-                 ,        1450.,        1600.                                      )       &
+                 ,      -1.5600,  0.301335491,        0.116,    0.216,        0.320        &
+                 ,        0.340,        0.340,        1450.,    1600.              )       &
       !----- 9. Sandy clay. ---------------------------------------------------------------!
       ,soil_class( -0.121283019,     0.415620,     9.538000, 1673422.,  0.182198910        &
                  ,  0.196607427,  4.314507e-6,  0.000002167,   0.2700,       3.3200        &
-                 ,      -1.6300,  0.286363001,        0.520,    0.420,        0.060        &
-                 ,        1450.,        1600.                                      )       &
+                 ,      -1.6300,  0.286363001,        0.144,    0.216,        0.520        &
+                 ,        0.420,        0.060,        1450.,    1600.              )       &
       !----- 10. Silty clay. --------------------------------------------------------------!
       ,soil_class( -0.601312179,     0.479090,    10.461000, 1652723.,  0.263228486        &
                  ,  0.282143846,  1.055191e-6,  0.000001033,   0.2500,       2.5800        &
-                 ,      -1.0900,  0.360319788,        0.060,    0.470,        0.470        &
-                 ,        1650.,        1600.                                      )       &
+                 ,      -1.0900,  0.360319788,        0.068,    0.159,        0.060        &
+                 ,        0.470,        0.470,        1650.,    1600.              )       &
       !----- 11. Clay. --------------------------------------------------------------------!
       ,soil_class( -0.299226464,     0.454400,    12.460000, 1692037.,  0.259868987        &
                  ,  0.275459057,  1.307770e-6,  0.000001283,   0.2500,       2.4000        &
-                 ,      -0.9600,  0.353255209,        0.200,    0.600,        0.200        &
-                 ,        1700.,        1600.                                      )       &
+                 ,      -0.9600,  0.353255209,        0.083,    0.140,        0.200        &
+                 ,        0.600,        0.200,        1700.,    1600.              )       &
       !----- 12. Peat. --------------------------------------------------------------------!
       ,soil_class( -0.534564359,     0.469200,     6.180000,  874000.,  0.167047523        &
                  ,  0.187868805,  2.357930e-6,  0.000008000,   0.0600,       0.4600        &
-                 ,       0.0000,  0.285709966,       0.2000,   0.2000,       0.6000        &
-                 ,         500.,         300.                                      )       &
+                 ,       0.0000,  0.285709966,        0.070,    0.140,       0.2000        &
+                 ,       0.2000,       0.6000,         500.,     300.              )       &
       !----- 13. Bedrock. -----------------------------------------------------------------!
       ,soil_class(    0.0000000,     0.000000,     0.000000, 2130000.,  0.000000000        &
                  ,  0.000000000,  0.000000e+0,  0.000000000,   4.6000,       0.0000        &
-                 ,       0.0000,  0.000000001,       0.0000,   0.0000,       0.0000        &
-                 ,           0.,           0.                                      )       &
+                 ,       0.0000,  0.000000001,        0.320,    0.320,       0.0000        &
+                 ,       0.0000,       0.0000,           0.,       0.              )       &
       !----- 14. Silt. --------------------------------------------------------------------!
       ,soil_class( -1.047128548,     0.492500,     3.862500, 1510052.,  0.112299080        &
                  ,  0.135518820,  2.046592e-6,  0.000010600,   0.2700,       3.4700        &
-                 ,      -1.7400,  0.245247642,        0.075,    0.050,        0.875        &
-                 ,        1400.,        1600.                                      )       &
+                 ,      -1.7400,  0.245247642,        0.092,    0.265,        0.075        &
+                 ,        0.050,        0.875,        1400.,    1600.              )       &
       !----- 15. Heavy clay. --------------------------------------------------------------!
       ,soil_class( -0.322106879,     0.461200,    15.630000, 1723619.,  0.296806035        &
                  ,  0.310916364,  7.286705e-7,  0.000001283,   0.2500,       2.4000        &
-                 ,      -0.9600,  0.382110712,        0.100,    0.800,        0.100        &
-                 ,        1700.,        1600.                                      )       &
+                 ,      -0.9600,  0.382110712,        0.056,    0.080,        0.100        &
+                 ,        0.800,        0.100,        1700.,    1600.              )       &
       !----- 16. Clayey sand. -------------------------------------------------------------!
       ,soil_class( -0.176502150,     0.432325,    11.230000, 1688353.,  0.221886929        &
                  ,  0.236704039,  2.426785e-6,  0.000001283,   0.2500,       2.4000        &
-                 ,      -0.9600,  0.320146708,        0.375,    0.525,        0.100        &
-                 ,        1700.,        1600.                                      )       &
+                 ,      -0.9600,  0.320146708,        0.115,    0.175,        0.375        &
+                 ,        0.525,        0.100,        1700.,    1600.              )       &
       !----- 17. Clayey silt. -------------------------------------------------------------!
       ,soil_class( -0.438278332,     0.467825,    11.305000, 1670103.,  0.261376708        &
                  ,  0.278711303,  1.174982e-6,  0.000001283,   0.2500,       2.4000        &
-                 ,      -0.9600,  0.357014719,        0.125,    0.525,        0.350        &
-                 ,        1700.,        1600.                                      )       &
+                 ,      -0.9600,  0.357014719,        0.075,    0.151,        0.125        &
+                 ,        0.525,        0.350,        1700.,    1600.              )       &
    /)
    !---------------------------------------------------------------------------------------!
 
@@ -3345,6 +3547,36 @@ subroutine init_soil_coms
                               * air_hcapv
          !---------------------------------------------------------------------------------!
 
+
+
+         !---------------------------------------------------------------------------------!
+         !     No, I'm not happy with that, but I am just trying to get some general sense !
+         ! of albedo for different texture.  In reality, soil albedo is a function of many !
+         ! things besides soil texture, like organic content, iron content, just to name a !
+         ! few.  Getting these kinds of information is almost impossible, though.  Here I  !
+         ! built a very weak linear model using robust linear model in R (rlm, package     !
+         ! MASS), using data from a few papers:                                            !
+         !                                                                                 !
+         ! Idso, S. B., R. D. Jackson, R. J. Reginato, B. A. Kimball, F. S. Nakayama,      !
+         !      1975: The dependence of bare soil albedo on soil water content.  J. Appl.  !
+         !      Meteorol., 14, 109-113.  No sand/clay/silt fraction given, but it is a     !
+         !      loam soil, so I used the canonical loam fraction of sand and silt.         !
+         ! Matthias, A. D., A. Fimbres, E. E. Sano, D. F. Post, L. Accioly,                !
+         !      A. K . Batchily, L. G. Ferreira, 2000: Surface roughness effects on soil   !
+         !      albedo.  I used the average value for smooth soil and averaged across      !
+         !      zenith angles.                                                             !
+         ! Ten Berge, H.F.M., 1986: Heat and water transfer at the bare soil surface.      !
+         !      Aspects affecting thermal imagery. PhD. Thesis Agricultural University     !
+         !      Wageningen, The Netherlands.  I didn't find the actual thesis online, but  !
+         !      I found a table from the Italian Centre for Industrial Agriculture         !
+         !      Research and used the standard fraction of sand and clay for their soil    !
+         !      types.  http://agsys.cra-cin.it/tools/solarradiation/help/Albedo.html      !
+         !---------------------------------------------------------------------------------!
+         soil(nslcon)%albwet = 0.02982594 + 0.21343545 * soil(nslcon)%xsand                &
+                                          + 0.05314899 * soil(nslcon)%xsilt
+         soil(nslcon)%albdry = 0.02008580 + 0.34730650 * soil(nslcon)%xsand                &
+                                          + 0.25034280 * soil(nslcon)%xsilt
+         !---------------------------------------------------------------------------------!
       end if
    end do
    !---------------------------------------------------------------------------------------!
@@ -3369,6 +3601,8 @@ subroutine init_soil_coms
       soil8(nsoil)%soilcond1 = dble(soil(nsoil)%soilcond1)
       soil8(nsoil)%soilcond2 = dble(soil(nsoil)%soilcond2)
       soil8(nsoil)%sfldcap   = dble(soil(nsoil)%sfldcap  )
+      soil8(nsoil)%albwet    = dble(soil(nsoil)%albwet   )
+      soil8(nsoil)%albdry    = dble(soil(nsoil)%albdry   )
       soil8(nsoil)%xsand     = dble(soil(nsoil)%xsand    )
       soil8(nsoil)%xclay     = dble(soil(nsoil)%xclay    )
       soil8(nsoil)%xsilt     = dble(soil(nsoil)%xsilt    )
@@ -3563,8 +3797,6 @@ subroutine init_rk4_params()
                              , toocold                & ! intent(out)
                              , toohot                 & ! intent(out)
                              , lai_to_cover           & ! intent(out)
-                             , hcapveg_ref            & ! intent(out)
-                             , min_height             & ! intent(out)
                              , rk4min_veg_temp        & ! intent(out)
                              , rk4water_stab_thresh   & ! intent(out)
                              , rk4tiny_sfcw_mass      & ! intent(out)
@@ -3645,17 +3877,6 @@ subroutine init_rk4_params()
    !---------------------------------------------------------------------------------------!
 
 
-   !---------------------------------------------------------------------------------------!
-   !    These two parameter will scale the cohort heat capacity inside the RK4 integrator, !
-   ! to avoid having patches with heat capacity that is way too small to be computational- !
-   ! ly stable and resolvable in a fast way.  If you don't want this and want to use the   !
-   ! nominal heat capacity, the laziest way to turn this off is by setting hcapveg_ref to  !
-   ! a small number.  Don't set it to zero, otherwise you may have FPE issues.             !
-   !---------------------------------------------------------------------------------------!
-   hcapveg_ref         = 3.0d3            ! Reference heat capacity value          [J/m³/K]
-   min_height          = 1.5d0            ! Minimum vegetation height              [     m]
-   !---------------------------------------------------------------------------------------!
-
 
    !---------------------------------------------------------------------------------------!
    !     Variables used to keep track on the error.                                        !
@@ -3679,7 +3900,7 @@ subroutine init_rk4_params()
    ! depending on the cohort and soil grid definitions.                                    !
    !---------------------------------------------------------------------------------------!
    rk4min_can_temp   =  1.8400d2  ! Minimum canopy    temperature               [        K]
-   rk4max_can_temp   =  3.4100d2  ! Maximum canopy    temperature               [        K]
+   rk4max_can_temp   =  3.5100d2  ! Maximum canopy    temperature               [        K]
    rk4min_can_shv    =  1.0000d-8 ! Minimum canopy    specific humidity         [kg/kg_air]
    rk4max_can_shv    =  4.6000d-2 ! Maximum canopy    specific humidity         [kg/kg_air]
    rk4max_can_rhv    =  1.1000d0  ! Maximum canopy    relative humidity (**)    [      ---]
@@ -3688,9 +3909,9 @@ subroutine init_rk4_params()
    rk4min_soil_temp  =  1.8400d2  ! Minimum soil      temperature               [        K]
    rk4max_soil_temp  =  3.5100d2  ! Maximum soil      temperature               [        K]
    rk4min_veg_temp   =  1.8400d2  ! Minimum leaf      temperature               [        K]
-   rk4max_veg_temp   =  3.4100d2  ! Maximum leaf      temperature               [        K]
+   rk4max_veg_temp   =  3.5100d2  ! Maximum leaf      temperature               [        K]
    rk4min_sfcw_temp  =  1.9315d2  ! Minimum snow/pond temperature               [        K]
-   rk4max_sfcw_temp  =  3.4100d2  ! Maximum snow/pond temperature               [        K]
+   rk4max_sfcw_temp  =  3.5100d2  ! Maximum snow/pond temperature               [        K]
    !.......................................................................................!
    ! (**) Please, don't be too strict here.  The model currently doesn't have radiation    !
    !      fog, so supersaturation may happen.  This is a problem we may want to address in !

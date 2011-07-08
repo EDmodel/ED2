@@ -21,8 +21,6 @@ subroutine flag_stable_cohorts(cgrid)
    integer                     :: ipa           ! Patch index
    integer                     :: ico           ! Cohort index
    integer                     :: k             ! Vertical index
-   !----- External functions. -------------------------------------------------------------!
-   logical          , external :: is_resolvable ! Cohort can be resolved.
    !---------------------------------------------------------------------------------------!
 
    polyloop: do ipy=1, cgrid%npolygons
@@ -37,8 +35,7 @@ subroutine flag_stable_cohorts(cgrid)
             cohortloop: do ico=1, cpatch%ncohorts
 
                !----- Check whether we can resolve this cohort. ---------------------------!
-               cpatch%resolvable(ico) = is_resolvable(csite,ipa,ico                        &
-                                                     ,cpoly%green_leaf_factor(:,isi))
+               call is_resolvable(csite,ipa,ico,cpoly%green_leaf_factor(:,isi))
                !---------------------------------------------------------------------------!
 
             end do cohortloop
@@ -59,23 +56,23 @@ end subroutine flag_stable_cohorts
 
 !==========================================================================================!
 !==========================================================================================!
-!     This function finds whether a cohort can or cannot be solved.  This was taken out of !
-! flag_stable_cohorts so we can call it in other places and change the cohort status as    !
-! soon as the conditions change.  We will skip the cohort if any of these conditions       !
-! happens:                                                                                 !
+!     This sub-routine checks whether cohort leaves and wood thermodynamics can or cannot  !
+! be solved.  This was taken out of flag_stable_cohorts so we can call it in other places  !
+! and change the cohort status as soon as the conditions change.  We will skip the cohort  !
+! if any of these conditions happens:                                                      !
 ! 1. The cohort leaf biomass is much less than what it would have when all                 !
-!    leaves are fully flushed;                                                             !
+!    leaves are fully flushed (leaves only);                                               !
 ! 2. The cohort is buried in snow or under water                                           !
-! 3. The phenology-based green leaf factor is 0 (plants are not allowed to                 !
-!    have any leaves;                                                                      !
-! 4. The cohort is extremely sparse.                                                       !
+! 3. The cohort is extremely sparse.                                                       !
+! 4. The user doesn't want to solve wood thermodynamics (wood only).                       !
 !------------------------------------------------------------------------------------------!
-logical function is_resolvable(csite,ipa,ico,green_leaf_factor)
+subroutine is_resolvable(csite,ipa,ico,green_leaf_factor)
    use ed_state_vars , only : sitetype        & ! structure
                             , patchtype       ! ! structure
    use phenology_coms, only : elongf_min      ! ! intent(in)
    use pft_coms      , only : lai_min         ! ! intent(in)
    use ed_max_dims   , only : n_pft           ! ! intent(in)
+
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    type(sitetype)        , target     :: csite             ! Current site
@@ -85,9 +82,10 @@ logical function is_resolvable(csite,ipa,ico,green_leaf_factor)
    !----- Local variables. ----------------------------------------------------------------!
    type(patchtype)  , pointer         :: cpatch       ! Current patch
    integer                            :: ipft         ! Cohort PFT
-   logical                            :: exposed      ! Cohort is above snow    [      T|F]
-   logical                            :: green        ! Cohort has some leaves. [      T|F]
-   logical                            :: nottoosparse ! Cohort may have leaves. [      T|F]
+   logical                            :: exposed      ! Cohort is above snow       [   T|F]
+   logical                            :: green        ! Cohort has some leaves.    [   T|F]
+   logical                            :: leaf_enough  ! Cohort have enough leaves  [   T|F]
+   logical                            :: wood_enough  ! Cohort have enough wood    [   T|F]
    !---------------------------------------------------------------------------------------!
 
 
@@ -96,19 +94,43 @@ logical function is_resolvable(csite,ipa,ico,green_leaf_factor)
    ipft      = cpatch%pft(ico)
 
    !---------------------------------------------------------------------------------------!
-   !     Check the three conditions mentioned above.                                       !
+   ! 1.  Check for cohort height relative to snow/water depth.  If the cohort is buried in !
+   !     snow or has drowned in the standing water, we can't solve it.                     !
    !---------------------------------------------------------------------------------------!
-   !----- 1. Check for relative leaf biomass. ---------------------------------------------!
-   green        = cpatch%elongf(ico) * green_leaf_factor(ipft) >= elongf_min
-   !----- 2. Check for cohort height relative to snow/water depth. ------------------------!
    exposed      = cpatch%hite(ico)  > csite%total_sfcw_depth(ipa)
-   !----- 3. Check whether this cohort is not extremely sparse. ---------------------------!
-   nottoosparse = cpatch%lai(ico) > lai_min(ipft)
    !---------------------------------------------------------------------------------------!
-   
-   is_resolvable = green .and. exposed .and. nottoosparse
-   
+
+
+
+   !---------------------------------------------------------------------------------------!
+   ! 2.   Check whether this cohort is not extremely sparse.  Wood area index is always    !
+   !      set to zero when branch thermodynamics is turned off, so this will always be     !
+   !      false in this case.                                                              !
+   !---------------------------------------------------------------------------------------!
+   leaf_enough  = cpatch%lai(ico) > lai_min(ipft)
+   wood_enough  = cpatch%wai(ico) > lai_min(ipft)
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   ! 3.  Check for relative leaf biomass, which is the product of the drought-phenology    !
+   !     and cold-phenology elongation factors.                                            !
+   !---------------------------------------------------------------------------------------!
+   green        = cpatch%elongf(ico) * green_leaf_factor(ipft) >= elongf_min
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Save the tests in the cohort variable, so the checks are done consistently.       !
+   !---------------------------------------------------------------------------------------!
+   cpatch%leaf_resolvable(ico) = exposed .and. leaf_enough .and. green
+   cpatch%wood_resolvable(ico) = exposed .and. wood_enough
+   !---------------------------------------------------------------------------------------!
+
+
    return
-end function is_resolvable
+end subroutine is_resolvable
 !==========================================================================================!
 !==========================================================================================!

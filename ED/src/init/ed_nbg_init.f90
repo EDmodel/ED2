@@ -120,7 +120,6 @@ subroutine init_nbg_cohorts(csite,lsl,ipa_a,ipa_z)
                                  , pio4               & ! intent(in)
                                  , kgom2_2_tonoha     & ! intent(in)
                                  , tonoha_2_kgom2     ! ! intent(in)
-   use ed_therm_lib       , only : calc_hcapveg       ! ! function
    use allometry          , only : h2dbh              & ! function
                                  , dbh2bd             & ! function
                                  , dbh2bl             & ! function
@@ -142,8 +141,6 @@ subroutine init_nbg_cohorts(csite,lsl,ipa_a,ipa_z)
    integer                            :: ipft              ! PFT counter
    real                               :: salloc            ! balive/bleaf when on allom.
    real                               :: salloci           ! 1./salloc
-   !----- External functions. -------------------------------------------------------------!
-   logical               , external   :: is_resolvable
    !---------------------------------------------------------------------------------------!
 
    !----- Patch loop. ---------------------------------------------------------------------!
@@ -239,21 +236,6 @@ subroutine init_nbg_cohorts(csite,lsl,ipa_a,ipa_z)
 
          !----- Initialize other cohort-level variables. ----------------------------------!
          call init_ed_cohort_vars(cpatch,ico,lsl)
-         
-         !---------------------------------------------------------------------------------!
-         !     Set the initial vegetation thermodynamic properties.  We assume the veget-  !
-         ! ation to be with no condensed/frozen water in their surfaces, and the temper-   !
-         ! ature to be the same as the canopy air space.  Then we find the internal energy !
-         ! and heat capacity.                                                              !
-         !---------------------------------------------------------------------------------!
-         cpatch%veg_water(ico)  = 0.0
-         cpatch%veg_fliq(ico)   = 0.0
-         cpatch%hcapveg(ico)    = calc_hcapveg(cpatch%bleaf(ico),cpatch%bdead(ico)         &
-                                              ,cpatch%balive(ico),cpatch%nplant(ico)       &
-                                              ,cpatch%hite(ico),cpatch%pft(ico)            &
-                                              ,cpatch%phenology_status(ico)                &
-                                              ,cpatch%bsapwood(ico))
-
 
          !----- Update total patch-level above-ground biomass -----------------------------!
          csite%plant_ag_biomass(ipa) = csite%plant_ag_biomass(ipa)                         &
@@ -300,7 +282,6 @@ subroutine init_cohorts_by_layers(csite,lsl,ipa_a,ipa_z)
                                  , pio4               & ! intent(in)
                                  , kgom2_2_tonoha     & ! intent(in)
                                  , tonoha_2_kgom2     ! ! intent(in)
-   use ed_therm_lib       , only : calc_hcapveg       ! ! function
    use allometry          , only : h2dbh              & ! function
                                  , dbh2bd             & ! function
                                  , dbh2bl             & ! function
@@ -395,21 +376,7 @@ subroutine init_cohorts_by_layers(csite,lsl,ipa_a,ipa_z)
 
          !----- Initialize other cohort-level variables. ----------------------------------!
          call init_ed_cohort_vars(cpatch,ico,lsl)
-         
-         !---------------------------------------------------------------------------------!
-         !     Set the initial vegetation thermodynamic properties.  We assume the veget-  !
-         ! ation to be with no condensed/frozen water in their surfaces, and the temper-   !
-         ! ature to be the same as the canopy air space.  Then we find the internal energy !
-         ! and heat capacity.                                                              !
-         !---------------------------------------------------------------------------------!
-         cpatch%veg_water(ico)  = 0.0
-         cpatch%veg_fliq(ico)   = 0.0
-         cpatch%hcapveg(ico)    = calc_hcapveg(cpatch%bleaf(ico),cpatch%bdead(ico)         &
-                                              ,cpatch%balive(ico),cpatch%nplant(ico)       &
-                                              ,cpatch%hite(ico),cpatch%pft(ico)            &
-                                              ,cpatch%phenology_status(ico)                &
-                                              ,cpatch%bsapwood(ico))
-         cpatch%resolvable(ico) = .false.
+
          !----- Update total patch-level above-ground biomass -----------------------------!
          csite%plant_ag_biomass(ipa) = csite%plant_ag_biomass(ipa)                         &
                                      + cpatch%nplant(ico) * cpatch%agb(ico)

@@ -199,7 +199,7 @@ subroutine leaf_stars(theta_atm,theiv_atm,shv_atm,rvap_atm,co2_atm              
       end if
       zeta0m = rough * zeta / (zref - dheight)
 
-      !----- Finding the aerodynamic resistance similarly to L79. -------------------------!
+      !----- Find the aerodynamic resistance similarly to L79. ----------------------------!
       r_aer = tprandtl * (lnzoz0m - psih(zeta,stable) + psih(zeta0m,stable))               &
                        * (lnzoz0m - psim(zeta,stable) + psim(zeta0m,stable))               &
                        / (vonk * vonk * uuse)
@@ -1159,17 +1159,53 @@ subroutine sfcrad(mzg,mzs,ip,soil_water,soil_text,sfcwater_depth,patch_area,veg_
       vfc = 1. - vf
 
       !------------------------------------------------------------------------------------!
-      !     Shortwave radiation calculations.                                              !
+      !     Ground albedo.  Experimental value ranging from dry to wet soil albedo, and    !
+      ! using some soil texture dependence, even though soil colour depends on a lot more  !
+      ! things.                                                                            !
       !------------------------------------------------------------------------------------!
-      nsoil=nint(soil_text(mzg))
-      fcpct = soil_water(mzg) / slmsts(nsoil)
-      if (fcpct > .5) then
-         alg = .14
-      else
-         alg = .31 - .34 * fcpct
-      end if
-      alv = veg_albedo
+      ! nsoil=nint(soil_text(mzg))
+      ! select case (nsoil)
+      ! case (13)
+      !    !----- Bedrock, no soil moisture, use dry soil albedo. -------------------------!
+      !    alg = albdry(nsoil)
+      ! case default
+      !    !-------------------------------------------------------------------------------!
+      !    !     Find relative soil moisture.  Not sure about this one, but I am assuming  !
+      !    ! that albedo won't change below the dry air soil moisture, and that should be  !
+      !    ! the dry value.                                                                !
+      !    !-------------------------------------------------------------------------------!
+      !    fcpct = max(0., min(1., (soil_water(mzg) - soilcp(nsoil))                       &
+      !                          / (slmsts(nsoil)   - soilcp(nsoil)) ) )
+      !    alg   = albdry(nsoil) + fcpct * (albwet(nsoil) - albdry(nsoil))
+      ! end select
+      nsoil = nint(soil_text(mzg))
+      select case (nsoil)
+      case (13)
+         !----- Bedrock, use constants soil value for granite. ----------------------------!
+         alg = albdry(nsoil)
+      case (12)
+         !----- Peat, follow McCumber and Pielke (1981). ----------------------------------!
+         fcpct = soil_water(mzg) / slmsts(nsoil)
+         alg   = max (0.07, 0.14 * (1.0 - fcpct))
+      case default
+         !----- Other soils, follow McCumber and Pielke (1981). ---------------------------!
+         fcpct = soil_water(mzg) / slmsts(nsoil)
+         alg   = max (0.14, 0.31 - 0.34 * fcpct)
+      end select
+      !------------------------------------------------------------------------------------!
 
+
+      !------------------------------------------------------------------------------------!
+      !      Vegetation albedo.                                                            !
+      !------------------------------------------------------------------------------------!
+      alv = veg_albedo
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !       Snow/surface water albedo.                                                   !
+      !------------------------------------------------------------------------------------!
       rad = 1.
       if (ksn > 0) then
          !------ als = .14 (the wet soil value) for all-liquid. ---------------------------!
@@ -1190,6 +1226,8 @@ subroutine sfcrad(mzg,mzs,ip,soil_water,soil_text,sfcwater_depth,patch_area,veg_
       rshort_g = rshort * vfc * absg
       rshort_v = rshort * vf * (1. - alv + vfc * algs)
       alb      = vf * alv + vfc * vfc * algs
+      !------------------------------------------------------------------------------------!
+
 
       !----- Adding urban contribution if running TEB. ------------------------------------!
       if (teb_spm==1) then

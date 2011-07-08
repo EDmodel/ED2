@@ -13,6 +13,17 @@ module canopy_radiation_coms
 
 
    !---------------------------------------------------------------------------------------!
+   !       This variable controls which short wave radiation model to use.  0 means Beers' !
+   ! law, and 1 means two-stream.  Longwave will be always solved by the two-stream model. !
+   ! Important:  option 0 cannot be used with CROWN_MOD = 2.                               !
+   !---------------------------------------------------------------------------------------!
+   integer :: ican_swrad
+   !---------------------------------------------------------------------------------------!
+
+
+
+
+   !---------------------------------------------------------------------------------------!
    !     Leaf angle distribution parameter (dimensionless).  Let mu' be the cosine of leaf !
    ! angle and G(mu') be the distribution of mu'.  Then, mubar = (integral from 0 to 1)    !
    ! (d mu'   mu' / G(mu')).  See, for example, Dickinson 1983.                            !
@@ -21,63 +32,122 @@ module canopy_radiation_coms
    !---------------------------------------------------------------------------------------!
 
 
+
+
+
    !---------------------------------------------------------------------------------------!
-   !     Fraction of solar radiation in the PAR band.  Used when you don't know the        !
-   ! direct/diffuse breakdown.                                                             !
+   !     Fraction of solar radiation in the PAR band.  Used every time step.               !
    !---------------------------------------------------------------------------------------!
    real :: visible_fraction
    !---------------------------------------------------------------------------------------!
+
+
 
 
    !----- Fraction of direct solar radiation in the PAR band. -----------------------------!
    real :: visible_fraction_dir
    !---------------------------------------------------------------------------------------!
 
+
+
+
+
    !---------------------------------------------------------------------------------------!
-   !     Fraction of diffuse solar radiation in the PAR band.  Used when you don't know    !
-   ! the direct/diffuse breakdown.                                                         !
+   !     Fraction of diffuse solar radiation in the PAR band.  Used every time step        !
    !---------------------------------------------------------------------------------------!
    real :: visible_fraction_dif
    !---------------------------------------------------------------------------------------!
 
 
-   !---------------------------------------------------------------------------------------!
-   !     The following three values are based on Dickinson (1983).                         !
-   !---------------------------------------------------------------------------------------!
-   real :: leaf_reflect_nir  !----- Fraction of scattered NIR that is reflected. ----------!
-   real :: leaf_trans_nir    !----- Fraction of scattered NIR that is transmitted. --------!
-   real :: leaf_scatter_nir  !----- Sum of reflected plus scattered NIR. ------------------!
+
+
 
    !---------------------------------------------------------------------------------------!
-   !     The following two values are from Baldocchi et al.                                !
+   !     Fraction of diffuse solar radiation in the PAR band.  Used when you don't know    !
+   ! the direct/diffuse breakdown.                                                         !
    !---------------------------------------------------------------------------------------!
-   !----- Fraction of scattered PAR that is reflected (temperate trees). ------------------!
-   real, parameter :: leaf_reflect_vis_temperate = 0.11
-   !----- Fraction of scattered PAR that is transmitted (temperate trees). ----------------!
-   real, parameter :: leaf_trans_vis_temperate = 0.16  
-   !---------------------------------------------------------------------------------------!
-
-   !---------------------------------------------------------------------------------------!
-   !     The following two values are from Poorter et al.                                  !
-   !---------------------------------------------------------------------------------------!
-   !----- Fraction of scattered PAR that is reflected (tropical trees). -------------------!
-   real, parameter :: leaf_reflect_vis_tropics = 0.062  
-   !----- Fraction of scattered PAR that is transmitted (tropical trees). -----------------!
-   real, parameter :: leaf_trans_vis_tropics = 0.028  
+   real :: fvis_beam_def
+   real :: fvis_diff_def
+   real :: fnir_beam_def
+   real :: fnir_diff_def
    !---------------------------------------------------------------------------------------!
 
-   !----- Backscatter parameter for diffuse NIR. ------------------------------------------!
-   real :: diffuse_backscatter_nir 
 
-   !----- Sum of reflected plus scattered PAR. --------------------------------------------!
-   real, dimension(n_pft) :: leaf_scatter_vis
 
-   !----- Backscatter parameter for diffuse PAR. ------------------------------------------!
-   real, dimension(n_pft) :: diffuse_backscatter_vis
+
+   !---------------------------------------------------------------------------------------!
+   !     These are the normalised variables that will be used in the two-stream model.     !
+   !---------------------------------------------------------------------------------------!
+   real(kind=8) :: par_beam_norm
+   real(kind=8) :: par_diff_norm
+   real(kind=8) :: nir_beam_norm
+   real(kind=8) :: nir_diff_norm
+   !---------------------------------------------------------------------------------------!
+
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Fraction of radiation that is reflected.                                          !
+   !---------------------------------------------------------------------------------------!
+   !----- Visible (PAR). ------------------------------------------------------------------!
+   real(kind=8), dimension(n_pft) :: leaf_reflect_vis
+   real(kind=8), dimension(n_pft) :: wood_reflect_vis
+   !----- Near infrared. ------------------------------------------------------------------!
+   real(kind=8), dimension(n_pft) :: leaf_reflect_nir
+   real(kind=8), dimension(n_pft) :: wood_reflect_nir
+   !---------------------------------------------------------------------------------------!
+
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Fraction of scattered PAR that is transmitted.                                    !
+   !---------------------------------------------------------------------------------------!
+   !----- Visible (PAR). ------------------------------------------------------------------!
+   real(kind=8), dimension(n_pft) :: leaf_trans_vis
+   real(kind=8), dimension(n_pft) :: wood_trans_vis
+   !----- Near infrared. ------------------------------------------------------------------!
+   real(kind=8), dimension(n_pft) :: leaf_trans_nir
+   real(kind=8), dimension(n_pft) :: wood_trans_nir
+   !---------------------------------------------------------------------------------------!
+
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Fraction of scattered PAR that is scattered.                                      !
+   !---------------------------------------------------------------------------------------!
+   !----- Visible (PAR). ------------------------------------------------------------------!
+   real(kind=8), dimension(n_pft) :: leaf_scatter_vis
+   real(kind=8), dimension(n_pft) :: wood_scatter_vis
+   !----- Near infrared. ------------------------------------------------------------------!
+   real(kind=8), dimension(n_pft) :: leaf_scatter_nir
+   real(kind=8), dimension(n_pft) :: wood_scatter_nir
+   !---------------------------------------------------------------------------------------!
+
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Fraction of scattered PAR that is back-scattered.                                 !
+   !---------------------------------------------------------------------------------------!
+   !----- Visible (PAR). ------------------------------------------------------------------!
+   real(kind=8), dimension(n_pft) :: leaf_backscatter_vis
+   real(kind=8), dimension(n_pft) :: wood_backscatter_vis
+   !----- Near infrared. ------------------------------------------------------------------!
+   real(kind=8), dimension(n_pft) :: leaf_backscatter_nir
+   real(kind=8), dimension(n_pft) :: wood_backscatter_nir
+   !---------------------------------------------------------------------------------------!
+
+
+
 
    !----- Emissivity of the vegetation. ---------------------------------------------------!
-   real(kind=8), dimension(n_pft) :: emis_v
+   real(kind=8), dimension(n_pft) :: leaf_emis
+   real(kind=8), dimension(n_pft) :: wood_emis
    !---------------------------------------------------------------------------------------!
+
 
 
 

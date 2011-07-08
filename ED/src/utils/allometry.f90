@@ -234,14 +234,38 @@ module allometry
 
    !=======================================================================================!
    !=======================================================================================!
+   !    This function computes the standing volume of a tree.                              !
+   !---------------------------------------------------------------------------------------!
+   real function dbh2vol(hgt,dbh,ipft)
+      use pft_coms    , only : b1Vol    & ! intent(in)
+                             , b2Vol    ! ! intent(in)
+      implicit none
+      !----- Arguments --------------------------------------------------------------------!
+      real   , intent(in) :: hgt
+      real   , intent(in) :: dbh
+      integer, intent(in) :: ipft
+      !------------------------------------------------------------------------------------!
+
+
+      dbh2vol = b1Vol(ipft) * hgt * dbh ** b2Vol(ipft)
+
+      return
+   end function dbh2vol
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
    integer function dbh2krdepth(hgt,dbh,ipft,lsl)
       use ed_misc_coms, only : iallom   ! ! intent(in)
       use grid_coms   , only : nzg      ! ! intent(in)
       use soil_coms   , only : slz      ! ! intent(in)
-      use consts_coms , only : pi1      ! ! intent(in)
-      use pft_coms    , only : b1Vol    & ! intent(in)
-                             , b2Vol    & ! intent(in)
-                             , b1Rd     & ! intent(in)
+      use pft_coms    , only : b1Rd     & ! intent(in)
                              , b2Rd     ! ! intent(in)
       implicit none 
       !----- Arguments --------------------------------------------------------------------!
@@ -262,7 +286,7 @@ module allometry
          !---------------------------------------------------------------------------------!
          !    Original ED-2.1 (I don't know the source for this equation, though).         !
          !---------------------------------------------------------------------------------!
-         volume     = b1Vol(ipft) * hgt * dbh ** b2Vol(ipft)
+         volume     = dbh2vol(hgt,dbh,ipft) 
          root_depth = b1Rd(ipft)  * volume ** b2Rd(ipft)
 
       case (3)
@@ -340,18 +364,15 @@ module allometry
 
    !=======================================================================================!
    !=======================================================================================!
-   !     This subroutine finds the total above ground biomass corresponding to wood (stem  !
-   ! + branches).                                                                          !
+   !     This subroutine finds the total above ground biomass corresponding to stems.      !
    !---------------------------------------------------------------------------------------!
-   real function wood_biomass(bdead, balive, pft, hite, bsapwood)
+   real function wood_biomass(bdead, bsapwood, pft)
       use pft_coms, only:  agf_bs          ! ! intent(in)
 
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       real    , intent(in) :: bdead
-      real    , intent(in) :: balive
       real    , intent(in) :: bsapwood
-      real    , intent(in) :: hite
       integer , intent(in) :: pft
       !----- Local variables --------------------------------------------------------------!
       real                 :: bstem
@@ -391,7 +412,7 @@ module allometry
       real                 :: bwood
       !------------------------------------------------------------------------------------!
 
-      bwood      = wood_biomass(bdead, balive, pft, hite, bsapwood)
+      bwood      = wood_biomass(bdead, bsapwood, pft)
       ed_biomass = bleaf + bwood
 
       return
@@ -480,19 +501,19 @@ module allometry
       ! otherwise, simply assign zeroes to them.                                           !
       !------------------------------------------------------------------------------------!
       select case (ibranch_thermo)
-      !----- Ignore branches and trunk. ---------------------------------------------------!
       case (0) 
+         !----- Ignore branches and trunk. ------------------------------------------------!
          wpa  = 0.
          wai  = 0.
       !------------------------------------------------------------------------------------!
 
 
-      !----- Use curve fit based on Conijn (1995) model. ----------------------------------!
       case (1) 
          !---------------------------------------------------------------------------------!
-         !     Find the total wood biomass and the fraction corresponding to branches.     !
+         !     Use curve fit based on Conijn (1995) model.   Find the total wood biomass   !
+         ! and the fraction corresponding to branches.                                     !
          !---------------------------------------------------------------------------------!
-         bwood   = wood_biomass(bdead, balive, pft, hite, bsapwood)
+         bwood   = wood_biomass(bdead, bsapwood, pft)
          if (is_grass(pft)) then
             swa = conijn_a(pft)
          else
@@ -504,8 +525,10 @@ module allometry
          !---------------------------------------------------------------------------------!
 
 
-      !----- Use  Järvelä (2004) method. --------------------------------------------------!
       case (2) 
+         !---------------------------------------------------------------------------------!
+         !     Use  Järvelä (2004) method.                                                 !
+         !---------------------------------------------------------------------------------!
          !----- Now we check the first branching height, that will be the trunk height. ---!
          blength = h2crownbh(hite,pft)
          !----- Main branch diameter is DBH (in meters) -----------------------------------!
@@ -530,8 +553,31 @@ module allometry
          !----- The wood projected area and the wood area index. --------------------------!
          wpa = nplant       * swa
          wai = horiz_branch(pft) * wpa
-      !------------------------------------------------------------------------------------!
+      case (3) 
+         !---------------------------------------------------------------------------------!
+         !    Use the equation by:                                                         !
+         !    Ahrends, B., C. Penne, O. Panferov, 2010: Impact of target diameter          !
+         !        harvesting on spatial and temporal pattern of drought risk in forest     !
+         !        ecosystems under climate change conditions.  The Open Geography Journal, !
+         !        3, 91-102  (they didn't develop the allometry, but the original          !
+         !        reference is in German...)                                               !
+         !---------------------------------------------------------------------------------!
+         select case (pft)
+         case (6:8,17)
+             !----- Conifers. -------------------------------------------------------------!
+             wai = nplant * 0.0553 * 0.5 * dbh ** 1.9769
+         case default
+             !----- Broadleaf trees and grasses. ------------------------------------------!
+             wai = nplant * 0.0192 * 0.5 * dbh ** 2.0947
+         end select
+         !---------------------------------------------------------------------------------!
+         wpa = wai * dbh2ca(dbh,sla,pft)
+
       end select
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
 
       return
    end subroutine area_indices

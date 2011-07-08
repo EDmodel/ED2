@@ -85,9 +85,10 @@ hovdi02 = list(vnam   = c("rsnet","rlong","rlongup","qwflxca","hflxca")
               ,unit   = "W/m2"
               ,legpos = "topleft"
               ,plt    = TRUE)
-hovdi03 = list(vnam   = c("qwflxgc","qwflxac","qwflxvc","qtransp","qdewgnd")
-              ,desc   = c("Ground->Canopy","Air->Canopy","Leaf->Canopy","Transpiration","Dew")
-              ,colour = c("firebrick","midnightblue","chartreuse"
+hovdi03 = list(vnam   = c("qwflxgc","qwflxac","qwflxlc","qwflxwc","qtransp","qdewgnd")
+              ,desc   = c("Ground->Canopy","Air->Canopy","Leaf->Canopy"
+                         ,"Wood->Canopy","Transpiration","Dew")
+              ,colour = c("firebrick","midnightblue","chartreuse","goldenrod"
                          ,"darkolivegreen","deepskyblue")
               ,lwd    = c(1.5,1.5,1.5,1.5,1.5)
               ,type   = ptype
@@ -96,19 +97,19 @@ hovdi03 = list(vnam   = c("qwflxgc","qwflxac","qwflxvc","qtransp","qdewgnd")
               ,unit   = "W/m2"
               ,legpos = "topleft"
               ,plt    = TRUE)
-hovdi04 = list(vnam   = c("hflxgc","hflxac","hflxvc")
-              ,desc   = c("Ground->Canopy","Air->Canopy","Leaf->Canopy")
-              ,colour = c("firebrick","midnightblue","chartreuse")
-              ,lwd    = c(1.5,1.5,1.5)
+hovdi04 = list(vnam   = c("hflxgc","hflxac","hflxlc","hflxwc")
+              ,desc   = c("Ground->Canopy","Air->Canopy","Leaf->Canopy","Wood->Canopy")
+              ,colour = c("firebrick","midnightblue","chartreuse","goldenrod")
+              ,lwd    = c(1.5,1.5,1.5,1.5)
               ,type   = ptype
               ,prefix = "sensflux"
               ,theme  = "Sensible heat fluxes"
               ,unit   = "W/m2"
               ,legpos = "topleft"
               ,plt    = TRUE)
-hovdi05 = list(vnam   = c("atm.temp","can.temp","veg.temp","soil.temp")
-              ,desc   = c("Atmosphere","Canopy air","Leaf","Soil (Top)")
-              ,colour = c("deepskyblue","gray21","chartreuse","sienna")
+hovdi05 = list(vnam   = c("atm.temp","can.temp","leaf.temp","wood.temp","soil.temp")
+              ,desc   = c("Atmosphere","Canopy air","Leaf","Wood","Soil (Top)")
+              ,colour = c("deepskyblue","gray21","chartreuse","goldenrod","sienna")
               ,lwd    = c(1.5,1.5,1.5,1.5)
               ,type   = ptype
               ,prefix = "temperature"
@@ -308,15 +309,18 @@ for (ipy in 1:nplaces){
    p$hflxca       = NULL
    p$qwflxgc      = NULL
    p$qwflxac      = NULL
-   p$qwflxvc      = NULL
+   p$qwflxlc      = NULL
+   p$qwflxwc      = NULL
    p$qtransp      = NULL
    p$qdewgnd      = NULL
    p$hflxgc       = NULL
    p$hflxac       = NULL
-   p$hflxvc       = NULL
+   p$hflxlc       = NULL
+   p$hflxwc       = NULL
    p$atm.temp     = NULL
    p$can.temp     = NULL
-   p$veg.temp     = NULL
+   p$leaf.temp    = NULL
+   p$wood.temp    = NULL
    p$soil.temp    = NULL
    p$atm.shv      = NULL
    p$can.shv      = NULL
@@ -419,15 +423,18 @@ for (n in 1:ntimes){
       p$hflxca      = c(p$hflxca     ,-myfast$AVG.SENSIBLE.AC [ipy    ]           )
       p$qwflxgc     = c(p$qwflxgc    , myfast$AVG.VAPOR.GC    [ipy    ] * alvl    )
       p$qwflxac     = c(p$qwflxac    , myfast$AVG.VAPOR.AC    [ipy    ] * alvl    )
-      p$qwflxvc     = c(p$qwflxvc    , myfast$AVG.VAPOR.VC    [ipy    ] * alvl    )
+      p$qwflxlc     = c(p$qwflxlc    , myfast$AVG.VAPOR.LC    [ipy    ] * alvl    )
+      p$qwflxwc     = c(p$qwflxwc    , myfast$AVG.VAPOR.WC    [ipy    ] * alvl    )
       p$qtransp     = c(p$qtransp    , myfast$AVG.TRANSP      [ipy    ] * alvl    )
       p$qdewgnd     = c(p$qdewgnd    ,-myfast$AVG.DEW.CG      [ipy    ] * alvl    )
       p$hflxgc      = c(p$hflxgc     , myfast$AVG.SENSIBLE.GC [ipy    ]           )
       p$hflxac      = c(p$hflxac     , myfast$AVG.SENSIBLE.AC [ipy    ]           )
-      p$hflxvc      = c(p$hflxvc     , myfast$AVG.SENSIBLE.VC [ipy    ]           )
+      p$hflxlc      = c(p$hflxlc     , myfast$AVG.SENSIBLE.LC [ipy    ]           )
+      p$hflxwc      = c(p$hflxwc     , myfast$AVG.SENSIBLE.WC [ipy    ]           )
       p$atm.temp    = c(p$atm.temp   , myfast$AVG.ATM.TMP     [ipy    ] - t00     )
       p$can.temp    = c(p$can.temp   , myfast$AVG.CAN.TEMP    [ipy    ] - t00     )
-      p$veg.temp    = c(p$veg.temp   , myfast$AVG.VEG.TEMP    [ipy    ] - t00     )
+      p$leaf.temp   = c(p$leaf.temp  , myfast$AVG.LEAF.TEMP   [ipy    ] - t00     )
+      p$wood.temp   = c(p$wood.temp  , myfast$AVG.WOOD.TEMP   [ipy    ] - t00     )
       p$soil.temp   = c(p$soil.temp  , myfast$AVG.SOIL.TEMP   [ipy,nzg] - t00     )
       p$atm.shv     = c(p$atm.shv    , myfast$AVG.ATM.SHV     [ipy    ] * 1000.   )
       p$can.shv     = c(p$can.shv    , myfast$AVG.CAN.SHV     [ipy    ] * 1000.   )
