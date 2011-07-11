@@ -1235,7 +1235,7 @@ subroutine init_pft_photo_params()
    implicit none
    !---------------------------------------------------------------------------------------!
 
-   D0(1)                     = 0.015  ! 0.010 * d0fact
+   D0(1)                     = 0.020  ! 0.010 * d0fact
    D0(2:4)                   = 0.015  ! 0.010 * d0fact
    D0(5)                     = 0.010
    D0(6:8)                   = 0.010
@@ -1295,10 +1295,10 @@ subroutine init_pft_photo_params()
 
 
    !------ Vm0 is the maximum photosynthesis capacity in µmol/m2/s. -----------------------!
-   Vm0(1)                    = 15.000 ! 12.500 * vmfact
-   Vm0(2)                    = 22.500 ! 18.750 * vmfact
-   Vm0(3)                    = 15.000 ! 12.500 * vmfact
-   Vm0(4)                    =  7.500 !  6.250 * vmfact
+   Vm0(1)                    = 13.75  ! 12.500 * vmfact
+   Vm0(2)                    = 18.750 ! 18.750 * vmfact
+   Vm0(3)                    = 12.500  ! 12.500 * vmfact
+   Vm0(4)                    =  6.250 !  6.250 * vmfact
    Vm0(5)                    = 18.300 
    Vm0(6)                    = 11.350 ! 15.625 * 0.7264
    Vm0(7)                    = 11.350 ! 15.625 * 0.7264
@@ -1308,7 +1308,7 @@ subroutine init_pft_photo_params()
    Vm0(11)                   =  6.981 !  6.250 * 1.1171
    Vm0(12:13)                = 18.300 ! 18.300
    Vm0(14:15)                = 15.000 ! 12.500 * vmfact
-   Vm0(16)                   = 26.250 ! 21.875 * vmfact
+   Vm0(16)                   = 24.0625 ! 21.875 * vmfact
    Vm0(17)                   = 18.750 ! 15.625 * vmfact
    !---------------------------------------------------------------------------------------!
 
@@ -1330,7 +1330,7 @@ subroutine init_pft_photo_params()
    !---------------------------------------------------------------------------------------!
    !    Dark_respiration_factor is the lower-case gamma in Moorcroft et al. (2001).        !
    !---------------------------------------------------------------------------------------!
-   dark_respiration_factor(1)     = 0.035
+   dark_respiration_factor(1)     = 0.036
    dark_respiration_factor(2)     = 0.015 ! 0.020 * gamfact
    dark_respiration_factor(3)     = 0.015 ! 0.020 * gamfact
    dark_respiration_factor(4)     = 0.015 ! 0.020 * gamfact
