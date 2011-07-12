@@ -839,7 +839,7 @@ subroutine init_can_air_params()
    !                        the canopy air space.                                          !
    !---------------------------------------------------------------------------------------!
    veg_height_min        = minval(hgt_min) ! alternative: minval(hgt_min) 
-   minimum_canopy_depth  = veg_height_min  ! alternative: minval(hgt_min) 
+   minimum_canopy_depth  = 1.5             ! alternative: minval(hgt_min) 
 
    !----- This is the dimensionless exponential wind atenuation factor. -------------------!
    exar  = 2.5
@@ -1235,14 +1235,14 @@ subroutine init_pft_photo_params()
    implicit none
    !---------------------------------------------------------------------------------------!
 
-   D0(1)                     = 0.015  ! 0.010 * d0fact
+   D0(1)                     = 0.020  ! 0.010 * d0fact
    D0(2:4)                   = 0.015  ! 0.010 * d0fact
    D0(5)                     = 0.010
    D0(6:8)                   = 0.010
    D0(9:11)                  = 0.010
    D0(12:13)                 = 0.010
    D0(14:15)                 = 0.010
-   D0(16)                    = 0.015  ! 0.010 * d0fact
+   D0(16)                    = 0.020  ! 0.010 * d0fact
    D0(17)                    = 0.015  ! 0.010 * d0fact
 
    Vm_low_temp(1)            = 13.0             ! c4 grass
@@ -1295,11 +1295,11 @@ subroutine init_pft_photo_params()
 
 
    !------ Vm0 is the maximum photosynthesis capacity in µmol/m2/s. -----------------------!
-   Vm0(1)                    = 15.000 ! 12.500 * vmfact
+   Vm0(1)                    = 14.583 ! 12.500 * vmfact
    Vm0(2)                    = 22.500 ! 18.750 * vmfact
    Vm0(3)                    = 15.000 ! 12.500 * vmfact
    Vm0(4)                    =  7.500 !  6.250 * vmfact
-   Vm0(5)                    = 18.300 
+   Vm0(5)                    = 18.300
    Vm0(6)                    = 11.350 ! 15.625 * 0.7264
    Vm0(7)                    = 11.350 ! 15.625 * 0.7264
    Vm0(8)                    =  4.540 !  6.250 * 0.7264
@@ -1307,9 +1307,9 @@ subroutine init_pft_photo_params()
    Vm0(10)                   = 17.455 ! 15.625 * 1.1171
    Vm0(11)                   =  6.981 !  6.250 * 1.1171
    Vm0(12:13)                = 18.300 ! 18.300
-   Vm0(14:15)                = 15.000 ! 12.500 * vmfact
+   Vm0(14:15)                = 12.500 ! 12.500 * vmfact
    Vm0(16)                   = 26.250 ! 21.875 * vmfact
-   Vm0(17)                   = 18.750 ! 15.625 * vmfact
+   Vm0(17)                   = 18.750 ! 14.583 * vmfact
    !---------------------------------------------------------------------------------------!
 
 
@@ -1330,7 +1330,7 @@ subroutine init_pft_photo_params()
    !---------------------------------------------------------------------------------------!
    !    Dark_respiration_factor is the lower-case gamma in Moorcroft et al. (2001).        !
    !---------------------------------------------------------------------------------------!
-   dark_respiration_factor(1)     = 0.035
+   dark_respiration_factor(1)     = 0.036
    dark_respiration_factor(2)     = 0.015 ! 0.020 * gamfact
    dark_respiration_factor(3)     = 0.015 ! 0.020 * gamfact
    dark_respiration_factor(4)     = 0.015 ! 0.020 * gamfact
@@ -1343,10 +1343,10 @@ subroutine init_pft_photo_params()
    dark_respiration_factor(11)    = 0.020
    dark_respiration_factor(12)    = 0.020
    dark_respiration_factor(13)    = 0.020
-   dark_respiration_factor(14)    = 0.035
-   dark_respiration_factor(15)    = 0.035
+   dark_respiration_factor(14)    = 0.036
+   dark_respiration_factor(15)    = 0.036
    dark_respiration_factor(16)    = 0.015
-   dark_respiration_factor(17)    = 0.020
+   dark_respiration_factor(17)    = 0.021
    !---------------------------------------------------------------------------------------!
 
 
@@ -1399,7 +1399,7 @@ subroutine init_pft_photo_params()
    stomatal_slope(16)        =  9.0
    stomatal_slope(17)        =  6.4
  
-   cuticular_cond(1)         =  8000.0
+   cuticular_cond(1)         = 10000.0
    cuticular_cond(2)         = 10000.0
    cuticular_cond(3)         = 10000.0
    cuticular_cond(4)         = 10000.0
@@ -1412,8 +1412,8 @@ subroutine init_pft_photo_params()
    cuticular_cond(11)        = 20000.0
    cuticular_cond(12)        = 10000.0
    cuticular_cond(13)        = 10000.0
-   cuticular_cond(14)        =  8000.0
-   cuticular_cond(15)        =  8000.0
+   cuticular_cond(14)        = 10000.0
+   cuticular_cond(15)        = 10000.0
    cuticular_cond(16)        = 10000.0
    cuticular_cond(17)        =  1000.0
 
@@ -2850,8 +2850,7 @@ end subroutine init_pft_derived_params
 !==========================================================================================!
 subroutine init_disturb_params
 
-   use disturb_coms , only : sm_fire                  & ! intent(in)
-                           , min_new_patch_area       & ! intent(out)
+   use disturb_coms , only : min_new_patch_area       & ! intent(out)
                            , treefall_hite_threshold  & ! intent(out)
                            , forestry_on              & ! intent(out)
                            , agriculture_on           & ! intent(out)
@@ -2859,7 +2858,6 @@ subroutine init_disturb_params
                            , plantation_rotation      & ! intent(out)
                            , mature_harvest_age       & ! intent(out)
                            , fire_dryness_threshold   & ! intent(out)
-                           , fire_smoist_threshold    & ! intent(out)
                            , fire_smoist_depth        & ! intent(out)
                            , k_fire_first             & ! intent(out)
                            , fire_parameter           & ! intent(out)
@@ -2895,14 +2893,6 @@ subroutine init_disturb_params
    ! converted to meters falls below this threshold.                                       !
    !---------------------------------------------------------------------------------------!
    fire_dryness_threshold = 0.2
-
-   !---------------------------------------------------------------------------------------!
-   !     If include_fire is 2, then fire may occur if total (ground + underground) water   !
-   ! falls below a threshold defined by the total water of a soil column with average soil !
-   ! moisture equal to soilcp + (slmsts-soilcp) * fire_smoist_threshold [m3_H2O/m3_gnd]    !
-   ! would have.                                                                           !
-   !---------------------------------------------------------------------------------------!
-   fire_smoist_threshold = sm_fire
 
    !----- Maximum depth that will be considered in the average soil -----------------------!
    fire_smoist_depth     = -1.0
@@ -3345,7 +3335,8 @@ subroutine init_soil_coms
                              , betapower8            & ! intent(out)
                              , freezecoef            & ! intent(out)
                              , freezecoef8           ! ! intent(out)
-
+   use phenology_coms , only : thetacrit             ! ! intent(in)
+   use disturb_coms   , only : sm_fire               ! ! intent(in)
    use grid_coms      , only : ngrids                ! ! intent(in)
    use consts_coms    , only : grav                  & ! intent(in)
                              , hr_sec                & ! intent(in)
@@ -3356,13 +3347,13 @@ subroutine init_soil_coms
    integer            :: nsoil
    integer            :: ifm
    !----- Local constants. ----------------------------------------------------------------!
-   real   , parameter :: fieldcp_K  = 0.1     ! hydraulic conduct. at field cap.   [mm/day]
-   real   , parameter :: soilcp_MPa = 3.1     ! soil-water pot. for air dry soil   [   MPa]
-   real   , parameter :: soilwp_MPa = 1.5     ! soil-water pot. at wil. point      [   MPa]
-   real   , parameter :: sand_hcapv = 2.128e6 ! Sand vol. heat capacity            [J/m3/K]
-   real   , parameter :: clay_hcapv = 2.385e6 ! Clay vol. heat capacity            [J/m3/K]
-   real   , parameter :: silt_hcapv = 2.286e6 ! Silt vol. heat capacity (*)        [J/m3/K]
-   real   , parameter :: air_hcapv  = 1.212e6 ! Air vol. heat capacity             [J/m3/K]
+   real   , parameter :: fieldcp_K  =  0.1     ! hydraulic conduct. at field cap.  [mm/day]
+   real   , parameter :: soilcp_MPa = -3.1     ! soil-water pot. for air dry soil  [   MPa]
+   real   , parameter :: soilwp_MPa = -1.5     ! soil-water pot. at wil. point     [   MPa]
+   real   , parameter :: sand_hcapv =  2.128e6 ! Sand vol. heat capacity           [J/m3/K]
+   real   , parameter :: clay_hcapv =  2.385e6 ! Clay vol. heat capacity           [J/m3/K]
+   real   , parameter :: silt_hcapv =  2.286e6 ! Silt vol. heat capacity (*)       [J/m3/K]
+   real   , parameter :: air_hcapv  =  1.212e6 ! Air vol. heat capacity            [J/m3/K]
    !---------------------------------------------------------------------------------------!
    ! (*) If anyone has the heat capacity for silt, please feel free to add it in here, I   !
    !     didn't find any.  Apparently no one knows, and I've seen in other models that     !
@@ -3399,94 +3390,112 @@ subroutine init_soil_coms
    ! (1st line)          slpots        slmsts          slbs     slcpd        soilcp        !
    ! (2nd line)          soilwp        slcons       slcons0 soilcond0     soilcond1        !
    ! (3rd line)       soilcond2       sfldcap        albwet    albdry         xsand        !
-   ! (4th line)           xclay         xsilt       xrobulk     slden                      !
+   ! (4th line)           xclay         xsilt       xrobulk     slden        soilld        !
+   ! (5th line)          soilfr                                                            !
    !---------------------------------------------------------------------------------------!
    soil = (/                                                                               &
       !----- 1. Sand. ---------------------------------------------------------------------!
        soil_class( -0.049831046,     0.373250,     3.295000, 1584640.,  0.026183447        &
                  ,  0.032636854,  2.446421e-5,  0.000500000,   0.3000,       4.8000        &
                  ,      -2.7000,  0.132130936,        0.229,    0.352,        0.920        &
-                 ,        0.030,        0.050,        1200.,    1600.              )       &
+                 ,        0.030,        0.050,        1200.,    1600.,        0.000        &
+                 ,        0.000                                                    )       &
       !----- 2. Loamy sand. ---------------------------------------------------------------!
       ,soil_class( -0.067406224,     0.385630,     3.794500, 1584809.,  0.041560499        &
                  ,  0.050323046,  1.776770e-5,  0.000600000,   0.3000,       4.6600        &
                  ,      -2.6000,  0.155181959,        0.212,    0.335,        0.825        &
-                 ,        0.060,        0.115,        1250.,    1600.              )       &
+                 ,        0.060,        0.115,        1250.,    1600.,        0.000        &
+                 ,        0.000                                                    )       &
       !----- 3. Sandy loam. ---------------------------------------------------------------!
       ,soil_class( -0.114261521,     0.407210,     4.629000, 1587042.,  0.073495043        &
                  ,  0.085973722,  1.022660e-5,  0.000769000,   0.2900,       4.2700        &
                  ,      -2.3100,  0.194037750,        0.183,    0.307,        0.660        &
-                 ,        0.110,        0.230,        1300.,    1600.              )       &
+                 ,        0.110,        0.230,        1300.,    1600.,        0.000        &
+                 ,        0.000                                                    )       &
       !----- 4. Silt loam. ----------------------------------------------------------------!
       ,soil_class( -0.566500112,     0.470680,     5.552000, 1568225.,  0.150665475        &
                  ,  0.171711257,  2.501101e-6,  0.000010600,   0.2700,       3.4700        &
                  ,      -1.7400,  0.273082063,        0.107,    0.250,        0.200        &
-                 ,        0.160,        0.640,        1400.,    1600.              )       &
+                 ,        0.160,        0.640,        1400.,    1600.,        0.000        &
+                 ,        0.000                                                    )       &
       !----- 5. Loam. ---------------------------------------------------------------------!
       ,soil_class( -0.260075834,     0.440490,     5.646000, 1588082.,  0.125192234        &
                  ,  0.142369513,  4.532431e-6,  0.002200000,   0.2800,       3.6300        &
                  ,      -1.8500,  0.246915025,        0.140,    0.268,        0.410        &
-                 ,        0.170,        0.420,        1350.,    1600.              )       &
+                 ,        0.170,        0.420,        1350.,    1600.,        0.000        &
+                 ,        0.000                                                    )       &
       !----- 6. Sandy clay loam. ----------------------------------------------------------!
       ,soil_class( -0.116869181,     0.411230,     7.162000, 1636224.,  0.136417267        &
                  ,  0.150969505,  6.593731e-6,  0.001500000,   0.2800,       3.7800        &
                  ,      -1.9600,  0.249629687,        0.163,    0.260,        0.590        &
-                 ,        0.270,        0.140,        1350.,    1600.              )       &
+                 ,        0.270,        0.140,        1350.,    1600.,        0.000        &
+                 ,        0.000                                                    )       &
       !----- 7. Silty clay loam. ----------------------------------------------------------!
       ,soil_class( -0.627769194,     0.478220,     8.408000, 1621562.,  0.228171947        &
                  ,  0.248747504,  1.435262e-6,  0.000107000,   0.2600,       2.7300        &
                  ,      -1.2000,  0.333825332,        0.081,    0.195,        0.100        &
-                 ,        0.340,        0.560,        1500.,    1600.              )       &
+                 ,        0.340,        0.560,        1500.,    1600.,        0.000        &
+                 ,        0.000                                                    )       &
       !----- 8. Clayey loam. --------------------------------------------------------------!
       ,soil_class( -0.281968114,     0.446980,     8.342000, 1636911.,  0.192624431        &
                  ,  0.210137962,  2.717260e-6,  0.002200000,   0.2700,       3.2300        &
                  ,      -1.5600,  0.301335491,        0.116,    0.216,        0.320        &
-                 ,        0.340,        0.340,        1450.,    1600.              )       &
+                 ,        0.340,        0.340,        1450.,    1600.,        0.000        &
+                 ,        0.000                                                    )       &
       !----- 9. Sandy clay. ---------------------------------------------------------------!
       ,soil_class( -0.121283019,     0.415620,     9.538000, 1673422.,  0.182198910        &
                  ,  0.196607427,  4.314507e-6,  0.000002167,   0.2700,       3.3200        &
                  ,      -1.6300,  0.286363001,        0.144,    0.216,        0.520        &
-                 ,        0.420,        0.060,        1450.,    1600.              )       &
+                 ,        0.420,        0.060,        1450.,    1600.,        0.000        &
+                 ,        0.000                                                    )       &
       !----- 10. Silty clay. --------------------------------------------------------------!
       ,soil_class( -0.601312179,     0.479090,    10.461000, 1652723.,  0.263228486        &
                  ,  0.282143846,  1.055191e-6,  0.000001033,   0.2500,       2.5800        &
                  ,      -1.0900,  0.360319788,        0.068,    0.159,        0.060        &
-                 ,        0.470,        0.470,        1650.,    1600.              )       &
+                 ,        0.470,        0.470,        1650.,    1600.,        0.000        &
+                 ,        0.000                                                    )       &
       !----- 11. Clay. --------------------------------------------------------------------!
       ,soil_class( -0.299226464,     0.454400,    12.460000, 1692037.,  0.259868987        &
                  ,  0.275459057,  1.307770e-6,  0.000001283,   0.2500,       2.4000        &
                  ,      -0.9600,  0.353255209,        0.083,    0.140,        0.200        &
-                 ,        0.600,        0.200,        1700.,    1600.              )       &
+                 ,        0.600,        0.200,        1700.,    1600.,        0.000        &
+                 ,        0.000                                                    )       &
       !----- 12. Peat. --------------------------------------------------------------------!
       ,soil_class( -0.534564359,     0.469200,     6.180000,  874000.,  0.167047523        &
                  ,  0.187868805,  2.357930e-6,  0.000008000,   0.0600,       0.4600        &
                  ,       0.0000,  0.285709966,        0.070,    0.140,       0.2000        &
-                 ,       0.2000,       0.6000,         500.,     300.              )       &
+                 ,       0.2000,       0.6000,         500.,     300.,        0.000        &
+                 ,        0.000                                                    )       &
       !----- 13. Bedrock. -----------------------------------------------------------------!
       ,soil_class(    0.0000000,     0.000000,     0.000000, 2130000.,  0.000000000        &
                  ,  0.000000000,  0.000000e+0,  0.000000000,   4.6000,       0.0000        &
                  ,       0.0000,  0.000000001,        0.320,    0.320,       0.0000        &
-                 ,       0.0000,       0.0000,           0.,       0.              )       &
+                 ,       0.0000,       0.0000,           0.,       0.,        0.000        &
+                 ,        0.000                                                    )       &
       !----- 14. Silt. --------------------------------------------------------------------!
       ,soil_class( -1.047128548,     0.492500,     3.862500, 1510052.,  0.112299080        &
                  ,  0.135518820,  2.046592e-6,  0.000010600,   0.2700,       3.4700        &
                  ,      -1.7400,  0.245247642,        0.092,    0.265,        0.075        &
-                 ,        0.050,        0.875,        1400.,    1600.              )       &
+                 ,        0.050,        0.875,        1400.,    1600.,        0.000        &
+                 ,        0.000                                                    )       &
       !----- 15. Heavy clay. --------------------------------------------------------------!
       ,soil_class( -0.322106879,     0.461200,    15.630000, 1723619.,  0.296806035        &
                  ,  0.310916364,  7.286705e-7,  0.000001283,   0.2500,       2.4000        &
                  ,      -0.9600,  0.382110712,        0.056,    0.080,        0.100        &
-                 ,        0.800,        0.100,        1700.,    1600.              )       &
+                 ,        0.800,        0.100,        1700.,    1600.,        0.000        &
+                 ,        0.000                                                    )       &
       !----- 16. Clayey sand. -------------------------------------------------------------!
       ,soil_class( -0.176502150,     0.432325,    11.230000, 1688353.,  0.221886929        &
                  ,  0.236704039,  2.426785e-6,  0.000001283,   0.2500,       2.4000        &
                  ,      -0.9600,  0.320146708,        0.115,    0.175,        0.375        &
-                 ,        0.525,        0.100,        1700.,    1600.              )       &
+                 ,        0.525,        0.100,        1700.,    1600.,        0.000        &
+                 ,        0.000                                                    )       &
       !----- 17. Clayey silt. -------------------------------------------------------------!
       ,soil_class( -0.438278332,     0.467825,    11.305000, 1670103.,  0.261376708        &
                  ,  0.278711303,  1.174982e-6,  0.000001283,   0.2500,       2.4000        &
                  ,      -0.9600,  0.357014719,        0.075,    0.151,        0.125        &
-                 ,        0.525,        0.350,        1700.,    1600.              )       &
+                 ,        0.525,        0.350,        1700.,    1600.,        0.000        &
+                 ,        0.000                                                    )       &
    /)
    !---------------------------------------------------------------------------------------!
 
@@ -3523,11 +3532,11 @@ subroutine init_soil_coms
                               ** (1. / (2.*soil(nslcon)%slbs+3.))
          !----- Dry soil capacity (at -3.1MPa) [ m^3/m^3 ]. -------------------------------!
          soil(nslcon)%soilcp  = soil(nslcon)%slmsts                                        &
-                              *  ( -1.*soil(nslcon)%slpots / (soilcp_MPa * 1000. / grav))  &
+                              *  ( soil(nslcon)%slpots / (soilcp_MPa * 1000. / grav))      &
                               ** (1. / soil(nslcon)%slbs)
          !----- Wilting point capacity (at -1.5MPa) [ m^3/m^3 ]. --------------------------!
          soil(nslcon)%soilwp  = soil(nslcon)%slmsts                                        &
-                              *  ( -1.*soil(nslcon)%slpots / (soilwp_MPa * 1000. / grav))  &
+                              *  ( soil(nslcon)%slpots / (soilwp_MPa * 1000. / grav))      &
                               ** ( 1. / soil(nslcon)%slbs)
          !---------------------------------------------------------------------------------!
 
@@ -3585,6 +3594,56 @@ subroutine init_soil_coms
 
 
 
+   !---------------------------------------------------------------------------------------!
+   !     Find two remaining properties, that depend on the user choices.                   !
+   ! SOILLD -- the critical soil moisture below which drought deciduous plants start drop- !
+   !           ping their leaves.  The sign of input variable THETACRIT matters here.  If  !
+   !           the user gave a positive number (or 0),  then the soil moisture is a        !
+   !           fraction above wilting point.  If it is negative, the value is the          !
+   !           potential in MPa.  This is not done for bedrock because it doesn't make     !
+   !           sense.                                                                      !
+   ! SOILFR -- the critical soil moisture below which fires may happen, provided that the  !
+   !           user wants fires, and that there is enough biomass to burn.  The sign of    !
+   !           the input variable SM_FIRE matters here.  If the user gave a positive       !
+   !           number (or 0), then the soil moisture is a fraction above dry air soil.  If !
+   !           it is negative, the value is the potential in MPa.  This is not done for    !
+   !           bedrock because it doesn't make sense.                                      !
+   !---------------------------------------------------------------------------------------!
+   do nsoil=1,ed_nstyp
+      select case (nsoil)
+      case (13)
+         soil(nsoil)%soilld = 0.0
+         soil(nsoil)%soilfr = 0.0
+      case default
+         if (thetacrit >= 0.0) then
+            !----- Soil moisture fraction. ------------------------------------------------!
+            soil(nsoil)%soilld = soil(nsoil)%soilwp                                        &
+                               + thetacrit * (soil(nsoil)%slmsts - soil(nsoil)%soilwp)
+         else
+            !----- Water potential. -------------------------------------------------------!
+            soil(nsoil)%soilld = soil(nsoil)%slmsts                                        &
+                               *  ( soil(nsoil)%slpots / (thetacrit * 1000. / grav))       &
+                               ** ( 1. / soil(nsoil)%slbs)
+         end if
+
+         if (sm_fire >= 0.0) then
+            !----- Soil moisture fraction. ------------------------------------------------!
+            soil(nsoil)%soilfr = soil(nsoil)%soilcp                                        &
+                               + sm_fire * (soil(nsoil)%slmsts - soil(nsoil)%soilcp)
+         else
+            !----- Water potential. -------------------------------------------------------!
+            soil(nsoil)%soilfr = soil(nsoil)%slmsts                                        &
+                               *  ( soil(nsoil)%slpots / (sm_fire * 1000. / grav))         &
+                               ** ( 1. / soil(nsoil)%slbs)
+         end if
+      end select
+   end do
+   !---------------------------------------------------------------------------------------!
+
+
+
+
+
 
 
    !----- Here we fill soil8, which will be used in Runge-Kutta (double precision). -------!
@@ -3608,6 +3667,8 @@ subroutine init_soil_coms
       soil8(nsoil)%xsilt     = dble(soil(nsoil)%xsilt    )
       soil8(nsoil)%xrobulk   = dble(soil(nsoil)%xrobulk  )
       soil8(nsoil)%slden     = dble(soil(nsoil)%slden    )
+      soil8(nsoil)%soilld    = dble(soil(nsoil)%soilld   )
+      soil8(nsoil)%soilfr    = dble(soil(nsoil)%soilfr   )
    end do
    betapower8  = dble(betapower)
    soil_rough8 = dble(soil_rough)
@@ -3630,7 +3691,7 @@ subroutine init_phen_coms
                             , pio180                   ! ! intent(in)
    use phenology_coms, only : retained_carbon_fraction & ! intent(out)
                             , elongf_min               & ! intent(out)
-                            , theta_crit               & ! intent(out)
+                            , spot_phen                & ! intent(out)
                             , dl_tr                    & ! intent(out)
                             , st_tr1                   & ! intent(out)
                             , st_tr2                   & ! intent(out)
@@ -3646,13 +3707,13 @@ subroutine init_phen_coms
                             , max_phenology_dist       & ! intent(out)
                             , radint                   & ! intent(out)
                             , radslp                   & ! intent(out)
-                            , thetacrit                   ! ! intent(in)
+                            , thetacrit                ! ! intent(in)
    implicit none
 
  
    retained_carbon_fraction = 0.5
    elongf_min               = 0.02
-   theta_crit               = thetacrit
+   spot_phen                = thetacrit < 0.
    dl_tr                    = 655.0
    st_tr1                   = 284.3
    st_tr2                   = 275.15

@@ -701,7 +701,7 @@ recursive subroutine read_ed_xml_config(filename)
         call getConfigREAL  ('retained_carbon_fraction','phenology',i,rval,texist)
         if(texist)  retained_carbon_fraction = real(rval)
         call getConfigREAL  ('theta_crit','phenology',i,rval,texist)
-        if(texist)  theta_crit= real(rval)
+        if(texist)  thetacrit= real(rval)
         call getConfigREAL  ('dl_tr','phenology',i,rval,texist)
         if(texist)  dl_tr = real(rval)
         call getConfigREAL  ('st_tr1','phenology',i,rval,texist)
@@ -742,8 +742,6 @@ recursive subroutine read_ed_xml_config(filename)
         
         call libxml2f90__ll_selecttag('DOWN','physiology',i)
 
-        call getConfigINT  ('istoma_scheme','physiology',i,ival,texist)
-        if(texist) istoma_scheme = ival
         call getConfigINT  ('n_plant_lim','physiology',i,ival,texist)
         if(texist) n_plant_lim = ival
         

@@ -161,6 +161,8 @@ module soil_coms
       real(kind=4) :: xsilt      ! Percentage of silt                            [     ---]
       real(kind=4) :: xrobulk    ! Bulk density                                  [     ---]
       real(kind=4) :: slden      ! "Dry" soil density (porosity)                 [   kg/m3]
+      real(kind=4) :: soilld     ! Soil moist. below which drought phen. happens [   m3/m3]
+      real(kind=4) :: soilfr     ! Soil moist. below which fires may happen      [   m3/m3]
    end type soil_class
    !----- Double precision version --------------------------------------------------------!
    type soil_class8
@@ -183,6 +185,8 @@ module soil_coms
       real(kind=8) :: xsilt      ! Percentage of silt                            [     ---]
       real(kind=8) :: xrobulk    ! Bulk density                                  [     ---]
       real(kind=8) :: slden      ! "Dry" soil density (porosity)                 [   kg/m3]
+      real(kind=4) :: soilld     ! Soil moist. below which drought phen. happens [   m3/m3]
+      real(kind=4) :: soilfr     ! Soil moist. below which fires may happen      [   m3/m3]
    end type soil_class8
    !---------------------------------------------------------------------------------------!
    !----- To be filled in ed_params.f90. --------------------------------------------------!

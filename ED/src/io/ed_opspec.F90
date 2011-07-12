@@ -1133,7 +1133,6 @@ subroutine ed_opspec_misc
    use mem_polygons          , only : maxsite                      ! ! intent(in)
    use grid_coms             , only : ngrids                       ! ! intent(in)
    use physiology_coms       , only : iphysiol                     & ! intent(in)
-                                    , istoma_scheme                & ! intent(in)
                                     , h2o_plant_lim                & ! intent(in)
                                     , n_plant_lim                  & ! intent(in)
                                     , vmfact                       & ! intent(in)
@@ -1453,14 +1452,6 @@ end do
       ifaterr = ifaterr +1
    end if
 
-   if (istoma_scheme < 0 .or. istoma_scheme > 1) then
-      write (reason,fmt='(a,1x,i4,a)')                                                     &
-                    'Invalid ISTOMA_SCHEME, it must be between 0 and 1. Yours is set to'   &
-                    ,istoma_scheme,'...'
-      call opspec_fatal(reason,'opspec_misc')
-      ifaterr = ifaterr +1
-   end if
-
    if (iallom < 0 .or. iallom > 4) then
       write (reason,fmt='(a,1x,i4,a)')                                                     &
                     'Invalid IALLOM, it must be between 0 and 4. Yours is set to'          &
@@ -1548,9 +1539,9 @@ end do
       ifaterr = ifaterr +1
    end if
    
-   if (thetacrit < 0. .or. thetacrit > 1.) then
+   if (thetacrit < -1.49 .or. thetacrit > 1.) then
       write (reason,fmt='(a,1x,es12.5,a)')                                                 &
-                    'Invalid THETACRIT, it must be between 0 and 1. Yours is set to'       &
+                    'Invalid THETACRIT, it must be between -1.49 and 1. Yours is set to'   &
                     ,thetacrit,'...'
       call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
@@ -1604,9 +1595,9 @@ end do
       ifaterr = ifaterr +1
    end if
    
-   if (sm_fire < 0. .or. sm_fire > 1.) then
+   if (sm_fire < -3.1 .or. sm_fire > 1.) then
       write (reason,fmt='(a,1x,es12.5,a)')                                                 &
-                    'Invalid SM_FIRE, it must be between 0 and 1.  Yours is set to'        &
+                    'Invalid SM_FIRE, it must be between -3.1 and 1.  Yours is set to'     &
                     ,sm_fire,'...'
       call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1

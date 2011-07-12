@@ -1730,3 +1730,6 @@ ED/dbgbuild/bin/rk4_stepper.F90
 ED/dbgbuild/bin/rsys.F90
 ED/dbgbuild/bin/soil_coms.F90
 ED/dbgbuild/ed_2.1-opt
+check_diff.sh
+BRAMS/line_counter.sh
+ED/line_counter.sh

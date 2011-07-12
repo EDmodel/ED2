@@ -14,7 +14,6 @@ subroutine fire_frequency(month, cgrid)
                             , dslz                   ! ! intent(in)
    use disturb_coms  , only : include_fire           & ! intent(in)
                             , fire_dryness_threshold & ! intent(in)
-                            , fire_smoist_threshold  & ! intent(in)
                             , fire_smoist_depth      & ! intent(in)
                             , k_fire_first           & ! intent(in)
                             , fire_parameter         ! ! intent(in)
@@ -139,9 +138,7 @@ subroutine fire_frequency(month, cgrid)
                do k = ka, nzg
                   nsoil                = cpoly%ntext_soil(k,isi)
                   fire_wmass_threshold = fire_wmass_threshold                              &
-                                       + ( fire_smoist_threshold                           &
-                                         * (soil(nsoil)%slmsts - soil(nsoil)%soilcp)       &
-                                         + soil(nsoil)%soilcp ) * dslz(k) * wdns
+                                       + soil(nsoil)%soilfr * dslz(k) * wdns
                end do
 
                !---------------------------------------------------------------------------!

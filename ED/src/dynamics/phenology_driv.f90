@@ -155,7 +155,6 @@ subroutine update_phenology(doy, cpoly, isi, lat)
                              , c2n_storage              ! ! intent(in)
    use decomp_coms    , only : f_labile                 ! ! intent(in)
    use phenology_coms , only : retained_carbon_fraction & ! intent(in)
-                             , theta_crit               & ! intent(in)
                              , iphen_scheme             & ! intent(in)
                              , elongf_min               ! ! intent(in)
    use consts_coms    , only : t3ple                    & ! intent(in)
@@ -279,7 +278,7 @@ subroutine update_phenology(doy, cpoly, isi, lat)
             ! enough water or it is too dry, or if there is some drought relief so leaves  !
             ! can start to grow again.                                                     ! 
             !------------------------------------------------------------------------------!
-            if (theta(kroot) < theta_crit) then
+            if (theta(kroot) < 1.0) then
 
                !----- It is time to drop leaves. ------------------------------------------!
                if (cpatch%phenology_status(ico) < 2) then
@@ -324,7 +323,7 @@ subroutine update_phenology(doy, cpoly, isi, lat)
                                                - cpatch%leaf_drop(ico)
                end if
                
-            elseif(theta(kroot) > theta_crit .and. cpatch%phenology_status(ico) == 2) then
+            elseif(theta(kroot) > 1.0 .and. cpatch%phenology_status(ico) == 2) then
                
                !----- It is time to flush.  Change phenology_status will update -----------!
                !----- carbon pools in growth_balive       ---------------------------------!
@@ -415,7 +414,7 @@ subroutine update_phenology(doy, cpoly, isi, lat)
             ! 2. The plant has no leaves, but the soil has started to come back to more    !
             !    moist conditions. Given this situation, leaves can start growing again.   !
             !------------------------------------------------------------------------------!
-            cpatch%elongf(ico) = max(0.0, min (1.0, cpatch%paw_avg(ico)/theta_crit))
+            cpatch%elongf(ico) = max(0.0, min (1.0, cpatch%paw_avg(ico)))
             bl_max             = cpatch%elongf(ico) * dbh2bl(cpatch%dbh(ico),ipft)
                
 
@@ -506,14 +505,14 @@ subroutine update_phenology(doy, cpoly, isi, lat)
             ipft=cpatch%pft(ico)
             if (first_time(ipft)) then
                first_time(ipft) = .false.
-               write (unit=40+ipft,fmt='(a10,6(1x,a12))')                                  &
+               write (unit=40+ipft,fmt='(a10,5(1x,a12))')                                  &
                   &'      TIME','       PATCH','      COHORT','      NPLANT'               &
-                  &            ,'   LEAF_DROP','       THETA','  THETA_CRIT'
+                  &            ,'   LEAF_DROP','       THETA'
             end if
          
             write (unit=40+ipft,fmt='(2(i2.2,a1),i4.4,2(1x,i12),4(1x,es12.5))')            &
                  current_time%month,'/',current_time%date,'/',current_time%year,ipa,ico    &
-                ,cpatch%nplant(ico),cpatch%leaf_drop(ico),theta(kroot),theta_crit
+                ,cpatch%nplant(ico),cpatch%leaf_drop(ico),theta(kroot)
          end if
       end do cohortloop
    end do patchloop
@@ -538,6 +537,7 @@ subroutine phenology_thresholds(daylight,soil_temp,soil_water,soil_class,sum_chd
                                ,drop_cold,leaf_out_cold,theta,lsl)
    use grid_coms     , only : nzg          ! ! intent(in)
    use soil_coms     , only : soil         & ! intent(in)
+                            , dslz         & ! intent(in)
                             , slz          ! ! intent(in)
    use phenology_coms, only : dl_tr        & ! intent(in)
                             , st_tr1       & ! intent(in)
@@ -600,14 +600,12 @@ subroutine phenology_thresholds(daylight,soil_temp,soil_water,soil_class,sum_chd
    theta(1:nzg) = 0.0
    topsoil      = soil_class(nzg)
    do k1 = lsl, nzg
-      do k2 = k1,nzg-1
+      do k2 = k1,nzg
          nsoil     = soil_class(k2)
          theta(k1) = theta(k1)                                                             &
-                   + (soil_water(k2)     - soil(nsoil)%soilwp) * (slz(k2+1)-slz(k2))       &
-                   / (soil(nsoil)%slmsts - soil(nsoil)%soilwp)
+                   + (soil_water(k2)     - soil(nsoil)%soilwp) * dslz(k2)                  &
+                   / (soil(nsoil)%soilld - soil(nsoil)%soilwp)
       end do
-      theta(k1)    = theta(k1) - (soil_water(nzg)      - soil(topsoil)%soilwp) * slz(nzg)  &
-                               / (soil(topsoil)%slmsts - soil(topsoil)%soilwp)
       theta(k1) = - theta(k1) / slz(k1)
    end do
 

@@ -133,7 +133,6 @@ module ename_coms
       real                                              :: rk4_tolerance
       integer                                           :: ibranch_thermo
       integer                                           :: iphysiol
-      integer                                           :: istoma_scheme
       integer                                           :: iallom
       integer                                           :: iphen_scheme
       integer                                           :: repro_scheme
@@ -358,7 +357,6 @@ module ename_coms
       enl%rk4_tolerance             = undef_real
       enl%ibranch_thermo            = undef_integer
       enl%iphysiol                  = undef_integer
-      enl%istoma_scheme             = undef_integer
       enl%iallom                    = undef_integer
       enl%iphen_scheme              = undef_integer
       enl%repro_scheme              = undef_integer

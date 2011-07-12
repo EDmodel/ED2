@@ -1841,7 +1841,7 @@ for (place in myplaces){
    #---------------------------------------------------------------------------------------#
    print ("      * Finding the standard deviation...")
    srnorm1 = sqrt(1./(1. - 1. / moncensus))
-   srnorm1[!is.finite(srnorm1)] = NA
+   srnorm1[!is.finite(srnorm1)] = 0.
    mont12sd            = list()
    mont12sd$gpp     = sqrt(mont12sq$gpp     - mont12mn$gpp^2     ) * srnorm1
    mont12sd$plresp  = sqrt(mont12sq$plresp  - mont12mn$plresp^2  ) * srnorm1
@@ -1858,22 +1858,26 @@ for (place in myplaces){
    mont12sd$wflxgc  = sqrt(mont12sq$wflxgc  - mont12mn$wflxgc^2  ) * srnorm1
    mont12sd$evap    = sqrt(mont12sq$evap    - mont12mn$evap^2    ) * srnorm1
    mont12sd$transp  = sqrt(mont12sq$transp  - mont12mn$transp^2  ) * srnorm1
-   #----- Discard the standard deviations that may have somehow become NaN. ---------------#
-   mont12sd$gpp     [!is.finite(mont12mn$gpp     )] = NA
-   mont12sd$plresp  [!is.finite(mont12mn$plresp  )] = NA
-   mont12sd$hetresp [!is.finite(mont12mn$hetresp )] = NA
-   mont12sd$nee     [!is.finite(mont12mn$nee     )] = NA
-   mont12sd$sens    [!is.finite(mont12mn$sens    )] = NA
-   mont12sd$hflxlc  [!is.finite(mont12mn$hflxlc  )] = NA
-   mont12sd$hflxlc  [!is.finite(mont12mn$hflxwc  )] = NA
-   mont12sd$hflxgc  [!is.finite(mont12mn$hflxgc  )] = NA
-   mont12sd$et      [!is.finite(mont12mn$et      )] = NA
-   mont12sd$latent  [!is.finite(mont12mn$latent  )] = NA
-   mont12sd$wflxlc  [!is.finite(mont12mn$wflxlc  )] = NA
-   mont12sd$wflxwc  [!is.finite(mont12mn$wflxwc  )] = NA
-   mont12sd$wflxgc  [!is.finite(mont12mn$wflxgc  )] = NA
-   mont12sd$evap    [!is.finite(mont12mn$evap    )] = NA
-   mont12sd$transp  [!is.finite(mont12mn$transp  )] = NA
+   #---------------------------------------------------------------------------------------#
+   #     Set standard deviations that became NaN to 0.  This usually happens when we run   #
+   # the post-processing script when the simulation hasn't run for more than 2 years.  We  #
+   # can't find the standard deviation because the number of degrees of freedom becomes 0. #
+   #---------------------------------------------------------------------------------------#
+   mont12sd$gpp     [!is.finite(mont12mn$gpp     )] = 0.
+   mont12sd$plresp  [!is.finite(mont12mn$plresp  )] = 0.
+   mont12sd$hetresp [!is.finite(mont12mn$hetresp )] = 0.
+   mont12sd$nee     [!is.finite(mont12mn$nee     )] = 0.
+   mont12sd$sens    [!is.finite(mont12mn$sens    )] = 0.
+   mont12sd$hflxlc  [!is.finite(mont12mn$hflxlc  )] = 0.
+   mont12sd$hflxlc  [!is.finite(mont12mn$hflxwc  )] = 0.
+   mont12sd$hflxgc  [!is.finite(mont12mn$hflxgc  )] = 0.
+   mont12sd$et      [!is.finite(mont12mn$et      )] = 0.
+   mont12sd$latent  [!is.finite(mont12mn$latent  )] = 0.
+   mont12sd$wflxlc  [!is.finite(mont12mn$wflxlc  )] = 0.
+   mont12sd$wflxwc  [!is.finite(mont12mn$wflxwc  )] = 0.
+   mont12sd$wflxgc  [!is.finite(mont12mn$wflxgc  )] = 0.
+   mont12sd$evap    [!is.finite(mont12mn$evap    )] = 0.
+   mont12sd$transp  [!is.finite(mont12mn$transp  )] = 0.
    #---------------------------------------------------------------------------------------#
 
 
@@ -1959,7 +1963,7 @@ for (place in myplaces){
    #---------------------------------------------------------------------------------------#
    print ("    - Finding the standard deviation...")
    srnorm1 = sqrt(1./(1. - 1. / moncnt))
-   srnorm1[!is.finite(srnorm1)] = NA
+   srnorm1[!is.finite(srnorm1)] = 0.
    dcyc12sd            = list()
    dcyc12sd$gpp        = sqrt(dcyc12sq$gpp      -dcyc12mn$gpp^2             )*srnorm1
    dcyc12sd$plresp     = sqrt(dcyc12sq$plresp   -dcyc12mn$plresp^2          )*srnorm1
@@ -1976,22 +1980,26 @@ for (place in myplaces){
    dcyc12sd$wflxwc     = sqrt(dcyc12sq$wflxwc   -dcyc12mn$wflxwc^2          )*srnorm1
    dcyc12sd$wflxgc     = sqrt(dcyc12sq$wflxgc   -dcyc12mn$wflxgc^2          )*srnorm1
    dcyc12sd$transp     = sqrt(dcyc12sq$transp   -dcyc12mn$transp^2          )*srnorm1
-   #----- Discard the standard deviations that may have somehow become NaN. ---------------#
-   dcyc12sd$gpp     [!is.finite(dcyc12sd$gpp    )] = NA
-   dcyc12sd$plresp  [!is.finite(dcyc12sd$plresp )] = NA
-   dcyc12sd$hetresp [!is.finite(dcyc12sd$hetresp)] = NA
-   dcyc12sd$nep     [!is.finite(dcyc12sd$nep    )] = NA
-   dcyc12sd$nee     [!is.finite(dcyc12sd$nee    )] = NA
-   dcyc12sd$sens    [!is.finite(dcyc12sd$sens   )] = NA
-   dcyc12sd$hflxlc  [!is.finite(dcyc12sd$hflxlc )] = NA
-   dcyc12sd$hflxwc  [!is.finite(dcyc12sd$hflxwc )] = NA
-   dcyc12sd$hflxgc  [!is.finite(dcyc12sd$hflxgc )] = NA
-   dcyc12sd$et      [!is.finite(dcyc12sd$et     )] = NA
-   dcyc12sd$latent  [!is.finite(dcyc12sd$latent )] = NA
-   dcyc12sd$wflxlc  [!is.finite(dcyc12sd$wflxlc )] = NA
-   dcyc12sd$wflxwc  [!is.finite(dcyc12sd$wflxwc )] = NA
-   dcyc12sd$wflxgc  [!is.finite(dcyc12sd$wflxgc )] = NA
-   dcyc12sd$transp  [!is.finite(dcyc12sd$transp )] = NA
+   #---------------------------------------------------------------------------------------#
+   #     Set standard deviations that became NaN to 0.  This usually happens when we run   #
+   # the post-processing script when the simulation hasn't run for more than 2 years.  We  #
+   # can't find the standard deviation because the number of degrees of freedom becomes 0. #
+   #---------------------------------------------------------------------------------------#
+   dcyc12sd$gpp     [!is.finite(dcyc12sd$gpp    )] = 0.
+   dcyc12sd$plresp  [!is.finite(dcyc12sd$plresp )] = 0.
+   dcyc12sd$hetresp [!is.finite(dcyc12sd$hetresp)] = 0.
+   dcyc12sd$nep     [!is.finite(dcyc12sd$nep    )] = 0.
+   dcyc12sd$nee     [!is.finite(dcyc12sd$nee    )] = 0.
+   dcyc12sd$sens    [!is.finite(dcyc12sd$sens   )] = 0.
+   dcyc12sd$hflxlc  [!is.finite(dcyc12sd$hflxlc )] = 0.
+   dcyc12sd$hflxwc  [!is.finite(dcyc12sd$hflxwc )] = 0.
+   dcyc12sd$hflxgc  [!is.finite(dcyc12sd$hflxgc )] = 0.
+   dcyc12sd$et      [!is.finite(dcyc12sd$et     )] = 0.
+   dcyc12sd$latent  [!is.finite(dcyc12sd$latent )] = 0.
+   dcyc12sd$wflxlc  [!is.finite(dcyc12sd$wflxlc )] = 0.
+   dcyc12sd$wflxwc  [!is.finite(dcyc12sd$wflxwc )] = 0.
+   dcyc12sd$wflxgc  [!is.finite(dcyc12sd$wflxgc )] = 0.
+   dcyc12sd$transp  [!is.finite(dcyc12sd$transp )] = 0.
    #---------------------------------------------------------------------------------------#
 
 
@@ -2717,7 +2725,6 @@ for (place in myplaces){
          if (! file.exists(outdir)) dir.create(outdir)
          print (paste("      - ",description,"comparison..."))
 
-
          #----- Define the number of layers. ----------------------------------------------#
          thismean  = mont12mn[[vname]]
          thissdev  = mont12sd[[vname]]
@@ -2828,7 +2835,7 @@ for (place in myplaces){
          print (paste("      + Climatology profile of ",description,"..."))
 
          #----- Find the number of rows and columns, and the axes. ------------------------#
-         monaxis  = sort(unique(monnum[sel]))
+         monaxis  = sort(unique(monnum))
          soilaxis = slz
          nmon     = length(monaxis)
          nsoil    = nzg

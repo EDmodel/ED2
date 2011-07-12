@@ -2591,7 +2591,7 @@ module fuse_fiss_utils
                   recloopp: do recp=donp-1,1,-1
                      recp_found = csite%dist_type(donp) == csite%dist_type(recp) .and.     &
                                   fuse_table(recp) .and.                                   &
-                                  (csite%dist_type(recp) == 1 .or. csite%age(recp) > 2.)
+                                  (csite%dist_type(recp) == 1 .or. csite%age(recp) > 3.)
                      if (recp_found) then
                         recpatch => csite%patch(recp)
                         exit recloopp
@@ -2911,11 +2911,7 @@ module fuse_fiss_utils
             ! be a bug.                                                                    !
             !------------------------------------------------------------------------------!
             if (new_area       < 0.99 * old_area       .or.                                &
-                new_area       > 1.01 * old_area       .or.                                &
-                new_nplant_tot < 0.99 * (old_nplant_tot - elim_nplant_tot) .or.            &
-                new_nplant_tot > 1.01 * (old_nplant_tot - elim_nplant_tot) .or.            &
-                new_lai_tot    < 0.99 * (old_lai_tot    - elim_lai_tot   ) .or.            &
-                new_lai_tot    > 1.01 * (old_lai_tot    - elim_lai_tot   )     ) then
+                new_area       > 1.01 * old_area            ) then
                write (unit=*,fmt='(a,1x,es12.5)') 'OLD_AREA:       ',old_area
                write (unit=*,fmt='(a,1x,es12.5)') 'NEW_AREA:       ',new_area
                write (unit=*,fmt='(a,1x,es12.5)') 'NEW_LAI_TOT:    ',new_lai_tot

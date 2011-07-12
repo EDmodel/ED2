@@ -90,7 +90,6 @@ subroutine copy_nl(copy_type)
                                    , maxpatch                  & ! intent(out)
                                    , maxcohort                 ! ! intent(out)
    use physiology_coms      , only : iphysiol                  & ! intent(out)
-                                   , istoma_scheme             & ! intent(out)
                                    , h2o_plant_lim             & ! intent(out)
                                    , n_plant_lim               & ! intent(out)
                                    , vmfact                    & ! intent(out)
@@ -312,7 +311,6 @@ subroutine copy_nl(copy_type)
       rk4_tolerance             = nl%rk4_tolerance
       ibranch_thermo            = nl%ibranch_thermo
       iphysiol                  = nl%iphysiol
-      istoma_scheme             = nl%istoma_scheme
       iallom                    = nl%iallom
       iphen_scheme              = nl%iphen_scheme
       repro_scheme              = nl%repro_scheme

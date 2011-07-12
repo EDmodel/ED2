@@ -2076,18 +2076,6 @@ $ED2_INFO
 
 
 
-
-   !---------------------------------------------------------------------------------------!
-   ! ISTOMA_SCHEME -- This is the scheme used to compute stomatal conductance and          !
-   !                  photosynthesis.                                                      !
-   !                  0. Full, exact calculation each time.                                !
-   !                  1. (defunct) 'small perturbation' scheme.                            !
-   !---------------------------------------------------------------------------------------!
-   ISTOMA_SCHEME   = 0,
-   !---------------------------------------------------------------------------------------!
-
-
-
    !---------------------------------------------------------------------------------------!
    ! IALLOM -- Which allometry to use (this affects tropical PFTs only)                    !
    !           0.  Original ED-2.1                                                         !
@@ -2350,7 +2338,7 @@ $ED2_INFO
    !             3.  This is also based on Massman (1997), but with the option of varying 
    !                 the drag and sheltering within the canopy.
    !---------------------------------------------------------------------------------------!
-   ICANTURB        = 3,       
+   ICANTURB        = 2,       
    !---------------------------------------------------------------------------------------!
 
 
@@ -2391,7 +2379,7 @@ $ED2_INFO
    ! 7 - southern pines                   | 17 - "Araucaria" (non-optimised                !
    ! 8 - late conifers                    |      Southern Pines).                          !
    !---------------------------------------------------------------------------------------!
-   INCLUDE_THESE_PFT = 1,2,3,4,16,17
+   INCLUDE_THESE_PFT = 1,2,3,4,16,17,
    AGRI_STOCK        = 1,
    PLANTATION_STOCK  = 3,
    !---------------------------------------------------------------------------------------!

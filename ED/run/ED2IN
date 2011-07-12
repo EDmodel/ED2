@@ -582,18 +582,6 @@ $ED_NL
 
 
 
-
-   !---------------------------------------------------------------------------------------!
-   ! ISTOMA_SCHEME -- This is the scheme used to compute stomatal conductance and          !
-   !                  photosynthesis.                                                      !
-   !                  0. Full, exact calculation each time.                                !
-   !                  1. (defunct) 'small perturbation' scheme.                            !
-   !---------------------------------------------------------------------------------------!
-   NL%ISTOMA_SCHEME   = 0
-   !---------------------------------------------------------------------------------------!
-
-
-
    !---------------------------------------------------------------------------------------!
    ! IALLOM -- Which allometry to use (this affects tropical PFTs only)                    !
    !           0.  Original ED-2.1                                                         !
@@ -760,13 +748,6 @@ $ED_NL
    ! D0FACT    -- Factor multiplying the transpiration control in gsw (D0)                 !
    ! ALPHAFACT -- Factor for changing the quantum yield of C3 plants.  This is only        !
    !              applied when QUANTUM_EFFICIENCY_T = 0.                                   !
-   ! THETACRIT -- Leaf drought phenology threshold.  This is the relative soil moisture    !
-   !              above the wilting point below which the drought-deciduous plants will    !
-   !              start shedding their leaves                                              !
-   ! LWFACT    -- Factor for changing the leaf width (w)                                   !
-   ! THIOFF    -- Offset to be added to the Vm_high_temp                                   !
-   ! GGFACT    -- factor to multiply the ground to canopy conductance.  Default value      !
-   !              is 1.0.                                                                  !
    !---------------------------------------------------------------------------------------!
    NL%VMFACT          = 1.6
    NL%MFACT           = 1.125
@@ -774,7 +755,33 @@ $ED_NL
    NL%GAMFACT         = 0.75
    NL%D0FACT          = 1.00
    NL%ALPHAFACT       = 1.00
+   !---------------------------------------------------------------------------------------!
+
+
+
+
+   !---------------------------------------------------------------------------------------!
+   ! THETACRIT -- Leaf drought phenology threshold.  The sign matters here:                !
+   !              >= 0. -- This is the relative soil moisture above the wilting point      !
+   !                       below which the drought-deciduous plants will start shedding    !
+   !                       their leaves                                                    !
+   !              <  0. -- This is the soil potential in MPa below which the drought-      !
+   !                       -deciduous plants will start shedding their leaves.  The wilt-  !
+   !                       ing point is by definition -1.5MPa, so make sure that the value !
+   !                       is above -1.5.                                                  !
+   !---------------------------------------------------------------------------------------!
    NL%THETACRIT       = 0.20
+   !---------------------------------------------------------------------------------------!
+
+
+
+
+   !---------------------------------------------------------------------------------------!
+   ! LWFACT    -- Factor for changing the leaf width (w)                                   !
+   ! THIOFF    -- Offset to be added to the Vm_high_temp                                   !
+   ! GGFACT    -- factor to multiply the ground to canopy conductance.  Default value      !
+   !              is 1.0.                                                                  !
+   !---------------------------------------------------------------------------------------!
    NL%LWFACT          = 1.
    NL%THIOFF          = 0.
    NL%GGFACT          = 1.
@@ -825,9 +832,13 @@ $ED_NL
    !                      often  will never allow fires.                                   !
    !                  2.  Fire will be triggered with enough biomass and the total soil    !
    !                      water at the top 75 cm falls below a threshold.                  !
-   ! SM_FIRE       -- Threshold to define the relative soil moisture above dry air of the  !
-   !                  top 75cm that will trigger fires.  Used only when include_fire is    !
-   !                  set to 2.                                                            !
+   ! SM_FIRE       -- This is used only when INCLUDE_FIRE = 2.  The sign here matters.     !
+   !                  >= 0. - Minimum relative soil moisture above dry air of the top 75cm !
+   !                          that will prevent fires to happen.                           !
+   !                  <  0. - Minimum mean soil moisture potential in MPa of the top 75 cm !
+   !                          that will prevent fires to happen.  The dry air soil         !
+   !                          potential is defined as -3.1 MPa, so make sure SM_FIRE   is  !
+   !                          greater than this value.                                     !
    !---------------------------------------------------------------------------------------!
    NL%INCLUDE_FIRE    = 2
    NL%SM_FIRE         = 0.11

@@ -392,9 +392,9 @@ module ed_therm_lib
          elseif (topsoil_water <= soil(nsoil)%soilwp) then
             beta   = 0.
          else
-            smterm = (topsoil_water       - soil(nsoil)%soilwp)                            &
-                   / (soil(nsoil)%sfldcap - soil(nsoil)%soilwp)         
-            beta   = (.5 * (1. - cos (smterm * pi1))) ** betapower      
+            smterm = (topsoil_water       - soil(nsoil)%soilcp)                            &
+                   / (soil(nsoil)%sfldcap - soil(nsoil)%soilcp)
+            beta   = (.5 * (1. - cos (smterm * pi1))) ** betapower
          end if
          !---------------------------------------------------------------------------------!
 

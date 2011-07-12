@@ -35,7 +35,6 @@ module growth_balive
       use allometry       , only : area_indices           & ! subroutine
                                  , ed_biomass             ! ! function
       use mortality       , only : mortality_rates        ! ! subroutine
-      use phenology_coms  , only : theta_crit             ! ! intent(in)
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
       type(edtype)     , target     :: cgrid
@@ -89,8 +88,7 @@ module growth_balive
                   !----- Update the elongation factor. ------------------------------------!
                   select case (phenology(ipft))
                   case (4)
-                     cpatch%elongf(ico) = max(0.0, min(1.0, cpatch%paw_avg(ico)            &
-                                                          / theta_crit))
+                     cpatch%elongf(ico) = max(0.0, min(1.0, cpatch%paw_avg(ico)))
                   case default
                      cpatch%elongf(ico) = 1.0
 
@@ -318,7 +316,6 @@ module growth_balive
       use allometry       , only : area_indices           & ! subroutine
                                  , ed_biomass             ! ! function
       use mortality       , only : mortality_rates        ! ! subroutine
-      use phenology_coms  , only : theta_crit             ! ! intent(in)
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
       type(edtype)     , target     :: cgrid
@@ -371,7 +368,7 @@ module growth_balive
                   !----- Update the elongation factor. ------------------------------------!
                   select case (phenology(ipft))
                   case (4)
-                     cpatch%elongf(ico) = max(0.0, min(1.0, cpatch%paw_avg(ico)/theta_crit))
+                     cpatch%elongf(ico) = max(0.0, min(1.0, cpatch%paw_avg(ico)))
                   case default
                      cpatch%elongf(ico) = 1.0
                   end select

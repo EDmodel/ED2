@@ -18,7 +18,7 @@ monthh='07'
 dateh='01'
 timeh='0000'
 
-toldef='0.001'
+toldef='0.01'
 initmode=6
 
 callunpa=${here}'/callunpa.sh'
@@ -520,6 +520,9 @@ do
          ;;
       s77)
          thissfilin=${bioinit}'/k77.'
+         ;;
+      cax)
+         thissfilin=${bioinit}'/cax06.'
          ;;
       *)
          echo ' Polygon: '${polyname}

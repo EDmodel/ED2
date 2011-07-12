@@ -54,8 +54,6 @@ module physiology_coms
                                       !  3 -- Same as 2, except that the compensation point
                                       !       were found as functions of the Michaelis-
                                       !       Mentel constants for CO2 and O2 (like in F80)
-   !----- This flag controls whether to use the exact or small perturbation solution. -----!
-   integer                :: istoma_scheme
    !----- This flag controls whether the plants should be limited by nitrogen. ------------!
    integer                :: n_plant_lim
    !---------------------------------------------------------------------------------------!

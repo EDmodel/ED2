@@ -526,7 +526,6 @@ subroutine update_derived_cohort_props(cpatch,ico,green_leaf_factor,lsl)
                             , ed_biomass          & ! function
                             , area_indices        ! ! subroutine
    use consts_coms   , only : pio4                ! ! intent(in)
-   use phenology_coms, only: theta_crit   ! ! intent(in)
    
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
@@ -549,7 +548,7 @@ subroutine update_derived_cohort_props(cpatch,ico,green_leaf_factor,lsl)
 
       select case (phenology(cpatch%pft(ico)))
       case (4)
-         cpatch%elongf(ico)  = max(0.0,min (1.0, cpatch%paw_avg(ico)/theta_crit))
+         cpatch%elongf(ico)  = max(0.0,min (1.0, cpatch%paw_avg(ico)))
       case default
          cpatch%elongf(ico)  = 1.0
       end select

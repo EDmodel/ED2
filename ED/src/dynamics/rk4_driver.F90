@@ -328,11 +328,13 @@ module rk4_driver
       use ed_misc_coms         , only : fast_diagnostics     & ! intent(in)
                                       , dtlsm                ! ! intent(in)
       use soil_coms            , only : soil8                & ! intent(in)
+                                      , dslz8                & ! intent(in)
                                       , slz8                 ! ! intent(in)
       use grid_coms            , only : nzg                  & ! intent(in)
                                       , nzs                  ! ! intent(in)
       use therm_lib            , only : qwtk                 & ! subroutine
                                       , rslif                ! ! function
+      use phenology_coms       , only : spot_phen            ! ! intent(in)
       use canopy_air_coms      , only : i_blyr_condct        ! ! intent(in)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
@@ -358,6 +360,9 @@ module rk4_driver
       integer                         :: nlsw1
       real(kind=8)                    :: tmp_energy
       real(kind=8)                    :: available_water
+      real(kind=8)                    :: psi_layer
+      real(kind=8)                    :: psi_wilt
+      real(kind=8)                    :: psi_crit
       !----- Local contants ---------------------------------------------------------------!
       real        , parameter         :: tendays_sec=10.*day_sec
       !----- External function ------------------------------------------------------------!
@@ -482,30 +487,48 @@ module rk4_driver
 
 
       !------------------------------------------------------------------------------------!
-      ! paw_avg - 10-day average of plant available water.                                 !
+      ! paw_avg - 10-day average of relative plant available water.  The relative value    !
+      !           depends on whether the user wants to define phenology based on soil      !
+      !           moisture or soil potential.                                              !
       !------------------------------------------------------------------------------------!
-      cpatch => csite%patch(ipa)
-      do ico = 1,cpatch%ncohorts
-         available_water = 0.d0
-         do k = cpatch%krdepth(ico), nzg - 1
-            nsoil = rk4site%ntext_soil(k)
-            available_water = available_water                                              &
-                            + max(0.d0,(initp%soil_water(k) - soil8(nsoil)%soilwp))        &
-                            * (slz8(k+1)-slz8(k))                                          &
-                            / (soil8(nsoil)%slmsts - soil8(nsoil)%soilwp)
+      if (spot_phen) then
+         cpatch => csite%patch(ipa)
+         do ico = 1,cpatch%ncohorts
+            available_water = 0.d0
+            do k = cpatch%krdepth(ico), nzg
+               nsoil            = rk4site%ntext_soil(k)
+               psi_layer        = soil8(nsoil)%slpots                                      &
+                                / (initp%soil_water(k) / soil8(nsoil)%slmsts)              &
+                                ** soil8(nsoil)%slbs
+               psi_wilt         = soil8(nsoil)%slpots                                      &
+                                / (soil8(nsoil)%soilwp / soil8(nsoil)%slmsts)              &
+                                ** soil8(nsoil)%slbs
+               psi_crit         = soil8(nsoil)%slpots                                      &
+                                / (soil8(nsoil)%soilld / soil8(nsoil)%slmsts)              &
+                                ** soil8(nsoil)%slbs
+               available_water  = available_water                                          &
+                                + max(0.d0,(psi_layer - psi_wilt))                         &
+                                * dslz8(k) / (psi_crit - psi_wilt)
+            end do
+            available_water     = - available_water / slz8(cpatch%krdepth(ico))
+            cpatch%paw_avg(ico) = cpatch%paw_avg(ico)*(1.0-sngl(hdid)/tendays_sec)         &
+                                + sngl(available_water)*sngl(hdid)/tendays_sec
          end do
-         nsoil = rk4site%ntext_soil(nzg)
-         available_water = available_water                                                 &
-                         + max(0.d0,(initp%soil_water(nzg) - soil8(nsoil)%soilwp))         &
-                         * (-1.d0*slz8(nzg))                                               &
-                         / (soil8(nsoil)%slmsts -soil8(nsoil)%soilwp) 
-         available_water = available_water / (-1.d0*slz8(cpatch%krdepth(ico)))
-
-
-         cpatch%paw_avg(ico) = cpatch%paw_avg(ico)*(1.0-sngl(hdid)/tendays_sec)            &
-                             + sngl(available_water)*sngl(hdid)/tendays_sec
-      end do
-
+      else
+         cpatch => csite%patch(ipa)
+         do ico = 1,cpatch%ncohorts
+            available_water = 0.d0
+            do k = cpatch%krdepth(ico), nzg
+               nsoil            = rk4site%ntext_soil(k)
+               available_water  = available_water                                          &
+                                + max(0.d0,(initp%soil_water(k)   - soil8(nsoil)%soilwp))  &
+                                * dslz8(k) / (soil8(nsoil)%soilld - soil8(nsoil)%soilwp)
+            end do
+            available_water     = - available_water / slz8(cpatch%krdepth(ico))
+            cpatch%paw_avg(ico) = cpatch%paw_avg(ico)*(1.0-sngl(hdid)/tendays_sec)         &
+                                + sngl(available_water)*sngl(hdid)/tendays_sec
+         end do
+      end if
       
       do k = rk4site%lsl, nzg
          csite%soil_water(k,ipa)   = sngloff(initp%soil_water(k)  ,tiny_offset)

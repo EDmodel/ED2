@@ -386,8 +386,9 @@ subroutine pheninit_balive_bstorage(mzg,csite,ipa,ico,ntext_soil,green_leaf_fact
    use ed_state_vars , only : sitetype            & ! structure
                             , patchtype           ! ! structure
    use soil_coms     , only : soil                & ! intent(in), look-up table
-                            , slz                 ! ! intent(in)
-   use phenology_coms, only : theta_crit          & ! intent(in)
+                            , slz                 & ! intent(in)
+                            , dslz                ! ! intent(in)
+   use phenology_coms, only : spot_phen           & ! intent(in)
                             , elongf_min          ! ! intent(in)
    use pft_coms      , only : phenology           & ! intent(in)
                             , q                   & ! intent(in)
@@ -411,6 +412,9 @@ subroutine pheninit_balive_bstorage(mzg,csite,ipa,ico,ntext_soil,green_leaf_fact
    real                                       :: salloci    ! bleaf:balive ratio
    real                                       :: bleaf_max  ! maximum bleaf
    real                                       :: balive_max ! balive if on-allometry
+   real                                       :: psi_layer  ! Water potential of this layer
+   real                                       :: psi_wilt   ! Wilting point potential
+   real                                       :: psi_crit   ! Critical point potential
    !---------------------------------------------------------------------------------------!
 
 
@@ -418,31 +422,48 @@ subroutine pheninit_balive_bstorage(mzg,csite,ipa,ico,ntext_soil,green_leaf_fact
 
    ipft = cpatch%pft(ico)
 
+   !---------------------------------------------------------------------------------------!
+   !     Here we decide how to compute the mean available water fraction.                  !
+   !---------------------------------------------------------------------------------------!
+   if (spot_phen) then
+      !----- Use soil potential to determine phenology. -----------------------------------!
+      cpatch%paw_avg(ico) = 0.0
+      do k=cpatch%krdepth(ico),mzg
+         nsoil = ntext_soil(k)
+         
+         psi_layer = soil(nsoil)%slpots                                                    &
+                   / (csite%soil_water(k,ipa) / soil(nsoil)%slmsts) ** soil(nsoil)%slbs
+         psi_wilt  = soil(nsoil)%slpots                                                    &
+                   / (soil(nsoil)%soilwp / soil(nsoil)%slmsts) ** soil(nsoil)%slbs
+         psi_crit  = soil(nsoil)%slpots                                                    &
+                   / (soil(nsoil)%soilld / soil(nsoil)%slmsts) ** soil(nsoil)%slbs
 
-   cpatch%paw_avg(ico) = 0.0
+         cpatch%paw_avg(ico) = cpatch%paw_avg(ico)                                         &
+                             + max(0.0, (psi_layer - psi_wilt))                            &
+                             * dslz(k) / (psi_crit  - psi_wilt)
+      end do
+      cpatch%paw_avg(ico) = - cpatch%paw_avg(ico) / slz(cpatch%krdepth(ico))
+   else 
+      !----- Use soil moisture (mass) to determine phenology. -----------------------------!
+      cpatch%paw_avg(ico) = 0.0
+      do k = cpatch%krdepth(ico), mzg
+         nsoil = ntext_soil(k)
+         cpatch%paw_avg(ico) = cpatch%paw_avg(ico)                                         &
+                             + max(0.0, (csite%soil_water(k,ipa) - soil(nsoil)%soilwp))    &
+                                      * dslz(k) / (soil(nsoil)%soilld - soil(nsoil)%soilwp)
+      end do
+      cpatch%paw_avg(ico) = - cpatch%paw_avg(ico) / slz(cpatch%krdepth(ico))
+   end if
 
-   do k = cpatch%krdepth(ico), mzg - 1
-      nsoil = ntext_soil(k)
-      cpatch%paw_avg(ico) = cpatch%paw_avg(ico)                                            &
-                          + max(0.0,(csite%soil_water(k,ipa) - soil(nsoil)%soilwp))        &
-                          * (slz(k+1)-slz(k))                                              &
-                          / (soil(nsoil)%slmsts - soil(nsoil)%soilwp) 
-   end do
-   nsoil = ntext_soil(mzg)
-   cpatch%paw_avg(ico) = cpatch%paw_avg(ico)                                               &
-                       + max(0.0,(csite%soil_water(mzg,ipa) - soil(nsoil)%soilwp))         &
-                       * (-1.0*slz(mzg)) / (soil(nsoil)%slmsts - soil(nsoil)%soilwp)
-   cpatch%paw_avg(ico) = cpatch%paw_avg(ico)/(-1.0*slz(cpatch%krdepth(ico)))
    select case (phenology(ipft))
    case (1)
-      if (cpatch%paw_avg(ico) < theta_crit) then
+      if (cpatch%paw_avg(ico) < 1.0) then
          cpatch%elongf(ico) = 0.0
       else
          cpatch%elongf(ico) = green_leaf_factor(ipft)
       end if
    case (4)
-      cpatch%elongf(ico)  = max(0.0,min(1.0,cpatch%paw_avg(ico)/theta_crit))               &
-                          * green_leaf_factor(ipft)
+      cpatch%elongf(ico)  = max(0.0,min(1.0,cpatch%paw_avg(ico)))
    case default
       cpatch%elongf(ico)  = green_leaf_factor(ipft)
    end select
