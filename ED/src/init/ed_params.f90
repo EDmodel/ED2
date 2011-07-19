@@ -268,27 +268,33 @@ end subroutine init_ed_misc_coms
 !------------------------------------------------------------------------------------------!
 subroutine init_met_params()
 
-   use met_driver_coms, only : rshort_min   & ! intent(out)
-                             , rshort_max   & ! intent(out)
-                             , rlong_min    & ! intent(out)
-                             , rlong_max    & ! intent(out)
-                             , dt_radinterp & ! intent(out)
-                             , atm_tmp_min  & ! intent(out)
-                             , atm_tmp_max  & ! intent(out)
-                             , atm_shv_min  & ! intent(out)
-                             , atm_shv_max  & ! intent(out)
-                             , atm_rhv_min  & ! intent(out)
-                             , atm_rhv_max  & ! intent(out)
-                             , atm_co2_min  & ! intent(out)
-                             , atm_co2_max  & ! intent(out)
-                             , prss_min     & ! intent(out)
-                             , prss_max     & ! intent(out)
-                             , pcpg_min     & ! intent(out)
-                             , pcpg_max     & ! intent(out)
-                             , vels_min     & ! intent(out)
-                             , vels_max     & ! intent(out)
-                             , geoht_min    & ! intent(out)
-                             , geoht_max    ! ! intent(out)
+   use met_driver_coms, only : rshort_min      & ! intent(out)
+                             , rshort_max      & ! intent(out)
+                             , rlong_min       & ! intent(out)
+                             , rlong_max       & ! intent(out)
+                             , dt_radinterp    & ! intent(out)
+                             , atm_tmp_min     & ! intent(out)
+                             , atm_tmp_max     & ! intent(out)
+                             , atm_shv_min     & ! intent(out)
+                             , atm_shv_max     & ! intent(out)
+                             , atm_rhv_min     & ! intent(out)
+                             , atm_rhv_max     & ! intent(out)
+                             , atm_co2_min     & ! intent(out)
+                             , atm_co2_max     & ! intent(out)
+                             , prss_min        & ! intent(out)
+                             , prss_max        & ! intent(out)
+                             , pcpg_min        & ! intent(out)
+                             , pcpg_max        & ! intent(out)
+                             , vels_min        & ! intent(out)
+                             , vels_max        & ! intent(out)
+                             , geoht_min       & ! intent(out)
+                             , geoht_max       & ! intent(out)
+                             , print_radinterp & ! intent(out)
+                             , vbdsf_file      & ! intent(out)
+                             , vddsf_file      & ! intent(out)
+                             , nbdsf_file      & ! intent(out)
+                             , nddsf_file      ! ! intent(out)
+
 
    !----- Minimum and maximum acceptable shortwave radiation [W/m²]. ----------------------!
    rshort_min  = 0.
@@ -340,6 +346,16 @@ subroutine init_met_params()
    dt_radinterp = 30.0    ! Value in seconds.
    !---------------------------------------------------------------------------------------!
 
+
+   !---------------------------------------------------------------------------------------!
+   !   These variables control the detailed interpolation output (for debugging only).     !
+   !---------------------------------------------------------------------------------------!
+   print_radinterp = .false.
+   vbdsf_file      = 'visible_beam.txt'
+   vddsf_file      = 'visible_diff.txt'
+   nbdsf_file      = 'near_infrared_beam.txt'
+   nddsf_file      = 'near_infrared_diff.txt'
+   !---------------------------------------------------------------------------------------!
 
    return
 end subroutine init_met_params
@@ -484,7 +500,7 @@ subroutine init_can_rad_params()
    leaf_reflect_nir(12:13) = 5.77d-1
    leaf_reflect_nir(14:15) = 5.80d-1
    leaf_reflect_nir(16)    = 6.30d-1
-   leaf_reflect_nir(17)    = 4.60d-1
+   leaf_reflect_nir(17)    = 5.77d-1
    !---------------------------------------------------------------------------------------!
 
 
@@ -538,7 +554,7 @@ subroutine init_can_rad_params()
    leaf_trans_nir(12:13) = 2.48d-1
    leaf_trans_nir(14:15) = 2.48d-1
    leaf_trans_nir(   16) = 2.48d-1
-   leaf_trans_nir(   17) = 1.80d-1
+   leaf_trans_nir(   17) = 2.48d-1
    !---------------------------------------------------------------------------------------!
 
 
@@ -607,6 +623,7 @@ subroutine init_can_rad_params()
    !---------------------------------------------------------------------------------------!
    !      Emissivity.                                                                      !
    !---------------------------------------------------------------------------------------!
+   !----- Leaves. -------------------------------------------------------------------------!
    leaf_emis(1)     = 9.60d-1
    leaf_emis(2:4)   = 9.50d-1
    leaf_emis(5)     = 9.60d-1
@@ -615,6 +632,7 @@ subroutine init_can_rad_params()
    leaf_emis(12:15) = 9.60d-1
    leaf_emis(16)    = 9.60d-1
    leaf_emis(17)    = 9.70d-1
+   !----- Branches. -----------------------------------------------------------------------!
    wood_emis(1)     = 9.60d-1
    wood_emis(2:4)   = 9.00d-1
    wood_emis(5)     = 9.60d-1
@@ -852,9 +870,9 @@ subroutine init_can_air_params()
    !      Parameters for surface layer models.                                             !
    !---------------------------------------------------------------------------------------!
    !----- This is the minimum wind speed for boundary layer conductivity. -----------------!
-   ugbmin    = 0.10
+   ugbmin    = 0.25
    !----- This is the minimum wind scale under stable and unstable conditions. ------------!
-   ubmin     = 0.10
+   ubmin     = 0.65
    !---------------------------------------------------------------------------------------!
 
    !----- Louis (1979) model. -------------------------------------------------------------!
@@ -1235,17 +1253,17 @@ subroutine init_pft_photo_params()
    implicit none
    !---------------------------------------------------------------------------------------!
 
-   D0(1)                     = 0.020  ! 0.010 * d0fact
+   D0(1)                     = 0.025  ! 0.010 * d0fact
    D0(2:4)                   = 0.015  ! 0.010 * d0fact
    D0(5)                     = 0.010
    D0(6:8)                   = 0.010
    D0(9:11)                  = 0.010
    D0(12:13)                 = 0.010
    D0(14:15)                 = 0.010
-   D0(16)                    = 0.020  ! 0.010 * d0fact
+   D0(16)                    = 0.025  ! 0.010 * d0fact
    D0(17)                    = 0.015  ! 0.010 * d0fact
 
-   Vm_low_temp(1)            = 13.0             ! c4 grass
+   Vm_low_temp(1)            = 15.0             ! c4 grass
    Vm_low_temp(2)            =  8.0             ! early tropical
    Vm_low_temp(3)            =  8.0             ! mid tropical
    Vm_low_temp(4)            =  8.0             ! late tropical
@@ -1258,8 +1276,8 @@ subroutine init_pft_photo_params()
    Vm_low_temp(11)           =  4.7137          ! late hardwoods
    Vm_low_temp(12)           =  4.7137          ! c3 pasture
    Vm_low_temp(13)           =  4.7137          ! c3 crop
-   Vm_low_temp(14)           = 13.0             ! c4 pasture
-   Vm_low_temp(15)           = 13.0             ! c4 crop
+   Vm_low_temp(14)           = 15.0             ! c4 pasture
+   Vm_low_temp(15)           = 15.0             ! c4 crop
    Vm_low_temp(16)           =  4.7137          ! subtropical C3 grass
    Vm_low_temp(17)           =  4.7137          ! Araucaria
 
@@ -1295,21 +1313,21 @@ subroutine init_pft_photo_params()
 
 
    !------ Vm0 is the maximum photosynthesis capacity in µmol/m2/s. -----------------------!
-   Vm0(1)                    = 14.583 ! 12.500 * vmfact
-   Vm0(2)                    = 22.500 ! 18.750 * vmfact
-   Vm0(3)                    = 15.000 ! 12.500 * vmfact
-   Vm0(4)                    =  7.500 !  6.250 * vmfact
-   Vm0(5)                    = 18.300
-   Vm0(6)                    = 11.350 ! 15.625 * 0.7264
-   Vm0(7)                    = 11.350 ! 15.625 * 0.7264
-   Vm0(8)                    =  4.540 !  6.250 * 0.7264
-   Vm0(9)                    = 20.387 ! 18.250 * 1.1171
-   Vm0(10)                   = 17.455 ! 15.625 * 1.1171
-   Vm0(11)                   =  6.981 !  6.250 * 1.1171
-   Vm0(12:13)                = 18.300 ! 18.300
-   Vm0(14:15)                = 12.500 ! 12.500 * vmfact
-   Vm0(16)                   = 26.250 ! 21.875 * vmfact
-   Vm0(17)                   = 18.750 ! 14.583 * vmfact
+   Vm0(1)                    = 12.5000 ! 12.500 * vmfact
+   Vm0(2)                    = 24.3750 ! 18.750 * vmfact
+   Vm0(3)                    = 16.2500 ! 12.500 * vmfact
+   Vm0(4)                    =  8.3333 !  6.250 * vmfact
+   Vm0(5)                    = 18.3000
+   Vm0(6)                    = 11.3500 ! 15.625 * 0.7264
+   Vm0(7)                    = 11.3500 ! 15.625 * 0.7264
+   Vm0(8)                    =  4.5400 !  6.250 * 0.7264
+   Vm0(9)                    = 20.3870 ! 18.250 * 1.1171
+   Vm0(10)                   = 17.4550 ! 15.625 * 1.1171
+   Vm0(11)                   =  6.9810 !  6.250 * 1.1171
+   Vm0(12:13)                = 18.3000 ! 18.300
+   Vm0(14:15)                = 16.6667 ! 12.500 * vmfact
+   Vm0(16)                   = 28.4375 ! 21.875 * vmfact
+   Vm0(17)                   = 20.3125 ! 15.625 * vmfact
    !---------------------------------------------------------------------------------------!
 
 
@@ -1320,9 +1338,9 @@ subroutine init_pft_photo_params()
    !---------------------------------------------------------------------------------------!
    vm_hor(1:17)              = 3000.
    !----- Here we distinguish between C3 and C4 photosynthesis as in Collatz et al 91/92. -!
-   vm_q10(1)                 = 2.0
+   vm_q10(1)                 = 2.4
    vm_q10(2:13)              = 2.4
-   vm_q10(14:15)             = 2.0
+   vm_q10(14:15)             = 2.4
    vm_q10(16:17)             = 2.4
    !---------------------------------------------------------------------------------------!
 
@@ -1346,7 +1364,7 @@ subroutine init_pft_photo_params()
    dark_respiration_factor(14)    = 0.036
    dark_respiration_factor(15)    = 0.036
    dark_respiration_factor(16)    = 0.015
-   dark_respiration_factor(17)    = 0.021
+   dark_respiration_factor(17)    = 0.020
    !---------------------------------------------------------------------------------------!
 
 
@@ -1381,7 +1399,7 @@ subroutine init_pft_photo_params()
 
 
    !----- Define the stomatal slope (aka the M factor). -----------------------------------!
-   stomatal_slope(1)         =  5.0
+   stomatal_slope(1)         =  5.2
    stomatal_slope(2)         =  9.0 ! 8.0    * mfact
    stomatal_slope(3)         =  9.0 ! 8.0    * mfact
    stomatal_slope(4)         =  9.0 ! 8.0    * mfact
@@ -1392,10 +1410,10 @@ subroutine init_pft_photo_params()
    stomatal_slope(9)         =  6.3949
    stomatal_slope(10)        =  6.3949
    stomatal_slope(11)        =  6.3949
-   stomatal_slope(12)        =  8.0   
+   stomatal_slope(12)        =  8.0
    stomatal_slope(13)        =  8.0
-   stomatal_slope(14)        =  5.0
-   stomatal_slope(15)        =  5.0
+   stomatal_slope(14)        =  5.2
+   stomatal_slope(15)        =  5.2
    stomatal_slope(16)        =  9.0
    stomatal_slope(17)        =  6.4
  
@@ -2813,7 +2831,8 @@ subroutine init_pft_derived_params()
       !     The minimum LAI is the LAI of a plant at the minimum cohort size that is at    !
       ! approaching the minimum elongation factor that supports leaves.                                !
       !------------------------------------------------------------------------------------!
-      lai_min(ipft) = min(1.e-4,min_plant_dens * sla(ipft) * bleaf_min * (5. * elongf_min))
+      lai_min(ipft) = 1.e-4
+      !lai_min(ipft) = min(1.e-4,min_plant_dens * sla(ipft) * bleaf_min * (5. * elongf_min))
       !------------------------------------------------------------------------------------!
 
 
@@ -3712,7 +3731,7 @@ subroutine init_phen_coms
 
  
    retained_carbon_fraction = 0.5
-   elongf_min               = 0.02
+   elongf_min               = 0.05
    spot_phen                = thetacrit < 0.
    dl_tr                    = 655.0
    st_tr1                   = 284.3
@@ -3965,7 +3984,7 @@ subroutine init_rk4_params()
    rk4min_can_shv    =  1.0000d-8 ! Minimum canopy    specific humidity         [kg/kg_air]
    rk4max_can_shv    =  4.6000d-2 ! Maximum canopy    specific humidity         [kg/kg_air]
    rk4max_can_rhv    =  1.1000d0  ! Maximum canopy    relative humidity (**)    [      ---]
-   rk4min_can_co2    =  6.0000d1  ! Minimum canopy    CO2 mixing ratio          [ µmol/mol]
+   rk4min_can_co2    =  3.0000d1  ! Minimum canopy    CO2 mixing ratio          [ µmol/mol]
    rk4max_can_co2    =  5.0000d4  ! Maximum canopy    CO2 mixing ratio          [ µmol/mol]
    rk4min_soil_temp  =  1.8400d2  ! Minimum soil      temperature               [        K]
    rk4max_soil_temp  =  3.5100d2  ! Maximum soil      temperature               [        K]

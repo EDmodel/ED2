@@ -1010,12 +1010,14 @@ real function mean_daysecz(plon,plat,whena,dt,tmax)
    real(kind=4) , intent(in) :: dt
    real(kind=4) , intent(in) :: tmax
    !------ Local variables. ---------------------------------------------------------------!
-   type(simtime)             :: now      ! Current time
-   integer                   :: is       ! Step counter
-   integer                   :: nsteps   ! Number of steps to perform the average
-   real                      :: dtfit    ! Delta-t that nicely fits within tmax
-   real                      :: dtnow    ! Delta-t for this time
-   real                      :: cosz     ! Declination
+   type(simtime)             :: now          ! Current time
+   integer                   :: is           ! Step counter
+   integer                   :: nsteps       ! Number of steps to perform the average
+   real                      :: dtfit        ! Delta-t that nicely fits within tmax
+   real                      :: dtnow        ! Delta-t for this time
+   real                      :: cosz         ! Declination
+   real                      :: daytot       ! Total time that was daytime
+   real                      :: mean_daycosz ! Average cosine of zenith angle
    !----- External functions. -------------------------------------------------------------!
    real(kind=4), external    :: ed_zen   ! Function to find day of year ("Julian" day)
    !---------------------------------------------------------------------------------------!
@@ -1044,7 +1046,8 @@ real function mean_daysecz(plon,plat,whena,dt,tmax)
       dtfit  = tmax / real(nsteps)
       !------------------------------------------------------------------------------------!
 
-      mean_daysecz = 0.0
+      mean_daycosz = 0.0
+      daytot       = 0.0
       do is=1,nsteps
          !----- Get the current time. -----------------------------------------------------!
          now   = whena
@@ -1056,7 +1059,8 @@ real function mean_daysecz(plon,plat,whena,dt,tmax)
 
          !----- Add to the integral only if it this value is valid. -----------------------!
          if (cosz > cosz_min) then
-            mean_daysecz = mean_daysecz + dtfit / cosz 
+            mean_daycosz = mean_daycosz + dtfit * cosz 
+            daytot       = daytot       + dtfit
          end if
          !---------------------------------------------------------------------------------!
       end do
@@ -1067,7 +1071,12 @@ real function mean_daysecz(plon,plat,whena,dt,tmax)
       !------------------------------------------------------------------------------------!
       !     Find the normalisation factor.                                                 !
       !------------------------------------------------------------------------------------!
-      mean_daysecz = mean_daysecz / tmax
+      if (daytot > 0.0 .and. mean_daycosz > 0.0) then
+         mean_daycosz = mean_daycosz / daytot
+         mean_daysecz = 1.0 / mean_daycosz
+      else
+         mean_daysecz = 0.0
+      end if
       !------------------------------------------------------------------------------------!
    end if
 

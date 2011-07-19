@@ -382,7 +382,7 @@ subroutine harr_swrad(nz,alb,amu0,time,mynum)
 
       case default
          !----- Not going to happen -------------------------------------------------------!
-         write(unit=*,fmt='(a)') '╗╗╗ ERROR ллллллллллллллллллллллллллллллллллллллл'
+         write(unit=*,fmt='(a)') '=== ERROR ===================================='
          write(unit=*,fmt='(a)') 'Three is the maximum amount of overlapping'
          write(unit=*,fmt='(a)') 'gasses allowed: if you really want to have '
          write(unit=*,fmt='(a)') 'more gasses overlap, they better have few'

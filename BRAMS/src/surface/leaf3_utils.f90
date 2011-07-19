@@ -20,10 +20,10 @@
 ! OD95. ONCLEY, S.P.; DUDHIA, J.; Evaluation of surface fluxes from MM5 using observa-     !
 !           tions.  Mon. Wea. Rev., 123, 3344-3357, 1995.                                  !
 !------------------------------------------------------------------------------------------!
-subroutine leaf_stars(theta_atm,theiv_atm,shv_atm,rvap_atm,co2_atm                         &
-                     ,theta_can,theiv_can,shv_can,rvap_can,co2_can                         &
-                     ,zref,dheight,uref,dtll,rough,ustar,tstar,estar,qstar,rstar,cstar     &
-                     ,zeta,rib,r_aer)
+subroutine leaf3_stars(theta_atm,theiv_atm,shv_atm,rvap_atm,co2_atm                        &
+                      ,theta_can,theiv_can,shv_can,rvap_can,co2_can                        &
+                      ,zref,dheight,uref,dtll,rough,ustar,tstar,estar,qstar,rstar,cstar    &
+                      ,zeta,rib,r_aer)
    use mem_leaf  , only : istar      ! ! intent(in)
    use rconstants, only : grav       & ! intent(in)
                         , vonk       & ! intent(in)
@@ -268,7 +268,7 @@ subroutine leaf_stars(theta_atm,theiv_atm,shv_atm,rvap_atm,co2_atm              
 
 
    return
-end subroutine leaf_stars
+end subroutine leaf3_stars
 !==========================================================================================!
 !==========================================================================================!
 
@@ -282,8 +282,8 @@ end subroutine leaf_stars
 !    This routine computes the turbulent fluxes of momentum, heat and moisture from the    !
 ! surface layer using the  Manton-Cotton algebraic surface layer equations.                !
 !------------------------------------------------------------------------------------------!
-subroutine sfclmcv(ustar,tstar,rstar,cstar,zeta,vels_pat,ups,vps,patch_area                &
-                  ,sflux_u,sflux_v,sflux_w,sflux_t,sflux_r,sflux_c)
+subroutine leaf3_sfclmcv(ustar,tstar,rstar,cstar,zeta,vels_pat,ups,vps,patch_area          &
+                        ,sflux_u,sflux_v,sflux_w,sflux_t,sflux_r,sflux_c)
    use rconstants
    use leaf_coms     , only : g_urban ! ! intent(in)
    use teb_spm_start , only : teb_spm ! ! intent(in)
@@ -326,7 +326,7 @@ subroutine sfclmcv(ustar,tstar,rstar,cstar,zeta,vels_pat,ups,vps,patch_area     
                      * ustar * vtscr
 
    return
-end subroutine sfclmcv
+end subroutine leaf3_sfclmcv
 !==========================================================================================!
 !==========================================================================================!
 
@@ -359,9 +359,9 @@ end subroutine sfclmcv
 !                                                                                          !
 ! Lee, T. J., R. A. Pielke, 1993: Corrigendum. J. Appl. Meteorol., 32, 580-580. (LP93)     !
 !------------------------------------------------------------------------------------------!
-subroutine leaf_grndvap(topsoil_energy,topsoil_water,topsoil_text,sfcwater_energy_int      &
-                       ,sfcwater_nlev,can_rvap,can_prss,ground_rsat,ground_rvap            &
-                       ,ground_temp,ground_fliq)
+subroutine leaf3_grndvap(topsoil_energy,topsoil_water,topsoil_text,sfcwater_energy_int     &
+                        ,sfcwater_nlev,can_rvap,can_prss,ground_rsat,ground_rvap           &
+                        ,ground_temp,ground_fliq)
 
    use leaf_coms  , only : slcpd       & ! intent(in)
                          , slpots      & ! intent(in)
@@ -514,7 +514,7 @@ subroutine leaf_grndvap(topsoil_energy,topsoil_water,topsoil_text,sfcwater_energ
    end select
 
    return
-end subroutine leaf_grndvap
+end subroutine leaf3_grndvap
 !==========================================================================================!
 !==========================================================================================!
 
@@ -1072,8 +1072,9 @@ end subroutine vegndvi
 ! through each layer based on mass per square meter.  algs is the resultant albedo from    !
 ! snow plus ground.                                                                        !
 !------------------------------------------------------------------------------------------!
-subroutine sfcrad(mzg,mzs,ip,soil_water,soil_text,sfcwater_depth,patch_area,veg_fracarea   &
-                 ,leaf_class,veg_albedo,sfcwater_nlev,rshort,rlong,albedt,rlongup,cosz     )
+subroutine leaf3_sfcrad(mzg,mzs,ip,soil_water,soil_text,sfcwater_depth,patch_area          &
+                       ,veg_fracarea,leaf_class,veg_albedo,sfcwater_nlev,rshort,rlong      &
+                       ,albedt,rlongup,cosz)
    use mem_leaf
    use leaf_coms
    use rconstants
@@ -1295,7 +1296,7 @@ subroutine sfcrad(mzg,mzs,ip,soil_water,soil_text,sfcwater_depth,patch_area,veg_
    end if
 
    return
-end subroutine sfcrad
+end subroutine leaf3_sfcrad
 !==========================================================================================!
 !==========================================================================================!
 
@@ -1309,7 +1310,7 @@ end subroutine sfcrad
 !    This function determines the wind at a given height, given that the stars are al-     !
 ! ready known, as well as the Richardson number and the zetas.                             !
 !------------------------------------------------------------------------------------------!
-real(kind=4) function leaf_reduced_wind(ustar,zeta,rib,zref,dheight,height,rough)
+real(kind=4) function leaf3_reduced_wind(ustar,zeta,rib,zref,dheight,height,rough)
    use rconstants     , only : vonk     ! ! intent(in)
    use leaf_coms      , only : bl79     & ! intent(in)
                              , csm      & ! intent(in)
@@ -1383,7 +1384,7 @@ real(kind=4) function leaf_reduced_wind(ustar,zeta,rib,zref,dheight,height,rough
       end if
       
       !----- Find the wind. ---------------------------------------------------------------!
-      leaf_reduced_wind = (ustar/vonk) * (lnhoz0/sqrt(fm))
+      leaf3_reduced_wind = (ustar/vonk) * (lnhoz0/sqrt(fm))
 
    case default  !----- Other methods. ----------------------------------------------------!
 
@@ -1392,7 +1393,8 @@ real(kind=4) function leaf_reduced_wind(ustar,zeta,rib,zref,dheight,height,rough
       zeta0 = zeta * rough            / (zref-dheight)
       !------------------------------------------------------------------------------------!
 
-      leaf_reduced_wind = (ustar/vonk) * (lnhoz0 - psim(zetah,stable) + psim(zeta0,stable))
+      leaf3_reduced_wind = (ustar/vonk)                                                    &
+                         * (lnhoz0 - psim(zetah,stable) + psim(zeta0,stable))
 
    end select
    !---------------------------------------------------------------------------------------!
@@ -1400,12 +1402,12 @@ real(kind=4) function leaf_reduced_wind(ustar,zeta,rib,zref,dheight,height,rough
 
 
    !----- Impose the wind to be more than the minimum. ------------------------------------!
-   leaf_reduced_wind = max(leaf_reduced_wind, ugbmin)
+   leaf3_reduced_wind = max(leaf3_reduced_wind, ugbmin)
    !---------------------------------------------------------------------------------------!
 
 
    return
-end function leaf_reduced_wind
+end function leaf3_reduced_wind
 !==========================================================================================!
 !==========================================================================================!
 
@@ -1429,7 +1431,7 @@ end function leaf_reduced_wind
 ! - gbh is in J/(K m2 s), and                                                              !
 ! - gbw is in kg_H2O/m2/s.                                                                 !
 !------------------------------------------------------------------------------------------!
-subroutine leaf_aerodynamic_conductances(iveg,veg_wind,veg_temp,can_temp,can_shv,can_rhos)
+subroutine leaf3_aerodynamic_conductances(iveg,veg_wind,veg_temp,can_temp,can_shv,can_rhos)
    use leaf_coms , only : leaf_width & ! intent(in)
                         , aflat_turb & ! intent(in)
                         , aflat_lami & ! intent(in)
@@ -1518,7 +1520,7 @@ subroutine leaf_aerodynamic_conductances(iveg,veg_wind,veg_temp,can_temp,can_shv
    !---------------------------------------------------------------------------------------!
 
    return
-end subroutine leaf_aerodynamic_conductances
+end subroutine leaf3_aerodynamic_conductances
 !==========================================================================================!
 !==========================================================================================!
 
@@ -1532,7 +1534,7 @@ end subroutine leaf_aerodynamic_conductances
 !      This sub-routine copies some atmospheric fields from the 2-D arrays to the common   !
 ! module variable.                                                                         !
 !------------------------------------------------------------------------------------------!
-subroutine leaf_atmo1d(m2,m3,i,j,thp,theta,rv,rtp,co2p,up,vp,pitot,dens,height,pcpg,qpcpg  &
+subroutine leaf3_atmo1d(m2,m3,i,j,thp,theta,rv,rtp,co2p,up,vp,pitot,dens,height,pcpg,qpcpg &
                       ,dpcpg)
    use leaf_coms , only : ubmin     & ! intent(in)
                         , atm_up    & ! intent(out)
@@ -1617,7 +1619,7 @@ subroutine leaf_atmo1d(m2,m3,i,j,thp,theta,rv,rtp,co2p,up,vp,pitot,dens,height,p
    !---------------------------------------------------------------------------------------!
 
    return
-end subroutine leaf_atmo1d
+end subroutine leaf3_atmo1d
 !==========================================================================================!
 !==========================================================================================!
 
@@ -1862,8 +1864,8 @@ end subroutine normal_accfluxes
 !==========================================================================================!
 !     This sub-routine decides whether this patch should be solved or not.                 !
 !------------------------------------------------------------------------------------------!
-subroutine leaf_solve_veg(ip,mzs,leaf_class,veg_height,patch_area,veg_fracarea,veg_tai     &
-                         ,sfcwater_nlev,sfcwater_depth,initial)
+subroutine leaf3_solve_veg(ip,mzs,leaf_class,veg_height,patch_area,veg_fracarea,veg_tai    &
+                          ,sfcwater_nlev,sfcwater_depth,initial)
    use leaf_coms, only : min_patch_area  & ! intent(in)
                        , tai_max         & ! intent(in)
                        , tai_min         & ! intent(in)
@@ -1928,6 +1930,6 @@ subroutine leaf_solve_veg(ip,mzs,leaf_class,veg_height,patch_area,veg_fracarea,v
    !---------------------------------------------------------------------------------------!
 
    return
-end subroutine leaf_solve_veg
+end subroutine leaf3_solve_veg
 !==========================================================================================!
 !==========================================================================================!

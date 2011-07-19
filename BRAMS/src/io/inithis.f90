@@ -486,17 +486,17 @@ subroutine sfcinit_hstart()
                end if
 
                !----- Find the surface saturation mixing ratio. ---------------------------!
-               call leaf_grndvap(leaf_g(ifm)%soil_energy           (nzg,i,j,ipat)          &
-                                ,leaf_g(ifm)%soil_water            (nzg,i,j,ipat)          &
-                                ,leaf_g(ifm)%soil_text             (nzg,i,j,ipat)          &
-                                ,leaf_g(ifm)%sfcwater_energy       (nzs,i,j,ipat)          &
-                                ,leaf_g(ifm)%sfcwater_nlev             (i,j,ipat)          &
-                                ,leaf_g(ifm)%can_rvap                  (i,j,ipat)          &
-                                ,leaf_g(ifm)%can_prss                  (i,j,ipat)          &
-                                ,leaf_g(ifm)%ground_rsat               (i,j,ipat)          &
-                                ,leaf_g(ifm)%ground_rvap               (i,j,ipat)          &
-                                ,leaf_g(ifm)%ground_temp               (i,j,ipat)          &
-                                ,leaf_g(ifm)%ground_fliq               (i,j,ipat)          )
+               call leaf3_grndvap(leaf_g(ifm)%soil_energy           (nzg,i,j,ipat)         &
+                                 ,leaf_g(ifm)%soil_water            (nzg,i,j,ipat)         &
+                                 ,leaf_g(ifm)%soil_text             (nzg,i,j,ipat)         &
+                                 ,leaf_g(ifm)%sfcwater_energy       (nzs,i,j,ipat)         &
+                                 ,leaf_g(ifm)%sfcwater_nlev             (i,j,ipat)         &
+                                 ,leaf_g(ifm)%can_rvap                  (i,j,ipat)         &
+                                 ,leaf_g(ifm)%can_prss                  (i,j,ipat)         &
+                                 ,leaf_g(ifm)%ground_rsat               (i,j,ipat)         &
+                                 ,leaf_g(ifm)%ground_rvap               (i,j,ipat)         &
+                                 ,leaf_g(ifm)%ground_temp               (i,j,ipat)         &
+                                 ,leaf_g(ifm)%ground_fliq               (i,j,ipat)         )
 
             end do patchloop
          end do iloop

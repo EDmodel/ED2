@@ -141,7 +141,7 @@ end subroutine leaf3_ocean
 !      This routine will find the internal energy of the ocean based on the previous and   !
 ! future sea surface temperature.                                                          !
 !------------------------------------------------------------------------------------------!
-subroutine leaf_ocean_diag(ifm,mzg,pastsst,futuresst,soil_energy)
+subroutine leaf3_ocean_diag(ifm,mzg,pastsst,futuresst,soil_energy)
    use rconstants, only : cliq         & ! intent(in)
                         , tsupercool   ! ! intent(in)
    use mem_grid  , only : time         ! ! intent(in)
@@ -189,6 +189,6 @@ subroutine leaf_ocean_diag(ifm,mzg,pastsst,futuresst,soil_energy)
    !---------------------------------------------------------------------------------------!
 
    return
-end subroutine leaf_ocean_diag
+end subroutine leaf3_ocean_diag
 !==========================================================================================!
 !==========================================================================================!

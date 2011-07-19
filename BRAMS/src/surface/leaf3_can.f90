@@ -4,13 +4,13 @@
 ! carbon exchanges with the canopy air space and vegetation.  This solves only the         !
 ! prognostic variables, the diagnostic ones will be updated in a separate sub-routine.     !
 !------------------------------------------------------------------------------------------!
-subroutine leaf_canopy(mzg,mzs,ksn,soil_energy,soil_water,soil_text,sfcwater_mass          &
-                      ,ustar,tstar,rstar,cstar,zeta,ribulk,soil_rough,veg_rough            &
-                      ,patch_rough,veg_height,veg_displace,veg_lai,veg_tai,veg_water       &
-                      ,veg_hcap,veg_energy,leaf_class,veg_fracarea,stom_condct,can_prss    &
-                      ,can_rvap,can_co2,sensible_gc,sensible_vc,evap_gc,evap_vc            &
-                      ,transp,gpp,plresp,resphet,ground_rsat,ground_rvap,ground_temp       &
-                      ,ground_fliq,available_water,rshort)
+subroutine leaf3_canopy(mzg,mzs,ksn,soil_energy,soil_water,soil_text,sfcwater_mass         &
+                       ,ustar,tstar,rstar,cstar,zeta,ribulk,soil_rough,veg_rough           &
+                       ,patch_rough,veg_height,veg_displace,veg_lai,veg_tai,veg_water      &
+                       ,veg_hcap,veg_energy,leaf_class,veg_fracarea,stom_condct,can_prss   &
+                       ,can_rvap,can_co2,sensible_gc,sensible_vc,evap_gc,evap_vc           &
+                       ,transp,gpp,plresp,resphet,ground_rsat,ground_rvap,ground_temp      &
+                       ,ground_fliq,available_water,rshort)
    use leaf_coms
    use rconstants
    use therm_lib , only : eslif          & ! function
@@ -116,7 +116,7 @@ subroutine leaf_canopy(mzg,mzs,ksn,soil_energy,soil_water,soil_text,sfcwater_mas
    character(len=3)      , parameter   :: fmtc='(a)'
    character(len=9)      , parameter   :: fmtl='(a,1x,l1)'
    !----- External functions. -------------------------------------------------------------!
-   real                  , external    :: leaf_reduced_wind
+   real                  , external    :: leaf3_reduced_wind
    !---------------------------------------------------------------------------------------!
 
 
@@ -304,7 +304,7 @@ subroutine leaf_canopy(mzg,mzs,ksn,soil_energy,soil_water,soil_text,sfcwater_mas
       !------------------------------------------------------------------------------------!
       !     Find the wind speed at the top of the canopy, using the similarity theory.     !
       !------------------------------------------------------------------------------------!
-      veg_wind = leaf_reduced_wind(ustar,zeta,ribulk,geoht,veg_displace,veg_height         &
+      veg_wind = leaf3_reduced_wind(ustar,zeta,ribulk,geoht,veg_displace,veg_height        &
                                   ,patch_rough)
 
 
@@ -312,7 +312,7 @@ subroutine leaf_canopy(mzg,mzs,ksn,soil_energy,soil_water,soil_text,sfcwater_mas
       !    Find the aerodynamic conductances for heat and water at the leaf boundary       !
       ! layer.                                                                             !
       !------------------------------------------------------------------------------------!
-      call leaf_aerodynamic_conductances(nveg,veg_wind,veg_temp,can_temp,can_rvap,can_rhos)
+      call leaf3_aerodynamic_conductances(nveg,veg_wind,veg_temp,can_temp,can_rvap,can_rhos)
       !------------------------------------------------------------------------------------!
 
 
@@ -549,7 +549,7 @@ subroutine leaf_canopy(mzg,mzs,ksn,soil_energy,soil_water,soil_text,sfcwater_mas
    end if
 
    return
-end subroutine leaf_canopy
+end subroutine leaf3_canopy
 !==========================================================================================!
 !==========================================================================================!
 
@@ -563,7 +563,7 @@ end subroutine leaf_canopy
 !      This sub-routine initialises a couple of canopy air space variables for a given     !
 ! patch, before the time step iteration loop.                                              !
 !------------------------------------------------------------------------------------------!
-subroutine leaf_can_diag(ip,can_theta,can_theiv,can_rvap,leaf_class,can_prss,initial)
+subroutine leaf3_can_diag(ip,can_theta,can_theiv,can_rvap,leaf_class,can_prss,initial)
    use leaf_coms , only : atm_prss      & ! intent(in)
                         , atm_theta     & ! intent(in)
                         , atm_shv       & ! intent(in)
@@ -699,7 +699,7 @@ subroutine leaf_can_diag(ip,can_theta,can_theiv,can_rvap,leaf_class,can_prss,ini
 
 
    return
-end subroutine leaf_can_diag
+end subroutine leaf3_can_diag
 !==========================================================================================!
 !==========================================================================================!
 
@@ -713,7 +713,7 @@ end subroutine leaf_can_diag
 !      This sub-routine initialises a couple of leaf-level variables for a given patch,    !
 ! before the time step iteration loop.                                                     !
 !------------------------------------------------------------------------------------------!
-subroutine leaf_veg_diag(veg_energy,veg_water,veg_hcap)
+subroutine leaf3_veg_diag(veg_energy,veg_water,veg_hcap)
    use leaf_coms , only : can_temp         & ! intent(in)
                         , min_patch_area   & ! intent(in)
                         , veg_temp         & ! intent(out)
@@ -752,6 +752,6 @@ subroutine leaf_veg_diag(veg_energy,veg_water,veg_hcap)
    !---------------------------------------------------------------------------------------!
 
    return
-end subroutine leaf_veg_diag
+end subroutine leaf3_veg_diag
 !==========================================================================================!
 !==========================================================================================!

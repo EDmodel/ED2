@@ -897,12 +897,12 @@ subroutine sfcinit_nofile(n1,n2,n3,mzg,mzs,npat,ifm,theta,pi0,pp,rv,co2p,seatp,s
                             , veg_albedo      (i,j,ipat) , veg_ndvip          (i,j,ipat)   &
                             , veg_ndvic       (i,j,ipat) , veg_ndvif          (i,j,ipat)   )
 
-            call leaf_grndvap( soil_energy(mzg,i,j,ipat) , soil_water     (mzg,i,j,ipat)   &
-                             , soil_text  (mzg,i,j,ipat) , sfcwater_energy(  1,i,j,ipat)   &
-                             , sfcwater_nlev  (i,j,ipat) , can_rvap           (i,j,ipat)   &
-                             , can_prss       (i,j,ipat) , ground_rsat        (i,j,ipat)   &
-                             , ground_rvap    (i,j,ipat) , ground_temp        (i,j,ipat)   &
-                             , ground_fliq    (i,j,ipat) )
+            call leaf3_grndvap( soil_energy(mzg,i,j,ipat) , soil_water     (mzg,i,j,ipat)  &
+                              , soil_text  (mzg,i,j,ipat) , sfcwater_energy(  1,i,j,ipat)  &
+                              , sfcwater_nlev  (i,j,ipat) , can_rvap           (i,j,ipat)  &
+                              , can_prss       (i,j,ipat) , ground_rsat        (i,j,ipat)  &
+                              , ground_rvap    (i,j,ipat) , ground_temp        (i,j,ipat)  &
+                              , ground_fliq    (i,j,ipat) )
          end do patchloop1
 
          !---------------------------------------------------------------------------------!
@@ -915,43 +915,43 @@ subroutine sfcinit_nofile(n1,n2,n3,mzg,mzs,npat,ifm,theta,pi0,pp,rv,co2p,seatp,s
             ! ables.                                                                       !
             !------------------------------------------------------------------------------!
             if (ipat == 1) then
-               call leaf_ocean_diag(ifm,mzg,seatp (i,j),seatf (i,j),soil_energy(:,i,j,1))
+               call leaf3_ocean_diag(ifm,mzg,seatp (i,j),seatf (i,j),soil_energy(:,i,j,1))
             end if
-            call leaf_soilsfcw_diag(ipat,mzg,mzs,soil_energy       (:,i,j,ipat)           &
-                                                ,soil_water        (:,i,j,ipat)           &
-                                                ,soil_text         (:,i,j,ipat)           &
-                                                ,sfcwater_nlev     (  i,j,ipat)           &
-                                                ,sfcwater_energy   (:,i,j,ipat)           &
-                                                ,sfcwater_mass     (:,i,j,ipat)           &
-                                                ,sfcwater_depth    (:,i,j,ipat)           &
-                                              ,.true.                                      )
+            call leaf3_soilsfcw_diag(ipat,mzg,mzs,soil_energy       (:,i,j,ipat)           &
+                                                 ,soil_water        (:,i,j,ipat)           &
+                                                 ,soil_text         (:,i,j,ipat)           &
+                                                 ,sfcwater_nlev     (  i,j,ipat)           &
+                                                 ,sfcwater_energy   (:,i,j,ipat)           &
+                                                 ,sfcwater_mass     (:,i,j,ipat)           &
+                                                 ,sfcwater_depth    (:,i,j,ipat)           &
+                                                 ,.true.                                   )
 
-            call leaf_solve_veg(ipat,mzs,leaf_class                  (i,j,ipat)            &
-                                        ,veg_height                (  i,j,ipat)            &
-                                        ,patch_area                  (i,j,ipat)            &
-                                        ,veg_fracarea                (i,j,ipat)            &
-                                        ,veg_tai                   (  i,j,ipat)            &
-                                        ,sfcwater_nlev               (i,j,ipat)            &
-                                        ,sfcwater_depth            (:,i,j,ipat)            &
-                                        ,.true.                                            )
+            call leaf3_solve_veg(ipat,mzs,leaf_class                  (i,j,ipat)           &
+                                         ,veg_height                (  i,j,ipat)           &
+                                         ,patch_area                  (i,j,ipat)           &
+                                         ,veg_fracarea                (i,j,ipat)           &
+                                         ,veg_tai                   (  i,j,ipat)           &
+                                         ,sfcwater_nlev               (i,j,ipat)           &
+                                         ,sfcwater_depth            (:,i,j,ipat)           &
+                                         ,.true.                                           )
 
-            call leaf_can_diag(ipat,can_theta        (i,j,ipat)                            &
-                                   ,can_theiv        (i,j,ipat)                            &
-                                   ,can_rvap         (i,j,ipat)                            &
-                                   ,leaf_class       (i,j,ipat)                            &
-                                   ,can_prss         (i,j,ipat)                            &
-                                   ,.true.                                                 )
+            call leaf3_can_diag(ipat,can_theta        (i,j,ipat)                           &
+                                    ,can_theiv        (i,j,ipat)                           &
+                                    ,can_rvap         (i,j,ipat)                           &
+                                    ,leaf_class       (i,j,ipat)                           &
+                                    ,can_prss         (i,j,ipat)                           &
+                                    ,.true.                                                )
 
-            call leaf_veg_diag(veg_energy(i,j,ipat),veg_water(i,j,ipat),veg_hcap(i,j,ipat))
+            call leaf3_veg_diag(veg_energy(i,j,ipat),veg_water(i,j,ipat),veg_hcap(i,j,ipat))
 
-            call sfcrad( mzg, mzs, ipat                                                    &
-                                 , soil_water    (:,i,j,ipat) , soil_text     (:,i,j,ipat) &
-                                 , sfcwater_depth(:,i,j,ipat) , patch_area    (  i,j,ipat) &
-                                 , veg_fracarea  (  i,j,ipat) , leaf_class    (  i,j,ipat) &
-                                 , veg_albedo    (  i,j,ipat) , sfcwater_nlev (  i,j,ipat) &
-                                 , 0.                         , 0.                         &
-                                 , albedt        (  i,j     ) , rlongup       (  i,j     ) &
-                                 , cosz          (  i,j     ) )
+            call leaf3_sfcrad( mzg, mzs, ipat                                              &
+                             , soil_water    (:,i,j,ipat) , soil_text     (:,i,j,ipat)     &
+                             , sfcwater_depth(:,i,j,ipat) , patch_area    (  i,j,ipat)     &
+                             , veg_fracarea  (  i,j,ipat) , leaf_class    (  i,j,ipat)     &
+                             , veg_albedo    (  i,j,ipat) , sfcwater_nlev (  i,j,ipat)     &
+                             , 0.                         , 0.                             &
+                             , albedt        (  i,j     ) , rlongup       (  i,j     )     &
+                             , cosz          (  i,j     ) )
          end do patchloop2
       end do iloop
    end do jloop

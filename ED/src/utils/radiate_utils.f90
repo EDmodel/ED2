@@ -307,7 +307,7 @@ subroutine short_bdown_weissnorman(rshort_full,atm_prss,cosz,par_beam,par_diff,n
       !------------------------------------------------------------------------------------!
       !     Find the actual total for PAR and NIR, using equations 7 and 8.                !
       !------------------------------------------------------------------------------------!
-      ratio    = min(1.2, rshort_full / (par_full_pot + nir_full_pot))
+      ratio    = rshort_full / (par_full_pot + nir_full_pot)
       par_full = ratio * par_full_pot
       nir_full = ratio * nir_full_pot
       !------------------------------------------------------------------------------------!
@@ -346,5 +346,258 @@ subroutine short_bdown_weissnorman(rshort_full,atm_prss,cosz,par_beam,par_diff,n
 
    return
 end subroutine short_bdown_weissnorman
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!     This sub-routine prints the radiation information if the user wants detailed output  !
+!------------------------------------------------------------------------------------------!
+subroutine dump_radinfo(cgrid,ipy,mprev,mnext,prevmet_timea,nextmet_timea,met_frq          &
+                       ,wprev,wnext,secz_prev,secz_next,fperp_prev,fperp_next,night_prev   &
+                       ,night_next,variable)
+   use ed_state_vars        , only : edtype        ! ! structure
+   use ed_max_dims          , only : str_len       ! ! intent(in)
+   use ed_misc_coms         , only : simtime       & ! intent(in)
+                                   , current_time  ! ! intent(in)
+   use met_driver_coms      , only : nbdsf_file    & ! intent(in)
+                                   , nddsf_file    & ! intent(in)
+                                   , vbdsf_file    & ! intent(in)
+                                   , vddsf_file    ! ! intent(in)
+   use canopy_radiation_coms, only : cosz_min      ! ! intent(in)
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   type(edtype)          , target     :: cgrid
+   integer               , intent(in) :: ipy
+   type(simtime)         , intent(in) :: prevmet_timea
+   type(simtime)         , intent(in) :: nextmet_timea
+   integer               , intent(in) :: mprev
+   integer               , intent(in) :: mnext
+   real                  , intent(in) :: met_frq
+   real                  , intent(in) :: wprev
+   real                  , intent(in) :: wnext
+   real                  , intent(in) :: secz_prev
+   real                  , intent(in) :: secz_next
+   real                  , intent(in) :: fperp_prev
+   real                  , intent(in) :: fperp_next
+   logical               , intent(in) :: night_prev
+   logical               , intent(in) :: night_next
+   character(len=5)      , intent(in) :: variable
+   !----- Local variables. ----------------------------------------------------------------!
+   character(len=str_len)             :: thisfile
+   character(len=22)                  :: when_prev
+   character(len=22)                  :: when_next
+   character(len=22)                  :: when_now
+   real                               :: flux_prev
+   real                               :: flux_next
+   real                               :: flux_now
+   real                               :: fperp_now
+   logical                            :: night_now
+   logical                            :: itsthere
+   !----- Local constants. ----------------------------------------------------------------!
+   character(len=18)     , parameter  :: fmth = '(3(a,3x),15(a,1x))'
+   character(len=35)     , parameter  :: fmtd = '(3(a,3x),3(11x,l1,1x),12(f12.3,1x))'
+   character(len=29)     , parameter  :: fmtt = '(2(i2.2,a),i4.4,1x,3(i2.2,a))'
+   !----- Locally saved variables, to delete and re-create scratch files. -----------------!
+   logical               , save       :: first_nbdsf = .true.
+   logical               , save       :: first_nddsf = .true.
+   logical               , save       :: first_vbdsf = .true.
+   logical               , save       :: first_vddsf = .true.
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !    This copies the information to some common variables.                              !
+   !---------------------------------------------------------------------------------------!
+   select case (variable)
+   case ('nbdsf')
+
+      flux_prev = cgrid%metinput(ipy)%nbdsf(mprev)
+      flux_next = cgrid%metinput(ipy)%nbdsf(mnext)
+      flux_now  = cgrid%met(ipy)%nir_beam
+      thisfile  = nbdsf_file
+
+      if (first_nbdsf) then
+
+         !---------------------------------------------------------------------------------!
+         !     Check whether there was a file in there.  In case there was, delete and     !
+         ! create a new header.                                                            !
+         !---------------------------------------------------------------------------------!
+         inquire (file=trim(thisfile),exist=itsthere)
+         if (itsthere) then
+            open (unit=87,file=trim(thisfile),status='old',action='write')
+            close(unit=87,status='delete')
+         end if
+         !---------------------------------------------------------------------------------!
+
+
+         !---------------------------------------------------------------------------------!
+         !     Make the header.                                                            !
+         !---------------------------------------------------------------------------------!
+         open (unit=87,file=trim(thisfile),status='new',action='write')
+         write (unit=87,fmt=fmth) '             WHEN_PREV','              WHEN_NOW'        &
+                                 ,'             WHEN_NEXT','  NIGHT_PREV','   NIGHT_NOW'   &
+                                          ,'  NIGHT_NEXT','     MET_FRQ','       WPREV'    &
+                                          ,'       WNEXT','   FLUX_PREV','   SECZ_PREV'    &
+                                          ,'  FPERP_PREV','   FLUX_NEXT','   SECZ_NEXT'    &
+                                          ,'  FPERP_NEXT','    FLUX_NOW','    COSZ_NOW'    &
+                                          ,'   FPERP_NOW'
+        close (unit=87,status='keep')
+         !---------------------------------------------------------------------------------!
+
+         first_nbdsf = .false.
+      end if
+
+   case ('nddsf')
+
+      flux_prev = cgrid%metinput(ipy)%nddsf(mprev)
+      flux_next = cgrid%metinput(ipy)%nddsf(mnext)
+      flux_now  = cgrid%met(ipy)%nir_diffuse
+      thisfile  = nddsf_file
+
+      if (first_nddsf) then
+
+         !---------------------------------------------------------------------------------!
+         !     Check whether there was a file in there.  In case there was, delete and     !
+         ! create a new header.                                                            !
+         !---------------------------------------------------------------------------------!
+         inquire (file=trim(thisfile),exist=itsthere)
+         if (itsthere) then
+            open (unit=87,file=trim(thisfile),status='old',action='write')
+            close(unit=87,status='delete')
+         end if
+         !---------------------------------------------------------------------------------!
+
+
+         !---------------------------------------------------------------------------------!
+         !     Make the header.                                                            !
+         !---------------------------------------------------------------------------------!
+         open (unit=87,file=trim(thisfile),status='new',action='write')
+         write (unit=87,fmt=fmth) '             WHEN_PREV','              WHEN_NOW'        &
+                                 ,'             WHEN_NEXT','  NIGHT_PREV','   NIGHT_NOW'   &
+                                          ,'  NIGHT_NEXT','     MET_FRQ','       WPREV'    &
+                                          ,'       WNEXT','   FLUX_PREV','   SECZ_PREV'    &
+                                          ,'  FPERP_PREV','   FLUX_NEXT','   SECZ_NEXT'    &
+                                          ,'  FPERP_NEXT','    FLUX_NOW','    COSZ_NOW'    &
+                                          ,'   FPERP_NOW'
+         close (unit=87,status='keep')
+         !---------------------------------------------------------------------------------!
+
+         first_nddsf = .false.
+      end if
+   case ('vbdsf')
+
+      flux_prev = cgrid%metinput(ipy)%vbdsf(mprev)
+      flux_next = cgrid%metinput(ipy)%vbdsf(mnext)
+      flux_now  = cgrid%met(ipy)%par_beam
+      thisfile  = vbdsf_file
+
+      if (first_vbdsf) then
+
+         !---------------------------------------------------------------------------------!
+         !     Check whether there was a file in there.  In case there was, delete and     !
+         ! create a new header.                                                            !
+         !---------------------------------------------------------------------------------!
+         inquire (file=trim(thisfile),exist=itsthere)
+         if (itsthere) then
+            open (unit=87,file=trim(thisfile),status='old',action='write')
+            close(unit=87,status='delete')
+         end if
+         !---------------------------------------------------------------------------------!
+
+
+         !---------------------------------------------------------------------------------!
+         !     Make the header.                                                            !
+         !---------------------------------------------------------------------------------!
+         open (unit=87,file=trim(thisfile),status='new',action='write')
+         write (unit=87,fmt=fmth) '             WHEN_PREV','              WHEN_NOW'        &
+                                 ,'             WHEN_NEXT','  NIGHT_PREV','   NIGHT_NOW'   &
+                                          ,'  NIGHT_NEXT','     MET_FRQ','       WPREV'    &
+                                          ,'       WNEXT','   FLUX_PREV','   SECZ_PREV'    &
+                                          ,'  FPERP_PREV','   FLUX_NEXT','   SECZ_NEXT'    &
+                                          ,'  FPERP_NEXT','    FLUX_NOW','    COSZ_NOW'    &
+                                          ,'   FPERP_NOW'
+         close (unit=87,status='keep')
+         !---------------------------------------------------------------------------------!
+
+         first_vbdsf = .false.
+      end if
+
+   case ('vddsf')
+
+      flux_prev = cgrid%metinput(ipy)%vddsf(mprev)
+      flux_next = cgrid%metinput(ipy)%vddsf(mnext)
+      flux_now  = cgrid%met(ipy)%par_diffuse
+      thisfile  = vddsf_file
+
+      if (first_vddsf) then
+
+         !---------------------------------------------------------------------------------!
+         !     Check whether there was a file in there.  In case there was, delete and     !
+         ! create a new header.                                                            !
+         !---------------------------------------------------------------------------------!
+         inquire (file=trim(thisfile),exist=itsthere)
+         if (itsthere) then
+            open (unit=87,file=trim(thisfile),status='old',action='write')
+            close(unit=87,status='delete')
+         end if
+         !---------------------------------------------------------------------------------!
+
+
+         !---------------------------------------------------------------------------------!
+         !     Make the header.                                                            !
+         !---------------------------------------------------------------------------------!
+         open (unit=87,file=trim(thisfile),status='new',action='write')
+         write (unit=87,fmt=fmth) '             WHEN_PREV','              WHEN_NOW'        &
+                                 ,'             WHEN_NEXT','  NIGHT_PREV','   NIGHT_NOW'   &
+                                          ,'  NIGHT_NEXT','     MET_FRQ','       WPREV'    &
+                                          ,'       WNEXT','   FLUX_PREV','   SECZ_PREV'    &
+                                          ,'  FPERP_PREV','   FLUX_NEXT','   SECZ_NEXT'    &
+                                          ,'  FPERP_NEXT','    FLUX_NOW','    COSZ_NOW'    &
+                                          ,'   FPERP_NOW'
+         close (unit=87,status='keep')
+         !---------------------------------------------------------------------------------!
+
+         first_vddsf = .false.
+      end if
+   end select
+   !---------------------------------------------------------------------------------------!
+
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !      Find some common variables.                                                      !
+   !---------------------------------------------------------------------------------------!
+   write (when_prev,fmt=fmtt) prevmet_timea%month,'/',prevmet_timea%date,'/'               &
+                             ,prevmet_timea%year,prevmet_timea%hour,'.',prevmet_timea%min  &
+                             ,'.',prevmet_timea%sec,'UTC'
+   write (when_now ,fmt=fmtt) current_time%month,'/',current_time%date,'/'                 &
+                             ,current_time%year,current_time%hour,'.',current_time%min,'.' &
+                             ,current_time%sec,'UTC'
+   write (when_next,fmt=fmtt) nextmet_timea%month,'/',nextmet_timea%date,'/'               &
+                             ,nextmet_timea%year,nextmet_timea%hour,'.',nextmet_timea%min  &
+                             ,'.',nextmet_timea%sec,'UTC'
+   fperp_now = fperp_prev * wprev + fperp_next * wnext
+   night_now = cgrid%cosz(ipy) <= cosz_min
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Write the information on the file.                                                !
+   !---------------------------------------------------------------------------------------!
+   open(unit=87,file=trim(thisfile),status='old',action='write',position='append')
+   write(unit=87,fmt=fmtd) when_prev,when_now,when_next,night_prev,night_now,night_next    &
+                          ,met_frq,wprev,wnext,flux_prev,secz_prev,fperp_prev,flux_next    &
+                          ,secz_next,fperp_next,flux_now,cgrid%cosz(ipy),fperp_now
+   close(unit=87,status='keep')
+   !---------------------------------------------------------------------------------------!
+   return
+end subroutine dump_radinfo
 !==========================================================================================!
 !==========================================================================================!

@@ -371,7 +371,7 @@ do
       iphen=2
       ;;
    Santarem_KM77)
-      metdriverdb=${sitemet}'/Fazenda_Nossa_Senhora/Santarem_KM77_HEADER'
+      metdriverdb=${sitemet}'/Santarem_KM77/Santarem_KM77_HEADER'
       metcyc1=2001
       metcycf=2005
       imetavg=1
@@ -507,22 +507,25 @@ do
       thissfilin=${fullygrown}
       case ${polyiata} in
       s67)
-         thissfilin=${bioinit}'/km67_ustein.'
+         thissfilin=${bioinit}'/km67_ustein_newallom.'
          ;;
       m34)
-         thissfilin=${bioinit}'/pBDFFP1_1983_ustein.'
+         thissfilin=${bioinit}'/k34_ustein_newallom.'
          ;;
       pdg)
-         thissfilin=${bioinit}'/pdg_grass.'
+         thissfilin=${bioinit}'/pdg_ustein_newallom.'
          ;;
       fns)
          thissfilin=${bioinit}'/fns.'
          ;;
       s77)
-         thissfilin=${bioinit}'/k77.'
+         thissfilin=${bioinit}'/km77.'
          ;;
       cax)
-         thissfilin=${bioinit}'/cax06.'
+         thissfilin=${bioinit}'/cax06_ustein_newallom.'
+         ;;
+      rja)
+         thissfilin=${bioinit}'/rja_ustein_newallom.'
          ;;
       *)
          echo ' Polygon: '${polyname}

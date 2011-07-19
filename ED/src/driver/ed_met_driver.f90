@@ -779,7 +779,8 @@ subroutine update_met_drivers(cgrid)
                                    , prec_slope        & ! intent(in)
                                    , humid_scenario    & ! intent(in)
                                    , atm_rhv_min       & ! intent(in)
-                                   , atm_rhv_max       ! ! intent(in)
+                                   , atm_rhv_max       & ! intent(in)
+                                   , print_radinterp   ! ! intent(in)
    use ed_misc_coms         , only : simtime           & ! intent(in)
                                    , current_time      & ! intent(in)
                                    , dtlsm             ! ! intent(in)
@@ -1262,10 +1263,8 @@ subroutine update_met_drivers(cgrid)
                      ! based on both both the flux and the zenith angle.  We must consider !
                      ! the flux because the sun sets a 90 degrees only in a flat surface.  !
                      !---------------------------------------------------------------------!
-                     night_prev = secz_prev == 0. .or.                                     &
-                                  cgrid%metinput(ipy)%nbdsf(mprev) == 0.
-                     night_next = secz_next == 0. .or.                                     &
-                                  cgrid%metinput(ipy)%nbdsf(mnext) == 0.
+                     night_prev = secz_prev == 0.
+                     night_next = secz_next == 0.
                      !---------------------------------------------------------------------!
 
 
@@ -1278,6 +1277,8 @@ subroutine update_met_drivers(cgrid)
                      !---------------------------------------------------------------------!
                      if (night_prev .and. night_next) then
                         !----- Middle of the night, set the value to zero. ----------------!
+                        fperp_prev = 0.
+                        fperp_next = 0.
                         cgrid%met(ipy)%nir_beam = 0.
                      elseif (night_prev) then
                         !------------------------------------------------------------------!
@@ -1286,6 +1287,7 @@ subroutine update_met_drivers(cgrid)
                         ! next secant and scaling back with the current cosine of zenith   !
                         ! angle.                                                           !
                         !------------------------------------------------------------------!
+                        fperp_prev = 0.
                         fperp_next = cgrid%metinput(ipy)%nbdsf(mnext) * secz_next
                         cgrid%met(ipy)%nir_beam = fperp_next * cgrid%cosz(ipy)
                      elseif (night_next) then
@@ -1296,6 +1298,7 @@ subroutine update_met_drivers(cgrid)
                         ! zenith angle.                                                    !
                         !------------------------------------------------------------------!
                         fperp_prev = cgrid%metinput(ipy)%nbdsf(mprev) * secz_prev
+                        fperp_next = 0.
                         cgrid%met(ipy)%nir_beam = fperp_prev * cgrid%cosz(ipy)
                      else
                         !----- Middle of the day, use both previous and next values. ------!
@@ -1308,11 +1311,29 @@ subroutine update_met_drivers(cgrid)
                      !---------------------------------------------------------------------!
                   else
                      !----- Night time, assign it zero. -----------------------------------!
+                     secz_prev               = 0.
+                     secz_next               = 0.
+                     night_prev              = .true.
+                     night_next              = .true.
+                     fperp_prev              = 0.
+                     fperp_next              = 0.
                      cgrid%met(ipy)%nir_beam = 0.0
+                     
                      !---------------------------------------------------------------------!
                   end if
                   !------------------------------------------------------------------------!
 
+
+
+                  !------------------------------------------------------------------------!
+                  !     Print the debugging information if the user wants so.              !
+                  !------------------------------------------------------------------------!
+                  if (print_radinterp) then
+                     call dump_radinfo(cgrid,ipy,mprev,mnext,prevmet_timea,nextmet_timea   &
+                                      ,met_frq(iformat,iv),wprev,wnext,secz_prev,secz_next &
+                                      ,fperp_prev,fperp_next,night_prev,night_next,'nbdsf')
+                  end if
+                  !------------------------------------------------------------------------!
                end do
                !---------------------------------------------------------------------------!
 
@@ -1354,10 +1375,8 @@ subroutine update_met_drivers(cgrid)
                      ! based on both both the flux and the zenith angle.  We must consider !
                      ! the flux because the sun sets a 90 degrees only in a flat surface.  !
                      !---------------------------------------------------------------------!
-                     night_prev = secz_prev == 0. .or.                                     &
-                                  cgrid%metinput(ipy)%nddsf(mprev) == 0.
-                     night_next = secz_next == 0. .or.                                     &
-                                  cgrid%metinput(ipy)%nddsf(mnext) == 0.
+                     night_prev = secz_prev == 0.
+                     night_next = secz_next == 0.
                      !---------------------------------------------------------------------!
 
 
@@ -1369,6 +1388,8 @@ subroutine update_met_drivers(cgrid)
                      !---------------------------------------------------------------------!
                      if (night_prev .and. night_next) then
                         !----- Middle of the night, set the value to zero. ----------------!
+                        fperp_prev = 0.
+                        fperp_next = 0.
                         cgrid%met(ipy)%nir_diffuse = 0.
                      elseif (night_prev) then
                         !------------------------------------------------------------------!
@@ -1377,6 +1398,7 @@ subroutine update_met_drivers(cgrid)
                         ! next secant and scaling back with the current cosine of zenith   !
                         ! angle.                                                           !
                         !------------------------------------------------------------------!
+                        fperp_prev = 0.
                         fperp_next = cgrid%metinput(ipy)%nddsf(mnext) * secz_next
                         cgrid%met(ipy)%nir_diffuse = fperp_next * cgrid%cosz(ipy)
                      elseif (night_next) then
@@ -1387,6 +1409,7 @@ subroutine update_met_drivers(cgrid)
                         ! zenith angle.                                                    !
                         !------------------------------------------------------------------!
                         fperp_prev = cgrid%metinput(ipy)%nddsf(mprev) * secz_prev
+                        fperp_next = 0.
                         cgrid%met(ipy)%nir_diffuse = fperp_prev * cgrid%cosz(ipy)
                      else
                         !----- Middle of the day, use both previous and next values. ------!
@@ -1399,8 +1422,26 @@ subroutine update_met_drivers(cgrid)
                      !---------------------------------------------------------------------!
                   else
                      !----- Night time, assign it zero. -----------------------------------!
+                     secz_prev                  = 0.
+                     secz_next                  = 0.
+                     night_prev                 = .true.
+                     night_next                 = .true.
+                     fperp_prev                 = 0.
+                     fperp_next                 = 0.
                      cgrid%met(ipy)%nir_diffuse = 0.0
                      !---------------------------------------------------------------------!
+                  end if
+                  !------------------------------------------------------------------------!
+
+
+
+                  !------------------------------------------------------------------------!
+                  !     Print the debugging information if the user wants so.              !
+                  !------------------------------------------------------------------------!
+                  if (print_radinterp) then
+                     call dump_radinfo(cgrid,ipy,mprev,mnext,prevmet_timea,nextmet_timea   &
+                                      ,met_frq(iformat,iv),wprev,wnext,secz_prev,secz_next &
+                                      ,fperp_prev,fperp_next,night_prev,night_next,'nddsf')
                   end if
                   !------------------------------------------------------------------------!
                end do
@@ -1444,10 +1485,8 @@ subroutine update_met_drivers(cgrid)
                      ! based on both both the flux and the zenith angle.  We must consider !
                      ! the flux because the sun sets a 90 degrees only in a flat surface.  !
                      !---------------------------------------------------------------------!
-                     night_prev = secz_prev == 0. .or.                                     &
-                                  cgrid%metinput(ipy)%vbdsf(mprev) == 0.
-                     night_next = secz_next == 0. .or.                                     &
-                                  cgrid%metinput(ipy)%vbdsf(mnext) == 0.
+                     night_prev = secz_prev == 0.
+                     night_next = secz_next == 0.
                      !---------------------------------------------------------------------!
 
 
@@ -1459,6 +1498,8 @@ subroutine update_met_drivers(cgrid)
                      !---------------------------------------------------------------------!
                      if (night_prev .and. night_next) then
                         !----- Middle of the night, set the value to zero. ----------------!
+                        fperp_prev = 0.
+                        fperp_next = 0.
                         cgrid%met(ipy)%par_beam = 0.
                      elseif (night_prev) then
                         !------------------------------------------------------------------!
@@ -1467,6 +1508,7 @@ subroutine update_met_drivers(cgrid)
                         ! next secant and scaling back with the current cosine of zenith   !
                         ! angle.                                                           !
                         !------------------------------------------------------------------!
+                        fperp_prev = 0.
                         fperp_next = cgrid%metinput(ipy)%vbdsf(mnext) * secz_next
                         cgrid%met(ipy)%par_beam = fperp_next * cgrid%cosz(ipy)
                      elseif (night_next) then
@@ -1477,6 +1519,7 @@ subroutine update_met_drivers(cgrid)
                         ! zenith angle.                                                    !
                         !------------------------------------------------------------------!
                         fperp_prev = cgrid%metinput(ipy)%vbdsf(mprev) * secz_prev
+                        fperp_next = 0.
                         cgrid%met(ipy)%par_beam = fperp_prev * cgrid%cosz(ipy)
                      else
                         !----- Middle of the day, use both previous and next values. ------!
@@ -1489,8 +1532,26 @@ subroutine update_met_drivers(cgrid)
                      !---------------------------------------------------------------------!
                   else
                      !----- Night time, assign it zero. -----------------------------------!
+                     secz_prev               = 0.
+                     secz_next               = 0.
+                     night_prev              = .true.
+                     night_next              = .true.
+                     fperp_prev              = 0.
+                     fperp_next              = 0.
                      cgrid%met(ipy)%par_beam = 0.0
                      !---------------------------------------------------------------------!
+                  end if
+                  !------------------------------------------------------------------------!
+
+
+
+                  !------------------------------------------------------------------------!
+                  !     Print the debugging information if the user wants so.              !
+                  !------------------------------------------------------------------------!
+                  if (print_radinterp) then
+                     call dump_radinfo(cgrid,ipy,mprev,mnext,prevmet_timea,nextmet_timea   &
+                                      ,met_frq(iformat,iv),wprev,wnext,secz_prev,secz_next &
+                                      ,fperp_prev,fperp_next,night_prev,night_next,'vbdsf')
                   end if
                   !------------------------------------------------------------------------!
                end do
@@ -1533,10 +1594,8 @@ subroutine update_met_drivers(cgrid)
                      ! based on both both the flux and the zenith angle.  We must consider !
                      ! the flux because the sun sets a 90 degrees only in a flat surface.  !
                      !---------------------------------------------------------------------!
-                     night_prev = secz_prev == 0. .or.                                     &
-                                  cgrid%metinput(ipy)%vddsf(mprev) == 0.
-                     night_next = secz_next == 0. .or.                                     &
-                                  cgrid%metinput(ipy)%vddsf(mnext) == 0.
+                     night_prev = secz_prev == 0.
+                     night_next = secz_next == 0.
                      !---------------------------------------------------------------------!
 
 
@@ -1548,6 +1607,8 @@ subroutine update_met_drivers(cgrid)
                      !---------------------------------------------------------------------!
                      if (night_prev .and. night_next) then
                         !----- Middle of the night, set the value to zero. ----------------!
+                        fperp_prev = 0.
+                        fperp_next = 0.
                         cgrid%met(ipy)%par_diffuse = 0.
                      elseif (night_prev) then
                         !------------------------------------------------------------------!
@@ -1556,6 +1617,7 @@ subroutine update_met_drivers(cgrid)
                         ! next secant and scaling back with the current cosine of zenith   !
                         ! angle.                                                           !
                         !------------------------------------------------------------------!
+                        fperp_prev = 0.
                         fperp_next = cgrid%metinput(ipy)%vddsf(mnext) * secz_next
                         cgrid%met(ipy)%par_diffuse = fperp_next * cgrid%cosz(ipy)
                      elseif (night_next) then
@@ -1566,6 +1628,7 @@ subroutine update_met_drivers(cgrid)
                         ! zenith angle.                                                    !
                         !------------------------------------------------------------------!
                         fperp_prev = cgrid%metinput(ipy)%vddsf(mprev) * secz_prev
+                        fperp_next = 0.
                         cgrid%met(ipy)%par_diffuse = fperp_prev * cgrid%cosz(ipy)
                      else
                         !----- Middle of the day, use both previous and next values. ------!
@@ -1578,8 +1641,26 @@ subroutine update_met_drivers(cgrid)
                      !---------------------------------------------------------------------!
                   else
                      !----- Night time, assign it zero. -----------------------------------!
+                     secz_prev                  = 0.
+                     secz_next                  = 0.
+                     night_prev                 = .true.
+                     night_next                 = .true.
+                     fperp_prev                 = 0.
+                     fperp_next                 = 0.
                      cgrid%met(ipy)%par_diffuse = 0.0
                      !---------------------------------------------------------------------!
+                  end if
+                  !------------------------------------------------------------------------!
+
+
+
+                  !------------------------------------------------------------------------!
+                  !     Print the debugging information if the user wants so.              !
+                  !------------------------------------------------------------------------!
+                  if (print_radinterp) then
+                     call dump_radinfo(cgrid,ipy,mprev,mnext,prevmet_timea,nextmet_timea   &
+                                      ,met_frq(iformat,iv),wprev,wnext,secz_prev,secz_next &
+                                      ,fperp_prev,fperp_next,night_prev,night_next,'vddsf')
                   end if
                   !------------------------------------------------------------------------!
                end do
