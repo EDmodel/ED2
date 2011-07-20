@@ -290,8 +290,17 @@ subroutine leaf_database(ofn,nsite,nlandsea,iaction,lat,lon,classout,pctout)
 
                call shdf5_close_f()
             else
-               call fatal_error( 'In landuse_input, '//trim(iaction)//' file is missing'   &
-                               ,'leaf_database','leaf_database.f90')
+               write (unit=*,fmt='(a,1x,a,a)') ' -> File:',trim(title3)                    &
+                                              ,'doesn''t exist.  Using default values...'
+               select case (trim(iaction))
+               case ('leaf_class')
+                  idato(:,:) = 0
+               case ('soil_text')
+                  idato(:,:) = nslcon
+               case default
+                  call fatal_error('Incorrect action specified in leaf_database'           &
+                                  ,'leaf_database','leaf_database.f90')
+               end select
             end if
             !------------------------------------------------------------------------------!
 

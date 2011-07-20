@@ -911,8 +911,8 @@ subroutine ed_masterput_worklist_info(par_run)
    integer                                     :: ipya
    integer                                     :: ipyz
    type(work_vecs), dimension(:), allocatable  :: sc_work
-   real           , dimension(:),  allocatable :: rscratch
-   integer        , dimension(:),  allocatable :: iscratch
+   real           , dimension(:), allocatable  :: rscratch
+   integer        , dimension(:), allocatable  :: iscratch
    !---------------------------------------------------------------------------------------!
    
 
@@ -927,7 +927,8 @@ subroutine ed_masterput_worklist_info(par_run)
             ipyz   = offset + npoly
 
             !----- Allocate the scratch vectors. ------------------------------------------!
-            allocate(rscratch(npoly),iscratch(npoly))
+            allocate(rscratch(npoly))
+            allocate(iscratch(npoly))
 
 
             !----- Set a unique identifier for these packages. ----------------------------!
@@ -967,7 +968,8 @@ subroutine ed_masterput_worklist_info(par_run)
             end do
 
             !----- Deallocate the scratch arrays, as the polygon sizes may change. --------!
-            deallocate(rscratch,iscratch)
+            deallocate(rscratch)
+            deallocate(iscratch)
 
          end do
       end do
@@ -1002,7 +1004,8 @@ subroutine ed_masterput_worklist_info(par_run)
 
       call ed_dealloc_work_vec(work_v(ifm))
    end do
-   deallocate(work_e,work_v)
+   deallocate(work_e)
+   deallocate(work_v)
    !---------------------------------------------------------------------------------------!
 
 
@@ -1012,7 +1015,6 @@ subroutine ed_masterput_worklist_info(par_run)
    ! serial run.                                                                           !
    !---------------------------------------------------------------------------------------!
    call ed_mem_alloc(2*par_run) 
-
    allocate (work_v(ngrids))
    do ifm=1,ngrids
 
@@ -1656,41 +1658,40 @@ subroutine ed_nodeget_worklist_info
       call ed_nullify_work_vec(work_v(ifm))
       call ed_alloc_work_vec(work_v(ifm),npolygons,maxsite)
 
-      mpiid=maxmach*(ifm-1)*(10+5*maxsite)+mynum
+      mpiid=1300000 + maxmach*(ifm-1)*(10+5*maxsite)+mynum
 
       !------ Grab the information. -------------------------------------------------------!
-      call MPI_Recv(work_v(ifm)%glon(1:npolygons),npolygons,MPI_REAL,master_num,mpiid      &
+      call MPI_Recv(work_v(ifm)%glon,npolygons,MPI_REAL,master_num,mpiid,MPI_COMM_WORLD    &
+                   ,status,ierr)
+      mpiid = mpiid + 1
+
+      call MPI_Recv(work_v(ifm)%glat,npolygons,MPI_REAL,master_num,mpiid,MPI_COMM_WORLD    &
+                   ,status,ierr)
+      mpiid = mpiid + 1
+
+      call MPI_Recv(work_v(ifm)%landfrac,npolygons,MPI_REAL,master_num,mpiid               &
                    ,MPI_COMM_WORLD,status,ierr)
       mpiid = mpiid + 1
 
-      call MPI_Recv(work_v(ifm)%glat(1:npolygons),npolygons,MPI_REAL,master_num,mpiid      &
-                   ,MPI_COMM_WORLD,status,ierr)
+
+      call MPI_Recv(work_v(ifm)%xid,npolygons,MPI_INTEGER,master_num,mpiid,MPI_COMM_WORLD  &
+                   ,status,ierr)
       mpiid = mpiid + 1
 
-      call MPI_Recv(work_v(ifm)%landfrac(1:npolygons),npolygons,MPI_REAL,master_num,mpiid  &
-                   ,MPI_COMM_WORLD,status,ierr)
-      mpiid = mpiid + 1
-
-
-      call MPI_Recv(work_v(ifm)%xid(1:npolygons),npolygons,MPI_INTEGER,master_num,mpiid    &
-                   ,MPI_COMM_WORLD,status,ierr)
-      mpiid = mpiid + 1
-
-      call MPI_Recv(work_v(ifm)%yid(1:npolygons),npolygons,MPI_INTEGER,master_num,mpiid    &
-                   ,MPI_COMM_WORLD,status,ierr)
+      call MPI_Recv(work_v(ifm)%yid,npolygons,MPI_INTEGER,master_num,mpiid,MPI_COMM_WORLD  &
+                   ,status,ierr)
       mpiid = mpiid + 1
 
       do itext=1,maxsite
-         call MPI_Recv(work_v(ifm)%ntext(itext,1:npolygons),npolygons,MPI_INTEGER          &
-                      ,master_num,mpiid,MPI_COMM_WORLD,status,ierr)
+         call MPI_Recv(work_v(ifm)%ntext(itext,:),npolygons,MPI_INTEGER,master_num,mpiid   &
+                      ,MPI_COMM_WORLD,status,ierr)
          mpiid = mpiid + 1
 
-         call MPI_Recv(work_v(ifm)%soilfrac(itext,1:npolygons),npolygons,MPI_REAL          &
-                      ,master_num,mpiid,MPI_COMM_WORLD,status,ierr)
+         call MPI_Recv(work_v(ifm)%soilfrac(itext,:),npolygons,MPI_REAL,master_num,mpiid   &
+                      ,MPI_COMM_WORLD,status,ierr)
          mpiid = mpiid + 1
       end do
    end do
-
    return
 end subroutine ed_nodeget_worklist_info
 !==========================================================================================!

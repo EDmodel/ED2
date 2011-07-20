@@ -676,7 +676,7 @@ subroutine h5_output(vtype)
                       ,'cmp')
          open (unit=79,file=trim(anamel),form='formatted',status='replace')
          write(unit=79,fmt='(a)') 'history write completed'
-         write(unit=* ,fmt=*    ) 'Completed History Write: ',trim(anamel)
+         write(unit=* ,fmt='(2a)') ' - Completed History Write: ',trim(anamel)
          close(unit=79,status='keep')
       end if
 

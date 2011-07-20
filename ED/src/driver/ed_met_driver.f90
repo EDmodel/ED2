@@ -322,6 +322,7 @@ subroutine read_met_drivers_init
                                 , imonthz        ! ! intent(in)
    use grid_coms         , only : ngrids         ! ! intent(in)
    use consts_coms       , only : day_sec        ! ! intent(in)
+   use ed_node_coms      , only : mynum          ! ! intent(in)
    implicit none
    !----- Local variables -----------------------------------------------------------------!
    type(edtype)          , pointer :: cgrid
@@ -397,13 +398,14 @@ subroutine read_met_drivers_init
          i1stfull = metcyc1 - nfullcyc * ncyc
          
          year_use   = metcycf - (i1stfull - iyeara)
-
-         write (unit=*,fmt='(a)'       )  '------------------------------'
-         write (unit=*,fmt='(a,1x,i12)')  ' - METCYC1 =',metcyc1
-         write (unit=*,fmt='(a,1x,i12)')  ' - METCYCF =',metcycf
-         write (unit=*,fmt='(a,1x,i12)')  ' - NYEARS  =',nyears
-         write (unit=*,fmt='(a)'       )  '------------------------------'
-         write (unit=*,fmt='(2(1x,a))') '       IYEAR','    YEAR_USE'
+         if (mynum == 1) then
+            write (unit=*,fmt='(a)'       )  '------------------------------'
+            write (unit=*,fmt='(a,1x,i12)')  ' - METCYC1 =',metcyc1
+            write (unit=*,fmt='(a,1x,i12)')  ' - METCYCF =',metcycf
+            write (unit=*,fmt='(a,1x,i12)')  ' - NYEARS  =',nyears
+            write (unit=*,fmt='(a)'       )  '------------------------------'
+            write (unit=*,fmt='(2(1x,a))') '       IYEAR','    YEAR_USE'
+         end if
          do iyear=1,nyears
             if (year_use == metcycf) then
                year_use = metcyc1
@@ -411,10 +413,14 @@ subroutine read_met_drivers_init
                year_use = year_use + 1
             end if
             metyears(iyear) = year_use
-            write (unit=*,fmt='(2(1x,i12))') iyear,metyears(iyear)
+            if (mynum == 1) then
+               write (unit=*,fmt='(2(1x,i12))') iyear,metyears(iyear)
+            end if
          end do
-         write (unit=*,fmt='(a)'       )  '------------------------------'
-         write (unit=*,fmt='(a)'       )  ' '
+         if (mynum == 1) then
+            write (unit=*,fmt='(a)'       )  '------------------------------'
+            write (unit=*,fmt='(a)'       )  ' '
+         end if
 
       !------------------------------------------------------------------------------------!
       !    For years outside the met driver range, we pick up a random year.  Because we   !
@@ -423,12 +429,14 @@ subroutine read_met_drivers_init
       !------------------------------------------------------------------------------------!
       case (1)
 
-         write (unit=*,fmt='(a)'       )  '------------------------------'
-         write (unit=*,fmt='(a,1x,i12)')  ' - METCYC1 =',metcyc1
-         write (unit=*,fmt='(a,1x,i12)')  ' - METCYCF =',metcycf
-         write (unit=*,fmt='(a,1x,i12)')  ' - NYEARS  =',nyears
-         write (unit=*,fmt='(a)'       )  '------------------------------'
-         write (unit=*,fmt='(2(1x,a))') '       IYEAR','    YEAR_USE'
+         if (mynum == 1) then
+            write (unit=*,fmt='(a)'       )  '------------------------------'
+            write (unit=*,fmt='(a,1x,i12)')  ' - METCYC1 =',metcyc1
+            write (unit=*,fmt='(a,1x,i12)')  ' - METCYCF =',metcycf
+            write (unit=*,fmt='(a,1x,i12)')  ' - NYEARS  =',nyears
+            write (unit=*,fmt='(a)'       )  '------------------------------'
+            write (unit=*,fmt='(2(1x,a))') '       IYEAR','    YEAR_USE'
+         end if
          do year_use=iyeara,iyearz
             iyear=year_use-iyeara+1
             if (year_use < metcyc1 .or. year_use > metcycf) then
@@ -437,10 +445,14 @@ subroutine read_met_drivers_init
             else
                metyears(iyear) = year_use
             end if
-            write (unit=*,fmt='(2(1x,i12))') iyear,metyears(iyear)
+            if (mynum == 1) then
+               write (unit=*,fmt='(2(1x,i12))') iyear,metyears(iyear)
+            end if
          end do
-         write (unit=*,fmt='(a)'       )  '------------------------------'
-         write (unit=*,fmt='(a)'       )  ' '
+         if (mynum == 1) then
+            write (unit=*,fmt='(a)'       )  '------------------------------'
+            write (unit=*,fmt='(a)'       )  ' '
+         end if
 
       !------------------------------------------------------------------------------------!
       !    For years outside the met driver range, we pick up a random year. We skip some  !
@@ -449,12 +461,14 @@ subroutine read_met_drivers_init
       !------------------------------------------------------------------------------------!
       case (2)
 
-         write (unit=*,fmt='(a)'       )  '------------------------------'
-         write (unit=*,fmt='(a,1x,i12)')  ' - METCYC1 =',metcyc1
-         write (unit=*,fmt='(a,1x,i12)')  ' - METCYCF =',metcycf
-         write (unit=*,fmt='(a,1x,i12)')  ' - NYEARS  =',nyears
-         write (unit=*,fmt='(a)'       )  '------------------------------'
-         write (unit=*,fmt='(2(1x,a))') '       IYEAR','    YEAR_USE'
+         if (mynum == 1) then
+            write (unit=*,fmt='(a)'       )  '------------------------------'
+            write (unit=*,fmt='(a,1x,i12)')  ' - METCYC1 =',metcyc1
+            write (unit=*,fmt='(a,1x,i12)')  ' - METCYCF =',metcycf
+            write (unit=*,fmt='(a,1x,i12)')  ' - NYEARS  =',nyears
+            write (unit=*,fmt='(a)'       )  '------------------------------'
+            write (unit=*,fmt='(2(1x,a))') '       IYEAR','    YEAR_USE'
+         end if
          do year_use=iyeara,iyearz
             iyear=year_use-iyeara+1
             if (year_use < metcyc1 .or. year_use > metcycf) then
@@ -466,10 +480,14 @@ subroutine read_met_drivers_init
             else
                metyears(iyear) = year_use
             end if
-            write (unit=*,fmt='(2(1x,i12))') iyear,metyears(iyear)
+            if (mynum == 1) then
+               write (unit=*,fmt='(2(1x,i12))') iyear,metyears(iyear)
+            end if
          end do
-         write (unit=*,fmt='(a)'       )  '------------------------------'
-         write (unit=*,fmt='(a)'       )  ' '
+         if (mynum == 1) then
+            write (unit=*,fmt='(a)'       )  '------------------------------'
+            write (unit=*,fmt='(a)'       )  ' '
+         end if
       end select
    end if
    !---------------------------------------------------------------------------------------!

@@ -1069,7 +1069,7 @@ for (place in myplaces){
 
    #----- Retrieve default information about this place and set up some variables. --------#
    thispoi = locations(where=place,here=here,yearbeg=yearbeg,yearend=yearend
-                      ,monthbeg=monthbeg)
+                      ,monthbeg=monthbeg,filetype="Q")
    inpref  = thispoi$pathin
    outmain = paste(outroot,place,sep="/")
    outpref = paste(outmain,"monthly",sep="/")
