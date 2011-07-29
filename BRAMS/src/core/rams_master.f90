@@ -226,22 +226,41 @@ subroutine rams_master(ipara, nslaves, master_num, name_name)
         do i=1,nslaves
            taskids(i)=i
         end do
-
+        write (unit=*,fmt='(a)') ' Waiting for all nodes to reach this barrier'
         call MPI_Barrier(MPI_COMM_WORLD,ierr)
+        write (unit=*,fmt='(a)') ' - Masterput_processid'
         call masterput_processid(nslaves,taskids,master_num)
+        write (unit=*,fmt='(a)') ' - Masterput_nl'
         call masterput_nl(master_num)
-        if (isfcl == 5) call masterput_ednl(master_num)
+        if (isfcl == 5) then
+           write (unit=*,fmt='(a)') ' - Masterput_ednl'
+           call masterput_ednl(master_num)
+        end if
+        write (unit=*,fmt='(a)') ' - Masterput_gridinit'
         call masterput_gridinit(master_num)
+        write (unit=*,fmt='(a)') ' - Node_decomp'
         call node_decomp(.true.)
+        write (unit=*,fmt='(a)') ' - dump_Domain_Decomposition'
         call dump_Domain_Decomposition()
+        write (unit=*,fmt='(a)') ' - Masterput_grid_dimens'
         call masterput_grid_dimens(master_num)
+        write (unit=*,fmt='(a)') ' - Masterput_grid_gridset'
         call masterput_gridset(master_num)
+        write (unit=*,fmt='(a)') ' - Masterput_grid_cofnest'
         call masterput_cofnest(master_num)
+        write (unit=*,fmt='(a)') ' - Masterput_grid_micphys'
         call masterput_micphys(master_num)
-        if (if_oda == 1) call masterput_oda(master_num)
+        if (if_oda == 1) then
+           write (unit=*,fmt='(a)') ' - Masterput_oda'
+           call masterput_oda(master_num)
+        end if
+        write (unit=*,fmt='(a)') ' - Masterput_misc'
         call masterput_misc(master_num)
+        write (unit=*,fmt='(a)') ' - Master_sendinit'
         call master_sendinit()
+        write (unit=*,fmt='(a)') ' - Master_ed_init'
         call master_ed_init(iparallel)
+        write (unit=*,fmt='(a)') ' - Second Barrier'
         call MPI_Barrier(MPI_COMM_WORLD,ierr)
      else
         call master_ed_init(iparallel)

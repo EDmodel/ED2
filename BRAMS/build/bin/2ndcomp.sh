@@ -278,6 +278,7 @@ rm -fv average_utils.o            average_utils.mod
 rm -fv budget_utils.o             budget_utils.mod
 rm -fv c34constants.o             c34constants.mod
 rm -fv canopy_air_coms.o          canopy_air_coms.mod
+rm -fv canopy_layer_coms.o        canopy_layer_coms.mod 
 rm -fv canopy_radiation_coms.o    canopy_radiation_coms.mod
 rm -fv canopy_struct_dynamics.o   canopy_struct_dynamics.mod
 rm -fv consts_coms.o              consts_coms.mod
@@ -340,6 +341,7 @@ rm -fv photosyn_driv.o            photosyn_driv.mod
 rm -fv physiology_coms.o          physiology_coms.mod
 rm -fv pft_coms.o                 pft_coms.mod
 rm -fv radiate_driver.o           radiate_driver.mod
+rm -fv radiate_utils.o            radiate_utils.mod
 rm -fv reproduction.o             reproduction.mod
 rm -fv rk4_coms.o                 rk4_coms.mod 
 rm -fv rk4_derivs.o               rk4_derivs.mod

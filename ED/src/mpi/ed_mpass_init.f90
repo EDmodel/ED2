@@ -70,43 +70,184 @@ end subroutine ed_masterput_processid
 ! patches for the POI runs).                                                               !
 !------------------------------------------------------------------------------------------!
 subroutine ed_masterput_nl(par_run)
-   use ed_para_coms,    only: mainnum
-   use ed_max_dims,     only: str_len,max_poi,max_ed_regions,nzgmax,n_pft,maxgrds,maxpvars
-   use ed_misc_coms,    only: expnme, runtype,itimea,iyeara,imontha,idatea ,itimez,iyearz  &
-                             ,imonthz,idatez,dtlsm,radfrq,ifoutput,idoutput,imoutput       &
-                             ,iqoutput,itoutput,iyoutput,iclobber,frqfast,sfilin,ffilout   &
-                             ,ied_init_mode,thsums_database,integration_scheme,end_time    &
-                             ,current_time,sfilout,frqstate,isoutput,iprintpolys,printvars &
-                             ,pfmtstr,ipmin,ipmax,iedcnfgf,outfast,outstate,out_time_fast  &
-                             ,out_time_state,nrec_fast,nrec_state,irec_fast,irec_state     &
-                             ,unitfast,unitstate,event_file,itimeh,iyearh,imonthh,idateh   &
-                             ,ndcycle
-
-   use ed_misc_coms   , only: attach_metadata
-   use canopy_air_coms, only: icanturb, i_blyr_condct, isfclyrm, ustmin, gamm, gamh        &
-                             ,tprandtl,vkopr, ggfact, vh2vr, vh2dh
-   use grid_coms,       only: nzg,nzs,ngrids,nnxp,nnyp,deltax,deltay,polelat,polelon       &
-                             ,centlat,centlon,time,timmax,nstratx,nstraty
-   use soil_coms,       only: isoilflg,nslcon,slxclay,slxsand,slz,slmstr,stgoff,veg_database,soil_database &
-                             ,soilstate_db,soildepth_db,isoilstateinit,isoildepthflg       &
-                             ,isoilbc,runoff_time,betapower,zrough,layer_index,nlon_lyr    &
-                             ,nlat_lyr
-   use met_driver_coms, only: ed_met_driver_db,imettype,ishuffle,metcyc1,metcycf           &
-                             ,initial_co2, lapse_scheme
-   use mem_polygons,    only: n_poi,n_ed_region,grid_type,grid_res,poi_lat,poi_lon         &
-                             ,ed_reg_latmin,ed_reg_latmax,ed_reg_lonmin,ed_reg_lonmax      &
-                             ,edres,maxpatch,maxcohort
-   use physiology_coms, only: istoma_scheme, h2o_plant_lim, n_plant_lim, vmfact, mfact     &
-                            , kfact, gamfact, lwfact, thioff, icomppt, quantum_efficiency_T
-   use phenology_coms , only: iphen_scheme,iphenys1,iphenysf,iphenyf1,iphenyff,phenpath    &
-                             ,repro_scheme, radint, radslp, thetacrit
-   use decomp_coms,     only: n_decomp_lim
-   use pft_coms,        only: include_these_pft,agri_stock,plantation_stock,pft_1st_check
-   use disturb_coms,    only: include_fire,ianth_disturb, treefall_disturbance_rate        &
-                             ,lu_database,plantation_file,lu_rescale_file,sm_fire
-   use optimiz_coms,    only: ioptinpt
-   use canopy_radiation_coms, only : crown_mod
-   use rk4_coms,        only: rk4_tolerance, ibranch_thermo, ipercol
+   use ed_para_coms         , only : mainnum                   ! ! intent(in)
+   use ed_max_dims          , only : str_len                   & ! intent(in)
+                                   , max_poi                   & ! intent(in)
+                                   , max_ed_regions            & ! intent(in)
+                                   , nzgmax                    & ! intent(in)
+                                   , n_pft                     & ! intent(in)
+                                   , maxgrds                   & ! intent(in)
+                                   , maxpvars                  ! ! intent(in)
+   use ed_misc_coms         , only : expnme                    & ! intent(in)
+                                   , runtype                   & ! intent(in)
+                                   , itimea                    & ! intent(in)
+                                   , iyeara                    & ! intent(in)
+                                   , imontha                   & ! intent(in)
+                                   , idatea                    & ! intent(in)
+                                   , itimez                    & ! intent(in)
+                                   , iyearz                    & ! intent(in)
+                                   , imonthz                   & ! intent(in)
+                                   , idatez                    & ! intent(in)
+                                   , dtlsm                     & ! intent(in)
+                                   , radfrq                    & ! intent(in)
+                                   , ifoutput                  & ! intent(in)
+                                   , idoutput                  & ! intent(in)
+                                   , imoutput                  & ! intent(in)
+                                   , iqoutput                  & ! intent(in)
+                                   , itoutput                  & ! intent(in)
+                                   , iyoutput                  & ! intent(in)
+                                   , iclobber                  & ! intent(in)
+                                   , frqfast                   & ! intent(in)
+                                   , sfilin                    & ! intent(in)
+                                   , ffilout                   & ! intent(in)
+                                   , ied_init_mode             & ! intent(in)
+                                   , thsums_database           & ! intent(in)
+                                   , integration_scheme        & ! intent(in)
+                                   , end_time                  & ! intent(in)
+                                   , current_time              & ! intent(in)
+                                   , sfilout                   & ! intent(in)
+                                   , frqstate                  & ! intent(in)
+                                   , isoutput                  & ! intent(in)
+                                   , iprintpolys               & ! intent(in)
+                                   , printvars                 & ! intent(in)
+                                   , pfmtstr                   & ! intent(in)
+                                   , ipmin                     & ! intent(in)
+                                   , ipmax                     & ! intent(in)
+                                   , iedcnfgf                  & ! intent(in)
+                                   , outfast                   & ! intent(in)
+                                   , outstate                  & ! intent(in)
+                                   , out_time_fast             & ! intent(in)
+                                   , out_time_state            & ! intent(in)
+                                   , nrec_fast                 & ! intent(in)
+                                   , nrec_state                & ! intent(in)
+                                   , irec_fast                 & ! intent(in)
+                                   , irec_state                & ! intent(in)
+                                   , unitfast                  & ! intent(in)
+                                   , unitstate                 & ! intent(in)
+                                   , event_file                & ! intent(in)
+                                   , itimeh                    & ! intent(in)
+                                   , iyearh                    & ! intent(in)
+                                   , imonthh                   & ! intent(in)
+                                   , idateh                    & ! intent(in)
+                                   , ndcycle                   & ! intent(in)
+                                   , iallom                    & ! intent(in)
+                                   , min_site_area             & ! intent(in)
+                                   , attach_metadata           ! ! intent(in)
+   use canopy_air_coms      , only : icanturb                  & ! intent(in)
+                                   , i_blyr_condct             & ! intent(in)
+                                   , isfclyrm                  & ! intent(in)
+                                   , ied_grndvap               & ! intent(in)
+                                   , ustmin                    & ! intent(in)
+                                   , gamm                      & ! intent(in)
+                                   , gamh                      & ! intent(in)
+                                   , tprandtl                  & ! intent(in)
+                                   , vkopr                     & ! intent(in)
+                                   , ggfact                    & ! intent(in)
+                                   , vh2vr                     & ! intent(in)
+                                   , vh2dh                     & ! intent(in)
+                                   , ribmax                    & ! intent(in)
+                                   , leaf_maxwhc               ! ! intent(in)
+   use grid_coms            , only : nzg                       & ! intent(in)
+                                   , nzs                       & ! intent(in)
+                                   , ngrids                    & ! intent(in)
+                                   , nnxp                      & ! intent(in)
+                                   , nnyp                      & ! intent(in)
+                                   , deltax                    & ! intent(in)
+                                   , deltay                    & ! intent(in)
+                                   , polelat                   & ! intent(in)
+                                   , polelon                   & ! intent(in)
+                                   , centlat                   & ! intent(in)
+                                   , centlon                   & ! intent(in)
+                                   , time                      & ! intent(in)
+                                   , timmax                    & ! intent(in)
+                                   , nstratx                   & ! intent(in)
+                                   , nstraty                   ! ! intent(in)
+   use soil_coms            , only : isoilflg                  & ! intent(in)
+                                   , nslcon                    & ! intent(in)
+                                   , slxclay                   & ! intent(in)
+                                   , slxsand                   & ! intent(in)
+                                   , slz                       & ! intent(in)
+                                   , slmstr                    & ! intent(in)
+                                   , stgoff                    & ! intent(in)
+                                   , veg_database              & ! intent(in)
+                                   , soil_database             & ! intent(in)
+                                   , soilstate_db              & ! intent(in)
+                                   , soildepth_db              & ! intent(in)
+                                   , isoilstateinit            & ! intent(in)
+                                   , isoildepthflg             & ! intent(in)
+                                   , isoilbc                   & ! intent(in)
+                                   , runoff_time               & ! intent(in)
+                                   , betapower                 & ! intent(in)
+                                   , zrough                    & ! intent(in)
+                                   , layer_index               & ! intent(in)
+                                   , nlon_lyr                  & ! intent(in)
+                                   , nlat_lyr                  ! ! intent(in)
+   use met_driver_coms      , only : ed_met_driver_db          & ! intent(in)
+                                   , imettype                  & ! intent(in)
+                                   , ishuffle                  & ! intent(in)
+                                   , metcyc1                   & ! intent(in)
+                                   , metcycf                   & ! intent(in)
+                                   , imetavg                   & ! intent(in)
+                                   , imetrad                   & ! intent(in)
+                                   , initial_co2               & ! intent(in)
+                                   , lapse_scheme              ! ! intent(in)
+   use mem_polygons         , only : n_poi                     & ! intent(in)
+                                   , n_ed_region               & ! intent(in)
+                                   , grid_type                 & ! intent(in)
+                                   , grid_res                  & ! intent(in)
+                                   , poi_lat                   & ! intent(in)
+                                   , poi_lon                   & ! intent(in)
+                                   , poi_res                   & ! intent(in)
+                                   , ed_reg_latmin             & ! intent(in)
+                                   , ed_reg_latmax             & ! intent(in)
+                                   , ed_reg_lonmin             & ! intent(in)
+                                   , ed_reg_lonmax             & ! intent(in)
+                                   , edres                     & ! intent(in)
+                                   , maxsite                   & ! intent(in)
+                                   , maxpatch                  & ! intent(in)
+                                   , maxcohort                 ! ! intent(in)
+   use physiology_coms      , only : iphysiol                  & ! intent(in)
+                                   , istoma_scheme             & ! intent(in)
+                                   , h2o_plant_lim             & ! intent(in)
+                                   , n_plant_lim               & ! intent(in)
+                                   , vmfact                    & ! intent(in)
+                                   , mfact                     & ! intent(in)
+                                   , kfact                     & ! intent(in)
+                                   , gamfact                   & ! intent(in)
+                                   , d0fact                    & ! intent(in)
+                                   , alphafact                 & ! intent(in)
+                                   , lwfact                    & ! intent(in)
+                                   , thioff                    & ! intent(in)
+                                   , quantum_efficiency_T      ! ! intent(in)
+   use phenology_coms       , only : iphen_scheme              & ! intent(in)
+                                   , iphenys1                  & ! intent(in)
+                                   , iphenysf                  & ! intent(in)
+                                   , iphenyf1                  & ! intent(in)
+                                   , iphenyff                  & ! intent(in)
+                                   , phenpath                  & ! intent(in)
+                                   , repro_scheme              & ! intent(in)
+                                   , radint                    & ! intent(in)
+                                   , radslp                    & ! intent(in)
+                                   , thetacrit                 ! ! intent(in)
+   use decomp_coms          , only : n_decomp_lim              ! ! intent(in)
+   use pft_coms             , only : include_these_pft         & ! intent(in)
+                                   , agri_stock                & ! intent(in)
+                                   , plantation_stock          & ! intent(in)
+                                   , pft_1st_check             ! ! intent(in)
+   use disturb_coms         , only : include_fire              & ! intent(in)
+                                   , ianth_disturb             & ! intent(in)
+                                   , treefall_disturbance_rate & ! intent(in)
+                                   , lu_database               & ! intent(in)
+                                   , plantation_file           & ! intent(in)
+                                   , lu_rescale_file           & ! intent(in)
+                                   , sm_fire                   & ! intent(in)
+                                   , time2canopy               ! ! intent(in)
+   use optimiz_coms         , only : ioptinpt                  ! ! intent(in)
+   use canopy_layer_coms    , only : crown_mod                 ! ! intent(in)
+   use canopy_radiation_coms, only : ican_swrad                ! ! intent(in)
+   use rk4_coms             , only : rk4_tolerance             & ! intent(in)
+                                   , ibranch_thermo            & ! intent(in)
+                                   , ipercol                   ! ! intent(in)
 
    implicit none
    include 'mpif.h'
@@ -212,6 +353,7 @@ subroutine ed_masterput_nl(par_run)
    call MPI_Bcast(grid_res,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(poi_lat,max_poi,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(poi_lon,max_poi,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(poi_res,max_poi,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(ed_reg_latmin,max_ed_regions,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(ed_reg_latmax,max_ed_regions,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(ed_reg_lonmin,max_ed_regions,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
@@ -231,7 +373,9 @@ subroutine ed_masterput_nl(par_run)
    call MPI_Bcast(integration_scheme,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(rk4_tolerance,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(ibranch_thermo,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(iphysiol,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(istoma_scheme,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(iallom,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(iphen_scheme,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(repro_scheme,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(radint,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)   
@@ -239,15 +383,17 @@ subroutine ed_masterput_nl(par_run)
       
    call MPI_Bcast(lapse_scheme,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(crown_mod,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(ican_swrad,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(h2o_plant_lim,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(vmfact,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(mfact,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(kfact,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(gamfact,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(d0fact,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(alphafact,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(thetacrit,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(lwfact,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(thioff,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
-   call MPI_Bcast(icomppt,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(quantum_efficiency_T,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(n_plant_lim,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(n_decomp_lim,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
@@ -262,9 +408,11 @@ subroutine ed_masterput_nl(par_run)
    call MPI_Bcast(icanturb,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(i_blyr_condct,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(isfclyrm,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(ied_grndvap,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(ipercol,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
 
    call MPI_Bcast(treefall_disturbance_rate,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(time2canopy,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(runoff_time,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(betapower,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(ustmin,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
@@ -274,6 +422,8 @@ subroutine ed_masterput_nl(par_run)
    call MPI_Bcast(vkopr,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(vh2vr,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(vh2dh,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(ribmax,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(leaf_maxwhc,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(ggfact,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
 
    call MPI_Bcast(iprintpolys,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
@@ -288,6 +438,8 @@ subroutine ed_masterput_nl(par_run)
    call MPI_Bcast(ishuffle,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(metcyc1,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(metcycf,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(imetavg,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(imetrad,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(initial_co2,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
 
    call MPI_Bcast(iphenys1,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
@@ -299,8 +451,10 @@ subroutine ed_masterput_nl(par_run)
    call MPI_Bcast(phenpath,str_len,MPI_CHARACTER,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(event_file,str_len,MPI_CHARACTER,mainnum,MPI_COMM_WORLD,ierr)
 
+   call MPI_Bcast(maxsite,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(maxpatch,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(maxcohort,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(min_site_area,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
 
   
    call MPI_Bcast(ioptinpt,str_len,MPI_CHARACTER,mainnum,MPI_COMM_WORLD,ierr)
@@ -310,10 +464,10 @@ subroutine ed_masterput_nl(par_run)
 
    call MPI_Bcast(attach_metadata,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
 
-!------------------------------------------------------------------------------------------!
-!   One last thing to send is the layer index based on the soil_depth. It is not really a  !
-! namelist thing, but it is still a setup variable.                                        !
-!------------------------------------------------------------------------------------------!
+   !---------------------------------------------------------------------------------------!
+   !   One last thing to send is the layer index based on the soil_depth. It is not really !
+   ! a namelist thing, but it is still a setup variable.                                   !
+   !---------------------------------------------------------------------------------------!
    call MPI_Barrier(MPI_COMM_WORLD,ierr) ! Just to wait until the matrix is allocated
    call MPI_Bcast(layer_index,nlat_lyr*nlon_lyr,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
 
@@ -329,39 +483,65 @@ end subroutine ed_masterput_nl
 
 !==========================================================================================!
 !==========================================================================================!
-subroutine ed_masterput_met_header(par_run)
-!------------------------------------------------------------------------------------------!
 !    This subroutine sends the met driver information to the nodes, which can then read    !
 ! the hdf5 in parallel                                                                     !
 !------------------------------------------------------------------------------------------!
-   use ed_para_coms, only: mainnum
-   use ed_max_dims, only: max_met_vars,str_len
-   use met_driver_coms, only: nformats, met_names, met_nlon,   &
-        met_nlat, met_dx, met_dy, met_xmin, met_ymin, met_nv,   &
-        met_vars, met_frq, met_interp, ed_met_driver_db, no_ll,  &
-        metname_len,metvars_len
+subroutine ed_masterput_met_header(par_run)
+   use ed_para_coms   , only : mainnum           ! ! intent(in)
+   use ed_max_dims    , only : max_met_vars      & ! intent(in)
+                             , str_len           ! ! intent(in)
+   use met_driver_coms, only : nformats          & ! intent(in)
+                             , met_names         & ! intent(in)
+                             , met_nlon          & ! intent(in)
+                             , met_nlat          & ! intent(in)
+                             , met_dx            & ! intent(in)
+                             , met_dy            & ! intent(in)
+                             , met_xmin          & ! intent(in)
+                             , met_ymin          & ! intent(in)
+                             , met_nv            & ! intent(in)
+                             , met_vars          & ! intent(in)
+                             , met_frq           & ! intent(in)
+                             , met_interp        & ! intent(in)
+                             , ed_met_driver_db  & ! intent(in)
+                             , no_ll             & ! intent(in)
+                             , metname_len       & ! intent(in)
+                             , metvars_len       ! ! intent(in)
    
    implicit none
+   !------ Pre-compiled options. ----------------------------------------------------------!
    include 'mpif.h'
-   integer, intent(in) :: par_run
-   integer             :: ierr, nsize,f,v
+   !------ Arguments. ---------------------------------------------------------------------!
+   integer                      , intent(in)   :: par_run
+   !------ Local variables. ---------------------------------------------------------------!
+   integer                                     :: ierr
+   integer                                     :: nsize
+   integer                                     :: f
+   integer                                     :: v
+   !---------------------------------------------------------------------------------------!
 
+
+   !----- Nothing to do if this is a serial run. ------------------------------------------!
    if (par_run == 0) return
-   
+   !---------------------------------------------------------------------------------------!
+
    nsize=nformats*max_met_vars
 
-!----- First I send the scalars -----------------------------------------------------------!
-   call MPI_Bcast (nformats,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
 
-   
-!------------------------------------------------------------------------------------------!
-!   Here I need a MPI Barrier. The master has the variables already allocated, but I need  !
-! the nodes with their structures already allocated before I proceed sending the info      !
-!------------------------------------------------------------------------------------------!
+   !----- First I send the scalars --------------------------------------------------------!
+   call MPI_Bcast (nformats,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
+   !---------------------------------------------------------------------------------------!
+
+   !---------------------------------------------------------------------------------------!
+   !    Here we need a MPI Barrier. The master has the variables already allocated, but we !
+   ! need the nodes with their structures already allocated before we proceed sending the  !
+   ! information.                                                                          !
+   !---------------------------------------------------------------------------------------!
    call MPI_Barrier(MPI_COMM_WORLD,ierr)
+   !---------------------------------------------------------------------------------------!
+
 
    do f=1,nformats
-     call MPI_Bcast(met_names(f),metname_len,MPI_CHARACTER,mainnum,MPI_COMM_WORLD,ierr)
+      call MPI_Bcast(met_names(f),metname_len,MPI_CHARACTER,mainnum,MPI_COMM_WORLD,ierr)
    end do
    
    call MPI_Bcast(met_nlon,nformats,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
@@ -375,7 +555,8 @@ subroutine ed_masterput_met_header(par_run)
   
    do f=1,nformats
       do v=1,max_met_vars
-         call MPI_Bcast(met_vars(f,v),metvars_len,MPI_CHARACTER,mainnum,MPI_COMM_WORLD,ierr)
+         call MPI_Bcast(met_vars(f,v),metvars_len,MPI_CHARACTER,mainnum,MPI_COMM_WORLD     &
+                       ,ierr)
       end do
    end do
    
@@ -692,138 +873,188 @@ end subroutine ed_masterput_poly_dims
 
 !==========================================================================================!
 !==========================================================================================!
+!     This sub-routine sends the work structure variables to the other nodes, and copy the !
+! variables to the vectorised version of the work arrays.                                  !
+!------------------------------------------------------------------------------------------!
 subroutine ed_masterput_worklist_info(par_run)
 
-  use ed_max_dims, only: maxmach
-  use grid_coms, only: ngrids
-  use ed_work_vars , only : work_v                & ! intent(inout)
-                          , work_e                & ! intent(inout)
-                          , work_vecs             & ! structure
-                          , ed_alloc_work_vec     & ! subroutine
-                          , ed_nullify_work_vec   & ! subroutine
-                          , ed_dealloc_work_vec   ! ! subroutine
-  use ed_para_coms, only: nmachs,mainnum,machnum
-  use soil_coms, only: isoilflg
-  use ed_node_coms, only: mxp,myp,i0,j0
-  use ed_state_vars, only: gdpy,py_off
-
-  implicit none
-  include 'mpif.h'
-  integer, intent(in) :: par_run
-  integer :: npoly
-  integer :: offset
-  integer :: nm
-  integer :: ifm
-  integer :: mpiid
-  integer :: ierr
-
-  type(work_vecs), allocatable, dimension(:)   :: sc_work
-
-  real,            allocatable, dimension(:) :: rscratch
-  integer,         allocatable, dimension(:) :: iscratch
-
-  
-
-  if (par_run == 1) then
-     
-     do nm=1,nmachs
-        do ifm=1,ngrids
-           
-           npoly  = gdpy(nm,ifm)
-           offset = py_off(nm,ifm)
-           
-           allocate(rscratch(npoly),iscratch(npoly))
-
-           mpiid=maxmach*(ifm-1)+nm
-
-           rscratch(1:npoly) = work_v(ifm)%glon(offset+1:offset+npoly)
-           call MPI_Send(rscratch,npoly,MPI_REAL,machnum(nm),1300000+mpiid,MPI_COMM_WORLD,ierr)
-  
-           rscratch(1:npoly) = work_v(ifm)%glat(offset+1:offset+npoly)
-           call MPI_Send(rscratch,npoly,MPI_REAL,machnum(nm),1400000+mpiid,MPI_COMM_WORLD,ierr)
-           
-           rscratch(1:npoly) = work_v(ifm)%landfrac(offset+1:offset+npoly)
-           call MPI_Send(rscratch,npoly,MPI_REAL,machnum(nm),1500000+mpiid,MPI_COMM_WORLD,ierr)
-           
-           iscratch(1:npoly) = work_v(ifm)%ntext(offset+1:offset+npoly)
-           call MPI_Send(iscratch,npoly,MPI_INTEGER,machnum(nm),1600000+mpiid,MPI_COMM_WORLD,ierr)
-
-           iscratch(1:npoly) = work_v(ifm)%xid(offset+1:offset+npoly)
-           call MPI_Send(iscratch,npoly,MPI_INTEGER,machnum(nm),1700000+mpiid,MPI_COMM_WORLD,ierr)
-           
-           iscratch(1:npoly) = work_v(ifm)%yid(offset+1:offset+npoly)
-           call MPI_Send(iscratch,npoly,MPI_INTEGER,machnum(nm),1800000+mpiid,MPI_COMM_WORLD,ierr)
-
-
-
-           deallocate(rscratch,iscratch)
-
-        enddo
-     enddo
-     
-  endif
-  
-  ! Deallocate each of the global vectors, and reallocate (and fill) as local vectors
-
-  nm=nmachs+1
-  allocate(sc_work(ngrids))
-
-  do ifm=1,ngrids
-     
-     npoly  = gdpy(nm,ifm)
-     offset = py_off(nm,ifm)
-     call ed_nullify_work_vec(sc_work(ifm))
-     call ed_alloc_work_vec(sc_work(ifm),npoly)
-
-     sc_work(ifm)%glon(1:npoly)     = work_v(ifm)%glon(offset+1:offset+npoly)
-     sc_work(ifm)%glat(1:npoly)     = work_v(ifm)%glat(offset+1:offset+npoly)
-     sc_work(ifm)%landfrac(1:npoly) = work_v(ifm)%landfrac(offset+1:offset+npoly)
-     sc_work(ifm)%ntext(1:npoly)    = work_v(ifm)%ntext(offset+1:offset+npoly)
-     sc_work(ifm)%xid(1:npoly)      = work_v(ifm)%xid(offset+1:offset+npoly)
-     sc_work(ifm)%yid(1:npoly)      = work_v(ifm)%yid(offset+1:offset+npoly)
-
-     call ed_dealloc_work_vec(work_v(ifm))
-     
-
-  enddo
-
-  deallocate(work_e,work_v)
-
-  ! So here it will be 2 (node-style) if it is a parallel run, and 0 if it is a serial run
-  call ed_mem_alloc(2*par_run) 
-
-  allocate (work_v(ngrids))
-  do ifm=1,ngrids
-
-     npoly  = gdpy(nm,ifm)
-     call ed_nullify_work_vec(work_v(ifm))
-     call ed_alloc_work_vec(work_v(ifm),npoly)
-
-     !----- Copying the scratch work structure back to the work structure. ----------------!
-     work_v(ifm)%glon(1:npoly)     = sc_work(ifm)%glon(1:npoly)
-     work_v(ifm)%glat(1:npoly)     = sc_work(ifm)%glat(1:npoly)
-     work_v(ifm)%landfrac(1:npoly) = sc_work(ifm)%landfrac(1:npoly)
-     work_v(ifm)%ntext(1:npoly)    = sc_work(ifm)%ntext(1:npoly)
-     work_v(ifm)%xid(1:npoly)      = sc_work(ifm)%xid(1:npoly)
-     work_v(ifm)%yid(1:npoly)      = sc_work(ifm)%yid(1:npoly)
-
-     !----- Deallocating the scratch structure. -------------------------------------------!
-     call ed_dealloc_work_vec(sc_work(ifm))
-
-   end do
+   use ed_max_dims  , only : maxmach
+   use grid_coms    , only : ngrids
+   use ed_work_vars , only : work_v                & ! intent(inout)
+                           , work_e                & ! intent(inout)
+                           , work_vecs             & ! structure
+                           , ed_alloc_work_vec     & ! subroutine
+                           , ed_nullify_work_vec   & ! subroutine
+                           , ed_dealloc_work_vec   ! ! subroutine
+   use ed_para_coms , only : nmachs                & ! intent(in)
+                           , mainnum               & ! intent(in)
+                           , machnum               ! ! intent(in)
+   use soil_coms    , only : isoilflg              ! ! intent(in)
+   use ed_node_coms , only : mxp                   & ! intent(in)
+                           , myp                   & ! intent(in)
+                           , i0                    & ! intent(in)
+                           , j0                    ! ! intent(in)
+   use ed_state_vars, only : gdpy                  & ! intent(in)
+                           , py_off                ! ! intent(in)
+   use mem_polygons , only : maxsite               ! ! intent(in)
+   implicit none
+   !------ Pre-compiled options. ----------------------------------------------------------!
+   include 'mpif.h'
+   !------ Arguments. ---------------------------------------------------------------------!
+   integer                      , intent(in)   :: par_run
+   !------ Local variables. ---------------------------------------------------------------!
+   integer                                     :: npoly
+   integer                                     :: offset
+   integer                                     :: nm
+   integer                                     :: ifm
+   integer                                     :: mpiid
+   integer                                     :: ierr
+   integer                                     :: itext
+   integer                                     :: ipya
+   integer                                     :: ipyz
+   type(work_vecs), dimension(:), allocatable  :: sc_work
+   real           , dimension(:),  allocatable :: rscratch
+   integer        , dimension(:),  allocatable :: iscratch
+   !---------------------------------------------------------------------------------------!
    
-   deallocate(sc_work)
+
+   if (par_run == 1) then
+      
+      do nm=1,nmachs
+         do ifm=1,ngrids
+
+            npoly  = gdpy(nm,ifm)
+            offset = py_off(nm,ifm)
+            ipya   = offset + 1
+            ipyz   = offset + npoly
+
+            !----- Allocate the scratch vectors. ------------------------------------------!
+            allocate(rscratch(npoly),iscratch(npoly))
 
 
-  
-  return
+            !----- Set a unique identifier for these packages. ----------------------------!
+            mpiid = 1300000 + maxmach*(ifm-1)*(10+5*maxsite) + nm
+
+            rscratch(1:npoly) = work_v(ifm)%glon(ipya:ipyz)
+            call MPI_Send(rscratch,npoly,MPI_REAL,machnum(nm),mpiid,MPI_COMM_WORLD,ierr)
+            mpiid = mpiid + 1
+
+            rscratch(1:npoly) = work_v(ifm)%glat(ipya:ipyz)
+            call MPI_Send(rscratch,npoly,MPI_REAL,machnum(nm),mpiid,MPI_COMM_WORLD,ierr)
+            mpiid = mpiid + 1
+
+            rscratch(1:npoly) = work_v(ifm)%landfrac(ipya:ipyz)
+            call MPI_Send(rscratch,npoly,MPI_REAL,machnum(nm),mpiid,MPI_COMM_WORLD,ierr)
+            mpiid = mpiid + 1
+
+
+            iscratch(1:npoly) = work_v(ifm)%xid(ipya:ipyz)
+            call MPI_Send(iscratch,npoly,MPI_INTEGER,machnum(nm),mpiid,MPI_COMM_WORLD,ierr)
+            mpiid = mpiid + 1
+
+            iscratch(1:npoly) = work_v(ifm)%yid(ipya:ipyz)
+            call MPI_Send(iscratch,npoly,MPI_INTEGER,machnum(nm),mpiid,MPI_COMM_WORLD,ierr)
+            mpiid = mpiid + 1
+
+            do itext=1,maxsite
+               iscratch(1:npoly) = work_v(ifm)%ntext(itext,ipya:ipyz)
+               call MPI_Send(iscratch,npoly,MPI_INTEGER,machnum(nm),mpiid,MPI_COMM_WORLD   &
+                            ,ierr)
+               mpiid = mpiid + 1
+
+               rscratch(1:npoly) = work_v(ifm)%soilfrac(itext,ipya:ipyz)
+               call MPI_Send(rscratch,npoly,MPI_REAL,machnum(nm),mpiid,MPI_COMM_WORLD      &
+                            ,ierr)
+               mpiid = mpiid + 1
+            end do
+
+            !----- Deallocate the scratch arrays, as the polygon sizes may change. --------!
+            deallocate(rscratch,iscratch)
+
+         end do
+      end do
+   end if
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Deallocate each of the global vectors, and reallocate (and fill) as local         !
+   ! vectors.                                                                              !
+   !---------------------------------------------------------------------------------------!
+   nm = nmachs+1
+   allocate(sc_work(ngrids))
+   do ifm=1,ngrids
+      
+      npoly  = gdpy(nm,ifm)
+      offset = py_off(nm,ifm)
+      ipya   = offset + 1
+      ipyz   = offset + npoly
+
+      call ed_nullify_work_vec(sc_work(ifm))
+      call ed_alloc_work_vec(sc_work(ifm),npoly,maxsite)
+
+      sc_work(ifm)%glon              (1:npoly) = work_v(ifm)%glon              (ipya:ipyz)
+      sc_work(ifm)%glat              (1:npoly) = work_v(ifm)%glat              (ipya:ipyz)
+      sc_work(ifm)%landfrac          (1:npoly) = work_v(ifm)%landfrac          (ipya:ipyz)
+      sc_work(ifm)%soilfrac(1:maxsite,1:npoly) = work_v(ifm)%soilfrac(1:maxsite,ipya:ipyz)
+      sc_work(ifm)%ntext   (1:maxsite,1:npoly) = work_v(ifm)%ntext   (1:maxsite,ipya:ipyz)
+      sc_work(ifm)%xid               (1:npoly) = work_v(ifm)%xid               (ipya:ipyz)
+      sc_work(ifm)%yid               (1:npoly) = work_v(ifm)%yid               (ipya:ipyz)
+
+      call ed_dealloc_work_vec(work_v(ifm))
+   end do
+   deallocate(work_e,work_v)
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     So here it will be 2 (node-style) if it is a parallel run, and 0 if it is a       !
+   ! serial run.                                                                           !
+   !---------------------------------------------------------------------------------------!
+   call ed_mem_alloc(2*par_run) 
+
+   allocate (work_v(ngrids))
+   do ifm=1,ngrids
+
+      npoly  = gdpy(nm,ifm)
+      call ed_nullify_work_vec(work_v(ifm))
+      call ed_alloc_work_vec(work_v(ifm),npoly,maxsite)
+
+      !----- Copy the scratch work structure back to the work structure. ------------------!
+      work_v(ifm)%glon              (1:npoly) = sc_work(ifm)%glon              (1:npoly)
+      work_v(ifm)%glat              (1:npoly) = sc_work(ifm)%glat              (1:npoly)
+      work_v(ifm)%landfrac          (1:npoly) = sc_work(ifm)%landfrac          (1:npoly)
+      work_v(ifm)%soilfrac(1:maxsite,1:npoly) = sc_work(ifm)%soilfrac(1:maxsite,1:npoly)
+      work_v(ifm)%ntext   (1:maxsite,1:npoly) = sc_work(ifm)%ntext   (1:maxsite,1:npoly)
+      work_v(ifm)%xid               (1:npoly) = sc_work(ifm)%xid               (1:npoly)
+      work_v(ifm)%yid               (1:npoly) = sc_work(ifm)%yid               (1:npoly)
+
+      !----- Deallocate the scratch structure. --------------------------------------------!
+      call ed_dealloc_work_vec(sc_work(ifm))
+    end do
+
+
+    !----- Free memory before leaving, so it won't leak memory. ---------------------------!
+    deallocate(sc_work)
+
+
+   
+   return
 end subroutine ed_masterput_worklist_info
-
-
 !==========================================================================================!
 !==========================================================================================!
 
 
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!     This sub-routine grabs the work structure variables from the "master" node.          !
+!------------------------------------------------------------------------------------------!
 subroutine ed_nodeget_processid(init)
 
   use ed_max_dims
@@ -863,49 +1094,190 @@ end subroutine ed_nodeget_processid
 
 !==========================================================================================!
 !==========================================================================================!
-subroutine ed_nodeget_nl
-
-  use ed_node_coms, only: master_num,mynum
-!------------------------------------------------------------------------------------------!
-!   This subroutine is responsible for getting all the namelist-related information in     !
+!   This subroutine brings all the namelist-related information sent by the master in      !
 ! every node.                                                                              !
 !------------------------------------------------------------------------------------------!
-   use ed_max_dims,     only: str_len,max_poi,max_ed_regions,nzgmax,n_pft,maxgrds,maxpvars
-   use ed_misc_coms,    only: expnme, runtype,itimea,iyeara,imontha,idatea ,itimez,iyearz  &
-                             ,imonthz,idatez,dtlsm,radfrq,ifoutput,idoutput,imoutput       &
-                             ,iqoutput, itoutput,iyoutput,iclobber,frqfast,sfilin,ffilout  &
-                             ,ied_init_mode,thsums_database,integration_scheme,end_time    &
-                             ,current_time,isoutput,sfilout,frqstate,iprintpolys,printvars &
-                             ,pfmtstr,ipmin,ipmax,iedcnfgf,outfast,outstate,out_time_fast  &
-                             ,out_time_state,nrec_fast,nrec_state,irec_fast,irec_state     &
-                             ,unitfast,unitstate,event_file,itimeh,iyearh,imonthh,idateh   &
-                             ,ndcycle
+subroutine ed_nodeget_nl
 
-   use grid_coms,       only: nzg,nzs,ngrids,nnxp,nnyp,deltax,deltay,polelat,polelon       &
-                             ,centlat,centlon,time,timmax,nstratx,nstraty
-   use soil_coms,       only: isoilflg,nslcon,slxclay,slxsand,slz,slmstr,stgoff,veg_database,soil_database &
-                             ,soilstate_db,soildepth_db,isoilstateinit,isoildepthflg       &
-                             ,isoilbc,runoff_time,betapower,zrough,layer_index,nlon_lyr    &
-                             ,nlat_lyr
-   use met_driver_coms, only: ed_met_driver_db,imettype,ishuffle,metcyc1,metcycf           &
-                             ,initial_co2,lapse_scheme
-   use mem_polygons,    only: n_poi,n_ed_region,grid_type,grid_res,poi_lat,poi_lon         &
-                             ,ed_reg_latmin,ed_reg_latmax,ed_reg_lonmin,ed_reg_lonmax      &
-                             ,edres,maxpatch,maxcohort
-   use physiology_coms, only: istoma_scheme, h2o_plant_lim, n_plant_lim, vmfact, mfact     &
-                            , kfact, gamfact, lwfact, thioff, icomppt, quantum_efficiency_T
-   use phenology_coms , only: iphen_scheme,iphenys1,iphenysf,iphenyf1,iphenyff,phenpath    &
-                             ,repro_scheme, radint, radslp, thetacrit
-   use decomp_coms,     only: n_decomp_lim
-   use disturb_coms,    only: include_fire,ianth_disturb, treefall_disturbance_rate        &
-                             ,lu_database,plantation_file,lu_rescale_file,sm_fire
-   use optimiz_coms,    only: ioptinpt
-   use ed_misc_coms,    only: attach_metadata
-   use canopy_air_coms, only: icanturb, i_blyr_condct, isfclyrm, ustmin, gamm, gamh        &
-                             ,tprandtl, vkopr, ggfact, vh2vr, vh2dh
-   use pft_coms,        only: include_these_pft,agri_stock,plantation_stock,pft_1st_check
-   use canopy_radiation_coms, only: crown_mod
-   use rk4_coms,        only: rk4_tolerance, ibranch_thermo, ipercol
+   use ed_node_coms         , only : master_num                & ! intent(in)
+                                   , mynum                     ! ! intent(in)
+   use ed_max_dims          , only : str_len                   & ! intent(in)
+                                   , max_poi                   & ! intent(in)
+                                   , max_ed_regions            & ! intent(in)
+                                   , nzgmax                    & ! intent(in)
+                                   , n_pft                     & ! intent(in)
+                                   , maxgrds                   & ! intent(in)
+                                   , maxpvars                  ! ! intent(in)
+   use ed_misc_coms         , only : expnme                    & ! intent(out)
+                                   , runtype                   & ! intent(out)
+                                   , itimea                    & ! intent(out)
+                                   , iyeara                    & ! intent(out)
+                                   , imontha                   & ! intent(out)
+                                   , idatea                    & ! intent(out)
+                                   , itimez                    & ! intent(out)
+                                   , iyearz                    & ! intent(out)
+                                   , imonthz                   & ! intent(out)
+                                   , idatez                    & ! intent(out)
+                                   , dtlsm                     & ! intent(out)
+                                   , radfrq                    & ! intent(out)
+                                   , ifoutput                  & ! intent(out)
+                                   , idoutput                  & ! intent(out)
+                                   , imoutput                  & ! intent(out)
+                                   , iqoutput                  & ! intent(out)
+                                   , itoutput                  & ! intent(out)
+                                   , iyoutput                  & ! intent(out)
+                                   , iclobber                  & ! intent(out)
+                                   , frqfast                   & ! intent(out)
+                                   , sfilin                    & ! intent(out)
+                                   , ffilout                   & ! intent(out)
+                                   , ied_init_mode             & ! intent(out)
+                                   , thsums_database           & ! intent(out)
+                                   , integration_scheme        & ! intent(out)
+                                   , end_time                  & ! intent(out)
+                                   , current_time              & ! intent(out)
+                                   , sfilout                   & ! intent(out)
+                                   , frqstate                  & ! intent(out)
+                                   , isoutput                  & ! intent(out)
+                                   , iprintpolys               & ! intent(out)
+                                   , printvars                 & ! intent(out)
+                                   , pfmtstr                   & ! intent(out)
+                                   , ipmin                     & ! intent(out)
+                                   , ipmax                     & ! intent(out)
+                                   , iedcnfgf                  & ! intent(out)
+                                   , outfast                   & ! intent(out)
+                                   , outstate                  & ! intent(out)
+                                   , out_time_fast             & ! intent(out)
+                                   , out_time_state            & ! intent(out)
+                                   , nrec_fast                 & ! intent(out)
+                                   , nrec_state                & ! intent(out)
+                                   , irec_fast                 & ! intent(out)
+                                   , irec_state                & ! intent(out)
+                                   , unitfast                  & ! intent(out)
+                                   , unitstate                 & ! intent(out)
+                                   , event_file                & ! intent(out)
+                                   , itimeh                    & ! intent(out)
+                                   , iyearh                    & ! intent(out)
+                                   , imonthh                   & ! intent(out)
+                                   , idateh                    & ! intent(out)
+                                   , ndcycle                   & ! intent(out)
+                                   , iallom                    & ! intent(out)
+                                   , min_site_area             & ! intent(out)
+                                   , attach_metadata           ! ! intent(out)
+   use canopy_air_coms      , only : icanturb                  & ! intent(out)
+                                   , i_blyr_condct             & ! intent(out)
+                                   , isfclyrm                  & ! intent(out)
+                                   , ied_grndvap               & ! intent(out)
+                                   , ustmin                    & ! intent(out)
+                                   , gamm                      & ! intent(out)
+                                   , gamh                      & ! intent(out)
+                                   , tprandtl                  & ! intent(out)
+                                   , vkopr                     & ! intent(out)
+                                   , ggfact                    & ! intent(out)
+                                   , vh2vr                     & ! intent(out)
+                                   , vh2dh                     & ! intent(out)
+                                   , ribmax                    & ! intent(out)
+                                   , leaf_maxwhc               ! ! intent(out)
+   use grid_coms            , only : nzg                       & ! intent(out)
+                                   , nzs                       & ! intent(out)
+                                   , ngrids                    & ! intent(out)
+                                   , nnxp                      & ! intent(out)
+                                   , nnyp                      & ! intent(out)
+                                   , deltax                    & ! intent(out)
+                                   , deltay                    & ! intent(out)
+                                   , polelat                   & ! intent(out)
+                                   , polelon                   & ! intent(out)
+                                   , centlat                   & ! intent(out)
+                                   , centlon                   & ! intent(out)
+                                   , time                      & ! intent(out)
+                                   , timmax                    & ! intent(out)
+                                   , nstratx                   & ! intent(out)
+                                   , nstraty                   ! ! intent(out)
+   use soil_coms            , only : isoilflg                  & ! intent(out)
+                                   , nslcon                    & ! intent(out)
+                                   , slxclay                   & ! intent(out)
+                                   , slxsand                   & ! intent(out)
+                                   , slz                       & ! intent(out)
+                                   , slmstr                    & ! intent(out)
+                                   , stgoff                    & ! intent(out)
+                                   , veg_database              & ! intent(out)
+                                   , soil_database             & ! intent(out)
+                                   , soilstate_db              & ! intent(out)
+                                   , soildepth_db              & ! intent(out)
+                                   , isoilstateinit            & ! intent(out)
+                                   , isoildepthflg             & ! intent(out)
+                                   , isoilbc                   & ! intent(out)
+                                   , runoff_time               & ! intent(out)
+                                   , betapower                 & ! intent(out)
+                                   , zrough                    & ! intent(out)
+                                   , layer_index               & ! intent(out)
+                                   , nlon_lyr                  & ! intent(out)
+                                   , nlat_lyr                  ! ! intent(out)
+   use met_driver_coms      , only : ed_met_driver_db          & ! intent(out)
+                                   , imettype                  & ! intent(out)
+                                   , ishuffle                  & ! intent(out)
+                                   , metcyc1                   & ! intent(out)
+                                   , metcycf                   & ! intent(out)
+                                   , imetavg                   & ! intent(out)
+                                   , imetrad                   & ! intent(out)
+                                   , initial_co2               & ! intent(out)
+                                   , lapse_scheme              ! ! intent(out)
+   use mem_polygons         , only : n_poi                     & ! intent(out)
+                                   , n_ed_region               & ! intent(out)
+                                   , grid_type                 & ! intent(out)
+                                   , grid_res                  & ! intent(out)
+                                   , poi_lat                   & ! intent(out)
+                                   , poi_lon                   & ! intent(out)
+                                   , poi_res                   & ! intent(out)
+                                   , ed_reg_latmin             & ! intent(out)
+                                   , ed_reg_latmax             & ! intent(out)
+                                   , ed_reg_lonmin             & ! intent(out)
+                                   , ed_reg_lonmax             & ! intent(out)
+                                   , edres                     & ! intent(out)
+                                   , maxsite                   & ! intent(out)
+                                   , maxpatch                  & ! intent(out)
+                                   , maxcohort                 ! ! intent(out)
+   use physiology_coms      , only : iphysiol                  & ! intent(out)
+                                   , istoma_scheme             & ! intent(out)
+                                   , h2o_plant_lim             & ! intent(out)
+                                   , n_plant_lim               & ! intent(out)
+                                   , vmfact                    & ! intent(out)
+                                   , mfact                     & ! intent(out)
+                                   , kfact                     & ! intent(out)
+                                   , gamfact                   & ! intent(out)
+                                   , d0fact                    & ! intent(out)
+                                   , alphafact                 & ! intent(out)
+                                   , lwfact                    & ! intent(out)
+                                   , thioff                    & ! intent(out)
+                                   , quantum_efficiency_T      ! ! intent(out)
+   use phenology_coms       , only : iphen_scheme              & ! intent(out)
+                                   , iphenys1                  & ! intent(out)
+                                   , iphenysf                  & ! intent(out)
+                                   , iphenyf1                  & ! intent(out)
+                                   , iphenyff                  & ! intent(out)
+                                   , phenpath                  & ! intent(out)
+                                   , repro_scheme              & ! intent(out)
+                                   , radint                    & ! intent(out)
+                                   , radslp                    & ! intent(out)
+                                   , thetacrit                 ! ! intent(out)
+   use decomp_coms          , only : n_decomp_lim              ! ! intent(out)
+   use pft_coms             , only : include_these_pft         & ! intent(out)
+                                   , agri_stock                & ! intent(out)
+                                   , plantation_stock          & ! intent(out)
+                                   , pft_1st_check             ! ! intent(out)
+   use disturb_coms         , only : include_fire              & ! intent(out)
+                                   , ianth_disturb             & ! intent(out)
+                                   , treefall_disturbance_rate & ! intent(out)
+                                   , lu_database               & ! intent(out)
+                                   , plantation_file           & ! intent(out)
+                                   , lu_rescale_file           & ! intent(out)
+                                   , sm_fire                   & ! intent(out)
+                                   , time2canopy               ! ! intent(out)
+   use optimiz_coms         , only : ioptinpt                  ! ! intent(out)
+   use canopy_layer_coms    , only : crown_mod                 ! ! intent(out)
+   use canopy_radiation_coms, only : ican_swrad                ! ! intent(out)
+   use rk4_coms             , only : rk4_tolerance             & ! intent(out)
+                                   , ibranch_thermo            & ! intent(out)
+                                   , ipercol                   ! ! intent(out)
 
    implicit none
    include 'mpif.h'
@@ -1017,6 +1389,7 @@ subroutine ed_nodeget_nl
    call MPI_Bcast(grid_res,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(poi_lat,max_poi,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(poi_lon,max_poi,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(poi_res,max_poi,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(ed_reg_latmin,max_ed_regions,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(ed_reg_latmax,max_ed_regions,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(ed_reg_lonmin,max_ed_regions,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
@@ -1036,7 +1409,9 @@ subroutine ed_nodeget_nl
    call MPI_Bcast(integration_scheme,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(rk4_tolerance,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(ibranch_thermo,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(iphysiol,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(istoma_scheme,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(iallom,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(iphen_scheme,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(repro_scheme,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(radint,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
@@ -1044,15 +1419,17 @@ subroutine ed_nodeget_nl
    
    call MPI_Bcast(lapse_scheme,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(crown_mod,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(ican_swrad,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(h2o_plant_lim,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(vmfact,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(mfact,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(kfact,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(gamfact,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(d0fact,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(alphafact,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(thetacrit,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(lwfact,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(thioff,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
-   call MPI_Bcast(icomppt,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(quantum_efficiency_T,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(n_plant_lim,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(n_decomp_lim,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
@@ -1067,9 +1444,11 @@ subroutine ed_nodeget_nl
    call MPI_Bcast(icanturb,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(i_blyr_condct,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(isfclyrm,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(ied_grndvap,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(ipercol,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
 
    call MPI_Bcast(treefall_disturbance_rate,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(time2canopy,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(runoff_time,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(betapower,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(ustmin,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
@@ -1079,6 +1458,8 @@ subroutine ed_nodeget_nl
    call MPI_Bcast(vkopr,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(vh2vr,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(vh2dh,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(ribmax,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(leaf_maxwhc,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(ggfact,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
 
    call MPI_Bcast(iprintpolys,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
@@ -1093,6 +1474,8 @@ subroutine ed_nodeget_nl
    call MPI_Bcast(ishuffle,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(metcyc1,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(metcycf,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(imetavg,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(imetrad,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(initial_co2,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
 
    call MPI_Bcast(iphenys1,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
@@ -1104,8 +1487,10 @@ subroutine ed_nodeget_nl
    call MPI_Bcast(phenpath,str_len,MPI_CHARACTER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(event_file,str_len,MPI_CHARACTER,master_num,MPI_COMM_WORLD,ierr)
 
+   call MPI_Bcast(maxsite,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(maxpatch,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(maxcohort,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(min_site_area,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
 
   
    call MPI_Bcast(ioptinpt,str_len,MPI_CHARACTER,master_num,MPI_COMM_WORLD,ierr)
@@ -1230,60 +1615,87 @@ end subroutine ed_nodeget_poly_dims
 !==========================================================================================!
 
 
+
+
+
 !==========================================================================================!
 !==========================================================================================!
+!     This subroutine gets the work structure from the "master".                           !
+!------------------------------------------------------------------------------------------!
 subroutine ed_nodeget_worklist_info
 
-  use ed_max_dims, only: maxmach
-  use grid_coms,  only: ngrids
-  use ed_work_vars,  only: work_v              & ! intent(inout)
-                         , ed_alloc_work_vec   & ! subroutine
-                         , ed_nullify_work_vec ! ! subroutine
-  use ed_node_coms,  only: mynum,nmachs,master_num
-  use ed_state_vars, only: gdpy
+   use ed_max_dims  , only : maxmach             ! ! intent(in)
+   use grid_coms    , only : ngrids              ! ! intent(in)
+   use ed_work_vars , only : work_v              & ! intent(inout)
+                           , ed_alloc_work_vec   & ! subroutine
+                           , ed_nullify_work_vec ! ! subroutine
+   use ed_node_coms ,  only: mynum               & ! intent(in)
+                           , nmachs              & ! intent(in)
+                           , master_num          ! ! intent(in)
+   use ed_state_vars, only : gdpy                ! ! intent(in)
+   use mem_polygons , only : maxsite             ! ! intent(in)
+   implicit none
+   !------ Pre-compiled options. ----------------------------------------------------------!
+   include 'mpif.h'
+   !------ Local variables. ---------------------------------------------------------------!
+   integer, dimension(MPI_STATUS_SIZE) :: status
+   integer                             :: ierr
+   integer                             :: npolygons
+   integer                             :: mpiid
+   integer                             :: ifm
+   integer                             :: itext
+   !---------------------------------------------------------------------------------------!
 
-  implicit none
-  include 'mpif.h'
-  
-  integer,dimension(MPI_STATUS_SIZE) :: status
-  integer :: ierr
-  integer :: npolygons
-  integer :: mpiid
-  integer :: ifm
-  
-  ! Allocate the work vectors
-  allocate(work_v(ngrids))
 
-  do ifm=1,ngrids
-     
-     npolygons = gdpy(mynum,ifm)
-     
-     ! Allocate the work vectors
-     call ed_nullify_work_vec(work_v(ifm))
-     call ed_alloc_work_vec(work_v(ifm),npolygons)
 
-     mpiid=maxmach*(ifm-1)+mynum
+   !----- Allocate the work vectors. ------------------------------------------------------!
+   allocate(work_v(ngrids))
+   !---------------------------------------------------------------------------------------!
 
-     call MPI_Recv(work_v(ifm)%glon(1:npolygons),npolygons, &
-          MPI_REAL,0,1300000+mpiid,MPI_COMM_WORLD,status,ierr)
-     
-     call MPI_Recv(work_v(ifm)%glat(1:npolygons),npolygons, &
-          MPI_REAL,0,1400000+mpiid,MPI_COMM_WORLD,status,ierr)
-     
-     call MPI_Recv(work_v(ifm)%landfrac(1:npolygons),npolygons, &
-          MPI_REAL,0,1500000+mpiid,MPI_COMM_WORLD,status,ierr)
-     
-     call MPI_Recv(work_v(ifm)%ntext(1:npolygons),npolygons, &
-          MPI_INTEGER,0,1600000+mpiid,MPI_COMM_WORLD,status,ierr)
+   do ifm=1,ngrids
+      
+      npolygons = gdpy(mynum,ifm)
 
-     call MPI_Recv(work_v(ifm)%xid(1:npolygons),npolygons, &
-          MPI_INTEGER,0,1700000+mpiid,MPI_COMM_WORLD,status,ierr)
-     
-     call MPI_Recv(work_v(ifm)%yid(1:npolygons),npolygons, &
-          MPI_INTEGER,0,1800000+mpiid,MPI_COMM_WORLD,status,ierr)
-  end do
+      !----- Allocate the work vectors elements. ------------------------------------------!
+      call ed_nullify_work_vec(work_v(ifm))
+      call ed_alloc_work_vec(work_v(ifm),npolygons,maxsite)
 
-  return
+      mpiid=maxmach*(ifm-1)*(10+5*maxsite)+mynum
+
+      !------ Grab the information. -------------------------------------------------------!
+      call MPI_Recv(work_v(ifm)%glon(1:npolygons),npolygons,MPI_REAL,master_num,mpiid      &
+                   ,MPI_COMM_WORLD,status,ierr)
+      mpiid = mpiid + 1
+
+      call MPI_Recv(work_v(ifm)%glat(1:npolygons),npolygons,MPI_REAL,master_num,mpiid      &
+                   ,MPI_COMM_WORLD,status,ierr)
+      mpiid = mpiid + 1
+
+      call MPI_Recv(work_v(ifm)%landfrac(1:npolygons),npolygons,MPI_REAL,master_num,mpiid  &
+                   ,MPI_COMM_WORLD,status,ierr)
+      mpiid = mpiid + 1
+
+
+      call MPI_Recv(work_v(ifm)%xid(1:npolygons),npolygons,MPI_INTEGER,master_num,mpiid    &
+                   ,MPI_COMM_WORLD,status,ierr)
+      mpiid = mpiid + 1
+
+      call MPI_Recv(work_v(ifm)%yid(1:npolygons),npolygons,MPI_INTEGER,master_num,mpiid    &
+                   ,MPI_COMM_WORLD,status,ierr)
+      mpiid = mpiid + 1
+
+      do itext=1,maxsite
+         call MPI_Recv(work_v(ifm)%ntext(itext,1:npolygons),npolygons,MPI_INTEGER          &
+                      ,master_num,mpiid,MPI_COMM_WORLD,status,ierr)
+         mpiid = mpiid + 1
+
+         call MPI_Recv(work_v(ifm)%soilfrac(itext,1:npolygons),npolygons,MPI_REAL          &
+                      ,master_num,mpiid,MPI_COMM_WORLD,status,ierr)
+         mpiid = mpiid + 1
+      end do
+   end do
+
+   return
 end subroutine ed_nodeget_worklist_info
 !==========================================================================================!
 !==========================================================================================!

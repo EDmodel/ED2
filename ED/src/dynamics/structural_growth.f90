@@ -23,7 +23,7 @@ subroutine structural_growth(cgrid, month)
    use decomp_coms   , only : f_labile               ! ! intent(in)
    use ed_max_dims   , only : n_pft                  & ! intent(in)
                             , n_dbh                  ! ! intent(in)
-   use ed_therm_lib  , only : calc_hcapveg           & ! function
+   use ed_therm_lib  , only : calc_veg_hcap          & ! function
                             , update_veg_energy_cweh ! ! function
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
@@ -62,7 +62,8 @@ subroutine structural_growth(cgrid, month)
    real                          :: net_stem_N_uptake
    real                          :: cb_act
    real                          :: cb_max
-   real                          :: old_hcapveg
+   real                          :: old_leaf_hcap
+   real                          :: old_wood_hcap
    !---------------------------------------------------------------------------------------!
 
    polyloop: do ipy = 1,cgrid%npolygons
@@ -127,7 +128,7 @@ subroutine structural_growth(cgrid, month)
                !------ NPP allocation to wood and course roots in KgC /m2 -----------------!
                cpatch%today_NPPwood(ico) = agf_bs * f_bdead * cpatch%bstorage(ico)         &
                                           * cpatch%nplant(ico)
-               cpatch%today_NPPcroot(ico) = (1- agf_bs) * f_bdead * cpatch%bstorage(ico)   &
+               cpatch%today_NPPcroot(ico) = (1. - agf_bs) * f_bdead * cpatch%bstorage(ico) &
                                           * cpatch%nplant(ico)
                                           
                !---------------------------------------------------------------------------!
@@ -189,15 +190,13 @@ subroutine structural_growth(cgrid, month)
                !      Internal energy is an extensive variable, we just account for the    !
                !      difference in the heat capacity to update it.                        !
                !---------------------------------------------------------------------------!
-               old_hcapveg = cpatch%hcapveg(ico)
-               cpatch%hcapveg(ico) = calc_hcapveg(cpatch%bleaf(ico),cpatch%bdead(ico)      &
-                                                 ,cpatch%balive(ico),cpatch%nplant(ico)    &
-                                                 ,cpatch%hite(ico),cpatch%pft(ico)         &
-                                                 ,cpatch%phenology_status(ico)             &
-                                                 ,cpatch%bsapwood(ico))
-               call update_veg_energy_cweh(csite,ipa,ico,old_hcapveg)
-               !----- Likewise, update the patch heat capacity ----------------------------!
-               csite%hcapveg(ipa) = csite%hcapveg(ipa) + cpatch%hcapveg(ico) - old_hcapveg
+               old_leaf_hcap = cpatch%leaf_hcap(ico)
+               old_wood_hcap = cpatch%wood_hcap(ico)
+               call calc_veg_hcap(cpatch%bleaf(ico),cpatch%bdead(ico),cpatch%bsapwood(ico) &
+                                 ,cpatch%nplant(ico),cpatch%pft(ico)                       &
+                                 ,cpatch%leaf_hcap(ico),cpatch%wood_hcap(ico) )
+               call update_veg_energy_cweh(csite,ipa,ico,old_leaf_hcap,old_wood_hcap)
+               call is_resolvable(csite,ipa,ico,cpoly%green_leaf_factor(:,isi))
                !---------------------------------------------------------------------------!
 
 
@@ -279,9 +278,9 @@ subroutine structural_growth_eq_0(cgrid, month)
                             , c2n_stem               & ! intent(in)
                             , l2n_stem               ! ! intent(in)
    use decomp_coms   , only : f_labile               ! ! intent(in)
-   use ed_max_dims      , only : n_pft                  & ! intent(in)
+   use ed_max_dims   , only : n_pft                  & ! intent(in)
                             , n_dbh                  ! ! intent(in)
-   use ed_therm_lib  , only : calc_hcapveg           & ! function
+   use ed_therm_lib  , only : calc_veg_hcap          & ! function
                             , update_veg_energy_cweh ! ! function
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
@@ -320,7 +319,8 @@ subroutine structural_growth_eq_0(cgrid, month)
    real                          :: net_stem_N_uptake
    real                          :: cb_act
    real                          :: cb_max
-   real                          :: old_hcapveg
+   real                          :: old_leaf_hcap
+   real                          :: old_wood_hcap
    !---------------------------------------------------------------------------------------!
 
    polyloop: do ipy = 1,cgrid%npolygons
@@ -449,7 +449,10 @@ end subroutine structural_growth_eq_0
 subroutine plant_structural_allocation(ipft,hite,lat,month,phen_status,f_bseeds,f_bdead)
    use pft_coms      , only : phenology    & ! intent(in)
                             , repro_min_h  & ! intent(in)
-                            , r_fract      ! ! intent(in)
+                            , r_fract      & ! intent(in)
+                            , st_fract     & ! intent(in)
+                            , hgt_max      & ! intent(in)
+                            , is_grass     ! ! intent(in)
 
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
@@ -475,13 +478,20 @@ subroutine plant_structural_allocation(ipft,hite,lat,month,phen_status,f_bseeds,
    ! deciduous plants), or if the plants are actively dropping leaves or off allometry.    !
    !---------------------------------------------------------------------------------------!
    if ((phenology(ipft) /= 2   .or.  late_spring) .and. phen_status == 0)    then
-      !----- For all PFTs except broadleaf deciduous. -------------------------------------!
-      if (hite <= repro_min_h(ipft)) then
+      if (is_grass(ipft) .and. hite >= hgt_max(ipft)) then
+         !---------------------------------------------------------------------------------!
+         !    Grasses have reached the maximum height, stop growing in size and send       !
+         ! everything to reproduction.                                                     !
+         !---------------------------------------------------------------------------------!
+         f_bseeds = 1.0 - st_fract(ipft)
+      elseif (hite <= repro_min_h(ipft)) then
+         !----- The plant is too short, invest as much as it can in growth. ---------------!
          f_bseeds = 0.0
       else
+         !----- Plant is with a certain height, use prescribed reproduction rate. ---------!
          f_bseeds = r_fract(ipft)
       end if
-      f_bdead  = 1.0 - f_bseeds
+      f_bdead  = 1.0 - st_fract(ipft) - f_bseeds
    else
       f_bdead  = 0.0
       f_bseeds = 0.0
@@ -512,8 +522,7 @@ subroutine update_derived_cohort_props(cpatch,ico,green_leaf_factor,lsl)
    use allometry     , only : bd2dbh              & ! function
                             , dbh2h               & ! function
                             , dbh2bl              & ! function
-                            , assign_root_depth   & ! function
-                            , calc_root_depth     & ! function
+                            , dbh2krdepth         & ! function
                             , ed_biomass          & ! function
                             , area_indices        ! ! subroutine
    use consts_coms   , only : pio4                ! ! intent(in)
@@ -528,11 +537,10 @@ subroutine update_derived_cohort_props(cpatch,ico,green_leaf_factor,lsl)
    !----- Local variables -----------------------------------------------------------------!
    real :: bl
    real :: bl_max
-   real :: rootdepth
    !---------------------------------------------------------------------------------------!
 
    !----- Gett DBH and height from structural biomass. ------------------------------------!
-   cpatch%dbh(ico) = bd2dbh(cpatch%pft(ico), cpatch%bdead(ico))
+   cpatch%dbh(ico)  = bd2dbh(cpatch%pft(ico), cpatch%bdead(ico))
    cpatch%hite(ico) = dbh2h(cpatch%pft(ico), cpatch%dbh(ico))
    
    !----- Check the phenology status and whether it needs to change. ----------------------!
@@ -546,8 +554,8 @@ subroutine update_derived_cohort_props(cpatch,ico,green_leaf_factor,lsl)
          cpatch%elongf(ico)  = 1.0
       end select
 
-      bl_max = dbh2bl(cpatch%dbh(ico),cpatch%pft(ico)) * green_leaf_factor                 &
-             * cpatch%elongf(ico)
+      bl_max = dbh2bl(cpatch%dbh(ico),cpatch%pft(ico))                                     &
+             * green_leaf_factor * cpatch%elongf(ico)
       !------------------------------------------------------------------------------------!
       !     If LEAF biomass is not the maximum, set it to 1 (leaves partially flushed),    !
       ! otherwise, set it to 0 (leaves are fully flushed).                                 !
@@ -573,10 +581,7 @@ subroutine update_derived_cohort_props(cpatch,ico,green_leaf_factor,lsl)
                                    ,cpatch%bsapwood(ico))
 
    !----- Update rooting depth ------------------------------------------------------------!
-   rootdepth = calc_root_depth(cpatch%hite(ico), cpatch%dbh(ico), cpatch%pft(ico))
-   
-   !----- See which discrete soil level this corresponds to. ------------------------------!
-   cpatch%krdepth(ico) = assign_root_depth(rootdepth, lsl)
+   cpatch%krdepth(ico) = dbh2krdepth(cpatch%hite(ico),cpatch%dbh(ico),cpatch%pft(ico),lsl)
    
    return
 end subroutine update_derived_cohort_props
@@ -690,10 +695,9 @@ subroutine update_vital_rates(cpatch,ico,ilu,dbh_in,bdead_in,balive_in,hite_in,b
    basal_area_mort(ipft,idbh) = basal_area_mort(ipft,idbh)                                 &
                               + area * (nplant_in - cpatch%nplant(ico)) * ba_in * 12.0
 
-!!   agb_mort(ipft,idbh)        = agb_mort(ipft,idbh) + area * mort_litter 
-!! calculation based on mort_litter includes TOTAL biomass, not AGB [[mcd]]
+   !----- Calculation based on mort_litter includes TOTAL biomass, not AGB [[mcd]]. -------!
    agb_mort(ipft,idbh)        = agb_mort(ipft,idbh)                                        &
-                              + area * (nplant_in - cpatch%nplant(ico))*agb_in * 12.0
+                              + area * (nplant_in - cpatch%nplant(ico)) * agb_in * 12.0
 
    return
 end subroutine update_vital_rates
@@ -836,7 +840,7 @@ subroutine compute_C_and_N_storage(cgrid,ipy, soil_C, soil_N, veg_C, veg_N)
 
          !----- Loop over PFT so we account for veg carbon/nitrogen in repro arrays. ------!
          pftloop: do ipft = 1, n_pft
-            if (include_pft(ipft) == 1) then
+            if (include_pft(ipft)) then
                veg_C8 = veg_C8 + dble(csite%repro(ipft,ipa)) * area_factor
                veg_N8 = veg_N8 + dble(csite%repro(ipft,ipa))                               &
                                / dble(c2n_recruit(ipft)) * area_factor

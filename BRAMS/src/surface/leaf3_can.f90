@@ -158,21 +158,20 @@ subroutine leaf_canopy(mzg,mzs,ksn,soil_energy,soil_water,soil_text,sfcwater_mas
    !     Find the ground conductance due to vegetation and find the total conductance      !
    ! (the inverse of the sum due to bare ground plus vegetation).                          !
    !---------------------------------------------------------------------------------------!
-   if (veg_tai >= .1 .and. snowfac < .9) then
+   if (resolvable) then
 
       !------------------------------------------------------------------------------------!
       !    If vegetation is sufficiently abundant and not covered by snow, compute  heat   !
       ! and moisture fluxes from vegetation to canopy, and flux resistance from soil or    !
       ! snow to canopy.                                                                    !
       !------------------------------------------------------------------------------------!
-      factv       = log((geoht-zdisp) / zoveg) / (vonk * vonk * atm_vels)
-      aux         = exp(exar * (1. - (zdisp + zoveg) / zveg))
-      ggveg       = (exar * (zveg - zdisp)) / (factv * zveg  * (exp(exar) - aux))
-      ggnet       = ggfact * ggbare * ggveg / (ggbare + ggveg)
+      factv = log((geoht-zdisp) / zoveg) / (vonk * vonk * atm_vels)
+      aux   = exp(exar * (1. - (zdisp + zoveg) / zveg))
+      ggveg = (exar * (zveg - zdisp)) / (factv * zveg  * (exp(exar) - aux))
    else
-      ggveg      = 0.0
-      ggnet      = ggfact * ggbare
+      ggveg = huge_num
    end if
+   ggnet    = ggfact * ggbare * ggveg / (ggbare + ggveg)
    !---------------------------------------------------------------------------------------!
 
 
@@ -265,25 +264,15 @@ subroutine leaf_canopy(mzg,mzs,ksn,soil_energy,soil_water,soil_text,sfcwater_mas
       wflxgc     = max(0.,min(wflx,sfcwater_mass(ksn)/dtll))
       qwflxgc    = wflx * (alvi - ground_fliq * alli)
 
-   else if (ground_rvap <= can_rvap) then
-      !------------------------------------------------------------------------------------!
-      !     In case the ground specific humidity is negative despite that the saturation   !
-      ! is positive, we impose the flux to be zero to avoid bogus dew fluxes.              !
-      !------------------------------------------------------------------------------------!
-      dewgndflx  = 0.0
-      qdewgndflx = 0.0
-      ddewgndflx = 0.0
-      wflxgc     = 0.0
-      qwflxgc    = 0.0
-
    else
       !------------------------------------------------------------------------------------!
       !    Evaporation will happen, but water will come from the top most layer.  Wflx     !
       ! cannot be used because the ground specific humidity is not the saturation specific !
       ! humidity at the soil temperature only, it depends on the canopy specific humidity  !
-      ! itself and the soil moisture.                                                      !
+      ! itself and the soil moisture.  ground_rvap cannot be less than can_rvap, so we no  !
+      ! longer need to check for sign.                                                     !
       !------------------------------------------------------------------------------------!
-      wflxgc = max(0.,can_rhos * ggnet * (ground_rvap - can_rvap))
+      wflxgc  = can_rhos * ggnet * ggsoil * (ground_rvap - can_rvap) / (ggnet + ggsoil)
       !----- Adjust the flux according to the surface fraction (no phase bias). -----------!
       qwflxgc = wflxgc * ( alvi - ground_fliq * alli)
       !----- Set condensation fluxes to zero. ---------------------------------------------!
@@ -464,19 +453,19 @@ subroutine leaf_canopy(mzg,mzs,ksn,soil_energy,soil_water,soil_text,sfcwater_mas
       old_veg_water = veg_water
       wtemp         = veg_water - wflxvc * dtll + intercepted_tot
       !----- If this result will lead to negative solution, then reduce evaporation. ------!
-      if (wtemp < 0.0005 * stai) then
+      if (wtemp < 0.005 * leaf_maxwhc * stai) then
          wflxvc     = (veg_water + intercepted_tot) / dtll
          veg_water  = 0.
          wshed_tot  = 0.
          qwshed_tot = 0.
          dwshed_tot = 0.
-      elseif (wtemp > 0.11 * stai) then
+      elseif (wtemp > leaf_maxwhc * stai) then
          !----- Shed water in excess of the leaf holding water capacity. ------------------!
-         wshed_tot  = wtemp - 0.11 * stai
+         wshed_tot  = wtemp - leaf_maxwhc * stai
          qwshed_tot = wshed_tot * (     veg_fliq  * cliq * (veg_temp - tsupercool)         &
                                   + (1.-veg_fliq) * cice *  veg_temp )
          dwshed_tot = wshed_tot * (veg_fliq * wdnsi + (1.0 - veg_fliq) * fdnsi)
-         veg_water  = 0.11 * stai
+         veg_water  = leaf_maxwhc * stai
       else
          wshed_tot  = 0.
          qwshed_tot = 0.
@@ -725,13 +714,13 @@ end subroutine leaf_can_diag
 ! before the time step iteration loop.                                                     !
 !------------------------------------------------------------------------------------------!
 subroutine leaf_veg_diag(veg_energy,veg_water,veg_hcap)
-   use leaf_coms , only : can_temp     & ! intent(in)
-                        , tiny_parea   & ! intent(in)
-                        , veg_temp     & ! intent(out)
-                        , veg_fliq     & ! intent(out)
-                        , resolvable   ! ! intent(in)
-   use rconstants, only : t3ple        ! ! intent(in)
-   use therm_lib , only : qwtk         ! ! function
+   use leaf_coms , only : can_temp         & ! intent(in)
+                        , min_patch_area   & ! intent(in)
+                        , veg_temp         & ! intent(out)
+                        , veg_fliq         & ! intent(out)
+                        , resolvable       ! ! intent(in)
+   use rconstants, only : t3ple            ! ! intent(in)
+   use therm_lib , only : qwtk             ! ! function
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
    real   , intent(inout) :: veg_energy
@@ -757,7 +746,7 @@ subroutine leaf_veg_diag(veg_energy,veg_water,veg_hcap)
       else
          veg_fliq = 0.5
       end if
-      veg_energy = 0.0
+      veg_energy = veg_hcap * veg_temp
       veg_water  = 0.0
    end if
    !---------------------------------------------------------------------------------------!

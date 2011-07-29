@@ -590,7 +590,12 @@ subroutine opspec3
           lc_gamh => gamh,  & ! intent(in)
           tprandtl,         & ! intent(in)
           vh2vr,            & ! intent(in)
-          vh2dh             ! ! intent(in)
+          vh2dh,            & ! intent(in)
+          ribmax,           & ! intent(in)
+          leaf_maxwhc,      & ! intent(in)
+          min_patch_area,   & ! intent(in)
+          nstyp,            & ! intent(in)
+          nvtyp             ! ! intent(in)
           
   use therm_lib , only:  &
           level          ! ! intent(in)
@@ -1020,16 +1025,28 @@ subroutine opspec3
      print *, vh2dh
      ifaterr = ifaterr + 1
   end if
+  
+  if (ribmax < 0.01 .or. ribmax > 20.0) then
+     print *, 'FATAL - RIBMAX must be greater than 0.01 and less than 20.'
+     print *, ribmax
+     ifaterr = ifaterr + 1
+  end if
+  
+  if (leaf_maxwhc < 0.0 .or. leaf_maxwhc > 10.0) then
+     print *, 'FATAL - LEAF_MAXWHC must be greater than 0.0 and less than 10.'
+     print *, leaf_maxwhc
+     ifaterr = ifaterr + 1
+  end if
 
-  if (isoilbc < 0 .or. isoilbc > 3) then
+  if (isoilbc < 0 .or. isoilbc > 4) then
      write (unit=*,fmt='(a,1x,i4,a)')                                                      &
-       'Invalid ISOILBC, it must be between 0 and 3. Yours is set to',isoilbc,'...'
+       'Invalid ISOILBC, it must be between 0 and 4. Yours is set to',isoilbc,'...'
      ifaterr = ifaterr +1
   end if
  
-  if (ipercol < 0 .or. ipercol > 1) then
+  if (ipercol < 0 .or. ipercol > 2) then
      write (unit=*,fmt='(a,1x,i4,a)')                                                      &
-       'Invalid IPERCOL, it must be between 0 and 1. Yours is set to',ipercol,'...'
+       'Invalid IPERCOL, it must be between 0 and 2. Yours is set to',ipercol,'...'
      ifaterr = ifaterr +1
   end if
    
@@ -1114,6 +1131,13 @@ subroutine opspec3
      print *, 'fatal - ISTAR must be between 1 and 5, and yours is set to ',istar,'...'
      ifaterr=ifaterr+1
   end if
+  
+  ! Check whether the ground vapour method scheme the user chose is fine or not. 
+  if (isfcl /= 0 .and. (igrndvap < 0 .or. igrndvap > 4)) then
+     print *, 'fatal - IGRNDVAP must be between 0 and 4, and yours is set to '            &
+            ,igrndvap,'...'
+     ifaterr=ifaterr+1
+  end if
 
   ! Check whether the time step makes sense for LEAF or ED.
   if (isfcl /= 0 .and. dtleaf <= 0.) then
@@ -1133,7 +1157,10 @@ subroutine opspec3
   endif
 
   if (isfcl == 0 .and. npatch /= 2) then
-     print*, ' fatal  - when isfcl = 0, npatch must be 2. '
+     print*, ' fatal  - when isfcl = 0, npatch must be 2.'
+     ifaterr = ifaterr + 1
+  else if (npatch < 2) then
+     print*, ' fatal - npatch must be at least 2.'
      ifaterr = ifaterr + 1
   endif
 
@@ -1143,7 +1170,42 @@ subroutine opspec3
           ,' model.'
      ifaterr=ifaterr+1
   endif
-  
+
+  !----------------------------------------------------------------------------------------!
+  !     Check whether the number of patches make sense.                                    !
+  !----------------------------------------------------------------------------------------!
+  select case (isfcl)
+  case (1,2)
+     if (npatch > nvtyp+1) then
+        print *, ' fatal - Running LEAF-3, and NPATCH is greater than the number of '//    &
+                          'vegetation types.'
+        ifaterr=ifaterr+1
+     end if
+  case (5)
+     if (npatch > nstyp+1) then
+        print *, ' fatal - Running ED-2, and NPATCH is greater than the number of '//      &
+                          'vegetation types.'
+        ifaterr=ifaterr+1
+     end if
+     if (nvegpat /= npatch - 1) then
+        print *, ' fatal - Running ED-2, NVEGPAT must be equal to NPATCH-1'
+        ifaterr=ifaterr+1
+     end if
+  end select
+  !----------------------------------------------------------------------------------------!
+
+
+
+  !----------------------------------------------------------------------------------------!
+  !     Check whether the minimum area is reasonable.                                      !
+  !----------------------------------------------------------------------------------------!
+  if (min_patch_area < 0.0001 .or. min_patch_area > 0.1) then
+     print *, ' fatal - MIN_PATCH_AREA must be between 0.0001 and 0.1'
+     ifaterr = ifaterr + 1
+  end if
+  !----------------------------------------------------------------------------------------!
+
+
   !----- Check CO2 settings. --------------------------------------------------------------!
   select case (ico2)
   case (0,1)
@@ -1178,20 +1240,33 @@ subroutine opspec3
   end select
 
   do k=1,nzg
-     if (slz(k) .gt. -.001) then
-        print*, 'fatal - soil level',k,' not (enough) below ground'  &
-             ,' level'
+     if (slz(k) > -.001) then
+        write (unit=*,fmt='(a,200(es12.5,1x))') 'SLZ = ',slz(1:nzg)
+        write (unit=*,fmt='(a,1x,i5,1x,a,a)') 'FATAL - soil level',k,'is greater than '    &
+                                             ,'-0.001 m.  Make it deeper...'
         ifaterr=ifaterr+1
      endif
   enddo
 
+
   do k=1,nzg-1
-     if (slz(k)-slz(k+1) .gt. .001) then
-        print*, 'fatal - soil level',k,' not (enough) deeper than'  &
-             ,' soil level',k+1
+     if (slz(k)-slz(k+1) > .001) then
+        write (unit=*,fmt='(a)') ' FATAL - Soil layers must be defined from bottom to top.'
+        write (unit=*,fmt='(a,1x,i5,1x,a,1x,es12.5)') '   * Layer=',k  ,' SLZ =',slz(k  )
+        write (unit=*,fmt='(a,1x,i5,1x,a,1x,es12.5)') '   * Layer=',k+1,' SLZ =',slz(k+1)
         ifaterr=ifaterr+1
-     endif
-  enddo
+     end if
+  end do
+
+
+  do k=1,nzg
+     if (slmstr(k) < -1. .or. slmstr(k) > 2.) then
+        write (unit=*,fmt='(a,200(es12.5,1x))') 'SLMSTR = ',slmstr(1:nzg)
+        write (unit=*,fmt='(a,1x,i5,1x,a)') ' FATAL - Soil moisture index in layer',k      &
+                                           ,'is outside the allowed range [-1.0;2.0].'
+        ifaterr=ifaterr+1
+     end if
+  end do
 
   ! if the soil model will be run with no radiation, make a suggestion
   !   that the radiation be turned on. (severity - f )

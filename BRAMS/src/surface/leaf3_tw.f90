@@ -156,6 +156,7 @@ subroutine leaftw(mzg,mzs,soil_water, soil_energy,soil_text,sfcwater_energy_int 
    real                                   :: wtold
    real                                   :: wdiff
    real                                   :: wgpmid
+   real                                   :: wgpfrac
    real                                   :: freezecor
    real                                   :: psiplusz_bl
    real                                   :: available_water
@@ -164,7 +165,8 @@ subroutine leaftw(mzg,mzs,soil_water, soil_energy,soil_text,sfcwater_energy_int 
    real                                   :: wloss
    real                                   :: qwloss
    real                                   :: soilcond
-   real                                   :: wgpfrac
+   real                                   :: slz0
+   real                                   :: ezg
    !---------------------------------------------------------------------------------------!
 
 
@@ -181,8 +183,14 @@ subroutine leaftw(mzg,mzs,soil_water, soil_energy,soil_text,sfcwater_energy_int 
       dslztidt(k) = dslzti(k) * dtll
    end do
 
+   !----- Find the exponential increase factor. -------------------------------------------!
+   ezg    = log(slz(1)/slz(mzg)) / log(real(mzg))
+   slz0   = slz(1) * (real(mzg+1)/real(mzg))**ezg
+
+   slzt_0 = .5 * (slz0 + slz(1))
+
    !----- These must be defined for free drainage bc (RGK) --------------------------------!
-   dslzt    (1) = 2.0*slz(1) - slzt(1)
+   dslzt    (1) = slzt(1) - slzt_0
    dslzti   (1) = 1./dslzt(1)
    dslztidt (1) = dslzti(1) * dtll
 
@@ -220,12 +228,70 @@ subroutine leaftw(mzg,mzs,soil_water, soil_energy,soil_text,sfcwater_energy_int 
    !---------------------------------------------------------------------------------------!
    do k = 1,mzg
       nsoil           = nint(soil_text(k))
-      psiplusz(k)     = slzt(k) + slpots(nsoil)*(slmsts(nsoil)/soil_water(k))**slbs(nsoil)
+      wgpfrac         = min(soil_water(k)/slmsts(nsoil), 1.0)
+      hydcond(k)      = slcons1(k,nsoil) * wgpfrac ** (2.0 * slbs(nsoil) + 3.0)
+      psiplusz(k)     = slzt(k) + slpots(nsoil) / wgpfrac ** slbs(nsoil)
       soil_liq(k)     = dslz(k) * max(0.,(soil_water(k) - soilwp(nsoil)) * soil_fracliq(k))
       soilair99(k)    = 0.99 * slmsts(nsoil) - soil_water(k)
       soilair01(k)    = (soil_water(k) - 1.01 * soilcp(nsoil)) * soil_fracliq(k)
       half_soilair(k) = (slmsts(nsoil) - soil_water(k)) * dslz(k) * .5
    end do
+   !------ Find the bottom boundary condition parameters depending on the user's choice. --!
+   nsoil = nint(soil_text(1))
+   select case (isoilbc)
+   case (0)
+      !------------------------------------------------------------------------------------!
+      !    Bedrock.  Make the potential exactly the same as the bottom layer, and the flux !
+      ! will be zero.                                                                      !
+      !------------------------------------------------------------------------------------!
+      soil_water_0   = soil_water   (k)
+      soil_fracliq_0 = soil_fracliq (k)
+      hydcond_0      = hydcond      (k)
+      psiplusz_0     = psiplusz     (k)
+      !------------------------------------------------------------------------------------!
+   case (1)
+      !------------------------------------------------------------------------------------!
+      !     Free drainage.   Make the water potential at the layer beneath to be at the    !
+      ! same soil moisture as the bottom layer.                                            !
+      !------------------------------------------------------------------------------------!
+      soil_water_0   = soil_water   (k)
+      soil_fracliq_0 = soil_fracliq (k)
+      wgpfrac        = min(soil_water_0/slmsts(nsoil), 1.0)
+      hydcond_0      = slcons1_0(nsoil) * wgpfrac ** (2.0 * slbs(nsoil) + 3.0)
+      psiplusz_0     = slzt_0 + slpots(nsoil) / wgpfrac ** slbs(nsoil)
+      !------------------------------------------------------------------------------------!
+   case (2)
+      !------------------------------------------------------------------------------------!
+      !     Super drainage.   Make the water potential at the layer beneath to be at dry   !
+      ! air soil, and find the corresponding hydraulic conductivity.                       !
+      !------------------------------------------------------------------------------------!
+      soil_water_0   = soilcp(nsoil)
+      soil_fracliq_0 = soil_fracliq (k)
+      wgpfrac        = min(soil_water_0/slmsts(nsoil), 1.0)
+      hydcond_0      = slcons1_0(nsoil) * wgpfrac ** (2.0 * slbs(nsoil) + 3.0)
+      psiplusz_0     = slzt_0 + slpots(nsoil) / wgpfrac ** slbs(nsoil)
+      !------------------------------------------------------------------------------------!
+   case (3)
+      !------------------------------------------------------------------------------------!
+      !     Make the soil moisture in the layer beneath to be at field capacity.           !
+      !------------------------------------------------------------------------------------!
+      soil_water_0   = sfldcap(nsoil)
+      soil_fracliq_0 = soil_fracliq (k)
+      wgpfrac        = min(soil_water_0/slmsts(nsoil), 1.0)
+      hydcond_0      = slcons1_0(nsoil) * wgpfrac ** (2.0 * slbs(nsoil) + 3.0)
+      psiplusz_0     = slzt_0 + slpots(nsoil) / wgpfrac ** slbs(nsoil)
+      !------------------------------------------------------------------------------------!
+   case (4)
+      !------------------------------------------------------------------------------------!
+      !     Aquifer.   Make the soil moisture in the layer beneath to be always saturated. !
+      !------------------------------------------------------------------------------------!
+      soil_water_0   = slmsts(nsoil)
+      soil_fracliq_0 = soil_fracliq (k)
+      wgpfrac        = min(soil_water_0/slmsts(nsoil), 1.0)
+      hydcond_0      = slcons1_0(nsoil) * wgpfrac ** (2.0 * slbs(nsoil) + 3.0)
+      psiplusz_0     = slzt_0 + slpots(nsoil) / wgpfrac ** slbs(nsoil)
+      !------------------------------------------------------------------------------------!
+   end select
    !---------------------------------------------------------------------------------------!
 
 
@@ -363,12 +429,10 @@ subroutine leaftw(mzg,mzs,soil_water, soil_energy,soil_text,sfcwater_energy_int 
    do k = 2, mzg
       nsoil = nint(soil_text(k))
 
-      wgpmid    = 0.5 * (soil_water(k)   + soil_water(k-1))
       freezecor = 0.5 * (soil_fracliq(k) + soil_fracliq(k-1))
-      if (freezecor < 1.0) freezecor = 10.**(- freezecoef * (1.0 - freezecor))
-      w_flux(k) = dslztidt(k) * slcons1(k,nsoil)                                           &
-                * (wgpmid / slmsts(nsoil)) ** (2. * slbs(nsoil) + 3.)                      &
-                * (psiplusz(k-1) - psiplusz(k)) * freezecor
+      freezecor = 10.**(- freezecoef * (1.0 - freezecor))
+      w_flux(k) = - freezecor * 0.5 * (hydcond(k-1) + hydcond(k))                          &
+                  * (psiplusz(k) - psiplusz(k-1)) * dslztidt(k) 
 
       !------------------------------------------------------------------------------------!
       !     Limit water transfers to prevent over-saturation and over-depletion.  Compute  !
@@ -393,18 +457,12 @@ subroutine leaftw(mzg,mzs,soil_water, soil_energy,soil_text,sfcwater_energy_int 
    case (0)
       !----- Bedrock, no flux across. -----------------------------------------------------!
       w_flux(1)  = 0.
-   case (1)
-      !------------------------------------------------------------------------------------!
-      !     Free drainage, water movement of bottom soil layer is only under gravity, i.e. !
-      ! the soil water content of boundary layer is equal to that of bottom soil layer.    !
-      !------------------------------------------------------------------------------------!
-
-      wgpmid    = soil_water(1)
-      freezecor = soil_fracliq(1) 
-      if (freezecor < 1.0) freezecor = 10.**(- freezecoef * (1.0 - freezecor))
-      w_flux(1) = dslztidt(1) * slcons1(1,nsoil)                                           &
-                * (wgpmid / slmsts(nsoil)) ** (2. * slbs(nsoil) + 3.)                      &
-                * (slz(2) - slz(1)) * freezecor
+   case default
+      
+      freezecor = 0.5 * (soil_fracliq(1) + soil_fracliq_0)
+      freezecor = 10.**(- freezecoef * (1.0 - freezecor))
+      w_flux(1) = - freezecor * 0.5 * (hydcond_0 + hydcond(1))                             &
+                  * (psiplusz(1) - psiplusz_0) * dslztidt(1)
 
       !------------------------------------------------------------------------------------!
       !     Limit water transfers to prevent over-saturation and over-depletion. Compute q !
@@ -416,47 +474,6 @@ subroutine leaftw(mzg,mzs,soil_water, soil_energy,soil_text,sfcwater_energy_int 
          w_flux(1) = - min(-w_flux(1),soil_liq(1))
       end if
       !------------------------------------------------------------------------------------!
-   case (2)
-      !------------------------------------------------------------------------------------!
-      !     Half drainage, water movement of bottom soil layer is only under gravity, i.e. !
-      ! the soil water content of boundary layer is equal to that of bottom soil layer.    !
-      !------------------------------------------------------------------------------------!
-      wgpmid    = soil_water(1)
-      freezecor = soil_fracliq(1) 
-      if (freezecor < 1.0) freezecor = 10.**(- freezecoef * (1.0 - freezecor))
-      w_flux(1) = dslztidt(1) * slcons1(1,nsoil)                                           &
-                * (wgpmid / slmsts(nsoil)) ** (2. * slbs(nsoil) + 3.)                      &
-                * (slz(2) - slz(1)) * freezecor * 0.5
-      !------------------------------------------------------------------------------------!
-      !     Limit water transfers to prevent over-saturation and over-depletion. Compute q !
-      ! transfers between soil layers (qw_flux) [J/m2].                                     !
-      !------------------------------------------------------------------------------------!
-      if (w_flux(1) > 0.) then
-         w_flux(1) = min(w_flux(1),half_soilair(1))
-      else
-         w_flux(1) = - min(-w_flux(1),soil_liq(1))
-      end if
-      !------------------------------------------------------------------------------------!
-   case (3)
-      !------------------------------------------------------------------------------------!
-      !     Free drainage, water movement of bottom soil layer is under gravity and moist- !
-      ! ure potential difference. The soil water content of boundary layer is equal to     !
-      ! field capacity.                                                                    !
-      !------------------------------------------------------------------------------------!
-      wgpmid = soil_water(1)
-      freezecor = soil_fracliq(1) 
-      if (freezecor < 1.0) freezecor = 10.**(- freezecoef * (1.0 - freezecor))
-      psiplusz_bl = slz(1)                                                                 &
-                  + slpots(nsoil) * (slmsts(nsoil) / sfldcap(nsoil)) ** slbs(nsoil)
-
-      if (psiplusz_bl <= psiplusz(1)) then
-          w_flux(1) =  dslztidt(1) * slcons1(1,nsoil)                                      &
-                    * (wgpmid/slmsts(nsoil)) ** (2.0 * slbs(nsoil) + 3.0)                  &
-                    * (psiplusz(1) - psiplusz_bl) * freezecor
-      else
-         !----- Prevent bottom soil layer sucking water from the boundary layer. ----------!
-         w_flux(1) = 0.0
-      end if
    end select
    qw_flux(1) = w_flux(1) * cliqvlme * (soil_tempk(1) - tsupercool)
    !---------------------------------------------------------------------------------------!
@@ -908,7 +925,7 @@ subroutine leaf_adjust_sfcw(mzg,mzs,soil_energy,soil_water,soil_text,sfcwater_nl
          !---------------------------------------------------------------------------------!
          wmass_perc  = max(0.0, wmass_try * (fliq_try - 0.1) / 0.9)
          !---------------------------------------------------------------------------------!
-      case (1)
+      case (1,2)
          !---------------------------------------------------------------------------------!
          !    Alternative "free" water calculation.                                        !
          !    Anderson (1976), NOAA Tech Report NWS 19.                                    !

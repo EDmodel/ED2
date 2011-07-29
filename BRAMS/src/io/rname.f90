@@ -56,6 +56,8 @@ subroutine NAMEOUT
 
   use turb_coms, only : nna, nnb, nnc
 
+  use leaf_coms, only : ribmax, leaf_maxwhc
+
   implicit none
 
   integer :: ng,np,k,m
@@ -123,7 +125,7 @@ subroutine NAMEOUT
   write(6,298) IEXEV,IMASSFLX,IBRUVAIS,IBOTFLX
 ! ED2:
   write(6,205)LONRAD,IMONTHA,IDATEA,IYEARA,ITIMEA
-  write(6,297) ISFCL,ISTAR
+  write(6,297) ISFCL,ISTAR,IGRNDVAP
   write(6,299) IMONTHZ,IDATEZ,IYEARZ,ITIMEZ
 !MLO]
 
@@ -143,7 +145,7 @@ subroutine NAMEOUT
        ,'    IDELTAT=',I4,'    ISWRTYP=',I4,'    ILWRTYP=',I4,'    ICUMFDBK=',I4)
 205 format('  LONRAD=',I4,'    IMONTHA=',I4,'     IDATEA=',I4  &
        ,'     IYEARA=',I4,'     ITIMEA=',I4)
-297 format('   ISFCL=',I4,'      ISTAR=',I4)
+297 format('   ISFCL=',I4,'      ISTAR=',I4,'   IGRNDVAP=',I4)
 298 format('   IEXEV=',I4,'   IMASSFLX=',I4,'   IBRUVAIS=',I4,'   IBOTFLX=',I4)
 299 format('  IMONTHZ=',I4,'     IDATEZ=',I4  &
        ,'     IYEARZ=',I4,'     ITIMEZ=',I4)
@@ -190,13 +192,14 @@ subroutine NAMEOUT
   write(6,405)POLELAT,POLELON,DELTAZ
   write(6,406)DZRAT,DZMAX,SSPCT
   write(6,407)CPHAS,DISTIM,RADFRQ
-  write(6,409)WCLDBS,DTLEAF
+  write(6,409)WCLDBS
+  write(6,410)DTLEAF,RIBMAX,LEAF_MAXWHC
 
-  write(6,410)PCTLCON,ZROUGH,ALBEDO
-  write(6,411)SEATMP,DTHCON,DRTCON
-  write(6,412)CPARM,RPARM,PPARM
-  write(6,413)SPARM,APARM,GPARM
-  write(6,414)HPARM
+  write(6,411)PCTLCON,ZROUGH,ALBEDO
+  write(6,412)SEATMP,DTHCON,DRTCON
+  write(6,413)CPARM,RPARM,PPARM
+  write(6,414)SPARM,APARM,GPARM
+  write(6,415)HPARM
 
 401 format('   TIMMAX=',E12.5,'         TIMSTR=',E12.5  &
        ,'         FRQHIS=',E12.5)
@@ -212,18 +215,20 @@ subroutine NAMEOUT
        ,'          SSPCT=',E12.5)
 407 format('    CPHAS=',E12.5,'         DISTIM=',E12.5  &
        ,'         RADFRQ=',E12.5)
-409 format('   WCLDBS=',E12.5,'         DTLEAF=',E12.5)
+409 format('   WCLDBS=',E12.5)
+410 format('   DTLEAF=',E12.5,'         RIBMAX=',E12.5  &
+       ,'    LEAF_MAXWHC=',E12.5)
 
 
-410 format('  PCTLCON=',E12.5,'         ZROUGH=',E12.5  &
+411 format('  PCTLCON=',E12.5,'         ZROUGH=',E12.5  &
        ,'         ALBEDO=',E12.5)
-411 format('   SEATMP=',E12.5,'         DTHCON=',E12.5  &
+412 format('   SEATMP=',E12.5,'         DTHCON=',E12.5  &
        ,'         DRTCON=',E12.5)
-412 format('    CPARM=',E12.5,'          RPARM=',E12.5  &
+413 format('    CPARM=',E12.5,'          RPARM=',E12.5  &
        ,'          PPARM=',E12.5)
-413 format('    SPARM=',E12.5,'          APARM=',E12.5  &
+414 format('    SPARM=',E12.5,'          APARM=',E12.5  &
        ,'          GPARM=',E12.5)
-414 format('    HPARM=',E12.5)
+415 format('    HPARM=',E12.5)
 
   print*, ' '
   write(6,501)(' ',IPLFLD(NP),PLFMT(NP),IXSCTN(NP)  &

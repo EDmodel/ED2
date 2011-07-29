@@ -1700,7 +1700,7 @@ end subroutine RAMS_comp_sfcwinteg
 !    This routine is for quantities defined for all patches.                               !
 !------------------------------------------------------------------------------------------!
 subroutine RAMS_comp_patchsum(nx,ny,nz,np,iovar)
-   use leaf_coms, only : tiny_parea
+   use leaf_coms, only : min_patch_area
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
    integer                         , intent(in)    :: nx
@@ -1752,7 +1752,7 @@ subroutine RAMS_comp_patchsum(nx,ny,nz,np,iovar)
             psum(x,y,z) = 0.
             totarea     = 0.
             ploop: do p = 1,np
-               if (pfarea(x,y,p) < tiny_parea) cycle ploop
+               if (pfarea(x,y,p) <= min_patch_area) cycle ploop
                
                psum(x,y,z) = psum(x,y,z) + pfarea(x,y,p) * patval(x,y,z,p)
                totarea     = totarea + pfarea(x,y,p)
@@ -1780,7 +1780,7 @@ end subroutine RAMS_comp_patchsum
 !      This routine is for quantities that are not defined for water patches.              !
 !------------------------------------------------------------------------------------------!
 subroutine RAMS_comp_patchsum_l(nx,ny,nz,np,iovar)
-   use leaf_coms, only : tiny_parea
+   use leaf_coms, only : min_patch_area
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
    integer                         , intent(in)    :: nx
@@ -1830,7 +1830,7 @@ subroutine RAMS_comp_patchsum_l(nx,ny,nz,np,iovar)
    do z = 1,nz
       do y = 1,ny
          do x = 1,nx
-            if (pfarea(x,y,1) < 1.-tiny_parea) then
+            if (pfarea(x,y,1) < 1.-min_patch_area) then
                psum(x,y,z) = 0.
                landarea    = 0.
                do p = 2,np
@@ -2049,35 +2049,34 @@ end
 subroutine RAMS_reduced_prop(nx,ny,nz,np,ng,which,topt,theta_atm,rvap_atm,co2_atm,uspd_atm &
                             ,theta_can,rvap_can,co2_can,prss_can,zout,rough,rib,zeta,parea &
                             ,ustar,tstar,rstar,cstar,varred)
-   use rpost_coms, only : isfcl      ! ! intent(in)
-   use somevars  , only : myztn      & ! intent(in)
-                        , myzmn      & ! intent(in)
-                        , mynnzp     & ! intent(in)
-                        , myistar    ! ! intent(in)
-   use rconstants, only : grav       & ! intent(in)
-                        , p00i       & ! intent(in)
-                        , rocp       & ! intent(in)
-                        , vonk       & ! intent(in)
-                        , ep         & ! intent(in)
-                        , toodry     ! ! intent(in)
-   use therm_lib , only : virtt      & ! function
-                        , eslif      & ! function
-                        , tslif      ! ! function
-   use leaf_coms , only : ustmin     & ! intent(in)
-                        , ubmin      & ! intent(in)
-                        , bl79       & ! intent(in)
-                        , csm        & ! intent(in)
-                        , csh        & ! intent(in)
-                        , dl79       & ! intent(in)
-                        , ribmaxod95 & ! intent(in)
-                        , ribmaxbh91 & ! intent(in)
-                        , tprandtl   & ! intent(in)
-                        , z0moz0h    & ! intent(in)
-                        , z0hoz0m    & ! intent(in)
-                        , tiny_parea & ! intent(in)
-                        , psim       & ! function
-                        , psih       & ! function
-                        , zoobukhov  ! ! function
+   use rpost_coms, only : isfcl          ! ! intent(in)
+   use somevars  , only : myztn          & ! intent(in)
+                        , myzmn          & ! intent(in)
+                        , mynnzp         & ! intent(in)
+                        , myistar        ! ! intent(in)
+   use rconstants, only : grav           & ! intent(in)
+                        , p00i           & ! intent(in)
+                        , rocp           & ! intent(in)
+                        , vonk           & ! intent(in)
+                        , ep             & ! intent(in)
+                        , toodry         ! ! intent(in)
+   use therm_lib , only : virtt          & ! function
+                        , eslif          & ! function
+                        , tslif          ! ! function
+   use leaf_coms , only : ustmin         & ! intent(in)
+                        , ubmin          & ! intent(in)
+                        , bl79           & ! intent(in)
+                        , csm            & ! intent(in)
+                        , csh            & ! intent(in)
+                        , dl79           & ! intent(in)
+                        , ribmax         & ! intent(in)
+                        , tprandtl       & ! intent(in)
+                        , z0moz0h        & ! intent(in)
+                        , z0hoz0m        & ! intent(in)
+                        , min_patch_area & ! intent(in)
+                        , psim           & ! function
+                        , psih           & ! function
+                        , zoobukhov      ! ! function
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
    integer                  , intent(in)    :: nx
@@ -2174,7 +2173,7 @@ subroutine RAMS_reduced_prop(nx,ny,nz,np,ng,which,topt,theta_atm,rvap_atm,co2_at
 
          ploop: do p = 1,np
             !----- Skip patch if the area is tiny. ----------------------------------------!
-            if (parea(x,y,p) < tiny_parea) cycle ploop
+            if (parea(x,y,p) <= min_patch_area) cycle ploop
 
             !----- Compute the virtual pot. temperature at the canopy air space (CAS). ----!
             thetav_can = virtt(theta_can(x,y,p),rvap_can(x,y,p),rvap_can(x,y,p))
@@ -2196,6 +2195,13 @@ subroutine RAMS_reduced_prop(nx,ny,nz,np,ng,which,topt,theta_atm,rvap_atm,co2_at
             !------------------------------------------------------------------------------!
             stable     = rib(x,y,p) > 0.0
             !------------------------------------------------------------------------------!
+
+
+            !------ Check whether we must correct the bulk Richardson number and stars. ---!
+            if (rib(x,y,p) > ribmax .and. myistar /= 1 .and. is_ed2) then
+               uref = sqrt(rib(x,y,p) / ribmax) * uref
+               rib(x,y,p) = ribmax
+            end if
 
 
             !------------------------------------------------------------------------------!
@@ -2287,8 +2293,6 @@ subroutine RAMS_reduced_prop(nx,ny,nz,np,ng,which,topt,theta_atm,rvap_atm,co2_at
                !    approximation given by OD95.                                           !
                !---------------------------------------------------------------------------!
                if (is_ed2) then 
-                  !----- Make sure that the bulk Richardson number is not above ribmax. ---!
-                  rib(x,y,p) = min(rib(x,y,p),ribmaxod95)
 
                   !----- We now compute the stability correction functions. ---------------!
                   if (stable) then
@@ -2343,7 +2347,6 @@ subroutine RAMS_reduced_prop(nx,ny,nz,np,ng,which,topt,theta_atm,rvap_atm,co2_at
                !---------------------------------------------------------------------------!
                if (is_ed2) then 
                   !----- Make sure that the bulk Richardson number is not above ribmax. ---!
-                  rib(x,y,p)  = min(rib(x,y,p),ribmaxbh91)
                   zeta(x,y,p) = zoobukhov(rib(x,y,p),zref,rough(x,y,p),zroz0m,lnzroz0m     &
                                          ,zroz0h,lnzroz0h,stable,myistar)
                end if

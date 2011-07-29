@@ -121,6 +121,7 @@ module ename_coms
       real                                              :: grid_res
       real                  , dimension(max_poi)        :: poi_lat
       real                  , dimension(max_poi)        :: poi_lon
+      real                  , dimension(max_poi)        :: poi_res
       real                  , dimension(max_ed_regions) :: ed_reg_latmin
       real                  , dimension(max_ed_regions) :: ed_reg_latmax
       real                  , dimension(max_ed_regions) :: ed_reg_lonmin
@@ -131,20 +132,24 @@ module ename_coms
       integer                                           :: integration_scheme
       real                                              :: rk4_tolerance
       integer                                           :: ibranch_thermo
+      integer                                           :: iphysiol
       integer                                           :: istoma_scheme
+      integer                                           :: iallom
       integer                                           :: iphen_scheme
       integer                                           :: repro_scheme
       integer                                           :: lapse_scheme
       integer                                           :: crown_mod
+      integer                                           :: ican_swrad
       integer                                           :: h2o_plant_lim
       real                                              :: vmfact
       real                                              :: mfact
       real                                              :: kfact
       real                                              :: gamfact
+      real                                              :: d0fact
+      real                                              :: alphafact
       real                                              :: thetacrit
       real                                              :: lwfact
       real                                              :: thioff
-      integer                                           :: icomppt
       integer                                           :: quantum_efficiency_T
       integer                                           :: n_plant_lim
       integer                                           :: n_decomp_lim
@@ -155,12 +160,14 @@ module ename_coms
       integer                                           :: icanturb
       integer                                           :: i_blyr_condct
       integer                                           :: isfclyrm
+      integer                                           :: ied_grndvap
       integer                                           :: ipercol
       integer               , dimension(n_pft)          :: include_these_pft
       integer                                           :: agri_stock
       integer                                           :: plantation_stock
       integer                                           :: pft_1st_check
       real                                              :: treefall_disturbance_rate
+      real                                              :: Time2Canopy
       real                                              :: runoff_time
       real                                              :: betapower
       real                                              :: ustmin
@@ -169,6 +176,8 @@ module ename_coms
       real                                              :: tprandtl
       real                                              :: vh2vr
       real                                              :: vh2dh
+      real                                              :: ribmax
+      real                                              :: leaf_maxwhc
       real                                              :: ggfact
 
       !----- Options for printing polygon vectors/arrays to standard output. --------------!
@@ -184,6 +193,8 @@ module ename_coms
       integer                                           :: ishuffle
       integer                                           :: metcyc1
       integer                                           :: metcycf
+      integer                                           :: imetavg
+      integer                                           :: imetrad
       real                                              :: initial_co2
 
       !------ Options controlling prescribed phenology forcing. ---------------------------!
@@ -200,8 +211,10 @@ module ename_coms
       character(len=str_len)                            :: event_file
 
       !----- Variables that control the sought number of patches and cohorts. -------------!
+      integer                                           :: maxsite
       integer                                           :: maxpatch
       integer                                           :: maxcohort
+      real                                              :: min_site_area
 
       !----- Directory for optimizer inputs. ----------------------------------------------!
       character(len=str_len)                            :: ioptinpt
@@ -334,6 +347,7 @@ module ename_coms
       enl%grid_res                  = undef_real
       enl%poi_lat                   = (/ (undef_real, i=1,max_poi) /)
       enl%poi_lon                   = (/ (undef_real, i=1,max_poi) /)
+      enl%poi_res                   = (/ (undef_real, i=1,max_poi) /)
       enl%ed_reg_latmin             = (/ (undef_real,i=1,max_ed_regions) /)
       enl%ed_reg_latmax             = (/ (undef_real,i=1,max_ed_regions) /)
       enl%ed_reg_lonmin             = (/ (undef_real,i=1,max_ed_regions) /)
@@ -343,20 +357,24 @@ module ename_coms
       enl%integration_scheme        = undef_integer
       enl%rk4_tolerance             = undef_real
       enl%ibranch_thermo            = undef_integer
+      enl%iphysiol                  = undef_integer
       enl%istoma_scheme             = undef_integer
+      enl%iallom                    = undef_integer
       enl%iphen_scheme              = undef_integer
       enl%repro_scheme              = undef_integer
       enl%lapse_scheme              = undef_integer
       enl%crown_mod                 = undef_integer
+      enl%ican_swrad                = undef_integer
       enl%h2o_plant_lim             = undef_integer
       enl%vmfact                    = undef_real
       enl%mfact                     = undef_real
       enl%kfact                     = undef_real
       enl%gamfact                   = undef_real
+      enl%d0fact                    = undef_real
+      enl%alphafact                 = undef_real
       enl%thetacrit                 = undef_real
       enl%lwfact                    = undef_real
       enl%thioff                    = undef_real
-      enl%icomppt                   = undef_integer
       enl%quantum_efficiency_T      = undef_integer
       enl%n_plant_lim               = undef_integer
       enl%n_decomp_lim              = undef_integer
@@ -375,6 +393,7 @@ module ename_coms
       enl%pft_1st_check             = undef_integer
 
       enl%treefall_disturbance_rate = undef_real
+      enl%Time2Canopy               = undef_real
       enl%runoff_time               = undef_real
       enl%betapower                 = undef_real
       enl%ustmin                    = undef_real
@@ -383,6 +402,8 @@ module ename_coms
       enl%tprandtl                  = undef_real
       enl%vh2vr                     = undef_real
       enl%vh2dh                     = undef_real
+      enl%ribmax                    = undef_real
+      enl%leaf_maxwhc               = undef_real
       enl%ggfact                    = undef_real
 
       enl%iprintpolys               = undef_integer
@@ -396,6 +417,8 @@ module ename_coms
       enl%ishuffle                  = undef_integer
       enl%metcyc1                   = undef_integer
       enl%metcycf                   = undef_integer
+      enl%imetavg                   = undef_integer
+      enl%imetrad                   = undef_integer
       enl%initial_co2               = undef_real
 
       enl%iphenys1                  = undef_integer
@@ -409,10 +432,11 @@ module ename_coms
       enl%phenpath                  = undef_path
       enl%event_file                = undef_path
 
+      enl%maxsite                   = undef_integer
       enl%maxpatch                  = undef_integer
       enl%maxcohort                 = undef_integer
-       
-   
+      enl%min_site_area             = undef_real
+
       enl%ioptinpt                  = undef_path
       enl%zrough                    = undef_real
       enl%edres                     = undef_real 

@@ -32,29 +32,26 @@ module mem_edcp
    ! called every BRAMS time step.                                                         !
    !---------------------------------------------------------------------------------------!
    type ed_flux
-      real(kind=4), dimension (:,:), pointer :: ustar
-      real(kind=4), dimension (:,:), pointer :: tstar
-      real(kind=4), dimension (:,:), pointer :: rstar
-      real(kind=4), dimension (:,:), pointer :: cstar
-      real(kind=4), dimension (:,:), pointer :: zeta
-      real(kind=4), dimension (:,:), pointer :: ribulk
-      real(kind=4), dimension (:,:), pointer :: sflux_u
-      real(kind=4), dimension (:,:), pointer :: sflux_v
-      real(kind=4), dimension (:,:), pointer :: sflux_t
-      real(kind=4), dimension (:,:), pointer :: sflux_r
-      real(kind=4), dimension (:,:), pointer :: sflux_c
-      real(kind=4), dimension (:,:), pointer :: sflux_w
-      real(kind=4), dimension (:,:), pointer :: albedt
-      real(kind=4), dimension (:,:), pointer :: rlongup
-      real(kind=4), dimension (:,:), pointer :: rk4step
+      real(kind=4), dimension (:,:,:), pointer :: ustar
+      real(kind=4), dimension (:,:,:), pointer :: tstar
+      real(kind=4), dimension (:,:,:), pointer :: rstar
+      real(kind=4), dimension (:,:,:), pointer :: cstar
+      real(kind=4), dimension (:,:,:), pointer :: zeta
+      real(kind=4), dimension (:,:,:), pointer :: ribulk
+      real(kind=4), dimension (:,:,:), pointer :: sflux_u
+      real(kind=4), dimension (:,:,:), pointer :: sflux_v
+      real(kind=4), dimension (:,:,:), pointer :: sflux_t
+      real(kind=4), dimension (:,:,:), pointer :: sflux_r
+      real(kind=4), dimension (:,:,:), pointer :: sflux_c
+      real(kind=4), dimension (:,:,:), pointer :: sflux_w
+      real(kind=4), dimension (:,:,:), pointer :: albedt
+      real(kind=4), dimension (:,:,:), pointer :: rlongup
+      real(kind=4), dimension (:,:,:), pointer :: rk4step
    end type ed_flux
 
    type(ed_flux),pointer, dimension(:) :: ed_fluxp_g
+   type(ed_flux),pointer, dimension(:) :: ed_fluxpm_g
    type(ed_flux),pointer, dimension(:) :: ed_fluxf_g
-   type(ed_flux),pointer, dimension(:) :: wgrid_g
-   type(ed_flux),pointer, dimension(:) :: wgridm_g ! Not that we really need, but we add
-                                                   !    this to make sure the model will 
-                                                   !    work
    !---------------------------------------------------------------------------------------!
 
 
@@ -90,13 +87,14 @@ module mem_edcp
    !=======================================================================================!
    !     This subroutine allocates the flux structures.                                    !
    !---------------------------------------------------------------------------------------!
-   subroutine alloc_edflux(edflux,nxm,nym)
+   subroutine alloc_edflux(edflux,nxm,nym,nsite)
 
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
       type(ed_flux), intent(inout) :: edflux
       integer      , intent(in)    :: nxm
       integer      , intent(in)    :: nym
+      integer      , intent(in)    :: nsite
       !------------------------------------------------------------------------------------!
 
 
@@ -106,21 +104,21 @@ module mem_edcp
 
 
       !----- Allocate the elements of the ed flux structure. ------------------------------!
-      allocate(edflux%ustar     (nxm,nym)   )
-      allocate(edflux%tstar     (nxm,nym)   )
-      allocate(edflux%rstar     (nxm,nym)   )
-      allocate(edflux%cstar     (nxm,nym)   )
-      allocate(edflux%zeta      (nxm,nym)   )
-      allocate(edflux%ribulk    (nxm,nym)   )
-      allocate(edflux%sflux_u   (nxm,nym)   )
-      allocate(edflux%sflux_v   (nxm,nym)   )
-      allocate(edflux%sflux_r   (nxm,nym)   )
-      allocate(edflux%sflux_c   (nxm,nym)   )
-      allocate(edflux%sflux_t   (nxm,nym)   )
-      allocate(edflux%sflux_w   (nxm,nym)   )
-      allocate(edflux%albedt    (nxm,nym)   )
-      allocate(edflux%rlongup   (nxm,nym)   )
-      allocate(edflux%rk4step   (nxm,nym)   )
+      allocate(edflux%ustar     (nxm,nym,nsite)   )
+      allocate(edflux%tstar     (nxm,nym,nsite)   )
+      allocate(edflux%rstar     (nxm,nym,nsite)   )
+      allocate(edflux%cstar     (nxm,nym,nsite)   )
+      allocate(edflux%zeta      (nxm,nym,nsite)   )
+      allocate(edflux%ribulk    (nxm,nym,nsite)   )
+      allocate(edflux%sflux_u   (nxm,nym,nsite)   )
+      allocate(edflux%sflux_v   (nxm,nym,nsite)   )
+      allocate(edflux%sflux_r   (nxm,nym,nsite)   )
+      allocate(edflux%sflux_c   (nxm,nym,nsite)   )
+      allocate(edflux%sflux_t   (nxm,nym,nsite)   )
+      allocate(edflux%sflux_w   (nxm,nym,nsite)   )
+      allocate(edflux%albedt    (nxm,nym,nsite)   )
+      allocate(edflux%rlongup   (nxm,nym,nsite)   )
+      allocate(edflux%rk4step   (nxm,nym,nsite)   )
 
       return
    end subroutine alloc_edflux
@@ -251,7 +249,7 @@ module mem_edcp
    !     This routine will fill the variable table with the previous precipitation values  !
    ! for ED.  This is because we need the information when we run with HISTORY.            !
    !---------------------------------------------------------------------------------------!
-   subroutine filltab_edflux(edflux,edfluxm,imean,nxm,nym,ng)
+   subroutine filltab_edflux(edflux,edfluxm,imean,nxm,nym,npatm,ng)
       use var_tables
 
       implicit none
@@ -261,17 +259,18 @@ module mem_edcp
       integer      , intent(in)    :: imean
       integer      , intent(in)    :: nxm
       integer      , intent(in)    :: nym
+      integer      , intent(in)    :: npatm
       integer      , intent(in)    :: ng
       !----- Local variables. -------------------------------------------------------------!
       integer                      :: npts
       !------------------------------------------------------------------------------------!
 
       !----- Fill pointers to arrays into variable tables. --------------------------------!
-      npts = nxm * nym
+      npts = nxm * nym * npatm
 
       if (associated(edflux%rk4step )) then
          call vtables2 (edflux%rk4step,edfluxm%rk4step,ng,npts,imean                       &
-                       , 'RK4STEP :2:hist:mpti:mpt3')
+                       , 'RK4STEP :6:hist:mpti:mpt3')
       end if
 
       return

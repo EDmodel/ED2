@@ -16,6 +16,7 @@ subroutine read_ed21_history_file
                              , q                       & ! intent(in)
                              , qsw                     & ! intent(in)
                              , hgt_min                 & ! intent(in)
+                             , is_grass                & ! intent(in)
                              , include_pft             & ! intent(in)
                              , include_pft_ag          & ! intent(in)
                              , phenology               & ! intent(in)
@@ -49,7 +50,11 @@ subroutine read_ed21_history_file
                              , memoffs                 & ! intent(in)
                              , memsize                 ! ! intent(in)
    use allometry      , only : area_indices            & ! function
-                             , ed_biomass              ! ! function
+                             , ed_biomass              & ! function
+                             , bd2dbh                  & ! function
+                             , dbh2h                   & ! function
+                             , dbh2bd                  & ! function
+                             , dbh2bl                  ! ! function
    use fuse_fiss_utils, only : terminate_cohorts       ! ! subroutine
 
    implicit none
@@ -97,6 +102,8 @@ subroutine read_ed21_history_file
    real                                :: currad
    real                                :: elim_nplant
    real                                :: elim_lai
+   real                                :: salloc
+   real                                :: salloci
    !----- Local constants. ----------------------------------------------------------------!
    real                  , parameter   :: tiny_biomass = 1.e-20
    !----- External function. --------------------------------------------------------------!
@@ -529,19 +536,38 @@ subroutine read_ed21_history_file
                      memoffs(1)  = 0_8
 
                      call hdf_getslab_r(cpatch%dbh   ,'DBH '   ,dsetrank,iparallel,.true.)
-                     call hdf_getslab_r(cpatch%hite  ,'HITE '  ,dsetrank,iparallel,.true.)
+                     call hdf_getslab_r(cpatch%bdead ,'BDEAD ' ,dsetrank,iparallel,.true.)
                      call hdf_getslab_i(cpatch%pft   ,'PFT '   ,dsetrank,iparallel,.true.)
                      call hdf_getslab_r(cpatch%nplant,'NPLANT ',dsetrank,iparallel,.true.)
-                     call hdf_getslab_r(cpatch%bdead ,'BDEAD ' ,dsetrank,iparallel,.true.)
-                     call hdf_getslab_r(cpatch%balive,'BALIVE ',dsetrank,iparallel,.true.)
-                     call hdf_getslab_r(cpatch%bleaf ,'BLEAF ' ,dsetrank,iparallel,.true.)
-                     call hdf_getslab_r(cpatch%broot ,'BROOT ' ,dsetrank,iparallel,.true.)
-                     call hdf_getslab_r(cpatch%bsapwood        ,'BSAPWOOD '                &
-                                       ,dsetrank,iparallel,.true.)
-                     call hdf_getslab_r(cpatch%bstorage        ,'BSTORAGE '                &
-                                       ,dsetrank,iparallel,.true.)
-                     call hdf_getslab_i(cpatch%phenology_status,'PHENOLOGY_STATUS '        &
-                                       ,dsetrank,iparallel,.true.)
+
+                     !---------------------------------------------------------------------!
+                     !    Find derived properties from Bdead.  In the unlikely case that   !
+                     ! bdead is zero, then we use DBH as the starting point.  In both      !
+                     ! cases we assume that plants are in allometry.                       !
+                     !---------------------------------------------------------------------!
+                     do ico=1,cpatch%ncohorts
+                        ipft = cpatch%pft(ico)
+
+                        if (cpatch%bdead(ico) > 0.0) then
+                           cpatch%dbh(ico)   = bd2dbh(cpatch%pft(ico),cpatch%bdead(ico))
+                           cpatch%hite(ico)  = dbh2h (cpatch%pft(ico),cpatch%dbh  (ico))
+                        else
+                           cpatch%hite(ico)  = dbh2h (cpatch%pft(ico),cpatch%dbh  (ico))
+                           cpatch%bdead(ico) = dbh2bd(cpatch%dbh(ico),cpatch%pft  (ico))
+                        end if
+
+                        cpatch%bleaf(ico)  = dbh2bl(cpatch%dbh(ico),cpatch%pft(ico))
+
+                        !----- Find the other pools. --------------------------------------!
+                        salloc  = (1.0 + q(ipft) + qsw(ipft) * cpatch%hite(ico))
+                        salloci = 1.0 / salloc
+                        cpatch%balive  (ico) = cpatch%bleaf(ico) * salloc
+                        cpatch%broot   (ico) = cpatch%balive(ico) * q(ipft) * salloci
+                        cpatch%bsapwood(ico) = cpatch%balive(ico) * qsw(ipft)              &
+                                             * cpatch%hite(ico) * salloci
+                        cpatch%bstorage(ico) = 0.0
+                        cpatch%phenology_status(ico) = 0
+                     end do
 
                      !----- Then the 2-D variables. ---------------------------------------!
                      dsetrank    = 2
@@ -567,7 +593,7 @@ subroutine read_ed21_history_file
                      cpatch%ddbh_dt              = 0.
                      cpatch%fsw                  = 1.0
                      cpatch%gpp                  = 0.0
-                     cpatch%par_v                = 0.0
+                     cpatch%par_l                = 0.0
                      
                      cohortloop: do ico=1,cpatch%ncohorts
                         !------------------------------------------------------------------!
@@ -575,7 +601,7 @@ subroutine read_ed21_history_file
                         ! if this is a valid PFT.  If not, then we must decide what we     !
                         ! should do...                                                     !
                         !------------------------------------------------------------------!
-                        if (include_pft(cpatch%pft(ico)) == 0) then
+                        if (.not. include_pft(cpatch%pft(ico))) then
                            select case(pft_1st_check)
                            case (0)
                               !----- Stop the run. ----------------------------------------!
@@ -591,13 +617,13 @@ subroutine read_ed21_history_file
                               write (unit=*,fmt='(a,1x,i5,1x,a)')                          &
                                     'I found a cohort with PFT=',cpatch%pft(ico)           &
                                    ,'... Including this PFT in your include_these_pft...'
-                              include_pft(cpatch%pft(ico))        = 1
-                              include_these_pft(sum(include_pft)) = cpatch%pft(ico)
+                              include_pft(cpatch%pft(ico))          = .true.
+                              include_these_pft(count(include_pft)) = cpatch%pft(ico)
 
                               call sort_up(include_these_pft,n_pft)
 
-                              if (cpatch%pft(ico) == 1 .or. cpatch%pft(ico) == 5) then
-                                 include_pft_ag(cpatch%pft(ico)) = 1
+                              if (is_grass(cpatch%pft(ico))) then
+                                 include_pft_ag(cpatch%pft(ico)) = .true.
                               end if
 
                            case (2)
@@ -773,6 +799,7 @@ subroutine read_ed21_history_unstruct
                              , q                       & ! intent(in)
                              , qsw                     & ! intent(in)
                              , hgt_min                 & ! intent(in)
+                             , is_grass                & ! intent(in)
                              , include_pft             & ! intent(in)
                              , include_pft_ag          & ! intent(in)
                              , phenology               & ! intent(in)
@@ -794,7 +821,8 @@ subroutine read_ed21_history_unstruct
                              , edgrid_g                & ! variable type
                              , allocate_polygontype    & ! subroutine
                              , allocate_sitetype       & ! subroutine
-                             , allocate_patchtype      ! ! subroutine
+                             , allocate_patchtype      & ! subroutine
+                             , deallocate_polygontype  ! ! subroutine
    use grid_coms      , only : ngrids                  & ! intent(in)
                              , nzg                     ! ! intent(in)
    use consts_coms    , only : pio4                    ! ! intent(in)
@@ -809,11 +837,16 @@ subroutine read_ed21_history_unstruct
                              , memoffs                 & ! intent(in)
                              , memsize                 ! ! intent(in)
    use allometry      , only : area_indices            & ! function
-                             , ed_biomass              ! ! function
+                             , ed_biomass              & ! function
+                             , bd2dbh                  & ! function
+                             , dbh2h                   & ! function
+                             , dbh2bd                  & ! function
+                             , dbh2bl                  ! ! function
    use fuse_fiss_utils, only : terminate_cohorts       ! ! subroutine
    use disturb_coms   , only : ianth_disturb           & ! intent(in)
                              , lu_rescale_file         & ! intent(in)
                              , min_new_patch_area      ! ! intent(in)
+   use soil_coms      , only : soil                    ! ! intent(in)
 
    implicit none
 
@@ -821,6 +854,7 @@ subroutine read_ed21_history_unstruct
    !----- Local variables. ----------------------------------------------------------------!
    type(edtype)          , pointer                              :: cgrid
    type(polygontype)     , pointer                              :: cpoly
+   type(polygontype)     , pointer                              :: tpoly
    type(sitetype)        , pointer                              :: csite
    type(patchtype)       , pointer                              :: cpatch
    character(len=str_len), dimension(maxlist)                   :: full_list
@@ -831,20 +865,26 @@ subroutine read_ed21_history_unstruct
    integer               , dimension(maxfiles)                  :: ngridpoly
    integer               , dimension(huge_polygon)              :: pyfile_list
    integer               , dimension(huge_polygon)              :: pyindx_list
-   integer               , dimension(:)           , allocatable :: pclosest
-   integer               , dimension(:)           , allocatable :: psrcfile
-   integer               , dimension(:)           , allocatable :: pysi_n
-   integer               , dimension(:)           , allocatable :: pysi_id
-   integer               , dimension(:)           , allocatable :: sipa_n
-   integer               , dimension(:)           , allocatable :: sipa_id
-   integer               , dimension(:)           , allocatable :: paco_n
-   integer               , dimension(:)           , allocatable :: paco_id
+   integer               , dimension(  :)         , allocatable :: pclosest
+   integer               , dimension(  :)         , allocatable :: psrcfile
+   integer               , dimension(  :)         , allocatable :: pysi_n
+   integer               , dimension(  :)         , allocatable :: pysi_id
+   integer               , dimension(  :)         , allocatable :: sipa_n
+   integer               , dimension(  :)         , allocatable :: sipa_id
+   integer               , dimension(  :)         , allocatable :: paco_n
+   integer               , dimension(  :)         , allocatable :: paco_id
+   integer               , dimension(:,:)         , allocatable :: this_ntext
    integer                                                      :: year
    integer                                                      :: igr
    integer                                                      :: ipy
    integer                                                      :: isi
    integer                                                      :: ipa
    integer                                                      :: ico
+   integer                                                      :: isi_best
+   integer                                                      :: isi_try
+   integer                                                      :: nsoil
+   integer                                                      :: nsoil_try
+   integer                                                      :: nsites_inp
    integer                                                      :: xclosest
    integer                                                      :: nflist
    integer                                                      :: nhisto
@@ -886,9 +926,13 @@ subroutine read_ed21_history_unstruct
    real                  , dimension(huge_polygon)              :: nlat_rscl
    real                  , dimension(n_dist_types,huge_polygon) :: newarea
    real                  , dimension(n_dist_types)              :: oldarea
+   real                                                         :: textdist_try
+   real                                                         :: textdist_min
    real                                                         :: dummy
    real                                                         :: elim_nplant
    real                                                         :: elim_lai
+   real                                                         :: salloc
+   real                                                         :: salloci
    !----- Local constants. ----------------------------------------------------------------!
    real                                           , parameter   :: tiny_biomass = 1.e-20
    !----- External functions. -------------------------------------------------------------!
@@ -1281,9 +1325,19 @@ subroutine read_ed21_history_unstruct
                               ,iparallel,.false.)
             !------------------------------------------------------------------------------!
 
-            
-            !----- Allocate the vector of sites in the polygon. ---------------------------!
-            call allocate_polygontype(cpoly,pysi_n(py_index))     
+
+
+
+            !------------------------------------------------------------------------------!
+            !     Site level.  Here we allocate a temporary site that will grab the        !
+            ! soil type information.  We then copy the data with the closest soil texture  !
+            ! properties to the definite site, preserving the previously assigned area.    !
+            !------------------------------------------------------------------------------!
+            nsites_inp = pysi_n(py_index)
+            nullify  (tpoly)
+            allocate (tpoly)
+            allocate (this_ntext(dset_nzg,nsites_inp))
+            call allocate_polygontype(tpoly,nsites_inp)
             !------------------------------------------------------------------------------!
 
 
@@ -1302,55 +1356,52 @@ subroutine read_ed21_history_unstruct
             !----- Load 1D dataset. -------------------------------------------------------!
             dsetrank = 1_8
             globdims(1) = int(dset_nsites_global,8)
-            chnkdims(1) = int(cpoly%nsites,8)
+            chnkdims(1) = int(tpoly%nsites,8)
             chnkoffs(1) = int(pysi_id(py_index) - 1,8)
-            memdims(1)  = int(cpoly%nsites,8)
-            memsize(1)  = int(cpoly%nsites,8)
+            memdims(1)  = int(tpoly%nsites,8)
+            memsize(1)  = int(tpoly%nsites,8)
             memoffs(1)  = 0_8
-            
-            call hdf_getslab_r(cpoly%area       ,'AREA_SI '    ,dsetrank,iparallel,.true.)
-            call hdf_getslab_r(cpoly%moist_f    ,'MOIST_F '    ,dsetrank,iparallel,.true.)
-            call hdf_getslab_r(cpoly%moist_W    ,'MOIST_W '    ,dsetrank,iparallel,.true.)
-            call hdf_getslab_r(cpoly%elevation  ,'ELEVATION '  ,dsetrank,iparallel,.true.)
-            call hdf_getslab_r(cpoly%slope      ,'SLOPE '      ,dsetrank,iparallel,.true.)
-            call hdf_getslab_r(cpoly%aspect     ,'ASPECT '     ,dsetrank,iparallel,.true.)
-            call hdf_getslab_r(cpoly%TCI        ,'TCI '        ,dsetrank,iparallel,.true.)
-            call hdf_getslab_i(cpoly%patch_count,'PATCH_COUNT ',dsetrank,iparallel,.true.)
 
-            !----- Load 2D dataset. -------------------------------------------------------!
-            if (cpoly%nsites > 1) then
-               !---------------------------------------------------------------------------!
-               !      Multiple-site run, load the site-level soil texture.                 !
-               !---------------------------------------------------------------------------!
-               call hdf_getslab_i(cpoly%lsl     ,'LSL_SI '     ,dsetrank,iparallel,.true.)
-               dsetrank     = 2_8
-               globdims(1)  = int(dset_nzg,8)
-               chnkdims(1)  = int(dset_nzg,8)
-               memdims(1)   = int(dset_nzg,8)
-               memsize(1)   = int(dset_nzg,8)
-               chnkoffs(1)  = 0_8
-               memoffs(1)   = 0_8
-               globdims(2)  = int(dset_nsites_global,8)
-               chnkdims(2)  = int(cpoly%nsites,8)
-               chnkoffs(2)  = int(pysi_id(py_index) - 1,8)
-               memdims(2)   = int(cpoly%nsites,8)
-               memsize(2)   = int(cpoly%nsites,8)
-               memoffs(2)   = 0_8
-               call hdf_getslab_i(cpoly%ntext_soil,'NTEXT_SOIL_SI ',dsetrank               &
-                                 ,iparallel,.true.)
-            else
-               !----- Single-site, copy the polygon-level. --------------------------------!
-               do k=1,nzg
-                  cpoly%ntext_soil(k,1) = cgrid%ntext_soil(k,ipy)
-               end do
+            call hdf_getslab_r(tpoly%area       ,'AREA_SI '    ,dsetrank,iparallel,.true.)
+            call hdf_getslab_r(tpoly%moist_f    ,'MOIST_F '    ,dsetrank,iparallel,.true.)
+            call hdf_getslab_r(tpoly%moist_W    ,'MOIST_W '    ,dsetrank,iparallel,.true.)
+            call hdf_getslab_r(tpoly%elevation  ,'ELEVATION '  ,dsetrank,iparallel,.true.)
+            call hdf_getslab_r(tpoly%slope      ,'SLOPE '      ,dsetrank,iparallel,.true.)
+            call hdf_getslab_r(tpoly%aspect     ,'ASPECT '     ,dsetrank,iparallel,.true.)
+            call hdf_getslab_r(tpoly%TCI        ,'TCI '        ,dsetrank,iparallel,.true.)
+            call hdf_getslab_i(tpoly%patch_count,'PATCH_COUNT ',dsetrank,iparallel,.true.)
 
-               !---------------------------------------------------------------------------!
-               !     The soil layer in this case is user defined, so take this from the    !
-               ! grid level variable, and not from the dataset.                            !
-               !---------------------------------------------------------------------------!
-               cpoly%lsl(1)  = cgrid%lsl(ipy)
-               !---------------------------------------------------------------------------!
-            end if
+            !----- Load 2D dataset, currently just the soil texture. ----------------------!
+            call hdf_getslab_i(tpoly%lsl        ,'LSL_SI '     ,dsetrank,iparallel,.true.)
+            dsetrank     = 2_8
+            globdims(1)  = int(dset_nzg,8)
+            chnkdims(1)  = int(dset_nzg,8)
+            memdims(1)   = int(dset_nzg,8)
+            memsize(1)   = int(dset_nzg,8)
+            chnkoffs(1)  = 0_8
+            memoffs(1)   = 0_8
+            globdims(2)  = int(dset_nsites_global,8)
+            chnkdims(2)  = int(tpoly%nsites,8)
+            chnkoffs(2)  = int(pysi_id(py_index) - 1,8)
+            memdims(2)   = int(tpoly%nsites,8)
+            memsize(2)   = int(tpoly%nsites,8)
+            memoffs(2)   = 0_8
+            call hdf_getslab_i(this_ntext,'NTEXT_SOIL_SI ',dsetrank,iparallel,.true.)
+
+            !------------------------------------------------------------------------------!
+            !      The input file may have different number of soil layers than this       !
+            ! simulation.  This is not a problem at this point because the soil maps don't !
+            ! have soil texture profiles, but it may become an issue for sites with        !
+            ! different soil types along the profile.  Feel free to improve the code...    !
+            ! For the time being, we assume here that there is only one soil type, so all  !
+            ! that we need is to save one layer for each site.                             !
+            !------------------------------------------------------------------------------!
+            do isi_try=1,nsites_inp
+               tpoly%ntext_soil(nzg,isi_try) = this_ntext(dset_nzg,isi_try)
+            end do
+            !------------------------------------------------------------------------------!
+
+
 
 
             !------------------------------------------------------------------------------!
@@ -1358,6 +1409,54 @@ subroutine read_ed21_history_unstruct
             !------------------------------------------------------------------------------!
             siteloop: do isi = 1,cpoly%nsites
                csite => cpoly%site(isi)
+
+               nsoil = cpoly%ntext_soil(nzg,isi)
+
+               !---------------------------------------------------------------------------!
+               !     Loop over the sites, pick up the closest one.                         !
+               !---------------------------------------------------------------------------!
+               textdist_min = huge(1.)
+               do isi_try = 1, tpoly%nsites
+                  nsoil_try = tpoly%ntext_soil(nzg,isi_try)
+                  
+                  !------------------------------------------------------------------------!
+                  !     Find the "distance" between the two sites based on the sand and    !
+                  ! clay contents.                                                         !
+                  !------------------------------------------------------------------------!
+                  textdist_try = (soil(nsoil_try)%xsand - soil(nsoil)%xsand) ** 2          &
+                               + (soil(nsoil_try)%xclay - soil(nsoil)%xclay) ** 2
+                  !------------------------------------------------------------------------!
+
+
+                  !------------------------------------------------------------------------!
+                  !     Hold this site in case the "distance" is the minimum so far.       !
+                  !------------------------------------------------------------------------!
+                  if (textdist_try < textdist_min) then
+                     isi_best = isi_try
+                     textdist_min = textdist_try
+                  end if
+                  !------------------------------------------------------------------------!
+               end do
+               !---------------------------------------------------------------------------!
+
+
+               !---------------------------------------------------------------------------!
+               !      Copy the variables we just loaded for the temporary site to the      !
+               ! actual site, with two exceptions: area and lowest soil layer.  This is    !
+               ! because we are not running a history run, so these values are likely to   !
+               ! be different and we want them to be based on the user settings rather     !
+               ! than the old run setting.                                                 !
+               !---------------------------------------------------------------------------!
+               cpoly%moist_f     (isi) = tpoly%moist_f     (isi_best)
+               cpoly%moist_w     (isi) = tpoly%moist_w     (isi_best)
+               cpoly%elevation   (isi) = tpoly%elevation   (isi_best)
+               cpoly%slope       (isi) = tpoly%slope       (isi_best)
+               cpoly%aspect      (isi) = tpoly%aspect      (isi_best)
+               cpoly%TCI         (isi) = tpoly%TCI         (isi_best)
+               cpoly%patch_count (isi) = tpoly%patch_count (isi_best)
+               !---------------------------------------------------------------------------!
+
+
 
                !----- Reset the HDF5 auxiliary variables before moving to the next level. -!
                globdims = 0_8
@@ -1368,7 +1467,7 @@ subroutine read_ed21_history_unstruct
                memsize  = 1_8
 
                !----- Calculate the index of this site data in the HDF5 file. -------------!
-               si_index = pysi_id(py_index) + isi - 1
+               si_index = pysi_id(py_index) + isi_best - 1
 
                if (sipa_n(si_index) > 0) then
 
@@ -1496,26 +1595,41 @@ subroutine read_ed21_history_unstruct
 
                         call hdf_getslab_r(cpatch%dbh             ,'DBH '                  &
                                           ,dsetrank,iparallel,.true.)
-                        call hdf_getslab_r(cpatch%hite            ,'HITE '                 &
+                        call hdf_getslab_r(cpatch%bdead           ,'BDEAD '                &
                                           ,dsetrank,iparallel,.true.)
                         call hdf_getslab_i(cpatch%pft             ,'PFT '                  &
                                           ,dsetrank,iparallel,.true.)
                         call hdf_getslab_r(cpatch%nplant          ,'NPLANT '               &
                                           ,dsetrank,iparallel,.true.)
-                        call hdf_getslab_r(cpatch%bdead           ,'BDEAD '                &
-                                          ,dsetrank,iparallel,.true.)
-                        call hdf_getslab_r(cpatch%balive          ,'BALIVE '               &
-                                          ,dsetrank,iparallel,.true.)
-                        call hdf_getslab_r(cpatch%bleaf           ,'BLEAF '                &
-                                          ,dsetrank,iparallel,.true.)
-                        call hdf_getslab_r(cpatch%broot           ,'BROOT '                &
-                                          ,dsetrank,iparallel,.true.)
-                        call hdf_getslab_r(cpatch%bsapwood        ,'BSAPWOOD '                &
-                                          ,dsetrank,iparallel,.true.)
-                        call hdf_getslab_r(cpatch%bstorage        ,'BSTORAGE '             &
-                                          ,dsetrank,iparallel,.true.)
-                        call hdf_getslab_i(cpatch%phenology_status,'PHENOLOGY_STATUS '     &
-                                          ,dsetrank,iparallel,.true.)
+
+                        !------------------------------------------------------------------!
+                        !    Find derived properties from Bdead.  In the unlikely case     !
+                        ! that bdead is zero, then we use DBH as the starting point.  In   !
+                        ! both cases we assume that plants are in allometry.               !
+                        !------------------------------------------------------------------!
+                        do ico=1,cpatch%ncohorts
+                           ipft = cpatch%pft(ico)
+
+                           if (cpatch%bdead(ico) > 0.0) then
+                              cpatch%dbh(ico)   = bd2dbh(cpatch%pft(ico),cpatch%bdead(ico))
+                              cpatch%hite(ico)  = dbh2h (cpatch%pft(ico),cpatch%dbh  (ico))
+                           else
+                              cpatch%hite(ico)  = dbh2h (cpatch%pft(ico),cpatch%dbh  (ico))
+                              cpatch%bdead(ico) = dbh2bd(cpatch%dbh(ico),cpatch%pft  (ico))
+                           end if
+
+                           cpatch%bleaf(ico)  = dbh2bl(cpatch%dbh(ico),cpatch%pft(ico))
+
+                           !----- Find the other pools. -----------------------------------!
+                           salloc  = (1.0 + q(ipft) + qsw(ipft) * cpatch%hite(ico))
+                           salloci = 1.0 / salloc
+                           cpatch%balive  (ico) = cpatch%bleaf(ico) * salloc
+                           cpatch%broot   (ico) = cpatch%balive(ico) * q(ipft) * salloci
+                           cpatch%bsapwood(ico) = cpatch%balive(ico) * qsw(ipft)           &
+                                                * cpatch%hite(ico) * salloci
+                           cpatch%bstorage(ico) = 0.0
+                           cpatch%phenology_status(ico) = 0
+                        end do
 
                         !----- Then the 2-D variables. ------------------------------------!
                         dsetrank    = 2
@@ -1545,7 +1659,7 @@ subroutine read_ed21_history_unstruct
                         cpatch%ddbh_dt              = 0.
                         cpatch%fsw                  = 1.0
                         cpatch%gpp                  = 0.0
-                        cpatch%par_v                = 0.0
+                        cpatch%par_l                = 0.0
 
                         cohortloop: do ico=1,cpatch%ncohorts
                            !---------------------------------------------------------------!
@@ -1553,7 +1667,7 @@ subroutine read_ed21_history_unstruct
                            ! if this is a valid PFT.  If not, then we must decide what we  !
                            ! should do...                                                  !
                            !---------------------------------------------------------------!
-                           if (include_pft(cpatch%pft(ico)) == 0) then
+                           if (.not. include_pft(cpatch%pft(ico))) then
                               select case(pft_1st_check)
                               case (0)
                                  !----- Stop the run. -------------------------------------!
@@ -1569,13 +1683,13 @@ subroutine read_ed21_history_unstruct
                                  write (unit=*,fmt='(a,1x,i5,1x,a)')                       &
                                       'I found a cohort with PFT=',cpatch%pft(ico)         &
                                      ,'... Including this PFT in your include_these_pft...'
-                                 include_pft(cpatch%pft(ico))        = 1
-                                 include_these_pft(sum(include_pft)) = cpatch%pft(ico)
+                                 include_pft(cpatch%pft(ico))          = .true.
+                                 include_these_pft(count(include_pft)) = cpatch%pft(ico)
 
                                  call sort_up(include_these_pft,n_pft)
 
-                                 if (cpatch%pft(ico) == 1 .or. cpatch%pft(ico) == 5) then
-                                    include_pft_ag(cpatch%pft(ico)) = 1
+                                 if (is_grass(cpatch%pft(ico))) then
+                                    include_pft_ag(cpatch%pft(ico)) = .true.
                                  end if
 
                               case (2)
@@ -1681,6 +1795,12 @@ subroutine read_ed21_history_unstruct
             call init_ed_site_vars(cpoly,cgrid%lat(ipy))
             !------------------------------------------------------------------------------!
 
+            !----- Deallocate the temporary polygon and soil structure. -------------------!
+            call deallocate_polygontype(tpoly)
+            deallocate(tpoly)
+            deallocate(this_ntext          )
+            !------------------------------------------------------------------------------!
+
          end do polyloop
 
          !----- Close the dataset. --------------------------------------------------------!
@@ -1693,9 +1813,9 @@ subroutine read_ed21_history_unstruct
                             ,'read_ed21_history_file','ed_read_ed21_history.F90')
          end if
 
-         deallocate(paco_n   ,paco_id  )
-         deallocate(sipa_n   ,sipa_id  )
-         deallocate(pysi_n   ,pysi_id  )
+         deallocate(paco_n    ,paco_id  )
+         deallocate(sipa_n    ,sipa_id  )
+         deallocate(pysi_n    ,pysi_id  )
       end do rstfileloop
 
       !----- Initialise the other polygon-level variables. --------------------------------!

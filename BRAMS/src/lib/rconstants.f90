@@ -313,6 +313,17 @@ Module rconstants
 
 
    !---------------------------------------------------------------------------------------!
+   !     These are the just default huge and tiny numbers that are not the actual huge or  !
+   ! tiny values from Fortran intrinsic functions, so if you do any numerical operations   !
+   ! you will still be fine.                                                               !
+   !---------------------------------------------------------------------------------------!
+   real, parameter :: huge_num  = 1.e+19
+   real, parameter :: tiny_num  = 1.e-19
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
    !    Double precision version of all constants used in Runge-Kutta.                     !
    !---------------------------------------------------------------------------------------!
    real(kind=8), parameter :: pi18            = dble(pi1           )
@@ -338,6 +349,8 @@ Module rconstants
    real(kind=8), parameter :: volmoll8        = dble(volmoll       )
    real(kind=8), parameter :: mmdry8          = dble(mmdry         )
    real(kind=8), parameter :: mmh2o8          = dble(mmh2o         )
+   real(kind=8), parameter :: mmo28           = dble(mmo2          )
+   real(kind=8), parameter :: mmo38           = dble(mmo3          )
    real(kind=8), parameter :: mmco28          = dble(mmco2         )
    real(kind=8), parameter :: mmdoc8          = dble(mmdoc         )
    real(kind=8), parameter :: mmcod8          = dble(mmcod         )
@@ -422,6 +435,8 @@ Module rconstants
    real(kind=8), parameter :: gr_coeff8       = dble(gr_coeff      )
    real(kind=8), parameter :: lnexp_min8      = dble(lnexp_min     )
    real(kind=8), parameter :: lnexp_max8      = dble(lnexp_max     )
+   real(kind=8), parameter :: huge_num8       = dble(huge_num      )
+   real(kind=8), parameter :: tiny_num8       = dble(tiny_num      )
    !---------------------------------------------------------------------------------------!
 
 

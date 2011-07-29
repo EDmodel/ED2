@@ -47,7 +47,8 @@ subroutine copy_nl(copy_type)
                                    , undef_integer             & ! intent(in)
                                    , maxgrds                   ! ! intent(in)
    use ename_coms           , only : nl                        ! ! intent(in)
-   use soil_coms            , only : isoilflg                  & ! intent(out)
+   use soil_coms            , only : find_soil_class           & ! function
+                                   , isoilflg                  & ! intent(out)
                                    , nslcon                    & ! intent(out)
                                    , slxclay                   & ! intent(out)
                                    , slxsand                   & ! intent(out)
@@ -69,11 +70,14 @@ subroutine copy_nl(copy_type)
                                    , metcyc1                   & ! intent(out)
                                    , metcycf                   & ! intent(out)
                                    , imettype                  & ! intent(out)
+                                   , imetavg                   & ! intent(out)
+                                   , imetrad                   & ! intent(out)
                                    , initial_co2               & ! intent(out)
                                    , lapse_scheme              ! ! intent(out)
    use mem_polygons         , only : n_poi                     & ! intent(out)
                                    , poi_lat                   & ! intent(out)
                                    , poi_lon                   & ! intent(out)
+                                   , poi_res                   & ! intent(out)
                                    , n_ed_region               & ! intent(out)
                                    , ed_reg_latmin             & ! intent(out)
                                    , ed_reg_latmax             & ! intent(out)
@@ -82,18 +86,21 @@ subroutine copy_nl(copy_type)
                                    , grid_res                  & ! intent(out)
                                    , grid_type                 & ! intent(out)
                                    , edres                     & ! intent(out)
+                                   , maxsite                   & ! intent(out)
                                    , maxpatch                  & ! intent(out)
                                    , maxcohort                 ! ! intent(out)
-   use physiology_coms      , only : istoma_scheme             & ! intent(out)
+   use physiology_coms      , only : iphysiol                  & ! intent(out)
+                                   , istoma_scheme             & ! intent(out)
                                    , h2o_plant_lim             & ! intent(out)
                                    , n_plant_lim               & ! intent(out)
                                    , vmfact                    & ! intent(out)
                                    , mfact                     & ! intent(out)
                                    , kfact                     & ! intent(out)
                                    , gamfact                   & ! intent(out)
+                                   , d0fact                    & ! intent(out)
+                                   , alphafact                 & ! intent(out)
                                    , lwfact                    & ! intent(out)
                                    , thioff                    & ! intent(out)
-                                   , icomppt                   & ! intent(out)
                                    , quantum_efficiency_T      ! ! intent(out)
    use phenology_coms       , only : iphen_scheme              & ! intent(out)
                                    , iphenys1                  & ! intent(out)
@@ -113,7 +120,8 @@ subroutine copy_nl(copy_type)
                                    , lu_database               & ! intent(out)
                                    , plantation_file           & ! intent(out)
                                    , lu_rescale_file           & ! intent(out)
-                                   , sm_fire                   ! ! intent(out)
+                                   , sm_fire                   & ! intent(out)
+                                   , time2canopy               ! ! intent(out)
    use pft_coms             , only : include_these_pft         & ! intent(out)
                                    , agri_stock                & ! intent(out)
                                    , plantation_stock          & ! intent(out)
@@ -164,7 +172,9 @@ subroutine copy_nl(copy_type)
                                    , outstate                  & ! intent(out)
                                    , unitfast                  & ! intent(out)
                                    , unitstate                 & ! intent(out)
-                                   , event_file                ! ! intent(out)
+                                   , event_file                & ! intent(out)
+                                   , iallom                    & ! intent(out)
+                                   , min_site_area             ! ! intent(out)
    use grid_coms            , only : time                      & ! intent(out)
                                    , centlon                   & ! intent(out)
                                    , centlat                   & ! intent(out)
@@ -184,6 +194,7 @@ subroutine copy_nl(copy_type)
    use ed_misc_coms         , only : attach_metadata           ! ! intent(out)
    use canopy_air_coms      , only : icanturb                  & ! intent(out)
                                    , isfclyrm                  & ! intent(out)
+                                   , ied_grndvap               & ! intent(out)
                                    , i_blyr_condct             & ! intent(out)
                                    , ustmin                    & ! intent(out)
                                    , ggfact                    & ! intent(out)
@@ -192,9 +203,12 @@ subroutine copy_nl(copy_type)
                                    , tprandtl                  & ! intent(out)
                                    , vkopr                     & ! intent(out)
                                    , vh2vr                     & ! intent(out)
-                                   , vh2dh                     ! ! intent(out)
+                                   , vh2dh                     & ! intent(out)
+                                   , ribmax                    & ! intent(out)
+                                   , leaf_maxwhc               ! ! intent(out)
    use optimiz_coms         , only : ioptinpt                  ! ! intent(out)
-   use canopy_radiation_coms, only : crown_mod                 ! ! intent(out)
+   use canopy_layer_coms    , only : crown_mod                 ! ! intent(out)
+   use canopy_radiation_coms, only : ican_swrad                ! ! intent(out)
    use rk4_coms             , only : ibranch_thermo            & ! intent(out)
                                    , ipercol                   & ! intent(out)
                                    , rk4_tolerance             ! ! intent(out)
@@ -288,6 +302,7 @@ subroutine copy_nl(copy_type)
       grid_type                 = nl%grid_type
       poi_lat                   = nl%poi_lat
       poi_lon                   = nl%poi_lon
+      poi_res                   = nl%poi_res
       ed_reg_latmin             = nl%ed_reg_latmin
       ed_reg_latmax             = nl%ed_reg_latmax
       ed_reg_lonmin             = nl%ed_reg_lonmin
@@ -296,20 +311,24 @@ subroutine copy_nl(copy_type)
       integration_scheme        = nl%integration_scheme
       rk4_tolerance             = nl%rk4_tolerance
       ibranch_thermo            = nl%ibranch_thermo
+      iphysiol                  = nl%iphysiol
       istoma_scheme             = nl%istoma_scheme
+      iallom                    = nl%iallom
       iphen_scheme              = nl%iphen_scheme
       repro_scheme              = nl%repro_scheme
       lapse_scheme              = nl%lapse_scheme
       crown_mod                 = nl%crown_mod
+      ican_swrad                = nl%ican_swrad
       h2o_plant_lim             = nl%h2o_plant_lim
       vmfact                    = nl%vmfact
       mfact                     = nl%mfact
       kfact                     = nl%kfact
       gamfact                   = nl%gamfact
+      d0fact                    = nl%d0fact
+      alphafact                 = nl%alphafact
       thetacrit                 = nl%thetacrit
       lwfact                    = nl%lwfact
       thioff                    = nl%thioff
-      icomppt                   = nl%icomppt
       quantum_efficiency_T      = nl%quantum_efficiency_T
       radint                    = nl%radint
       radslp                    = nl%radslp
@@ -325,11 +344,14 @@ subroutine copy_nl(copy_type)
       icanturb                  = nl%icanturb
       i_blyr_condct             = nl%i_blyr_condct
       isfclyrm                  = nl%isfclyrm
+      ied_grndvap               = nl%ied_grndvap
       gamm                      = nl%gamm
       gamh                      = nl%gamh
       tprandtl                  = nl%tprandtl
       vh2vr                     = nl%vh2vr
       vh2dh                     = nl%vh2dh
+      ribmax                    = nl%ribmax
+      leaf_maxwhc               = nl%leaf_maxwhc
       ipercol                   = nl%ipercol
 
       include_these_pft         = nl%include_these_pft
@@ -338,6 +360,7 @@ subroutine copy_nl(copy_type)
       pft_1st_check             = nl%pft_1st_check
       
       treefall_disturbance_rate = nl%treefall_disturbance_rate
+      time2canopy               = nl%time2canopy
       runoff_time               = nl%runoff_time
       betapower                 = nl%betapower
       ustmin                    = nl%ustmin
@@ -355,6 +378,8 @@ subroutine copy_nl(copy_type)
       ishuffle                  = nl%ishuffle
       metcyc1                   = nl%metcyc1
       metcycf                   = nl%metcycf
+      imetavg                   = nl%imetavg
+      imetrad                   = nl%imetrad
       initial_co2               = nl%initial_co2
       
       iphenys1                  = nl%iphenys1
@@ -365,8 +390,10 @@ subroutine copy_nl(copy_type)
       iedcnfgf                  = nl%iedcnfgf
       event_file                = nl%event_file
       phenpath                  = nl%phenpath
+      maxsite                   = nl%maxsite
       maxpatch                  = nl%maxpatch
       maxcohort                 = nl%maxcohort
+      min_site_area             = nl%min_site_area
       ioptinpt                  = nl%ioptinpt
       zrough                    = nl%zrough
       
@@ -535,6 +562,20 @@ subroutine copy_nl(copy_type)
       vkopr = 0.0
    end if 
    !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !       Check whether we must re-define the default soil type (nslcon) based on the     !
+   ! fractions of sand and clay.                                                           !
+   !---------------------------------------------------------------------------------------!
+   if ( any(isoilflg == 2) .and. slxclay > 0. .and. slxsand > 0. .and.                     &
+        (slxclay + slxsand) <= 1. ) then
+      nslcon = find_soil_class(slxsand,slxclay)
+   end if
+   !---------------------------------------------------------------------------------------!
+
+
+
 
    return
 end subroutine copy_nl

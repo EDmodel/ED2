@@ -42,7 +42,9 @@ Module consts_coms
      , b_hr_min     => hr_min     , b_th_diff    => th_diff    , b_th_diffi   => th_diffi  &
      , b_kin_visc   => kin_visc   , b_kin_visci  => kin_visci  , b_th_expan   => th_expan  &
      , b_gr_coeff   => gr_coeff   , b_mmh2oi     => mmh2oi     , b_lnexp_min  => lnexp_min &
-     , b_lnexp_max  => lnexp_max
+     , b_lnexp_max  => lnexp_max  , b_huge_num   => huge_num   , b_tiny_num   => tiny_num  &
+     , b_mmo2       => mmo2       , b_mmo3       => mmo3       , b_prefsea    => prefsea   &
+     , b_solar      => solar
 
    implicit none
 
@@ -99,6 +101,9 @@ Module consts_coms
    real, parameter :: th_expan   = b_th_expan   , gr_coeff   = b_gr_coeff
    real, parameter :: mmh2oi     = b_mmh2o      , lnexp_min  = b_lnexp_min
    real, parameter :: lnexp_max  = b_lnexp_max  , kin_visci  = b_kin_visci
+   real, parameter :: huge_num   = b_huge_num   , tiny_num   = b_tiny_num
+   real, parameter :: mmo2       = b_mmo2       , mmo3       = b_mmo3
+   real, parameter :: prefsea    = b_prefsea    , solar      = b_solar
    !---------------------------------------------------------------------------------------!
 
 #else
@@ -151,6 +156,8 @@ Module consts_coms
    ! Molar masses and derived variables                                                    !
    !---------------------------------------------------------------------------------------!
    real, parameter :: mmdry       = 0.02897        ! Mean dry air molar mass    [   kg/mol]
+   real, parameter :: mmo2        = 0.03199880     ! Mean O2 molar mass         [   kg/mol]
+   real, parameter :: mmo3        = 0.0479982      ! Mean ozone molar mass      [   kg/mol]
    real, parameter :: mmh2o       = 0.01801505     ! Mean water molar mass      [   kg/mol]
    real, parameter :: mmco2       = 0.0440095      ! Mean CO2 molar mass        [   kg/mol]
    real, parameter :: mmdoc       = mmdry/mmco2    ! mmdry/mmco2                [     ----]
@@ -184,7 +191,9 @@ Module consts_coms
    real, parameter :: grav      = 9.80665     ! Gravity acceleration            [     m/s²]
    real, parameter :: erad      = 6370997.    ! Earth radius                    [        m]
    real, parameter :: erad2     = 2.*erad     ! Earth diameter                  [        m]
+   real, parameter :: solar     = 1.3533e3    ! Solar constant                  [     W/m²]
    real, parameter :: p00       = 1.e5        ! Reference pressure              [       Pa]
+   real, parameter :: prefsea   = 101325.     ! Reference sea level pressure    [       Pa]
    real, parameter :: p00i      = 1. / p00    ! 1/p00                           [     1/Pa]
    real, parameter :: p00k      = 26.870941   ! p0 ** (Ra/Cp)                   [ Pa^0.286]
    real, parameter :: p00ki     = 1. / p00k   ! p0 ** (-Ra/Cp)                  [Pa^-0.286]
@@ -356,6 +365,17 @@ Module consts_coms
    real, parameter :: lnexp_max =  38.
    !---------------------------------------------------------------------------------------!
 
+
+
+   !---------------------------------------------------------------------------------------!
+   !     These are the just default huge and tiny numbers that are not the actual huge or  !
+   ! tiny values from Fortran intrinsic functions, so if you do any numerical operations   !
+   ! you will still be fine.                                                               !
+   !---------------------------------------------------------------------------------------!
+   real, parameter :: huge_num  = 1.e+19
+   real, parameter :: tiny_num  = 1.e-19
+   !---------------------------------------------------------------------------------------!
+
 #endif
 
    !---------------------------------------------------------------------------------------!
@@ -399,6 +419,8 @@ Module consts_coms
    real(kind=8), parameter :: volmol8         = dble(volmol        )
    real(kind=8), parameter :: volmoll8        = dble(volmoll       )
    real(kind=8), parameter :: mmdry8          = dble(mmdry         )
+   real(kind=8), parameter :: mmo28           = dble(mmo2          )
+   real(kind=8), parameter :: mmo38           = dble(mmo3          )
    real(kind=8), parameter :: mmh2o8          = dble(mmh2o         )
    real(kind=8), parameter :: mmco28          = dble(mmco2         )
    real(kind=8), parameter :: mmdoc8          = dble(mmdoc         )
@@ -486,6 +508,8 @@ Module consts_coms
    real(kind=8), parameter :: umol_2_mol8     = dble(umol_2_mol    )
    real(kind=8), parameter :: lnexp_min8      = dble(lnexp_min     )
    real(kind=8), parameter :: lnexp_max8      = dble(lnexp_max     )
+   real(kind=8), parameter :: huge_num8       = dble(huge_num      )
+   real(kind=8), parameter :: tiny_num8       = dble(tiny_num      )
    !---------------------------------------------------------------------------------------!
 
 

@@ -33,6 +33,19 @@ module canopy_air_coms
                             !      328-341.
                             !  4 - BH91, using OD95 to find zeta.
 
+
+   integer :: ied_grndvap   ! Methods to find the ground -> canopy conductance:
+                            ! In all cases the beta term is modified so it approaches
+                            !    zero as soil moisture goes to dry air soil. 
+                            !  0. Modified Lee Pielke (1992), adding field capacity, but 
+                            !     using beta factor without the square, like in 
+                            !     Noilhan and Planton (1989).  This is the closest to
+                            !     the original ED-2.0
+                            !  1. Test # 1 of Mahfouf and Noilhan (1991)
+                            !  2. Test # 2 of Mahfouf and Noilhan (1991)
+                            !  3. Test # 3 of Mahfouf and Noilhan (1991)
+                            !  4. Test # 4 of Mahfouf and Noilhan (1991)
+
    integer :: i_blyr_condct ! Methods to estimate the leaf boundary layer conductance:
                             !  0. The Nusselt number for forced convection is estimated
                             !     using the average winds, with no corrections
@@ -42,6 +55,14 @@ module canopy_air_coms
                             !  2. The actual Nusselt number for forced convection is 
                             !     multiplied by 10. as the Reynolds number gets close or
                             !     greater than 10,000.
+
+   real :: leaf_maxwhc      !   Maximum amount of water that can stay on top of the leaf
+                            ! surface.  If this amount is reached, the leaf stops collect-
+                            ! ing water, thus increasing the through fall fraction.  This 
+                            ! value is given in kg/[m2 leaf], so it will be always scaled
+                            ! by LAI.
+   !---------------------------------------------------------------------------------------!
+
    !----- Minimum Ustar [m/s]. ------------------------------------------------------------!
    real         :: ustmin
    !----- Factor to be applied to the ground->canopy conductance. -------------------------!
@@ -54,6 +75,7 @@ module canopy_air_coms
                          !     based on the namelist TPRANDTL
    real   :: vh2vr       ! vegetation roughness:vegetation height ratio
    real   :: vh2dh       ! displacement height:vegetation height ratio
+   real   :: ribmax      ! Maximum bulk Richardson number (ignored when ISFCLYRM = 1)
    !---------------------------------------------------------------------------------------!
 
    !=======================================================================================!
@@ -70,6 +92,8 @@ module canopy_air_coms
    real         :: ubmin
    !----- Some parameters that were used in ED-2.0, added here for some tests. ------------!
    real         :: ez
+
+
    !----- Double precision version of some of these variables (for Runge-Kutta). ----------!
    real(kind=8) :: exar8
    real(kind=8) :: ustmin8
@@ -78,6 +102,8 @@ module canopy_air_coms
    real(kind=8) :: ez8
    real(kind=8) :: vh2dh8
    real(kind=8) :: ggfact8
+   real(kind=8) :: rasveg_min8
+   real(kind=8) :: taumin8
    !=======================================================================================!
    !=======================================================================================!
 
@@ -88,28 +114,60 @@ module canopy_air_coms
 
    !=======================================================================================!
    !=======================================================================================!
-   !     Constants for new canopy turbulence.                                              !
+   !     Parameters for Massman (1997) and Massman and Weil (1999) canopy turbulence       !
+   ! closures.                                                                             !
+   !                                                                                       !
+   ! Massman, W. J., 1997: An analytical one-dimensional model of momentum transfer by     !
+   !    vegetation of arbitrary structure.  Boundary Layer Meteorology, 83, 407-421.       !
+   !                                                                                       !
+   ! Massman, W. J., and J. C. Weil, 1999: An analytical one-dimension second-order clos-  !
+   !    ure model turbulence statistics and the Lagrangian time scale within and above     !
+   !    plant canopies of arbitrary structure.  Boundary Layer Meteorology, 91, 81-107.    !
    !---------------------------------------------------------------------------------------!
-   !----- Discrete step size in canopy elevation [m]. -------------------------------------!
-   real        , parameter :: dz     = 0.5
-   !----- Fluid drag coefficient for turbulent flow in leaves. ----------------------------!
-   real        , parameter :: Cd0    = 0.2
-   !----- Sheltering factor of fluid drag on canopies. ------------------------------------!
-   real        , parameter :: Pm     = 1.0
+   !----- Fluid drag coefficient for turbulent flow in leaves at the top. -----------------!
+   real(kind=4)  :: cdrag0
+   !----- Sheltering factor of fluid drag at the top of the canopy. -----------------------!
+   real(kind=4)  :: pm0
    !----- Surface drag parameters (Massman 1997). -----------------------------------------!
-   real        , parameter :: c1_m97 = 0.320 
-   real        , parameter :: c2_m97 = 0.264
-   real        , parameter :: c3_m97 = 15.1
+   real(kind=4)  :: c1_m97
+   real(kind=4)  :: c2_m97
+   real(kind=4)  :: c3_m97
    !----- Eddy diffusivity due to Von Karman Wakes in gravity flows. ----------------------!
-   real        , parameter :: kvwake = 0.001
-   !----- Double precision version of these variables, used in the Runge-Kutta scheme. ----!
-   real(kind=8), parameter :: dz8     = dble(dz)
-   real(kind=8), parameter :: Cd08    = dble(Cd0)
-   real(kind=8), parameter :: Pm8     = dble(Pm)
-   real(kind=8), parameter :: c1_m978 = dble(c1_m97)
-   real(kind=8), parameter :: c2_m978 = dble(c2_m97)
-   real(kind=8), parameter :: c3_m978 = dble(c3_m97)
-   real(kind=8), parameter :: kvwake8 = dble(kvwake)
+   real(kind=4)  :: kvwake
+   !---------------------------------------------------------------------------------------!
+   !     Alpha factors to produce the profile of sheltering factor and within canopy drag, !
+   ! as suggested by Massman (1997) and Massman and Weil (1999).                           !
+   !---------------------------------------------------------------------------------------!
+   real(kind=4)  :: alpha_m97
+   real(kind=4)  :: alpha_mw99
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Parameters for Massman and Weil (1999).                                           !
+   !  Gamma and nu are the parameters that close equation 10 in Massman and Weil (1999).   !
+   !  VERY IMPORTANT: If you mess with gamma, you must recompute nu!                       !
+   !---------------------------------------------------------------------------------------!
+   real(kind=4), dimension(3) :: gamma_mw99
+   real(kind=4), dimension(3) :: nu_mw99
+   !----- Parameter to represent the Roughness sublayer effect. ---------------------------!
+   real(kind=4)               :: infunc
+   !---------------------------------------------------------------------------------------!
+
+   !----- Double precision version of all variables above. --------------------------------!
+   real(kind=8)                            :: dz_m978
+   real(kind=8)                            :: cdrag08
+   real(kind=8)                            :: pm08
+   real(kind=8)                            :: c1_m978
+   real(kind=8)                            :: c2_m978
+   real(kind=8)                            :: c3_m978
+   real(kind=8)                            :: kvwake8
+   real(kind=8)                            :: alpha_m97_8
+   real(kind=8)                            :: alpha_mw99_8
+   real(kind=8), dimension(3)              :: gamma_mw99_8
+   real(kind=8), dimension(3)              :: nu_mw99_8
+   real(kind=8)                            :: infunc_8
    !=======================================================================================!
    !=======================================================================================!
 
@@ -120,22 +178,35 @@ module canopy_air_coms
 
    !=======================================================================================!
    !=======================================================================================!
-   !      Parameters for the aerodynamic resistance between the leaf and the canopy air    !
-   ! space.  These are the A, B, n, and m parameters that define the Nusselt number for    !
-   ! forced and free convection, at equations 10.7 and 10.9:                               !
+   !      Parameters for the aerodynamic resistance between the leaf (flat surface) and    !
+   ! wood (kind of cylinder surface), and the canopy air space.  These are the A, B, n,    !
+   ! and m parameters that define the Nusselt number for forced and free convection, at    !
+   ! equations 10.7 and 10.9.  The numbers are defined in appendix A, table A.5.           !
    !                                                                                       !
    ! M08 - Monteith, J. L., M. H. Unsworth, 2008. Principles of Environmental Physics,     !
    !       3rd. edition, Academic Press, Amsterdam, 418pp.  (Mostly Chapter 10).           !
    !---------------------------------------------------------------------------------------!
-   real                    :: aflat_turb  ! A (forced convection), turbulent flow
-   real                    :: aflat_lami  ! A (forced convection), laminar   flow
-   real                    :: nflat_turb  ! n (forced convection), turbulent flow
-   real                    :: nflat_lami  ! n (forced convection), laminar   flow
+   real(kind=4)            :: aflat_turb  ! A (forced convection), turbulent flow
+   real(kind=4)            :: aflat_lami  ! A (forced convection), laminar   flow
+   real(kind=4)            :: nflat_turb  ! n (forced convection), turbulent flow
+   real(kind=4)            :: nflat_lami  ! n (forced convection), laminar   flow
 
-   real                    :: bflat_turb  ! B (free   convection), turbulent flow
-   real                    :: bflat_lami  ! B (free   convection), laminar   flow
-   real                    :: mflat_turb  ! m (free   convection), turbulent flow
-   real                    :: mflat_lami  ! m (free   convection), laminar   flow
+   real(kind=4)            :: bflat_turb  ! B (free   convection), turbulent flow
+   real(kind=4)            :: bflat_lami  ! B (free   convection), laminar   flow
+   real(kind=4)            :: mflat_turb  ! m (free   convection), turbulent flow
+   real(kind=4)            :: mflat_lami  ! m (free   convection), laminar   flow
+
+   real(kind=4)            :: ocyli_turb  ! intercept (forced convection), turbulent flow
+   real(kind=4)            :: ocyli_lami  ! intercept (forced convection), laminar   flow
+   real(kind=4)            :: acyli_turb  ! A (forced convection), turbulent flow
+   real(kind=4)            :: acyli_lami  ! A (forced convection), laminar   flow
+   real(kind=4)            :: ncyli_turb  ! n (forced convection), turbulent flow
+   real(kind=4)            :: ncyli_lami  ! n (forced convection), laminar   flow
+
+   real(kind=4)            :: bcyli_turb  ! B (free   convection), turbulent flow
+   real(kind=4)            :: bcyli_lami  ! B (free   convection), laminar   flow
+   real(kind=4)            :: mcyli_turb  ! m (free   convection), turbulent flow
+   real(kind=4)            :: mcyli_lami  ! m (free   convection), laminar   flow
 
    real(kind=8)            :: aflat_turb8 ! A (forced convection), turbulent flow
    real(kind=8)            :: aflat_lami8 ! A (forced convection), laminar   flow
@@ -146,6 +217,18 @@ module canopy_air_coms
    real(kind=8)            :: bflat_lami8 ! B (free   convection), laminar   flow
    real(kind=8)            :: mflat_turb8 ! m (free   convection), turbulent flow
    real(kind=8)            :: mflat_lami8 ! m (free   convection), laminar   flow
+
+   real(kind=8)            :: ocyli_turb8 ! intercept (forced convection), turbulent flow
+   real(kind=8)            :: ocyli_lami8 ! intercept (forced convection), laminar   flow
+   real(kind=8)            :: acyli_turb8 ! A (forced convection), turbulent flow
+   real(kind=8)            :: acyli_lami8 ! A (forced convection), laminar   flow
+   real(kind=8)            :: ncyli_turb8 ! n (forced convection), turbulent flow
+   real(kind=8)            :: ncyli_lami8 ! n (forced convection), laminar   flow
+
+   real(kind=8)            :: bcyli_turb8 ! B (free   convection), turbulent flow
+   real(kind=8)            :: bcyli_lami8 ! B (free   convection), laminar   flow
+   real(kind=8)            :: mcyli_turb8 ! m (free   convection), turbulent flow
+   real(kind=8)            :: mcyli_lami8 ! m (free   convection), laminar   flow
 
    real(kind=8)            :: beta_lami8  ! Correction term for Nusselt #, laminar flow
    real(kind=8)            :: beta_turb8  ! Correction term for Nusselt #, turbulent flow
@@ -188,7 +271,6 @@ module canopy_air_coms
    real   :: dl79        ! ???
    !----- Oncley and Dudhia (1995) model. -------------------------------------------------!
    real   :: bbeta       ! Beta 
-   real   :: ribmaxod95  ! Maximum bulk Richardson number
    !----- Beljaars and Holtslag (1991) model. ---------------------------------------------!
    real   :: abh91       ! -a from equation  (28) and (32)
    real   :: bbh91       ! -b from equation  (28) and (32)
@@ -203,7 +285,6 @@ module canopy_air_coms
    real   :: atetf       ! a * e * f
    real   :: z0moz0h     ! z0(M)/z0(h)
    real   :: z0hoz0m     ! z0(M)/z0(h)
-   real   :: ribmaxbh91  ! Maximum bulk Richardson number
    !---------------------------------------------------------------------------------------!
 
    !----- Double precision of all these variables. ----------------------------------------!
@@ -214,8 +295,7 @@ module canopy_air_coms
    real(kind=8)   :: bbeta8
    real(kind=8)   :: gamm8
    real(kind=8)   :: gamh8
-   real(kind=8)   :: ribmaxod958
-   real(kind=8)   :: ribmaxbh918
+   real(kind=8)   :: ribmax8
    real(kind=8)   :: tprandtl8
    real(kind=8)   :: vkopr8
    real(kind=8)   :: abh918
@@ -249,16 +329,7 @@ module canopy_air_coms
    !    Minimum leaf water content to be considered.  Values smaller than this will be     !
    ! flushed to zero.  This value is in kg/[m2 leaf], so it will be always scaled by LAI.  !
    !---------------------------------------------------------------------------------------!
-   real :: dry_veg_lwater
-   !---------------------------------------------------------------------------------------!
-
-   !---------------------------------------------------------------------------------------!
-   !    Maximum leaf water that plants can hold.  Should leaf water exceed this number,    !
-   ! water will be no longer intercepted by the leaves, and any value in excess of this    !
-   ! will be promptly removed through shedding.  This value is in kg/[m2 leaf], so it will !
-   ! be always scaled by LAI.                                                              !
-   !---------------------------------------------------------------------------------------!
-   real :: fullveg_lwater
+   real :: leaf_drywhc
    !---------------------------------------------------------------------------------------!
 
 
@@ -283,12 +354,40 @@ module canopy_air_coms
 
    !=======================================================================================!
    !=======================================================================================!
+   !   Soil conductance terms, from:                                                       !
+   !                                                                                       !
+   ! Passerat de Silans, A., 1986: Transferts de masse et de chaleur dans un sol stratifié !
+   !     soumis à une excitation amtosphérique naturelle. Comparaison: Modèles-expérience. !
+   !     Thesis, Institut National Polytechnique de Grenoble. (P86)                        !
+   !                                                                                       !
+   ! retrieved from:                                                                       !
+   ! Mahfouf, J. F., J. Noilhan, 1991: Comparative study of various formulations of        !
+   !     evaporation from bare soil using in situ data. J. Appl. Meteorol., 30, 1354-1365. !
+   !     (MN91)                                                                            !
+   !                                                                                       !
+   !     Please notice that the values are inverted because we compute conductance, not    !
+   ! resistance.                                                                           !
+   !---------------------------------------------------------------------------------------!
+   real(kind=4) :: ggsoil0
+   real(kind=4) :: kksoil
+   real(kind=8) :: ggsoil08
+   real(kind=8) :: kksoil8
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
 
 
    contains
-   
-   
-   
+
+
+
    !=======================================================================================!
    !=======================================================================================!
    !    This function computes the stability  correction function for momentum.            !

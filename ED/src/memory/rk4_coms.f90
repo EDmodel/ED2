@@ -68,6 +68,7 @@ module rk4_coms
       real(kind=8)                        :: ggbare       ! Cond. of bare ground [     m/s]
       real(kind=8)                        :: ggveg        ! Cond. of veg. ground [     m/s]
       real(kind=8)                        :: ggnet        ! Net ground  conduct. [     m/s]
+      real(kind=8)                        :: ggsoil       ! Soil evap. conduct.  [     m/s]
       integer                             :: flag_wflxgc  ! Flag for water flux.
       !------------------------------------------------------------------------------------!
 
@@ -78,13 +79,6 @@ module rk4_coms
       real(kind=8), dimension(:), pointer :: soil_tempk   ! Specific humidity     [      K]
       real(kind=8), dimension(:), pointer :: soil_fracliq ! Liquid fraction       [   ----]
       real(kind=8), dimension(:), pointer :: soil_water   ! Water content         [  m³/m³]
-      real(kind=8), dimension(:), pointer :: soil_restz   ! Resistance term       [    m/s]
-      real(kind=8), dimension(:), pointer :: psiplusz     ! Water potential       [      m]
-      real(kind=8), dimension(:), pointer :: soilair99    ! 99% of field capacity [  m³/m³]
-      real(kind=8), dimension(:), pointer :: soilair01    !  1% above wilting pt. [  m³/m³]
-      real(kind=8), dimension(:), pointer :: soil_liq     ! Liquid fraction       [  kg/m²]
-      real(kind=8), dimension(:), pointer :: available_liquid_water !             [  kg/m²]
-      real(kind=8), dimension(:), pointer :: extracted_water        !             [  kg/m²]
       !------------------------------------------------------------------------------------!
 
 
@@ -97,7 +91,6 @@ module rk4_coms
       real(kind=8), dimension(:), pointer :: sfcwater_energy  ! Internal energy   [   J/m²]
       real(kind=8), dimension(:), pointer :: sfcwater_tempk   ! Temperature       [      K]
       real(kind=8), dimension(:), pointer :: sfcwater_fracliq ! Liquid fraction   [   ----]
-      real(kind=8), dimension(:), pointer :: sfcwater_restz   ! Resistance term   [   ----]
       !------------------------------------------------------------------------------------!
 
 
@@ -159,40 +152,60 @@ module rk4_coms
 
 
       !----- Leaf (cohort-level) variables. -----------------------------------------------!
-      real(kind=8), pointer, dimension(:) :: veg_energy   ! Internal energy     [     J/m²]
-      real(kind=8), pointer, dimension(:) :: veg_water    ! Surface water mass  [    kg/m²]
-      real(kind=8), pointer, dimension(:) :: veg_temp     ! Temperature         [        K]
-      real(kind=8), pointer, dimension(:) :: veg_fliq     ! Liquid fraction     [      ---]
-      real(kind=8), pointer, dimension(:) :: hcapveg      ! Heat capacity       [   J/m²/K]
-      real(kind=8), pointer, dimension(:) :: veg_wind     ! Wind felt by cohort [      m/s]
-      real(kind=8), pointer, dimension(:) :: veg_reynolds ! Reynolds number     [      ---]
-      real(kind=8), pointer, dimension(:) :: veg_grashof  ! Grashof number      [      ---]
-      real(kind=8), pointer, dimension(:) :: veg_nussfree ! Nusselt # (free)    [      ---]
-      real(kind=8), pointer, dimension(:) :: veg_nussforc ! Nusselt # (forced)  [      ---]
-      real(kind=8), pointer, dimension(:) :: lint_shv     ! Intercell. sp. hum. [    kg/kg]
+      real(kind=8), pointer, dimension(:) :: leaf_energy     ! Internal energy  [     J/m²]
+      real(kind=8), pointer, dimension(:) :: leaf_water      ! Sfc. water mass  [    kg/m²]
+      real(kind=8), pointer, dimension(:) :: leaf_temp       ! Temperature      [        K]
+      real(kind=8), pointer, dimension(:) :: leaf_fliq       ! Liquid fraction  [      ---]
+      real(kind=8), pointer, dimension(:) :: leaf_hcap       ! Heat capacity    [   J/m²/K]
+      real(kind=8), pointer, dimension(:) :: leaf_reynolds   ! Reynolds number  [      ---]
+      real(kind=8), pointer, dimension(:) :: leaf_grashof    ! Grashof number   [      ---]
+      real(kind=8), pointer, dimension(:) :: leaf_nussfree   ! Nusselt # (free) [      ---]
+      real(kind=8), pointer, dimension(:) :: leaf_nussforc   ! Nusselt # (forc.)[      ---]
+      real(kind=8), pointer, dimension(:) :: lint_shv        ! Interc. sp. hum. [    kg/kg]
+      logical     , pointer, dimension(:) :: leaf_resolvable ! resolve leaves?  [      T|F]
+      real(kind=8), pointer, dimension(:) :: leaf_gbh        ! Bnd.lyr. condct. [ J/K/m²/s]
+      real(kind=8), pointer, dimension(:) :: leaf_gbw        ! Bnd.lyr. condct. [  kg/m²/s]
+      real(kind=8), pointer, dimension(:) :: gsw_open        ! Sto. cond. (op.) [ J/K/m²/s]
+      real(kind=8), pointer, dimension(:) :: gsw_closed      ! Sto. cond. (cl.) [  kg/m²/s]
+      real(kind=8), pointer, dimension(:) :: rshort_l        ! Absorbed SWRad.  [   J/m²/s]
+      real(kind=8), pointer, dimension(:) :: rlong_l         ! Absorbed LWRad.  [   J/m²/s]
+
+
+      !----- Wood (cohort-level) variables. -----------------------------------------------!
+      real(kind=8), pointer, dimension(:) :: wood_energy     ! Internal energy  [     J/m²]
+      real(kind=8), pointer, dimension(:) :: wood_water      ! Sfc. water mass  [    kg/m²]
+      real(kind=8), pointer, dimension(:) :: wood_temp       ! Temperature      [        K]
+      real(kind=8), pointer, dimension(:) :: wood_fliq       ! Liquid fraction  [      ---]
+      real(kind=8), pointer, dimension(:) :: wood_hcap       ! Heat capacity    [   J/m²/K]
+      real(kind=8), pointer, dimension(:) :: wood_reynolds   ! Reynolds number  [      ---]
+      real(kind=8), pointer, dimension(:) :: wood_grashof    ! Grashof number   [      ---]
+      real(kind=8), pointer, dimension(:) :: wood_nussfree   ! Nusselt # (free) [      ---]
+      real(kind=8), pointer, dimension(:) :: wood_nussforc   ! Nusselt # (forc.)[      ---]
+      logical     , pointer, dimension(:) :: wood_resolvable ! resolve wood?    [      T|F]
+      real(kind=8), pointer, dimension(:) :: wood_gbh        ! Bnd.lyr. condct. [ J/K/m²/s]
+      real(kind=8), pointer, dimension(:) :: wood_gbw        ! Bnd.lyr. condct. [  kg/m²/s]
+      real(kind=8), pointer, dimension(:) :: rshort_w        ! Absorbed SWRad.  [   J/m²/s]
+      real(kind=8), pointer, dimension(:) :: rlong_w         ! Absorbed LWRad.  [   J/m²/s]
+
+
+      !----- General cohort-level properties. ---------------------------------------------!
       real(kind=8), pointer, dimension(:) :: nplant       ! Plant density       [ plant/m²]
+      real(kind=8), pointer, dimension(:) :: veg_wind      ! Cohort-level wind  [      m/s]
       real(kind=8), pointer, dimension(:) :: lai          ! Leaf area index     [    m²/m²]
       real(kind=8), pointer, dimension(:) :: wai          ! Wood area index     [    m²/m²]
       real(kind=8), pointer, dimension(:) :: wpa          ! Wood projected area [    m²/m²]
       real(kind=8), pointer, dimension(:) :: tai          ! Tree area index     [    m²/m²]
       real(kind=8), pointer, dimension(:) :: crown_area   ! Crown area          [    m²/m²]
       real(kind=8), pointer, dimension(:) :: elongf       ! Elongation factor   [     ----]
-      real(kind=8), pointer, dimension(:) :: gbh          ! Leaf b.lyr. condct. [ J/K/m²/s]
-      real(kind=8), pointer, dimension(:) :: gbw          ! Leaf b.lyr. condct. [  kg/m²/s]
-      real(kind=8), pointer, dimension(:) :: gsw_open     ! Sto. condct. (op.)  [ J/K/m²/s]
-      real(kind=8), pointer, dimension(:) :: gsw_closed   ! Sto. condct. (cl.)  [  kg/m²/s]
       real(kind=8), pointer, dimension(:) :: psi_open     ! Water demand (op.)  [  kg/m²/s]
       real(kind=8), pointer, dimension(:) :: psi_closed   ! Water demand (clos.)[  kg/m²/s]
       real(kind=8), pointer, dimension(:) :: fs_open      ! Frac. of op. stom.  [      ---]
-      logical     , pointer, dimension(:) :: resolvable   ! resolve this cohort [      T|F]
       real(kind=8), pointer, dimension(:) :: gpp          ! Gross primary prod. [µmol/m²/s]
       real(kind=8), pointer, dimension(:) :: leaf_resp    ! Leaf respiration    [µmol/m²/s]
       real(kind=8), pointer, dimension(:) :: root_resp    ! Root respiration    [µmol/m²/s]
       real(kind=8), pointer, dimension(:) :: growth_resp  ! Growth respiration  [µmol/m²/s]
       real(kind=8), pointer, dimension(:) :: storage_resp ! Storage respiration [µmol/m²/s]
       real(kind=8), pointer, dimension(:) :: vleaf_resp   ! Virtual leaf resp.  [µmol/m²/s]
-      real(kind=8), pointer, dimension(:) :: rshort_v     ! Net absorbed SWRad. [   J/m²/s]
-      real(kind=8), pointer, dimension(:) :: rlong_v      ! Net absorbed LWRad. [   J/m²/s]
       !------------------------------------------------------------------------------------!
 
 
@@ -201,9 +214,11 @@ module rk4_coms
       !     Fast time flux diagnostic variables.  These variables may be turned off under  !
       ! different conditions.                                                              !
       !------------------------------------------------------------------------------------!
-      real(kind=8) :: avg_netrad        ! Net radiation
+      real(kind=8) :: avg_rshort_gnd  ! Total absorbed SW radiation
+      real(kind=8) :: avg_rlong_gnd   ! Net absorbed LW radiation
       !----- Water fluxes -----------------------------------------------------------------!
-      real(kind=8) :: avg_vapor_vc ! Leaf       -> canopy air:  evap./cond. flux
+      real(kind=8) :: avg_vapor_lc ! Leaf       -> canopy air:  evap./cond. flux
+      real(kind=8) :: avg_vapor_wc ! Wood       -> canopy air:  evap./cond. flux
       real(kind=8) :: avg_dew_cg   ! Canopy     -> ground    :  condensation flux
       real(kind=8) :: avg_vapor_gc ! Ground     -> canopy air:  evaporation flux
       real(kind=8) :: avg_vapor_ac ! Free atm.  -> canopy air:  vapour flux
@@ -219,7 +234,8 @@ module rk4_coms
       real(kind=8) :: avg_throughfall   ! Mass flux
       real(kind=8) :: avg_qthroughfall  ! Energy flux
       !----- Sensible heat flux -----------------------------------------------------------!
-      real(kind=8) :: avg_sensible_vc   ! Leaf      -> canopy air
+      real(kind=8) :: avg_sensible_lc   ! Leaf      -> canopy air
+      real(kind=8) :: avg_sensible_wc   ! Wood      -> canopy air
       real(kind=8) :: avg_sensible_gc   ! Ground    -> canopy air
       real(kind=8) :: avg_sensible_ac   ! Free atm. -> canopy air
       real(kind=8) :: avg_heatstor_veg  ! Heat storage in vegetation
@@ -235,9 +251,11 @@ module rk4_coms
       !     Fast time flux variables for each time step.  These variables will be defined  !
       ! only when the user is debugging.                                                   !
       !------------------------------------------------------------------------------------!
-      real(kind=8) :: flx_netrad        ! Net radiation
+      real(kind=8) :: flx_rshort_gnd    ! Absorbed SW radiation
+      real(kind=8) :: flx_rlong_gnd     ! Absorbed LW radiation
       !----- Water fluxes -----------------------------------------------------------------!
-      real(kind=8) :: flx_vapor_vc      ! Leaf       -> canopy air:  evap./cond. flux
+      real(kind=8) :: flx_vapor_lc      ! Leaf       -> canopy air:  evap./cond. flux
+      real(kind=8) :: flx_vapor_wc      ! Wood       -> canopy air:  evap./cond. flux
       real(kind=8) :: flx_dew_cg        ! Canopy     -> ground    :  condensation flux
       real(kind=8) :: flx_vapor_gc      ! Ground     -> canopy air:  evaporation flux
       real(kind=8) :: flx_vapor_ac      ! Free atm.  -> canopy air:  vapour flux
@@ -253,7 +271,8 @@ module rk4_coms
       real(kind=8) :: flx_throughfall   ! Mass flux
       real(kind=8) :: flx_qthroughfall  ! Energy flux
       !----- Sensible heat flux -----------------------------------------------------------!
-      real(kind=8) :: flx_sensible_vc   ! Leaf      -> canopy air
+      real(kind=8) :: flx_sensible_lc   ! Leaf      -> canopy air
+      real(kind=8) :: flx_sensible_wc   ! Wood      -> canopy air
       real(kind=8) :: flx_sensible_gc   ! Ground    -> canopy air
       real(kind=8) :: flx_sensible_ac   ! Free atm. -> canopy air
       real(kind=8) :: flx_heatstor_veg  ! Heat storage in vegetation
@@ -266,8 +285,10 @@ module rk4_coms
       real(kind=8)                      :: flx_drainage      ! Drainage at the bottom.
       real(kind=8)                      :: flx_drainage_heat ! Drainage at the bottom.
       !----- Cohort-level fluxes. ---------------------------------------------------------!
-      real(kind=8),pointer,dimension(:) :: cfx_hflxvc        ! Sensible heat
-      real(kind=8),pointer,dimension(:) :: cfx_qwflxvc       ! Latent heat - Evaporation
+      real(kind=8),pointer,dimension(:) :: cfx_hflxlc        ! Sensible heat
+      real(kind=8),pointer,dimension(:) :: cfx_hflxwc        ! Sensible heat
+      real(kind=8),pointer,dimension(:) :: cfx_qwflxlc       ! Latent heat - Evaporation
+      real(kind=8),pointer,dimension(:) :: cfx_qwflxwc       ! Latent heat - Evaporation
       real(kind=8),pointer,dimension(:) :: cfx_qwshed        ! Int. en. of shed water
       real(kind=8),pointer,dimension(:) :: cfx_qtransp       ! Latent heat - Transpiration
       real(kind=8),pointer,dimension(:) :: cfx_qintercepted  ! Int. en. of intercept. H2O
@@ -315,7 +336,41 @@ module rk4_coms
       real(kind=8)                    :: rlong
       real(kind=8)                    :: lon
       real(kind=8)                    :: lat
+      real(kind=8)                    :: cosz
    end type rk4sitetype
+   !---------------------------------------------------------------------------------------!
+
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !    Structure with auxiliary gridded variables that will be used by the derivatives.   !
+   !---------------------------------------------------------------------------------------!
+   type rk4auxtype
+      !----- Total potential [m]. ---------------------------------------------------------!
+      real(kind=8), dimension(:), pointer :: psiplusz
+      !----- Hydraulic conductivity [m/s]. ------------------------------------------------!
+      real(kind=8), dimension(:), pointer :: hydcond
+      !----- Liquid water above wilting point [m³/m³]. ------------------------------------!
+      real(kind=8), dimension(:), pointer :: soil_liq_wilt
+      !----- Liquid water available for photosynthesis [kg/m²]. ---------------------------!
+      real(kind=8), dimension(:), pointer :: available_liquid_water
+      !----- Extracted water by transpiration [kg/m²]. ------------------------------------!
+      real(kind=8), dimension(:), pointer :: extracted_water
+      !----- Heat resistance [Km²s/J]. ----------------------------------------------------!
+      real(kind=8), dimension(:), pointer :: rfactor
+      !----- Sensible heat flux at staggered layer (k = k-1/2) [W/m²]. --------------------!
+      real(kind=8), dimension(:), pointer :: hfluxgsc
+      !----- Water flux at staggered layers (k = k-1/2) [kg/m²/s]. ------------------------!
+      real(kind=8), dimension(:), pointer :: w_flux
+      !----- Latent heat flux at staggered layers (k=k-1/2) [W/m²]. -----------------------!
+      real(kind=8), dimension(:), pointer :: qw_flux
+      !----- Depth flux at staggered layers (k=k-1/2) [m/s]. ------------------------------!
+      real(kind=8), dimension(:), pointer :: d_flux
+      !----- Tests to check if the soil is too dry or too wet. ----------------------------!
+      logical     , dimension(:), pointer :: drysoil
+      logical     , dimension(:), pointer :: satsoil
+   end type rk4auxtype
    !---------------------------------------------------------------------------------------!
 
 
@@ -344,6 +399,7 @@ module rk4_coms
    !----- This is the actual integration buffer structure. --------------------------------!
    type(integration_vars) :: integration_buff
    type(rk4sitetype)      :: rk4site
+   type(rk4auxtype)       :: rk4aux
    !=======================================================================================!
    !=======================================================================================!
 
@@ -508,17 +564,6 @@ module rk4_coms
 
 
    !---------------------------------------------------------------------------------------!
-   !    These two parameter will scale the cohort heat capacity inside the RK4 integrator. !
-   ! These are used only when the biophysics is set to be the same as in ED-2.1, and       !
-   ! should not be used in standard simulations.                                           !
-   !---------------------------------------------------------------------------------------!
-   real(kind=8) :: hcapveg_ref         ! Reference value                          [ J/m³/K]
-   real(kind=8) :: min_height          ! Minimum vegetation height                [      m]
-   !---------------------------------------------------------------------------------------!
-
-
-
-   !---------------------------------------------------------------------------------------!
    !    The following variables are the bounds of what we could consider barely reasonable !
    ! during the integration process. If values go beyond these limits, reject the step     !
    ! right away.  These numbers are filled in init_rk4_params (ed_params.f90).  Most of    !
@@ -564,8 +609,8 @@ module rk4_coms
    real(kind=8) :: rk4tiny_sfcw_mass     ! Min. non-negligible snow/pond mass   [    kg/m²]
    real(kind=8) :: rk4water_stab_thresh  ! Min. mass for a layer to be stable   [    kg/m²]
    real(kind=8) :: rk4snowmin            ! Min. snow mass required for new lyr  [    kg/m²]
-   real(kind=8) :: rk4dry_veg_lwater     ! Min. non-negligible leaf water mass  [kg/m²leaf]
-   real(kind=8) :: rk4fullveg_lwater     ! Max. leaf water mass possible        [kg/m²leaf]
+   real(kind=8) :: rk4leaf_drywhc        ! Min. non-negligible leaf water mass  [kg/m²leaf]
+   real(kind=8) :: rk4leaf_maxwhc        ! Max. leaf water mass possible        [kg/m²leaf]
    real(kind=8) :: rk4tiny_sfcw_depth    ! Minimum snow/pond depth              [        m]
    !---------------------------------------------------------------------------------------!
 
@@ -653,7 +698,7 @@ module rk4_coms
    !      Integrator error statistics.                                                     !
    !---------------------------------------------------------------------------------------!
    !----- Number of variables other than soil and surface that will be analysed. ----------!
-   integer                          , parameter   :: nerrfix = 18
+   integer                          , parameter   :: nerrfix = 20
 
    !----- Total number of variables that will be analysed. --------------------------------!
    integer                                        :: nerr
@@ -696,35 +741,27 @@ module rk4_coms
 
       call nullify_rk4_patch(y)
 
-      allocate(y%soil_energy(nzg))
-      allocate(y%soil_water(nzg))
-      allocate(y%soil_fracliq(nzg))
-      allocate(y%soil_tempk(nzg))
-      allocate(y%available_liquid_water(nzg))
-      allocate(y%extracted_water(nzg))
-      allocate(y%psiplusz(nzg))
-      allocate(y%soilair99(nzg))
-      allocate(y%soilair01(nzg))
-      allocate(y%soil_liq(nzg))
-      allocate(y%soil_restz(nzg))
+      allocate(y%soil_energy            (0:nzg))
+      allocate(y%soil_water             (0:nzg))
+      allocate(y%soil_fracliq           (0:nzg))
+      allocate(y%soil_tempk             (0:nzg))
 
-      allocate(y%sfcwater_energy(nzs))
-      allocate(y%sfcwater_mass(nzs))
-      allocate(y%sfcwater_depth(nzs))
-      allocate(y%sfcwater_fracliq(nzs))
-      allocate(y%sfcwater_tempk(nzs))
-      allocate(y%sfcwater_restz(nzs))
+      allocate(y%sfcwater_energy          (nzs))
+      allocate(y%sfcwater_mass            (nzs))
+      allocate(y%sfcwater_depth           (nzs))
+      allocate(y%sfcwater_fracliq         (nzs))
+      allocate(y%sfcwater_tempk           (nzs))
 
       !------------------------------------------------------------------------------------!
       !     Diagnostics - for now we will always allocate the diagnostics, even if they    !
       !                   aren't used.                                                     !
       !------------------------------------------------------------------------------------!
-      allocate(y%avg_sensible_gg(nzg))
-      allocate(y%avg_smoist_gg(nzg))
-      allocate(y%avg_transloss(nzg))
-      allocate(y%flx_sensible_gg(nzg))
-      allocate(y%flx_smoist_gg(nzg))
-      allocate(y%flx_transloss(nzg))
+      allocate(y%avg_sensible_gg          (nzg))
+      allocate(y%avg_smoist_gg            (nzg))
+      allocate(y%avg_transloss            (nzg))
+      allocate(y%flx_sensible_gg          (nzg))
+      allocate(y%flx_smoist_gg            (nzg))
+      allocate(y%flx_transloss            (nzg))
 
       call zero_rk4_patch(y)
 
@@ -752,20 +789,12 @@ module rk4_coms
       nullify(y%soil_water)
       nullify(y%soil_fracliq)
       nullify(y%soil_tempk)
-      nullify(y%available_liquid_water)
-      nullify(y%extracted_water)
-      nullify(y%psiplusz)
-      nullify(y%soilair99)
-      nullify(y%soilair01)
-      nullify(y%soil_liq)
-      nullify(y%soil_restz)
 
       nullify(y%sfcwater_energy)
       nullify(y%sfcwater_mass)
       nullify(y%sfcwater_depth)
       nullify(y%sfcwater_fracliq)
       nullify(y%sfcwater_tempk)
-      nullify(y%sfcwater_restz)
 
       !------------------------------------------------------------------------------------!
       !     Diagnostics - for now we will always allocate the diagnostics, even if they    !
@@ -833,6 +862,7 @@ module rk4_coms
       y%ggbare                         = 0.d0
       y%ggveg                          = 0.d0
       y%ggnet                          = 0.d0
+      y%ggsoil                         = 0.d0
       y%flag_wflxgc                    = -1
       y%virtual_water                  = 0.d0
       y%virtual_energy                 = 0.d0
@@ -873,7 +903,8 @@ module rk4_coms
      
 
       y%avg_carbon_ac                  = 0.d0
-      y%avg_vapor_vc                   = 0.d0
+      y%avg_vapor_lc                   = 0.d0
+      y%avg_vapor_wc                   = 0.d0
       y%avg_dew_cg                     = 0.d0
       y%avg_vapor_gc                   = 0.d0
       y%avg_wshed_vg                   = 0.d0
@@ -882,8 +913,10 @@ module rk4_coms
       y%avg_vapor_ac                   = 0.d0
       y%avg_transp                     = 0.d0
       y%avg_evap                       = 0.d0
-      y%avg_netrad                     = 0.d0
-      y%avg_sensible_vc                = 0.d0
+      y%avg_rshort_gnd                 = 0.d0
+      y%avg_rlong_gnd                  = 0.d0
+      y%avg_sensible_lc                = 0.d0
+      y%avg_sensible_wc                = 0.d0
       y%avg_qwshed_vg                  = 0.d0
       y%avg_qintercepted               = 0.d0
       y%avg_qthroughfall               = 0.d0
@@ -895,7 +928,8 @@ module rk4_coms
       y%avg_drainage_heat              = 0.d0
 
       y%flx_carbon_ac                  = 0.d0
-      y%flx_vapor_vc                   = 0.d0
+      y%flx_vapor_lc                   = 0.d0
+      y%flx_vapor_wc                   = 0.d0
       y%flx_dew_cg                     = 0.d0
       y%flx_vapor_gc                   = 0.d0
       y%flx_wshed_vg                   = 0.d0
@@ -904,8 +938,10 @@ module rk4_coms
       y%flx_vapor_ac                   = 0.d0
       y%flx_transp                     = 0.d0
       y%flx_evap                       = 0.d0
-      y%flx_netrad                     = 0.d0
-      y%flx_sensible_vc                = 0.d0
+      y%flx_rshort_gnd                 = 0.d0
+      y%flx_rlong_gnd                  = 0.d0
+      y%flx_sensible_lc                = 0.d0
+      y%flx_sensible_wc                = 0.d0
       y%flx_qwshed_vg                  = 0.d0
       y%flx_qintercepted               = 0.d0
       y%flx_qthroughfall               = 0.d0
@@ -921,20 +957,12 @@ module rk4_coms
       if(associated(y%soil_tempk            ))   y%soil_tempk(:)                  = 0.d0
       if(associated(y%soil_fracliq          ))   y%soil_fracliq(:)                = 0.d0
       if(associated(y%soil_water            ))   y%soil_water(:)                  = 0.d0
-      if(associated(y%available_liquid_water))   y%available_liquid_water(:)      = 0.d0
-      if(associated(y%extracted_water       ))   y%extracted_water(:)             = 0.d0
-      if(associated(y%psiplusz              ))   y%psiplusz(:)                    = 0.d0
-      if(associated(y%soilair99             ))   y%soilair99(:)                   = 0.d0
-      if(associated(y%soilair01             ))   y%soilair01(:)                   = 0.d0
-      if(associated(y%soil_liq              ))   y%soil_liq(:)                    = 0.d0
-      if(associated(y%soil_restz            ))   y%soil_restz(:)                  = 0.d0
      
       if(associated(y%sfcwater_depth        ))   y%sfcwater_depth(:)              = 0.d0
       if(associated(y%sfcwater_mass         ))   y%sfcwater_mass(:)               = 0.d0
       if(associated(y%sfcwater_energy       ))   y%sfcwater_energy(:)             = 0.d0
       if(associated(y%sfcwater_tempk        ))   y%sfcwater_tempk(:)              = 0.d0
       if(associated(y%sfcwater_fracliq      ))   y%sfcwater_fracliq(:)            = 0.d0
-      if(associated(y%sfcwater_restz        ))   y%sfcwater_restz(:)              = 0.d0
 
       if(associated(y%avg_smoist_gg         ))   y%avg_smoist_gg(:)               = 0.d0
       if(associated(y%avg_transloss         ))   y%avg_transloss(:)               = 0.d0
@@ -968,20 +996,12 @@ module rk4_coms
       if (associated(y%soil_water))              deallocate(y%soil_water)
       if (associated(y%soil_fracliq))            deallocate(y%soil_fracliq)
       if (associated(y%soil_tempk))              deallocate(y%soil_tempk)
-      if (associated(y%available_liquid_water))  deallocate(y%available_liquid_water)
-      if (associated(y%extracted_water))         deallocate(y%extracted_water)
-      if (associated(y%psiplusz))                deallocate(y%psiplusz)
-      if (associated(y%soilair99))               deallocate(y%soilair99)
-      if (associated(y%soilair01))               deallocate(y%soilair01)
-      if (associated(y%soil_liq))                deallocate(y%soil_liq)
-      if (associated(y%soil_restz))              deallocate(y%soil_restz)
 
       if (associated(y%sfcwater_energy))         deallocate(y%sfcwater_energy)
       if (associated(y%sfcwater_mass))           deallocate(y%sfcwater_mass)
       if (associated(y%sfcwater_depth))          deallocate(y%sfcwater_depth)
       if (associated(y%sfcwater_fracliq))        deallocate(y%sfcwater_fracliq)
       if (associated(y%sfcwater_tempk))          deallocate(y%sfcwater_tempk)
-      if (associated(y%sfcwater_restz))          deallocate(y%sfcwater_restz)
 
       ! Diagnostics
       if (associated(y%avg_smoist_gg))           deallocate(y%avg_smoist_gg)
@@ -1015,45 +1035,62 @@ module rk4_coms
       
       call nullify_rk4_cohort(y)
 
-      allocate(y%veg_energy      (maxcohort))
-      allocate(y%veg_water       (maxcohort))
-      allocate(y%veg_temp        (maxcohort))
-      allocate(y%veg_fliq        (maxcohort))
-      allocate(y%hcapveg         (maxcohort))
-      allocate(y%veg_wind        (maxcohort))
-      allocate(y%veg_reynolds    (maxcohort))
-      allocate(y%veg_grashof     (maxcohort))
-      allocate(y%veg_nussfree    (maxcohort))
-      allocate(y%veg_nussforc    (maxcohort))
-      allocate(y%lint_shv        (maxcohort))
-      allocate(y%nplant          (maxcohort))
-      allocate(y%lai             (maxcohort))
-      allocate(y%wai             (maxcohort))
-      allocate(y%wpa             (maxcohort))
-      allocate(y%tai             (maxcohort))
-      allocate(y%crown_area      (maxcohort))
-      allocate(y%elongf          (maxcohort))
-      allocate(y%gbh             (maxcohort))
-      allocate(y%gbw             (maxcohort))
-      allocate(y%gsw_open        (maxcohort))
-      allocate(y%gsw_closed      (maxcohort))
-      allocate(y%psi_open        (maxcohort))
-      allocate(y%psi_closed      (maxcohort))
-      allocate(y%fs_open         (maxcohort))
-      allocate(y%resolvable      (maxcohort))
-      allocate(y%gpp             (maxcohort))
-      allocate(y%leaf_resp       (maxcohort))
-      allocate(y%root_resp       (maxcohort))
-      allocate(y%growth_resp     (maxcohort))
-      allocate(y%storage_resp    (maxcohort))
-      allocate(y%vleaf_resp      (maxcohort))
-      allocate(y%rshort_v        (maxcohort))
-      allocate(y%rlong_v         (maxcohort))
-      allocate(y%cfx_hflxvc      (maxcohort))  
-      allocate(y%cfx_qwflxvc     (maxcohort))  
-      allocate(y%cfx_qwshed      (maxcohort))  
-      allocate(y%cfx_qtransp     (maxcohort))  
-      allocate(y%cfx_qintercepted(maxcohort))  
+
+      allocate(y%leaf_energy      (maxcohort))
+      allocate(y%leaf_water       (maxcohort))
+      allocate(y%leaf_temp        (maxcohort))
+      allocate(y%leaf_fliq        (maxcohort))
+      allocate(y%leaf_hcap        (maxcohort))
+      allocate(y%leaf_reynolds    (maxcohort))
+      allocate(y%leaf_grashof     (maxcohort))
+      allocate(y%leaf_nussfree    (maxcohort))
+      allocate(y%leaf_nussforc    (maxcohort))
+      allocate(y%lint_shv         (maxcohort))
+      allocate(y%leaf_resolvable  (maxcohort))
+      allocate(y%leaf_gbh         (maxcohort))
+      allocate(y%leaf_gbw         (maxcohort))
+      allocate(y%gsw_open         (maxcohort))
+      allocate(y%gsw_closed       (maxcohort))
+      allocate(y%rshort_l         (maxcohort))
+      allocate(y%rlong_l          (maxcohort))
+      allocate(y%wood_energy      (maxcohort))
+      allocate(y%wood_water       (maxcohort))
+      allocate(y%wood_temp        (maxcohort))
+      allocate(y%wood_fliq        (maxcohort))
+      allocate(y%wood_hcap        (maxcohort))
+      allocate(y%wood_reynolds    (maxcohort))
+      allocate(y%wood_grashof     (maxcohort))
+      allocate(y%wood_nussfree    (maxcohort))
+      allocate(y%wood_nussforc    (maxcohort))
+      allocate(y%wood_resolvable  (maxcohort))
+      allocate(y%wood_gbh         (maxcohort))
+      allocate(y%wood_gbw         (maxcohort))
+      allocate(y%rshort_w         (maxcohort))
+      allocate(y%rlong_w          (maxcohort))
+      allocate(y%nplant           (maxcohort))
+      allocate(y%veg_wind         (maxcohort))
+      allocate(y%lai              (maxcohort))
+      allocate(y%wai              (maxcohort))
+      allocate(y%wpa              (maxcohort))
+      allocate(y%tai              (maxcohort))
+      allocate(y%crown_area       (maxcohort))
+      allocate(y%elongf           (maxcohort))
+      allocate(y%psi_open         (maxcohort))
+      allocate(y%psi_closed       (maxcohort))
+      allocate(y%fs_open          (maxcohort))
+      allocate(y%gpp              (maxcohort))
+      allocate(y%leaf_resp        (maxcohort))
+      allocate(y%root_resp        (maxcohort))
+      allocate(y%growth_resp      (maxcohort))
+      allocate(y%storage_resp     (maxcohort))
+      allocate(y%vleaf_resp       (maxcohort))
+      allocate(y%cfx_hflxlc       (maxcohort))
+      allocate(y%cfx_hflxwc       (maxcohort))
+      allocate(y%cfx_qwflxlc      (maxcohort))
+      allocate(y%cfx_qwflxwc      (maxcohort))
+      allocate(y%cfx_qwshed       (maxcohort))
+      allocate(y%cfx_qtransp      (maxcohort))
+      allocate(y%cfx_qintercepted (maxcohort))
 
       call zero_rk4_cohort(y)
 
@@ -1076,46 +1113,62 @@ module rk4_coms
       !----- Arguments --------------------------------------------------------------------!
       type(rk4patchtype), target :: y
       !------------------------------------------------------------------------------------!
-          
-      nullify(y%veg_energy      )
-      nullify(y%veg_water       )
-      nullify(y%veg_temp        )
-      nullify(y%veg_fliq        )
-      nullify(y%hcapveg         )
-      nullify(y%veg_wind        )
-      nullify(y%veg_reynolds    )
-      nullify(y%veg_grashof     )
-      nullify(y%veg_nussfree    )
-      nullify(y%veg_nussforc    )
-      nullify(y%lint_shv        )
-      nullify(y%nplant          )
-      nullify(y%lai             )
-      nullify(y%wai             )
-      nullify(y%wpa             )
-      nullify(y%tai             )
-      nullify(y%crown_area      )
-      nullify(y%elongf          )
-      nullify(y%gbh             )
-      nullify(y%gbw             )
-      nullify(y%gsw_open        )
-      nullify(y%gsw_closed      )
-      nullify(y%psi_open        )
-      nullify(y%psi_closed      )
-      nullify(y%fs_open         )
-      nullify(y%resolvable      )
-      nullify(y%gpp             )
-      nullify(y%leaf_resp       )
-      nullify(y%root_resp       )
-      nullify(y%growth_resp     )
-      nullify(y%storage_resp    )
-      nullify(y%vleaf_resp      )
-      nullify(y%rshort_v        )
-      nullify(y%rlong_v         )
-      nullify(y%cfx_hflxvc      )
-      nullify(y%cfx_qwflxvc     )
-      nullify(y%cfx_qwshed      )
-      nullify(y%cfx_qtransp     )
-      nullify(y%cfx_qintercepted)
+
+      nullify(y%leaf_energy      )
+      nullify(y%leaf_water       )
+      nullify(y%leaf_temp        )
+      nullify(y%leaf_fliq        )
+      nullify(y%leaf_hcap        )
+      nullify(y%leaf_reynolds    )
+      nullify(y%leaf_grashof     )
+      nullify(y%leaf_nussfree    )
+      nullify(y%leaf_nussforc    )
+      nullify(y%lint_shv         )
+      nullify(y%leaf_resolvable  )
+      nullify(y%leaf_gbh         )
+      nullify(y%leaf_gbw         )
+      nullify(y%gsw_open         )
+      nullify(y%gsw_closed       )
+      nullify(y%rshort_l         )
+      nullify(y%rlong_l          )
+      nullify(y%wood_energy      )
+      nullify(y%wood_water       )
+      nullify(y%wood_temp        )
+      nullify(y%wood_fliq        )
+      nullify(y%wood_hcap        )
+      nullify(y%wood_reynolds    )
+      nullify(y%wood_grashof     )
+      nullify(y%wood_nussfree    )
+      nullify(y%wood_nussforc    )
+      nullify(y%wood_resolvable  )
+      nullify(y%wood_gbh         )
+      nullify(y%wood_gbw         )
+      nullify(y%rshort_w         )
+      nullify(y%rlong_w          )
+      nullify(y%nplant           )
+      nullify(y%veg_wind         )
+      nullify(y%lai              )
+      nullify(y%wai              )
+      nullify(y%wpa              )
+      nullify(y%tai              )
+      nullify(y%crown_area       )
+      nullify(y%elongf           )
+      nullify(y%psi_open         )
+      nullify(y%psi_closed       )
+      nullify(y%fs_open          )
+      nullify(y%gpp              )
+      nullify(y%leaf_resp        )
+      nullify(y%root_resp        )
+      nullify(y%growth_resp      )
+      nullify(y%storage_resp     )
+      nullify(y%vleaf_resp       )
+      nullify(y%cfx_hflxlc       )
+      nullify(y%cfx_hflxwc       )
+      nullify(y%cfx_qwflxlc      )
+      nullify(y%cfx_qwflxwc      )
+      nullify(y%cfx_qwshed       )
+      nullify(y%cfx_qtransp      )
+      nullify(y%cfx_qintercepted )
 
       return
    end subroutine nullify_rk4_cohort
@@ -1137,45 +1190,61 @@ module rk4_coms
       type(rk4patchtype), target :: y
       !------------------------------------------------------------------------------------!
 
-      if(associated(y%veg_energy      )) y%veg_energy       = 0.d0
-      if(associated(y%veg_water       )) y%veg_water        = 0.d0
-      if(associated(y%veg_temp        )) y%veg_temp         = 0.d0
-      if(associated(y%veg_fliq        )) y%veg_fliq         = 0.d0
-      if(associated(y%hcapveg         )) y%hcapveg          = 0.d0
-      if(associated(y%veg_wind        )) y%veg_wind         = 0.d0
-      if(associated(y%veg_reynolds    )) y%veg_reynolds     = 0.d0
-      if(associated(y%veg_grashof     )) y%veg_grashof      = 0.d0
-      if(associated(y%veg_nussfree    )) y%veg_nussfree     = 0.d0
-      if(associated(y%veg_nussforc    )) y%veg_nussforc     = 0.d0
-      if(associated(y%lint_shv        )) y%lint_shv         = 0.d0
-      if(associated(y%nplant          )) y%nplant           = 0.d0
-      if(associated(y%lai             )) y%lai              = 0.d0
-      if(associated(y%wai             )) y%wai              = 0.d0
-      if(associated(y%wpa             )) y%wpa              = 0.d0
-      if(associated(y%tai             )) y%tai              = 0.d0
-      if(associated(y%crown_area      )) y%crown_area       = 0.d0
-      if(associated(y%elongf          )) y%elongf           = 0.d0
-      if(associated(y%gbh             )) y%gbh              = 0.d0
-      if(associated(y%gbw             )) y%gbw              = 0.d0
-      if(associated(y%gsw_open        )) y%gsw_open         = 0.d0
-      if(associated(y%gsw_closed      )) y%gsw_closed       = 0.d0
-      if(associated(y%psi_open        )) y%psi_open         = 0.d0
-      if(associated(y%psi_closed      )) y%psi_closed       = 0.d0
-      if(associated(y%fs_open         )) y%fs_open          = 0.d0
-      if(associated(y%resolvable      )) y%resolvable       = .false.
-      if(associated(y%gpp             )) y%gpp              = 0.d0
-      if(associated(y%leaf_resp       )) y%leaf_resp        = 0.d0
-      if(associated(y%root_resp       )) y%root_resp        = 0.d0
-      if(associated(y%growth_resp     )) y%growth_resp      = 0.d0
-      if(associated(y%storage_resp    )) y%storage_resp     = 0.d0
-      if(associated(y%vleaf_resp      )) y%vleaf_resp       = 0.d0
-      if(associated(y%rshort_v        )) y%rshort_v         = 0.d0
-      if(associated(y%rlong_v         )) y%rlong_v          = 0.d0
-      if(associated(y%cfx_hflxvc      )) y%cfx_hflxvc       = 0.d0
-      if(associated(y%cfx_qwflxvc     )) y%cfx_qwflxvc      = 0.d0
-      if(associated(y%cfx_qwshed      )) y%cfx_qwshed       = 0.d0
-      if(associated(y%cfx_qtransp     )) y%cfx_qtransp      = 0.d0
-      if(associated(y%cfx_qintercepted)) y%cfx_qintercepted = 0.d0
+      if (associated(y%leaf_energy      )) y%leaf_energy      = 0.d0
+      if (associated(y%leaf_water       )) y%leaf_water       = 0.d0
+      if (associated(y%leaf_temp        )) y%leaf_temp        = 0.d0
+      if (associated(y%leaf_fliq        )) y%leaf_fliq        = 0.d0
+      if (associated(y%leaf_hcap        )) y%leaf_hcap        = 0.d0
+      if (associated(y%leaf_reynolds    )) y%leaf_reynolds    = 0.d0
+      if (associated(y%leaf_grashof     )) y%leaf_grashof     = 0.d0
+      if (associated(y%leaf_nussfree    )) y%leaf_nussfree    = 0.d0
+      if (associated(y%leaf_nussforc    )) y%leaf_nussforc    = 0.d0
+      if (associated(y%lint_shv         )) y%lint_shv         = 0.d0
+      if (associated(y%leaf_resolvable  )) y%leaf_resolvable  = .false.
+      if (associated(y%leaf_gbh         )) y%leaf_gbh         = 0.d0
+      if (associated(y%leaf_gbw         )) y%leaf_gbw         = 0.d0
+      if (associated(y%gsw_open         )) y%gsw_open         = 0.d0
+      if (associated(y%gsw_closed       )) y%gsw_closed       = 0.d0
+      if (associated(y%rshort_l         )) y%rshort_l         = 0.d0
+      if (associated(y%rlong_l          )) y%rlong_l          = 0.d0
+      if (associated(y%wood_energy      )) y%wood_energy      = 0.d0
+      if (associated(y%wood_water       )) y%wood_water       = 0.d0
+      if (associated(y%wood_temp        )) y%wood_temp        = 0.d0
+      if (associated(y%wood_fliq        )) y%wood_fliq        = 0.d0
+      if (associated(y%wood_hcap        )) y%wood_hcap        = 0.d0
+      if (associated(y%wood_reynolds    )) y%wood_reynolds    = 0.d0
+      if (associated(y%wood_grashof     )) y%wood_grashof     = 0.d0
+      if (associated(y%wood_nussfree    )) y%wood_nussfree    = 0.d0
+      if (associated(y%wood_nussforc    )) y%wood_nussforc    = 0.d0
+      if (associated(y%wood_resolvable  )) y%wood_resolvable  = .false.
+      if (associated(y%wood_gbh         )) y%wood_gbh         = 0.d0
+      if (associated(y%wood_gbw         )) y%wood_gbw         = 0.d0
+      if (associated(y%rshort_w         )) y%rshort_w         = 0.d0
+      if (associated(y%rlong_w          )) y%rlong_w          = 0.d0
+      if (associated(y%nplant           )) y%nplant           = 0.d0
+      if (associated(y%veg_wind         )) y%veg_wind         = 0.d0
+      if (associated(y%lai              )) y%lai              = 0.d0
+      if (associated(y%wai              )) y%wai              = 0.d0
+      if (associated(y%wpa              )) y%wpa              = 0.d0
+      if (associated(y%tai              )) y%tai              = 0.d0
+      if (associated(y%crown_area       )) y%crown_area       = 0.d0
+      if (associated(y%elongf           )) y%elongf           = 0.d0
+      if (associated(y%psi_open         )) y%psi_open         = 0.d0
+      if (associated(y%psi_closed       )) y%psi_closed       = 0.d0
+      if (associated(y%fs_open          )) y%fs_open          = 0.d0
+      if (associated(y%gpp              )) y%gpp              = 0.d0
+      if (associated(y%leaf_resp        )) y%leaf_resp        = 0.d0
+      if (associated(y%root_resp        )) y%root_resp        = 0.d0
+      if (associated(y%growth_resp      )) y%growth_resp      = 0.d0
+      if (associated(y%storage_resp     )) y%storage_resp     = 0.d0
+      if (associated(y%vleaf_resp       )) y%vleaf_resp       = 0.d0
+      if (associated(y%cfx_hflxlc       )) y%cfx_hflxlc       = 0.d0
+      if (associated(y%cfx_hflxwc       )) y%cfx_hflxwc       = 0.d0
+      if (associated(y%cfx_qwflxlc      )) y%cfx_qwflxlc      = 0.d0
+      if (associated(y%cfx_qwflxwc      )) y%cfx_qwflxwc      = 0.d0
+      if (associated(y%cfx_qwshed       )) y%cfx_qwshed       = 0.d0
+      if (associated(y%cfx_qtransp      )) y%cfx_qtransp      = 0.d0
+      if (associated(y%cfx_qintercepted )) y%cfx_qintercepted = 0.d0
 
       return
    end subroutine zero_rk4_cohort
@@ -1197,45 +1266,61 @@ module rk4_coms
       type(rk4patchtype), target :: y
       !------------------------------------------------------------------------------------!
 
-      if(associated(y%veg_energy      )) deallocate(y%veg_energy      )
-      if(associated(y%veg_water       )) deallocate(y%veg_water       )
-      if(associated(y%veg_temp        )) deallocate(y%veg_temp        )
-      if(associated(y%veg_fliq        )) deallocate(y%veg_fliq        )
-      if(associated(y%hcapveg         )) deallocate(y%hcapveg         )
-      if(associated(y%veg_wind        )) deallocate(y%veg_wind        )
-      if(associated(y%veg_reynolds    )) deallocate(y%veg_reynolds    )
-      if(associated(y%veg_grashof     )) deallocate(y%veg_grashof     )
-      if(associated(y%veg_nussfree    )) deallocate(y%veg_nussfree    )
-      if(associated(y%veg_nussforc    )) deallocate(y%veg_nussforc    )
-      if(associated(y%lint_shv        )) deallocate(y%lint_shv        )
-      if(associated(y%nplant          )) deallocate(y%nplant          )
-      if(associated(y%lai             )) deallocate(y%lai             )
-      if(associated(y%wai             )) deallocate(y%wai             )
-      if(associated(y%wpa             )) deallocate(y%wpa             )
-      if(associated(y%tai             )) deallocate(y%tai             )
-      if(associated(y%crown_area      )) deallocate(y%crown_area      )
-      if(associated(y%elongf          )) deallocate(y%elongf          )
-      if(associated(y%gbh             )) deallocate(y%gbh             )
-      if(associated(y%gbw             )) deallocate(y%gbw             )
-      if(associated(y%gsw_open        )) deallocate(y%gsw_open        )
-      if(associated(y%gsw_closed      )) deallocate(y%gsw_closed      )
-      if(associated(y%psi_open        )) deallocate(y%psi_open        )
-      if(associated(y%psi_closed      )) deallocate(y%psi_closed      )
-      if(associated(y%fs_open         )) deallocate(y%fs_open         )
-      if(associated(y%resolvable      )) deallocate(y%resolvable      )
-      if(associated(y%gpp             )) deallocate(y%gpp             )
-      if(associated(y%leaf_resp       )) deallocate(y%leaf_resp       )
-      if(associated(y%root_resp       )) deallocate(y%root_resp       )
-      if(associated(y%growth_resp     )) deallocate(y%growth_resp     )
-      if(associated(y%storage_resp    )) deallocate(y%storage_resp    )
-      if(associated(y%vleaf_resp      )) deallocate(y%vleaf_resp      )
-      if(associated(y%rshort_v        )) deallocate(y%rshort_v        )
-      if(associated(y%rlong_v         )) deallocate(y%rlong_v         )
-      if(associated(y%cfx_hflxvc      )) deallocate(y%cfx_hflxvc      )
-      if(associated(y%cfx_qwflxvc     )) deallocate(y%cfx_qwflxvc     )
-      if(associated(y%cfx_qwshed      )) deallocate(y%cfx_qwshed      )
-      if(associated(y%cfx_qtransp     )) deallocate(y%cfx_qtransp     )
-      if(associated(y%cfx_qintercepted)) deallocate(y%cfx_qintercepted)
+      if (associated(y%leaf_energy      )) deallocate(y%leaf_energy      )
+      if (associated(y%leaf_water       )) deallocate(y%leaf_water       )
+      if (associated(y%leaf_temp        )) deallocate(y%leaf_temp        )
+      if (associated(y%leaf_fliq        )) deallocate(y%leaf_fliq        )
+      if (associated(y%leaf_hcap        )) deallocate(y%leaf_hcap        )
+      if (associated(y%leaf_reynolds    )) deallocate(y%leaf_reynolds    )
+      if (associated(y%leaf_grashof     )) deallocate(y%leaf_grashof     )
+      if (associated(y%leaf_nussfree    )) deallocate(y%leaf_nussfree    )
+      if (associated(y%leaf_nussforc    )) deallocate(y%leaf_nussforc    )
+      if (associated(y%lint_shv         )) deallocate(y%lint_shv         )
+      if (associated(y%leaf_resolvable  )) deallocate(y%leaf_resolvable  )
+      if (associated(y%leaf_gbh         )) deallocate(y%leaf_gbh         )
+      if (associated(y%leaf_gbw         )) deallocate(y%leaf_gbw         )
+      if (associated(y%gsw_open         )) deallocate(y%gsw_open         )
+      if (associated(y%gsw_closed       )) deallocate(y%gsw_closed       )
+      if (associated(y%rshort_l         )) deallocate(y%rshort_l         )
+      if (associated(y%rlong_l          )) deallocate(y%rlong_l          )
+      if (associated(y%wood_energy      )) deallocate(y%wood_energy      )
+      if (associated(y%wood_water       )) deallocate(y%wood_water       )
+      if (associated(y%wood_temp        )) deallocate(y%wood_temp        )
+      if (associated(y%wood_fliq        )) deallocate(y%wood_fliq        )
+      if (associated(y%wood_hcap        )) deallocate(y%wood_hcap        )
+      if (associated(y%wood_reynolds    )) deallocate(y%wood_reynolds    )
+      if (associated(y%wood_grashof     )) deallocate(y%wood_grashof     )
+      if (associated(y%wood_nussfree    )) deallocate(y%wood_nussfree    )
+      if (associated(y%wood_nussforc    )) deallocate(y%wood_nussforc    )
+      if (associated(y%wood_resolvable  )) deallocate(y%wood_resolvable  )
+      if (associated(y%wood_gbh         )) deallocate(y%wood_gbh         )
+      if (associated(y%wood_gbw         )) deallocate(y%wood_gbw         )
+      if (associated(y%rshort_w         )) deallocate(y%rshort_w         )
+      if (associated(y%rlong_w          )) deallocate(y%rlong_w          )
+      if (associated(y%nplant           )) deallocate(y%nplant           )
+      if (associated(y%veg_wind         )) deallocate(y%veg_wind         )
+      if (associated(y%lai              )) deallocate(y%lai              )
+      if (associated(y%wai              )) deallocate(y%wai              )
+      if (associated(y%wpa              )) deallocate(y%wpa              )
+      if (associated(y%tai              )) deallocate(y%tai              )
+      if (associated(y%crown_area       )) deallocate(y%crown_area       )
+      if (associated(y%elongf           )) deallocate(y%elongf           )
+      if (associated(y%psi_open         )) deallocate(y%psi_open         )
+      if (associated(y%psi_closed       )) deallocate(y%psi_closed       )
+      if (associated(y%fs_open          )) deallocate(y%fs_open          )
+      if (associated(y%gpp              )) deallocate(y%gpp              )
+      if (associated(y%leaf_resp        )) deallocate(y%leaf_resp        )
+      if (associated(y%root_resp        )) deallocate(y%root_resp        )
+      if (associated(y%growth_resp      )) deallocate(y%growth_resp      )
+      if (associated(y%storage_resp     )) deallocate(y%storage_resp     )
+      if (associated(y%vleaf_resp       )) deallocate(y%vleaf_resp       )
+      if (associated(y%cfx_hflxlc       )) deallocate(y%cfx_hflxlc       )
+      if (associated(y%cfx_hflxwc       )) deallocate(y%cfx_hflxwc       )
+      if (associated(y%cfx_qwflxlc      )) deallocate(y%cfx_qwflxlc      )
+      if (associated(y%cfx_qwflxwc      )) deallocate(y%cfx_qwflxwc      )
+      if (associated(y%cfx_qwshed       )) deallocate(y%cfx_qwshed       )
+      if (associated(y%cfx_qtransp      )) deallocate(y%cfx_qtransp      )
+      if (associated(y%cfx_qintercepted )) deallocate(y%cfx_qintercepted )
 
       return
    end subroutine deallocate_rk4_coh
@@ -1261,7 +1346,8 @@ module rk4_coms
 
 
       y%flx_carbon_ac                  = 0.d0
-      y%flx_vapor_vc                   = 0.d0
+      y%flx_vapor_lc                   = 0.d0
+      y%flx_vapor_wc                   = 0.d0
       y%flx_dew_cg                     = 0.d0
       y%flx_vapor_gc                   = 0.d0
       y%flx_wshed_vg                   = 0.d0
@@ -1270,8 +1356,10 @@ module rk4_coms
       y%flx_vapor_ac                   = 0.d0
       y%flx_transp                     = 0.d0
       y%flx_evap                       = 0.d0
-      y%flx_netrad                     = 0.d0
-      y%flx_sensible_vc                = 0.d0
+      y%flx_rshort_gnd                 = 0.d0
+      y%flx_rlong_gnd                  = 0.d0
+      y%flx_sensible_lc                = 0.d0
+      y%flx_sensible_wc                = 0.d0
       y%flx_qwshed_vg                  = 0.d0
       y%flx_qintercepted               = 0.d0
       y%flx_qthroughfall               = 0.d0
@@ -1287,8 +1375,10 @@ module rk4_coms
       if(associated(y%flx_transloss   )) y%flx_transloss    (:) = 0.d0
       if(associated(y%flx_sensible_gg )) y%flx_sensible_gg  (:) = 0.d0
       !----- Reset cohort-level energy fluxes when they are allocated. --------------------!
-      if(associated(y%cfx_hflxvc      )) y%cfx_hflxvc       (:) = 0.d0
-      if(associated(y%cfx_qwflxvc     )) y%cfx_qwflxvc      (:) = 0.d0
+      if(associated(y%cfx_hflxlc      )) y%cfx_hflxlc       (:) = 0.d0
+      if(associated(y%cfx_hflxwc      )) y%cfx_hflxwc       (:) = 0.d0
+      if(associated(y%cfx_qwflxlc     )) y%cfx_qwflxlc      (:) = 0.d0
+      if(associated(y%cfx_qwflxwc     )) y%cfx_qwflxwc      (:) = 0.d0
       if(associated(y%cfx_qwshed      )) y%cfx_qwshed       (:) = 0.d0
       if(associated(y%cfx_qtransp     )) y%cfx_qtransp      (:) = 0.d0
       if(associated(y%cfx_qintercepted)) y%cfx_qintercepted (:) = 0.d0
@@ -1323,7 +1413,8 @@ module rk4_coms
 
 
       y%flx_carbon_ac     = y%flx_carbon_ac     * hdidi
-      y%flx_vapor_vc      = y%flx_vapor_vc      * hdidi
+      y%flx_vapor_lc      = y%flx_vapor_lc      * hdidi
+      y%flx_vapor_wc      = y%flx_vapor_wc      * hdidi
       y%flx_dew_cg        = y%flx_dew_cg        * hdidi
       y%flx_vapor_gc      = y%flx_vapor_gc      * hdidi
       y%flx_wshed_vg      = y%flx_wshed_vg      * hdidi
@@ -1332,8 +1423,10 @@ module rk4_coms
       y%flx_vapor_ac      = y%flx_vapor_ac      * hdidi
       y%flx_transp        = y%flx_transp        * hdidi
       y%flx_evap          = y%flx_evap          * hdidi
-      y%flx_netrad        = y%flx_netrad        * hdidi
-      y%flx_sensible_vc   = y%flx_sensible_vc   * hdidi
+      y%flx_rshort_gnd    = y%flx_rshort_gnd    * hdidi
+      y%flx_rlong_gnd     = y%flx_rlong_gnd     * hdidi
+      y%flx_sensible_lc   = y%flx_sensible_lc   * hdidi
+      y%flx_sensible_wc   = y%flx_sensible_wc   * hdidi
       y%flx_qwshed_vg     = y%flx_qwshed_vg     * hdidi
       y%flx_qintercepted  = y%flx_qintercepted  * hdidi
       y%flx_qthroughfall  = y%flx_qthroughfall  * hdidi
@@ -1351,9 +1444,13 @@ module rk4_coms
       if(associated(y%flx_sensible_gg )) y%flx_sensible_gg  (:) = y%flx_sensible_gg (:)    &
                                                                 * hdidi
       !----- Cohort-level energy fluxes. --------------------------------------------------!
-      if(associated(y%cfx_hflxvc      )) y%cfx_hflxvc       (:) = y%cfx_hflxvc      (:)    &
+      if(associated(y%cfx_hflxlc      )) y%cfx_hflxlc       (:) = y%cfx_hflxlc      (:)    &
                                                                 * hdidi
-      if(associated(y%cfx_qwflxvc     )) y%cfx_qwflxvc      (:) = y%cfx_qwflxvc     (:)    &
+      if(associated(y%cfx_hflxwc      )) y%cfx_hflxwc       (:) = y%cfx_hflxwc      (:)    &
+                                                                * hdidi
+      if(associated(y%cfx_qwflxlc     )) y%cfx_qwflxlc      (:) = y%cfx_qwflxlc     (:)    &
+                                                                * hdidi
+      if(associated(y%cfx_qwflxwc     )) y%cfx_qwflxwc      (:) = y%cfx_qwflxwc     (:)    &
                                                                 * hdidi
       if(associated(y%cfx_qwshed      )) y%cfx_qwshed       (:) = y%cfx_qwshed      (:)    &
                                                                 * hdidi
@@ -1364,6 +1461,187 @@ module rk4_coms
 
       return
    end subroutine norm_rk4_fluxes
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !    This subroutine will allocate the auxiliary variables.                             !
+   !---------------------------------------------------------------------------------------!
+   subroutine allocate_rk4_aux(mzg,mzs)
+      implicit none
+      !----- Arguments --------------------------------------------------------------------!
+      integer            , intent(in) :: mzg
+      integer            , intent(in) :: mzs
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------ Nullify the structure for a safe allocation. --------------------------------!
+      call nullify_rk4_aux()
+      !------------------------------------------------------------------------------------!
+
+      allocate(rk4aux%psiplusz                (    0:mzg) )
+      allocate(rk4aux%hydcond                 (    0:mzg) )
+      allocate(rk4aux%drysoil                 (    0:mzg) )
+      allocate(rk4aux%satsoil                 (    0:mzg) )
+      allocate(rk4aux%soil_liq_wilt           (      mzg) )
+      allocate(rk4aux%available_liquid_water  (      mzg) )
+      allocate(rk4aux%extracted_water         (      mzg) )
+      allocate(rk4aux%rfactor                 (  mzg+mzs) )
+      allocate(rk4aux%hfluxgsc                (mzg+mzs+1) )
+      allocate(rk4aux%w_flux                  (mzg+mzs+1) )
+      allocate(rk4aux%qw_flux                 (mzg+mzs+1) )
+      allocate(rk4aux%d_flux                  (    mzs+1) )
+
+
+      !------ Flush the variables within this structure to zero. --------------------------!
+      call zero_rk4_aux()
+      !------------------------------------------------------------------------------------!
+
+      return
+   end subroutine allocate_rk4_aux
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !    This subroutine will nullify the auxiliary pointers for a safe allocation.         !
+   !---------------------------------------------------------------------------------------!
+   subroutine nullify_rk4_aux()
+      implicit none
+
+      nullify(rk4aux%psiplusz                )
+      nullify(rk4aux%hydcond                 )
+      nullify(rk4aux%drysoil                 )
+      nullify(rk4aux%satsoil                 )
+      nullify(rk4aux%soil_liq_wilt           )
+      nullify(rk4aux%available_liquid_water  )
+      nullify(rk4aux%extracted_water         )
+      nullify(rk4aux%rfactor                 )
+      nullify(rk4aux%hfluxgsc                )
+      nullify(rk4aux%w_flux                  )
+      nullify(rk4aux%qw_flux                 )
+      nullify(rk4aux%d_flux                  )
+
+      return
+   end subroutine nullify_rk4_aux
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !    This subroutine will flush all auxiliary variables to zero.                        !
+   !---------------------------------------------------------------------------------------!
+   subroutine zero_rk4_aux()
+      implicit none
+
+      if (associated(rk4aux%psiplusz              ))                                       &
+         rk4aux%psiplusz              (:) = 0.d0
+
+      if (associated(rk4aux%hydcond               ))                                       &
+         rk4aux%hydcond               (:) = 0.d0
+
+      if (associated(rk4aux%drysoil               ))                                       &
+         rk4aux%drysoil               (:) = .false.
+
+      if (associated(rk4aux%satsoil               ))                                       &
+         rk4aux%satsoil               (:) = .false.
+
+      if (associated(rk4aux%soil_liq_wilt         ))                                       &
+         rk4aux%soil_liq_wilt         (:) = 0.d0
+
+      if (associated(rk4aux%available_liquid_water))                                       &
+         rk4aux%available_liquid_water(:) = 0.d0
+
+      if (associated(rk4aux%extracted_water       ))                                       &
+         rk4aux%extracted_water       (:) = 0.d0
+
+      if (associated(rk4aux%rfactor               ))                                       &
+         rk4aux%rfactor               (:) = 0.d0
+
+      if (associated(rk4aux%hfluxgsc              ))                                       &
+         rk4aux%hfluxgsc              (:) = 0.d0
+
+      if (associated(rk4aux%w_flux                ))                                       &
+         rk4aux%w_flux                (:) = 0.d0
+
+      if (associated(rk4aux%qw_flux               ))                                       &
+         rk4aux%qw_flux               (:) = 0.d0
+
+      if (associated(rk4aux%d_flux                ))                                       &
+         rk4aux%d_flux                (:) = 0.d0
+
+      return
+   end subroutine zero_rk4_aux
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !    This subroutine will deallocate the auxiliary variables.                           !
+   !---------------------------------------------------------------------------------------!
+   subroutine deallocate_rk4_aux()
+      implicit none
+
+      if (associated(rk4aux%psiplusz              ))                                       &
+         deallocate(rk4aux%psiplusz              )
+
+      if (associated(rk4aux%hydcond               ))                                       &
+         deallocate(rk4aux%hydcond               )
+
+      if (associated(rk4aux%drysoil               ))                                       &
+         deallocate(rk4aux%drysoil               )
+
+      if (associated(rk4aux%satsoil               ))                                       &
+         deallocate(rk4aux%satsoil               )
+
+      if (associated(rk4aux%soil_liq_wilt         ))                                       &
+         deallocate(rk4aux%soil_liq_wilt         )
+
+      if (associated(rk4aux%available_liquid_water))                                       &
+         deallocate(rk4aux%available_liquid_water)
+
+      if (associated(rk4aux%extracted_water       ))                                       &
+         deallocate(rk4aux%extracted_water       )
+
+      if (associated(rk4aux%rfactor               ))                                       &
+         deallocate(rk4aux%rfactor               )
+
+      if (associated(rk4aux%hfluxgsc              ))                                       &
+         deallocate(rk4aux%hfluxgsc              )
+
+      if (associated(rk4aux%w_flux                ))                                       &
+         deallocate(rk4aux%w_flux                )
+
+      if (associated(rk4aux%qw_flux               ))                                       &
+         deallocate(rk4aux%qw_flux               )
+
+      if (associated(rk4aux%d_flux                ))                                       &
+         deallocate(rk4aux%d_flux                )
+
+      return
+   end subroutine deallocate_rk4_aux
    !=======================================================================================!
    !=======================================================================================!
 
@@ -1433,9 +1711,9 @@ module rk4_coms
       !----- Local constants. -------------------------------------------------------------!
       character(len=13), dimension(nerrfix), parameter :: err_lab_fix = (/                 &
            'CAN_THEIV    ','CAN_THETA    ','CAN_SHV      ','CAN_TEMP     ','CAN_PRSS     ' &
-          ,'CAN_CO2      ','VEG_WATER    ','VEG_ENERGY   ','VIRT_HEAT    ','VIRT_WATER   ' &
-          ,'CO2B_STORAGE ','CO2B_LOSS2ATM','EB_LOSS2ATM  ','WATB_LOSS2ATM','ENB_LOSS2DRA ' &
-          ,'WATB_LOSS2DRA','ENB_STORAGE  ','WATB_STORAGE '/)
+          ,'CAN_CO2      ','LEAF_WATER   ','LEAF_ENERGY  ','WOOD_WATER   ','WOOD_ENERGY  ' &
+          ,'VIRT_HEAT    ','VIRT_WATER   ','CO2B_STORAGE ','CO2B_LOSS2ATM','EB_LOSS2ATM  ' &
+          ,'WATB_LOSS2ATM','ENB_LOSS2DRA ','WATB_LOSS2DRA','ENB_STORAGE  ','WATB_STORAGE '/)
       !----- Local variables. -------------------------------------------------------------!
       integer                                          :: n
       character(len=13)                                :: err_lab_loc

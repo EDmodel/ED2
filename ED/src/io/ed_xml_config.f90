@@ -201,12 +201,12 @@ recursive subroutine read_ed_xml_config(filename)
         if(myPFT .le. n_pft .and. myPFT .ge. 1) then
            call getConfigINT('include_pft','pft',i,ival,texist)
            if(texist) then
-              include_pft(myPFT) = ival
+              include_pft(myPFT) = ival == 1
 !           else
 !              include_pft(myPFT) = 1  !! if a PFT is defined, assume it's meant to be included
            endif
            call getConfigINT('include_pft_ag','pft',i,ival,texist)
-           if(texist) include_pft_ag(myPFT) = ival
+           if(texist) include_pft_ag(myPFT) = ival == 1
            call getConfigSTRING('name','pft',i,cval,texist)
            call getConfigREAL  ('SLA','pft',i,rval,texist)
            if(texist) SLA(myPFT) = real(rval)
@@ -215,9 +215,15 @@ recursive subroutine read_ed_xml_config(filename)
            call getConfigREAL  ('b2Bl','pft',i,rval,texist)
            if(texist) b2Bl(myPFT) = real(rval)
            call getConfigREAL  ('b1Bs','pft',i,rval,texist)
-           if(texist) b1Bs(myPFT) = real(rval)
+           if (texist) then
+              b1Bs_small(myPFT) = real(rval)
+              b1Bs_big(myPFT)   = real(rval)
+           end if
            call getConfigREAL  ('b2Bs','pft',i,rval,texist)
-           if(texist) b2Bs(myPFT) = real(rval)
+           if (texist) then
+              b2Bs_small(myPFT) = real(rval)
+              b2Bs_big  (myPFT) = real(rval)
+           end if
            call getConfigREAL  ('b1Ht','pft',i,rval,texist)
            if(texist) b1Ht(myPFT) = real(rval)
            call getConfigREAL  ('b2Ht','pft',i,rval,texist)
@@ -318,9 +324,9 @@ recursive subroutine read_ed_xml_config(filename)
            call getConfigREAL  ('leaf_scatter_vis','pft',i,rval,texist)
            if(texist) leaf_scatter_vis(myPFT) = real(rval)
            call getConfigREAL  ('diffuse_backscatter_vis','pft',i,rval,texist)
-           if(texist) diffuse_backscatter_vis(myPFT) = real(rval)
+           if(texist) leaf_backscatter_vis(myPFT) = real(rval)
            call getConfigREAL  ('emis_v','pft',i,rval,texist)
-           if(texist) emis_v(myPFT) = rval
+           if(texist) leaf_emis(myPFT) = rval
            
 
 !!! PFT VARIABLES THAT ARE ACTUALLY IN DECOMP
@@ -499,9 +505,9 @@ recursive subroutine read_ed_xml_config(filename)
         call getConfigREAL  ('leaf_trans_nir','radiation',i,rval,texist)
         if(texist) leaf_trans_nir = real(rval)
         call getConfigREAL  ('diffuse_backscatter_vis','radiation',i,rval,texist)
-        if(texist) diffuse_backscatter_vis = real(rval)
+        if(texist) leaf_backscatter_vis = real(rval)
         call getConfigREAL  ('diffuse_backscatter_nir','radiation',i,rval,texist)
-        if(texist) diffuse_backscatter_nir = real(rval)
+        if(texist) leaf_backscatter_nir = real(rval)
         
         
         call libxml2f90__ll_selecttag('UP','config',1) !move back up to top level
@@ -651,11 +657,12 @@ recursive subroutine read_ed_xml_config(filename)
         !! TREEFALL
         call getConfigREAL  ('treefall_disturbance_rate','disturbance',i,rval,texist)
         if(texist) treefall_disturbance_rate = real(rval)
-
+        
+        call getConfigREAL  ('Time2Canopy','disturbance',i,rval,texist)
+        if(texist) Time2Canopy = real(rval)
+        
         call getConfigREAL  ('treefall_hite_threshold','disturbance',i,rval,texist)
         if(texist) treefall_hite_threshold = real(rval)
-        call getConfigREAL  ('treefall_age_theshold','disturbance',i,rval,texist)
-        if(texist) treefall_age_threshold = real(rval)
 
         !! FORESTRY
         call getConfigINT  ('plantation_year','disturbance',i,ival,texist)
@@ -940,7 +947,7 @@ subroutine write_ed_xml_config
   use canopy_radiation_coms
   use decomp_coms
   use ed_misc_coms, only: sfilout
-
+  integer :: ival
   character(512) :: xfilout 
 
   write(xfilout,"(a)") trim(sfilout)//".xml"
@@ -951,19 +958,31 @@ subroutine write_ed_xml_config
 
   !************   PFT  *****************
   do i=1,n_pft
-     if(include_pft(i) == 1) then !! loop over included PFT's
+     if(include_pft(i)) then !! loop over included PFT's
 
         call libxml2f90_ll_opentag("pft")
      
         call putConfigINT("num",i)
-        call putConfigINT("include_pft_ag",include_pft_ag(i))
-        call putConfigINT("include_pft",include_pft(i))
+        if (include_pft_ag(i)) then
+           ival = 1
+        else
+           ival = 0
+        end if
+        call putConfigINT("include_pft_ag",ival)
+        if (include_pft(i)) then
+           ival = 1
+        else
+           ival = 0
+        end if
+        call putConfigINT("include_pft",ival)
         
         call putConfigREAL("SLA",SLA(i))
         call putConfigREAL("b1Bl",b1Bl(i))
         call putConfigREAL("b2Bl",b2Bl(i))
-        call putConfigREAL("b1Bs",b1Bs(i))
-        call putConfigREAL("b2Bs",b2Bs(i))
+        call putConfigREAL("b1Bs",b1Bs_small(i))
+        b1Bs_big(i) = b1Bs_big(i)
+        call putConfigREAL("b2Bs",b2Bs_small(i))
+        b2Bs_big(i) = b2Bs_big(i)
         call putConfigREAL("b1Ht",b1Ht(i))
         call putConfigREAL("b2Ht",b2Ht(i))
         call putConfigREAL("Vm0",Vm0(i))
@@ -1001,9 +1020,9 @@ subroutine write_ed_xml_config
         call putConfigREAL("root_respiration_factor",root_respiration_factor(i))
         call putConfigREAL("seedling_mortality",seedling_mortality(i))
         call putConfigREAL("water_conductance",water_conductance(i))
-        call putConfigREAL("leaf_scatter_vis",leaf_scatter_vis(i))
-        call putConfigREAL("diffuse_backscatter_vis",diffuse_backscatter_vis(i))
-        call putConfigREAL8("emis_v",emis_v(i))
+        call putConfigREAL8("leaf_scatter_vis",leaf_scatter_vis(i))
+        call putConfigREAL8("diffuse_backscatter_vis",leaf_backscatter_vis(i))
+        call putConfigREAL8("emis_v",leaf_emis(i))
         call putConfigREAL("f_labile",f_labile(i))
         call libxml2f90_ll_closetag("pft")
      endif

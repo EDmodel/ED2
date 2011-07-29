@@ -138,6 +138,18 @@ Module mem_leaf
                                           !    3. Beljaars and Holtslag (1991)
                                           !    4. BH91, using OD95 to find zeta.
                                           !    5. OD95, using BH91 to find zeta
+   integer                 :: igrndvap    ! Methods to find the ground -> canopy 
+                                          !     conductance.  In all cases the beta term 
+                                          !     is modified so it approaches zero as soil 
+                                          !     moisture goes to dry air soil. 
+                                          ! 0. Modified Lee Pielke (1992), adding field
+                                          !    capacity, but using beta factor without the
+                                          !    square, like in Noilhan and Planton (1989).
+                                          !    This is the closest to the original ED-2.1
+                                          ! 1. Test # 1 of Mahfouf and Noilhan (1991)
+                                          ! 2. Test # 2 of Mahfouf and Noilhan (1991)
+                                          ! 3. Test # 3 of Mahfouf and Noilhan (1991)
+                                          ! 4. Test # 4 of Mahfouf and Noilhan (1991)
    integer                 :: isoilbc     ! Bottom soil boundary condition.
                                           !    0. Bedrock
                                           !    1. Free drainage

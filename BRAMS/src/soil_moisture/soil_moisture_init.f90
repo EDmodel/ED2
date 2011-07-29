@@ -83,6 +83,7 @@ subroutine soil_moisture_init(n1,n2,n3,mzg,npat,ifm,can_theta,can_prss,glat,glon
    integer                                           :: size_expected
    !----- External functions. -------------------------------------------------------------!
    integer                           , external      :: filesize4
+   real                              , external      :: soil_idx2water
    !----- Namelist in case soil moisture is not a default one. ----------------------------!
    namelist /gradeumso/ latni, latnf, lonni, lonnf, ilatn, ilonn, nlat, nlon
    !---------------------------------------------------------------------------------------!
@@ -221,10 +222,6 @@ subroutine soil_moisture_init(n1,n2,n3,mzg,npat,ifm,can_theta,can_prss,glat,glon
       write(unit=*,fmt='(a)') '|     points outside the input domain         |'
       write(unit=*,fmt='(a)') '|---------------------------------------------|'
 
-      where (slmstr > 1.0)
-         slmstr = 1.0
-      end where
-
       hoploop: do ipat= 2,npat
          hojloop: do j = 1,n3
             hoiloop: do i = 1,n2
@@ -232,10 +229,9 @@ subroutine soil_moisture_init(n1,n2,n3,mzg,npat,ifm,can_theta,can_prss,glat,glon
                can_temp = can_theta(i,j,ipat) * (p00i * can_prss(i,j,ipat)) ** rocp
 
                hokloop: do k = 1,mzg
-                  nsoil = nint(soil_text(k,i,j,ipat))
-                  soil_water(k,i,j,ipat) = soilcp(nsoil)                                   &
-                                         + slmstr(k) * (slmsts(nsoil) - soilcp(nsoil))
-                  tsoil = can_temp + stgoff(k)
+                  nsoil                  = nint(soil_text(k,i,j,ipat))
+                  soil_water(k,i,j,ipat) = soil_idx2water(slmstr(k),nsoil)
+                  tsoil                  = can_temp + stgoff(k)
                   if (tsoil >= t3ple) then
                      soil_energy(k,i,j,ipat) = slcpd(nsoil) * tsoil                        &
                                              + soil_water(k,i,j,ipat) * cliqvlme           &
@@ -698,5 +694,48 @@ subroutine nearest_neighbour_sm(glon,glat,nlon,nlat,prlat,prlon,i1,i2,ic,j1,j2,j
 
    return
 end subroutine nearest_neighbour_sm
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!      This sub-routines converts the soil moisture index into soil moisture.              !
+!  This scale is piece-wise linear, and dependent on the soil texture.                     !
+!  -1. = dry air soil moisture (soilcp)                                                    !
+!   0. = wilting point         (soilwp)                                                    !
+!   1. = field capacity        (sfldcap)                                                   !
+!   2. = porosity/saturation   (slmsts)                                                    !
+!------------------------------------------------------------------------------------------!
+real(kind=4) function soil_idx2water(soil_index,ntext)
+   use leaf_coms, only : soilcp  & ! intent(in)
+                       , soilwp  & ! intent(in)
+                       , sfldcap & ! intent(in)
+                       , slmsts  ! ! intent(in)
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   real(kind=4), intent(in) :: soil_index
+   integer     , intent(in) :: ntext
+   !----- Local variables. ----------------------------------------------------------------!
+   real(kind=4)             :: soil_water
+   !---------------------------------------------------------------------------------------!
+
+
+   if (soil_index < 0.0) then
+      soil_water = soilcp (ntext) + (soil_index + 1.0) * (soilwp (ntext) - soilcp (ntext))
+   elseif (soil_index < 1.0) then
+      soil_water = soilwp (ntext) +  soil_index        * (sfldcap(ntext) - soilwp (ntext))
+   else
+      soil_water = sfldcap(ntext) + (soil_index - 1.0) * (slmsts (ntext) - sfldcap(ntext))
+   end if
+
+   soil_idx2water = soil_water
+
+   return
+end function soil_idx2water
 !==========================================================================================!
 !==========================================================================================!

@@ -35,8 +35,7 @@ subroutine leaf_stars(theta_atm,theiv_atm,shv_atm,rvap_atm,co2_atm              
                         , csm        & ! intent(in)
                         , csh        & ! intent(in)
                         , dl79       & ! intent(in)
-                        , ribmaxod95 & ! intent(in)
-                        , ribmaxbh91 & ! intent(in)
+                        , ribmax     & ! intent(in)
                         , tprandtl   & ! intent(in)
                         , z0moz0h    & ! intent(in)
                         , z0hoz0m    & ! intent(in)
@@ -81,6 +80,7 @@ subroutine leaf_stars(theta_atm,theiv_atm,shv_atm,rvap_atm,co2_atm              
    real              :: delz         !
    real              :: d_vel        !
    real              :: vel_new      !
+   real              :: uuse         ! Wind for too stable cases (Rib > Ribmax)
    !----- Local variables, used by L79. ---------------------------------------------------!
    real              :: a2           ! Drag coefficient in neutral conditions
    real              :: c1           ! a2 * vels
@@ -93,7 +93,6 @@ subroutine leaf_stars(theta_atm,theiv_atm,shv_atm,rvap_atm,co2_atm              
    !----- Local variables, used by OD95 and/or BH91. --------------------------------------!
    real              :: zeta0m       ! roughness(momentum)/(Obukhov length).
    real              :: zeta0h       ! roughness(heat)/(Obukhov length).
-   real              :: ribold       ! Bulk richardson number.
    !----- Aux. environment conditions. ----------------------------------------------------!
    real              :: thetav_atm   ! Atmos. virtual potential temperature     [        K]
    real              :: thetav_can   ! Canopy air virtual pot. temperature      [        K]
@@ -112,6 +111,26 @@ subroutine leaf_stars(theta_atm,theiv_atm,shv_atm,rvap_atm,co2_atm              
    rib        = 2.0 * grav * (zref-dheight-rough) * (thetav_atm-thetav_can)                &
               / ( (thetav_atm+thetav_can) * uref * uref)
    stable     = thetav_atm >= thetav_can
+   !---------------------------------------------------------------------------------------!
+
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !    Correct the bulk Richardson number in case it's too stable and we are not running  !
+   ! the L79 model.  We also define a stable case correction to bring down the stars other !
+   ! than ustar, so the flux doesn't increase for stabler cases (it remains constant).     !
+   !---------------------------------------------------------------------------------------!
+   if (rib > ribmax .and. istar /= 1) then
+      uuse = sqrt(rib/ribmax) * uref
+      rib  = ribmax
+   else
+      uuse = uref
+   end if
+   !---------------------------------------------------------------------------------------!
+
+
+
 
    !---------------------------------------------------------------------------------------!
    !     Here we find u* and the coefficient to find the other stars based on the chosen   !
@@ -125,7 +144,7 @@ subroutine leaf_stars(theta_atm,theiv_atm,shv_atm,rvap_atm,co2_atm              
 
       !----- Compute the a-square factor and the coefficient to find theta*. --------------!
       a2   = (vonk / lnzoz0m) ** 2.
-      c1   = a2 * uref
+      c1   = a2 * uuse
 
       if (stable) then
          !---------------------------------------------------------------------------------!
@@ -146,10 +165,10 @@ subroutine leaf_stars(theta_atm,theiv_atm,shv_atm,rvap_atm,co2_atm              
          fm = (1.0 - 2.0 * bl79 * rib / (1.0 + 2.0 * cm))
          fh = (1.0 - 3.0 * bl79 * rib / (1.0 + 3.0 * ch))
       end if
-      r_aer = 1. / (a2 * uref * fh)
+      r_aer = 1. / (a2 * uuse * fh)
 
       !----- Finding ustar, making sure it is not too small. ------------------------------!
-      ustar = max(ustmin,sqrt(c1 * uref * fm))
+      ustar = max(ustmin,sqrt(c1 * uuse * fm))
 
       !----- Finding the coefficient to scale the other stars. ----------------------------!
       c3 = c1 * fh / ustar
@@ -170,10 +189,6 @@ subroutine leaf_stars(theta_atm,theiv_atm,shv_atm,rvap_atm,co2_atm              
       ! 4. We use the model proposed by BH91, but we find zeta using the approximation     !
       !    given by OD95.                                                                  !
       !------------------------------------------------------------------------------------!
-
-      !----- Make sure that the bulk Richardson number is not above ribmax. ---------------!
-      rib = min(rib,ribmaxod95)
-      
       !----- We now compute the stability correction functions. ---------------------------!
       if (stable) then
          !----- Stable case. --------------------------------------------------------------!
@@ -184,13 +199,13 @@ subroutine leaf_stars(theta_atm,theiv_atm,shv_atm,rvap_atm,co2_atm              
       end if
       zeta0m = rough * zeta / (zref - dheight)
 
-      !----- Finding the aerodynamic resistance similarly to L79. -------------------------!
+      !----- Find the aerodynamic resistance similarly to L79. ----------------------------!
       r_aer = tprandtl * (lnzoz0m - psih(zeta,stable) + psih(zeta0m,stable))               &
                        * (lnzoz0m - psim(zeta,stable) + psim(zeta0m,stable))               &
-                       / (vonk * vonk * uref)
+                       / (vonk * vonk * uuse)
 
       !----- Finding ustar, making sure it is not too small. ------------------------------!
-      ustar = max (ustmin, vonk * uref                                                     &
+      ustar = max (ustmin, vonk * uuse                                                     &
                          / (lnzoz0m - psim(zeta,stable) + psim(zeta0m,stable)))
 
       !----- Finding the coefficient to scale the other stars. ----------------------------!
@@ -209,12 +224,6 @@ subroutine leaf_stars(theta_atm,theiv_atm,shv_atm,rvap_atm,co2_atm              
       !       and excessive cooling.                                                       !
       ! 5. Similar as 3, but we compute the stable functions the same way as OD95.         !
       !------------------------------------------------------------------------------------!
-
-      !----- Make sure that the bulk Richardson number is not above ribmax. ---------------!
-      ribold = rib
-      rib    = min(rib,ribmaxbh91)
-
-
       !----- We now compute the stability correction functions. ---------------------------!
       zeta   = zoobukhov(rib,zref-dheight,rough,zoz0m,lnzoz0m,zoz0h,lnzoz0h,stable)
       zeta0m = rough * zeta / (zref-dheight)
@@ -223,10 +232,10 @@ subroutine leaf_stars(theta_atm,theiv_atm,shv_atm,rvap_atm,co2_atm              
       !----- Finding the aerodynamic resistance similarly to L79. -------------------------!
       r_aer = tprandtl * (lnzoz0h - psih(zeta,stable) + psih(zeta0h,stable))               &
                        * (lnzoz0m - psim(zeta,stable) + psim(zeta0m,stable))               &
-                       / (vonk * vonk * uref)
+                       / (vonk * vonk * uuse)
 
       !----- Finding ustar, making sure it is not too small. ------------------------------!
-      ustar = max (ustmin, vonk * uref                                                     &
+      ustar = max (ustmin, vonk * uuse                                                     &
                          / (lnzoz0m - psim(zeta,stable) + psim(zeta0m,stable)))
 
 
@@ -331,6 +340,24 @@ end subroutine sfclmcv
 !     This subroutine computes the ground properties.  By ground we mean the top soil      !
 ! layer if no temporary surface water/snow exists, or the top temporary surface water/snow !
 ! layer if it exists.                                                                      !
+!                                                                                          !
+! References:                                                                              !
+!                                                                                          !
+! Passerat de Silans, A., 1986: Transferts de masse et de chaleur dans un sol stratifié    !
+!     soumis à une excitation amtosphérique naturelle. Comparaison: Modèles-expérience.    !
+!     Thesis, Institut National Polytechnique de Grenoble. (P86)                           !
+!                                                                                          !
+! Noilhan, J., S. Planton, 1989: Simple parameterization of land surface processes for     !
+!     meteorological models, Mon. Wea. Rev., 117, 536-549. (NP89)                          !
+!                                                                                          !
+! Mahfouf, J. F., J. Noilhan, 1991: Comparative study of various formulations of           !
+!     evaporation from bare soil using in situ data. J. Appl. Meteorol., 30, 1354-1365.    !
+!     (MN91)                                                                               !
+!                                                                                          !
+! Lee, T. J., R. A. Pielke, 1992: Estimating the soil surface specific humidity. J. Appl.  !
+!     Meteorol., 31, 480-484. (LP92)                                                       !
+!                                                                                          !
+! Lee, T. J., R. A. Pielke, 1993: Corrigendum. J. Appl. Meteorol., 32, 580-580. (LP93)     !
 !------------------------------------------------------------------------------------------!
 subroutine leaf_grndvap(topsoil_energy,topsoil_water,topsoil_text,sfcwater_energy_int      &
                        ,sfcwater_nlev,can_rvap,can_prss,ground_rsat,ground_rvap            &
@@ -341,15 +368,20 @@ subroutine leaf_grndvap(topsoil_energy,topsoil_water,topsoil_text,sfcwater_energ
                          , slmsts      & ! intent(in)
                          , soilcp      & ! intent(in)
                          , slbs        & ! intent(in)
-                         , sfldcap     ! ! intent(in)
+                         , sfldcap     & ! intent(in)
+                         , ggsoil      & ! intent(in)
+                         , ggsoil0     & ! intent(in)
+                         , kksoil      ! ! intent(in)
    use rconstants , only : gorh2o      & ! intent(in)
                          , pi1         & ! intent(in)
                          , wdns        & ! intent(in)
-                         , lnexp_min   ! ! intent(in)
+                         , lnexp_min   & ! intent(in)
+                         , huge_num    ! ! intent(in)
    use therm_lib  , only : rslif       & ! function
                          , qwtk        & ! function
                          , qtk         ! ! function
-   use mem_leaf   , only : betapower   ! ! intent(in)
+   use mem_leaf   , only : igrndvap    & ! intent(in)
+                         , betapower   ! ! intent(in)
 
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
@@ -368,8 +400,8 @@ subroutine leaf_grndvap(topsoil_energy,topsoil_water,topsoil_text,sfcwater_energ
    integer           :: ksn                 ! # active levels of surface water
    integer           :: nsoil               ! Soil texture class                [      ---]
    real              :: slpotvn             ! soil water potential              [        m]
-   real              :: alpha               ! "alpha" term in Lee and Pielke (1993)
-   real              :: beta                ! "beta" term in Lee and Pielke (1993)
+   real              :: alpha               ! "alpha" term in LP92
+   real              :: beta                ! "beta" term in LP92
    real              :: lnalpha             ! ln(alpha)
    real              :: smterm              ! soil moisture term                [     ----]
    !---------------------------------------------------------------------------------------!
@@ -398,6 +430,9 @@ subroutine leaf_grndvap(topsoil_energy,topsoil_water,topsoil_text,sfcwater_energ
       call qwtk(topsoil_energy,topsoil_water*wdns,slcpd(nsoil),ground_temp,ground_fliq)
       !----- Compute the saturation mixing ratio at ground temperature. -------------------!
       ground_rsat = rslif(can_prss,ground_temp)
+      !------------------------------------------------------------------------------------!
+
+
       !----- Determine alpha. -------------------------------------------------------------!
       slpotvn  = slpots(nsoil) * (slmsts(nsoil) / topsoil_water) ** slbs(nsoil)
       lnalpha  = gorh2o * slpotvn / ground_temp
@@ -415,13 +450,52 @@ subroutine leaf_grndvap(topsoil_energy,topsoil_water,topsoil_text,sfcwater_energ
       ! shut down when the soil approaches the dry air soil moisture, we offset both the   !
       ! soil moisture and field capacity to the soil moisture above dry air soil.  This is !
       ! necessary to avoid evaporation to be large just slightly above the dry air soil,   !
-      ! which was happening especially for those clay-rich soil types.                     !
+      ! which was happening especially for those clay-rich soil types.  To switch the      !
+      ! power to the same as LP92/LP93, set betapower to 2.                                !
       !------------------------------------------------------------------------------------!
       smterm     = (topsoil_water - soilcp(nsoil)) / (sfldcap(nsoil) - soilcp(nsoil))
       beta       = (.5 * (1. - cos (min(1.,smterm) * pi1))) ** betapower
-      !----- Use the expression from LP92 to determine the specific humidity. -------------!
-      ground_rvap = ground_rsat * alpha * beta + (1. - beta) * can_rvap
       !------------------------------------------------------------------------------------!
+
+
+
+
+      !------------------------------------------------------------------------------------!
+      !     Decide which method to use to find the ground water vapour mixing ratio.       !
+      !------------------------------------------------------------------------------------!
+      select case (igrndvap)
+      case (0)
+         !----- LP92 method. --------------------------------------------------------------!
+         ground_rvap = max(can_rvap, ground_rsat * alpha * beta + (1. - beta) * can_rvap)
+         !---------------------------------------------------------------------------------!
+
+      case (1)
+         !----- MH91, test 1. -------------------------------------------------------------!
+         ground_rvap = max(can_rvap, ground_rsat * beta)
+         ggsoil      = huge_num
+         !---------------------------------------------------------------------------------!
+
+      case (2)
+         !----- MH91, test 2. -------------------------------------------------------------!
+         ground_rvap = ground_rsat
+         ggsoil      = ggsoil0 * exp(kksoil * smterm)
+         !---------------------------------------------------------------------------------!
+
+      case (3)
+         !----- MH91, test 3. -------------------------------------------------------------!
+         ground_rvap = max(can_rvap, ground_rsat * beta + (1. - beta) * can_rvap)
+         ggsoil      = huge_num
+         !---------------------------------------------------------------------------------!
+
+      case (4)
+         !---------------------------------------------------------------------------------!
+         !     MH91, test 4.                                                               !
+         !---------------------------------------------------------------------------------!
+         ground_rvap = max(can_rvap, ground_rsat * alpha)
+         ggsoil      = ggsoil0 * exp(kksoil * smterm)
+         !---------------------------------------------------------------------------------!
+
+      end select
 
    case default
       !------------------------------------------------------------------------------------!
@@ -434,6 +508,8 @@ subroutine leaf_grndvap(topsoil_energy,topsoil_water,topsoil_text,sfcwater_energ
       ground_rsat = rslif(can_prss,ground_temp)
       !----- The ground specific humidity in this case is just the saturation value. ------!
       ground_rvap = ground_rsat
+      !----- The conductance should be large so it won't contribute to the net value. -----!
+      ggsoil      = huge_num
       !------------------------------------------------------------------------------------!
    end select
 
@@ -1083,17 +1159,53 @@ subroutine sfcrad(mzg,mzs,ip,soil_water,soil_text,sfcwater_depth,patch_area,veg_
       vfc = 1. - vf
 
       !------------------------------------------------------------------------------------!
-      !     Shortwave radiation calculations.                                              !
+      !     Ground albedo.  Experimental value ranging from dry to wet soil albedo, and    !
+      ! using some soil texture dependence, even though soil colour depends on a lot more  !
+      ! things.                                                                            !
       !------------------------------------------------------------------------------------!
-      nsoil=nint(soil_text(mzg))
-      fcpct = soil_water(mzg) / slmsts(nsoil)
-      if (fcpct > .5) then
-         alg = .14
-      else
-         alg = .31 - .34 * fcpct
-      end if
-      alv = veg_albedo
+      ! nsoil=nint(soil_text(mzg))
+      ! select case (nsoil)
+      ! case (13)
+      !    !----- Bedrock, no soil moisture, use dry soil albedo. -------------------------!
+      !    alg = albdry(nsoil)
+      ! case default
+      !    !-------------------------------------------------------------------------------!
+      !    !     Find relative soil moisture.  Not sure about this one, but I am assuming  !
+      !    ! that albedo won't change below the dry air soil moisture, and that should be  !
+      !    ! the dry value.                                                                !
+      !    !-------------------------------------------------------------------------------!
+      !    fcpct = max(0., min(1., (soil_water(mzg) - soilcp(nsoil))                       &
+      !                          / (slmsts(nsoil)   - soilcp(nsoil)) ) )
+      !    alg   = albdry(nsoil) + fcpct * (albwet(nsoil) - albdry(nsoil))
+      ! end select
+      nsoil = nint(soil_text(mzg))
+      select case (nsoil)
+      case (13)
+         !----- Bedrock, use constants soil value for granite. ----------------------------!
+         alg = albdry(nsoil)
+      case (12)
+         !----- Peat, follow McCumber and Pielke (1981). ----------------------------------!
+         fcpct = soil_water(mzg) / slmsts(nsoil)
+         alg   = max (0.07, 0.14 * (1.0 - fcpct))
+      case default
+         !----- Other soils, follow McCumber and Pielke (1981). ---------------------------!
+         fcpct = soil_water(mzg) / slmsts(nsoil)
+         alg   = max (0.14, 0.31 - 0.34 * fcpct)
+      end select
+      !------------------------------------------------------------------------------------!
 
+
+      !------------------------------------------------------------------------------------!
+      !      Vegetation albedo.                                                            !
+      !------------------------------------------------------------------------------------!
+      alv = veg_albedo
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !       Snow/surface water albedo.                                                   !
+      !------------------------------------------------------------------------------------!
       rad = 1.
       if (ksn > 0) then
          !------ als = .14 (the wet soil value) for all-liquid. ---------------------------!
@@ -1114,6 +1226,8 @@ subroutine sfcrad(mzg,mzs,ip,soil_water,soil_text,sfcwater_depth,patch_area,veg_
       rshort_g = rshort * vfc * absg
       rshort_v = rshort * vf * (1. - alv + vfc * algs)
       alb      = vf * alv + vfc * vfc * algs
+      !------------------------------------------------------------------------------------!
+
 
       !----- Adding urban contribution if running TEB. ------------------------------------!
       if (teb_spm==1) then
@@ -1518,35 +1632,35 @@ end subroutine leaf_atmo1d
 ! leaf is not solved.                                                                      !
 !------------------------------------------------------------------------------------------!
 subroutine leaf0(m2,m3,mpat,i,j,can_theta,can_rvap,can_co2,can_prss,can_theiv,patch_area)
-   use mem_leaf  , only : dthcon        & ! intent(in)
-                        , drtcon        & ! intent(in)
-                        , pctlcon       ! ! intent(in)
-   use leaf_coms , only : atm_theta     & ! intent(in)
-                        , atm_rvap      & ! intent(in)
-                        , atm_co2       & ! intent(in)
-                        , atm_prss      & ! intent(in)
-                        , atm_shv       & ! intent(in)
-                        , geoht         & ! intent(in)
-                        , tiny_parea    & ! intent(in)
-                        , can_depth_min & ! intent(in)
-                        , can_shv       & ! intent(out)
-                        , can_rsat      & ! intent(out)
-                        , can_rhv       & ! intent(out)
-                        , can_exner     & ! intent(out)
-                        , can_temp      & ! intent(out)
-                        , can_lntheta   & ! intent(out)
-                        , can_rhos      ! ! intent(out)
-   use rconstants, only : cp            & ! intent(in)
-                        , cpi           & ! intent(in)
-                        , ep            & ! intent(in)
-                        , p00           & ! intent(in)
-                        , p00i          & ! intent(in)
-                        , rocp          & ! intent(in)
-                        , cpor          ! ! intent(in)
-   use therm_lib , only : thetaeiv      & ! function
-                        , rslif         & ! function
-                        , reducedpress  & ! function
-                        , idealdenssh   ! ! function
+   use mem_leaf  , only : dthcon         & ! intent(in)
+                        , drtcon         & ! intent(in)
+                        , pctlcon        ! ! intent(in)
+   use leaf_coms , only : atm_theta      & ! intent(in)
+                        , atm_rvap       & ! intent(in)
+                        , atm_co2        & ! intent(in)
+                        , atm_prss       & ! intent(in)
+                        , atm_shv        & ! intent(in)
+                        , geoht          & ! intent(in)
+                        , min_patch_area & ! intent(in)
+                        , can_depth_min  & ! intent(in)
+                        , can_shv        & ! intent(out)
+                        , can_rsat       & ! intent(out)
+                        , can_rhv        & ! intent(out)
+                        , can_exner      & ! intent(out)
+                        , can_temp       & ! intent(out)
+                        , can_lntheta    & ! intent(out)
+                        , can_rhos       ! ! intent(out)
+   use rconstants, only : cp             & ! intent(in)
+                        , cpi            & ! intent(in)
+                        , ep             & ! intent(in)
+                        , p00            & ! intent(in)
+                        , p00i           & ! intent(in)
+                        , rocp           & ! intent(in)
+                        , cpor           ! ! intent(in)
+   use therm_lib , only : thetaeiv       & ! function
+                        , rslif          & ! function
+                        , reducedpress   & ! function
+                        , idealdenssh    ! ! function
 
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
@@ -1593,7 +1707,7 @@ subroutine leaf0(m2,m3,mpat,i,j,can_theta,can_rvap,can_co2,can_prss,can_theiv,pa
 
 
    !----- Impose area to be bounded. ------------------------------------------------------!
-   patch_area(i,j,1) = min(1.0,max(tiny_parea,1.0-pctlcon))
+   patch_area(i,j,1) = min(1.0,max(min_patch_area,1.0-pctlcon))
    patch_area(i,j,2) = 1.0 - patch_area(i,j,1)
    !---------------------------------------------------------------------------------------!
 
@@ -1615,7 +1729,7 @@ end subroutine leaf0
 subroutine leaf3_roughness(ip,veg_fracarea,patch_area,ustar,topzo,veg_rough,soil_rough     &
                           ,patch_rough)
    use mem_leaf , only : isfcl          ! ! intent(in)
-   use leaf_coms, only : tiny_parea     & ! intent(in)
+   use leaf_coms, only : min_patch_area & ! intent(in)
                        , z0fac_water    & ! intent(in)
                        , min_waterrough & ! intent(in)
                        , snowfac        & ! intent(in)
@@ -1667,10 +1781,10 @@ end subroutine leaf3_roughness
 !------------------------------------------------------------------------------------------!
 subroutine normal_accfluxes(m2,m3,mpat,ia,iz,ja,jz,atm_rhos,patch_area,sflux_u,sflux_v     &
                            ,sflux_w,sflux_t,sflux_r,sflux_c,albedt,rlongup)
-   use leaf_coms  , only : dtll_factor & ! intent(in)
-                         , tiny_parea  ! ! intent(in)
-   use mem_radiate, only : iswrtyp     & ! intent(in)
-                         , ilwrtyp     ! ! intent(in)
+   use leaf_coms  , only : dtll_factor    & ! intent(in)
+                         , min_patch_area ! ! intent(in)
+   use mem_radiate, only : iswrtyp        & ! intent(in)
+                         , ilwrtyp        ! ! intent(in)
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
    integer                       , intent(in)    :: m2
@@ -1712,7 +1826,7 @@ subroutine normal_accfluxes(m2,m3,mpat,ia,iz,ja,jz,atm_rhos,patch_area,sflux_u,s
 
          solarea = patch_area(i,j,1)
          do p=2,mpat
-            if (patch_area(i,j,p) >= tiny_parea) solarea = solarea + patch_area(i,j,p)
+            if (patch_area(i,j,p) >= min_patch_area) solarea = solarea + patch_area(i,j,p)
          end do
          solarea_i = 1.0 / solarea
 
@@ -1750,12 +1864,12 @@ end subroutine normal_accfluxes
 !------------------------------------------------------------------------------------------!
 subroutine leaf_solve_veg(ip,mzs,leaf_class,veg_height,patch_area,veg_fracarea,veg_tai     &
                          ,sfcwater_nlev,sfcwater_depth,initial)
-   use leaf_coms, only : tiny_parea  & ! intent(in)
-                       , tai_max     & ! intent(in)
-                       , tai_min     & ! intent(in)
-                       , snowfac_max & ! intent(in)
-                       , snowfac     & ! intent(inout)
-                       , resolvable  ! ! intent(inout)
+   use leaf_coms, only : min_patch_area  & ! intent(in)
+                       , tai_max         & ! intent(in)
+                       , tai_min         & ! intent(in)
+                       , snowfac_max     & ! intent(in)
+                       , snowfac         & ! intent(inout)
+                       , resolvable      ! ! intent(inout)
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
    integer                , intent(in) :: ip
@@ -1797,23 +1911,19 @@ subroutine leaf_solve_veg(ip,mzs,leaf_class,veg_height,patch_area,veg_fracarea,v
          resolvable = .false.
       else
          nveg = nint(leaf_class)
-         resolvable = tai_max(nveg) >= tai_min .and.                                       &
-                      veg_tai       >= tai_min .and.                                       &
-                      snowfac       <= snowfac_max
+         resolvable = tai_max(nveg)            >= tai_min .and.                            &
+                      veg_tai * (1. - snowfac) >= tai_min
       end if
-   else
+   elseif (resolvable) then
       !------------------------------------------------------------------------------------!
       !     Call in the middle of the step.  This can go only from resolvable to non-      !
       ! resolvable, in case snow or water has buried or drowned the plants.  The single    !
       ! direction is to avoid calling vegetation properties that cannot start to be        !
       ! computed in the middle of the step.                                                !
       !------------------------------------------------------------------------------------!
-      if (resolvable) then
-         nveg = nint(leaf_class)
-         resolvable = tai_max(nveg) >= tai_min .and.                                       &
-                      veg_tai       >= tai_min .and.                                       &
-                      snowfac       <= snowfac_max
-      end if
+      nveg       = nint(leaf_class)
+      resolvable = tai_max(nveg)            >= tai_min .and.                               &
+                   veg_tai * (1. - snowfac) >= tai_min
    end if
    !---------------------------------------------------------------------------------------!
 

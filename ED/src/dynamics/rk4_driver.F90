@@ -43,7 +43,6 @@ module rk4_driver
       integer                                 :: isi
       integer                                 :: ipa
       integer                                 :: iun
-      integer, dimension(:)     , allocatable :: ed_ktrans
       integer                                 :: nsteps
       real                                    :: wcurr_loss2atm
       real                                    :: ecurr_loss2atm
@@ -60,10 +59,6 @@ module rk4_driver
       !----- Functions --------------------------------------------------------------------!
       real                      , external    :: walltime
       !------------------------------------------------------------------------------------!
-
-
-      !----- Allocate the auxiliary variables. --------------------------------------------!
-      allocate(ed_ktrans(nzg))
 
       polygonloop: do ipy = 1,cgrid%npolygons
          cpoly => cgrid%polygon(ipy)
@@ -140,7 +135,7 @@ module rk4_driver
                                       ,cmet%prss,cmet%rshort,cmet%rlong,cmet%geoht         &
                                       ,cpoly%lsl(isi),cpoly%ntext_soil(:,isi)              &
                                       ,cpoly%green_leaf_factor(:,isi)                      &
-                                      ,cgrid%lon(ipy),cgrid%lat(ipy))
+                                      ,cgrid%lon(ipy),cgrid%lat(ipy),cgrid%cosz(ipy))
 
                !----- Compute current storage terms. --------------------------------------!
                call update_budget(csite,cpoly%lsl(isi),ipa,ipa)
@@ -150,15 +145,10 @@ module rk4_driver
                !---------------------------------------------------------------------------!
                call copy_patch_init(csite,ipa,integration_buff%initp)
 
-               !---------------------------------------------------------------------------!
-               !     Calculate the canopy geometry, and the scalar transport coefficients. !
-               !---------------------------------------------------------------------------!
-               call canopy_turbulence8(csite,integration_buff%initp,ipa)
-
 
 
                !----- Get photosynthesis, stomatal conductance, and transpiration. --------!
-               call canopy_photosynthesis(csite,cmet,nzg,ipa,ed_ktrans,cpoly%lsl(isi)      &
+               call canopy_photosynthesis(csite,cmet,nzg,ipa,cpoly%lsl(isi)                &
                                          ,cpoly%ntext_soil(:,isi)                          &
                                          ,cpoly%leaf_aging_factor(:,isi)                   &
                                          ,cpoly%green_leaf_factor(:,isi))
@@ -203,9 +193,6 @@ module rk4_driver
          end do siteloop
 
       end do polygonloop
-
-      !----- De-allocate scratch variables. -----------------------------------------------!
-      deallocate (ed_ktrans)
 
       return
    end subroutine rk4_timestep
@@ -391,6 +378,8 @@ module rk4_driver
       csite%can_co2(ipa)          = sngloff(initp%can_co2         ,tiny_offset)
       csite%can_rhos(ipa)         = sngloff(initp%can_rhos        ,tiny_offset)
       csite%can_depth(ipa)        = sngloff(initp%can_depth       ,tiny_offset)
+      csite%veg_displace(ipa)     = sngloff(initp%veg_displace    ,tiny_offset)
+      csite%rough(ipa)            = sngloff(initp%rough           ,tiny_offset)
       csite%snowfac(ipa)          = sngloff(initp%snowfac         ,tiny_offset)
       csite%total_sfcw_depth(ipa) = sngloff(initp%total_sfcw_depth,tiny_offset)
 
@@ -417,32 +406,50 @@ module rk4_driver
       ! check this before copying.                                                         !
       !------------------------------------------------------------------------------------!
       if (fast_diagnostics) then
-
-         csite%avg_vapor_vc(ipa)         =sngloff(initp%avg_vapor_vc      ,tiny_offset)
-         csite%avg_dew_cg(ipa)           =sngloff(initp%avg_dew_cg        ,tiny_offset)
-         csite%avg_vapor_gc(ipa)         =sngloff(initp%avg_vapor_gc      ,tiny_offset)
-         csite%avg_wshed_vg(ipa)         =sngloff(initp%avg_wshed_vg      ,tiny_offset)
-         csite%avg_intercepted(ipa)      =sngloff(initp%avg_intercepted   ,tiny_offset)
-         csite%avg_throughfall(ipa)      =sngloff(initp%avg_throughfall   ,tiny_offset)
-         csite%avg_vapor_ac(ipa)         =sngloff(initp%avg_vapor_ac      ,tiny_offset)
-         csite%avg_transp(ipa)           =sngloff(initp%avg_transp        ,tiny_offset)
-         csite%avg_evap(ipa)             =sngloff(initp%avg_evap          ,tiny_offset)
-         csite%avg_drainage(ipa)         =sngloff(initp%avg_drainage      ,tiny_offset)
-         csite%avg_drainage_heat(ipa)    =sngloff(initp%avg_drainage_heat ,tiny_offset)
-         csite%avg_netrad(ipa)           =sngloff(initp%avg_netrad        ,tiny_offset)
-         csite%avg_sensible_vc(ipa)      =sngloff(initp%avg_sensible_vc   ,tiny_offset)
-         csite%avg_qwshed_vg(ipa)        =sngloff(initp%avg_qwshed_vg     ,tiny_offset)
-         csite%avg_qintercepted(ipa)     =sngloff(initp%avg_qintercepted  ,tiny_offset)
-         csite%avg_qthroughfall(ipa)     =sngloff(initp%avg_qthroughfall  ,tiny_offset)
-         csite%avg_sensible_gc(ipa)      =sngloff(initp%avg_sensible_gc   ,tiny_offset)
-         csite%avg_sensible_ac(ipa)      =sngloff(initp%avg_sensible_ac   ,tiny_offset)
-         csite%avg_carbon_ac(ipa)        =sngloff(initp%avg_carbon_ac     ,tiny_offset)
+         csite%avg_vapor_lc        (ipa) = sngloff(initp%avg_vapor_lc       ,tiny_offset)
+         csite%avg_vapor_wc        (ipa) = sngloff(initp%avg_vapor_wc       ,tiny_offset)
+         csite%avg_dew_cg          (ipa) = sngloff(initp%avg_dew_cg         ,tiny_offset)
+         csite%avg_vapor_gc        (ipa) = sngloff(initp%avg_vapor_gc       ,tiny_offset)
+         csite%avg_wshed_vg        (ipa) = sngloff(initp%avg_wshed_vg       ,tiny_offset)
+         csite%avg_intercepted     (ipa) = sngloff(initp%avg_intercepted    ,tiny_offset)
+         csite%avg_throughfall     (ipa) = sngloff(initp%avg_throughfall    ,tiny_offset)
+         csite%avg_vapor_ac        (ipa) = sngloff(initp%avg_vapor_ac       ,tiny_offset)
+         csite%avg_transp          (ipa) = sngloff(initp%avg_transp         ,tiny_offset)
+         csite%avg_evap            (ipa) = sngloff(initp%avg_evap           ,tiny_offset)
+         csite%avg_drainage        (ipa) = sngloff(initp%avg_drainage       ,tiny_offset)
+         csite%avg_drainage_heat   (ipa) = sngloff(initp%avg_drainage_heat  ,tiny_offset)
+         csite%avg_rshort_gnd      (ipa) = sngloff(initp%avg_rshort_gnd     ,tiny_offset)
+         csite%avg_rlong_gnd       (ipa) = sngloff(initp%avg_rlong_gnd      ,tiny_offset)
+         csite%avg_sensible_lc     (ipa) = sngloff(initp%avg_sensible_lc    ,tiny_offset)
+         csite%avg_sensible_wc     (ipa) = sngloff(initp%avg_sensible_wc    ,tiny_offset)
+         csite%avg_qwshed_vg       (ipa) = sngloff(initp%avg_qwshed_vg      ,tiny_offset)
+         csite%avg_qintercepted    (ipa) = sngloff(initp%avg_qintercepted   ,tiny_offset)
+         csite%avg_qthroughfall    (ipa) = sngloff(initp%avg_qthroughfall   ,tiny_offset)
+         csite%avg_sensible_gc     (ipa) = sngloff(initp%avg_sensible_gc    ,tiny_offset)
+         csite%avg_sensible_ac     (ipa) = sngloff(initp%avg_sensible_ac    ,tiny_offset)
+         csite%avg_carbon_ac       (ipa) = sngloff(initp%avg_carbon_ac      ,tiny_offset)
          do k = rk4site%lsl, nzg
-            csite%avg_sensible_gg(k,ipa) =sngloff(initp%avg_sensible_gg(k)   ,tiny_offset)
-            csite%avg_smoist_gg(k,ipa)   =sngloff(initp%avg_smoist_gg(k)     ,tiny_offset)
-            csite%avg_transloss(k,ipa)   =sngloff(initp%avg_transloss(k)     ,tiny_offset)
+            csite%avg_sensible_gg(k,ipa) = sngloff(initp%avg_sensible_gg(k) ,tiny_offset)
+            csite%avg_smoist_gg  (k,ipa) = sngloff(initp%avg_smoist_gg  (k) ,tiny_offset)
+            csite%avg_transloss  (k,ipa) = sngloff(initp%avg_transloss  (k) ,tiny_offset)
          end do
+         
+         !---------------------------------------------------------------------------------!
+         !     These variables are integrated here, since they don't change with time.     !
+         !---------------------------------------------------------------------------------!
+         csite%avg_rlongup        (ipa) = csite%avg_rlongup        (ipa)                   &
+                                        + csite%rlongup            (ipa) * dtlsm
+         csite%avg_albedo         (ipa) = csite%avg_albedo         (ipa)                   &
+                                        + csite%albedo             (ipa) * dtlsm
+         csite%avg_albedo_beam    (ipa) = csite%avg_albedo_beam    (ipa)                   &
+                                        + csite%albedo_beam        (ipa) * dtlsm
+         csite%avg_albedo_diffuse (ipa) = csite%avg_albedo_diffuse (ipa)                   &
+                                        + csite%albedo_diffuse     (ipa) * dtlsm
+         csite%avg_rlong_albedo   (ipa) = csite%avg_rlong_albedo   (ipa)                   &
+                                        + csite%rlong_albedo       (ipa) * dtlsm
+         !---------------------------------------------------------------------------------!
       end if
+      !------------------------------------------------------------------------------------!
 
       if(checkbudget) then
          co2budget_loss2atm    = sngloff(initp%co2budget_loss2atm   ,tiny_offset)
@@ -550,43 +557,27 @@ module rk4_driver
       ! ged as such matters.                                                               !
       !------------------------------------------------------------------------------------!
       do ico = 1,cpatch%ncohorts
-
-         if (initp%resolvable(ico)) then
-            select case (i_blyr_condct)
-            case (-1)
-               !---------------------------------------------------------------------------!
-               !    The cohort was solved, update internal energy and water, and re-       !
-               ! calculate temperature.  Note that energy may need to be scaled back.      !
-               !---------------------------------------------------------------------------!
-               cpatch%veg_water(ico)  = sngloff(initp%veg_water(ico),tiny_offset)
-               tmp_energy             = initp%veg_energy(ico)                              &
-                                      + (dble(cpatch%hcapveg(ico))-initp%hcapveg(ico))     &
-                                      * initp%veg_temp(ico)
-
-               cpatch%veg_energy(ico) = sngloff(tmp_energy,tiny_offset)
-               call qwtk(cpatch%veg_energy(ico),cpatch%veg_water(ico),cpatch%hcapveg(ico)  &
-                        ,cpatch%veg_temp(ico),cpatch%veg_fliq(ico))
-
-            case default
-               !---------------------------------------------------------------------------!
-               !    The cohort was solved, update water and internal energy, and re-       !
-               ! calculate the temperature and leaf intercellular specific humidity.  The  !
-               ! vegetation dry heat capacity is constant within one time step, so it does !
-               ! not need to be updated.                                                   !
-               !---------------------------------------------------------------------------!
-               cpatch%veg_water(ico)  = sngloff(initp%veg_water(ico) , tiny_offset)
-               cpatch%veg_energy(ico) = sngloff(initp%veg_energy(ico), tiny_offset)
-               call qwtk(cpatch%veg_energy(ico),cpatch%veg_water(ico),cpatch%hcapveg(ico)  &
-                        ,cpatch%veg_temp(ico),cpatch%veg_fliq(ico))
-
-            end select
+         !---------------------------------------------------------------------------------!
+         !  LEAVES                                                                         !
+         !---------------------------------------------------------------------------------!
+         if (initp%leaf_resolvable(ico)) then
+            !------------------------------------------------------------------------------!
+            !     Leaves were solved, update water and internal energy, and recalculate    !
+            ! the temperature and leaf intercellular specific humidity.  The vegetation    !
+            ! dry heat capacity is constant within one time step, so it doesn't need to be !
+            ! updated.                                                                     !
+            !------------------------------------------------------------------------------!
+            cpatch%leaf_water(ico)  = sngloff(initp%leaf_water(ico) , tiny_offset)
+            cpatch%leaf_energy(ico) = sngloff(initp%leaf_energy(ico), tiny_offset)
+            call qwtk(cpatch%leaf_energy(ico),cpatch%leaf_water(ico),cpatch%leaf_hcap(ico) &
+                     ,cpatch%leaf_temp(ico),cpatch%leaf_fliq(ico))
 
             !------------------------------------------------------------------------------!
             !     The intercellular specific humidity is always assumed to be at           !
             ! saturation for a given temperature.  Find the saturation mixing ratio, then  !
             ! convert it to specific humidity.                                             !
             !------------------------------------------------------------------------------!
-            cpatch%lint_shv(ico) = rslif(csite%can_prss(ipa),cpatch%veg_temp(ico))
+            cpatch%lint_shv(ico) = rslif(csite%can_prss(ipa),cpatch%leaf_temp(ico))
             cpatch%lint_shv(ico) = cpatch%lint_shv(ico) / (1. + cpatch%lint_shv(ico))
             !----- Convert the wind. ------------------------------------------------------!
             cpatch%veg_wind(ico) = sngloff(initp%veg_wind(ico),tiny_offset)
@@ -596,8 +587,8 @@ module rk4_driver
             !------------------------------------------------------------------------------!
             !     Copy the conductances.                                                   !
             !------------------------------------------------------------------------------!
-            cpatch%gbh       (ico) = sngloff(initp%gbh       (ico), tiny_offset)
-            cpatch%gbw       (ico) = sngloff(initp%gbw       (ico), tiny_offset)
+            cpatch%leaf_gbh       (ico) = sngloff(initp%leaf_gbh       (ico), tiny_offset)
+            cpatch%leaf_gbw       (ico) = sngloff(initp%leaf_gbw       (ico), tiny_offset)
             !------------------------------------------------------------------------------!
 
 
@@ -618,16 +609,16 @@ module rk4_driver
             do k = csite%nlev_sfcwater(ipa), 1, -1
                if (sum(csite%sfcwater_depth(1:k,ipa)) > cpatch%hite(ico)) kclosest = k
             end do
-            cpatch%veg_temp(ico)   = csite%sfcwater_tempk(kclosest,ipa)
-            cpatch%veg_fliq(ico)   = 0.
-            cpatch%veg_water(ico)  = 0.
-            cpatch%veg_energy(ico) = cpatch%hcapveg(ico) * cpatch%veg_temp(ico)
+            cpatch%leaf_temp(ico)   = csite%sfcwater_tempk(kclosest,ipa)
+            cpatch%leaf_fliq(ico)   = 0.
+            cpatch%leaf_water(ico)  = 0.
+            cpatch%leaf_energy(ico) = cpatch%leaf_hcap(ico) * cpatch%leaf_temp(ico)
             !------------------------------------------------------------------------------!
             !     The intercellular specific humidity is always assumed to be at           !
             ! saturation for a given temperature.  Find the saturation mixing ratio, then  !
             ! convert it to specific humidity.                                             !
             !------------------------------------------------------------------------------!
-            cpatch%lint_shv(ico) = rslif(csite%can_prss(ipa),cpatch%veg_temp(ico))
+            cpatch%lint_shv(ico) = rslif(csite%can_prss(ipa),cpatch%leaf_temp(ico))
             cpatch%lint_shv(ico) = cpatch%lint_shv(ico) / (1. + cpatch%lint_shv(ico))
             !----- Copy the meteorological wind to here. ----------------------------------!
             cpatch%veg_wind(ico) = sngloff(rk4site%vels, tiny_offset)
@@ -638,18 +629,18 @@ module rk4_driver
          else
             !------------------------------------------------------------------------------!
             !     For plants with minimal foliage or very sparse patches, fix the leaf     !
-            ! temperature to the canopy air space and force veg_water to be zero.          !
+            ! temperature to the canopy air space and force leaf_water to be zero.         !
             !------------------------------------------------------------------------------!
-            cpatch%veg_temp(ico)   = csite%can_temp(ipa)
-            cpatch%veg_fliq(ico)   = 0.
-            cpatch%veg_water(ico)  = 0. 
-            cpatch%veg_energy(ico) = cpatch%hcapveg(ico) * cpatch%veg_temp(ico)
+            cpatch%leaf_temp(ico)   = csite%can_temp(ipa)
+            cpatch%leaf_fliq(ico)   = 0.
+            cpatch%leaf_water(ico)  = 0. 
+            cpatch%leaf_energy(ico) = cpatch%leaf_hcap(ico) * cpatch%leaf_temp(ico)
             !------------------------------------------------------------------------------!
             !     The intercellular specific humidity is always assumed to be at           !
             ! saturation for a given temperature.  Find the saturation mixing ratio, then  !
             ! convert it to specific humidity.                                             !
             !------------------------------------------------------------------------------!
-            cpatch%lint_shv(ico) = rslif(csite%can_prss(ipa),cpatch%veg_temp(ico))
+            cpatch%lint_shv(ico) = rslif(csite%can_prss(ipa),cpatch%leaf_temp(ico))
             cpatch%lint_shv(ico) = cpatch%lint_shv(ico) / (1. + cpatch%lint_shv(ico))
             !----- Copy the meteorological wind to here. ----------------------------------!
             cpatch%veg_wind(ico) = sngloff(rk4site%vels, tiny_offset)
@@ -657,16 +648,81 @@ module rk4_driver
             cpatch%psi_open  (ico) = 0.0
             cpatch%psi_closed(ico) = 0.0
          end if
+         !---------------------------------------------------------------------------------!
+
+
+
+
+
+         !---------------------------------------------------------------------------------!
+         !  WOOD                                                                           !
+         !---------------------------------------------------------------------------------!
+         if (initp%wood_resolvable(ico)) then
+            !------------------------------------------------------------------------------!
+            !     Wood was solved, update water and internal energy, and recalculate       !
+            ! the temperature.  The wood dry heat capacity is constant within one time     !
+            ! step, so it doesn't need to be updated.                                      !
+            !------------------------------------------------------------------------------!
+            cpatch%wood_water(ico)  = sngloff(initp%wood_water(ico) , tiny_offset)
+            cpatch%wood_energy(ico) = sngloff(initp%wood_energy(ico), tiny_offset)
+            call qwtk(cpatch%wood_energy(ico),cpatch%wood_water(ico),cpatch%wood_hcap(ico) &
+                     ,cpatch%wood_temp(ico),cpatch%wood_fliq(ico))
+
+            !----- Convert the wind. ------------------------------------------------------!
+            cpatch%veg_wind(ico) = sngloff(initp%veg_wind(ico),tiny_offset)
+            !------------------------------------------------------------------------------!
+
+
+            !------------------------------------------------------------------------------!
+            !     Copy the conductances.                                                   !
+            !------------------------------------------------------------------------------!
+            cpatch%wood_gbh       (ico) = sngloff(initp%wood_gbh       (ico), tiny_offset)
+            cpatch%wood_gbw       (ico) = sngloff(initp%wood_gbw       (ico), tiny_offset)
+            !------------------------------------------------------------------------------!
+
+         elseif (cpatch%hite(ico) <=  csite%total_sfcw_depth(ipa)) then
+            !------------------------------------------------------------------------------!
+            !    For plants buried in snow, fix the wood temperature to the snow temper-   !
+            ! ature of the layer that is the closest to the branches.                      !
+            !------------------------------------------------------------------------------!
+            kclosest = 1
+            do k = csite%nlev_sfcwater(ipa), 1, -1
+               if (sum(csite%sfcwater_depth(1:k,ipa)) > cpatch%hite(ico)) kclosest = k
+            end do
+            cpatch%wood_temp(ico)   = csite%sfcwater_tempk(kclosest,ipa)
+            cpatch%wood_fliq(ico)   = 0.
+            cpatch%wood_water(ico)  = 0.
+            cpatch%wood_energy(ico) = cpatch%wood_hcap(ico) * cpatch%wood_temp(ico)
+
+            !----- Copy the meteorological wind to here. ----------------------------------!
+            cpatch%veg_wind(ico) = sngloff(rk4site%vels, tiny_offset)
+
+         else
+            !------------------------------------------------------------------------------!
+            !     For very sparse patches of for when wood thermodynamics is off, fix the  !
+            ! wood temperature to the canopy air space and force wood_water to be zero.    !
+            !------------------------------------------------------------------------------!
+            cpatch%wood_temp(ico)   = csite%can_temp(ipa)
+            cpatch%wood_fliq(ico)   = 0.
+            cpatch%wood_water(ico)  = 0. 
+            cpatch%wood_energy(ico) = cpatch%wood_hcap(ico) * cpatch%wood_temp(ico)
+
+
+            !----- Copy the meteorological wind to here. ----------------------------------!
+            if (.not. cpatch%leaf_resolvable(ico)) then
+               cpatch%veg_wind(ico) = sngloff(rk4site%vels, tiny_offset)
+            end if
+         end if
 
          !---------------------------------------------------------------------------------!
          !     Final sanity check.  This should be removed soon, since it should never     !
          ! happen (well, if this still happens, then it's a bug, and we should remove the  !
          ! bug first...).                                                                  !
          !---------------------------------------------------------------------------------!
-         if (cpatch%veg_temp(ico) < sngl(rk4min_veg_temp) .or.                             &
-             cpatch%veg_temp(ico) > sngl(rk4max_veg_temp)   ) then
+         if (cpatch%leaf_temp(ico) < sngl(rk4min_veg_temp) .or.                             &
+             cpatch%leaf_temp(ico) > sngl(rk4max_veg_temp)   ) then
             write (unit=*,fmt='(80a)')         ('=',k=1,80)
-            write (unit=*,fmt='(a)')           'FINAL VEG_TEMP IS WRONG IN INITP2MODELP'
+            write (unit=*,fmt='(a)')           'FINAL LEAF_TEMP IS WRONG IN INITP2MODELP'
             write (unit=*,fmt='(80a)')         ('-',k=1,80)
             write (unit=*,fmt='(a,1x,f9.4)')   ' + LONGITUDE:    ',rk4site%lon
             write (unit=*,fmt='(a,1x,f9.4)')   ' + LATITUDE:     ',rk4site%lat
@@ -676,17 +732,46 @@ module rk4_driver
             write (unit=*,fmt='(a,1x,es12.4)') '   - AGE:        ',csite%age(ipa)
             write (unit=*,fmt='(a,1x,i6)')     '   - DIST_TYPE:  ',csite%dist_type(ipa)
             write (unit=*,fmt='(a)')           ' + BUFFER_COHORT (initp):'
-            write (unit=*,fmt='(a,1x,es12.4)') '   - ENERGY:     ',initp%veg_energy(ico)
-            write (unit=*,fmt='(a,1x,es12.4)') '   - WATER:      ',initp%veg_water(ico)
-            write (unit=*,fmt='(a,1x,es12.4)') '   - TEMPERATURE:',initp%veg_temp(ico)
-            write (unit=*,fmt='(a,1x,es12.4)') '   - FRACLIQ:    ',initp%veg_fliq(ico)
-            write (unit=*,fmt='(a,1x,es12.4)') '   - HEAT_CAP:   ',initp%hcapveg(ico)
+            write (unit=*,fmt='(a,1x,es12.4)') '   - ENERGY:     ',initp%leaf_energy(ico)
+            write (unit=*,fmt='(a,1x,es12.4)') '   - WATER:      ',initp%leaf_water(ico)
+            write (unit=*,fmt='(a,1x,es12.4)') '   - TEMPERATURE:',initp%leaf_temp(ico)
+            write (unit=*,fmt='(a,1x,es12.4)') '   - FRACLIQ:    ',initp%leaf_fliq(ico)
+            write (unit=*,fmt='(a,1x,es12.4)') '   - HEAT_CAP:   ',initp%leaf_hcap(ico)
             write (unit=*,fmt='(a)')           ' + STATE_COHORT (cpatch):'
-            write (unit=*,fmt='(a,1x,es12.4)') '   - ENERGY:     ',cpatch%veg_energy(ico)
-            write (unit=*,fmt='(a,1x,es12.4)') '   - WATER:      ',cpatch%veg_water(ico)
-            write (unit=*,fmt='(a,1x,es12.4)') '   - TEMPERATURE:',cpatch%veg_temp(ico)
-            write (unit=*,fmt='(a,1x,es12.4)') '   - FRACLIQ:    ',cpatch%veg_fliq(ico)
-            write (unit=*,fmt='(a,1x,es12.4)') '   - HEAT_CAP:   ',cpatch%hcapveg(ico)
+            write (unit=*,fmt='(a,1x,es12.4)') '   - ENERGY:     ',cpatch%leaf_energy(ico)
+            write (unit=*,fmt='(a,1x,es12.4)') '   - WATER:      ',cpatch%leaf_water(ico)
+            write (unit=*,fmt='(a,1x,es12.4)') '   - TEMPERATURE:',cpatch%leaf_temp(ico)
+            write (unit=*,fmt='(a,1x,es12.4)') '   - FRACLIQ:    ',cpatch%leaf_fliq(ico)
+            write (unit=*,fmt='(a,1x,es12.4)') '   - HEAT_CAP:   ',cpatch%leaf_hcap(ico)
+            write (unit=*,fmt='(80a)') ('-',k=1,80)
+            call print_rk4patch(initp, csite,ipa)
+            call fatal_error('extreme vegetation temperature','initp2modelp'               &
+                            &,'rk4_driver.f90')
+         end if
+         if (cpatch%wood_temp(ico) < sngl(rk4min_veg_temp) .or.                             &
+             cpatch%wood_temp(ico) > sngl(rk4max_veg_temp)   ) then
+            write (unit=*,fmt='(80a)')         ('=',k=1,80)
+            write (unit=*,fmt='(a)')           'FINAL WOOD_TEMP IS WRONG IN INITP2MODELP'
+            write (unit=*,fmt='(80a)')         ('-',k=1,80)
+            write (unit=*,fmt='(a,1x,f9.4)')   ' + LONGITUDE:    ',rk4site%lon
+            write (unit=*,fmt='(a,1x,f9.4)')   ' + LATITUDE:     ',rk4site%lat
+            write (unit=*,fmt='(a,1x,i6)')     ' + PATCH:        ',ipa
+            write (unit=*,fmt='(a,1x,i6)')     ' + COHORT:       ',ico
+            write (unit=*,fmt='(a)')           ' + PATCH AGE:    ',csite%age(ipa)
+            write (unit=*,fmt='(a,1x,es12.4)') '   - AGE:        ',csite%age(ipa)
+            write (unit=*,fmt='(a,1x,i6)')     '   - DIST_TYPE:  ',csite%dist_type(ipa)
+            write (unit=*,fmt='(a)')           ' + BUFFER_COHORT (initp):'
+            write (unit=*,fmt='(a,1x,es12.4)') '   - ENERGY:     ',initp%wood_energy(ico)
+            write (unit=*,fmt='(a,1x,es12.4)') '   - WATER:      ',initp%wood_water(ico)
+            write (unit=*,fmt='(a,1x,es12.4)') '   - TEMPERATURE:',initp%wood_temp(ico)
+            write (unit=*,fmt='(a,1x,es12.4)') '   - FRACLIQ:    ',initp%wood_fliq(ico)
+            write (unit=*,fmt='(a,1x,es12.4)') '   - HEAT_CAP:   ',initp%wood_hcap(ico)
+            write (unit=*,fmt='(a)')           ' + STATE_COHORT (cpatch):'
+            write (unit=*,fmt='(a,1x,es12.4)') '   - ENERGY:     ',cpatch%wood_energy(ico)
+            write (unit=*,fmt='(a,1x,es12.4)') '   - WATER:      ',cpatch%wood_water(ico)
+            write (unit=*,fmt='(a,1x,es12.4)') '   - TEMPERATURE:',cpatch%wood_temp(ico)
+            write (unit=*,fmt='(a,1x,es12.4)') '   - FRACLIQ:    ',cpatch%wood_fliq(ico)
+            write (unit=*,fmt='(a,1x,es12.4)') '   - HEAT_CAP:   ',cpatch%wood_hcap(ico)
             write (unit=*,fmt='(80a)') ('-',k=1,80)
             call print_rk4patch(initp, csite,ipa)
             call fatal_error('extreme vegetation temperature','initp2modelp'               &

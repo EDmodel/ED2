@@ -425,6 +425,7 @@ end subroutine sst_read_new
 
 subroutine sst_file_inv (sstfilin,ierr)
 
+use grid_dims, only : maxfiles, str_len
 use mem_grid
 use io_params
 
@@ -436,8 +437,8 @@ integer :: ierr
 integer :: nc,nf,lnf,nftot,ng
 integer :: inyear,inmonth,indate,inhour
 
-integer, parameter :: maxfiles=1000
-character(len=128), dimension(maxfiles) :: fnames
+character(len=str_len), dimension(maxfiles) :: fnames
+character(len=str_len)                      :: thisfile
 character(len=14)  :: itotdate
 character(len=1)  :: cgrid
 real(kind=8) :: secs_init,secs_file
@@ -459,7 +460,8 @@ do ng = 1, ngrids
 
    nftot = -1
    write(cgrid,'(i1)') ng
-   call RAMS_filelist(fnames,trim(sstfilin)//'-W-*-g'//cgrid//'.vfm',nftot)
+   thisfile = trim(sstfilin)//'-W-*-g'//cgrid//'.vfm'
+   call RAMS_filelist(fnames,thisfile,nftot)
 
    if(nftot <= 0) then
       print*,'No sst files for grid '//cgrid
@@ -553,7 +555,7 @@ integer,save :: iun=25
 
 integer :: ng,nc
 character(len=1) :: cgrid
-character(len=128) :: flnm
+character(len=str_len) :: flnm
 character(len=1) :: dummy
 
 

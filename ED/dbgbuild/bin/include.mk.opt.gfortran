@@ -1,0 +1,208 @@
+#Makefile include include.mk.opt
+############################## Change Log ##################################
+# 1.0.0.2
+#
+# 000908 MJB include.mk-mrc ##
+#            Added MAKE environment varaible.
+#            Added free format option to F_OPTS for some platforms. ##
+# 000907 MJB include.mk-mrc ##
+#            Changed the defualts to no NCAR Graphics and no parallel.
+#            Also commented out the machine specifics to force the user to
+#            select the appropriate machine for them. ##
+# 000823 MJB include.mk-mrc ##
+#            New - defines all make environment varaibles and is included
+#            in all make files. ##
+#
+############################################################################
+
+# Define make (gnu make works best).
+
+MAKE=/usr/bin/make
+
+# libraries.
+
+BASE=$(ED_ROOT)/build/
+
+# Activate appropriate parts below, comment out others.
+
+#---------------------------------------------------------------
+# If you are using a real distribution of NCAR Graphics...
+#NCARG_DIR=/usr/local/ncarg-4.3.0/lib
+#LIBNCARG=-L$(NCARG_DIR) -lncarg -lncarg_gks -lncarg_c -L/usr/X11R6/lib -lX11 -ldl
+#---------------------------------------------------------------
+
+# HDF libraries  -----------------------------------------------
+# HDF4 library: Instructions to install: www.cptec.inpe.br/brams
+# If you run "configure" script, you don't need to edit line bellow
+#HDF_LIBS=-L.hdf4_libs -lmfhdf -ldf -lz -ljpeg -lsz
+# --------------------------------------------------------------
+
+# HDF 5  Libraries
+# ED2 HAS OPTIONAL HDF 5 I/O
+# If you wish to use this functionality specify USE_HDF5=1
+# and specify the location of the include directory
+# library files. Make sure you include the zlib.a location too.
+
+USE_HDF5=1
+#HDF5_INCS=-I/n/Moorcroft_Lab/Lab/apps/i91/lib -I/n/Moorcroft_Lab/Lab/apps/i91/include
+#HDF5_LIBS=-L/n/Moorcroft_Lab/Lab/apps/i91/lib -lhdf5 -lm -lhdf5_fortran -lhdf5 -lhdf5_hl \
+#          -L/n/Moorcroft_Lab/Lab/mlongo/util/hdflib/hdf4_64/zlib/lib -lz
+
+#HDF5_INCS=-p /sw/hdf5-1.8.0-pabs/include
+#HDF5C_INCS=-I/sw/hdf5-1.8.0-pabs/include
+#HDF5_LIBS=-lz /sw/hdf5-1.8.0-pabs/lib/libhdf5_fortran.a \
+#	/sw/hdf5-1.8.0-pabs/lib/libhdf5.a \
+#	/sw/hdf5-1.8.0-pabs/lib/libhdf5_hl.a
+
+#HDF5_INCS=-I/sw/hdf5-1.6.6-gfortran/lib
+#HDF5C_INCS=-I/sw/hdf5-1.6.6-gfortran/include
+#HDF5_LIBS=-lz /sw/hdf5-1.6.6-gfortran/lib/libhdf5_fortran.a \
+#	/sw/hdf5-1.6.6-gfortran/lib/libhdf5.a \
+#	/sw/hdf5-1.6.6-gfortran/lib/libhdf5_hl.a
+
+HDF5_INCS=-I/usr/local/hdf5-1.8.2/include
+HDF5C_INCS=-I/usr/local/hdf5-1.8.2/include
+HDF5_LIBS=-lz /usr/local/hdf5-1.8.2/lib/libhdf5_fortran.a \
+        /usr/local/hdf5-1.8.2/lib/libhdf5.a \
+        /usr/local/hdf5-1.8.2/lib/libhdf5_hl.a
+
+
+# tormenta.mit.edu
+
+HDF5_INCS=-I/opt/hdf5/1.8.1/ompi-tcp-gnu41/include
+HDF5C_INCS=-I/opt/hdf5/1.8.1/ompi-tcp-gnu41/include
+HDF5_LIBS=-lz -L/opt/hdf5/1.8.1/ompi-tcp-gnu41/lib \
+	-lhdf5_fortran -lhdf5 -lhdf5_hl
+#---------------------------------------------------------------
+# If you have a version of hdf5 compiled in parallel, then you
+# may benefit from collective I/O, then use this flag = 1
+# Otherwise, set it to zero.
+
+USE_COLLECTIVE_MPIO=0
+ 
+#---------------------------------------------------------------
+
+# netCDF libraries ---------------------------------------------
+# If you have netCDF set USENC=1 and type the lib folder
+# at NC_LIBS, with the leading -L (e.g. -L/usr/local/lib).
+# If you don't have it, leave USENC=0 and type a dummy
+# folder for NC_LIBS (e.g. -L/dev/null or leave it blank)
+USENC=0
+NC_LIBS=-L/dev/null
+# --------------------------------------------------------------
+
+# interface ----------------------------------------------------
+# This should be 1 unless you are running with -gen-interfaces.
+# Interfaces usually make the compilation to crash when the 
+# -gen-interfaces option are on, so this flag bypass all 
+# interfaces in the code.
+USE_INTERF=1
+
+# MPI_Wtime. ---------------------------------------------------
+# If USE_MPIWTIME=1, then it will use MPI libraries to compute
+# the wall time (the only double-precision intrinsic).  In case
+# you don't have it, leave USE_MPIWTIME=0, in which case it will
+# use a simpler, single-precision function.
+USE_MPIWTIME=1
+
+
+# GFORTRAN DEVELOPERS: REMOVE ffree-line-length-0
+# CODE IS INTENDED TO BE LINE WIDTH COMPLIANT WITHIN 132 
+
+
+#----------------- gfortran on Linux (optimized build)-----------
+CMACH=PC_LINUX1
+F_COMP=mpif90
+F_OPTS=-O3 -ffree-line-length-none
+C_COMP=mpicc
+C_OPTS=-O3
+LOADER=mpif90
+LOADER_OPTS=${F_OPTS}
+C_LOADER=mpicc
+LIBS=
+MOD_EXT=mod
+
+
+#----------------- gfortran on Linux (debugging build)-----------
+#CMACH=PC_LINUX1
+#F_COMP=mpif90
+#F_OPTS=-g -ffpe-trap=invalid,zero,overflow -fbounds-check -ffree-line-length-0
+#C_COMP=mpicc
+#C_OPTS=-g -ffpe-trap=invalid,zero,overflow -fbounds-check -ffree-line-length-0
+#LOADER=mpif90
+#LOADER_OPTS=${F_OPTS}
+#C_LOADER=mpicc
+#LIBS=
+#MOD_EXT=mod
+
+
+# Ancillary Compiler options
+#USE_INTERF=1
+#F_OPTS= -ffree-form -O3 -fconvert=little-endian -frecord-marker=4
+#C_OPTS= -O3 -DLITTLE 
+#LOADER_OPTS= -ffree-form -O3 -fconvert=little-endian -frecord-marker=4
+#C_LOADER_OPTS=-v 
+
+
+# If compiling for a single-CPU platform only (without MPI):
+
+#-----------------------------------------------------------------
+#PAR_LIBS=
+#PAR_DEFS=
+#-----------------------------------------------------------------
+
+# Else if using MPI libraries:
+
+#---------------SGI-----------------------------------------------
+#with mpich parallel stuff
+#MPI_PATH=/n/Moorcroft_Lab/Users/mlongo/util/mpich
+#PAR_INCS=-I$(MPI_PATH)/include
+#PAR_LIBS=-L$(MPI_PATH)/lib/IRIXN32/ch_shmem -lmpi
+#  or with SGI Parallel stuff
+#PAR_LIBS=-L/usr/lib32 -lmpi
+#  need this for both
+#PAR_DEFS=-DRAMS_MPI
+#-----------------------------------------------------------------
+
+#---------------IBM-----------------------------------------------
+#MPI_PATH=/usr/local/mpich
+#PAR_INCS=-I$(MPI_PATH)/include
+#PAR_LIBS=-L$(MPI_PATH)/lib/rs6000/ch_p4 -lmpi 
+#PAR_DEFS=-DRAMS_MPI
+#-----------------------------------------------------------------
+
+#---------------Sun-----------------------------------------------
+#MPI_PATH=/usr/local/mpich
+#PAR_INCS=-I$(MPI_PATH)/include
+#PAR_LIBS=-L$(MPI_PATH)/lib/solaris/ch_p4 -lmpi 
+#PAR_DEFS=-DRAMS_MPI
+#-----------------------------------------------------------------
+
+#---------------HP-Exemplar---------------------------------------
+#MPI_PATH=/opt/mpi
+#PAR_INCS=-I$(MPI_PATH)/include
+#PAR_LIBS=$(MPI_PATH)/lib/pa1.1/libmpi.a
+#PAR_DEFS=-DRAMS_MPI
+#-----------------------------------------------------------------
+
+#---------------LINUX Portland Group pgf77/gcc--------------------
+#MPI_PATH=/n/Moorcroft_Lab/Users/mlongo/util/mpich-1.2.7p1/intel_9.1.036_64
+#PAR_INCS=-I$(MPI_PATH)/include
+#PAR_LIBS=-L$(MPI_PATH)/lib -lmpich -lpmpich
+#PAR_DEFS=-DRAMS_MPI
+#-----------------------------------------------------------------
+
+#---------------If using scritps 'mpicc' e 'mpif90'---------------'
+MPI_PATH=
+PAR_INCS=
+PAR_LIBS=
+PAR_DEFS=-DRAMS_MPI
+#-----------------------------------------------------------------
+
+# For IBM,HP,SGI,ALPHA,LINUX use these:
+ARCHIVE=ar rs
+# For NEC SX-6
+#ARCHIVE=sxar rs
+# For SUN,CONVEX
+#ARCHIVE=ar r'
+

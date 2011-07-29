@@ -39,7 +39,6 @@ subroutine heun_timestep(cgrid)
    integer                                :: ipa
    integer                                :: ico
    integer                                :: nsteps
-   integer, dimension(:)    , allocatable :: ed_ktrans
    real                                   :: thetaatm
    real                                   :: thetacan
    real                                   :: rasveg
@@ -62,9 +61,6 @@ subroutine heun_timestep(cgrid)
    !----- External functions. -------------------------------------------------------------!
    real, external                         :: compute_netrad
    !---------------------------------------------------------------------------------------!
-
-   !----- Allocate the auxiliary variables. -----------------------------------------------!
-   allocate(ed_ktrans(nzg))
 
 
    polyloop: do ipy = 1,cgrid%npolygons
@@ -128,7 +124,7 @@ subroutine heun_timestep(cgrid)
                                    ,cmet%rshort,cmet%rlong,cmet%geoht,cpoly%lsl(isi)       &
                                    ,cpoly%ntext_soil(:,isi)                                &
                                    ,cpoly%green_leaf_factor(:,isi)                         &
-                                   ,cgrid%lon(ipy),cgrid%lat(ipy))
+                                   ,cgrid%lon(ipy),cgrid%lat(ipy),cgrid%cosz(ipy))
 
             !----- Compute current storage terms. -----------------------------------------!
             call update_budget(csite,cpoly%lsl(isi),ipa,ipa)
@@ -139,15 +135,8 @@ subroutine heun_timestep(cgrid)
             !------------------------------------------------------------------------------!
             call copy_patch_init(csite,ipa,integration_buff%initp)
 
-            !------------------------------------------------------------------------------!
-            !     Here we compute canopy turbulence-related variables, such as the rough-  !
-            ! ness scale, the characteristic scales (stars) and canopy resistance and      !
-            ! capacities.                                                                  !
-            !------------------------------------------------------------------------------!
-            call canopy_turbulence8(csite,integration_buff%initp,ipa)
-
             !----- Get photosynthesis, stomatal conductance, and transpiration. -----------!
-            call canopy_photosynthesis(csite,cmet,nzg,ipa,ed_ktrans,cpoly%lsl(isi)         &
+            call canopy_photosynthesis(csite,cmet,nzg,ipa,cpoly%lsl(isi)                   &
                                       ,cpoly%ntext_soil(:,isi)                             &
                                       ,cpoly%leaf_aging_factor(:,isi)                      &
                                       ,cpoly%green_leaf_factor(:,isi))
@@ -192,9 +181,6 @@ subroutine heun_timestep(cgrid)
          end do patchloop
       end do siteloop
    end do polyloop
-
-   !----- De-allocate the auxiliary variables. --------------------------------------------!
-   deallocate(ed_ktrans)
 
    return
 end subroutine heun_timestep

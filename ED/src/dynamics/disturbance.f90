@@ -40,11 +40,11 @@ module disturbance_utils
                               , sitetype                & ! structure
                               , patchtype               ! ! structure
       use ed_misc_coms , only : current_time            ! ! intent(in)
-      use disturb_coms , only : treefall_age_threshold  & ! intent(in)
-                              , min_new_patch_area      & ! intent(in)
+      use disturb_coms , only : min_new_patch_area      & ! intent(in)
                               , mature_harvest_age      & ! intent(in)
                               , plantation_rotation     & ! intent(in)
-                              , ianth_disturb
+                              , ianth_disturb           & ! intent(in)
+                              , time2canopy             ! ! intent(in)
       use ed_max_dims  , only : n_dist_types            & ! intent(in)
                               , n_pft                   & ! intent(in)
                               , n_dbh                   ! ! intent(in)
@@ -184,7 +184,7 @@ module disturbance_utils
                   abandoned = new_lu == 2 .and. old_lu == 1
                   !----- Natural disturbance, either trees are old or there is a fire. ----!
                   natural   = new_lu == 3 .and. old_lu /= 1 .and.                          &
-                              ( csite%age(ipa) > treefall_age_threshold .or.               &
+                              ( csite%age(ipa) > time2canopy .or.                          &
                                 cpoly%nat_dist_type(isi) == 1)
                   !----- Check whether the patch is ready  be harvested. ------------------!
                   mature_primary    = old_lu == 3                                  .and.   &
@@ -197,15 +197,23 @@ module disturbance_utils
                   logged    = new_lu == 2 .and.                                            &
                               ( mature_primary .or. mature_plantation .or.                 &
                                 mature_secondary)
- 
-                  if (ploughed .or. abandoned .or. natural .or. logged) then
 
-                     dA   = csite%area(ipa)                                                &
-                          * (1. - exp(- ( cpoly%disturbance_rates(new_lu,old_lu,isi)       &
-                                        + cpoly%disturbance_memory(new_lu,old_lu,isi) ) ) )
+                  !------------------------------------------------------------------------!
+                  !    Add area if any of the disturbances that produce of type new_lu has !
+                  ! happened.  The ones that produce type other than new_lu will be always !
+                  ! false for new_lu.                                                      !
+                  !------------------------------------------------------------------------!
+                  if  (ploughed .or. abandoned .or. natural .or. logged) then
+                     dA = csite%area(ipa)                                                  &
+                        * (1. - exp(- ( cpoly%disturbance_rates(new_lu,old_lu,isi)         &
+                                      + cpoly%disturbance_memory(new_lu,old_lu,isi) ) ) )
                      area = area + dA
                   end if
+                  !------------------------------------------------------------------------!
+
+
                end do
+               
                if (area > min_new_patch_area) then
                   write(unit=*,fmt='(a,1x,es12.5,1x,a,1x,i5)')                             &
                       ' ---> Making new patch, with area=',area,' for dist_type=',new_lu
@@ -234,7 +242,7 @@ module disturbance_utils
                      ploughed  = new_lu == 1 .and. old_lu /= 1
                      abandoned = new_lu == 2 .and. old_lu == 1
                      natural   = new_lu == 3 .and. old_lu /= 1 .and.                       &
-                                 ( csite%age(ipa) > treefall_age_threshold .or.            &
+                                 ( csite%age(ipa) > time2canopy .or.                       &
                                    cpoly%nat_dist_type(isi) == 1)
                      !----- Check whether the patch is ready  be harvested. ---------------!
                      mature_primary    = old_lu == 3                                 .and. &
@@ -274,11 +282,12 @@ module disturbance_utils
                      ! the litter layer.                                                   !
                      !---------------------------------------------------------------------!
                      if (ploughed .or. abandoned .or. natural .or. logged) then
-                        dA = csite%area(ipa) * (1.0 - exp(                                 &
-                           - (cpoly%disturbance_rates(new_lu,old_lu,isi)                   &
-                           + cpoly%disturbance_memory(new_lu,old_lu,isi))))
-                        area_fac = dA / csite%area(onsp+new_lu)
+                        dA  = csite%area(ipa)                                              &
+                            * (1. - exp(- ( cpoly%disturbance_rates(new_lu,old_lu,isi)     &
+                                       + cpoly%disturbance_memory(new_lu,old_lu,isi) ) ) ) 
 
+                        area_fac = dA / csite%area(onsp+new_lu)
+                      
                         call increment_patch_vars(csite,new_lu+onsp,ipa,area_fac)
                         call insert_survivors(csite,new_lu+onsp,ipa,new_lu,area_fac        &
                                              ,poly_dest_type,mindbh_harvest)
@@ -324,8 +333,8 @@ module disturbance_utils
                                                       cpoly%basal_area(1:n_pft,1:n_dbh,isi)
 
                   !------------------------------------------------------------------------!
-                  !     Update the derived properties including veg_height, patch hcapveg, !
-                  ! patch-level LAI, WAI, WPA.                                             !
+                  !     Update the derived properties including veg_height, and patch-     !
+                  ! -level LAI, WAI, WPA.                                                  !
                   !------------------------------------------------------------------------!
                   call update_patch_derived_props(csite,cpoly%lsl(isi),cpoly%met(isi)%prss &
                                                  ,new_lu+onsp)
@@ -707,7 +716,6 @@ module disturbance_utils
       csite%sfcwater_mass        (1:nzs,np) = 0.0
       csite%sfcwater_energy      (1:nzs,np) = 0.0
       csite%sfcwater_depth       (1:nzs,np) = 0.0
-      csite%hcapveg                    (np) = 0.0
       csite%rough                      (np) = 0.0
       csite%fsc_in                     (np) = 0.0
       csite%ssc_in                     (np) = 0.0
@@ -982,28 +990,31 @@ module disturbance_utils
             tpatch%leaf_respiration   (nco) = tpatch%leaf_respiration (nco) * survival_fac
             tpatch%root_respiration   (nco) = tpatch%root_respiration (nco) * survival_fac
             tpatch%monthly_dndt       (nco) = tpatch%monthly_dndt     (nco) * survival_fac
-            tpatch%veg_water          (nco) = tpatch%veg_water        (nco) * survival_fac
-            tpatch%hcapveg            (nco) = tpatch%hcapveg          (nco) * survival_fac
-            tpatch%veg_energy         (nco) = tpatch%veg_energy       (nco) * survival_fac
+            tpatch%leaf_water         (nco) = tpatch%leaf_water       (nco) * survival_fac
+            tpatch%leaf_hcap          (nco) = tpatch%leaf_hcap        (nco) * survival_fac
+            tpatch%leaf_energy        (nco) = tpatch%leaf_energy      (nco) * survival_fac
+            tpatch%wood_water         (nco) = tpatch%wood_water       (nco) * survival_fac
+            tpatch%wood_hcap          (nco) = tpatch%wood_hcap        (nco) * survival_fac
+            tpatch%wood_energy        (nco) = tpatch%wood_energy      (nco) * survival_fac
             !----- Crown area shall not exceed 1. -----------------------------------------!
             tpatch%crown_area         (nco) = min(1.,tpatch%crown_area(nco) * survival_fac)
             !----- Carbon flux monthly means are extensive, we must convert them. ---------!
             if (idoutput > 0 .or. imoutput > 0 .or. iqoutput > 0) then
-               tpatch%dmean_par_v     (nco) = tpatch%dmean_par_v      (nco) * survival_fac
-               tpatch%dmean_par_v_beam(nco) = tpatch%dmean_par_v_beam (nco) * survival_fac
-               tpatch%dmean_par_v_diff(nco) = tpatch%dmean_par_v_diff (nco) * survival_fac
+               tpatch%dmean_par_l     (nco) = tpatch%dmean_par_l      (nco) * survival_fac
+               tpatch%dmean_par_l_beam(nco) = tpatch%dmean_par_l_beam (nco) * survival_fac
+               tpatch%dmean_par_l_diff(nco) = tpatch%dmean_par_l_diff (nco) * survival_fac
             end if
             if (imoutput > 0 .or. iqoutput > 0) then
-               tpatch%mmean_par_v     (nco) = tpatch%mmean_par_v      (nco) * survival_fac
-               tpatch%mmean_par_v_beam(nco) = tpatch%mmean_par_v_beam (nco) * survival_fac
-               tpatch%mmean_par_v_diff(nco) = tpatch%mmean_par_v_diff (nco) * survival_fac
+               tpatch%mmean_par_l     (nco) = tpatch%mmean_par_l      (nco) * survival_fac
+               tpatch%mmean_par_l_beam(nco) = tpatch%mmean_par_l_beam (nco) * survival_fac
+               tpatch%mmean_par_l_diff(nco) = tpatch%mmean_par_l_diff (nco) * survival_fac
             end if
             if (iqoutput > 0) then
-               tpatch%qmean_par_v     (:,nco) = tpatch%qmean_par_v      (:,nco)            &
+               tpatch%qmean_par_l     (:,nco) = tpatch%qmean_par_l      (:,nco)            &
                                               * survival_fac
-               tpatch%qmean_par_v_beam(:,nco) = tpatch%qmean_par_v_beam (:,nco)            &
+               tpatch%qmean_par_l_beam(:,nco) = tpatch%qmean_par_l_beam (:,nco)            &
                                               * survival_fac
-               tpatch%qmean_par_v_diff(:,nco) = tpatch%qmean_par_v_diff (:,nco)            &
+               tpatch%qmean_par_l_diff(:,nco) = tpatch%qmean_par_l_diff (:,nco)            &
                                               * survival_fac
             end if
          end if
@@ -1217,13 +1228,11 @@ module disturbance_utils
                                 , is_grass                 ! ! intent(in)
       use ed_misc_coms   , only : dtlsm                    ! ! intent(in)
       use fuse_fiss_utils, only : sort_cohorts             ! ! sub-routine
-      use ed_therm_lib   , only : calc_hcapveg             ! ! function
+      use ed_therm_lib   , only : calc_veg_hcap            ! ! function
       use consts_coms    , only : t3ple                    & ! intent(in)
                                 , pio4                     ! ! intent(in)
       use allometry      , only : h2dbh                    & ! function
                                 , dbh2bd                   & ! function
-                                , dbh2bl                   & ! function
-                                , dbh2h                    & ! function
                                 , area_indices             & ! function
                                 , ed_biomass               ! ! function
       use ed_max_dims    , only : n_pft                    ! ! intent(in)
@@ -1248,8 +1257,6 @@ module disturbance_utils
       real                                         :: salloci
       real                                         :: bleaf_max
       real                                         :: balive_max
-      !----- External functions. ----------------------------------------------------------!
-      logical                         , external   :: is_resolvable
       !------------------------------------------------------------------------------------!
 
 
@@ -1297,13 +1304,13 @@ module disturbance_utils
 
       !----- Find DBH and the maximum leaf biomass. ---------------------------------------!
       cpatch%dbh(nc)   = h2dbh(cpatch%hite(nc),cpatch%pft(nc))
-      cpatch%bdead(nc) = dbh2bd(cpatch%dbh(nc),cpatch%hite(nc),cpatch%pft(nc))
+      cpatch%bdead(nc) = dbh2bd(cpatch%dbh(nc),cpatch%pft(nc))
 
       !------------------------------------------------------------------------------------!
       !      Initialise the active and storage biomass scaled by the leaf drought phenology (or start with 1.0 if the plant doesn't !
       ! shed their leaves due to water stress.                                             !
       !------------------------------------------------------------------------------------!
-      call pheninit_balive_bstorage(mzg,csite,np,nc,ntext_soil)
+      call pheninit_balive_bstorage(mzg,csite,np,nc,ntext_soil,green_leaf_factor)
       !------------------------------------------------------------------------------------!
 
 
@@ -1315,23 +1322,28 @@ module disturbance_utils
                        ,cpatch%crown_area(nc),cpatch%bsapwood(nc))
 
 
-      !----- Finding the new basal area and above-ground biomass. -------------------------!
+      !----- Find the new basal area and above-ground biomass. ----------------------------!
       cpatch%basarea(nc) = pio4 * cpatch%dbh(nc) * cpatch%dbh(nc)
       cpatch%agb(nc)     = ed_biomass(cpatch%bdead(nc),cpatch%balive(nc),cpatch%bleaf(nc)  &
                                      ,cpatch%pft(nc),cpatch%hite(nc) ,cpatch%bstorage(nc)  &
                                      ,cpatch%bsapwood(nc))
 
-      cpatch%veg_temp(nc)  = csite%can_temp(np)
-      cpatch%veg_water(nc) = 0.0
-      cpatch%veg_fliq(nc)  = 0.0
+      cpatch%leaf_temp(nc)  = csite%can_temp(np)
+      cpatch%leaf_water(nc) = 0.0
+      cpatch%leaf_fliq(nc)  = 0.0
+      cpatch%wood_temp(nc)  = csite%can_temp(np)
+      cpatch%wood_water(nc) = 0.0
+      cpatch%wood_fliq(nc)  = 0.0
 
-      !----- Because we assigned no water, the internal energy is simply hcapveg*T. -------!
-      cpatch%hcapveg(nc)    = calc_hcapveg(cpatch%bleaf(nc),cpatch%bdead(nc)               &
-                                          ,cpatch%balive(nc),cpatch%nplant(nc)             &
-                                          ,cpatch%hite(nc),cpatch%pft(nc)                  &
-                                          ,cpatch%phenology_status(nc),cpatch%bsapwood(nc))
-      cpatch%veg_energy(nc) = cpatch%hcapveg(nc) * cpatch%veg_temp(nc)
-      cpatch%resolvable(nc) = is_resolvable(csite,np,nc,green_leaf_factor)
+      !----- Because we assigned no water, the internal energy is simply hcap*T. ----------!
+      call calc_veg_hcap(cpatch%bleaf(nc),cpatch%bdead(nc),cpatch%bsapwood(nc)             &
+                        ,cpatch%nplant(nc),cpatch%pft(nc)                                  &
+                        ,cpatch%leaf_hcap(nc),cpatch%wood_hcap(nc))
+
+      cpatch%leaf_energy(nc) = cpatch%leaf_hcap(nc) * cpatch%leaf_temp(nc)
+      cpatch%wood_energy(nc) = cpatch%wood_hcap(nc) * cpatch%wood_temp(nc)
+
+      call is_resolvable(csite,np,nc,green_leaf_factor)
 
       !----- Should plantations be considered recruits? -----------------------------------!
       cpatch%new_recruit_flag(nc) = 1

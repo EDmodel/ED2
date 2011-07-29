@@ -44,7 +44,8 @@ subroutine leaf3_ocean(mzg,ustar,tstar,rstar,cstar,patch_rough,can_prss,can_rvap
                         , cp             & ! intent(in)
                         , cpi            & ! intent(in)
                         , t3ple          & ! intent(in)
-                        , alvl           ! ! intent(in)
+                        , alvl           & ! intent(in)
+                        , huge_num       ! ! intent(in)
    use therm_lib , only : rslif          & ! function
                         , thetaeiv       ! ! function
    use node_mod  , only : mynum          ! ! intent(in)
@@ -97,7 +98,7 @@ subroutine leaf3_ocean(mzg,ustar,tstar,rstar,cstar,patch_rough,can_prss,can_rvap
    !---------------------------------------------------------------------------------------!
    !    For water patches, the net conductance is the same as the bare ground.             !
    !---------------------------------------------------------------------------------------!
-   ggveg   = 0.0
+   ggveg   = huge_num
    ggnet   = ggbare * ggfact
    !---------------------------------------------------------------------------------------!
 

@@ -190,7 +190,7 @@ subroutine dry_dep_particles(iscl,m1,m2,m3,naddsc,npatch,ia,iz,ja,jz &
      ,temps,dens,vels,rvs,Zi                                         &
      ,ustar,tstar                                                    &
      ,patch_area,veg,Z0m                                             )
-  use leaf_coms, only : tiny_parea
+  use leaf_coms, only : min_patch_area
   implicit none
   integer :: m1,m2,m3,naddsc,npatch,ia,iz,ja,jz,i,j,ipatch,iscl
   real    :: vdtmp
@@ -216,7 +216,7 @@ subroutine dry_dep_particles(iscl,m1,m2,m3,naddsc,npatch,ia,iz,ja,jz &
      do i = ia,iz
         do ipatch = 1,npatch
 
-           if (patch_area(i,j,ipatch) >= tiny_parea) then
+           if (patch_area(i,j,ipatch) >= min_patch_area) then
 
               vdtmp = v_sed(i,j) + 1./(r_aer(i,j,ipatch) + r_lsl(i,j,ipatch) +&
                    r_aer(i,j,ipatch) * r_lsl(i,j,ipatch) * v_sed(i,j))
@@ -323,7 +323,7 @@ subroutine lsl_particles(m2,m3,npatch,ia,iz,ja,jz           &
      ,temps,dens,vels,rvs,Zi,ustar,tstar,patch_area,veg,Z0m &
      ,v_sed,r_lsl)
   use rconstants, only: t00, vonk,cp,pi1,grav,boltzmann
-  use leaf_coms, only : tiny_parea
+  use leaf_coms, only : min_patch_area
   implicit none
   REAL,PARAMETER :: ASP = 1.257          ! 1.249
   REAL,PARAMETER :: BSP = 0.4            ! 0.42
@@ -409,7 +409,7 @@ subroutine lsl_particles(m2,m3,npatch,ia,iz,ja,jz           &
 
            else
 
-              if(patch_area(i,j,ipatch) > tiny_parea) then
+              if(patch_area(i,j,ipatch) >= min_patch_area) then
                  
                  !-- for smooth land surfaces !- bare ground (3), desert(3) or ice (2)
                  !-- Seinfeld & Pandis (1998)
@@ -484,7 +484,7 @@ end subroutine lsl_particles
 
 subroutine dry_dep_gaseous(m1,m2,m3,naddsc,npatch,ia,iz,ja,jz &
      ,V_dep,patch_area)
-  use leaf_coms, only : tiny_parea
+  use leaf_coms, only : min_patch_area
   implicit none
   integer :: m1,m2,m3,naddsc,npatch,ia,iz,ja,jz,i,j,ipatch
   real    :: vdtmp
@@ -506,7 +506,7 @@ subroutine dry_dep_gaseous(m1,m2,m3,naddsc,npatch,ia,iz,ja,jz &
         
         do ipatch = 2,npatch
 
-           if (patch_area(i,j,ipatch) >= tiny_parea) &
+           if (patch_area(i,j,ipatch) >= min_patch_area) &
                 V_dep(i,j) = V_dep(i,j) + patch_area(i,j,ipatch)*V_dep_CO(2)
 
         enddo

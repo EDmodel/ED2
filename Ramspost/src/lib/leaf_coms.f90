@@ -18,18 +18,25 @@
 !------------------------------------------------------------------------------------------!
 module leaf_coms
    use rconstants, only: grav      & ! intent(in)
-                       , vonk      & ! intent(in)
                        , twothirds ! ! intent(in)
 
-   !----- Minimum patch area to consider. -------------------------------------------------!
-   real, parameter :: tiny_parea     = 0.001   
+   !----- Values that are read in rcio. ---------------------------------------------------!
+   real :: ustmin         ! Minimum ustar                                        [     m/s]
+   real :: gamm           ! Gamma used by Businger et al. (1971) - momentum.
+   real :: gamh           ! Gamma used by Businger et al. (1971) - heat.
+   real :: tprandtl       ! Turbulent Prandtl number.
+   real :: vkopr          ! von Karman / turbulent Prandtl
+   real :: ribmax         ! Maximum bulk Richardson number
+   real :: min_patch_area ! Minimum patch area to consider. 
    !---------------------------------------------------------------------------------------!
+
+
+
 
    !---------------------------------------------------------------------------------------!
    !     Speed-related minimum values we will consider.                                    !
    !---------------------------------------------------------------------------------------!
    real, parameter :: ubmin    = 0.65  ! Minimum velocity                        [     m/s]
-   real, parameter :: ustmin   = 0.10  ! Minimum ustar                           [     m/s]
    !---------------------------------------------------------------------------------------!
 
    !---------------------------------------------------------------------------------------!
@@ -42,7 +49,6 @@ module leaf_coms
    real, parameter :: dl79       = 5.0    ! ???
    !----- Oncley and Dudhia (1995) model. -------------------------------------------------!
    real, parameter :: bbeta      = 5.0    ! Beta used by Businger et al. (1971)
-   real, parameter :: ribmaxod95 = 0.20   ! Maximum bulk Richardson number
    !----- Beljaars and Holtslag (1991) model. ---------------------------------------------!
    real, parameter :: abh91       = -1.00         ! -a from equation  (28) and (32)
    real, parameter :: bbh91       = -twothirds    ! -b from equation  (28) and (32)
@@ -57,12 +63,6 @@ module leaf_coms
    real, parameter :: atetf       = ate   * fbh91 ! a * e * f
    real, parameter :: z0moz0h     = 1.0           ! z0(M)/z0(h)
    real, parameter :: z0hoz0m     = 1. / z0moz0h  ! z0(M)/z0(h)
-   real, parameter :: ribmaxbh91  = 6.00          ! Maximum bulk Richardson number
-   !----- Used by OD95 and BH91. ----------------------------------------------------------!
-   real, parameter :: gamm       = 13.0   ! Gamma used by Businger et al. (1971) - momentum.
-   real, parameter :: gamh       = 13.0   ! Gamma used by Businger et al. (1971) - heat.
-   real, parameter :: tprandtl   = 0.74   ! Turbulent Prandtl number.
-   real, parameter :: vkopr      = vonk/tprandtl ! von Karman / turbulent Prandtl
    !---------------------------------------------------------------------------------------!
 
    contains

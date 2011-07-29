@@ -2,11 +2,11 @@
 !! evaluated daily
 
 subroutine read_events_xml(filename,success)
-
+  implicit none
   character*(*),intent(in) :: filename
   logical                  :: iamhere
   logical, intent(out)     :: success 
-
+  integer                  :: nevent
   success = .false.
 
   if (filename /= '') then
@@ -29,8 +29,8 @@ end subroutine read_events_xml
 
 
 subroutine prescribed_event(year,doy)
-
   use ed_misc_coms, only: event_file 
+  implicit none
 
   integer, intent(in) :: year
   integer, intent(in) :: doy !! day of year
@@ -289,7 +289,7 @@ subroutine event_harvest(agb_frac8,bgb_frac8,fol_frac8,stor_frac8)
        patchtype,allocate_patchtype,copy_patchtype,deallocate_patchtype 
   use pft_coms, only:sla,qsw,q,hgt_min, agf_bs
   use disturbance_utils,only: plant_patch
-  use ed_therm_lib, only: calc_hcapveg,update_veg_energy_cweh
+  use ed_therm_lib, only: calc_veg_hcap,update_veg_energy_cweh
   use fuse_fiss_utils, only: terminate_cohorts
   use allometry, only : bd2dbh, dbh2h, area_indices, ed_biomass
   use consts_coms, only : pio4
@@ -300,7 +300,8 @@ subroutine event_harvest(agb_frac8,bgb_frac8,fol_frac8,stor_frac8)
   real(kind=8),intent(in) :: stor_frac8
   real :: ialloc,bdead_new,bsw_new,bleaf_new,bfr_new,bstore_new
   real :: agb_frac,bgb_frac,fol_frac,stor_frac
-  real :: old_hcapveg
+  real :: old_leaf_hcap
+  real :: old_wood_hcap
   real :: elim_nplant
   real :: elim_lai
   integer :: ifm,ipy,isi,ipa,ico,pft
@@ -369,6 +370,7 @@ subroutine event_harvest(agb_frac8,bgb_frac8,fol_frac8,stor_frac8)
                  cpatch%bstorage(ico) = max(0.0,bstore_new)
                  if(bleaf_new .le. tiny(1.0)) then
                     cpatch%phenology_status(ico) = 2
+                    cpatch%elongf(ico)           = 0.0
                     !----- No leaves, then set it to zero. --------------------------------!
                     cpatch%bleaf(ico)      = 0.0
                  else
@@ -403,17 +405,16 @@ subroutine event_harvest(agb_frac8,bgb_frac8,fol_frac8,stor_frac8)
                  ! worry, if there is any, it will go down through shedding the next       !
                  ! step.                                                                   !
                  !-------------------------------------------------------------------------!
-                 old_hcapveg         = cpatch%hcapveg(ico)
-                 cpatch%hcapveg(ico) = calc_hcapveg(cpatch%bleaf(ico),cpatch%bdead(ico)   &
-                                                   ,cpatch%balive(ico),cpatch%nplant(ico) &
-                                                   ,cpatch%hite(ico),cpatch%pft(ico)      &
-                                                   ,cpatch%phenology_status(ico)          &
-                                                   ,cpatch%bsapwood(ico))
-                 call update_veg_energy_cweh(csite,ipa,ico,old_hcapveg)
+                 old_leaf_hcap = cpatch%leaf_hcap(ico)
+                 old_wood_hcap = cpatch%wood_hcap(ico)
+                 call calc_veg_hcap(cpatch%bleaf(ico),cpatch%bdead(ico)                    &
+                                   ,cpatch%bsapwood(ico),cpatch%nplant(ico)                &
+                                   ,cpatch%pft(ico)                                        &
+                                   ,cpatch%leaf_hcap(ico),cpatch%wood_hcap(ico))
+                 call update_veg_energy_cweh(csite,ipa,ico,old_leaf_hcap,old_wood_hcap)
 
-                 !----- Updating patch heat capacity. ----------------------------------!
-                 csite%hcapveg(ipa) = csite%hcapveg(ipa)                                &
-                                    + cpatch%hcapveg(ico) - old_hcapveg
+                 !----- Update flags telling whether leaves and branches can be solved. ---!
+                 call is_resolvable(csite,ipa,ico,cpoly%green_leaf_factor(:,isi))
 
               enddo
              
@@ -445,7 +446,7 @@ subroutine event_planting(pft,density8)
        filltab_alltypes 
   use pft_coms, only:sla,qsw,q,hgt_min
   use disturbance_utils,only: plant_patch
-
+  implicit none
   integer(kind=4),intent(in) :: pft
   real(kind=8),intent(in) :: density8
   real :: density
@@ -575,6 +576,8 @@ subroutine event_irrigate(rval8)
        edtype,polygontype,sitetype, &
        patchtype
   use therm_lib, only: qtk
+  use consts_coms, only : cliqvlme, allivlme,cicevlme,tsupercool,wdnsi,t00
+  implicit none
   real(kind=8),intent(in) :: rval8
 
   real :: iwater,ienergy,fliq,soil_temp
@@ -618,12 +621,11 @@ subroutine event_irrigate(rval8)
               cpatch => csite%patch(ipa)
 
               !! note, assume irrigation water is at same temperature as soil
-              soil_temp = csite%soil_tempk(nzg,ipa) - 273.15
-              if(soil_temp > 0.0)then
-                 ienergy = soil_temp * cliq1000 + alli1000
+              if(csite%soil_tempk(nzg,ipa) > t00)then
+                 ienergy = cliqvlme * (csite%soil_tempk(nzg,ipa) - tsupercool)
                  fliq = 1.0
               else
-                 ienergy = soil_temp*cice1000
+                 ienergy = cicevlme * csite%soil_tempk(nzg,ipa)
                  fliq = 0.0
               end if
 
@@ -632,16 +634,15 @@ subroutine event_irrigate(rval8)
                  csite%sfcwater_mass(1,ipa)    = iwater
                  csite%sfcwater_tempk(1,ipa)   = soil_temp
                  csite%sfcwater_energy(1,ipa)  = ienergy
-                 csite%sfcwater_depth(1,ipa)   = iwater*0.001 
-                 csite%sfcwater_fracliq(1,ipa) = fracliq
+                 csite%sfcwater_depth(1,ipa)   = iwater * wdnsi
+                 csite%sfcwater_fracliq(1,ipa) = fliq
                  csite%nlev_sfcwater(ipa)      = 1
               else
                  csite%sfcwater_energy(k,ipa) = (csite%sfcwater_energy(k,ipa)*csite%sfcwater_mass(k,ipa) &
                       + ienergy*iwater)/(csite%sfcwater_mass(k,ipa) + iwater)
                  csite%sfcwater_mass(k,ipa)   = csite%sfcwater_mass(k,ipa) + iwater
-                 csite%sfcwater_depth(k,ipa)  = csite%sfcwater_depth(k,ipa) + iwater*0.001 
-                 call qtk( csite%sfcwater_energy(k,ipa) &
-                      & ,csite%sfcwater_tempk(k,ipa),csite%sfcwater_fracliq(k,ipa))
+                 csite%sfcwater_depth(k,ipa)  = csite%sfcwater_depth(k,ipa) + iwater*wdnsi
+                 call qtk(csite%sfcwater_energy(k,ipa),csite%sfcwater_tempk(k,ipa),csite%sfcwater_fracliq(k,ipa))
               endif
 
               !! do we need to call infiltration?
@@ -657,7 +658,7 @@ subroutine event_irrigate(rval8)
 end subroutine
 
 subroutine event_fire()
-
+  implicit none
   print*,"----------------------------"
   print*,"----------------------------"
   print*,"----------------------------"
@@ -681,11 +682,12 @@ subroutine event_till(rval8)
   use pft_coms, only: c2n_structural, c2n_slow, c2n_storage,c2n_leaf,c2n_stem,l2n_stem
   use decomp_coms, only: f_labile
   use fuse_fiss_utils, only: terminate_cohorts
-  
+  use ed_therm_lib, only : calc_veg_hcap
+  implicit none
   real(kind=8),intent(in) :: rval8
 
   real :: depth
-  integer :: ifm,ipy,isi,ipa,pft
+  integer :: ifm,ipy,isi,ipa,pft,ico
   real :: elim_nplant,elim_lai
   type(edtype), pointer :: cgrid
   type(polygontype), pointer :: cpoly
@@ -745,22 +747,31 @@ subroutine event_till(rval8)
 
 
                  !! update biomass pools
-                 cpatch%balive(ico)     = 0.0
-                 cpatch%broot(ico)      = 0.0
-                 cpatch%bsapwood(ico)   = 0.0
-                 cpatch%bdead(ico)      = 0.0
-                 cpatch%bstorage(ico)   = 0.0
-                 cpatch%nplant(ico)     = 0.0
-                 cpatch%lai(ico)        = 0.0
-                 cpatch%wpa(ico)        = 0.0
-                 cpatch%wai(ico)        = 0.0
-                 cpatch%crown_area(ico) = 0.0
-                 cpatch%bleaf(ico)      = 0.0
-                 cpatch%veg_energy(ico) = 0.0
-                 cpatch%veg_water(ico)  = 0.0
-                 cpatch%veg_fliq(ico)   = 0.0
-                 cpatch%veg_temp(ico)   = csite%can_temp(ipa)
+                 cpatch%balive(ico)           = 0.0
+                 cpatch%broot(ico)            = 0.0
+                 cpatch%bsapwood(ico)         = 0.0
+                 cpatch%bdead(ico)            = 0.0
+                 cpatch%bstorage(ico)         = 0.0
+                 cpatch%nplant(ico)           = 0.0
+                 cpatch%lai(ico)              = 0.0
+                 cpatch%wpa(ico)              = 0.0
+                 cpatch%wai(ico)              = 0.0
+                 cpatch%crown_area(ico)       = 0.0
+                 cpatch%bleaf(ico)            = 0.0
+                 cpatch%leaf_water(ico)       = 0.0
+                 cpatch%leaf_fliq(ico)        = 0.0
+                 cpatch%leaf_temp(ico)        = csite%can_temp(ipa)
+                 cpatch%wood_water(ico)       = 0.0
+                 cpatch%wood_fliq(ico)        = 0.0
+                 cpatch%wood_temp(ico)        = csite%can_temp(ipa)
+                 call calc_veg_hcap(cpatch%bleaf(ico),cpatch%bdead(ico) &
+                                   ,cpatch%bsapwood(ico),cpatch%nplant(ico) &
+                                   ,cpatch%pft(ico) &
+                                   ,cpatch%leaf_hcap(ico),cpatch%wood_hcap(ico))
+                 cpatch%leaf_energy(ico)      = cpatch%leaf_hcap(ico) * cpatch%leaf_temp(ico)
+                 cpatch%wood_energy(ico)      = cpatch%wood_hcap(ico) * cpatch%wood_temp(ico)
                  cpatch%phenology_status(ico) = 2
+                 cpatch%elongf(ico)           = 0.0
                  
               enddo
               !! remove small cohorts
@@ -798,8 +809,7 @@ end subroutine event_till
 !!$              cpatch%nplant(ico)  = density
 !!$              cpatch%hite(ico)    = hgt_min(pft)
 !!$              cpatch%dbh(ico)     = h2dbh(hgt_min(pft),pft)
-!!$              cpatch%bdead(ico)   = dbh2bd(cpatch%dbh(ico),&
-!!$                   & hgt_min(pft),pft)
+!!$              cpatch%bdead(ico)   = dbh2bd(cpatch%dbh(ico),pft)
 !!$              cpatch%bleaf(ico)   = dbh2bl(cpatch%dbh(ico),pft)
 !!$print*,cpatch%hite(ico),cpatch%dbh(ico),cpatch%bdead(ico),cpatch%bleaf(ico)
 !!$              cpatch%phenology_status(ico) = 0
@@ -816,7 +826,7 @@ end subroutine event_till
 !!$              hcapveg = hcapveg_ref * max(cpatch%hite(1),cpatch%hite(ico),heathite_min) * cpatch%lai(ico)/csite%lai(ipa)
 !!$
 !!$print*,hcapveg
-!!$              cpatch%veg_energy(ico) =  hcapveg * (cpatch%veg_temp(ico)-t3ple)
+!!$              cpatch%leaf_energy(ico) =  hcapveg * (cpatch%leaf_temp(ico)-t3ple)
 !!$print*,cpatch%veg_energy(ico)
 !!$
 !!$              !! count as new recruitment?

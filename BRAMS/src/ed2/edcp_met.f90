@@ -50,10 +50,14 @@ subroutine copy_atm2lsm(ifm,init)
    use therm_lib            , only : thetaeiv      & ! intent(in)
                                    , rehuil        & ! intent(in)
                                    , ptrh2rvapil   ! ! intent(in)
-   use met_driver_coms      , only : rlong_min     & ! intent(in)
+   use met_driver_coms      , only : imetrad       & ! intent(in)
+                                   , rlong_min     & ! intent(in)
                                    , atm_rhv_min   & ! intent(in)
                                    , atm_rhv_max   ! ! intent(in)
-
+   use canopy_radiation_coms, only : fvis_beam_def & ! intent(in)
+                                   , fvis_diff_def & ! intent(in)
+                                   , fnir_beam_def & ! intent(in)
+                                   , fnir_diff_def ! ! intent(in)
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    integer                             , intent(in)  :: ifm
@@ -85,6 +89,10 @@ subroutine copy_atm2lsm(ifm,init)
    integer                                           :: k2v_1
    integer                                           :: k3v_1
    real             , dimension(:,:)   , allocatable :: rshortd
+   real             , dimension(:,:)   , allocatable :: par_beam
+   real             , dimension(:,:)   , allocatable :: par_diff
+   real             , dimension(:,:)   , allocatable :: nir_beam
+   real             , dimension(:,:)   , allocatable :: nir_diff
    real             , dimension(:,:)   , allocatable :: up_mean
    real             , dimension(:,:)   , allocatable :: vp_mean
    real             , dimension(:,:)   , allocatable :: pi0_mean
@@ -103,6 +111,7 @@ subroutine copy_atm2lsm(ifm,init)
    real                                              :: rvaux
    real                                              :: fice
    real                                              :: snden
+   real                                              :: press
    !---------------------------------------------------------------------------------------!
   
    !----- Assigning some aliases. ---------------------------------------------------------!
@@ -112,6 +121,10 @@ subroutine copy_atm2lsm(ifm,init)
 
    !----- Allocate the 2-D arrays. --------------------------------------------------------!
    allocate(rshortd    (m2,m3))
+   allocate(par_beam   (m2,m3))
+   allocate(par_diff   (m2,m3))
+   allocate(nir_beam   (m2,m3))
+   allocate(nir_diff   (m2,m3))
    allocate(up_mean    (m2,m3))
    allocate(vp_mean    (m2,m3))
    allocate(pi0_mean   (m2,m3))
@@ -156,14 +169,33 @@ subroutine copy_atm2lsm(ifm,init)
             end if
             if (iswrtyp == 3) then
                !----- We obtain the diffuse radiation straight from Harrington. -----------!
-               rshortd(i,j) = radiate_g(ifm)%rshort_diffuse(i,j)
+               rshortd(i,j)  = radiate_g(ifm)%rshort_diffuse(i,j)
+               nir_beam(i,j) = fnir_beam_def * (radiate_g(ifm)%rshort(i,j)-rshortd(i,j))
+               nir_diff(i,j) = fnir_diff_def * rshortd(i,j)
+               par_beam(i,j) = fvis_beam_def * (radiate_g(ifm)%rshort(i,j)-rshortd(i,j))
+               par_diff(i,j) = fvis_diff_def * rshortd(i,j)
+
             else
                !---------------------------------------------------------------------------!
-               !      The following subroutine calculates diffuse shortwave radiation.     !
-               ! This is a gross approximation that uses constant scattering coefficients. !   !
+               !      The following subroutine estimates the diffuse shortwave radiation.  !
+               ! This is a gross approximation that uses constant scattering coefficients. !
                !---------------------------------------------------------------------------!
-               call short2diff(radiate_g(ifm)%rshort(i,j),radiate_g(ifm)%cosz(i,j)         &
-                              ,rshortd(i,j))
+               select case (imetrad)
+               case (0,1)
+                  call short2diff_sib(radiate_g(ifm)%rshort(i,j),radiate_g(ifm)%cosz(i,j)  &
+                                     ,rshortd(i,j))
+                  nir_beam(i,j) = fnir_beam_def * (radiate_g(ifm)%rshort(i,j)-rshortd(i,j))
+                  nir_diff(i,j) = fnir_diff_def * rshortd(i,j)
+                  par_beam(i,j) = fvis_beam_def * (radiate_g(ifm)%rshort(i,j)-rshortd(i,j))
+                  par_diff(i,j) = fvis_diff_def * rshortd(i,j)
+               case (2)
+                  press = p00 * (cpi * pi0_mean(i,j))**cpor
+               
+                  call short_bdown_weissnorman(radiate_g(ifm)%rshort_diffuse(i,j),press    &
+                                              ,radiate_g(ifm)%cosz(i,j),par_beam(i,j)      &
+                                              ,par_diff(i,j),nir_beam(i,j),nir_diff(i,j)   &
+                                              ,rshortd(i,j) )
+               end select
             end if
          end do
       end do
@@ -251,14 +283,33 @@ subroutine copy_atm2lsm(ifm,init)
 
             if (iswrtyp == 3) then
                !----- We obtain the diffuse radiation straight from Harrington. -----------!
-               rshortd(i,j) = radiate_g(ifm)%rshort_diffuse(i,j)
+               rshortd(i,j)  = radiate_g(ifm)%rshort_diffuse(i,j)
+               nir_beam(i,j) = fnir_beam_def * (radiate_g(ifm)%rshort(i,j)-rshortd(i,j))
+               nir_diff(i,j) = fnir_diff_def * rshortd(i,j)
+               par_beam(i,j) = fvis_beam_def * (radiate_g(ifm)%rshort(i,j)-rshortd(i,j))
+               par_diff(i,j) = fvis_diff_def * rshortd(i,j)
+
             else
                !---------------------------------------------------------------------------!
-               !      The following subroutine calculates diffuse shortwave radiation.     !
-               ! This is a gross approximation that uses constant scattering coefficients. !   !
+               !      The following subroutine estimates the diffuse shortwave radiation.  !
+               ! This is a gross approximation that uses constant scattering coefficients. !
                !---------------------------------------------------------------------------!
-               call short2diff(radiate_g(ifm)%rshort(i,j),radiate_g(ifm)%cosz(i,j)         &
-                              ,rshortd(i,j))
+               select case (imetrad)
+               case (0,1)
+                  call short2diff_sib(radiate_g(ifm)%rshort(i,j),radiate_g(ifm)%cosz(i,j)  &
+                                     ,rshortd(i,j))
+                  nir_beam(i,j) = fnir_beam_def * (radiate_g(ifm)%rshort(i,j)-rshortd(i,j))
+                  nir_diff(i,j) = fnir_diff_def * rshortd(i,j)
+                  par_beam(i,j) = fvis_beam_def * (radiate_g(ifm)%rshort(i,j)-rshortd(i,j))
+                  par_diff(i,j) = fvis_diff_def * rshortd(i,j)
+               case (2)
+                  press = p00 * (cpi * pi0_mean(i,j))**cpor
+               
+                  call short_bdown_weissnorman(radiate_g(ifm)%rshort_diffuse(i,j),press    &
+                                              ,radiate_g(ifm)%cosz(i,j),par_beam(i,j)      &
+                                              ,par_diff(i,j),nir_beam(i,j),nir_diff(i,j)   &
+                                              ,rshortd(i,j) )
+               end select
             end if
         end do
       end do
@@ -276,15 +327,14 @@ subroutine copy_atm2lsm(ifm,init)
       k1w   = k2w - 1
 
       !------------------------------------------------------------------------------------!
-      !     Splitting the shortwave into direct and diffuse.  Also, assign 45% of the      !
-      ! total as near infrared, and the remaining as photosynthetically active radiation.  !
-      ! These could be probably better retrieved from the radiation model, need to check   !
-      ! that.                                                                              !
+      !     Save the radiation terms.                                                      !
       !------------------------------------------------------------------------------------!
-      cgrid%met(ipy)%nir_beam     =  0.57 * (radiate_g(ifm)%rshort(ix,iy)-rshortd(ix,iy))
-      cgrid%met(ipy)%nir_diffuse  =  0.48 * (rshortd(ix,iy))
-      cgrid%met(ipy)%par_beam     =  0.43 * (radiate_g(ifm)%rshort(ix,iy)-rshortd(ix,iy))
-      cgrid%met(ipy)%par_diffuse  =  0.52 * (rshortd(ix,iy))
+      cgrid%met(ipy)%rshort         =  radiate_g(ifm)%rshort(ix,iy)
+      cgrid%met(ipy)%rshort_diffuse =  rshortd              (ix,iy)
+      cgrid%met(ipy)%nir_beam       =  nir_beam             (ix,iy)
+      cgrid%met(ipy)%nir_diffuse    =  nir_diff             (ix,iy)
+      cgrid%met(ipy)%par_beam       =  par_beam             (ix,iy)
+      cgrid%met(ipy)%par_diffuse    =  par_diff             (ix,iy)
       !------------------------------------------------------------------------------------!
 
       cgrid%met(ipy)%rlong    = radiate_g(ifm)%rlong(ix,iy)
@@ -488,6 +538,10 @@ subroutine copy_atm2lsm(ifm,init)
 
    !----- Allocate the 2-D arrays. --------------------------------------------------------!
    deallocate(rshortd    )
+   deallocate(par_beam   )
+   deallocate(par_diff   )
+   deallocate(nir_beam   )
+   deallocate(nir_diff   )
    deallocate(up_mean    )
    deallocate(vp_mean    )
    deallocate(pi0_mean   )
@@ -652,6 +706,7 @@ subroutine copy_fluxes_future_2_past(ifm)
    ed_fluxp_g(ifm)%sflux_t = ed_fluxf_g(ifm)%sflux_t
    ed_fluxp_g(ifm)%sflux_r = ed_fluxf_g(ifm)%sflux_r
    ed_fluxp_g(ifm)%sflux_c = ed_fluxf_g(ifm)%sflux_c
+   ed_fluxp_g(ifm)%rk4step = ed_fluxf_g(ifm)%rk4step
 
    return
 end subroutine copy_fluxes_future_2_past
@@ -680,7 +735,8 @@ subroutine copy_fluxes_lsm2atm(ifm)
                             , dzt         & ! intent(in)
                             , zm          & ! intent(in)
                             , if_adap     & ! intent(in)
-                            , jdim        ! ! intent(in)
+                            , jdim        & ! intent(in)
+                            , npatch      ! ! intent(in)
    use mem_basic     , only : basic_g     ! ! structure
    use mem_leaf      , only : leaf_g      ! ! structure
    use rconstants    , only : mmcod       ! ! intent(in)
@@ -692,13 +748,28 @@ subroutine copy_fluxes_lsm2atm(ifm)
    type(polygontype)     , pointer    :: cpoly
    type(sitetype)        , pointer    :: csite
    type(ed_flux)         , pointer    :: fluxp
-   integer                            :: ipy,isi
-   integer                            :: ix,iy
-   integer                            :: k2u,k3u,k2u_1,k3u_1
-   integer                            :: k2v,k3v,k2v_1,k3v_1
-   real                               :: wtu1,wtu2,wtv1,wtv2
-   real                               :: up_mean,vp_mean,cosine,sine
-   real                               :: poly_area_i, site_area_i
+   integer                            :: ipy
+   integer                            :: isi
+   integer                            :: ix
+   integer                            :: iy
+   integer                            :: ilp
+   integer                            :: k2u
+   integer                            :: k3u
+   integer                            :: k2u_1
+   integer                            :: k3u_1
+   integer                            :: k2v
+   integer                            :: k3v
+   integer                            :: k2v_1
+   integer                            :: k3v_1
+   real                               :: wtu1
+   real                               :: wtu2
+   real                               :: wtv1
+   real                               :: wtv2
+   real                               :: up_mean
+   real                               :: vp_mean
+   real                               :: cosine
+   real                               :: sine
+   real                               :: site_area_i
    real(kind=8)                       :: angle
    !---------------------------------------------------------------------------------------!
 
@@ -712,27 +783,10 @@ subroutine copy_fluxes_lsm2atm(ifm)
 
       ix = cgrid%ilon(ipy)
       iy = cgrid%ilat(ipy)
-      poly_area_i = 1./ sum(cpoly%area)
-
-      !----- Initialising all fluxes. -----------------------------------------------------!
-      fluxp%ustar(ix,iy)     = 0.0
-      fluxp%tstar(ix,iy)     = 0.0
-      fluxp%rstar(ix,iy)     = 0.0
-      fluxp%cstar(ix,iy)     = 0.0
-      fluxp%zeta(ix,iy)      = 0.0
-      fluxp%ribulk(ix,iy)    = 0.0
-      fluxp%sflux_u(ix,iy)   = 0.0
-      fluxp%sflux_v(ix,iy)   = 0.0
-      fluxp%sflux_w(ix,iy)   = 0.0
-      fluxp%sflux_t(ix,iy)   = 0.0
-      fluxp%sflux_r(ix,iy)   = 0.0
-      fluxp%sflux_c(ix,iy)   = 0.0
-      fluxp%rlongup(ix,iy) = 0.0
-      fluxp%albedt(ix,iy)  = 0.0
 
       !------------------------------------------------------------------------------------!
-      !     Finding the wind average.  To do this, we first check which vertical coordi-   !
-      ! nate we are using.                                                                 !
+      !     Find the wind average.  To do this, we first check which vertical coordinate   !
+      ! we are using.                                                                      !
       !------------------------------------------------------------------------------------!
       select case(if_adap)
       case (0) !----- Terrain-following coordinate. ---------------------------------------!
@@ -740,8 +794,8 @@ subroutine copy_fluxes_lsm2atm(ifm)
          vp_mean = (basic_g(ifm)%vp(2,ix,iy) + basic_g(ifm)% vp(2,ix,iy-jdim)) * 0.5
       case (1) !----- Adaptive coordinate. ------------------------------------------------!
          !---------------------------------------------------------------------------------!
-         !    Finding the lowest boundary levels, depending on which kind of variable we   !
-         ! are averaging (staggered grid).                                                 !
+         !    Find the lowest boundary levels, depending on which kind of variable we are  !
+         ! averaging (staggered grid).                                                     !
          !---------------------------------------------------------------------------------!
          !----- U points, need to average between i-1 and i... ----------------------------!
          k2u   = nint(grid_g(ifm)%flpu(ix,iy))
@@ -754,7 +808,7 @@ subroutine copy_fluxes_lsm2atm(ifm)
          k2v_1 = nint(grid_g(ifm)%flpv(ix,iy-jdim))
          k3v_1 = k2v_1 + 1
          !---------------------------------------------------------------------------------!
-         !     Computing the weights for lowest predicted points, relative to points above !
+         !     Compute the weights for lowest predicted points, relative to points above   !
          ! them.                                                                           !
          !---------------------------------------------------------------------------------!
          wtu1 = grid_g(ifm)%aru(k2u_1,ix-1,iy)    / grid_g(ifm)%aru(k3u_1,ix-1,iy)
@@ -777,101 +831,75 @@ subroutine copy_fluxes_lsm2atm(ifm)
 
 
       !------------------------------------------------------------------------------------!
-      !    Finding the averaged flux variables.  For most variables, it will be simply     !
-      ! the site and patch weighted average, in which the weights are the site and patch   !
+      !    Find the averaged flux variables.  For most variables, it will be simply the    !
+      ! site and patch weighted average, in which the weights are the site and patch       !
       ! areas.  The exceptions are commented.                                              !
       !------------------------------------------------------------------------------------!
       do isi=1,cpoly%nsites
          csite => cpoly%site(isi)
+         
+         !---- Leaf "patch" is offset by 1 because the first patch is water. --------------!
+         ilp = isi + 1
+
+         !---- Inverse of the sum of the patch area, used to normalise site averages. -----!
          site_area_i = 1./sum(csite%area)
 
-         fluxp%ustar(ix,iy) = fluxp%ustar(ix,iy)                                           &
-                            + cpoly%area(isi)*sum(csite%area * csite%ustar)                &
-                            * site_area_i * poly_area_i
-
-         fluxp%tstar(ix,iy) = fluxp%tstar(ix,iy)                                           &
-                            + cpoly%area(isi)*sum(csite%area * csite%tstar)                &
-                            * site_area_i * poly_area_i
-
-         fluxp%cstar(ix,iy) = fluxp%cstar(ix,iy)                                           &
-                            + cpoly%area(isi)*sum(csite%area * csite%cstar)                &
-                            * site_area_i * poly_area_i
+         fluxp%ustar(ix,iy,ilp) = sum(csite%area * csite%ustar) * site_area_i
+         fluxp%tstar(ix,iy,ilp) = sum(csite%area * csite%tstar) * site_area_i
+         fluxp%cstar(ix,iy,ilp) = sum(csite%area * csite%cstar) * site_area_i
 
          !---------------------------------------------------------------------------------!
          !     BRAMS needs rstar (mixing ratio), but ED computes qstar (specific humidity) !
          ! characteristic friction scales.  We must find the appropriate conversion.       !
          !---------------------------------------------------------------------------------!
-         fluxp%rstar(ix,iy) = fluxp%rstar(ix,iy)                                           &
-                            + cpoly%area(isi)* site_area_i * poly_area_i                   &
-                            * sum(csite%area * csite%qstar / (1.-csite%can_shv))           &
-                            / (1. - cpoly%met(isi)%atm_shv)
+         fluxp%rstar(ix,iy,ilp) = site_area_i                                              &
+                                * sum(csite%area * csite%qstar / (1.-csite%can_shv))       &
+                                / (1. - cpoly%met(isi)%atm_shv)
          !---------------------------------------------------------------------------------!
 
          !---------------------------------------------------------------------------------!
          !     Linear interpolation is not the best method here but the following vari-    !
          ! ables are diagnostic only.                                                      !
          !---------------------------------------------------------------------------------!
-         fluxp%zeta(ix,iy)   = fluxp%zeta(ix,iy)                                           &
-                             + cpoly%area(isi)*sum(csite%area * csite%zeta)                &
-                             * site_area_i * poly_area_i
-
-         fluxp%ribulk(ix,iy) = fluxp%ribulk(ix,iy)                                         &
-                             + cpoly%area(isi)*sum(csite%area * csite%ribulk)              &
-                             * site_area_i * poly_area_i
+         fluxp%zeta  (ix,iy,ilp) = sum(csite%area * csite%zeta  ) * site_area_i
+         fluxp%ribulk(ix,iy,ilp) = sum(csite%area * csite%ribulk) * site_area_i
 
          !---------------------------------------------------------------------------------!
          !     The flux of momentum for the horizontal wind needs to be split with the     !
          ! appropriate direction.                                                          !
          !---------------------------------------------------------------------------------!
-         fluxp%sflux_u(ix,iy) = fluxp%sflux_u(ix,iy)                                       &
-                              + cosine*cpoly%area(isi)*sum(csite%area * csite%upwp)        &
-                              * site_area_i * poly_area_i
-         fluxp%sflux_v(ix,iy) = fluxp%sflux_v(ix,iy)                                       &
-                              + sine*cpoly%area(isi)*sum(csite%area * csite%upwp)          &
-                              * site_area_i * poly_area_i
+         fluxp%sflux_u(ix,iy,ilp) = cosine * sum(csite%area * csite%upwp) * site_area_i
+         fluxp%sflux_v(ix,iy,ilp) =   sine * sum(csite%area * csite%upwp) * site_area_i
+         fluxp%sflux_w(ix,iy,ilp) =          sum(csite%area * csite%wpwp) * site_area_i
+         fluxp%sflux_t(ix,iy,ilp) =          sum(csite%area * csite%tpwp) * site_area_i
+         fluxp%sflux_c(ix,iy,ilp) =          sum(csite%area * csite%cpwp) * site_area_i
          !---------------------------------------------------------------------------------!
 
-         fluxp%sflux_w(ix,iy) = fluxp%sflux_w(ix,iy)                                       &
-                              + cpoly%area(isi)*sum(csite%area * csite%wpwp)               &
-                              * site_area_i * poly_area_i
-
-         fluxp%sflux_t(ix,iy) = fluxp%sflux_t(ix,iy)                                       &
-                              + cpoly%area(isi)*sum(csite%area * csite%tpwp)               &
-                              * site_area_i * poly_area_i
 
          !---------------------------------------------------------------------------------!
          !     Same thing as in the rstar case: we must convert the ED-2 flux (specific    !
          ! volume) to mixing ratio, which is what BRAMS expects.                           !
          !---------------------------------------------------------------------------------!
-         fluxp%sflux_r(ix,iy) = fluxp%sflux_r(ix,iy)                                       &
-                              + cpoly%area(isi)* site_area_i * poly_area_i                 &
-                              * sum(csite%area * csite%qpwp / (1.-csite%can_shv))          &
-                              / (1. - cpoly%met(isi)%atm_shv)
+         fluxp%sflux_r(ix,iy,ilp) = site_area_i                                            &
+                                  * sum(csite%area * csite%qpwp / (1.-csite%can_shv))      &
+                                  / (1. - cpoly%met(isi)%atm_shv)
          !---------------------------------------------------------------------------------!
 
-
-         !---------------------------------------------------------------------------------!
-         !     Same thing as the cstar case: we must convert the ED-2 flux to BRAMS units. !
-         !---------------------------------------------------------------------------------!
-         fluxp%sflux_c(ix,iy) = fluxp%sflux_c(ix,iy)                                       &
-                              + cpoly%area(isi)*sum(csite%area * csite%cpwp)               &
-                              * site_area_i * poly_area_i
 
          !---------------------------------------------------------------------------------!
          !   Include emission and reflected longwave in rlongup.                           !
          !---------------------------------------------------------------------------------!
-         fluxp%rlongup(ix,iy) = fluxp%rlongup(ix,iy)                                       &
-                              + ( cpoly%area(isi)*cpoly%rlongup(isi)                       &
-                                + cgrid%met(ipy)%rlong *cpoly%area(isi)                    &
-                                * cpoly%rlong_albedo(isi) ) * site_area_i * poly_area_i
+         fluxp%rlongup(ix,iy,ilp) = sum( csite%area  * ( csite%rlongup                     &
+                                                       + cpoly%met(isi)%rlong              &
+                                                       * csite%rlong_albedo  ) )           &
+                                  * site_area_i
          !---------------------------------------------------------------------------------!
+
 
          !---------------------------------------------------------------------------------!
          !    Total albedo is the average between albedo for direct (beam) and diffuse.    !
          !---------------------------------------------------------------------------------!
-         fluxp%albedt(ix,iy)  = fluxp%albedt(ix,iy)                                        &
-                              + cpoly%area(isi) * site_area_i * poly_area_i                &
-                              * 0.5 * (cpoly%albedo_beam(isi) + cpoly%albedo_diffuse(isi) )
+         fluxp%albedt(ix,iy,ilp)  = sum(csite%area * csite%albedo) * site_area_i
          !---------------------------------------------------------------------------------!
       end do
    end do
@@ -896,7 +924,6 @@ subroutine initialize_ed2leaf(ifm)
   
    use mem_edcp     , only : ed_fluxf_g     & ! structure
                            , ed_fluxp_g     & ! structure
-                           , wgrid_g        & ! structure
                            , ed_precip_g    ! ! structure
    use node_mod     , only : mxp            & ! intent(in)
                            , myp            & ! intent(in)
@@ -912,7 +939,8 @@ subroutine initialize_ed2leaf(ifm)
                            , dzt            & ! intent(in)
                            , zm             & ! intent(in)
                            , if_adap        & ! intent(in)
-                           , jdim           ! ! intent(in)
+                           , jdim           & ! intent(in)
+                           , npatch         ! ! intent(in)
    use rconstants   , only : cpi            & ! intent(in)
                            , p00            & ! intent(in)
                            , cpor           ! ! intent(in)
@@ -936,6 +964,7 @@ subroutine initialize_ed2leaf(ifm)
    integer                           :: k2w
    integer                           :: k3w
    integer                           :: k1w
+   integer                           :: ilp
    real                              :: topma_t
    real                              :: wtw
    real                              :: atm_prss
@@ -1045,18 +1074,20 @@ subroutine initialize_ed2leaf(ifm)
          leaf_g(ifm)%evap_vc     (i,j,1) = 0.0
          leaf_g(ifm)%transp      (i,j,1) = 0.0
 
-         leaf_g(ifm)%can_theta   (i,j,2) = leaf_g(ifm)%can_theta(i,j,1)
-         leaf_g(ifm)%can_theiv   (i,j,2) = leaf_g(ifm)%can_theiv(i,j,1)
-         leaf_g(ifm)%can_rvap    (i,j,2) = leaf_g(ifm)%can_rvap (i,j,1)
-         leaf_g(ifm)%can_prss    (i,j,2) = leaf_g(ifm)%can_prss(i,j,1)
-         leaf_g(ifm)%gpp         (i,j,2) = 0.0
-         leaf_g(ifm)%resphet     (i,j,2) = 0.0
-         leaf_g(ifm)%plresp      (i,j,2) = 0.0
-         leaf_g(ifm)%sensible_gc (i,j,2) = 0.0
-         leaf_g(ifm)%sensible_vc (i,j,2) = 0.0
-         leaf_g(ifm)%evap_gc     (i,j,2) = 0.0
-         leaf_g(ifm)%evap_vc     (i,j,2) = 0.0
-         leaf_g(ifm)%transp      (i,j,2) = 0.0
+         do ilp=2,npatch
+            leaf_g(ifm)%can_theta   (i,j,ilp) = leaf_g(ifm)%can_theta(i,j,1)
+            leaf_g(ifm)%can_theiv   (i,j,ilp) = leaf_g(ifm)%can_theiv(i,j,1)
+            leaf_g(ifm)%can_rvap    (i,j,ilp) = leaf_g(ifm)%can_rvap (i,j,1)
+            leaf_g(ifm)%can_prss    (i,j,ilp) = leaf_g(ifm)%can_prss(i,j,1)
+            leaf_g(ifm)%gpp         (i,j,ilp) = 0.0
+            leaf_g(ifm)%resphet     (i,j,ilp) = 0.0
+            leaf_g(ifm)%plresp      (i,j,ilp) = 0.0
+            leaf_g(ifm)%sensible_gc (i,j,ilp) = 0.0
+            leaf_g(ifm)%sensible_vc (i,j,ilp) = 0.0
+            leaf_g(ifm)%evap_gc     (i,j,ilp) = 0.0
+            leaf_g(ifm)%evap_vc     (i,j,ilp) = 0.0
+            leaf_g(ifm)%transp      (i,j,ilp) = 0.0
+         end do
       end do
    end do
 
@@ -1086,7 +1117,6 @@ end subroutine initialize_ed2leaf
 subroutine transfer_ed2leaf(ifm,timel)
    use mem_edcp      , only : ed_fluxf_g  & ! structure
                             , ed_fluxp_g  & ! structure
-                            , wgrid_g     & ! structure
                             , edtime1     & ! intent(in)
                             , edtime2     ! ! intent(in)
    use mem_turb      , only : turb_g      ! ! structure
@@ -1109,6 +1139,7 @@ subroutine transfer_ed2leaf(ifm,timel)
                             , jz1         & ! intent(in)
                             , ibcon       ! ! intent(in)
    use mem_grid      , only : jdim        & ! intent(in)
+                            , npatch      & ! intent(in)
                             , grid_g      ! ! structure
    use ed_state_vars , only : edgrid_g    & ! structure
                             , edtype      & ! structure
@@ -1123,15 +1154,22 @@ subroutine transfer_ed2leaf(ifm,timel)
    type(edtype)     , pointer   :: cgrid
    type(polygontype), pointer   :: cpoly
    type(sitetype)   , pointer   :: csite
-   real                         :: tfact,la
-   integer                      :: ic,jc,ici,jci,i,j,ix,iy
-   integer                      :: m2,m3
-   integer                      :: ipy, isi
-   real                         :: site_area_i, polygon_area_i
-   !----- Local constants -----------------------------------------------------------------!
-   real             , parameter :: z0fac_water  = 0.016/grav
-   real             , parameter :: snowrough    = 0.001
-   real             , parameter :: z0_min_water = 0.0001
+   real                         :: tfact
+   real                         :: la
+   integer                      :: ic
+   integer                      :: jc
+   integer                      :: ici
+   integer                      :: jci
+   integer                      :: i
+   integer                      :: j
+   integer                      :: ix
+   integer                      :: iy
+   integer                      :: m2
+   integer                      :: m3
+   integer                      :: ipy
+   integer                      :: isi
+   integer                      :: ilp
+   real                         :: site_area_i
    !---------------------------------------------------------------------------------------!
 
    !----- Assigning some aliases ----------------------------------------------------------!
@@ -1141,111 +1179,94 @@ subroutine transfer_ed2leaf(ifm,timel)
 
   
    !---------------------------------------------------------------------------------------!
-   !     There are effectively two LEAF-3 patches: patch 1 is water, patch 2 is land (the  !
-   ! ED polygon level.  We could also assign leaf_g(ifm)%zrough based on the surface       !
-   ! characteristics of ED, and discretize the sites or ed-patches into leaf patches, but  !
-   ! for now they are left homogeneous as land.                                            !
+   !     Interpolate the fluxes of every leaf patch (ED site) in time, and copy to the     !
+   ! leaf structures as they can be used by other parts of BRAMS.                          !
    !---------------------------------------------------------------------------------------!
-  
-  
    do j=ja,jz
-      do i=ia,iz 
-         !---------------------------------------------------------------------------------!
-         !      For the stars, we use a simple linear interpolation on time.               !
-         !---------------------------------------------------------------------------------!
-         leaf_g(ifm)%ustar(i,j,2) = (1. - tfact) * ed_fluxp_g(ifm)%ustar(i,j)              &
-                                  +       tfact  * ed_fluxf_g(ifm)%ustar(i,j)
-         leaf_g(ifm)%tstar(i,j,2) = (1. - tfact) * ed_fluxp_g(ifm)%tstar(i,j)              &
-                                  +       tfact  * ed_fluxf_g(ifm)%tstar(i,j)
-         leaf_g(ifm)%rstar(i,j,2) = (1. - tfact) * ed_fluxp_g(ifm)%rstar(i,j)              &
-                                  +       tfact  * ed_fluxf_g(ifm)%rstar(i,j)
-         leaf_g(ifm)%cstar(i,j,2) = (1. - tfact) * ed_fluxp_g(ifm)%cstar(i,j)              &
-                                  +       tfact  * ed_fluxf_g(ifm)%cstar(i,j)
+      do i=ia,iz
+         !----- Reset the radiation data, which will be averaged amongst all sites. -------!
+         radiate_g(ifm)%albedt (i,j) = 0.0
+         radiate_g(ifm)%rlongup(i,j) = 0.0
 
-         !---------------------------------------------------------------------------------!
-         !      The following variables are for diagnostics only, linear interpolation is  !
-         ! fine.                                                                           !
-         !---------------------------------------------------------------------------------!
-         leaf_g(ifm)%zeta(i,j,2)   = (1. - tfact) * ed_fluxp_g(ifm)%zeta(i,j)              &
-                                   +       tfact  * ed_fluxf_g(ifm)%zeta(i,j)
+         !----- Reset the turbulent flux data, which will be averaged amongst all sites. --!
+         turb_g(ifm)%sflux_u   (i,j) = 0.0
+         turb_g(ifm)%sflux_v   (i,j) = 0.0
+         turb_g(ifm)%sflux_w   (i,j) = 0.0
+         turb_g(ifm)%sflux_t   (i,j) = 0.0
+         turb_g(ifm)%sflux_r   (i,j) = 0.0
+         turb_g(ifm)%sflux_c   (i,j) = 0.0
 
-         leaf_g(ifm)%ribulk(i,j,2) = (1. - tfact) * ed_fluxp_g(ifm)%ribulk(i,j)            &
-                                   +       tfact  * ed_fluxf_g(ifm)%ribulk(i,j)
+         do ilp=1,npatch
+            !------------------------------------------------------------------------------!
+            !      For the stars, we use a simple linear interpolation on time.            !
+            !------------------------------------------------------------------------------!
+            leaf_g(ifm)%ustar(i,j,ilp) = (1. - tfact) * ed_fluxp_g(ifm)%ustar(i,j,ilp)     &
+                                       +       tfact  * ed_fluxf_g(ifm)%ustar(i,j,ilp)
+            leaf_g(ifm)%tstar(i,j,ilp) = (1. - tfact) * ed_fluxp_g(ifm)%tstar(i,j,ilp)     &
+                                       +       tfact  * ed_fluxf_g(ifm)%tstar(i,j,ilp)
+            leaf_g(ifm)%rstar(i,j,ilp) = (1. - tfact) * ed_fluxp_g(ifm)%rstar(i,j,ilp)     &
+                                       +       tfact  * ed_fluxf_g(ifm)%rstar(i,j,ilp)
+            leaf_g(ifm)%cstar(i,j,ilp) = (1. - tfact) * ed_fluxp_g(ifm)%cstar(i,j,ilp)     &
+                                       +       tfact  * ed_fluxf_g(ifm)%cstar(i,j,ilp)
 
-         !---------------------------------------------------------------------------------!
-         !      For the albedo and surface fluxes, we must blend land and water.  The land !
-         ! (ED polygon) is done similarly to the stars, while the water uses the instant-  !
-         ! aneous value.                                                                   !
-         !---------------------------------------------------------------------------------!
-         radiate_g(ifm)%albedt(i,j) = leaf_g(ifm)%patch_area(i,j,2)                        &
-                                    * ( (1.-tfact) * ed_fluxp_g(ifm)%albedt(i,j)           &
-                                      +     tfact  * ed_fluxf_g(ifm)%albedt(i,j) )         &
-                                    + leaf_g(ifm)%patch_area(i,j,1)                        &
-                                    * wgrid_g(ifm)%albedt(i,j)
+            !------------------------------------------------------------------------------!
+            !      The following variables are for diagnostics only, linear interpolation  !
+            ! is fine.                                                                     !
+            !------------------------------------------------------------------------------!
+            leaf_g(ifm)%zeta  (i,j,ilp) = (1. - tfact) * ed_fluxp_g(ifm)%zeta(i,j,ilp)     &
+                                        +       tfact  * ed_fluxf_g(ifm)%zeta(i,j,ilp)
 
-         radiate_g(ifm)%rlongup(i,j) = leaf_g(ifm)%patch_area(i,j,2)                       &
-                                     * ( (1.-tfact) * ed_fluxp_g(ifm)%rlongup(i,j)         &
-                                       +     tfact  * ed_fluxf_g(ifm)%rlongup(i,j) )       &
-                                     + leaf_g(ifm)%patch_area(i,j,1)                       &
-                                     * wgrid_g(ifm)%rlongup(i,j)
+            leaf_g(ifm)%ribulk(i,j,ilp) = (1. - tfact) * ed_fluxp_g(ifm)%ribulk(i,j,ilp)   &
+                                        +       tfact  * ed_fluxf_g(ifm)%ribulk(i,j,ilp)
 
-         turb_g(ifm)%sflux_u(i,j)    = leaf_g(ifm)%patch_area(i,j,2)                       &
-                                     * ( (1.-tfact) * ed_fluxp_g(ifm)%sflux_u(i,j)         &
-                                       +     tfact  * ed_fluxf_g(ifm)%sflux_u(i,j))        &
-                                     + leaf_g(ifm)%patch_area(i,j,1)                       &
-                                     * wgrid_g(ifm)%sflux_u(i,j)
+            !------------------------------------------------------------------------------!
+            !      For the albedo and surface fluxes, we must blend land and water.  The   !
+            ! land (ED polygon) is done similarly to the stars, while the water uses the   !
+            ! instantaneous value.                                                         !
+            !------------------------------------------------------------------------------!
+            radiate_g(ifm)%albedt (i,j) = radiate_g(ifm)%albedt(i,j)                       &
+                                        + leaf_g(ifm)%patch_area(i,j,ilp)                  &
+                                        * ( (1.-tfact) * ed_fluxp_g(ifm)%albedt (i,j,ilp)  &
+                                          +     tfact  * ed_fluxf_g(ifm)%albedt (i,j,ilp) )
 
-         turb_g(ifm)%sflux_v(i,j)    = leaf_g(ifm)%patch_area(i,j,2)                       &
-                                     * ( (1.-tfact) * ed_fluxp_g(ifm)%sflux_v(i,j)         &
-                                       +     tfact  * ed_fluxf_g(ifm)%sflux_v(i,j))        &
-                                     + leaf_g(ifm)%patch_area(i,j,1)                       &
-                                     * wgrid_g(ifm)%sflux_v(i,j)
+            radiate_g(ifm)%rlongup(i,j) = radiate_g(ifm)%rlongup(i,j)                      &
+                                        + leaf_g(ifm)%patch_area(i,j,ilp)                  &
+                                        * ( (1.-tfact) * ed_fluxp_g(ifm)%rlongup(i,j,ilp)  &
+                                          +     tfact  * ed_fluxf_g(ifm)%rlongup(i,j,ilp) )
 
-         turb_g(ifm)%sflux_w(i,j)    = leaf_g(ifm)%patch_area(i,j,2)                       &
-                                     * ( (1.-tfact) * ed_fluxp_g(ifm)%sflux_w(i,j)         &
-                                       +     tfact  * ed_fluxf_g(ifm)%sflux_w(i,j) )       &
-                                     + leaf_g(ifm)%patch_area(i,j,1)                       &
-                                     * wgrid_g(ifm)%sflux_w(i,j)
+            turb_g(ifm)%sflux_u(i,j)    = turb_g(ifm)%sflux_u(i,j)                         &
+                                        + leaf_g(ifm)%patch_area(i,j,ilp)                  &
+                                        * ( (1.-tfact) * ed_fluxp_g(ifm)%sflux_u(i,j,ilp)  &
+                                          +     tfact  * ed_fluxf_g(ifm)%sflux_u(i,j,ilp))
 
-         turb_g(ifm)%sflux_t(i,j)    = leaf_g(ifm)%patch_area(i,j,2)                       &
-                                     * ( (1.-tfact) * ed_fluxp_g(ifm)%sflux_t(i,j)         &
-                                       +     tfact  * ed_fluxf_g(ifm)%sflux_t(i,j) )       &
-                                     + leaf_g(ifm)%patch_area(i,j,1)                       &
-                                     * wgrid_g(ifm)%sflux_t(i,j)
+            turb_g(ifm)%sflux_v(i,j)    = turb_g(ifm)%sflux_v(i,j)                         &
+                                        + leaf_g(ifm)%patch_area(i,j,ilp)                  &
+                                        * ( (1.-tfact) * ed_fluxp_g(ifm)%sflux_v(i,j,ilp)  &
+                                          +     tfact  * ed_fluxf_g(ifm)%sflux_v(i,j,ilp))
 
-         turb_g(ifm)%sflux_r(i,j)    = leaf_g(ifm)%patch_area(i,j,2)                       &
-                                     * ( (1.-tfact) * ed_fluxp_g(ifm)%sflux_r(i,j)         &
-                                       +     tfact  * ed_fluxf_g(ifm)%sflux_r(i,j))        &
-                                     + leaf_g(ifm)%patch_area(i,j,1)                       &
-                                     * wgrid_g(ifm)%sflux_r(i,j)
+            turb_g(ifm)%sflux_w(i,j)    = turb_g(ifm)%sflux_w(i,j)                         &
+                                        + leaf_g(ifm)%patch_area(i,j,ilp)                  &
+                                        * ( (1.-tfact) * ed_fluxp_g(ifm)%sflux_w(i,j,ilp)  &
+                                          +     tfact  * ed_fluxf_g(ifm)%sflux_w(i,j,ilp))
 
-         turb_g(ifm)%sflux_c(i,j)    = leaf_g(ifm)%patch_area(i,j,2)                       &
-                                     * ( (1.-tfact) * ed_fluxp_g(ifm)%sflux_c(i,j)         &
-                                       +     tfact  * ed_fluxf_g(ifm)%sflux_c(i,j))        &
-                                     + leaf_g(ifm)%patch_area(i,j,1)                       &
-                                     * wgrid_g(ifm)%sflux_c(i,j)
+            turb_g(ifm)%sflux_t(i,j)    = turb_g(ifm)%sflux_t(i,j)                         &
+                                        + leaf_g(ifm)%patch_area(i,j,ilp)                  &
+                                        * ( (1.-tfact) * ed_fluxp_g(ifm)%sflux_t(i,j,ilp)  &
+                                          +     tfact  * ed_fluxf_g(ifm)%sflux_t(i,j,ilp))
 
-         !----- Copy the water-body fluxes, they are synchronised with BRAMS --------------!
-         leaf_g(ifm)%ustar(i,j,1)  = wgrid_g(ifm)%ustar (i,j)
-         leaf_g(ifm)%tstar(i,j,1)  = wgrid_g(ifm)%tstar (i,j)
-         leaf_g(ifm)%rstar(i,j,1)  = wgrid_g(ifm)%rstar (i,j)
-         leaf_g(ifm)%cstar(i,j,1)  = wgrid_g(ifm)%cstar (i,j)
-         leaf_g(ifm)%zeta (i,j,1)  = wgrid_g(ifm)%zeta  (i,j)
-         leaf_g(ifm)%ribulk(i,j,1) = wgrid_g(ifm)%ribulk(i,j)
+            turb_g(ifm)%sflux_r(i,j)    = turb_g(ifm)%sflux_r(i,j)                         &
+                                        + leaf_g(ifm)%patch_area(i,j,ilp)                  &
+                                        * ( (1.-tfact) * ed_fluxp_g(ifm)%sflux_r(i,j,ilp)  &
+                                          +     tfact  * ed_fluxf_g(ifm)%sflux_r(i,j,ilp))
 
-         !----- Find roughness scales for water bodies ------------------------------------!
-         leaf_g(ifm)%patch_rough(i,j,1) = max(z0fac_water * leaf_g(ifm)%ustar(i,j,1) ** 2  &
-                                             ,z0_min_water)
-         leaf_g(ifm)%soil_rough(i,j,1)  = 0.0
-         leaf_g(ifm)%veg_rough(i,j,1)   = 0.0
-         
-         !----- Initializing the land bodies. They will remain 0 over the ocean. ----------!
-         leaf_g(ifm)%veg_rough(i,j,2)   = 0.0
-         leaf_g(ifm)%soil_rough(i,j,2)  = soil_rough
-         leaf_g(ifm)%patch_rough(i,j,2) = 0.0
+            turb_g(ifm)%sflux_c(i,j)    = turb_g(ifm)%sflux_c(i,j)                         &
+                                        + leaf_g(ifm)%patch_area(i,j,ilp)                  &
+                                        * ( (1.-tfact) * ed_fluxp_g(ifm)%sflux_c(i,j,ilp)  &
+                                          +     tfact  * ed_fluxf_g(ifm)%sflux_c(i,j,ilp))
+                                          
+         end do
       end do
    end do
-
    !---------------------------------------------------------------------------------------!
    !     Computing the vegetation and patch roughness for land.  We assign the polygon     !
    ! average in both cases.                                                                !
@@ -1255,29 +1276,24 @@ subroutine transfer_ed2leaf(ifm,timel)
       cpoly => cgrid%polygon(ipy)
       ix     = cgrid%ilon(ipy)
       iy    = cgrid%ilat(ipy)     
-      polygon_area_i = 1. / sum(cpoly%area(:))
 
       siteloop: do isi = 1, cpoly%nsites
+         !------ Leaf patch is offset by 1 because the 1st patch is water. ----------------!
+         ilp = isi + 1
+
          csite => cpoly%site(isi)
          site_area_i = 1. / sum(csite%area(:))
 
-         leaf_g(ifm)%veg_rough(ix,iy,2)   = leaf_g(ifm)%veg_rough(ix,iy,2)                 &
-                                          + sum(csite%veg_rough(:)*csite%area(:))          &
-                                          * cpoly%area(isi)  * site_area_i * polygon_area_i
-         leaf_g(ifm)%patch_rough(ix,iy,2) = leaf_g(ifm)%patch_rough(ix,iy,2)               &
-                                          + sum(csite%rough(:)*csite%area(:))              &
-                                          * cpoly%area(isi) * site_area_i * polygon_area_i
+         leaf_g(ifm)%veg_rough   (ix,iy,ilp) = sum(csite%veg_rough(:)*csite%area(:))       &
+                                             * site_area_i
+         leaf_g(ifm)%patch_rough (ix,iy,ilp) = sum(csite%rough(:)*csite%area(:))           &
+                                             * site_area_i
+         !----- Not sure about this one, but this is consistent with LEAF-3 ---------------!
+         leaf_g(ifm)%patch_rough (ix,iy,ilp) = max(leaf_g(ifm)%patch_rough(ix,iy,ilp)      &
+                                                  ,leaf_g(ifm)%soil_rough (ix,iy,ilp)      &
+                                                  ,grid_g(ifm)%topzo      (ix,iy)    )
       end do siteloop
    end do polyloop
-  
-   do j=ja,jz
-      do i=ia,iz
-         !----- Not sure about this one, but this is consistent with LEAF-3 ---------------!
-         leaf_g(ifm)%patch_rough(i,j,2) = max(leaf_g(ifm)%patch_rough(i,j,2)               &
-                                             ,leaf_g(ifm)%soil_rough(i,j,2)                &
-                                             ,grid_g(ifm)%topzo(i,j))
-      end do
-   end do
    !---------------------------------------------------------------------------------------!
 
 
@@ -1302,20 +1318,15 @@ subroutine transfer_ed2leaf(ifm,timel)
          turb_g(ifm)%sflux_t(1,j)   = turb_g(ifm)%sflux_t(2,j)
          turb_g(ifm)%sflux_r(1,j)   = turb_g(ifm)%sflux_r(2,j)
          turb_g(ifm)%sflux_c(1,j)   = turb_g(ifm)%sflux_c(2,j)
- 
-         leaf_g(ifm)%ustar (1,j,1)  = leaf_g(ifm)%ustar (2,j,1)
-         leaf_g(ifm)%rstar (1,j,1)  = leaf_g(ifm)%rstar (2,j,1)
-         leaf_g(ifm)%tstar (1,j,1)  = leaf_g(ifm)%tstar (2,j,1)
-         leaf_g(ifm)%cstar (1,j,1)  = leaf_g(ifm)%cstar (2,j,1)
-         leaf_g(ifm)%zeta  (1,j,1)  = leaf_g(ifm)%zeta  (2,j,1)
-         leaf_g(ifm)%ribulk(1,j,1)  = leaf_g(ifm)%ribulk(2,j,1)
 
-         leaf_g(ifm)%ustar (1,j,2)  = leaf_g(ifm)%ustar (2,j,2)
-         leaf_g(ifm)%rstar (1,j,2)  = leaf_g(ifm)%rstar (2,j,2)
-         leaf_g(ifm)%tstar (1,j,2)  = leaf_g(ifm)%tstar (2,j,2)
-         leaf_g(ifm)%cstar (1,j,2)  = leaf_g(ifm)%cstar (2,j,2)
-         leaf_g(ifm)%zeta  (1,j,2)  = leaf_g(ifm)%zeta  (2,j,2)
-         leaf_g(ifm)%ribulk(1,j,2)  = leaf_g(ifm)%ribulk(2,j,2)
+         do ilp=1,npatch
+            leaf_g(ifm)%ustar (1,j,ilp)  = leaf_g(ifm)%ustar (2,j,ilp)
+            leaf_g(ifm)%rstar (1,j,ilp)  = leaf_g(ifm)%rstar (2,j,ilp)
+            leaf_g(ifm)%tstar (1,j,ilp)  = leaf_g(ifm)%tstar (2,j,ilp)
+            leaf_g(ifm)%cstar (1,j,ilp)  = leaf_g(ifm)%cstar (2,j,ilp)
+            leaf_g(ifm)%zeta  (1,j,ilp)  = leaf_g(ifm)%zeta  (2,j,ilp)
+            leaf_g(ifm)%ribulk(1,j,ilp)  = leaf_g(ifm)%ribulk(2,j,ilp)
+         end do
       end do
    end if
 
@@ -1331,20 +1342,15 @@ subroutine transfer_ed2leaf(ifm,timel)
          turb_g(ifm)%sflux_t(m2,j)   = turb_g(ifm)%sflux_t(m2-1,j)
          turb_g(ifm)%sflux_r(m2,j)   = turb_g(ifm)%sflux_r(m2-1,j)
          turb_g(ifm)%sflux_c(m2,j)   = turb_g(ifm)%sflux_c(m2-1,j)
-      
-         leaf_g(ifm)%ustar  (m2,j,1) = leaf_g(ifm)%ustar  (m2-1,j,1)
-         leaf_g(ifm)%rstar  (m2,j,1) = leaf_g(ifm)%rstar  (m2-1,j,1)
-         leaf_g(ifm)%tstar  (m2,j,1) = leaf_g(ifm)%tstar  (m2-1,j,1)
-         leaf_g(ifm)%cstar  (m2,j,1) = leaf_g(ifm)%cstar  (m2-1,j,1)
-         leaf_g(ifm)%zeta   (m2,j,1) = leaf_g(ifm)%zeta   (m2-1,j,1)
-         leaf_g(ifm)%ribulk (m2,j,1) = leaf_g(ifm)%ribulk (m2-1,j,1)
 
-         leaf_g(ifm)%ustar  (m2,j,2) = leaf_g(ifm)%ustar  (m2-1,j,2)
-         leaf_g(ifm)%rstar  (m2,j,2) = leaf_g(ifm)%rstar  (m2-1,j,2)
-         leaf_g(ifm)%tstar  (m2,j,2) = leaf_g(ifm)%tstar  (m2-1,j,2)
-         leaf_g(ifm)%cstar  (m2,j,2) = leaf_g(ifm)%cstar  (m2-1,j,2)
-         leaf_g(ifm)%zeta   (m2,j,2) = leaf_g(ifm)%zeta   (m2-1,j,2)
-         leaf_g(ifm)%ribulk (m2,j,2) = leaf_g(ifm)%ribulk (m2-1,j,2)
+         do ilp=1,npatch
+            leaf_g(ifm)%ustar  (m2,j,ilp) = leaf_g(ifm)%ustar  (m2-1,j,ilp)
+            leaf_g(ifm)%rstar  (m2,j,ilp) = leaf_g(ifm)%rstar  (m2-1,j,ilp)
+            leaf_g(ifm)%tstar  (m2,j,ilp) = leaf_g(ifm)%tstar  (m2-1,j,ilp)
+            leaf_g(ifm)%cstar  (m2,j,ilp) = leaf_g(ifm)%cstar  (m2-1,j,ilp)
+            leaf_g(ifm)%zeta   (m2,j,ilp) = leaf_g(ifm)%zeta   (m2-1,j,ilp)
+            leaf_g(ifm)%ribulk (m2,j,ilp) = leaf_g(ifm)%ribulk (m2-1,j,ilp)
+         end do
       end do
    end if
 
@@ -1361,19 +1367,14 @@ subroutine transfer_ed2leaf(ifm,timel)
          turb_g(ifm)%sflux_r(i,1)   = turb_g(ifm)%sflux_r(i,2)
          turb_g(ifm)%sflux_c(i,1)   = turb_g(ifm)%sflux_c(i,2)
 
-         leaf_g(ifm)%ustar  (i,1,1) = leaf_g(ifm)%ustar  (i,2,1)
-         leaf_g(ifm)%rstar  (i,1,1) = leaf_g(ifm)%rstar  (i,2,1)
-         leaf_g(ifm)%tstar  (i,1,1) = leaf_g(ifm)%tstar  (i,2,1)
-         leaf_g(ifm)%cstar  (i,1,1) = leaf_g(ifm)%cstar  (i,2,1)
-         leaf_g(ifm)%zeta   (i,1,1) = leaf_g(ifm)%zeta   (i,2,1)
-         leaf_g(ifm)%ribulk (i,1,1) = leaf_g(ifm)%ribulk (i,2,1)
-
-         leaf_g(ifm)%ustar  (i,1,2) = leaf_g(ifm)%ustar  (i,2,2)
-         leaf_g(ifm)%rstar  (i,1,2) = leaf_g(ifm)%rstar  (i,2,2)
-         leaf_g(ifm)%tstar  (i,1,2) = leaf_g(ifm)%tstar  (i,2,2)
-         leaf_g(ifm)%cstar  (i,1,2) = leaf_g(ifm)%cstar  (i,2,2)
-         leaf_g(ifm)%zeta   (i,1,2) = leaf_g(ifm)%zeta   (i,2,2)
-         leaf_g(ifm)%ribulk (i,1,2) = leaf_g(ifm)%ribulk (i,2,2)
+         do ilp=1,npatch
+            leaf_g(ifm)%ustar  (i,1,ilp) = leaf_g(ifm)%ustar  (i,2,ilp)
+            leaf_g(ifm)%rstar  (i,1,ilp) = leaf_g(ifm)%rstar  (i,2,ilp)
+            leaf_g(ifm)%tstar  (i,1,ilp) = leaf_g(ifm)%tstar  (i,2,ilp)
+            leaf_g(ifm)%cstar  (i,1,ilp) = leaf_g(ifm)%cstar  (i,2,ilp)
+            leaf_g(ifm)%zeta   (i,1,ilp) = leaf_g(ifm)%zeta   (i,2,ilp)
+            leaf_g(ifm)%ribulk (i,1,ilp) = leaf_g(ifm)%ribulk (i,2,ilp)
+         end do
       end do
    end if
 
@@ -1391,19 +1392,14 @@ subroutine transfer_ed2leaf(ifm,timel)
          turb_g(ifm)%sflux_r(i,m3)   = turb_g(ifm)%sflux_r(i,m3-1)
          turb_g(ifm)%sflux_c(i,m3)   = turb_g(ifm)%sflux_c(i,m3-1)
 
-         leaf_g(ifm)%ustar  (i,m3,1) = leaf_g(ifm)%ustar  (i,m3-1,1)
-         leaf_g(ifm)%rstar  (i,m3,1) = leaf_g(ifm)%rstar  (i,m3-1,1)
-         leaf_g(ifm)%tstar  (i,m3,1) = leaf_g(ifm)%tstar  (i,m3-1,1)
-         leaf_g(ifm)%cstar  (i,m3,1) = leaf_g(ifm)%cstar  (i,m3-1,1)
-         leaf_g(ifm)%zeta   (i,m3,1) = leaf_g(ifm)%zeta   (i,m3-1,1)
-         leaf_g(ifm)%ribulk (i,m3,1) = leaf_g(ifm)%ribulk (i,m3-1,1)
-
-         leaf_g(ifm)%ustar  (i,m3,2) = leaf_g(ifm)%ustar  (i,m3-1,2)
-         leaf_g(ifm)%rstar  (i,m3,2) = leaf_g(ifm)%rstar  (i,m3-1,2)
-         leaf_g(ifm)%tstar  (i,m3,2) = leaf_g(ifm)%tstar  (i,m3-1,2)
-         leaf_g(ifm)%cstar  (i,m3,2) = leaf_g(ifm)%cstar  (i,m3-1,2)
-         leaf_g(ifm)%zeta   (i,m3,2) = leaf_g(ifm)%zeta   (i,m3-1,2)
-         leaf_g(ifm)%ribulk (i,m3,2) = leaf_g(ifm)%ribulk (i,m3-1,2)
+         do ilp=1,npatch
+            leaf_g(ifm)%ustar  (i,m3,ilp) = leaf_g(ifm)%ustar  (i,m3-1,ilp)
+            leaf_g(ifm)%rstar  (i,m3,ilp) = leaf_g(ifm)%rstar  (i,m3-1,ilp)
+            leaf_g(ifm)%tstar  (i,m3,ilp) = leaf_g(ifm)%tstar  (i,m3-1,ilp)
+            leaf_g(ifm)%cstar  (i,m3,ilp) = leaf_g(ifm)%cstar  (i,m3-1,ilp)
+            leaf_g(ifm)%zeta   (i,m3,ilp) = leaf_g(ifm)%zeta   (i,m3-1,ilp)
+            leaf_g(ifm)%ribulk (i,m3,ilp) = leaf_g(ifm)%ribulk (i,m3-1,ilp)
+         end do
 
       end do
    end if
@@ -1425,19 +1421,14 @@ subroutine transfer_ed2leaf(ifm,timel)
       turb_g(ifm)%sflux_r(ic,jc)   = turb_g(ifm)%sflux_r(ici,jci)
       turb_g(ifm)%sflux_c(ic,jc)   = turb_g(ifm)%sflux_c(ici,jci)
 
-      leaf_g(ifm)%ustar  (ic,jc,1) = leaf_g(ifm)%ustar  (ici,jci,1)
-      leaf_g(ifm)%rstar  (ic,jc,1) = leaf_g(ifm)%rstar  (ici,jci,1)
-      leaf_g(ifm)%tstar  (ic,jc,1) = leaf_g(ifm)%tstar  (ici,jci,1)
-      leaf_g(ifm)%cstar  (ic,jc,1) = leaf_g(ifm)%cstar  (ici,jci,1)
-      leaf_g(ifm)%zeta   (ic,jc,1) = leaf_g(ifm)%zeta   (ici,jci,1)
-      leaf_g(ifm)%ribulk (ic,jc,1) = leaf_g(ifm)%ribulk (ici,jci,1)
-
-      leaf_g(ifm)%ustar  (ic,jc,2) = leaf_g(ifm)%ustar  (ici,jci,2)
-      leaf_g(ifm)%rstar  (ic,jc,2) = leaf_g(ifm)%rstar  (ici,jci,2)
-      leaf_g(ifm)%tstar  (ic,jc,2) = leaf_g(ifm)%tstar  (ici,jci,2)
-      leaf_g(ifm)%cstar  (ic,jc,2) = leaf_g(ifm)%cstar  (ici,jci,2)
-      leaf_g(ifm)%zeta   (ic,jc,2) = leaf_g(ifm)%zeta   (ici,jci,2)
-      leaf_g(ifm)%ribulk (ic,jc,2) = leaf_g(ifm)%ribulk (ici,jci,2)
+      do ilp=1,npatch
+         leaf_g(ifm)%ustar  (ic,jc,ilp) = leaf_g(ifm)%ustar  (ici,jci,ilp)
+         leaf_g(ifm)%rstar  (ic,jc,ilp) = leaf_g(ifm)%rstar  (ici,jci,ilp)
+         leaf_g(ifm)%tstar  (ic,jc,ilp) = leaf_g(ifm)%tstar  (ici,jci,ilp)
+         leaf_g(ifm)%cstar  (ic,jc,ilp) = leaf_g(ifm)%cstar  (ici,jci,ilp)
+         leaf_g(ifm)%zeta   (ic,jc,ilp) = leaf_g(ifm)%zeta   (ici,jci,ilp)
+         leaf_g(ifm)%ribulk (ic,jc,ilp) = leaf_g(ifm)%ribulk (ici,jci,ilp)
+      end do
 
    end if
 
@@ -1458,19 +1449,14 @@ subroutine transfer_ed2leaf(ifm,timel)
       turb_g(ifm)%sflux_r(ic,jc)   = turb_g(ifm)%sflux_r(ici,jci)
       turb_g(ifm)%sflux_c(ic,jc)   = turb_g(ifm)%sflux_c(ici,jci)
 
-      leaf_g(ifm)%ustar  (ic,jc,1) = leaf_g(ifm)%ustar  (ici,jci,1)
-      leaf_g(ifm)%rstar  (ic,jc,1) = leaf_g(ifm)%rstar  (ici,jci,1)
-      leaf_g(ifm)%tstar  (ic,jc,1) = leaf_g(ifm)%tstar  (ici,jci,1)
-      leaf_g(ifm)%cstar  (ic,jc,1) = leaf_g(ifm)%cstar  (ici,jci,1)
-      leaf_g(ifm)%zeta   (ic,jc,1) = leaf_g(ifm)%zeta   (ici,jci,1)
-      leaf_g(ifm)%ribulk (ic,jc,1) = leaf_g(ifm)%ribulk (ici,jci,1)
-
-      leaf_g(ifm)%ustar  (ic,jc,2) = leaf_g(ifm)%ustar  (ici,jci,2)
-      leaf_g(ifm)%rstar  (ic,jc,2) = leaf_g(ifm)%rstar  (ici,jci,2)
-      leaf_g(ifm)%tstar  (ic,jc,2) = leaf_g(ifm)%tstar  (ici,jci,2)
-      leaf_g(ifm)%cstar  (ic,jc,2) = leaf_g(ifm)%cstar  (ici,jci,2)
-      leaf_g(ifm)%zeta   (ic,jc,2) = leaf_g(ifm)%zeta   (ici,jci,2)
-      leaf_g(ifm)%ribulk (ic,jc,2) = leaf_g(ifm)%ribulk (ici,jci,2)
+      do ilp=1,npatch
+         leaf_g(ifm)%ustar  (ic,jc,ilp) = leaf_g(ifm)%ustar  (ici,jci,ilp)
+         leaf_g(ifm)%rstar  (ic,jc,ilp) = leaf_g(ifm)%rstar  (ici,jci,ilp)
+         leaf_g(ifm)%tstar  (ic,jc,ilp) = leaf_g(ifm)%tstar  (ici,jci,ilp)
+         leaf_g(ifm)%cstar  (ic,jc,ilp) = leaf_g(ifm)%cstar  (ici,jci,ilp)
+         leaf_g(ifm)%zeta   (ic,jc,ilp) = leaf_g(ifm)%zeta   (ici,jci,ilp)
+         leaf_g(ifm)%ribulk (ic,jc,ilp) = leaf_g(ifm)%ribulk (ici,jci,ilp)
+      end do
    end if
   
    !----- Northwestern corner -------------------------------------------------------------!
@@ -1490,19 +1476,14 @@ subroutine transfer_ed2leaf(ifm,timel)
       turb_g(ifm)%sflux_r(ic,jc)   = turb_g(ifm)%sflux_r(ici,jci)
       turb_g(ifm)%sflux_c(ic,jc)   = turb_g(ifm)%sflux_c(ici,jci)
 
-      leaf_g(ifm)%ustar  (ic,jc,1) = leaf_g(ifm)%ustar  (ici,jci,1)
-      leaf_g(ifm)%rstar  (ic,jc,1) = leaf_g(ifm)%rstar  (ici,jci,1)
-      leaf_g(ifm)%tstar  (ic,jc,1) = leaf_g(ifm)%tstar  (ici,jci,1)
-      leaf_g(ifm)%cstar  (ic,jc,1) = leaf_g(ifm)%cstar  (ici,jci,1)
-      leaf_g(ifm)%zeta   (ic,jc,1) = leaf_g(ifm)%zeta   (ici,jci,1)
-      leaf_g(ifm)%ribulk (ic,jc,1) = leaf_g(ifm)%ribulk (ici,jci,1)
-
-      leaf_g(ifm)%ustar  (ic,jc,2) = leaf_g(ifm)%ustar  (ici,jci,2)
-      leaf_g(ifm)%rstar  (ic,jc,2) = leaf_g(ifm)%rstar  (ici,jci,2)
-      leaf_g(ifm)%tstar  (ic,jc,2) = leaf_g(ifm)%tstar  (ici,jci,2)
-      leaf_g(ifm)%cstar  (ic,jc,2) = leaf_g(ifm)%cstar  (ici,jci,2)
-      leaf_g(ifm)%zeta   (ic,jc,2) = leaf_g(ifm)%zeta   (ici,jci,2)
-      leaf_g(ifm)%ribulk (ic,jc,2) = leaf_g(ifm)%ribulk (ici,jci,2)
+      do ilp=1,npatch
+         leaf_g(ifm)%ustar  (ic,jc,ilp) = leaf_g(ifm)%ustar  (ici,jci,ilp)
+         leaf_g(ifm)%rstar  (ic,jc,ilp) = leaf_g(ifm)%rstar  (ici,jci,ilp)
+         leaf_g(ifm)%tstar  (ic,jc,ilp) = leaf_g(ifm)%tstar  (ici,jci,ilp)
+         leaf_g(ifm)%cstar  (ic,jc,ilp) = leaf_g(ifm)%cstar  (ici,jci,ilp)
+         leaf_g(ifm)%zeta   (ic,jc,ilp) = leaf_g(ifm)%zeta   (ici,jci,ilp)
+         leaf_g(ifm)%ribulk (ic,jc,ilp) = leaf_g(ifm)%ribulk (ici,jci,ilp)
+      end do
    end if
 
    !----- Northeastern corner -------------------------------------------------------------!
@@ -1522,19 +1503,14 @@ subroutine transfer_ed2leaf(ifm,timel)
       turb_g(ifm)%sflux_r(ic,jc)   = turb_g(ifm)%sflux_r(ici,jci)
       turb_g(ifm)%sflux_c(ic,jc)   = turb_g(ifm)%sflux_c(ici,jci)
 
-      leaf_g(ifm)%ustar  (ic,jc,1) = leaf_g(ifm)%ustar  (ici,jci,1)
-      leaf_g(ifm)%rstar  (ic,jc,1) = leaf_g(ifm)%rstar  (ici,jci,1)
-      leaf_g(ifm)%tstar  (ic,jc,1) = leaf_g(ifm)%tstar  (ici,jci,1)
-      leaf_g(ifm)%cstar  (ic,jc,1) = leaf_g(ifm)%cstar  (ici,jci,1)
-      leaf_g(ifm)%zeta   (ic,jc,1) = leaf_g(ifm)%zeta   (ici,jci,1)
-      leaf_g(ifm)%ribulk (ic,jc,1) = leaf_g(ifm)%ribulk (ici,jci,1)
-
-      leaf_g(ifm)%ustar  (ic,jc,2) = leaf_g(ifm)%ustar  (ici,jci,2)
-      leaf_g(ifm)%rstar  (ic,jc,2) = leaf_g(ifm)%rstar  (ici,jci,2)
-      leaf_g(ifm)%tstar  (ic,jc,2) = leaf_g(ifm)%tstar  (ici,jci,2)
-      leaf_g(ifm)%cstar  (ic,jc,2) = leaf_g(ifm)%cstar  (ici,jci,2)
-      leaf_g(ifm)%zeta   (ic,jc,2) = leaf_g(ifm)%zeta   (ici,jci,2)
-      leaf_g(ifm)%ribulk (ic,jc,2) = leaf_g(ifm)%ribulk (ici,jci,2)
+      do ilp=1,npatch
+         leaf_g(ifm)%ustar  (ic,jc,ilp) = leaf_g(ifm)%ustar  (ici,jci,ilp)
+         leaf_g(ifm)%rstar  (ic,jc,ilp) = leaf_g(ifm)%rstar  (ici,jci,ilp)
+         leaf_g(ifm)%tstar  (ic,jc,ilp) = leaf_g(ifm)%tstar  (ici,jci,ilp)
+         leaf_g(ifm)%cstar  (ic,jc,ilp) = leaf_g(ifm)%cstar  (ici,jci,ilp)
+         leaf_g(ifm)%zeta   (ic,jc,ilp) = leaf_g(ifm)%zeta   (ici,jci,ilp)
+         leaf_g(ifm)%ribulk (ic,jc,ilp) = leaf_g(ifm)%ribulk (ici,jci,ilp)
+      end do
    end if
 
 
@@ -1552,25 +1528,26 @@ end subroutine transfer_ed2leaf
 !==========================================================================================!
 subroutine copy_avgvars_to_leaf(ifm)
 
-   use ed_state_vars , only : edgrid_g     & ! structure
-                            , edtype       & ! structure
-                            , polygontype  & ! structure
-                            , sitetype     & ! structure
-                            , patchtype    ! ! structure
-   use mem_leaf      , only : leaf_g       ! ! intent(inout)
-   use mem_edcp      , only : co2_offset   & ! intent(in)
-                            , atm_co2_min  ! ! intent(in)
-   use mem_grid      , only : nzg          & ! intent(in)
-                            , nzs          ! ! intent(in)
-   use rconstants    , only : t3ple        & ! intent(in)
-                            , cliqvlme     & ! intent(in)
-                            , cicevlme     & ! intent(in)
-                            , allivlme     & ! intent(in)
-                            , alvl         ! ! intent(in)
-   use soil_coms     , only : soil         ! ! intent(in)
-   use ed_misc_coms  , only : frqsum       ! ! intent(in)
-   use ed_max_dims   , only : n_pft        & ! intent(in)
-                            , n_dbh        ! ! intent(in)
+   use ed_state_vars , only : edgrid_g           & ! structure
+                            , edtype             & ! structure
+                            , polygontype        & ! structure
+                            , sitetype           & ! structure
+                            , patchtype          ! ! structure
+   use mem_leaf      , only : leaf_g             ! ! intent(inout)
+   use mem_edcp      , only : co2_offset         & ! intent(in)
+                            , atm_co2_min        ! ! intent(in)
+   use mem_grid      , only : nzg                & ! intent(in)
+                            , nzs                ! ! intent(in)
+   use rconstants    , only : t3ple              & ! intent(in)
+                            , cliqvlme           & ! intent(in)
+                            , cicevlme           & ! intent(in)
+                            , allivlme           & ! intent(in)
+                            , alvl               ! ! intent(in)
+   use soil_coms     , only : soil               & ! intent(in)
+                            , tiny_sfcwater_mass ! ! intent(in)
+   use ed_misc_coms  , only : frqsum             ! ! intent(in)
+   use ed_max_dims   , only : n_pft              & ! intent(in)
+                            , n_dbh              ! ! intent(in)
    implicit none
    
    !----- Argument ------------------------------------------------------------------------!
@@ -1580,167 +1557,153 @@ subroutine copy_avgvars_to_leaf(ifm)
    type(polygontype), pointer :: cpoly
    type(sitetype)   , pointer :: csite
    type(patchtype)  , pointer :: cpatch
-   integer                    :: ipy,isi,ipa,ico
+   integer                    :: ipy
+   integer                    :: isi
+   integer                    :: ipa
+   integer                    :: ico
    integer                    :: ix
    integer                    :: iy
+   integer                    :: ilp
    integer                    :: k
    integer                    :: idbh
    integer                    :: ipft
    real                       :: site_area_i
-   real                       :: poly_area_i
-   real                       :: sitesum_gpp
-   real                       :: sitesum_plresp
-   real                       :: sitesum_resphet
    !---------------------------------------------------------------------------------------!
 
    !----- Set the pointers ----------------------------------------------------------------!
    cgrid => edgrid_g(ifm)
-
-   do ipy=1,cgrid%npolygons
-      cpoly => cgrid%polygon(ipy)
-
-      ix = cgrid%ilon(ipy)
-      iy = cgrid%ilat(ipy)
-      
-      do k=1,nzg
-         leaf_g(ifm)%soil_text  (k,ix,iy,2) = real(cgrid%ntext_soil(k,ipy))
-         leaf_g(ifm)%soil_energy(k,ix,iy,2) = cgrid%avg_soil_energy(k,ipy)
-         leaf_g(ifm)%soil_water (k,ix,iy,2) = cgrid%avg_soil_water (k,ipy)
-      end do
-      !----- Surface water is always 1, because we give the averaged value. ---------------!
-      leaf_g(ifm)%sfcwater_nlev     (ix,iy,2) = 1.
-      leaf_g(ifm)%sfcwater_energy (1,ix,iy,2) = cgrid%avg_sfcw_energy(ipy)
-      leaf_g(ifm)%sfcwater_mass   (1,ix,iy,2) = cgrid%avg_sfcw_mass  (ipy)
-      leaf_g(ifm)%sfcwater_depth  (1,ix,iy,2) = cgrid%avg_sfcw_depth (ipy)
-      do k=2,nzs
-         leaf_g(ifm)%sfcwater_energy (k,ix,iy,2) = 0.
-         leaf_g(ifm)%sfcwater_mass   (k,ix,iy,2) = 0.
-         leaf_g(ifm)%sfcwater_depth  (k,ix,iy,2) = 0.
-      end do
-      
-      !----- Update vegetation properties. ------------------------------------------------!
-      leaf_g(ifm)%veg_water(ix,iy,2)    = cgrid%avg_veg_water (ipy)
-      leaf_g(ifm)%veg_hcap (ix,iy,2)    = cgrid%avg_veg_hcap (ipy)
-      leaf_g(ifm)%veg_energy(ix,iy,2)   = cgrid%avg_veg_energy(ipy)
-      leaf_g(ifm)%veg_lai(ix,iy,2)      = cgrid%lai(ipy)
-      leaf_g(ifm)%veg_tai(ix,iy,2)      = cgrid%lai(ipy) + cgrid%wai(ipy)
-
-      !----- Fill above ground biomass by integrating all PFTs and DBH classes. -----------!
-      leaf_g(ifm)%veg_agb(ix,iy,2)      = 0.
-      do idbh=1,n_dbh
-         do ipft=1,n_pft
-            leaf_g(ifm)%veg_agb(ix,iy,2) = leaf_g(ifm)%veg_agb(ix,iy,2)                    &
-                                         + cgrid%agb(ipft,idbh,ipy)
-         end do
-      end do
-
-      !------------------------------------------------------------------------------------!
-      !      Update canopy air properties.                                                 !
-      !------------------------------------------------------------------------------------!
-      leaf_g(ifm)%can_theta(ix,iy,2)   = cgrid%avg_can_theta(ipy)
-      leaf_g(ifm)%can_theiv(ix,iy,2)   = cgrid%avg_can_theiv(ipy)
-      leaf_g(ifm)%can_co2(ix,iy,2)     = max( atm_co2_min                                  &
-                                            , cgrid%avg_can_co2(ipy) - co2_offset)
-      leaf_g(ifm)%can_prss(ix,iy,2)    = cgrid%avg_can_prss(ipy)
-      !----- ED uses specific humidity, converting it to mixing ratio. --------------------!
-      leaf_g(ifm)%can_rvap(ix,iy,2)    = cgrid%avg_can_shv(ipy)                           &
-                                       / (1.-cgrid%avg_can_shv(ipy))
-      !------------------------------------------------------------------------------------!
-
-      leaf_g(ifm)%sensible_gc(ix,iy,2) = cgrid%avg_sensible_gc(ipy)
-      leaf_g(ifm)%sensible_vc(ix,iy,2) = cgrid%avg_sensible_vc(ipy)
-      leaf_g(ifm)%evap_gc(ix,iy,2)     = (cgrid%avg_vapor_gc(ipy) - cgrid%avg_dew_cg(ipy)) &
-                                       * alvl
-      leaf_g(ifm)%evap_vc(ix,iy,2)     = cgrid%avg_vapor_vc(ipy) * alvl
-      leaf_g(ifm)%transp(ix,iy,2)      = cgrid%avg_transp(ipy)   * alvl
-
-      leaf_g(ifm)%gpp(ix,iy,2)         = 0.0
-      leaf_g(ifm)%resphet(ix,iy,2)     = 0.0
-      leaf_g(ifm)%plresp(ix,iy,2)      = 0.0
-
-      sitesum_gpp      = 0.0
-      sitesum_plresp   = 0.0
-      sitesum_resphet  = 0.0
-
-      poly_area_i = 1./sum(cpoly%area)
-      do isi=1,cpoly%nsites
-         csite => cpoly%site(isi)
-         if (csite%npatches > 0) then
-            site_area_i=1./sum(csite%area)
-            
-            sitesum_gpp      = sum(csite%area * csite%co2budget_gpp     ) * site_area_i
-            sitesum_plresp   = sum(csite%area * csite%co2budget_plresp  ) * site_area_i
-            sitesum_resphet  = sum(csite%area * csite%co2budget_rh      ) * site_area_i
-
-            leaf_g(ifm)%gpp(ix,iy,2)       = leaf_g(ifm)%gpp(ix,iy,2)                      &
-                                           + sitesum_gpp     * cpoly%area(isi)             &
-                                           * poly_area_i
-
-            leaf_g(ifm)%plresp(ix,iy,2)    = leaf_g(ifm)%plresp(ix,iy,2)                   &
-                                           + sitesum_plresp  * cpoly%area(isi)             &
-                                           * poly_area_i
-
-            leaf_g(ifm)%resphet(ix,iy,2)   = leaf_g(ifm)%resphet(ix,iy,2)                  &
-                                           + sitesum_resphet * cpoly%area(isi)             &
-                                           * poly_area_i
-         end if
-      end do
-
-   end do
-   return
-
-   
-end subroutine copy_avgvars_to_leaf
-!==========================================================================================!
-!==========================================================================================!
-
-
-
-
-
-
-!==========================================================================================!
-!==========================================================================================!
-!     This subroutine is an adaptation from the SiB2 model (Sellars et al. 1986), and it   !
-! splits the radiation into diffuse and direct radiation.  This is currently used to       !
-! convert the radiation from BRAMS.  In the future, we should use the values that come     !
-! from the radiation schemes.                                                              !
-!------------------------------------------------------------------------------------------!
-subroutine short2diff(rshort_tot,cosz,rshort_diff)
-   use mem_radiate, only : rad_cosz_min & ! intent(in)
-                         , iswrtyp      ! ! intent(in)
-   implicit none
-   !----- Arguments. ----------------------------------------------------------------------!
-   real, intent(in)    :: rshort_tot  ! Surface incident shortwave radiation
-   real, intent(in)    :: cosz        ! Cosine of the zenith distance
-   real, intent(out)   :: rshort_diff ! Surface incident diffuse shortwave radiation.
-   !----- Local variables. ----------------------------------------------------------------!
-   real                :: stemp
-   real                :: cloud
-   real                :: difrat
-   real                :: vnrat
-   !----- Local constants. ----------------------------------------------------------------!
-   real, parameter     :: c1 = 580.
-   real, parameter     :: c2 = 464.
-   real, parameter     :: c3 = 499.
-   real, parameter     :: c4 = 963.
-   real, parameter     :: c5 = 1160.
    !---------------------------------------------------------------------------------------!
 
-   if (cosz > rad_cosz_min) then
 
-      cloud       = min(1.,max(0.,(c5 * cosz - rshort_tot) / (c4 * cosz)))
-      difrat      = min(1.,max(0.,0.0604 / ( cosz -0.0223 ) + 0.0683))
 
-      difrat      = difrat + ( 1. - difrat ) * cloud
-      vnrat       = ( c1 - cloud*c2 ) / ( ( c1 - cloud*c3 ) + ( c1 - cloud*c2 ))
+   !---------------------------------------------------------------------------------------!
+   !      Loop over all polygons.                                                          !
+   !---------------------------------------------------------------------------------------!
+   polyloop: do ipy=1,cgrid%npolygons
+      cpoly => cgrid%polygon(ipy)
 
-      rshort_diff = difrat*vnrat*rshort_tot
-   else
-      rshort_diff = rshort_tot
-   end if
+      !----- Copy the index of this polygons that correspond to the BRAMS grid. -----------!
+      ix = cgrid%ilon(ipy)
+      iy = cgrid%ilat(ipy)
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !      Copy the ED site-level averages to leaf_g structure "patches".                !
+      !------------------------------------------------------------------------------------!
+      siteloop: do isi = 1,cpoly%nsites
+         !----- Pointer for the current site. ---------------------------------------------!
+         csite => cpoly%site(isi)
+         site_area_i = 1. / sum(csite%area)
+         !---------------------------------------------------------------------------------!
+
+
+         !----- Leaf "patch" is offset by 1 because the first is water. -------------------!
+         ilp = isi + 1
+         !---------------------------------------------------------------------------------!
+
+
+         !---------------------------------------------------------------------------------!
+         !     Copy the soil information.                                                  !
+         !---------------------------------------------------------------------------------!
+         do k=1,nzg
+            leaf_g(ifm)%soil_text  (k,ix,iy,ilp) = real(cpoly%ntext_soil(k,isi))
+            leaf_g(ifm)%soil_energy(k,ix,iy,ilp) = cpoly%avg_soil_energy(k,isi)
+            leaf_g(ifm)%soil_water (k,ix,iy,ilp) = cpoly%avg_soil_water (k,isi)
+         end do
+         !---------------------------------------------------------------------------------!
+
+
+         !---------------------------------------------------------------------------------!
+         !    Site-level Surface water properties are always merged into one layer, 1,     !
+         ! so we copy all the information that may exist to the first layer and make the   !
+         ! others zero.  In case there is nothing to copy, make it empty.                  !
+         !---------------------------------------------------------------------------------!
+         if (cgrid%avg_sfcw_mass  (isi) > tiny_sfcwater_mass) then
+            leaf_g(ifm)%sfcwater_nlev     (ix,iy,ilp) = 1.
+            leaf_g(ifm)%sfcwater_energy (1,ix,iy,ilp) = cgrid%avg_sfcw_energy(isi)
+            leaf_g(ifm)%sfcwater_mass   (1,ix,iy,ilp) = cgrid%avg_sfcw_mass  (isi)
+            leaf_g(ifm)%sfcwater_depth  (1,ix,iy,ilp) = cgrid%avg_sfcw_depth (isi)
+         else
+            leaf_g(ifm)%sfcwater_nlev     (ix,iy,ilp) = 0.
+            leaf_g(ifm)%sfcwater_energy (1,ix,iy,ilp) = 0.
+            leaf_g(ifm)%sfcwater_mass   (1,ix,iy,ilp) = 0.
+            leaf_g(ifm)%sfcwater_depth  (1,ix,iy,ilp) = 0.
+         end if
+         do k=2,nzs
+            leaf_g(ifm)%sfcwater_energy (k,ix,iy,ilp) = 0.
+            leaf_g(ifm)%sfcwater_mass   (k,ix,iy,ilp) = 0.
+            leaf_g(ifm)%sfcwater_depth  (k,ix,iy,ilp) = 0.
+         end do
+         !---------------------------------------------------------------------------------!
+
+
+
+         !----- Update vegetation properties. ---------------------------------------------!
+         leaf_g(ifm)%veg_water   (ix,iy,ilp)   = cpoly%avg_leaf_water  (isi)               &
+                                               + cpoly%avg_wood_water  (isi)
+         leaf_g(ifm)%veg_hcap    (ix,iy,ilp)   = cpoly%avg_leaf_hcap   (isi)               &
+                                               + cpoly%avg_wood_hcap   (isi)
+         leaf_g(ifm)%veg_energy  (ix,iy,ilp)   = cpoly%avg_leaf_energy (isi)               &
+                                               + cpoly%avg_wood_energy (isi)
+         leaf_g(ifm)%veg_lai     (ix,iy,ilp)   = cpoly%lai(isi)
+         leaf_g(ifm)%veg_tai     (ix,iy,ilp)   = cpoly%lai(isi) + cgrid%wai(isi)
+
+         !----- Fill above ground biomass by integrating all PFTs and DBH classes. --------!
+         leaf_g(ifm)%veg_agb(ix,iy,ilp)       = 0.
+         do idbh=1,n_dbh
+            do ipft=1,n_pft
+               leaf_g(ifm)%veg_agb(ix,iy,ilp) = leaf_g(ifm)%veg_agb(ix,iy,ilp)             &
+                                              + cpoly%agb(ipft,idbh,isi)
+            end do
+         end do
+
+         !---------------------------------------------------------------------------------!
+         !      Update canopy air properties.                                              !
+         !---------------------------------------------------------------------------------!
+         leaf_g(ifm)%can_theta  (ix,iy,ilp) = cpoly%avg_can_theta(isi)
+         leaf_g(ifm)%can_theiv  (ix,iy,ilp) = cpoly%avg_can_theiv(isi)
+         leaf_g(ifm)%can_co2    (ix,iy,ilp) = max( atm_co2_min                             &
+                                                 , cpoly%avg_can_co2(isi) - co2_offset)
+         leaf_g(ifm)%can_prss   (ix,iy,ilp) = cpoly%avg_can_prss(isi)
+         !----- ED uses specific humidity, converting it to mixing ratio. -----------------!
+         leaf_g(ifm)%can_rvap   (ix,iy,ilp) = cpoly%avg_can_shv(isi)                       &
+                                            / (1.-cpoly%avg_can_shv(isi))
+         !---------------------------------------------------------------------------------!
+
+
+
+         !---------------------------------------------------------------------------------!
+         !     Copy the fluxes, which will be used for output only.                        !
+         !---------------------------------------------------------------------------------!
+         leaf_g(ifm)%sensible_gc(ix,iy,ilp) = cpoly%avg_sensible_gc(isi)
+         leaf_g(ifm)%sensible_vc(ix,iy,ilp) = ( cpoly%avg_sensible_lc(isi)                 &
+                                              + cpoly%avg_sensible_wc(isi) )
+         leaf_g(ifm)%evap_gc    (ix,iy,ilp) = ( cpoly%avg_vapor_gc(isi)                    &
+                                              - cpoly%avg_dew_cg(isi))    * alvl
+         leaf_g(ifm)%evap_vc    (ix,iy,ilp) = ( cpoly%avg_vapor_lc(isi)                    &
+                                              + cpoly%avg_vapor_wc(isi) ) * alvl
+         leaf_g(ifm)%transp     (ix,iy,ilp) = cpoly%avg_transp(isi)       * alvl
+         !---------------------------------------------------------------------------------!
+
+
+
+         !------ Carbon fluxes don't have polygon level, compute the average here. --------!
+         leaf_g(ifm)%gpp        (ix,iy,ilp) = sum(csite%area * csite%co2budget_gpp     )   &
+                                            * site_area_i
+         leaf_g(ifm)%plresp     (ix,iy,ilp) = sum(csite%area * csite%co2budget_plresp  )   &
+                                            * site_area_i
+         leaf_g(ifm)%resphet    (ix,iy,ilp) = sum(csite%area * csite%co2budget_rh      )   &
+                                            * site_area_i
+         !---------------------------------------------------------------------------------!
+      end do siteloop
+      !------------------------------------------------------------------------------------!
+   end do polyloop
+   !---------------------------------------------------------------------------------------!
+
 
    return
-end subroutine short2diff
+end subroutine copy_avgvars_to_leaf
 !==========================================================================================!
 !==========================================================================================!

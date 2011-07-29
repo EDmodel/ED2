@@ -162,7 +162,7 @@ subroutine update_phenology(doy, cpoly, isi, lat)
                              , cice                     & ! intent(in)
                              , cliq                     & ! intent(in)
                              , alli                     ! ! intent(in)
-   use ed_therm_lib   , only : calc_hcapveg             & ! function
+   use ed_therm_lib   , only : calc_veg_hcap            & ! function
                              , update_veg_energy_cweh   ! ! subroutine
    use ed_max_dims    , only : n_pft                    ! ! intent(in)
    use ed_misc_coms   , only : current_time             ! ! intent(in)
@@ -190,7 +190,8 @@ subroutine update_phenology(doy, cpoly, isi, lat)
    real                                  :: daylight
    real                                  :: delta_bleaf
    real                                  :: bl_max
-   real                                  :: old_hcapveg
+   real                                  :: old_leaf_hcap
+   real                                  :: old_wood_hcap
    real                                  :: salloci
    !----- External functions. -------------------------------------------------------------!
    real                     , external   :: daylength
@@ -241,7 +242,8 @@ subroutine update_phenology(doy, cpoly, isi, lat)
             !----- Get cohort-specific thresholds for prescribed phenology. ---------------!
             call assign_prescribed_phen(cpoly%green_leaf_factor(ipft,isi)                  &
                                        ,cpoly%leaf_aging_factor(ipft,isi),cpatch%dbh(ico)  &
-                                       ,ipft,drop_cold,leaf_out_cold, bl_max)
+                                       ,cpatch%hite(ico),ipft,drop_cold,leaf_out_cold      &
+                                       ,bl_max)
          case default
             !----- Drop_cold is computed in phenology_thresholds for Botta scheme. --------!
             if (drop_cold) bl_max = 0.0
@@ -315,6 +317,7 @@ subroutine update_phenology(doy, cpoly, isi, lat)
                                                * (1.0 / c2n_leaf(ipft) - 1.0 / c2n_storage)
                   cpatch%bleaf(ico)            = 0.0
                   cpatch%phenology_status(ico) = 2
+                  cpatch%elongf(ico)           = 0.
                   cpatch%cb(13,ico)            = cpatch%cb(13,ico)                         &
                                                - cpatch%leaf_drop(ico)
                   cpatch%cb_max(13,ico)        = cpatch%cb_max(13,ico)                     &
@@ -387,10 +390,11 @@ subroutine update_phenology(doy, cpoly, isi, lat)
 
                !----- Set status flag. ----------------------------------------------------!
                if (bl_max == 0.0) then
-                  cpatch%phenology_status(ico) = 2 
+                  cpatch%phenology_status(ico) = 2
+                  cpatch%elongf(ico) = 0. 
                end if
                
-            elseif(cpatch%phenology_status(ico) == 2 .and. leaf_out_cold) then
+            elseif (cpatch%phenology_status(ico) == 2 .and. leaf_out_cold) then
                !---------------------------------------------------------------------------!
                !      Update the phenology status (1 means that leaves are growing),       !
                !---------------------------------------------------------------------------!
@@ -453,8 +457,9 @@ subroutine update_phenology(doy, cpoly, isi, lat)
                cpatch%bleaf(ico)     = bl_max
                
                if (cpatch%bleaf(ico) == 0.0) then
-               !   No leaves                                                               !
-                         cpatch%phenology_status(ico) = 2
+                  !----- No leaves. -------------------------------------------------------!
+                  cpatch%phenology_status(ico) = 2
+                  cpatch%elongf(ico) = 0.
                end if
                
                cpatch%cb(13,ico)     = cpatch%cb(13,ico)     - cpatch%leaf_drop(ico)
@@ -488,14 +493,13 @@ subroutine update_phenology(doy, cpoly, isi, lat)
          !    The leaf biomass of the cohort has changed, update the vegetation energy -   !
          ! using a constant temperature assumption.                                        !
          !---------------------------------------------------------------------------------!
-         old_hcapveg         = cpatch%hcapveg(ico)
-         cpatch%hcapveg(ico) = calc_hcapveg(cpatch%bleaf(ico),cpatch%bdead(ico)            &
-                                           ,cpatch%balive(ico),cpatch%nplant(ico)          &
-                                           ,cpatch%hite(ico),cpatch%pft(ico)               &
-                                           ,cpatch%phenology_status(ico)                   &
-                                           ,cpatch%bsapwood(ico))
-         csite%hcapveg(ipa)  = csite%hcapveg(ipa) + cpatch%hcapveg(ico) - old_hcapveg
-         call update_veg_energy_cweh(csite,ipa,ico,old_hcapveg)
+         old_leaf_hcap       = cpatch%leaf_hcap(ico)
+         old_wood_hcap       = cpatch%wood_hcap(ico)
+         call calc_veg_hcap(cpatch%bleaf(ico),cpatch%bdead(ico),cpatch%bsapwood(ico)       &
+                           ,cpatch%nplant(ico),cpatch%pft(ico)                             &
+                           ,cpatch%leaf_hcap(ico),cpatch%wood_hcap(ico) )
+         call update_veg_energy_cweh(csite,ipa,ico,old_leaf_hcap,old_wood_hcap)
+         call is_resolvable(csite,ipa,ico,cpoly%green_leaf_factor(:,isi))
 
          !----- Printing some debugging stuff if the code is set for it. ------------------!
          if (printphen) then
@@ -621,7 +625,7 @@ end subroutine phenology_thresholds
 !==========================================================================================!
 !    This subroutine assigns the prescribed phenology.                                     !
 !------------------------------------------------------------------------------------------!
-subroutine assign_prescribed_phen(green_leaf_factor,leaf_aging_factor,dbh,pft              &
+subroutine assign_prescribed_phen(green_leaf_factor,leaf_aging_factor,dbh,height,pft       &
                                  ,drop_cold,leaf_out_cold,bl_max)
    use allometry     , only : dbh2bl
    use phenology_coms, only : elongf_min
@@ -633,6 +637,7 @@ subroutine assign_prescribed_phen(green_leaf_factor,leaf_aging_factor,dbh,pft   
    real   , intent(in)  :: green_leaf_factor
    real   , intent(in)  :: leaf_aging_factor
    real   , intent(in)  :: dbh
+   real   , intent(in)  :: height
    integer, intent(in)  :: pft
    !---------------------------------------------------------------------------------------!
 

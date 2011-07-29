@@ -26,6 +26,9 @@ subroutine ed_timestep()
    integer                                 :: thismonth
    integer                                 :: thisyear
    integer                                 :: thisdate
+   integer                                 :: thishour
+   integer                                 :: thismin
+   integer                                 :: thissec
    !----- Local constants. ----------------------------------------------------------------!
    logical                    , parameter  :: print_banner = .false.
    !----- Locally saved variable to control when ED should be called. ---------------------!
@@ -33,11 +36,6 @@ subroutine ed_timestep()
    !----- External function. --------------------------------------------------------------!
    real                       , external   :: walltime
    !---------------------------------------------------------------------------------------!
-   
-   !---------------------------------------------------------------------------------------!
-   !     Now the solve the water fluxes.  This is called every time step.                  !
-   !---------------------------------------------------------------------------------------!
-   call simple_lake_model()
      
    !----- Now we check whether this is the time to call ED. -------------------------------!
    if ( mod(time+dble(dtlt),dble(dtlsm)) < dble(dtlt) .or. first_time(ngrid) ) then
@@ -46,6 +44,9 @@ subroutine ed_timestep()
       thismonth = current_time%month
       thisdate  = current_time%date
       thistime  = current_time%time
+      thishour  = current_time%hour
+      thismin   = current_time%min
+      thissec   = current_time%sec
 
       if (print_banner) then
          wtime_start=walltime(0.)
@@ -63,11 +64,13 @@ subroutine ed_timestep()
       call copy_fluxes_future_2_past(ngrid)
       call copy_atm2lsm(ngrid,.false.)
       
-      !----- Call the actual model driver. ------------------------------------------------!
-      call ed_coup_model(ngrid)
 
       edtime1  = time
       edtime2  = time + dble(dtlsm)
+
+      !----- Call the actual model driver, for water, and for land. -----------------------!
+      call simple_lake_model()
+      call ed_coup_model(ngrid)
 
       !----- Copy the fluxes from ED to LEAF. ---------------------------------------------!
       call copy_fluxes_lsm2atm(ngrid)
@@ -77,10 +80,11 @@ subroutine ed_timestep()
          call timing(2,cputime2)
 
          if (mynum == 1) then
-            write (unit=*,fmt='(a,i4,2(a,i2.2),a,i4.4,1x,f6.0,a,2(1x,f7.3,a))')            &
-                 ' ED2 LSM Timestep; Grid ',ngrid,'; Sim time  ',thismonth, '-',thisdate   &
-                ,'-',thisyear,thistime,'s; Wall',wtime2-wtime1,'s; CPU',cputime2-cputime1  &
-                ,'s'
+            write (unit=*,fmt='(a,i4,2(a,i2.2),a,i4.4,1x,3(i2.2,a),1x,a,2(1x,f7.3,a))')    &
+                 ' ED2 LSM Timestep; Grid ',ngrid                                          &
+                ,'; Sim time  ',thismonth, '-',thisdate,'-',thisyear                       &
+                ,thishour,':',thismin,':',thissec,'UTC;'                                   &
+                ,'Wall',wtime2-wtime1,'s; CPU',cputime2-cputime1,'s'
          end if
       end if
 

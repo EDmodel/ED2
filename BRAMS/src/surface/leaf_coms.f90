@@ -26,13 +26,16 @@ module leaf_coms
                        , twothirds ! ! intent(in)
 
    !----- Parameters that are initialised from RAMSIN. ------------------------------------! 
-   real    :: ustmin    ! Minimum ustar                                          [     m/s]
-   real    :: ggfact    ! Factor to multiply the ground->canopy conductance.
-   real    :: gamm      ! Gamma used by Businger et al. (1971) - momentum.
-   real    :: gamh      ! Gamma used by Businger et al. (1971) - heat.
-   real    :: tprandtl  ! Turbulent Prandtl number.
-   real    :: vh2vr     ! Vegetation roughness:vegetation height ratio
-   real    :: vh2dh     ! Displacement height:vegetation height ratio
+   real    :: ustmin          ! Minimum ustar                                   [      m/s]
+   real    :: ggfact          ! Factor to multiply ground->canopy conductance.
+   real    :: gamm            ! Gamma used by Businger et al. (1971) - momentum.
+   real    :: gamh            ! Gamma used by Businger et al. (1971) - heat.
+   real    :: tprandtl        ! Turbulent Prandtl number.
+   real    :: vh2vr           ! Vegetation roughness:vegetation height ratio
+   real    :: vh2dh           ! Displacement height:vegetation height ratio
+   real    :: ribmax          ! Maximum bulk Richardson number
+   real    :: leaf_maxwhc     ! Leaf maximum water holding capacity             [kg/m2leaf]
+   real    :: min_patch_area  !  Minimum patch area to consider
    !---------------------------------------------------------------------------------------!
 
 
@@ -97,6 +100,7 @@ module leaf_coms
             , ggnet            & ! net ground heat/water conductance             [     m/s]
             , ggbare           & ! heat/water conductance, bare ground           [     m/s]
             , ggveg            & ! heat/water conductance,  vegetated ground     [     m/s]
+            , ggsoil           & ! water conductance only, soil moisture effect  [     m/s]
             , rho_ustar        & ! canopy density time friction velocity
             , rshort_g         & ! net SW radiation absorbed by grnd
             , rshort_v         & ! net SW radiation absorbed by veg
@@ -147,6 +151,13 @@ module leaf_coms
             , ts_town          & ! Urban temperature
             , g_urban          ! ! Urban something... 
 
+   !----- These are used for the soil bottom boundary condition. --------------------------!
+   real    :: slzt_0
+   real    :: soil_water_0
+   real    :: soil_fracliq_0
+   real    :: psiplusz_0
+   real    :: hydcond_0
+
    real, allocatable, dimension(:) ::  &
               dslz                 & ! soil layer thickness at T point
             , dslzi                & ! (1. / soil layer thickness at T point)
@@ -168,6 +179,7 @@ module leaf_coms
             , soilair99            & ! 99% of of available airspace in soil [m]
             , soilair01            & !  1% of of available airspace in soil [m]
             , soil_liq             & ! soil liquid water content [m]
+            , hydcond              & ! hydraulic conductivity    [m/s]
 
             , rfactor              & ! soil, sfcwater thermal resistance    
             , hfluxgsc             & ! sensible heat flux between soil, sfcwater, canopy
@@ -185,7 +197,7 @@ module leaf_coms
 
 
    !----- Some dimensions -----------------------------------------------------------------!
-   integer, parameter :: nstyp     = 12 ! # of soil types
+   integer, parameter :: nstyp     = 17 ! # of soil types
    integer, parameter :: nvtyp     = 20 ! # of land use types
    integer, parameter :: nvtyp_teb =  1 ! # of TEB extra land use types (21 - Very urban).
    !---------------------------------------------------------------------------------------!
@@ -195,8 +207,9 @@ module leaf_coms
    !----- Soil properties -----------------------------------------------------------------!
    real, dimension(nstyp)           :: slden,slcpd,slbs,slcond,sfldcap,slcons,slmsts,slpots
    real, dimension(nstyp)           :: ssand,sclay,sorgan,sporo,soilwp,soilcp,slfc,emisg
-   real, dimension(nstyp)           :: slcons00,slcons0,fhydraul
-   real, dimension(nstyp)           :: soilcond0,soilcond1,soilcond2
+   real, dimension(nstyp)           :: slcons00,slcons0,fhydraul,xsilt,xsand,xclay
+   real, dimension(nstyp)           :: albwet,albdry
+   real, dimension(nstyp)           :: soilcond0,soilcond1,soilcond2,slcons1_0
    real, dimension(nzgmax,nstyp)    :: slcons1
    !---------------------------------------------------------------------------------------!
 
@@ -213,10 +226,6 @@ module leaf_coms
 
    !----- Other variables -----------------------------------------------------------------!
    real                             :: cmin,corg,cwat,cair,cka,ckw
-   !---------------------------------------------------------------------------------------!
-
-   !----- Minimum patch area to consider. -------------------------------------------------!
-   real, parameter :: tiny_parea     = 0.001   
    !---------------------------------------------------------------------------------------!
 
    !----- Roughness -----------------------------------------------------------------------!
@@ -272,7 +281,6 @@ module leaf_coms
    real, parameter :: dl79       = 5.0    ! ???
    !----- Oncley and Dudhia (1995) model. -------------------------------------------------!
    real, parameter :: bbeta      = 5.0    ! Beta used by Businger et al. (1971)
-   real, parameter :: ribmaxod95 = 0.20   ! Maximum bulk Richardson number
    !----- Beljaars and Holtslag (1991) model. ---------------------------------------------!
    real, parameter :: abh91       = -1.00         ! -a from equation  (28) and (32)
    real, parameter :: bbh91       = -twothirds    ! -b from equation  (28) and (32)
@@ -287,7 +295,6 @@ module leaf_coms
    real, parameter :: atetf       = ate   * fbh91 ! a * e * f
    real, parameter :: z0moz0h     = 1.0           ! z0(M)/z0(h)
    real, parameter :: z0hoz0m     = 1. / z0moz0h  ! z0(M)/z0(h)
-   real, parameter :: ribmaxbh91  = 0.20          ! Maximum bulk Richardson number
    !---------------------------------------------------------------------------------------!
 
 
@@ -296,8 +303,14 @@ module leaf_coms
 
 
    !---------------------------------------------------------------------------------------!
-   real, parameter                   :: exar=2.5
-   real, parameter                   :: covr=2.16
+   !     Parameters used to compute the aerodynamic resistance.                            !
+   !---------------------------------------------------------------------------------------!
+   real, parameter                   :: exar       =  2.50
+   real, parameter                   :: covr       =  2.16
+   real, parameter                   :: rasveg_min =  1.e-6
+   real, parameter                   :: taumin     =  1.e-6
+   !---------------------------------------------------------------------------------------!
+
 
 
    !---------------------------------------------------------------------------------------!
@@ -329,14 +342,14 @@ module leaf_coms
    ! M08 - Monteith, J. L., M. H. Unsworth, 2008. Principles of Environmental Physics,     !
    !       3rd. edition, Academic Press, Amsterdam, 418pp.  (Mostly Chapter 10).           !
    !---------------------------------------------------------------------------------------!
-   real(kind=4), parameter :: aflat_turb = 0.600    ! A (forced convection), turbulent flow
-   real(kind=4), parameter :: aflat_lami = 0.032    ! A (forced convection), laminar   flow
-   real(kind=4), parameter :: bflat_turb = 0.500    ! B (free   convection), turbulent flow
-   real(kind=4), parameter :: bflat_lami = 0.130    ! B (free   convection), laminar   flow
-   real(kind=4), parameter :: nflat_turb = 0.500    ! n (forced convection), turbulent flow
-   real(kind=4), parameter :: nflat_lami = 0.800    ! n (forced convection), laminar   flow
-   real(kind=4), parameter :: mflat_turb = 0.250    ! m (free   convection), turbulent flow
-   real(kind=4), parameter :: mflat_lami = onethird ! m (free   convection), laminar   flow
+   real(kind=4), parameter :: aflat_lami = 0.600    ! A (forced convection), laminar   flow
+   real(kind=4), parameter :: nflat_lami = 0.500    ! n (forced convection), laminar   flow
+   real(kind=4), parameter :: aflat_turb = 0.032    ! A (forced convection), turbulent flow
+   real(kind=4), parameter :: nflat_turb = 0.800    ! n (forced convection), turbulent flow
+   real(kind=4), parameter :: bflat_lami = 0.500    ! B (free   convection), laminar   flow
+   real(kind=4), parameter :: mflat_lami = 0.250    ! m (free   convection), laminar   flow
+   real(kind=4), parameter :: bflat_turb = 0.130    ! B (free   convection), turbulent flow
+   real(kind=4), parameter :: mflat_turb = onethird ! m (free   convection), turbulent flow
    !---------------------------------------------------------------------------------------!
 
 
@@ -367,6 +380,27 @@ module leaf_coms
    real(kind=4)              , parameter :: tai_min     = 0.1
    real(kind=4)              , parameter :: snowfac_max = 0.9
    !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !   Soil conductance terms, from:                                                       !
+   !                                                                                       !
+   ! Passerat de Silans, A., 1986: Transferts de masse et de chaleur dans un sol stratifié !
+   !     soumis à une excitation amtosphérique naturelle. Comparaison: Modèles-expérience. !
+   !     Thesis, Institut National Polytechnique de Grenoble. (P86)                        !
+   !                                                                                       !
+   ! retrieved from:                                                                       !
+   ! Mahfouf, J. F., J. Noilhan, 1991: Comparative study of various formulations of        !
+   !     evaporation from bare soil using in situ data. J. Appl. Meteorol., 30, 1354-1365. !
+   !     (MN91)                                                                            !
+   !                                                                                       !
+   !     Please notice that the values are inverted because we compute conductance, not    !
+   ! resistance.                                                                           !
+   !---------------------------------------------------------------------------------------!
+   real(kind=4)              , parameter :: ggsoil0 = 1. / 38113.
+   real(kind=4)              , parameter :: kksoil  = 13.515
+   !---------------------------------------------------------------------------------------!
+
 
 
    !=======================================================================================!
@@ -415,6 +449,7 @@ module leaf_coms
       allocate (soilair99           (nzg)      )
       allocate (soilair01           (nzg)      )
       allocate (soil_liq            (nzg)      )
+      allocate (hydcond             (nzg)      )
 
       allocate (rfactor             (nzg+nzs)  )
       allocate (hfluxgsc            (nzg+nzs+1))
@@ -638,7 +673,8 @@ module leaf_coms
       half_soilair     (:)   = 0.
       soilair99        (:)   = 0.
       soilair01        (:)   = 0.
-      soil_liq         (:)   = 0
+      soil_liq         (:)   = 0.
+      hydcond          (:)   = 0.
 
       rfactor          (:)   = 0.
       hfluxgsc         (:)   = 0.

@@ -30,9 +30,11 @@ subroutine sfcdata()
       real :: soilcond1  ! Linear coefficient for conductivity           [   N/K/s]
       real :: soilcond2  ! Quadratic coefficient for conductivity        [   N/K/s]
       real :: sfldcap    ! Soil field capacity                           [   m3/m3]
+      real :: albwet     ! Albedo for wet soil                           [     ---]
+      real :: albdry     ! Albedo for dry soil                           [     ---]
       real :: xsand      ! Percentage of sand                            [     ---]
       real :: xclay      ! Percentage of clay                            [     ---]
-      real :: xorgan     ! Percentage of organic material                [     ---]
+      real :: xsilt      ! Percentage of silt                            [     ---]
       real :: xrobulk    ! Bulk density                                  [     ---]
       real :: slden      ! "Dry" soil density (porosity)                 [   kg/m3]
    end type soil_class
@@ -57,9 +59,6 @@ subroutine sfcdata()
    !----- Local variables. ----------------------------------------------------------------!
    type(soil_class) , dimension(nstyp)            :: soilparms
    type(vegt_class) , dimension(nvtyp+nvtyp_teb)  :: bioparms
-   real             , dimension(nstyp)            :: xsand
-   real             , dimension(nstyp)            :: xclay
-   real             , dimension(nstyp)            :: xorgan
    real             , dimension(nstyp)            :: xrobulk
    integer                                        :: k
    integer                                        :: nnn
@@ -70,6 +69,8 @@ subroutine sfcdata()
    real                                           :: tmin
    real                                           :: ratio
    real                                           :: xmin
+   real                                           :: slz0
+   real                                           :: ezg
    !---------------------------------------------------------------------------------------!
 
 
@@ -214,70 +215,95 @@ subroutine sfcdata()
    ! Define the soil parameters.                                                           !
    ! (1st line)          slpots        slmsts          slbs     slcpd        soilcp        !
    ! (2nd line)          soilwp        slcons       slcons0 soilcond0     soilcond1        !
-   ! (3rd line)       soilcond2       sfldcap         xsand     xclay        xorgan        !
-   ! (4th line)         xrobulk         slden                                              !
+   ! (3rd line)       soilcond2       sfldcap        albwet    albdry         xsand        !
+   ! (4th line)           xclay         xsilt       xrobulk     slden                      !
    !---------------------------------------------------------------------------------------!
    soilparms = (/                                                                          &
       !----- 1. Sand. ---------------------------------------------------------------------!
-       soil_class( -0.049831046,     0.373250,     3.295000, 1465000.,  0.026183447        &
-                 ,  0.032636854,  2.446420e-5,  0.000500000,   0.3000,       4.8000        &
-                 ,      -2.7000,  0.132130936,       0.9200,   0.0300,       0.0500        &
-                 ,        1200.,        1600.                                      )       &
+       soil_class( -0.049831046,     0.373250,     3.295000, 1584640.,  0.026183447        &
+                 ,  0.032636854,  2.446421e-5,  0.000500000,   0.3000,       4.8000        &
+                 ,      -2.7000,  0.132130936,        0.229,    0.352,        0.920        &
+                 ,        0.030,        0.050,        1200.,    1600.              )       &
       !----- 2. Loamy sand. ---------------------------------------------------------------!
-      ,soil_class( -0.068643592,     0.386340,     3.796000, 1407000.,  0.041873866        &
-                 ,  0.050698650,  1.751180e-5,  0.000600000,   0.3000,       4.6600        &
-                 ,      -2.6000,  0.155720881,       0.8200,   0.0600,       0.1200        &
-                 ,        1250.,        1600.                                      )       &
+      ,soil_class( -0.067406224,     0.385630,     3.794500, 1584809.,  0.041560499        &
+                 ,  0.050323046,  1.776770e-5,  0.000600000,   0.3000,       4.6600        &
+                 ,      -2.6000,  0.155181959,        0.212,    0.335,        0.825        &
+                 ,        0.060,        0.115,        1250.,    1600.              )       &
       !----- 3. Sandy loam. ---------------------------------------------------------------!
-      ,soil_class( -0.155095787,     0.418940,     4.496000, 1344000.,  0.076932647        &
-                 ,  0.090413463,  8.228700e-6,  0.000769000,   0.2900,       4.2700        &
-                 ,      -2.3100,  0.199963447,       0.5800,   0.1000,       0.3200        &
-                 ,        1300.,        1600.                                      )       &
+      ,soil_class( -0.114261521,     0.407210,     4.629000, 1587042.,  0.073495043        &
+                 ,  0.085973722,  1.022660e-5,  0.000769000,   0.2900,       4.2700        &
+                 ,      -2.3100,  0.194037750,        0.183,    0.307,        0.660        &
+                 ,        0.110,        0.230,        1300.,    1600.              )       &
       !----- 4. Silt loam. ----------------------------------------------------------------!
-      ,soil_class( -0.659933234,     0.476050,     5.090000, 1273000.,  0.141599910        &
-                 ,  0.163306007,  2.396240e-6,  0.000010600,   0.2700,       3.4700        &
-                 ,      -1.7400,  0.266720155,       0.1700,   0.1300,       0.7000        &
-                 ,        1400.,        1600.                                      )       &
+      ,soil_class( -0.566500112,     0.470680,     5.552000, 1568225.,  0.150665475        &
+                 ,  0.171711257,  2.501101e-6,  0.000010600,   0.2700,       3.4700        &
+                 ,      -1.7400,  0.273082063,        0.107,    0.250,        0.200        &
+                 ,        0.160,        0.640,        1400.,    1600.              )       &
       !----- 5. Loam. ---------------------------------------------------------------------!
-      ,soil_class( -0.238341682,     0.437280,     5.797000, 1214000.,  0.126501190        &
-                 ,  0.143377074,  4.732940e-6,  0.002200000,   0.2800,       3.6300        &
-                 ,      -1.8500,  0.247334654,       0.4300,   0.1800,       0.3900        &
-                 ,        1350.,        1600.                                      )       &
+      ,soil_class( -0.260075834,     0.440490,     5.646000, 1588082.,  0.125192234        &
+                 ,  0.142369513,  4.532431e-6,  0.002200000,   0.2800,       3.6300        &
+                 ,      -1.8500,  0.246915025,        0.140,    0.268,        0.410        &
+                 ,        0.170,        0.420,        1350.,    1600.              )       &
       !----- 6. Sandy clay loam. ----------------------------------------------------------!
-      ,soil_class( -0.121199269,     0.412650,     7.165000, 1177000.,  0.137648733        &
-                 ,  0.152325872,  6.405180e-6,  0.001500000,   0.2800,       3.7800        &
-                 ,      -1.9600,  0.250954745,       0.5800,   0.2700,       0.1500        &
-                 ,        1350.,        1600.                                      )       & 
+      ,soil_class( -0.116869181,     0.411230,     7.162000, 1636224.,  0.136417267        &
+                 ,  0.150969505,  6.593731e-6,  0.001500000,   0.2800,       3.7800        &
+                 ,      -1.9600,  0.249629687,        0.163,    0.260,        0.590        &
+                 ,        0.270,        0.140,        1350.,    1600.              )       &
       !----- 7. Silty clay loam. ----------------------------------------------------------!
-      ,soil_class( -0.627769194,     0.478220,     8.408000, 1319000.,  0.228171947        &
-                 ,  0.248747504,  1.435260e-6,  0.000107000,   0.2600,       2.7300        &
-                 ,      -1.2000,  0.333825332,       0.1000,   0.3400,       0.5600        &
-                 ,        1500.,        1600.)                                             &
-      !----- 8. Clay loam. ----------------------------------------------------------------!
-      ,soil_class( -0.281968114,     0.446980,     8.342000, 1227000.,  0.192624431        &
+      ,soil_class( -0.627769194,     0.478220,     8.408000, 1621562.,  0.228171947        &
+                 ,  0.248747504,  1.435262e-6,  0.000107000,   0.2600,       2.7300        &
+                 ,      -1.2000,  0.333825332,        0.081,    0.195,        0.100        &
+                 ,        0.340,        0.560,        1500.,    1600.              )       &
+      !----- 8. Clayey loam. --------------------------------------------------------------!
+      ,soil_class( -0.281968114,     0.446980,     8.342000, 1636911.,  0.192624431        &
                  ,  0.210137962,  2.717260e-6,  0.002200000,   0.2700,       3.2300        &
-                 ,      -1.5600,  0.301335491,       0.3200,   0.3400,       0.3400        &
-                 ,        1450.,        1600.                                      )       &
+                 ,      -1.5600,  0.301335491,        0.116,    0.216,        0.320        &
+                 ,        0.340,        0.340,        1450.,    1600.              )       &
       !----- 9. Sandy clay. ---------------------------------------------------------------!
-      ,soil_class( -0.121283019,     0.415620,     9.538000, 1177000.,  0.182198910        &
-                 ,  0.196607427,  4.314510e-6,  0.000002167,   0.2700,       3.3200        &
-                 ,      -1.6300,  0.286363001,       0.5200,   0.4200,       0.0600        &
-                 ,        1450.,        1600.                                      )       &
+      ,soil_class( -0.121283019,     0.415620,     9.538000, 1673422.,  0.182198910        &
+                 ,  0.196607427,  4.314507e-6,  0.000002167,   0.2700,       3.3200        &
+                 ,      -1.6300,  0.286363001,        0.144,    0.216,        0.520        &
+                 ,        0.420,        0.060,        1450.,    1600.              )       &
       !----- 10. Silty clay. --------------------------------------------------------------!
-      ,soil_class( -0.601312179,     0.479090,     10.46100, 1151000.,  0.263228486        &
-                 ,  0.282143846,  1.055190e-6,  0.000001033,   0.2500,       2.5800        &
-                 ,      -1.0900,  0.360319788,       0.0600,   0.4700,       0.4700        &
-                 ,        1650.,        1600.                                      )       & 
+      ,soil_class( -0.601312179,     0.479090,    10.461000, 1652723.,  0.263228486        &
+                 ,  0.282143846,  1.055191e-6,  0.000001033,   0.2500,       2.5800        &
+                 ,      -1.0900,  0.360319788,        0.068,    0.159,        0.060        &
+                 ,        0.470,        0.470,        1650.,    1600.              )       &
       !----- 11. Clay. --------------------------------------------------------------------!
-      ,soil_class( -0.286417797,     0.452300,     12.14000, 1088000.,  0.253968998        &
-                 ,  0.269618857,  1.427350e-6,  0.000001283,   0.2500,       2.4000        &
-                 ,      -0.9600,  0.348432364,       0.2200,   0.5800,       0.2000        &
-                 ,        1700.,        1600.                                      )       &
+      ,soil_class( -0.299226464,     0.454400,    12.460000, 1692037.,  0.259868987        &
+                 ,  0.275459057,  1.307770e-6,  0.000001283,   0.2500,       2.4000        &
+                 ,      -0.9600,  0.353255209,        0.083,    0.140,        0.200        &
+                 ,        0.600,        0.200,        1700.,    1600.              )       &
       !----- 12. Peat. --------------------------------------------------------------------!
-      ,soil_class( -0.534564359,     0.469200,     6.180000, 8740000.,  0.167047523        &
+      ,soil_class( -0.534564359,     0.469200,     6.180000,  874000.,  0.167047523        &
                  ,  0.187868805,  2.357930e-6,  0.000008000,   0.0600,       0.4600        &
-                 ,       0.0000,  0.285709966,       0.2000,   0.2000,       0.6000        &
-                 ,         500.,         300.                                      )       &
+                 ,       0.0000,  0.285709966,        0.070,    0.140,       0.2000        &
+                 ,       0.2000,       0.6000,         500.,     300.              )       &
+      !----- 13. Bedrock. -----------------------------------------------------------------!
+      ,soil_class(    0.0000000,     0.000000,     0.000000, 2130000.,  0.000000000        &
+                 ,  0.000000000,  0.000000e+0,  0.000000000,   4.6000,       0.0000        &
+                 ,       0.0000,  0.000000001,        0.320,    0.320,       0.0000        &
+                 ,       0.0000,       0.0000,           0.,       0.              )       &
+      !----- 14. Silt. --------------------------------------------------------------------!
+      ,soil_class( -1.047128548,     0.492500,     3.862500, 1510052.,  0.112299080        &
+                 ,  0.135518820,  2.046592e-6,  0.000010600,   0.2700,       3.4700        &
+                 ,      -1.7400,  0.245247642,        0.092,    0.265,        0.075        &
+                 ,        0.050,        0.875,        1400.,    1600.              )       &
+      !----- 15. Heavy clay. --------------------------------------------------------------!
+      ,soil_class( -0.322106879,     0.461200,    15.630000, 1723619.,  0.296806035        &
+                 ,  0.310916364,  7.286705e-7,  0.000001283,   0.2500,       2.4000        &
+                 ,      -0.9600,  0.382110712,        0.056,    0.080,        0.100        &
+                 ,        0.800,        0.100,        1700.,    1600.              )       &
+      !----- 16. Clayey sand. -------------------------------------------------------------!
+      ,soil_class( -0.176502150,     0.432325,    11.230000, 1688353.,  0.221886929        &
+                 ,  0.236704039,  2.426785e-6,  0.000001283,   0.2500,       2.4000        &
+                 ,      -0.9600,  0.320146708,        0.115,    0.175,        0.375        &
+                 ,        0.525,        0.100,        1700.,    1600.              )       &
+      !----- 17. Clayey silt. -------------------------------------------------------------!
+      ,soil_class( -0.438278332,     0.467825,    11.305000, 1670103.,  0.261376708        &
+                 ,  0.278711303,  1.174982e-6,  0.000001283,   0.2500,       2.4000        &
+                 ,      -0.9600,  0.357014719,        0.075,    0.151,        0.125        &
+                 ,        0.525,        0.350,        1700.,    1600.              )       &
    /)
    !---------------------------------------------------------------------------------------!
 
@@ -292,22 +318,61 @@ subroutine sfcdata()
    !------ Set the top soil depth to be zero. ---------------------------------------------!
    slz(nzg+1) = 0.
    slfcap     = -10. / 3.
-   refdepth   = -2.0
+
+   !------ The reference depth varies depending on the surface model. ---------------------!
+   select case (isfcl)
+   case (2)
+      refdepth   = -2.0
+   case default
+      refdepth   = -0.5
+   end select
+
+   do k = 1,nzg
+      slzt   (k) = .5 * (slz(k) + slz(k+1))
+   end do
+
+   !----- Find the exponential increase factor. -------------------------------------------!
+   ezg    = log(slz(1)/slz(nzg)) / log(real(nzg))
+   slz0   = slz(1) * (real(nzg+1)/real(nzg))**ezg
+
+   slzt_0 = .5 * (slz0 + slz(1))
 
    do nnn = 1,nstyp
       slcons0(nnn) = soilparms(nnn)%slcons0
-      fhydraul(nnn) = log (soilparms(nnn)%slcons / soilparms(nnn)%slcons0) / refdepth
+      if (nnn /= 13) then
+         fhydraul(nnn) = log (soilparms(nnn)%slcons / soilparms(nnn)%slcons0) / refdepth
+      else
+         fhydraul(nnn) = 0.
+      end if
 
-      do k = 1,nzg
-         select case (isfcl)
-         case (2)
-            !----- TOPMODEL form - large at surface, and exponential decrease with depth. -!
+      select case (isfcl)
+      case (2)
+         !----- TOPMODEL form - large at surface, and exponential decrease with depth. ----!
+         do k = 1,nzg
             slcons1(k,nnn) = soilparms(nnn)%slcons0 * exp(slz(k) * fhydraul(nnn))
-         case default
+         end do
+         slcons1_0(nnn) = soilparms(nnn)%slcons0 * exp(slz0 * fhydraul(nnn))
+      case default
+         select case (ipercol)
+         case (0,1)
             !----- ORIGINAL form - const with depth. --------------------------------------!
-            slcons1(k,nnn) = soilparms(nnn)%slcons      
+            do k=1,nzg
+               slcons1(k,nnn) = soilparms(nnn)%slcons
+            end do
+            slcons1_0(nnn) = soilparms(nnn)%slcons
+
+         case (2)
+            !------------------------------------------------------------------------------!
+            !    TOPMODEL form, similar to CLM.  Here we use the same definition of slcons !
+            ! from Cosby et al. (1984) because it has a stronger spread and it accounts    !
+            ! for sand and clay contents.                                                  !
+            !------------------------------------------------------------------------------!
+            do k=1,nzg
+               slcons1(k,nnn) = soilparms(nnn)%slcons * exp ( - slzt(k) / refdepth)
+            end do
+            slcons1_0(nnn) = soilparms(nnn)%slcons * exp ( - slzt_0 / refdepth)
          end select
-      end do
+      end select
       !------ Copy the other parameters to the vectors. -----------------------------------!
       slpots   (nnn) = soilparms(nnn)%slpots
       slmsts   (nnn) = soilparms(nnn)%slmsts
@@ -322,14 +387,20 @@ subroutine sfcdata()
       soilcond0(nnn) = soilparms(nnn)%soilcond0
       soilcond1(nnn) = soilparms(nnn)%soilcond1
       soilcond2(nnn) = soilparms(nnn)%soilcond2
+      albwet   (nnn) = soilparms(nnn)%albwet
+      albdry   (nnn) = soilparms(nnn)%albdry
       xsand    (nnn) = soilparms(nnn)%xsand
       xclay    (nnn) = soilparms(nnn)%xclay
-      xorgan   (nnn) = soilparms(nnn)%xorgan
+      xsilt    (nnn) = soilparms(nnn)%xsilt
       xrobulk  (nnn) = soilparms(nnn)%xrobulk
 
       !----- Define the emmisivity and slfc. ----------------------------------------------!
       emisg(nnn) = .98
-      slfc(nnn) = slmsts(nnn) * (slfcap / slpots(nnn)) ** (-1. / slbs(nnn))
+      if (nnn /= 13) then
+         slfc(nnn) = slmsts(nnn) * (slfcap / slpots(nnn)) ** (-1. / slbs(nnn))
+      else
+         slfc(nnn) = 0.0
+      end if
    end do
 
    return
@@ -387,7 +458,7 @@ end subroutine snowinit
 subroutine sfcinit_file(n2,n3,mzg,npat,ifm,patch_area,leaf_class,soil_text)
    use mem_leaf
    use rconstants
-   use leaf_coms , only : tiny_parea
+   use leaf_coms , only : min_patch_area
 
    implicit none
    !------ Arguments. ---------------------------------------------------------------------!
@@ -409,7 +480,7 @@ subroutine sfcinit_file(n2,n3,mzg,npat,ifm,patch_area,leaf_class,soil_text)
 
 
    !----- Re-define the percentage of land cover, so it's always bounded. -----------------!
-   pctlcon = max(0.,min(pctlcon, 1. - tiny_parea))
+   pctlcon = max(0.,min(pctlcon, 1. - min_patch_area))
 
 
    !---------------------------------------------------------------------------------------!
@@ -581,6 +652,8 @@ subroutine sfcinit_nofile(n1,n2,n3,mzg,mzs,npat,ifm,theta,pi0,pp,rv,co2p,seatp,s
    integer                                        :: nveg
    integer                                        :: nsoil
    real                                           :: tsoil
+   !----- External functions. -------------------------------------------------------------!
+   real                           , external      :: soil_idx2water
    !---------------------------------------------------------------------------------------!
 
 
@@ -747,8 +820,7 @@ subroutine sfcinit_nofile(n1,n2,n3,mzg,mzs,npat,ifm,theta,pi0,pp,rv,co2p,seatp,s
                case (16,17,20)
                   soil_water(k,i,j,ipat) = slmsts(nsoil)
                case default
-                  soil_water(k,i,j,ipat) = soilcp(nsoil) + max(0.,min(1.,slmstr(k)))       &
-                                         * (slmsts(nsoil) - soilcp(nsoil))
+                  soil_water(k,i,j,ipat) = soil_idx2water(slmstr(k),nsoil)
                end select
 
                !---------------------------------------------------------------------------!
@@ -899,7 +971,7 @@ end subroutine sfcinit_nofile
 !      This subroutine maps the input datp classes to a smaller set datq which represents  !
 ! the full set of LEAF-2 or LEAF-3 classes for which LSP values are defined.               !
 !------------------------------------------------------------------------------------------!
-subroutine datp_datq(datp,datq)
+subroutine leaf_datp_datq(datp,datq)
    use teb_spm_start, only : teb_spm ! intent(in)
 
    implicit none
@@ -948,14 +1020,16 @@ subroutine datp_datq(datp,datq)
    !     Convert the data.  In the unlikely case that the dataset lies outside the range,  !
    ! re-assign it to ocean.                                                                !
    !---------------------------------------------------------------------------------------!
-   if (nint(datp) >= 0. .and. nint(datp) <= 95. ) then
+   select case (nint(datp))
+   case (0:95)
       datq = oge2leaf3(nint(datp))
-   else
+   case default
       datq = 0
-   end if
+   end select
+   !---------------------------------------------------------------------------------------!
 
    return
-end subroutine datp_datq
+end subroutine leaf_datp_datq
 !==========================================================================================!
 !==========================================================================================!
 
@@ -968,8 +1042,12 @@ end subroutine datp_datq
 !==========================================================================================!
 !      This subroutine maps the input datp soil classes to a smaller set datsoil which     !
 ! represents the full set of LEAF-2 classes for which soil parameter values are defined.   !
+! This sub-routine is now deprecated as we converted the soil types in the input files to  !
+! have the same classification.                                                            !
+!      This is currently deprecated, because the input files should have indices already   !
+! converted to the LEAF-3 classes.                                                         !
 !------------------------------------------------------------------------------------------!
-subroutine datp_datsoil(datp,datsoil)
+subroutine leaf_datp_datsoil(datp,datsoil)
 
 
    implicit none
@@ -1039,6 +1117,6 @@ subroutine datp_datsoil(datp,datsoil)
    datsoil = fao2leaf3(nint(datp))
 
    return
-end subroutine datp_datsoil
+end subroutine leaf_datp_datsoil
 !==========================================================================================!
 !==========================================================================================!

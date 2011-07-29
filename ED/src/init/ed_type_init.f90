@@ -6,8 +6,7 @@
 !------------------------------------------------------------------------------------------!
 subroutine init_ed_cohort_vars(cpatch,ico, lsl)
    use ed_state_vars , only : patchtype           ! ! structure
-   use allometry     , only : calc_root_depth     & ! function
-                            , assign_root_depth   ! ! function
+   use allometry     , only : dbh2krdepth         ! ! function
    use pft_coms      , only : leaf_turnover_rate  & ! intent(in)
                             , Vm0                 & ! intent(in)
                             , sla                 ! ! intent(in)
@@ -23,16 +22,16 @@ subroutine init_ed_cohort_vars(cpatch,ico, lsl)
    type(patchtype), target     :: cpatch     ! Current patch
    integer        , intent(in) :: ico        ! Index of the current cohort
    integer        , intent(in) :: lsl        ! Lowest soil level layer
-   !----- Local variables. ----------------------------------------------------------------!
-   real                        :: root_depth ! Root depth.
    !---------------------------------------------------------------------------------------!
 
 
    !---------------------------------------------------------------------------------------!
-   !    Set all cohorts to not have enough leaf area index to be resolved.  The code will  !
-   ! update this every time step.                                                          !
+   !    Set all cohorts to not have enough leaf area index or wood area index to be        !
+   ! resolved.  The code will update this every time step, but we must assign an initial   !
+   ! value so the debugger won't complain.                                                 !
    !---------------------------------------------------------------------------------------!
-   cpatch%resolvable(ico) = .false.
+   cpatch%leaf_resolvable(ico) = .false.
+   cpatch%wood_resolvable(ico) = .false.
    !---------------------------------------------------------------------------------------!
 
 
@@ -60,8 +59,6 @@ subroutine init_ed_cohort_vars(cpatch,ico, lsl)
    cpatch%light_level_diff(ico)  = 0.0
    cpatch%beamext_level   (ico)  = 0.0
    cpatch%diffext_level   (ico)  = 0.0
-   cpatch%norm_par_beam   (ico)  = 0.0
-   cpatch%norm_par_diff   (ico)  = 0.0
    cpatch%lambda_light(ico)      = 0.0
 
    cpatch%gpp(ico)                 = 0.0
@@ -90,18 +87,26 @@ subroutine init_ed_cohort_vars(cpatch,ico, lsl)
    cpatch%ddbh_dt(ico)          = 0.0
 
 
-   cpatch%par_v(ico)            = 0.0
-   cpatch%par_v_beam(ico)       = 0.0
-   cpatch%par_v_diffuse(ico)    = 0.0
-   cpatch%rshort_v(ico)         = 0.0
-   cpatch%rshort_v_beam(ico)    = 0.0
-   cpatch%rshort_v_diffuse(ico) = 0.0
-   cpatch%rlong_v(ico)          = 0.0
-   cpatch%rlong_v_surf(ico)     = 0.0
-   cpatch%rlong_v_incid(ico)    = 0.0
+   cpatch%par_l(ico)            = 0.0
+   cpatch%par_l_beam(ico)       = 0.0
+   cpatch%par_l_diffuse(ico)    = 0.0
+   cpatch%rshort_l(ico)         = 0.0
+   cpatch%rshort_l_beam(ico)    = 0.0
+   cpatch%rshort_l_diffuse(ico) = 0.0
+   cpatch%rlong_l(ico)          = 0.0
+   cpatch%rlong_l_surf(ico)     = 0.0
+   cpatch%rlong_l_incid(ico)    = 0.0
+   cpatch%rshort_w(ico)         = 0.0
+   cpatch%rshort_w_beam(ico)    = 0.0
+   cpatch%rshort_w_diffuse(ico) = 0.0
+   cpatch%rlong_w(ico)          = 0.0
+   cpatch%rlong_w_surf(ico)     = 0.0
+   cpatch%rlong_w_incid(ico)    = 0.0
 
-   cpatch%gbh(ico)                  = 0.0
-   cpatch%gbw(ico)                  = 0.0
+   cpatch%leaf_gbh(ico)             = 0.0
+   cpatch%leaf_gbw(ico)             = 0.0
+   cpatch%wood_gbh(ico)             = 0.0
+   cpatch%wood_gbw(ico)             = 0.0
    cpatch%A_open(ico)               = 0.0
    cpatch%A_closed(ico)             = 0.0
    cpatch%psi_open(ico)             = 0.0
@@ -164,8 +169,7 @@ subroutine init_ed_cohort_vars(cpatch,ico, lsl)
    !---------------------------------------------------------------------------------------!
    !      The root depth should be the actual level for the roots.                         !
    !---------------------------------------------------------------------------------------!
-   root_depth          = calc_root_depth(cpatch%hite(ico),cpatch%dbh(ico), cpatch%pft(ico))
-   cpatch%krdepth(ico) = assign_root_depth(root_depth, lsl)
+   cpatch%krdepth(ico) = dbh2krdepth(cpatch%hite(ico),cpatch%dbh(ico),cpatch%pft(ico),lsl)
    !---------------------------------------------------------------------------------------!
 
 
@@ -181,11 +185,16 @@ subroutine init_ed_cohort_vars(cpatch,ico, lsl)
    cpatch%new_recruit_flag(ico) = 0
    cpatch%bseeds(ico)           = 0.0
 
-   cpatch%hcapveg(ico)          = 0.
-   cpatch%veg_energy(ico)       = 0.
-   cpatch%veg_temp(ico)         = 0.
-   cpatch%veg_water(ico)        = 0.
-   cpatch%veg_fliq(ico)         = 0.
+   cpatch%leaf_energy(ico)      = 0.
+   cpatch%leaf_hcap(ico)        = 0.
+   cpatch%leaf_temp(ico)        = 0.
+   cpatch%leaf_water(ico)       = 0.
+   cpatch%leaf_fliq(ico)        = 0.
+   cpatch%wood_energy(ico)      = 0.
+   cpatch%wood_hcap(ico)        = 0.
+   cpatch%wood_temp(ico)        = 0.
+   cpatch%wood_water(ico)       = 0.
+   cpatch%wood_fliq(ico)        = 0.
    cpatch%veg_wind(ico)         = 0.
    cpatch%lsfc_shv_open(ico)    = 0.
    cpatch%lsfc_shv_closed(ico)  = 0.
@@ -209,9 +218,9 @@ subroutine init_ed_cohort_vars(cpatch,ico, lsl)
    ! the mean diurnal cycle.                                                               !
    !---------------------------------------------------------------------------------------!
    if (imoutput > 0 .or. iqoutput > 0) then
-      cpatch%mmean_par_v            (ico) = 0.0
-      cpatch%mmean_par_v_beam       (ico) = 0.0
-      cpatch%mmean_par_v_diff       (ico) = 0.0
+      cpatch%mmean_par_l            (ico) = 0.0
+      cpatch%mmean_par_l_beam       (ico) = 0.0
+      cpatch%mmean_par_l_diff       (ico) = 0.0
       cpatch%mmean_gpp              (ico) = 0.0
       cpatch%mmean_nppleaf          (ico) = 0.0
       cpatch%mmean_nppfroot         (ico) = 0.0
@@ -230,8 +239,6 @@ subroutine init_ed_cohort_vars(cpatch,ico, lsl)
       cpatch%mmean_light_level_diff (ico) = 0.0
       cpatch%mmean_beamext_level    (ico) = 0.0
       cpatch%mmean_diffext_level    (ico) = 0.0
-      cpatch%mmean_norm_par_beam    (ico) = 0.0
-      cpatch%mmean_norm_par_diff    (ico) = 0.0
       cpatch%mmean_fs_open          (ico) = 0.0
       cpatch%mmean_fsw              (ico) = 0.0
       cpatch%mmean_fsn              (ico) = 0.0
@@ -254,9 +261,9 @@ subroutine init_ed_cohort_vars(cpatch,ico, lsl)
    ! output, or the mean diurnal cycle.                                                    !
    !---------------------------------------------------------------------------------------!
    if (idoutput > 0 .or. imoutput > 0 .or. iqoutput > 0) then
-      cpatch%dmean_par_v            (ico) = 0.0
-      cpatch%dmean_par_v_beam       (ico) = 0.0
-      cpatch%dmean_par_v_diff       (ico) = 0.0
+      cpatch%dmean_par_l            (ico) = 0.0
+      cpatch%dmean_par_l_beam       (ico) = 0.0
+      cpatch%dmean_par_l_diff       (ico) = 0.0
       cpatch%dmean_gpp              (ico) = 0.0
       cpatch%dmean_nppleaf          (ico) = 0.0
       cpatch%dmean_nppfroot         (ico) = 0.0
@@ -272,8 +279,6 @@ subroutine init_ed_cohort_vars(cpatch,ico, lsl)
       cpatch%dmean_light_level_diff (ico) = 0.0
       cpatch%dmean_beamext_level    (ico) = 0.0
       cpatch%dmean_diffext_level    (ico) = 0.0
-      cpatch%dmean_norm_par_beam    (ico) = 0.0
-      cpatch%dmean_norm_par_diff    (ico) = 0.0
       cpatch%dmean_fsw              (ico) = 0.0
       cpatch%dmean_fsn              (ico) = 0.0
       cpatch%dmean_fs_open          (ico) = 0.0
@@ -290,9 +295,9 @@ subroutine init_ed_cohort_vars(cpatch,ico, lsl)
    ! output, or the mean diurnal cycle.                                                    !
    !---------------------------------------------------------------------------------------!
    if (iqoutput > 0) then
-      cpatch%qmean_par_v            (:,ico) = 0.0
-      cpatch%qmean_par_v_beam       (:,ico) = 0.0
-      cpatch%qmean_par_v_diff       (:,ico) = 0.0
+      cpatch%qmean_par_l            (:,ico) = 0.0
+      cpatch%qmean_par_l_beam       (:,ico) = 0.0
+      cpatch%qmean_par_l_diff       (:,ico) = 0.0
       cpatch%qmean_gpp              (:,ico) = 0.0
       cpatch%qmean_leaf_resp        (:,ico) = 0.0
       cpatch%qmean_root_resp        (:,ico) = 0.0
@@ -428,6 +433,10 @@ subroutine init_ed_patch_vars(csite,ip1,ip2,lsl)
    csite%today_A_decomp(ip1:ip2) = 0.0
    csite%today_Af_decomp(ip1:ip2) = 0.0
 
+   csite%par_l_max        (ip1:ip2) = 0.0
+   csite%par_l_beam_max   (ip1:ip2) = 0.0
+   csite%par_l_diffuse_max(ip1:ip2) = 0.0
+
    csite%repro(1:n_pft,ip1:ip2) = 0.0
    csite%A_o_max(1:n_pft,ip1:ip2) = 0.0
    csite%A_c_max(1:n_pft,ip1:ip2) = 0.0
@@ -470,6 +479,9 @@ subroutine init_ed_patch_vars(csite,ip1,ip2,lsl)
       csite%dmean_water_residual  (ip1:ip2) = 0.0
       csite%dmean_lambda_light    (ip1:ip2) = 0.0
       csite%dmean_rk4step         (ip1:ip2) = 0.0
+      csite%dmean_albedo          (ip1:ip2) = 0.0
+      csite%dmean_albedo_beam     (ip1:ip2) = 0.0
+      csite%dmean_albedo_diffuse  (ip1:ip2) = 0.0
    end if
 
    if (imoutput > 0 .or. iqoutput > 0) then
@@ -481,64 +493,79 @@ subroutine init_ed_patch_vars(csite,ip1,ip2,lsl)
       csite%mmean_water_residual  (ip1:ip2) = 0.0
       csite%mmean_lambda_light    (ip1:ip2) = 0.0
       csite%mmean_rk4step         (ip1:ip2) = 0.0
+      csite%mmean_albedo          (ip1:ip2) = 0.0
+      csite%mmean_albedo_beam     (ip1:ip2) = 0.0
+      csite%mmean_albedo_diffuse  (ip1:ip2) = 0.0
    end if
 
    if (iqoutput > 0) then
       csite%qmean_rh              (:,ip1:ip2) = 0.0
+      csite%qmean_albedo          (:,ip1:ip2) = 0.0
+      csite%qmean_albedo_beam     (:,ip1:ip2) = 0.0
+      csite%qmean_albedo_diffuse  (:,ip1:ip2) = 0.0
    end if
 
    !----------------------------------------------------------------------------------------!
    !    These variables need to be initialized here otherwise it will fail when new patches !
    ! are created.                                                                           !
    !----------------------------------------------------------------------------------------!
-   csite%avg_rk4step       (ip1:ip2)  = 0.0
-   csite%avg_carbon_ac     (ip1:ip2)  = 0.0
-   csite%avg_vapor_vc      (ip1:ip2)  = 0.0
-   csite%avg_dew_cg        (ip1:ip2)  = 0.0
-   csite%avg_vapor_gc      (ip1:ip2)  = 0.0
-   csite%avg_wshed_vg      (ip1:ip2)  = 0.0
-   csite%avg_intercepted   (ip1:ip2)  = 0.0
-   csite%avg_throughfall   (ip1:ip2)  = 0.0
-   csite%avg_vapor_ac      (ip1:ip2)  = 0.0
-   csite%avg_transp        (ip1:ip2)  = 0.0
-   csite%avg_evap          (ip1:ip2)  = 0.0
-   csite%avg_netrad        (ip1:ip2)  = 0.0
-   csite%avg_runoff        (ip1:ip2)  = 0.0
-   csite%avg_drainage      (ip1:ip2)  = 0.0
-   csite%avg_drainage_heat (ip1:ip2)  = 0.0
-   csite%aux               (ip1:ip2)  = 0.0
-   csite%avg_sensible_vc   (ip1:ip2)  = 0.0
-   csite%avg_qwshed_vg     (ip1:ip2)  = 0.0
-   csite%avg_qintercepted  (ip1:ip2)  = 0.0
-   csite%avg_qthroughfall  (ip1:ip2)  = 0.0
-   csite%avg_sensible_gc   (ip1:ip2)  = 0.0
-   csite%avg_sensible_ac   (ip1:ip2)  = 0.0
-   csite%avg_runoff_heat   (ip1:ip2)  = 0.0
-   csite%avg_sensible_gg (:,ip1:ip2)  = 0.0
-   csite%avg_smoist_gg   (:,ip1:ip2)  = 0.0
-   csite%avg_transloss   (:,ip1:ip2)  = 0.0
-   csite%aux_s           (:,ip1:ip2)  = 0.0
-   csite%avg_available_water(ip1:ip2) = 0.0
-   csite%avg_veg_energy(ip1:ip2)      = 0.0 
-   csite%avg_veg_temp(ip1:ip2)        = 0.0 
-   csite%avg_veg_fliq(ip1:ip2)        = 0.0 
-   csite%avg_veg_water(ip1:ip2)       = 0.0 
+   csite%avg_rk4step          (ip1:ip2) = 0.0
+   csite%avg_carbon_ac        (ip1:ip2) = 0.0
+   csite%avg_vapor_lc         (ip1:ip2) = 0.0
+   csite%avg_vapor_wc         (ip1:ip2) = 0.0
+   csite%avg_dew_cg           (ip1:ip2) = 0.0
+   csite%avg_vapor_gc         (ip1:ip2) = 0.0
+   csite%avg_wshed_vg         (ip1:ip2) = 0.0
+   csite%avg_intercepted      (ip1:ip2) = 0.0
+   csite%avg_throughfall      (ip1:ip2) = 0.0
+   csite%avg_vapor_ac         (ip1:ip2) = 0.0
+   csite%avg_transp           (ip1:ip2) = 0.0
+   csite%avg_evap             (ip1:ip2) = 0.0
+   csite%avg_rshort_gnd       (ip1:ip2) = 0.0
+   csite%avg_rlong_gnd        (ip1:ip2) = 0.0
+   csite%avg_runoff           (ip1:ip2) = 0.0
+   csite%avg_drainage         (ip1:ip2) = 0.0
+   csite%avg_drainage_heat    (ip1:ip2) = 0.0
+   csite%aux                  (ip1:ip2) = 0.0
+   csite%avg_sensible_lc      (ip1:ip2) = 0.0
+   csite%avg_sensible_wc      (ip1:ip2) = 0.0
+   csite%avg_qwshed_vg        (ip1:ip2) = 0.0
+   csite%avg_qintercepted     (ip1:ip2) = 0.0
+   csite%avg_qthroughfall     (ip1:ip2) = 0.0
+   csite%avg_sensible_gc      (ip1:ip2) = 0.0
+   csite%avg_sensible_ac      (ip1:ip2) = 0.0
+   csite%avg_runoff_heat      (ip1:ip2) = 0.0
+   csite%avg_sensible_gg    (:,ip1:ip2) = 0.0
+   csite%avg_smoist_gg      (:,ip1:ip2) = 0.0
+   csite%avg_transloss      (:,ip1:ip2) = 0.0
+   csite%aux_s              (:,ip1:ip2) = 0.0
+   csite%avg_available_water  (ip1:ip2) = 0.0
+   csite%avg_leaf_energy      (ip1:ip2) = 0.0 
+   csite%avg_leaf_temp        (ip1:ip2) = 0.0 
+   csite%avg_leaf_hcap        (ip1:ip2) = 0.0 
+   csite%avg_leaf_fliq        (ip1:ip2) = 0.0 
+   csite%avg_leaf_water       (ip1:ip2) = 0.0 
+   csite%avg_wood_energy      (ip1:ip2) = 0.0 
+   csite%avg_wood_temp        (ip1:ip2) = 0.0 
+   csite%avg_wood_hcap        (ip1:ip2) = 0.0 
+   csite%avg_wood_fliq        (ip1:ip2) = 0.0 
+   csite%avg_wood_water       (ip1:ip2) = 0.0 
 
-   csite%rshort_g(ip1:ip2) = 0.0
-   csite%rshort_g_beam(ip1:ip2) = 0.0
-   csite%rshort_g_diffuse(ip1:ip2) = 0.0
-   csite%rlong_g(ip1:ip2) = 0.0
-   csite%rlong_g_surf(ip1:ip2) = 0.0
-   csite%rlong_g_incid(ip1:ip2) = 0.0
-   csite%rlong_s(ip1:ip2) = 0.0
-   csite%rlong_s_surf(ip1:ip2) = 0.0
-   csite%rlong_s_incid(ip1:ip2) = 0.0
-   csite%albedt(ip1:ip2) = 0.0
-   csite%albedo_beam(ip1:ip2) = 0.0
-   csite%albedo_diffuse(ip1:ip2) = 0.0
-   csite%rlongup(ip1:ip2) = 0.0
-   csite%rlong_albedo(ip1:ip2) = 0.0
-   csite%lambda_light(ip1:ip2) = 0.0
+   csite%rshort_g             (ip1:ip2) = 0.0
+   csite%rshort_g_beam        (ip1:ip2) = 0.0
+   csite%rshort_g_diffuse     (ip1:ip2) = 0.0
+   csite%rlong_g              (ip1:ip2) = 0.0
+   csite%rlong_g_surf         (ip1:ip2) = 0.0
+   csite%rlong_g_incid        (ip1:ip2) = 0.0
+   csite%rlong_s              (ip1:ip2) = 0.0
+   csite%rlong_s_surf         (ip1:ip2) = 0.0
+   csite%rlong_s_incid        (ip1:ip2) = 0.0
+   csite%albedo               (ip1:ip2) = 0.0
+   csite%albedo_beam          (ip1:ip2) = 0.0
+   csite%albedo_diffuse       (ip1:ip2) = 0.0
+   csite%rlongup              (ip1:ip2) = 0.0
+   csite%rlong_albedo         (ip1:ip2) = 0.0
+   csite%lambda_light         (ip1:ip2) = 0.0
 
    csite%fsc_in                      (ip1:ip2) = 0.0
    csite%ssc_in                      (ip1:ip2) = 0.0
@@ -574,6 +601,7 @@ subroutine init_ed_patch_vars(csite,ip1,ip2,lsl)
    csite%ggbare(ip1:ip2) = 0.0
    csite%ggveg (ip1:ip2) = 0.0
    csite%ggnet (ip1:ip2) = 0.0
+   csite%ggsoil(ip1:ip2) = 0.0
 
    csite%old_stoma_data_max(:,ip1:ip2)%recalc = 1
    csite%old_stoma_data_max(:,ip1:ip2)%T_L = 0.0
@@ -859,7 +887,7 @@ subroutine new_patch_sfc_props(csite,ipa,mzg,mzs,ntext_soil)
                   ,csite%soil_fracliq(mzg,ipa),csite%sfcwater_tempk(k,ipa)                 &
                   ,csite%sfcwater_fracliq(k,ipa),csite%can_prss(ipa)                       &
                   ,csite%can_shv(ipa),csite%ground_shv(ipa),csite%ground_ssh(ipa)          &
-                  ,csite%ground_temp(ipa),csite%ground_fliq(ipa))
+                  ,csite%ground_temp(ipa),csite%ground_fliq(ipa),csite%ggsoil(ipa))
    !---------------------------------------------------------------------------------------! 
 
    return

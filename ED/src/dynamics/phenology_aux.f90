@@ -299,7 +299,7 @@ subroutine first_phenology(cgrid)
                             , polygontype      & ! structure
                             , sitetype         & ! structure
                             , patchtype        ! ! structure
-   use ed_therm_lib  , only : calc_hcapveg     ! ! function
+   use ed_therm_lib  , only : calc_veg_hcap    ! ! function
    use allometry     , only : area_indices     ! ! subroutine
    use grid_coms     , only : nzg              ! ! intent(in)
    implicit none
@@ -313,8 +313,6 @@ subroutine first_phenology(cgrid)
    integer                       :: isi            ! Site counter
    integer                       :: ipa            ! Patch counter
    integer                       :: ico            ! Cohort counter
-   !----- External functions. -------------------------------------------------------------!
-   logical          , external   :: is_resolvable  ! The cohort can be resolved.
    !---------------------------------------------------------------------------------------!
 
 
@@ -334,7 +332,8 @@ subroutine first_phenology(cgrid)
                ! factor, then compute the equilibrium biomass of active tissues and        !
                ! storage.                                                                  !
                !---------------------------------------------------------------------------!
-               call pheninit_balive_bstorage(nzg,csite,ipa,ico,cpoly%ntext_soil(:,isi))
+               call pheninit_balive_bstorage(nzg,csite,ipa,ico,cpoly%ntext_soil(:,isi)     &
+                                            ,cpoly%green_leaf_factor(:,isi))
                !---------------------------------------------------------------------------!
 
 
@@ -346,15 +345,14 @@ subroutine first_phenology(cgrid)
                                 ,cpatch%bsapwood(ico)) 
                !---------------------------------------------------------------------------!
 
+
                !----- Find heat capacity and vegetation internal energy. ------------------!
-               cpatch%hcapveg(ico) = calc_hcapveg(cpatch%bleaf(ico),cpatch%bdead(ico)      &
-                                                 ,cpatch%balive(ico),cpatch%nplant(ico)    &
-                                                 ,cpatch%hite(ico),cpatch%pft(ico)         &
-                                                 ,cpatch%phenology_status(ico)             &
-                                                 ,cpatch%bsapwood(ico))
-               cpatch%veg_energy(ico) = cpatch%hcapveg(ico) * cpatch%veg_temp(ico)
-               cpatch%resolvable(ico) = is_resolvable(csite,ipa,ico                        &
-                                                     ,cpoly%green_leaf_factor(:,isi))
+               call calc_veg_hcap(cpatch%bleaf(ico),cpatch%bdead(ico),cpatch%bsapwood(ico) &
+                                 ,cpatch%nplant(ico),cpatch%pft(ico)                       &
+                                 ,cpatch%leaf_hcap(ico),cpatch%wood_hcap(ico) )
+               cpatch%leaf_energy(ico) = cpatch%leaf_hcap(ico) * cpatch%leaf_temp(ico)
+               cpatch%wood_energy(ico) = cpatch%wood_hcap(ico) * cpatch%wood_temp(ico)
+               call is_resolvable(csite,ipa,ico,cpoly%green_leaf_factor(:,isi))
                !---------------------------------------------------------------------------!
 
 
@@ -384,7 +382,7 @@ end subroutine first_phenology
 ! found but it doesn't control the phenology, so we assign the biomass that matches the    !
 ! fully flushed leaves.                                                                    !
 !------------------------------------------------------------------------------------------!
-subroutine pheninit_balive_bstorage(mzg,csite,ipa,ico,ntext_soil)
+subroutine pheninit_balive_bstorage(mzg,csite,ipa,ico,ntext_soil,green_leaf_factor)
    use ed_state_vars , only : sitetype            & ! structure
                             , patchtype           ! ! structure
    use soil_coms     , only : soil                & ! intent(in), look-up table
@@ -394,14 +392,16 @@ subroutine pheninit_balive_bstorage(mzg,csite,ipa,ico,ntext_soil)
    use pft_coms      , only : phenology           & ! intent(in)
                             , q                   & ! intent(in)
                             , qsw                 ! ! intent(in)
+   use ed_max_dims   , only : n_pft               ! ! intent(in)
    use allometry     , only : dbh2bl              ! ! function
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
-   type(sitetype)                , target     :: csite      ! Current site
-   integer                       , intent(in) :: mzg        ! Number of soil layers
-   integer                       , intent(in) :: ipa        ! Number of the current patch
-   integer                       , intent(in) :: ico        ! Cohort counter
-   integer       , dimension(mzg), intent(in) :: ntext_soil ! Soil texture
+   type(sitetype)                  , target     :: csite             ! Current site
+   integer                         , intent(in) :: mzg               ! # of soil layers
+   integer                         , intent(in) :: ipa               ! Current patch
+   integer                         , intent(in) :: ico               ! Cohort counter
+   integer       , dimension(mzg)  , intent(in) :: ntext_soil        ! Soil texture
+   real          , dimension(n_pft), intent(in) :: green_leaf_factor ! Hardwood phenology
    !----- Local variables -----------------------------------------------------------------!
    type(patchtype)               , pointer    :: cpatch     ! Current patch
    integer                                    :: k          ! Layer counter
@@ -438,12 +438,13 @@ subroutine pheninit_balive_bstorage(mzg,csite,ipa,ico,ntext_soil)
       if (cpatch%paw_avg(ico) < theta_crit) then
          cpatch%elongf(ico) = 0.0
       else
-         cpatch%elongf(ico) = 1.0
+         cpatch%elongf(ico) = green_leaf_factor(ipft)
       end if
    case (4)
-      cpatch%elongf(ico)  = max(0.0,min(1.0,cpatch%paw_avg(ico)/theta_crit))
+      cpatch%elongf(ico)  = max(0.0,min(1.0,cpatch%paw_avg(ico)/theta_crit))               &
+                          * green_leaf_factor(ipft)
    case default
-      cpatch%elongf(ico)  = 1.0
+      cpatch%elongf(ico)  = green_leaf_factor(ipft)
    end select
 
    !----- Set phenology status according to the elongation factor. ------------------------!
@@ -453,6 +454,7 @@ subroutine pheninit_balive_bstorage(mzg,csite,ipa,ico,ntext_soil)
       cpatch%phenology_status(ico) = -1
    else
       cpatch%phenology_status(ico) = 2
+      cpatch%elongf(ico)           = 0.
    end if
    !---------------------------------------------------------------------------------------!
 
@@ -463,7 +465,13 @@ subroutine pheninit_balive_bstorage(mzg,csite,ipa,ico,ntext_soil)
    salloci              = 1.0 / salloc
    bleaf_max            = dbh2bl(cpatch%dbh(ico),cpatch%pft(ico))
    balive_max           = bleaf_max * salloc
-   cpatch%bleaf(ico)    = bleaf_max * cpatch%elongf(ico)
+   select case (cpatch%phenology_status(ico))
+   case (2)
+      cpatch%bleaf(ico)  = 0.
+      cpatch%elongf(ico) = 0.
+   case default
+      cpatch%bleaf(ico) = bleaf_max * cpatch%elongf(ico) 
+   end select
    cpatch%broot(ico)    = balive_max * q(ipft)   * salloci
    cpatch%bsapwood(ico) = balive_max * qsw(ipft) * cpatch%hite(ico) * salloci
    cpatch%balive(ico)   = cpatch%bleaf(ico) + cpatch%broot(ico) + cpatch%bsapwood(ico)

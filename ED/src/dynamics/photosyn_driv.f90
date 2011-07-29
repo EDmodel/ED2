@@ -3,7 +3,7 @@
 !     This subroutine will control the photosynthesis scheme (Farquar and Leuning).  This  !
 ! is called every step, but not every sub-step.                                            !
 !------------------------------------------------------------------------------------------!
-subroutine canopy_photosynthesis(csite,cmet,mzg,ipa,ed_ktrans,lsl,ntext_soil               &
+subroutine canopy_photosynthesis(csite,cmet,mzg,ipa,lsl,ntext_soil                         &
                                 ,leaf_aging_factor,green_leaf_factor)
    use ed_state_vars  , only : sitetype          & ! structure
                              , patchtype         ! ! structure
@@ -12,12 +12,16 @@ subroutine canopy_photosynthesis(csite,cmet,mzg,ipa,ed_ktrans,lsl,ntext_soil    
                              , water_conductance & ! intent(in)
                              , include_pft       ! ! intent(in)
    use soil_coms      , only : soil              & ! intent(in)
-                             , dslz              ! ! intent(in)
+                             , slz               & ! intent(in)
+                             , dslz              & ! intent(in)
+                             , freezecoef        ! ! intent(in)
    use consts_coms    , only : t00               & ! intent(in)
                              , epi               & ! intent(in)
                              , wdnsi             & ! intent(in)
                              , wdns              & ! intent(in)
-                             , kgCday_2_umols    ! ! intent(in)
+                             , kgCday_2_umols    & ! intent(in)
+                             , lnexp_min         ! ! intent(in)
+   use ed_misc_coms   , only : current_time      ! ! intent(in)
    use met_driver_coms, only : met_driv_state    ! ! structure
    use physiology_coms, only : print_photo_debug & ! intent(in)
                              , h2o_plant_lim     ! ! intent(in)
@@ -32,7 +36,6 @@ subroutine canopy_photosynthesis(csite,cmet,mzg,ipa,ed_ktrans,lsl,ntext_soil    
    integer, dimension(mzg)   , intent(in)  :: ntext_soil        ! Soil class
    real   , dimension(n_pft) , intent(in)  :: leaf_aging_factor ! 
    real   , dimension(n_pft) , intent(in)  :: green_leaf_factor ! 
-   integer, dimension(mzg)   , intent(out) :: ed_ktrans         ! 
    !----- Local variables -----------------------------------------------------------------!
    type(patchtype)           , pointer     :: cpatch             ! Current site
    integer                                 :: ico                ! Current cohort #
@@ -40,11 +43,15 @@ subroutine canopy_photosynthesis(csite,cmet,mzg,ipa,ed_ktrans,lsl,ntext_soil    
    integer                                 :: ipft
    integer                                 :: k1
    integer                                 :: k2
+   integer                                 :: kroot
    integer                                 :: nsoil
    integer                                 :: limit_flag
-   logical, dimension(mzg)                 :: root_depth_indices ! 
+   logical, dimension(mzg+1)               :: root_depth_indices ! 
    logical                                 :: las
-   real   , dimension(mzg)                 :: available_liquid_water
+   real   , dimension(mzg+1)               :: avg_frozen_water
+   real   , dimension(mzg+1)               :: avg_liquid_water
+   real   , dimension(mzg+1)               :: available_liquid_water
+   real   , dimension(mzg+1)               :: wilting_factor
    real                                    :: leaf_par
    real                                    :: leaf_resp
    real                                    :: d_gsw_open
@@ -61,6 +68,11 @@ subroutine canopy_photosynthesis(csite,cmet,mzg,ipa,ed_ktrans,lsl,ntext_soil    
    real                                    :: compp
    real                                    :: broot_tot
    real                                    :: broot_loc
+   real                                    :: wgpfrac
+   real                                    :: avg_fracliq
+   real                                    :: psi_wilting
+   real                                    :: psi_layer
+   real                                    :: freezecor
    real                                    :: pss_available_water
    !---------------------------------------------------------------------------------------!
 
@@ -80,16 +92,69 @@ subroutine canopy_photosynthesis(csite,cmet,mzg,ipa,ed_ktrans,lsl,ntext_soil    
 
 
    !----- Calculate liquid water available for transpiration. -----------------------------!
-   nsoil = ntext_soil(mzg)
-   available_liquid_water(mzg) = wdns * dslz(mzg) * csite%soil_fracliq(mzg,ipa)            &
-                               * max(0.0, csite%soil_water(mzg,ipa) - soil(nsoil)%soilwp )
-   do k1 = mzg-1, lsl, -1
+   available_liquid_water(mzg+1) = 0.
+   do k1 = mzg, lsl, -1
       nsoil = ntext_soil(k1)
       available_liquid_water(k1) = available_liquid_water(k1+1)                            &
                                  + wdns * dslz(k1) * csite%soil_fracliq(k1,ipa)            &
                                  * max(0.0, csite%soil_water(k1,ipa) - soil(nsoil)%soilwp )
    end do
    !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !     If we are solving H2O_PLANT_LIM = 2, then we must account for the water potential !
+   ! as in CLM.                                                                            !
+   !---------------------------------------------------------------------------------------!
+   select case (h2o_plant_lim)
+   case (2)
+
+      !----- Find the average liquid and frozen water. ------------------------------------!
+      avg_liquid_water(:) = 0.0
+      avg_frozen_water(:) = 0.0
+      do k1=mzg,lsl,-1
+         avg_frozen_water(k1) = avg_frozen_water(k1+1)                                     &
+                              + dslz(k1) * (1. - csite%soil_fracliq(k1,ipa))               &
+                              * csite%soil_water(k1,ipa)
+         avg_liquid_water(k1) = avg_liquid_water(k1+1)                                     &
+                              + dslz(k1) * csite%soil_fracliq(k1,ipa)                      &
+                              * csite%soil_water(k1,ipa)
+      end do
+      avg_frozen_water(lsl:mzg) = avg_frozen_water(lsl:mzg) / (- slz(lsl:mzg))
+      avg_liquid_water(lsl:mzg) = avg_liquid_water(lsl:mzg) / (- slz(lsl:mzg))
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !    Compute the soil potential for transpiration for each layer as in CLM.          !
+      !------------------------------------------------------------------------------------!
+      wilting_factor(:) = 0.0
+      do k1=lsl,mzg
+         nsoil = ntext_soil(k1)
+         if (avg_liquid_water(k1) > soil(nsoil)%soilwp) then
+            !----- Find the average soil wetness. -----------------------------------------!
+            wgpfrac = avg_liquid_water(k1) / soil(nsoil)%slmsts
+            avg_fracliq  = avg_liquid_water(k1)                                            &
+                         / (avg_liquid_water(k1) + avg_frozen_water(k1))
+
+            !----- Apply correction in case the soil is partially frozen. -----------------!
+            freezecor    = 10. ** max(lnexp_min,- freezecoef * (1.0 - avg_fracliq))
+            psi_wilting  = soil(nsoil)%slpots                                              &
+                         / (soil(nsoil)%soilwp / soil(nsoil)%slmsts) ** soil(nsoil)%slbs
+            psi_layer    = soil(nsoil)%slpots / wgpfrac ** soil(nsoil)%slbs
+
+            !----- Find the wilting factor which will control the dry soil correction. ----!
+            wilting_factor(k1) = max( 0., min(1., (psi_wilting - psi_layer         )       &
+                                                / (psi_wilting - soil(nsoil)%slpots) ) )
+         end if
+      end do
+      !------------------------------------------------------------------------------------!
+   end select
+   !---------------------------------------------------------------------------------------!
+
+
+
 
    !---------------------------------------------------------------------------------------!
    !     Initialize the array of maximum photosynthesis rates used in the mortality        !
@@ -106,7 +171,7 @@ subroutine canopy_photosynthesis(csite,cmet,mzg,ipa,ed_ktrans,lsl,ntext_soil    
    las = .false.
    do ico = 1,cpatch%ncohorts
       !----- If this is the tallest cohort to be used, we save its index. -----------------!
-      if (.not. las .and. cpatch%resolvable(ico)) then
+      if (.not. las .and. cpatch%leaf_resolvable(ico)) then
          las  = .true.
          tuco = ico
       end if
@@ -122,12 +187,12 @@ subroutine canopy_photosynthesis(csite,cmet,mzg,ipa,ed_ktrans,lsl,ntext_soil    
    if (las) then
       !----- We now loop over PFTs, not cohorts, skipping those we are not using. ---------!
       do ipft = 1, n_pft
-         if (include_pft(ipft) == 1)then
+         if (include_pft(ipft)) then
 
             !------------------------------------------------------------------------------!
             !    Scale photosynthetically active radiation per unit of leaf.               !
             !------------------------------------------------------------------------------!
-            leaf_par = cpatch%par_v(tuco) / cpatch%lai(tuco)
+            leaf_par = csite%par_l_max(ipa) / cpatch%lai(tuco)
 
             !------------------------------------------------------------------------------!
             !    Call the photosynthesis for maximum photosynthetic rates.  The units      !
@@ -143,13 +208,13 @@ subroutine canopy_photosynthesis(csite,cmet,mzg,ipa,ed_ktrans,lsl,ntext_soil    
              , csite%can_co2(ipa)          & ! Canopy air CO2 mixing ratio      [ µmol/mol]
              , ipft                        & ! Plant functional type            [      ---]
              , leaf_par                    & ! Absorbed photos. active rad.     [     W/m²]
-             , cpatch%veg_temp(tuco)       & ! Vegetation temperature           [        K]
+             , cpatch%leaf_temp(tuco)      & ! Leaf temperature                 [        K]
              , cpatch%lint_shv(tuco)       & ! Leaf intercellular spec. hum.    [    kg/kg]
              , green_leaf_factor(ipft)     & ! Greenness rel. to on-allometry   [      ---]
              , leaf_aging_factor(ipft)     & ! Ageing parameter to scale VM     [      ---]
              , cpatch%llspan(tuco)         & ! Leaf life span                   [       yr]
              , cpatch%vm_bar(tuco)         & ! Average Vm function              [µmol/m²/s]
-             , cpatch%gbw(tuco)            & ! Aerodyn. condct. of water vapour [  kg/m²/s]
+             , cpatch%leaf_gbw(tuco)       & ! Aerodyn. condct. of water vapour [  kg/m²/s]
              , csite%A_o_max(ipft,ipa)     & ! Photosynthesis rate     (open)   [µmol/m²/s]
              , csite%A_c_max(ipft,ipa)     & ! Photosynthesis rate     (closed) [µmol/m²/s]
              , d_gsw_open                  & ! Stom. condct. of water  (open)   [  kg/m²/s]
@@ -197,7 +262,7 @@ subroutine canopy_photosynthesis(csite,cmet,mzg,ipa,ed_ktrans,lsl,ntext_soil    
       !     Only need to worry about photosyn if radiative transfer has been  done for     !
       ! this cohort.                                                                       !
       !------------------------------------------------------------------------------------!
-      if (cpatch%resolvable(ico)) then
+      if (cpatch%leaf_resolvable(ico)) then
 
             !----- Alias for PFT ----------------------------------------------------------!
             ipft = cpatch%pft(ico)
@@ -205,7 +270,7 @@ subroutine canopy_photosynthesis(csite,cmet,mzg,ipa,ed_ktrans,lsl,ntext_soil    
             !------------------------------------------------------------------------------!
             !    Scale photosynthetically active radiation per unit of leaf.               !
             !------------------------------------------------------------------------------!
-            leaf_par = cpatch%par_v(ico) / cpatch%lai(ico) 
+            leaf_par = cpatch%par_l(ico) / cpatch%lai(ico) 
 
 
             !------------------------------------------------------------------------------!
@@ -222,13 +287,13 @@ subroutine canopy_photosynthesis(csite,cmet,mzg,ipa,ed_ktrans,lsl,ntext_soil    
              , csite%can_co2(ipa)          & ! Canopy air CO2 mixing ratio      [ µmol/mol]
              , ipft                        & ! Plant functional type            [      ---]
              , leaf_par                    & ! Absorbed photos. active rad.     [     W/m²]
-             , cpatch%veg_temp(ico)        & ! Vegetation temperature           [        K]
+             , cpatch%leaf_temp(ico)       & ! Leaf temperature                 [        K]
              , cpatch%lint_shv(ico)        & ! Leaf intercellular spec. hum.    [    kg/kg]
              , green_leaf_factor(ipft)     & ! Greenness rel. to on-allometry   [      ---]
              , leaf_aging_factor(ipft)     & ! Ageing parameter to scale VM     [      ---]
              , cpatch%llspan(ico)          & ! Leaf life span                   [       yr]
              , cpatch%vm_bar(ico)          & ! Average Vm function              [µmol/m²/s]
-             , cpatch%gbw(ico)             & ! Aerodyn. condct. of water vapour [  kg/m²/s]
+             , cpatch%leaf_gbw(ico)        & ! Aerodyn. condct. of water vapour [  kg/m²/s]
              , cpatch%A_open(ico)          & ! Photosynthesis rate     (open)   [µmol/m²/s]
              , cpatch%A_closed(ico)        & ! Photosynthesis rate     (closed) [µmol/m²/s]
              , cpatch%gsw_open(ico)        & ! Stom. condct. of water  (open)   [  kg/m²/s]
@@ -284,17 +349,13 @@ subroutine canopy_photosynthesis(csite,cmet,mzg,ipa,ed_ktrans,lsl,ntext_soil    
                                     , cpatch%water_supply(ico) + cpatch%psi_open(ico))
             case (2)
                !---------------------------------------------------------------------------!
-               !    New method to determine the fraction of open stomata, this function    !
-               ! allows almost 100% of the stomata to remain open when demand is equal     !
-               ! to supply, about 50% when demand is twice the supply, and almost 0% and   !
-               ! demand becomes larger than three times the supply.                        !
+               !     Somewhat based on CLM, but we reduce the total amount of available    !
+               ! water by the fraction of root biomass belonging to this cohort.  We don't !
+               ! have the root profile up to now, assume they are evenly distributed       !
+               ! through all layers that have roots.                                       !
                !---------------------------------------------------------------------------!
-               if (cpatch%water_supply(ico) > 1.e-20) then
-                  cpatch%fsw(ico) = 0.5 * ( 1. - tanh( 2. * (cpatch%psi_open(ico)          &
-                                                            /cpatch%water_supply(ico)-2.)))
-               else
-                  cpatch%fsw(ico) = 0.0
-               end if
+               cpatch%fsw(ico) = wilting_factor(cpatch%krdepth(ico))
+
             end select
             !------------------------------------------------------------------------------!
 
@@ -349,8 +410,8 @@ subroutine canopy_photosynthesis(csite,cmet,mzg,ipa,ed_ktrans,lsl,ntext_soil    
          cpatch%water_supply(ico)         = 0.0
          cpatch%gsw_open(ico)             = 0.0
          cpatch%gsw_closed(ico)           = 0.0
-         cpatch%gbh(ico)                  = 0.0
-         cpatch%gbw(ico)                  = 0.0
+         cpatch%leaf_gbh(ico)             = 0.0
+         cpatch%leaf_gbw(ico)             = 0.0
          cpatch%stomatal_conductance(ico) = 0.0
          cpatch%gpp(ico)                  = 0.0
          cpatch%leaf_respiration(ico)     = 0.0
@@ -389,36 +450,6 @@ subroutine canopy_photosynthesis(csite,cmet,mzg,ipa,ed_ktrans,lsl,ntext_soil    
    !else
    !  Add nothing, the contribution of this time is zero since no cohort can transpire... 
    end if
-
-   !---------------------------------------------------------------------------------------!
-   !     For plants of a given rooting depth, determine soil level from which transpired   !
-   ! water is to be extracted.                                                             !
-   !---------------------------------------------------------------------------------------!
-   ed_ktrans(:) = 0
-   do k1 = lsl, mzg
-      !---- Assign a very large negative, so it will update it at least once. -------------!
-      swp = -huge(1.)
-      if (root_depth_indices(k1)) then
-         do k2 = k1, mzg
-            nsoil = ntext_soil(k2)
-            !------------------------------------------------------------------------------!
-            !      Find slpotv using the available liquid water, since ice is unavailable  !
-            ! for transpiration.                                                           !
-            !------------------------------------------------------------------------------!
-            slpotv = soil(nsoil)%slpots * csite%soil_fracliq(k2,ipa)                       &
-                   * (soil(nsoil)%slmsts / csite%soil_water(k2,ipa)) ** soil(nsoil)%slbs
-
-            !------------------------------------------------------------------------------!
-            !      Find layer in root zone with highest slpotv AND soil_water above        !
-            ! minimum soilwp.  Set ktrans to this layer.                                   !
-            !------------------------------------------------------------------------------!
-            if (slpotv > swp .and. csite%soil_water(k2,ipa) > soil(nsoil)%soilwp) then
-               swp = slpotv
-               ed_ktrans(k1) = k2
-            end if
-         end do
-      end if
-   end do
 
    return
 end subroutine canopy_photosynthesis
@@ -473,8 +504,8 @@ subroutine print_photo_details(cmet,csite,ipa,ico,limit_flag,vm,compp)
    real                                    :: util_parv
    real                                    :: alpha
    !----- Local constants. ----------------------------------------------------------------!
-   character(len=10), parameter :: hfmt='(55(a,1x))'
-   character(len=48), parameter :: bfmt='(3(i13,1x),1(es13.6,1x),2(i13,1x),49(es13.6,1x))'
+   character(len=10), parameter :: hfmt='(58(a,1x))'
+   character(len=48), parameter :: bfmt='(3(i13,1x),1(es13.6,1x),2(i13,1x),52(es13.6,1x))'
    !----- Locally saved variables. --------------------------------------------------------!
    logical                   , save        :: first_time=.true.
    !---------------------------------------------------------------------------------------!
@@ -487,8 +518,8 @@ subroutine print_photo_details(cmet,csite,ipa,ico,limit_flag,vm,compp)
    stom_condct =  cpatch%stomatal_conductance(ico)
    !---------------------------------------------------------------------------------------!
 
-   if (cpatch%resolvable(ico)) then
-      par_area   = cpatch%par_v(ico) * Watts_2_Ein * mol_2_umol
+   if (cpatch%leaf_resolvable(ico)) then
+      par_area   = cpatch%par_l(ico) * Watts_2_Ein * mol_2_umol
       parv       = par_area / cpatch%lai(ico)
       
       
@@ -502,7 +533,7 @@ subroutine print_photo_details(cmet,csite,ipa,ico,limit_flag,vm,compp)
            case (4)
                alpha         = dble(quantum_efficiency(ipft))       
            case (3)       
-               alpha         = dble(-0.0016*(dble(cpatch%veg_temp(ico))-t008)+0.1040)
+               alpha         = dble(-0.0016*(dble(cpatch%leaf_temp(ico))-t008)+0.1040)
            end select
       case default
             alpha         = dble(quantum_efficiency(ipft))      
@@ -556,17 +587,18 @@ subroutine print_photo_details(cmet,csite,ipa,ico,limit_flag,vm,compp)
       write (unit=57,fmt=hfmt)   '         YEAR', '        MONTH', '          DAY'         &
                                , '         TIME', '          PFT', '   LIMIT_FLAG'         &
                                , '       HEIGHT', '       NPLANT', '        BLEAF'         &
-                               , '          LAI', '      HCAPVEG', '    VEG_WATER'         &
-                               , '     VEG_TEMP', '     CAN_TEMP', '     ATM_TEMP'         &
-                               , '  GROUND_TEMP', '      CAN_SHV', '      ATM_SHV'         &
-                               , '   GROUND_SHV', 'LSFC_SHV_OPEN', 'LSFC_SHV_CLOS'         &
-                               , '     LINT_SHV', '     ATM_PRSS', '     CAN_PRSS'         &
-                               , '         PCPG', '     CAN_RHOS', '      ATM_CO2'         &
-                               , '      CAN_CO2', 'LSFC_CO2_OPEN', 'LSFC_CO2_CLOS'         &
-                               , 'LINT_CO2_OPEN', 'LINT_CO2_CLOS', '        COMPP'         &
-                               , '     PAR_AREA', '         PARV', '    UTIL_PARV'         &
-                               , '          GPP', '    LEAF_RESP', '          GBH'         &
-                               , '          GBW', '  STOM_CONDCT', '       A_OPEN'         &
+                               , '          LAI', '    LEAF_HCAP', '   LEAF_WATER'         &
+                               , '    LEAF_TEMP', '    WOOD_TEMP', '     CAN_TEMP'         &
+                               , '     ATM_TEMP', '  GROUND_TEMP', '      CAN_SHV'         &
+                               , '      ATM_SHV', '   GROUND_SHV', 'LSFC_SHV_OPEN'         &
+                               , 'LSFC_SHV_CLOS', '     LINT_SHV', '     ATM_PRSS'         &
+                               , '     CAN_PRSS', '         PCPG', '     CAN_RHOS'         &
+                               , '      ATM_CO2', '      CAN_CO2', 'LSFC_CO2_OPEN'         &
+                               , 'LSFC_CO2_CLOS', 'LINT_CO2_OPEN', 'LINT_CO2_CLOS'         &
+                               , '        COMPP', '     PAR_AREA', '         PARV'         &
+                               , '    UTIL_PARV', '          GPP', '    LEAF_RESP'         &
+                               , '     LEAF_GBH', '     LEAF_GBW', '     WOOD_GBH'         &
+                               , '     WOOD_GBW', '  STOM_CONDCT', '       A_OPEN'         &
                                , '       A_CLOS', '     GSW_OPEN', '     GSW_CLOS'         &
                                , '     PSI_OPEN', '     PSI_CLOS', '   H2O_SUPPLY'         &
                                , '          FSW', '          FSN', '      FS_OPEN'         &
@@ -587,17 +619,18 @@ subroutine print_photo_details(cmet,csite,ipa,ico,limit_flag,vm,compp)
      current_time%year          , current_time%month         , current_time%date           &
    , current_time%time          , cpatch%pft(ico)            , limit_flag                  &
    , cpatch%hite(ico)           , cpatch%nplant(ico)         , cpatch%bleaf(ico)           &
-   , cpatch%lai(ico)            , cpatch%hcapveg(ico)        , cpatch%veg_water(ico)       &
-   , cpatch%veg_temp(ico)       , csite%can_temp(ipa)        , cmet%atm_tmp                &
-   , csite%ground_temp(ipa)     , csite%can_shv(ipa)         , cmet%atm_shv                &
-   , csite%ground_shv(ipa)      , cpatch%lsfc_shv_open(ico)  , cpatch%lsfc_shv_closed(ico) &
-   , cpatch%lint_shv(ico)       , cmet%prss                  , csite%can_prss(ipa)         &
-   , cmet%pcpg                  , csite%can_rhos(ipa)        , cmet%atm_co2                &
-   , csite%can_co2(ipa)         , cpatch%lsfc_co2_open(ico)  , cpatch%lsfc_co2_closed(ico) &
-   , cpatch%lint_co2_open(ico)  , cpatch%lint_co2_closed(ico), compp                       &
-   , par_area                   , parv                       , util_parv                   &
-   , cpatch%gpp(ico)            , leaf_resp                  , cpatch%gbh(ico)             &
-   , cpatch%gbw(ico)            , stom_condct                , cpatch%A_open(ico)          &
+   , cpatch%lai(ico)            , cpatch%leaf_hcap(ico)      , cpatch%leaf_water(ico)      &
+   , cpatch%leaf_temp(ico)      , cpatch%wood_temp(ico)      , csite%can_temp(ipa)         &
+   , cmet%atm_tmp               , csite%ground_temp(ipa)     , csite%can_shv(ipa)          &
+   , cmet%atm_shv               , csite%ground_shv(ipa)      , cpatch%lsfc_shv_open(ico)   &
+   , cpatch%lsfc_shv_closed(ico), cpatch%lint_shv(ico)       , cmet%prss                   &
+   , csite%can_prss(ipa)        , cmet%pcpg                  , csite%can_rhos(ipa)         &
+   , cmet%atm_co2               , csite%can_co2(ipa)         , cpatch%lsfc_co2_open(ico)   &
+   , cpatch%lsfc_co2_closed(ico), cpatch%lint_co2_open(ico)  , cpatch%lint_co2_closed(ico) &
+   , compp                      , par_area                   , parv                        &
+   , util_parv                  , cpatch%gpp(ico)            , leaf_resp                   &
+   , cpatch%leaf_gbh(ico)       , cpatch%leaf_gbw(ico)       , cpatch%wood_gbh(ico)        &
+   , cpatch%wood_gbw(ico)       , stom_condct                , cpatch%A_open(ico)          &
    , cpatch%A_closed(ico)       , cpatch%gsw_open(ico)       , cpatch%gsw_closed(ico)      &
    , cpatch%psi_open(ico)       , cpatch%psi_closed(ico)     , cpatch%water_supply(ico)    &
    , cpatch%fsw(ico)            , cpatch%fsn(ico)            , cpatch%fs_open(ico)         &

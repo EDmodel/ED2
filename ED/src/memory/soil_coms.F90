@@ -27,7 +27,7 @@ module soil_coms
    integer, parameter :: ed_nstyp = nstyp          ! total # of soil textural classes
    integer, parameter :: ed_nvtyp = nvtyp+nvtyp_teb
 #else
-   integer, parameter :: ed_nstyp = 12             ! total # of soil textural classes
+   integer, parameter :: ed_nstyp = 17             ! total # of soil textural classes
    integer, parameter :: ed_nvtyp = 21
 #endif
 
@@ -67,6 +67,8 @@ module soil_coms
    real         :: tiny_sfcwater_mass  ! Min. mass allowed in temporary layers   [   kg/m2]
    real         :: snowmin             ! Min. snow mass needed to create new lyr [   kg/m2]
    integer      :: infiltration_method ! Infiltration scheme (for rk4_derivs)    [     0|1]
+   real         :: freezecoef          ! Coeff. for infiltration of frozen water [     ---]
+   real(kind=8) :: freezecoef8         ! Coeff. for infiltration of frozen water [     ---]
    !---------------------------------------------------------------------------------------!
 
 
@@ -140,23 +142,25 @@ module soil_coms
    !                             Tremback & Kessler, 1985).                                !
    !---------------------------------------------------------------------------------------!
    type soil_class
-      real :: slpots             ! Soil moisture potential at saturation         [       m]
-      real :: slmsts             ! Soil moisture at saturation                   [   m3/m3]
-      real :: slbs               ! B exponent                                    [     n/d]
-      real :: slcpd              ! Specific heat of dry soil                     [  J/m3/K]
-      real :: soilcp             ! Dry soil capacity (at -3.1MPa)                [   m3/m3]
-      real :: soilwp             ! Wilting point capacity (at -1.5MPa)           [   m3/m3]
-      real :: slcons             ! hydraulic conductivity at saturation          [     m/s]
-      real :: slcons0            ! Surface value for slcons                      [     m/s]
-      real :: soilcond0          ! Intercept for conductivity calculation        [   N/K/s]
-      real :: soilcond1          ! Linear coefficient for conductivity           [   N/K/s]
-      real :: soilcond2          ! Quadratic coefficient for conductivity        [   N/K/s]
-      real :: sfldcap            ! Soil field capacity                           [   m3/m3]
-      real :: xsand              ! Percentage of sand                            [     ---]
-      real :: xclay              ! Percentage of clay                            [     ---]
-      real :: xorgan             ! Percentage of organic material                [     ---]
-      real :: xrobulk            ! Bulk density                                  [     ---]
-      real :: slden              ! "Dry" soil density (porosity)                 [   kg/m3]
+      real(kind=4) :: slpots     ! Soil moisture potential at saturation         [       m]
+      real(kind=4) :: slmsts     ! Soil moisture at saturation                   [   m3/m3]
+      real(kind=4) :: slbs       ! B exponent                                    [     n/d]
+      real(kind=4) :: slcpd      ! Specific heat of dry soil                     [  J/m3/K]
+      real(kind=4) :: soilcp     ! Dry soil capacity (at -3.1MPa)                [   m3/m3]
+      real(kind=4) :: soilwp     ! Wilting point capacity (at -1.5MPa)           [   m3/m3]
+      real(kind=4) :: slcons     ! hydraulic conductivity at saturation          [     m/s]
+      real(kind=4) :: slcons0    ! Surface value for slcons                      [     m/s]
+      real(kind=4) :: soilcond0  ! Intercept for conductivity calculation        [   N/K/s]
+      real(kind=4) :: soilcond1  ! Linear coefficient for conductivity           [   N/K/s]
+      real(kind=4) :: soilcond2  ! Quadratic coefficient for conductivity        [   N/K/s]
+      real(kind=4) :: sfldcap    ! Soil field capacity                           [   m3/m3]
+      real(kind=4) :: albwet     ! Albedo for wet soil                           [     ---]
+      real(kind=4) :: albdry     ! Albedo for dry soil                           [     ---]
+      real(kind=4) :: xsand      ! Percentage of sand                            [     ---]
+      real(kind=4) :: xclay      ! Percentage of clay                            [     ---]
+      real(kind=4) :: xsilt      ! Percentage of silt                            [     ---]
+      real(kind=4) :: xrobulk    ! Bulk density                                  [     ---]
+      real(kind=4) :: slden      ! "Dry" soil density (porosity)                 [   kg/m3]
    end type soil_class
    !----- Double precision version --------------------------------------------------------!
    type soil_class8
@@ -172,9 +176,11 @@ module soil_coms
       real(kind=8) :: soilcond1  ! Linear coefficient for conductivity           [   N/K/s]
       real(kind=8) :: soilcond2  ! Quadratic coefficient for conductivity        [   N/K/s]
       real(kind=8) :: sfldcap    ! Soil field capacity                           [   m3/m3]
+      real(kind=8) :: albwet     ! Albedo for wet soil                           [     ---]
+      real(kind=8) :: albdry     ! Albedo for dry soil                           [     ---]
       real(kind=8) :: xsand      ! Percentage of sand                            [     ---]
       real(kind=8) :: xclay      ! Percentage of clay                            [     ---]
-      real(kind=8) :: xorgan     ! Percentage of organic material                [     ---]
+      real(kind=8) :: xsilt      ! Percentage of silt                            [     ---]
       real(kind=8) :: xrobulk    ! Bulk density                                  [     ---]
       real(kind=8) :: slden      ! "Dry" soil density (porosity)                 [   kg/m3]
    end type soil_class8
@@ -238,34 +244,174 @@ module soil_coms
       implicit none
 
 
-      allocate (slcons1(nzg,ed_nstyp))
+      allocate (slcons1(0:nzg,ed_nstyp))
 
-      allocate (slz8     (nzg))
-      allocate (dslz     (nzg))
-      allocate (dslzo2   (nzg))
-      allocate (dslzi    (nzg))
-      allocate (dslzidt  (nzg))
-      allocate (slzt     (nzg))
-      allocate (dslzt    (nzg))
-      allocate (dslzti   (nzg))
-      allocate (dslztidt (nzg))
+      allocate (slz8     (  nzg))
+      allocate (dslz     (  nzg))
+      allocate (dslzo2   (  nzg))
+      allocate (dslzi    (  nzg))
+      allocate (dslzidt  (  nzg))
+      allocate (slzt     (0:nzg))
+      allocate (dslzt    (  nzg))
+      allocate (dslzti   (  nzg))
+      allocate (dslztidt (  nzg))
 
-      allocate (slcons18(nzg,ed_nstyp))
+      allocate (slcons18(0:nzg,ed_nstyp))
 
-      allocate (dslz8     (nzg))
-      allocate (dslzo28   (nzg))
-      allocate (dslzi8    (nzg))
-      allocate (dslzidt8  (nzg))
-      allocate (slzt8     (nzg))
-      allocate (dslzt8    (nzg))
-      allocate (dslzti8   (nzg))
-      allocate (dslztidt8 (nzg))
+      allocate (dslz8     (  nzg))
+      allocate (dslzo28   (  nzg))
+      allocate (dslzi8    (  nzg))
+      allocate (dslzidt8  (  nzg))
+      allocate (slzt8     (0:nzg))
+      allocate (dslzt8    (  nzg))
+      allocate (dslzti8   (  nzg))
+      allocate (dslztidt8 (  nzg))
 
       return
    end subroutine alloc_soilgrid
    !=======================================================================================!
    !=======================================================================================!
 
-end Module soil_coms
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !     This function determines the soil class based on the fraction of sand, clay, and  !
+   ! silt separates.                                                                       !
+   !---------------------------------------------------------------------------------------!
+   integer function find_soil_class(sandfrac,clayfrac)
+      implicit none
+      !----- Arguments. -------------------------------------------------------------------!
+      real   , intent(in) :: sandfrac
+      real   , intent(in) :: clayfrac
+      !----- Local variables. -------------------------------------------------------------!
+      integer             :: sclass
+      real                :: sand
+      real                :: clay
+      real                :: silt
+      real                :: sandline
+      real                :: loamysandline
+      !------------------------------------------------------------------------------------!
+
+
+
+      !----- Define the percentage of sand, clay, and silt. -------------------------------!
+      sand = 100. * sandfrac
+      clay = 100. * clayfrac
+      silt = 100. - sand - clay
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !     Here there is not much we can do other than explore where in the triangle      !
+      ! space we are.                                                                      !
+      !------------------------------------------------------------------------------------!
+      if (silt > 100. .or. silt < 0. .or. sand > 100. .or. sand < 0. .or.                  &
+          clay > 100. .or. clay < 0. ) then
+         write (unit=*,fmt='(a)') '---------------------------------------------------'
+         write (unit=*,fmt='(a)') ' At least one of your percentages is off-bounds...'
+         write (unit=*,fmt='(a,1x,f8.2,a)') 'SAND = ',sand,'%'
+         write (unit=*,fmt='(a,1x,f8.2,a)') 'CLAY = ',clay,'%'
+         write (unit=*,fmt='(a,1x,f8.2,a)') 'SILT = ',silt,'%'
+         write (unit=*,fmt='(a)') ' This soil doesn''t fit into any category...'
+         write (unit=*,fmt='(a)') '---------------------------------------------------'
+         call fatal_error('Incorrect fractions of sand, clay, or silt...'                  &
+                         ,'find_soil_class','soil_coms.F90')
+      elseif (sand > 85.0 + 0.5 * clay) then
+         sclass =  1  !----- Sand. --------------------------------------------------------!
+      elseif (sand > 70.0 + clay) then
+         sclass =  2  !----- Loamy sand. --------------------------------------------------!
+      elseif ((clay <= 20.0 .and. sand > 52.5) .or. (clay <= 7.5 .and. silt <= 50.0)) then
+         sclass =  3  !----- Sandy loam. --------------------------------------------------!
+      elseif ((clay <= 27.5 .and. silt > 50.0 .and. silt <= 80.0) .or.                     &
+              (silt >  80.0 .and. clay > 12.5)                    ) then
+         sclass =  4  !----- Silt loam. ---------------------------------------------------!
+      elseif (clay > 7.5 .and. clay <= 27.5 .and. silt > 27.5 .and. silt <= 50.0 .and.     &
+              sand <= 52.5) then
+         sclass =  5  !----- Loam. --------------------------------------------------------!
+      elseif (clay > 20.0 .and. clay <= 35.0 .and. silt <= 27.5 .and. sand > 45.0) then
+         sclass =  6  !----- Sandy clay loam. ---------------------------------------------!
+      elseif (clay > 27.5 .and. clay <= 40.0 .and. sand <= 20.0) then
+         sclass =  7  !----- Silty clay loam. ---------------------------------------------!
+      elseif (clay > 27.5 .and. clay <= 40.0 .and. sand > 20.0 .and. sand <= 45.0) then
+         sclass =  8  !----- Clayey loam. -------------------------------------------------!
+      elseif (clay > 35.0 .and. sand > 45.0) then
+         sclass =  9  !----- Sandy clay. --------------------------------------------------!
+      elseif (clay > 40.0 .and. silt > 40.0) then
+         sclass = 10  !----- Silty clay. --------------------------------------------------!
+      elseif (clay <= 70.0 .and. sand <= 30.0 .and. silt <= 30.0) then
+         sclass = 11  !----- Clay. --------------------------------------------------------!
+      elseif ( silt > 80.0 .and. clay <= 12.5) then
+         sclass = 14  !----- Silt. --------------------------------------------------------!
+      elseif ( clay > 70.0) then
+         sclass = 15  !----- Heavy clay. --------------------------------------------------!
+      elseif ( clay > 40.0 .and. sand > 30.0 .and. sand <= 45.0) then
+         sclass = 16  !----- Clayey sand. -------------------------------------------------!
+      elseif ( clay > 40.0 .and. silt > 30.0 .and. silt <= 40.0) then
+         sclass = 17  !----- Clayey silt. -------------------------------------------------!
+      else
+         write (unit=*,fmt='(a)') '---------------------------------------------------'
+         write (unit=*,fmt='(a,1x,f8.2,a)') 'SAND = ',sand,'%'
+         write (unit=*,fmt='(a,1x,f8.2,a)') 'CLAY = ',clay,'%'
+         write (unit=*,fmt='(a,1x,f8.2,a)') 'SILT = ',silt,'%'
+         write (unit=*,fmt='(a)') ' This soil doesn''t fit into any category...'
+         write (unit=*,fmt='(a)') '---------------------------------------------------'
+         call fatal_error('Failed finding the correct soil class...'                       &
+                         ,'find_soil_class','soil_coms.F90')
+      end if
+      !------------------------------------------------------------------------------------!
+
+      find_soil_class = sclass
+
+      return
+   end function find_soil_class
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !      This sub-routines converts the soil moisture index into soil moisture.           !
+   !  This scale is piece-wise linear, and dependent on the soil texture.                  !
+   !  -1. = dry air soil moisture (soilcp)                                                 !
+   !   0. = wilting point         (soilwp)                                                 !
+   !   1. = field capacity        (sfldcap)                                                !
+   !   2. = porosity/saturation   (slmsts)                                                 !
+   !---------------------------------------------------------------------------------------!
+   real(kind=4) function ed_soil_idx2water(soil_index,ntext)
+      implicit none
+      !----- Arguments. -------------------------------------------------------------------!
+      real(kind=4), intent(in) :: soil_index
+      integer     , intent(in) :: ntext
+      !----- Local variables. -------------------------------------------------------------!
+      real(kind=4)             :: soil_water
+      !------------------------------------------------------------------------------------!
+
+
+      if (soil_index < 0.0) then
+         soil_water = soil(ntext)%soilcp                                                   &
+                    + (soil_index + 1.0) * (soil(ntext)%soilwp  - soil(ntext)%soilcp )
+      elseif (soil_index < 1.0) then
+         soil_water = soil(ntext)%soilwp                                                   &
+                    +  soil_index        * (soil(ntext)%sfldcap - soil(ntext)%soilwp )
+      else
+         soil_water = soil(ntext)%sfldcap                                                  &
+                    + (soil_index - 1.0) * (soil(ntext)%slmsts  - soil(ntext)%sfldcap)
+      end if
+
+      ed_soil_idx2water = soil_water
+
+      return
+   end function ed_soil_idx2water
+   !==========================================================================================!
+   !==========================================================================================!
+end module soil_coms
 !==========================================================================================!
 !==========================================================================================!
