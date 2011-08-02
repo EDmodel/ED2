@@ -15,7 +15,7 @@ subroutine leaf3_bcond(m2,m3,mzg,mzs,npat,ia,iz,ja,jz,jdim,ibcon,soil_water,sfcw
                       ,veg_energy,can_prss,can_theiv,can_theta,can_rvap,can_co2            &
                       ,sensible_gc,sensible_vc,evap_gc,evap_vc,transp,gpp,plresp,resphet   &
                       ,veg_ndvip,veg_ndvic,veg_ndvif,sflux_u,sflux_v,sflux_w,sflux_t       &
-                      ,sflux_r,sflux_c,albedt,rlongup)
+                      ,sflux_r,sflux_c,albedt,rlongup,rshort_gnd,rlong_gnd)
 
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
@@ -87,8 +87,11 @@ subroutine leaf3_bcond(m2,m3,mzg,mzs,npat,ia,iz,ja,jz,jdim,ibcon,soil_water,sfcw
    real, dimension(    m2,m3     ), intent(inout) :: sflux_c
    real, dimension(    m2,m3     ), intent(inout) :: albedt
    real, dimension(    m2,m3     ), intent(inout) :: rlongup
+   real, dimension(    m2,m3,npat), intent(inout) :: rshort_gnd
+   real, dimension(    m2,m3,npat), intent(inout) :: rlong_gnd
    !----- Local variables. ----------------------------------------------------------------!
-   integer                                        :: i,j
+   integer                                        :: i
+   integer                                        :: j
    !---------------------------------------------------------------------------------------!
 
 
@@ -104,7 +107,8 @@ subroutine leaf3_bcond(m2,m3,mzg,mzs,npat,ia,iz,ja,jz,jdim,ibcon,soil_water,sfcw
                          ,ground_fliq,veg_water,veg_hcap,veg_energy,can_prss,can_theiv     &
                          ,can_theta,can_rvap,can_co2,sensible_gc,sensible_vc,evap_gc       &
                          ,evap_vc,transp,gpp,plresp,resphet,veg_ndvip,veg_ndvic,veg_ndvif  &
-                         ,sflux_u,sflux_v,sflux_w,sflux_t,sflux_r,sflux_c,albedt,rlongup)
+                         ,sflux_u,sflux_v,sflux_w,sflux_t,sflux_r,sflux_c,albedt,rlongup   &
+                         ,rshort_gnd,rlong_gnd)
       end do
    end if
    !---------------------------------------------------------------------------------------!
@@ -125,7 +129,8 @@ subroutine leaf3_bcond(m2,m3,mzg,mzs,npat,ia,iz,ja,jz,jdim,ibcon,soil_water,sfcw
                          ,ground_fliq,veg_water,veg_hcap,veg_energy,can_prss,can_theiv     &
                          ,can_theta,can_rvap,can_co2,sensible_gc,sensible_vc,evap_gc       &
                          ,evap_vc,transp,gpp,plresp,resphet,veg_ndvip,veg_ndvic,veg_ndvif  &
-                         ,sflux_u,sflux_v,sflux_w,sflux_t,sflux_r,sflux_c,albedt,rlongup)
+                         ,sflux_u,sflux_v,sflux_w,sflux_t,sflux_r,sflux_c,albedt,rlongup   &
+                         ,rshort_gnd,rlong_gnd)
       end do
    end if
    !---------------------------------------------------------------------------------------!
@@ -145,7 +150,8 @@ subroutine leaf3_bcond(m2,m3,mzg,mzs,npat,ia,iz,ja,jz,jdim,ibcon,soil_water,sfcw
                          ,ground_fliq,veg_water,veg_hcap,veg_energy,can_prss,can_theiv     &
                          ,can_theta,can_rvap,can_co2,sensible_gc,sensible_vc,evap_gc       &
                          ,evap_vc,transp,gpp,plresp,resphet,veg_ndvip,veg_ndvic,veg_ndvif  &
-                         ,sflux_u,sflux_v,sflux_w,sflux_t,sflux_r,sflux_c,albedt,rlongup)
+                         ,sflux_u,sflux_v,sflux_w,sflux_t,sflux_r,sflux_c,albedt,rlongup   &
+                         ,rshort_gnd,rlong_gnd)
       end do
    end if
    !---------------------------------------------------------------------------------------!
@@ -165,7 +171,8 @@ subroutine leaf3_bcond(m2,m3,mzg,mzs,npat,ia,iz,ja,jz,jdim,ibcon,soil_water,sfcw
                          ,ground_fliq,veg_water,veg_hcap,veg_energy,can_prss,can_theiv     &
                          ,can_theta,can_rvap,can_co2,sensible_gc,sensible_vc,evap_gc       &
                          ,evap_vc,transp,gpp,plresp,resphet,veg_ndvip,veg_ndvic,veg_ndvif  &
-                         ,sflux_u,sflux_v,sflux_w,sflux_t,sflux_r,sflux_c,albedt,rlongup)
+                         ,sflux_u,sflux_v,sflux_w,sflux_t,sflux_r,sflux_c,albedt,rlongup   &
+                         ,rshort_gnd,rlong_gnd)
       end do
    end if
    !---------------------------------------------------------------------------------------!
@@ -184,7 +191,8 @@ subroutine leaf3_bcond(m2,m3,mzg,mzs,npat,ia,iz,ja,jz,jdim,ibcon,soil_water,sfcw
                       ,ground_fliq,veg_water,veg_hcap,veg_energy,can_prss,can_theiv        &
                       ,can_theta,can_rvap,can_co2,sensible_gc,sensible_vc,evap_gc          &
                       ,evap_vc,transp,gpp,plresp,resphet,veg_ndvip,veg_ndvic,veg_ndvif     &
-                      ,sflux_u,sflux_v,sflux_w,sflux_t,sflux_r,sflux_c,albedt,rlongup)  
+                      ,sflux_u,sflux_v,sflux_w,sflux_t,sflux_r,sflux_c,albedt,rlongup      &
+                      ,rshort_gnd,rlong_gnd)
    end if
    !---------------------------------------------------------------------------------------!
 
@@ -202,7 +210,8 @@ subroutine leaf3_bcond(m2,m3,mzg,mzs,npat,ia,iz,ja,jz,jdim,ibcon,soil_water,sfcw
                       ,ground_fliq,veg_water,veg_hcap,veg_energy,can_prss,can_theiv        &
                       ,can_theta,can_rvap,can_co2,sensible_gc,sensible_vc,evap_gc          &
                       ,evap_vc,transp,gpp,plresp,resphet,veg_ndvip,veg_ndvic,veg_ndvif     &
-                      ,sflux_u,sflux_v,sflux_w,sflux_t,sflux_r,sflux_c,albedt,rlongup)  
+                      ,sflux_u,sflux_v,sflux_w,sflux_t,sflux_r,sflux_c,albedt,rlongup      &
+                      ,rshort_gnd,rlong_gnd)
    end if
    !---------------------------------------------------------------------------------------!
 
@@ -220,7 +229,8 @@ subroutine leaf3_bcond(m2,m3,mzg,mzs,npat,ia,iz,ja,jz,jdim,ibcon,soil_water,sfcw
                       ,ground_fliq,veg_water,veg_hcap,veg_energy,can_prss,can_theiv        &
                       ,can_theta,can_rvap,can_co2,sensible_gc,sensible_vc,evap_gc          &
                       ,evap_vc,transp,gpp,plresp,resphet,veg_ndvip,veg_ndvic,veg_ndvif     &
-                      ,sflux_u,sflux_v,sflux_w,sflux_t,sflux_r,sflux_c,albedt,rlongup)  
+                      ,sflux_u,sflux_v,sflux_w,sflux_t,sflux_r,sflux_c,albedt,rlongup      &
+                      ,rshort_gnd,rlong_gnd)
    end if
    !---------------------------------------------------------------------------------------!
 
@@ -238,7 +248,8 @@ subroutine leaf3_bcond(m2,m3,mzg,mzs,npat,ia,iz,ja,jz,jdim,ibcon,soil_water,sfcw
                       ,ground_fliq,veg_water,veg_hcap,veg_energy,can_prss,can_theiv        &
                       ,can_theta,can_rvap,can_co2,sensible_gc,sensible_vc,evap_gc          &
                       ,evap_vc,transp,gpp,plresp,resphet,veg_ndvip,veg_ndvic,veg_ndvif     &
-                      ,sflux_u,sflux_v,sflux_w,sflux_t,sflux_r,sflux_c,albedt,rlongup)  
+                      ,sflux_u,sflux_v,sflux_w,sflux_t,sflux_r,sflux_c,albedt,rlongup      &
+                      ,rshort_gnd,rlong_gnd)
    end if
    !---------------------------------------------------------------------------------------!
 
@@ -265,7 +276,7 @@ subroutine leaf3_clone(m2,m3,mzg,mzs,npat,isrc,idest,jsrc,jdest,soil_water      
                       ,veg_energy,can_prss,can_theiv,can_theta,can_rvap,can_co2            &
                       ,sensible_gc,sensible_vc,evap_gc,evap_vc,transp,gpp,plresp,resphet   &
                       ,veg_ndvip,veg_ndvic,veg_ndvif,sflux_u,sflux_v,sflux_w,sflux_t       &
-                      ,sflux_r,sflux_c,albedt,rlongup)
+                      ,sflux_r,sflux_c,albedt,rlongup,rshort_gnd,rlong_gnd)
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
    integer                        , intent(in)    :: m2
@@ -334,6 +345,8 @@ subroutine leaf3_clone(m2,m3,mzg,mzs,npat,isrc,idest,jsrc,jdest,soil_water      
    real, dimension(    m2,m3     ), intent(inout) :: sflux_c
    real, dimension(    m2,m3     ), intent(inout) :: albedt
    real, dimension(    m2,m3     ), intent(inout) :: rlongup
+   real, dimension(    m2,m3,npat), intent(inout) :: rshort_gnd
+   real, dimension(    m2,m3,npat), intent(inout) :: rlong_gnd
    !----- Local variables. ----------------------------------------------------------------!
    integer                                        :: kzg
    integer                                        :: kzs
@@ -396,6 +409,9 @@ subroutine leaf3_clone(m2,m3,mzg,mzs,npat,isrc,idest,jsrc,jdest,soil_water      
       veg_ndvip      (idest,jdest,ipat) = veg_ndvip        (isrc,jsrc,ipat)
       veg_ndvic      (idest,jdest,ipat) = veg_ndvic        (isrc,jsrc,ipat)
       veg_ndvif      (idest,jdest,ipat) = veg_ndvif        (isrc,jsrc,ipat)
+
+      rshort_gnd     (idest,jdest,ipat) = rshort_gnd       (isrc,jsrc,ipat)
+      rlong_gnd      (idest,jdest,ipat) = rlong_gnd        (isrc,jsrc,ipat)
 
       soilloop: do kzg = 1,mzg
          soil_water       (kzg,idest,jdest,ipat) = soil_water         (kzg,isrc,jsrc,ipat)

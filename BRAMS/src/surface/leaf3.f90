@@ -251,6 +251,8 @@ subroutine leaf3_timestep()
    call azero(mxp*myp*npatch,leaf_g(ngrid)%gpp        )
    call azero(mxp*myp*npatch,leaf_g(ngrid)%plresp     )
    call azero(mxp*myp*npatch,leaf_g(ngrid)%resphet    )
+   call azero(mxp*myp*npatch,leaf_g(ngrid)%rshort_gnd )
+   call azero(mxp*myp*npatch,leaf_g(ngrid)%rlong_gnd  )
    if (iswrtyp > 0 .or. ilwrtyp > 0) then
       call azero(mxp*myp,radiate_g(ngrid)%albedt)
       call azero(mxp*myp,radiate_g(ngrid)%rlongup)
@@ -425,9 +427,11 @@ subroutine leaf3_timestep()
                                    ,leaf_g(ngrid)%sfcwater_nlev    (  i,j,ip)              &
                                    ,radiate_g(ngrid)%rshort        (  i,j   )              &
                                    ,radiate_g(ngrid)%rlong         (  i,j   )              &
+                                   ,radiate_g(ngrid)%cosz          (  i,j   )              &
                                    ,radiate_g(ngrid)%albedt        (  i,j   )              &
                                    ,radiate_g(ngrid)%rlongup       (  i,j   )              &
-                                   ,radiate_g(ngrid)%cosz          (  i,j   )              )
+                                   ,leaf_g(ngrid)%rshort_gnd       (  i,j,ip)              &
+                                   ,leaf_g(ngrid)%rlong_gnd        (  i,j,ip)              )
                end if
                !---------------------------------------------------------------------------!
 
@@ -738,7 +742,8 @@ subroutine leaf3_timestep()
                       , turb_g(ngrid)%sflux_v            , turb_g(ngrid)%sflux_w           &
                       , turb_g(ngrid)%sflux_t            , turb_g(ngrid)%sflux_r           &
                       , turb_g(ngrid)%sflux_c            , radiate_g(ngrid)%albedt         &
-                      , radiate_g(ngrid)%rlongup         )
+                      , radiate_g(ngrid)%rlongup         , leaf_g(ngrid)%rshort_gnd        &
+                      , leaf_g(ngrid)%rlong_gnd          )
    !---------------------------------------------------------------------------------------!
    return
 end subroutine leaf3_timestep

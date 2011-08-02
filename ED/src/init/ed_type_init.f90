@@ -505,10 +505,10 @@ subroutine init_ed_patch_vars(csite,ip1,ip2,lsl)
       csite%qmean_albedo_diffuse  (:,ip1:ip2) = 0.0
    end if
 
-   !----------------------------------------------------------------------------------------!
-   !    These variables need to be initialized here otherwise it will fail when new patches !
-   ! are created.                                                                           !
-   !----------------------------------------------------------------------------------------!
+   !---------------------------------------------------------------------------------------!
+   !    These variables need to be initialized here otherwise it will fail when new        !
+   ! patches are created.                                                                  !
+   !---------------------------------------------------------------------------------------!
    csite%avg_rk4step          (ip1:ip2) = 0.0
    csite%avg_carbon_ac        (ip1:ip2) = 0.0
    csite%avg_vapor_lc         (ip1:ip2) = 0.0
@@ -523,6 +523,11 @@ subroutine init_ed_patch_vars(csite,ip1,ip2,lsl)
    csite%avg_evap             (ip1:ip2) = 0.0
    csite%avg_rshort_gnd       (ip1:ip2) = 0.0
    csite%avg_rlong_gnd        (ip1:ip2) = 0.0
+   csite%avg_rlongup          (ip1:ip2) = 0.0
+   csite%avg_albedo           (ip1:ip2) = 0.0
+   csite%avg_albedo_beam      (ip1:ip2) = 0.0
+   csite%avg_albedo_diffuse   (ip1:ip2) = 0.0
+   csite%avg_rlong_albedo     (ip1:ip2) = 0.0
    csite%avg_runoff           (ip1:ip2) = 0.0
    csite%avg_drainage         (ip1:ip2) = 0.0
    csite%avg_drainage_heat    (ip1:ip2) = 0.0

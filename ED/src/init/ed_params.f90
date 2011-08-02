@@ -428,6 +428,9 @@ subroutine init_can_rad_params()
                                     , leaf_trans_vis              & ! intent(out)
                                     , leaf_backscatter_vis        & ! intent(out)
                                     , leaf_backscatter_nir        & ! intent(out)
+                                    , leaf_backscatter_tir        & ! intent(out)
+                                    , clumping_factor             & ! intent(out)
+                                    , orient_factor               & ! intent(out)
                                     , leaf_emis                   & ! intent(out)
                                     , wood_reflect_nir            & ! intent(out)
                                     , wood_trans_nir              & ! intent(out)
@@ -439,8 +442,9 @@ subroutine init_can_rad_params()
                                     , wood_trans_vis              & ! intent(out)
                                     , wood_backscatter_vis        & ! intent(out)
                                     , wood_backscatter_nir        & ! intent(out)
+                                    , wood_backscatter_tir        & ! intent(out)
                                     , wood_emis                   & ! intent(out)
-                                    , mubar                       & ! intent(out)
+                                    , mu_bar_lw                   & ! intent(out)
                                     , fvis_beam_def               & ! intent(out)
                                     , fvis_diff_def               & ! intent(out)
                                     , fnir_beam_def               & ! intent(out)
@@ -449,19 +453,23 @@ subroutine init_can_rad_params()
                                     , cosz_min                    & ! intent(out)
                                     , cosz_min8                   ! ! intent(out)
    use consts_coms           , only : pio180                      ! ! intent(out)
+   use ed_max_dims           , only : n_pft                       ! ! intent(out)
    implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   integer :: ipft
+   !---------------------------------------------------------------------------------------!
+
 
 
 
    !---------------------------------------------------------------------------------------!
    !     Leaf angle distribution parameter (dimensionless).  Let mu' be the cosine of leaf !
    ! angle and G(mu') be the distribution of mu'.  Then, mubar = (integral from 0 to 1)    !
-   ! (d mu'   mu' / G(mu')).  See, for example, Dickinson 1983.                            !
+   ! (d mu'   mu' / G(mu')).  See, for example, Dickinson 1983.  For longwave we always    !
+   ! assume it to be 1.                                                                    !
    !---------------------------------------------------------------------------------------!
-   mubar                      = 1.0d0 
+   mu_bar_lw = 1.0d0 
    !---------------------------------------------------------------------------------------!
-
-
 
 
    !---------------------------------------------------------------------------------------!
@@ -477,30 +485,104 @@ subroutine init_can_rad_params()
 
 
    !---------------------------------------------------------------------------------------!
+   !     Clumping factor.  This factor indicates the degree of clumpiness of leaves.       !
+   !  0 -- black hole
+   !  1 -- homogeneous, no clumping.
+   !---------------------------------------------------------------------------------------!
+   clumping_factor(1)     = 1.000d0
+   clumping_factor(2:4)   = 7.350d-1
+   clumping_factor(5)     = 8.400d-1
+   clumping_factor(6:8)   = 7.350d-1
+   clumping_factor(9:11)  = 8.400d-1
+   clumping_factor(12:13) = 8.400d-1
+   clumping_factor(14:15) = 1.000d0
+   clumping_factor(16)    = 1.000d0
+   clumping_factor(17)    = 7.350d-1
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !      Orientation factor.  The numbers come from CLM, and the original value from      !
+   ! ED-2.1 used to 0.  This works in the following way:                                   !
+   !  0 -- leaves are randomly oriented                                                    !
+   !  1 -- all leaves are perfectly horizontal                                             !
+   ! -1 -- all leaves are perfectly vertical.                                              !
+   !---------------------------------------------------------------------------------------!
+   orient_factor(    1) = -3.0d-1 ! CLM value for C4 grass
+   orient_factor(  2:4) =  1.0d-1 ! CLM value for temperate deciduous broadleaf tree
+   orient_factor(    5) = -3.0d-1 ! CLM value for C3 grass
+   orient_factor(  6:8) =  1.0d-2 ! CLM value for temperate evergreen needleef tree
+   orient_factor( 9:11) =  2.5d-1 ! CLM value for temperate deciduous broadleaf tree
+   orient_factor(12:13) = -3.0d-1 ! CLM value for C3 grass
+   orient_factor(14:15) = -3.0d-1 ! CLM value for C4 grass
+   orient_factor(   16) = -3.0d-1 ! CLM value for C3 grass
+   orient_factor(   17) =  1.0d-2 ! CLM value for temperate evergreen needleef
+   !---------------------------------------------------------------------------------------!
+
+
+
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !      Emissivity on Thermal infra-red (TIR).                                           !
+   !---------------------------------------------------------------------------------------!
+   !----- Leaves. -------------------------------------------------------------------------!
+   leaf_emis(1)     = 9.60d-1
+   leaf_emis(2:4)   = 9.50d-1
+   leaf_emis(5)     = 9.60d-1
+   leaf_emis(6:8)   = 9.70d-1
+   leaf_emis(9:11)  = 9.50d-1
+   leaf_emis(12:15) = 9.60d-1
+   leaf_emis(16)    = 9.60d-1
+   leaf_emis(17)    = 9.70d-1
+   !----- Branches. -----------------------------------------------------------------------!
+   wood_emis(1)     = 9.60d-1
+   wood_emis(2:4)   = 9.00d-1
+   wood_emis(5)     = 9.60d-1
+   wood_emis(6:8)   = 9.00d-1
+   wood_emis(9:11)  = 9.00d-1
+   wood_emis(12:15) = 9.60d-1
+   wood_emis(16)    = 9.60d-1
+   wood_emis(17)    = 9.00d-1
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
    !      Leaf reflectance.                                                                !
    !      Values for temperate PFTs were left as they were.  Tropical and sub-tropical     !
    ! PFTs use the parameters from CLM.  I checked the values against some published and    !
    ! they seem similar at a first glance, at least closer than the original values, which  !
    ! looked like the visible ignoring the green band.                                      !
+   !                                                                                       !
+   ! Tropical / Subtropical values for visible came from:                                  !
+   ! - Poorter, L., S. F. Oberbauer, D. B. Clark, 1995: Leaf optical properties along a    !
+   !      vertical gradient in a tropical rainforest in Costa Rica. American J. of Botany, !
+   !      82, 1257-1263.                                                                   !
+   ! Tropical values for NIR were estimated from:                                          !
+   ! - Roberts, D. A., B. W. Nelson, J. B. Adams, F. Palmer, 1998: Spectral changes with   !
+   !      leaf aging in Amazon caatinga. Trees, 12, 315-325.                               !
    !---------------------------------------------------------------------------------------!
    !----- Visible (PAR). ------------------------------------------------------------------!
-   leaf_reflect_vis(1)     = 1.3d-1 ! 6.2d-2
-   leaf_reflect_vis(2:4)   = 1.3d-1 ! 6.2d-2
+   leaf_reflect_vis(1)     = 1.1d-1 ! 1.3d-1
+   leaf_reflect_vis(2:4)   = 6.2d-2 ! 1.3d-1
    leaf_reflect_vis(5)     = 1.1d-1 ! 6.2d-2
    leaf_reflect_vis(6:11)  = 1.1d-1 ! 1.1d-1
    leaf_reflect_vis(12:13) = 1.1d-1 ! 1.1d-1
    leaf_reflect_vis(14:15) = 1.1d-1 ! 1.1d-1
-   leaf_reflect_vis(16)    = 1.3d-1 ! 0.062
+   leaf_reflect_vis(16)    = 1.1d-1 ! 1.3d-1
    leaf_reflect_vis(17)    = 9.0d-2 ! 9.0d-2
    !----- Near infrared. ------------------------------------------------------------------!
-   leaf_reflect_nir(1)     = 6.30d-1
-   leaf_reflect_nir(2:4)   = 6.30d-1
+   leaf_reflect_nir(1)     = 6.30d-1 ! 6.30d-1
+   leaf_reflect_nir(2:4)   = 6.30d-1 ! 6.30d-1
    leaf_reflect_nir(5)     = 5.77d-1
    leaf_reflect_nir( 6:11) = 5.77d-1
    leaf_reflect_nir(12:13) = 5.77d-1
-   leaf_reflect_nir(14:15) = 5.80d-1
-   leaf_reflect_nir(16)    = 6.30d-1
-   leaf_reflect_nir(17)    = 5.77d-1
+   leaf_reflect_nir(14:15) = 6.30d-1
+   leaf_reflect_nir(16)    = 6.30d-1 ! 6.30d-1
+   leaf_reflect_nir(17)    = 5.77d-1 ! 5.77d-1
    !---------------------------------------------------------------------------------------!
 
 
@@ -536,19 +618,27 @@ subroutine init_can_rad_params()
    ! PFTs use the parameters from CLM.  I checked the values against some published and    !
    ! they seem similar at a first glance, at least closer than the original values, which  !
    ! looked like the visible ignoring the green band.                                      !
+   !                                                                                       !
+   ! Tropical / Subtropical values for visible came from:                                  !
+   ! - Poorter, L., S. F. Oberbauer, D. B. Clark, 1995: Leaf optical properties along a    !
+   !      vertical gradient in a tropical rainforest in Costa Rica. American J. of Botany, !
+   !      82, 1257-1263.                                                                   !
+   ! Tropical values for NIR were estimated from:                                          !
+   ! - Roberts, D. A., B. W. Nelson, J. B. Adams, F. Palmer, 1998: Spectral changes with   !
+   !      leaf aging in Amazon caatinga. Trees, 12, 315-325.                               !
    !---------------------------------------------------------------------------------------!
    !----- Visible (PAR). ------------------------------------------------------------------!
-   leaf_trans_vis(    1) = 2.80d-2  ! 7.00d-2
+   leaf_trans_vis(    1) = 7.00d-2  ! 7.00d-2
    leaf_trans_vis(  2:4) = 2.80d-2  ! 5.00d-2
    leaf_trans_vis(    5) = 1.60d-1  ! 0.160
    leaf_trans_vis( 6:11) = 1.60d-1  ! 0.160
    leaf_trans_vis(12:13) = 1.60d-1  ! 0.160
    leaf_trans_vis(14:15) = 7.00d-2  ! 0.028
-   leaf_trans_vis(   16) = 2.80d-2  ! 7.00d-2
-   leaf_trans_vis(   17) = 5.00d-2  ! 0.160
+   leaf_trans_vis(   16) = 7.00d-2
+   leaf_trans_vis(   17) = 2.80d-2  ! 0.160
    !----- Near infrared. ------------------------------------------------------------------!
    leaf_trans_nir(    1) = 2.48d-1
-   leaf_trans_nir(  2:4) = 2.48d-1
+   leaf_trans_nir(  2:4) = 3.20d-1
    leaf_trans_nir(    5) = 2.48d-1
    leaf_trans_nir( 6:11) = 2.48d-1
    leaf_trans_nir(12:13) = 2.48d-1
@@ -586,61 +676,62 @@ subroutine init_can_rad_params()
 
 
    !---------------------------------------------------------------------------------------!
-   !      Scattering coefficient.  For all PFTs this is just the sum of reflectance and    !
-   ! transmittance.                                                                        !
+   !     Scattering coefficients.  Contrary to ED-2.1, these values are based on the       !
+   ! description by by Sellers (1985) and the CLM technical manual, which includes the     !
+   ! leaf orientation factor in the backscattering.  This DOES NOT reduce to ED-2.1 case   !
+   ! when the leaf orientation is random.                                                  !
    !---------------------------------------------------------------------------------------!
-   !----- Visible (PAR). ------------------------------------------------------------------!
-   leaf_scatter_vis(1:17) = leaf_reflect_vis(1:17) + leaf_trans_vis(1:17)
-   wood_scatter_vis(1:17) = wood_reflect_vis(1:17) + wood_trans_vis(1:17)
-   !----- Near infrared. ------------------------------------------------------------------!
-   leaf_scatter_nir(1:17) = leaf_reflect_nir(1:17) + leaf_trans_nir(1:17)
-   wood_scatter_nir(1:17) = wood_reflect_nir(1:17) + wood_trans_nir(1:17)
-   !---------------------------------------------------------------------------------------!
+   do ipft = 1, n_pft
+
+      !------------------------------------------------------------------------------------!
+      !     Forward scattering.                                                            !
+      !------------------------------------------------------------------------------------!
+      !----- Visible (PAR). ---------------------------------------------------------------!
+      leaf_scatter_vis(ipft) = leaf_reflect_vis(ipft) + leaf_trans_vis(ipft)
+      wood_scatter_vis(ipft) = wood_reflect_vis(ipft) + wood_trans_vis(ipft)
+      !----- Near infrared (NIR). ---------------------------------------------------------!
+      leaf_scatter_nir(ipft) = leaf_reflect_nir(ipft) + leaf_trans_nir(ipft)
+      wood_scatter_nir(ipft) = wood_reflect_nir(ipft) + wood_trans_nir(ipft)
+      !------------------------------------------------------------------------------------!
 
 
 
-
-   !---------------------------------------------------------------------------------------!
-   !      Back-scattering coefficients.                                                    !
-   !---------------------------------------------------------------------------------------!
-   !----- Visible (PAR). ------------------------------------------------------------------!
-   leaf_backscatter_vis(1:17) = (2.d0 * leaf_reflect_vis(1:17) - leaf_trans_vis(1:17))     &
-                              / (3.d0 * leaf_scatter_vis(1:17))
-   wood_backscatter_vis(1:17) = (2.d0 * wood_reflect_vis(1:17) - wood_trans_vis(1:17))     &
-                              / (3.d0 * wood_scatter_vis(1:17))
-   !----- Near infrared. ------------------------------------------------------------------!
-   leaf_backscatter_nir(1:17) = (2.d0 * leaf_reflect_nir(1:17) - leaf_trans_nir(1:17))     &
-                              / (3.d0 * leaf_scatter_nir(1:17))
-   wood_backscatter_nir(1:17) = (2.d0 * wood_reflect_nir(1:17) - wood_trans_nir(1:17))     &
-                              / (3.d0 * wood_scatter_nir(1:17))
-   !---------------------------------------------------------------------------------------!
-
-
-
-
-
-
-   !---------------------------------------------------------------------------------------!
-   !      Emissivity.                                                                      !
-   !---------------------------------------------------------------------------------------!
-   !----- Leaves. -------------------------------------------------------------------------!
-   leaf_emis(1)     = 9.60d-1
-   leaf_emis(2:4)   = 9.50d-1
-   leaf_emis(5)     = 9.60d-1
-   leaf_emis(6:8)   = 9.70d-1
-   leaf_emis(9:11)  = 9.50d-1
-   leaf_emis(12:15) = 9.60d-1
-   leaf_emis(16)    = 9.60d-1
-   leaf_emis(17)    = 9.70d-1
-   !----- Branches. -----------------------------------------------------------------------!
-   wood_emis(1)     = 9.60d-1
-   wood_emis(2:4)   = 9.00d-1
-   wood_emis(5)     = 9.60d-1
-   wood_emis(6:8)   = 9.00d-1
-   wood_emis(9:11)  = 9.00d-1
-   wood_emis(12:15) = 9.60d-1
-   wood_emis(16)    = 9.60d-1
-   wood_emis(17)    = 9.00d-1
+      !------------------------------------------------------------------------------------!
+      !      Back-scattering coefficients.                                                 !
+      !------------------------------------------------------------------------------------!
+      !----- Visible (PAR). ---------------------------------------------------------------!
+      leaf_backscatter_vis(ipft) = ( leaf_scatter_vis(ipft)                                &
+                                   + 2.5d-1                                                &
+                                   * ( leaf_reflect_vis(ipft) - leaf_trans_vis(ipft)   )   &
+                                   * ( 1.d0 + orient_factor(ipft)) ** 2 )                  &
+                                 / ( 2.d0 * leaf_scatter_vis(ipft) )
+      wood_backscatter_vis(ipft) = ( wood_scatter_vis(ipft)                                &
+                                   + 2.5d-1                                                &
+                                   * ( wood_reflect_vis(ipft) - wood_trans_vis(ipft)   )   &
+                                   * ( 1.d0 + orient_factor(ipft)) ** 2 )                  &
+                                 / ( 2.d0 * wood_scatter_vis(ipft) )
+      !----- Near infrared (NIR). ---------------------------------------------------------!
+      leaf_backscatter_nir(ipft) = ( leaf_scatter_nir(ipft)                                &
+                                   + 2.5d-1                                                &
+                                   * ( leaf_reflect_nir(ipft) - leaf_trans_nir(ipft)   )   &
+                                   * ( 1.d0 + orient_factor(ipft)) ** 2 )                  &
+                                 / ( 2.d0 * leaf_scatter_nir(ipft) )
+      wood_backscatter_nir(ipft) = ( wood_scatter_nir(ipft)                                &
+                                   + 2.5d-1                                                &
+                                   * ( wood_reflect_nir(ipft) - wood_trans_nir(ipft)   )   &
+                                   * ( 1.d0 + orient_factor(ipft)) ** 2 )                  &
+                                 / ( 2.d0 * wood_scatter_nir(ipft) )
+      !------------------------------------------------------------------------------------!
+      !      Thermal infra-red (TIR): Here we use the same expression from CLM manual,     !
+      ! further assuming that the transmittance is zero like Zhao and Qualls (2006) did,   !
+      ! the backscattering coefficient becomes a function of the leaf orientation only.    !
+      ! We don't have different orientation factor for wood (we could have), so we assume  !
+      ! them to be the same as leaves.                                                     !
+      !------------------------------------------------------------------------------------!
+      leaf_backscatter_tir(ipft) = 5.d-1 + 1.25d-1 * (1 + orient_factor(ipft)) ** 2
+      wood_backscatter_tir(ipft) = 5.d-1 + 1.25d-1 * (1 + orient_factor(ipft)) ** 2
+      !------------------------------------------------------------------------------------!
+   end do
    !---------------------------------------------------------------------------------------!
 
 
@@ -1254,7 +1345,7 @@ subroutine init_pft_photo_params()
    !---------------------------------------------------------------------------------------!
 
    D0(1)                     = 0.025  ! 0.010 * d0fact
-   D0(2:4)                   = 0.015  ! 0.010 * d0fact
+   D0(2:4)                   = 0.020  ! 0.010 * d0fact
    D0(5)                     = 0.010
    D0(6:8)                   = 0.010
    D0(9:11)                  = 0.010
@@ -1314,9 +1405,9 @@ subroutine init_pft_photo_params()
 
    !------ Vm0 is the maximum photosynthesis capacity in µmol/m2/s. -----------------------!
    Vm0(1)                    = 12.5000 ! 12.500 * vmfact
-   Vm0(2)                    = 24.3750 ! 18.750 * vmfact
-   Vm0(3)                    = 16.2500 ! 12.500 * vmfact
-   Vm0(4)                    =  8.3333 !  6.250 * vmfact
+   Vm0(2)                    = 18.7500 ! 18.750 * vmfact
+   Vm0(3)                    = 12.5000 ! 12.500 * vmfact
+   Vm0(4)                    =  6.2500 !  6.250 * vmfact
    Vm0(5)                    = 18.3000
    Vm0(6)                    = 11.3500 ! 15.625 * 0.7264
    Vm0(7)                    = 11.3500 ! 15.625 * 0.7264
@@ -1326,8 +1417,8 @@ subroutine init_pft_photo_params()
    Vm0(11)                   =  6.9810 !  6.250 * 1.1171
    Vm0(12:13)                = 18.3000 ! 18.300
    Vm0(14:15)                = 16.6667 ! 12.500 * vmfact
-   Vm0(16)                   = 28.4375 ! 21.875 * vmfact
-   Vm0(17)                   = 20.3125 ! 15.625 * vmfact
+   Vm0(16)                   = 25.0000 ! 21.875 * vmfact
+   Vm0(17)                   = 15.6250 ! 15.625 * vmfact
    !---------------------------------------------------------------------------------------!
 
 
@@ -1338,20 +1429,20 @@ subroutine init_pft_photo_params()
    !---------------------------------------------------------------------------------------!
    vm_hor(1:17)              = 3000.
    !----- Here we distinguish between C3 and C4 photosynthesis as in Collatz et al 91/92. -!
-   vm_q10(1)                 = 2.4
-   vm_q10(2:13)              = 2.4
-   vm_q10(14:15)             = 2.4
-   vm_q10(16:17)             = 2.4
+   vm_q10(1)                 = 2.0
+   vm_q10(2:13)              = 2.0
+   vm_q10(14:15)             = 2.0
+   vm_q10(16:17)             = 2.0
    !---------------------------------------------------------------------------------------!
 
 
    !---------------------------------------------------------------------------------------!
    !    Dark_respiration_factor is the lower-case gamma in Moorcroft et al. (2001).        !
    !---------------------------------------------------------------------------------------!
-   dark_respiration_factor(1)     = 0.036
-   dark_respiration_factor(2)     = 0.015 ! 0.020 * gamfact
-   dark_respiration_factor(3)     = 0.015 ! 0.020 * gamfact
-   dark_respiration_factor(4)     = 0.015 ! 0.020 * gamfact
+   dark_respiration_factor(1)     = 0.035
+   dark_respiration_factor(2)     = 0.014 ! 0.020 * gamfact
+   dark_respiration_factor(3)     = 0.014 ! 0.020 * gamfact
+   dark_respiration_factor(4)     = 0.014 ! 0.020 * gamfact
    dark_respiration_factor(5)     = 0.020
    dark_respiration_factor(6)     = 0.020
    dark_respiration_factor(7)     = 0.020
@@ -1361,9 +1452,9 @@ subroutine init_pft_photo_params()
    dark_respiration_factor(11)    = 0.020
    dark_respiration_factor(12)    = 0.020
    dark_respiration_factor(13)    = 0.020
-   dark_respiration_factor(14)    = 0.036
-   dark_respiration_factor(15)    = 0.036
-   dark_respiration_factor(16)    = 0.015
+   dark_respiration_factor(14)    = 0.035
+   dark_respiration_factor(15)    = 0.035
+   dark_respiration_factor(16)    = 0.014
    dark_respiration_factor(17)    = 0.020
    !---------------------------------------------------------------------------------------!
 
@@ -1417,7 +1508,7 @@ subroutine init_pft_photo_params()
    stomatal_slope(16)        =  9.0
    stomatal_slope(17)        =  6.4
  
-   cuticular_cond(1)         = 10000.0
+   cuticular_cond(1)         =  8000.0
    cuticular_cond(2)         = 10000.0
    cuticular_cond(3)         = 10000.0
    cuticular_cond(4)         = 10000.0
@@ -1436,9 +1527,9 @@ subroutine init_pft_photo_params()
    cuticular_cond(17)        =  1000.0
 
    quantum_efficiency(1)     = 0.053
-   quantum_efficiency(2)     = 0.070 ! 0.08  * alphafact
-   quantum_efficiency(3)     = 0.070 ! 0.08  * alphafact
-   quantum_efficiency(4)     = 0.070 ! 0.08  * alphafact
+   quantum_efficiency(2)     = 0.080 ! 0.08  * alphafact
+   quantum_efficiency(3)     = 0.080 ! 0.08  * alphafact
+   quantum_efficiency(4)     = 0.080 ! 0.08  * alphafact
    quantum_efficiency(5)     = 0.080
    quantum_efficiency(6)     = 0.080
    quantum_efficiency(7)     = 0.080
@@ -1450,8 +1541,8 @@ subroutine init_pft_photo_params()
    quantum_efficiency(13)    = 0.080
    quantum_efficiency(14)    = 0.053
    quantum_efficiency(15)    = 0.053
-   quantum_efficiency(16)    = 0.070 ! 0.08  * alphafact
-   quantum_efficiency(17)    = 0.070 ! 0.08  * alphafact
+   quantum_efficiency(16)    = 0.080 ! 0.08  * alphafact
+   quantum_efficiency(17)    = 0.080 ! 0.08  * alphafact
 
    !---------------------------------------------------------------------------------------!
    !     The KW parameter. Medvigy et al. (2009) and Moorcroft et al. (2001) give the      !
@@ -2531,7 +2622,6 @@ end subroutine init_pft_nitro_params
 subroutine init_pft_leaf_params()
    use rk4_coms       , only : ibranch_thermo       ! ! intent(in)
    use pft_coms       , only : phenology            & ! intent(out)
-                             , clumping_factor      & ! intent(out)
                              , b1Cl                 & ! intent(out)
                              , b2Cl                 & ! intent(out)
                              , c_grn_leaf_dry       & ! intent(out)
@@ -2577,16 +2667,6 @@ subroutine init_pft_leaf_params()
       phenology(16)    = 4
       phenology(17)    = 0
    end select
-
-   clumping_factor(1)     = 1.000d0
-   clumping_factor(2:4)   = 1.000d0 ! 7.350d-1
-   clumping_factor(5)     = 8.400d-1
-   clumping_factor(6:8)   = 7.350d-1
-   clumping_factor(9:11)  = 8.400d-1
-   clumping_factor(12:13) = 8.400d-1
-   clumping_factor(14:15) = 1.000d0
-   clumping_factor(16)    = 1.000d0 ! 8.400d-1
-   clumping_factor(17)    = 1.000d0 ! 7.350d-1
 
    !---------------------------------------------------------------------------------------!
    !      The following parameters are second sources found in Gu et al. (2007)            !

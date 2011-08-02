@@ -3,8 +3,8 @@ ed_1st.o: ed_misc_coms.mod ed_para_coms.mod ed_state_vars.mod
 ed_driver.o: consts_coms.mod ed_misc_coms.mod ed_node_coms.mod ed_state_vars.mod
 ed_driver.o: fuse_fiss_utils.mod grid_coms.mod soil_coms.mod
 ed_met_driver.o: canopy_air_coms.mod canopy_radiation_coms.mod consts_coms.mod
-ed_met_driver.o: ed_max_dims.mod ed_misc_coms.mod ed_state_vars.mod
-ed_met_driver.o: grid_coms.mod hdf5_utils.mod mem_polygons.mod
+ed_met_driver.o: ed_max_dims.mod ed_misc_coms.mod ed_node_coms.mod
+ed_met_driver.o: ed_state_vars.mod grid_coms.mod hdf5_utils.mod mem_polygons.mod
 ed_met_driver.o: met_driver_coms.mod pft_coms.mod therm_lib.mod
 ed_model.o: consts_coms.mod disturb_coms.mod ed_misc_coms.mod ed_node_coms.mod
 ed_model.o: ed_state_vars.mod grid_coms.mod mem_polygons.mod rk4_coms.mod
@@ -42,6 +42,8 @@ lsm_hyd.o: grid_coms.mod hydrology_coms.mod hydrology_constants.mod pft_coms.mod
 lsm_hyd.o: soil_coms.mod therm_lib.mod
 mortality.o: consts_coms.mod disturb_coms.mod ed_max_dims.mod ed_misc_coms.mod
 mortality.o: ed_state_vars.mod pft_coms.mod
+multiple_scatter.o: canopy_radiation_coms.mod consts_coms.mod ed_max_dims.mod
+multiple_scatter.o: rk4_coms.mod
 phenology_aux.o: allometry.mod consts_coms.mod ed_max_dims.mod ed_state_vars.mod
 phenology_aux.o: ed_therm_lib.mod grid_coms.mod pft_coms.mod phenology_coms.mod
 phenology_aux.o: soil_coms.mod
@@ -53,7 +55,7 @@ photosyn_driv.o: ed_state_vars.mod farq_leuning.mod met_driver_coms.mod
 photosyn_driv.o: pft_coms.mod physiology_coms.mod soil_coms.mod
 radiate_driver.o: allometry.mod canopy_layer_coms.mod canopy_radiation_coms.mod
 radiate_driver.o: consts_coms.mod ed_max_dims.mod ed_misc_coms.mod
-radiate_driver.o: ed_state_vars.mod grid_coms.mod pft_coms.mod soil_coms.mod
+radiate_driver.o: ed_state_vars.mod grid_coms.mod soil_coms.mod
 reproduction.o: allometry.mod consts_coms.mod decomp_coms.mod ed_max_dims.mod
 reproduction.o: ed_state_vars.mod ed_therm_lib.mod fuse_fiss_utils.mod
 reproduction.o: grid_coms.mod mem_polygons.mod pft_coms.mod phenology_coms.mod
@@ -77,8 +79,8 @@ soil_respiration.o: pft_coms.mod soil_coms.mod
 structural_growth.o: allometry.mod consts_coms.mod decomp_coms.mod
 structural_growth.o: ed_max_dims.mod ed_misc_coms.mod ed_state_vars.mod
 structural_growth.o: ed_therm_lib.mod pft_coms.mod
-twostream_rad.o: canopy_layer_coms.mod canopy_radiation_coms.mod consts_coms.mod
-twostream_rad.o: ed_max_dims.mod pft_coms.mod rk4_coms.mod
+twostream_rad.o: canopy_radiation_coms.mod consts_coms.mod ed_max_dims.mod
+twostream_rad.o: rk4_coms.mod
 vegetation_dynamics.o: consts_coms.mod disturb_coms.mod disturbance_utils.mod
 vegetation_dynamics.o: ed_misc_coms.mod ed_state_vars.mod fuse_fiss_utils.mod
 vegetation_dynamics.o: grid_coms.mod growth_balive.mod mem_polygons.mod

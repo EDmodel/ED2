@@ -40,7 +40,7 @@ module mem_radiate
    real               :: prsnz
    real               :: prsnzp  
    integer            :: ncrad                 ! Number of clouds that affect radiation
-   real   , parameter :: rad_cosz_min   = 0.0009
+   real   , parameter :: rad_cosz_min   = 0.01745241
    real   , parameter :: rad_rshort_min = 0.50
    !----- These are used for adding extra levels at the top with the Mclatchy soundings. --!
    integer, parameter :: maxadd_rad     = 10   ! max allowed # of added rad levels

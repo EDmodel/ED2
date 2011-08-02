@@ -151,8 +151,7 @@ subroutine landuse_opqr(n2,n3,mzg,npat,nvegpat,ivegtflg,ivegtfn,isoilflg,isoilfn
    character(len=str_len)                                            :: h5name
    integer               , dimension(0:maxdatq)                      :: sumpix
    integer               , dimension(0:maxdatq,2)                    :: ngrdpix
-   integer               , dimension(0:maxdatq,nstyp)                :: datq_soil
-   integer               , dimension(0:maxdatq,nstyp)                :: soil_tab
+   integer               , dimension(0:maxdatq,0:nstyp)              :: datq_soil
    real                  , dimension(0:maxdatq)                      :: datq_ndvi
    real                  , dimension(0:maxdatq)                      :: sumndvi
    integer                                                           :: ing_prt
@@ -391,7 +390,6 @@ subroutine landuse_opqr(n2,n3,mzg,npat,nvegpat,ivegtflg,ivegtfn,isoilflg,isoilfn
                      datsoil  = nint(datp(ip,jp,ir,jr))
 
                      datq_pat = datq_patch(ip,jp,ir,jr)
-
                      datq_soil(datq_pat,datsoil) = datq_soil(datq_pat,datsoil) + 1
                      ngrdpix(datsoil,1)          = ngrdpix(datsoil,1) + 1
                   end do

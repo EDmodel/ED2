@@ -380,9 +380,6 @@ module pft_coms
    !---------------------------------------------------------------------------------------!
    integer, dimension(n_pft) :: phenology 
 
-   !----- A 0-1 factor indicating degree of clumpiness of leaves and shoots. --------------!
-   real(kind=8), dimension(n_pft) :: clumping_factor
-
    !----- Leaf width [m], which is used to compute the leaf boundary layer conductance. ---!
    real, dimension(n_pft) :: leaf_width
 

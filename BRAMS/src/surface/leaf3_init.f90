@@ -552,8 +552,8 @@ subroutine sfcinit_nofile(n1,n2,n3,mzg,mzs,npat,ifm,theta,pi0,pp,rv,co2p,seatp,s
                          ,ground_temp,ground_fliq,veg_water,veg_hcap,veg_energy,can_prss   &
                          ,can_theiv,can_theta,can_rvap,can_co2,sensible_gc,sensible_vc     &
                          ,evap_gc,evap_vc,transp,gpp,plresp,resphet,veg_ndvip,veg_ndvic    &
-                         ,veg_ndvif,snow_mass,snow_depth,cosz,rlongup,albedt,rvv,prsv,piv  &
-                         ,vt2da,vt2db,glat,glon,zot,flpw,rtgt)
+                         ,veg_ndvif,snow_mass,snow_depth,rshort_gnd,rlong_gnd,cosz,rlongup &
+                         ,albedt,rvv,prsv,piv,vt2da,vt2db,glat,glon,zot,flpw,rtgt)
    use mem_grid
    use mem_leaf
    use leaf_coms
@@ -633,16 +633,18 @@ subroutine sfcinit_nofile(n1,n2,n3,mzg,mzs,npat,ifm,theta,pi0,pp,rv,co2p,seatp,s
    real, dimension(    n2,n3,npat), intent(inout) :: veg_ndvip
    real, dimension(    n2,n3,npat), intent(inout) :: veg_ndvic
    real, dimension(    n2,n3,npat), intent(inout) :: veg_ndvif
-   real, dimension(   n2,n3)      , intent(out)   :: rlongup
-   real, dimension(   n2,n3)      , intent(out)   :: albedt
-   real, dimension(   n2,n3)      , intent(inout) :: rvv
-   real, dimension(   n2,n3)      , intent(inout) :: prsv
-   real, dimension(   n2,n3)      , intent(inout) :: piv
-   real, dimension(   n2,n3)      , intent(inout) :: vt2da
-   real, dimension(   n2,n3)      , intent(inout) :: vt2db
-   real, dimension(   n2,n3)      , intent(in)    :: glat
-   real, dimension(   n2,n3)      , intent(in)    :: glon
-   real, dimension(   n2,n3)      , intent(inout) :: zot
+   real, dimension(    n2,n3,npat), intent(inout) :: rshort_gnd
+   real, dimension(    n2,n3,npat), intent(inout) :: rlong_gnd
+   real, dimension(    n2,n3)     , intent(out)   :: rlongup
+   real, dimension(    n2,n3)     , intent(out)   :: albedt
+   real, dimension(    n2,n3)     , intent(inout) :: rvv
+   real, dimension(    n2,n3)     , intent(inout) :: prsv
+   real, dimension(    n2,n3)     , intent(inout) :: piv
+   real, dimension(    n2,n3)     , intent(inout) :: vt2da
+   real, dimension(    n2,n3)     , intent(inout) :: vt2db
+   real, dimension(    n2,n3)     , intent(in)    :: glat
+   real, dimension(    n2,n3)     , intent(in)    :: glon
+   real, dimension(    n2,n3)     , intent(inout) :: zot
    !----- Local variables. ----------------------------------------------------------------!
    integer                                        :: k2
    integer                                        :: i
@@ -950,8 +952,9 @@ subroutine sfcinit_nofile(n1,n2,n3,mzg,mzs,npat,ifm,theta,pi0,pp,rv,co2p,seatp,s
                              , veg_fracarea  (  i,j,ipat) , leaf_class    (  i,j,ipat)     &
                              , veg_albedo    (  i,j,ipat) , sfcwater_nlev (  i,j,ipat)     &
                              , 0.                         , 0.                             &
-                             , albedt        (  i,j     ) , rlongup       (  i,j     )     &
-                             , cosz          (  i,j     ) )
+                             , cosz          (  i,j     ) , albedt        (  i,j     )     &
+                             , rlongup       (  i,j     ) , rshort_gnd    (  i,j,ipat)     &
+                             , rlong_gnd     (  i,j,ipat) )
          end do patchloop2
       end do iloop
    end do jloop

@@ -403,7 +403,8 @@ subroutine geonest_nofile(ngra,ngrb)
                          , leaf_g(ifm)%plresp             , leaf_g(ifm)%resphet            &
                          , leaf_g(ifm)%veg_ndvip          , leaf_g(ifm)%veg_ndvic          &
                          , leaf_g(ifm)%veg_ndvif          , leaf_g(ifm)%snow_mass          &
-                         , leaf_g(ifm)%snow_depth         , scratch%vt2dq                  &
+                         , leaf_g(ifm)%snow_depth         , leaf_g(ifm)%rshort_gnd         &
+                         , leaf_g(ifm)%rlong_gnd          , scratch%vt2dq                  &
                          , scratch%vt2dr                  , scratch%vt2ds                  &
                          , scratch%vt2da                  , scratch%vt2db                  &
                          , scratch%vt2dc                  , scratch%vt2dd                  &
@@ -514,7 +515,8 @@ subroutine geonest_nofile(ngra,ngrb)
       !            , leaf_g(ifm)%plresp                , leaf_g(ifm)%resphet               &
       !            , leaf_g(ifm)%veg_ndvip             , leaf_g(ifm)%veg_ndvic             &
       !            , leaf_g(ifm)%veg_ndvif             , leaf_g(ifm)%snow_mass             &
-      !            , leaf_g(ifm)%snow_depth            , scratch%vt2dq                     &
+      !            , leaf_g(ifm)%snow_depth            , leaf_g(ifm)%rshort_gnd            &
+      !            , leaf_g(ifm)%rlong_gnd             , scratch%vt2dq                     &
       !            , scratch%vt2dr                     , scratch%vt2ds                     &
       !            , scratch%vt2da                     , scratch%vt2db                     &
       !            , scratch%vt2dc                     , scratch%vt2dd                     &

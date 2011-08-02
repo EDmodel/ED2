@@ -2174,28 +2174,21 @@ $ED2_INFO
    !                  cohorts are stacked on the top of each other.                        !
    !              1.  Dietze (2008) model.  Cohorts have a finite radius, and cohorts are  !
    !                  stacked on the top of each other.                                    !
-   !              2.  Cohorts have a finite radius with horizontal, but they are no longer !
-   !                  organised by cohort index.  Instead, cohorts of the same height      !
-   !                  compete for light as the radiation is solved layer by layer rather   !
-   !                   than cohort by cohort.  This is still under development, ideas are  !
-   !                   welcome.                                                            !
    !---------------------------------------------------------------------------------------!
    CROWN_MOD       = 1,
    !---------------------------------------------------------------------------------------!
 
 
 
-
    !---------------------------------------------------------------------------------------!
-   ! ICAN_SWRAD -- This variable specifies which canopy radiation model to use for short-  !
-   !               wave radiation within the canopy:                                       !
-   !               0.  Beers law.  Added back just for theroretical tests, don't use it if !
-   !                   you are unsure.  This cannot be used with CROWN_MOD = 2.            !
-   !               1.  Two-stream model.  The default and recommended method.              !
-   !                                                                                       !
-   !               In either case longwave will be solved using two-stream model.          !
+   ! ICANRAD -- Specifies how canopy radiation is solved.  This variable sets both short-  !
+   !            wave and longwave.                                                         !
+   !              0.  Two-stream model (Medvigy 2006), with the possibility to apply       !
+   !                  finite crown area to direct shortwave radiation.                     !
+   !              1.  Multiple-scattering model (Zhao and Qualls 2005,2006), with the      !
+   !                  possibility to apply finite crown area to all radiation fluxes.      !
    !---------------------------------------------------------------------------------------!
-   ICAN_SWRAD      = 1,
+   ICANRAD        = 0,
    !---------------------------------------------------------------------------------------!
 
 
@@ -2239,11 +2232,6 @@ $ED2_INFO
    ! D0FACT    -- Factor multiplying the transpiration control in gsw (D0)                 !
    ! ALPHAFACT -- Factor for changing the quantum yield of C3 plants.  This is only        !
    !              applied when QUANTUM_EFFICIENCY_T = 0.                                   !
-   ! THETACRIT -- Leaf drought phenology threshold.  This is the relative soil moisture    !
-   !              above the wilting point below which the drought-deciduous plants will    !
-   !              start shedding their leaves                                              !
-   ! LWFACT    -- Factor for changing the leaf width (w)                                   !
-   ! THIOFF    -- Offset to be added to the Vm_high_temp                                   !
    !---------------------------------------------------------------------------------------!
    VMFACT          =   1.6,
    MFACT           =   1.0,
@@ -2251,7 +2239,29 @@ $ED2_INFO
    GAMFACT         =  0.75,
    D0FACT          =  1.20,
    ALPHAFACT       = 0.875,
-   THETACRIT       =  0.20,
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   ! THETACRIT -- Leaf drought phenology threshold.  The sign matters here:                !
+   !              >= 0. -- This is the relative soil moisture above the wilting point      !
+   !                       below which the drought-deciduous plants will start shedding    !
+   !                       their leaves                                                    !
+   !              <  0. -- This is the soil potential in MPa below which the drought-      !
+   !                       -deciduous plants will start shedding their leaves.  The wilt-  !
+   !                       ing point is by definition -1.5MPa, so make sure that the value !
+   !                       is above -1.5.                                                  !
+   !---------------------------------------------------------------------------------------!
+   THETACRIT       = -0.75,
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   ! LWFACT    -- Factor for changing the leaf width (w)                                   !
+   ! THIOFF    -- Offset to be added to the Vm_high_temp                                   !
+   !---------------------------------------------------------------------------------------!
    LWFACT          =   1.0,
    THIOFF          =   0.0,
    !---------------------------------------------------------------------------------------!
@@ -2301,12 +2311,16 @@ $ED2_INFO
    !                      often  will never allow fires.                                   !
    !                  2.  Fire will be triggered with enough biomass and the total soil    !
    !                      water at the top 75 cm falls below a threshold.                  !
-   ! SM_FIRE       -- Threshold to define the relative soil moisture above dry air of the  !
-   !                  top 75cm that will trigger fires.  Used only when include_fire is    !
-   !                  set to 2.                                                            !
+   ! SM_FIRE       -- This is used only when INCLUDE_FIRE = 2.  The sign here matters.     !
+   !                  >= 0. - Minimum relative soil moisture above dry air of the top 75cm !
+   !                          that will prevent fires to happen.                           !
+   !                  <  0. - Minimum mean soil moisture potential in MPa of the top 75 cm !
+   !                          that will prevent fires to happen.  The dry air soil         !
+   !                          potential is defined as -3.1 MPa, so make sure SM_FIRE   is  !
+   !                          greater than this value.                                     !
    !---------------------------------------------------------------------------------------!
    INCLUDE_FIRE    = 2,
-   SM_FIRE         = 0.11,
+   SM_FIRE         = -1.40,
    !---------------------------------------------------------------------------------------!
 
 

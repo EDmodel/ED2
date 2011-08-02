@@ -683,28 +683,21 @@ $ED_NL
    !                  cohorts are stacked on the top of each other.                        !
    !              1.  Dietze (2008) model.  Cohorts have a finite radius, and cohorts are  !
    !                  stacked on the top of each other.                                    !
-   !              2.  Cohorts have a finite radius with horizontal, but they are no longer !
-   !                  organised by cohort index.  Instead, cohorts of the same height      !
-   !                  compete for light as the radiation is solved layer by layer rather   !
-   !                   than cohort by cohort.  This is still under development, ideas are  !
-   !                   welcome.                                                            !
    !---------------------------------------------------------------------------------------!
    NL%CROWN_MOD       = 1
    !---------------------------------------------------------------------------------------!
 
 
 
-
    !---------------------------------------------------------------------------------------!
-   ! ICAN_SWRAD -- This variable specifies which canopy radiation model to use for short-  !
-   !               wave radiation within the canopy:                                       !
-   !               0.  Beers law.  Added back just for theroretical tests, don't use it if !
-   !                   you are unsure.  This cannot be used with CROWN_MOD = 2.            !
-   !               1.  Two-stream model.  The default and recommended method.              !
-   !                                                                                       !
-   !               In either case longwave will be solved using two-stream model.          !
+   ! ICANRAD -- Specifies how canopy radiation is solved.  This variable sets both short-  !
+   !            wave and longwave.                                                         !
+   !              0.  Two-stream model (Medvigy 2006), with the possibility to apply       !
+   !                  finite crown area to direct shortwave radiation.                     !
+   !              1.  Multiple-scattering model (Zhao and Qualls 2005,2006), with the      !
+   !                  possibility to apply finite crown area to all radiation fluxes.      !
    !---------------------------------------------------------------------------------------!
-   NL%ICAN_SWRAD      = 1
+   NL%ICANRAD        = 0
    !---------------------------------------------------------------------------------------!
 
 
@@ -770,7 +763,7 @@ $ED_NL
    !                       ing point is by definition -1.5MPa, so make sure that the value !
    !                       is above -1.5.                                                  !
    !---------------------------------------------------------------------------------------!
-   NL%THETACRIT       = 0.20
+   NL%THETACRIT       = -0.75
    !---------------------------------------------------------------------------------------!
 
 

@@ -85,6 +85,7 @@ module lake_coms
       real(kind=8)  :: avg_sflux_t
       real(kind=8)  :: avg_sflux_r
       real(kind=8)  :: avg_sflux_c
+      real(kind=8)  :: avg_rshort_gnd
       real(kind=8)  :: avg_albedt
       real(kind=8)  :: avg_rlongup
    end type lakesitetype
@@ -255,6 +256,7 @@ module lake_coms
       lake%avg_sflux_t     = 0.d0
       lake%avg_sflux_r     = 0.d0
       lake%avg_sflux_c     = 0.d0
+      lake%avg_rshort_gnd  = 0.d0
       lake%avg_albedt      = 0.d0
       lake%avg_rlongup     = 0.d0
       !------------------------------------------------------------------------------------!
@@ -321,6 +323,7 @@ module lake_coms
       lakeout%avg_sflux_t     = lakein%avg_sflux_t
       lakeout%avg_sflux_r     = lakein%avg_sflux_r
       lakeout%avg_sflux_c     = lakein%avg_sflux_c
+      lakeout%avg_rshort_gnd  = lakein%avg_rshort_gnd
       lakeout%avg_albedt      = lakein%avg_albedt
       lakeout%avg_rlongup     = lakein%avg_rlongup
       !------------------------------------------------------------------------------------!
@@ -366,6 +369,7 @@ module lake_coms
       lake%avg_sflux_t     = lake%avg_sflux_t      + dtim * dlakedt%avg_sflux_t
       lake%avg_sflux_r     = lake%avg_sflux_r      + dtim * dlakedt%avg_sflux_r
       lake%avg_sflux_c     = lake%avg_sflux_c      + dtim * dlakedt%avg_sflux_c
+      lake%avg_rshort_gnd  = lake%avg_rshort_gnd   + dtim * dlakedt%avg_rshort_gnd
       lake%avg_albedt      = lake%avg_albedt       + dtim * dlakedt%avg_albedt
       lake%avg_rlongup     = lake%avg_rlongup      + dtim * dlakedt%avg_rlongup
       !------------------------------------------------------------------------------------!
@@ -414,6 +418,7 @@ module lake_coms
       lake%avg_sflux_t         = lake%avg_sflux_t     * dttoti
       lake%avg_sflux_r         = lake%avg_sflux_r     * dttoti
       lake%avg_sflux_c         = lake%avg_sflux_c     * dttoti
+      lake%avg_rshort_gnd      = lake%avg_rshort_gnd  * dttoti
       lake%avg_albedt          = lake%avg_albedt      * dttoti
       lake%avg_rlongup         = lake%avg_rlongup     * dttoti
       !------------------------------------------------------------------------------------!

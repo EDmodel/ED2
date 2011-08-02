@@ -623,8 +623,10 @@ subroutine copy_lake_brams(i,j,ifm,mzg,mzs,initp)
 
 
    !----- Radiation-related variables. ----------------------------------------------------!
-   ed_fluxf_g(ifm)%albedt (i,j,1) = sngloff(initp%avg_albedt  ,tiny_lakeoff)
-   ed_fluxf_g(ifm)%rlongup(i,j,1) = sngloff(initp%avg_rlongup ,tiny_lakeoff)
+   ed_fluxf_g(ifm)%albedt     (i,j,1) = sngloff(initp%avg_albedt     ,tiny_lakeoff)
+   ed_fluxf_g(ifm)%rlongup    (i,j,1) = sngloff(initp%avg_rlongup    ,tiny_lakeoff)
+   ed_fluxf_g(ifm)%rshort_gnd (i,j,1) = sngloff(initp%avg_rshort_gnd ,tiny_lakeoff)
+   ed_fluxf_g(ifm)%rlong_gnd  (i,j,1) = 0.0
    !---------------------------------------------------------------------------------------!
 
 

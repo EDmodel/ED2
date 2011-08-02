@@ -207,7 +207,7 @@ subroutine copy_nl(copy_type)
                                    , leaf_maxwhc               ! ! intent(out)
    use optimiz_coms         , only : ioptinpt                  ! ! intent(out)
    use canopy_layer_coms    , only : crown_mod                 ! ! intent(out)
-   use canopy_radiation_coms, only : ican_swrad                ! ! intent(out)
+   use canopy_radiation_coms, only : icanrad                   ! ! intent(out)
    use rk4_coms             , only : ibranch_thermo            & ! intent(out)
                                    , ipercol                   & ! intent(out)
                                    , rk4_tolerance             ! ! intent(out)
@@ -316,7 +316,7 @@ subroutine copy_nl(copy_type)
       repro_scheme              = nl%repro_scheme
       lapse_scheme              = nl%lapse_scheme
       crown_mod                 = nl%crown_mod
-      ican_swrad                = nl%ican_swrad
+      icanrad                   = nl%icanrad
       h2o_plant_lim             = nl%h2o_plant_lim
       vmfact                    = nl%vmfact
       mfact                     = nl%mfact

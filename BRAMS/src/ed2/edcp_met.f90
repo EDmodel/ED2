@@ -692,21 +692,23 @@ subroutine copy_fluxes_future_2_past(ifm)
    !---------------------------------------------------------------------------------------!
 
    !----- Simple copy of fluxes over land. ------------------------------------------------!
-   ed_fluxp_g(ifm)%ustar   = ed_fluxf_g(ifm)%ustar
-   ed_fluxp_g(ifm)%tstar   = ed_fluxf_g(ifm)%tstar
-   ed_fluxp_g(ifm)%rstar   = ed_fluxf_g(ifm)%rstar
-   ed_fluxp_g(ifm)%cstar   = ed_fluxf_g(ifm)%cstar
-   ed_fluxp_g(ifm)%zeta    = ed_fluxf_g(ifm)%zeta
-   ed_fluxp_g(ifm)%ribulk  = ed_fluxf_g(ifm)%ribulk
-   ed_fluxp_g(ifm)%albedt  = ed_fluxf_g(ifm)%albedt
-   ed_fluxp_g(ifm)%rlongup = ed_fluxf_g(ifm)%rlongup
-   ed_fluxp_g(ifm)%sflux_u = ed_fluxf_g(ifm)%sflux_u
-   ed_fluxp_g(ifm)%sflux_v = ed_fluxf_g(ifm)%sflux_v
-   ed_fluxp_g(ifm)%sflux_w = ed_fluxf_g(ifm)%sflux_w
-   ed_fluxp_g(ifm)%sflux_t = ed_fluxf_g(ifm)%sflux_t
-   ed_fluxp_g(ifm)%sflux_r = ed_fluxf_g(ifm)%sflux_r
-   ed_fluxp_g(ifm)%sflux_c = ed_fluxf_g(ifm)%sflux_c
-   ed_fluxp_g(ifm)%rk4step = ed_fluxf_g(ifm)%rk4step
+   ed_fluxp_g(ifm)%ustar      = ed_fluxf_g(ifm)%ustar
+   ed_fluxp_g(ifm)%tstar      = ed_fluxf_g(ifm)%tstar
+   ed_fluxp_g(ifm)%rstar      = ed_fluxf_g(ifm)%rstar
+   ed_fluxp_g(ifm)%cstar      = ed_fluxf_g(ifm)%cstar
+   ed_fluxp_g(ifm)%zeta       = ed_fluxf_g(ifm)%zeta
+   ed_fluxp_g(ifm)%ribulk     = ed_fluxf_g(ifm)%ribulk
+   ed_fluxp_g(ifm)%rshort_gnd = ed_fluxf_g(ifm)%rshort_gnd
+   ed_fluxp_g(ifm)%rlong_gnd  = ed_fluxf_g(ifm)%rlong_gnd
+   ed_fluxp_g(ifm)%albedt     = ed_fluxf_g(ifm)%albedt
+   ed_fluxp_g(ifm)%rlongup    = ed_fluxf_g(ifm)%rlongup
+   ed_fluxp_g(ifm)%sflux_u    = ed_fluxf_g(ifm)%sflux_u
+   ed_fluxp_g(ifm)%sflux_v    = ed_fluxf_g(ifm)%sflux_v
+   ed_fluxp_g(ifm)%sflux_w    = ed_fluxf_g(ifm)%sflux_w
+   ed_fluxp_g(ifm)%sflux_t    = ed_fluxf_g(ifm)%sflux_t
+   ed_fluxp_g(ifm)%sflux_r    = ed_fluxf_g(ifm)%sflux_r
+   ed_fluxp_g(ifm)%sflux_c    = ed_fluxf_g(ifm)%sflux_c
+   ed_fluxp_g(ifm)%rk4step    = ed_fluxf_g(ifm)%rk4step
 
    return
 end subroutine copy_fluxes_future_2_past
@@ -730,6 +732,7 @@ subroutine copy_fluxes_lsm2atm(ifm)
                             , sitetype    ! ! structure
    use mem_edcp      , only : ed_fluxf_g  & ! structure
                             , ed_flux     ! ! structure
+   use soil_coms     , only : nzs         ! ! intent(in)
    use mem_grid      , only : zt          & ! intent(in)
                             , grid_g      & ! structure
                             , dzt         & ! intent(in)
@@ -753,6 +756,7 @@ subroutine copy_fluxes_lsm2atm(ifm)
    integer                            :: ix
    integer                            :: iy
    integer                            :: ilp
+   integer                            :: k
    integer                            :: k2u
    integer                            :: k3u
    integer                            :: k2u_1
@@ -900,6 +904,21 @@ subroutine copy_fluxes_lsm2atm(ifm)
          !    Total albedo is the average between albedo for direct (beam) and diffuse.    !
          !---------------------------------------------------------------------------------!
          fluxp%albedt(ix,iy,ilp)  = sum(csite%area * csite%albedo) * site_area_i
+         !---------------------------------------------------------------------------------!
+
+
+         !---------------------------------------------------------------------------------!
+         !    Total albedo is the average between albedo for direct (beam) and diffuse.    !
+         !---------------------------------------------------------------------------------!
+         fluxp%rshort_gnd    (ix,iy,ilp) = sum(csite%area * csite%rshort_g) * site_area_i
+         do k=1,nzs
+            fluxp%rshort_gnd (ix,iy,ilp) = fluxp%rshort_gnd(ix,iy,ilp)                     &
+                                         + sum(csite%area * csite%rshort_s(k,:))           &
+                                         * site_area_i
+         end do
+         fluxp%rlong_gnd     (ix,iy,ilp) = sum(csite%area * ( csite%rlong_g                &
+                                                            + csite%rlong_s ))             &
+                                         * site_area_i
          !---------------------------------------------------------------------------------!
       end do
    end do

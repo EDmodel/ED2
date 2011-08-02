@@ -13,11 +13,14 @@ module canopy_radiation_coms
 
 
    !---------------------------------------------------------------------------------------!
-   !       This variable controls which short wave radiation model to use.  0 means Beers' !
-   ! law, and 1 means two-stream.  Longwave will be always solved by the two-stream model. !
-   ! Important:  option 0 cannot be used with CROWN_MOD = 2.                               !
+   ! ICANRAD -- Specifies how canopy radiation is solved.  This variable sets both short-  !
+   !            wave and longwave.                                                         !
+   !            0.  Two-stream model (Medvigy 2006), with the possibility to apply         !
+   !                finite crown area to direct shortwave radiation.                       !
+   !            1.  Multiple-scattering model (Zhao and Qualls 2005,2006), with the        !
+   !                possibility to apply finite crown area to all radiation fluxes.        !
    !---------------------------------------------------------------------------------------!
-   integer :: ican_swrad
+   integer :: icanrad
    !---------------------------------------------------------------------------------------!
 
 
@@ -28,10 +31,8 @@ module canopy_radiation_coms
    ! angle and G(mu') be the distribution of mu'.  Then, mubar = (integral from 0 to 1)    !
    ! (d mu'   mu' / G(mu')).  See, for example, Dickinson 1983.                            !
    !---------------------------------------------------------------------------------------!
-   real(kind=8) :: mubar
+   real(kind=8) :: mu_bar_lw
    !---------------------------------------------------------------------------------------!
-
-
 
 
 
@@ -88,7 +89,21 @@ module canopy_radiation_coms
 
 
    !---------------------------------------------------------------------------------------!
-   !     Fraction of radiation that is reflected.                                          !
+   !     Factors that define the orientation and clumping of leaves.                       !
+   ! CLUMPING FACTOR - factor indicating the degree of clumpiness of leaves.               !
+   ! ORIENT_FACTOR   - mean leaf orientation.                                              !
+   !                     0 -- leaves are randomly oriented                                 !
+   !                     1 -- all leaves are perfectly horizontal                          !
+   !                    -1 -- all leaves are perfectly vertical.                           !
+   !---------------------------------------------------------------------------------------!
+   real(kind=8), dimension(n_pft) :: clumping_factor
+   real(kind=8), dimension(n_pft) :: orient_factor
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Reflectance coefficients.                                                         !
    !---------------------------------------------------------------------------------------!
    !----- Visible (PAR). ------------------------------------------------------------------!
    real(kind=8), dimension(n_pft) :: leaf_reflect_vis
@@ -102,7 +117,7 @@ module canopy_radiation_coms
 
 
    !---------------------------------------------------------------------------------------!
-   !     Fraction of scattered PAR that is transmitted.                                    !
+   !     Transmittance coefficients.                                                       !
    !---------------------------------------------------------------------------------------!
    !----- Visible (PAR). ------------------------------------------------------------------!
    real(kind=8), dimension(n_pft) :: leaf_trans_vis
@@ -116,7 +131,7 @@ module canopy_radiation_coms
 
 
    !---------------------------------------------------------------------------------------!
-   !     Fraction of scattered PAR that is scattered.                                      !
+   !     Scattering coefficients.                                                          !
    !---------------------------------------------------------------------------------------!
    !----- Visible (PAR). ------------------------------------------------------------------!
    real(kind=8), dimension(n_pft) :: leaf_scatter_vis
@@ -130,7 +145,7 @@ module canopy_radiation_coms
 
 
    !---------------------------------------------------------------------------------------!
-   !     Fraction of scattered PAR that is back-scattered.                                 !
+   !     Fraction of diffuse radiation that is upscattered.                                !
    !---------------------------------------------------------------------------------------!
    !----- Visible (PAR). ------------------------------------------------------------------!
    real(kind=8), dimension(n_pft) :: leaf_backscatter_vis
@@ -146,6 +161,14 @@ module canopy_radiation_coms
    !----- Emissivity of the vegetation. ---------------------------------------------------!
    real(kind=8), dimension(n_pft) :: leaf_emis
    real(kind=8), dimension(n_pft) :: wood_emis
+   !---------------------------------------------------------------------------------------!
+
+
+
+
+   !----- Backscattering of thermal infrared. ---------------------------------------------!
+   real(kind=8), dimension(n_pft) :: leaf_backscatter_tir
+   real(kind=8), dimension(n_pft) :: wood_backscatter_tir
    !---------------------------------------------------------------------------------------!
 
 

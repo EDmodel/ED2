@@ -123,7 +123,7 @@ subroutine read_ednl(iunit,filename)
    use rk4_coms             , only : rk4_tolerance                         & ! intent(out)
                                    , ibranch_thermo                        ! ! intent(out)
    use canopy_layer_coms    , only : crown_mod                             ! ! intent(out)
-   use canopy_radiation_coms, only : ican_swrad                            ! ! intent(out)
+   use canopy_radiation_coms, only : icanrad                               ! ! intent(out)
    !----- Coupled ED-BRAMS modules. -------------------------------------------------------!
    use mem_edcp             , only : co2_offset                            ! ! intent(out)
    !----- BRAMS modules. ------------------------------------------------------------------!
@@ -202,7 +202,7 @@ subroutine read_ednl(iunit,filename)
                        ,plantation_file,lu_rescale_file,thsums_database,soilstate_db       &
                        ,soildepth_db,isoilstateinit,isoildepthflg,integration_scheme       &
                        ,rk4_tolerance,ibranch_thermo,iphysiol,iallom,iphen_scheme,radint   &
-                       ,radslp,repro_scheme,lapse_scheme,crown_mod,ican_swrad              &
+                       ,radslp,repro_scheme,lapse_scheme,crown_mod,icanrad                 &
                        ,decomp_scheme,h2o_plant_lim,vmfact,mfact,kfact,gamfact,d0fact      &
                        ,alphafact,thetacrit,lwfact,thioff,quantum_efficiency_t,n_plant_lim &
                        ,n_decomp_lim,include_fire,sm_fire,ianth_disturb,icanturb           &
@@ -280,7 +280,7 @@ subroutine read_ednl(iunit,filename)
       write (unit=*,fmt=*) ' repro_scheme              =',repro_scheme
       write (unit=*,fmt=*) ' lapse_scheme              =',lapse_scheme
       write (unit=*,fmt=*) ' crown_mod                 =',crown_mod
-      write (unit=*,fmt=*) ' ican_swrad                =',ican_swrad
+      write (unit=*,fmt=*) ' icanrad                   =',icanrad
       write (unit=*,fmt=*) ' decomp_scheme             =',decomp_scheme
       write (unit=*,fmt=*) ' h2o_plant_lim             =',h2o_plant_lim
       write (unit=*,fmt=*) ' vmfact                    =',vmfact

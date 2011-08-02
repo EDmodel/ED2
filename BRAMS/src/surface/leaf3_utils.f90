@@ -1073,8 +1073,8 @@ end subroutine vegndvi
 ! snow plus ground.                                                                        !
 !------------------------------------------------------------------------------------------!
 subroutine leaf3_sfcrad(mzg,mzs,ip,soil_water,soil_text,sfcwater_depth,patch_area          &
-                       ,veg_fracarea,leaf_class,veg_albedo,sfcwater_nlev,rshort,rlong      &
-                       ,albedt,rlongup,cosz)
+                       ,veg_fracarea,leaf_class,veg_albedo,sfcwater_nlev,rshort &
+                       ,rlong,cosz,albedt,rlongup,rshort_gnd,rlong_gnd)
    use mem_leaf
    use leaf_coms
    use rconstants
@@ -1103,6 +1103,8 @@ subroutine leaf3_sfcrad(mzg,mzs,ip,soil_water,soil_text,sfcwater_depth,patch_are
    real                   , intent(in)    :: cosz
    real                   , intent(inout) :: albedt
    real                   , intent(inout) :: rlongup
+   real                   , intent(inout) :: rshort_gnd
+   real                   , intent(inout) :: rlong_gnd
    !----- Local variables. ----------------------------------------------------------------!
    integer                                :: k
    integer                                :: m
@@ -1138,15 +1140,23 @@ subroutine leaf3_sfcrad(mzg,mzs,ip,soil_water,soil_text,sfcwater_depth,patch_are
    if (ip == 1) then
       !----- Compute the albedo and upward longwave for water patches. --------------------!
       if (cosz > .03) then
-         alb = min(max(-.0139 + .0467 * tan(acos(cosz)),.03),.999)
-         albedt = albedt + patch_area * alb
+         alb     = min(max(-.0139 + .0467 * tan(acos(cosz)),.03),.999)
+         albedt  = albedt + patch_area * alb
+      else
+         alb     = 0.0
       end if
-      rlongup = rlongup + patch_area * stefan * soil_tempk(mzg) ** 4
+      rlongup    = rlongup + patch_area * stefan * soil_tempk(mzg) ** 4
+
+      rshort_gnd = alb * rshort
+      rlong_gnd  = 0.0
 
    elseif (isfcl == 0) then
       !------ Not running a land surface model, use prescribed value of can_temp. ---------!
-      albedt  = albedt  + patch_area * albedo
-      rlongup = rlongup + patch_area * stefan * can_temp ** 4
+      albedt     = albedt  + patch_area * albedo
+      rlongup    = rlongup + patch_area * stefan * can_temp ** 4
+
+      rshort_gnd = albedt * rshort
+      rlong_gnd  = 0.0
    else
       !------ Running an actual land surface model... -------------------------------------!
 
@@ -1230,6 +1240,7 @@ subroutine leaf3_sfcrad(mzg,mzs,ip,soil_water,soil_text,sfcwater_depth,patch_are
       !------------------------------------------------------------------------------------!
 
 
+
       !----- Adding urban contribution if running TEB. ------------------------------------!
       if (teb_spm==1) then
          if (nint(g_urban) == 0) then
@@ -1293,6 +1304,19 @@ subroutine leaf3_sfcrad(mzg,mzs,ip,soil_water,soil_text,sfcwater_depth,patch_are
          rlonga_a  = 0.
       end if
       !------------------------------------------------------------------------------------!
+
+
+
+      !----- Integrate the total absorbed light by ground (top soil plus TSW layers). -----!
+      rshort_gnd = rshort_g
+      do k=1,ksn
+         rshort_gnd = rshort_gnd + rshort_s(k)
+      end do
+      rlong_gnd  = rlonga_gs + rlongv_gs - rlonggs_a - rlonggs_v
+      !------------------------------------------------------------------------------------!
+
+
+
    end if
 
    return

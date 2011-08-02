@@ -279,7 +279,7 @@ ntser=9
 tser01 = list(vnam   = c("gpp","plresp","hetresp","nee")
              ,desc   = c("GPP","Plant resp.","Het. resp.","NEE")
              ,colour = c("forestgreen","chartreuse","sienna","deepskyblue")
-             ,lwd    = c(1.5,1.5,1.5,1.5)
+             ,lwd    = c(2.5,2.5,2.5,2.5)
              ,type   = ptype
              ,plog   = ""
              ,prefix = "carbflux"
@@ -287,10 +287,10 @@ tser01 = list(vnam   = c("gpp","plresp","hetresp","nee")
              ,unit   = "kgC/m2/yr"
              ,legpos = "topleft"
              ,plt    = TRUE)
-tser02 = list(vnam   = c("rshort","rlong","latent","sens")
-             ,desc   = c("Down SW","Down LW","Latent","Sensible")
-             ,colour = c("goldenrod","lawngreen","midnightblue","firebrick")
-             ,lwd    = c(1.5,1.5,1.5,1.5)
+tser02 = list(vnam   = c("rshort","rlong","rshort.gnd","latent","sens")
+             ,desc   = c("Down SW","Down LW","Abs. Grnd","Latent","Sensible")
+             ,colour = c("goldenrod","lawngreen","purple4","steelblue","firebrick")
+             ,lwd    = c(2.5,2.5,2.5,2.5,2.5)
              ,type   = ptype
              ,plog   = ""
              ,prefix = "eneflux"
@@ -303,7 +303,7 @@ tser03 = list(vnam   = c("wflxgc","et","wflxlc","wflxwc","transp")
                         ,"Wood->Canopy","Transpiration")
              ,colour = c("firebrick","midnightblue","chartreuse"
                         ,"goldenrod","darkolivegreen")
-             ,lwd    = c(1.5,1.5,1.5,1.5,1.5)
+             ,lwd    = c(2.5,2.5,2.5,2.5,2.5)
              ,type   = ptype
              ,plog   = ""
              ,prefix = "h2oflux"
@@ -314,7 +314,7 @@ tser03 = list(vnam   = c("wflxgc","et","wflxlc","wflxwc","transp")
 tser04 = list(vnam   = c("atm.temp","can.temp","leaf.temp","wood.temp","gnd.temp")
              ,desc   = c("Atmosphere","Canopy air","Leaf","Wood","Ground")
              ,colour = c("deepskyblue","gray21","chartreuse","goldenrod","sienna")
-             ,lwd    = c(1.5,1.5,1.5,1.5,1.5)
+             ,lwd    = c(2.5,2.5,2.5,2.5,2.5)
              ,type   = ptype
              ,plog   = ""
              ,prefix = "temperature"
@@ -325,7 +325,7 @@ tser04 = list(vnam   = c("atm.temp","can.temp","leaf.temp","wood.temp","gnd.temp
 tser05 = list(vnam   = c("atm.shv","can.shv","gnd.shv")
              ,desc   = c("Atmosphere","Canopy air","Ground")
              ,colour = c("deepskyblue","gray21","sienna")
-             ,lwd    = c(1.5,1.5,1.5)
+             ,lwd    = c(2.5,2.5,2.5)
              ,type   = ptype
              ,plog   = ""
              ,prefix = "h2ovapour"
@@ -336,7 +336,7 @@ tser05 = list(vnam   = c("atm.shv","can.shv","gnd.shv")
 tser06 = list(vnam   = c("atm.co2","can.co2")
              ,desc   = c("Atmosphere","Canopy air")
              ,colour = c("deepskyblue","lawngreen")
-             ,lwd    = c(1.5,1.5)
+             ,lwd    = c(2.5,2.5)
              ,type   = ptype
              ,plog   = ""
              ,prefix = "co2"
@@ -1069,7 +1069,7 @@ for (place in myplaces){
 
    #----- Retrieve default information about this place and set up some variables. --------#
    thispoi = locations(where=place,here=here,yearbeg=yearbeg,yearend=yearend
-                      ,monthbeg=monthbeg,filetype="Q")
+                      ,monthbeg=monthbeg)
    inpref  = thispoi$pathin
    outmain = paste(outroot,place,sep="/")
    outpref = paste(outmain,"monthly",sep="/")

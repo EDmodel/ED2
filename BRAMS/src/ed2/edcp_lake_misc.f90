@@ -252,6 +252,7 @@ subroutine lake_diagnostics(initp)
       write(unit=*,fmt='(a,1x,es12.5)') '    * Sflux_c     :',initp%avg_sflux_c
       write(unit=*,fmt='(a,1x,es12.5)') '    * Albedt      :',initp%avg_albedt
       write(unit=*,fmt='(a,1x,es12.5)') '    * Rlongup     :',initp%avg_rlongup
+      write(unit=*,fmt='(a,1x,es12.5)') '    * Rshort_gnd  :',initp%avg_rshort_gnd
       write(unit=*,fmt='(a)'          ) ' '
       write(unit=*,fmt='(a)'          ) '-------------------------------------------------'
       call abort_run('Non-resolvable values','lake_diagnostics','edcp_lake_misc.f90')
@@ -467,8 +468,9 @@ subroutine lake_derivs(initp,dinitp)
    !---------------------------------------------------------------------------------------!
    !     Find the contribution of this time step to the longwave fluxes.                   !
    !---------------------------------------------------------------------------------------!
-   dinitp%avg_albedt   = min(max(albt_inter + albt_slope * lakemet%tanz,albt_min),albt_max)
-   dinitp%avg_rlongup  = emiss_h2o * stefan8 * initp%lake_temp ** 4
+   dinitp%avg_albedt     = min(max(albt_inter + albt_slope*lakemet%tanz,albt_min),albt_max)
+   dinitp%avg_rlongup    = emiss_h2o * stefan8 * initp%lake_temp ** 4
+   dinitp%avg_rshort_gnd = dinitp%avg_albedt * lakemet%rshort
    !---------------------------------------------------------------------------------------!
 
    return

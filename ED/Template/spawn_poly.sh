@@ -3,7 +3,7 @@
 here=`pwd`
 there=`echo ${here} | sed s@/n/Moorcroft_Lab/Users@/n/moorcroft_scratch@g`
 desc=`basename ${here}`
-sitemet='/n/moorcroft_scratch/nlevine/data/ed2_data/site_met_driver'
+sitemet='/n/moorcroft_data/mlongo/data/site_met_driver'
 hvdmet='/n/home11/aantonarakis/EDrelease65/run/'
 bioinit='/n/moorcroft_data/mlongo/data/site_bio_data'
 sheffield='SHEF_NCEP_DRIVER_DS314'
@@ -130,9 +130,9 @@ do
    isoilbc=`echo ${oi}   | awk '{print $52}'`
    ipercol=`echo ${oi}   | awk '{print $53}'`
    iphysiol=`echo ${oi}  | awk '{print $54}'`
-   icanswrad=`echo ${oi} | awk '{print $55}'`
-   imetrad=`echo ${oi}   | awk '{print $56}'`
-   ibranch=`echo ${oi}   | awk '{print $57}'`
+   imetrad=`echo ${oi}   | awk '{print $55}'`
+   ibranch=`echo ${oi}   | awk '{print $56}'`
+   icanrad=`echo ${oi}   | awk '{print $57}'`
    #---------------------------------------------------------------------------------------#
 
 
@@ -512,6 +512,9 @@ do
       m34)
          thissfilin=${bioinit}'/k34_ustein_newallom.'
          ;;
+      bdf)
+         thissfilin=${bioinit}'/pBDFFP1_1983_ustein.'
+         ;;
       pdg)
          thissfilin=${bioinit}'/pdg_ustein_newallom.'
          ;;
@@ -611,9 +614,9 @@ do
    sed -i s@mysoilbc@${isoilbc}@g          ${ED2IN}
    sed -i s@mypercol@${ipercol}@g          ${ED2IN}
    sed -i s@myphysiol@${iphysiol}@g        ${ED2IN}
-   sed -i s@mycanswrad@${icanswrad}@g      ${ED2IN}
    sed -i s@mymetrad@${imetrad}@g          ${ED2IN}
    sed -i s@mybranch@${ibranch}@g          ${ED2IN}
+   sed -i s@mycanrad@${icanrad}@g          ${ED2IN}
    #----- Change the srun.sh file. --------------------------------------------------------#
    srun=${here}'/'${polyname}'/srun.sh'
    sed -i s@pathhere@${here}@g     ${srun}

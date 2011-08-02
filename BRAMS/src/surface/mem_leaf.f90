@@ -108,6 +108,12 @@ Module mem_leaf
                                        , sensible_vc ! ! Sens. heat (Veg->Can)  [     W/m²]
 
       !------------------------------------------------------------------------------------!
+      !     Radiation variables, for diagnostics only (nxp,nyp,npatch).                    !
+      !------------------------------------------------------------------------------------!
+      real, dimension(:,:,:), pointer :: rshort_gnd  & ! Absorbed SW radiation  [     W/m²]
+                                       , rlong_gnd   ! ! Absorbed LW radiation  [     W/m²]
+
+      !------------------------------------------------------------------------------------!
       !     Miscellaneous properties, dimensioned by (nxp,nyp,npatch).                     !
       !------------------------------------------------------------------------------------!
       real, dimension(:,:,:), pointer :: R_aer   & ! Aerodynamic resistance     [      ???]
@@ -268,6 +274,9 @@ Module mem_leaf
       allocate (leaf%sensible_gc      (    nx,ny,np))
       allocate (leaf%sensible_vc      (    nx,ny,np))
 
+      allocate (leaf%rshort_gnd       (    nx,ny,np))
+      allocate (leaf%rlong_gnd        (    nx,ny,np))
+
       allocate (leaf%R_aer            (    nx,ny,np))
 
       if (teb_spm == 1) then
@@ -361,6 +370,9 @@ Module mem_leaf
       if (associated(leaf%sensible_gc      ))  nullify(leaf%sensible_gc      )
       if (associated(leaf%sensible_vc      ))  nullify(leaf%sensible_vc      )
 
+      if (associated(leaf%rshort_gnd       ))  nullify(leaf%rshort_gnd       )
+      if (associated(leaf%rlong_gnd        ))  nullify(leaf%rlong_gnd        )
+
       if (associated(leaf%R_aer            ))  nullify(leaf%R_aer            )
       if (associated(leaf%G_URBAN          ))  nullify(leaf%G_URBAN          )
 
@@ -453,6 +465,9 @@ Module mem_leaf
       if (associated(leaf%sensible_gc      ))  leaf%sensible_gc      = 0.0
       if (associated(leaf%sensible_vc      ))  leaf%sensible_vc      = 0.0
 
+      if (associated(leaf%rshort_gnd       ))  leaf%rshort_gnd       = 0.0
+      if (associated(leaf%rlong_gnd        ))  leaf%rlong_gnd        = 0.0
+
       if (associated(leaf%R_aer            ))  leaf%R_aer            = 0.0
       if (associated(leaf%G_URBAN          ))  leaf%G_URBAN          = 0.0
 
@@ -542,6 +557,9 @@ Module mem_leaf
       if (associated(leaf%transp           ))  deallocate(leaf%transp           )
       if (associated(leaf%sensible_gc      ))  deallocate(leaf%sensible_gc      )
       if (associated(leaf%sensible_vc      ))  deallocate(leaf%sensible_vc      )
+
+      if (associated(leaf%rshort_gnd       ))  deallocate(leaf%rshort_gnd       )
+      if (associated(leaf%rlong_gnd        ))  deallocate(leaf%rlong_gnd        )
 
       if (associated(leaf%R_aer            ))  deallocate(leaf%R_aer            )
       if (associated(leaf%G_URBAN          ))  deallocate(leaf%G_URBAN          )
@@ -824,6 +842,14 @@ Module mem_leaf
       if (associated(leaf%G_URBAN))                                                        &
          call vtables2(leaf%G_URBAN,leafm%G_URBAN,ng,npts,imean                            &
                       ,'G_URBAN :6:hist:anal:mpti:mpt3'//trim(str_recycle))
+
+      if (associated(leaf%rshort_gnd))                                                     &
+         call vtables2(leaf%rshort_gnd,leafm%rshort_gnd,ng,npts,imean                      &
+                      ,'RSHORT_GND :6:hist:anal:mpti:mpt3')
+
+      if (associated(leaf%rlong_gnd))                                                      &
+         call vtables2(leaf%rlong_gnd,leafm%rlong_gnd,ng,npts,imean                        &
+                      ,'RLONG_GND :6:hist:anal:mpti:mpt3')
 
 
       !------------------------------------------------------------------------------------!

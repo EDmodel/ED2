@@ -23,7 +23,7 @@ program ramspost
   character(len=fnm_len)                      :: gprefix
   character(len=fnm_len)                      :: cfln
   character*40 vpln(200),cdum1
-  character*10 vp(200),vpun(200),cdum2,proj,anl2gra
+  character*20 vp(200),vpun(200),cdum2,proj,anl2gra
   character*1 cgrid
   character*2 ccgrid,patchnumber,cldnumber
   character*3 cmo(12)

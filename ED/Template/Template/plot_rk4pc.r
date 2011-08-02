@@ -64,8 +64,8 @@ phovdi02 = list(vnam   = c("met.rshort","met.rlong","gnd.rshort"
                ,unit   = "W/m2"
                ,legpos = "topleft"
                ,plt    = TRUE)
-phovdi03 = list(vnam   = c("qwflxgc","qwflxac","qwflxlc","qwflxwc","qtransp","qdewgnd")
-               ,desc   = c("Ground->Canopy","Air->Canopy","Leaf->Canopy","Wood->Canopy"
+phovdi03 = list(vnam   = c("wflxgc","wflxca","wflxlc","wflxwc","transp","dewgnd")
+               ,desc   = c("Ground->Canopy","Canopy->Air","Leaf->Canopy","Wood->Canopy"
                           ,"Transpiration","Dew")
                ,colour = c("firebrick","midnightblue","chartreuse","goldenrod"
                           ,"darkolivegreen","deepskyblue")
@@ -77,8 +77,8 @@ phovdi03 = list(vnam   = c("qwflxgc","qwflxac","qwflxlc","qwflxwc","qtransp","qd
                ,unit   = "kg/m2/day"
                ,legpos = "topleft"
                ,plt    = TRUE)
-phovdi04 = list(vnam   = c("hflxgc","hflxac","hflxlc","hflxwc")
-               ,desc   = c("Ground->Canopy","Air->Canopy","Leaf->Canopy","Wood->Canopy")
+phovdi04 = list(vnam   = c("hflxgc","hflxca","hflxlc","hflxwc")
+               ,desc   = c("Ground->Canopy","Canopy->Air","Leaf->Canopy","Wood->Canopy")
                ,colour = c("firebrick","midnightblue","chartreuse","goldenrod")
                ,lwd    = c(1.5,1.5,1.5,1.5)
                ,type   = ptype
@@ -685,16 +685,18 @@ for (place in myplaces){
       cpatch$hetresp         = cpatch$cwdrh        + cpatch$soilrh
 
       #----- Water flux in kg/m2/day. -----------------------------------------------------#
-      cpatch$qwflxlc         = cpatch$wflxlc       * day.sec
-      cpatch$qwflxwc         = cpatch$wflxwc       * day.sec
-      cpatch$qwflxgc         = cpatch$wflxgc       * day.sec
-      cpatch$qwflxac         = cpatch$wflxac       * day.sec
-      cpatch$qtransp         = cpatch$transp       * day.sec
-      cpatch$qdewgnd         = cpatch$dewgnd       * day.sec
+      cpatch$wflxlc          =   cpatch$wflxlc       * day.sec
+      cpatch$wflxwc          =   cpatch$wflxwc       * day.sec
+      cpatch$wflxgc          =   cpatch$wflxgc       * day.sec
+      cpatch$wflxac          =   cpatch$wflxac       * day.sec
+      cpatch$wflxca          = - cpatch$wflxac
+      cpatch$transp          =   cpatch$transp       * day.sec
+      cpatch$dewgnd          =   cpatch$dewgnd       * day.sec
 
       #----- Canopy -> Atmosphere fluxes in W/m2. -----------------------------------------#
-      cpatch$qwflxca         = -cpatch$wflxac      * alvl
+      cpatch$qwflxca         = -cpatch$wflxac      * alvl / day.sec
       cpatch$hflxca          = -cpatch$hflxac
+      cpatch$cflxca          = -cpatch$cflxac
 
       #----- Virtual potential temperature. -----------------------------------------------#
       cpatch$atm.thetav      = cpatch$atm.theta    * (1. + epim1 * cpatch$atm.shv)

@@ -108,9 +108,9 @@ do
    isoilbc=`echo ${oi}   | awk '{print $52}'`
    ipercol=`echo ${oi}   | awk '{print $53}'`
    iphysiol=`echo ${oi}  | awk '{print $54}'`
-   icanswrad=`echo ${oi} | awk '{print $55}'`
-   imetrad=`echo ${oi}   | awk '{print $56}'`
-   ibranch=`echo ${oi}   | awk '{print $57}'`
+   imetrad=`echo ${oi}   | awk '{print $55}'`
+   ibranch=`echo ${oi}   | awk '{print $56}'`
+   icanrad=`echo ${oi}   | awk '{print $57}'`
    #---------------------------------------------------------------------------------------#
 
    bkill -J ${desc}-${polyname} -q ${queue}

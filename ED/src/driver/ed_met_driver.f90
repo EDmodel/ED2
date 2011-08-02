@@ -901,9 +901,11 @@ subroutine update_met_drivers(cgrid)
             select case(met_interp(iformat,iv))
             case (2,4)
                !---------------------------------------------------------------------------!
-               !     Time independent variables, set mprev to 1.                           !
+               !     Time independent variables, set mprev to 1 and the previous time to   !
+               ! the current time.                                                         !
                !---------------------------------------------------------------------------!
                mprev = 1
+               prevmet_timea = current_time
 
             case (0,3)
                
@@ -913,30 +915,496 @@ subroutine update_met_drivers(cgrid)
                ndays_elapsed    = current_time%date - 1
                nseconds_elapsed = nint(current_time%time) + ndays_elapsed * nint(day_sec)
                mprev            = int(float(nseconds_elapsed) / met_frq(iformat,iv)) + 1
+               dtprev           = floor(real(nseconds_elapsed)/met_frq(iformat,iv))        &
+                                * met_frq(iformat,iv) - real(nseconds_elapsed)
+
+
+
+               !---------------------------------------------------------------------------!
+               !     Find the actual time of the previous and the upcoming met             !
+               ! information.  We need this to find the integral of the secant of the      !
+               ! zenith angle, which is used to make a time interpolation that preserves   !
+               ! the diurnal cycle consistent.  This is particularly important for         !
+               ! tropical regions because the zenith angle changes very quickly and the    !
+               ! radiation could be too skewed even with hourly data.                      !
+               !---------------------------------------------------------------------------!
+               prevmet_timea = current_time
+               nextmet_timea = current_time ! we won't use it, though.
+               select case (imetavg)
+               case (0)
+                  !----- Instantaneous averages. ------------------------------------------!
+                  call update_model_time_dm(prevmet_timea,dtprev)
+                  !------------------------------------------------------------------------!
+
+               case (1)
+                  !----- Averages ending at the reference time. ---------------------------!
+                  call update_model_time_dm(prevmet_timea,dtprev - met_frq(iformat,iv))
+                  !------------------------------------------------------------------------!
+
+               case (2)
+                  !----- Averages beginning at the reference time. ------------------------!
+                  call update_model_time_dm(prevmet_timea,dtprev)
+                  !------------------------------------------------------------------------!
+
+               case (3)
+                  !----- Averages centred at the reference time. --------------------------!
+                  call update_model_time_dm(prevmet_timea                                  &
+                                           ,dtprev - 0.5 * met_frq(iformat,iv))
+                  !------------------------------------------------------------------------!
+
+               end select
+               !------------------------------------------------------------------------------!
                
             end select
-            
+
             !----- Find which variable it is, and then fill the polygons. -----------------!
             select case (trim(met_vars(iformat,iv)))
             case('nbdsf')   !----- Near IR beam downward shortwave flux. ------ [   W/m²] -!
-               do ipy = 1,cgrid%npolygons
-                  cgrid%met(ipy)%nir_beam = cgrid%metinput(ipy)%nbdsf(mprev)
-               end do
+
+               !---------------------------------------------------------------------------!
+               !    Decide whether to interpolate or not.                                  !
+               !---------------------------------------------------------------------------!
+               select case (met_interp(iformat,iv))
+               case (2,3)
+                  !----- Constant, do not attempt to do any interpolation. ----------------!
+                  do ipy = 1,cgrid%npolygons
+                     cgrid%met(ipy)%nir_beam = cgrid%metinput(ipy)%nbdsf(mprev)
+                  end do
+               case (0,4)
+                  do ipy = 1,cgrid%npolygons
+
+                     !---------------------------------------------------------------------!
+                     !     Check whether this is day time or night time.  We should only   !
+                     ! do the full interpolation thing during the day, the night should    !
+                     ! have no incoming radiation until we incorporate fireflies (or a     !
+                     ! good twilight scheme) in the model.                                 !
+                     !---------------------------------------------------------------------!
+                     if (cgrid%cosz(ipy) > cosz_min) then
+                        !------------------------------------------------------------------!
+                        !     Define the normalisation factors for the previous and the    !
+                        ! next time.                                                       !
+                        !------------------------------------------------------------------!
+                        select case (imetavg)
+                        case (0)
+                           secz_prev = mean_daysecz(cgrid%lon(ipy),cgrid%lat(ipy)          &
+                                                   ,prevmet_timea,dt_radinterp,0.)
+                        case default
+                           secz_prev = mean_daysecz(cgrid%lon(ipy),cgrid%lat(ipy)          &
+                                                   ,prevmet_timea,dt_radinterp             &
+                                                   ,met_frq(iformat,iv))
+                        end select
+                        !------------------------------------------------------------------!
+
+
+
+                        !------------------------------------------------------------------!
+                        !     Decide whether we want to use the previous or the next data  !
+                        ! based on both the zenith angle.                                  !
+                        !------------------------------------------------------------------!
+                        night_prev = secz_prev == 0.
+                        !------------------------------------------------------------------!
+
+
+
+
+                        !------------------------------------------------------------------!
+                        !     Decide what to do based on the weighting factors.  This is   !
+                        ! to avoid putting too little or too much energy at noon, dawn,    !
+                        ! and dusk.                                                        !
+                        !------------------------------------------------------------------!
+                        if (night_prev) then
+                           !----- Middle of the night, set the value to zero. -------------!
+                           fperp_prev = 0.
+                           fperp_next = 0.
+                           cgrid%met(ipy)%nir_beam = 0.
+                        else
+                           !---------------------------------------------------------------!
+                           !     Daytime: we scale the current time using the previous     !
+                           ! secant and scaling back with the current cosine of zenith     !
+                           ! angle.                                                        !
+                           !---------------------------------------------------------------!
+                           fperp_prev = cgrid%metinput(ipy)%nbdsf(mprev) * secz_prev
+                           cgrid%met(ipy)%nir_beam = fperp_prev * cgrid%cosz(ipy)
+                        end if
+                        !------------------------------------------------------------------!
+
+
+
+                        !----- Assume all future stuff to be zero, we won't use them. -----!
+                        secz_next               = 0.
+                        night_next              = .true.
+                        fperp_next              = 0.
+                        wprev                   = 1.0
+                        wnext                   = 0.0
+                        mnext                   = mprev
+                        !------------------------------------------------------------------!
+
+                     else
+                        !----- Night time, assign it zero. --------------------------------!
+                        secz_prev               = 0.
+                        secz_next               = 0.
+                        night_prev              = .true.
+                        night_next              = .true.
+                        fperp_prev              = 0.
+                        fperp_next              = 0.
+                        cgrid%met(ipy)%nir_beam = 0.0
+                        wprev                   = 0.0
+                        wnext                   = 0.0
+                        mnext                   = mprev
+                        !------------------------------------------------------------------!
+                     end if
+                     !---------------------------------------------------------------------!
+
+
+
+                     !---------------------------------------------------------------------!
+                     !     Print the debugging information if the user wants so.           !
+                     !---------------------------------------------------------------------!
+                     if (print_radinterp) then
+                        call dump_radinfo(cgrid,ipy,mprev,mnext,prevmet_timea              &
+                                         ,nextmet_timea,met_frq(iformat,iv),wprev,wnext    &
+                                         ,secz_prev,secz_next,fperp_prev,fperp_next        &
+                                         ,night_prev,night_next,'nbdsf')
+                     end if
+                     !---------------------------------------------------------------------!
+                  end do
+               end select
+               !---------------------------------------------------------------------------!
 
             case('nddsf')   !----- Near IR diffuse downward shortwave flux. --- [   W/m²] -!
-               do ipy = 1,cgrid%npolygons
-                  cgrid%met(ipy)%nir_diffuse = cgrid%metinput(ipy)%nddsf(mprev)
-               end do
+
+               !---------------------------------------------------------------------------!
+               !    Decide whether to interpolate or not.                                  !
+               !---------------------------------------------------------------------------!
+               select case (met_interp(iformat,iv))
+               case (2,3)
+                  !----- Constant, do not attempt to do any interpolation. ----------------!
+                  do ipy = 1,cgrid%npolygons
+                     cgrid%met(ipy)%nir_diffuse = cgrid%metinput(ipy)%nddsf(mprev)
+                  end do
+               case (0,4)
+                  do ipy = 1,cgrid%npolygons
+
+                     !---------------------------------------------------------------------!
+                     !     Check whether this is day time or night time.  We should only   !
+                     ! do the full interpolation thing during the day, the night should    !
+                     ! have no incoming radiation until we incorporate fireflies (or a     !
+                     ! good twilight scheme) in the model.                                 !
+                     !---------------------------------------------------------------------!
+                     if (cgrid%cosz(ipy) > cosz_min) then
+                        !------------------------------------------------------------------!
+                        !     Define the normalisation factors for the previous and the    !
+                        ! next time.                                                       !
+                        !------------------------------------------------------------------!
+                        select case (imetavg)
+                        case (0)
+                           secz_prev = mean_daysecz(cgrid%lon(ipy),cgrid%lat(ipy)          &
+                                                   ,prevmet_timea,dt_radinterp,0.)
+                        case default
+                           secz_prev = mean_daysecz(cgrid%lon(ipy),cgrid%lat(ipy)          &
+                                                   ,prevmet_timea,dt_radinterp             &
+                                                   ,met_frq(iformat,iv))
+                        end select
+                        !------------------------------------------------------------------!
+
+
+
+                        !------------------------------------------------------------------!
+                        !     Decide whether we want to use the previous or the next data  !
+                        ! based on both the zenith angle.                                  !
+                        !------------------------------------------------------------------!
+                        night_prev = secz_prev == 0.
+                        !------------------------------------------------------------------!
+
+
+
+
+                        !------------------------------------------------------------------!
+                        !     Decide what to do based on the weighting factors.  This is   !
+                        ! to avoid putting too little or too much energy at noon, dawn,    !
+                        ! and dusk.                                                        !
+                        !------------------------------------------------------------------!
+                        if (night_prev) then
+                           !----- Middle of the night, set the value to zero. -------------!
+                           fperp_prev = 0.
+                           fperp_next = 0.
+                           cgrid%met(ipy)%nir_diffuse = 0.
+                        else
+                           !---------------------------------------------------------------!
+                           !     Daytime: we scale the current time using the previous     !
+                           ! secant and scaling back with the current cosine of zenith     !
+                           ! angle.                                                        !
+                           !---------------------------------------------------------------!
+                           fperp_prev = cgrid%metinput(ipy)%nddsf(mprev) * secz_prev
+                           cgrid%met(ipy)%nir_diffuse = fperp_prev * cgrid%cosz(ipy)
+                        end if
+                        !------------------------------------------------------------------!
+
+
+
+                        !----- Assume all future stuff to be zero, we won't use them. -----!
+                        secz_next               = 0.
+                        night_next              = .true.
+                        fperp_next              = 0.
+                        wprev                   = 1.0
+                        wnext                   = 0.0
+                        mnext                   = mprev
+                        !------------------------------------------------------------------!
+
+                     else
+                        !----- Night time, assign it zero. --------------------------------!
+                        secz_prev                  = 0.
+                        secz_next                  = 0.
+                        night_prev                 = .true.
+                        night_next                 = .true.
+                        fperp_prev                 = 0.
+                        fperp_next                 = 0.
+                        cgrid%met(ipy)%nir_diffuse = 0.0
+                        wprev                      = 0.0
+                        wnext                      = 0.0
+                        mnext                      = mprev
+                        !------------------------------------------------------------------!
+                     end if
+                     !---------------------------------------------------------------------!
+
+
+
+                     !---------------------------------------------------------------------!
+                     !     Print the debugging information if the user wants so.           !
+                     !---------------------------------------------------------------------!
+                     if (print_radinterp) then
+                        call dump_radinfo(cgrid,ipy,mprev,mnext,prevmet_timea              &
+                                         ,nextmet_timea,met_frq(iformat,iv),wprev,wnext    &
+                                         ,secz_prev,secz_next,fperp_prev,fperp_next        &
+                                         ,night_prev,night_next,'nddsf')
+                     end if
+                     !---------------------------------------------------------------------!
+                  end do
+               end select
+               !---------------------------------------------------------------------------!
 
             case('vbdsf')   !----- Visible beam downward shortwave flux. ------ [   W/m²] -!
-               do ipy = 1,cgrid%npolygons
-                  cgrid%met(ipy)%par_beam = cgrid%metinput(ipy)%vbdsf(mprev)
-               end do
+               !---------------------------------------------------------------------------!
+               !    Decide whether to interpolate or not.                                  !
+               !---------------------------------------------------------------------------!
+               select case (met_interp(iformat,iv))
+               case (2,3)
+                  !----- Constant, do not attempt to do any interpolation. ----------------!
+                  do ipy = 1,cgrid%npolygons
+                     cgrid%met(ipy)%par_beam = cgrid%metinput(ipy)%vbdsf(mprev)
+                  end do
+               case (0,4)
+                  do ipy = 1,cgrid%npolygons
+
+                     !---------------------------------------------------------------------!
+                     !     Check whether this is day time or night time.  We should only   !
+                     ! do the full interpolation thing during the day, the night should    !
+                     ! have no incoming radiation until we incorporate fireflies (or a     !
+                     ! good twilight scheme) in the model.                                 !
+                     !---------------------------------------------------------------------!
+                     if (cgrid%cosz(ipy) > cosz_min) then
+                        !------------------------------------------------------------------!
+                        !     Define the normalisation factors for the previous and the    !
+                        ! next time.                                                       !
+                        !------------------------------------------------------------------!
+                        select case (imetavg)
+                        case (0)
+                           secz_prev = mean_daysecz(cgrid%lon(ipy),cgrid%lat(ipy)          &
+                                                   ,prevmet_timea,dt_radinterp,0.)
+                        case default
+                           secz_prev = mean_daysecz(cgrid%lon(ipy),cgrid%lat(ipy)          &
+                                                   ,prevmet_timea,dt_radinterp             &
+                                                   ,met_frq(iformat,iv))
+                        end select
+                        !------------------------------------------------------------------!
+
+
+
+                        !------------------------------------------------------------------!
+                        !     Decide whether we want to use the previous or the next data  !
+                        ! based on both the zenith angle.                                  !
+                        !------------------------------------------------------------------!
+                        night_prev = secz_prev == 0.
+                        !------------------------------------------------------------------!
+
+
+
+
+                        !------------------------------------------------------------------!
+                        !     Decide what to do based on the weighting factors.  This is   !
+                        ! to avoid putting too little or too much energy at noon, dawn,    !
+                        ! and dusk.                                                        !
+                        !------------------------------------------------------------------!
+                        if (night_prev) then
+                           !----- Middle of the night, set the value to zero. -------------!
+                           fperp_prev = 0.
+                           fperp_next = 0.
+                           cgrid%met(ipy)%par_beam = 0.
+                        else
+                           !---------------------------------------------------------------!
+                           !     Daytime: we scale the current time using the previous     !
+                           ! secant and scaling back with the current cosine of zenith     !
+                           ! angle.                                                        !
+                           !---------------------------------------------------------------!
+                           fperp_prev = cgrid%metinput(ipy)%vbdsf(mprev) * secz_prev
+                           cgrid%met(ipy)%par_beam = fperp_prev * cgrid%cosz(ipy)
+                        end if
+                        !------------------------------------------------------------------!
+
+
+
+                        !----- Assume all future stuff to be zero, we won't use them. -----!
+                        secz_next               = 0.
+                        night_next              = .true.
+                        fperp_next              = 0.
+                        wprev                   = 1.0
+                        wnext                   = 0.0
+                        mnext                   = mprev
+                        !------------------------------------------------------------------!
+
+                     else
+                        !----- Night time, assign it zero. --------------------------------!
+                        secz_prev               = 0.
+                        secz_next               = 0.
+                        night_prev              = .true.
+                        night_next              = .true.
+                        fperp_prev              = 0.
+                        fperp_next              = 0.
+                        cgrid%met(ipy)%par_beam = 0.0
+                        wprev                   = 0.0
+                        wnext                   = 0.0
+                        mnext                   = mprev
+                        !------------------------------------------------------------------!
+                     end if
+                     !---------------------------------------------------------------------!
+
+
+
+                     !---------------------------------------------------------------------!
+                     !     Print the debugging information if the user wants so.           !
+                     !---------------------------------------------------------------------!
+                     if (print_radinterp) then
+                        call dump_radinfo(cgrid,ipy,mprev,mnext,prevmet_timea              &
+                                         ,nextmet_timea,met_frq(iformat,iv),wprev,wnext    &
+                                         ,secz_prev,secz_next,fperp_prev,fperp_next        &
+                                         ,night_prev,night_next,'vbdsf')
+                     end if
+                     !---------------------------------------------------------------------!
+                  end do
+               end select
+               !---------------------------------------------------------------------------!
 
             case('vddsf')   !----- Visible diffuse downward shortwave flux. --- [   W/m²] -!
-               do ipy = 1,cgrid%npolygons
-                  cgrid%met(ipy)%par_diffuse = cgrid%metinput(ipy)%vddsf(mprev)
-               end do
+
+               !---------------------------------------------------------------------------!
+               !    Decide whether to interpolate or not.                                  !
+               !---------------------------------------------------------------------------!
+               select case (met_interp(iformat,iv))
+               case (2,3)
+                  !----- Constant, do not attempt to do any interpolation. ----------------!
+                  do ipy = 1,cgrid%npolygons
+                     cgrid%met(ipy)%par_diffuse = cgrid%metinput(ipy)%vddsf(mprev)
+                  end do
+               case (0,4)
+                  do ipy = 1,cgrid%npolygons
+
+                     !---------------------------------------------------------------------!
+                     !     Check whether this is day time or night time.  We should only   !
+                     ! do the full interpolation thing during the day, the night should    !
+                     ! have no incoming radiation until we incorporate fireflies (or a     !
+                     ! good twilight scheme) in the model.                                 !
+                     !---------------------------------------------------------------------!
+                     if (cgrid%cosz(ipy) > cosz_min) then
+                        !------------------------------------------------------------------!
+                        !     Define the normalisation factors for the previous and the    !
+                        ! next time.                                                       !
+                        !------------------------------------------------------------------!
+                        select case (imetavg)
+                        case (0)
+                           secz_prev = mean_daysecz(cgrid%lon(ipy),cgrid%lat(ipy)          &
+                                                   ,prevmet_timea,dt_radinterp,0.)
+                        case default
+                           secz_prev = mean_daysecz(cgrid%lon(ipy),cgrid%lat(ipy)          &
+                                                   ,prevmet_timea,dt_radinterp             &
+                                                   ,met_frq(iformat,iv))
+                        end select
+                        !------------------------------------------------------------------!
+
+
+
+                        !------------------------------------------------------------------!
+                        !     Decide whether we want to use the previous or the next data  !
+                        ! based on both the zenith angle.                                  !
+                        !------------------------------------------------------------------!
+                        night_prev = secz_prev == 0.
+                        !------------------------------------------------------------------!
+
+
+
+
+                        !------------------------------------------------------------------!
+                        !     Decide what to do based on the weighting factors.  This is   !
+                        ! to avoid putting too little or too much energy at noon, dawn,    !
+                        ! and dusk.                                                        !
+                        !------------------------------------------------------------------!
+                        if (night_prev) then
+                           !----- Middle of the night, set the value to zero. -------------!
+                           fperp_prev = 0.
+                           fperp_next = 0.
+                           cgrid%met(ipy)%par_diffuse = 0.
+                        else
+                           !---------------------------------------------------------------!
+                           !     Daytime: we scale the current time using the previous     !
+                           ! secant and scaling back with the current cosine of zenith     !
+                           ! angle.                                                        !
+                           !---------------------------------------------------------------!
+                           fperp_prev = cgrid%metinput(ipy)%vddsf(mprev) * secz_prev
+                           cgrid%met(ipy)%par_diffuse = fperp_prev * cgrid%cosz(ipy)
+                        end if
+                        !------------------------------------------------------------------!
+
+
+
+                        !----- Assume all future stuff to be zero, we won't use them. -----!
+                        secz_next               = 0.
+                        night_next              = .true.
+                        fperp_next              = 0.
+                        wprev                   = 1.0
+                        wnext                   = 0.0
+                        mnext                   = mprev
+                        !------------------------------------------------------------------!
+
+                     else
+                        !----- Night time, assign it zero. --------------------------------!
+                        secz_prev                  = 0.
+                        secz_next                  = 0.
+                        night_prev                 = .true.
+                        night_next                 = .true.
+                        fperp_prev                 = 0.
+                        fperp_next                 = 0.
+                        cgrid%met(ipy)%par_diffuse = 0.0
+                        wprev                      = 0.0
+                        wnext                      = 0.0
+                        mnext                      = mprev
+                        !------------------------------------------------------------------!
+                     end if
+                     !---------------------------------------------------------------------!
+
+
+
+                     !---------------------------------------------------------------------!
+                     !     Print the debugging information if the user wants so.           !
+                     !---------------------------------------------------------------------!
+                     if (print_radinterp) then
+                        call dump_radinfo(cgrid,ipy,mprev,mnext,prevmet_timea              &
+                                         ,nextmet_timea,met_frq(iformat,iv),wprev,wnext    &
+                                         ,secz_prev,secz_next,fperp_prev,fperp_next        &
+                                         ,night_prev,night_next,'vddsf')
+                     end if
+                     !---------------------------------------------------------------------!
+                  end do
+               end select
+               !---------------------------------------------------------------------------!
 
             case('prate')   !----- Precipitation rate. ------------------------ [kg/m²/s] -!
                do ipy = 1,cgrid%npolygons
