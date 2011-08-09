@@ -27,11 +27,25 @@ module canopy_radiation_coms
 
 
    !---------------------------------------------------------------------------------------!
-   !     Leaf angle distribution parameter (dimensionless).  Let mu' be the cosine of leaf !
-   ! angle and G(mu') be the distribution of mu'.  Then, mubar = (integral from 0 to 1)    !
-   ! (d mu'   mu' / G(mu')).  See, for example, Dickinson 1983.                            !
+   !     The following variables are temporary namelist variables used to control the      !
+   ! radiation properties of leaves.                                                       !
+   ! LTRANS_VIS   -- Leaf transmittance on visible.                                        !
+   ! LTRANS_NIR   -- Leaf transmittance on near infrared.                                  !
+   ! LREFLECT_VIS -- Leaf reflectance on visible.                                          !
+   ! LREFLECT_NIR -- Leaf reflectance on near infrared.                                    !
+   ! ORIENT_TREE  -- Leaf orientation parameter for tropical trees                         !
+   ! ORIENT_GRASS -- Leaf orientation parameter for tropical grasses                       !
+   ! CLUMP_TREE   -- Leaf clumping factor for tropical trees                               !
+   ! CLUMP_GRASS  -- Leaf clumping factor for tropical grasses                             !
    !---------------------------------------------------------------------------------------!
-   real(kind=8) :: mu_bar_lw
+   real :: ltrans_vis
+   real :: ltrans_nir
+   real :: lreflect_vis
+   real :: lreflect_nir
+   real :: orient_tree
+   real :: orient_grass
+   real :: clump_tree
+   real :: clump_grass
    !---------------------------------------------------------------------------------------!
 
 
@@ -95,9 +109,16 @@ module canopy_radiation_coms
    !                     0 -- leaves are randomly oriented                                 !
    !                     1 -- all leaves are perfectly horizontal                          !
    !                    -1 -- all leaves are perfectly vertical.                           !
+   ! PHI1            - The phi1 term from the CLM technical manual                         !
+   ! PHI2            - The phi2 term from the CLM technical manual                         !
+   ! MU_BAR          - average cosine of incidence angle for hemispheric (diffuse)         !
+   !                   radiation (for both short wave and long wave)                       !
    !---------------------------------------------------------------------------------------!
    real(kind=8), dimension(n_pft) :: clumping_factor
    real(kind=8), dimension(n_pft) :: orient_factor
+   real(kind=8), dimension(n_pft) :: phi1
+   real(kind=8), dimension(n_pft) :: phi2
+   real(kind=8), dimension(n_pft) :: mu_bar
    !---------------------------------------------------------------------------------------!
 
 

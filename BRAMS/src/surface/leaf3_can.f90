@@ -171,7 +171,7 @@ subroutine leaf3_canopy(mzg,mzs,ksn,soil_energy,soil_water,soil_text,sfcwater_ma
    else
       ggveg = huge_num
    end if
-   ggnet    = ggfact * ggbare * ggveg / (ggbare + ggveg)
+   ggnet    = ggbare * ggveg / (ggbare + ggveg)
    !---------------------------------------------------------------------------------------!
 
 

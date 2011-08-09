@@ -30,7 +30,6 @@ subroutine leaf3_stars(theta_atm,theiv_atm,shv_atm,rvap_atm,co2_atm             
                         , epim1      & ! intent(in)
                         , halfpi     ! ! intent(in)
    use leaf_coms , only : ustmin     & ! intent(in)
-                        , ggfact     & ! intent(in)
                         , bl79       & ! intent(in)
                         , csm        & ! intent(in)
                         , csh        & ! intent(in)
@@ -380,8 +379,7 @@ subroutine leaf3_grndvap(topsoil_energy,topsoil_water,topsoil_text,sfcwater_ener
    use therm_lib  , only : rslif       & ! function
                          , qwtk        & ! function
                          , qtk         ! ! function
-   use mem_leaf   , only : igrndvap    & ! intent(in)
-                         , betapower   ! ! intent(in)
+   use mem_leaf   , only : igrndvap    ! ! intent(in)
 
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
@@ -450,11 +448,10 @@ subroutine leaf3_grndvap(topsoil_energy,topsoil_water,topsoil_text,sfcwater_ener
       ! shut down when the soil approaches the dry air soil moisture, we offset both the   !
       ! soil moisture and field capacity to the soil moisture above dry air soil.  This is !
       ! necessary to avoid evaporation to be large just slightly above the dry air soil,   !
-      ! which was happening especially for those clay-rich soil types.  To switch the      !
-      ! power to the same as LP92/LP93, set betapower to 2.                                !
+      ! which was happening especially for those clay-rich soil types.                     !
       !------------------------------------------------------------------------------------!
       smterm     = (topsoil_water - soilcp(nsoil)) / (sfldcap(nsoil) - soilcp(nsoil))
-      beta       = (.5 * (1. - cos (min(1.,smterm) * pi1))) ** betapower
+      beta       = .5 * (1. - cos (min(1.,smterm) * pi1))
       !------------------------------------------------------------------------------------!
 
 

@@ -20,7 +20,6 @@ subroutine ed_coup_driver()
                             , imoutput            & ! intent(in)
                             , iqoutput            & ! intent(in)
                             , iyoutput            & ! intent(in)
-                            , integration_scheme  & ! intent(in)
                             , runtype             ! ! intent(in)
    use ed_work_vars  , only : ed_dealloc_work     & ! subroutine
                             , work_e              ! ! intent(inout)

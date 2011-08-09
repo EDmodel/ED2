@@ -43,7 +43,6 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
                                     , reducedpress8          ! ! function
    use soil_coms             , only : soil8                  ! ! intent(in)
    use ed_therm_lib          , only : ed_grndvap8            ! ! subroutine
-   use canopy_air_coms       , only : i_blyr_condct          ! ! intent(in)
    use canopy_struct_dynamics, only : canopy_turbulence8     ! ! subroutine
    implicit none
 
@@ -3369,10 +3368,14 @@ subroutine print_rk4_state(initp,fluxp,csite,ipa,elapsed,hdid)
    real(kind=8)                       :: avg_wood_temp
    real(kind=8)                       :: avg_wood_fliq
    real(kind=8)                       :: sfc_temp
+   real(kind=8)                       :: par_b_beam
+   real(kind=8)                       :: par_b_diff
+   real(kind=8)                       :: nir_b_beam
+   real(kind=8)                       :: nir_b_diff
    real(kind=8)                       :: elapsec
    !----- Local constants. ----------------------------------------------------------------!
-   character(len=10), parameter :: phfmt='(74(a,1x))'
-   character(len=48), parameter :: pbfmt='(3(i13,1x),4(es13.6,1x),3(i13,1x),64(es13.6,1x))'
+   character(len=10), parameter :: phfmt='(82(a,1x))'
+   character(len=48), parameter :: pbfmt='(3(i13,1x),4(es13.6,1x),3(i13,1x),72(es13.6,1x))'
    character(len=10), parameter :: chfmt='(57(a,1x))'
    character(len=48), parameter :: cbfmt='(3(i13,1x),2(es13.6,1x),3(i13,1x),49(es13.6,1x))'
    !----- Locally saved variables. --------------------------------------------------------!
@@ -3461,6 +3464,10 @@ subroutine print_rk4_state(initp,fluxp,csite,ipa,elapsed,hdid)
    end do
    !---------------------------------------------------------------------------------------!
 
+   par_b_beam = dble(csite%par_b_beam   (ipa))
+   par_b_diff = dble(csite%par_b_diffuse(ipa))
+   nir_b_beam = dble(csite%nir_b_beam   (ipa))
+   nir_b_diff = dble(csite%nir_b_diffuse(ipa))
 
 
    !---------------------------------------------------------------------------------------!
@@ -3543,14 +3550,17 @@ subroutine print_rk4_state(initp,fluxp,csite,ipa,elapsed,hdid)
                                , '    SOIL.TEMP', '   SOIL.WATER', '       SOILCP'         &
                                , '       SOILWP', '       SOILFC', '       SLMSTS'         &
                                , '        USTAR', '        TSTAR', '        QSTAR'         &
-                               , '        CSTAR', '         ZETA', '      RI_BULK'         &
+                               , '        CSTAR', '         ZETA', '      RI.BULK'         &
                                , '   GND.RSHORT', '    GND.RLONG', '       WFLXLC'         &
                                , '       WFLXWC', '       DEWGND', '       WFLXGC'         &
                                , '       WFLXAC', '       TRANSP', '        WSHED'         &
                                , '    INTERCEPT', '  THROUGHFALL', '       HFLXGC'         &
                                , '       HFLXLC', '       HFLXWC', '       HFLXAC'         &
                                , '       CFLXAC', '        CWDRH', '       SOILRH'         &
-                               , '          GPP', '       PLRESP'
+                               , '          GPP', '       PLRESP', ' PAR.BEAM.TOP'         &
+                               , ' PAR.DIFF.TOP', ' NIR.BEAM.TOP', ' NIR.DIFF.TOP'         &
+                               , ' PAR.BEAM.BOT', ' PAR.DIFF.BOT', ' NIR.BEAM.BOT'         &
+                               , ' NIR.DIFF.BOT'
                                
                                
                                
@@ -3590,9 +3600,11 @@ subroutine print_rk4_state(initp,fluxp,csite,ipa,elapsed,hdid)
                    , fluxp%flx_intercepted , fluxp%flx_throughfall , fluxp%flx_sensible_gc &
                    , fluxp%flx_sensible_lc , fluxp%flx_sensible_wc , fluxp%flx_sensible_ac &
                    , fluxp%flx_carbon_ac   , initp%cwd_rh          , soil_rh               &
-                   , sum_gpp               , sum_plresp
-                   
-                   
+                   , sum_gpp               , sum_plresp            , rk4site%par_beam      &
+                   , rk4site%par_diffuse   , rk4site%nir_beam      , rk4site%nir_diffuse   &
+                   , par_b_beam            , par_b_diff            , nir_b_beam            &
+                   , nir_b_diff
+
    close(unit=83,status='keep')
    !---------------------------------------------------------------------------------------!
 

@@ -20,8 +20,7 @@ subroutine copy_lake_init(i,j,ifm,initp)
    use leaf_coms             , only : min_waterrough8  & ! intent(in)
                                     , z0fac_water8     & ! intent(in)
                                     , can_depth_min    ! ! intent(in)
-   use canopy_air_coms       , only : ustmin8          & ! intent(in)
-                                    , ggfact8          ! ! intent(in)
+   use canopy_air_coms       , only : ustmin8          ! ! intent(in)
    use canopy_struct_dynamics, only : ed_stars8        & ! intent(in)
                                     , can_whcap8       ! ! intent(in)
    implicit none
@@ -92,7 +91,6 @@ subroutine copy_lake_init(i,j,ifm,initp)
    !      Apply the conductance factor (should be removed soon).  Also, update the rough-  !
    ! ness so next time we use we have the most up to date value.                           !
    !---------------------------------------------------------------------------------------!
-   initp%gglake     = ggfact8 * initp%gglake
    initp%lake_rough = max(z0fac_water8 * initp%ustar * initp%ustar, min_waterrough8)
    !---------------------------------------------------------------------------------------!
 
@@ -156,8 +154,7 @@ subroutine lake_diagnostics(initp)
    use leaf_coms             , only : min_waterrough8       & ! intent(in)
                                     , z0fac_water8          & ! intent(in)
                                     , can_depth_min         ! ! intent(in)
-   use canopy_air_coms       , only : ustmin8               & ! intent(in)
-                                    , ggfact8               ! ! intent(in)
+   use canopy_air_coms       , only : ustmin8               ! ! intent(in)
    use canopy_struct_dynamics, only : ed_stars8             & ! intent(in)
                                     , can_whcap8            ! ! intent(in)
    implicit none
@@ -330,7 +327,6 @@ subroutine lake_diagnostics(initp)
       !      Apply the conductance factor (should be removed soon).  Also, update the      !
       ! roughness so next time we use we have the most up to date value.                   !
       !------------------------------------------------------------------------------------!
-      initp%gglake     = ggfact8 * initp%gglake
       initp%lake_rough = max(z0fac_water8 * initp%ustar * initp%ustar,min_waterrough8)
       !------------------------------------------------------------------------------------!
 

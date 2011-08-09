@@ -522,6 +522,20 @@ $ED_NL
 
 
    !---------------------------------------------------------------------------------------!
+   ! IVEGT_DYNAMICS -- The vegetation dynamics scheme.                                     !
+   !                   0.  No vegetation dynamics, the initial state will be preserved,    !
+   !                       even though the model will compute the potential values.  This  !
+   !                       option is useful for theoretical simulations only.              !
+   !                   1.  Normal ED vegetation dynamics (Moorcroft et al 2001).           !
+   !                       The normal option for almost any simulation.                    !
+   !---------------------------------------------------------------------------------------!
+   NL%IVEGT_DYNAMICS = 1
+   !---------------------------------------------------------------------------------------!
+
+
+
+
+   !---------------------------------------------------------------------------------------!
    ! INTEGRATION_SCHEME -- The biophysics integration scheme.                              !
    !                       0.  Euler step.  The fastest, but it doesn't estimate           !
    !                           errors.                                                     !
@@ -684,20 +698,50 @@ $ED_NL
    !              1.  Dietze (2008) model.  Cohorts have a finite radius, and cohorts are  !
    !                  stacked on the top of each other.                                    !
    !---------------------------------------------------------------------------------------!
-   NL%CROWN_MOD       = 1
+   NL%CROWN_MOD       = 0
    !---------------------------------------------------------------------------------------!
 
 
 
    !---------------------------------------------------------------------------------------!
-   ! ICANRAD -- Specifies how canopy radiation is solved.  This variable sets both short-  !
-   !            wave and longwave.                                                         !
-   !              0.  Two-stream model (Medvigy 2006), with the possibility to apply       !
-   !                  finite crown area to direct shortwave radiation.                     !
-   !              1.  Multiple-scattering model (Zhao and Qualls 2005,2006), with the      !
-   !                  possibility to apply finite crown area to all radiation fluxes.      !
+   !      The following variables control the canopy radiation solver.                     !
+   !                                                                                       !
+   ! ICANRAD      -- Specifies how canopy radiation is solved.  This variable sets both    !
+   !                 shortwave and longwave.                                               !
+   !                 0.  Two-stream model (Medvigy 2006), with the possibility to apply    !
+   !                     finite crown area to direct shortwave radiation.                  !
+   !                 1.  Multiple-scattering model (Zhao and Qualls 2005,2006), with the   !
+   !                     possibility to apply finite crown area to all radiation fluxes.   !
+   ! LTRANS_VIS   -- Leaf transmittance for tropical plants - Visible/PAR                  !
+   ! LTRANS_NIR   -- Leaf transmittance for tropical plants - Near Infrared                !
+   ! LREFLECT_VIS -- Leaf reflectance for tropical plants - Visible/PAR                    !
+   ! LREFLECT_NIR -- Leaf reflectance for tropical plants - Near Infrared                  !
+   ! ORIENT_TREE  -- Leaf orientation factor for tropical trees.  Extremes are:            !
+   !                 -1.  All leaves are oriented in the vertical                          !
+   !                  0.  Leaf orientation is perfectly random                             !
+   !                  1.  All leaves are oriented in the horizontal                        !
+   !                  In practice, acceptable values range from -0.4 and 0.6               !
+   ! ORIENT_GRASS -- Leaf orientation factor for tropical grasses.  Extremes are:          !
+   !                 -1.  All leaves are oriented in the vertical                          !
+   !                  0.  Leaf orientation is perfectly random                             !
+   !                  1.  All leaves are oriented in the horizontal                        !
+   !                  In practice, acceptable values range from -0.4 and 0.6               !
+   ! CLUMP_TREE   -- Clumping factor for tropical trees.  Extremes are:                    !
+   !                 lim -> 0.  Black hole (0 itself is unacceptable)                      !
+   !                        1.  Homogeneously spread over the layer (i.e., no clumping)    !
+   ! CLUMP_GRASS  -- Clumping factor for tropical grasses.  Extremes are:                  !
+   !                 lim -> 0.  Black hole (0 itself is unacceptable)                      !
+   !                        1.  Homogeneously spread over the layer (i.e., no clumping)    !
    !---------------------------------------------------------------------------------------!
-   NL%ICANRAD        = 0
+   NL%ICANRAD        =      0
+   NL%LTRANS_VIS     =  0.028
+   NL%LTRANS_NIR     =  0.248
+   NL%LREFLECT_VIS   =  0.062
+   NL%LREFLECT_NIR   =  0.630
+   NL%ORIENT_TREE    =  0.250
+   NL%ORIENT_GRASS   = -0.300
+   NL%CLUMP_TREE     =  1.000
+   NL%CLUMP_GRASS    =  1.000
    !---------------------------------------------------------------------------------------!
 
 
@@ -733,14 +777,16 @@ $ED_NL
    ! parameters.  Setting them to 1.0 will make them the default.  These are applied       !
    ! mostly to tropical C3 plants.                                                         !
    !                                                                                       !
-   ! VMFACT    -- Factor multiplying the default Vm0                                       !
-   ! MFACT     -- Factor multiplying the stomatal slope M.                                 !
-   ! KFACT     -- Factor multiplying the water conductance Kw.  This is used only when     !
-   !              H2O_PLANT_LIM = 1.                                                       !
-   ! GAMFACT   -- Factor multiplying the dark respiration factor (gamma)                   !
-   ! D0FACT    -- Factor multiplying the transpiration control in gsw (D0)                 !
-   ! ALPHAFACT -- Factor for changing the quantum yield of C3 plants.  This is only        !
-   !              applied when QUANTUM_EFFICIENCY_T = 0.                                   !
+   ! VMFACT     -- Factor multiplying the default Vm0                                      !
+   ! MFACT      -- Factor multiplying the stomatal slope M.                                !
+   ! KFACT      -- Factor multiplying the water conductance Kw.  This is used only when    !
+   !               H2O_PLANT_LIM = 1.                                                      !
+   ! GAMFACT    -- Factor multiplying the dark respiration factor (gamma)                  !
+   ! D0FACT     -- Factor multiplying the transpiration control in gsw (D0)                !
+   ! ALPHAFACT  -- Factor for changing the quantum yield of C3 plants.  This is only       !
+   !               applied when QUANTUM_EFFICIENCY_T = 0.                                  !
+   ! RRFFACT    -- Factor multiplying the root respiration factor.                         !
+   ! GROWTHRESP -- The actual growth respiration factor (tropical PFTs only).              !
    !---------------------------------------------------------------------------------------!
    NL%VMFACT          = 1.6
    NL%MFACT           = 1.125
@@ -748,6 +794,8 @@ $ED_NL
    NL%GAMFACT         = 0.75
    NL%D0FACT          = 1.00
    NL%ALPHAFACT       = 1.00
+   NL%RRFFACT         = 1.00
+   NL%GROWTHRESP      = 0.33333333333333
    !---------------------------------------------------------------------------------------!
 
 
@@ -764,20 +812,6 @@ $ED_NL
    !                       is above -1.5.                                                  !
    !---------------------------------------------------------------------------------------!
    NL%THETACRIT       = -0.75
-   !---------------------------------------------------------------------------------------!
-
-
-
-
-   !---------------------------------------------------------------------------------------!
-   ! LWFACT    -- Factor for changing the leaf width (w)                                   !
-   ! THIOFF    -- Offset to be added to the Vm_high_temp                                   !
-   ! GGFACT    -- factor to multiply the ground to canopy conductance.  Default value      !
-   !              is 1.0.                                                                  !
-   !---------------------------------------------------------------------------------------!
-   NL%LWFACT          = 1.
-   NL%THIOFF          = 0.
-   NL%GGFACT          = 1.
    !---------------------------------------------------------------------------------------!
 
 
@@ -834,7 +868,7 @@ $ED_NL
    !                          greater than this value.                                     !
    !---------------------------------------------------------------------------------------!
    NL%INCLUDE_FIRE    = 2
-   NL%SM_FIRE         = 0.11
+   NL%SM_FIRE         = -1.40
    !---------------------------------------------------------------------------------------!
 
 
@@ -864,21 +898,6 @@ $ED_NL
    !                 the drag and sheltering within the canopy.                            !
    !---------------------------------------------------------------------------------------!
    NL%ICANTURB        = 0
-   !---------------------------------------------------------------------------------------!
-
-
-   !---------------------------------------------------------------------------------------!
-   ! I_BLYR_CONDCT -- This flag controls the boundary layer conductance.  This is for      !
-   !                  tests only and should be removed soon, so unless you know what you   !
-   !                  are doing, leave it as zero.                                         !
-   !                  0.  The Nusselt number for forced convection is estimated using the  !
-   !                      average winds, with no corrections                               !
-   !                  1.  The actual Nusselt number for forced convection is multiplied by !
-   !                      2.5 as the Reynolds number gets close or greater than 10,000.    !
-   !                  2.  The actual Nusselt number for forced convection is multiplied by !
-   !                      10. as the Reynolds number gets close or greater than 10,000.    !
-   !---------------------------------------------------------------------------------------!
-   NL%I_BLYR_CONDCT   = 0
    !---------------------------------------------------------------------------------------!
 
 
@@ -922,27 +941,11 @@ $ED_NL
 
 
    !---------------------------------------------------------------------------------------!
-   !     The following variables are used to control the similarity theory model.  For the !
-   ! meaning of these parameters, check Beljaars and Holtslag (1991).                      !
-   ! GAMM        -- gamma coefficient for momentum, unstable case (dimensionless)          !
-   !                Ignored when ISTAR = 1                                                 !
-   ! GAMH        -- gamma coefficient for heat, unstable case (dimensionless)              !
-   !                Ignored when ISTAR = 1                                                 !
-   ! TPRANDTL    -- Turbulent Prandtl number                                               !
-   !                Ignored when ISTAR = 1                                                 !
-   ! VH2VR       -- Ratio between vegetation roughness and vegetation height.              !
-   !                Ignored when ISFCL = 5 and ICANTURB = 2 or 3.                          !
-   ! VH2DH       -- Ratio between 0-plane displacement height and vegetation height.       !
-   !                Ignored when ISFCL = 5 and ICANTURB = 2 or 3.                          !
-   ! RIBMAX      -- maximum bulk Richardson number.                                        !
+   ! RIBMAX   -- maximum bulk Richardson numberm used for controlling stable fluxes in the !
+   !             similarity theory model.                                                  !
    ! LEAF_MAXWHC -- Maximum water that can be intercepted by leaves, in kg/m2leaf.         !
    !---------------------------------------------------------------------------------------!
-   NL%GAMM            = 13.
-   NL%GAMH            = 13.
-   NL%TPRANDTL        = 0.74
-   NL%VH2VR           = 0.13
-   NL%VH2DH           = 0.63
-   NL%RIBMAX          = 1.00
+   NL%RIBMAX          = 0.25
    NL%LEAF_MAXWHC     = 0.11
    !---------------------------------------------------------------------------------------!
 
@@ -1078,15 +1081,6 @@ $ED_NL
 
 
 
-   !---------------------------------------------------------------------------------------!
-   ! BETAPOWER -- power to apply in the ground evaporation model (see IED_GRNDVAP          !
-   !              references).  Default value is 1.0.                                      !
-   !---------------------------------------------------------------------------------------!
-   NL%BETAPOWER      = 1.0
-   !---------------------------------------------------------------------------------------!
-
-
-
 
    !---------------------------------------------------------------------------------------!
    !  USTMIN -- minimum friction velocity, u*, in m/s.                                     !
@@ -1140,7 +1134,10 @@ $ED_NL
    !                   the  model is run.                                                  !
    ! IMETCYC1    -- First year with meteorological information                             !
    ! IMETCYCF    -- Last year with meteorological information                              !
-   ! IMETAVG     -- How the input radiation was originally averaged.                       !
+   ! IMETAVG     -- How the input radiation was originally averaged.  You must tell this   !
+   !                because ED-2.1 can make a interpolation accounting for the cosine of   !
+   !                zenith angle.                                                          !
+   !               -1.  I don't know, use linear interpolation.                            !
    !                0.  No average, the values are instantaneous                           !
    !                1.  Averages ending at the reference time                              !
    !                2.  Averages beginning at the reference time                           !

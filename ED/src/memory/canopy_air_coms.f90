@@ -46,16 +46,6 @@ module canopy_air_coms
                             !  3. Test # 3 of Mahfouf and Noilhan (1991)
                             !  4. Test # 4 of Mahfouf and Noilhan (1991)
 
-   integer :: i_blyr_condct ! Methods to estimate the leaf boundary layer conductance:
-                            !  0. The Nusselt number for forced convection is estimated
-                            !     using the average winds, with no corrections
-                            !  1. The actual Nusselt number for forced convection is 
-                            !     multiplied by 2.5 as the Reynolds number gets close or
-                            !     greater than 10,000.
-                            !  2. The actual Nusselt number for forced convection is 
-                            !     multiplied by 10. as the Reynolds number gets close or
-                            !     greater than 10,000.
-
    real :: leaf_maxwhc      !   Maximum amount of water that can stay on top of the leaf
                             ! surface.  If this amount is reached, the leaf stops collect-
                             ! ing water, thus increasing the through fall fraction.  This 
@@ -65,8 +55,6 @@ module canopy_air_coms
 
    !----- Minimum Ustar [m/s]. ------------------------------------------------------------!
    real         :: ustmin
-   !----- Factor to be applied to the ground->canopy conductance. -------------------------!
-   real         :: ggfact
    !----- Used by OD95 and BH91. ----------------------------------------------------------!
    real   :: gamm        ! Gamma for momentum.
    real   :: gamh        ! Gamma for heat.
@@ -101,7 +89,6 @@ module canopy_air_coms
    real(kind=8) :: ubmin8
    real(kind=8) :: ez8
    real(kind=8) :: vh2dh8
-   real(kind=8) :: ggfact8
    real(kind=8) :: rasveg_min8
    real(kind=8) :: taumin8
    !=======================================================================================!
@@ -232,26 +219,6 @@ module canopy_air_coms
 
    real(kind=8)            :: beta_lami8  ! Correction term for Nusselt #, laminar flow
    real(kind=8)            :: beta_turb8  ! Correction term for Nusselt #, turbulent flow
-
-   !---------------------------------------------------------------------------------------!
-   !     Both free and forced convection tend to underestimate the Nusselt number under    !
-   ! different conditions.  Based on M08 review on the subject, I wrote the following      !
-   ! functional form to expand the Nusselt number by a factor beta:                        !
-   ! - beta_forced = R1 + R2 * tanh[log(Re/Re0)]                                           !
-   ! - beta_free   = G1 + G2 * tanh[log(Gr/Gr0)]                                           !
-   !---------------------------------------------------------------------------------------!
-   real                    :: beta_r1
-   real                    :: beta_r2
-   real                    :: beta_re0
-   real                    :: beta_g1
-   real                    :: beta_g2
-   real                    :: beta_gr0
-   real(kind=8)            :: beta_r18
-   real(kind=8)            :: beta_r28
-   real(kind=8)            :: beta_re08
-   real(kind=8)            :: beta_g18
-   real(kind=8)            :: beta_g28
-   real(kind=8)            :: beta_gr08
    !=======================================================================================!
    !=======================================================================================!
 

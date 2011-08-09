@@ -866,7 +866,25 @@ module ed_state_vars
      
      ! Short wave radiation absorbed by the ground, diffuse component (W/m2)
      real , pointer,dimension(:) :: rshort_g_diffuse
-     
+
+     ! Photosynthetically active radiation incident at the ground(W/m2)
+     real , pointer,dimension(:) :: par_b
+
+     ! Photosynthetically active radiation incident at the ground, beam component (W/m2)
+     real , pointer,dimension(:) :: par_b_beam
+
+     ! Photosynthetically active radiation incident at the ground, diffuse component (W/m2)
+     real , pointer,dimension(:) :: par_b_diffuse
+
+     ! Near infrared radiation incident at the ground(W/m2)
+     real , pointer,dimension(:) :: nir_b
+
+     ! Near infrared radiation incident at the ground, beam component (W/m2)
+     real , pointer,dimension(:) :: nir_b_beam
+
+     ! Near infrared radiation incident at the ground, diffuse component (W/m2)
+     real , pointer,dimension(:) :: nir_b_diffuse
+
      ! Long wave radiation absorbed by the ground (W/m2)
      real , pointer,dimension(:) :: rlong_g
 
@@ -3054,6 +3072,12 @@ contains
     allocate(csite%rshort_g(npatches))
     allocate(csite%rshort_g_beam(npatches))
     allocate(csite%rshort_g_diffuse(npatches))
+    allocate(csite%par_b(npatches))
+    allocate(csite%par_b_beam(npatches))
+    allocate(csite%par_b_diffuse(npatches))
+    allocate(csite%nir_b(npatches))
+    allocate(csite%nir_b_beam(npatches))
+    allocate(csite%nir_b_diffuse(npatches))
     allocate(csite%rlong_g(npatches))
     allocate(csite%rlong_g_surf(npatches))
     allocate(csite%rlong_g_incid(npatches))
@@ -4244,6 +4268,12 @@ contains
     nullify(csite%rshort_g)
     nullify(csite%rshort_g_beam)
     nullify(csite%rshort_g_diffuse)
+    nullify(csite%par_b)
+    nullify(csite%par_b_beam)
+    nullify(csite%par_b_diffuse)
+    nullify(csite%nir_b)
+    nullify(csite%nir_b_beam)
+    nullify(csite%nir_b_diffuse)
     nullify(csite%rlong_g)
     nullify(csite%rlong_g_surf)
     nullify(csite%rlong_g_incid)
@@ -5409,6 +5439,12 @@ contains
     if(associated(csite%rshort_g                     )) deallocate(csite%rshort_g                     )
     if(associated(csite%rshort_g_beam                )) deallocate(csite%rshort_g_beam                )
     if(associated(csite%rshort_g_diffuse             )) deallocate(csite%rshort_g_diffuse             )
+    if(associated(csite%par_b                        )) deallocate(csite%par_b                        )
+    if(associated(csite%par_b_beam                   )) deallocate(csite%par_b_beam                   )
+    if(associated(csite%par_b_diffuse                )) deallocate(csite%par_b_diffuse                )
+    if(associated(csite%nir_b                        )) deallocate(csite%nir_b                        )
+    if(associated(csite%nir_b_beam                   )) deallocate(csite%nir_b_beam                   )
+    if(associated(csite%nir_b_diffuse                )) deallocate(csite%nir_b_diffuse                )
     if(associated(csite%rlong_g                      )) deallocate(csite%rlong_g                      )
     if(associated(csite%rlong_g_surf                 )) deallocate(csite%rlong_g_surf                 )
     if(associated(csite%rlong_g_incid                )) deallocate(csite%rlong_g_incid                )
@@ -5872,6 +5908,12 @@ contains
          osite%rshort_g(opa)                    = isite%rshort_g(ipa)
          osite%rshort_g_beam(opa)               = isite%rshort_g_beam(ipa)
          osite%rshort_g_diffuse(opa)            = isite%rshort_g_diffuse(ipa)
+         osite%par_b(opa)                       = isite%par_b(ipa)
+         osite%par_b_beam(opa)                  = isite%par_b_beam(ipa)
+         osite%par_b_diffuse(opa)               = isite%par_b_diffuse(ipa)
+         osite%nir_b(opa)                       = isite%nir_b(ipa)
+         osite%nir_b_beam(opa)                  = isite%nir_b_beam(ipa)
+         osite%nir_b_diffuse(opa)               = isite%nir_b_diffuse(ipa)
          osite%rlong_g(opa)                     = isite%rlong_g(ipa)
          osite%rlong_g_surf(opa)                = isite%rlong_g_surf(ipa)
          osite%rlong_g_incid(opa)               = isite%rlong_g_incid(ipa)
@@ -6192,6 +6234,12 @@ contains
     siteout%rshort_g(1:inc)             = pack(sitein%rshort_g,logmask)
     siteout%rshort_g_beam(1:inc)        = pack(sitein%rshort_g_beam,logmask)
     siteout%rshort_g_diffuse(1:inc)     = pack(sitein%rshort_g_diffuse,logmask)
+    siteout%par_b(1:inc)                = pack(sitein%par_b,logmask)
+    siteout%par_b_beam(1:inc)           = pack(sitein%par_b_beam,logmask)
+    siteout%par_b_diffuse(1:inc)        = pack(sitein%par_b_diffuse,logmask)
+    siteout%nir_b(1:inc)                = pack(sitein%nir_b,logmask)
+    siteout%nir_b_beam(1:inc)           = pack(sitein%nir_b_beam,logmask)
+    siteout%nir_b_diffuse(1:inc)        = pack(sitein%nir_b_diffuse,logmask)
     siteout%rlong_g(1:inc)              = pack(sitein%rlong_g,logmask)
     siteout%rlong_g_surf(1:inc)         = pack(sitein%rlong_g_surf,logmask)
     siteout%rlong_g_incid(1:inc)        = pack(sitein%rlong_g_incid,logmask)
@@ -6296,7 +6344,7 @@ contains
        siteout%rshort_s_beam(k,1:inc)    = pack(sitein%rshort_s_beam(k,:),logmask)
        siteout%rshort_s_diffuse(k,1:inc) = pack(sitein%rshort_s_diffuse(k,:),logmask)
        siteout%sfcwater_tempk(k,1:inc)   = pack(sitein%sfcwater_tempk(k,:),logmask)
-       siteout%sfcwater_fracliq(k,1:inc)  = pack(sitein%sfcwater_fracliq(k,:),logmask)
+       siteout%sfcwater_fracliq(k,1:inc) = pack(sitein%sfcwater_fracliq(k,:),logmask)
     end do
 
     ! Soil layers 1:nzg
@@ -12451,6 +12499,48 @@ contains
          nvar=nvar+1
            call vtable_edio_r(npts,csite%rshort_g_diffuse,nvar,igr,init,csite%paglob_id, &
            var_len,var_len_global,max_ptrs,'RSHORT_G_DIFFUSE :31:hist') 
+         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+      end if
+
+      if (associated(csite%par_b)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,csite%par_b,nvar,igr,init,csite%paglob_id, &
+           var_len,var_len_global,max_ptrs,'PAR_B :31:hist') 
+         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+      end if
+
+      if (associated(csite%par_b_beam)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,csite%par_b_beam,nvar,igr,init,csite%paglob_id, &
+           var_len,var_len_global,max_ptrs,'PAR_B_BEAM :31:hist') 
+         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+      end if
+
+      if (associated(csite%par_b_diffuse)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,csite%par_b_diffuse,nvar,igr,init,csite%paglob_id, &
+           var_len,var_len_global,max_ptrs,'PAR_B_DIFFUSE :31:hist') 
+         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+      end if
+
+      if (associated(csite%nir_b)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,csite%nir_b,nvar,igr,init,csite%paglob_id, &
+           var_len,var_len_global,max_ptrs,'NIR_B :31:hist') 
+         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+      end if
+
+      if (associated(csite%nir_b_beam)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,csite%nir_b_beam,nvar,igr,init,csite%paglob_id, &
+           var_len,var_len_global,max_ptrs,'NIR_B_BEAM :31:hist') 
+         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+      end if
+
+      if (associated(csite%nir_b_diffuse)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,csite%nir_b_diffuse,nvar,igr,init,csite%paglob_id, &
+           var_len,var_len_global,max_ptrs,'NIR_B_DIFFUSE :31:hist') 
          call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
       end if
 

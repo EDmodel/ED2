@@ -66,17 +66,16 @@ module physiology_coms
    !---------------------------------------------------------------------------------------!
 
    !---------------------------------------------------------------------------------------!
-   !     These parameter will decide scaling factors for stomatal slope, Vm0, Kw, and the  !
-   ! dark respiration constant.                                                            !
+   !     These parameter will decide scaling factors for several physiological parameters. !
    !---------------------------------------------------------------------------------------!
-   real(kind=4)               :: vmfact
-   real(kind=4)               :: mfact
-   real(kind=4)               :: kfact
-   real(kind=4)               :: gamfact
-   real(kind=4)               :: d0fact
-   real(kind=4)               :: alphafact
-   real(kind=4)               :: lwfact
-   real(kind=4)               :: thioff
+   real(kind=4)               :: vmfact     ! Max. Rubisco capacity
+   real(kind=4)               :: mfact      ! Stomatal slope
+   real(kind=4)               :: kfact      ! Water conductance
+   real(kind=4)               :: gamfact    ! Dark respiration factor
+   real(kind=4)               :: d0fact     ! Transpiration effect on stom. conductance
+   real(kind=4)               :: alphafact  ! Quantum efficiency 
+   real(kind=4)               :: rrffact    ! Root respiration factor
+   real(kind=4)               :: growthresp ! Growth respiration factor (actual value)
    !---------------------------------------------------------------------------------------!
 
    !---------------------------------------------------------------------------------------!

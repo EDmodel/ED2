@@ -559,6 +559,12 @@ subroutine init_ed_patch_vars(csite,ip1,ip2,lsl)
    csite%rshort_g             (ip1:ip2) = 0.0
    csite%rshort_g_beam        (ip1:ip2) = 0.0
    csite%rshort_g_diffuse     (ip1:ip2) = 0.0
+   csite%par_b                (ip1:ip2) = 0.0
+   csite%par_b_beam           (ip1:ip2) = 0.0
+   csite%par_b_diffuse        (ip1:ip2) = 0.0
+   csite%nir_b                (ip1:ip2) = 0.0
+   csite%nir_b_beam           (ip1:ip2) = 0.0
+   csite%nir_b_diffuse        (ip1:ip2) = 0.0
    csite%rlong_g              (ip1:ip2) = 0.0
    csite%rlong_g_surf         (ip1:ip2) = 0.0
    csite%rlong_g_incid        (ip1:ip2) = 0.0

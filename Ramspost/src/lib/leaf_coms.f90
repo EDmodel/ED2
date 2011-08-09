@@ -18,14 +18,11 @@
 !------------------------------------------------------------------------------------------!
 module leaf_coms
    use rconstants, only: grav      & ! intent(in)
+                       , vonk      & ! intent(in)
                        , twothirds ! ! intent(in)
 
    !----- Values that are read in rcio. ---------------------------------------------------!
    real :: ustmin         ! Minimum ustar                                        [     m/s]
-   real :: gamm           ! Gamma used by Businger et al. (1971) - momentum.
-   real :: gamh           ! Gamma used by Businger et al. (1971) - heat.
-   real :: tprandtl       ! Turbulent Prandtl number.
-   real :: vkopr          ! von Karman / turbulent Prandtl
    real :: ribmax         ! Maximum bulk Richardson number
    real :: min_patch_area ! Minimum patch area to consider. 
    !---------------------------------------------------------------------------------------!
@@ -39,9 +36,17 @@ module leaf_coms
    real, parameter :: ubmin    = 0.65  ! Minimum velocity                        [     m/s]
    !---------------------------------------------------------------------------------------!
 
+
+
    !---------------------------------------------------------------------------------------!
    !      Constants for surface layer models.                                              !
    !---------------------------------------------------------------------------------------!
+   real, parameter :: gamm     = 13.0          ! Gamma (Businger et al. 1971) - momentum.
+   real, parameter :: gamh     = 13.0          ! Gamma (Businger et al. 1971) - heat.
+   real, parameter :: tprandtl = 0.74          ! Turbulent Prandtl number.
+   real, parameter :: vh2vr    = 0.13          ! Vegetation roughness:vegetation hgt ratio
+   real, parameter :: vh2dh    = 0.63          ! Displacement height:vegetation hgt ratio
+   real, parameter :: vkopr    = vonk/tprandtl ! von Karman / turbulent Prandtl
    !----- Louis (1979) model. -------------------------------------------------------------!
    real, parameter :: bl79       = 5.0    ! b prime parameter
    real, parameter :: csm        = 7.5    ! C* for momentum (eqn. 20, not co2 char. scale)

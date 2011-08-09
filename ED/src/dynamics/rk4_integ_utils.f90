@@ -219,8 +219,9 @@ end subroutine odeint
 ! ables.                                                                                   !
 !------------------------------------------------------------------------------------------!
 subroutine copy_met_2_rk4site(mzg,vels,atm_theiv,atm_theta,atm_tmp,atm_shv,atm_co2,zoff    &
-                             ,exner,pcpg,qpcpg,dpcpg,prss,rshort,rlong,geoht,lsl           &
-                             ,ntext_soil,green_leaf_factor,lon,lat,cosz)
+                             ,exner,pcpg,qpcpg,dpcpg,prss,rshort,rlong,par_beam            &
+                             ,par_diffuse,nir_beam,nir_diffuse,geoht,lsl,ntext_soil        &
+                             ,green_leaf_factor,lon,lat,cosz)
    use ed_max_dims    , only : n_pft         ! ! intent(in)
    use rk4_coms       , only : rk4site       ! ! structure
    use canopy_air_coms, only : ubmin8        ! ! intent(in)
@@ -244,6 +245,10 @@ subroutine copy_met_2_rk4site(mzg,vels,atm_theiv,atm_theta,atm_tmp,atm_shv,atm_c
    real                     , intent(in) :: prss
    real                     , intent(in) :: rshort
    real                     , intent(in) :: rlong
+   real                     , intent(in) :: par_beam
+   real                     , intent(in) :: par_diffuse
+   real                     , intent(in) :: nir_beam
+   real                     , intent(in) :: nir_diffuse
    real                     , intent(in) :: geoht
    integer, dimension(mzg)  , intent(in) :: ntext_soil
    real   , dimension(n_pft), intent(in) :: green_leaf_factor
@@ -274,6 +279,10 @@ subroutine copy_met_2_rk4site(mzg,vels,atm_theiv,atm_theta,atm_tmp,atm_shv,atm_c
    rk4site%atm_prss              = dble(prss                )
    rk4site%rshort                = dble(rshort              )
    rk4site%rlong                 = dble(rlong               )
+   rk4site%par_beam              = dble(par_beam            )
+   rk4site%par_diffuse           = dble(par_diffuse         )
+   rk4site%nir_beam              = dble(nir_beam            )
+   rk4site%nir_diffuse           = dble(nir_diffuse         )
    rk4site%geoht                 = dble(geoht               )
    rk4site%lon                   = dble(lon                 )
    rk4site%lat                   = dble(lat                 )

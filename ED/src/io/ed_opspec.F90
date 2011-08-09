@@ -1103,20 +1103,14 @@ subroutine ed_opspec_misc
                                     , iclobber                     & ! intent(in)
                                     , runtype                      & ! intent(in)
                                     , ied_init_mode                & ! intent(in)
+                                    , ivegt_dynamics               & ! intent(in)
                                     , integration_scheme           & ! intent(in)
                                     , iallom                       & ! intent(in)
                                     , min_site_area                ! ! intent(in)
    use canopy_air_coms       , only : icanturb                     & ! intent(in)
-                                    , i_blyr_condct                & ! intent(in)
                                     , isfclyrm                     & ! intent(in)
                                     , ied_grndvap                  & ! intent(in)
                                     , ustmin                       & ! intent(in)
-                                    , ggfact                       & ! intent(in)
-                                    , gamm                         & ! intent(in)
-                                    , gamh                         & ! intent(in)
-                                    , tprandtl                     & ! intent(in)
-                                    , vh2vr                        & ! intent(in)
-                                    , vh2dh                        & ! intent(in)
                                     , ribmax                       & ! intent(in)
                                     , leaf_maxwhc                  ! ! intent(in)
    use soil_coms             , only : ed_nstyp                     & ! intent(in)
@@ -1128,7 +1122,6 @@ subroutine ed_opspec_misc
                                     , isoildepthflg                & ! intent(in)
                                     , isoilbc                      & ! intent(in)
                                     , zrough                       & ! intent(in)
-                                    , betapower                    & ! intent(in)
                                     , runoff_time                  ! ! intent(in)
    use mem_polygons          , only : maxsite                      ! ! intent(in)
    use grid_coms             , only : ngrids                       ! ! intent(in)
@@ -1141,8 +1134,8 @@ subroutine ed_opspec_misc
                                     , gamfact                      & ! intent(in)
                                     , d0fact                       & ! intent(in)
                                     , alphafact                    & ! intent(in)
-                                    , lwfact                       & ! intent(in)
-                                    , thioff                       & ! intent(in)
+                                    , rrffact                      & ! intent(in)
+                                    , growthresp                   & ! intent(in)
                                     , quantum_efficiency_T         ! ! intent(in)
    use decomp_coms           , only : n_decomp_lim                 ! ! intent(in)
    use disturb_coms          , only : include_fire                 & ! intent(in)
@@ -1159,7 +1152,15 @@ subroutine ed_opspec_misc
                                     , agri_stock                   & ! intent(in)
                                     , plantation_stock             ! ! intent(in)
    use canopy_layer_coms     , only : crown_mod                    ! ! intent(in)
-   use canopy_radiation_coms , only : icanrad                      ! ! intent(in)
+   use canopy_radiation_coms , only : icanrad                      & ! intent(in)
+                                    , ltrans_vis                   & ! intent(in)
+                                    , ltrans_nir                   & ! intent(in)
+                                    , lreflect_vis                 & ! intent(in)
+                                    , lreflect_nir                 & ! intent(in)
+                                    , orient_tree                  & ! intent(in)
+                                    , orient_grass                 & ! intent(in)
+                                    , clump_tree                   & ! intent(in)
+                                    , clump_grass                  ! ! intent(in)
    use rk4_coms              , only : ibranch_thermo               & ! intent(in)
                                     , ipercol                      & ! intent(in)
                                     , rk4_tolerance                ! ! intent(in)
@@ -1407,6 +1408,14 @@ end do
       ifaterr = ifaterr +1
    end if
 
+   if (ivegt_dynamics < 0 .or. ivegt_dynamics > 1) then
+      write (reason,fmt='(a,1x,i4,a)')                                                     &
+         'Invalid IVEGT_DYNAMICS, it must be between 0 and 1. Yours is set to'              &
+        ,ivegt_dynamics,'...'
+      call opspec_fatal(reason,'opspec_misc')
+      ifaterr = ifaterr +1
+   end if
+
    !---------------------------------------------------------------------------------------!
    !      Integration scheme can be only 0 (Euler) or 1 (4th order Runge-Kutta).  The      !
    ! branch thermodynamics is currently working only with Runge-Kutta, so we won't allow   !
@@ -1531,7 +1540,7 @@ end do
       ifaterr = ifaterr +1
    end if
    
-   if (alphafact < 0.1 .or. d0fact > 10.) then
+   if (alphafact < 0.1 .or. alphafact > 10.) then
       write (reason,fmt='(a,1x,es12.5,a)')                                                 &
                     'Invalid ALPHAFACT, it must be between 0.1 and 10. Yours is set to'    &
                     ,alphafact,'...'
@@ -1539,26 +1548,26 @@ end do
       ifaterr = ifaterr +1
    end if
    
+   if (rrffact < 0.1 .or. rrffact > 10.) then
+      write (reason,fmt='(a,1x,es12.5,a)')                                                 &
+                    'Invalid RRFFACT, it must be between 0.1 and 10. Yours is set to'      &
+                    ,rrffact,'...'
+      call opspec_fatal(reason,'opspec_misc')
+      ifaterr = ifaterr +1
+   end if
+     
+   if (growthresp < 0.0 .or. growthresp > 1.0) then
+      write (reason,fmt='(a,1x,es12.5,a)')                                                 &
+                    'Invalid GROWTHRESP, it must be between 0 and 1. Yours is set to'      &
+                    ,growthresp,'...'
+      call opspec_fatal(reason,'opspec_misc')
+      ifaterr = ifaterr +1
+   end if
+ 
    if (thetacrit < -1.49 .or. thetacrit > 1.) then
       write (reason,fmt='(a,1x,es12.5,a)')                                                 &
                     'Invalid THETACRIT, it must be between -1.49 and 1. Yours is set to'   &
                     ,thetacrit,'...'
-      call opspec_fatal(reason,'opspec_misc')
-      ifaterr = ifaterr +1
-   end if
-   
-   if (lwfact < 0. .or. lwfact > 100.) then
-      write (reason,fmt='(a,1x,es12.5,a)')                                                 &
-                    'Invalid LWFACT, it must be between 0 and 100. Yours is set to'        &
-                    ,lwfact,'...'
-      call opspec_fatal(reason,'opspec_misc')
-      ifaterr = ifaterr +1
-   end if
-    
-   if (thioff < -20. .or. thioff > 20.) then
-      write (reason,fmt='(a,1x,es12.5,a)')                                                 &
-                    'Invalid THIOFF, it must be between -20 and 20. Yours is set to'       &
-                    ,lwfact,'...'
       call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
    end if
@@ -1619,14 +1628,6 @@ end do
       call opspec_fatal(reason,'opspec_misc')  
       ifaterr = ifaterr +1
    end select
-
-   if (i_blyr_condct < 0 .or. i_blyr_condct > 2) then
-      write (reason,fmt='(a,1x,i4,a)') &
-            'Invalid I_BLYR_CONDCT, it must be between 0 and 2. Yours is set to'           &
-           ,i_blyr_condct,'...'
-      call opspec_fatal(reason,'opspec_misc')  
-      ifaterr = ifaterr +1
-   end if
 
    if (isfclyrm < 1 .or. isfclyrm > 5) then
       write (reason,fmt='(a,1x,i4,a)') &
@@ -1743,6 +1744,94 @@ end do
       ifaterr = ifaterr +1
       call opspec_fatal(reason,'opspec_misc')
    end if
+
+   if  (ltrans_vis < 0.01 .or. ltrans_vis > 0.99) then
+      write (reason,fmt='(a,2x,a,1x,es12.5,a)')                                            &
+                    'Invalid LTRANS_VIS, it must be between 0.01 and 0.99.'                &
+                   ,'Yours is set to',ltrans_vis,'...'
+      ifaterr = ifaterr +1
+      call opspec_fatal(reason,'opspec_misc')
+   end if
+
+   if  (ltrans_nir < 0.01 .or. ltrans_nir > 0.99) then
+      write (reason,fmt='(a,2x,a,1x,es12.5,a)')                                            &
+                    'Invalid LTRANS_NIR, it must be between 0.01 and 0.99.'                &
+                   ,'Yours is set to',ltrans_nir,'...'
+      ifaterr = ifaterr +1
+      call opspec_fatal(reason,'opspec_misc')
+   end if
+
+   if  (lreflect_vis < 0.01 .or. lreflect_vis > 0.99) then
+      write (reason,fmt='(a,2x,a,1x,es12.5,a)')                                            &
+                    'Invalid LREFLECT_VIS, it must be between 0.01 and 0.99.'              &
+                   ,'Yours is set to',lreflect_vis,'...'
+      ifaterr = ifaterr +1
+      call opspec_fatal(reason,'opspec_misc')
+   end if
+
+   if  (lreflect_nir < 0.01 .or. lreflect_nir > 0.99) then
+      write (reason,fmt='(a,2x,a,1x,es12.5,a)')                                            &
+                    'Invalid LREFLECT_NIR, it must be between 0.01 and 0.99.'              &
+                   ,'Yours is set to',lreflect_nir,'...'
+      ifaterr = ifaterr +1
+      call opspec_fatal(reason,'opspec_misc')
+   end if
+
+   if  (lreflect_vis + ltrans_vis > 0.99) then
+      write (unit=*,fmt='(a,1x,es12.5)') ' LTRANS_VIS   = ',ltrans_vis
+      write (unit=*,fmt='(a,1x,es12.5)') ' LREFLECT_VIS = ',lreflect_vis
+      write (unit=*,fmt='(a,1x,es12.5)') ' LABSORPT_VIS = ',1. - ltrans_vis - lreflect_vis
+      write (reason,fmt='(a,2x,a)')                                                        &
+                    'LTRANS_VIS + LREFLECT_VIS cannot exceed 0.99.'                        &
+                   ,'This causes absorptance to be weird (a bad thing).'
+      ifaterr = ifaterr +1
+      call opspec_fatal(reason,'opspec_misc')
+   end if
+
+   if  (lreflect_nir + ltrans_nir > 0.99) then
+      write (unit=*,fmt='(a,1x,es12.5)') ' LTRANS_NIR   = ',ltrans_nir
+      write (unit=*,fmt='(a,1x,es12.5)') ' LREFLECT_NIR = ',lreflect_nir
+      write (unit=*,fmt='(a,1x,es12.5)') ' LABSORPT_NIR = ',1. - ltrans_nir - lreflect_nir
+      write (reason,fmt='(a,2x,a)')                                                        &
+                    'LTRANS_NIR + LREFLECT_NIR cannot exceed 0.99.'                        &
+                   ,'This causes absorptance to be weird (a bad thing).'
+      ifaterr = ifaterr +1
+      call opspec_fatal(reason,'opspec_misc')
+   end if
+
+   if  (orient_tree < -0.40 .or. orient_tree > 0.60) then
+      write (reason,fmt='(a,2x,a,1x,es12.5,a)')                                            &
+                    'Invalid ORIENT_TREE, it must be between -0.40 and 0.60.'              &
+                   ,'Yours is set to',orient_tree,'...'
+      ifaterr = ifaterr +1
+      call opspec_fatal(reason,'opspec_misc')
+   end if
+
+   if  (orient_grass < -0.40 .or. orient_grass > 0.60) then
+      write (reason,fmt='(a,2x,a,1x,es12.5,a)')                                            &
+                    'Invalid ORIENT_GRASS, it must be between -0.40 and 0.60.'             &
+                   ,'Yours is set to',orient_grass,'...'
+      ifaterr = ifaterr +1
+      call opspec_fatal(reason,'opspec_misc')
+   end if
+
+   if  (clump_tree < 0.01 .or. clump_tree > 1.00) then
+      write (reason,fmt='(a,2x,a,1x,es12.5,a)')                                            &
+                    'Invalid CLUMP_TREE, it must be between 0.01 and 1.00.'                &
+                   ,'Yours is set to',clump_tree,'...'
+      ifaterr = ifaterr +1
+      call opspec_fatal(reason,'opspec_misc')
+   end if
+
+   if  (clump_grass < 0.01 .or. clump_grass > 1.00) then
+      write (reason,fmt='(a,2x,a,1x,es12.5,a)')                                            &
+                    'Invalid CLUMP_GRASS, it must be between 0.01 and 1.00.'               &
+                   ,'Yours is set to',clump_grass,'...'
+      ifaterr = ifaterr +1
+      call opspec_fatal(reason,'opspec_misc')
+   end if
+
+
     
    if (zrough <= 0.0) then
       write (reason,fmt='(a,1x,es14.7,a)')                                                 &
@@ -1785,66 +1874,10 @@ end do
       ifaterr = ifaterr +1
    end if
     
-   if (betapower < 0.0 .or. betapower > 10.0) then
-      write (reason,fmt='(a,1x,es14.7,a)')                                                 &
-            'Invalid BETAPOWER, it must be between 0.0 and 10.0. Yours is set to'          &
-           ,betapower,'...'
-      call opspec_fatal(reason,'opspec_misc')  
-      ifaterr = ifaterr +1
-   end if
-    
    if (ustmin < 0.0001 .or. ustmin > 1.0) then
       write (reason,fmt='(a,1x,es14.7,a)')                                                 &
             'Invalid USTMIN, it must be between 0.0001 and 1.0. Yours is set to'           &
            ,ustmin,'...'
-      call opspec_fatal(reason,'opspec_misc')  
-      ifaterr = ifaterr +1
-   end if
-    
-   if (ggfact < 0.0 .or. ggfact > 100.0) then
-      write (reason,fmt='(a,1x,es14.7,a)')                                                 &
-            'Invalid GGFACT, it must be between 0.0 and 100.0. Yours is set to'            &
-           ,ggfact,'...'
-      call opspec_fatal(reason,'opspec_misc')  
-      ifaterr = ifaterr +1
-   end if
-
-   if (gamm < 0.1 .or. gamm > 100.0) then
-      write (reason,fmt='(a,1x,es14.7,a)')                                                 &
-            'Invalid GAMM, it must be between 0.1 and 100.0. Yours is set to'              &
-           ,gamm,'...'
-      call opspec_fatal(reason,'opspec_misc')  
-      ifaterr = ifaterr +1
-   end if
-
-   if (gamh < 0.1 .or. gamh > 100.0) then
-      write (reason,fmt='(a,1x,es14.7,a)')                                                 &
-            'Invalid GAMH, it must be between 0.1 and 100.0. Yours is set to'              &
-           ,gamh,'...'
-      call opspec_fatal(reason,'opspec_misc')  
-      ifaterr = ifaterr +1
-   end if
-
-   if (tprandtl < 0.01 .or. tprandtl > 100.0) then
-      write (reason,fmt='(a,1x,es14.7,a)')                                                 &
-            'Invalid TPRANDTL, it must be between 0.01 and 100.0. Yours is set to'         &
-           ,tprandtl,'...'
-      call opspec_fatal(reason,'opspec_misc')  
-      ifaterr = ifaterr +1
-   end if
-
-   if (vh2vr < 0.001 .or. vh2vr > 0.99) then
-      write (reason,fmt='(a,1x,es14.7,a)')                                                 &
-            'Invalid VH2VR, it must be between 0.001 and 0.99.  Yours is set to'           &
-           ,vh2vr,'...'
-      call opspec_fatal(reason,'opspec_misc')  
-      ifaterr = ifaterr +1
-   end if
-
-   if (vh2dh < 0.0 .or. vh2dh > 0.99) then
-      write (reason,fmt='(a,1x,es14.7,a)')                                                 &
-            'Invalid VH2DH, it must be between 0.0 and 0.99.  Yours is set to'             &
-           ,vh2dh,'...'
       call opspec_fatal(reason,'opspec_misc')  
       ifaterr = ifaterr +1
    end if
@@ -1874,9 +1907,9 @@ end do
       ifaterr = ifaterr +1
       call opspec_fatal(reason,'opspec_misc')
    end if
-   if (imetavg < 0 .or. imetavg > 3) then
+   if (imetavg < -1 .or. imetavg > 3) then
       write (reason,fmt='(a,1x,i4,a)')                                                     &
-                    'Invalid IMETAVG, it must be between 0 and 3.  Yours is set to'        &
+                    'Invalid IMETAVG, it must be between -1 and 3.  Yours is set to'       &
                     ,imetavg,'...'
       ifaterr = ifaterr +1
       call opspec_fatal(reason,'opspec_misc')

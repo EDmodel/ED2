@@ -869,6 +869,12 @@ subroutine sfcrad_ed(cosz,cosaoi,csite,mzg,mzs,ntext_soil,maxcohort,tuco        
                                   + downward_nir_below_beam    * abs_ground_nir
       csite%rshort_g_diffuse(ipa) = downward_par_below_diffuse * abs_ground_par            &
                                   + downward_nir_below_diffuse * abs_ground_nir
+      
+      !----- Incident radiation at the ground. --------------------------------------------!
+      csite%par_b_beam      (ipa) = downward_par_below_beam
+      csite%nir_b_beam      (ipa) = downward_nir_below_beam
+      csite%par_b_diffuse   (ipa) = downward_par_below_diffuse
+      csite%nir_b_diffuse   (ipa) = downward_nir_below_diffuse
 
 
       !----- Absorption rate of short wave by the surface water. --------------------------!
@@ -1137,9 +1143,15 @@ subroutine scale_ed_radiation(tuco,rshort,rshort_diffuse,rlong,csite)
             end if
          end do
          
-         csite%rshort_g_beam(ipa)    = 0.
+         csite%rshort_g_beam   (ipa) = 0.
          csite%rshort_g_diffuse(ipa) = 0.
-         csite%rshort_g(ipa)         = 0.
+         csite%rshort_g        (ipa) = 0.
+         csite%par_b_beam      (ipa) = 0.
+         csite%par_b_diffuse   (ipa) = 0.
+         csite%par_b           (ipa) = 0.
+         csite%nir_b_beam      (ipa) = 0.
+         csite%nir_b_diffuse   (ipa) = 0.
+         csite%nir_b           (ipa) = 0.
          !----- Absorption rate of short wave by the surface water. -----------------------!
          do k=1,csite%nlev_sfcwater(ipa)
             csite%rshort_s_beam(k,ipa)    = 0.
@@ -1197,7 +1209,15 @@ subroutine scale_ed_radiation(tuco,rshort,rshort_diffuse,rlong,csite)
       csite%rshort_g_beam(ipa)    = csite%rshort_g_beam(ipa)    * rshort
       csite%rshort_g_diffuse(ipa) = csite%rshort_g_diffuse(ipa) * rshort
       csite%rshort_g(ipa)         = csite%rshort_g_beam(ipa) + csite%rshort_g_diffuse(ipa)
-      
+
+      csite%par_b_beam(ipa)    = csite%par_b_beam(ipa)    * rshort
+      csite%par_b_diffuse(ipa) = csite%par_b_diffuse(ipa) * rshort
+      csite%par_b(ipa)         = csite%par_b_beam(ipa) + csite%par_b_diffuse(ipa)
+
+      csite%nir_b_beam(ipa)    = csite%nir_b_beam(ipa)    * rshort
+      csite%nir_b_diffuse(ipa) = csite%nir_b_diffuse(ipa) * rshort
+      csite%nir_b(ipa)         = csite%nir_b_beam(ipa) + csite%nir_b_diffuse(ipa)
+
       !----- Absorption rate of short wave by the surface water. --------------------------!
       do k=1,csite%nlev_sfcwater(ipa)
          csite%rshort_s_beam(k,ipa)    = csite%rshort_s_beam   (k,ipa) * rshort

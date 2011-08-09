@@ -383,6 +383,7 @@ end subroutine first_phenology
 ! fully flushed leaves.                                                                    !
 !------------------------------------------------------------------------------------------!
 subroutine pheninit_balive_bstorage(mzg,csite,ipa,ico,ntext_soil,green_leaf_factor)
+   use ed_misc_coms  , only : ivegt_dynamics      ! ! intent(in)
    use ed_state_vars , only : sitetype            & ! structure
                             , patchtype           ! ! structure
    use soil_coms     , only : soil                & ! intent(in), look-up table
@@ -455,18 +456,30 @@ subroutine pheninit_balive_bstorage(mzg,csite,ipa,ico,ntext_soil,green_leaf_fact
       cpatch%paw_avg(ico) = - cpatch%paw_avg(ico) / slz(cpatch%krdepth(ico))
    end if
 
-   select case (phenology(ipft))
-   case (1)
-      if (cpatch%paw_avg(ico) < 1.0) then
-         cpatch%elongf(ico) = 0.0
-      else
-         cpatch%elongf(ico) = green_leaf_factor(ipft)
-      end if
-   case (4)
-      cpatch%elongf(ico)  = max(0.0,min(1.0,cpatch%paw_avg(ico)))
+   !---------------------------------------------------------------------------------------!
+   !    We make the elongation factor 1.0 when we are not solving the vegetation dynamics, !
+   ! otherwise we assign the normal values.                                                !
+   !---------------------------------------------------------------------------------------!
+   select case (ivegt_dynamics)
+   case (0)
+      cpatch%elongf(ico) = 1.0
+
    case default
-      cpatch%elongf(ico)  = green_leaf_factor(ipft)
+      select case (phenology(ipft))
+      case (1)
+         if (cpatch%paw_avg(ico) < 1.0) then
+            cpatch%elongf(ico) = 0.0
+         else
+            cpatch%elongf(ico) = 1.0
+         end if
+      case (4)
+         cpatch%elongf(ico)  = max(0.0,min(1.0,cpatch%paw_avg(ico)))
+      case default
+         cpatch%elongf(ico)  = 1.0
+      end select
+
    end select
+   !---------------------------------------------------------------------------------------!
 
    !----- Set phenology status according to the elongation factor. ------------------------!
    if (cpatch%elongf(ico) >= 1.0) then

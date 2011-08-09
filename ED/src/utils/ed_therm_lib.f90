@@ -315,8 +315,7 @@ module ed_therm_lib
       use canopy_air_coms, only : ied_grndvap & ! intent(in)
                                 , ggsoil0     & ! intent(in)
                                 , kksoil      ! ! intent(in)
-      use soil_coms      , only : soil        & ! intent(in)
-                                , betapower   ! ! intent(in)
+      use soil_coms      , only : soil        ! ! intent(in)
       use consts_coms    , only : pi1         & ! intent(in)
                                 , wdns        & ! intent(in)
                                 , gorh2o      & ! intent(in)
@@ -394,7 +393,7 @@ module ed_therm_lib
          else
             smterm = (topsoil_water       - soil(nsoil)%soilcp)                            &
                    / (soil(nsoil)%sfldcap - soil(nsoil)%soilcp)
-            beta   = (.5 * (1. - cos (smterm * pi1))) ** betapower
+            beta   = .5 * (1. - cos (smterm * pi1))
          end if
          !---------------------------------------------------------------------------------!
 
@@ -491,8 +490,7 @@ module ed_therm_lib
       use canopy_air_coms, only : ied_grndvap & ! intent(in)
                                 , ggsoil08    & ! intent(in)
                                 , kksoil8     ! ! intent(in)
-      use soil_coms      , only : soil8       & ! intent(in)
-                                , betapower8  ! ! intent(in)
+      use soil_coms      , only : soil8       ! ! intent(in)
       use consts_coms    , only : pi18        & ! intent(in)
                                 , wdns8       & ! intent(in)
                                 , gorh2o8     & ! intent(in)
@@ -580,7 +578,7 @@ module ed_therm_lib
          else
             smterm = (topsoil_water        - soil8(nsoil)%soilwp)                          &
                    / (soil8(nsoil)%sfldcap - soil8(nsoil)%soilwp)
-            beta   = (5.d-1 * (1.d0 - cos (smterm * pi18))) ** betapower8
+            beta   = 5.d-1 * (1.d0 - cos (smterm * pi18))
          end if
          !---------------------------------------------------------------------------------!
 

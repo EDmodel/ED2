@@ -113,20 +113,41 @@ subroutine load_ed_ecosystem_params()
                    ,'load_ecosystem_params','ed_params.f90')
    end if
 
-   !----- Assign many PFT-dependent parameters. -------------------------------------------!
+   !---------------------------------------------------------------------------------------!
+   !     Assign many PFT-dependent parameters.  Here the order may matter, so think twice  !
+   ! before changing the order.                                                            !
+   !---------------------------------------------------------------------------------------!
+   !----- Photosynthesis and leaf respiration. --------------------------------------------!
    call init_pft_photo_params()
+   !----- Root and heterotrophic respiration. ---------------------------------------------!
    call init_pft_resp_params()
+   !----- Allometry and some plant traits. ------------------------------------------------!
    call init_pft_alloc_params()
+   !----- Mortality. ----------------------------------------------------------------------!
    call init_pft_mort_params()
+   !----- Nitrogen. -----------------------------------------------------------------------!
    call init_pft_nitro_params()
+   !----- Miscellaneous leaf properties. --------------------------------------------------!
    call init_pft_leaf_params()
+   !----- Reproduction. -------------------------------------------------------------------!
    call init_pft_repro_params()
+   !----- Miscellaneous parameters that depend on the previous ones. ----------------------!
    call init_pft_derived_params()
+   !---------------------------------------------------------------------------------------!
 
-   !----- This must be done after defining some PFT parameters. ---------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Assign canopy properties.  This must be done after defining the PFT stuff.        !
+   ! Again, check the routines and think twice before changing the order.                  !
+   !---------------------------------------------------------------------------------------!
+   !----- Canopy turbulence and aerodynamic resistance. -----------------------------------!
    call init_can_air_params()
+   !----- Canopy radiation properties. ----------------------------------------------------!
    call init_can_rad_params()
+   !----- Canopy splitting into height layers. --------------------------------------------!
    call init_can_lyr_params()
+   !---------------------------------------------------------------------------------------!
 
    !---------------------------------------------------------------------------------------!
    !     This should be always the last one, since it depends on variables assigned in     !
@@ -267,7 +288,7 @@ end subroutine init_ed_misc_coms
 ! logical forcing.                                                                         !
 !------------------------------------------------------------------------------------------!
 subroutine init_met_params()
-
+   use ed_misc_coms   , only : dtlsm           ! ! intent(in)
    use met_driver_coms, only : rshort_min      & ! intent(out)
                              , rshort_max      & ! intent(out)
                              , rlong_min       & ! intent(out)
@@ -343,7 +364,7 @@ subroutine init_met_params()
    !---------------------------------------------------------------------------------------!
    !     Time step used to perform the daytime average of the secant of the zenith angle.  !
    !---------------------------------------------------------------------------------------!
-   dt_radinterp = 30.0    ! Value in seconds.
+   dt_radinterp = dtlsm    ! Value in seconds.
    !---------------------------------------------------------------------------------------!
 
 
@@ -418,7 +439,15 @@ end subroutine init_lapse_params
 !------------------------------------------------------------------------------------------!
 subroutine init_can_rad_params()
 
-   use canopy_radiation_coms , only : leaf_reflect_nir            & ! intent(out)
+   use canopy_radiation_coms , only : ltrans_vis                  & ! intent(in)
+                                    , ltrans_nir                  & ! intent(in)
+                                    , lreflect_vis                & ! intent(in)
+                                    , lreflect_nir                & ! intent(in)
+                                    , orient_tree                 & ! intent(in)
+                                    , orient_grass                & ! intent(in)
+                                    , clump_tree                  & ! intent(in)
+                                    , clump_grass                 & ! intent(in)
+                                    , leaf_reflect_nir            & ! intent(out)
                                     , leaf_trans_nir              & ! intent(out)
                                     , leaf_scatter_nir            & ! intent(out)
                                     , leaf_reflect_vis            & ! intent(out)
@@ -431,6 +460,9 @@ subroutine init_can_rad_params()
                                     , leaf_backscatter_tir        & ! intent(out)
                                     , clumping_factor             & ! intent(out)
                                     , orient_factor               & ! intent(out)
+                                    , phi1                        & ! intent(out)
+                                    , phi2                        & ! intent(out)
+                                    , mu_bar                      & ! intent(out)
                                     , leaf_emis                   & ! intent(out)
                                     , wood_reflect_nir            & ! intent(out)
                                     , wood_trans_nir              & ! intent(out)
@@ -444,7 +476,6 @@ subroutine init_can_rad_params()
                                     , wood_backscatter_nir        & ! intent(out)
                                     , wood_backscatter_tir        & ! intent(out)
                                     , wood_emis                   & ! intent(out)
-                                    , mu_bar_lw                   & ! intent(out)
                                     , fvis_beam_def               & ! intent(out)
                                     , fvis_diff_def               & ! intent(out)
                                     , fnir_beam_def               & ! intent(out)
@@ -452,23 +483,12 @@ subroutine init_can_rad_params()
                                     , rshort_twilight_min         & ! intent(out)
                                     , cosz_min                    & ! intent(out)
                                     , cosz_min8                   ! ! intent(out)
-   use consts_coms           , only : pio180                      ! ! intent(out)
+   use consts_coms           , only : pio180                      & ! intent(out)
+                                    , twothirds8                  ! ! intent(out)
    use ed_max_dims           , only : n_pft                       ! ! intent(out)
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
    integer :: ipft
-   !---------------------------------------------------------------------------------------!
-
-
-
-
-   !---------------------------------------------------------------------------------------!
-   !     Leaf angle distribution parameter (dimensionless).  Let mu' be the cosine of leaf !
-   ! angle and G(mu') be the distribution of mu'.  Then, mubar = (integral from 0 to 1)    !
-   ! (d mu'   mu' / G(mu')).  See, for example, Dickinson 1983.  For longwave we always    !
-   ! assume it to be 1.                                                                    !
-   !---------------------------------------------------------------------------------------!
-   mu_bar_lw = 1.0d0 
    !---------------------------------------------------------------------------------------!
 
 
@@ -485,18 +505,18 @@ subroutine init_can_rad_params()
 
 
    !---------------------------------------------------------------------------------------!
-   !     Clumping factor.  This factor indicates the degree of clumpiness of leaves.       !
-   !  0 -- black hole
-   !  1 -- homogeneous, no clumping.
+   !     Clumping factor.  This factor indicates the degree of clumpiness of leaves.       !a
+   !  0 -- black hole                                                                      !
+   !  1 -- homogeneous, no clumping.                                                       !
    !---------------------------------------------------------------------------------------!
-   clumping_factor(1)     = 1.000d0
-   clumping_factor(2:4)   = 7.350d-1
+   clumping_factor(1)     = dble(clump_grass)
+   clumping_factor(2:4)   = dble(clump_tree )
    clumping_factor(5)     = 8.400d-1
    clumping_factor(6:8)   = 7.350d-1
    clumping_factor(9:11)  = 8.400d-1
    clumping_factor(12:13) = 8.400d-1
-   clumping_factor(14:15) = 1.000d0
-   clumping_factor(16)    = 1.000d0
+   clumping_factor(14:15) = dble(clump_grass)
+   clumping_factor(16)    = dble(clump_grass)
    clumping_factor(17)    = 7.350d-1
    !---------------------------------------------------------------------------------------!
 
@@ -509,15 +529,15 @@ subroutine init_can_rad_params()
    !  1 -- all leaves are perfectly horizontal                                             !
    ! -1 -- all leaves are perfectly vertical.                                              !
    !---------------------------------------------------------------------------------------!
-   orient_factor(    1) = -3.0d-1 ! CLM value for C4 grass
-   orient_factor(  2:4) =  1.0d-1 ! CLM value for temperate deciduous broadleaf tree
-   orient_factor(    5) = -3.0d-1 ! CLM value for C3 grass
-   orient_factor(  6:8) =  1.0d-2 ! CLM value for temperate evergreen needleef tree
-   orient_factor( 9:11) =  2.5d-1 ! CLM value for temperate deciduous broadleaf tree
-   orient_factor(12:13) = -3.0d-1 ! CLM value for C3 grass
-   orient_factor(14:15) = -3.0d-1 ! CLM value for C4 grass
-   orient_factor(   16) = -3.0d-1 ! CLM value for C3 grass
-   orient_factor(   17) =  1.0d-2 ! CLM value for temperate evergreen needleef
+   orient_factor(    1) = dble(orient_grass)
+   orient_factor(  2:4) = dble(orient_tree)
+   orient_factor(    5) = 0.0d0 ! -3.0d-1 ! CLM value for C3 grass
+   orient_factor(  6:8) = 0.0d0 !  1.0d-2 ! CLM value for temperate evergreen needleef tree
+   orient_factor( 9:11) = 0.0d0 !  2.5d-1 ! CLM value for temperate deciduous broadleaf tree
+   orient_factor(12:13) = 0.0d0 ! -3.0d-1 ! CLM value for C3 grass
+   orient_factor(14:15) = dble(orient_grass) ! -3.0d-1 ! CLM value for C4 grass
+   orient_factor(   16) = dble(orient_grass)
+   orient_factor(   17) = 1.0d-2 ! CLM value for temperate evergreen needleef
    !---------------------------------------------------------------------------------------!
 
 
@@ -566,23 +586,25 @@ subroutine init_can_rad_params()
    !      leaf aging in Amazon caatinga. Trees, 12, 315-325.                               !
    !---------------------------------------------------------------------------------------!
    !----- Visible (PAR). ------------------------------------------------------------------!
-   leaf_reflect_vis(1)     = 1.1d-1 ! 1.3d-1
-   leaf_reflect_vis(2:4)   = 6.2d-2 ! 1.3d-1
-   leaf_reflect_vis(5)     = 1.1d-1 ! 6.2d-2
-   leaf_reflect_vis(6:11)  = 1.1d-1 ! 1.1d-1
-   leaf_reflect_vis(12:13) = 1.1d-1 ! 1.1d-1
-   leaf_reflect_vis(14:15) = 1.1d-1 ! 1.1d-1
-   leaf_reflect_vis(16)    = 1.1d-1 ! 1.3d-1
-   leaf_reflect_vis(17)    = 9.0d-2 ! 9.0d-2
+   leaf_reflect_vis(1)     = dble(lreflect_vis)
+   leaf_reflect_vis(2)     = dble(lreflect_vis)
+   leaf_reflect_vis(3)     = dble(lreflect_vis)
+   leaf_reflect_vis(4)     = dble(lreflect_vis)
+   leaf_reflect_vis(5)     = 1.10d-1 ! 6.2d-2
+   leaf_reflect_vis(6:11)  = 1.10d-1 ! 1.1d-1
+   leaf_reflect_vis(12:13) = 1.10d-1 ! 1.1d-1
+   leaf_reflect_vis(14:15) = dble(lreflect_vis)
+   leaf_reflect_vis(16)    = dble(lreflect_vis)
+   leaf_reflect_vis(17)    = 9.00d-2 ! 9.0d-2
    !----- Near infrared. ------------------------------------------------------------------!
-   leaf_reflect_nir(1)     = 6.30d-1 ! 6.30d-1
-   leaf_reflect_nir(2:4)   = 6.30d-1 ! 6.30d-1
+   leaf_reflect_nir(1)     = dble(lreflect_nir)
+   leaf_reflect_nir(2:4)   = dble(lreflect_nir)
    leaf_reflect_nir(5)     = 5.77d-1
    leaf_reflect_nir( 6:11) = 5.77d-1
    leaf_reflect_nir(12:13) = 5.77d-1
-   leaf_reflect_nir(14:15) = 6.30d-1
-   leaf_reflect_nir(16)    = 6.30d-1 ! 6.30d-1
-   leaf_reflect_nir(17)    = 5.77d-1 ! 5.77d-1
+   leaf_reflect_nir(14:15) = dble(lreflect_nir)
+   leaf_reflect_nir(16)    = dble(lreflect_nir)
+   leaf_reflect_nir(17)    = 5.77d-1
    !---------------------------------------------------------------------------------------!
 
 
@@ -628,22 +650,24 @@ subroutine init_can_rad_params()
    !      leaf aging in Amazon caatinga. Trees, 12, 315-325.                               !
    !---------------------------------------------------------------------------------------!
    !----- Visible (PAR). ------------------------------------------------------------------!
-   leaf_trans_vis(    1) = 7.00d-2  ! 7.00d-2
-   leaf_trans_vis(  2:4) = 2.80d-2  ! 5.00d-2
+   leaf_trans_vis(    1) = dble(ltrans_vis)
+   leaf_trans_vis(    2) = dble(ltrans_vis)
+   leaf_trans_vis(    3) = dble(ltrans_vis)
+   leaf_trans_vis(    4) = dble(ltrans_vis)
    leaf_trans_vis(    5) = 1.60d-1  ! 0.160
    leaf_trans_vis( 6:11) = 1.60d-1  ! 0.160
    leaf_trans_vis(12:13) = 1.60d-1  ! 0.160
-   leaf_trans_vis(14:15) = 7.00d-2  ! 0.028
-   leaf_trans_vis(   16) = 7.00d-2
-   leaf_trans_vis(   17) = 2.80d-2  ! 0.160
+   leaf_trans_vis(14:15) = dble(ltrans_vis)
+   leaf_trans_vis(   16) = dble(ltrans_vis)
+   leaf_trans_vis(   17) = 5.00d-2  ! 0.160
    !----- Near infrared. ------------------------------------------------------------------!
-   leaf_trans_nir(    1) = 2.48d-1
-   leaf_trans_nir(  2:4) = 3.20d-1
+   leaf_trans_nir(    1) = dble(ltrans_nir)
+   leaf_trans_nir(  2:4) = dble(ltrans_nir)
    leaf_trans_nir(    5) = 2.48d-1
    leaf_trans_nir( 6:11) = 2.48d-1
    leaf_trans_nir(12:13) = 2.48d-1
-   leaf_trans_nir(14:15) = 2.48d-1
-   leaf_trans_nir(   16) = 2.48d-1
+   leaf_trans_nir(14:15) = dble(ltrans_nir)
+   leaf_trans_nir(   16) = dble(ltrans_nir)
    leaf_trans_nir(   17) = 2.48d-1
    !---------------------------------------------------------------------------------------!
 
@@ -695,9 +719,29 @@ subroutine init_can_rad_params()
       !------------------------------------------------------------------------------------!
 
 
-
       !------------------------------------------------------------------------------------!
-      !      Back-scattering coefficients.                                                 !
+      !      Original back-scattering coefficients.  They don't depend on orientation      !
+      ! factor so I'll be using CLM instead.                                               !
+      !------------------------------------------------------------------------------------!
+      !----- Visible (PAR). ---------------------------------------------------------------!
+      ! leaf_backscatter_vis(ipft) = ( 2.d0 * leaf_reflect_vis(ipft)                       &
+      !                              - leaf_trans_vis(ipft))                               &
+      !                            / ( 3.d0 * leaf_scatter_vis(ipft))
+      ! wood_backscatter_vis(ipft) = ( 2.d0 * wood_reflect_vis(ipft)                       &
+      !                              - wood_trans_vis(ipft))                               &
+      !                            / ( 3.d0 * wood_scatter_vis(ipft))
+      !----- Near infrared. ---------------------------------------------------------------!
+      ! leaf_backscatter_nir(ipft) = ( 2.d0 * leaf_reflect_nir(ipft)                       &
+      !                              - leaf_trans_nir(ipft))                               &
+      !                            / ( 3.d0 * leaf_scatter_nir(ipft))
+      ! wood_backscatter_nir(ipft) = ( 2.d0 * wood_reflect_nir(ipft)                       &
+      !                              - wood_trans_nir(ipft))                               &
+      !                            / ( 3.d0 * wood_scatter_nir(ipft))
+      !----- Thermal infrared.  We assume transmittance to be zero. -----------------------!
+      ! leaf_backscatter_tir(ipft) = twothirds8
+      ! wood_backscatter_tir(ipft) = twothirds8
+      !------------------------------------------------------------------------------------!
+      !      Back-scattering coefficients following CLM.                                   !
       !------------------------------------------------------------------------------------!
       !----- Visible (PAR). ---------------------------------------------------------------!
       leaf_backscatter_vis(ipft) = ( leaf_scatter_vis(ipft)                                &
@@ -738,6 +782,36 @@ subroutine init_can_rad_params()
 
 
    !---------------------------------------------------------------------------------------!
+   !     Light extinction coefficients.   These are found following CLM technical manual,  !
+   ! and the values fall back to ED-2.0 defaults when orient_factor is zero.               !
+   !---------------------------------------------------------------------------------------!
+   do ipft = 1, n_pft
+      phi1(ipft) = 5.d-1                                                                   &
+                 - orient_factor(ipft) * ( 6.33d-1 + 3.3d-1 * orient_factor(ipft) )
+      phi2(ipft) = 8.77d-1 * (1.d0 - 2.d0 * phi1(ipft))
+
+
+
+      !------------------------------------------------------------------------------------!
+      !     Find the average inverse diffuse optical depth per unit leaf and stem area.    !
+      ! We follow CLM technical manual, equation 3.4 only when the orientation factor is   !
+      ! non-zero.   Otherwise, we make it 1.d0, which is the limit of that equation when   !
+      ! phi2 approaches zero.                                                              !
+      !------------------------------------------------------------------------------------!
+      if (orient_factor(ipft) == 0.d0) then
+         mu_bar(ipft) = 1.d0
+      else
+         mu_bar(ipft) = ( 1.d0                                                             &
+                        - phi1(ipft) * log(1.d0 + phi2(ipft) / phi1(ipft)) / phi2(ipft) )  &
+                      / phi2(ipft)
+      end if
+   end do
+   !---------------------------------------------------------------------------------------!
+
+
+
+
+   !---------------------------------------------------------------------------------------!
    !     These variables are the thresholds for things that should be computed during the  !
    ! day time hours only.                                                                  !
    !---------------------------------------------------------------------------------------!
@@ -767,16 +841,14 @@ subroutine init_can_air_params()
                              , vonk                  ! ! intent(in)
    use pft_coms       , only : hgt_min               & ! intent(in)
                              , hgt_max               ! ! intent(in)
-   use canopy_air_coms, only : i_blyr_condct         & ! intent(in)
-                             , isfclyrm              & ! intent(in)
+   use canopy_air_coms, only : isfclyrm              & ! intent(in)
                              , ustmin                & ! intent(in)
-                             , ggfact                & ! intent(in)
-                             , gamm                  & ! intent(in)
-                             , gamh                  & ! intent(in)
-                             , tprandtl              & ! intent(in)
-                             , vkopr                 & ! intent(in)
-                             , vh2vr                 & ! intent(in)
-                             , vh2dh                 & ! intent(in)
+                             , gamm                  & ! intent(out)
+                             , gamh                  & ! intent(out)
+                             , tprandtl              & ! intent(out)
+                             , vkopr                 & ! intent(out)
+                             , vh2vr                 & ! intent(out)
+                             , vh2dh                 & ! intent(out)
                              , ribmax                & ! intent(out)
                              , leaf_drywhc           & ! intent(out)
                              , leaf_maxwhc           & ! intent(out)
@@ -794,7 +866,6 @@ subroutine init_can_air_params()
                              , ustmin8               & ! intent(out)
                              , ugbmin8               & ! intent(out)
                              , ubmin8                & ! intent(out)
-                             , ggfact8               & ! intent(out)
                              , ez8                   & ! intent(out)
                              , vh2dh8                & ! intent(out)
                              , cdrag0                & ! intent(out)
@@ -878,12 +949,6 @@ subroutine init_can_air_params()
                              , ncyli_lami            & ! intent(out)
                              , mcyli_turb            & ! intent(out)
                              , mcyli_lami            & ! intent(out)
-                             , beta_r1               & ! intent(out)
-                             , beta_r2               & ! intent(out)
-                             , beta_re0              & ! intent(out)
-                             , beta_g1               & ! intent(out)
-                             , beta_g2               & ! intent(out)
-                             , beta_gr0              & ! intent(out)
                              , aflat_turb8           & ! intent(out)
                              , aflat_lami8           & ! intent(out)
                              , bflat_turb8           & ! intent(out)
@@ -902,12 +967,6 @@ subroutine init_can_air_params()
                              , ncyli_lami8           & ! intent(out)
                              , mcyli_turb8           & ! intent(out)
                              , mcyli_lami8           & ! intent(out)
-                             , beta_r18              & ! intent(out)
-                             , beta_r28              & ! intent(out)
-                             , beta_re08             & ! intent(out)
-                             , beta_g18              & ! intent(out)
-                             , beta_g28              & ! intent(out)
-                             , beta_gr08             & ! intent(out)
                              , ggsoil0               & ! intent(out)
                              , kksoil                & ! intent(out)
                              , ggsoil08              & ! intent(out)
@@ -930,14 +989,8 @@ subroutine init_can_air_params()
    !      Variables to define the vegetation aerodynamic resistance.  They are currently   !
    ! not PFT dependent.                                                                    !
    !---------------------------------------------------------------------------------------!
-   select case (i_blyr_condct)
-   case (-1)
-      rb_slope =  25.0
-      rb_inter =   0.0
-   case default
-      rb_slope =   0.0
-      rb_inter =   1.e9
-   end select
+   rb_slope =   0.0
+   rb_inter =   1.e9
 
    !---------------------------------------------------------------------------------------!
    ! veg_height_min       - This is the minimum vegetation height allowed [m].  Vegetation !
@@ -961,10 +1014,25 @@ subroutine init_can_air_params()
    !      Parameters for surface layer models.                                             !
    !---------------------------------------------------------------------------------------!
    !----- This is the minimum wind speed for boundary layer conductivity. -----------------!
-   ugbmin    = 0.25
+   ugbmin   = 0.25
    !----- This is the minimum wind scale under stable and unstable conditions. ------------!
-   ubmin     = 0.65
+   ubmin    = 0.65
+   !----- Gamma (Businger et al. 1971) - momentum. ----------------------------------------!
+   gamm     = 13.0
+   !----- Gamma (Businger et al. 1971) - heat. --------------------------------------------!
+   gamh     = 13.0
+   !----- Turbulent Prandtl number. -------------------------------------------------------!
+   tprandtl = 0.74
+   !----- Vegetation roughness:vegetation height ratio. -----------------------------------!
+   vh2vr    = 0.13
+   !----- Displacement height:vegetation height ratio. ------------------------------------!
+   vh2dh    = 0.63
+   !----- von Karman / turbulent Prandtl. -------------------------------------------------!
+   vkopr    = vonk / tprandtl
    !---------------------------------------------------------------------------------------!
+
+
+
 
    !----- Louis (1979) model. -------------------------------------------------------------!
    bl79        = 5.0    ! b prime parameter
@@ -1029,44 +1097,6 @@ subroutine init_can_air_params()
    mcyli_lami = 0.250    ! m (free   convection), laminar   flow
    bcyli_turb = 0.090    ! B (free   convection), turbulent flow
    mcyli_turb = onethird ! m (free   convection), turbulent flow
-   !---------------------------------------------------------------------------------------!
-
-
-
-
-   !---------------------------------------------------------------------------------------!
-   !     Both free and forced convection tend to underestimate the Nusselt number under    !
-   ! different conditions.  Based on M08 review on the subject, I wrote the following      !
-   ! functional form to expand the Nusselt number by a factor beta:                        !
-   ! - beta_forced = R1 + R2 * tanh[log(Re/Re0)]                                           !
-   ! - beta_free   = G1 + G2 * tanh[log(Gr/Gr0)]                                           !
-   !     The values of beta change depending on the boundary layer conductance method.     !
-   ! Currently only the forced convection varies, as we believe that the Reynolds number   !
-   ! is the one that influences the most.                                                  ! 
-   !---------------------------------------------------------------------------------------!
-   select case (i_blyr_condct)
-   case (-1,0)
-      beta_r1  = 1.
-      beta_r2  = 0.
-      beta_re0 = 2000.
-      beta_g1  = 1.
-      beta_g2  = 0.
-      beta_gr0 = 100000.
-   case (1)
-      beta_r1  =   7./4.
-      beta_r2  =   3./4.
-      beta_re0 =   2000.
-      beta_g1  =   3./2.
-      beta_g2  =  -1./2.
-      beta_gr0 = 100000.
-   case (2)
-      beta_r1  =   11./2.
-      beta_r2  =   9. /2.
-      beta_re0 =   2000.
-      beta_g1  =   3./2.
-      beta_g2  =  -1./2.
-      beta_gr0 = 100000.
-   end select
    !---------------------------------------------------------------------------------------!
 
 
@@ -1143,7 +1173,6 @@ subroutine init_can_air_params()
    ubmin8                = dble(ubmin               )
    ugbmin8               = dble(ugbmin              )
    ustmin8               = dble(ustmin              )
-   ggfact8               = dble(ggfact              )
    ez8                   = dble(ez                  )
    vh2dh8                = dble(vh2dh               )
    bl798                 = dble(bl79                )
@@ -1187,12 +1216,6 @@ subroutine init_can_air_params()
    mcyli_lami8           = dble(mcyli_lami          ) 
    bcyli_turb8           = dble(bcyli_turb          ) 
    mcyli_turb8           = dble(mcyli_turb          ) 
-   beta_r18              = dble(beta_r1             )
-   beta_r28              = dble(beta_r2             )
-   beta_re08             = dble(beta_re0            )
-   beta_g18              = dble(beta_g1             )
-   beta_g28              = dble(beta_g2             )
-   beta_gr08             = dble(beta_gr0            )
    cdrag08               = dble(cdrag0              )
    pm08                  = dble(pm0                 )
    c1_m978               = dble(c1_m97              )
@@ -1338,9 +1361,7 @@ subroutine init_pft_photo_params()
                              , gamfact                 & ! intent(in)
                              , d0fact                  & ! intent(in)
                              , alphafact               & ! intent(in)
-                             , kfact                   & ! intent(in)
-                             , lwfact                  & ! intent(in)
-                             , thioff                  ! ! intent(in)
+                             , kfact                   ! ! intent(in)
    implicit none
    !---------------------------------------------------------------------------------------!
 
@@ -1352,9 +1373,9 @@ subroutine init_pft_photo_params()
    D0(12:13)                 = 0.010
    D0(14:15)                 = 0.010
    D0(16)                    = 0.025  ! 0.010 * d0fact
-   D0(17)                    = 0.015  ! 0.010 * d0fact
+   D0(17)                    = 0.020  ! 0.010 * d0fact
 
-   Vm_low_temp(1)            = 15.0             ! c4 grass
+   Vm_low_temp(1)            =  8.0             ! c4 grass
    Vm_low_temp(2)            =  8.0             ! early tropical
    Vm_low_temp(3)            =  8.0             ! mid tropical
    Vm_low_temp(4)            =  8.0             ! late tropical
@@ -1367,28 +1388,28 @@ subroutine init_pft_photo_params()
    Vm_low_temp(11)           =  4.7137          ! late hardwoods
    Vm_low_temp(12)           =  4.7137          ! c3 pasture
    Vm_low_temp(13)           =  4.7137          ! c3 crop
-   Vm_low_temp(14)           = 15.0             ! c4 pasture
-   Vm_low_temp(15)           = 15.0             ! c4 crop
+   Vm_low_temp(14)           =  8.0             ! c4 pasture
+   Vm_low_temp(15)           =  8.0             ! c4 crop
    Vm_low_temp(16)           =  4.7137          ! subtropical C3 grass
    Vm_low_temp(17)           =  4.7137          ! Araucaria
 
-   Vm_high_temp(1)           =  45.0  + thioff ! C4
-   Vm_high_temp(2)           =  45.0  + thioff ! C3
-   Vm_high_temp(3)           =  45.0  + thioff ! C3
-   Vm_high_temp(4)           =  45.0  + thioff ! C3
-   Vm_high_temp(5)           =  45.0  + thioff ! C3
-   Vm_high_temp(6)           =  45.0  + thioff ! C3
-   Vm_high_temp(7)           =  45.0  + thioff ! C3
-   Vm_high_temp(8)           =  45.0  + thioff ! C3
-   Vm_high_temp(9)           =  45.0  + thioff ! C3
-   Vm_high_temp(10)          =  45.0  + thioff ! C3
-   Vm_high_temp(11)          =  45.0  + thioff ! C3
-   Vm_high_temp(12)          =  45.0  + thioff ! C3
-   Vm_high_temp(13)          =  45.0  + thioff ! C3
-   Vm_high_temp(14)          =  45.0  + thioff ! C4
-   Vm_high_temp(15)          =  45.0  + thioff ! C4
-   Vm_high_temp(16)          =  45.0  + thioff ! C3
-   Vm_high_temp(17)          =  45.0  + thioff ! C3
+   Vm_high_temp(1)           =  45.0 ! C4
+   Vm_high_temp(2)           =  45.0 ! C3
+   Vm_high_temp(3)           =  45.0 ! C3
+   Vm_high_temp(4)           =  45.0 ! C3
+   Vm_high_temp(5)           =  45.0 ! C3
+   Vm_high_temp(6)           =  45.0 ! C3
+   Vm_high_temp(7)           =  45.0 ! C3
+   Vm_high_temp(8)           =  45.0 ! C3
+   Vm_high_temp(9)           =  45.0 ! C3
+   Vm_high_temp(10)          =  45.0 ! C3
+   Vm_high_temp(11)          =  45.0 ! C3
+   Vm_high_temp(12)          =  45.0 ! C3
+   Vm_high_temp(13)          =  45.0 ! C3
+   Vm_high_temp(14)          =  45.0 ! C4
+   Vm_high_temp(15)          =  45.0 ! C4
+   Vm_high_temp(16)          =  45.0 ! C3
+   Vm_high_temp(17)          =  45.0 ! C3
 
    !---------------------------------------------------------------------------------------!
    !    Vm_decay_e is the correction term for high and low temperatures when running the   !
@@ -1404,21 +1425,21 @@ subroutine init_pft_photo_params()
 
 
    !------ Vm0 is the maximum photosynthesis capacity in µmol/m2/s. -----------------------!
-   Vm0(1)                    = 12.5000 ! 12.500 * vmfact
-   Vm0(2)                    = 18.7500 ! 18.750 * vmfact
-   Vm0(3)                    = 12.5000 ! 12.500 * vmfact
-   Vm0(4)                    =  6.2500 !  6.250 * vmfact
-   Vm0(5)                    = 18.3000
-   Vm0(6)                    = 11.3500 ! 15.625 * 0.7264
-   Vm0(7)                    = 11.3500 ! 15.625 * 0.7264
-   Vm0(8)                    =  4.5400 !  6.250 * 0.7264
-   Vm0(9)                    = 20.3870 ! 18.250 * 1.1171
-   Vm0(10)                   = 17.4550 ! 15.625 * 1.1171
-   Vm0(11)                   =  6.9810 !  6.250 * 1.1171
-   Vm0(12:13)                = 18.3000 ! 18.300
-   Vm0(14:15)                = 16.6667 ! 12.500 * vmfact
-   Vm0(16)                   = 25.0000 ! 21.875 * vmfact
-   Vm0(17)                   = 15.6250 ! 15.625 * vmfact
+   Vm0(1)                    = 12.500 * vmfact ! 15.62500 (vmfact = 1.25)
+   Vm0(2)                    = 18.750 * vmfact ! 23.43750
+   Vm0(3)                    = 12.500 * vmfact ! 15.62500
+   Vm0(4)                    =  6.250 * vmfact !  7.81250
+   Vm0(5)                    = 18.30000
+   Vm0(6)                    = 11.35000        ! 15.625 * 0.7264
+   Vm0(7)                    = 11.35000        ! 15.625 * 0.7264
+   Vm0(8)                    =  4.54000        !  6.250 * 0.7264
+   Vm0(9)                    = 20.38707        ! 18.250 * 1.1171
+   Vm0(10)                   = 17.45469        ! 15.625 * 1.1171
+   Vm0(11)                   =  6.981875       !  6.250 * 1.1171
+   Vm0(12:13)                = 18.30000        ! 18.300
+   Vm0(14:15)                = 12.500 * vmfact ! 15.62500
+   Vm0(16)                   = 25.000 * vmfact ! 31.25000
+   Vm0(17)                   = 15.625 * vmfact ! 19.53125
    !---------------------------------------------------------------------------------------!
 
 
@@ -1439,10 +1460,10 @@ subroutine init_pft_photo_params()
    !---------------------------------------------------------------------------------------!
    !    Dark_respiration_factor is the lower-case gamma in Moorcroft et al. (2001).        !
    !---------------------------------------------------------------------------------------!
-   dark_respiration_factor(1)     = 0.035
-   dark_respiration_factor(2)     = 0.014 ! 0.020 * gamfact
-   dark_respiration_factor(3)     = 0.014 ! 0.020 * gamfact
-   dark_respiration_factor(4)     = 0.014 ! 0.020 * gamfact
+   dark_respiration_factor(1)     = 0.048 * gamfact
+   dark_respiration_factor(2)     = 0.020 * gamfact
+   dark_respiration_factor(3)     = 0.020 * gamfact
+   dark_respiration_factor(4)     = 0.020 * gamfact
    dark_respiration_factor(5)     = 0.020
    dark_respiration_factor(6)     = 0.020
    dark_respiration_factor(7)     = 0.020
@@ -1452,10 +1473,10 @@ subroutine init_pft_photo_params()
    dark_respiration_factor(11)    = 0.020
    dark_respiration_factor(12)    = 0.020
    dark_respiration_factor(13)    = 0.020
-   dark_respiration_factor(14)    = 0.035
-   dark_respiration_factor(15)    = 0.035
-   dark_respiration_factor(16)    = 0.014
-   dark_respiration_factor(17)    = 0.020
+   dark_respiration_factor(14)    = 0.048 * gamfact
+   dark_respiration_factor(15)    = 0.048 * gamfact
+   dark_respiration_factor(16)    = 0.020 * gamfact
+   dark_respiration_factor(17)    = 0.028 * gamfact
    !---------------------------------------------------------------------------------------!
 
 
@@ -1491,9 +1512,9 @@ subroutine init_pft_photo_params()
 
    !----- Define the stomatal slope (aka the M factor). -----------------------------------!
    stomatal_slope(1)         =  5.2
-   stomatal_slope(2)         =  9.0 ! 8.0    * mfact
-   stomatal_slope(3)         =  9.0 ! 8.0    * mfact
-   stomatal_slope(4)         =  9.0 ! 8.0    * mfact
+   stomatal_slope(2)         =  9.0    ! 8.0    * mfact
+   stomatal_slope(3)         =  9.0    ! 8.0    * mfact
+   stomatal_slope(4)         =  9.0    ! 8.0    * mfact
    stomatal_slope(5)         =  8.0
    stomatal_slope(6)         =  6.3949
    stomatal_slope(7)         =  6.3949
@@ -1506,7 +1527,7 @@ subroutine init_pft_photo_params()
    stomatal_slope(14)        =  5.2
    stomatal_slope(15)        =  5.2
    stomatal_slope(16)        =  9.0
-   stomatal_slope(17)        =  6.4
+   stomatal_slope(17)        =  7.2
  
    cuticular_cond(1)         =  8000.0
    cuticular_cond(2)         = 10000.0
@@ -1633,21 +1654,34 @@ end subroutine init_decomp_params
 !==========================================================================================!
 !==========================================================================================!
 subroutine init_pft_resp_params()
-
-   use pft_coms       , only : growth_resp_factor        & ! intent(out)
+   use physiology_coms, only : iphysiol                  & ! intent(in)
+                             , rrffact                   & ! intent(in)
+                             , growthresp                ! ! intent(in)
+   use pft_coms       , only : rd_low_temp               & ! intent(in)
+                             , rd_high_temp              & ! intent(in)
+                             , rd_decay_e                & ! intent(in)
+                             , rd_hor                    & ! intent(in)
+                             , rd_q10                    & ! intent(in)
+                             , growth_resp_factor        & ! intent(out)
                              , leaf_turnover_rate        & ! intent(out)
                              , root_turnover_rate        & ! intent(out)
                              , storage_turnover_rate     & ! intent(out)
-                             , root_respiration_factor   ! ! intent(out)
+                             , root_respiration_factor   & ! intent(out)
+                             , rrf_low_temp              & ! intent(out)
+                             , rrf_high_temp             & ! intent(out)
+                             , rrf_decay_e               & ! intent(out)
+                             , rrf_hor                   & ! intent(out)
+                             , rrf_q10                   ! ! intent(out)
    use decomp_coms    , only : f_labile                  ! ! intent(out)
    use consts_coms    , only : onesixth                  & ! intent(in)
-                             , onethird                  ! ! intent(in)
+                             , onethird                  & ! intent(in)
+                             , t00                       ! ! intent(in)
    implicit none
 
-   growth_resp_factor(1)          = onethird
-   growth_resp_factor(2)          = onethird
-   growth_resp_factor(3)          = onethird
-   growth_resp_factor(4)          = onethird
+   growth_resp_factor(1)          = growthresp
+   growth_resp_factor(2)          = growthresp
+   growth_resp_factor(3)          = growthresp
+   growth_resp_factor(4)          = growthresp
    growth_resp_factor(5)          = onethird
    growth_resp_factor(6)          = 0.4503 ! 0.333
    growth_resp_factor(7)          = 0.4503
@@ -1659,7 +1693,7 @@ subroutine init_pft_resp_params()
    growth_resp_factor(13)         = onethird
    growth_resp_factor(14)         = onethird
    growth_resp_factor(15)         = onethird
-   growth_resp_factor(16)         = onethird
+   growth_resp_factor(16)         = growthresp
    growth_resp_factor(17)         = 0.4503
 
    leaf_turnover_rate(1)          = 2.0
@@ -1717,13 +1751,59 @@ subroutine init_pft_resp_params()
    storage_turnover_rate(16)      = 0.00 ! 0.25
    storage_turnover_rate(17)      = 0.00 ! 0.25
 
-   root_respiration_factor(1:17)  = 0.528
-
    f_labile(1:5)                  = 1.0
    f_labile(6:11)                 = 0.79
    f_labile(12:15)                = 1.0
    f_labile(16)                   = 1.0
    f_labile(17)                   = 0.79
+
+   !---------------------------------------------------------------------------------------!
+   !    This variable sets the contribution of roots to respiration at the reference       !
+   ! temperature of 15C.  Its units is µmol_CO2/kg_fine_roots/s.                           !
+   !---------------------------------------------------------------------------------------!
+   select case (iphysiol)
+   case (0,1)
+      !----- Arrhenius function. ----------------------------------------------------------!
+      root_respiration_factor(1)     = 0.528 * rrffact
+      root_respiration_factor(2:4)   = 0.528 * rrffact
+      root_respiration_factor(5)     = 0.528 * rrffact
+      root_respiration_factor(6:8)   = 0.528 * rrffact
+      root_respiration_factor(9:11)  = 0.528 * rrffact
+      root_respiration_factor(12:13) = 0.528 * rrffact
+      root_respiration_factor(14:15) = 0.528 * rrffact
+      root_respiration_factor(16)    = 0.528 * rrffact
+      root_respiration_factor(17)    = 0.528 * rrffact
+   case (2,3)
+      !----- Collatz function. ------------------------------------------------------------!
+      root_respiration_factor(1)     = 0.280 * rrffact
+      root_respiration_factor(2:4)   = 0.280 * rrffact
+      root_respiration_factor(5)     = 0.280 * rrffact
+      root_respiration_factor(6:8)   = 0.280 * rrffact
+      root_respiration_factor(9:11)  = 0.280 * rrffact
+      root_respiration_factor(12:13) = 0.280 * rrffact
+      root_respiration_factor(14:15) = 0.280 * rrffact
+      root_respiration_factor(16)    = 0.280 * rrffact
+      root_respiration_factor(17)    = 0.280 * rrffact
+   end select
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Following Moorcroft et al. (2001), we use the same shape for both leaf and root   !
+   ! respiration.                                                                          !
+   !---------------------------------------------------------------------------------------!
+   !----- Temperature [°C] below which root metabolic activity begins to rapidly decline. -!
+   rrf_low_temp(1:17)  = rd_low_temp(1:17)
+   !----- Temperature [°C] above which root metabolic activity begins to rapidly decline. -!
+   rrf_high_temp(1:17) = rd_high_temp(1:17)
+   !----- Decay factor for the exponential correction. ------------------------------------!
+   rrf_decay_e(1:17)   = rd_decay_e(1:17)
+   !----- Exponent for Rr in the Arrhenius equation [K]. ----------------------------------!
+   rrf_hor(1:17)       = rd_hor(1:17)
+   !----- Base (Q10 term) for respiration in Collatz equation . ---------------------------!
+   rrf_q10(1:17)       = rd_q10(1:17)
+   !---------------------------------------------------------------------------------------!
 
    return
 end subroutine init_pft_resp_params
@@ -3419,7 +3499,6 @@ subroutine init_soil_coms
                              , slxclay               & ! intent(in)
                              , slxsand               & ! intent(in)
                              , soil                  & ! intent(in)
-                             , betapower             & ! intent(in)
                              , soil_class            & ! type
                              , soil8                 & ! intent(out)
                              , water_stab_thresh     & ! intent(out)
@@ -3431,7 +3510,6 @@ subroutine init_soil_coms
                              , infiltration_method   & ! intent(out)
                              , soil_rough8           & ! intent(out)
                              , snow_rough8           & ! intent(out)
-                             , betapower8            & ! intent(out)
                              , freezecoef            & ! intent(out)
                              , freezecoef8           ! ! intent(out)
    use phenology_coms , only : thetacrit             ! ! intent(in)
@@ -3769,7 +3847,6 @@ subroutine init_soil_coms
       soil8(nsoil)%soilld    = dble(soil(nsoil)%soilld   )
       soil8(nsoil)%soilfr    = dble(soil(nsoil)%soilfr   )
    end do
-   betapower8  = dble(betapower)
    soil_rough8 = dble(soil_rough)
    snow_rough8 = dble(snow_rough)
    freezecoef8 = dble(freezecoef)

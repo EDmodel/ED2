@@ -97,7 +97,6 @@ module canopy_struct_dynamics
                                   , nu_mw99              & ! intent(in)
                                   , rb_inter             & ! intent(in)
                                   , rb_slope             & ! intent(in)
-                                  , ggfact               & ! intent(in)
                                   , tprandtl             & ! intent(in)
                                   , zoobukhov            ! ! function
       use canopy_layer_coms, only : crown_mod            & ! intent(in)
@@ -256,7 +255,7 @@ module canopy_struct_dynamics
          ! zero to the conductance, but it shouldn't be used at all.                       !
          !---------------------------------------------------------------------------------!
          csite%ggveg(ipa) = 0.0
-         csite%ggnet(ipa) = ggfact * csite%ggbare(ipa)
+         csite%ggnet(ipa) = csite%ggbare(ipa)
          !---------------------------------------------------------------------------------!
 
 
@@ -469,9 +468,9 @@ module canopy_struct_dynamics
          ! bare and vegetated grounds.                                                     !
          !---------------------------------------------------------------------------------!
          if (csite%opencan_frac(ipa) > 0.999 .or. csite%snowfac(ipa) >= 0.9) then
-            csite%ggnet(ipa) = ggfact * csite%ggbare(ipa)
+            csite%ggnet(ipa) = csite%ggbare(ipa)
          else
-            csite%ggnet(ipa) = ggfact * csite%ggbare(ipa) * csite%ggveg(ipa)               &
+            csite%ggnet(ipa) = csite%ggbare(ipa) * csite%ggveg(ipa)                        &
                              / ( csite%ggveg(ipa) + (1. - csite%opencan_frac(ipa))         &
                                                   * csite%ggbare(ipa))
          end if
@@ -635,9 +634,9 @@ module canopy_struct_dynamics
          ! bare and vegetated grounds.                                                     !
          !---------------------------------------------------------------------------------!
          if (csite%opencan_frac(ipa) > 0.999 .or. csite%snowfac(ipa) >= 0.9) then
-            csite%ggnet(ipa) = ggfact * csite%ggbare(ipa)
+            csite%ggnet(ipa) = csite%ggbare(ipa)
          else
-            csite%ggnet(ipa) = ggfact * csite%ggbare(ipa) * csite%ggveg(ipa)               &
+            csite%ggnet(ipa) = csite%ggbare(ipa) * csite%ggveg(ipa)                        &
                              / ( csite%ggveg(ipa)  + (1. - csite%opencan_frac(ipa))        &
                                                    * csite%ggbare(ipa) )
          end if
@@ -1124,9 +1123,9 @@ module canopy_struct_dynamics
          ! bare and vegetated grounds.                                                     !
          !---------------------------------------------------------------------------------!
          if (csite%opencan_frac(ipa) > 0.999 .or. csite%snowfac(ipa) >= 0.9) then
-            csite%ggnet(ipa) = ggfact * csite%ggbare(ipa)
+            csite%ggnet(ipa) = csite%ggbare(ipa)
          else
-            csite%ggnet(ipa) = ggfact * csite%ggbare(ipa) * csite%ggveg(ipa)               &
+            csite%ggnet(ipa) = csite%ggbare(ipa) * csite%ggveg(ipa)                        &
                              / ( csite%ggveg(ipa) + (1. - csite%opencan_frac(ipa))         &
                                                   * csite%ggbare(ipa))
          end if
@@ -1246,7 +1245,6 @@ module canopy_struct_dynamics
                                   , nu_mw99_8            & ! intent(in)
                                   , rb_inter             & ! intent(in)
                                   , rb_slope             & ! intent(in)
-                                  , ggfact8              & ! intent(in)
                                   , tprandtl8            & ! intent(in)
                                   , zoobukhov8           ! ! intent(in)
       use canopy_layer_coms, only : crown_mod            & ! intent(in)
@@ -1391,7 +1389,7 @@ module canopy_struct_dynamics
          ! ground.                                                                         !
          !---------------------------------------------------------------------------------!
          initp%ggveg = 0.d0
-         initp%ggnet = ggfact8 * initp%ggbare
+         initp%ggnet = initp%ggbare
          !---------------------------------------------------------------------------------!
 
 
@@ -1607,9 +1605,9 @@ module canopy_struct_dynamics
          ! bare and vegetated grounds.                                                     !
          !---------------------------------------------------------------------------------!
          if (initp%opencan_frac > 9.99d-1 .or. initp%snowfac >= 9.d-1) then
-            initp%ggnet = ggfact8 * initp%ggbare
+            initp%ggnet = initp%ggbare
          else
-            initp%ggnet = ggfact8 * initp%ggbare * initp%ggveg                             &
+            initp%ggnet = initp%ggbare * initp%ggveg                                       &
                         / ( initp%ggveg + (1.d0 - initp%opencan_frac) * initp%ggbare )
          end if
          !---------------------------------------------------------------------------------!
@@ -1769,9 +1767,9 @@ module canopy_struct_dynamics
          ! bare and vegetated grounds.                                                     !
          !---------------------------------------------------------------------------------!
          if (initp%opencan_frac > 9.99d-1 .or. initp%snowfac >= 9.d-1) then
-            initp%ggnet = ggfact8 * initp%ggbare
+            initp%ggnet = initp%ggbare
          else
-            initp%ggnet = ggfact8 * initp%ggbare * initp%ggveg                             &
+            initp%ggnet = initp%ggbare * initp%ggveg                                       &
                         / (initp%ggveg + (1.d0 - initp%opencan_frac) * initp%ggbare )
          end if
          !---------------------------------------------------------------------------------!
@@ -2259,9 +2257,9 @@ module canopy_struct_dynamics
          ! bare and vegetated grounds.                                                     !
          !---------------------------------------------------------------------------------!
          if (initp%opencan_frac > 9.99d-1 .or. initp%snowfac >= 9.d-1) then
-            initp%ggnet = ggfact8 * initp%ggbare
+            initp%ggnet = initp%ggbare
          else
-            initp%ggnet = ggfact8 * initp%ggbare * initp%ggveg                             &
+            initp%ggnet = initp%ggbare * initp%ggveg                                       &
                         / (initp%ggveg + (1.d0 - initp%opencan_frac) * initp%ggbare )
          end if
          !---------------------------------------------------------------------------------!
@@ -3193,13 +3191,7 @@ module canopy_struct_dynamics
                                 , bflat_lami & ! intent(in)
                                 , mflat_lami & ! intent(in)
                                 , bflat_turb & ! intent(in)
-                                , mflat_turb & ! intent(in)
-                                , beta_r1    & ! intent(in)
-                                , beta_r2    & ! intent(in)
-                                , beta_re0   & ! intent(in)
-                                , beta_g1    & ! intent(in)
-                                , beta_g2    & ! intent(in)
-                                , beta_gr0   ! ! intent(in)
+                                , mflat_turb ! ! intent(in)
       use consts_coms    , only : gr_coeff   & ! intent(in)
                                 , th_diffi   & ! intent(in)
                                 , th_diff    & ! intent(in)
@@ -3223,8 +3215,6 @@ module canopy_struct_dynamics
       real(kind=4)                 :: nusselt_lami    ! Nusselt number (laminar)[      ---]
       real(kind=4)                 :: nusselt_turb    ! Nusselt number (turb.)  [      ---]
       real(kind=4)                 :: nusselt         ! Nusselt number          [      ---]
-      real(kind=4)                 :: beta_forced     ! Correct.  term (forced) [      ---]
-      real(kind=4)                 :: beta_free       ! Correct.  term (free)   [      ---]
       real(kind=4)                 :: forced_gbh_mos  ! Forced convection cond. [      m/s]
       real(kind=4)                 :: free_gbh_mos    ! Free convection cond.   [      m/s]
       real(kind=4)                 :: gbh_mos         ! Total convection cond.  [      m/s]
@@ -3244,11 +3234,9 @@ module canopy_struct_dynamics
       !----- 2. Compute the Nusselt number for both the laminar and turbulent case. -------!
       nusselt_lami    = aflat_lami * reynolds ** nflat_lami
       nusselt_turb    = aflat_turb * reynolds ** nflat_turb
-      !----- 3. Compute the correction term for the theoretical Nusselt numbers. ----------!
-      beta_forced     = beta_r1 + beta_r2 * tanh(log(reynolds/beta_re0))
-      !----- 4. The right Nusselt number is the largest. ----------------------------------!
-      nusselt         = beta_forced * max(nusselt_lami,nusselt_turb)
-      !----- 5. The conductance is given by MU08 - equation 10.4 --------------------------!
+      !----- 3. The right Nusselt number is the largest. ----------------------------------!
+      nusselt         = max(nusselt_lami,nusselt_turb)
+      !----- 4. The conductance is given by MU08 - equation 10.4 --------------------------!
       forced_gbh_mos  = th_diff * nusselt / lwidth
       !------------------------------------------------------------------------------------!
 
@@ -3262,15 +3250,9 @@ module canopy_struct_dynamics
       !----- 2. Compute the Nusselt number for both the laminar and turbulent case. -------!
       nusselt_lami    = bflat_lami * grashof ** mflat_lami
       nusselt_turb    = bflat_turb * grashof ** mflat_turb
-      !----- 3. Compute the correction term for the theoretical Nusselt numbers. ----------!
-      if (grashof == 0.0) then
-         beta_free    = beta_g1 - beta_g2
-      else
-         beta_free    = beta_g1 + beta_g2 * tanh(log(grashof/beta_gr0))
-      end if
-      !----- 4. The right Nusselt number is the largest. ----------------------------------!
-      nusselt         = beta_free * max(nusselt_lami,nusselt_turb)
-      !----- 5. The conductance is given by MU08 - equation 10.4 --------------------------!
+      !----- 3. The right Nusselt number is the largest. ----------------------------------!
+      nusselt         = max(nusselt_lami,nusselt_turb)
+      !----- 4. The conductance is given by MU08 - equation 10.4 --------------------------!
       free_gbh_mos    = th_diff * nusselt / lwidth
       !------------------------------------------------------------------------------------!
 
@@ -3325,15 +3307,7 @@ module canopy_struct_dynamics
                                 , bflat_lami8 & ! intent(in)
                                 , mflat_lami8 & ! intent(in)
                                 , bflat_turb8 & ! intent(in)
-                                , mflat_turb8 & ! intent(in)
-                                , beta_lami8  & ! intent(in)
-                                , beta_turb8  & ! intent(in)
-                                , beta_r18    & ! intent(in)
-                                , beta_r28    & ! intent(in)
-                                , beta_re08   & ! intent(in)
-                                , beta_g18    & ! intent(in)
-                                , beta_g28    & ! intent(in)
-                                , beta_gr08   ! ! intent(in)
+                                , mflat_turb8 ! ! intent(in)
       use consts_coms    , only : gr_coeff8   & ! intent(in)
                                 , th_diffi8   & ! intent(in)
                                 , th_diff8    & ! intent(in)
@@ -3358,8 +3332,6 @@ module canopy_struct_dynamics
       real(kind=8)                 :: lwidth          ! Leaf width              [        m]
       real(kind=8)                 :: nusselt_lami    ! Nusselt number (laminar)[      ---]
       real(kind=8)                 :: nusselt_turb    ! Nusselt number (turb.)  [      ---]
-      real(kind=8)                 :: beta_forced     ! Correct.  term (forced) [      ---]
-      real(kind=8)                 :: beta_free       ! Correct.  term (free)   [      ---]
       real(kind=8)                 :: forced_gbh_mos  ! Forced convection cond. [      m/s]
       real(kind=8)                 :: free_gbh_mos    ! Free convection cond.   [      m/s]
       real(kind=8)                 :: gbh_mos         ! Total convection cond.  [      m/s]
@@ -3379,11 +3351,9 @@ module canopy_struct_dynamics
       !----- 2. Compute the Nusselt number for both the laminar and turbulent case. -------!
       nusselt_lami    = aflat_lami8 * reynolds ** nflat_lami8
       nusselt_turb    = aflat_turb8 * reynolds ** nflat_turb8
-      !----- 3. Compute the correction term for the theoretical Nusselt numbers. ----------!
-      beta_forced     = beta_r18 + beta_r28 * tanh(log(reynolds/beta_re08))
-      !----- 4. The right Nusselt number is the largest of the both. ----------------------!
-      nusselt_forced  = beta_forced * max(nusselt_lami,nusselt_turb)
-      !----- 5. The conductance is given by MU08 - equation 10.4 --------------------------!
+      !----- 3. The right Nusselt number is the largest of the both. ----------------------!
+      nusselt_forced  = max(nusselt_lami,nusselt_turb)
+      !----- 4. The conductance is given by MU08 - equation 10.4 --------------------------!
       forced_gbh_mos  = th_diff8 * nusselt_forced / lwidth
       !------------------------------------------------------------------------------------!
 
@@ -3397,15 +3367,9 @@ module canopy_struct_dynamics
       !----- 2. Compute the Nusselt number for both the laminar and turbulent case. -------!
       nusselt_lami    = bflat_lami8 * grashof ** mflat_lami8
       nusselt_turb    = bflat_turb8 * grashof ** mflat_turb8
-      !----- 3. Compute the correction term for the theoretical Nusselt numbers. ----------!
-      if (grashof == 0.d0) then
-         beta_free    = beta_g18 - beta_g28
-      else
-         beta_free    = beta_g18 + beta_g28 * tanh(log(grashof/beta_gr08))
-      end if
-      !----- 4. The right Nusselt number is the largest of the both. ----------------------!
-      nusselt_free    = beta_free * max(nusselt_lami,nusselt_turb)
-      !----- 5. The conductance is given by MU08 - equation 10.4 --------------------------!
+      !----- 3. The right Nusselt number is the largest of the both. ----------------------!
+      nusselt_free    = max(nusselt_lami,nusselt_turb)
+      !----- 4. The conductance is given by MU08 - equation 10.4 --------------------------!
       free_gbh_mos    = th_diff8 * nusselt_free / lwidth
       !------------------------------------------------------------------------------------!
 
@@ -3460,13 +3424,7 @@ module canopy_struct_dynamics
                                 , bcyli_lami & ! intent(in)
                                 , mcyli_lami & ! intent(in)
                                 , bcyli_turb & ! intent(in)
-                                , mcyli_turb & ! intent(in)
-                                , beta_r1    & ! intent(in)
-                                , beta_r2    & ! intent(in)
-                                , beta_re0   & ! intent(in)
-                                , beta_g1    & ! intent(in)
-                                , beta_g2    & ! intent(in)
-                                , beta_gr0   ! ! intent(in)
+                                , mcyli_turb ! ! intent(in)
       use consts_coms    , only : gr_coeff   & ! intent(in)
                                 , th_diffi   & ! intent(in)
                                 , th_diff    & ! intent(in)
@@ -3492,8 +3450,6 @@ module canopy_struct_dynamics
       real(kind=4)                 :: nusselt_lami    ! Nusselt number (laminar)[      ---]
       real(kind=4)                 :: nusselt_turb    ! Nusselt number (turb.)  [      ---]
       real(kind=4)                 :: nusselt         ! Nusselt number          [      ---]
-      real(kind=4)                 :: beta_forced     ! Correct.  term (forced) [      ---]
-      real(kind=4)                 :: beta_free       ! Correct.  term (free)   [      ---]
       real(kind=4)                 :: forced_gbh_mos  ! Forced convection cond. [      m/s]
       real(kind=4)                 :: free_gbh_mos    ! Free convection cond.   [      m/s]
       real(kind=4)                 :: gbh_mos         ! Total convection cond.  [      m/s]
@@ -3520,10 +3476,8 @@ module canopy_struct_dynamics
       !----- 2. Compute the Nusselt number for both the laminar and turbulent case. -------!
       nusselt_lami    = ocyli_lami + acyli_lami * reynolds ** ncyli_lami
       nusselt_turb    = ocyli_turb + acyli_turb * reynolds ** ncyli_turb
-      !----- 3. Compute the correction term for the theoretical Nusselt numbers. ----------!
-      beta_forced     = beta_r1 + beta_r2 * tanh(log(reynolds/beta_re0))
-      !----- 4. The right Nusselt number is the largest. ----------------------------------!
-      nusselt         = beta_forced * max(nusselt_lami,nusselt_turb)
+      !----- 3. The right Nusselt number is the largest. ----------------------------------!
+      nusselt         = max(nusselt_lami,nusselt_turb)
       !----- 5. The conductance is given by MU08 - equation 10.4 --------------------------!
       forced_gbh_mos  = th_diff * nusselt / w_diam
       !------------------------------------------------------------------------------------!
@@ -3538,14 +3492,8 @@ module canopy_struct_dynamics
       !----- 2. Compute the Nusselt number for both the laminar and turbulent case. -------!
       nusselt_lami    = bcyli_lami * grashof ** mcyli_lami
       nusselt_turb    = bcyli_turb * grashof ** mcyli_turb
-      !----- 3. Compute the correction term for the theoretical Nusselt numbers. ----------!
-      if (grashof == 0.0) then
-         beta_free    = beta_g1 - beta_g2
-      else
-         beta_free    = beta_g1 + beta_g2 * tanh(log(grashof/beta_gr0))
-      end if
-      !----- 4. The right Nusselt number is the largest. ----------------------------------!
-      nusselt         = beta_free * max(nusselt_lami,nusselt_turb)
+      !----- 3. The right Nusselt number is the largest. ----------------------------------!
+      nusselt         = max(nusselt_lami,nusselt_turb)
       !----- 5. The conductance is given by MU08 - equation 10.4 --------------------------!
       free_gbh_mos    = th_diff * nusselt / w_diam
       !------------------------------------------------------------------------------------!
@@ -3603,15 +3551,7 @@ module canopy_struct_dynamics
                                 , bcyli_lami8 & ! intent(in)
                                 , mcyli_lami8 & ! intent(in)
                                 , bcyli_turb8 & ! intent(in)
-                                , mcyli_turb8 & ! intent(in)
-                                , beta_lami8  & ! intent(in)
-                                , beta_turb8  & ! intent(in)
-                                , beta_r18    & ! intent(in)
-                                , beta_r28    & ! intent(in)
-                                , beta_re08   & ! intent(in)
-                                , beta_g18    & ! intent(in)
-                                , beta_g28    & ! intent(in)
-                                , beta_gr08   ! ! intent(in)
+                                , mcyli_turb8 ! ! intent(in)
       use consts_coms    , only : gr_coeff8   & ! intent(in)
                                 , th_diffi8   & ! intent(in)
                                 , th_diff8    & ! intent(in)
@@ -3638,8 +3578,6 @@ module canopy_struct_dynamics
       real(kind=8)                 :: w_diam          ! Wood "diameter"         [        m]
       real(kind=8)                 :: nusselt_lami    ! Nusselt number (laminar)[      ---]
       real(kind=8)                 :: nusselt_turb    ! Nusselt number (turb.)  [      ---]
-      real(kind=8)                 :: beta_forced     ! Correct.  term (forced) [      ---]
-      real(kind=8)                 :: beta_free       ! Correct.  term (free)   [      ---]
       real(kind=8)                 :: forced_gbh_mos  ! Forced convection cond. [      m/s]
       real(kind=8)                 :: free_gbh_mos    ! Free convection cond.   [      m/s]
       real(kind=8)                 :: gbh_mos         ! Total convection cond.  [      m/s]
@@ -3666,10 +3604,8 @@ module canopy_struct_dynamics
       !----- 2. Compute the Nusselt number for both the laminar and turbulent case. -------!
       nusselt_lami    = ocyli_lami8 + acyli_lami8 * reynolds ** ncyli_lami8
       nusselt_turb    = ocyli_turb8 + acyli_turb8 * reynolds ** ncyli_turb8
-      !----- 3. Compute the correction term for the theoretical Nusselt numbers. ----------!
-      beta_forced     = beta_r18 + beta_r28 * tanh(log(reynolds/beta_re08))
-      !----- 4. The right Nusselt number is the largest of the both. ----------------------!
-      nusselt_forced  = beta_forced * max(nusselt_lami,nusselt_turb)
+      !----- 3. The right Nusselt number is the largest of the both. ----------------------!
+      nusselt_forced  = max(nusselt_lami,nusselt_turb)
       !----- 5. The conductance is given by MU08 - equation 10.4 --------------------------!
       forced_gbh_mos  = th_diff8 * nusselt_forced / w_diam
       !------------------------------------------------------------------------------------!
@@ -3684,14 +3620,8 @@ module canopy_struct_dynamics
       !----- 2. Compute the Nusselt number for both the laminar and turbulent case. -------!
       nusselt_lami    = bcyli_lami8 * grashof ** mcyli_lami8
       nusselt_turb    = bcyli_turb8 * grashof ** mcyli_turb8
-      !----- 3. Compute the correction term for the theoretical Nusselt numbers. ----------!
-      if (grashof == 0.d0) then
-         beta_free    = beta_g18 - beta_g28
-      else
-         beta_free    = beta_g18 + beta_g28 * tanh(log(grashof/beta_gr08))
-      end if
-      !----- 4. The right Nusselt number is the largest of the both. ----------------------!
-      nusselt_free    = beta_free * max(nusselt_lami,nusselt_turb)
+      !----- 3. The right Nusselt number is the largest of the both. ----------------------!
+      nusselt_free    = max(nusselt_lami,nusselt_turb)
       !----- 5. The conductance is given by MU08 - equation 10.4 --------------------------!
       free_gbh_mos    = th_diff8 * nusselt_free / w_diam
       !------------------------------------------------------------------------------------!

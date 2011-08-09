@@ -135,7 +135,7 @@ module pft_coms
    !----- Exponent for Vm in the Arrhenius equation [K]. ----------------------------------!
    real, dimension(n_pft) :: Vm_hor 
 
-   !----- Base (Q10 term) for Vm in Collatz equation [K]. ---------------------------------!
+   !----- Base (Q10 term) for Vm in Collatz equation. -------------------------------------!
    real, dimension(n_pft) :: Vm_q10
 
    !----- The a term for the Vm decline correction for high temperature, as in Collatz. ---!
@@ -159,7 +159,7 @@ module pft_coms
    !----- Exponent for Rd in the Arrhenius equation [K]. ----------------------------------!
    real, dimension(n_pft) :: Rd_hor 
 
-   !----- Base (Q10 term) for respiration in Collatz equation [K]. ------------------------!
+   !----- Base (Q10 term) for respiration in Collatz equation. ----------------------------!
    real, dimension(n_pft) :: Rd_q10
 
    !----- Slope of the Ball/Berry stomatal conductance-photosynthesis relationship. -------!
@@ -209,10 +209,25 @@ module pft_coms
    real, dimension(n_pft) :: storage_turnover_rate 
 
    !---------------------------------------------------------------------------------------!
-   !    This variable sets the contribution of roots to respiration.  Its units is         !
-   ! umol_CO2/kg_fine_roots/second.                                                        !
+   !    This variable sets the contribution of roots to respiration at the reference       !
+   ! temperature of 15C.  Its units is µmol_CO2/kg_fine_roots/s.                           !
    !---------------------------------------------------------------------------------------!
    real, dimension(n_pft) :: root_respiration_factor 
+
+   !----- Temperature [°C] below which root metabolic activity begins to rapidly decline. -!
+   real, dimension(n_pft) :: rrf_low_temp 
+
+   !----- Temperature [°C] above which root metabolic activity begins to rapidly decline. -!
+   real, dimension(n_pft) :: rrf_high_temp 
+
+   !----- Decay factor for the exponential correction. ------------------------------------!
+   real, dimension(n_pft) :: rrf_decay_e 
+
+   !----- Exponent for Rr in the Arrhenius equation [K]. ----------------------------------!
+   real, dimension(n_pft) :: rrf_hor 
+
+   !----- Base (Q10 term) for respiration in Collatz equation. ----------------------------!
+   real, dimension(n_pft) :: rrf_q10
    !=======================================================================================!
    !=======================================================================================!
 

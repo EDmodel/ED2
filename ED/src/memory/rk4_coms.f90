@@ -334,6 +334,10 @@ module rk4_coms
       real(kind=8)                    :: geoht
       real(kind=8)                    :: rshort
       real(kind=8)                    :: rlong
+      real(kind=8)                    :: par_beam
+      real(kind=8)                    :: par_diffuse
+      real(kind=8)                    :: nir_beam
+      real(kind=8)                    :: nir_diffuse
       real(kind=8)                    :: lon
       real(kind=8)                    :: lat
       real(kind=8)                    :: cosz

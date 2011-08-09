@@ -520,6 +520,20 @@ $ED_NL
 
 
    !---------------------------------------------------------------------------------------!
+   ! IVEGT_DYNAMICS -- The vegetation dynamics scheme.                                     !
+   !                   0.  No vegetation dynamics, the initial state will be preserved,    !
+   !                       even though the model will compute the potential values.  This  !
+   !                       option is useful for theoretical simulations only.              !
+   !                   1.  Normal ED vegetation dynamics (Moorcroft et al 2001).           !
+   !                       The normal option for almost any simulation.                    !
+   !---------------------------------------------------------------------------------------!
+   NL%IVEGT_DYNAMICS = myvegtdyn
+   !---------------------------------------------------------------------------------------!
+
+
+
+
+   !---------------------------------------------------------------------------------------!
    ! INTEGRATION_SCHEME -- The biophysics integration scheme.                              !
    !                       0.  Euler step.  The fastest, but it doesn't estimate           !
    !                           errors.                                                     !
@@ -578,7 +592,7 @@ $ED_NL
    !      Moorcroft et al. (2001), but the correction for Vm is done like in Collatz.      !
    ! 3 -- Same as 2, except that we find Gamma* as in Farquhar et al. (1980) and in CLM.   !
    !---------------------------------------------------------------------------------------!
-   NL%IPHYSIOL = myphysiol
+   NL%IPHYSIOL = 2
    !---------------------------------------------------------------------------------------!
 
 
@@ -595,7 +609,7 @@ $ED_NL
    !               to have root depths of 5m and grasses/seedlings at 0.5 to have root     !
    !               depth of 0.5 m.                                                         !
    !---------------------------------------------------------------------------------------!
-   NL%IALLOM          = myallom
+   NL%IALLOM          = 4
    !---------------------------------------------------------------------------------------!
 
 
@@ -685,20 +699,50 @@ $ED_NL
    !              1.  Dietze (2008) model.  Cohorts have a finite radius, and cohorts are  !
    !                  stacked on the top of each other.                                    !
    !---------------------------------------------------------------------------------------!
-   NL%CROWN_MOD       = mycrownmod
+   NL%CROWN_MOD       = 0
    !---------------------------------------------------------------------------------------!
 
 
 
    !---------------------------------------------------------------------------------------!
-   ! ICANRAD -- Specifies how canopy radiation is solved.  This variable sets both short-  !
-   !            wave and longwave.                                                         !
-   !              0.  Two-stream model (Medvigy 2006), with the possibility to apply       !
-   !                  finite crown area to direct shortwave radiation.                     !
-   !              1.  Multiple-scattering model (Zhao and Qualls 2005,2006), with the      !
-   !                  possibility to apply finite crown area to all radiation fluxes.      !
+   !      The following variables control the canopy radiation solver.                     !
+   !                                                                                       !
+   ! ICANRAD      -- Specifies how canopy radiation is solved.  This variable sets both    !
+   !                 shortwave and longwave.                                               !
+   !                 0.  Two-stream model (Medvigy 2006), with the possibility to apply    !
+   !                     finite crown area to direct shortwave radiation.                  !
+   !                 1.  Multiple-scattering model (Zhao and Qualls 2005,2006), with the   !
+   !                     possibility to apply finite crown area to all radiation fluxes.   !
+   ! LTRANS_VIS   -- Leaf transmittance for tropical plants - Visible/PAR                  !
+   ! LTRANS_NIR   -- Leaf transmittance for tropical plants - Near Infrared                !
+   ! LREFLECT_VIS -- Leaf reflectance for tropical plants - Visible/PAR                    !
+   ! LREFLECT_NIR -- Leaf reflectance for tropical plants - Near Infrared                  !
+   ! ORIENT_TREE  -- Leaf orientation factor for tropical trees.  Extremes are:            !
+   !                 -1.  All leaves are oriented in the vertical                          !
+   !                  0.  Leaf orientation is perfectly random                             !
+   !                  1.  All leaves are oriented in the horizontal                        !
+   !                  In practice, acceptable values range from -0.4 and 0.6               !
+   ! ORIENT_GRASS -- Leaf orientation factor for tropical grasses.  Extremes are:          !
+   !                 -1.  All leaves are oriented in the vertical                          !
+   !                  0.  Leaf orientation is perfectly random                             !
+   !                  1.  All leaves are oriented in the horizontal                        !
+   !                  In practice, acceptable values range from -0.4 and 0.6               !
+   ! CLUMP_TREE   -- Clumping factor for tropical trees.  Extremes are:                    !
+   !                 lim -> 0.  Black hole (0 itself is unacceptable)                      !
+   !                        1.  Homogeneously spread over the layer (i.e., no clumping)    !
+   ! CLUMP_GRASS  -- Clumping factor for tropical grasses.  Extremes are:                  !
+   !                 lim -> 0.  Black hole (0 itself is unacceptable)                      !
+   !                        1.  Homogeneously spread over the layer (i.e., no clumping)    !
    !---------------------------------------------------------------------------------------!
-   NL%ICANRAD        = mycanrad
+   NL%ICANRAD        =  mycanrad
+   NL%LTRANS_VIS     =  myltransvis
+   NL%LTRANS_NIR     =  myltransnir
+   NL%LREFLECT_VIS   =  mylreflectvis
+   NL%LREFLECT_NIR   =  mylreflectnir
+   NL%ORIENT_TREE    =  myorienttree
+   NL%ORIENT_GRASS   =  myorientgrass
+   NL%CLUMP_TREE     =  myclumptree
+   NL%CLUMP_GRASS    =  myclumpgrass
    !---------------------------------------------------------------------------------------!
 
 
@@ -725,7 +769,7 @@ $ED_NL
    !                      the water potential only, with all contribution of transpiration !
    !                      accounted by gsw.  It also ignores root biomass.                 !
    !---------------------------------------------------------------------------------------!
-   NL%H2O_PLANT_LIM   = mywlimit
+   NL%H2O_PLANT_LIM   = 1
    !---------------------------------------------------------------------------------------!
 
 
@@ -734,21 +778,16 @@ $ED_NL
    ! parameters.  Setting them to 1.0 will make them the default.  These are applied       !
    ! mostly to tropical C3 plants.                                                         !
    !                                                                                       !
-   ! VMFACT    -- Factor multiplying the default Vm0                                       !
-   ! MFACT     -- Factor multiplying the stomatal slope M.                                 !
-   ! KFACT     -- Factor multiplying the water conductance Kw.  This is used only when     !
-   !              H2O_PLANT_LIM = 1.                                                       !
-   ! GAMFACT   -- Factor multiplying the dark respiration factor (gamma)                   !
-   ! D0FACT    -- Factor multiplying the transpiration control in gsw (D0)                 !
-   ! ALPHAFACT -- Factor for changing the quantum yield of C3 plants.  This is only        !
-   !              applied when QUANTUM_EFFICIENCY_T = 0.                                   !
-   ! THETACRIT -- Leaf drought phenology threshold.  This is the relative soil moisture    !
-   !              above the wilting point below which the drought-deciduous plants will    !
-   !              start shedding their leaves                                              !
-   ! LWFACT    -- Factor for changing the leaf width (w)                                   !
-   ! THIOFF    -- Offset to be added to the Vm_high_temp                                   !
-   ! GGFACT    -- factor to multiply the ground to canopy conductance.  Default value      !
-   !              is 1.0.                                                                  !
+   ! VMFACT     -- Factor multiplying the default Vm0                                      !
+   ! MFACT      -- Factor multiplying the stomatal slope M.                                !
+   ! KFACT      -- Factor multiplying the water conductance Kw.  This is used only when    !
+   !               H2O_PLANT_LIM = 1.                                                      !
+   ! GAMFACT    -- Factor multiplying the dark respiration factor (gamma)                  !
+   ! D0FACT     -- Factor multiplying the transpiration control in gsw (D0)                !
+   ! ALPHAFACT  -- Factor for changing the quantum yield of C3 plants.  This is only       !
+   !               applied when QUANTUM_EFFICIENCY_T = 0.                                  !
+   ! RRFFACT    -- Factor multiplying the root respiration factor.                         !
+   ! GROWTHRESP -- The actual growth respiration factor (tropical PFTs only).              !
    !---------------------------------------------------------------------------------------!
    NL%VMFACT          = myvmfact
    NL%MFACT           = mymfact
@@ -756,10 +795,24 @@ $ED_NL
    NL%GAMFACT         = mygamfact
    NL%D0FACT          = myd0fact
    NL%ALPHAFACT       = myalphafact
+   NL%RRFFACT         = myrrffact
+   NL%GROWTHRESP      = mygrowthresp
+   !---------------------------------------------------------------------------------------!
+
+
+
+
+   !---------------------------------------------------------------------------------------!
+   ! THETACRIT -- Leaf drought phenology threshold.  The sign matters here:                !
+   !              >= 0. -- This is the relative soil moisture above the wilting point      !
+   !                       below which the drought-deciduous plants will start shedding    !
+   !                       their leaves                                                    !
+   !              <  0. -- This is the soil potential in MPa below which the drought-      !
+   !                       -deciduous plants will start shedding their leaves.  The wilt-  !
+   !                       ing point is by definition -1.5MPa, so make sure that the value !
+   !                       is above -1.5.                                                  !
+   !---------------------------------------------------------------------------------------!
    NL%THETACRIT       = mythcrit
-   NL%LWFACT          = mylwfact
-   NL%THIOFF          = mythioff
-   NL%GGFACT          = myggfact
    !---------------------------------------------------------------------------------------!
 
 
@@ -770,7 +823,7 @@ $ED_NL
    !                         1.  Quantum efficiency varies with temperature following      !
    !                             Ehleringer (1978) polynomial fit.                         !
    !---------------------------------------------------------------------------------------!
-   NL%QUANTUM_EFFICIENCY_T = myquantum
+   NL%QUANTUM_EFFICIENCY_T = 0
    !---------------------------------------------------------------------------------------!
 
 
@@ -807,9 +860,13 @@ $ED_NL
    !                      often  will never allow fires.                                   !
    !                  2.  Fire will be triggered with enough biomass and the total soil    !
    !                      water at the top 75 cm falls below a threshold.                  !
-   ! SM_FIRE       -- Threshold to define the relative soil moisture above dry air of the  !
-   !                  top 75cm that will trigger fires.  Used only when include_fire is    !
-   !                  set to 2.                                                            !
+   ! SM_FIRE       -- This is used only when INCLUDE_FIRE = 2.  The sign here matters.     !
+   !                  >= 0. - Minimum relative soil moisture above dry air of the top 75cm !
+   !                          that will prevent fires to happen.                           !
+   !                  <  0. - Minimum mean soil moisture potential in MPa of the top 75 cm !
+   !                          that will prevent fires to happen.  The dry air soil         !
+   !                          potential is defined as -3.1 MPa, so make sure SM_FIRE   is  !
+   !                          greater than this value.                                     !
    !---------------------------------------------------------------------------------------!
    NL%INCLUDE_FIRE    = 2
    NL%SM_FIRE         = mysmfire
@@ -845,21 +902,6 @@ $ED_NL
    !---------------------------------------------------------------------------------------!
 
 
-   !---------------------------------------------------------------------------------------!
-   ! I_BLYR_CONDCT -- This flag controls the boundary layer conductance.  This is for      !
-   !                  tests only and should be removed soon, so unless you know what you   !
-   !                  are doing, leave it as zero.                                         !
-   !                  0.  The Nusselt number for forced convection is estimated using the  !
-   !                      average winds, with no corrections                               !
-   !                  1.  The actual Nusselt number for forced convection is multiplied by !
-   !                      2.5 as the Reynolds number gets close or greater than 10,000.    !
-   !                  2.  The actual Nusselt number for forced convection is multiplied by !
-   !                      10. as the Reynolds number gets close or greater than 10,000.    !
-   !---------------------------------------------------------------------------------------!
-   NL%I_BLYR_CONDCT   = myblyrcnd
-   !---------------------------------------------------------------------------------------!
-
-
 
    !---------------------------------------------------------------------------------------!
    ! ISFCLYRM -- Similarity theory model.  The model that computes u*, T*, etc...          !
@@ -876,7 +918,7 @@ $ED_NL
    !    5.  The parametrisation of Oncley and Dudhia, but using z/L estimation as in       !
    !        Beljaars and Holtslag.                                                         !
    !---------------------------------------------------------------------------------------!
-   NL%ISFCLYRM        = myisfclyrm
+   NL%ISFCLYRM        = 3
    !---------------------------------------------------------------------------------------!
 
 
@@ -893,34 +935,18 @@ $ED_NL
    !    In all cases the beta term is modified so it approaches zero as soil moisture goes !
    ! to dry air soil.                                                                      !
    !---------------------------------------------------------------------------------------!
-   NL%IED_GRNDVAP   = mygrndvap
+   NL%IED_GRNDVAP   = 0
    !---------------------------------------------------------------------------------------!
 
 
 
 
    !---------------------------------------------------------------------------------------!
-   !     The following variables are used to control the similarity theory model.  For the !
-   ! meaning of these parameters, check Beljaars and Holtslag (1991).                      !
-   ! GAMM        -- gamma coefficient for momentum, unstable case (dimensionless)          !
-   !                Ignored when ISTAR = 1                                                 !
-   ! GAMH        -- gamma coefficient for heat, unstable case (dimensionless)              !
-   !                Ignored when ISTAR = 1                                                 !
-   ! TPRANDTL    -- Turbulent Prandtl number                                               !
-   !                Ignored when ISTAR = 1                                                 !
-   ! VH2VR       -- Ratio between vegetation roughness and vegetation height.              !
-   !                Ignored when ISFCL = 5 and ICANTURB = 2 or 3.                          !
-   ! VH2DH       -- Ratio between 0-plane displacement height and vegetation height.       !
-   !                Ignored when ISFCL = 5 and ICANTURB = 2 or 3.                          !
-   ! RIBMAX      -- maximum bulk Richardson number.                                        !
+   ! RIBMAX   -- maximum bulk Richardson numberm used for controlling stable fluxes in the !
+   !             similarity theory model.                                                  !
    ! LEAF_MAXWHC -- Maximum water that can be intercepted by leaves, in kg/m2leaf.         !
    !---------------------------------------------------------------------------------------!
-   NL%GAMM            = 13.
-   NL%GAMH            = 13.
-   NL%TPRANDTL        = 0.74
-   NL%VH2VR           = 0.13
-   NL%VH2DH           = 0.63
-   NL%RIBMAX          = 1.00
+   NL%RIBMAX          = 0.25
    NL%LEAF_MAXWHC     = 0.11
    !---------------------------------------------------------------------------------------!
 
@@ -940,7 +966,7 @@ $ED_NL
    !            2.  Soil conductivity decreases with depth even for constant soil moisture !
    !                , otherwise it is the same as 1.                                       !
    !---------------------------------------------------------------------------------------!
-   NL%IPERCOL         = mypercol
+   NL%IPERCOL         = 1
    !---------------------------------------------------------------------------------------!
 
 
@@ -1040,7 +1066,7 @@ $ED_NL
    !                              average patch age is still 1/TREEFALL_DISTURBANCE_RATE   !
    !---------------------------------------------------------------------------------------!
    NL%TREEFALL_DISTURBANCE_RATE  = 0.014
-   NL%TIME2CANOPY    = myagefall
+   NL%TIME2CANOPY    = 0.
    !---------------------------------------------------------------------------------------!
 
 
@@ -1051,16 +1077,7 @@ $ED_NL
    !                -folding lifetime" of the TSW in seconds due to runoff.  If you don't  !
    !                want runoff to happen, set this to 0.                                  !
    !---------------------------------------------------------------------------------------!
-   NL%RUNOFF_TIME    = myrunoff
-   !---------------------------------------------------------------------------------------!
-
-
-
-   !---------------------------------------------------------------------------------------!
-   ! BETAPOWER -- power to apply in the ground evaporation model (see IED_GRNDVAP          !
-   !              references).  Default value is 1.0.                                      !
-   !---------------------------------------------------------------------------------------!
-   NL%BETAPOWER      = mybpower
+   NL%RUNOFF_TIME    = 1800.
    !---------------------------------------------------------------------------------------!
 
 
@@ -1069,7 +1086,7 @@ $ED_NL
    !---------------------------------------------------------------------------------------!
    !  USTMIN -- minimum friction velocity, u*, in m/s.                                     !
    !---------------------------------------------------------------------------------------!
-   NL%USTMIN         = myustmin
+   NL%USTMIN         = 0.05
    !---------------------------------------------------------------------------------------!
 
 
@@ -1118,7 +1135,10 @@ $ED_NL
    !                   the  model is run.                                                  !
    ! IMETCYC1    -- First year with meteorological information                             !
    ! IMETCYCF    -- Last year with meteorological information                              !
-   ! IMETAVG     -- How the input radiation was originally averaged.                       !
+   ! IMETAVG     -- How the input radiation was originally averaged.  You must tell this   !
+   !                because ED-2.1 can make a interpolation accounting for the cosine of   !
+   !                zenith angle.                                                          !
+   !               -1.  I don't know, use linear interpolation.                            !
    !                0.  No average, the values are instantaneous                           !
    !                1.  Averages ending at the reference time                              !
    !                2.  Averages beginning at the reference time                           !
@@ -1183,7 +1203,7 @@ $ED_NL
    !---------------------------------------------------------------------------------------!
    ! IOPTINPT -- Optimization configuration. (Currently not used)                          !
    !---------------------------------------------------------------------------------------!
-      NL%IOPTINPT = ''
+   NL%IOPTINPT = ''
    !---------------------------------------------------------------------------------------!
 $END
 !==========================================================================================!

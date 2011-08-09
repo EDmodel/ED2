@@ -56,24 +56,47 @@ tserdist        = TRUE          # Time series of disturbance rates
 #     List of possible plots. In case you don't want some of them, simply switch plt to F. #
 #------------------------------------------------------------------------------------------#
 #----- Time series per PFT. ---------------------------------------------------------------#
-ntspft   = 17
-tsplot01 = list(vnam="agbpft"    ,desc="Above ground biomass"      ,unit="kgC/m2"    ,plt=T)
-tsplot02 = list(vnam="laipft"    ,desc="Leaf area index"           ,unit="m2/m2"     ,plt=T)
-tsplot03 = list(vnam="waipft"    ,desc="Wood area index"           ,unit="m2/m2"     ,plt=T)
-tsplot04 = list(vnam="taipft"    ,desc="Total area index"          ,unit="m2/m2"     ,plt=T)
-tsplot05 = list(vnam="bseedspft" ,desc="Seed biomass"              ,unit="kgC/m2"    ,plt=T)
-tsplot06 = list(vnam="gpppft"    ,desc="Gross primary productivity",unit="kgC/m2/yr" ,plt=T)
-tsplot07 = list(vnam="npppft"    ,desc="Net primary productivity"  ,unit="kgC/m2/yr" ,plt=T)
-tsplot08 = list(vnam="mcopft"    ,desc="Maintenance costs"         ,unit="kgC/m2/yr" ,plt=T)
-tsplot09 = list(vnam="cbapft"    ,desc="Carbon balance"            ,unit="kgC/m2/yr" ,plt=T)
-tsplot10 = list(vnam="ldroppft"  ,desc="Leaf drop"                 ,unit="kgC/m2/yr" ,plt=T)
-tsplot11 = list(vnam="balivepft" ,desc="Biomass of active tissues" ,unit="kgC/m2"    ,plt=T)
-tsplot12 = list(vnam="bdeadpft"  ,desc="Structural biomass"        ,unit="kgC/m2"    ,plt=T)
-tsplot13 = list(vnam="bleafpft"  ,desc="Leaf biomass"              ,unit="kgC/m2"    ,plt=T)
-tsplot14 = list(vnam="brootpft"  ,desc="Root biomass"              ,unit="kgC/m2"    ,plt=T)
-tsplot15 = list(vnam="bswoodpft" ,desc="Sapwood biomass"           ,unit="kgC/m2"    ,plt=T)
-tsplot16 = list(vnam="bstorepft" ,desc="Storage biomass"           ,unit="kgC/m2"    ,plt=T)
-tsplot17 = list(vnam="basareapft",desc="Basal area"                ,unit="m2/m2"     ,plt=T)
+ntspft   = 20
+tsplot01 = list(vnam="agbpft"       ,desc="Above ground biomass"      ,unit="kgC/m2"
+               ,plt=T)
+tsplot02 = list(vnam="laipft"       ,desc="Leaf area index"           ,unit="m2/m2"
+               ,plt=T)
+tsplot03 = list(vnam="waipft"       ,desc="Wood area index"           ,unit="m2/m2"
+               ,plt=T)
+tsplot04 = list(vnam="taipft"       ,desc="Total area index"          ,unit="m2/m2"
+               ,plt=T)
+tsplot05 = list(vnam="bseedspft"    ,desc="Seed biomass"              ,unit="kgC/m2"
+               ,plt=T)
+tsplot06 = list(vnam="gpppft"       ,desc="Gross primary productivity",unit="kgC/m2/yr"
+               ,plt=T)
+tsplot07 = list(vnam="npppft"       ,desc="Net primary productivity"  ,unit="kgC/m2/yr"
+               ,plt=T)
+tsplot08 = list(vnam="mcopft"       ,desc="Maintenance costs"         ,unit="kgC/m2/yr"
+               ,plt=T)
+tsplot09 = list(vnam="cbapft"       ,desc="Carbon balance"            ,unit="kgC/m2/yr"
+               ,plt=T)
+tsplot10 = list(vnam="ldroppft"     ,desc="Leaf drop"                 ,unit="kgC/m2/yr"
+               ,plt=F)
+tsplot11 = list(vnam="balivepft"    ,desc="Biomass of active tissues" ,unit="kgC/m2"
+               ,plt=F)
+tsplot12 = list(vnam="bdeadpft"     ,desc="Structural biomass"        ,unit="kgC/m2"
+               ,plt=F)
+tsplot13 = list(vnam="bleafpft"     ,desc="Leaf biomass"              ,unit="kgC/m2"
+               ,plt=F)
+tsplot14 = list(vnam="brootpft"     ,desc="Root biomass"              ,unit="kgC/m2"
+               ,plt=F)
+tsplot15 = list(vnam="bswoodpft"    ,desc="Sapwood biomass"           ,unit="kgC/m2"
+               ,plt=F)
+tsplot16 = list(vnam="bstorepft"    ,desc="Storage biomass"           ,unit="kgC/m2"
+               ,plt=F)
+tsplot17 = list(vnam="basareapft"   ,desc="Basal area"                ,unit="m2/m2"
+               ,plt=T)
+tsplot18 = list(vnam="leafresppft"  ,desc="Leaf respiration"          ,unit="m2/m2"
+               ,plt=T)
+tsplot19 = list(vnam="rootresppft"  ,desc="Root respiration"          ,unit="m2/m2"
+               ,plt=T)
+tsplot20 = list(vnam="growthresppft",desc="Growth respiration"        ,unit="m2/m2"
+               ,plt=T)
 #----- Time series per PFT. ---------------------------------------------------------------#
 ntslu    = 6
 lsplot01 = list(vnam="agblu"     ,desc="Above ground biomass"      ,unit="kgC/m2"    ,plt=F)
@@ -275,7 +298,7 @@ hovdi36 = list(vnam="rshort.diff",desc="Diffuse incident SW radiation"   ,unit="
 hovdi37 = list(vnam="albedo"     ,desc="SW albedo"                       ,unit="---"
                                  ,csch="muitas"                          ,plt=T)
 #----- Time series with several variables in it. ------------------------------------------#
-ntser=9
+ntser=10
 tser01 = list(vnam   = c("gpp","plresp","hetresp","nee")
              ,desc   = c("GPP","Plant resp.","Het. resp.","NEE")
              ,colour = c("forestgreen","chartreuse","sienna","deepskyblue")
@@ -375,6 +398,19 @@ tser09 = list(vnam   = c("ncoh.global")
              ,prefix = "ncohort"
              ,theme  = "Total number of cohorts"
              ,unit   = "---"
+             ,legpos = "topleft"
+             ,plt    = TRUE)
+tser10 = list(vnam   = c("plresp","hetresp","leaf.resp","root.resp","growth.resp")
+             ,desc   = c("Plant resp.","Het. resp.","Leaf resp.","Root resp."
+                        ,"Growth resp.")
+             ,colour = c("midnightblue","steelblue","forestgreen","darkorange3"
+                        ,"goldenrod")
+             ,lwd    = c(2.5,2.5,2.5,2.5,2.5)
+             ,type   = ptype
+             ,plog   = ""
+             ,prefix = "respiration"
+             ,theme  = "Respiration fluxes"
+             ,unit   = "kgC/m2/yr"
              ,legpos = "topleft"
              ,plt    = TRUE)
 #------------------------------------------------------------------------------------------#
@@ -1093,123 +1129,132 @@ for (place in myplaces){
    #---------------------------------------------------------------------------------------#
    totmon      = (yearz-yeara-1)*12+meszz+(12-monthbeg+1)
    #----- Size (DBH) and age arrays. ------------------------------------------------------#
-   agbpftdbh    = array(data=0.,dim=c(totmon,ndbh,npft))
-   laipftdbh    = array(data=0.,dim=c(totmon,ndbh,npft))
-   waipftdbh    = array(data=0.,dim=c(totmon,ndbh,npft))
-   taipftdbh    = array(data=0.,dim=c(totmon,ndbh,npft))
-   gpppftdbh    = array(data=0.,dim=c(totmon,ndbh,npft))
-   npppftdbh    = array(data=0.,dim=c(totmon,ndbh,npft))
-   mcopftdbh    = array(data=0.,dim=c(totmon,ndbh,npft))
-   cbapftdbh    = array(data=0.,dim=c(totmon,ndbh,npft))
-   agbpftage    = array(data=0.,dim=c(totmon,nage,npft))
-   laipftage    = array(data=0.,dim=c(totmon,nage,npft))
-   waipftage    = array(data=0.,dim=c(totmon,nage,npft))
-   taipftage    = array(data=0.,dim=c(totmon,nage,npft))
-   gpppftage    = array(data=0.,dim=c(totmon,nage,npft))
-   npppftage    = array(data=0.,dim=c(totmon,nage,npft))
-   mcopftage    = array(data=0.,dim=c(totmon,nage,npft))
-   cbapftage    = array(data=0.,dim=c(totmon,nage,npft))
+   agbpftdbh      = array(data=0.,dim=c(totmon,ndbh,npft))
+   laipftdbh      = array(data=0.,dim=c(totmon,ndbh,npft))
+   waipftdbh      = array(data=0.,dim=c(totmon,ndbh,npft))
+   taipftdbh      = array(data=0.,dim=c(totmon,ndbh,npft))
+   gpppftdbh      = array(data=0.,dim=c(totmon,ndbh,npft))
+   npppftdbh      = array(data=0.,dim=c(totmon,ndbh,npft))
+   mcopftdbh      = array(data=0.,dim=c(totmon,ndbh,npft))
+   cbapftdbh      = array(data=0.,dim=c(totmon,ndbh,npft))
+   agbpftage      = array(data=0.,dim=c(totmon,nage,npft))
+   laipftage      = array(data=0.,dim=c(totmon,nage,npft))
+   waipftage      = array(data=0.,dim=c(totmon,nage,npft))
+   taipftage      = array(data=0.,dim=c(totmon,nage,npft))
+   gpppftage      = array(data=0.,dim=c(totmon,nage,npft))
+   npppftage      = array(data=0.,dim=c(totmon,nage,npft))
+   mcopftage      = array(data=0.,dim=c(totmon,nage,npft))
+   cbapftage      = array(data=0.,dim=c(totmon,nage,npft))
    #----- PFT arrays.   The "+1" column contains the total. -------------------------------#
-   agbpft       = matrix(data=0,nrow=totmon,ncol=npft+1)
-   bseedspft    = matrix(data=0,nrow=totmon,ncol=npft+1)
-   laipft       = matrix(data=0,nrow=totmon,ncol=npft+1)
-   waipft       = matrix(data=0,nrow=totmon,ncol=npft+1)
-   taipft       = matrix(data=0,nrow=totmon,ncol=npft+1)
-   gpppft       = matrix(data=0,nrow=totmon,ncol=npft+1)
-   npppft       = matrix(data=0,nrow=totmon,ncol=npft+1)
-   mcopft       = matrix(data=0,nrow=totmon,ncol=npft+1)
-   cbapft       = matrix(data=0,nrow=totmon,ncol=npft+1)
-   ldroppft     = matrix(data=0,nrow=totmon,ncol=npft+1)
-   balivepft    = matrix(data=0,nrow=totmon,ncol=npft+1)
-   bdeadpft     = matrix(data=0,nrow=totmon,ncol=npft+1)
-   bleafpft     = matrix(data=0,nrow=totmon,ncol=npft+1)
-   brootpft     = matrix(data=0,nrow=totmon,ncol=npft+1)
-   bswoodpft    = matrix(data=0,nrow=totmon,ncol=npft+1)
-   bstorepft    = matrix(data=0,nrow=totmon,ncol=npft+1)
-   basareapft   = matrix(data=0,nrow=totmon,ncol=npft+1)
+   agbpft         = matrix(data=0,nrow=totmon,ncol=npft+1)
+   bseedspft      = matrix(data=0,nrow=totmon,ncol=npft+1)
+   laipft         = matrix(data=0,nrow=totmon,ncol=npft+1)
+   waipft         = matrix(data=0,nrow=totmon,ncol=npft+1)
+   taipft         = matrix(data=0,nrow=totmon,ncol=npft+1)
+   gpppft         = matrix(data=0,nrow=totmon,ncol=npft+1)
+   npppft         = matrix(data=0,nrow=totmon,ncol=npft+1)
+   mcopft         = matrix(data=0,nrow=totmon,ncol=npft+1)
+   cbapft         = matrix(data=0,nrow=totmon,ncol=npft+1)
+   ldroppft       = matrix(data=0,nrow=totmon,ncol=npft+1)
+   balivepft      = matrix(data=0,nrow=totmon,ncol=npft+1)
+   bdeadpft       = matrix(data=0,nrow=totmon,ncol=npft+1)
+   bleafpft       = matrix(data=0,nrow=totmon,ncol=npft+1)
+   brootpft       = matrix(data=0,nrow=totmon,ncol=npft+1)
+   bswoodpft      = matrix(data=0,nrow=totmon,ncol=npft+1)
+   bstorepft      = matrix(data=0,nrow=totmon,ncol=npft+1)
+   basareapft     = matrix(data=0,nrow=totmon,ncol=npft+1)
+   leafresppft    = matrix(data=0,nrow=totmon,ncol=npft+1)
+   rootresppft    = matrix(data=0,nrow=totmon,ncol=npft+1)
+   growthresppft  = matrix(data=0,nrow=totmon,ncol=npft+1)
 
    #----- LU arrays.   The "+1" column contains the total. --------------------------------#
-   agblu       = matrix(data=0,nrow=totmon,ncol=nlu+1)
-   lailu       = matrix(data=0,nrow=totmon,ncol=nlu+1)
-   gpplu       = matrix(data=0,nrow=totmon,ncol=nlu+1)
-   npplu       = matrix(data=0,nrow=totmon,ncol=nlu+1)
-   arealu      = matrix(data=0,nrow=totmon,ncol=nlu+1)
-   basarealu   = matrix(data=0,nrow=totmon,ncol=nlu+1)
+   agblu          = matrix(data=0,nrow=totmon,ncol=nlu+1)
+   lailu          = matrix(data=0,nrow=totmon,ncol=nlu+1)
+   gpplu          = matrix(data=0,nrow=totmon,ncol=nlu+1)
+   npplu          = matrix(data=0,nrow=totmon,ncol=nlu+1)
+   arealu         = matrix(data=0,nrow=totmon,ncol=nlu+1)
+   basarealu      = matrix(data=0,nrow=totmon,ncol=nlu+1)
    #----- Miscellaneous arrays. -----------------------------------------------------------#
-   dist         = array(NA,dim=c(totmon,nlu,nlu))
+   dist           = array(NA,dim=c(totmon,nlu,nlu))
    #----- Polygon level vectors. ----------------------------------------------------------#
-   gpp            = NULL
-   plresp         = NULL
-   hetresp        = NULL
-   mco            = NULL
-   npp            = NULL
-   cba            = NULL
-   ldrop          = NULL
-   npp            = NULL
-   nep            = NULL
-   nee            = NULL
-   evap           = NULL
-   transp         = NULL
-   atm.prss       = NULL
-   atm.temp       = NULL
-   can.prss       = NULL
-   can.temp       = NULL
-   atm.co2        = NULL
-   can.co2        = NULL
-   leaf.temp      = NULL
-   wood.temp      = NULL
-   atm.shv        = NULL
-   can.shv        = NULL
-   can.co2        = NULL
-   sens           = NULL
-   latent         = NULL
-   et             = NULL
-   agb            = NULL
-   lai            = NULL
-   wai            = NULL
-   tai            = NULL
-   area           = NULL
-   rain           = NULL
-   gnd.temp       = NULL
-   gnd.shv        = NULL
-   workload       = NULL
-   specwork       = NULL
-   fs.open        = NULL
-   hflxgc         = NULL
-   hflxlc         = NULL
-   hflxwc         = NULL
-   wflxgc         = NULL
-   wflxlc         = NULL
-   wflxwc         = NULL
-   et             = NULL
-   rshort         = NULL
-   rshort.beam    = NULL
-   rshort.diff    = NULL
-   rlong          = NULL
-   rshort.gnd     = NULL
-   rlong.gnd      = NULL
-   rlongup        = NULL
-   albedo         = NULL
-   albedo.beam    = NULL
-   albedo.diff    = NULL
-   rlong.albedo   = NULL
-   npat.global    = NULL
-   ncoh.global    = NULL
-   mmsqu.gpp      = NULL
-   mmsqu.plresp   = NULL
-   mmsqu.hetresp  = NULL
-   mmsqu.nee      = NULL
-   mmsqu.sens     = NULL
-   mmsqu.hflxlc   = NULL
-   mmsqu.hflxwc   = NULL
-   mmsqu.hflxgc   = NULL
-   mmsqu.et       = NULL
-   mmsqu.latent   = NULL
-   mmsqu.wflxlc   = NULL
-   mmsqu.wflxwc   = NULL
-   mmsqu.wflxgc   = NULL
-   mmsqu.evap     = NULL
-   mmsqu.transp   = NULL
+   gpp             = NULL
+   plresp          = NULL
+   leaf.resp       = NULL
+   root.resp       = NULL
+   growth.resp     = NULL
+   hetresp         = NULL
+   mco             = NULL
+   npp             = NULL
+   cba             = NULL
+   ldrop           = NULL
+   npp             = NULL
+   nep             = NULL
+   nee             = NULL
+   evap            = NULL
+   transp          = NULL
+   atm.prss        = NULL
+   atm.temp        = NULL
+   can.prss        = NULL
+   can.temp        = NULL
+   atm.co2         = NULL
+   can.co2         = NULL
+   leaf.temp       = NULL
+   wood.temp       = NULL
+   atm.shv         = NULL
+   can.shv         = NULL
+   can.co2         = NULL
+   sens            = NULL
+   latent          = NULL
+   et              = NULL
+   agb             = NULL
+   lai             = NULL
+   wai             = NULL
+   tai             = NULL
+   area            = NULL
+   rain            = NULL
+   gnd.temp        = NULL
+   gnd.shv         = NULL
+   workload        = NULL
+   specwork        = NULL
+   fs.open         = NULL
+   hflxgc          = NULL
+   hflxlc          = NULL
+   hflxwc          = NULL
+   wflxgc          = NULL
+   wflxlc          = NULL
+   wflxwc          = NULL
+   et              = NULL
+   rshort          = NULL
+   rshort.beam     = NULL
+   rshort.diff     = NULL
+   rlong           = NULL
+   rshort.gnd      = NULL
+   rlong.gnd       = NULL
+   rlongup         = NULL
+   albedo          = NULL
+   albedo.beam     = NULL
+   albedo.diff     = NULL
+   rlong.albedo    = NULL
+   npat.global     = NULL
+   ncoh.global     = NULL
+   mmsqu.gpp       = NULL
+   mmsqu.plresp    = NULL
+   mmsqu.leaf.resp = NULL
+   mmsqu.root.resp = NULL
+   mmsqu.plresp    = NULL
+   mmsqu.hetresp   = NULL
+   mmsqu.nee       = NULL
+   mmsqu.sens      = NULL
+   mmsqu.hflxlc    = NULL
+   mmsqu.hflxwc    = NULL
+   mmsqu.hflxgc    = NULL
+   mmsqu.et        = NULL
+   mmsqu.latent    = NULL
+   mmsqu.wflxlc    = NULL
+   mmsqu.wflxwc    = NULL
+   mmsqu.wflxgc    = NULL
+   mmsqu.evap      = NULL
+   mmsqu.transp    = NULL
 
    #----- Cohort level lists. -------------------------------------------------------------#
    lightco      = list()
@@ -1322,6 +1367,9 @@ for (place in myplaces){
              dcycmean                = list()
              dcycmean$gpp            = matrix(data=0,nrow=totmon,ncol=ndcycle)
              dcycmean$plresp         = matrix(data=0,nrow=totmon,ncol=ndcycle)
+             dcycmean$leaf.resp      = matrix(data=0,nrow=totmon,ncol=ndcycle)
+             dcycmean$root.resp      = matrix(data=0,nrow=totmon,ncol=ndcycle)
+             dcycmean$growth.resp    = matrix(data=0,nrow=totmon,ncol=ndcycle)
              dcycmean$hetresp        = matrix(data=0,nrow=totmon,ncol=ndcycle)
              dcycmean$nep            = matrix(data=0,nrow=totmon,ncol=ndcycle)
              dcycmean$nee            = matrix(data=0,nrow=totmon,ncol=ndcycle)
@@ -1366,6 +1414,8 @@ for (place in myplaces){
              dcycmsqu             = list()
              dcycmsqu$gpp         = matrix(data=0,nrow=totmon,ncol=ndcycle)
              dcycmsqu$plresp      = matrix(data=0,nrow=totmon,ncol=ndcycle)
+             dcycmsqu$leaf.resp   = matrix(data=0,nrow=totmon,ncol=ndcycle)
+             dcycmsqu$root.resp   = matrix(data=0,nrow=totmon,ncol=ndcycle)
              dcycmsqu$hetresp     = matrix(data=0,nrow=totmon,ncol=ndcycle)
              dcycmsqu$nep         = matrix(data=0,nrow=totmon,ncol=ndcycle)
              dcycmsqu$nee         = matrix(data=0,nrow=totmon,ncol=ndcycle)
@@ -1395,39 +1445,44 @@ for (place in myplaces){
 
 
           #----- Load the simple variables. -----------------------------------------------#
-          gpp       = c(gpp              ,   mymont$MMEAN.GPP                            )
-          plresp    = c(plresp           ,   mymont$MMEAN.PLRESP                         )
-          hetresp   = c(hetresp          ,   mymont$MMEAN.RH                             )
-          nep       = c(nep              ,   mymont$MMEAN.NEP                            )
-          npp       = c(npp              ,   mymont$MMEAN.GPP - mymont$MMEAN.PLRESP      )
-          nee       = c(nee              ,   mymont$MMEAN.NEE                            )
-          sens      = c(sens             , - mymont$MMEAN.SENSIBLE.AC                    )
-          hflxlc    = c(hflxlc           ,   mymont$MMEAN.SENSIBLE.LC                    )
-          hflxwc    = c(hflxwc           ,   mymont$MMEAN.SENSIBLE.WC                    )
-          hflxgc    = c(hflxgc           ,   mymont$MMEAN.SENSIBLE.GC                    )
-          latent    = c(latent           , - mymont$MMEAN.VAPOR.AC    * alvl             )
-          et        = c(et               , - mymont$MMEAN.VAPOR.AC    * day.sec          )
-          wflxlc    = c(wflxlc           ,   mymont$MMEAN.VAPOR.LC    * day.sec          )
-          wflxwc    = c(wflxwc           ,   mymont$MMEAN.VAPOR.WC    * day.sec          )
-          wflxgc    = c(wflxgc           ,   mymont$MMEAN.VAPOR.GC    * day.sec          )
-          evap      = c(evap             ,   mymont$MMEAN.EVAP        * day.sec          )
-          transp    = c(transp           ,   mymont$MMEAN.TRANSP      * day.sec          )
+          gpp             = c(gpp              ,   mymont$MMEAN.GPP                      )
+          plresp          = c(plresp           ,   mymont$MMEAN.PLRESP                   )
+          leaf.resp       = c(leaf.resp        ,   mymont$MMEAN.LEAF.RESP                )
+          root.resp       = c(root.resp        ,   mymont$MMEAN.ROOT.RESP                )
+          growth.resp     = c(growth.resp      ,   mymont$MMEAN.GROWTH.RESP              )
+          hetresp         = c(hetresp          ,   mymont$MMEAN.RH                       )
+          nep             = c(nep              ,   mymont$MMEAN.NEP                      )
+          npp             = c(npp              ,   mymont$MMEAN.GPP - mymont$MMEAN.PLRESP)
+          nee             = c(nee              ,   mymont$MMEAN.NEE                      )
+          sens            = c(sens             , - mymont$MMEAN.SENSIBLE.AC              )
+          hflxlc          = c(hflxlc           ,   mymont$MMEAN.SENSIBLE.LC              )
+          hflxwc          = c(hflxwc           ,   mymont$MMEAN.SENSIBLE.WC              )
+          hflxgc          = c(hflxgc           ,   mymont$MMEAN.SENSIBLE.GC              )
+          latent          = c(latent           , - mymont$MMEAN.VAPOR.AC    * alvl       )
+          et              = c(et               , - mymont$MMEAN.VAPOR.AC    * day.sec    )
+          wflxlc          = c(wflxlc           ,   mymont$MMEAN.VAPOR.LC    * day.sec    )
+          wflxwc          = c(wflxwc           ,   mymont$MMEAN.VAPOR.WC    * day.sec    )
+          wflxgc          = c(wflxgc           ,   mymont$MMEAN.VAPOR.GC    * day.sec    )
+          evap            = c(evap             ,   mymont$MMEAN.EVAP        * day.sec    )
+          transp          = c(transp           ,   mymont$MMEAN.TRANSP      * day.sec    )
 
-          mmsqu.gpp     = c(mmsqu.gpp    ,mymont$MMSQU.GPP                               )
-          mmsqu.plresp  = c(mmsqu.plresp ,mymont$MMSQU.PLRESP                            )
-          mmsqu.hetresp = c(mmsqu.hetresp,mymont$MMSQU.RH                                )
-          mmsqu.nee     = c(mmsqu.nee    ,mymont$MMSQU.NEE                               )
-          mmsqu.sens    = c(mmsqu.sens   ,mymont$MMSQU.SENSIBLE.AC                       )
-          mmsqu.hflxlc  = c(mmsqu.hflxlc ,mymont$MMSQU.SENSIBLE.LC                       )
-          mmsqu.hflxwc  = c(mmsqu.hflxwc ,mymont$MMSQU.SENSIBLE.WC                       )
-          mmsqu.hflxgc  = c(mmsqu.hflxgc ,mymont$MMSQU.SENSIBLE.GC                       )
-          mmsqu.et      = c(mmsqu.et     ,mymont$MMSQU.VAPOR.AC  * day.sec * day.sec     )
-          mmsqu.latent  = c(mmsqu.latent ,mymont$MMSQU.VAPOR.AC  * alvl    * alvl        )
-          mmsqu.wflxlc  = c(mmsqu.wflxlc ,mymont$MMSQU.VAPOR.LC  * day.sec * day.sec     )
-          mmsqu.wflxwc  = c(mmsqu.wflxwc ,mymont$MMSQU.VAPOR.WC  * day.sec * day.sec     )
-          mmsqu.wflxgc  = c(mmsqu.wflxgc ,mymont$MMSQU.VAPOR.GC  * day.sec * day.sec     )
-          mmsqu.evap    = c(mmsqu.evap   ,mymont$MMSQU.EVAP      * day.sec * day.sec     )
-          mmsqu.transp  = c(mmsqu.transp ,mymont$MMSQU.TRANSP    * day.sec * day.sec     )
+          mmsqu.gpp       = c(mmsqu.gpp    ,mymont$MMSQU.GPP                             )
+          mmsqu.plresp    = c(mmsqu.plresp ,mymont$MMSQU.PLRESP                          )
+          mmsqu.leaf.resp = c(mmsqu.leaf.resp ,mymont$MMSQU.PLRESP                       )
+          mmsqu.root.resp = c(mmsqu.root.resp ,mymont$MMSQU.PLRESP                       )
+          mmsqu.hetresp   = c(mmsqu.hetresp,mymont$MMSQU.RH                              )
+          mmsqu.nee       = c(mmsqu.nee    ,mymont$MMSQU.NEE                             )
+          mmsqu.sens      = c(mmsqu.sens   ,mymont$MMSQU.SENSIBLE.AC                     )
+          mmsqu.hflxlc    = c(mmsqu.hflxlc ,mymont$MMSQU.SENSIBLE.LC                     )
+          mmsqu.hflxwc    = c(mmsqu.hflxwc ,mymont$MMSQU.SENSIBLE.WC                     )
+          mmsqu.hflxgc    = c(mmsqu.hflxgc ,mymont$MMSQU.SENSIBLE.GC                     )
+          mmsqu.et        = c(mmsqu.et     ,mymont$MMSQU.VAPOR.AC  * day.sec * day.sec   )
+          mmsqu.latent    = c(mmsqu.latent ,mymont$MMSQU.VAPOR.AC  * alvl    * alvl      )
+          mmsqu.wflxlc    = c(mmsqu.wflxlc ,mymont$MMSQU.VAPOR.LC  * day.sec * day.sec   )
+          mmsqu.wflxwc    = c(mmsqu.wflxwc ,mymont$MMSQU.VAPOR.WC  * day.sec * day.sec   )
+          mmsqu.wflxgc    = c(mmsqu.wflxgc ,mymont$MMSQU.VAPOR.GC  * day.sec * day.sec   )
+          mmsqu.evap      = c(mmsqu.evap   ,mymont$MMSQU.EVAP      * day.sec * day.sec   )
+          mmsqu.transp    = c(mmsqu.transp ,mymont$MMSQU.TRANSP    * day.sec * day.sec   )
 
           atm.prss      = c(atm.prss     ,mymont$MMEAN.ATM.PRSS  * 0.01                  )
           atm.temp      = c(atm.temp     ,mymont$MMEAN.ATM.TEMP  - t00                   )
@@ -1487,6 +1542,8 @@ for (place in myplaces){
           #--------------------------------------------------------------------------------#
           dcycmean$gpp         [m,] = mymont$QMEAN.GPP
           dcycmean$plresp      [m,] = mymont$QMEAN.PLRESP
+          dcycmean$leaf.resp   [m,] = mymont$QMEAN.LEAF.RESP
+          dcycmean$root.resp   [m,] = mymont$QMEAN.ROOT.RESP
           dcycmean$hetresp     [m,] = mymont$QMEAN.RH
           dcycmean$nep         [m,] = mymont$QMEAN.NEP
           dcycmean$nee         [m,] = mymont$QMEAN.NEE
@@ -1532,6 +1589,8 @@ for (place in myplaces){
 
           dcycmsqu$gpp         [m,] = mymont$QMSQU.GPP
           dcycmsqu$plresp      [m,] = mymont$QMSQU.PLRESP
+          dcycmsqu$leaf.resp   [m,] = mymont$QMSQU.LEAF.RESP
+          dcycmsqu$root.resp   [m,] = mymont$QMSQU.ROOT.RESP
           dcycmsqu$hetresp     [m,] = mymont$QMSQU.RH
           dcycmsqu$nep         [m,] = mymont$QMSQU.NEP
           dcycmsqu$nee         [m,] = mymont$QMSQU.NEE
@@ -1601,38 +1660,42 @@ for (place in myplaces){
              areapaage  = tapply(X=areapa,INDEX=agepafac,sum,na.rm=TRUE)
              areaage    = areapaage[as.character(agefac)]
 
-             pftconow      = mymont$PFT
-             nplantconow   = mymont$NPLANT
-             heightconow   = mymont$HITE
-             baconow       = mymont$BA.CO
-             agbconow      = mymont$AGB.CO
-             bseedsconow   = mymont$BSEEDS.CO
-             laiconow      = mymont$LAI.CO
-             waiconow      = mymont$WAI.CO
-             taiconow      = laiconow + waiconow
-             gppconow      = mymont$MMEAN.GPP.CO
-             respconow     = ( mymont$MMEAN.LEAF.RESP.CO   + mymont$MMEAN.ROOT.RESP.CO
-                             + mymont$MMEAN.GROWTH.RESP.CO + mymont$MMEAN.STORAGE.RESP.CO
-                             + mymont$MMEAN.VLEAF.RESP.CO  )
-             nppconow      = gppconow-respconow
-             cbalconow     = mymont$MMEAN.CB
-             mcostconow    = mymont$MMEAN.LEAF.MAINTENANCE + mymont$MMEAN.ROOT.MAINTENANCE
-             ldropconow    = mymont$MMEAN.LEAF.DROP.CO
-             cbrbarconow   = mymont$CBR.BAR
-             ncbmortconow  = mymont$MMEAN.MORT.RATE[,2]
-             fsoconow      = mymont$MMEAN.FS.OPEN.CO
-             lightconow    = mymont$MMEAN.LIGHT.LEVEL
-             lambdaconow   = mymont$MMEAN.LAMBDA.LIGHT.CO
-             beamextconow  = mymont$MMEAN.BEAMEXT.LEVEL
-             diffextconow  = mymont$MMEAN.BEAMEXT.LEVEL
-             parlconow     = mymont$MMEAN.PAR.L
+             pftconow        = mymont$PFT
+             nplantconow     = mymont$NPLANT
+             heightconow     = mymont$HITE
+             baconow         = mymont$BA.CO
+             agbconow        = mymont$AGB.CO
+             bseedsconow     = mymont$BSEEDS.CO
+             laiconow        = mymont$LAI.CO
+             waiconow        = mymont$WAI.CO
+             taiconow        = laiconow + waiconow
+             gppconow        = mymont$MMEAN.GPP.CO
+             leafrespconow   = mymont$MMEAN.LEAF.RESP.CO
+             rootrespconow   = mymont$MMEAN.ROOT.RESP.CO
+             growthrespconow = mymont$MMEAN.GROWTH.RESP.CO
+             respconow       = ( mymont$MMEAN.LEAF.RESP.CO   + mymont$MMEAN.ROOT.RESP.CO
+                               + mymont$MMEAN.GROWTH.RESP.CO + mymont$MMEAN.STORAGE.RESP.CO
+                               + mymont$MMEAN.VLEAF.RESP.CO  )
+             nppconow        = gppconow-respconow
+             cbalconow       = mymont$MMEAN.CB
+             mcostconow      = ( mymont$MMEAN.LEAF.MAINTENANCE
+                               + mymont$MMEAN.ROOT.MAINTENANCE )
+             ldropconow      = mymont$MMEAN.LEAF.DROP.CO
+             cbrbarconow     = mymont$CBR.BAR
+             ncbmortconow    = mymont$MMEAN.MORT.RATE[,2]
+             fsoconow        = mymont$MMEAN.FS.OPEN.CO
+             lightconow      = mymont$MMEAN.LIGHT.LEVEL
+             lambdaconow     = mymont$MMEAN.LAMBDA.LIGHT.CO
+             beamextconow    = mymont$MMEAN.BEAMEXT.LEVEL
+             diffextconow    = mymont$MMEAN.BEAMEXT.LEVEL
+             parlconow       = mymont$MMEAN.PAR.L
 
-             baliveconow   = mymont$BALIVE
-             bdeadconow    = mymont$BDEAD
-             bleafconow    = mymont$BLEAF
-             brootconow    = mymont$BROOT
-             bswoodconow   = mymont$BSAPWOOD
-             bstoreconow   = mymont$BSTORAGE
+             baliveconow     = mymont$BALIVE
+             bdeadconow      = mymont$BDEAD
+             bleafconow      = mymont$BLEAF
+             brootconow      = mymont$BROOT
+             bswoodconow     = mymont$BSAPWOOD
+             bstoreconow     = mymont$BSTORAGE
 
 
              sel               = laiconow > 1.e-10
@@ -1648,54 +1711,57 @@ for (place in myplaces){
              #-----------------------------------------------------------------------------#
           }else{
              #----- Make everything NA. ---------------------------------------------------#
-             areaconow     = NA
-             luconow       = NA
-             dbhconow      = NA
-             dbhbks        = NA
-             dbhcut        = NA
-             dbhlevs       = NA
-             dbhfac        = NA
-             ageconow      = NA
-             agebks        = NA
-             agecut        = NA
-             agelevs       = NA
-             agefac        = NA
-             agepacut      = NA
-             agepafac      = NA
-             areapaage     = NA
-             areaage       = NA
-             pftconow      = NA
-             nplantconow   = NA
-             heightconow   = NA
-             agbconow      = NA
-             baconow       = NA
-             bseedsconow   = NA
-             laiconow      = NA
-             waiconow      = NA
-             taiconow      = NA
-             gppconow      = NA
-             gpplconow     = NA
-             respconow     = NA
-             nppconow      = NA
-             cbalconow     = NA
-             mcostconow    = NA
-             ldropconow    = NA
-             cbrbarconow   = NA
-             ncbmortconow  = NA
-             fsoconow      = NA
-             lightconow    = NA
-             lambdaconow   = NA
-             beamextconow  = NA
-             diffextconow  = NA
-             parlconow     = NA
-             demandconow   = NA
-             supplyconow   = NA
-             baliveconow   = NA
-             bdeadconow    = NA
-             bleafconow    = NA
-             brootconow    = NA
-             bswoodconow   = NA
-             bstoreconow   = NA
+             areaconow       = NA
+             luconow         = NA
+             dbhconow        = NA
+             dbhbks          = NA
+             dbhcut          = NA
+             dbhlevs         = NA
+             dbhfac          = NA
+             ageconow        = NA
+             agebks          = NA
+             agecut          = NA
+             agelevs         = NA
+             agefac          = NA
+             agepacut        = NA
+             agepafac        = NA
+             areapaage       = NA
+             areaage         = NA
+             pftconow        = NA
+             nplantconow     = NA
+             heightconow     = NA
+             agbconow        = NA
+             baconow         = NA
+             bseedsconow     = NA
+             laiconow        = NA
+             waiconow        = NA
+             taiconow        = NA
+             gppconow        = NA
+             gpplconow       = NA
+             leafrespconow   = NA
+             rootrespconow   = NA
+             growthrespconow = NA
+             respconow       = NA 
+             nppconow        = NA 
+             cbalconow       = NA 
+             mcostconow      = NA 
+             ldropconow      = NA 
+             cbrbarconow     = NA 
+             ncbmortconow    = NA 
+             fsoconow        = NA 
+             lightconow      = NA 
+             lambdaconow     = NA 
+             beamextconow    = NA 
+             diffextconow    = NA 
+             parlconow       = NA 
+             demandconow     = NA 
+             supplyconow     = NA 
+             baliveconow     = NA 
+             bdeadconow      = NA 
+             bleafconow      = NA 
+             brootconow      = NA 
+             bswoodconow     = NA 
+             bstoreconow     = NA 
           }#end if
 
           #----- Define some classes that can be defined even when no cohorts exist. ------#
@@ -1721,68 +1787,80 @@ for (place in myplaces){
                  waipft    [m,p] = waipft     [m,p] + sum(waiconow [sel] * areaconow[sel])
                  taipft    [m,p] = taipft     [m,p] + sum(taiconow [sel] * areaconow[sel])
 
-                 basareapft[m,p] = ( basareapft [m,p] 
-                                   + sum( nplantconow[sel] * baconow [sel]   
-                                        * areaconow[sel]))
-                 agbpft    [m,p] = ( agbpft [m,p] 
-                                   + sum( nplantconow[sel] * agbconow [sel]   
-                                        * areaconow[sel]))
-                 bseedspft [m,p] = ( bseedspft [m,p]
-                                   + sum( nplantconow[sel] * bseedsconow [sel] 
-                                        * areaconow [sel]))
-                 gpppft    [m,p] = ( gpppft [m,p]
-                                   + sum( nplantconow[sel] * gppconow [sel]
-                                        * areaconow[sel]))
-                 npppft    [m,p] = ( npppft [m,p]
-                                   + sum( nplantconow[sel] * nppconow [sel]  
-                                        * areaconow[sel]))
-                 mcopft    [m,p] = ( mcopft [m,p]
-                                   + sum( nplantconow[sel] * mcostconow [sel]
-                                        * areaconow[sel]))
-                 cbapft    [m,p] = ( cbapft [m,p] 
-                                   + sum( nplantconow[sel] * cbalconow [sel]  
-                                        * areaconow[sel]))
-                 ldroppft  [m,p] = ( ldroppft [m,p] 
-                                   + sum( nplantconow[sel] * ldropconow [sel]  
-                                        * areaconow[sel]))
-                 balivepft [m,p] = ( balivepft [m,p]
-                                   + sum( nplantconow[sel] * baliveconow[sel]
-                                        * areaconow[sel]))
-                 bdeadpft  [m,p] = ( bdeadpft [m,p]
-                                   + sum( nplantconow[sel] * bdeadconow[sel]
-                                        * areaconow[sel]))
-                 bleafpft  [m,p] = ( bleafpft [m,p]
-                                   + sum( nplantconow[sel] * bleafconow[sel]
-                                        * areaconow[sel]))
-                 brootpft  [m,p] = ( brootpft [m,p]
-                                   + sum( nplantconow[sel] * brootconow[sel]
-                                        * areaconow[sel]))
-                 bswoodpft [m,p] = ( bswoodpft [m,p]
-                                   + sum( nplantconow[sel] * bswoodconow[sel]
-                                        * areaconow[sel]))
-                 bstorepft [m,p] = ( bstorepft [m,p]
-                                   + sum( nplantconow[sel] * bstoreconow[sel]
-                                        * areaconow[sel]))
+                 basareapft[m,p]    = ( basareapft [m,p] 
+                                      + sum( nplantconow[sel] * baconow [sel]   
+                                           * areaconow[sel]))
+                 agbpft    [m,p]    = ( agbpft [m,p] 
+                                      + sum( nplantconow[sel] * agbconow [sel]   
+                                           * areaconow[sel]))
+                 bseedspft [m,p]    = ( bseedspft [m,p]
+                                      + sum( nplantconow[sel] * bseedsconow [sel] 
+                                           * areaconow [sel]))
+                 gpppft    [m,p]    = ( gpppft [m,p]
+                                      + sum( nplantconow[sel] * gppconow [sel]
+                                           * areaconow[sel]))
+                 npppft    [m,p]    = ( npppft [m,p]
+                                      + sum( nplantconow[sel] * nppconow [sel]  
+                                           * areaconow[sel]))
+                 mcopft    [m,p]    = ( mcopft [m,p]
+                                      + sum( nplantconow[sel] * mcostconow [sel]
+                                           * areaconow[sel]))
+                 cbapft    [m,p]    = ( cbapft [m,p] 
+                                      + sum( nplantconow[sel] * cbalconow [sel]  
+                                           * areaconow[sel]))
+                 ldroppft  [m,p]    = ( ldroppft [m,p] 
+                                      + sum( nplantconow[sel] * ldropconow [sel]  
+                                           * areaconow[sel]))
+                 balivepft [m,p]    = ( balivepft [m,p]
+                                      + sum( nplantconow[sel] * baliveconow[sel]
+                                           * areaconow[sel]))
+                 bdeadpft  [m,p]    = ( bdeadpft [m,p]
+                                      + sum( nplantconow[sel] * bdeadconow[sel]
+                                           * areaconow[sel]))
+                 bleafpft  [m,p]    = ( bleafpft [m,p]
+                                      + sum( nplantconow[sel] * bleafconow[sel]
+                                           * areaconow[sel]))
+                 brootpft  [m,p]    = ( brootpft [m,p]
+                                      + sum( nplantconow[sel] * brootconow[sel]
+                                           * areaconow[sel]))
+                 bswoodpft [m,p]    = ( bswoodpft [m,p]
+                                      + sum( nplantconow[sel] * bswoodconow[sel]
+                                           * areaconow[sel]))
+                 bstorepft [m,p]    = ( bstorepft [m,p]
+                                      + sum( nplantconow[sel] * bstoreconow[sel]
+                                           * areaconow[sel]))
+                 leafresppft[m,p]   = ( leafresppft [m,p] 
+                                      + sum( nplantconow[sel] * leafrespconow[sel]
+                                           * areaconow[sel]))
+                 rootresppft[m,p]   = ( rootresppft [m,p] 
+                                      + sum( nplantconow[sel] * rootrespconow[sel]
+                                           * areaconow[sel]))
+                 growthresppft[m,p] = ( growthresppft [m,p] 
+                                      + sum( nplantconow[sel] * growthrespconow[sel]
+                                           * areaconow[sel]))
               }
           }
           #------ Find the total. ---------------------------------------------------------#
-          laipft     [m,npft+1] = sum(laipft     [m,1:npft],na.rm=TRUE)
-          waipft     [m,npft+1] = sum(waipft     [m,1:npft],na.rm=TRUE)
-          taipft     [m,npft+1] = sum(taipft     [m,1:npft],na.rm=TRUE)
-          agbpft     [m,npft+1] = sum(agbpft     [m,1:npft],na.rm=TRUE)
-          bseedspft  [m,npft+1] = sum(bseedspft  [m,1:npft],na.rm=TRUE)
-          gpppft     [m,npft+1] = sum(gpppft     [m,1:npft],na.rm=TRUE)
-          npppft     [m,npft+1] = sum(npppft     [m,1:npft],na.rm=TRUE)
-          mcopft     [m,npft+1] = sum(mcopft     [m,1:npft],na.rm=TRUE)
-          cbapft     [m,npft+1] = sum(cbapft     [m,1:npft],na.rm=TRUE)
-          ldroppft   [m,npft+1] = sum(ldroppft   [m,1:npft],na.rm=TRUE)
-          balivepft  [m,npft+1] = sum(balivepft  [m,1:npft],na.rm=TRUE)
-          bdeadpft   [m,npft+1] = sum(bdeadpft   [m,1:npft],na.rm=TRUE)
-          bleafpft   [m,npft+1] = sum(bleafpft   [m,1:npft],na.rm=TRUE)
-          brootpft   [m,npft+1] = sum(brootpft   [m,1:npft],na.rm=TRUE)
-          bswoodpft  [m,npft+1] = sum(bswoodpft  [m,1:npft],na.rm=TRUE)
-          bstorepft  [m,npft+1] = sum(bstorepft  [m,1:npft],na.rm=TRUE)
-          basareapft [m,npft+1] = sum(basareapft [m,1:npft],na.rm=TRUE)
+          laipft       [m,npft+1] = sum(laipft       [m,1:npft],na.rm=TRUE)
+          waipft       [m,npft+1] = sum(waipft       [m,1:npft],na.rm=TRUE)
+          taipft       [m,npft+1] = sum(taipft       [m,1:npft],na.rm=TRUE)
+          agbpft       [m,npft+1] = sum(agbpft       [m,1:npft],na.rm=TRUE)
+          bseedspft    [m,npft+1] = sum(bseedspft    [m,1:npft],na.rm=TRUE)
+          gpppft       [m,npft+1] = sum(gpppft       [m,1:npft],na.rm=TRUE)
+          npppft       [m,npft+1] = sum(npppft       [m,1:npft],na.rm=TRUE)
+          mcopft       [m,npft+1] = sum(mcopft       [m,1:npft],na.rm=TRUE)
+          cbapft       [m,npft+1] = sum(cbapft       [m,1:npft],na.rm=TRUE)
+          ldroppft     [m,npft+1] = sum(ldroppft     [m,1:npft],na.rm=TRUE)
+          balivepft    [m,npft+1] = sum(balivepft    [m,1:npft],na.rm=TRUE)
+          bdeadpft     [m,npft+1] = sum(bdeadpft     [m,1:npft],na.rm=TRUE)
+          bleafpft     [m,npft+1] = sum(bleafpft     [m,1:npft],na.rm=TRUE)
+          brootpft     [m,npft+1] = sum(brootpft     [m,1:npft],na.rm=TRUE)
+          bswoodpft    [m,npft+1] = sum(bswoodpft    [m,1:npft],na.rm=TRUE)
+          bstorepft    [m,npft+1] = sum(bstorepft    [m,1:npft],na.rm=TRUE)
+          basareapft   [m,npft+1] = sum(basareapft   [m,1:npft],na.rm=TRUE)
+          leafresppft  [m,npft+1] = sum(leafresppft  [m,1:npft],na.rm=TRUE)
+          rootresppft  [m,npft+1] = sum(rootresppft  [m,1:npft],na.rm=TRUE)
+          growthresppft[m,npft+1] = sum(growthresppft[m,1:npft],na.rm=TRUE)
           #--------------------------------------------------------------------------------#
 
 
@@ -1992,6 +2070,9 @@ for (place in myplaces){
    mont12mn             = list()
    mont12mn$gpp         = tapply(X=gpp          ,INDEX=mfac,FUN=mean,na.rm=TRUE)
    mont12mn$plresp      = tapply(X=plresp       ,INDEX=mfac,FUN=mean,na.rm=TRUE)
+   mont12mn$leaf.resp   = tapply(X=leaf.resp    ,INDEX=mfac,FUN=mean,na.rm=TRUE)
+   mont12mn$root.resp   = tapply(X=root.resp    ,INDEX=mfac,FUN=mean,na.rm=TRUE)
+   mont12mn$growth.resp = tapply(X=growth.resp  ,INDEX=mfac,FUN=mean,na.rm=TRUE)
    mont12mn$hetresp     = tapply(X=hetresp      ,INDEX=mfac,FUN=mean,na.rm=TRUE)
    mont12mn$nee         = tapply(X=nee          ,INDEX=mfac,FUN=mean,na.rm=TRUE)
    mont12mn$sens        = tapply(X=sens         ,INDEX=mfac,FUN=mean,na.rm=TRUE)
@@ -2017,22 +2098,24 @@ for (place in myplaces){
    mont12mn$soil.mstpot = qapply(mat=soil.mstpot,index=mfac,bycol=T,func=mean,na.rm=T)
    #----- Find the mean sum of squares. ---------------------------------------------------#
    print ("      * Aggregating the monthly mean sum of squares...")
-   mont12sq         = list()
-   mont12sq$gpp     = tapply(X=mmsqu.gpp    ,INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mont12sq$plresp  = tapply(X=mmsqu.plresp ,INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mont12sq$hetresp = tapply(X=mmsqu.hetresp,INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mont12sq$nee     = tapply(X=mmsqu.nee    ,INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mont12sq$sens    = tapply(X=mmsqu.sens   ,INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mont12sq$hflxlc  = tapply(X=mmsqu.hflxlc ,INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mont12sq$hflxwc  = tapply(X=mmsqu.hflxwc ,INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mont12sq$hflxgc  = tapply(X=mmsqu.hflxgc ,INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mont12sq$et      = tapply(X=mmsqu.et     ,INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mont12sq$latent  = tapply(X=mmsqu.latent ,INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mont12sq$wflxlc  = tapply(X=mmsqu.wflxlc ,INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mont12sq$wflxwc  = tapply(X=mmsqu.wflxwc ,INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mont12sq$wflxgc  = tapply(X=mmsqu.wflxgc ,INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mont12sq$evap    = tapply(X=mmsqu.evap   ,INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mont12sq$transp  = tapply(X=mmsqu.transp ,INDEX=mfac,FUN=mean,na.rm=TRUE)
+   mont12sq           = list()
+   mont12sq$gpp       = tapply(X=mmsqu.gpp       ,INDEX=mfac,FUN=mean,na.rm=TRUE)
+   mont12sq$plresp    = tapply(X=mmsqu.plresp    ,INDEX=mfac,FUN=mean,na.rm=TRUE)
+   mont12sq$leaf.resp = tapply(X=mmsqu.leaf.resp ,INDEX=mfac,FUN=mean,na.rm=TRUE)
+   mont12sq$root.resp = tapply(X=mmsqu.root.resp ,INDEX=mfac,FUN=mean,na.rm=TRUE)
+   mont12sq$hetresp   = tapply(X=mmsqu.hetresp   ,INDEX=mfac,FUN=mean,na.rm=TRUE)
+   mont12sq$nee       = tapply(X=mmsqu.nee       ,INDEX=mfac,FUN=mean,na.rm=TRUE)
+   mont12sq$sens      = tapply(X=mmsqu.sens      ,INDEX=mfac,FUN=mean,na.rm=TRUE)
+   mont12sq$hflxlc    = tapply(X=mmsqu.hflxlc    ,INDEX=mfac,FUN=mean,na.rm=TRUE)
+   mont12sq$hflxwc    = tapply(X=mmsqu.hflxwc    ,INDEX=mfac,FUN=mean,na.rm=TRUE)
+   mont12sq$hflxgc    = tapply(X=mmsqu.hflxgc    ,INDEX=mfac,FUN=mean,na.rm=TRUE)
+   mont12sq$et        = tapply(X=mmsqu.et        ,INDEX=mfac,FUN=mean,na.rm=TRUE)
+   mont12sq$latent    = tapply(X=mmsqu.latent    ,INDEX=mfac,FUN=mean,na.rm=TRUE)
+   mont12sq$wflxlc    = tapply(X=mmsqu.wflxlc    ,INDEX=mfac,FUN=mean,na.rm=TRUE)
+   mont12sq$wflxwc    = tapply(X=mmsqu.wflxwc    ,INDEX=mfac,FUN=mean,na.rm=TRUE)
+   mont12sq$wflxgc    = tapply(X=mmsqu.wflxgc    ,INDEX=mfac,FUN=mean,na.rm=TRUE)
+   mont12sq$evap      = tapply(X=mmsqu.evap      ,INDEX=mfac,FUN=mean,na.rm=TRUE)
+   mont12sq$transp    = tapply(X=mmsqu.transp    ,INDEX=mfac,FUN=mean,na.rm=TRUE)
    #---------------------------------------------------------------------------------------#
    #   Here we convert the sum of squares into standard deviation. The standard devi-      #
    # ation can be written in two different ways, and we will use the latter because it     #
@@ -2049,41 +2132,45 @@ for (place in myplaces){
    srnorm1 = sqrt(1./(1. - 1. / moncensus))
    srnorm1[!is.finite(srnorm1)] = 0.
    mont12sd            = list()
-   mont12sd$gpp     = sqrt(mont12sq$gpp     - mont12mn$gpp^2     ) * srnorm1
-   mont12sd$plresp  = sqrt(mont12sq$plresp  - mont12mn$plresp^2  ) * srnorm1
-   mont12sd$hetresp = sqrt(mont12sq$hetresp - mont12mn$hetresp^2 ) * srnorm1
-   mont12sd$nee     = sqrt(mont12sq$nee     - mont12mn$nee^2     ) * srnorm1
-   mont12sd$sens    = sqrt(mont12sq$sens    - mont12mn$sens^2    ) * srnorm1
-   mont12sd$hflxlc  = sqrt(mont12sq$hflxlc  - mont12mn$hflxlc^2  ) * srnorm1
-   mont12sd$hflxwc  = sqrt(mont12sq$hflxwc  - mont12mn$hflxwc^2  ) * srnorm1
-   mont12sd$hflxgc  = sqrt(mont12sq$hflxgc  - mont12mn$hflxgc^2  ) * srnorm1
-   mont12sd$et      = sqrt(mont12sq$et      - mont12mn$et^2      ) * srnorm1
-   mont12sd$latent  = sqrt(mont12sq$latent  - mont12mn$latent^2  ) * srnorm1
-   mont12sd$wflxlc  = sqrt(mont12sq$wflxlc  - mont12mn$wflxlc^2  ) * srnorm1
-   mont12sd$wflxwc  = sqrt(mont12sq$wflxwc  - mont12mn$wflxwc^2  ) * srnorm1
-   mont12sd$wflxgc  = sqrt(mont12sq$wflxgc  - mont12mn$wflxgc^2  ) * srnorm1
-   mont12sd$evap    = sqrt(mont12sq$evap    - mont12mn$evap^2    ) * srnorm1
-   mont12sd$transp  = sqrt(mont12sq$transp  - mont12mn$transp^2  ) * srnorm1
+   mont12sd$gpp        = sqrt(mont12sq$gpp        - mont12mn$gpp^2        ) * srnorm1
+   mont12sd$plresp     = sqrt(mont12sq$plresp     - mont12mn$plresp^2     ) * srnorm1
+   mont12sd$leaf.resp  = sqrt(mont12sq$leaf.resp  - mont12mn$leaf.resp^2  ) * srnorm1
+   mont12sd$root.resp  = sqrt(mont12sq$root.resp  - mont12mn$root.resp^2  ) * srnorm1
+   mont12sd$hetresp    = sqrt(mont12sq$hetresp    - mont12mn$hetresp^2    ) * srnorm1
+   mont12sd$nee        = sqrt(mont12sq$nee        - mont12mn$nee^2        ) * srnorm1
+   mont12sd$sens       = sqrt(mont12sq$sens       - mont12mn$sens^2       ) * srnorm1
+   mont12sd$hflxlc     = sqrt(mont12sq$hflxlc     - mont12mn$hflxlc^2     ) * srnorm1
+   mont12sd$hflxwc     = sqrt(mont12sq$hflxwc     - mont12mn$hflxwc^2     ) * srnorm1
+   mont12sd$hflxgc     = sqrt(mont12sq$hflxgc     - mont12mn$hflxgc^2     ) * srnorm1
+   mont12sd$et         = sqrt(mont12sq$et         - mont12mn$et^2         ) * srnorm1
+   mont12sd$latent     = sqrt(mont12sq$latent     - mont12mn$latent^2     ) * srnorm1
+   mont12sd$wflxlc     = sqrt(mont12sq$wflxlc     - mont12mn$wflxlc^2     ) * srnorm1
+   mont12sd$wflxwc     = sqrt(mont12sq$wflxwc     - mont12mn$wflxwc^2     ) * srnorm1
+   mont12sd$wflxgc     = sqrt(mont12sq$wflxgc     - mont12mn$wflxgc^2     ) * srnorm1
+   mont12sd$evap       = sqrt(mont12sq$evap       - mont12mn$evap^2       ) * srnorm1
+   mont12sd$transp     = sqrt(mont12sq$transp     - mont12mn$transp^2     ) * srnorm1
    #---------------------------------------------------------------------------------------#
    #     Set standard deviations that became NaN to 0.  This usually happens when we run   #
    # the post-processing script when the simulation hasn't run for more than 2 years.  We  #
    # can't find the standard deviation because the number of degrees of freedom becomes 0. #
    #---------------------------------------------------------------------------------------#
-   mont12sd$gpp     [!is.finite(mont12mn$gpp     )] = 0.
-   mont12sd$plresp  [!is.finite(mont12mn$plresp  )] = 0.
-   mont12sd$hetresp [!is.finite(mont12mn$hetresp )] = 0.
-   mont12sd$nee     [!is.finite(mont12mn$nee     )] = 0.
-   mont12sd$sens    [!is.finite(mont12mn$sens    )] = 0.
-   mont12sd$hflxlc  [!is.finite(mont12mn$hflxlc  )] = 0.
-   mont12sd$hflxlc  [!is.finite(mont12mn$hflxwc  )] = 0.
-   mont12sd$hflxgc  [!is.finite(mont12mn$hflxgc  )] = 0.
-   mont12sd$et      [!is.finite(mont12mn$et      )] = 0.
-   mont12sd$latent  [!is.finite(mont12mn$latent  )] = 0.
-   mont12sd$wflxlc  [!is.finite(mont12mn$wflxlc  )] = 0.
-   mont12sd$wflxwc  [!is.finite(mont12mn$wflxwc  )] = 0.
-   mont12sd$wflxgc  [!is.finite(mont12mn$wflxgc  )] = 0.
-   mont12sd$evap    [!is.finite(mont12mn$evap    )] = 0.
-   mont12sd$transp  [!is.finite(mont12mn$transp  )] = 0.
+   mont12sd$gpp        [!is.finite(mont12mn$gpp        )] = 0.
+   mont12sd$plresp     [!is.finite(mont12mn$plresp     )] = 0.
+   mont12sd$leaf.resp  [!is.finite(mont12mn$leaf.resp  )] = 0.
+   mont12sd$root.resp  [!is.finite(mont12mn$root.resp  )] = 0.
+   mont12sd$hetresp    [!is.finite(mont12mn$hetresp    )] = 0.
+   mont12sd$nee        [!is.finite(mont12mn$nee        )] = 0.
+   mont12sd$sens       [!is.finite(mont12mn$sens       )] = 0.
+   mont12sd$hflxlc     [!is.finite(mont12mn$hflxlc     )] = 0.
+   mont12sd$hflxlc     [!is.finite(mont12mn$hflxwc     )] = 0.
+   mont12sd$hflxgc     [!is.finite(mont12mn$hflxgc     )] = 0.
+   mont12sd$et         [!is.finite(mont12mn$et         )] = 0.
+   mont12sd$latent     [!is.finite(mont12mn$latent     )] = 0.
+   mont12sd$wflxlc     [!is.finite(mont12mn$wflxlc     )] = 0.
+   mont12sd$wflxwc     [!is.finite(mont12mn$wflxwc     )] = 0.
+   mont12sd$wflxgc     [!is.finite(mont12mn$wflxgc     )] = 0.
+   mont12sd$evap       [!is.finite(mont12mn$evap       )] = 0.
+   mont12sd$transp     [!is.finite(mont12mn$transp     )] = 0.
    #---------------------------------------------------------------------------------------#
 
 
@@ -2095,6 +2182,8 @@ for (place in myplaces){
    dcyc12mn             = list()
    dcyc12mn$gpp         = qapply(dcycmean$gpp         ,index=mfac,bycol=T,func=mean,na.rm=T)
    dcyc12mn$plresp      = qapply(dcycmean$plresp      ,index=mfac,bycol=T,func=mean,na.rm=T)
+   dcyc12mn$leaf.resp   = qapply(dcycmean$leaf.resp   ,index=mfac,bycol=T,func=mean,na.rm=T)
+   dcyc12mn$root.resp   = qapply(dcycmean$root.resp   ,index=mfac,bycol=T,func=mean,na.rm=T)
    dcyc12mn$hetresp     = qapply(dcycmean$hetresp     ,index=mfac,bycol=T,func=mean,na.rm=T)
    dcyc12mn$nep         = qapply(dcycmean$nep         ,index=mfac,bycol=T,func=mean,na.rm=T)
    dcyc12mn$nee         = qapply(dcycmean$nee         ,index=mfac,bycol=T,func=mean,na.rm=T)
@@ -2141,6 +2230,8 @@ for (place in myplaces){
    dcyc12sq            = list()
    dcyc12sq$gpp        = qapply(dcycmsqu$gpp       ,index=mfac,bycol=T,func=mean,na.rm=T)
    dcyc12sq$plresp     = qapply(dcycmsqu$plresp    ,index=mfac,bycol=T,func=mean,na.rm=T)
+   dcyc12sq$leaf.resp  = qapply(dcycmsqu$leaf.resp ,index=mfac,bycol=T,func=mean,na.rm=T)
+   dcyc12sq$root.resp  = qapply(dcycmsqu$root.resp ,index=mfac,bycol=T,func=mean,na.rm=T)
    dcyc12sq$hetresp    = qapply(dcycmsqu$hetresp   ,index=mfac,bycol=T,func=mean,na.rm=T)
    dcyc12sq$nep        = qapply(dcycmsqu$nep       ,index=mfac,bycol=T,func=mean,na.rm=T)
    dcyc12sq$nee        = qapply(dcycmsqu$nee       ,index=mfac,bycol=T,func=mean,na.rm=T)
@@ -2173,6 +2264,8 @@ for (place in myplaces){
    dcyc12sd            = list()
    dcyc12sd$gpp        = sqrt(dcyc12sq$gpp      -dcyc12mn$gpp^2             )*srnorm1
    dcyc12sd$plresp     = sqrt(dcyc12sq$plresp   -dcyc12mn$plresp^2          )*srnorm1
+   dcyc12sd$leaf.resp  = sqrt(dcyc12sq$leaf.resp-dcyc12mn$leaf.resp^2       )*srnorm1
+   dcyc12sd$root.resp  = sqrt(dcyc12sq$root.resp-dcyc12mn$root.resp^2       )*srnorm1
    dcyc12sd$hetresp    = sqrt(dcyc12sq$hetresp  -dcyc12mn$hetresp^2         )*srnorm1
    dcyc12sd$nep        = sqrt(dcyc12sq$nep      -dcyc12mn$nep^2             )*srnorm1
    dcyc12sd$nee        = sqrt(dcyc12sq$nee      -dcyc12mn$nee^2             )*srnorm1
@@ -2191,21 +2284,23 @@ for (place in myplaces){
    # the post-processing script when the simulation hasn't run for more than 2 years.  We  #
    # can't find the standard deviation because the number of degrees of freedom becomes 0. #
    #---------------------------------------------------------------------------------------#
-   dcyc12sd$gpp     [!is.finite(dcyc12sd$gpp    )] = 0.
-   dcyc12sd$plresp  [!is.finite(dcyc12sd$plresp )] = 0.
-   dcyc12sd$hetresp [!is.finite(dcyc12sd$hetresp)] = 0.
-   dcyc12sd$nep     [!is.finite(dcyc12sd$nep    )] = 0.
-   dcyc12sd$nee     [!is.finite(dcyc12sd$nee    )] = 0.
-   dcyc12sd$sens    [!is.finite(dcyc12sd$sens   )] = 0.
-   dcyc12sd$hflxlc  [!is.finite(dcyc12sd$hflxlc )] = 0.
-   dcyc12sd$hflxwc  [!is.finite(dcyc12sd$hflxwc )] = 0.
-   dcyc12sd$hflxgc  [!is.finite(dcyc12sd$hflxgc )] = 0.
-   dcyc12sd$et      [!is.finite(dcyc12sd$et     )] = 0.
-   dcyc12sd$latent  [!is.finite(dcyc12sd$latent )] = 0.
-   dcyc12sd$wflxlc  [!is.finite(dcyc12sd$wflxlc )] = 0.
-   dcyc12sd$wflxwc  [!is.finite(dcyc12sd$wflxwc )] = 0.
-   dcyc12sd$wflxgc  [!is.finite(dcyc12sd$wflxgc )] = 0.
-   dcyc12sd$transp  [!is.finite(dcyc12sd$transp )] = 0.
+   dcyc12sd$gpp        [!is.finite(dcyc12sd$gpp       )] = 0.
+   dcyc12sd$plresp     [!is.finite(dcyc12sd$plresp    )] = 0.
+   dcyc12sd$leaf.resp  [!is.finite(dcyc12sd$leaf.resp )] = 0.
+   dcyc12sd$root.resp  [!is.finite(dcyc12sd$root.resp )] = 0.
+   dcyc12sd$hetresp    [!is.finite(dcyc12sd$hetresp   )] = 0.
+   dcyc12sd$nep        [!is.finite(dcyc12sd$nep       )] = 0.
+   dcyc12sd$nee        [!is.finite(dcyc12sd$nee       )] = 0.
+   dcyc12sd$sens       [!is.finite(dcyc12sd$sens      )] = 0.
+   dcyc12sd$hflxlc     [!is.finite(dcyc12sd$hflxlc    )] = 0.
+   dcyc12sd$hflxwc     [!is.finite(dcyc12sd$hflxwc    )] = 0.
+   dcyc12sd$hflxgc     [!is.finite(dcyc12sd$hflxgc    )] = 0.
+   dcyc12sd$et         [!is.finite(dcyc12sd$et        )] = 0.
+   dcyc12sd$latent     [!is.finite(dcyc12sd$latent    )] = 0.
+   dcyc12sd$wflxlc     [!is.finite(dcyc12sd$wflxlc    )] = 0.
+   dcyc12sd$wflxwc     [!is.finite(dcyc12sd$wflxwc    )] = 0.
+   dcyc12sd$wflxgc     [!is.finite(dcyc12sd$wflxgc    )] = 0.
+   dcyc12sd$transp     [!is.finite(dcyc12sd$transp    )] = 0.
    #---------------------------------------------------------------------------------------#
 
 

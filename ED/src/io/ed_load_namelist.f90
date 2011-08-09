@@ -62,7 +62,6 @@ subroutine copy_nl(copy_type)
                                    , soilstate_db              & ! intent(out)
                                    , soildepth_db              & ! intent(out)
                                    , runoff_time               & ! intent(out)
-                                   , betapower                 & ! intent(out)
                                    , slz                       & ! intent(out)
                                    , veg_database              ! ! intent(out)
    use met_driver_coms      , only : ed_met_driver_db          & ! intent(out)
@@ -98,8 +97,8 @@ subroutine copy_nl(copy_type)
                                    , gamfact                   & ! intent(out)
                                    , d0fact                    & ! intent(out)
                                    , alphafact                 & ! intent(out)
-                                   , lwfact                    & ! intent(out)
-                                   , thioff                    & ! intent(out)
+                                   , rrffact                   & ! intent(out)
+                                   , growthresp                & ! intent(out)
                                    , quantum_efficiency_T      ! ! intent(out)
    use phenology_coms       , only : iphen_scheme              & ! intent(out)
                                    , iphenys1                  & ! intent(out)
@@ -149,6 +148,7 @@ subroutine copy_nl(copy_type)
                                    , thsums_database           & ! intent(out)
                                    , end_time                  & ! intent(out)
                                    , radfrq                    & ! intent(out)
+                                   , ivegt_dynamics            & ! intent(out)
                                    , integration_scheme        & ! intent(out)
                                    , ffilout                   & ! intent(out)
                                    , idoutput                  & ! intent(out)
@@ -194,20 +194,20 @@ subroutine copy_nl(copy_type)
    use canopy_air_coms      , only : icanturb                  & ! intent(out)
                                    , isfclyrm                  & ! intent(out)
                                    , ied_grndvap               & ! intent(out)
-                                   , i_blyr_condct             & ! intent(out)
                                    , ustmin                    & ! intent(out)
-                                   , ggfact                    & ! intent(out)
-                                   , gamm                      & ! intent(out)
-                                   , gamh                      & ! intent(out)
-                                   , tprandtl                  & ! intent(out)
-                                   , vkopr                     & ! intent(out)
-                                   , vh2vr                     & ! intent(out)
-                                   , vh2dh                     & ! intent(out)
                                    , ribmax                    & ! intent(out)
                                    , leaf_maxwhc               ! ! intent(out)
    use optimiz_coms         , only : ioptinpt                  ! ! intent(out)
    use canopy_layer_coms    , only : crown_mod                 ! ! intent(out)
-   use canopy_radiation_coms, only : icanrad                   ! ! intent(out)
+   use canopy_radiation_coms, only : icanrad                   & ! intent(out)
+                                   , ltrans_vis                & ! intent(out)
+                                   , ltrans_nir                & ! intent(out)
+                                   , lreflect_vis              & ! intent(out)
+                                   , lreflect_nir              & ! intent(out)
+                                   , orient_tree               & ! intent(out)
+                                   , orient_grass              & ! intent(out)
+                                   , clump_tree                & ! intent(out)
+                                   , clump_grass               ! ! intent(out)
    use rk4_coms             , only : ibranch_thermo            & ! intent(out)
                                    , ipercol                   & ! intent(out)
                                    , rk4_tolerance             ! ! intent(out)
@@ -307,6 +307,7 @@ subroutine copy_nl(copy_type)
       ed_reg_lonmin             = nl%ed_reg_lonmin
       ed_reg_lonmax             = nl%ed_reg_lonmax
 
+      ivegt_dynamics            = nl%ivegt_dynamics
       integration_scheme        = nl%integration_scheme
       rk4_tolerance             = nl%rk4_tolerance
       ibranch_thermo            = nl%ibranch_thermo
@@ -317,6 +318,14 @@ subroutine copy_nl(copy_type)
       lapse_scheme              = nl%lapse_scheme
       crown_mod                 = nl%crown_mod
       icanrad                   = nl%icanrad
+      ltrans_vis                = nl%ltrans_vis
+      ltrans_nir                = nl%ltrans_nir
+      lreflect_vis              = nl%lreflect_vis
+      lreflect_nir              = nl%lreflect_nir
+      orient_tree               = nl%orient_tree
+      orient_grass              = nl%orient_grass
+      clump_tree                = nl%clump_tree
+      clump_grass               = nl%clump_grass
       h2o_plant_lim             = nl%h2o_plant_lim
       vmfact                    = nl%vmfact
       mfact                     = nl%mfact
@@ -324,9 +333,9 @@ subroutine copy_nl(copy_type)
       gamfact                   = nl%gamfact
       d0fact                    = nl%d0fact
       alphafact                 = nl%alphafact
+      rrffact                   = nl%rrffact
+      growthresp                = nl%growthresp
       thetacrit                 = nl%thetacrit
-      lwfact                    = nl%lwfact
-      thioff                    = nl%thioff
       quantum_efficiency_T      = nl%quantum_efficiency_T
       radint                    = nl%radint
       radslp                    = nl%radslp
@@ -340,14 +349,8 @@ subroutine copy_nl(copy_type)
       LloydTaylor               = nl%decomp_scheme == 1
       
       icanturb                  = nl%icanturb
-      i_blyr_condct             = nl%i_blyr_condct
       isfclyrm                  = nl%isfclyrm
       ied_grndvap               = nl%ied_grndvap
-      gamm                      = nl%gamm
-      gamh                      = nl%gamh
-      tprandtl                  = nl%tprandtl
-      vh2vr                     = nl%vh2vr
-      vh2dh                     = nl%vh2dh
       ribmax                    = nl%ribmax
       leaf_maxwhc               = nl%leaf_maxwhc
       ipercol                   = nl%ipercol
@@ -360,9 +363,7 @@ subroutine copy_nl(copy_type)
       treefall_disturbance_rate = nl%treefall_disturbance_rate
       time2canopy               = nl%time2canopy
       runoff_time               = nl%runoff_time
-      betapower                 = nl%betapower
       ustmin                    = nl%ustmin
-      ggfact                    = nl%ggfact
 
       !----- Print control parameters. ----------------------------------------------------!
       iprintpolys               = nl%iprintpolys
@@ -545,20 +546,6 @@ subroutine copy_nl(copy_type)
    call copy_path_from_grid_1(ngrids,'lu_rescale_file',lu_rescale_file)
 
    call copy_path_from_grid_1(ngrids,'sfilin'         ,sfilin         )
-   !---------------------------------------------------------------------------------------!
-
-
-
-   !----- Find von-Karman/Prandtl number ratio. -------------------------------------------!
-   if (tprandtl /= 0.0) then
-      vkopr = vonk / tprandtl
-   else
-      !------------------------------------------------------------------------------------!
-      !     It doesn't make sense, but tprandtl is wrong and the run will crash at         !
-      ! ed_opspec.                                                                         !
-      !------------------------------------------------------------------------------------!
-      vkopr = 0.0
-   end if 
    !---------------------------------------------------------------------------------------!
 
 

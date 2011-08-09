@@ -3,7 +3,7 @@
 here=`pwd`
 there=`echo ${here} | sed s@/n/Moorcroft_Lab/Users@/n/moorcroft_scratch@g`
 desc=`basename ${here}`
-sitemet='/n/moorcroft_data/mlongo/data/site_met_driver'
+sitemet='/n/moorcroft_scratch/nlevine/data/ed2_data/site_met_driver'
 hvdmet='/n/home11/aantonarakis/EDrelease65/run/'
 bioinit='/n/moorcroft_data/mlongo/data/site_bio_data'
 sheffield='SHEF_NCEP_DRIVER_DS314'
@@ -76,69 +76,51 @@ do
    # latitude.                                                                             #
    #---------------------------------------------------------------------------------------#
    oi=`head -${line} ${lonlat} | tail -1`
-   polyname=`echo ${oi}  | awk '{print $1 }'`
-   polyiata=`echo ${oi}  | awk '{print $2 }'`
-   polylon=`echo ${oi}   | awk '{print $3 }'`
-   polylat=`echo ${oi}   | awk '{print $4 }'`
-   yeara=`echo ${oi}     | awk '{print $5 }'`
-   montha=`echo ${oi}    | awk '{print $6 }'`
-   datea=`echo ${oi}     | awk '{print $7 }'`
-   timea=`echo ${oi}     | awk '{print $8 }'`
-   yearz=`echo ${oi}     | awk '{print $9 }'`
-   monthz=`echo ${oi}    | awk '{print $10}'`
-   datez=`echo ${oi}     | awk '{print $11}'`
-   timez=`echo ${oi}     | awk '{print $12}'`
-   polyisoil=`echo ${oi} | awk '{print $13}'`
-   polyntext=`echo ${oi} | awk '{print $14}'`
-   polysand=`echo ${oi}  | awk '{print $15}'`
-   polyclay=`echo ${oi}  | awk '{print $16}'`
-   polydepth=`echo ${oi} | awk '{print $17}'`
-   queue=`echo ${oi}     | awk '{print $18}'`
-   metdriver=`echo ${oi} | awk '{print $19}'`
-   dtlsm=`echo ${oi}     | awk '{print $20}'`
-   vmfact=`echo ${oi}    | awk '{print $21}'`
-   mfact=`echo ${oi}     | awk '{print $22}'`
-   kfact=`echo ${oi}     | awk '{print $23}'`
-   gamfact=`echo ${oi}   | awk '{print $24}'`
-   d0fact=`echo ${oi}    | awk '{print $25}'`
-   alphafact=`echo ${oi} | awk '{print $26}'`
-   lwfact=`echo ${oi}    | awk '{print $27}'`
-   betaflag=`echo ${oi}  | awk '{print $28}'`
-   thioff=`echo ${oi}    | awk '{print $29}'`
-   ustmin=`echo ${oi}    | awk '{print $30}'`
-   ggfact=`echo ${oi}    | awk '{print $31}'`
-   wlimit=`echo ${oi}    | awk '{print $32}'`
-   blyrcnd=`echo ${oi}   | awk '{print $33}'`
-   iallom=`echo ${oi}    | awk '{print $34}'`
-   icanturb=`echo ${oi}  | awk '{print $35}'`
-   isfclyrm=`echo ${oi}  | awk '{print $36}'`
-   gamm=`echo ${oi}      | awk '{print $37}'`
-   gamh=`echo ${oi}      | awk '{print $38}'`
-   tprandtl=`echo ${oi}  | awk '{print $39}'`
-   vh2vr=`echo ${oi}     | awk '{print $40}'`
-   vh2dh=`echo ${oi}     | awk '{print $41}'`
-   ribmax=`echo ${oi}    | awk '{print $42}'`
-   maxwhc=`echo ${oi}    | awk '{print $43}'`
-   runoff=`echo ${oi}    | awk '{print $44}'`
-   atmco2=`echo ${oi}    | awk '{print $45}'`
-   thcrit=`echo ${oi}    | awk '{print $46}'`
-   smfire=`echo ${oi}    | awk '{print $47}'`
-   agefall=`echo ${oi}   | awk '{print $48}'`
-   grndvap=`echo ${oi}   | awk '{print $49}'`
-   crownmod=`echo ${oi}  | awk '{print $50}'`
-   quantum=`echo ${oi}   | awk '{print $51}'`
-   isoilbc=`echo ${oi}   | awk '{print $52}'`
-   ipercol=`echo ${oi}   | awk '{print $53}'`
-   iphysiol=`echo ${oi}  | awk '{print $54}'`
-   imetrad=`echo ${oi}   | awk '{print $55}'`
-   ibranch=`echo ${oi}   | awk '{print $56}'`
-   icanrad=`echo ${oi}   | awk '{print $57}'`
-   #---------------------------------------------------------------------------------------#
-
-
-
-   #----- Find the actual beta power that goes to the namelist. ---------------------------#
-   bpower=`calc.sh ${betaflag}/2`
+   polyname=`echo ${oi}    | awk '{print $1 }'`
+   polyiata=`echo ${oi}    | awk '{print $2 }'`
+   polylon=`echo ${oi}     | awk '{print $3 }'`
+   polylat=`echo ${oi}     | awk '{print $4 }'`
+   yeara=`echo ${oi}       | awk '{print $5 }'`
+   montha=`echo ${oi}      | awk '{print $6 }'`
+   datea=`echo ${oi}       | awk '{print $7 }'`
+   timea=`echo ${oi}       | awk '{print $8 }'`
+   yearz=`echo ${oi}       | awk '{print $9 }'`
+   monthz=`echo ${oi}      | awk '{print $10}'`
+   datez=`echo ${oi}       | awk '{print $11}'`
+   timez=`echo ${oi}       | awk '{print $12}'`
+   polyisoil=`echo ${oi}   | awk '{print $13}'`
+   polyntext=`echo ${oi}   | awk '{print $14}'`
+   polysand=`echo ${oi}    | awk '{print $15}'`
+   polyclay=`echo ${oi}    | awk '{print $16}'`
+   polydepth=`echo ${oi}   | awk '{print $17}'`
+   queue=`echo ${oi}       | awk '{print $18}'`
+   metdriver=`echo ${oi}   | awk '{print $19}'`
+   dtlsm=`echo ${oi}       | awk '{print $20}'`
+   vmfact=`echo ${oi}      | awk '{print $21}'`
+   mfact=`echo ${oi}       | awk '{print $22}'`
+   kfact=`echo ${oi}       | awk '{print $23}'`
+   gamfact=`echo ${oi}     | awk '{print $24}'`
+   d0fact=`echo ${oi}      | awk '{print $25}'`
+   alphafact=`echo ${oi}   | awk '{print $26}'`
+   rrffact=`echo ${oi}     | awk '{print $27}'`
+   growthresp=`echo ${oi}  | awk '{print $28}'`
+   icanturb=`echo ${oi}    | awk '{print $29}'`
+   atmco2=`echo ${oi}      | awk '{print $30}'`
+   thcrit=`echo ${oi}      | awk '{print $31}'`
+   smfire=`echo ${oi}      | awk '{print $32}'`
+   isoilbc=`echo ${oi}     | awk '{print $33}'`
+   imetrad=`echo ${oi}     | awk '{print $34}'`
+   ibranch=`echo ${oi}     | awk '{print $35}'`
+   icanrad=`echo ${oi}     | awk '{print $36}'`
+   ltransvis=`echo ${oi}   | awk '{print $37}'`
+   lreflectvis=`echo ${oi} | awk '{print $38}'`
+   ltransnir=`echo ${oi}   | awk '{print $39}'`
+   lreflectnir=`echo ${oi} | awk '{print $40}'`
+   orienttree=`echo ${oi}  | awk '{print $41}'`
+   orientgrass=`echo ${oi} | awk '{print $42}'`
+   clumptree=`echo ${oi}   | awk '{print $43}'`
+   clumpgrass=`echo ${oi}  | awk '{print $44}'`
+   ivegtdyn=`echo ${oi}    | awk '{print $45}'`
    #---------------------------------------------------------------------------------------#
 
 
@@ -543,80 +525,68 @@ do
    #---------------------------------------------------------------------------------------#
 
    ED2IN=${here}'/'${polyname}'/ED2IN'
-   sed -i s@paththere@${there}@g           ${ED2IN}
-   sed -i s@myyeara@${thisyeara}@g         ${ED2IN}
-   sed -i s@mymontha@${montha}@g           ${ED2IN}
-   sed -i s@mydatea@${datea}@g             ${ED2IN}
-   sed -i s@mytimea@${timea}@g             ${ED2IN}
-   sed -i s@myyearz@${thisyearz}@g         ${ED2IN}
-   sed -i s@mymonthz@${monthz}@g           ${ED2IN}
-   sed -i s@mydatez@${datez}@g             ${ED2IN}
-   sed -i s@mytimez@${timez}@g             ${ED2IN}
-   sed -i s@mydtlsm@${dtlsm}@g             ${ED2IN}
-   sed -i s@thispoly@${polyname}@g         ${ED2IN}
-   sed -i s@plonflag@${polylon}@g          ${ED2IN}
-   sed -i s@platflag@${polylat}@g          ${ED2IN}
-   sed -i s@timehhhh@${time}@g             ${ED2IN}
-   sed -i s@datehhhh@${date}@g             ${ED2IN}
-   sed -i s@monthhhh@${month}@g            ${ED2IN}
-   sed -i s@yearhhhh@${year}@g             ${ED2IN}
-   sed -i s@myinitmode@${initmode}@g       ${ED2IN}
-   sed -i s@mysfilin@${thissfilin}@g       ${ED2IN}
-   sed -i s@mytrees@${pfts}@g              ${ED2IN}
-   sed -i s@mycrop@${crop}@g               ${ED2IN}
-   sed -i s@myplantation@${plantation}@g   ${ED2IN}
-   sed -i s@myiphen@${iphen}@g             ${ED2IN}
-   sed -i s@myisoilflg@${polyisoil}@g      ${ED2IN}
-   sed -i s@mynslcon@${polyntext}@g        ${ED2IN}
-   sed -i s@myslxsand@${polysand}@g        ${ED2IN}
-   sed -i s@myslxclay@${polyclay}@g        ${ED2IN}
-   sed -i s@mynzg@${polynzg}@g             ${ED2IN}
-   sed -i s@myslz@"${polyslz}"@g           ${ED2IN}
-   sed -i s@myslmstr@"${polyslm}"@g        ${ED2IN}
-   sed -i s@mystgoff@"${polyslt}"@g        ${ED2IN}
-   sed -i s@mymetdriverdb@${metdriverdb}@g ${ED2IN}
-   sed -i s@mymetcyc1@${metcyc1}@g         ${ED2IN}
-   sed -i s@mymetcycf@${metcycf}@g         ${ED2IN}
-   sed -i s@mytoler@${toler}@g             ${ED2IN}
-   sed -i s@RUNFLAG@${runt}@g              ${ED2IN}
-   sed -i s@myvmfact@${vmfact}@g           ${ED2IN}
-   sed -i s@mymfact@${mfact}@g             ${ED2IN}
-   sed -i s@mykfact@${kfact}@g             ${ED2IN}
-   sed -i s@mywlimit@${wlimit}@g           ${ED2IN}
-   sed -i s@mygamfact@${gamfact}@g         ${ED2IN}
-   sed -i s@myd0fact@${d0fact}@g           ${ED2IN}
-   sed -i s@myalphafact@${alphafact}@g     ${ED2IN}
-   sed -i s@mylwfact@${lwfact}@g           ${ED2IN}
-   sed -i s@mythioff@${thioff}@g           ${ED2IN}
-   sed -i s@myallom@${iallom}@g            ${ED2IN}
-   sed -i s@myblyrcnd@${blyrcnd}@g         ${ED2IN}
-   sed -i s@mybpower@${bpower}@g           ${ED2IN}
-   sed -i s@myicanturb@${icanturb}@g       ${ED2IN}
-   sed -i s@myisfclyrm@${isfclyrm}@g       ${ED2IN}
-   sed -i s@myustmin@${ustmin}@g           ${ED2IN}
-   sed -i s@myggfact@${ggfact}@g           ${ED2IN}
-   sed -i s@mygamm@${gamm}@g               ${ED2IN}
-   sed -i s@mygamh@${gamh}@g               ${ED2IN}
-   sed -i s@mytprandtl@${tprandtl}@g       ${ED2IN}
-   sed -i s@myvh2vr@${vh2vr}@g             ${ED2IN}
-   sed -i s@myvh2dh@${vh2dh}@g             ${ED2IN}
-   sed -i s@myribmax@${ribmax}@g           ${ED2IN}
-   sed -i s@mymaxwhc@${maxwhc}@g           ${ED2IN}
-   sed -i s@myrunoff@${runoff}@g           ${ED2IN}
-   sed -i s@myatmco2@${atmco2}@g           ${ED2IN}
-   sed -i s@mythcrit@${thcrit}@g           ${ED2IN}
-   sed -i s@mysmfire@${smfire}@g           ${ED2IN}
-   sed -i s@myagefall@${agefall}@g         ${ED2IN}
-   sed -i s@mygrndvap@${grndvap}@g         ${ED2IN}
-   sed -i s@mycrownmod@${crownmod}@g       ${ED2IN}
-   sed -i s@mymetavg@${imetavg}@g          ${ED2IN}
-   sed -i s@myquantum@${quantum}@g         ${ED2IN}
-   sed -i s@mysoilbc@${isoilbc}@g          ${ED2IN}
-   sed -i s@mypercol@${ipercol}@g          ${ED2IN}
-   sed -i s@myphysiol@${iphysiol}@g        ${ED2IN}
-   sed -i s@mymetrad@${imetrad}@g          ${ED2IN}
-   sed -i s@mybranch@${ibranch}@g          ${ED2IN}
-   sed -i s@mycanrad@${icanrad}@g          ${ED2IN}
+   sed -i s@paththere@${there}@g             ${ED2IN}
+   sed -i s@myyeara@${thisyeara}@g           ${ED2IN}
+   sed -i s@mymontha@${montha}@g             ${ED2IN}
+   sed -i s@mydatea@${datea}@g               ${ED2IN}
+   sed -i s@mytimea@${timea}@g               ${ED2IN}
+   sed -i s@myyearz@${thisyearz}@g           ${ED2IN}
+   sed -i s@mymonthz@${monthz}@g             ${ED2IN}
+   sed -i s@mydatez@${datez}@g               ${ED2IN}
+   sed -i s@mytimez@${timez}@g               ${ED2IN}
+   sed -i s@mydtlsm@${dtlsm}@g               ${ED2IN}
+   sed -i s@thispoly@${polyname}@g           ${ED2IN}
+   sed -i s@plonflag@${polylon}@g            ${ED2IN}
+   sed -i s@platflag@${polylat}@g            ${ED2IN}
+   sed -i s@timehhhh@${time}@g               ${ED2IN}
+   sed -i s@datehhhh@${date}@g               ${ED2IN}
+   sed -i s@monthhhh@${month}@g              ${ED2IN}
+   sed -i s@yearhhhh@${year}@g               ${ED2IN}
+   sed -i s@myinitmode@${initmode}@g         ${ED2IN}
+   sed -i s@mysfilin@${thissfilin}@g         ${ED2IN}
+   sed -i s@mytrees@${pfts}@g                ${ED2IN}
+   sed -i s@mycrop@${crop}@g                 ${ED2IN}
+   sed -i s@myplantation@${plantation}@g     ${ED2IN}
+   sed -i s@myiphen@${iphen}@g               ${ED2IN}
+   sed -i s@myisoilflg@${polyisoil}@g        ${ED2IN}
+   sed -i s@mynslcon@${polyntext}@g          ${ED2IN}
+   sed -i s@myslxsand@${polysand}@g          ${ED2IN}
+   sed -i s@myslxclay@${polyclay}@g          ${ED2IN}
+   sed -i s@mynzg@${polynzg}@g               ${ED2IN}
+   sed -i s@myslz@"${polyslz}"@g             ${ED2IN}
+   sed -i s@myslmstr@"${polyslm}"@g          ${ED2IN}
+   sed -i s@mystgoff@"${polyslt}"@g          ${ED2IN}
+   sed -i s@mymetdriverdb@${metdriverdb}@g   ${ED2IN}
+   sed -i s@mymetcyc1@${metcyc1}@g           ${ED2IN}
+   sed -i s@mymetcycf@${metcycf}@g           ${ED2IN}
+   sed -i s@mytoler@${toler}@g               ${ED2IN}
+   sed -i s@RUNFLAG@${runt}@g                ${ED2IN}
+   sed -i s@myvmfact@${vmfact}@g             ${ED2IN}
+   sed -i s@mymfact@${mfact}@g               ${ED2IN}
+   sed -i s@mykfact@${kfact}@g               ${ED2IN}
+   sed -i s@mygamfact@${gamfact}@g           ${ED2IN}
+   sed -i s@myd0fact@${d0fact}@g             ${ED2IN}
+   sed -i s@myalphafact@${alphafact}@g       ${ED2IN}
+   sed -i s@myrrffact@${rrffact}@g           ${ED2IN}
+   sed -i s@mygrowthresp@${growthresp}@g     ${ED2IN}
+   sed -i s@myicanturb@${icanturb}@g         ${ED2IN}
+   sed -i s@myatmco2@${atmco2}@g             ${ED2IN}
+   sed -i s@mythcrit@${thcrit}@g             ${ED2IN}
+   sed -i s@mysmfire@${smfire}@g             ${ED2IN}
+   sed -i s@mymetavg@${imetavg}@g            ${ED2IN}
+   sed -i s@mysoilbc@${isoilbc}@g            ${ED2IN}
+   sed -i s@mymetrad@${imetrad}@g            ${ED2IN}
+   sed -i s@mybranch@${ibranch}@g            ${ED2IN}
+   sed -i s@mycanrad@${icanrad}@g            ${ED2IN}
+   sed -i s@myltransvis@${ltransvis}@g       ${ED2IN}
+   sed -i s@myltransnir@${ltransnir}@g       ${ED2IN}
+   sed -i s@mylreflectvis@${lreflectvis}@g   ${ED2IN}
+   sed -i s@mylreflectnir@${lreflectnir}@g   ${ED2IN}
+   sed -i s@myorienttree@${orienttree}@g     ${ED2IN}
+   sed -i s@myorientgrass@${orientgrass}@g   ${ED2IN}
+   sed -i s@myclumptree@${clumptree}@g       ${ED2IN}
+   sed -i s@myclumpgrass@${clumpgrass}@g     ${ED2IN}
+   sed -i s@myvegtdyn@${ivegtdyn}@g          ${ED2IN}
    #----- Change the srun.sh file. --------------------------------------------------------#
    srun=${here}'/'${polyname}'/srun.sh'
    sed -i s@pathhere@${here}@g     ${srun}

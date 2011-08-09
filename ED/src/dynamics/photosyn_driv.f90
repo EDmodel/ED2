@@ -500,12 +500,14 @@ subroutine print_photo_details(cmet,csite,ipa,ico,limit_flag,vm,compp)
    real                                    :: leaf_resp
    real                                    :: stom_condct
    real                                    :: par_area
+   real                                    :: nir_area
    real                                    :: parv
+   real                                    :: nirv
    real                                    :: util_parv
    real                                    :: alpha
    !----- Local constants. ----------------------------------------------------------------!
-   character(len=10), parameter :: hfmt='(58(a,1x))'
-   character(len=48), parameter :: bfmt='(3(i13,1x),1(es13.6,1x),2(i13,1x),52(es13.6,1x))'
+   character(len=10), parameter :: hfmt='(60(a,1x))'
+   character(len=48), parameter :: bfmt='(3(i13,1x),1(es13.6,1x),2(i13,1x),54(es13.6,1x))'
    !----- Locally saved variables. --------------------------------------------------------!
    logical                   , save        :: first_time=.true.
    !---------------------------------------------------------------------------------------!
@@ -521,7 +523,8 @@ subroutine print_photo_details(cmet,csite,ipa,ico,limit_flag,vm,compp)
    if (cpatch%leaf_resolvable(ico)) then
       par_area   = cpatch%par_l(ico) * Watts_2_Ein * mol_2_umol
       parv       = par_area / cpatch%lai(ico)
-      
+      nir_area   = (cpatch%rshort_l(ico) - cpatch%par_l(ico)) * Watts_2_Ein * mol_2_umol
+      nirv       = nir_area / cpatch%lai(ico)
       
       !------------------------------------------------------------------------------------!
       !    Is alpha (quantum efficiency) temperature dependent?  If so, calculate after    !
@@ -596,14 +599,15 @@ subroutine print_photo_details(cmet,csite,ipa,ico,limit_flag,vm,compp)
                                , '      ATM_CO2', '      CAN_CO2', 'LSFC_CO2_OPEN'         &
                                , 'LSFC_CO2_CLOS', 'LINT_CO2_OPEN', 'LINT_CO2_CLOS'         &
                                , '        COMPP', '     PAR_AREA', '         PARV'         &
-                               , '    UTIL_PARV', '          GPP', '    LEAF_RESP'         &
-                               , '     LEAF_GBH', '     LEAF_GBW', '     WOOD_GBH'         &
-                               , '     WOOD_GBW', '  STOM_CONDCT', '       A_OPEN'         &
-                               , '       A_CLOS', '     GSW_OPEN', '     GSW_CLOS'         &
-                               , '     PSI_OPEN', '     PSI_CLOS', '   H2O_SUPPLY'         &
-                               , '          FSW', '          FSN', '      FS_OPEN'         &
-                               , '     ATM_WIND', '     VEG_WIND', '        USTAR'         &
-                               , '           VM'
+                               , '    UTIL_PARV', '     NIR_AREA', '         NIRV'         &
+                               , '          GPP', '    LEAF_RESP', '     LEAF_GBH'         &
+                               , '     LEAF_GBW', '     WOOD_GBH', '     WOOD_GBW'         &
+                               , '  STOM_CONDCT', '       A_OPEN', '       A_CLOS'         &
+                               , '     GSW_OPEN', '     GSW_CLOS', '     PSI_OPEN'         &
+                               , '     PSI_CLOS', '   H2O_SUPPLY', '          FSW'         &
+                               , '          FSN', '      FS_OPEN', '     ATM_WIND'         &
+                               , '     VEG_WIND', '        USTAR', '           VM'
+                               
                               
       close (unit=57,status='keep')
    end if
@@ -628,15 +632,14 @@ subroutine print_photo_details(cmet,csite,ipa,ico,limit_flag,vm,compp)
    , cmet%atm_co2               , csite%can_co2(ipa)         , cpatch%lsfc_co2_open(ico)   &
    , cpatch%lsfc_co2_closed(ico), cpatch%lint_co2_open(ico)  , cpatch%lint_co2_closed(ico) &
    , compp                      , par_area                   , parv                        &
-   , util_parv                  , cpatch%gpp(ico)            , leaf_resp                   &
-   , cpatch%leaf_gbh(ico)       , cpatch%leaf_gbw(ico)       , cpatch%wood_gbh(ico)        &
-   , cpatch%wood_gbw(ico)       , stom_condct                , cpatch%A_open(ico)          &
-   , cpatch%A_closed(ico)       , cpatch%gsw_open(ico)       , cpatch%gsw_closed(ico)      &
-   , cpatch%psi_open(ico)       , cpatch%psi_closed(ico)     , cpatch%water_supply(ico)    &
-   , cpatch%fsw(ico)            , cpatch%fsn(ico)            , cpatch%fs_open(ico)         &
-   , cmet%vels                  , cpatch%veg_wind(ico)       , csite%ustar(ipa)            &
-   , vm
-   
+   , util_parv                  , nir_area                   , nirv                        &
+   , cpatch%gpp(ico)            , leaf_resp                  , cpatch%leaf_gbh(ico)        &
+   , cpatch%leaf_gbw(ico)       , cpatch%wood_gbh(ico)       , cpatch%wood_gbw(ico)        &
+   , stom_condct                , cpatch%A_open(ico)         , cpatch%A_closed(ico)        &
+   , cpatch%gsw_open(ico)       , cpatch%gsw_closed(ico)     , cpatch%psi_open(ico)        &
+   , cpatch%psi_closed(ico)     , cpatch%water_supply(ico)   , cpatch%fsw(ico)             &
+   , cpatch%fsn(ico)            , cpatch%fs_open(ico)        , cmet%vels                   &
+   , cpatch%veg_wind(ico)       , csite%ustar(ipa)           , vm
 
    close(unit=57,status='keep')
    !---------------------------------------------------------------------------------------!

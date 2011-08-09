@@ -44,9 +44,9 @@ mortality.o: consts_coms.mod disturb_coms.mod ed_max_dims.mod ed_misc_coms.mod
 mortality.o: ed_state_vars.mod pft_coms.mod
 multiple_scatter.o: canopy_radiation_coms.mod consts_coms.mod ed_max_dims.mod
 multiple_scatter.o: rk4_coms.mod
-phenology_aux.o: allometry.mod consts_coms.mod ed_max_dims.mod ed_state_vars.mod
-phenology_aux.o: ed_therm_lib.mod grid_coms.mod pft_coms.mod phenology_coms.mod
-phenology_aux.o: soil_coms.mod
+phenology_aux.o: allometry.mod consts_coms.mod ed_max_dims.mod ed_misc_coms.mod
+phenology_aux.o: ed_state_vars.mod ed_therm_lib.mod grid_coms.mod pft_coms.mod
+phenology_aux.o: phenology_coms.mod soil_coms.mod
 phenology_driv.o: allometry.mod consts_coms.mod decomp_coms.mod ed_max_dims.mod
 phenology_driv.o: ed_misc_coms.mod ed_state_vars.mod ed_therm_lib.mod
 phenology_driv.o: grid_coms.mod pft_coms.mod phenology_coms.mod soil_coms.mod
@@ -70,12 +70,13 @@ rk4_integ_utils.o: canopy_air_coms.mod consts_coms.mod ed_max_dims.mod
 rk4_integ_utils.o: ed_misc_coms.mod ed_state_vars.mod grid_coms.mod
 rk4_integ_utils.o: hydrology_coms.mod rk4_coms.mod rk4_stepper.mod soil_coms.mod
 rk4_integ_utils.o: therm_lib8.mod
-rk4_misc.o: canopy_air_coms.mod canopy_struct_dynamics.mod consts_coms.mod
-rk4_misc.o: ed_max_dims.mod ed_misc_coms.mod ed_state_vars.mod ed_therm_lib.mod
-rk4_misc.o: grid_coms.mod rk4_coms.mod soil_coms.mod therm_lib8.mod
+rk4_misc.o: canopy_struct_dynamics.mod consts_coms.mod ed_max_dims.mod
+rk4_misc.o: ed_misc_coms.mod ed_state_vars.mod ed_therm_lib.mod grid_coms.mod
+rk4_misc.o: rk4_coms.mod soil_coms.mod therm_lib8.mod
 rk4_stepper.o: ed_state_vars.mod grid_coms.mod rk4_coms.mod soil_coms.mod
 soil_respiration.o: consts_coms.mod decomp_coms.mod ed_state_vars.mod
-soil_respiration.o: pft_coms.mod soil_coms.mod
+soil_respiration.o: farq_leuning.mod pft_coms.mod physiology_coms.mod
+soil_respiration.o: rk4_coms.mod soil_coms.mod
 structural_growth.o: allometry.mod consts_coms.mod decomp_coms.mod
 structural_growth.o: ed_max_dims.mod ed_misc_coms.mod ed_state_vars.mod
 structural_growth.o: ed_therm_lib.mod pft_coms.mod

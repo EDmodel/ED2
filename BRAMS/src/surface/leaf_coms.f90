@@ -27,22 +27,12 @@ module leaf_coms
 
    !----- Parameters that are initialised from RAMSIN. ------------------------------------! 
    real    :: ustmin          ! Minimum ustar                                   [      m/s]
-   real    :: ggfact          ! Factor to multiply ground->canopy conductance.
-   real    :: gamm            ! Gamma used by Businger et al. (1971) - momentum.
-   real    :: gamh            ! Gamma used by Businger et al. (1971) - heat.
-   real    :: tprandtl        ! Turbulent Prandtl number.
-   real    :: vh2vr           ! Vegetation roughness:vegetation height ratio
-   real    :: vh2dh           ! Displacement height:vegetation height ratio
    real    :: ribmax          ! Maximum bulk Richardson number
    real    :: leaf_maxwhc     ! Leaf maximum water holding capacity             [kg/m2leaf]
    real    :: min_patch_area  !  Minimum patch area to consider
    !---------------------------------------------------------------------------------------!
 
 
-
-   !----- This parameter is assigned based on namelist variables. -------------------------!
-   real    :: vkopr     ! von Karman / turbulent Prandtl
-   !---------------------------------------------------------------------------------------!
 
 
    !---------------------------------------------------------------------------------------!
@@ -274,11 +264,17 @@ module leaf_coms
    !---------------------------------------------------------------------------------------!
    !      Constants for surface layer models.                                              !
    !---------------------------------------------------------------------------------------!
+   real, parameter :: gamm     = 13.0          ! Gamma (Businger et al. 1971) - momentum.
+   real, parameter :: gamh     = 13.0          ! Gamma (Businger et al. 1971) - heat.
+   real, parameter :: tprandtl = 0.74          ! Turbulent Prandtl number.
+   real, parameter :: vh2vr    = 0.13          ! Vegetation roughness:vegetation hgt ratio
+   real, parameter :: vh2dh    = 0.63          ! Displacement height:vegetation hgt ratio
+   real, parameter :: vkopr    = vonk/tprandtl ! von Karman / turbulent Prandtl
    !----- Louis (1979) model. -------------------------------------------------------------!
-   real, parameter :: bl79       = 5.0    ! b prime parameter
-   real, parameter :: csm        = 7.5    ! C* for momentum (eqn. 20, not co2 char. scale)
-   real, parameter :: csh        = 5.0    ! C* for heat (eqn.20, not co2 char. scale)
-   real, parameter :: dl79       = 5.0    ! ???
+   real, parameter :: bl79     = 5.0 ! b prime parameter                                       
+   real, parameter :: csm      = 7.5 ! C* for momentum (eqn. 20, not co2 char. scale)          
+   real, parameter :: csh      = 5.0 ! C* for heat (eqn.20, not co2 char. scale)               
+   real, parameter :: dl79     = 5.0 ! ???                                                     
    !----- Oncley and Dudhia (1995) model. -------------------------------------------------!
    real, parameter :: bbeta      = 5.0    ! Beta used by Businger et al. (1971)
    !----- Beljaars and Holtslag (1991) model. ---------------------------------------------!

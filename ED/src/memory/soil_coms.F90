@@ -50,7 +50,6 @@ module soil_coms
    integer                                    :: isoilstateinit ! Soil state initial cond. 
    integer                                    :: isoildepthflg  ! Soil depth initial cond. 
    real                                       :: runoff_time    ! Default runoff time scale.
-   real                                       :: betapower      ! Power for gnd evaporation
    !---------------------------------------------------------------------------------------!
 
 
@@ -69,14 +68,6 @@ module soil_coms
    integer      :: infiltration_method ! Infiltration scheme (for rk4_derivs)    [     0|1]
    real         :: freezecoef          ! Coeff. for infiltration of frozen water [     ---]
    real(kind=8) :: freezecoef8         ! Coeff. for infiltration of frozen water [     ---]
-   !---------------------------------------------------------------------------------------!
-
-
-   !---------------------------------------------------------------------------------------!
-   !     The following variables are assigned in ed_params.f90 based on namelist           !
-   ! variables.                                                                            !
-   !---------------------------------------------------------------------------------------!
-   real(kind=8) :: betapower8 ! Power for ground evaporation
    !---------------------------------------------------------------------------------------!
 
 

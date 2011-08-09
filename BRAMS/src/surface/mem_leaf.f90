@@ -170,8 +170,6 @@ Module mem_leaf
    real                    :: dtleaf      ! LEAF-3 target time step.  It will be either this
                                           !    this or the actual BRAMS time step (which-
                                           !    ever is the lowest).
-   real                    :: betapower   ! Power for the beta parameter that controls 
-                                          !    ground evaporation.
 
    real, dimension(nzgmax) :: stgoff  ! Initial soil temperature offset
    real, dimension(nzgmax) :: slmstr  ! Initial soil moisture if constant for entire domain

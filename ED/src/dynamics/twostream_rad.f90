@@ -25,6 +25,9 @@ subroutine sw_twostream_clump(salbedo_par,salbedo_nir,scosz,scosaoi,ncoh,pft    
                                    , wood_scatter_vis        & ! intent(in)
                                    , clumping_factor         & ! intent(in)
                                    , orient_factor           & ! intent(in)
+                                   , phi1                    & ! intent(in)
+                                   , phi2                    & ! intent(in)
+                                   , mu_bar                  & ! intent(in)
                                    , par_beam_norm           & ! intent(in)
                                    , par_diff_norm           & ! intent(in)
                                    , nir_beam_norm           & ! intent(in)
@@ -92,7 +95,6 @@ subroutine sw_twostream_clump(salbedo_par,salbedo_nir,scosz,scosaoi,ncoh,pft    
    real(kind=8), dimension(ncoh)                :: tai
    real(kind=8), dimension(ncoh)                :: eff_tai
    real(kind=8), dimension(ncoh)                :: lambda
-   real(kind=8), dimension(ncoh)                :: mu_bar
    real(kind=8), dimension(ncoh)                :: beam_backscatter
    real(kind=8), dimension(ncoh)                :: cohort_scatter_vis
    real(kind=8), dimension(ncoh)                :: cohort_backscatter_vis
@@ -136,8 +138,6 @@ subroutine sw_twostream_clump(salbedo_par,salbedo_nir,scosz,scosaoi,ncoh,pft    
    real(kind=8)                                 :: weight_leaf
    real(kind=8)                                 :: weight_wood
    real(kind=8)                                 :: proj_area
-   real(kind=8)                                 :: phi1
-   real(kind=8)                                 :: phi2
    real(kind=8)                                 :: snglscat_alb
    !---------------------------------------------------------------------------------------!
 
@@ -151,34 +151,14 @@ subroutine sw_twostream_clump(salbedo_par,salbedo_nir,scosz,scosaoi,ncoh,pft    
    lambda     = 5.d-1/cosaoi
    lambda_tot = 0.0d0
    do il=1,ncoh
-      ipft                       = pft(il)
+      ipft = pft(il)
 
       !------------------------------------------------------------------------------------!
       !     We find the optical depth of the direct beam (lambda), following CLM technical !
       ! note (equation 3.3 and text after equation 3.2).                                   !
       !------------------------------------------------------------------------------------!
-      phi1           = 5.d-1                                                               &
-                     - orient_factor(ipft) * ( 6.33d-1 + 3.3d-1 * orient_factor(ipft) )
-      phi2           = 8.77d-1 * (1.d0 - 2.d0 * phi1)
-      proj_area      = phi1 + phi2 * cosaoi
+      proj_area      = phi1(ipft) + phi2(ipft) * cosaoi
       lambda(il)     = proj_area / cosaoi
-      lambda_out(il) = lambda(il) * cohort_clumping(il) / canopy_area(il)
-      lambda_tot = lambda_tot + clumping_factor(ipft) * lambda(il)
-      !------------------------------------------------------------------------------------!
-
-
-
-      !------------------------------------------------------------------------------------!
-      !     Find the average inverse diffuse optical depth per unit leaf and stem area.    !
-      ! We follow CLM technical manual, equation 3.4 only when the orientation factor is   !
-      ! non-zero.   Otherwise, we make it 1.d0, which is the limit of that equation when   !
-      ! phi2 approaches zero.                                                              !
-      !------------------------------------------------------------------------------------!
-      if (orient_factor(ipft) == 0.d0) then
-         mu_bar(il) = 1.d0
-      else
-         mu_bar(il) = ( 1.d0 - phi1 * log(1.d0 + phi2 / phi1) / phi2 ) / phi2
-      end if
       !------------------------------------------------------------------------------------!
 
 
@@ -189,11 +169,13 @@ subroutine sw_twostream_clump(salbedo_par,salbedo_nir,scosz,scosaoi,ncoh,pft    
       ! equations because they are different for PAR and NIR, but in both cases they       !
       ! cancel out.                                                                        !
       !------------------------------------------------------------------------------------!
-      snglscat_alb         = 5.d-1 * proj_area / (phi2 * cosaoi + proj_area)               &
-                           * ( 1.d0 - phi1 * cosaoi / (phi2 * cosaoi + proj_area)          &
-                             * log (1.d0  + (phi2 * cosaoi + proj_area) / (phi1 * cosaoi)))
-      beam_backscatter(il) = ( 1.d0 + mu_bar(il) * lambda(il) ) * snglscat_alb             &
-                           / ( mu_bar(il) * lambda(il) )
+      snglscat_alb         = 5.d-1 * proj_area / (phi2(ipft) * cosaoi + proj_area)         &
+                           * ( 1.d0 - phi1(ipft) * cosaoi                                  &
+                             / (phi2(ipft) * cosaoi + proj_area)                           &
+                             * log (1.d0  + (phi2(ipft) * cosaoi + proj_area)              &
+                                          / (phi1(ipft) * cosaoi)))
+      beam_backscatter(il) = ( 1.d0 + mu_bar(ipft) * lambda(il) ) * snglscat_alb           &
+                           / ( mu_bar(ipft) * lambda(il) )
       !------------------------------------------------------------------------------------!
 
 
@@ -206,6 +188,14 @@ subroutine sw_twostream_clump(salbedo_par,salbedo_nir,scosz,scosaoi,ncoh,pft    
       !------------------------------------------------------------------------------------!
 
 
+
+
+      !------------------------------------------------------------------------------------!
+      !     Find the output variables.                                                     !
+      !------------------------------------------------------------------------------------!
+      lambda_out(il) = lambda(il) * cohort_clumping(il) / canopy_area(il)
+      lambda_tot = lambda_tot + cohort_clumping(il) * lambda(il)
+      !------------------------------------------------------------------------------------!
 
 
 
@@ -282,9 +272,9 @@ subroutine sw_twostream_clump(salbedo_par,salbedo_nir,scosz,scosaoi,ncoh,pft    
          ipft  = pft(il)
          eta   = cohort_clumping(il)                                                       &
                * (1.0d0 - ( 1.0d0 - cohort_backscatter(il)) * cohort_scatter(il))          &
-               / mu_bar(il)
+               / mu_bar(ipft)
          zeta  = cohort_scatter(il) * cohort_backscatter(il) * cohort_clumping(il)         &
-               / mu_bar(il)
+               / mu_bar(ipft)
          psi   = cohort_clumping(il) * lambda(il)
          iota  = psi * cohort_scatter(il) * beam_backscatter(il)
 
@@ -787,13 +777,15 @@ subroutine lw_twostream(ncoh,semgs,sT_grnd, pft,lai,wai,canopy_area,leaf_temp,wo
                        ,lw_v_surf,lw_v_incid,downward_lw_below_surf                        &
                        ,downward_lw_below_incid,upward_lw_below_surf                       &
                        ,upward_lw_below_incid,upward_lw_above_surf,upward_lw_above_incid)
-   use canopy_radiation_coms , only : leaf_emis       & ! intent(in)
-                                    , wood_emis       & ! intent(in)
-                                    , clumping_factor & ! intent(in)
-                                    , mu_bar_lw       ! ! intent(in)
-   use consts_coms           , only : stefan8         & ! intent(in)
-                                    , tiny_num8       ! ! intent(in)
-   use rk4_coms              , only : tiny_offset     ! ! intent(in)
+   use canopy_radiation_coms , only : leaf_emis            & ! intent(in)
+                                    , wood_emis            & ! intent(in)
+                                    , leaf_backscatter_tir & ! intent(in)
+                                    , wood_backscatter_tir & ! intent(in)
+                                    , clumping_factor      & ! intent(in)
+                                    , mu_bar               ! ! intent(in)
+   use consts_coms           , only : stefan8              & ! intent(in)
+                                    , tiny_num8            ! ! intent(in)
+   use rk4_coms              , only : tiny_offset          ! ! intent(in)
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
    integer                      , intent(in)  :: ncoh        ! # of cohorts
@@ -855,6 +847,7 @@ subroutine lw_twostream(ncoh,semgs,sT_grnd, pft,lai,wai,canopy_area,leaf_temp,wo
    real(kind=8)                               :: lw_v_surf_tmp
    real(kind=8)                               :: lw_v_incid_tmp
    real(kind=8)                               :: cohort_emis
+   real(kind=8)                               :: cohort_backscatter
    real(kind=8)                               :: cohort_temp
    real(kind=8)                               :: cohort_tai
    !----- External functions. -------------------------------------------------------------!
@@ -869,13 +862,19 @@ subroutine lw_twostream(ncoh,semgs,sT_grnd, pft,lai,wai,canopy_area,leaf_temp,wo
    ncoh2  = 2*ncoh
 
    do il=1,ncoh
-      ipft           = pft(il)
-      cohort_tai     = lai(il) + wai(il)
-      cohort_emis    = (leaf_emis(ipft) * lai(il) + wood_emis(ipft) * wai(il)) / cohort_tai
-      cohort_temp    = (leaf_temp(il)   * lai(il) + wood_temp(il)   * wai(il)) / cohort_tai
+      ipft               = pft(il)
+      cohort_tai         = lai(il) + wai(il)
+      cohort_emis        = ( leaf_emis(ipft) * lai(il) + wood_emis(ipft) * wai(il))        &
+                         / cohort_tai
+      cohort_backscatter = ( leaf_backscatter_tir(ipft) * lai(il)                          &
+                           + wood_backscatter_tir(ipft) * wai(il) )                        &
+                         / cohort_tai
+      cohort_temp        = ( leaf_temp(il) * lai(il) + wood_temp(il) * wai(il))            &
+                         / cohort_tai
    
-      zeta           = 2.0d0 * (1.0d0 - cohort_emis) / (3.0d0 * mu_bar_lw)
-      eta            = (2.0d0 + cohort_emis) / (3.0d0 * mu_bar_lw)
+      zeta           = (1.d0 - cohort_emis) * cohort_backscatter / mu_bar(ipft)
+      eta            = (1.d0 - (1.d0 - cohort_backscatter) * (1.d0 - cohort_emis))         &
+                     / mu_bar(ipft)
       exk            = sqrt(eta * eta - zeta * zeta)
       exki           = 1.0d0 / exk
       zetai          = 1.0d0 / zeta

@@ -31,6 +31,9 @@ subroutine lw_multiple_scatter(grnd_emis4,grnd_temp4,rlong_top4,ncoh,pft,lai,wai
                                    , orient_factor           & ! intent(in)
                                    , leaf_emis               & ! intent(in)
                                    , wood_emis               & ! intent(in)
+                                   , phi1                    & ! intent(in)
+                                   , phi2                    & ! intent(in)
+                                   , mu_bar                  & ! intent(in)
                                    , leaf_backscatter_tir    & ! intent(in)
                                    , wood_backscatter_tir    ! ! intent(in)
    use consts_coms          , only : stefan8                 ! ! intent(in)
@@ -86,8 +89,6 @@ subroutine lw_multiple_scatter(grnd_emis4,grnd_temp4,rlong_top4,ncoh,pft,lai,wai
    real(kind=8)                                            :: grnd_emis
    real(kind=8)                                            :: grnd_temp
    real(kind=8)                                            :: rlong_top
-   real(kind=8)                                            :: phi1
-   real(kind=8)                                            :: phi2
    real(kind=8)                                            :: ext_diff1
    real(kind=8)                                            :: ext_diff2
    !----- External functions. -------------------------------------------------------------!
@@ -155,11 +156,8 @@ subroutine lw_multiple_scatter(grnd_emis4,grnd_temp4,rlong_top4,ncoh,pft,lai,wai
       !     The integral can be solved analytically for our case, with the help of the     !
       ! handy http://www.integrals.com website, of course ;-).                             !
       !------------------------------------------------------------------------------------!
-      phi1        = 5.d-1                                                                  &
-                  - orient_factor(ipft) * ( 6.33d-1 + 3.3d-1 * orient_factor(ipft) )
-      phi2        = 8.77d-1 * (1.d0 - 2.d0 * phi1)
-      ext_diff1   = phi1 * locetai(i)
-      ext_diff2   = phi2 * locetai(i)
+      ext_diff1   = phi1(ipft) * locetai(i)
+      ext_diff2   = phi2(ipft) * locetai(i)
       tau(i)      = (1.d0 - cai(i))                                                        &
                   - cai(i) * exp(- ext_diff1 - ext_diff2)                                  &
                   * ( ext_diff1 * ext_diff1 * exp(ext_diff1) * eifun8(-ext_diff1)          &
@@ -390,6 +388,9 @@ subroutine sw_multiple_scatter(grnd_alb_par4,grnd_alb_nir4,cosaoi4,ncoh,pft,lai,
    use rk4_coms             , only : tiny_offset             ! ! intent(in)
    use canopy_radiation_coms, only : clumping_factor         & ! intent(in)
                                    , orient_factor           & ! intent(in)
+                                   , phi1                    & ! intent(in)
+                                   , phi2                    & ! intent(in)
+                                   , mu_bar                  & ! intent(in)
                                    , leaf_scatter_vis        & ! intent(in)
                                    , leaf_scatter_nir        & ! intent(in)
                                    , leaf_backscatter_nir    & ! intent(in)
@@ -451,7 +452,6 @@ subroutine sw_multiple_scatter(grnd_alb_par4,grnd_alb_nir4,cosaoi4,ncoh,pft,lai,
    real(kind=8)                                            :: mu
    real(kind=4), dimension(ncoh)                           :: nir_beam_flip
    real(kind=4), dimension(ncoh)                           :: nir_diff_flip
-   real(kind=8), dimension(ncoh)                           :: mu_bar
    real(kind=8), dimension(ncoh)                           :: locetai
    real(kind=8), dimension(ncoh)                           :: etai
    real(kind=8), dimension(ncoh)                           :: elai
@@ -477,8 +477,6 @@ subroutine sw_multiple_scatter(grnd_alb_par4,grnd_alb_nir4,cosaoi4,ncoh,pft,lai,
    real(kind=8), dimension(2*ncoh+2)                       :: swvec
    real(kind=8), dimension(2*ncoh+2)                       :: cvec
    real(kind=8), dimension(2*ncoh+2,2*ncoh+2)              :: amat
-   real(kind=8)                                            :: phi1
-   real(kind=8)                                            :: phi2
    real(kind=8)                                            :: proj_area
    real(kind=8)                                            :: ext_diff1
    real(kind=8)                                            :: ext_diff2
@@ -542,10 +540,7 @@ subroutine sw_multiple_scatter(grnd_alb_par4,grnd_alb_nir4,cosaoi4,ncoh,pft,lai,
       !     We find the optical depth of the direct beam (lambda), following CLM04         !
       ! (equation 3.3 and text after equation 3.2).                                        !
       !------------------------------------------------------------------------------------!
-      phi1          = 5.d-1                                                                &
-                    - orient_factor(ipft) * ( 6.33d-1 + 3.3d-1 * orient_factor(ipft) )
-      phi2          = 8.77d-1 * (1.d0 - 2.d0 * phi1)
-      proj_area     = phi1 + phi2 * mu
+      proj_area     = phi1(ipft) + phi2(ipft) * mu
       lambda    (i) = proj_area / mu
       lambda_out(i) = lambda(i) * locetai(i) / (lai(i) + wai(i))
       lambda_tot    = lambda_tot + lambda(i)
@@ -569,8 +564,8 @@ subroutine sw_multiple_scatter(grnd_alb_par4,grnd_alb_nir4,cosaoi4,ncoh,pft,lai,
       !     The integral can be solved analytically for our case, with the help of the     !
       ! handy http://www.integrals.com website, of course ;-).                             !
       !------------------------------------------------------------------------------------!
-      ext_diff1   = phi1 * locetai(i)
-      ext_diff2   = phi2 * locetai(i)
+      ext_diff1   = phi1(ipft) * locetai(i)
+      ext_diff2   = phi2(ipft) * locetai(i)
       tau_diff(i) = (1.d0 - cai(i))                                                        &
                   - cai(i) * exp(- ext_diff1 - ext_diff2)                                  &
                   * ( ext_diff1 * ext_diff1 * exp(ext_diff1) * eifun8(-ext_diff1)          &
@@ -580,30 +575,16 @@ subroutine sw_multiple_scatter(grnd_alb_par4,grnd_alb_nir4,cosaoi4,ncoh,pft,lai,
 
 
       !------------------------------------------------------------------------------------!
-      !     Find the average inverse diffuse optical depth per unit leaf and stem area.    !
-      ! We follow CLM04, equation 3.4 only when the orientation factor is non-zero.        !
-      ! Otherwise, we make it 1.d0, which is the limit of that equation when phi2          !
-      ! approaches zero.                                                                   !
-      !------------------------------------------------------------------------------------!
-      if (orient_factor(ipft) == 0.d0) then
-         mu_bar(i) = 1.d0
-      else
-         mu_bar(i) = ( 1.d0 - phi1 * log(1.d0 + phi2 / phi1) / phi2 ) / phi2
-      end if
-      !------------------------------------------------------------------------------------!
-
-
-
-      !------------------------------------------------------------------------------------!
       !      Find the backscatter for direct beam radiation, following CLM04, equations    !
       ! (3.14) and (3.15).  The forward scattering was omitted on both equations because   !
       ! they are different for PAR and NIR, but in both cases they would cancel out.       !
       !------------------------------------------------------------------------------------!
-      snglscat_alb        = 5.d-1 * proj_area / (phi2 * mu + proj_area)                    &
-                          * ( 1.d0 - phi1 * mu / (phi2 * mu + proj_area)                   &
-                            * log (1.d0  + (phi2 * mu + proj_area) / (phi1 * mu)))
-      beam_backscatter(i) = ( 1.d0 + mu_bar(i) * lambda(i) ) * snglscat_alb                &
-                             / ( mu_bar(i) * lambda(i) )
+      snglscat_alb        = 5.d-1 * proj_area / (phi2(ipft) * mu + proj_area)              &
+                          * ( 1.d0 - phi1(ipft) * mu / (phi2(ipft) * mu + proj_area)       &
+                            * log (1.d0  + (phi2(ipft) * mu + proj_area)                   &
+                                         / (phi1(ipft) * mu)))
+      beam_backscatter(i) = ( 1.d0 + mu_bar(ipft) * lambda(i) ) * snglscat_alb             &
+                             / ( mu_bar(ipft) * lambda(i) )
       !------------------------------------------------------------------------------------!
    end do
    !---------------------------------------------------------------------------------------!
