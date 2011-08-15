@@ -14,9 +14,10 @@ program ramspost
   ! -----------------------
 
   use rpost_coms
-  use rpost_dims, only : fnm_len & ! intent(in)
-                       , str_len ! ! intent(in)
+  use rpost_dims, only  : fnm_len            & ! intent(in)
+                        , str_len            ! ! intent(in)
   use brams_data
+  use leaf_coms , only  : sfclyr_init_params ! ! sub-routine
   character(len=fnm_len), dimension(maxfiles) :: fln
   character(len=str_len)                      :: inp
   character(len=fnm_len)                      :: fprefix
@@ -83,6 +84,9 @@ program ramspost
 
   ! --- frequencia com as analises serao escrita     
   nstep = 1    
+
+  !---- Initialise surface layer parameters for the CLM-like similarity theory model.
+  call sfclyr_init_params()
 
   nrec=0
   ic=lastchar(gprefix)

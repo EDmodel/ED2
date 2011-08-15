@@ -455,7 +455,6 @@ subroutine spatial_averages
             cpoly%avg_carbon_ac(isi) = sum(csite%avg_carbon_ac * csite%area ) * site_area_i
             cpoly%avg_vapor_lc(isi)  = sum(csite%avg_vapor_lc  * csite%area ) * site_area_i
             cpoly%avg_vapor_wc(isi)  = sum(csite%avg_vapor_wc  * csite%area ) * site_area_i
-            cpoly%avg_dew_cg(isi)    = sum(csite%avg_dew_cg    * csite%area ) * site_area_i
             cpoly%avg_vapor_gc(isi)  = sum(csite%avg_vapor_gc  * csite%area ) * site_area_i
             cpoly%avg_wshed_vg(isi)  = sum(csite%avg_wshed_vg  * csite%area ) * site_area_i
             cpoly%avg_vapor_ac(isi)  = sum(csite%avg_vapor_ac  * csite%area ) * site_area_i
@@ -1157,7 +1156,6 @@ subroutine spatial_averages
          cgrid%avg_carbon_ac(ipy)    = sum(cpoly%avg_carbon_ac    *cpoly%area)*poly_area_i
          cgrid%avg_vapor_lc(ipy)     = sum(cpoly%avg_vapor_lc     *cpoly%area)*poly_area_i
          cgrid%avg_vapor_wc(ipy)     = sum(cpoly%avg_vapor_wc     *cpoly%area)*poly_area_i
-         cgrid%avg_dew_cg(ipy)       = sum(cpoly%avg_dew_cg       *cpoly%area)*poly_area_i
          cgrid%avg_vapor_gc(ipy)     = sum(cpoly%avg_vapor_gc     *cpoly%area)*poly_area_i
          cgrid%avg_wshed_vg(ipy)     = sum(cpoly%avg_wshed_vg     *cpoly%area)*poly_area_i
          cgrid%avg_intercepted(ipy)  = sum(cpoly%avg_intercepted  *cpoly%area)*poly_area_i

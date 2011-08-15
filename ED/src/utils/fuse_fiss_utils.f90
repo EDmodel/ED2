@@ -3233,10 +3233,6 @@ module fuse_fiss_utils
                                       ( csite%avg_vapor_wc(donp)      * csite%area(donp)   &
                                       + csite%avg_vapor_wc(recp)      * csite%area(recp) )  
 
-      csite%avg_dew_cg(recp)          = newareai *                                         &
-                                      ( csite%avg_dew_cg(donp)        * csite%area(donp)   &
-                                      + csite%avg_dew_cg(recp)        * csite%area(recp) )  
-
       csite%avg_vapor_gc(recp)        = newareai *                                         &
                                       ( csite%avg_vapor_gc(donp)      * csite%area(donp)   &
                                       + csite%avg_vapor_gc(recp)      * csite%area(recp) )  

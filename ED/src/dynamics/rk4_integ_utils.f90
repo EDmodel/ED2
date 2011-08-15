@@ -397,7 +397,6 @@ subroutine inc_rk4_patch(rkp, inc, fac, cpatch)
       
       rkp%avg_vapor_lc       = rkp%avg_vapor_lc       + fac * inc%avg_vapor_lc
       rkp%avg_vapor_wc       = rkp%avg_vapor_wc       + fac * inc%avg_vapor_wc
-      rkp%avg_dew_cg         = rkp%avg_dew_cg         + fac * inc%avg_dew_cg
       rkp%avg_vapor_gc       = rkp%avg_vapor_gc       + fac * inc%avg_vapor_gc
       rkp%avg_wshed_vg       = rkp%avg_wshed_vg       + fac * inc%avg_wshed_vg
       rkp%avg_intercepted    = rkp%avg_intercepted    + fac * inc%avg_intercepted
@@ -435,7 +434,6 @@ subroutine inc_rk4_patch(rkp, inc, fac, cpatch)
       
       rkp%flx_vapor_lc       = rkp%flx_vapor_lc       + fac * inc%avg_vapor_lc
       rkp%flx_vapor_wc       = rkp%flx_vapor_wc       + fac * inc%avg_vapor_wc
-      rkp%flx_dew_cg         = rkp%flx_dew_cg         + fac * inc%avg_dew_cg
       rkp%flx_vapor_gc       = rkp%flx_vapor_gc       + fac * inc%avg_vapor_gc
       rkp%flx_wshed_vg       = rkp%flx_wshed_vg       + fac * inc%avg_wshed_vg
       rkp%flx_intercepted    = rkp%flx_intercepted    + fac * inc%avg_intercepted
@@ -1082,6 +1080,7 @@ subroutine copy_rk4_patch(sourcep, targetp, cpatch)
    targetp%ggbare           = sourcep%ggbare
    targetp%ggveg            = sourcep%ggveg
    targetp%ggnet            = sourcep%ggnet
+   targetp%ggsoil           = sourcep%ggsoil
 
    targetp%flag_wflxgc      = sourcep%flag_wflxgc
 
@@ -1203,7 +1202,6 @@ subroutine copy_rk4_patch(sourcep, targetp, cpatch)
       targetp%avg_carbon_ac          = sourcep%avg_carbon_ac
       targetp%avg_vapor_lc           = sourcep%avg_vapor_lc
       targetp%avg_vapor_wc           = sourcep%avg_vapor_wc
-      targetp%avg_dew_cg             = sourcep%avg_dew_cg
       targetp%avg_vapor_gc           = sourcep%avg_vapor_gc
       targetp%avg_wshed_vg           = sourcep%avg_wshed_vg
       targetp%avg_intercepted        = sourcep%avg_intercepted
@@ -1234,7 +1232,6 @@ subroutine copy_rk4_patch(sourcep, targetp, cpatch)
       targetp%flx_carbon_ac          = sourcep%flx_carbon_ac
       targetp%flx_vapor_lc           = sourcep%flx_vapor_lc
       targetp%flx_vapor_wc           = sourcep%flx_vapor_wc
-      targetp%flx_dew_cg             = sourcep%flx_dew_cg
       targetp%flx_vapor_gc           = sourcep%flx_vapor_gc
       targetp%flx_wshed_vg           = sourcep%flx_wshed_vg
       targetp%flx_intercepted        = sourcep%flx_intercepted

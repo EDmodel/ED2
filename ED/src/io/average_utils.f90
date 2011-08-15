@@ -196,7 +196,6 @@ subroutine normalize_averaged_vars(cgrid,frqsum,dtlsm)
             csite%aux                (ipa) = csite%aux                (ipa) * frqsumi
             csite%avg_vapor_lc       (ipa) = csite%avg_vapor_lc       (ipa) * frqsumi
             csite%avg_vapor_wc       (ipa) = csite%avg_vapor_wc       (ipa) * frqsumi
-            csite%avg_dew_cg         (ipa) = csite%avg_dew_cg         (ipa) * frqsumi
             csite%avg_vapor_gc       (ipa) = csite%avg_vapor_gc       (ipa) * frqsumi
             csite%avg_wshed_vg       (ipa) = csite%avg_wshed_vg       (ipa) * frqsumi
             csite%avg_intercepted    (ipa) = csite%avg_intercepted    (ipa) * frqsumi
@@ -373,7 +372,6 @@ subroutine reset_averaged_vars(cgrid)
 
       cgrid%avg_vapor_lc         (ipy) = 0.0
       cgrid%avg_vapor_wc         (ipy) = 0.0
-      cgrid%avg_dew_cg           (ipy) = 0.0
       cgrid%avg_vapor_gc         (ipy) = 0.0
       cgrid%avg_wshed_vg         (ipy) = 0.0
       cgrid%avg_intercepted      (ipy) = 0.0
@@ -504,7 +502,6 @@ subroutine reset_averaged_vars(cgrid)
             csite%avg_carbon_ac(ipa)        = 0.0
             csite%avg_vapor_lc(ipa)         = 0.0
             csite%avg_vapor_wc(ipa)         = 0.0
-            csite%avg_dew_cg(ipa)           = 0.0
             csite%avg_vapor_gc(ipa)         = 0.0
             csite%avg_wshed_vg(ipa)         = 0.0
             csite%avg_intercepted(ipa)      = 0.0

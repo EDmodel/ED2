@@ -513,7 +513,6 @@ subroutine init_ed_patch_vars(csite,ip1,ip2,lsl)
    csite%avg_carbon_ac        (ip1:ip2) = 0.0
    csite%avg_vapor_lc         (ip1:ip2) = 0.0
    csite%avg_vapor_wc         (ip1:ip2) = 0.0
-   csite%avg_dew_cg           (ip1:ip2) = 0.0
    csite%avg_vapor_gc         (ip1:ip2) = 0.0
    csite%avg_wshed_vg         (ip1:ip2) = 0.0
    csite%avg_intercepted      (ip1:ip2) = 0.0

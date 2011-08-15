@@ -1110,7 +1110,12 @@ subroutine ed_opspec_misc
    use canopy_air_coms       , only : icanturb                     & ! intent(in)
                                     , isfclyrm                     & ! intent(in)
                                     , ied_grndvap                  & ! intent(in)
+                                    , ubmin                        & ! intent(in)
+                                    , ugbmin                       & ! intent(in)
                                     , ustmin                       & ! intent(in)
+                                    , gamm                         & ! intent(in)
+                                    , gamh                         & ! intent(in)
+                                    , tprandtl                     & ! intent(in)
                                     , ribmax                       & ! intent(in)
                                     , leaf_maxwhc                  ! ! intent(in)
    use soil_coms             , only : ed_nstyp                     & ! intent(in)
@@ -1620,11 +1625,11 @@ end do
    end if
 
    select case (icanturb)
-   case (0:3)
+   case (0:4)
       continue
    case default
       write (reason,fmt='(a,1x,i4,a)') &
-        'Invalid ICANTURB, it must be between 0 and 3. Yours is set to',icanturb,'...'
+        'Invalid ICANTURB, it must be between 0 and 4. Yours is set to',icanturb,'...'
       call opspec_fatal(reason,'opspec_misc')  
       ifaterr = ifaterr +1
    end select
@@ -1874,17 +1879,65 @@ end do
       ifaterr = ifaterr +1
    end if
     
+   if (ubmin < 0.0001 .or. ubmin > 1.0) then
+      write (reason,fmt='(a,1x,es14.7,a)')                                                 &
+            'Invalid UBMIN, it must be between 0.0001 and 1.0.  Yours is set to'           &
+           ,ustmin,'...'
+      call opspec_fatal(reason,'opspec_misc')  
+      ifaterr = ifaterr +1
+   end if
+    
    if (ustmin < 0.0001 .or. ustmin > 1.0) then
       write (reason,fmt='(a,1x,es14.7,a)')                                                 &
             'Invalid USTMIN, it must be between 0.0001 and 1.0. Yours is set to'           &
            ,ustmin,'...'
       call opspec_fatal(reason,'opspec_misc')  
       ifaterr = ifaterr +1
+   elseif (ustmin > ubmin) then
+      write (unit=*,fmt='(a,1x,es12.5)') ' UBMIN  = ',ubmin
+      write (unit=*,fmt='(a,1x,es12.5)') ' UGBMIN = ',ugbmin
+      write (unit=*,fmt='(a,1x,es12.5)') ' USTMIN = ',ustmin
+      write (reason,fmt='(a)') 'Invalid USTMIN, it can''t be greater than UBMIN...'
+      call opspec_fatal(reason,'opspec_misc')  
+      ifaterr = ifaterr +1
    end if
 
-   if (ribmax < 0.01 .or. ribmax > 20.) then
+   if (ugbmin < ustmin .or. ugbmin > ubmin) then
+      write (unit=*,fmt='(a,1x,es12.5)') ' UBMIN  = ',ubmin
+      write (unit=*,fmt='(a,1x,es12.5)') ' UGBMIN = ',ugbmin
+      write (unit=*,fmt='(a,1x,es12.5)') ' USTMIN = ',ustmin
+      write (reason,fmt='(a)') 'Invalid UGBMIN, it can''t be between USTMIN and UBMIN...'
+      call opspec_fatal(reason,'opspec_misc')  
+      ifaterr = ifaterr +1
+   end if
+
+   if (gamm < 0.1 .or. gamm > 100.0) then
       write (reason,fmt='(a,1x,es14.7,a)')                                                 &
-            'Invalid RIBMAX, it must be between 0.01 and 20..  Yours is set to'            &
+            'Invalid GAMM, it must be between 0.1 and 100.0. Yours is set to'              &
+           ,gamm,'...'
+      call opspec_fatal(reason,'opspec_misc')  
+      ifaterr = ifaterr +1
+   end if
+
+   if (gamh < 0.1 .or. gamh > 100.0) then
+      write (reason,fmt='(a,1x,es14.7,a)')                                                 &
+            'Invalid GAMH, it must be between 0.1 and 100.0. Yours is set to'              &
+           ,gamh,'...'
+      call opspec_fatal(reason,'opspec_misc')  
+      ifaterr = ifaterr +1
+   end if
+
+   if (tprandtl < 0.01 .or. tprandtl > 100.0) then
+      write (reason,fmt='(a,1x,es14.7,a)')                                                 &
+            'Invalid TPRANDTL, it must be between 0.01 and 100.0. Yours is set to'         &
+           ,tprandtl,'...'
+      call opspec_fatal(reason,'opspec_misc')  
+      ifaterr = ifaterr +1
+   end if
+
+   if (ribmax < 0.01 .or. ribmax > 1.0) then
+      write (reason,fmt='(a,1x,es14.7,a)')                                                 &
+            'Invalid RIBMAX, it must be between 0.01 and 1.0..  Yours is set to'           &
            ,ribmax,'...'
       call opspec_fatal(reason,'opspec_misc')  
       ifaterr = ifaterr +1

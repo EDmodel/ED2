@@ -194,7 +194,12 @@ subroutine copy_nl(copy_type)
    use canopy_air_coms      , only : icanturb                  & ! intent(out)
                                    , isfclyrm                  & ! intent(out)
                                    , ied_grndvap               & ! intent(out)
+                                   , ubmin                     & ! intent(out)
+                                   , ugbmin                    & ! intent(out)
                                    , ustmin                    & ! intent(out)
+                                   , gamm                      & ! intent(out)
+                                   , gamh                      & ! intent(out)
+                                   , tprandtl                  & ! intent(out)
                                    , ribmax                    & ! intent(out)
                                    , leaf_maxwhc               ! ! intent(out)
    use optimiz_coms         , only : ioptinpt                  ! ! intent(out)
@@ -351,6 +356,9 @@ subroutine copy_nl(copy_type)
       icanturb                  = nl%icanturb
       isfclyrm                  = nl%isfclyrm
       ied_grndvap               = nl%ied_grndvap
+      gamm                      = nl%gamm
+      gamh                      = nl%gamh
+      tprandtl                  = nl%tprandtl
       ribmax                    = nl%ribmax
       leaf_maxwhc               = nl%leaf_maxwhc
       ipercol                   = nl%ipercol
@@ -363,6 +371,8 @@ subroutine copy_nl(copy_type)
       treefall_disturbance_rate = nl%treefall_disturbance_rate
       time2canopy               = nl%time2canopy
       runoff_time               = nl%runoff_time
+      ubmin                     = nl%ubmin
+      ugbmin                    = nl%ugbmin
       ustmin                    = nl%ustmin
 
       !----- Print control parameters. ----------------------------------------------------!

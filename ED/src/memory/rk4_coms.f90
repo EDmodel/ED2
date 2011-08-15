@@ -219,7 +219,6 @@ module rk4_coms
       !----- Water fluxes -----------------------------------------------------------------!
       real(kind=8) :: avg_vapor_lc ! Leaf       -> canopy air:  evap./cond. flux
       real(kind=8) :: avg_vapor_wc ! Wood       -> canopy air:  evap./cond. flux
-      real(kind=8) :: avg_dew_cg   ! Canopy     -> ground    :  condensation flux
       real(kind=8) :: avg_vapor_gc ! Ground     -> canopy air:  evaporation flux
       real(kind=8) :: avg_vapor_ac ! Free atm.  -> canopy air:  vapour flux
       real(kind=8) :: avg_transp   ! Transpiration
@@ -256,7 +255,6 @@ module rk4_coms
       !----- Water fluxes -----------------------------------------------------------------!
       real(kind=8) :: flx_vapor_lc      ! Leaf       -> canopy air:  evap./cond. flux
       real(kind=8) :: flx_vapor_wc      ! Wood       -> canopy air:  evap./cond. flux
-      real(kind=8) :: flx_dew_cg        ! Canopy     -> ground    :  condensation flux
       real(kind=8) :: flx_vapor_gc      ! Ground     -> canopy air:  evaporation flux
       real(kind=8) :: flx_vapor_ac      ! Free atm.  -> canopy air:  vapour flux
       real(kind=8) :: flx_transp        ! Transpiration
@@ -909,7 +907,6 @@ module rk4_coms
       y%avg_carbon_ac                  = 0.d0
       y%avg_vapor_lc                   = 0.d0
       y%avg_vapor_wc                   = 0.d0
-      y%avg_dew_cg                     = 0.d0
       y%avg_vapor_gc                   = 0.d0
       y%avg_wshed_vg                   = 0.d0
       y%avg_intercepted                = 0.d0
@@ -934,7 +931,6 @@ module rk4_coms
       y%flx_carbon_ac                  = 0.d0
       y%flx_vapor_lc                   = 0.d0
       y%flx_vapor_wc                   = 0.d0
-      y%flx_dew_cg                     = 0.d0
       y%flx_vapor_gc                   = 0.d0
       y%flx_wshed_vg                   = 0.d0
       y%flx_intercepted                = 0.d0
@@ -1352,7 +1348,6 @@ module rk4_coms
       y%flx_carbon_ac                  = 0.d0
       y%flx_vapor_lc                   = 0.d0
       y%flx_vapor_wc                   = 0.d0
-      y%flx_dew_cg                     = 0.d0
       y%flx_vapor_gc                   = 0.d0
       y%flx_wshed_vg                   = 0.d0
       y%flx_intercepted                = 0.d0
@@ -1419,7 +1414,6 @@ module rk4_coms
       y%flx_carbon_ac     = y%flx_carbon_ac     * hdidi
       y%flx_vapor_lc      = y%flx_vapor_lc      * hdidi
       y%flx_vapor_wc      = y%flx_vapor_wc      * hdidi
-      y%flx_dew_cg        = y%flx_dew_cg        * hdidi
       y%flx_vapor_gc      = y%flx_vapor_gc      * hdidi
       y%flx_wshed_vg      = y%flx_wshed_vg      * hdidi
       y%flx_intercepted   = y%flx_intercepted   * hdidi

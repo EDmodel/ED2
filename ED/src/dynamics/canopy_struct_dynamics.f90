@@ -68,6 +68,12 @@ module canopy_struct_dynamics
    !        above plant canopies of arbitrary structure.  Boundary Layer Meteorology, 91,  !
    !        81-107.                                                                        !
    !                                                                                       !
+   ! 4.  This option is almost the same as option 1, except that the ground conductance is !
+   !     found following the CLM technical note, equations (5.98-5.100).                   !
+   !                                                                                       !
+   !     Oleson, K. W., et al.; Technical description of the community land model (CLM)    !
+   !        NCAR Technical Note NCAR/TN-461+STR, Boulder, CO, May 2004.                    !
+   !                                                                                       !
    !     Ultimately, this routine solves for the resistance of water vapor and sensible    !
    ! heat from the soil surface to canopy air space and from the leaf surfaces to canopy   !
    ! air space.                                                                            !
@@ -95,6 +101,7 @@ module canopy_struct_dynamics
                                   , infunc               & ! intent(in)
                                   , gamma_mw99           & ! intent(in)
                                   , nu_mw99              & ! intent(in)
+                                  , ggveg_inf            & ! intent(in)
                                   , rb_inter             & ! intent(in)
                                   , rb_slope             & ! intent(in)
                                   , tprandtl             & ! intent(in)
@@ -298,12 +305,13 @@ module canopy_struct_dynamics
       select case (icanturb)
 
       !------------------------------------------------------------------------------------!
-      ! LEAF-3 Case: This approach is very similar to older implementations of ED-2, and   !
-      !              it is very similar to LEAF-3, and to option 1, except that option 1   !
-      !              computes the vegetated ground conductance and wind profile different- !
-      !              ly.                                                                   !
+      ! 0.  LEAF-3 Case: This approach is very similar to older implementations of ED-2,   !
+      !     and it is very similar to LEAF-3, and to option 1, except that option 1        !
+      !     computes the vegetated ground conductance and wind profile differently.        !
+      ! 4.  CLMish Case: This is the same as option 0., except that the ground conductance !
+      !     is found using equations (5.98-5.100) from CLM technical note.                 !
       !------------------------------------------------------------------------------------!
-      case (0)
+      case (0,4)
 
          !---------------------------------------------------------------------------------!
          !     Find the roughness as the average between the bare ground and vegetated     !
@@ -338,17 +346,34 @@ module canopy_struct_dynamics
                       ,csite%rough(ipa),csite%ustar(ipa),csite%tstar(ipa),estar            &
                       ,csite%qstar(ipa),csite%cstar(ipa),csite%zeta(ipa),csite%ribulk(ipa) &
                       ,csite%ggbare(ipa))
+         !---------------------------------------------------------------------------------!
 
+
+
+         !---------------------------------------------------------------------------------!
+         !     Find the aerodynamic resistance due to vegetated ground.                    !
+         !---------------------------------------------------------------------------------!
          if (csite%snowfac(ipa) < 0.9) then
-            factv  = log((cmet%geoht - csite%veg_displace(ipa)) / csite%rough(ipa))        &
-                   / (vonk * vonk * cmet%vels)
-            aux    = exp(exar * (1. - (csite%veg_displace(ipa) + csite%rough(ipa))         &
-                                    / csite%veg_height(ipa)) )
-            csite%ggveg(ipa) = (exar * (csite%veg_height(ipa) - csite%veg_displace(ipa) )) &
-                             / (factv * csite%veg_height(ipa) * (exp(exar) - aux))
-         else 
+            select case (icanturb)
+            case (0)
+               !----- LEAF-3 method. ------------------------------------------------------!
+               factv  = log((cmet%geoht - csite%veg_displace(ipa)) / csite%rough(ipa))     &
+                      / (vonk * vonk * cmet%vels)
+               aux    = exp(exar * (1. - (csite%veg_displace(ipa) + csite%rough(ipa))      &
+                                       / csite%veg_height(ipa)) )
+               csite%ggveg(ipa) = (exar * (csite%veg_height(ipa)-csite%veg_displace(ipa))) &
+                                / (factv * csite%veg_height(ipa) * (exp(exar) - aux))
+            case (4)
+               !----- CLM-based,but using GGBare instead of their equation 5.102. ---------!
+               aux = exp(-(csite%lai(ipa) + csite%wai(ipa)))
+               csite%ggveg(ipa) = csite%ustar(ipa)                                         &
+                                * ( csite%ggbare(ipa) * aux + ggveg_inf * (1.0 - aux))
+            end select
+         else
             csite%ggveg(ipa) = 0.
          end if
+         !---------------------------------------------------------------------------------!
+
 
 
          !---------------------------------------------------------------------------------!
@@ -1210,6 +1235,12 @@ module canopy_struct_dynamics
    !        above plant canopies of arbitrary structure.  Boundary Layer Meteorology, 91,  !
    !        81-107.                                                                        !
    !                                                                                       !
+   ! 4.  This option is almost the same as option 1, except that the ground conductance is !
+   !     found following the CLM technical note, equations (5.98-5.100).                   !
+   !                                                                                       !
+   !     Oleson, K. W., et al.; Technical description of the community land model (CLM)    !
+   !        NCAR Technical Note NCAR/TN-461+STR, Boulder, CO, May 2004.                    !
+   !                                                                                       !
    !     Ultimately, this routine solves for the resistance of water vapor and sensible    !
    ! heat from the soil surface to canopy air space and from the leaf surfaces to canopy   !
    ! air space.                                                                            !
@@ -1245,6 +1276,7 @@ module canopy_struct_dynamics
                                   , nu_mw99_8            & ! intent(in)
                                   , rb_inter             & ! intent(in)
                                   , rb_slope             & ! intent(in)
+                                  , ggveg_inf8           & ! intent(in)
                                   , tprandtl8            & ! intent(in)
                                   , zoobukhov8           ! ! intent(in)
       use canopy_layer_coms, only : crown_mod            & ! intent(in)
@@ -1426,16 +1458,14 @@ module canopy_struct_dynamics
       ! resistance.                                                                        !
       !------------------------------------------------------------------------------------!
       select case (icanturb)
-
-
-
       !------------------------------------------------------------------------------------!
-      ! LEAF-3 Case: This approach is very similar to older implementations of ED-2, and   !
-      !              it is very similar to LEAF-3, and to option 1, except that option 1   !
-      !              computes the vegetated ground conductance and wind profile different- !
-      !              ly.                                                                   !
+      ! 0.  LEAF-3 Case: This approach is very similar to older implementations of ED-2,   !
+      !     and it is very similar to LEAF-3, and to option 1, except that option 1        !
+      !     computes the vegetated ground conductance and wind profile differently.        !
+      ! 4.  CLMish Case: This is the same as option 0., except that the ground conductance !
+      !     is found using equations (5.98-5.100) from CLM technical note.                 !
       !------------------------------------------------------------------------------------!
-      case (0) 
+      case (0,4)
 
          !---------------------------------------------------------------------------------!
          !     The roughness is found by combining two weighted averages.  The first one   !
@@ -1461,16 +1491,30 @@ module canopy_struct_dynamics
                        ,initp%cstar,initp%zeta,initp%ribulk,initp%ggbare)
          !---------------------------------------------------------------------------------!
 
+
+
+         !---------------------------------------------------------------------------------!
+         !     Find the aerodynamic resistance due to vegetated ground.                    !
+         !---------------------------------------------------------------------------------!
          if (initp%snowfac < 9.d-1) then
-            factv        = log((rk4site%geoht-initp%veg_displace) / initp%rough)           &
-                         / (vonk8 * vonk8 * rk4site%vels)
-            aux          = exp(exar8 * (1.d0 - (initp%veg_displace + initp%rough)          &
-                                             / initp%veg_height) )
-            initp%ggveg  = (exar8 * (initp%veg_height - initp%veg_displace))               &
-                         / (factv * initp%veg_displace * (exp(exar8) - aux))
+            select case (icanturb)
+            case (0)
+               !----- LEAF-3 method. ------------------------------------------------------!
+               factv        = log((rk4site%geoht-initp%veg_displace) / initp%rough)        &
+                            / (vonk8 * vonk8 * rk4site%vels)
+               aux          = exp(exar8 * (1.d0 - (initp%veg_displace + initp%rough)       &
+                                                / initp%veg_height) )
+               initp%ggveg  = (exar8 * (initp%veg_height - initp%veg_displace))            &
+                            / (factv * initp%veg_displace * (exp(exar8) - aux))
+            case (4)
+               !----- CLM-based,but using GGBare instead of their equation 5.102. ---------!
+               aux = exp(-dble(csite%lai(ipa)) - dble(csite%wai(ipa)))
+               initp%ggveg = initp%ustar * (initp%ggbare * aux + ggveg_inf8 * (1.d0 - aux))
+            end select
          else 
             initp%ggveg = 0.d0
          end if
+         !---------------------------------------------------------------------------------!
 
 
          !---------------------------------------------------------------------------------!
@@ -2299,10 +2343,14 @@ module canopy_struct_dynamics
    ! variable ISFCLYRM in ED2IN (if running the coupled model, this is done in ISTAR).     ! 
    !                                                                                       !
    ! 1. Based on L79;                                                                      !
-   ! 2. Based on OD95, but not assuming that z>>z0, so the zeta0 terms shall be computed   !
-   !    as presented in L79 and B71 to avoid singularities.                                !
+   ! 2. Based on: OD95, but with some terms computed as in L79 and B71 to avoid singular-  !
+   !    ities (now using the iterative method to find zeta).                               !
    ! 3. Based on BH91, using an iterative method to find zeta, and using the modified      !
    !    equation for stable layers.                                                        !
+   ! 4. Based on CLM04, with special functions for very stable and very stable case, even  !
+   !    though we use a different functional form for very unstable case for momentum.     !
+   !    This is ensure that phi_m decreases monotonically as zeta becomes more negative.   !
+   !    We use a power law of order of -1/6 instead.                                       !
    !                                                                                       !
    ! References:                                                                           !
    ! B71.  BUSINGER, J.A, et. al; Flux-Profile relationships in the atmospheric surface    !
@@ -2313,6 +2361,9 @@ module canopy_struct_dynamics
    !           for atmospheric models. J. Appl. Meteor., 30, 327-341, 1991.                !
    ! OD95. ONCLEY, S.P.; DUDHIA, J.; Evaluation of surface fluxes from MM5 using observa-  !
    !           tions.  Mon. Wea. Rev., 123, 3344-3357, 1995.                               !
+   ! CLM04. OLESON, K. W., et al.; Technical description of the community land model (CLM) !
+   !           NCAR Technical Note NCAR/TN-461+STR, Boulder, CO, May 2004.                 !
+   !                                                                                       !
    !---------------------------------------------------------------------------------------!
    subroutine ed_stars(theta_atm,theiv_atm,shv_atm,co2_atm,theta_can,theiv_can             &
                       ,shv_can,co2_can,zref,dheight,uref,rough,ustar,tstar,estar,qstar     &
@@ -2334,6 +2385,7 @@ module canopy_struct_dynamics
                                  , psim          & ! function
                                  , psih          & ! function
                                  , zoobukhov     ! ! function
+      use rk4_coms        , only : rk4_tolerance ! ! intent(in)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       real, intent(in)  :: theta_atm    ! Above canopy air pot. temperature     [        K]
@@ -2373,23 +2425,39 @@ module canopy_struct_dynamics
       real              :: cm           ! c coefficient times |Rib|^1/2 for momentum.
       real              :: ch           ! c coefficient times |Rib|^1/2 for heat.
       real              :: ee           ! (z/z0)^1/3 -1. for eqn. 20 w/o assuming z/z0 >> 1.
-      !----- Local variables, used by OD95. -----------------------------------------------!
+      !----- Local variables, used by others. ---------------------------------------------!
       real              :: zeta0m       ! roughness(momentum)/(Obukhov length).
       real              :: zeta0h       ! roughness(heat)/(Obukhov length).
+      real              :: utotal       ! Total wind (actual + convective)
+      real              :: uconv        ! Convective velocity
+      real              :: uconv_prev   ! Previous convective velocity
+      real              :: change       ! Difference in convective velocity
+      integer           :: icnt         ! Iteration counter
       !----- Aux. environment conditions. -------------------------------------------------!
       real              :: thetav_atm   ! Atmos. virtual potential temperature  [        K]
       real              :: thetav_can   ! Canopy air virtual pot. temperature   [        K]
       !----- External functions. ----------------------------------------------------------!
-      real, external    :: cbrt         ! Cubic root
+      real, external    :: cbrt              ! Cubic root
       !------------------------------------------------------------------------------------!
 
-      !----- Finding the variables common to both methods. --------------------------------!
+
+
+      !----- Find the variables common to both methods. -----------------------------------!
       thetav_atm = theta_atm * (1. + epim1 * shv_atm)
       thetav_can = theta_can * (1. + epim1 * shv_can)
       zoz0m      = (zref-dheight)/rough
       lnzoz0m    = log(zoz0m)
       zoz0h      = z0moz0h * zoz0m
       lnzoz0h    = log(zoz0h)
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !     Find the Bulk Richardson number.  For stable cases, and for L79 in both cases, !
+      ! this will be the definitive RiB, whilst this is the first guess, which will be     !
+      ! corrected by the convective velocity in the other unstable cases.                  !
+      !------------------------------------------------------------------------------------!
       rib        = 2.0 * grav * (zref-dheight-rough) * (thetav_atm-thetav_can)             &
                  / ( (thetav_atm+thetav_can) * uref * uref)
       stable     = thetav_atm >= thetav_can
@@ -2399,11 +2467,10 @@ module canopy_struct_dynamics
 
 
       !------------------------------------------------------------------------------------!
-      !    Correct the bulk Richardson number in case it's too stable and we are not run-  !
-      ! ning the L79 model.  We also define a stable case correction to make u* consistent !
-      ! with the Richardson number.                                                        !
+      !    Correct the bulk Richardson number in case it's too stable.  We also define a   !
+      ! stable case correction to make u* consistent with the Richardson number.           !
       !------------------------------------------------------------------------------------!
-      if (rib > ribmax .and. isfclyrm /= 1) then
+      if (rib > ribmax) then
          uuse = sqrt(rib / ribmax) * uref
          rib  = ribmax
       else
@@ -2456,60 +2523,113 @@ module canopy_struct_dynamics
          zeta = grav * vonk * c3 * (thetav_atm - thetav_can) / (thetav_atm * ustar * ustar)
 
 
-      case (2,4)
+      case default
          !---------------------------------------------------------------------------------!
          ! 2. Here we use the model proposed by OD95, the standard for MM5, but with some  !
-         !    terms that were computed in B71 (namely, the "0" terms). which prevent sin-  !
-         !    gularities.  We use OD95 to estimate zeta, which avoids the computation      !
-         !    of the Obukhov length L , we can't compute zeta0 by its definition(z0/L).    !
+         !    terms that were computed in B71 (namely, the "0" terms), which prevent sin-  !
+         !    gularities.                                                                  !
          !    However we know zeta, so zeta0 can be written as z0/z * zeta.                !
-         ! 4. We use the model proposed by BH91, but we find zeta using the approximation  !
-         !    given by OD95.                                                               !
-         !---------------------------------------------------------------------------------!
-         !----- We now compute the stability correction functions. ------------------------!
-         if (stable) then
-            !----- Stable case. -----------------------------------------------------------!
-            zeta  = rib * lnzoz0m / (1.1 - 5.0 * rib)
-         else
-            !----- Unstable case. ---------------------------------------------------------!
-            zeta = rib * lnzoz0m
-         end if
-         zeta0m = rough * zeta / (zref - dheight)
-
-         !----- Finding ustar, making sure it is not too small. ---------------------------!
-         ustar = max (ustmin, vonk * uuse                                                  &
-                            / (lnzoz0m - psim(zeta,stable) + psim(zeta0m,stable)))
-
-         !----- Finding the coefficient to scale the other stars. -------------------------!
-         c3    = vonk / (tprandtl * (lnzoz0m - psih(zeta,stable) + psih(zeta0m,stable)))
-
-         !---------------------------------------------------------------------------------!
-
-
-      case (3,5)
-         !---------------------------------------------------------------------------------!
          ! 3. Here we use the model proposed by BH91, which is almost the same as the OD95 !
-         !    method, with the two following (important) differences.                      !
-         !    a. Zeta (z/L) is actually found using the iterative method.                  !
-         !    b. Stable functions are computed in a more generic way.  BH91 claim that the !
-         !       oft-used approximation (-beta*zeta) can cause poor ventilation of the     !
-         !       stable layer, leading to decoupling between the atmosphere and the canopy !
-         !       air space and excessive cooling.                                          !
-         ! 5. Similar as 3, but we compute the stable functions the same way as OD95.      !
+         !    method, except that the stable functions are computed in a more generic way. !
+         !    BH91 claim that the oft-used approximation (-beta*zeta) can cause poor       !
+         !    ventilation of the stable layer, leading to decoupling between the atmo-     !
+         !    sphere and the canopy air space and excessive cooling                        !
+         ! 4. Here we use a similar approach as in CLM04, excepth that the momentum flux   !
+         !    gradient function for the unstable case for momentum is switched by a power  !
+         !    of -1/6 (kind of the square of the heat one).  This is to guarantee that     !
+         !    the psi function doesn't have local maxima/minima.                           !
          !---------------------------------------------------------------------------------!
-         !----- We now compute the stability correction functions. ------------------------!
-         zeta   = zoobukhov(rib,zref-dheight,rough,zoz0m,lnzoz0m,zoz0h,lnzoz0h,stable)
-         zeta0m = rough * zeta / (zref-dheight)
-         zeta0h = z0hoz0m * zeta0m
+         !----- Initialise uconv. ---------------------------------------------------------!
+         uconv      = 0.0
+         !----- Check if we need to go through the iterative process. ---------------------!
+         if (stable) then
+            !------------------------------------------------------------------------------!
+            !     Stable case, we don't need to find convective velocity, so we don't need !
+            ! the iterative case.                                                          !
+            !------------------------------------------------------------------------------!
+            !----- We now compute the stability correction functions. ---------------------!
+            zeta   = zoobukhov(rib,zref-dheight,rough,zoz0m,lnzoz0m,zoz0h,lnzoz0h,stable)
+            zeta0m = rough * zeta / (zref-dheight)
+            zeta0h = z0hoz0m * zeta0m
 
-         !----- Finding ustar, making sure it is not too small. ---------------------------!
-         ustar = max (ustmin, vonk * uuse                                                  &
-                            / (lnzoz0m - psim(zeta,stable) + psim(zeta0m,stable)))
+            !----- Find the coefficient to scale the other stars. -------------------------!
+            zeta0m = rough * zeta / (zref-dheight)
+            zeta0h = z0hoz0m * zeta0m
 
-         !----- Finding the coefficient to scale the other stars. -------------------------!
-         c3    = vonk / (tprandtl * (lnzoz0h - psih(zeta,stable) + psih(zeta0h,stable)))
+            !----- Find ustar, making sure it is not too small. ---------------------------!
+            ustar = max (ustmin, vonk * uuse                                               &
+                                     / (lnzoz0m - psim(zeta,stable) + psim(zeta0m,stable)))
+            !------------------------------------------------------------------------------!
 
-         !---------------------------------------------------------------------------------!
+
+            !----- Find the coefficient to scale the other stars. -------------------------!
+            c3    = vonk / (tprandtl * (lnzoz0h - psih(zeta,stable) + psih(zeta0h,stable)))
+            !------------------------------------------------------------------------------!
+
+         else
+            !------------------------------------------------------------------------------!
+            !    Unstable case.  Here we run a few iterations to make sure we correct the  !
+            ! bulk Richardson number.  This is really a simple correction, so we don't     !
+            ! need uconv to be totally in equilibrium.                                     !
+            !------------------------------------------------------------------------------!
+            unstable: do icnt=1,6
+               !----- Update total winds. -------------------------------------------------!
+               uconv_prev = uconv
+               utotal     = sqrt(uuse*uuse + uconv_prev * uconv_prev)
+               !---------------------------------------------------------------------------!
+
+
+               !----- Update the Bulk Richardson number. ----------------------------------!
+               rib        = 2.0 * grav * (zref-dheight-rough) * (thetav_atm-thetav_can)    &
+                          / ( (thetav_atm+thetav_can) * utotal)
+               !---------------------------------------------------------------------------!
+
+
+               !----- We now compute the stability correction functions. ------------------!
+               zeta   = zoobukhov(rib,zref-dheight,rough,zoz0m,lnzoz0m,zoz0h,lnzoz0h,stable)
+               !---------------------------------------------------------------------------!
+
+
+               !----- Find the coefficient to scale the other stars. ----------------------!
+               zeta0m = rough * zeta / (zref-dheight)
+               zeta0h = z0hoz0m * zeta0m
+               !---------------------------------------------------------------------------!
+
+
+               !----- Find ustar, making sure it is not too small. ------------------------!
+               ustar = max (ustmin, vonk * uuse                                            &
+                                  / (lnzoz0m - psim(zeta,stable) + psim(zeta0m,stable)))
+               !---------------------------------------------------------------------------!
+
+
+               !----- Find the coefficient to scale the other stars. ----------------------!
+               c3    = vonk                                                                &
+                     / (tprandtl * (lnzoz0h - psih(zeta,stable) + psih(zeta0h,stable)))
+               !---------------------------------------------------------------------------!
+
+
+               !---------------------------------------------------------------------------!
+               !     Use potential virtual temperature here because convection is related  !
+               ! to buoyancy.                                                              !
+               !---------------------------------------------------------------------------!
+               tstar  = c3 * (thetav_atm - thetav_can )
+               !---------------------------------------------------------------------------!
+
+
+               !----- Estimate the convective velocity. -----------------------------------!
+               uconv = vertical_vel_flux(zeta,tstar,ustar) / ustar
+               !---------------------------------------------------------------------------!
+
+
+               !---------------------------------------------------------------------------!
+               !     We are only after a rough estimate of this velocity, so if the        !
+               ! difference is less than the RK4 tolerance, then it's enough.              !
+               !---------------------------------------------------------------------------!
+               change = 2.0 * abs(uconv-uconv_prev) / (abs(uconv) + abs(uconv_prev))
+               if (change < rk4_tolerance) exit unstable
+               !---------------------------------------------------------------------------!
+            end do unstable
+         end if
       end select
 
       !----- Compute the other scales. ----------------------------------------------------!
@@ -2553,9 +2673,13 @@ module canopy_struct_dynamics
    !                                                                                       !
    ! 1. Based on L79;                                                                      !
    ! 2. Based on: OD95, but with some terms computed as in L79 and B71 to avoid singular-  !
-   !    ities.                                                                             !
+   !    ities (now using the iterative method to find zeta).                               !
    ! 3. Based on BH91, using an iterative method to find zeta, and using the modified      !
    !    equation for stable layers.                                                        !
+   ! 4. Based on CLM04, with special functions for very stable and very stable case, even  !
+   !    though we use a different functional form for very unstable case for momentum.     !
+   !    This is ensure that phi_m decreases monotonically as zeta becomes more negative.   !
+   !    We use a power law of order of -1/6 instead.                                       !
    !                                                                                       !
    ! References:                                                                           !
    ! B71.  BUSINGER, J.A, et. al; Flux-Profile relationships in the atmospheric surface    !
@@ -2566,6 +2690,9 @@ module canopy_struct_dynamics
    !           for atmospheric models. J. Appl. Meteor., 30, 327-341, 1991.                !
    ! OD95. ONCLEY, S.P.; DUDHIA, J.; Evaluation of surface fluxes from MM5 using observa-  !
    !           tions.  Mon. Wea. Rev., 123, 3344-3357, 1995.                               !
+   ! CLM04. OLESON, K. W., et al.; Technical description of the community land model (CLM) !
+   !           NCAR Technical Note NCAR/TN-461+STR, Boulder, CO, May 2004.                 !
+   !                                                                                       !
    !---------------------------------------------------------------------------------------!
    subroutine ed_stars8(theta_atm,theiv_atm,shv_atm,co2_atm                                &
                        ,theta_can,theiv_can,shv_can,co2_can                                &
@@ -2588,6 +2715,7 @@ module canopy_struct_dynamics
                                  , psim8         & ! function
                                  , psih8         & ! function
                                  , zoobukhov8    ! ! function
+      use rk4_coms        , only : rk4eps        ! ! intent(in)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       real(kind=8), intent(in)  :: theta_atm    ! Above canopy air pot. temp.   [        K]
@@ -2627,23 +2755,38 @@ module canopy_struct_dynamics
       real(kind=8)              :: cm           ! c coeff. times |Rib|^1/2 for momentum.
       real(kind=8)              :: ch           ! c coefficient times |Rib|^1/2 for heat.
       real(kind=8)              :: ee           ! (z/z0)^1/3 -1. for eqn. 20
-      !----- Local variables, used by OD95. -----------------------------------------------!
+      !----- Local variables, used by others. ---------------------------------------------!
       real(kind=8)              :: zeta0m       ! roughness(momentum)/(Obukhov length).
       real(kind=8)              :: zeta0h       ! roughness(heat)/(Obukhov length).
+      real(kind=8)              :: utotal       ! Total wind (actual + convective)
+      real(kind=8)              :: uconv        ! Convective velocity
+      real(kind=8)              :: uconv_prev   ! Previous convective velocity
+      real(kind=8)              :: change       ! Difference in convective velocity
+      integer                   :: icnt         ! Iteration counter
       !----- Aux. environment conditions. -------------------------------------------------!
       real(kind=8)              :: thetav_atm   ! Atmos. virtual pot. temp.     [        K]
       real(kind=8)              :: thetav_can   ! Canopy air virtual pot. temp. [        K]
       !----- External functions. ----------------------------------------------------------!
-      real(kind=8), external    :: cbrt8        ! Cubic root
+      real(kind=8), external    :: cbrt8              ! Cubic root
       !------------------------------------------------------------------------------------!
 
-      !----- Finding the variables common to both methods. --------------------------------!
+
+      !----- Find the variables common to both methods. -----------------------------------!
       thetav_atm = theta_atm * (1.d0 + epim18 * shv_atm)
       thetav_can = theta_can * (1.d0 + epim18 * shv_can)
       zoz0m      = (zref-dheight)/rough
       lnzoz0m    = log(zoz0m)
       zoz0h      = z0moz0h8 * zoz0m
       lnzoz0h    = log(zoz0h)
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !     Find the Bulk Richardson number.  For stable cases, and for L79 in both cases, !
+      ! this will be the definitive RiB, whilst this is the first guess, which will be     !
+      ! corrected by the convective velocity in the other unstable cases.                  !
+      !------------------------------------------------------------------------------------!
       rib        = 2.d0 * grav8 * (zref-dheight-rough) * (thetav_atm-thetav_can)           &
                  / ( (thetav_atm+thetav_can) * uref * uref)
       stable     = thetav_atm >= thetav_can
@@ -2653,12 +2796,11 @@ module canopy_struct_dynamics
 
 
       !------------------------------------------------------------------------------------!
-      !    Correct the bulk Richardson number in case it's too stable and we are not run-  !
-      ! ning the L79 model.  We also define a stable case correction to bring down the     !
-      ! stars other than ustar, so the flux doesn't increase for stabler cases (it remains !
-      ! constant).                                                                         !
+      !    Correct the bulk Richardson number in case it's too stable.  We also define a   !
+      ! stable case correction to bring down the stars other than ustar, so the flux       !
+      ! doesn't increase for stabler cases (it remains constant).                          !
       !------------------------------------------------------------------------------------!
-      if (rib > ribmax8 .and. isfclyrm /= 1) then
+      if (rib > ribmax8) then
          uuse = sqrt(rib / ribmax8) * uref
          rib  = ribmax8
       else
@@ -2711,65 +2853,116 @@ module canopy_struct_dynamics
               / (thetav_atm * ustar * ustar)
 
 
-      case (2,4)
+      case default
          !---------------------------------------------------------------------------------!
          ! 2. Here we use the model proposed by OD95, the standard for MM5, but with some  !
-         !    terms that were computed in B71 (namely, the "0" terms). which prevent sin-  !
-         !    gularities.  We use OD95 to estimate zeta, which avoids the computation      !
-         !    of the Obukhov length L , we can't compute zeta0 by its definition(z0/L).    !
+         !    terms that were computed in B71 (namely, the "0" terms), which prevent sin-  !
+         !    gularities.                                                                  !
          !    However we know zeta, so zeta0 can be written as z0/z * zeta.                !
-         ! 4. We use the model proposed by BH91, but we find zeta using the approximation  !
-         !    given by OD95.                                                               !
-         !---------------------------------------------------------------------------------!
-         !----- We now compute the stability correction functions. ------------------------!
-         if (stable) then
-            !----- Stable case. -----------------------------------------------------------!
-            zeta  = rib * lnzoz0m / (1.1d0 - 5.0d0 * rib)
-         else
-            !----- Unstable case. ---------------------------------------------------------!
-            zeta  = rib * lnzoz0m
-         end if
-
-         zeta0m = rough * zeta / (zref - dheight)
-
-         !----- Finding ustar, making sure it is not too small. ---------------------------!
-         ustar = max (ustmin8, vonk8 * uuse                                                &
-                             / (lnzoz0m - psim8(zeta,stable) + psim8(zeta0m,stable)))
-
-         !----- Finding the coefficient to scale the other stars. -------------------------!
-         c3    = vonk8 / (tprandtl8 * (lnzoz0m - psih8(zeta,stable) + psih8(zeta0m,stable)))
-
-         !---------------------------------------------------------------------------------!
-
-
-      case (3,5)
-         !---------------------------------------------------------------------------------!
          ! 3. Here we use the model proposed by BH91, which is almost the same as the OD95 !
-         !    method, with the two following (important) differences.                      !
-         !    a. Zeta (z/L) is actually found using the iterative method.                  !
-         !    b. Stable functions are computed in a more generic way.  BH91 claim that the !
-         !       oft-used approximation (-beta*zeta) can cause poor ventilation of the     !
-         !       stable layer, leading to decoupling between the atmosphere and the canopy !
-         !       air space and excessive cooling.                                          !
-         ! 5. Similar as 3, but we compute the stable functions the same way as OD95.      !
+         !    method, except that the stable functions are computed in a more generic way. !
+         !    BH91 claim that the oft-used approximation (-beta*zeta) can cause poor       !
+         !    ventilation of the stable layer, leading to decoupling between the atmo-     !
+         !    sphere and the canopy air space and excessive cooling                        !
+         ! 4. Here we use a similar approach as in CLM04, excepth that the momentum flux   !
+         !    gradient function for the unstable case for momentum is switched by a power  !
+         !    of -1/6 (kind of the square of the heat one).  This is to guarantee that     !
+         !    the psi function doesn't have local maxima/minima.                           !
          !---------------------------------------------------------------------------------!
-         !----- We now compute the stability correction functions. ------------------------!
-         zeta   = zoobukhov8(rib,zref-dheight,rough,zoz0m,lnzoz0m,zoz0h,lnzoz0h,stable)
-         zeta0m = rough * zeta / (zref - dheight)
-         zeta0h = z0hoz0m8 * zeta0m
+         !----- Initialise uconv. ---------------------------------------------------------!
+         uconv      = 0.0
+         !----- Check if we need to go through the iterative process. ---------------------!
+         if (stable) then
+            !------------------------------------------------------------------------------!
+            !     Stable case, we don't need to find convective velocity, so we don't need !
+            ! the iterative case.                                                          !
+            !------------------------------------------------------------------------------!
+            !----- We now compute the stability correction functions. ---------------------!
+            zeta   = zoobukhov8(rib,zref-dheight,rough,zoz0m,lnzoz0m,zoz0h,lnzoz0h,stable)
+            zeta0m = rough * zeta / (zref - dheight)
+            zeta0h = z0hoz0m8 * zeta0m
 
-         !----- Finding ustar, making sure it is not too small. ---------------------------!
-         ustar = max (ustmin8, vonk8 * uuse                                                &
-                             / (lnzoz0m - psim8(zeta,stable) + psim8(zeta0m,stable)))
+            !----- Finding ustar, making sure it is not too small. ------------------------!
+            ustar = max (ustmin8, vonk8 * uuse                                             &
+                                / (lnzoz0m - psim8(zeta,stable) + psim8(zeta0m,stable)))
 
-         !----- Finding the coefficient to scale the other stars. -------------------------!
-         c3    = vonk8                                                                     &
-               / (tprandtl8 * (lnzoz0h - psih8(zeta,stable) + psih8(zeta0h,stable)))
+            !----- Finding the coefficient to scale the other stars. ----------------------!
+            c3    = vonk8                                                                  &
+                  / (tprandtl8 * (lnzoz0h - psih8(zeta,stable) + psih8(zeta0h,stable)))
+            !------------------------------------------------------------------------------!
+         else
+            !------------------------------------------------------------------------------!
+            !    Unstable case.  Here we run a few iterations to make sure we correct the  !
+            ! bulk Richardson number.  This is really a simple correction, so we don't     !
+            ! need uconv to be totally in equilibrium.                                     !
+            !------------------------------------------------------------------------------!
+            unstable: do icnt=1,6
+               !----- Update total winds. -------------------------------------------------!
+               uconv_prev = uconv
+               utotal     = sqrt(uuse*uuse + uconv_prev * uconv_prev)
+               !---------------------------------------------------------------------------!
 
+
+
+               !----- Update the Bulk Richardson number. ----------------------------------!
+               rib        = 2.d0 * grav8 * (zref-dheight-rough) * (thetav_atm-thetav_can)  &
+                          / ( (thetav_atm+thetav_can) * utotal * utotal)
+               !---------------------------------------------------------------------------!
+
+
+               !----- We now compute the stability correction functions. ------------------!
+               zeta   = zoobukhov8(rib,zref-dheight,rough,zoz0m,lnzoz0m,zoz0h,lnzoz0h      &
+                                  ,stable)
+               !---------------------------------------------------------------------------!
+
+
+               !----- Find the coefficient to scale the other stars. ----------------------!
+               zeta0m = rough * zeta / (zref - dheight)
+               zeta0h = z0hoz0m8 * zeta0m
+               !---------------------------------------------------------------------------!
+
+
+               !----- Find ustar, making sure it is not too small. ------------------------!
+               ustar = max (ustmin8, vonk8 * uuse                                          &
+                                   / (lnzoz0m - psim8(zeta,stable) + psim8(zeta0m,stable)))
+               !---------------------------------------------------------------------------!
+
+
+               !----- Find the coefficient to scale the other stars. ----------------------!
+               c3    = vonk8                                                               &
+                     / (tprandtl8 * (lnzoz0h - psih8(zeta,stable) + psih8(zeta0h,stable)))
+               !---------------------------------------------------------------------------!
+
+
+               !---------------------------------------------------------------------------!
+               !     Use potential virtual temperature here because convection is related  !
+               ! to buoyancy.                                                              !
+               !---------------------------------------------------------------------------!
+               tstar  = c3 * (thetav_atm - thetav_can )
+               !---------------------------------------------------------------------------!
+
+
+               !----- Estimate the convective velocity. -----------------------------------!
+               uconv = vertical_vel_flux8(zeta,tstar,ustar) / ustar
+               !---------------------------------------------------------------------------!
+
+
+               !---------------------------------------------------------------------------!
+               !     We are only after a rough estimate of this velocity, so if the        !
+               ! difference is less than the RK4 tolerance, then it's enough.              !
+               !---------------------------------------------------------------------------!
+               change = 2.d0 * abs(uconv-uconv_prev) / (abs(uconv) + abs(uconv_prev))
+               if (change < rk4eps) exit unstable
+               !---------------------------------------------------------------------------!
+            end do unstable
+         end if
          !---------------------------------------------------------------------------------!
       end select
+      !------------------------------------------------------------------------------------!
 
-      !----- Computing the other scales. --------------------------------------------------!
+
+
+      !----- Compute the other scales. ----------------------------------------------------!
       qstar = c3 *    (shv_atm   - shv_can   )
       tstar = c3 *    (theta_atm - theta_can )
       estar = c3 * log(theiv_atm / theiv_can )

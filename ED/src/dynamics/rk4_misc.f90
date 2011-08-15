@@ -355,7 +355,6 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
       targetp%avg_carbon_ac      = dble(sourcesite%avg_carbon_ac(ipa)     )
       targetp%avg_vapor_lc       = dble(sourcesite%avg_vapor_lc(ipa)      )
       targetp%avg_vapor_wc       = dble(sourcesite%avg_vapor_wc(ipa)      )
-      targetp%avg_dew_cg         = dble(sourcesite%avg_dew_cg(ipa)        )
       targetp%avg_vapor_gc       = dble(sourcesite%avg_vapor_gc(ipa)      )
       targetp%avg_wshed_vg       = dble(sourcesite%avg_wshed_vg(ipa)      )
       targetp%avg_intercepted    = dble(sourcesite%avg_intercepted(ipa)   )
@@ -3552,15 +3551,15 @@ subroutine print_rk4_state(initp,fluxp,csite,ipa,elapsed,hdid)
                                , '        USTAR', '        TSTAR', '        QSTAR'         &
                                , '        CSTAR', '         ZETA', '      RI.BULK'         &
                                , '   GND.RSHORT', '    GND.RLONG', '       WFLXLC'         &
-                               , '       WFLXWC', '       DEWGND', '       WFLXGC'         &
-                               , '       WFLXAC', '       TRANSP', '        WSHED'         &
-                               , '    INTERCEPT', '  THROUGHFALL', '       HFLXGC'         &
-                               , '       HFLXLC', '       HFLXWC', '       HFLXAC'         &
-                               , '       CFLXAC', '        CWDRH', '       SOILRH'         &
-                               , '          GPP', '       PLRESP', ' PAR.BEAM.TOP'         &
-                               , ' PAR.DIFF.TOP', ' NIR.BEAM.TOP', ' NIR.DIFF.TOP'         &
-                               , ' PAR.BEAM.BOT', ' PAR.DIFF.BOT', ' NIR.BEAM.BOT'         &
-                               , ' NIR.DIFF.BOT'
+                               , '       WFLXWC', '       WFLXGC', '       WFLXAC'         &
+                               , '       TRANSP', '        WSHED', '    INTERCEPT'         &
+                               , '  THROUGHFALL', '       HFLXGC', '       HFLXLC'         &
+                               , '       HFLXWC', '       HFLXAC', '       CFLXAC'         &
+                               , '        CWDRH', '       SOILRH', '          GPP'         &
+                               , '       PLRESP', ' PAR.BEAM.TOP', ' PAR.DIFF.TOP'         &
+                               , ' NIR.BEAM.TOP', ' NIR.DIFF.TOP', ' PAR.BEAM.BOT'         &
+                               , ' PAR.DIFF.BOT', ' NIR.BEAM.BOT', ' NIR.DIFF.BOT'
+                               
                                
                                
                                
@@ -3595,15 +3594,14 @@ subroutine print_rk4_state(initp,fluxp,csite,ipa,elapsed,hdid)
                    , initp%ustar           , initp%tstar           , initp%qstar           &
                    , initp%cstar           , initp%zeta            , initp%ribulk          &
                    , fluxp%flx_rshort_gnd  , fluxp%flx_rlong_gnd   , fluxp%flx_vapor_lc    &
-                   , fluxp%flx_vapor_wc    , fluxp%flx_dew_cg      , fluxp%flx_vapor_gc    &
-                   , fluxp%flx_vapor_ac    , fluxp%flx_transp      , fluxp%flx_wshed_vg    &
-                   , fluxp%flx_intercepted , fluxp%flx_throughfall , fluxp%flx_sensible_gc &
-                   , fluxp%flx_sensible_lc , fluxp%flx_sensible_wc , fluxp%flx_sensible_ac &
-                   , fluxp%flx_carbon_ac   , initp%cwd_rh          , soil_rh               &
-                   , sum_gpp               , sum_plresp            , rk4site%par_beam      &
-                   , rk4site%par_diffuse   , rk4site%nir_beam      , rk4site%nir_diffuse   &
-                   , par_b_beam            , par_b_diff            , nir_b_beam            &
-                   , nir_b_diff
+                   , fluxp%flx_vapor_wc    , fluxp%flx_vapor_gc    , fluxp%flx_vapor_ac    &
+                   , fluxp%flx_transp      , fluxp%flx_wshed_vg    , fluxp%flx_intercepted &
+                   , fluxp%flx_throughfall , fluxp%flx_sensible_gc , fluxp%flx_sensible_lc &
+                   , fluxp%flx_sensible_wc , fluxp%flx_sensible_ac , fluxp%flx_carbon_ac   &
+                   , initp%cwd_rh          , soil_rh               , sum_gpp               &
+                   , sum_plresp            , rk4site%par_beam      , rk4site%par_diffuse   &
+                   , rk4site%nir_beam      , rk4site%nir_diffuse   , par_b_beam            &
+                   , par_b_diff            , nir_b_beam            , nir_b_diff
 
    close(unit=83,status='keep')
    !---------------------------------------------------------------------------------------!

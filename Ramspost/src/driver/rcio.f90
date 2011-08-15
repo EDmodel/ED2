@@ -12,7 +12,14 @@ SUBROUTINE COMMIO (CFILE,IO,IUN)
   use therm_lib , only : level_tl=>level,vapour_on,cloud_on,bulk_on
   use micro_coms 
   use rpost_coms
-  use leaf_coms , only : ustmin, ribmax, min_patch_area
+  use leaf_coms , only : ubmin          & ! intent(inout)
+                       , ugbmin         & ! intent(inout)
+                       , ustmin         & ! intent(inout)
+                       , gamm           & ! intent(inout)
+                       , gamh           & ! intent(inout)
+                       , tprandtl       & ! intent(inout)
+                       , ribmax         & ! intent(inout)
+                       , min_patch_area & ! intent(inout)
   use rconstants, only : vonk
   CHARACTER*(*) IO,CFILE
 
@@ -147,8 +154,13 @@ SUBROUTINE COMMIO (CFILE,IO,IUN)
   ie=cio_i_sca(iun,irw,'isfcl',isfcl,1)
   ie=cio_i_sca(iun,irw,'istar',istar,1)
 
+  ie=cio_f_sca(iun,irw,'ubmin',ubmin,1)
+  ie=cio_f_sca(iun,irw,'ugbmin',ugbmin,1)
   ie=cio_f_sca(iun,irw,'ustmin',ustmin,1)
   ie=cio_f_sca(iun,irw,'min_patch_area',min_patch_area,1)
+  ie=cio_f_sca(iun,irw,'gamm',gamm,1)
+  ie=cio_f_sca(iun,irw,'gamh',gamh,1)
+  ie=cio_f_sca(iun,irw,'tprandtl',tprandtl,1)
   ie=cio_f_sca(iun,irw,'ribmax',ribmax,1)
 
   ie=cio_i_sca(iun,irw,'ico2',ico2,1)

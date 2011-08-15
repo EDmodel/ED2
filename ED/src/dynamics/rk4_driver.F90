@@ -413,7 +413,6 @@ module rk4_driver
       if (fast_diagnostics) then
          csite%avg_vapor_lc        (ipa) = sngloff(initp%avg_vapor_lc       ,tiny_offset)
          csite%avg_vapor_wc        (ipa) = sngloff(initp%avg_vapor_wc       ,tiny_offset)
-         csite%avg_dew_cg          (ipa) = sngloff(initp%avg_dew_cg         ,tiny_offset)
          csite%avg_vapor_gc        (ipa) = sngloff(initp%avg_vapor_gc       ,tiny_offset)
          csite%avg_wshed_vg        (ipa) = sngloff(initp%avg_wshed_vg       ,tiny_offset)
          csite%avg_intercepted     (ipa) = sngloff(initp%avg_intercepted    ,tiny_offset)

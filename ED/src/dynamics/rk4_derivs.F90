@@ -350,9 +350,6 @@ subroutine leaftw_derivs(mzg,mzs,initp,dinitp,csite,ipa)
    !---------------------------------------------------------------------------------------!
 
 
-
-
-
    !---------------------------------------------------------------------------------------!
    !      Get derivatives of vegetation and canopy air space variables, plus some fluxes   !
    ! that will be used for soil top boundary conditions and for transpiration.             !
@@ -1033,7 +1030,7 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
       ! itself and the soil moisture.                                                      !
       !------------------------------------------------------------------------------------!
       wflxgc     = initp%ggnet * initp%can_rhos * (initp%ground_shv - initp%can_shv)       &
-                 * ( initp%ggsoil / (initp%ggnet + initp%ggsoil) )
+                 * ( 1.d0 / (1.d0 + initp%ggnet / initp%ggsoil) )
       !----- Adjusting the flux accordingly to the surface fraction (no phase bias). ------!
       qwflxgc    = wflxgc * ( alvi8 - initp%ground_fliq * alli8)
       !----- Set condensation fluxes to zero. ---------------------------------------------!
@@ -1576,8 +1573,7 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
 
       dinitp%avg_sensible_gc  = hflxgc                      ! Sens. heat,  Grnd->Canopy
       dinitp%avg_transp       = transp_tot                  ! Transpiration
-      dinitp%avg_vapor_gc     = wflxgc                      ! Lat.  heat,  Grnd->Canopy
-      dinitp%avg_dew_cg       = dewgndflx                   ! Lat.  heat,  Canopy->Grnd
+      dinitp%avg_vapor_gc     = wflxgc - dewgndflx          ! Lat.  heat,  Canopy->Grnd
 
       !----- Total evaporation to the canopy air space. -----------------------------------!
       dinitp%avg_evap         = wflxgc - dewgndflx + wflxlc_tot + wflxwc_tot

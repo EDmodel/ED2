@@ -584,7 +584,12 @@ subroutine opspec3
   use mem_turb
   use mem_leaf
   use leaf_coms, only :     &
+          ubmin,            & ! intent(in)
+          ugbmin,           & ! intent(in)
           ustmin,           & ! intent(in)
+          lc_gamm => gamm,  & ! intent(in)
+          lc_gamh => gamh,  & ! intent(in)
+          tprandtl,         & ! intent(in)
           ribmax,           & ! intent(in)
           leaf_maxwhc,      & ! intent(in)
           min_patch_area,   & ! intent(in)
@@ -978,8 +983,38 @@ subroutine opspec3
      end select
   endif
   
+  
+  if (ubmin < 1.e-4 .or. ubmin > 1.0) then
+     print *, 'FATAL - UBMIN must be between 0.0001 and 1.0'
+     ifaterr = ifaterr + 1
+  end if
+
   if (ustmin < 1.e-4 .or. ustmin > 1.0) then
      print *, 'FATAL - USTMIN must be between 0.0001 and 1.0'
+     ifaterr = ifaterr + 1
+  elseif (ustmin > ubmin) then
+     print *, 'FATAL - USTMIN must be less than UBMIN.  Check your namelist'
+  end if
+
+  if (ugbmin < ustmin .or. ugbmin > ubmin) then
+     print *, 'FATAL - UGBMIN must be between USTMIN and UBMIN'
+     ifaterr = ifaterr + 1
+  end if
+
+
+  
+  if (lc_gamm < 0.1 .or. lc_gamm > 100.0) then
+     print *, 'FATAL - GAMM must be between 0.1 and 100.'
+     ifaterr = ifaterr + 1
+  end if
+  
+  if (lc_gamh < 0.1 .or. lc_gamh > 100.0) then
+     print *, 'FATAL - GAMH must be between 0.1 and 100.'
+     ifaterr = ifaterr + 1
+  end if
+  
+  if (tprandtl < 0.01 .or. tprandtl > 100.0) then
+     print *, 'FATAL - TPRANDTL must be between 0.01 and 100.'
      ifaterr = ifaterr + 1
   end if
   
@@ -1084,8 +1119,8 @@ subroutine opspec3
   end select
   
   ! Check whether the surface layer exchange scheme the user chose is okay. 
-  if (isfcl /= 0 .and. (istar < 1 .or. istar > 5)) then
-     print *, 'fatal - ISTAR must be between 1 and 5, and yours is set to ',istar,'...'
+  if (isfcl /= 0 .and. (istar < 1 .or. istar > 4)) then
+     print *, 'fatal - ISTAR must be between 1 and 4, and yours is set to ',istar,'...'
      ifaterr=ifaterr+1
   end if
   

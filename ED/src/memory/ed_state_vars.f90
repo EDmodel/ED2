@@ -1034,7 +1034,6 @@ module ed_state_vars
      real,pointer,dimension(:)   :: avg_carbon_ac   ! Average carbon flux, ATM -> CAS,       [umol/m2/s]
      real,pointer,dimension(:)   :: avg_vapor_lc    ! Average water vapor flux, Leaf -> CAS     [kg/m2/s]
      real,pointer,dimension(:)   :: avg_vapor_wc    ! Average water vapor flux, wood -> CAS     [kg/m2/s]
-     real,pointer,dimension(:)   :: avg_dew_cg      ! Average dew flux, CAS -> GND             [kg/m2/s]
      real,pointer,dimension(:)   :: avg_vapor_gc    ! Average water vapor flux, GND -> CAS     [kg/m2/s]
      real,pointer,dimension(:)   :: avg_wshed_vg    ! Average precip that falls from leaves    [kg/m2/s]
      real,pointer,dimension(:)   :: avg_intercepted ! Average precip that is intercepted       [kg/m2/s]
@@ -1309,7 +1308,6 @@ module ed_state_vars
      !                                              | Description
      real,pointer,dimension(:)   :: avg_vapor_lc    ! Leaf to canopy air water flux [kg/m2/s]
      real,pointer,dimension(:)   :: avg_vapor_wc    ! wood to canopy air water flux [kg/m2/s]
-     real,pointer,dimension(:)   :: avg_dew_cg      ! Dew to ground flux
      real,pointer,dimension(:)   :: avg_vapor_gc    ! Ground to canopy air latent heat flux [kg/m2/s]
      real,pointer,dimension(:)   :: avg_wshed_vg    ! Water shedding
      real,pointer,dimension(:)   :: avg_intercepted ! Intercepted
@@ -1592,7 +1590,6 @@ module ed_state_vars
 
      real,pointer,dimension(:)   :: avg_vapor_lc    ! Leaf to canopy air water flux
      real,pointer,dimension(:)   :: avg_vapor_wc    ! wood to canopy air water flux
-     real,pointer,dimension(:)   :: avg_dew_cg      ! Dew to ground flux
      real,pointer,dimension(:)   :: avg_vapor_gc    ! Ground to canopy air latent heat flux [kg/m2/s]
      real,pointer,dimension(:)   :: avg_wshed_vg    ! Water shedding from the leaves
      real,pointer,dimension(:)   :: avg_intercepted ! Intercepted
@@ -2290,7 +2287,6 @@ contains
        ! ---------------------------------------------
        allocate(cgrid%avg_vapor_lc  (npolygons))
        allocate(cgrid%avg_vapor_wc  (npolygons))
-       allocate(cgrid%avg_dew_cg    (npolygons))
        allocate(cgrid%avg_vapor_gc  (npolygons))
        allocate(cgrid%avg_wshed_vg  (npolygons))
        allocate(cgrid%avg_intercepted (npolygons))
@@ -2846,7 +2842,6 @@ contains
     ! ---------------------------------------------
     allocate(cpoly%avg_vapor_lc  (nsites))
     allocate(cpoly%avg_vapor_wc  (nsites))
-    allocate(cpoly%avg_dew_cg    (nsites))
     allocate(cpoly%avg_vapor_gc  (nsites))
     allocate(cpoly%avg_wshed_vg  (nsites))
     allocate(cpoly%avg_intercepted (nsites))
@@ -3137,7 +3132,6 @@ contains
     ! ---------------------------------------------
     allocate(csite%avg_vapor_lc  (npatches))
     allocate(csite%avg_vapor_wc  (npatches))
-    allocate(csite%avg_dew_cg    (npatches))
     allocate(csite%avg_vapor_gc  (npatches))
     allocate(csite%avg_wshed_vg  (npatches))
     allocate(csite%avg_intercepted (npatches))
@@ -3529,7 +3523,6 @@ contains
        ! ---------------------------------------------
        nullify(cgrid%avg_vapor_lc            )
        nullify(cgrid%avg_vapor_wc            )
-       nullify(cgrid%avg_dew_cg              )
        nullify(cgrid%avg_vapor_gc            )
        nullify(cgrid%avg_wshed_vg            )
        nullify(cgrid%avg_intercepted         )
@@ -4040,7 +4033,6 @@ contains
     ! ---------------------------------------------
     nullify(cpoly%avg_vapor_lc  )
     nullify(cpoly%avg_vapor_wc  )
-    nullify(cpoly%avg_dew_cg    )
     nullify(cpoly%avg_vapor_gc  )
     nullify(cpoly%avg_wshed_vg  )
     nullify(cpoly%avg_intercepted)
@@ -4336,7 +4328,6 @@ contains
     ! ---------------------------------------------
     nullify(csite%avg_vapor_lc  )
     nullify(csite%avg_vapor_wc  )
-    nullify(csite%avg_dew_cg    )
     nullify(csite%avg_vapor_gc  )
     nullify(csite%avg_wshed_vg  )
     nullify(csite%avg_intercepted)
@@ -4681,7 +4672,6 @@ contains
        ! ---------------------------------------------
        if(associated(cgrid%avg_vapor_lc            )) deallocate(cgrid%avg_vapor_lc            )
        if(associated(cgrid%avg_vapor_wc            )) deallocate(cgrid%avg_vapor_wc            )
-       if(associated(cgrid%avg_dew_cg              )) deallocate(cgrid%avg_dew_cg              )
        if(associated(cgrid%avg_vapor_gc            )) deallocate(cgrid%avg_vapor_gc            )
        if(associated(cgrid%avg_wshed_vg            )) deallocate(cgrid%avg_wshed_vg            )
        if(associated(cgrid%avg_intercepted         )) deallocate(cgrid%avg_intercepted         )
@@ -5210,7 +5200,6 @@ contains
     ! ---------------------------------------------
     if(associated(cpoly%avg_vapor_lc                )) deallocate(cpoly%avg_vapor_lc                )
     if(associated(cpoly%avg_vapor_wc                )) deallocate(cpoly%avg_vapor_wc                )
-    if(associated(cpoly%avg_dew_cg                  )) deallocate(cpoly%avg_dew_cg                  )
     if(associated(cpoly%avg_vapor_gc                )) deallocate(cpoly%avg_vapor_gc                )
     if(associated(cpoly%avg_wshed_vg                )) deallocate(cpoly%avg_wshed_vg                )
     if(associated(cpoly%avg_intercepted             )) deallocate(cpoly%avg_intercepted             )
@@ -5504,7 +5493,6 @@ contains
 
     if(associated(csite%avg_vapor_lc                 )) deallocate(csite%avg_vapor_lc                 )
     if(associated(csite%avg_vapor_wc                 )) deallocate(csite%avg_vapor_wc                 )
-    if(associated(csite%avg_dew_cg                   )) deallocate(csite%avg_dew_cg                   )
     if(associated(csite%avg_vapor_gc                 )) deallocate(csite%avg_vapor_gc                 )
     if(associated(csite%avg_wshed_vg                 )) deallocate(csite%avg_wshed_vg                 )
     if(associated(csite%avg_intercepted              )) deallocate(csite%avg_intercepted              )
@@ -5974,7 +5962,6 @@ contains
 
          osite%avg_vapor_lc(opa)                = isite%avg_vapor_lc(ipa)
          osite%avg_vapor_wc(opa)                = isite%avg_vapor_wc(ipa)
-         osite%avg_dew_cg(opa)                  = isite%avg_dew_cg(ipa)
          osite%avg_vapor_gc(opa)                = isite%avg_vapor_gc(ipa)
          osite%avg_wshed_vg(opa)                = isite%avg_wshed_vg(ipa)
          osite%avg_intercepted(opa)             = isite%avg_intercepted(ipa)
@@ -6300,7 +6287,6 @@ contains
 
     siteout%avg_vapor_lc(1:inc)         = pack(sitein%avg_vapor_lc,logmask)
     siteout%avg_vapor_wc(1:inc)         = pack(sitein%avg_vapor_wc,logmask)
-    siteout%avg_dew_cg(1:inc)           = pack(sitein%avg_dew_cg,logmask)
     siteout%avg_vapor_gc(1:inc)         = pack(sitein%avg_vapor_gc,logmask)
     siteout%avg_wshed_vg(1:inc)         = pack(sitein%avg_wshed_vg,logmask)
     siteout%avg_intercepted(1:inc)      = pack(sitein%avg_intercepted,logmask)
@@ -7912,13 +7898,6 @@ contains
          call vtable_edio_r(npts,cgrid%avg_vapor_wc,nvar,igr,init,cgrid%pyglob_id, &
               var_len,var_len_global,max_ptrs,'AVG_VAPOR_WC :11:hist:anal:opti') 
          call metadata_edio(nvar,igr,'polygon wood to canopy air vapor flux','[kg/m2/s]','ipoly') 
-      end if
-      
-      if (associated(cgrid%avg_dew_cg)) then
-         nvar=nvar+1
-         call vtable_edio_r(npts,cgrid%avg_dew_cg,nvar,igr,init,cgrid%pyglob_id, &
-              var_len,var_len_global,max_ptrs,'AVG_DEW_CG :11:hist:anal:opti') 
-         call metadata_edio(nvar,igr,'Polygon averaged dew to ground flux','[kg/m2/s]','ipoly') 
       end if
       
       if (associated(cgrid%avg_vapor_gc)) then

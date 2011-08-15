@@ -26,7 +26,12 @@ module leaf_coms
                        , twothirds ! ! intent(in)
 
    !----- Parameters that are initialised from RAMSIN. ------------------------------------! 
+   real    :: ugbmin          ! Minimum leaf-level velocity                     [      m/s]
+   real    :: ubmin           ! Minimum velocity                                [      m/s]
    real    :: ustmin          ! Minimum ustar                                   [      m/s]
+   real    :: gamm            ! Gamma used by Businger et al. (1971) - momentum.
+   real    :: gamh            ! Gamma used by Businger et al. (1971) - heat.
+   real    :: tprandtl        ! Turbulent Prandtl number.
    real    :: ribmax          ! Maximum bulk Richardson number
    real    :: leaf_maxwhc     ! Leaf maximum water holding capacity             [kg/m2leaf]
    real    :: min_patch_area  !  Minimum patch area to consider
@@ -255,21 +260,10 @@ module leaf_coms
    !---------------------------------------------------------------------------------------!
 
    !---------------------------------------------------------------------------------------!
-   !     Speed-related minimum values we will consider.                                    !
-   !---------------------------------------------------------------------------------------!
-   real, parameter :: ugbmin   = 0.25  ! Minimum leaf-level velocity             [     m/s]
-   real, parameter :: ubmin    = 0.65  ! Minimum velocity                        [     m/s]
-   !---------------------------------------------------------------------------------------!
-
-   !---------------------------------------------------------------------------------------!
    !      Constants for surface layer models.                                              !
    !---------------------------------------------------------------------------------------!
-   real, parameter :: gamm     = 13.0          ! Gamma (Businger et al. 1971) - momentum.
-   real, parameter :: gamh     = 13.0          ! Gamma (Businger et al. 1971) - heat.
-   real, parameter :: tprandtl = 0.74          ! Turbulent Prandtl number.
    real, parameter :: vh2vr    = 0.13          ! Vegetation roughness:vegetation hgt ratio
    real, parameter :: vh2dh    = 0.63          ! Displacement height:vegetation hgt ratio
-   real, parameter :: vkopr    = vonk/tprandtl ! von Karman / turbulent Prandtl
    !----- Louis (1979) model. -------------------------------------------------------------!
    real, parameter :: bl79     = 5.0 ! b prime parameter                                       
    real, parameter :: csm      = 7.5 ! C* for momentum (eqn. 20, not co2 char. scale)          
@@ -291,6 +285,22 @@ module leaf_coms
    real, parameter :: atetf       = ate   * fbh91 ! a * e * f
    real, parameter :: z0moz0h     = 1.0           ! z0(M)/z0(h)
    real, parameter :: z0hoz0m     = 1. / z0moz0h  ! z0(M)/z0(h)
+   !    Modified CLM (2004) model.   These will be initialised later. -------------------!
+   real   :: beta_vs     ! Beta for the very stable case (CLM eq. 5.30)
+   real   :: chim        ! CLM coefficient for very unstable case (momentum)
+   real   :: chih        ! CLM coefficient for very unstable case (heat)
+   real   :: zetac_um    ! critical zeta below which it becomes very unstable (momentum)
+   real   :: zetac_uh    ! critical zeta below which it becomes very unstable (heat)
+   real   :: zetac_sm    ! critical zeta above which it becomes very stable   (momentum)
+   real   :: zetac_sh    ! critical zeta above which it becomes very stable   (heat)
+   real   :: zetac_umi   ! 1. / zetac_umi
+   real   :: zetac_uhi   ! 1. / zetac_uhi
+   real   :: zetac_smi   ! 1. / zetac_smi
+   real   :: zetac_shi   ! 1. / zetac_shi
+   real   :: zetac_umi16 ! 1/(-zetac_umi)^(1/6)
+   real   :: zetac_uhi13 ! 1/(-zetac_umi)^(1/6)
+   real   :: psimc_um    ! psim evaluation at zetac_um
+   real   :: psihc_uh    ! psih evaluation at zetac_uh
    !---------------------------------------------------------------------------------------!
 
 
@@ -688,7 +698,43 @@ module leaf_coms
 
 
 
-  !=======================================================================================!
+   !=======================================================================================!
+   !=======================================================================================!
+   !     This sub-routine initialises several parameters for the surface layer model.      !
+   !---------------------------------------------------------------------------------------!
+   subroutine sfclyr_init_params()
+      implicit none
+      
+      !----- Similar to CLM (2004), but with different phi_m for very unstable case. ------!
+      zetac_um    = -1.5
+      zetac_uh    = -0.5
+      zetac_sm    =  1.0
+      zetac_sh    =  zetac_sm
+      !----- Define chim and chih so the functions are continuous. ------------------------!
+      chim        = (-zetac_um) ** onesixth / sqrt(sqrt(1.0 - gamm * zetac_um))
+      chih        = cbrt(-zetac_uh) / sqrt(1.0 - gamh * zetac_uh)
+      beta_vs     = 1.0 - (1.0 - beta_s) * zetac_sm
+      !----- Define derived values to speed up the code a little. -------------------------!
+      zetac_umi   = 1.0 / zetac_um
+      zetac_uhi   = 1.0 / zetac_uh
+      zetac_smi   = 1.0 / zetac_sm
+      zetac_shi   = 1.0 / zetac_sh
+      zetac_umi16 = 1.0 / (- zetac_um) ** onesixth
+      zetac_uhi13 = 1.0 / cbrt(-zetac_uh)
+
+      !------------------------------------------------------------------------------------!
+      !     Initialise these values with dummies, it will be updated after we define the   !
+      ! functions.                                                                         !
+      !------------------------------------------------------------------------------------!
+      psimc_um  = 0.
+      psimc_um  = psim(zetac_um,.false.)
+      psihc_uh  = 0.
+      psihc_uh  = psih(zetac_uh,.false.)
+      !------------------------------------------------------------------------------------!
+
+      return
+   end subroutine sfclyr_init_params
+   !=======================================================================================!
    !=======================================================================================!
 
 
@@ -711,17 +757,40 @@ module leaf_coms
       !------------------------------------------------------------------------------------!
       if (stable) then
          select case (istar)
-         case (2,5) !----- Oncley and Dudhia (1995). --------------------------------------!
-            psim = - bbeta * zeta 
-         case (3,4) !----- Beljaars and Holtslag (1991). ----------------------------------!
+         case (2) !----- Oncley and Dudhia (1995). ----------------------------------------!
+            psim = - beta_s * zeta 
+         case (3) !----- Beljaars and Holtslag (1991). ------------------------------------!
             psim = abh91 * zeta                                                            &
                  + bbh91 * (zeta - cod) * exp(max(-38.,-dbh91 * zeta))                     &
                  + bcod
+         case (4) !----- CLM (2004) (including neglected terms). --------------------------!
+            if (zeta > zetac_sm) then
+               !----- Very stable case. ---------------------------------------------------!
+               psim = (1.0 - beta_vs) * log(zeta * zetac_smi)                              &
+                    + (1.0 - beta_s ) * zetac_sm - zeta
+            else
+               !----- Normal stable case. -------------------------------------------------!
+               psim = - beta_s * zeta
+            end if
          end select
       else
-         !----- Unstable case, both papers use the same expression. -----------------------!
-         xx   = sqrt(sqrt(1.0 - gamm * zeta))
-         psim = log(0.125 * (1.0+xx) * (1.0+xx) * (1.0 + xx*xx)) - 2.0*atan(xx) + halfpi
+         select case (istar)
+         case (2,3) !----- Oncley and Dudhia (1995) and Beljaars and Holtslag (1991). -----!
+            xx   = sqrt(sqrt(1.0 - gamm * zeta))
+            psim = log(0.125 * (1.0+xx) * (1.0+xx) * (1.0 + xx*xx)) - 2.0*atan(xx) + halfpi
+         case (4)   !----- CLM (2004) (including neglected terms). ------------------------!
+            if (zeta < zetac_um) then
+               !----- Very unstable case. -------------------------------------------------!
+               psim = log(zeta * zetac_umi)                                                &
+                    + 6.0 * chim * ((- zeta) ** (-onesixth) - zetac_umi16)                 &
+                    + psimc_um
+            else
+               !----- Normal unstable case. -----------------------------------------------!
+               xx   = sqrt(sqrt(1.0 - gamm * zeta))
+               psim = log(0.125 * (1.0+xx) * (1.0+xx) * (1.0 + xx*xx))                     &
+                    - 2.0*atan(xx) + halfpi
+            end if
+         end select
       end if
       return
    end function psim
@@ -746,21 +815,45 @@ module leaf_coms
       logical, intent(in) :: stable ! Flag... This surface layer is stable           [ T|F]
       !----- Local variables. -------------------------------------------------------------!
       real                :: yy
+      !----- External functions. ----------------------------------------------------------!
+      real   , external   :: cbrt
       !------------------------------------------------------------------------------------!
-
       if (stable) then
          select case (istar)
-         case (2,5) !----- Oncley and Dudhia (1995). --------------------------------------!
-            psih = - bbeta * zeta 
-         case (3,4) !----- Beljaars and Holtslag (1991). ----------------------------------!
+         case (2) !----- Oncley and Dudhia (1995). ----------------------------------------!
+            psih = - beta_s * zeta 
+         case (3) !----- Beljaars and Holtslag (1991). ------------------------------------!
             psih = 1.0 - (1.0 + ate * zeta)**fbh91                                         &
                  + bbh91 * (zeta - cod) * exp(max(-38.,-dbh91 * zeta)) + bcod
+         case (4) !----- CLM (2004). ------------------------------------------------------!
+            if (zeta > zetac_sh) then
+               !----- Very stable case. ---------------------------------------------------!
+               psih = (1.0 - beta_vs) * log(zeta * zetac_shi)                              &
+                    + (1.0 - beta_s ) * zetac_sh - zeta
+            else
+               !----- Normal stable case. -------------------------------------------------!
+               psih = - beta_s * zeta 
+            end if
          end select
       else
-         !----- Unstable case, both papers use the same expression. -----------------------!
-         yy   = sqrt(1.0 - gamh * zeta)
-         psih = log(0.25 * (1.0+yy) * (1.0+yy))
+         select case (istar)
+         case (2,3) !----- Oncley and Dudhia (1995) and Beljaars and Holtslag (1991). -----!
+            yy   = sqrt(1.0 - gamh * zeta)
+            psih = log(0.25 * (1.0+yy) * (1.0+yy))
+         case (4)   !----- CLM (2004) (including neglected terms). ------------------------!
+            if (zeta < zetac_um) then
+               !----- Very unstable case. -------------------------------------------------!
+               psih = log(zeta * zetac_uhi)                                                &
+                    + 3.0 * chih * (1./cbrt(-zeta) - zetac_uhi13)                          &
+                    + psihc_uh
+            else
+               !----- Normal unstable case. -----------------------------------------------!
+               yy   = sqrt(1.0 - gamh * zeta)
+               psih = log(0.25 * (1.0+yy) * (1.0+yy))
+            end if
+         end select
       end if
+      return
    end function psih
    !=======================================================================================!
    !=======================================================================================!
@@ -784,19 +877,37 @@ module leaf_coms
       !----- Local variables. -------------------------------------------------------------!
       real                :: xx
       !------------------------------------------------------------------------------------!
-
       if (stable) then
          select case (istar)
-         case (2,5) !----- Oncley and Dudhia (1995). --------------------------------------!
-            dpsimdzeta = - bbeta 
-         case (3,4) !----- Beljaars and Holtslag (1991). ----------------------------------!
+         case (2) !----- Oncley and Dudhia (1995). ----------------------------------------!
+            dpsimdzeta = - beta_s 
+         case (3) !----- Beljaars and Holtslag (1991). ------------------------------------!
             dpsimdzeta = abh91 + bbh91 * (1.0 - dbh91 * zeta + cbh91)                      &
                                * exp(max(-38.,-dbh91 * zeta))
+         case (4) !----- CLM (2004). ------------------------------------------------------!
+            if (zeta > zetac_sm) then
+               !----- Very stable case. ---------------------------------------------------!
+               dpsimdzeta = (1.0 - beta_vs) / zeta - 1.0
+            else
+               !----- Normal stable case. -------------------------------------------------!
+               dpsimdzeta = - beta_s 
+            end if
          end select
       else
-         !----- Unstable case, both papers use the same expression. -----------------------!
-         xx         = sqrt(sqrt(1.0 - gamm * zeta))
-         dpsimdzeta = - gamm / (xx * (1.0+xx) * (1.0 + xx*xx)) 
+         select case (istar)
+         case (2,3) !----- Oncley and Dudhia (1995) and Beljaars and Holtslag (1991). -----!
+            xx         = sqrt(sqrt(1.0 - gamm * zeta))
+            dpsimdzeta = - gamm / (xx * (1.0+xx) * (1.0 + xx*xx)) 
+         case (4)   !----- CLM (2004) (including neglected terms). ------------------------!
+            if (zeta < zetac_um) then
+               !----- Very unstable case. -------------------------------------------------!
+               dpsimdzeta = (1.0 - chim * (-zeta)**onesixth) / zeta
+            else
+               !----- Normal unstable case. -----------------------------------------------!
+               xx         = sqrt(sqrt(1.0 - gamm * zeta))
+               dpsimdzeta = - gamm / (xx * (1.0+xx) * (1.0 + xx*xx))
+            end if
+         end select
       end if
 
       return
@@ -822,21 +933,41 @@ module leaf_coms
       logical, intent(in) :: stable ! Flag... This surface layer is stable           [ T|F]
       !----- Local variables. -------------------------------------------------------------!
       real                :: yy
+      !----- External functions. ----------------------------------------------------------!
+      real   , external   :: cbrt
       !------------------------------------------------------------------------------------!
-
       if (stable) then
          select case (istar)
-         case (2,5) !----- Oncley and Dudhia (1995). --------------------------------------!
-            dpsihdzeta = - bbeta
-         case (3,4) !----- Beljaars and Holtslag (1991). ----------------------------------!
+         case (2) !----- Oncley and Dudhia (1995). ----------------------------------------!
+            dpsihdzeta = - beta_s
+         case (3) !----- Beljaars and Holtslag (1991). ------------------------------------!
             dpsihdzeta = - atetf * (1.0 + ate * zeta)**fm1                                 &
                          + bbh91 * (1.0 - dbh91 * zeta + cbh91)                            &
                          * exp(max(-38.,-dbh91 * zeta))
+         case (4) !----- CLM (2004). ------------------------------------------------------!
+            if (zeta > zetac_sh) then
+               !----- Very stable case. ---------------------------------------------------!
+               dpsihdzeta = (1.0 - beta_vs) / zeta - 1.0
+            else
+               !----- Normal stable case. -------------------------------------------------!
+               dpsihdzeta = - beta_s
+            end if
          end select
       else
-         !----- Unstable case, both papers use the same expression. -----------------------!
-         yy   = sqrt(1.0 - gamh * zeta)
-         dpsihdzeta = -gamh / (yy * (1.0 + yy))
+         select case (istar)
+         case (2,3) !----- Oncley and Dudhia (1995) and Beljaars and Holtslag (1991). -----!
+            yy   = sqrt(1.0 - gamh * zeta)
+            dpsihdzeta = -gamh / (yy * (1.0 + yy))
+         case (4)   !----- CLM (2004) (including neglected terms). ------------------------!
+            if (zeta < zetac_um) then
+               !----- Very unstable case. -------------------------------------------------!
+               dpsihdzeta = (1.0 + chih / cbrt(zeta)) / zeta
+            else
+               !----- Normal unstable case. -----------------------------------------------!
+               yy   = sqrt(1.0 - gamh * zeta)
+               dpsihdzeta = -gamh / (yy * (1.0 + yy))
+            end if
+         end select
       end if
 
       return
@@ -863,6 +994,7 @@ module leaf_coms
       use therm_lib, only : toler  & ! intent(in)
                           , maxfpo & ! intent(in)
                           , maxit  ! ! intent(in)
+      use mem_leaf , only : istar
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
       real   , intent(in) :: rib       ! Bulk Richardson number                    [   ---]
@@ -874,6 +1006,7 @@ module leaf_coms
       real   , intent(in) :: lnzoz0h   ! ln[zref/roughness(heat)]                  [   ---]
       logical, intent(in) :: stable    ! Flag... This surface layer is stable      [   T|F]
       !----- Local variables. -------------------------------------------------------------!
+      real                :: ribuse    ! Richardson number to use                  [   ---]
       real                :: fm        ! lnzoz0m - psim(zeta) + psim(zeta0m)       [   ---]
       real                :: fh        ! lnzoz0h - psih(zeta) + psih(zeta0h)       [   ---]
       real                :: dfmdzeta  ! d(fm)/d(zeta)                             [   ---]
@@ -899,22 +1032,56 @@ module leaf_coms
       logical             :: zside     ! Flag... I'm on the z-side.                [   T|F]
       !------------------------------------------------------------------------------------!
 
+
+
+      !----- Define some values that won't change during the iterative method. ------------!
+      z0moz = 1. / zoz0m
+      z0hoz = 1. / zoz0h
       !------------------------------------------------------------------------------------!
-      !     First thing: if the bulk Richardson number is zero or almost zero, then we     !
-      ! rather just assign z/L to be the one given by Oncley and Dudhia (1995).  This      !
-      ! saves time and also avoids the risk of having zeta with the opposite sign.         !
+
+
+
       !------------------------------------------------------------------------------------!
-      zetasmall = vkopr * rib * min(lnzoz0m,lnzoz0h)
-      if (rib <= 0. .and. zetasmall > - z0moz0h * toler) then
-         zoobukhov = vkopr * rib * lnzoz0m
+      !     First thing, check whether this is a stable case and we are running methods 2  !
+      ! or 4.  In these methods, there is a singularity that must be avoided.              !
+      !------------------------------------------------------------------------------------!
+      select case (istar)
+      case (2,4)
+         ribuse = min(rib, (1.0 - toler) * tprandtl / (beta_s * (1.0 - min(z0moz,z0hoz))))
+
+         !---------------------------------------------------------------------------------!
+         !    Stable case, using Oncley and Dudhia, we can solve it analytically.          !
+         !---------------------------------------------------------------------------------!
+         if (stable .and. istar == 2) then
+            zoobukhov = ribuse * min(lnzoz0m,lnzoz0h)                                      &
+                      / (tprandtl - beta_s * (1.0 - min(z0moz,z0hoz)) *ribuse)
+            return
+         end if
+         !---------------------------------------------------------------------------------!
+      case default
+         ribuse = rib
+      end select
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !     If the bulk Richardson number is zero or almost zero, then we rather just      !
+      ! assign z/L to be the one similar to Oncley and Dudhia (1995).  This saves time and !
+      ! also avoids the risk of having zeta with the opposite sign.                        !
+      !------------------------------------------------------------------------------------!
+      zetasmall = ribuse * min(lnzoz0m,lnzoz0h)
+      if (ribuse <= 0. .and. zetasmall > - z0moz0h * toler) then
+         zoobukhov = zetasmall / tprandtl
          return
-      elseif (rib > 0. .and. zetasmall < z0moz0h * toler) then
-         zoobukhov = zetasmall / (1.1 - 5.0 * rib)
+      elseif (ribuse > 0. .and. zetasmall < z0moz0h * toler) then
+         zoobukhov = zetasmall / (tprandtl - beta_s * (1.0 - min(z0moz,z0hoz)) * ribuse)
          return
       else
          zetamin    =  toler
          zetamax    = -toler
       end if
+      !------------------------------------------------------------------------------------!
 
       !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
       !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
@@ -933,9 +1100,9 @@ module leaf_coms
       !------------------------------------------------------------------------------------!
       !     First guess, using Oncley and Dudhia (1995) approximation for unstable case.   !
       ! We won't use the stable case to avoid FPE or zeta with opposite sign when          !
-      ! Ri > 0.20.                                                                         !
+      ! Ri is too positive.                                                                !
       !------------------------------------------------------------------------------------!
-      zetaa = vkopr * rib * lnzoz0m
+      zetaa = ribuse * lnzoz0m / tprandtl
 
       !----- Finding the function and its derivative. -------------------------------------!
       zeta0m   = zetaa * z0moz
@@ -944,9 +1111,9 @@ module leaf_coms
       fh       = lnzoz0h - psih(zetaa,stable) + psih(zeta0h,stable)
       dfmdzeta = z0moz * dpsimdzeta(zeta0m,stable) - dpsimdzeta(zetaa,stable)
       dfhdzeta = z0hoz * dpsihdzeta(zeta0h,stable) - dpsihdzeta(zetaa,stable)
-      funa     = vkopr * rib * fm * fm / fh - zetaa
-      deriv    = vkopr * rib * (2. * fm * dfmdzeta * fh - fm * fm * dfhdzeta)              &
-               / (fh * fh) - 1.
+      funa     = ribuse * fm * fm / (tprandtl * fh) - zetaa
+      deriv    = ribuse * (2. * fm * dfmdzeta * fh - fm * fm * dfhdzeta)                   &
+               / (tprandtl * fh * fh) - 1.
 
       !----- Copying just in case it fails at the first iteration. ------------------------!
       zetaz = zetaa
@@ -994,9 +1161,9 @@ module leaf_coms
          fh       = lnzoz0h - psih(zetaz,stable) + psih(zeta0h,stable)
          dfmdzeta = z0moz * dpsimdzeta(zeta0m,stable) - dpsimdzeta(zetaz,stable)
          dfhdzeta = z0hoz * dpsihdzeta(zeta0h,stable) - dpsihdzeta(zetaz,stable)
-         fun      = vkopr * rib * fm * fm / fh - zetaz
-         deriv    = vkopr * rib * (2. * fm * dfmdzeta * fh - fm * fm * dfhdzeta)           &
-                  / (fh * fh) - 1.
+         fun      = ribuse * fm * fm / (tprandtl * fh) - zetaz
+         deriv    = ribuse * (2. * fm * dfmdzeta * fh - fm * fm * dfhdzeta)                &
+                  / (tprandtl * fh * fh) - 1.
 
          !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
          !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
@@ -1059,7 +1226,7 @@ module leaf_coms
             zeta0h   = zetaz * z0hoz
             fm       = lnzoz0m - psim(zetaz,stable) + psim(zeta0m,stable)
             fh       = lnzoz0h - psih(zetaz,stable) + psih(zeta0h,stable)
-            funz     = vkopr * rib * fm * fm / fh - zetaz
+            funz     = ribuse * fm * fm / (tprandtl * fh) - zetaz
             zside    = funa * funz < 0.0
             !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
             !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
@@ -1076,7 +1243,7 @@ module leaf_coms
             write (unit=*,fmt='(a)') '=================================================='
             write (unit=*,fmt='(2(a,1x,es14.7,1x))') 'zref   =',zref   ,'rough  =',rough
             write (unit=*,fmt='(2(a,1x,es14.7,1x))') 'lnzoz0m=',lnzoz0m,'lnzoz0h=',lnzoz0h
-            write (unit=*,fmt='(1(a,1x,es14.7,1x))') 'rib    =',rib
+            write (unit=*,fmt='(1(a,1x,es14.7,1x))') 'rib    =',rib    ,'ribuse =',ribuse
             write (unit=*,fmt='(1(a,1x,l1,1x))')     'stable =',stable
             write (unit=*,fmt='(2(a,1x,es14.7,1x))') 'fun    =',fun    ,'delta  =',delta
             write (unit=*,fmt='(2(a,1x,es14.7,1x))') 'zetaa  =',zetaa  ,'funa   =',funa
@@ -1102,7 +1269,7 @@ module leaf_coms
          zeta0h   = zoobukhov * z0hoz
          fm       = lnzoz0m - psim(zoobukhov,stable) + psim(zeta0m,stable)
          fh       = lnzoz0h - psih(zoobukhov,stable) + psih(zeta0h,stable)
-         fun      = vkopr * rib * fm * fm / fh - zoobukhov
+         fun      = ribuse * fm * fm / (tprandtl * fh) - zoobukhov
 
          !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
          !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
@@ -1138,6 +1305,7 @@ module leaf_coms
          write (unit=*,fmt='(a)') ' Input values.'
          write (unit=*,fmt='(a)') ' '
          write (unit=*,fmt='(a,1x,f12.4)' ) 'rib             [   ---] =',rib
+         write (unit=*,fmt='(a,1x,f12.4)' ) 'ribuse          [   ---] =',ribuse
          write (unit=*,fmt='(a,1x,f12.4)' ) 'zref            [     m] =',zref
          write (unit=*,fmt='(a,1x,f12.4)' ) 'rough           [     m] =',rough
          write (unit=*,fmt='(a,1x,f12.4)' ) 'zoz0m           [   ---] =',zoz0m

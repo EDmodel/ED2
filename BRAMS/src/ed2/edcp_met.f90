@@ -1699,8 +1699,7 @@ subroutine copy_avgvars_to_leaf(ifm)
          leaf_g(ifm)%sensible_gc(ix,iy,ilp) = cpoly%avg_sensible_gc(isi)
          leaf_g(ifm)%sensible_vc(ix,iy,ilp) = ( cpoly%avg_sensible_lc(isi)                 &
                                               + cpoly%avg_sensible_wc(isi) )
-         leaf_g(ifm)%evap_gc    (ix,iy,ilp) = ( cpoly%avg_vapor_gc(isi)                    &
-                                              - cpoly%avg_dew_cg(isi))    * alvl
+         leaf_g(ifm)%evap_gc    (ix,iy,ilp) = cpoly%avg_vapor_gc(isi) * alvl
          leaf_g(ifm)%evap_vc    (ix,iy,ilp) = ( cpoly%avg_vapor_lc(isi)                    &
                                               + cpoly%avg_vapor_wc(isi) ) * alvl
          leaf_g(ifm)%transp     (ix,iy,ilp) = cpoly%avg_transp(isi)       * alvl

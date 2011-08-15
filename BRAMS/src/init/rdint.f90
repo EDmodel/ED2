@@ -866,7 +866,12 @@ subroutine read_nl(filename)
                                  , isoilbc                 & ! intent(out)
                                  , ipercol                 & ! intent(out)
                                  , runoff_time             ! ! intent(out)
-   use leaf_coms          , only : ustmin                  & ! intent(out)
+   use leaf_coms          , only : ubmin                   & ! intent(out)
+                                 , ugbmin                  & ! intent(out)
+                                 , ustmin                  & ! intent(out)
+                                 , gamm                    & ! intent(out)
+                                 , gamh                    & ! intent(out)
+                                 , tprandtl                & ! intent(out)
                                  , ribmax                  & ! intent(out)
                                  , leaf_maxwhc             & ! intent(out)
                                  , min_patch_area          ! ! intent(out)
@@ -1105,15 +1110,15 @@ subroutine read_nl(filename)
 
    namelist /MODEL_OPTIONS/       naddsc,icorflg,iexev,imassflx,ibnd,jbnd,cphas,lsflg,nfpt &
                                  ,distim,iswrtyp,ilwrtyp,icumfdbk,radfrq,lonrad,npatch     &
-                                 ,nvegpat,min_patch_area,isfcl,dtleaf,istar,igrndvap       &
-                                 ,ustmin,ribmax,leaf_maxwhc,ico2,co2con,nvgcon,pctlcon     &
-                                 ,nslcon,drtcon,zrough,albedo,seatmp,dthcon,soil_moist     &
-                                 ,soil_moist_fail,usdata_in,usmodel_in,slz,slmstr,stgoff   &
-                                 ,isoilbc,ipercol,runoff_time,if_urban_canopy,idiffk       &
-                                 ,ibruvais,ibotflx,ihorgrad,csx,csz,xkhkm,zkhkm,nna,nnb    &
-                                 ,nnc,akmin,akmax,hgtmin,hgtmax,level,icloud,irain,ipris   &
-                                 ,isnow,iaggr,igraup,ihail,cparm,rparm,pparm,sparm,aparm   &
-                                 ,gparm,hparm,gnu
+                                 ,nvegpat,min_patch_area,isfcl,dtleaf,istar,igrndvap,ubmin &
+                                 ,ugbmin,ustmin,gamm,gamh,tprandtl,ribmax,leaf_maxwhc,ico2 &
+                                 ,co2con,nvgcon,pctlcon,nslcon,drtcon,zrough,albedo,seatmp &
+                                 ,dthcon,soil_moist,soil_moist_fail,usdata_in,usmodel_in   &
+                                 ,slz,slmstr,stgoff,isoilbc,ipercol,runoff_time            &
+                                 ,if_urban_canopy,idiffk,ibruvais,ibotflx,ihorgrad,csx,csz &
+                                 ,xkhkm,zkhkm,nna,nnb,nnc,akmin,akmax,hgtmin,hgtmax,level  &
+                                 ,icloud,irain,ipris,isnow,iaggr,igraup,ihail,cparm,rparm  &
+                                 ,pparm,sparm,aparm,gparm,hparm,gnu
 
    namelist /MODEL_SOUND/         ipsflg,itsflg,irtsflg,iusflg,hs,ps,ts,rts,us,vs,co2s
 
@@ -1767,7 +1772,12 @@ subroutine read_nl(filename)
       write (unit=*,fmt=*) ' dtleaf          =',dtleaf
       write (unit=*,fmt=*) ' istar           =',istar
       write (unit=*,fmt=*) ' igrndvap        =',igrndvap
+      write (unit=*,fmt=*) ' ubmin           =',ubmin
+      write (unit=*,fmt=*) ' ugbmin          =',ugbmin
       write (unit=*,fmt=*) ' ustmin          =',ustmin
+      write (unit=*,fmt=*) ' gamm            =',gamm
+      write (unit=*,fmt=*) ' gamh            =',gamh
+      write (unit=*,fmt=*) ' tprandtl        =',tprandtl
       write (unit=*,fmt=*) ' ribmax          =',ribmax
       write (unit=*,fmt=*) ' leaf_maxwhc     =',leaf_maxwhc
       write (unit=*,fmt=*) ' ico2            =',ico2
@@ -2022,19 +2032,6 @@ subroutine read_nl(filename)
    !    Save the CO2 complexity level into a logical variable.                             !
    !---------------------------------------------------------------------------------------!
    co2_on    = ico2 > 0
-   !---------------------------------------------------------------------------------------!
-
-
-
-
-   !---------------------------------------------------------------------------------------!
-   !    Find the vonk/Tprandt constant based on the given tprandtl.                        !
-   !---------------------------------------------------------------------------------------!
-   if (tprandtl /= 0.0) then
-      vkopr = vonk / tprandtl
-   else
-      vkopr = 0.0
-   end if
    !---------------------------------------------------------------------------------------!
 
    return

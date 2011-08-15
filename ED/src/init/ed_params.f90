@@ -838,15 +838,19 @@ end subroutine init_can_rad_params
 subroutine init_can_air_params()
    use consts_coms    , only : onethird              & ! intent(in)
                              , twothirds             & ! intent(in)
+                             , onesixth              & ! intent(in)
                              , vonk                  ! ! intent(in)
    use pft_coms       , only : hgt_min               & ! intent(in)
                              , hgt_max               ! ! intent(in)
-   use canopy_air_coms, only : isfclyrm              & ! intent(in)
+   use canopy_air_coms, only : psim                  & ! function
+                             , psih                  & ! function
+                             , isfclyrm              & ! intent(in)
+                             , ugbmin                & ! intent(in)
+                             , ubmin                 & ! intent(in)
                              , ustmin                & ! intent(in)
-                             , gamm                  & ! intent(out)
-                             , gamh                  & ! intent(out)
-                             , tprandtl              & ! intent(out)
-                             , vkopr                 & ! intent(out)
+                             , gamm                  & ! intent(in)
+                             , gamh                  & ! intent(in)
+                             , tprandtl              & ! intent(in)
                              , vh2vr                 & ! intent(out)
                              , vh2dh                 & ! intent(out)
                              , ribmax                & ! intent(out)
@@ -859,8 +863,6 @@ subroutine init_can_air_params()
                              , minimum_canopy_depth8 & ! intent(out)
                              , exar                  & ! intent(out)
                              , covr                  & ! intent(out)
-                             , ugbmin                & ! intent(out)
-                             , ubmin                 & ! intent(out)
                              , exar8                 & ! intent(out)
                              , ez                    & ! intent(out)
                              , ustmin8               & ! intent(out)
@@ -879,6 +881,7 @@ subroutine init_can_air_params()
                              , gamma_mw99            & ! intent(out)
                              , nu_mw99               & ! intent(out)
                              , infunc                & ! intent(out)
+                             , ggveg_inf             & ! intent(out)
                              , cdrag08               & ! intent(out)
                              , pm08                  & ! intent(out)
                              , c1_m978               & ! intent(out)
@@ -890,11 +893,12 @@ subroutine init_can_air_params()
                              , gamma_mw99_8          & ! intent(out)
                              , nu_mw99_8             & ! intent(out)
                              , infunc_8              & ! intent(out)
+                             , ggveg_inf8            & ! intent(out)
                              , bl79                  & ! intent(out)
                              , csm                   & ! intent(out)
                              , csh                   & ! intent(out)
                              , dl79                  & ! intent(out)
-                             , bbeta                 & ! intent(out)
+                             , beta_s                & ! intent(out)
                              , abh91                 & ! intent(out)
                              , bbh91                 & ! intent(out)
                              , cbh91                 & ! intent(out)
@@ -908,16 +912,30 @@ subroutine init_can_air_params()
                              , atetf                 & ! intent(out)
                              , z0moz0h               & ! intent(out)
                              , z0hoz0m               & ! intent(out)
+                             , beta_vs               & ! intent(out)
+                             , chim                  & ! intent(out)
+                             , chih                  & ! intent(out)
+                             , zetac_um              & ! intent(out)
+                             , zetac_uh              & ! intent(out)
+                             , zetac_sm              & ! intent(out)
+                             , zetac_sh              & ! intent(out)
+                             , zetac_umi             & ! intent(out)
+                             , zetac_uhi             & ! intent(out)
+                             , zetac_smi             & ! intent(out)
+                             , zetac_shi             & ! intent(out)
+                             , zetac_umi16           & ! intent(out)
+                             , zetac_uhi13           & ! intent(out)
+                             , psimc_um              & ! intent(out)
+                             , psihc_uh              & ! intent(out)
                              , bl798                 & ! intent(out)
                              , csm8                  & ! intent(out)
                              , csh8                  & ! intent(out)
                              , dl798                 & ! intent(out)
-                             , bbeta8                & ! intent(out)
+                             , beta_s8               & ! intent(out)
                              , gamm8                 & ! intent(out)
                              , gamh8                 & ! intent(out)
                              , ribmax8               & ! intent(out)
                              , tprandtl8             & ! intent(out)
-                             , vkopr8                & ! intent(out)
                              , abh918                & ! intent(out)
                              , bbh918                & ! intent(out)
                              , cbh918                & ! intent(out)
@@ -931,6 +949,21 @@ subroutine init_can_air_params()
                              , atetf8                & ! intent(out)
                              , z0moz0h8              & ! intent(out)
                              , z0hoz0m8              & ! intent(out)
+                             , beta_vs8              & ! intent(out)
+                             , chim8                 & ! intent(out)
+                             , chih8                 & ! intent(out)
+                             , zetac_um8             & ! intent(out)
+                             , zetac_uh8             & ! intent(out)
+                             , zetac_sm8             & ! intent(out)
+                             , zetac_sh8             & ! intent(out)
+                             , zetac_umi8            & ! intent(out)
+                             , zetac_uhi8            & ! intent(out)
+                             , zetac_smi8            & ! intent(out)
+                             , zetac_shi8            & ! intent(out)
+                             , zetac_umi168          & ! intent(out)
+                             , zetac_uhi138          & ! intent(out)
+                             , psimc_um8             & ! intent(out)
+                             , psihc_uh8             & ! intent(out)
                              , aflat_turb            & ! intent(out)
                              , aflat_lami            & ! intent(out)
                              , bflat_turb            & ! intent(out)
@@ -973,7 +1006,9 @@ subroutine init_can_air_params()
                              , kksoil8               ! ! intent(out)
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
-   integer :: ican
+   integer           :: ican
+   !----- External functions. -------------------------------------------------------------!
+   real   , external :: cbrt
    !---------------------------------------------------------------------------------------!
 
 
@@ -1013,22 +1048,10 @@ subroutine init_can_air_params()
    !---------------------------------------------------------------------------------------!
    !      Parameters for surface layer models.                                             !
    !---------------------------------------------------------------------------------------!
-   !----- This is the minimum wind speed for boundary layer conductivity. -----------------!
-   ugbmin   = 0.25
-   !----- This is the minimum wind scale under stable and unstable conditions. ------------!
-   ubmin    = 0.65
-   !----- Gamma (Businger et al. 1971) - momentum. ----------------------------------------!
-   gamm     = 13.0
-   !----- Gamma (Businger et al. 1971) - heat. --------------------------------------------!
-   gamh     = 13.0
-   !----- Turbulent Prandtl number. -------------------------------------------------------!
-   tprandtl = 0.74
    !----- Vegetation roughness:vegetation height ratio. -----------------------------------!
    vh2vr    = 0.13
    !----- Displacement height:vegetation height ratio. ------------------------------------!
    vh2dh    = 0.63
-   !----- von Karman / turbulent Prandtl. -------------------------------------------------!
-   vkopr    = vonk / tprandtl
    !---------------------------------------------------------------------------------------!
 
 
@@ -1040,7 +1063,7 @@ subroutine init_can_air_params()
    csh         = 5.0    ! C* for heat (eqn.20, not co2 char. scale)
    dl79        = 5.0    ! ???
    !----- Oncley and Dudhia (1995) model. -------------------------------------------------!
-   bbeta       = 5.0           ! Beta 
+   beta_s       = 5.0          ! Beta 
    !----- Beljaars and Holtslag (1991) model. ---------------------------------------------!
    abh91       = -1.00         ! -a from equation  (28) and (32)
    bbh91       = -twothirds    ! -b from equation  (28) and (32)
@@ -1055,6 +1078,31 @@ subroutine init_can_air_params()
    atetf       = ate   * fbh91 ! a * e * f
    z0moz0h     = 1.0           ! z0(M)/z0(h)
    z0hoz0m     = 1. / z0moz0h  ! z0(M)/z0(h)
+   !----- Similar to CLM (2004), but with different phi_m for very unstable case. ---------!
+   zetac_um    = -1.5
+   zetac_uh    = -0.5
+   zetac_sm    =  1.0
+   zetac_sh    =  zetac_sm
+   !----- Define chim and chih so the functions are continuous. ---------------------------!
+   chim        = (-zetac_um) ** onesixth / sqrt(sqrt(1.0 - gamm * zetac_um))
+   chih        = cbrt(-zetac_uh) / sqrt(1.0 - gamh * zetac_uh)
+   beta_vs     = 1.0 - (1.0 - beta_s) * zetac_sm
+   !----- Define derived values to speed up the code a little. ----------------------------!
+   zetac_umi   = 1.0 / zetac_um
+   zetac_uhi   = 1.0 / zetac_uh
+   zetac_smi   = 1.0 / zetac_sm
+   zetac_shi   = 1.0 / zetac_sh
+   zetac_umi16 = 1.0 / (- zetac_um) ** onesixth
+   zetac_uhi13 = 1.0 / cbrt(-zetac_uh)
+
+   !---------------------------------------------------------------------------------------!
+   !     Initialise these values with dummies, it will be updated after we define the      !
+   ! functions.                                                                            !
+   !---------------------------------------------------------------------------------------!
+   psimc_um  = 0.
+   psimc_um  = psim(zetac_um,.false.)
+   psihc_uh  = 0.
+   psihc_uh  = psih(zetac_uh,.false.)
    !---------------------------------------------------------------------------------------!
 
 
@@ -1136,6 +1184,14 @@ subroutine init_can_air_params()
    !---------------------------------------------------------------------------------------!
 
 
+
+   !---------------------------------------------------------------------------------------!
+   !     Parameter for CLM, the number right next to equation 5.101 of CLM techical note.  !
+   !---------------------------------------------------------------------------------------!
+   ggveg_inf = 0.004
+   !---------------------------------------------------------------------------------------!
+
+
    !---------------------------------------------------------------------------------------!
    !  Gamma and nu are the parameters that close equation 10 in Massman and Weil (1999).   !
    !  VERY IMPORTANT: If you mess with gamma, you must recompute nu!                       !
@@ -1179,12 +1235,11 @@ subroutine init_can_air_params()
    csm8                  = dble(csm                 )
    csh8                  = dble(csh                 )
    dl798                 = dble(dl79                )
-   bbeta8                = dble(bbeta               )
+   beta_s8               = dble(beta_s              )
    gamm8                 = dble(gamm                )
    gamh8                 = dble(gamh                )
    ribmax8               = dble(ribmax              )
    tprandtl8             = dble(tprandtl            )
-   vkopr8                = dble(vkopr               )
    abh918                = dble(abh91               )
    bbh918                = dble(bbh91               )
    cbh918                = dble(cbh91               )
@@ -1227,8 +1282,26 @@ subroutine init_can_air_params()
    gamma_mw99_8          = dble(gamma_mw99          )
    nu_mw99_8             = dble(nu_mw99             )
    infunc_8              = dble(infunc              )
+   ggveg_inf8            = dble(ggveg_inf           )
    ggsoil08              = dble(ggsoil0             )
    kksoil8               = dble(kksoil              )
+   zetac_um8             = dble(zetac_um            )
+   zetac_uh8             = dble(zetac_uh            )
+   zetac_sm8             = dble(zetac_sm            )
+   zetac_sh8             = dble(zetac_sh            )
+   chim8                 = dble(chim                )
+   chih8                 = dble(chih                )
+   beta_vs8              = dble(beta_vs             )
+   zetac_umi8            = dble(zetac_umi           )
+   zetac_uhi8            = dble(zetac_uhi           )
+   zetac_smi8            = dble(zetac_smi           )
+   zetac_shi8            = dble(zetac_shi           )
+   zetac_umi168          = dble(zetac_umi16         )
+   zetac_uhi138          = dble(zetac_uhi13         )
+   psimc_um8             = dble(psimc_um            )
+   psimc_um8             = dble(psimc_um            )
+   psihc_uh8             = dble(psihc_uh            )
+   psihc_uh8             = dble(psihc_uh            )
    !---------------------------------------------------------------------------------------!
 
    return

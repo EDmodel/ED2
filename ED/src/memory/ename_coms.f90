@@ -176,7 +176,12 @@ module ename_coms
       real                                              :: treefall_disturbance_rate
       real                                              :: Time2Canopy
       real                                              :: runoff_time
+      real                                              :: ubmin
+      real                                              :: ugbmin
       real                                              :: ustmin
+      real                                              :: gamm
+      real                                              :: gamh
+      real                                              :: tprandtl
       real                                              :: ribmax
       real                                              :: leaf_maxwhc
 
@@ -402,7 +407,12 @@ module ename_coms
       enl%treefall_disturbance_rate = undef_real
       enl%Time2Canopy               = undef_real
       enl%runoff_time               = undef_real
+      enl%ubmin                     = undef_real
+      enl%ugbmin                    = undef_real
       enl%ustmin                    = undef_real
+      enl%gamm                      = undef_real
+      enl%gamh                      = undef_real
+      enl%tprandtl                  = undef_real
       enl%ribmax                    = undef_real
       enl%leaf_maxwhc               = undef_real
 

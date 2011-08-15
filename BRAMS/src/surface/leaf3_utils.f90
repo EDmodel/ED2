@@ -4,11 +4,16 @@
 !     This subroutine computes the characteristic scales, using one of the following surf- !
 ! ace layer parametrisation.                                                               !
 !                                                                                          !
+!                                                                                          !
 ! 1. Based on L79;                                                                         !
 ! 2. Based on: OD95, but with some terms computed as in L79 and B71 to avoid singular-     !
-!    ities.                                                                                !
+!    ities (now using the iterative method to find zeta).                                  !
 ! 3. Based on BH91, using an iterative method to find zeta, and using the modified         !
 !    equation for stable layers.                                                           !
+! 4. Based on CLM04, with special functions for very stable and very stable case, even     !
+!    though we use a different functional form for very unstable case for momentum.        !
+!    This is ensure that phi_m decreases monotonically as zeta becomes more negative.      !
+!    We use a power law of order of -1/6 instead.                                          !
 !                                                                                          !
 ! References:                                                                              !
 ! B71.  BUSINGER, J.A, et. al; Flux-Profile relationships in the atmospheric surface       !
@@ -19,6 +24,9 @@
 !           atmospheric models. J. Appl. Meteor., 30, 327-341, 1991.                       !
 ! OD95. ONCLEY, S.P.; DUDHIA, J.; Evaluation of surface fluxes from MM5 using observa-     !
 !           tions.  Mon. Wea. Rev., 123, 3344-3357, 1995.                                  !
+! CLM04. OLESON, K. W., et al.; Technical description of the community land model (CLM)    !
+!           NCAR Technical Note NCAR/TN-461+STR, Boulder, CO, May 2004.                    !
+!                                                                                          !
 !------------------------------------------------------------------------------------------!
 subroutine leaf3_stars(theta_atm,theiv_atm,shv_atm,rvap_atm,co2_atm                        &
                       ,theta_can,theiv_can,shv_can,rvap_can,co2_can                        &
@@ -92,6 +100,11 @@ subroutine leaf3_stars(theta_atm,theiv_atm,shv_atm,rvap_atm,co2_atm             
    !----- Local variables, used by OD95 and/or BH91. --------------------------------------!
    real              :: zeta0m       ! roughness(momentum)/(Obukhov length).
    real              :: zeta0h       ! roughness(heat)/(Obukhov length).
+   real              :: utotal       ! Total wind (actual + convective)
+   real              :: uconv        ! Convective velocity
+   real              :: uconv_prev   ! Previous convective velocity
+   real              :: change       ! Difference in convective velocity
+   integer           :: icnt         ! Iteration counter
    !----- Aux. environment conditions. ----------------------------------------------------!
    real              :: thetav_atm   ! Atmos. virtual potential temperature     [        K]
    real              :: thetav_can   ! Canopy air virtual pot. temperature      [        K]
@@ -107,6 +120,15 @@ subroutine leaf3_stars(theta_atm,theiv_atm,shv_atm,rvap_atm,co2_atm             
    lnzoz0m    = log(zoz0m)
    zoz0h      = z0moz0h * zoz0m
    lnzoz0h    = log(zoz0h)
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Find the Bulk Richardson number.  For stable cases, and for L79 in both cases,    !
+   ! this will be the definitive RiB, whilst this is the first guess, which will be        !
+   ! corrected by the convective velocity in the other unstable cases.                     !
+   !---------------------------------------------------------------------------------------!
    rib        = 2.0 * grav * (zref-dheight-rough) * (thetav_atm-thetav_can)                &
               / ( (thetav_atm+thetav_can) * uref * uref)
    stable     = thetav_atm >= thetav_can
@@ -116,11 +138,11 @@ subroutine leaf3_stars(theta_atm,theiv_atm,shv_atm,rvap_atm,co2_atm             
 
 
    !---------------------------------------------------------------------------------------!
-   !    Correct the bulk Richardson number in case it's too stable and we are not running  !
-   ! the L79 model.  We also define a stable case correction to bring down the stars other !
-   ! than ustar, so the flux doesn't increase for stabler cases (it remains constant).     !
+   !    Correct the bulk Richardson number in case it's too stable.  We also define a      !
+   ! stable case correction to bring down the stars other than ustar, so the flux doesn't  !
+   ! increase for stabler cases (it remains constant).                                     !
    !---------------------------------------------------------------------------------------!
-   if (rib > ribmax .and. istar /= 1) then
+   if (rib > ribmax) then
       uuse = sqrt(rib/ribmax) * uref
       rib  = ribmax
    else
@@ -176,72 +198,111 @@ subroutine leaf3_stars(theta_atm,theiv_atm,shv_atm,rvap_atm,co2_atm             
 
       !----- Compute zeta from u* and T* --------------------------------------------------!
       zeta = grav * vonk * c3 * (theta_atm - theta_can) / (theta_atm * ustar * ustar)
+      !------------------------------------------------------------------------------------!
 
 
-   case (2,4)
+   case default
       !------------------------------------------------------------------------------------!
       ! 2. Here we use the model proposed by OD95, the standard for MM5, but with some     !
-      !    terms that were computed in B71 (namely, the "0" terms). which prevent sin-     !
-      !    gularities.  Since we use OD95 to estimate zeta, which avoids the computation   !
-      !    of the Obukhov length L , we can't compute zeta0 by its definition(z0/L). How-  !
-      !    ever we know zeta, so zeta0 can be written as z0/z * zeta.                      !
-      ! 4. We use the model proposed by BH91, but we find zeta using the approximation     !
-      !    given by OD95.                                                                  !
-      !------------------------------------------------------------------------------------!
-      !----- We now compute the stability correction functions. ---------------------------!
-      if (stable) then
-         !----- Stable case. --------------------------------------------------------------!
-         zeta  = rib * lnzoz0m / (1.1 - 5.0 * rib)
-      else
-         !----- Unstable case. ------------------------------------------------------------!
-         zeta = rib * lnzoz0m
-      end if
-      zeta0m = rough * zeta / (zref - dheight)
-
-      !----- Find the aerodynamic resistance similarly to L79. ----------------------------!
-      r_aer = tprandtl * (lnzoz0m - psih(zeta,stable) + psih(zeta0m,stable))               &
-                       * (lnzoz0m - psim(zeta,stable) + psim(zeta0m,stable))               &
-                       / (vonk * vonk * uuse)
-
-      !----- Finding ustar, making sure it is not too small. ------------------------------!
-      ustar = max (ustmin, vonk * uuse                                                     &
-                         / (lnzoz0m - psim(zeta,stable) + psim(zeta0m,stable)))
-
-      !----- Finding the coefficient to scale the other stars. ----------------------------!
-      c3    = vonk / (tprandtl * (lnzoz0m - psih(zeta,stable) + psih(zeta0m,stable)))
-
-      !------------------------------------------------------------------------------------!
-
-   case (3,5)
-      !------------------------------------------------------------------------------------!
+      !    terms that were computed in B71 (namely, the "0" terms), which prevent sin-     !
+      !    gularities.                                                                     !
+      !    However we know zeta, so zeta0 can be written as z0/z * zeta.                   !
       ! 3. Here we use the model proposed by BH91, which is almost the same as the OD95    !
-      !    method, with the two following (important) differences.                         !
-      !    a. Zeta (z/L) is actually found using the iterative method.                     !
-      !    b. Stable functions are computed in a more generic way.  BH91 claim that the    !
-      !       oft-used approximation (-beta*zeta) can cause poor ventilation of the stable !
-      !       layer, leading to decoupling between the atmosphere and the canopy air space !
-      !       and excessive cooling.                                                       !
-      ! 5. Similar as 3, but we compute the stable functions the same way as OD95.         !
+      !    method, except that the stable functions are computed in a more generic way.    !
+      !    BH91 claim that the oft-used approximation (-beta*zeta) can cause poor          !
+      !    ventilation of the stable layer, leading to decoupling between the atmo-        !
+      !    sphere and the canopy air space and excessive cooling                           !
+      ! 4. Here we use a similar approach as in CLM04, excepth that the momentum flux      !
+      !    gradient function for the unstable case for momentum is switched by a power     !
+      !    of -1/6 (kind of the square of the heat one).  This is to guarantee that        !
+      !    the psi function doesn't have local maxima/minima.                              !
       !------------------------------------------------------------------------------------!
-      !----- We now compute the stability correction functions. ---------------------------!
-      zeta   = zoobukhov(rib,zref-dheight,rough,zoz0m,lnzoz0m,zoz0h,lnzoz0h,stable)
-      zeta0m = rough * zeta / (zref-dheight)
-      zeta0h = z0hoz0m * zeta0m
+      !----- Initialise uconv. ------------------------------------------------------------!
+      uconv      = 0.0
+      !----- Check if we need to go through the iterative process. ------------------------!
+      if (stable) then
+         !----- We now compute the stability correction functions. ------------------------!
+         zeta   = zoobukhov(rib,zref-dheight,rough,zoz0m,lnzoz0m,zoz0h,lnzoz0h,stable)
+         zeta0m = rough * zeta / (zref-dheight)
+         zeta0h = z0hoz0m * zeta0m
 
-      !----- Finding the aerodynamic resistance similarly to L79. -------------------------!
-      r_aer = tprandtl * (lnzoz0h - psih(zeta,stable) + psih(zeta0h,stable))               &
-                       * (lnzoz0m - psim(zeta,stable) + psim(zeta0m,stable))               &
-                       / (vonk * vonk * uuse)
+         !----- Find the aerodynamic resistance similarly to L79. -------------------------!
+         r_aer = tprandtl * (lnzoz0h - psih(zeta,stable) + psih(zeta0h,stable))            &
+                          * (lnzoz0m - psim(zeta,stable) + psim(zeta0m,stable))            &
+                          / (vonk * vonk * uuse)
 
-      !----- Finding ustar, making sure it is not too small. ------------------------------!
-      ustar = max (ustmin, vonk * uuse                                                     &
-                         / (lnzoz0m - psim(zeta,stable) + psim(zeta0m,stable)))
+         !----- Find ustar, making sure it is not too small. ------------------------------!
+         ustar = max (ustmin, vonk * uuse                                                  &
+                            / (lnzoz0m - psim(zeta,stable) + psim(zeta0m,stable)))
 
 
-      !----- Finding the coefficient to scale the other stars. ----------------------------!
-      c3    = vonk / (tprandtl * (lnzoz0h - psih(zeta,stable) + psih(zeta0h,stable)))
-      !------------------------------------------------------------------------------------!
+         !----- Find the coefficient to scale the other stars. ----------------------------!
+         c3    = vonk / (tprandtl * (lnzoz0h - psih(zeta,stable) + psih(zeta0h,stable)))
+         !---------------------------------------------------------------------------------!
+      else
+         !---------------------------------------------------------------------------------!
+         !    Unstable case.  Here we run a few iterations to make sure we correct the     !
+         ! bulk Richardson number.  This is really a simple correction, so we don't need   !
+         ! uconv to be totally in equilibrium.                                             !
+         !---------------------------------------------------------------------------------!
+         unstable: do icnt=1,6
+            !----- Update total winds. ----------------------------------------------------!
+            uconv_prev = uconv
+            utotal     = sqrt(uuse*uuse + uconv_prev * uconv_prev)
+            !------------------------------------------------------------------------------!
 
+
+            !----- Update the Bulk Richardson number. -------------------------------------!
+            rib        = 2.0 * grav * (zref-dheight-rough) * (thetav_atm-thetav_can)       &
+                       / ( (thetav_atm+thetav_can) * utotal)
+            !------------------------------------------------------------------------------!
+
+
+            !----- We now compute the stability correction functions. ---------------------!
+            zeta   = zoobukhov(rib,zref-dheight,rough,zoz0m,lnzoz0m,zoz0h,lnzoz0h,stable)
+            !------------------------------------------------------------------------------!
+
+
+            !----- Find the coefficient to scale the other stars. -------------------------!
+            zeta0m = rough * zeta / (zref-dheight)
+            zeta0h = z0hoz0m * zeta0m
+            !------------------------------------------------------------------------------!
+
+
+            !----- Find ustar, making sure it is not too small. ---------------------------!
+            ustar = max (ustmin, vonk * uuse                                               &
+                               / (lnzoz0m - psim(zeta,stable) + psim(zeta0m,stable)))
+            !------------------------------------------------------------------------------!
+
+
+            !----- Find the coefficient to scale the other stars. -------------------------!
+            c3    = vonk                                                                   &
+                  / (tprandtl * (lnzoz0h - psih(zeta,stable) + psih(zeta0h,stable)))
+            !------------------------------------------------------------------------------!
+
+
+            !------------------------------------------------------------------------------!
+            !     Use potential virtual temperature here because convection is related to  !
+            ! buoyancy.                                                                    !
+            !------------------------------------------------------------------------------!
+            tstar  = c3 * (thetav_atm - thetav_can )
+            !------------------------------------------------------------------------------!
+
+
+            !----- Estimate the convective velocity. --------------------------------------!
+            uconv = vertical_vel_flux(zeta,tstar,ustar) / ustar
+            !------------------------------------------------------------------------------!
+
+
+            !------------------------------------------------------------------------------!
+            !     We are only after a rough estimate of this velocity, so if the differ-   !
+            ! ence is less than the RK4 tolerance, then it's enough.                       !
+            !------------------------------------------------------------------------------!
+            change = 2.0 * abs(uconv-uconv_prev) / (abs(uconv) + abs(uconv_prev))
+            if (change < rk4_tolerance) exit unstable
+            !------------------------------------------------------------------------------!
+         end do unstable
+      end if
    end select
 
    !----- Finding all stars. --------------------------------------------------------------!

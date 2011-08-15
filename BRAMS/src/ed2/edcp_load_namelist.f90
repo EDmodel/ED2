@@ -179,7 +179,12 @@ subroutine read_ednl(iunit,filename)
                                    , leaf_isoilbc        => isoilbc        & ! intent(in)
                                    , leaf_ipercol        => ipercol        & ! intent(in)
                                    , leaf_runoff_time    => runoff_time    ! ! intent(in)
-   use leaf_coms            , only : leaf_ustmin         => ustmin         & ! intent(in)
+   use leaf_coms            , only : leaf_ubmin          => ubmin          & ! intent(in)
+                                   , leaf_ugbmin         => ugbmin         & ! intent(in)
+                                   , leaf_ustmin         => ustmin         & ! intent(in)
+                                   , leaf_gamm           => gamm           & ! intent(in)
+                                   , leaf_gamh           => gamh           & ! intent(in)
+                                   , leaf_tprandtl       => tprandtl       & ! intent(in)
                                    , leaf_ribmax         => ribmax         & ! intent(in)
                                    , leaf_leaf_maxwhc    => leaf_maxwhc    & ! intent(in)
                                    , leaf_min_patch_area => min_patch_area ! ! intent(in)
@@ -353,7 +358,8 @@ subroutine read_ednl(iunit,filename)
                        ,iyeara,itimeh,idateh,imonthh,iyearh,radfrq,nnxp,nnyp,deltax        &
                        ,deltay,polelat,polelon,centlat,centlon,nstratx,nstraty,iclobber    &
                        ,nzg,nzs,isoilflg,nslcon,slz,slmstr,stgoff,leaf_zrough,ngrids       &
-                       ,leaf_ustmin,leaf_isoilbc,leaf_ipercol,leaf_runoff_time,leaf_ribmax &
+                       ,leaf_ubmin,leaf_ugbmin,leaf_ustmin,leaf_isoilbc,leaf_ipercol       &
+                       ,leaf_runoff_time,leaf_gamm,leaf_gamh,leaf_tprandtl,leaf_ribmax     &
                        ,leaf_leaf_maxwhc)
    !---------------------------------------------------------------------------------------!
    !      The following variables can be defined in the regular ED2IN file for stand-alone !
@@ -502,8 +508,9 @@ subroutine copy_in_bramsnl(expnme_b,runtype_b,itimez_b,idatez_b,imonthz_b,iyearz
                           ,imonthh_b,iyearh_b,radfrq_b,nnxp_b,nnyp_b,deltax_b,deltay_b     &
                           ,polelat_b,polelon_b,centlat_b,centlon_b,nstratx_b,nstraty_b     &
                           ,iclobber_b,nzg_b,nzs_b,isoilflg_b,nslcon_b,slz_b,slmstr_b       &
-                          ,stgoff_b,zrough_b,ngrids_b,ustmin_b,isoilbc_b,ipercol_b         &
-                          ,runoff_time_b,ribmax_b,leaf_maxwhc_b)
+                          ,stgoff_b,zrough_b,ngrids_b,ubmin_b,ugbmin_b,ustmin_b,isoilbc_b  &
+                          ,ipercol_b,runoff_time_b,gamm_b,gamh_b,tprandtl_b,ribmax_b       &
+                          ,leaf_maxwhc_b)
    use ed_misc_coms   , only : expnme            & ! intent(out)
                              , runtype           & ! intent(out)
                              , itimez            & ! intent(out)
@@ -545,7 +552,12 @@ subroutine copy_in_bramsnl(expnme_b,runtype_b,itimez_b,idatez_b,imonthz_b,iyearz
                              , runoff_time       ! ! intent(in)
    use grid_dims      , only : maxgrds           & ! intent(out)
                              , nzgmax            ! ! intent(out)
-   use canopy_air_coms, only : ustmin            & ! intent(out)
+   use canopy_air_coms, only : ubmin             & ! intent(out)
+                             , ugbmin            & ! intent(out)
+                             , ustmin            & ! intent(out)
+                             , gamm              & ! intent(out)
+                             , gamh              & ! intent(out)
+                             , tprandtl          & ! intent(out)
                              , ribmax            & ! intent(out)
                              , leaf_maxwhc       ! ! intent(out)
    use rk4_coms       , only : ipercol           ! ! intent(out)
@@ -590,11 +602,16 @@ subroutine copy_in_bramsnl(expnme_b,runtype_b,itimez_b,idatez_b,imonthz_b,iyearz
    real, dimension(nzgmax)   , intent(in) :: slmstr_b      ! Initial soil moist. if const.
    real, dimension(nzgmax)   , intent(in) :: stgoff_b      ! Initial soil temp. offset
    real, dimension(nzgmax)   , intent(in) :: slz_b         ! Soil layers
+   real                      , intent(in) :: ubmin_b       ! Minimum u
+   real                      , intent(in) :: ugbmin_b      ! Minimum u at leaf level
    real                      , intent(in) :: ustmin_b      ! Minimum u*
    integer                   , intent(in) :: isoilbc_b     ! Bottom soil boundary condition
    integer                   , intent(in) :: ipercol_b     ! Percolation scheme.
    real                      , intent(in) :: runoff_time_b ! Runoff time scale.
    real                      , intent(in) :: ribmax_b      ! Maximum bulk Richardson number
+   real                      , intent(in) :: gamm_b        ! Sfc. lyr. Gamma for momentum
+   real                      , intent(in) :: gamh_b        ! Sfc. lyr. Gamma for heat
+   real                      , intent(in) :: tprandtl_b    ! Turbulent Prandtl number
    real                      , intent(in) :: leaf_maxwhc_b ! Leaf max. water holding cap.
    !---------------------------------------------------------------------------------------!
 
@@ -644,10 +661,16 @@ subroutine copy_in_bramsnl(expnme_b,runtype_b,itimez_b,idatez_b,imonthz_b,iyearz
    isoilflg    = isoilflg_b
 
 
+   ubmin       = ubmin_b
+   ugbmin      = ugbmin_b
    ustmin      = ustmin_b
    isoilbc     = isoilbc_b
    ipercol     = ipercol_b
    runoff_time = runoff_time_b
+
+   gamm        = gamm_b
+   gamh        = gamh_b
+   tprandtl    = tprandtl_b
 
    ribmax      = ribmax_b
    leaf_maxwhc = leaf_maxwhc_b

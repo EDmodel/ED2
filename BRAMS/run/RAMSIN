@@ -1235,18 +1235,17 @@ $MODEL_OPTIONS
       !------------------------------------------------------------------------------------!
       ! ISTAR -- Similarity theory model.  The model that computes u*, T*, etc...  Used by !
       ! both LEAF-3 and ED-2.                                                              !
-      !    1.  BRAMS default, based on Louis (1979).  It uses empirical relations to       !
-      !        estimate the flux based on the bulk Richardson number                       !
-      !    2.  Oncley and Dudhia (1995) model, based on MM5.  It uses an empirical         !
-      !        relation between bulk Richardson  number and z/L, then computes the flux    !
-      !        functions.                                                                  !
-      !    3.  Beljaars and Holtslag (1991) model. Similar to 2, but it finds z/L using a  !
-      !        root-finding method, and it has a different parametrisation for stable      !
-      !        layers that works better during night time.                                 !
-      !    4.  The parametrisation of Beljaars and Holtslag, but using z/L estimation as   !
-      !        in Oncley and Dudhia.                                                       !
-      !    5.  The parametrisation of Oncley and Dudhia, but using z/L estimation as in    !
-      !        Beljaars and Holtslag.                                                      !
+      ! 1.  BRAMS default, based on Louis (1979).  It uses empirical relations to          !
+      !     estimate the flux based on the bulk Richardson number                          !
+      !                                                                                    !
+      !       All models below use an interative method to find z/L, and the only change   !
+      !  is the functional form of the psi functions.                                      !
+      !                                                                                    !
+      ! 2.  Oncley and Dudhia (1995) model, based on MM5.                                  !
+      ! 3.  Beljaars and Holtslag (1991) model. Similar to 2, but it uses an alternative   !
+      !     method for the stable case that mixes more than the OD95.                      !
+      ! 4.  CLM (2004).  Similar to 2 and 3, but they have special functions to deal with !
+      !     very stable and very stable cases.                                            !
       !------------------------------------------------------------------------------------!
       ISTAR   = 3,
       !------------------------------------------------------------------------------------!
@@ -1273,18 +1272,37 @@ $MODEL_OPTIONS
 
 
       !------------------------------------------------------------------------------------!
-      !  USTMIN -- minimum friction velocity, u*, in m/s.                                  !
-      !------------------------------------------------------------------------------------!
-      USTMIN   = 0.01,
-      !------------------------------------------------------------------------------------!
+      !     The following variables control the minimum values of various velocities in    !
+      ! the canopy.  This is needed to avoid the air to be extremely still, or to avoid    !
+      ! singularities.  When defining the values, keep in mind that                        !
+      ! UBMIN >= UGBMIN >= USTMIN.                                                         !
+      !                                                                                    !
+      !  UBMIN  -- minimum wind speed at the top of the canopy air space            [ m/s] !
+      !  UGBMIN -- minimum wind speed at the leaf level                             [ m/s] !
+      !  USTMIN -- minimum friction velocity, u*, in m/s.                           [ m/s] !
+      !---------------------------------------------------------------------------------------!
+      UBMIN          = 0.65,
+      UGBMIN         = 0.25,
+      USTMIN         = 0.05,
+      !---------------------------------------------------------------------------------------!
 
 
 
 
       !------------------------------------------------------------------------------------!
-      ! RIBMAX   -- maximum bulk Richardson numberm used for controlling stable fluxes in  !
-      !             the similarity theory model.                                           !
+      !     The following variables are used to control the similarity theory model.  For  !
+      ! the meaning of these parameters, check Beljaars and Holtslag (1991).               !
+      ! GAMM     -- gamma coefficient for momentum, unstable case (dimensionless)          !
+      !             Ignored when ISTAR = 1                                                 !
+      ! GAMH     -- gamma coefficient for heat, unstable case (dimensionless)              !
+      !             Ignored when ISTAR = 1                                                 !
+      ! TPRANDTL -- Turbulent Prandtl number                                               !
+      !             Ignored when ISTAR = 1                                                 !
+      ! RIBMAX   -- maximum bulk Richardson number.                                        !
       !------------------------------------------------------------------------------------!
+      GAMM     =  13.,
+      GAMH     =  13.,
+      TPRANDTL = 0.74,
       RIBMAX   = 0.25,
       !------------------------------------------------------------------------------------!
 
@@ -2372,6 +2390,8 @@ $ED2_INFO
    !                 sheltering factor.                                                    !
    !             3.  This is also based on Massman (1997), but with the option of varying  !
    !                 the drag and sheltering within the canopy.                            !
+   !             4.  Same as 0, but if finds the ground conductance following CLM          !
+   !                 technical note (equations 5.98-5.100).                                !
    !---------------------------------------------------------------------------------------!
    ICANTURB        = 2,       
    !---------------------------------------------------------------------------------------!
