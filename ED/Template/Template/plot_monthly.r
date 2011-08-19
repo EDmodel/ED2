@@ -624,7 +624,7 @@ hdcyc29 = list(vnam="albedo"    ,desc="Shortwave albedo"                ,unit="-
 
 
 #----- Comparison between observations and model averages. --------------------------------#
-ncompdcyc = 10
+ncompdcyc = 12
 compdcyc01 = list( vnam   = "gpp"
                  , desc   = "Gross Primary Productivity"
                  , unit   = "kgC/m2/yr"
@@ -667,10 +667,24 @@ compdcyc03 = list( vnam   = "et"
                  , plog   = ""
                  , legpos = "topleft"
                  , plt    = TRUE)
-compdcyc04 = list( vnam   = "rain"
+compdcyc04 = list( vnam   = "sens"
+                 , desc   = "Sensible heat flux"
+                 , unit   = "W/m2"
+                 , plotsd = TRUE
+                 , colour = c("darkorange3","gray14")
+                 , errcol = c("gold","gray61")
+                 , angle  = c(45,-45)
+                 , dens   = c(40, 40)
+                 , lwd    = c(2.5,2.5)
+                 , shwd   = c(1.0,1.0)
+                 , type   = "o"
+                 , plog   = ""
+                 , legpos = "topleft"
+                 , plt    = TRUE)
+compdcyc05 = list( vnam   = "rain"
                  , desc   = "Precipitation rate"
                  , unit   = "kgH2O/m2/day"
-                 , plotsd = TRUE
+                 , plotsd = FALSE
                  , colour = c("midnightblue","gray14")
                  , errcol = c("steelblue","gray61")
                  , angle  = c(45,-45)
@@ -681,7 +695,7 @@ compdcyc04 = list( vnam   = "rain"
                  , plog   = ""
                  , legpos = "topleft"
                  , plt    = TRUE)
-compdcyc05 = list( vnam   = "atm.temp"
+compdcyc06 = list( vnam   = "atm.temp"
                  , desc   = "Air temperature"
                  , unit   = "C"
                  , plotsd = TRUE
@@ -695,7 +709,7 @@ compdcyc05 = list( vnam   = "atm.temp"
                  , plog   = ""
                  , legpos = "topleft"
                  , plt    = TRUE)
-compdcyc06 = list( vnam   = "rshort"
+compdcyc07 = list( vnam   = "rshort"
                  , desc   = "Shortwave radiation"
                  , unit   = "W/m2"
                  , plotsd = TRUE
@@ -709,7 +723,7 @@ compdcyc06 = list( vnam   = "rshort"
                  , plog   = ""
                  , legpos = "topleft"
                  , plt    = TRUE)
-compdcyc07 = list( vnam   = "rlong"
+compdcyc08 = list( vnam   = "rlong"
                  , desc   = "Longwave radiation"
                  , unit   = "W/m2"
                  , plotsd = TRUE
@@ -723,7 +737,7 @@ compdcyc07 = list( vnam   = "rlong"
                  , plog   = ""
                  , legpos = "topleft"
                  , plt    = TRUE)
-compdcyc08 = list( vnam   = "atm.shv"
+compdcyc09 = list( vnam   = "atm.shv"
                  , desc   = "Air specific humidity"
                  , unit   = "g/kg"
                  , plotsd = TRUE
@@ -737,7 +751,7 @@ compdcyc08 = list( vnam   = "atm.shv"
                  , plog   = ""
                  , legpos = "topleft"
                  , plt    = TRUE)
-compdcyc09 = list( vnam   = "atm.co2"
+compdcyc10 = list( vnam   = "atm.co2"
                  , desc   = "Air CO2 mixing ratio"
                  , unit   = "g/kg"
                  , plotsd = TRUE
@@ -751,9 +765,23 @@ compdcyc09 = list( vnam   = "atm.co2"
                  , plog   = ""
                  , legpos = "topleft"
                  , plt    = TRUE)
-compdcyc10 = list( vnam   = "atm.prss"
+compdcyc11 = list( vnam   = "atm.prss"
                  , desc   = "Air pressure"
                  , unit   = "hPa"
+                 , plotsd = TRUE
+                 , colour = c("purple4","gray14")
+                 , errcol = c("orchid","gray61")
+                 , angle  = c(45,-45)
+                 , dens   = c(40, 40)
+                 , lwd    = c(2.5,2.5)
+                 , shwd   = c(1.0,1.0)
+                 , type   = "o"
+                 , plog   = ""
+                 , legpos = "topleft"
+                 , plt    = TRUE)
+compdcyc12 = list( vnam   = "atm.vels"
+                 , desc   = "Wind speed"
+                 , unit   = "m/s"
                  , plotsd = TRUE
                  , colour = c("purple4","gray14")
                  , errcol = c("orchid","gray61")
@@ -771,7 +799,7 @@ compdcyc10 = list( vnam   = "atm.prss"
 
 
 #----- Comparison between observations and model averages. --------------------------------#
-ncompmmean = 10
+ncompmmean = 12
 compmmean01 = list( vnam   = "gpp"
                   , desc   = "Gross Primary Productivity"
                   , unit   = "kgC/m2/yr"
@@ -814,10 +842,24 @@ compmmean03 = list( vnam   = "et"
                   , plog   = ""
                   , legpos = "topleft"
                   , plt    = TRUE)
-compmmean04 = list( vnam   = "rain"
+compmmean04 = list( vnam   = "sens"
+                  , desc   = "Sensible heat"
+                  , unit   = "W/m2"
+                  , plotsd = TRUE
+                  , colour = c("darkorange3","gray14")
+                  , errcol = c("gold","gray61")
+                  , angle  = c(45,-45)
+                  , dens   = c(40, 40)
+                  , lwd    = c(2.5,2.5)
+                  , shwd   = c(1.0,1.0)
+                  , type   = "o"
+                  , plog   = ""
+                  , legpos = "topleft"
+                  , plt    = TRUE)
+compmmean05 = list( vnam   = "rain"
                   , desc   = "Precipitation rate"
                   , unit   = "kgH2O/m2/day"
-                  , plotsd = TRUE
+                  , plotsd = FALSE
                   , colour = c("midnightblue","gray14")
                   , errcol = c("steelblue","gray61")
                   , angle  = c(45,-45)
@@ -828,7 +870,7 @@ compmmean04 = list( vnam   = "rain"
                   , plog   = ""
                   , legpos = "topleft"
                   , plt    = TRUE)
-compmmean05 = list( vnam   = "atm.temp"
+compmmean06 = list( vnam   = "atm.temp"
                   , desc   = "Air temperature"
                   , unit   = "C"
                   , plotsd = TRUE
@@ -842,7 +884,7 @@ compmmean05 = list( vnam   = "atm.temp"
                   , plog   = ""
                   , legpos = "topleft"
                   , plt    = TRUE)
-compmmean06 = list( vnam   = "rshort"
+compmmean07 = list( vnam   = "rshort"
                   , desc   = "Shortwave radiation"
                   , unit   = "W/m2"
                   , plotsd = TRUE
@@ -856,7 +898,7 @@ compmmean06 = list( vnam   = "rshort"
                   , plog   = ""
                   , legpos = "topleft"
                   , plt    = TRUE)
-compmmean07 = list( vnam   = "rlong"
+compmmean08 = list( vnam   = "rlong"
                   , desc   = "Longwave radiation"
                   , unit   = "W/m2"
                   , plotsd = TRUE
@@ -870,7 +912,7 @@ compmmean07 = list( vnam   = "rlong"
                   , plog   = ""
                   , legpos = "topleft"
                   , plt    = TRUE)
-compmmean08 = list( vnam   = "atm.shv"
+compmmean09 = list( vnam   = "atm.shv"
                   , desc   = "Air specific humidity"
                   , unit   = "g/kg"
                   , plotsd = TRUE
@@ -884,7 +926,7 @@ compmmean08 = list( vnam   = "atm.shv"
                   , plog   = ""
                   , legpos = "topleft"
                   , plt    = TRUE)
-compmmean09 = list( vnam   = "atm.co2"
+compmmean10 = list( vnam   = "atm.co2"
                   , desc   = "Air CO2 mixing ratio"
                   , unit   = "g/kg"
                   , plotsd = TRUE
@@ -898,9 +940,23 @@ compmmean09 = list( vnam   = "atm.co2"
                   , plog   = ""
                   , legpos = "topleft"
                   , plt    = TRUE)
-compmmean10 = list( vnam   = "atm.prss"
+compmmean11 = list( vnam   = "atm.prss"
                   , desc   = "Air pressure"
                   , unit   = "hPa"
+                  , plotsd = TRUE
+                  , colour = c("purple4","gray14")
+                  , errcol = c("orchid","gray61")
+                  , angle  = c(45,-45)
+                  , dens   = c(40, 40)
+                  , lwd    = c(2.5,2.5)
+                  , shwd   = c(1.0,1.0)
+                  , type   = "o"
+                  , plog   = ""
+                  , legpos = "topleft"
+                  , plt    = TRUE)
+compmmean12 = list( vnam   = "atm.vels"
+                  , desc   = "Wind speed"
+                  , unit   = "m/s"
                   , plotsd = TRUE
                   , colour = c("purple4","gray14")
                   , errcol = c("orchid","gray61")
@@ -974,7 +1030,7 @@ source(paste(srcdir,"timeutils.r"  ,sep="/"))
 
 
 #----- Load observations. -----------------------------------------------------------------#
-obsrfile = paste(srcdir,"LBA_MIP.v2.RData",sep="/")
+obsrfile = paste(srcdir,"LBA_MIP.v3.RData",sep="/")
 load(file=obsrfile)
 
 
@@ -1192,6 +1248,7 @@ for (place in myplaces){
    nee             = NULL
    evap            = NULL
    transp          = NULL
+   atm.vels        = NULL
    atm.prss        = NULL
    atm.temp        = NULL
    can.prss        = NULL
@@ -1484,6 +1541,7 @@ for (place in myplaces){
           mmsqu.evap      = c(mmsqu.evap   ,mymont$MMSQU.EVAP      * day.sec * day.sec   )
           mmsqu.transp    = c(mmsqu.transp ,mymont$MMSQU.TRANSP    * day.sec * day.sec   )
 
+          atm.vels      = c(atm.vels     ,mymont$MMEAN.ATM.VELS                          )
           atm.prss      = c(atm.prss     ,mymont$MMEAN.ATM.PRSS  * 0.01                  )
           atm.temp      = c(atm.temp     ,mymont$MMEAN.ATM.TEMP  - t00                   )
           atm.shv       = c(atm.shv      ,mymont$MMEAN.ATM.SHV   * kg2g                  )
@@ -1570,9 +1628,9 @@ for (place in myplaces){
           dcycmean$gnd.shv     [m,] = mymont$QMEAN.GND.SHV            * kg2g
           dcycmean$atm.co2     [m,] = mymont$QMEAN.ATM.CO2
           dcycmean$can.co2     [m,] = mymont$QMEAN.CAN.CO2
+          dcycmean$atm.vels    [m,] = mymont$QMEAN.ATM.VELS
           dcycmean$atm.prss    [m,] = mymont$QMEAN.ATM.PRSS * 0.01
           dcycmean$can.prss    [m,] = mymont$QMEAN.CAN.PRSS * 0.01
-          dcycmean$atm.vels    [m,] = mymont$QMEAN.ATM.VELS
           dcycmean$fs.open     [m,] = mymont$QMEAN.FS.OPEN
           dcycmean$rain        [m,] = mymont$QMEAN.PCPG               * day.sec
           dcycmean$rshort      [m,] = mymont$QMEAN.RSHORT
@@ -2093,6 +2151,7 @@ for (place in myplaces){
    mont12mn$atm.shv     = tapply(X=atm.shv      ,INDEX=mfac,FUN=mean,na.rm=TRUE)
    mont12mn$atm.co2     = tapply(X=atm.co2      ,INDEX=mfac,FUN=mean,na.rm=TRUE)
    mont12mn$atm.prss    = tapply(X=atm.prss     ,INDEX=mfac,FUN=mean,na.rm=TRUE)
+   mont12mn$atm.vels    = tapply(X=atm.vels     ,INDEX=mfac,FUN=mean,na.rm=TRUE)
    mont12mn$soil.temp   = qapply(mat=soil.temp  ,index=mfac,bycol=T,func=mean,na.rm=T)
    mont12mn$soil.water  = qapply(mat=soil.water ,index=mfac,bycol=T,func=mean,na.rm=T)
    mont12mn$soil.mstpot = qapply(mat=soil.mstpot,index=mfac,bycol=T,func=mean,na.rm=T)

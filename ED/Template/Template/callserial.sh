@@ -3,7 +3,7 @@
 #------------------------------------- CUSTOMIZE HERE -------------------------------------#
 root='thisroot'
 here=${root}/'thispoly'                        # Directory to start the run
-exe=${here}'/ed'                               # Executable
+exe=${here}'/myexec'                               # Executable
 logfile=${here}'/serial_out.out'               # Log file of the executable run
 errfile=${here}'/serial_out.err'               # Executable error file
 currloc=`pwd`                                  # Current location

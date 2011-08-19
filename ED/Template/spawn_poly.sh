@@ -369,6 +369,13 @@ do
       imetavg=1
       iphen=2
       ;;
+   Santarem_KM83)
+      metdriverdb=${sitemet}'/Santarem_KM83/Santarem_KM83_HEADER'
+      metcyc1=2001
+      metcycf=2003
+      imetavg=1
+      iphen=2
+      ;;
    Fazenda_NS)
       metdriverdb=${sitemet}'/Fazenda_Nossa_Senhora/Fazenda_Nossa_Senhora_HEADER'
       metcyc1=1999
@@ -850,6 +857,7 @@ do
    callserial=${here}'/'${polyname}'/callserial.sh'
    sed -i s@thisroot@${here}@g ${callserial}
    sed -i s@thispoly@${polyname}@g ${callserial}
+   sed -i s@myexec@${execname}@g ${callserial}
 
    if [ ${queue} == 'GC3' ]
    then

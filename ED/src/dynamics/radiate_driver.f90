@@ -469,10 +469,9 @@ subroutine sfcrad_ed(cosz,cosaoi,csite,mzg,mzs,ntext_soil,maxcohort,tuco        
          albedo_soil_nir   = albedo_soil_par
       case default
          !---------------------------------------------------------------------------------!
-         !      Other soils, we use the soil numbers from CLM.  We don't have soil colour  !
-         ! but here we assume soils to be of class 1 (the lightest one).  The reason is    !
-         ! because we don't have a litter layer, which usually has a high reflectance,     !
-         ! especially in the near infra-red at least in the tropics.                       !
+         !      Other soils, we use the soil numbers from CLM-4.  The colour class must be !
+         ! given at RAMSIN.  At this point the value is the same for all points, but in    !
+         ! the future we may read their files if the results are promising.                !
          !---------------------------------------------------------------------------------!
          fcpct           = max(0., 0.11 - 0.40 * csite%soil_water(mzg,ipa))
          albedo_soil_par = min(0.24, 0.12 + fcpct)

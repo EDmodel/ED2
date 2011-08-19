@@ -16,6 +16,7 @@ module soil_coms
                            , nzs       ! ! intent(in)
 #if defined(COUPLED)
    use leaf_coms    , only : nstyp     & ! intent(in)
+                           , nscol     & ! intent(in)
                            , nvtyp     & ! intent(in)
                            , nvtyp_teb ! ! intent(in)
 #endif
@@ -25,9 +26,11 @@ module soil_coms
   !----- These variables depend on whether it's a coupled or stand alone model. -----------!
 #if defined(COUPLED)
    integer, parameter :: ed_nstyp = nstyp          ! total # of soil textural classes
+   integer, parameter :: ed_nscol = nscol          ! total # of soil colour classes
    integer, parameter :: ed_nvtyp = nvtyp+nvtyp_teb
 #else
    integer, parameter :: ed_nstyp = 17             ! total # of soil textural classes
+   integer, parameter :: ed_nscol = 20             ! total # of soil colour classes
    integer, parameter :: ed_nvtyp = 21
 #endif
 
@@ -183,6 +186,21 @@ module soil_coms
    !----- To be filled in ed_params.f90. --------------------------------------------------!
    type(soil_class8), dimension(ed_nstyp)            :: soil8 
    type(soil_class) , dimension(ed_nstyp)            :: soil
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Define soil colour structure.                                                     !
+   !---------------------------------------------------------------------------------------!
+   type soilcol_class
+      real(kind=4) :: alb_vis_dry
+      real(kind=4) :: alb_vis_wet
+      real(kind=4) :: alb_nir_dry
+      real(kind=4) :: alb_nir_wet
+   end type soilcol_class
+   !----- To be filled in ed_params.f90. --------------------------------------------------!
+   type(soilcol_class), dimension(nscol) :: soilcol
+   !---------------------------------------------------------------------------------------!
 
 
  ! Look-up tables for vegetation and soil properties:

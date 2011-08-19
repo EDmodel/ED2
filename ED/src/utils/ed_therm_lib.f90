@@ -487,19 +487,20 @@ module ed_therm_lib
    subroutine ed_grndvap8(ksn,topsoil_water,topsoil_temp,topsoil_fliq,sfcwater_temp        &
                          ,sfcwater_fliq,can_prss,can_shv,ground_shv,ground_ssh             &
                          ,ground_temp,ground_fliq,ggsoil)
-      use canopy_air_coms, only : ied_grndvap & ! intent(in)
-                                , ggsoil08    & ! intent(in)
-                                , kksoil8     ! ! intent(in)
-      use soil_coms      , only : soil8       ! ! intent(in)
-      use consts_coms    , only : pi18        & ! intent(in)
-                                , wdns8       & ! intent(in)
-                                , gorh2o8     & ! intent(in)
-                                , lnexp_min8  & ! intent(in)
-                                , huge_num8   ! ! intent(in)
-      use therm_lib8     , only : rslif8      ! ! function
-      use rk4_coms       , only : rk4site     ! ! intent(in)
-      use grid_coms      , only : nzg         ! ! intent(in)
-      use ed_max_dims    , only : n_pft       ! ! intent(in)
+      use canopy_air_coms, only : ied_grndvap  & ! intent(in)
+                                , ggsoil08     & ! intent(in)
+                                , kksoil8      ! ! intent(in)
+      use soil_coms      , only : soil8        ! ! intent(in)
+      use consts_coms    , only : pi18         & ! intent(in)
+                                , wdns8        & ! intent(in)
+                                , gorh2o8      & ! intent(in)
+                                , lnexp_min8   & ! intent(in)
+                                , huge_num8    ! ! intent(in)
+      use therm_lib8     , only : rslif8       ! ! function
+      use rk4_coms       , only : rk4site      ! ! intent(in)
+      use grid_coms      , only : nzg          ! ! intent(in)
+      use ed_max_dims    , only : n_pft        ! ! intent(in)
+      use ed_misc_coms   , only : current_time ! ! intent(in)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       integer     , intent(in)  :: ksn           ! # of surface water layers    [     ----]
@@ -523,17 +524,57 @@ module ed_therm_lib
       real(kind=8)              :: beta          ! beta term  (Lee-Pielke,1992) [     ----]
       real(kind=8)              :: lnalpha       ! ln(alpha)                    [     ----]
       real(kind=8)              :: smterm        ! soil moisture term           [     ----]
+      !----- Kludge variables. ------------------------------------------------------------!
+      logical                    , parameter :: soil_kludge = .false.
+      logical                    , save      :: first_time  = .true.
+      real(kind=8), dimension(12), save      :: topsoil_kludge 
+      real(kind=8)                           :: use_soil_h2o
+      integer                                :: use_ksn
       !------------------------------------------------------------------------------------!
+
+      if (first_time .and. soil_kludge) then
+         first_time = .false.
+
+         if (abs(rk4site%lon + 60.209) < 0.1 .and. abs(rk4site%lat + 2.609) < 0.1) then
+            !----- Manaus. ----------------------------------------------------------------!
+            topsoil_kludge = (/ 0.3944167, 0.4037273, 0.4197778, 0.4275714                 &
+                              , 0.4153636, 0.4140000, 0.4046111, 0.3853750                 &
+                              , 0.3743333, 0.3610435, 0.3746667, 0.3870000 /)
+         elseif (abs(rk4site%lon + 61.931) < 0.1 .and. abs(rk4site%lat + 10.083) < 0.1) then
+            !----- Rebio Jaru. ------------------------------------------------------------!
+            topsoil_kludge = (/ 0.2218000, 0.2233750, 0.2300000, 0.2141818                 &
+                              , 0.1758889, 0.1008750, 0.0867500, 0.1143077                 &
+                              , 0.1313636, 0.1208000, 0.1757143, 0.1947000 /)
+         elseif (abs(rk4site%lon + 62.357) < 0.1 .and. abs(rk4site%lat + 10.762) < 0.1) then
+            !---- Fazenda Nossa Senhora. --------------------------------------------------!
+            topsoil_kludge = (/ 0.1814286, 0.1936250, 0.1742222, 0.1783077                 &
+                              , 0.1478333, 0.1010000, 0.0618750, 0.0420000                 &
+                              , 0.0697500, 0.1412500, 0.1697000, 0.1927273 /)
+         else
+            write (unit=*,fmt='(a,1x,es12.5)') ' LON = ',rk4site%lon
+            write (unit=*,fmt='(a,1x,es12.5)') ' LAT = ',rk4site%lat
+            call fatal_error('Couldn''t find a good soil moisture climatology!'            &
+                            ,'ed_grndvap8','ed_therm_lib.f90')
+         end if
+      end if
+
 
       !------ Soil type at the top layer. -------------------------------------------------!
       nsoil = rk4site%ntext_soil(nzg)
       !------------------------------------------------------------------------------------!
 
+      if (soil_kludge) then
+         use_ksn = 0
+         use_soil_h2o = topsoil_kludge(current_time%month)
+      else
+         use_ksn = ksn
+         use_soil_h2o = topsoil_water
+      end if
 
       !------------------------------------------------------------------------------------!
       !     Decide what are we going to call surface.                                      !
       !------------------------------------------------------------------------------------!
-      select case (ksn)
+      select case (use_ksn)
       case (0)
          !---------------------------------------------------------------------------------!
          !      Without snowcover or water ponding, ground_shv is the effective specific   !
@@ -551,7 +592,7 @@ module ed_therm_lib
          ground_ssh  = ground_ssh / (1.d0 + ground_ssh)
          !----- Determine alpha. ----------------------------------------------------------!
          slpotvn      = soil8(nsoil)%slpots                                                &
-                      * (soil8(nsoil)%slmsts / topsoil_water) ** soil8(nsoil)%slbs
+                      * (soil8(nsoil)%slmsts / use_soil_h2o) ** soil8(nsoil)%slbs
          lnalpha     = gorh2o8 * slpotvn / ground_temp
          if (lnalpha > lnexp_min8) then
             alpha   = exp(lnalpha)
@@ -571,12 +612,12 @@ module ed_therm_lib
          ! This is necessary to avoid evaporation to be large just slightly above the dry  !
          ! air soil, which was happening especially for those soil types rich in clay.     !
          !---------------------------------------------------------------------------------!
-         if (topsoil_water >= soil8(nsoil)%sfldcap) then
+         if (use_soil_h2o >= soil8(nsoil)%sfldcap) then
             beta   = 1.d0
-         elseif (topsoil_water <= soil8(nsoil)%soilwp) then
+         elseif (use_soil_h2o <= soil8(nsoil)%soilwp) then
             beta   = 0.d0
          else
-            smterm = (topsoil_water        - soil8(nsoil)%soilwp)                          &
+            smterm = (use_soil_h2o         - soil8(nsoil)%soilwp)                          &
                    / (soil8(nsoil)%sfldcap - soil8(nsoil)%soilwp)
             beta   = 5.d-1 * (1.d0 - cos (smterm * pi18))
          end if
