@@ -162,6 +162,7 @@ subroutine ed_masterput_nl(par_run)
                                    , nstraty                   ! ! intent(in)
    use soil_coms            , only : isoilflg                  & ! intent(in)
                                    , nslcon                    & ! intent(in)
+                                   , isoilcol                  & ! intent(in)
                                    , slxclay                   & ! intent(in)
                                    , slxsand                   & ! intent(in)
                                    , slz                       & ! intent(in)
@@ -325,6 +326,7 @@ subroutine ed_masterput_nl(par_run)
    call MPI_Bcast(nzs ,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(isoilflg,maxgrds,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(nslcon,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(isoilcol,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(slxclay,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(slxsand,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
 
@@ -965,6 +967,10 @@ subroutine ed_masterput_worklist_info(par_run)
             call MPI_Send(iscratch,npoly,MPI_INTEGER,machnum(nm),mpiid,MPI_COMM_WORLD,ierr)
             mpiid = mpiid + 1
 
+            iscratch(1:npoly) = work_v(ifm)%nscol(ipya:ipyz)
+            call MPI_Send(iscratch,npoly,MPI_INTEGER,machnum(nm),mpiid,MPI_COMM_WORLD,ierr)
+            mpiid = mpiid + 1
+
             do itext=1,maxsite
                iscratch(1:npoly) = work_v(ifm)%ntext(itext,ipya:ipyz)
                call MPI_Send(iscratch,npoly,MPI_INTEGER,machnum(nm),mpiid,MPI_COMM_WORLD   &
@@ -1009,6 +1015,7 @@ subroutine ed_masterput_worklist_info(par_run)
       sc_work(ifm)%landfrac          (1:npoly) = work_v(ifm)%landfrac          (ipya:ipyz)
       sc_work(ifm)%soilfrac(1:maxsite,1:npoly) = work_v(ifm)%soilfrac(1:maxsite,ipya:ipyz)
       sc_work(ifm)%ntext   (1:maxsite,1:npoly) = work_v(ifm)%ntext   (1:maxsite,ipya:ipyz)
+      sc_work(ifm)%nscol             (1:npoly) = work_v(ifm)%nscol             (ipya:ipyz)
       sc_work(ifm)%xid               (1:npoly) = work_v(ifm)%xid               (ipya:ipyz)
       sc_work(ifm)%yid               (1:npoly) = work_v(ifm)%yid               (ipya:ipyz)
 
@@ -1038,6 +1045,7 @@ subroutine ed_masterput_worklist_info(par_run)
       work_v(ifm)%landfrac          (1:npoly) = sc_work(ifm)%landfrac          (1:npoly)
       work_v(ifm)%soilfrac(1:maxsite,1:npoly) = sc_work(ifm)%soilfrac(1:maxsite,1:npoly)
       work_v(ifm)%ntext   (1:maxsite,1:npoly) = sc_work(ifm)%ntext   (1:maxsite,1:npoly)
+      work_v(ifm)%nscol             (1:npoly) = sc_work(ifm)%nscol             (1:npoly)
       work_v(ifm)%xid               (1:npoly) = sc_work(ifm)%xid               (1:npoly)
       work_v(ifm)%yid               (1:npoly) = sc_work(ifm)%yid               (1:npoly)
 
@@ -1202,6 +1210,7 @@ subroutine ed_nodeget_nl
                                    , nstraty                   ! ! intent(out)
    use soil_coms            , only : isoilflg                  & ! intent(out)
                                    , nslcon                    & ! intent(out)
+                                   , isoilcol                  & ! intent(out)
                                    , slxclay                   & ! intent(out)
                                    , slxsand                   & ! intent(out)
                                    , slz                       & ! intent(out)
@@ -1363,6 +1372,7 @@ subroutine ed_nodeget_nl
    call MPI_Bcast(nzs ,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(isoilflg,maxgrds,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(nslcon,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(isoilcol,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(slxclay,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(slxsand,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    
@@ -1700,6 +1710,10 @@ subroutine ed_nodeget_worklist_info
 
       call MPI_Recv(work_v(ifm)%yid,npolygons,MPI_INTEGER,master_num,mpiid,MPI_COMM_WORLD  &
                    ,status,ierr)
+      mpiid = mpiid + 1
+
+      call MPI_Recv(work_v(ifm)%nscol,npolygons,MPI_INTEGER,master_num,mpiid               &
+                   ,MPI_COMM_WORLD,status,ierr)
       mpiid = mpiid + 1
 
       do itext=1,maxsite

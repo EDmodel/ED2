@@ -40,6 +40,7 @@ module soil_coms
    integer                                    :: isoilbc        ! Bottom layer bnd. cond.
    integer, dimension(maxgrds)                :: isoilflg       ! Soil initialization flag.
    integer                                    :: nslcon         ! Default soil texture
+   integer                                    :: isoilcol       ! Default soil texture
    real                                       :: slxclay        ! Clay soil fraction
    real                                       :: slxsand        ! Sand soil fraction
    real                                       :: zrough         ! Default soil roughness.
@@ -194,8 +195,8 @@ module soil_coms
    !---------------------------------------------------------------------------------------!
    type soilcol_class
       real(kind=4) :: alb_vis_dry
-      real(kind=4) :: alb_vis_wet
       real(kind=4) :: alb_nir_dry
+      real(kind=4) :: alb_vis_wet
       real(kind=4) :: alb_nir_wet
    end type soilcol_class
    !----- To be filled in ed_params.f90. --------------------------------------------------!

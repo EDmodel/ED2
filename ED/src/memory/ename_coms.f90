@@ -93,6 +93,7 @@ module ename_coms
       integer                                           :: nzs
       integer               , dimension(maxgrds)        :: isoilflg
       integer                                           :: nslcon
+      integer                                           :: isoilcol
       real                                              :: slxclay
       real                                              :: slxsand
       integer                                           :: isoilstateinit
@@ -324,6 +325,7 @@ module ename_coms
       enl%nzs                       = undef_integer
       enl%isoilflg                  = (/ (undef_integer,i=1,maxgrds) /)
       enl%nslcon                    = undef_integer
+      enl%isoilcol                  = undef_integer
       enl%slxclay                   = undef_real
       enl%slxsand                   = undef_real
       enl%isoilstateinit            = undef_integer

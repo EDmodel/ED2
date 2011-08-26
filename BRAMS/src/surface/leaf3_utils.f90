@@ -1130,8 +1130,8 @@ end subroutine vegndvi
 ! through each layer based on mass per square meter.  algs is the resultant albedo from    !
 ! snow plus ground.                                                                        !
 !------------------------------------------------------------------------------------------!
-subroutine leaf3_sfcrad(mzg,mzs,ip,soil_water,soil_text,sfcwater_depth,patch_area          &
-                       ,veg_fracarea,leaf_class,veg_albedo,sfcwater_nlev,rshort &
+subroutine leaf3_sfcrad(mzg,mzs,ip,soil_water,soil_color,soil_text,sfcwater_depth          &
+                       ,patch_area,veg_fracarea,leaf_class,veg_albedo,sfcwater_nlev,rshort &
                        ,rlong,cosz,albedt,rlongup,rshort_gnd,rlong_gnd)
    use mem_leaf
    use leaf_coms
@@ -1149,6 +1149,7 @@ subroutine leaf3_sfcrad(mzg,mzs,ip,soil_water,soil_text,sfcwater_depth,patch_are
    integer                , intent(in)    :: mzs
    integer                , intent(in)    :: ip
    real   , dimension(mzg), intent(in)    :: soil_water
+   real                   , intent(in)    :: soil_color
    real   , dimension(mzg), intent(in)    :: soil_text
    real   , dimension(mzs), intent(in)    :: sfcwater_depth 
    real                   , intent(in)    :: patch_area
@@ -1167,6 +1168,7 @@ subroutine leaf3_sfcrad(mzg,mzs,ip,soil_water,soil_text,sfcwater_depth,patch_are
    integer                                :: k
    integer                                :: m
    integer                                :: nsoil
+   integer                                :: nscol
    integer                                :: nveg
    integer                                :: ksn
    real                                   :: alb
@@ -1258,8 +1260,10 @@ subroutine leaf3_sfcrad(mzg,mzs,ip,soil_water,soil_text,sfcwater_depth,patch_are
          alg   = max (0.07, 0.14 * (1.0 - fcpct))
       case default
          !----- Other soils, follow McCumber and Pielke (1981). ---------------------------!
-         fcpct = soil_water(mzg) / slmsts(nsoil)
-         alg   = max (0.14, 0.31 - 0.34 * fcpct)
+         fcpct = max (0.00, 0.11 - 0.40 * soil_water(mzg))
+         nscol = nint(soil_color)
+         alg   = max (0.5 * (alb_nir_dry(nscol) + alb_vis_dry(nscol))                      &
+                     ,0.5 * (alb_nir_wet(nscol) + alb_vis_wet(nscol)) + fcpct )
       end select
       !------------------------------------------------------------------------------------!
 

@@ -1119,8 +1119,10 @@ subroutine ed_opspec_misc
                                     , ribmax                       & ! intent(in)
                                     , leaf_maxwhc                  ! ! intent(in)
    use soil_coms             , only : ed_nstyp                     & ! intent(in)
+                                    , ed_nscol                     & ! intent(in)
                                     , isoilflg                     & ! intent(in)
                                     , nslcon                       & ! intent(in)
+                                    , isoilcol                     & ! intent(in)
                                     , slxclay                      & ! intent(in)
                                     , slxsand                      & ! intent(in)
                                     , isoilstateinit               & ! intent(in)
@@ -1309,6 +1311,14 @@ subroutine ed_opspec_misc
       write (reason,fmt='(2(a,1x,i4),a)')                                                  &
              'Invalid NSLCON, it must be between 1 and ',ed_nstyp,'. Yours is set to'      &
             ,nslcon,'...'
+      call opspec_fatal(reason,'opspec_misc')
+      ifaterr = ifaterr +1
+   end if
+
+   if (isoilcol < 1 .or. isoilcol > ed_nscol) then
+      write (reason,fmt='(2(a,1x,i4),a)')                                                  &
+             'Invalid ISOILCOL, it must be between 1 and ',ed_nscol,'. Yours is set to'    &
+            ,isoilcol,'...'
       call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
    end if

@@ -168,6 +168,7 @@ subroutine read_ednl(iunit,filename)
                                    , imonthh                               & ! intent(in)
                                    , isoilflg                              ! ! intent(in)
    use mem_leaf             , only : nslcon                                & ! intent(in)
+                                   , isoilcol                              & ! intent(in)
                                    , slz                                   & ! intent(in)
                                    , stgoff                                & ! intent(in)
                                    , slmstr                                & ! intent(in)
@@ -357,10 +358,11 @@ subroutine read_ednl(iunit,filename)
    call copy_in_bramsnl(expnme,runtype,itimez,idatez,imonthz,iyearz,itimea,idatea,imontha  &
                        ,iyeara,itimeh,idateh,imonthh,iyearh,radfrq,nnxp,nnyp,deltax        &
                        ,deltay,polelat,polelon,centlat,centlon,nstratx,nstraty,iclobber    &
-                       ,nzg,nzs,isoilflg,nslcon,slz,slmstr,stgoff,leaf_zrough,ngrids       &
-                       ,leaf_ubmin,leaf_ugbmin,leaf_ustmin,leaf_isoilbc,leaf_ipercol       &
-                       ,leaf_runoff_time,leaf_gamm,leaf_gamh,leaf_tprandtl,leaf_ribmax     &
-                       ,leaf_leaf_maxwhc)
+                       ,nzg,nzs,isoilflg,nslcon,isoilcol,slz,slmstr,stgoff,leaf_zrough     &
+                       ,ngrids,leaf_ubmin,leaf_ugbmin,leaf_ustmin,leaf_isoilbc             &
+                       ,leaf_ipercol,leaf_runoff_time,leaf_gamm,leaf_gamh,leaf_tprandtl    &
+                       ,leaf_ribmax,leaf_leaf_maxwhc)
+
    !---------------------------------------------------------------------------------------!
    !      The following variables can be defined in the regular ED2IN file for stand-alone !
    ! runs, but they cannot be changed in the coupled simulation (or they are never used    !
@@ -507,10 +509,10 @@ subroutine copy_in_bramsnl(expnme_b,runtype_b,itimez_b,idatez_b,imonthz_b,iyearz
                           ,itimea_b,idatea_b,imontha_b,iyeara_b,itimeh_b,idateh_b          &
                           ,imonthh_b,iyearh_b,radfrq_b,nnxp_b,nnyp_b,deltax_b,deltay_b     &
                           ,polelat_b,polelon_b,centlat_b,centlon_b,nstratx_b,nstraty_b     &
-                          ,iclobber_b,nzg_b,nzs_b,isoilflg_b,nslcon_b,slz_b,slmstr_b       &
-                          ,stgoff_b,zrough_b,ngrids_b,ubmin_b,ugbmin_b,ustmin_b,isoilbc_b  &
-                          ,ipercol_b,runoff_time_b,gamm_b,gamh_b,tprandtl_b,ribmax_b       &
-                          ,leaf_maxwhc_b)
+                          ,iclobber_b,nzg_b,nzs_b,isoilflg_b,nslcon_b,isoilcol_b,slz_b     &
+                          ,slmstr_b,stgoff_b,zrough_b,ngrids_b,ubmin_b,ugbmin_b,ustmin_b   &
+                          ,isoilbc_b,ipercol_b,runoff_time_b,gamm_b,gamh_b,tprandtl_b      &
+                          ,ribmax_b,leaf_maxwhc_b)
    use ed_misc_coms   , only : expnme            & ! intent(out)
                              , runtype           & ! intent(out)
                              , itimez            & ! intent(out)
@@ -544,6 +546,7 @@ subroutine copy_in_bramsnl(expnme_b,runtype_b,itimez_b,idatez_b,imonthz_b,iyearz
                              , nzs               ! ! intent(out)
    use soil_coms      , only : isoilflg          & ! intent(out)
                              , nslcon            & ! intent(out)
+                             , isoilcol          & ! intent(out)
                              , slmstr            & ! intent(out)
                              , zrough            & ! intent(out)
                              , slz               & ! intent(out)
@@ -597,6 +600,8 @@ subroutine copy_in_bramsnl(expnme_b,runtype_b,itimez_b,idatez_b,imonthz_b,iyearz
    integer                   , intent(in) :: nzs_b         ! Number of snow layers
    integer,dimension(maxgrds), intent(in) :: isoilflg_b    ! Method to initialise soil type
    integer                   , intent(in) :: nslcon_b      ! Soil type if constant for 
+                                                           !    all grids
+   integer                   , intent(in) :: isoilcol_b    ! Soil colour if constant for 
                                                            !    all grids
    real                      , intent(in) :: zrough_b      ! Soil roughness if constant...
    real, dimension(nzgmax)   , intent(in) :: slmstr_b      ! Initial soil moist. if const.

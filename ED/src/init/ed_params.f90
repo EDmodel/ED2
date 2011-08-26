@@ -3569,10 +3569,13 @@ subroutine init_soil_coms
    use soil_coms      , only : ed_nstyp              & ! intent(in)
                              , isoilflg              & ! intent(in)
                              , nslcon                & ! intent(in)
+                             , isoilcol              & ! intent(in)
                              , slxclay               & ! intent(in)
                              , slxsand               & ! intent(in)
                              , soil                  & ! intent(in)
                              , soil_class            & ! type
+                             , soilcol               & ! intent(in)
+                             , soilcol_class         & ! type
                              , soil8                 & ! intent(out)
                              , water_stab_thresh     & ! intent(out)
                              , snowmin               & ! intent(out)
@@ -3893,6 +3896,36 @@ subroutine init_soil_coms
 
 
 
+   !---------------------------------------------------------------------------------------!
+   !     Fill in the albedo information regarding the soil colour classes.                 !
+   !---------------------------------------------------------------------------------------!
+   !                    |    Dry soil   |   Saturated   |                                  !
+   !   Soil class       |---------------+---------------|                                  !
+   !                    |   VIS |   NIR |   VIS |   NIR |                                  !
+   !---------------------------------------------------------------------------------------!
+   soilcol = (/                                              & !
+       soilcol_class = (/   0.36,   0.61,   0.25,   0.50 /)  & ! 01 - Brightest
+      ,soilcol_class = (/   0.34,   0.57,   0.23,   0.46 /)  & ! 02
+      ,soilcol_class = (/   0.32,   0.53,   0.21,   0.42 /)  & ! 03
+      ,soilcol_class = (/   0.31,   0.51,   0.20,   0.40 /)  & ! 04
+      ,soilcol_class = (/   0.30,   0.49,   0.19,   0.38 /)  & ! 05
+      ,soilcol_class = (/   0.29,   0.48,   0.18,   0.36 /)  & ! 06
+      ,soilcol_class = (/   0.28,   0.45,   0.17,   0.34 /)  & ! 07
+      ,soilcol_class = (/   0.27,   0.43,   0.16,   0.32 /)  & ! 08
+      ,soilcol_class = (/   0.26,   0.41,   0.15,   0.30 /)  & ! 09
+      ,soilcol_class = (/   0.25,   0.39,   0.14,   0.28 /)  & ! 10
+      ,soilcol_class = (/   0.24,   0.37,   0.13,   0.26 /)  & ! 11
+      ,soilcol_class = (/   0.23,   0.35,   0.12,   0.24 /)  & ! 12
+      ,soilcol_class = (/   0.22,   0.33,   0.11,   0.22 /)  & ! 13
+      ,soilcol_class = (/   0.20,   0.31,   0.10,   0.20 /)  & ! 14
+      ,soilcol_class = (/   0.18,   0.29,   0.09,   0.18 /)  & ! 15
+      ,soilcol_class = (/   0.16,   0.27,   0.08,   0.16 /)  & ! 16
+      ,soilcol_class = (/   0.14,   0.25,   0.07,   0.14 /)  & ! 17
+      ,soilcol_class = (/   0.12,   0.23,   0.06,   0.12 /)  & ! 18
+      ,soilcol_class = (/   0.10,   0.21,   0.05,   0.10 /)  & ! 19
+      ,soilcol_class = (/   0.08,   0.16,   0.04,   0.08 /)  & ! 20 - Darkest
+   /)
+   !---------------------------------------------------------------------------------------!
 
 
 

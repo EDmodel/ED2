@@ -54,6 +54,10 @@ do ipat = 1,npatch
 enddo
 
 do ipat = 1,npatch
+   call vfirec(25,leaf_g(ifm)%soil_color(:,:,ipat),nnxp(ifm)*nnyp(ifm),'LIN')
+enddo
+
+do ipat = 1,npatch
    call vfirec(25,leaf_g(ifm)%soil_text(:,:,:,ipat),nzg*nnxp(ifm)*nnyp(ifm),'LIN')
 enddo
 
@@ -200,6 +204,10 @@ enddo
 
 do ip = 1,npatch
    call vforec(25,sfcfile_p(ifm)%leaf_class(:,:,ip),nnxyp(ifm),24,scrx,'LIN')
+enddo
+
+do ip = 1,npatch
+   call vforec(25,sfcfile_p(ifm)%soil_color(:,:,ip),nnxyp(ifm),24,scrx,'LIN')
 enddo
 
 do ip = 1,npatch

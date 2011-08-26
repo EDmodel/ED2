@@ -280,7 +280,8 @@ subroutine inithis()
 
             !----- 3D variables (nzp,nxp,npatch) that can be interpolated -----------------!
             elseif (vtab_r(nv,1)%idim_type == 6 .and. hr_table(nvh)%string /= 'LEAF_CLASS' &
-                   .and. hr_table(nvh)%string /= 'PATCH_AREA' ) then
+                   .and. hr_table(nvh)%string /= 'PATCH_AREA'                              &
+                   .and. hr_table(nvh)%string /= 'SOIL_COLOR' ) then
 
                call hi_interp(1,nnxp1(ngr),nnyp1(ngr),1,scr,xmn1(:,ngr),xtn1(:,ngr)        &
                              ,ymn1(:,ngr),ytn1(:,ngr),zmn1(:,ngr),ztn1(:,ngr)              &

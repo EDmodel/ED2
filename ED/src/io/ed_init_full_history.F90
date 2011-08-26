@@ -514,6 +514,8 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
 
   call hdf_getslab_i(cgrid%lsl(ipy:ipy),'LSL ',dsetrank,iparallel,.true.)
 
+  call hdf_getslab_i(cgrid%ncol_soil(ipy:ipy),'NCOL_SOIL ',dsetrank,iparallel,.false.)
+
   call hdf_getslab_r(cgrid%wbar(ipy:ipy),'WBAR ',dsetrank,iparallel,.true.)
   
   call hdf_getslab_r(cgrid%Te(ipy:ipy),'TE ',dsetrank,iparallel,.true.)
@@ -1722,6 +1724,7 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
    call hdf_getslab_i(cpoly%sitenum,'SITENUM ',dsetrank,iparallel,.true.)
 
    call hdf_getslab_i(cpoly%lsl,'LSL_SI ',dsetrank,iparallel,.true.)   
+   call hdf_getslab_i(cpoly%ncol_soil,'NCOL_SOIL_SI ',dsetrank,iparallel,.true.)
    call hdf_getslab_r(cpoly%area,'AREA_SI ',dsetrank,iparallel,.true.)
    call hdf_getslab_r(cpoly%patch_area,'PATCH_AREA ',dsetrank,iparallel,.true.)
    call hdf_getslab_r(cpoly%elevation,'ELEVATION ',dsetrank,iparallel,.true.)

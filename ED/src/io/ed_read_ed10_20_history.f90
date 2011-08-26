@@ -200,6 +200,7 @@ subroutine read_ed10_ed20_history_file
             cgrid%ntext_soil(2,ipy) = 2
             cgrid%ntext_soil(3,ipy) = 3
             cgrid%ntext_soil(4,ipy) = 3
+            cgrid%ncol_soil(ipy)    = 10
          end if
 
 

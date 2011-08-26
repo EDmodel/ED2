@@ -1191,6 +1191,9 @@ module ed_state_vars
      real,pointer,dimension(:)  :: moist_zi  ! TOPMODEL "equilibrium" water table depth 
      real,pointer,dimension(:)  :: baseflow  ! loss of water from site to watershed discharge (kg/m2/s)
 
+     integer,pointer,dimension(:)   :: ncol_soil   ! The soil colour category, used to
+                                                   !     determine ground albedo.
+
      integer,pointer,dimension(:,:) :: ntext_soil  ! The soil classifications index of the soil layer
                                                    ! refer to soil_coms to view the soil parameters
                                                    ! associated with each of these classes
@@ -1484,6 +1487,8 @@ module ed_state_vars
      ! Sensible heat flux from the canopy to atmosphere, averaged across sites
    
      real,pointer,dimension(:) :: sensflux_py       ! of dimension npolys
+
+     integer,pointer,dimension(:) :: ncol_soil      ! Soil colour classification (npolygon)
 
      integer,pointer,dimension(:,:) :: ntext_soil   ! Soil texture classification
                                                     ! (nzg,polygon)
@@ -2230,6 +2235,7 @@ contains
        allocate(cgrid%lon(npolygons))
        allocate(cgrid%xatm(npolygons))
        allocate(cgrid%yatm(npolygons))
+       allocate(cgrid%ncol_soil(npolygons))
        allocate(cgrid%ntext_soil(nzg,npolygons))
        allocate(cgrid%lsl(npolygons))
        
@@ -2789,6 +2795,7 @@ contains
     allocate(cpoly%moist_tau(nsites))
     allocate(cpoly%moist_zi(nsites)) 
     allocate(cpoly%baseflow(nsites)) 
+    allocate(cpoly%ncol_soil(nsites)) 
     allocate(cpoly%ntext_soil(nzg,nsites))
     allocate(cpoly%min_monthly_temp(nsites))
     allocate(cpoly%plantation(nsites)) 
@@ -3467,6 +3474,7 @@ contains
        nullify(cgrid%lon                     )
        nullify(cgrid%xatm                    )
        nullify(cgrid%yatm                    )
+       nullify(cgrid%ncol_soil               )
        nullify(cgrid%ntext_soil              )
        nullify(cgrid%lsl                     )
        
@@ -3983,6 +3991,7 @@ contains
     nullify(cpoly%moist_tau)
     nullify(cpoly%moist_zi) 
     nullify(cpoly%baseflow) 
+    nullify(cpoly%ncol_soil)
     nullify(cpoly%ntext_soil)
     nullify(cpoly%min_monthly_temp)
     nullify(cpoly%plantation) 
@@ -4617,6 +4626,7 @@ contains
        if(associated(cgrid%lon                     )) deallocate(cgrid%lon                     )
        if(associated(cgrid%xatm                    )) deallocate(cgrid%xatm                    )
        if(associated(cgrid%yatm                    )) deallocate(cgrid%yatm                    )
+       if(associated(cgrid%ncol_soil               )) deallocate(cgrid%ncol_soil               )
        if(associated(cgrid%ntext_soil              )) deallocate(cgrid%ntext_soil              )
        if(associated(cgrid%lsl                     )) deallocate(cgrid%lsl                     )
        
@@ -5149,6 +5159,7 @@ contains
     if(associated(cpoly%moist_tau                   )) deallocate(cpoly%moist_tau                   )
     if(associated(cpoly%moist_zi                    )) deallocate(cpoly%moist_zi                    )
     if(associated(cpoly%baseflow                    )) deallocate(cpoly%baseflow                    )
+    if(associated(cpoly%ncol_soil                   )) deallocate(cpoly%ncol_soil                   )
     if(associated(cpoly%ntext_soil                  )) deallocate(cpoly%ntext_soil                  )
     if(associated(cpoly%min_monthly_temp            )) deallocate(cpoly%min_monthly_temp            )
     if(associated(cpoly%plantation                  )) deallocate(cpoly%plantation                  )
@@ -7679,6 +7690,15 @@ contains
                            ,var_len,var_len_global,max_ptrs                                &
                            ,'LSL :10:hist:anal:dail:mont:dcyc:year')
          call metadata_edio(nvar,igr,'Index of lowest soil layer','NA','ipoly')
+         
+      end if
+      
+      if (associated(cgrid%ncol_soil)) then
+         nvar=nvar+1
+         call vtable_edio_i(npts,cgrid%ncol_soil,nvar,igr,init,cgrid%pyglob_id             &
+                           ,var_len,var_len_global,max_ptrs                                &
+                           ,'NCOL_SOIL :10:hist:anal:dail:mont:dcyc:year')
+         call metadata_edio(nvar,igr,'Soil colour','NA','ipoly')
          
       end if
       
@@ -11278,6 +11298,13 @@ contains
          nvar=nvar+1
            call vtable_edio_i(npts,cpoly%lsl,nvar,igr,init,cpoly%siglob_id, &
            var_len,var_len_global,max_ptrs,'LSL_SI :20:hist:dail:mont:dcyc') 
+         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+      end if   
+
+      if (associated(cpoly%ncol_soil)) then
+         nvar=nvar+1
+           call vtable_edio_i(npts,cpoly%ncol_soil,nvar,igr,init,cpoly%siglob_id, &
+           var_len,var_len_global,max_ptrs,'NCOL_SOIL_SI :20:hist:dail:mont:dcyc') 
          call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
       end if   
       

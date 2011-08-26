@@ -395,6 +395,7 @@ subroutine masterput_nl(master_num)
    call MPI_Bcast(SEATMP,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(PCTLCON,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(NSLCON,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(ISOILCOL,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(NVGCON,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
 
    call MPI_Bcast(RADFRQ,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
@@ -1202,6 +1203,7 @@ subroutine nodeget_nl
    call MPI_Bcast(SEATMP,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(PCTLCON,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(NSLCON,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(ISOILCOL,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(NVGCON,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
 
    call MPI_Bcast(RADFRQ,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)

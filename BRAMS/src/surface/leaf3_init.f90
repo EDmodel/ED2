@@ -18,26 +18,36 @@ subroutine sfcdata()
       !  Soil Characteristics (see Clapp & Hornberger, 1978; McCumber & Pielke, 1981;      !
       !                            Pielke, 1984; Tremback & Kessler, 1985)                 !
       !------------------------------------------------------------------------------------!
-      real :: slpots     ! Soil moisture potential at saturation         [       m]
-      real :: slmsts     ! Soil moisture at saturation                   [   m3/m3]
-      real :: slbs       ! B exponent                                    [     n/d]
-      real :: slcpd      ! Specific heat of dry soil                     [  J/m3/K]
-      real :: soilcp     ! Dry soil capacity (at -3.1MPa)                [   m3/m3]
-      real :: soilwp     ! Wilting point capacity (at -1.5MPa)           [   m3/m3]
-      real :: slcons     ! hydraulic conductivity at saturation          [     m/s]
-      real :: slcons0    ! Surface value for slcons                      [     m/s]
-      real :: soilcond0  ! Intercept for conductivity calculation        [   N/K/s]
-      real :: soilcond1  ! Linear coefficient for conductivity           [   N/K/s]
-      real :: soilcond2  ! Quadratic coefficient for conductivity        [   N/K/s]
-      real :: sfldcap    ! Soil field capacity                           [   m3/m3]
-      real :: albwet     ! Albedo for wet soil                           [     ---]
-      real :: albdry     ! Albedo for dry soil                           [     ---]
-      real :: xsand      ! Percentage of sand                            [     ---]
-      real :: xclay      ! Percentage of clay                            [     ---]
-      real :: xsilt      ! Percentage of silt                            [     ---]
-      real :: xrobulk    ! Bulk density                                  [     ---]
-      real :: slden      ! "Dry" soil density (porosity)                 [   kg/m3]
+      real :: slpots     ! Soil moisture potential at saturation                 [       m]
+      real :: slmsts     ! Soil moisture at saturation                           [   m3/m3]
+      real :: slbs       ! B exponent                                            [     n/d]
+      real :: slcpd      ! Specific heat of dry soil                             [  J/m3/K]
+      real :: soilcp     ! Dry soil capacity (at -3.1MPa)                        [   m3/m3]
+      real :: soilwp     ! Wilting point capacity (at -1.5MPa)                   [   m3/m3]
+      real :: slcons     ! hydraulic conductivity at saturation                  [     m/s]
+      real :: slcons0    ! Surface value for slcons                              [     m/s]
+      real :: soilcond0  ! Intercept for conductivity calculation                [   N/K/s]
+      real :: soilcond1  ! Linear coefficient for conductivity                   [   N/K/s]
+      real :: soilcond2  ! Quadratic coefficient for conductivity                [   N/K/s]
+      real :: sfldcap    ! Soil field capacity                                   [   m3/m3]
+      real :: albwet     ! Albedo for wet soil                                   [     ---]
+      real :: albdry     ! Albedo for dry soil                                   [     ---]
+      real :: xsand      ! Percentage of sand                                    [     ---]
+      real :: xclay      ! Percentage of clay                                    [     ---]
+      real :: xsilt      ! Percentage of silt                                    [     ---]
+      real :: xrobulk    ! Bulk density                                          [     ---]
+      real :: slden      ! "Dry" soil density (porosity)                         [   kg/m3]
    end type soil_class
+   !.......................................................................................!
+   type soilcol_class
+      !------------------------------------------------------------------------------------!
+      !     Define soil colour structure.                                                  !
+      !------------------------------------------------------------------------------------!
+      real(kind=4) :: alb_vis_dry ! Dry soil albedo       - Visible              [     ---]
+      real(kind=4) :: alb_nir_dry ! Dry soil albedo       - Near Infrared        [     ---]
+      real(kind=4) :: alb_vis_wet ! Saturated soil albedo - Visible              [     ---]
+      real(kind=4) :: alb_nir_wet ! Saturated soil albedo - Near Infrared        [     ---]
+   end type soilcol_class
    !.......................................................................................!
    type vegt_class
       !----- LEAF-3 biophysical parameters by land use class number. ----------------------!
@@ -57,9 +67,10 @@ subroutine sfcdata()
       real :: stom_side
    end type vegt_class
    !----- Local variables. ----------------------------------------------------------------!
-   type(soil_class) , dimension(nstyp)            :: soilparms
-   type(vegt_class) , dimension(nvtyp+nvtyp_teb)  :: bioparms
-   real             , dimension(nstyp)            :: xrobulk
+   type(soil_class)   , dimension(nstyp)            :: soilparms
+   type(vegt_class)   , dimension(nvtyp+nvtyp_teb)  :: bioparms
+   type(soilcol_class), dimension(nscol)            :: scolparms
+   real               , dimension(nstyp)            :: xrobulk
    integer                                        :: k
    integer                                        :: nnn
    real                                           :: romin
@@ -402,6 +413,54 @@ subroutine sfcdata()
          slfc(nnn) = 0.0
       end if
    end do
+   !---------------------------------------------------------------------------------------!
+
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Fill in the albedo information regarding the soil colour classes.                 !
+   !---------------------------------------------------------------------------------------!
+   !                    |    Dry soil   |   Saturated   |                                  !
+   !   Soil class       |---------------+---------------|                                  !
+   !                    |   VIS |   NIR |   VIS |   NIR |                                  !
+   !---------------------------------------------------------------------------------------!
+   scolparms = (/                                            & !
+       soilcol_class = (/   0.36,   0.61,   0.25,   0.50 /)  & ! 01 - Brightest
+      ,soilcol_class = (/   0.34,   0.57,   0.23,   0.46 /)  & ! 02
+      ,soilcol_class = (/   0.32,   0.53,   0.21,   0.42 /)  & ! 03
+      ,soilcol_class = (/   0.31,   0.51,   0.20,   0.40 /)  & ! 04
+      ,soilcol_class = (/   0.30,   0.49,   0.19,   0.38 /)  & ! 05
+      ,soilcol_class = (/   0.29,   0.48,   0.18,   0.36 /)  & ! 06
+      ,soilcol_class = (/   0.28,   0.45,   0.17,   0.34 /)  & ! 07
+      ,soilcol_class = (/   0.27,   0.43,   0.16,   0.32 /)  & ! 08
+      ,soilcol_class = (/   0.26,   0.41,   0.15,   0.30 /)  & ! 09
+      ,soilcol_class = (/   0.25,   0.39,   0.14,   0.28 /)  & ! 10
+      ,soilcol_class = (/   0.24,   0.37,   0.13,   0.26 /)  & ! 11
+      ,soilcol_class = (/   0.23,   0.35,   0.12,   0.24 /)  & ! 12
+      ,soilcol_class = (/   0.22,   0.33,   0.11,   0.22 /)  & ! 13
+      ,soilcol_class = (/   0.20,   0.31,   0.10,   0.20 /)  & ! 14
+      ,soilcol_class = (/   0.18,   0.29,   0.09,   0.18 /)  & ! 15
+      ,soilcol_class = (/   0.16,   0.27,   0.08,   0.16 /)  & ! 16
+      ,soilcol_class = (/   0.14,   0.25,   0.07,   0.14 /)  & ! 17
+      ,soilcol_class = (/   0.12,   0.23,   0.06,   0.12 /)  & ! 18
+      ,soilcol_class = (/   0.10,   0.21,   0.05,   0.10 /)  & ! 19
+      ,soilcol_class = (/   0.08,   0.16,   0.04,   0.08 /)  & ! 20 - Darkest
+   /)
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !    Fill in the vectors.                                                               !
+   !---------------------------------------------------------------------------------------!
+   do nnn = 1,nstyp
+      alb_vis_dry(nnn) = scolparms(nnn)%alb_vis_dry
+      alb_nir_dry(nnn) = scolparms(nnn)%alb_nir_dry
+      alb_vis_wet(nnn) = scolparms(nnn)%alb_vis_wet
+      alb_nir_wet(nnn) = scolparms(nnn)%alb_nir_wet
+   end do
+   !---------------------------------------------------------------------------------------!
 
    return
 end subroutine sfcdata
@@ -455,7 +514,7 @@ end subroutine snowinit
 ! (2) specifying new hardcoded values in subroutine sfcinit_user in the file ruser.f90,    !
 ! (3) reading data from the standard RAMS datasets.                                        !
 !------------------------------------------------------------------------------------------!
-subroutine sfcinit_file(n2,n3,mzg,npat,ifm,patch_area,leaf_class,soil_text)
+subroutine sfcinit_file(n2,n3,mzg,npat,ifm,patch_area,leaf_class,soil_color,soil_text)
    use mem_leaf
    use rconstants
    use leaf_coms , only : min_patch_area
@@ -467,6 +526,7 @@ subroutine sfcinit_file(n2,n3,mzg,npat,ifm,patch_area,leaf_class,soil_text)
    integer                           , intent(in)    :: mzg
    integer                           , intent(in)    :: npat
    integer                           , intent(in)    :: ifm
+   real   , dimension(n2,n3,npat)    , intent(inout) :: soil_color
    real   , dimension(mzg,n2,n3,npat), intent(inout) :: soil_text
    real   , dimension(n2,n3,npat)    , intent(inout) :: patch_area
    real   , dimension(n2,n3,npat)    , intent(inout) :: leaf_class
@@ -494,12 +554,15 @@ subroutine sfcinit_file(n2,n3,mzg,npat,ifm,patch_area,leaf_class,soil_text)
          do k = 1,mzg
             soil_text(k,i,j,1) = 0.               ! patch 1
          end do
+         soil_color(i,j,1) = 0.
+
          !----- Land patch. ---------------------------------------------------------------!
          patch_area(i,j,2) = pctlcon
          leaf_class(i,j,2) = float(nvgcon)
          do k = 1,mzg
             soil_text(k,i,j,2) = float(nslcon)
          end do
+         soil_color(i,j,2) = isoilcol
       end do
    end do
    !---------------------------------------------------------------------------------------!
@@ -519,6 +582,8 @@ subroutine sfcinit_file(n2,n3,mzg,npat,ifm,patch_area,leaf_class,soil_text)
             do k = 1,mzg
                soil_text(k,i,j,ipat) = soil_text(k,i,j,2)
             end do
+
+            soil_color(i,j,ipat) = soil_color(i,j,2)
 
          end do
       end do
@@ -544,16 +609,17 @@ end subroutine sfcinit_file
 ! 2. Specifying new values in subroutine sfcinit_nofile_user in the file ruser.f90.        !
 !------------------------------------------------------------------------------------------!
 subroutine sfcinit_nofile(n1,n2,n3,mzg,mzs,npat,ifm,theta,pi0,pp,rv,co2p,seatp,seatf       &
-                         ,soil_water,soil_energy,soil_text,sfcwater_mass,sfcwater_energy   &
-                         ,sfcwater_depth,ustar,tstar,rstar,cstar,zeta,ribulk,veg_fracarea  &
-                         ,veg_agb,veg_lai,veg_tai,veg_rough,veg_height,veg_displace        &
-                         ,veg_albedo,patch_area,patch_rough,patch_wetind,leaf_class        &
-                         ,soil_rough,sfcwater_nlev,stom_condct,ground_rsat,ground_rvap     &
-                         ,ground_temp,ground_fliq,veg_water,veg_hcap,veg_energy,can_prss   &
-                         ,can_theiv,can_theta,can_rvap,can_co2,sensible_gc,sensible_vc     &
-                         ,evap_gc,evap_vc,transp,gpp,plresp,resphet,veg_ndvip,veg_ndvic    &
-                         ,veg_ndvif,snow_mass,snow_depth,rshort_gnd,rlong_gnd,cosz,rlongup &
-                         ,albedt,rvv,prsv,piv,vt2da,vt2db,glat,glon,zot,flpw,rtgt)
+                         ,soil_water,soil_energy,soil_color,soil_text,sfcwater_mass        &
+                         ,sfcwater_energy,sfcwater_depth,ustar,tstar,rstar,cstar,zeta      &
+                         ,ribulk,veg_fracarea,veg_agb,veg_lai,veg_tai,veg_rough,veg_height &
+                         ,veg_displace,veg_albedo,patch_area,patch_rough,patch_wetind      &
+                         ,leaf_class,soil_rough,sfcwater_nlev,stom_condct,ground_rsat      &
+                         ,ground_rvap,ground_temp,ground_fliq,veg_water,veg_hcap           &
+                         ,veg_energy,can_prss,can_theiv,can_theta,can_rvap,can_co2         &
+                         ,sensible_gc,sensible_vc,evap_gc,evap_vc,transp,gpp,plresp        &
+                         ,resphet,veg_ndvip,veg_ndvic,veg_ndvif,snow_mass,snow_depth       &
+                         ,rshort_gnd,rlong_gnd,cosz,rlongup,albedt,rvv,prsv,piv,vt2da      &
+                         ,vt2db,glat,glon,zot,flpw,rtgt)
    use mem_grid
    use mem_leaf
    use leaf_coms
@@ -585,6 +651,7 @@ subroutine sfcinit_nofile(n1,n2,n3,mzg,mzs,npat,ifm,theta,pi0,pp,rv,co2p,seatp,s
    real, dimension(   n2,n3)      , intent(in)    :: cosz
    real, dimension(mzg,n2,n3,npat), intent(inout) :: soil_water
    real, dimension(mzg,n2,n3,npat), intent(inout) :: soil_energy
+   real, dimension(    n2,n3,npat), intent(inout) :: soil_color
    real, dimension(mzg,n2,n3,npat), intent(inout) :: soil_text
    real, dimension(mzs,n2,n3,npat), intent(inout) :: sfcwater_mass
    real, dimension(mzs,n2,n3,npat), intent(inout) :: sfcwater_energy
@@ -947,14 +1014,14 @@ subroutine sfcinit_nofile(n1,n2,n3,mzg,mzs,npat,ifm,theta,pi0,pp,rv,co2p,seatp,s
             call leaf3_veg_diag(veg_energy(i,j,ipat),veg_water(i,j,ipat),veg_hcap(i,j,ipat))
 
             call leaf3_sfcrad( mzg, mzs, ipat                                              &
-                             , soil_water    (:,i,j,ipat) , soil_text     (:,i,j,ipat)     &
-                             , sfcwater_depth(:,i,j,ipat) , patch_area    (  i,j,ipat)     &
-                             , veg_fracarea  (  i,j,ipat) , leaf_class    (  i,j,ipat)     &
-                             , veg_albedo    (  i,j,ipat) , sfcwater_nlev (  i,j,ipat)     &
-                             , 0.                         , 0.                             &
-                             , cosz          (  i,j     ) , albedt        (  i,j     )     &
-                             , rlongup       (  i,j     ) , rshort_gnd    (  i,j,ipat)     &
-                             , rlong_gnd     (  i,j,ipat) )
+                             , soil_water    (:,i,j,ipat) , soil_color    (  i,j,ipat)     &
+                             , soil_text     (:,i,j,ipat) , sfcwater_depth(:,i,j,ipat)     &
+                             , patch_area    (  i,j,ipat) , veg_fracarea  (  i,j,ipat)     &
+                             , leaf_class    (  i,j,ipat) , veg_albedo    (  i,j,ipat)     &
+                             , sfcwater_nlev (  i,j,ipat) , 0.                             &
+                             , 0.                         , cosz          (  i,j     )     &
+                             , albedt        (  i,j     ) , rlongup       (  i,j     )     &
+                             , rshort_gnd    (  i,j,ipat) , rlong_gnd     (  i,j,ipat)     )
          end do patchloop2
       end do iloop
    end do jloop

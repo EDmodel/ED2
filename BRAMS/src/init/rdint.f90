@@ -855,6 +855,7 @@ subroutine read_nl(filename)
                                  , istar                   & ! intent(out)
                                  , igrndvap                & ! intent(out)
                                  , nslcon                  & ! intent(out)
+                                 , isoilcol                & ! intent(out)
                                  , nvegpat                 & ! intent(out)
                                  , nvgcon                  & ! intent(out)
                                  , pctlcon                 & ! intent(out)
@@ -1112,13 +1113,14 @@ subroutine read_nl(filename)
                                  ,distim,iswrtyp,ilwrtyp,icumfdbk,radfrq,lonrad,npatch     &
                                  ,nvegpat,min_patch_area,isfcl,dtleaf,istar,igrndvap,ubmin &
                                  ,ugbmin,ustmin,gamm,gamh,tprandtl,ribmax,leaf_maxwhc,ico2 &
-                                 ,co2con,nvgcon,pctlcon,nslcon,drtcon,zrough,albedo,seatmp &
-                                 ,dthcon,soil_moist,soil_moist_fail,usdata_in,usmodel_in   &
-                                 ,slz,slmstr,stgoff,isoilbc,ipercol,runoff_time            &
-                                 ,if_urban_canopy,idiffk,ibruvais,ibotflx,ihorgrad,csx,csz &
-                                 ,xkhkm,zkhkm,nna,nnb,nnc,akmin,akmax,hgtmin,hgtmax,level  &
-                                 ,icloud,irain,ipris,isnow,iaggr,igraup,ihail,cparm,rparm  &
-                                 ,pparm,sparm,aparm,gparm,hparm,gnu
+                                 ,co2con,nvgcon,pctlcon,nslcon,isoilcol,drtcon,zrough      &
+                                 ,albedo,seatmp,dthcon,soil_moist,soil_moist_fail          &
+                                 ,usdata_in,usmodel_in,slz,slmstr,stgoff,isoilbc,ipercol   &
+                                 ,runoff_time,if_urban_canopy,idiffk,ibruvais,ibotflx      &
+                                 ,ihorgrad,csx,csz,xkhkm,zkhkm,nna,nnb,nnc,akmin,akmax     &
+                                 ,hgtmin,hgtmax,level,icloud,irain,ipris,isnow,iaggr       &
+                                 ,igraup,ihail,cparm,rparm,pparm,sparm,aparm,gparm,hparm   &
+                                 ,gnu
 
    namelist /MODEL_SOUND/         ipsflg,itsflg,irtsflg,iusflg,hs,ps,ts,rts,us,vs,co2s
 
@@ -1785,6 +1787,7 @@ subroutine read_nl(filename)
       write (unit=*,fmt=*) ' nvgcon          =',nvgcon
       write (unit=*,fmt=*) ' pctlcon         =',pctlcon
       write (unit=*,fmt=*) ' nslcon          =',nslcon
+      write (unit=*,fmt=*) ' isoilcol        =',isoilcol
       write (unit=*,fmt=*) ' drtcon          =',drtcon
       write (unit=*,fmt=*) ' zrough          =',zrough
       write (unit=*,fmt=*) ' albedo          =',albedo

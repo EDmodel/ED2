@@ -50,6 +50,7 @@ subroutine copy_nl(copy_type)
    use soil_coms            , only : find_soil_class           & ! function
                                    , isoilflg                  & ! intent(out)
                                    , nslcon                    & ! intent(out)
+                                   , isoilcol                  & ! intent(out)
                                    , slxclay                   & ! intent(out)
                                    , slxsand                   & ! intent(out)
                                    , slmstr                    & ! intent(out)
@@ -281,6 +282,7 @@ subroutine copy_nl(copy_type)
 
       isoilflg                  = nl%isoilflg
       nslcon                    = nl%nslcon
+      isoilcol                  = nl%isoilcol
       slxclay                   = nl%slxclay
       slxsand                   = nl%slxsand
       slmstr(1:nzgmax)          = nl%slmstr(1:nzgmax)

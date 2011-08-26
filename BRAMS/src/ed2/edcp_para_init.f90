@@ -23,7 +23,8 @@ subroutine edcp_get_work(ifm,nxp,nyp,inode,mxp,myp,ia,iz,i0,ja,jz,j0)
    use ed_work_vars, only : work_e                 ! ! intent(inout)
    use soil_coms   , only : veg_database           & ! intent(in)
                           , soil_database          & ! intent(in)
-                          , nslcon                 ! ! intent(in)
+                          , nslcon                 & ! intent(in)
+                          , isoilcol               ! ! intent(in)
    use io_params   , only : b_isoilflg => isoilflg & ! intent(in)
                           , b_ivegtflg => ivegtflg ! ! intent(in)
    use mem_polygons, only : n_poi                  & ! intent(in)
@@ -49,6 +50,7 @@ subroutine edcp_get_work(ifm,nxp,nyp,inode,mxp,myp,ia,iz,i0,ja,jz,j0)
    real   , dimension(:,:), allocatable :: lon_list
    integer, dimension(:,:), allocatable :: leaf_class_list
    integer, dimension(:,:), allocatable :: ntext_soil_list
+   integer, dimension(:,:), allocatable :: ncol_soil_list
    real   , dimension(:,:), allocatable :: ipcent_land
    real   , dimension(:,:), allocatable :: ipcent_soil
    integer                              :: npoly
@@ -74,6 +76,7 @@ subroutine edcp_get_work(ifm,nxp,nyp,inode,mxp,myp,ia,iz,i0,ja,jz,j0)
    allocate(lon_list       (      3,npoly))
    allocate(leaf_class_list(maxsite,npoly))
    allocate(ntext_soil_list(maxsite,npoly))
+   allocate(ncol_soil_list (maxsite,npoly))
    allocate(ipcent_land    (maxsite,npoly))
    allocate(ipcent_soil    (maxsite,npoly))
   
@@ -225,6 +228,15 @@ subroutine edcp_get_work(ifm,nxp,nyp,inode,mxp,myp,ia,iz,i0,ja,jz,j0)
       call leaf_database(trim(soil_database(ifm)),maxsite,npoly,'soil_text'                &
                         ,lat_list,lon_list,ntext_soil_list,ipcent_soil)
    end select
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !      For the time being, soil colour is constant.  Only if results look promising we  !
+   ! will attempt to read a map.                                                           !
+   !---------------------------------------------------------------------------------------!
+   ncol_soil_list (:,:) = isoilcol
+   !---------------------------------------------------------------------------------------!
 
    write(unit=*,fmt='(a)')       '   + Successfully obtain land/sea mask and soil type.'
 
@@ -251,11 +263,13 @@ subroutine edcp_get_work(ifm,nxp,nyp,inode,mxp,myp,ia,iz,i0,ja,jz,j0)
                work_e(ifm)%soilfrac(itext,i,j) = ipcent_soil     (itext,ipy)
                work_e(ifm)%ntext   (itext,i,j) = ntext_soil_list (itext,ipy)
             end do
+            work_e(ifm)%nscol   (i,j) = ncol_soil_list  (1,ipy)
             maxwork = max(maxwork,work_e(ifm)%work(i,j))
          else
             !----- Making this grid point 100% water --------------------------------------!
             work_e(ifm)%landfrac  (i,j)  = 0.
             work_e(ifm)%work      (i,j)  = epsilon(0.0)
+            work_e(ifm)%nscol     (i,j)  = 0
             work_e(ifm)%ntext   (:,i,j)  = 0
             work_e(ifm)%soilfrac(:,i,j)  = 0
          end if
@@ -280,7 +294,8 @@ subroutine edcp_get_work(ifm,nxp,nyp,inode,mxp,myp,ia,iz,i0,ja,jz,j0)
    deallocate(lat_list        )
    deallocate(lon_list        )
    deallocate(leaf_class_list )
-   deallocate (ntext_soil_list)
+   deallocate(ntext_soil_list )
+   deallocate(ncol_soil_list  )
    deallocate(ipcent_land     )
    deallocate(ipcent_soil     )
    !---------------------------------------------------------------------------------------!
@@ -349,6 +364,8 @@ subroutine edcp_parvec_work(ifm,nxp,nyp,ia,iz,i0,ja,jz,j0)
             work_v(ifm)%landfrac   (poly) = work_e(ifm)%landfrac(i,j)
             work_v(ifm)%xid        (poly) = work_e(ifm)%xatm    (i,j)
             work_v(ifm)%yid        (poly) = work_e(ifm)%yatm    (i,j)
+
+            work_v(ifm)%nscol      (poly) = work_e(ifm)%nscol   (i,j)
 
             do itext=1,maxsite
                work_v(ifm)%ntext   (itext,poly) = work_e(ifm)%ntext   (itext,i,j)

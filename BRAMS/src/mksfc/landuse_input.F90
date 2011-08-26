@@ -31,7 +31,7 @@ subroutine patch_array_size(npq,deltax  &
    if (isoilflg == 1) then
 
       call read_header(isoilfn,iblksiz,no,isbeg  &
-         ,iwbeg,offlat,offlon,deltall,'soil',h5name)
+         ,iwbeg,offlat,offlon,deltall,'soil_text',h5name)
       deltallo_min = min(deltallo_min,deltall)
    endif
 
@@ -110,15 +110,17 @@ end subroutine patch_latlon
 ! average value for each landuse-class-defined patch is assigned to that patch.            !
 !------------------------------------------------------------------------------------------!
 subroutine landuse_opqr(n2,n3,mzg,npat,nvegpat,ivegtflg,ivegtfn,isoilflg,isoilfn           &
-                       ,ndviflg,ndvifn,cndvifil,iaction,platn,plonn,soil_text,patch_area   &
-                       ,leaf_class,veg_ndvif)
+                       ,ndviflg,ndvifn,cndvifil,iaction,platn,plonn,soil_color,soil_text   &
+                       ,patch_area,leaf_class,veg_ndvif)
 
    use mem_mksfc
    use rconstants
    use mem_leaf , only : nslcon          & ! intent(in)
+                       , isoilcol        & ! intent(in)
                        , isfcl           ! ! intent(in)
    use leaf_coms, only : min_patch_area  & ! intent(in)
                        , nstyp           & ! intent(in)
+                       , nscol           & ! intent(in)
                        , nvtyp           & ! intent(in)
                        , nvtyp_teb       ! ! intent(in)
    use io_params, only : iuselai         ! ! intent(in)
@@ -145,6 +147,7 @@ subroutine landuse_opqr(n2,n3,mzg,npat,nvegpat,ivegtflg,ivegtfn,isoilflg,isoilfn
    real, dimension(mzg,n2,n3,npat)                   , intent(inout) :: soil_text
    real, dimension(n2,n3,npat)                       , intent(inout) :: patch_area
    real, dimension(n2,n3,npat)                       , intent(inout) :: leaf_class
+   real, dimension(n2,n3,npat)                       , intent(inout) :: soil_color
    real, dimension(n2,n3,npat)                       , intent(inout) :: veg_ndvif
    !----- Local variables. ----------------------------------------------------------------!
    character(len=str_len), dimension(maxndvidata)                    :: fnmiss
@@ -152,6 +155,7 @@ subroutine landuse_opqr(n2,n3,mzg,npat,nvegpat,ivegtflg,ivegtfn,isoilflg,isoilfn
    integer               , dimension(0:maxdatq)                      :: sumpix
    integer               , dimension(0:maxdatq,2)                    :: ngrdpix
    integer               , dimension(0:maxdatq,0:nstyp)              :: datq_soil
+   integer               , dimension(0:maxdatq,0:nscol)              :: datq_scol
    real                  , dimension(0:maxdatq)                      :: datq_ndvi
    real                  , dimension(0:maxdatq)                      :: sumndvi
    integer                                                           :: ing_prt
@@ -339,14 +343,14 @@ subroutine landuse_opqr(n2,n3,mzg,npat,nvegpat,ivegtflg,ivegtfn,isoilflg,isoilfn
       end do jvegloop
       !------------------------------------------------------------------------------------!
 
-   case ('soil')
+   case ('soil_text')
 
 
       !------------------------------------------------------------------------------------!
       !     Read in the header and data files.                                             !
       !------------------------------------------------------------------------------------!
       call read_header(isoilfn,iblksizo_soil,no_soil,isbego_soil,iwbego_soil,offlat_soil   &
-                      ,offlon_soil,deltallo_soil,'soil',h5name)
+                      ,offlon_soil,deltallo_soil,'soil_text',h5name)
 
       call fill_datp(n2,n3,no_soil,iblksizo_soil,isbego_soil,iwbego_soil,platn,plonn       &
                     ,offlat_soil,offlon_soil,deltallo_soil,isoilfn,iaction,nmiss,fnmiss    &
@@ -559,6 +563,113 @@ subroutine landuse_opqr(n2,n3,mzg,npat,nvegpat,ivegtflg,ivegtfn,isoilflg,isoilfn
                   !------------------------------------------------------------------------!
 
                end select
+            end if
+         end do isoilloop
+      end do jsoilloop
+
+   case ('soil_col')
+
+
+      !------------------------------------------------------------------------------------!
+      !     Read in the header and data files.                                             !
+      !------------------------------------------------------------------------------------!
+      call read_header(isoilfn,iblksizo_soil,no_soil,isbego_soil,iwbego_soil,offlat_soil   &
+                      ,offlon_soil,deltallo_soil,'soil_col',h5name)
+
+      call fill_datp(n2,n3,no_soil,iblksizo_soil,isbego_soil,iwbego_soil,platn,plonn       &
+                    ,offlat_soil,offlon_soil,deltallo_soil,isoilfn,iaction,nmiss,fnmiss    &
+                    ,h5name)
+      !------------------------------------------------------------------------------------!
+
+
+
+
+      !------------------------------------------------------------------------------------!
+      jsoilloop: do jr = 1,n3
+         isoilloop: do ir = 1,n2
+            if (patch_area(ir,jr,1) < 1.0) then
+
+               !---------------------------------------------------------------------------!
+               !    Here we initialise both ngrdpix and datq_soil, because we will assign  !
+               ! patches differently depending on the surface model (LEAF or ED).          !
+               !---------------------------------------------------------------------------!
+               do idatq = 0,maxdatq
+                  ngrdpix(idatq,1) = 0     ! Initialise counter for datq pixels
+                  ngrdpix(idatq,2) = idatq ! Initialise array of consecutive datq values 
+                  do isoil = 1,nscol
+                     datq_scol(idatq,isoil) = 0  ! Initialise counter for datq pixels
+                  end do
+               end do
+               !---------------------------------------------------------------------------!
+
+
+
+
+               !---------------------------------------------------------------------------!
+               !     Count the pixels for this grid point.                                 !
+               !---------------------------------------------------------------------------!
+               do jp = 1,npq
+                  do ip = 1,npq
+
+                     !---------------------------------------------------------------------!
+                     !      Fill datq_soil values as secondary criterion.                  !
+                     !---------------------------------------------------------------------!
+                     datsoil  = nint(datp(ip,jp,ir,jr))
+
+                     datq_pat = datq_patch(ip,jp,ir,jr)
+                     datq_scol(datq_pat,datsoil) = datq_scol(datq_pat,datsoil) + 1
+                  end do
+               end do
+               !---------------------------------------------------------------------------!
+
+
+
+
+               !---------------------------------------------------------------------------!
+               !     Select the commonest soil colour class for each vegetation (LEAF-3)   !
+               ! or soil texture type (ED-2), as they may be correlated.                   !
+               !---------------------------------------------------------------------------!
+               do ipat = 2,nvegpat+1
+
+                  if (patch_area(ir,jr,ipat) >= min_patch_area) then
+
+                     select case (isfcl)
+                     case (1,2)
+                        datq_pat = nint(leaf_class(ir,jr,ipat))
+                     case (5)
+                        datq_pat = nint(soil_text(mzg,ir,jr,ipat))
+                     end select
+
+                     !---------------------------------------------------------------------!
+                     !      Find isoil value for which datq_soil(datq_pat,isoil) is a      !
+                     ! maximum.                                                            !
+                     !---------------------------------------------------------------------!
+                     soil_count = 0
+                     do isoil = 1,nscol
+                        if (datq_scol(datq_pat,isoil) > soil_count) then
+                           soil_count = datq_scol(datq_pat,isoil)
+                           jsoil      = isoil
+                        end if
+                     end do
+
+                     checksum = checksum + float(jsoil)
+                     !---------------------------------------------------------------------!
+
+
+
+                     !---------------------------------------------------------------------!
+                     !      For now, assume single level of input soil data (e.g., FAO)    !
+                     ! and fill all soil levels with this value.                           !
+                     !---------------------------------------------------------------------!
+                     if (jsoil /= 0) then
+                        soil_color(ir,jr,ipat) = float(jsoil)
+                     else
+                        soil_color(ir,jr,ipat) = float(isoilcol)
+                     end if
+                     !---------------------------------------------------------------------!
+                  end if
+               end do
+               !---------------------------------------------------------------------------!
             end if
          end do isoilloop
       end do jsoilloop
