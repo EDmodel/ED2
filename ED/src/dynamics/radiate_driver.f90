@@ -207,7 +207,13 @@ subroutine sfcrad_ed(cosz,cosaoi,csite,mzg,mzs,ntext_soil,ncol_soil,maxcohort,tu
                                    , par_beam_norm        & ! intent(in)
                                    , par_diff_norm        & ! intent(in)
                                    , nir_beam_norm        & ! intent(in)
-                                   , nir_diff_norm        ! ! intent(in)
+                                   , nir_diff_norm        & ! intent(in)
+                                   , leaf_scatter_vis     & ! intent(in)
+                                   , wood_scatter_vis     & ! intent(in)
+                                   , leaf_scatter_nir     & ! intent(in)
+                                   , wood_scatter_nir     & ! intent(in)
+                                   , leaf_emis            & ! intent(in)
+                                   , wood_emis            ! ! intent(in)
    use soil_coms            , only : soil                 & ! intent(in)
                                    , soilcol              & ! intent(in)
                                    , emisg                ! ! intent(in)
@@ -237,6 +243,7 @@ subroutine sfcrad_ed(cosz,cosaoi,csite,mzg,mzs,ntext_soil,ncol_soil,maxcohort,tu
    integer                                      :: il
    integer                                      :: ipa
    integer                                      :: ico
+   integer                                      :: ipft
    integer                                      :: cohort_count
    integer                                      :: nsoil
    integer                                      :: colour
@@ -297,8 +304,14 @@ subroutine sfcrad_ed(cosz,cosaoi,csite,mzg,mzs,ntext_soil,ncol_soil,maxcohort,tu
    real                                         :: downward_rshort_below_diffuse
    real                                         :: surface_absorbed_longwave_surf
    real                                         :: surface_absorbed_longwave_incid
-   real                                         :: weight_leaf
-   real                                         :: weight_wood
+   real                                         :: nir_v_beam
+   real                                         :: nir_v_diffuse
+   real                                         :: wleaf_vis
+   real                                         :: wleaf_nir
+   real                                         :: wleaf_tir
+   real                                         :: wwood_vis
+   real                                         :: wwood_nir
+   real                                         :: wwood_tir
    !----- External function. --------------------------------------------------------------!
    real            , external                   :: sngloff
    !----- Local constants. ----------------------------------------------------------------!
@@ -749,14 +762,16 @@ subroutine sfcrad_ed(cosz,cosaoi,csite,mzg,mzs,ntext_soil,ncol_soil,maxcohort,tu
             ! possible PAR is just the PAR from the tallest resolvable cohort is good      !
             ! enough.                                                                      !
             !------------------------------------------------------------------------------!
-            weight_leaf = sngloff( clumping_factor(pft_array(cohort_count))                &
+            ipft      = pft_array(cohort_count)
+            wleaf_vis = sngloff( clumping_factor(ipft) * (1.d0 - leaf_scatter_vis(ipft))   &
+                               * LAI_array(cohort_count)                                   &
+                               / ( clumping_factor(ipft) * (1.d0 - leaf_scatter_vis(ipft)) &
                                  * LAI_array(cohort_count)                                 &
-                                 / ( clumping_factor(pft_array(cohort_count))              &
-                                   * LAI_array(cohort_count)                               &
-                                   + WAI_array(cohort_count))                              &
-                                 , tiny_offset)
-            csite%par_l_beam_max(ipa)    = par_v_beam_array(cohort_count)    * weight_leaf
-            csite%par_l_diffuse_max(ipa) = par_v_diffuse_array(cohort_count) * weight_leaf
+                                 + (1.d0 - wood_scatter_vis(ipft))                         &
+                                 * WAI_array(cohort_count) )                               &
+                               , tiny_offset)
+            csite%par_l_beam_max(ipa)    = par_v_beam_array(cohort_count)    * wleaf_vis
+            csite%par_l_diffuse_max(ipa) = par_v_diffuse_array(cohort_count) * wleaf_vis
             !------------------------------------------------------------------------------!
 
 
@@ -810,36 +825,76 @@ subroutine sfcrad_ed(cosz,cosaoi,csite,mzg,mzs,ntext_soil,ncol_soil,maxcohort,tu
 
          do ico = cpatch%ncohorts,1,-1
             if (cpatch%leaf_resolvable(ico) .or. cpatch%wood_resolvable(ico)) then
-               il = il + 1
-               
+               il   = il + 1
+               ipft = pft_array(il)
+
                !---------------------------------------------------------------------------!
-               weight_leaf = sngloff( clumping_factor(pft_array(il)) * LAI_array(il)       &
-                                    / ( clumping_factor(pft_array(il)) * LAI_array(il)     &
-                                      + WAI_array(il)), tiny_offset)
-               weight_wood = 1. - weight_leaf
+               !      Find the weight for leaves and branchwood.  This is a weighted aver- !
+               ! age between the area and absorptance.  We must treat the visible and near !
+               ! infrared separately.                                                      !
+               !---------------------------------------------------------------------------!
+               wleaf_vis = sngloff ( ( clumping_factor(ipft)                               &
+                                     * (1.d0 - leaf_scatter_vis(ipft))                     &
+                                     * LAI_array(il) )                                     &
+                                   / ( clumping_factor(ipft)                               &
+                                     * (1.d0 - leaf_scatter_vis(ipft))                     &
+                                     * LAI_array(il)                                       &
+                                     + (1.d0 - wood_scatter_vis(ipft))                     &
+                                     * WAI_array(il) ), tiny_offset )
+               wleaf_nir = sngloff ( ( clumping_factor(ipft)                               &
+                                     * (1.d0 - leaf_scatter_nir(ipft))                     &
+                                     * LAI_array(il) )                                     &
+                                   / ( clumping_factor(ipft)                               &
+                                     * (1.d0 - leaf_scatter_nir(ipft))                     &
+                                     * LAI_array(il)                                       &
+                                     + (1.d0 - wood_scatter_nir(ipft))                     &
+                                     * WAI_array(il) ), tiny_offset  )
+               wleaf_tir = sngloff( ( leaf_emis(ipft) * LAI_array(il) )                    &
+                                  / ( leaf_emis(ipft) * LAI_array(il)                      &
+                                    + wood_emis(ipft) * WAI_array(il) ), tiny_offset )
+               wwood_vis = 1. - wleaf_vis
+               wwood_nir = 1. - wleaf_nir
+               wwood_tir = 1. - wleaf_tir
+               !---------------------------------------------------------------------------!
 
-               cpatch%par_l_beam       (ico) = par_v_beam_array              (il)          &
-                                             * weight_leaf
-               cpatch%par_l_diffuse    (ico) = par_v_diffuse_array           (il)          &
-                                             * weight_leaf
-               cpatch%rshort_l_beam    (ico) = rshort_v_beam_array           (il)          &
-                                             * weight_leaf
-               cpatch%rshort_l_diffuse (ico) = rshort_v_diffuse_array        (il)          &
-                                             * weight_leaf
-               cpatch%rlong_l_surf     (ico) = lw_v_surf_array               (il)          &
-                                             * weight_leaf
-               cpatch%rlong_l_incid    (ico) = lw_v_incid_array              (il)          &
-                                             * weight_leaf
-               cpatch%rshort_w_beam    (ico) = rshort_v_beam_array           (il)          &
-                                             * weight_wood
-               cpatch%rshort_w_diffuse (ico) = rshort_v_diffuse_array        (il)          &
-                                             * weight_wood
-               cpatch%rlong_w_surf     (ico) = lw_v_surf_array               (il)          &
-                                             * weight_wood
-               cpatch%rlong_w_incid    (ico) = lw_v_incid_array              (il)          &
-                                             * weight_wood
 
 
+
+
+               !----- Find the near infrared absorption, so we average things properly. ---!
+               nir_v_beam    = rshort_v_beam    (il) - par_v_beam_array    (il)
+               nir_v_diffuse = rshort_v_diffuse (il) - par_v_diffuse_array (il)
+               !---------------------------------------------------------------------------!
+
+
+
+
+               !---------------------------------------------------------------------------!
+               !    Split the layer radiation between leaf and branchwood.                 !
+               !---------------------------------------------------------------------------!
+               !------ Visible (PAR). -----------------------------------------------------!
+               cpatch%par_l_beam       (ico) = par_v_beam_array    (il) * wleaf_vis
+               cpatch%par_l_diffuse    (ico) = par_v_diffuse_array (il) * wleaf_vis
+               cpatch%par_w_beam       (ico) = par_v_beam_array    (il) * wwood_vis
+               cpatch%par_w_diffuse    (ico) = par_v_diffuse_array (il) * wwood_vis
+               !------ Total short wave radiation (PAR+NIR). ------------------------------!
+               cpatch%rshort_l_beam    (ico) = par_v_beam_array    (il) * wleaf_vis        &
+                                             + nir_v_beam_array         * wleaf_nir
+               cpatch%rshort_l_diffuse (ico) = par_v_diffuse_array (il) * wleaf_vis        &
+                                             + nir_v_diffuse_array      * wleaf_nir
+               cpatch%rshort_w_beam    (ico) = par_v_beam_array    (il) * wwood_vis        &
+                                             + nir_v_beam_array         * wwood_nir
+               cpatch%rshort_w_diffuse (ico) = par_v_diffuse_array (il) * wwood_vis        &
+                                             + nir_v_diffuse_array      * wwood_nir
+               !----- Thermal infra-red (long wave). --------------------------------------!
+               cpatch%rlong_l_surf     (ico) = lw_v_surf_array     (il) * wleaf_tir
+               cpatch%rlong_l_incid    (ico) = lw_v_incid_array    (il) * wleaf_tir
+               cpatch%rlong_w_surf     (ico) = lw_v_surf_array     (il) * wwood_tir
+               cpatch%rlong_w_incid    (ico) = lw_v_incid_array    (il) * wwood_tir
+               !---------------------------------------------------------------------------!
+
+
+               !----- Save the light levels. ----------------------------------------------!
                cpatch%lambda_light     (ico) = sngloff(lambda_array          (il)          &
                                                       ,tiny_offset )
                cpatch%beamext_level    (ico) = sngloff(beam_level_array      (il)          &
@@ -852,6 +907,7 @@ subroutine sfcrad_ed(cosz,cosaoi,csite,mzg,mzs,ntext_soil,ncol_soil,maxcohort,tu
                                                       ,tiny_offset )
                cpatch%light_level_diff (ico) = sngloff(light_diff_level_array(il)          &
                                                       ,tiny_offset )
+               !---------------------------------------------------------------------------!
             end if
          end do
 

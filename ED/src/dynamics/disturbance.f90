@@ -292,7 +292,6 @@ module disturbance_utils
                         call insert_survivors(csite,new_lu+onsp,ipa,new_lu,area_fac        &
                                              ,poly_dest_type,mindbh_harvest)
                         call accum_dist_litt(csite,new_lu+onsp,ipa,new_lu,area_fac         &
-                                            ,cpoly%loss_fraction(new_lu,isi)               &
                                             ,poly_dest_type,mindbh_harvest)
 
                         !----- Update patch area. -----------------------------------------!
@@ -436,7 +435,6 @@ module disturbance_utils
                               , include_fire              & ! intent(in)
                               , plantation_rotation       & ! intent(in)
                               , mature_harvest_age        ! ! intent(in)
-      use pft_coms     , only : agf_bs                    ! ! intent(in)
       use ed_max_dims  , only : n_pft                     ! ! intent(in)
 
       implicit none
@@ -628,15 +626,6 @@ module disturbance_utils
             cpoly%disturbance_rates(3,2,isi)= cpoly%nat_disturbance_rate(isi)
             !----- Primary forest to primary forest (3 => 3).  Natural disturbance. -------!
             cpoly%disturbance_rates(3,3,isi)= cpoly%nat_disturbance_rate(isi)
-            !------------------------------------------------------------------------------!
-
-            !------------------------------------------------------------------------------!
-            !      Fraction of above ground litter from disturbance that is removed from   !
-            ! patch.                                                                       !
-            !------------------------------------------------------------------------------!
-            cpoly%loss_fraction(1,isi) = agf_bs
-            cpoly%loss_fraction(2,isi) = agf_bs
-            cpoly%loss_fraction(3,isi) = 0.0
             !------------------------------------------------------------------------------!
 
          end do siteloop
@@ -1043,8 +1032,7 @@ module disturbance_utils
    !=======================================================================================!
    !     This subroutine updates the litter pools after a disturbance takes place.         !
    !---------------------------------------------------------------------------------------!
-   subroutine accum_dist_litt(csite,np,cp,q,area_fac,loss_fraction,poly_dest_type          &
-                             ,mindbh_harvest)
+   subroutine accum_dist_litt(csite,np,cp,q,area_fac,poly_dest_type,mindbh_harvest)
       use ed_state_vars, only : sitetype     & ! structure
                               , patchtype    & ! structure
                               , polygontype  ! ! structure
@@ -1055,6 +1043,7 @@ module disturbance_utils
                               , c2n_recruit  & ! intent(in)
                               , c2n_stem     & ! intent(in)
                               , l2n_stem     ! ! intent(in)
+      use pft_coms     , only : agf_bs       ! ! intent(in)
       use grid_coms    , only : nzg          ! ! intent(in)
 
       implicit none
@@ -1063,7 +1052,6 @@ module disturbance_utils
       integer                          , intent(in) :: np
       integer                          , intent(in) :: cp
       real           , dimension(n_pft), intent(in) :: mindbh_harvest
-      real                             , intent(in) :: loss_fraction
       integer                          , intent(in) :: q
       real                             , intent(in) :: area_fac
       integer                          , intent(in) :: poly_dest_type
@@ -1072,6 +1060,7 @@ module disturbance_utils
       type(patchtype)                  , pointer    :: npatch
       integer                                       :: ico
       integer                                       :: ipft
+      real                                          :: loss_fraction
       real                                          :: fast_litter
       real                                          :: struct_litter
       real                                          :: struct_lignin
@@ -1094,6 +1083,20 @@ module disturbance_utils
 
       do ico = 1,cpatch%ncohorts
          ipft = cpatch%pft(ico)
+
+         !---------------------------------------------------------------------------------!
+         !     Find the loss fraction, which normally corresponds to the above-ground bio- !
+         ! mass in case the patch was harvest/logged, or nothing in case it was a natural  !
+         ! disturbance.                                                                    !
+         !---------------------------------------------------------------------------------!
+         select case(q)
+         case (1,2)
+            loss_fraction = agf_bs(ipft)
+         case (3)
+            loss_fraction = 0.
+         end select
+         !---------------------------------------------------------------------------------!
+
 
          fast_litter   = fast_litter                                                       &
                        + (1. - survivorship(q,poly_dest_type,mindbh_harvest,csite,cp,ico)) &

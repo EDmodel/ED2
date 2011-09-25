@@ -363,7 +363,7 @@ recursive subroutine read_ed_xml_config(filename)
         call getConfigREAL  ('C2B','pftconst',i,rval,texist)
         if(texist) C2B = real(rval)
         call getConfigREAL  ('agf_bs','pftconst',i,rval,texist)
-        if(texist) agf_bs = real(rval)
+        if(texist) agf_bs(:) = real(rval)
         call getConfigREAL  ('frost_mort','pftconst',i,rval,texist)
         if(texist) frost_mort = real(rval)
         

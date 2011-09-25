@@ -314,8 +314,8 @@ module pft_coms
    !----- Carbon-to-biomass ratio of plant tissues. ---------------------------------------!
    real :: C2B
    !----- Fraction of structural stem that is assumed to be above ground. -----------------!
-   real :: agf_bs
-   real :: agf_bsi
+   real, dimension(n_pft) :: agf_bs
+   real, dimension(n_pft) :: agf_bsi
    !----- Supply coefficient for plant nitrogen uptake [m2/kgC_fine_root/day].  -----------!
    real :: plant_N_supply_scale
    !---------------------------------------------------------------------------------------!

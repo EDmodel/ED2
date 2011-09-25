@@ -1853,22 +1853,6 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
 
    call hdf_getslab_r(cpoly%lambda_fire,'LAMBDA_FIRE ',dsetrank,iparallel,.true.)
 
-   dsetrank    = 2_8
-   globdims(1) = int(n_dist_types,8)
-   chnkdims(1) = int(n_dist_types,8)
-   memdims(1)  = int(n_dist_types,8)
-   memsize(1)  = int(n_dist_types,8)
-   chnkoffs(1) = 0_8
-   memoffs(1)  = 0_8
-   globdims(2)  = int(nsites_global,8)
-   chnkdims(2)  = int(cpoly%nsites,8)
-   chnkoffs(2)  = int(pysi_index - 1,8)
-   memdims(2)   = int(cpoly%nsites,8)
-   memsize(2)   = int(cpoly%nsites,8)
-   memoffs(2)   = 0_8
-
-   call hdf_getslab_r(cpoly%loss_fraction,'LOSS_FRACTION ',dsetrank,iparallel,.true.)
-
    dsetrank    = 3_8
    globdims(1:2) = int(n_dist_types,8)
    chnkdims(1:2) = int(n_dist_types,8)

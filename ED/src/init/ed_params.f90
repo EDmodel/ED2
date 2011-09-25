@@ -2390,8 +2390,8 @@ subroutine init_pft_alloc_params()
 
 
    !----- Fraction of structural stem that is assumed to be above ground. -----------------!
-   agf_bs  = 0.7
-   agf_bsi = 1. / agf_bs
+   agf_bs(1:17)   = 0.7
+   agf_bsi(1:17)  = 1. / agf_bs(1:17)
    !---------------------------------------------------------------------------------------!
 
 

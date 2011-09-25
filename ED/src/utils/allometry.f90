@@ -379,8 +379,8 @@ module allometry
       real                 :: absapwood
       !------------------------------------------------------------------------------------!
 
-      bstem        = agf_bs * bdead
-      absapwood    = agf_bs * bsapwood
+      bstem        = agf_bs(pft) * bdead
+      absapwood    = agf_bs(pft) * bsapwood
       wood_biomass = bstem + absapwood
       return
    end function wood_biomass
@@ -397,7 +397,6 @@ module allometry
    !     This subroutine finds the total above ground biomass (wood + leaves)              !
    !---------------------------------------------------------------------------------------!
    real function ed_biomass(bdead, balive, bleaf, pft, hite, bstorage, bsapwood)
-      use pft_coms, only:  agf_bs ! ! intent(in)
 
       implicit none
       !----- Arguments --------------------------------------------------------------------!

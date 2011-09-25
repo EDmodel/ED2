@@ -126,10 +126,10 @@ subroutine structural_growth(cgrid, month)
 
 
                !------ NPP allocation to wood and course roots in KgC /m2 -----------------!
-               cpatch%today_NPPwood(ico) = agf_bs * f_bdead * cpatch%bstorage(ico)         &
+               cpatch%today_NPPwood(ico) = agf_bs(ipft) * f_bdead * cpatch%bstorage(ico)   &
                                           * cpatch%nplant(ico)
-               cpatch%today_NPPcroot(ico) = (1. - agf_bs) * f_bdead * cpatch%bstorage(ico) &
-                                          * cpatch%nplant(ico)
+               cpatch%today_NPPcroot(ico) = (1. - agf_bs(ipft)) * f_bdead                  &
+                                          * cpatch%bstorage(ico) * cpatch%nplant(ico)
                                           
                !---------------------------------------------------------------------------!
                !      Rebalance the plant nitrogen uptake considering the actual alloc-    !
@@ -383,10 +383,10 @@ subroutine structural_growth_eq_0(cgrid, month)
 
 
                !------ NPP allocation to wood and course roots in KgC /m2 -----------------!
-               cpatch%today_NPPwood(ico) = agf_bs * f_bdead * cpatch%bstorage(ico)         &
+               cpatch%today_NPPwood(ico) = agf_bs(ipft) * f_bdead * cpatch%bstorage(ico)   &
                                           * cpatch%nplant(ico)
-               cpatch%today_NPPcroot(ico) = (1. - agf_bs) * f_bdead * cpatch%bstorage(ico) &
-                                          * cpatch%nplant(ico)
+               cpatch%today_NPPcroot(ico) = (1. - agf_bs(ipft)) * f_bdead                  &
+                                          * cpatch%bstorage(ico) * cpatch%nplant(ico)
                                           
                !---------------------------------------------------------------------------!
                !      Rebalance the plant nitrogen uptake considering the actual alloc-    !
