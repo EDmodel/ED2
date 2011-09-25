@@ -12,13 +12,14 @@ Module mem_leaf
    type leaf_vars
       
       !------------------------------------------------------------------------------------!
-      !   Soil properties, dimensioned by (nzg,nxp,nyp,npatch), except for roughness which !
-      ! is dimensioned by (nxp,nyp,npatch).                                                !
+      !   Soil properties, dimensioned by (nzg,nxp,nyp,npatch), except for roughness and   !
+      ! colour which are dimensioned by (nxp,nyp,npatch).                                  !
       !------------------------------------------------------------------------------------!
       real, dimension(:,:,:,:), pointer :: soil_water  & ! Soil moisture        [    m³/m³]
                                          , soil_energy & ! Internal energy      [     J/m³]
                                          , soil_text   ! ! Soil texture class   [      ---]
       real, dimension(  :,:,:), pointer :: soil_rough  ! ! Soil roughness       [        m]
+      real, dimension(  :,:,:), pointer :: soil_color  ! ! Soil colour          [      ---]
 
       !------------------------------------------------------------------------------------!
       !    Temporary surface water or snow layer properties, dimensioned by                !
@@ -108,6 +109,14 @@ Module mem_leaf
                                        , sensible_vc ! ! Sens. heat (Veg->Can)  [     W/m²]
 
       !------------------------------------------------------------------------------------!
+      !     This is based on a 10-day running average of the relative soil moisture        !
+      ! potential in the root zone, and it is used by all vegetation types that have       !
+      ! drought phenology (phenology(nveg) = 4) and LAI is not to be read from standard    !
+      ! files.                                                                             !
+      !------------------------------------------------------------------------------------!
+      real, dimension(:,:,:), pointer :: psibar_10d
+
+      !------------------------------------------------------------------------------------!
       !     Radiation variables, for diagnostics only (nxp,nyp,npatch).                    !
       !------------------------------------------------------------------------------------!
       real, dimension(:,:,:), pointer :: rshort_gnd  & ! Absorbed SW radiation  [     W/m²]
@@ -135,6 +144,7 @@ Module mem_leaf
    !     Other variables.                                                                  !
    !---------------------------------------------------------------------------------------!
    integer                 :: nslcon      ! Soil texture if constant for entire domain
+   integer                 :: isoilcol    ! Number of vegetation types
    integer                 :: nvgcon      ! Vegetation class if constant for entire domain
    integer                 :: nvegpat     ! Number of vegetation types
    integer                 :: isfcl       ! Surface model (1. LEAF3, 2. LEAF-Hydro, 5. ED2)
@@ -215,6 +225,7 @@ Module mem_leaf
       allocate (leaf%soil_energy      (nzg,nx,ny,np))
       allocate (leaf%soil_text        (nzg,nx,ny,np))
       allocate (leaf%soil_rough       (    nx,ny,np))
+      allocate (leaf%soil_color       (    nx,ny,np))
 
       allocate (leaf%sfcwater_mass    (nzs,nx,ny,np))
       allocate (leaf%sfcwater_energy  (nzs,nx,ny,np))
@@ -271,6 +282,7 @@ Module mem_leaf
       allocate (leaf%transp           (    nx,ny,np))
       allocate (leaf%sensible_gc      (    nx,ny,np))
       allocate (leaf%sensible_vc      (    nx,ny,np))
+      allocate (leaf%psibar_10d       (    nx,ny,np))
 
       allocate (leaf%rshort_gnd       (    nx,ny,np))
       allocate (leaf%rlong_gnd        (    nx,ny,np))
@@ -311,6 +323,7 @@ Module mem_leaf
       if (associated(leaf%soil_energy      ))  nullify(leaf%soil_energy      )
       if (associated(leaf%soil_text        ))  nullify(leaf%soil_text        )
       if (associated(leaf%soil_rough       ))  nullify(leaf%soil_rough       )
+      if (associated(leaf%soil_color       ))  nullify(leaf%soil_color       )
 
       if (associated(leaf%sfcwater_mass    ))  nullify(leaf%sfcwater_mass    )
       if (associated(leaf%sfcwater_energy  ))  nullify(leaf%sfcwater_energy  )
@@ -367,6 +380,7 @@ Module mem_leaf
       if (associated(leaf%transp           ))  nullify(leaf%transp           )
       if (associated(leaf%sensible_gc      ))  nullify(leaf%sensible_gc      )
       if (associated(leaf%sensible_vc      ))  nullify(leaf%sensible_vc      )
+      if (associated(leaf%psibar_10d       ))  nullify(leaf%psibar_10d       )
 
       if (associated(leaf%rshort_gnd       ))  nullify(leaf%rshort_gnd       )
       if (associated(leaf%rlong_gnd        ))  nullify(leaf%rlong_gnd        )
@@ -406,6 +420,7 @@ Module mem_leaf
       if (associated(leaf%soil_energy      ))  leaf%soil_energy      = 0.0
       if (associated(leaf%soil_text        ))  leaf%soil_text        = 0.0
       if (associated(leaf%soil_rough       ))  leaf%soil_rough       = 0.0
+      if (associated(leaf%soil_color       ))  leaf%soil_color       = 0.0
 
       if (associated(leaf%sfcwater_mass    ))  leaf%sfcwater_mass    = 0.0
       if (associated(leaf%sfcwater_energy  ))  leaf%sfcwater_energy  = 0.0
@@ -462,6 +477,7 @@ Module mem_leaf
       if (associated(leaf%transp           ))  leaf%transp           = 0.0
       if (associated(leaf%sensible_gc      ))  leaf%sensible_gc      = 0.0
       if (associated(leaf%sensible_vc      ))  leaf%sensible_vc      = 0.0
+      if (associated(leaf%psibar_10d       ))  leaf%psibar_10d       = 0.0
 
       if (associated(leaf%rshort_gnd       ))  leaf%rshort_gnd       = 0.0
       if (associated(leaf%rlong_gnd        ))  leaf%rlong_gnd        = 0.0
@@ -499,6 +515,7 @@ Module mem_leaf
       if (associated(leaf%soil_energy      ))  deallocate(leaf%soil_energy      )
       if (associated(leaf%soil_text        ))  deallocate(leaf%soil_text        )
       if (associated(leaf%soil_rough       ))  deallocate(leaf%soil_rough       )
+      if (associated(leaf%soil_color       ))  deallocate(leaf%soil_color       )
 
       if (associated(leaf%sfcwater_mass    ))  deallocate(leaf%sfcwater_mass    )
       if (associated(leaf%sfcwater_energy  ))  deallocate(leaf%sfcwater_energy  )
@@ -555,6 +572,7 @@ Module mem_leaf
       if (associated(leaf%transp           ))  deallocate(leaf%transp           )
       if (associated(leaf%sensible_gc      ))  deallocate(leaf%sensible_gc      )
       if (associated(leaf%sensible_vc      ))  deallocate(leaf%sensible_vc      )
+      if (associated(leaf%psibar_10d       ))  deallocate(leaf%psibar_10d       )
 
       if (associated(leaf%rshort_gnd       ))  deallocate(leaf%rshort_gnd       )
       if (associated(leaf%rlong_gnd        ))  deallocate(leaf%rlong_gnd        )
@@ -656,6 +674,10 @@ Module mem_leaf
       if (associated(leaf%soil_rough))                                                     &
          call vtables2(leaf%soil_rough,leafm%soil_rough,ng,npts,imean                      &
                       ,'SOIL_ROUGH :6:hist:anal:mpti:mpt3'//trim(str_recycle))
+
+      if (associated(leaf%soil_color))                                                     &
+         call vtables2(leaf%soil_color,leafm%soil_color,ng,npts,imean                      &
+                      ,'SOIL_COLOR :6:hist:anal:mpti:mpt3'//trim(str_recycle))
 
       if (associated(leaf%sfcwater_nlev))                                                  &
          call vtables2(leaf%sfcwater_nlev,leafm%sfcwater_nlev,ng,npts,imean                &
@@ -832,6 +854,10 @@ Module mem_leaf
       if (associated(leaf%sensible_vc))                                                    &
          call vtables2(leaf%sensible_vc,leafm%sensible_vc,ng,npts,imean                    &
                       ,'SENSIBLE_VC :6:hist:anal:mpti:mpt3')
+
+      if (associated(leaf%psibar_10d))                                                     &
+         call vtables2(leaf%psibar_10d,leafm%psibar_10d,ng,npts,imean                      &
+                      ,'PSIBAR_10D :6:hist:anal:mpti:mpt3')
 
       if (associated(leaf%R_aer))                                                          &
          call vtables2(leaf%R_aer,leafm%R_aer,ng,npts,imean                                &

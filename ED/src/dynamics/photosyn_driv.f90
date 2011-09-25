@@ -13,8 +13,7 @@ subroutine canopy_photosynthesis(csite,cmet,mzg,ipa,lsl,ntext_soil              
                              , include_pft       ! ! intent(in)
    use soil_coms      , only : soil              & ! intent(in)
                              , slz               & ! intent(in)
-                             , dslz              & ! intent(in)
-                             , freezecoef        ! ! intent(in)
+                             , dslz              ! ! intent(in)
    use consts_coms    , only : t00               & ! intent(in)
                              , epi               & ! intent(in)
                              , wdnsi             & ! intent(in)
@@ -48,10 +47,9 @@ subroutine canopy_photosynthesis(csite,cmet,mzg,ipa,lsl,ntext_soil              
    integer                                 :: limit_flag
    logical, dimension(mzg+1)               :: root_depth_indices ! 
    logical                                 :: las
-   real   , dimension(mzg+1)               :: avg_frozen_water
-   real   , dimension(mzg+1)               :: avg_liquid_water
    real   , dimension(mzg+1)               :: available_liquid_water
    real   , dimension(mzg+1)               :: wilting_factor
+   real   , dimension(mzg+1)               :: h2o_stress_lyr
    real                                    :: leaf_par
    real                                    :: leaf_resp
    real                                    :: d_gsw_open
@@ -62,17 +60,16 @@ subroutine canopy_photosynthesis(csite,cmet,mzg,ipa,lsl,ntext_soil              
    real                                    :: d_lsfc_co2_closed
    real                                    :: d_lint_co2_open
    real                                    :: d_lint_co2_closed
-   real                                    :: slpotv
    real                                    :: swp
    real                                    :: vm
    real                                    :: compp
    real                                    :: broot_tot
    real                                    :: broot_loc
    real                                    :: wgpfrac
-   real                                    :: avg_fracliq
    real                                    :: psi_wilting
    real                                    :: psi_layer
-   real                                    :: freezecor
+   real                                    :: h2o_stress_avg
+   real                                    :: available_water_lyr
    real                                    :: pss_available_water
    !---------------------------------------------------------------------------------------!
 
@@ -92,67 +89,47 @@ subroutine canopy_photosynthesis(csite,cmet,mzg,ipa,lsl,ntext_soil              
 
 
    !----- Calculate liquid water available for transpiration. -----------------------------!
-   available_liquid_water(mzg+1) = 0.
+   available_liquid_water(:) = 0.
+   h2o_stress_lyr        (:) = 0.
    do k1 = mzg, lsl, -1
       nsoil = ntext_soil(k1)
       available_liquid_water(k1) = available_liquid_water(k1+1)                            &
                                  + wdns * dslz(k1) * csite%soil_fracliq(k1,ipa)            &
                                  * max(0.0, csite%soil_water(k1,ipa) - soil(nsoil)%soilwp )
+
+      !----- Find the average soil wetness. -----------------------------------------------!
+      wgpfrac = csite%soil_water(k1,ipa) * csite%soil_fracliq(k1,ipa)                      &
+              / soil(nsoil)%slmsts
+      !------------------------------------------------------------------------------------!
+
+
+
+      !----- Find the potential for this layer and wilting point. -------------------------!
+      psi_wilting  = soil(nsoil)%slpots                                                    &
+                   / (soil(nsoil)%soilwp / soil(nsoil)%slmsts) ** soil(nsoil)%slbs
+      psi_layer    = soil(nsoil)%slpots / wgpfrac ** soil(nsoil)%slbs
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !     Find the wilting factor which will control the dry soil correction for this    !
+      ! layer.                                                                             !
+      !------------------------------------------------------------------------------------!
+      wilting_factor(k1) = (psi_layer          - psi_wilting)                              &
+                         / (soil(nsoil)%slpots - psi_wilting)
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !     Find the soil moisture stress function for this layer.                         !
+      !------------------------------------------------------------------------------------!
+      h2o_stress_lyr(k1) = (psi_layer   - soil(nsoil)%slpots)                              &
+                         / (psi_wilting - soil(nsoil)%slpots)
+      !------------------------------------------------------------------------------------!
    end do
    !---------------------------------------------------------------------------------------!
-
-
-   !---------------------------------------------------------------------------------------!
-   !     If we are solving H2O_PLANT_LIM = 2, then we must account for the water potential !
-   ! as in CLM.                                                                            !
-   !---------------------------------------------------------------------------------------!
-   select case (h2o_plant_lim)
-   case (2)
-
-      !----- Find the average liquid and frozen water. ------------------------------------!
-      avg_liquid_water(:) = 0.0
-      avg_frozen_water(:) = 0.0
-      do k1=mzg,lsl,-1
-         avg_frozen_water(k1) = avg_frozen_water(k1+1)                                     &
-                              + dslz(k1) * (1. - csite%soil_fracliq(k1,ipa))               &
-                              * csite%soil_water(k1,ipa)
-         avg_liquid_water(k1) = avg_liquid_water(k1+1)                                     &
-                              + dslz(k1) * csite%soil_fracliq(k1,ipa)                      &
-                              * csite%soil_water(k1,ipa)
-      end do
-      avg_frozen_water(lsl:mzg) = avg_frozen_water(lsl:mzg) / (- slz(lsl:mzg))
-      avg_liquid_water(lsl:mzg) = avg_liquid_water(lsl:mzg) / (- slz(lsl:mzg))
-      !------------------------------------------------------------------------------------!
-
-
-
-      !------------------------------------------------------------------------------------!
-      !    Compute the soil potential for transpiration for each layer as in CLM.          !
-      !------------------------------------------------------------------------------------!
-      wilting_factor(:) = 0.0
-      do k1=lsl,mzg
-         nsoil = ntext_soil(k1)
-         if (avg_liquid_water(k1) > soil(nsoil)%soilwp) then
-            !----- Find the average soil wetness. -----------------------------------------!
-            wgpfrac = avg_liquid_water(k1) / soil(nsoil)%slmsts
-            avg_fracliq  = avg_liquid_water(k1)                                            &
-                         / (avg_liquid_water(k1) + avg_frozen_water(k1))
-
-            !----- Apply correction in case the soil is partially frozen. -----------------!
-            freezecor    = 10. ** max(lnexp_min,- freezecoef * (1.0 - avg_fracliq))
-            psi_wilting  = soil(nsoil)%slpots                                              &
-                         / (soil(nsoil)%soilwp / soil(nsoil)%slmsts) ** soil(nsoil)%slbs
-            psi_layer    = soil(nsoil)%slpots / wgpfrac ** soil(nsoil)%slbs
-
-            !----- Find the wilting factor which will control the dry soil correction. ----!
-            wilting_factor(k1) = max( 0., min(1., (psi_wilting - psi_layer         )       &
-                                                / (psi_wilting - soil(nsoil)%slpots) ) )
-         end if
-      end do
-      !------------------------------------------------------------------------------------!
-   end select
-   !---------------------------------------------------------------------------------------!
-
 
 
 
@@ -193,6 +170,14 @@ subroutine canopy_photosynthesis(csite,cmet,mzg,ipa,lsl,ntext_soil              
             !    Scale photosynthetically active radiation per unit of leaf.               !
             !------------------------------------------------------------------------------!
             leaf_par = csite%par_l_max(ipa) / cpatch%lai(tuco)
+            !------------------------------------------------------------------------------!
+
+
+            !------------------------------------------------------------------------------!
+            !     The maximum photosynthesis assumes no water limitation either.           !
+            !------------------------------------------------------------------------------!
+            h2o_stress_avg = 0.0
+            !------------------------------------------------------------------------------!
 
             !------------------------------------------------------------------------------!
             !    Call the photosynthesis for maximum photosynthetic rates.  The units      !
@@ -215,6 +200,7 @@ subroutine canopy_photosynthesis(csite,cmet,mzg,ipa,lsl,ntext_soil              
              , cpatch%llspan(tuco)         & ! Leaf life span                   [       yr]
              , cpatch%vm_bar(tuco)         & ! Average Vm function              [µmol/m²/s]
              , cpatch%leaf_gbw(tuco)       & ! Aerodyn. condct. of water vapour [  kg/m²/s]
+             , h2o_stress_avg              & ! Water stress parameter           [      ---]
              , csite%A_o_max(ipft,ipa)     & ! Photosynthesis rate     (open)   [µmol/m²/s]
              , csite%A_c_max(ipft,ipa)     & ! Photosynthesis rate     (closed) [µmol/m²/s]
              , d_gsw_open                  & ! Stom. condct. of water  (open)   [  kg/m²/s]
@@ -271,6 +257,29 @@ subroutine canopy_photosynthesis(csite,cmet,mzg,ipa,lsl,ntext_soil              
             !    Scale photosynthetically active radiation per unit of leaf.               !
             !------------------------------------------------------------------------------!
             leaf_par = cpatch%par_l(ico) / cpatch%lai(ico) 
+            !------------------------------------------------------------------------------!
+
+
+
+            !------------------------------------------------------------------------------!
+            !     Find the average water stress correction scaling by the root fraction of !
+            ! each layer.  If H2O_PLANT_LIM is not 3, this is not used.                    !
+            !------------------------------------------------------------------------------!
+            select case (h2o_plant_lim)
+            case (3)
+               !------ Average water stress. ----------------------------------------------!
+               kroot = cpatch%krdepth(ico)
+               h2o_stress_avg = 0.0
+               do k1 = kroot,mzg
+                  h2o_stress_avg = h2o_stress_avg + h2o_stress_lyr(k1) * dslz(k1)
+               end do
+               h2o_stress_avg = h2o_stress_avg / abs(slz(kroot))
+
+            case default
+               !----- No water stress. ----------------------------------------------------!
+               h2o_stress_avg = 0.0
+            end select
+            !------------------------------------------------------------------------------!
 
 
             !------------------------------------------------------------------------------!
@@ -294,6 +303,7 @@ subroutine canopy_photosynthesis(csite,cmet,mzg,ipa,lsl,ntext_soil              
              , cpatch%llspan(ico)          & ! Leaf life span                   [       yr]
              , cpatch%vm_bar(ico)          & ! Average Vm function              [µmol/m²/s]
              , cpatch%leaf_gbw(ico)        & ! Aerodyn. condct. of water vapour [  kg/m²/s]
+             , h2o_stress_avg              & ! Water stress parameter           [      ---]
              , cpatch%A_open(ico)          & ! Photosynthesis rate     (open)   [µmol/m²/s]
              , cpatch%A_closed(ico)        & ! Photosynthesis rate     (closed) [µmol/m²/s]
              , cpatch%gsw_open(ico)        & ! Stom. condct. of water  (open)   [  kg/m²/s]
@@ -338,7 +348,7 @@ subroutine canopy_photosynthesis(csite,cmet,mzg,ipa,lsl,ntext_soil              
             ! supply (cpatch%water_supply).                                                !
             !------------------------------------------------------------------------------!
             select case (h2o_plant_lim)
-            case (0)
+            case (0,3)
                !---- No water limitation, fsw is always 1.0. ------------------------------!
                cpatch%fsw(ico) = 1.0
 
@@ -349,13 +359,17 @@ subroutine canopy_photosynthesis(csite,cmet,mzg,ipa,lsl,ntext_soil              
                                     , cpatch%water_supply(ico) + cpatch%psi_open(ico))
             case (2)
                !---------------------------------------------------------------------------!
-               !     Somewhat based on CLM, but we reduce the total amount of available    !
-               ! water by the fraction of root biomass belonging to this cohort.  We don't !
-               ! have the root profile up to now, assume they are evenly distributed       !
-               ! through all layers that have roots.                                       !
+               !     Somewhat based on CLM-3.5, except that we don't have the root         !
+               ! profile.  A big disadvantage on this method is that it doesn't take root  !
+               ! biomass into account.  I am still thinking about how to include it here.  !
                !---------------------------------------------------------------------------!
-               cpatch%fsw(ico) = wilting_factor(cpatch%krdepth(ico))
-
+               kroot = cpatch%krdepth(ico)
+               cpatch%fsw(ico) = 0.0
+               do k1 = kroot,mzg
+                  cpatch%fsw(ico) = cpatch%fsw(ico)                                        &
+                                  + max(0.,min(1.,wilting_factor(k1))) * dslz(k1)
+               end do
+               cpatch%fsw(ico) = min(1.,max(0.,cpatch%fsw(ico)/abs(slz(kroot))))
             end select
             !------------------------------------------------------------------------------!
 

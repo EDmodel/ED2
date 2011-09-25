@@ -45,7 +45,7 @@ module leaf_coms
    real, parameter :: csh        = 5.0    ! C* for heat (eqn.20, not co2 char. scale)
    real, parameter :: dl79       = 5.0    ! ???
    !----- Oncley and Dudhia (1995) model. -------------------------------------------------!
-   real, parameter :: bbeta      = 5.0    ! Beta used by Businger et al. (1971)
+   real, parameter :: beta_s     = 5.0    ! Beta used by Businger et al. (1971)
    !----- Beljaars and Holtslag (1991) model. ---------------------------------------------!
    real, parameter :: abh91       = -1.00         ! -a from equation  (28) and (32)
    real, parameter :: bbh91       = -twothirds    ! -b from equation  (28) and (32)
@@ -91,8 +91,14 @@ module leaf_coms
    !=======================================================================================!
    !     This sub-routine initialises several parameters for the surface layer model.      !
    !---------------------------------------------------------------------------------------!
-   subroutine sfclyr_init_params()
+   subroutine sfclyr_init_params(istar)
+      use rconstants, only : onesixth ! ! intent(in)
       implicit none
+      !----- Arguments. -------------------------------------------------------------------!
+      integer, intent(in) :: istar
+      !----- External functions. ----------------------------------------------------------!
+      real   , external   :: cbrt
+      !------------------------------------------------------------------------------------!
       
       !----- Similar to CLM (2004), but with different phi_m for very unstable case. ------!
       zetac_um    = -1.5
@@ -116,9 +122,9 @@ module leaf_coms
       ! functions.                                                                         !
       !------------------------------------------------------------------------------------!
       psimc_um  = 0.
-      psimc_um  = psim(zetac_um,.false.)
+      psimc_um  = psim(zetac_um,.false.,istar)
       psihc_uh  = 0.
-      psihc_uh  = psih(zetac_uh,.false.)
+      psihc_uh  = psih(zetac_uh,.false.,istar)
       !------------------------------------------------------------------------------------!
 
       return
@@ -135,7 +141,8 @@ module leaf_coms
    !    This function computes the stability  correction function for momentum.            !
    !---------------------------------------------------------------------------------------!
    real function psim(zeta,stable,istar)
-      use rconstants, only : halfpi
+      use rconstants, only : halfpi   & ! intent(in)
+                           , onesixth ! ! intent(in)
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
       real   , intent(in) :: zeta   ! z/L, z is the height, and L the Obukhov length [ ---]
@@ -143,6 +150,8 @@ module leaf_coms
       integer, intent(in) :: istar  ! Which surface layer closure I should use
       !----- Local variables. -------------------------------------------------------------!
       real                :: xx
+      !----- External functions. ----------------------------------------------------------!
+      real   , external   :: cbrt
       !------------------------------------------------------------------------------------!
       if (stable) then
          select case (istar)
@@ -198,6 +207,8 @@ module leaf_coms
    ! and carbon dioxide too.)                                                              !
    !---------------------------------------------------------------------------------------!
    real function psih(zeta,stable,istar)
+      use rconstants, only : halfpi   & ! intent(in)
+                           , onesixth ! ! intent(in)
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
       real   , intent(in) :: zeta   ! z/L, z is the height, and L the Obukhov length [ ---]
@@ -205,6 +216,8 @@ module leaf_coms
       integer, intent(in) :: istar  ! Which surface layer closure I should use
       !----- Local variables. -------------------------------------------------------------!
       real                :: yy
+      !----- External functions. ----------------------------------------------------------!
+      real   , external   :: cbrt
       !------------------------------------------------------------------------------------!
       if (stable) then
          select case (istar)
@@ -257,6 +270,8 @@ module leaf_coms
    ! momentum with respect to zeta.                                                        !
    !---------------------------------------------------------------------------------------!
    real function dpsimdzeta(zeta,stable,istar)
+      use rconstants, only : halfpi   & ! intent(in)
+                           , onesixth ! ! intent(in)
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
       real   , intent(in) :: zeta   ! z/L, z is the height, and L the Obukhov length [ ---]
@@ -315,6 +330,8 @@ module leaf_coms
    ! heat/moisture/CO2 with respect to zeta.                                               !
    !---------------------------------------------------------------------------------------!
    real function dpsihdzeta(zeta,stable,istar)
+      use rconstants, only : halfpi   & ! intent(in)
+                           , onesixth ! ! intent(in)
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
       real   , intent(in) :: zeta   ! z/L, z is the height, and L the Obukhov length [ ---]
@@ -322,6 +339,8 @@ module leaf_coms
       integer, intent(in) :: istar  ! Which surface layer closure I should use
       !----- Local variables. -------------------------------------------------------------!
       real                :: yy
+      !----- External functions. ----------------------------------------------------------!
+      real   , external   :: cbrt
       !------------------------------------------------------------------------------------!
       if (stable) then
          select case (istar)

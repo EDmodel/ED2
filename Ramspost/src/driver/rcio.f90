@@ -12,15 +12,16 @@ SUBROUTINE COMMIO (CFILE,IO,IUN)
   use therm_lib , only : level_tl=>level,vapour_on,cloud_on,bulk_on
   use micro_coms 
   use rpost_coms
-  use leaf_coms , only : ubmin          & ! intent(inout)
-                       , ugbmin         & ! intent(inout)
-                       , ustmin         & ! intent(inout)
-                       , gamm           & ! intent(inout)
-                       , gamh           & ! intent(inout)
-                       , tprandtl       & ! intent(inout)
-                       , ribmax         & ! intent(inout)
-                       , min_patch_area & ! intent(inout)
-  use rconstants, only : vonk
+  use leaf_coms , only : ubmin              & ! intent(inout)
+                       , ugbmin             & ! intent(inout)
+                       , ustmin             & ! intent(inout)
+                       , gamm               & ! intent(inout)
+                       , gamh               & ! intent(inout)
+                       , tprandtl           & ! intent(inout)
+                       , ribmax             & ! intent(inout)
+                       , min_patch_area     & ! intent(inout)
+                       , sfclyr_init_params ! ! subroutine
+  use rconstants, only : vonk               ! ! intent(inout)
   CHARACTER*(*) IO,CFILE
 
   !  This routine reads or writes the history and analysis file common blocks.
@@ -281,6 +282,10 @@ SUBROUTINE COMMIO (CFILE,IO,IUN)
         rt01dn(z,ng) = myrt01dn(z,ng)
      end do
   end do
+
+
+  !---- Initialise surface layer parameters for the CLM-like similarity theory model.
+  call sfclyr_init_params(istar)
 
   return
 end SUBROUTINE COMMIO

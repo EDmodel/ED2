@@ -323,6 +323,7 @@ subroutine read_ed21_history_file
          !---- The ipy:ipy notation is needed for ifort when checking interfaces. ---------!
          call hdf_getslab_i(cgrid%load_adjacency(ipy:ipy),'LOAD_ADJACENCY '                &
                            ,dsetrank,iparallel,.true.)
+         call hdf_getslab_i(cgrid%ncol_soil(ipy:ipy),'NCOL_SOIL ',dsetrank,iparallel,.true.)
          call hdf_getslab_r(cgrid%wbar(ipy:ipy),'WBAR ',dsetrank,iparallel,.true.)
          
          !----- Load the workload (2D). ---------------------------------------------------!
@@ -396,15 +397,16 @@ subroutine read_ed21_history_file
          memdims(1)  = int(cpoly%nsites,8)
          memsize(1)  = int(cpoly%nsites,8)
          memoffs(1)  = 0_8
-         
-         call hdf_getslab_r(cpoly%area       ,'AREA_SI '    ,dsetrank,iparallel,.true.)
-         call hdf_getslab_r(cpoly%moist_f    ,'MOIST_F '    ,dsetrank,iparallel,.true.)
-         call hdf_getslab_r(cpoly%moist_W    ,'MOIST_W '    ,dsetrank,iparallel,.true.)
-         call hdf_getslab_r(cpoly%elevation  ,'ELEVATION '  ,dsetrank,iparallel,.true.)
-         call hdf_getslab_r(cpoly%slope      ,'SLOPE '      ,dsetrank,iparallel,.true.)
-         call hdf_getslab_r(cpoly%aspect     ,'ASPECT '     ,dsetrank,iparallel,.true.)
-         call hdf_getslab_r(cpoly%TCI        ,'TCI '        ,dsetrank,iparallel,.true.)
-         call hdf_getslab_i(cpoly%patch_count,'PATCH_COUNT ',dsetrank,iparallel,.true.)
+
+         call hdf_getslab_r(cpoly%area       ,'AREA_SI '     ,dsetrank,iparallel,.true.)
+         call hdf_getslab_r(cpoly%moist_f    ,'MOIST_F '     ,dsetrank,iparallel,.true.)
+         call hdf_getslab_r(cpoly%moist_W    ,'MOIST_W '     ,dsetrank,iparallel,.true.)
+         call hdf_getslab_r(cpoly%elevation  ,'ELEVATION '   ,dsetrank,iparallel,.true.)
+         call hdf_getslab_r(cpoly%slope      ,'SLOPE '       ,dsetrank,iparallel,.true.)
+         call hdf_getslab_r(cpoly%aspect     ,'ASPECT '      ,dsetrank,iparallel,.true.)
+         call hdf_getslab_r(cpoly%TCI        ,'TCI '         ,dsetrank,iparallel,.true.)
+         call hdf_getslab_i(cpoly%patch_count,'PATCH_COUNT ' ,dsetrank,iparallel,.true.)
+         call hdf_getslab_i(cpoly%ncol_soil  ,'NCOL_SOIL_SI ',dsetrank,iparallel,.true.)
 
          !----- Load 2D dataset. ----------------------------------------------------------!
          dsetrank     = 2_8

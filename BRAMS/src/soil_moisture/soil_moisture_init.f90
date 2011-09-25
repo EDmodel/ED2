@@ -8,7 +8,7 @@
 !          metodologia e validacao. Rev. Bras. Meteo., volume especial do LBA, 2007.       !
 !------------------------------------------------------------------------------------------!
 subroutine soil_moisture_init(n1,n2,n3,mzg,npat,ifm,can_theta,can_prss,glat,glon           &
-                             ,soil_water,soil_energy,soil_text)
+                             ,soil_water,soil_energy,soil_text,psibar_10d,leaf_class)
    use mem_grid          , only : runtype         & ! intent(in)
                                 , iyeara          & ! intent(in)
                                 , imontha         & ! intent(in)
@@ -33,7 +33,14 @@ subroutine soil_moisture_init(n1,n2,n3,mzg,npat,ifm,can_theta,can_prss,glat,glon
                                 , day_sec         ! ! intent(in)
    use leaf_coms         , only : soilcp          & ! intent(in)
                                 , slmsts          & ! intent(in)
-                                , slcpd           ! ! intent(in)
+                                , slcpd           & ! intent(in)
+                                , slpots          & ! intent(in)
+                                , slbs            & ! intent(in)
+                                , phenology       & ! intent(in)
+                                , kroot           & ! intent(in)
+                                , psild           & ! intent(in)
+                                , psiwp           & ! intent(in)
+                                , dslz            ! ! intent(in)
    use mem_leaf          , only : stgoff          & ! intent(in)
                                 , slmstr          & ! intent(in)
                                 , slz             ! ! intent(in)
@@ -51,6 +58,8 @@ subroutine soil_moisture_init(n1,n2,n3,mzg,npat,ifm,can_theta,can_prss,glat,glon
    real   , dimension(mzg,n2,n3,npat), intent(inout) :: soil_water
    real   , dimension(mzg,n2,n3,npat), intent(inout) :: soil_energy
    real   , dimension(mzg,n2,n3,npat), intent(inout) :: soil_text
+   real   , dimension(    n2,n3,npat), intent(inout) :: psibar_10d
+   real   , dimension(    n2,n3,npat), intent(in)    :: leaf_class
    !----- Local variables. ----------------------------------------------------------------!
    character (len=256)                               :: usdata, usmodel
    character (len=20)                                :: pref
@@ -72,13 +81,15 @@ subroutine soil_moisture_init(n1,n2,n3,mzg,npat,ifm,can_theta,can_prss,glat,glon
    real, dimension(    :)            , allocatable   :: slz_us,usdum
    real, dimension(:,:,:)            , allocatable   :: api_us
    real, dimension(  :,:)            , allocatable   :: prlat,prlon
-   real                                              :: can_temp,tsoil
+   real                                              :: can_temp,soil_temp,soil_fliq
    real                                              :: latni,latnf,lonni,lonnf
    real                                              :: ilatn,ilonn,ilats,ilons
    real                                              :: latn,lonn,lats,lons
    real                                              :: dlatr,dlonr
    real                                              :: slmrel
    real                                              :: swat_new
+   real                                              :: available_water
+   real                                              :: psi_layer
    integer                                           :: size_usmodel
    integer                                           :: size_expected
    !----- External functions. -------------------------------------------------------------!
@@ -223,24 +234,49 @@ subroutine soil_moisture_init(n1,n2,n3,mzg,npat,ifm,can_theta,can_prss,glat,glon
       write(unit=*,fmt='(a)') '|---------------------------------------------|'
 
       hoploop: do ipat= 2,npat
+
          hojloop: do j = 1,n3
             hoiloop: do i = 1,n2
+               nveg = nint(leaf_class(i,j,ipat))
+
                !----- Finding canopy temperature for this patch. --------------------------!
                can_temp = can_theta(i,j,ipat) * (p00i * can_prss(i,j,ipat)) ** rocp
 
+               available_water = 0.0
                hokloop: do k = 1,mzg
                   nsoil                  = nint(soil_text(k,i,j,ipat))
                   soil_water(k,i,j,ipat) = soil_idx2water(slmstr(k),nsoil)
-                  tsoil                  = can_temp + stgoff(k)
-                  if (tsoil >= t3ple) then
-                     soil_energy(k,i,j,ipat) = slcpd(nsoil) * tsoil                        &
+                  soil_temp              = can_temp + stgoff(k)
+                  if (soil_temp >= t3ple) then
+                     soil_energy(k,i,j,ipat) = slcpd(nsoil) * soil_temp                    &
                                              + soil_water(k,i,j,ipat) * cliqvlme           &
-                                             * (tsoil-tsupercool)
+                                             * (soil_temp-tsupercool)
+                     soil_fliq               = 1.0
                   else
-                     soil_energy(k,i,j,ipat) = tsoil  * ( slcpd(nsoil)                     &
-                                                        + soil_water(k,i,j,ipat)*cicevlme)
+                     soil_energy(k,i,j,ipat) = soil_temp * ( slcpd(nsoil)                  &
+                                                         + soil_water(k,i,j,ipat)*cicevlme)
+                     soil_fliq               = 0.0
                   end if
+
+                  !------ Integrate the relative potential. -------------------------------!
+                  if (k >= kroot(nveg) .and. nsoil /= 13) then
+                     psi_layer       = slpots(nsoil)                                       &
+                                     / (soil_water(k,i,j,ipat) / slmsts(nsoil))            &
+                                     ** slbs(nsoil)
+                     available_water = available_water                                     &
+                                     + max(0., (psi_layer    - psiwp(nsoil))               &
+                                             / (psild(nsoil) - psiwp(nsoil)) )             &
+                                     * soil_fliq * (slz(k+1)-slz(k))
+                  end if
+                  !------------------------------------------------------------------------!
+
                end do hokloop
+
+               !----- Normalise the available water. --------------------------------------!
+               available_water      = available_water / abs(slz(kroot(nveg)))
+               psibar_10d(i,j,ipat) = available_water
+               !---------------------------------------------------------------------------!
+
             end do hoiloop
          end do hojloop
       end do hoploop
@@ -480,28 +516,49 @@ subroutine soil_moisture_init(n1,n2,n3,mzg,npat,ifm,can_theta,can_prss,glat,glon
 
 
    heploop: do ipat= 2,npat
+   
       hejloop: do j = 1,n3
         heiloop: do i = 1,n2
+            nveg = nint(leaf_class(i,j,ipat))
 
             !----- Find the canopy temperature for this patch. ----------------------------!
             can_temp = can_theta(i,j,ipat) * (p00i * can_prss(i,j,ipat)) ** rocp
-
+            available_water = 0.0
             hekloop: do k = 1,mzg
                nsoil = nint(soil_text(k,i,j,ipat))
                !----- Make sure that the soil moisture is bounded... ----------------------!
                soil_water(k,i,j,npat) = max(soilcp(nsoil)                                  &
                                            ,min(soil_water(k,i,j,ipat), slmsts(nsoil)))
-               tsoil = can_temp + stgoff(k)
+               soil_temp = can_temp + stgoff(k)
 
-               if (tsoil >= t3ple) then
-                  soil_energy(k,i,j,ipat) = slcpd(nsoil) * tsoil                           &
+               if (soil_temp >= t3ple) then
+                  soil_energy(k,i,j,ipat) = slcpd(nsoil) * soil_temp                       &
                                           + soil_water(k,i,j,ipat) * cliqvlme              &
-                                          * (tsoil-tsupercool)
+                                          * (soil_temp-tsupercool)
+                  soil_fliq               = 1.0
                else
-                  soil_energy(k,i,j,ipat) = tsoil  * ( slcpd(nsoil)                        &
-                                                     + soil_water(k,i,j,ipat) * cicevlme)
+                  soil_energy(k,i,j,ipat) = soil_temp * ( slcpd(nsoil)                     &
+                                                      + soil_water(k,i,j,ipat) * cicevlme)
+                  soil_fliq               = 0.0
                end if
+
+
+               !------ Integrate the relative potential. ----------------------------------!
+               if (k >= kroot(nveg) .and. nsoil /= 13) then
+                  psi_layer       = slpots(nsoil)                                          &
+                                  / (soil_water(k,i,j,ipat) / slmsts(nsoil)) ** slbs(nsoil)
+                  available_water = available_water                                        &
+                                  + max(0., (psi_layer - psiwp(nsoil))                     &
+                                          / (psild(nsoil) - psiwp(nsoil)) )                &
+                                  * soil_fliq * (slz(k+1)-slz(k))
+               end if
+               !---------------------------------------------------------------------------!
             end do hekloop
+
+            !----- Normalise the available water. -----------------------------------------!
+            available_water      = available_water / abs(slz(kroot(nveg)))
+            psibar_10d(i,j,ipat) = available_water
+            !------------------------------------------------------------------------------!
          end do heiloop
       end do hejloop
    end do heploop

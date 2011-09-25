@@ -68,11 +68,13 @@ module canopy_struct_dynamics
    !        above plant canopies of arbitrary structure.  Boundary Layer Meteorology, 91,  !
    !        81-107.                                                                        !
    !                                                                                       !
-   ! 4.  This option is almost the same as option 1, except that the ground conductance is !
-   !     found following the CLM technical note, equations (5.98-5.100).                   !
+   ! 4.  This option is almost the same as option 1, except that the ground conductance    !
+   !     beneath a vegetated canopy is found in a similar way as the CLM technical note,   !
+   !     equations (5.98-5.100).  The conductance for bare ground is still found the same  !
+   !     way as in the similarity theory.                                                  !
    !                                                                                       !
-   !     Oleson, K. W., et al.; Technical description of the community land model (CLM)    !
-   !        NCAR Technical Note NCAR/TN-461+STR, Boulder, CO, May 2004.                    !
+   !     Oleson, K. W., et al.; Technical description of version 4.0 of the community land !
+   !        model (CLM) NCAR Technical Note NCAR/TN-478+STR, Boulder, CO, April 2010.      !
    !                                                                                       !
    !     Ultimately, this routine solves for the resistance of water vapor and sensible    !
    ! heat from the soil surface to canopy air space and from the leaf surfaces to canopy   !
@@ -83,6 +85,7 @@ module canopy_struct_dynamics
                                   , sitetype             & ! structure
                                   , patchtype            ! ! structure
       use met_driver_coms  , only : met_driv_state       ! ! structure
+      use grid_coms        , only : nzg                  ! ! intent(in)
       use rk4_coms         , only : ibranch_thermo       ! ! intent(in)
       use canopy_air_coms  , only : icanturb             & ! intent(in), can. turb. scheme
                                   , ustmin               & ! intent(in)
@@ -101,7 +104,8 @@ module canopy_struct_dynamics
                                   , infunc               & ! intent(in)
                                   , gamma_mw99           & ! intent(in)
                                   , nu_mw99              & ! intent(in)
-                                  , ggveg_inf            & ! intent(in)
+                                  , cs_dense0            & ! intent(in)
+                                  , gamma_clm4           & ! intent(in)
                                   , rb_inter             & ! intent(in)
                                   , rb_slope             & ! intent(in)
                                   , tprandtl             & ! intent(in)
@@ -150,6 +154,7 @@ module canopy_struct_dynamics
       integer        :: ico          ! Cohort loop
       integer        :: ipft         ! PFT alias
       integer        :: k            ! Elevation index
+      integer        :: ksn          ! Number of temporary sfc. water layers    [      ---]
       integer        :: kk           ! Counter                                  [      ---]
       integer        :: zcan         ! Index of canopy top elevation
       integer        :: zels         ! Index of roughness height
@@ -211,6 +216,8 @@ module canopy_struct_dynamics
       real           :: sigma_wou2   ! Square of (sigma w / u)                  [      ---]
       real           :: turbi        ! Mean turbulent intensity                 [      m/s]
       real           :: can_reynolds ! Reynolds number of the Sfc. mixing layer [      ---]
+      real           :: ground_temp  ! Ground temperature                       [      ---]
+      real           :: stab_clm4    ! Stability parameter (CLM4, eq. 5.104)    [      ---]
       !----- External functions. ----------------------------------------------------------!
       real(kind=4), external :: cbrt ! Cubic root that works for negative numbers
       !------------------------------------------------------------------------------------!
@@ -308,8 +315,9 @@ module canopy_struct_dynamics
       ! 0.  LEAF-3 Case: This approach is very similar to older implementations of ED-2,   !
       !     and it is very similar to LEAF-3, and to option 1, except that option 1        !
       !     computes the vegetated ground conductance and wind profile differently.        !
-      ! 4.  CLMish Case: This is the same as option 0., except that the ground conductance !
-      !     is found using equations (5.98-5.100) from CLM technical note.                 !
+      ! 4.  CLM-4 Case: This is the same as option 0., except that the ground conductance  !
+      !     is found using equations (5.99-5.104) from CLM technical note (except the bare !
+      !     ground, which is still found using the similarity theory).                     !
       !------------------------------------------------------------------------------------!
       case (0,4)
 
@@ -364,10 +372,28 @@ module canopy_struct_dynamics
                csite%ggveg(ipa) = (exar * (csite%veg_height(ipa)-csite%veg_displace(ipa))) &
                                 / (factv * csite%veg_height(ipa) * (exp(exar) - aux))
             case (4)
-               !----- CLM-based,but using GGBare instead of their equation 5.102. ---------!
-               aux = exp(-(csite%lai(ipa) + csite%wai(ipa)))
-               csite%ggveg(ipa) = csite%ustar(ipa)                                         &
-                                * ( csite%ggbare(ipa) * aux + ggveg_inf * (1.0 - aux))
+               !---------------------------------------------------------------------------!
+               !     Similar to CLM-4, although we use the ground conductance for bare     !
+               ! ground from the similarity theory and the fraction of open canopy to      !
+               ! determine the weights.  The conductance for dense canopy is simply        !
+               ! Cs_dense * u*, but Cs_dense depends on the stability.                     !
+               !---------------------------------------------------------------------------!
+               !----- Find which ground temperature to use. -------------------------------!
+               ksn = csite%nlev_sfcwater(ipa)
+               if (ksn == 0) then
+                  ground_temp = csite%soil_tempk(nzg,ipa)
+               else
+                  ground_temp = csite%sfcwater_tempk(ksn,ipa)
+               end if
+               !----- Stability factor (0 when it is unstable). ---------------------------!
+               stab_clm4        = max( 0.0                                                 &
+                                     , min(10., 2.0 * grav * csite%veg_height(ipa)         &
+                                              * ( csite%can_temp(ipa) - ground_temp )      &
+                                              / ( ( csite%can_temp(ipa) + ground_temp)     &
+                                              * csite%ustar(ipa) * csite%ustar(ipa) ) ) )
+               !----- The "veg" conductance is equivalent to CLM4 dense canopy. -----------!
+               csite%ggveg(ipa) = cs_dense0 * csite%ustar(ipa)                             &
+                                / (1.0 + gamma_clm4 * stab_clm4)
             end select
          else
             csite%ggveg(ipa) = 0.
@@ -1257,6 +1283,7 @@ module canopy_struct_dynamics
                                   , wcapcani             & ! intent(out)
                                   , hcapcani             & ! intent(out)
                                   , ccapcani             ! ! intent(out)
+      use grid_coms        , only : nzg                  ! ! intent(in)
       use canopy_air_coms  , only : icanturb             & ! intent(in), can. turb. scheme
                                   , ustmin8              & ! intent(in)
                                   , ugbmin8              & ! intent(in)
@@ -1276,7 +1303,8 @@ module canopy_struct_dynamics
                                   , nu_mw99_8            & ! intent(in)
                                   , rb_inter             & ! intent(in)
                                   , rb_slope             & ! intent(in)
-                                  , ggveg_inf8           & ! intent(in)
+                                  , cs_dense08           & ! intent(in)
+                                  , gamma_clm48          & ! intent(in)
                                   , tprandtl8            & ! intent(in)
                                   , zoobukhov8           ! ! intent(in)
       use canopy_layer_coms, only : crown_mod            & ! intent(in)
@@ -1320,6 +1348,7 @@ module canopy_struct_dynamics
       integer        :: ico          ! Cohort loop
       integer        :: ipft         ! PFT alias
       integer        :: k            ! Elevation index
+      integer        :: ksn          ! Number of temporary sfc. water layers    [      ---]
       integer        :: zcan         ! Index of canopy top elevation
       integer        :: kafull       ! First layer fully occupied by crown
       integer        :: kzfull       ! Last layer fully occupied by crown
@@ -1376,6 +1405,8 @@ module canopy_struct_dynamics
       real(kind=8)   :: sigma_wou2   ! Square of (sigma w / u)                  [      ---]
       real(kind=8)   :: turbi        ! Mean turbulent intensity                 [      m/s]
       real(kind=8)   :: can_reynolds ! Reynolds number of the sfc. mixing layer [      ---]
+      real(kind=8)   :: ground_temp  ! Ground temperature                       [      ---]
+      real(kind=8)   :: stab_clm4    ! Stability parameter (CLM4, eq. 5.104)    [      ---]
       !------ External procedures ---------------------------------------------------------!
       real(kind=8), external :: cbrt8    ! Cubic root that works for negative numbers
       real(kind=4), external :: sngloff  ! Safe double -> simple precision.
@@ -1462,8 +1493,9 @@ module canopy_struct_dynamics
       ! 0.  LEAF-3 Case: This approach is very similar to older implementations of ED-2,   !
       !     and it is very similar to LEAF-3, and to option 1, except that option 1        !
       !     computes the vegetated ground conductance and wind profile differently.        !
-      ! 4.  CLMish Case: This is the same as option 0., except that the ground conductance !
-      !     is found using equations (5.98-5.100) from CLM technical note.                 !
+      ! 4.  CLM-4 Case: This is the same as option 0., except that the ground conductance  !
+      !     is found using equations (5.99-5.104) from CLM technical note (except the bare !
+      !     ground, which is still found using the similarity theory).                     !
       !------------------------------------------------------------------------------------!
       case (0,4)
 
@@ -1507,9 +1539,26 @@ module canopy_struct_dynamics
                initp%ggveg  = (exar8 * (initp%veg_height - initp%veg_displace))            &
                             / (factv * initp%veg_displace * (exp(exar8) - aux))
             case (4)
-               !----- CLM-based,but using GGBare instead of their equation 5.102. ---------!
-               aux = exp(-dble(csite%lai(ipa)) - dble(csite%wai(ipa)))
-               initp%ggveg = initp%ustar * (initp%ggbare * aux + ggveg_inf8 * (1.d0 - aux))
+               !---------------------------------------------------------------------------!
+               !     Similar to CLM-4, although we use the ground conductance for bare     !
+               ! ground from the similarity theory and the fraction of open canopy to      !
+               ! determine the weights.  The conductance for dense canopy is simply        !
+               ! Cs_dense * u*, but Cs_dense depends on the stability.                     !
+               !---------------------------------------------------------------------------!
+               !----- Find which ground temperature to use. -------------------------------!
+               ksn = csite%nlev_sfcwater(ipa)
+               if (ksn == 0) then
+                  ground_temp = csite%soil_tempk(nzg,ipa)
+               else
+                  ground_temp = csite%sfcwater_tempk(ksn,ipa)
+               end if
+               !----- Stability factor (0 when it is unstable). ---------------------------!
+               stab_clm4 = max( 0.d0, min(1.d1, 2.d0 * grav8 * initp%veg_height            &
+                                              * ( initp%can_temp - ground_temp )           &
+                                              / ( ( initp%can_temp + ground_temp)          &
+                                              * initp%ustar * initp%ustar ) ) )
+               !----- The "veg" conductance is equivalent to CLM4 dense canopy. -----------!
+               initp%ggveg = cs_dense08 * initp%ustar / (1.d0 + gamma_clm48 * stab_clm4)
             end select
          else 
             initp%ggveg = 0.d0
@@ -3211,6 +3260,11 @@ module canopy_struct_dynamics
 
    !=======================================================================================!
    !=======================================================================================!
+   !    Vertical flux, as in:                                                              !
+   !                                                                                       !
+   !   Manton, M. J., Cotton, W. R., 1977: Parameterization of the atmospheric surface     !
+   !      layer.  J. Atm. Sci., 34, 331-334.                                               !
+   !---------------------------------------------------------------------------------------!
    real function vertical_vel_flux(zeta,tstar,ustar)
       use consts_coms , only : vonk ! intent(in)
      
@@ -3248,6 +3302,11 @@ module canopy_struct_dynamics
 
    !=======================================================================================!
    !=======================================================================================!
+   !    Vertical flux, as in:                                                              !
+   !                                                                                       !
+   !   Manton, M. J., Cotton, W. R., 1977: Parameterization of the atmospheric surface     !
+   !      layer.  J. Atm. Sci., 34, 331-334.                                               !
+   !---------------------------------------------------------------------------------------!
    real(kind=8) function vertical_vel_flux8(zeta,tstar,ustar)
       use consts_coms , only : vonk8 ! intent(in)
      

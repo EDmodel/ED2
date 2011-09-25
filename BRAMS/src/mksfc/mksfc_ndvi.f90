@@ -127,6 +127,7 @@ elseif (ndviflg(ifm) == 1) then
       ,ivegtflg(ifm),ivegtfn(ifm),isoilflg(ifm),isoilfn(ifm) &
       ,ndviflg(ifm),ndvifn(ifm),vndvifil(ivtime,ifm)  &
       ,'ndvi',platn(ifm),plonn(ifm)        &
+      ,sfcfile_p(ifm)%soil_color  &
       ,sfcfile_p(ifm)%soil_text  &
       ,sfcfile_p(ifm)%patch_area   &
       ,sfcfile_p(ifm)%leaf_class   &

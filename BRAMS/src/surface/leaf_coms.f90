@@ -195,6 +195,7 @@ module leaf_coms
    integer, parameter :: nstyp     = 17 ! # of soil types
    integer, parameter :: nvtyp     = 20 ! # of land use types
    integer, parameter :: nvtyp_teb =  1 ! # of TEB extra land use types (21 - Very urban).
+   integer, parameter :: nscol     = 21 ! # of soil colour types
    !---------------------------------------------------------------------------------------!
 
 
@@ -203,9 +204,10 @@ module leaf_coms
    real, dimension(nstyp)           :: slden,slcpd,slbs,slcond,sfldcap,slcons,slmsts,slpots
    real, dimension(nstyp)           :: ssand,sclay,sorgan,sporo,soilwp,soilcp,slfc,emisg
    real, dimension(nstyp)           :: slcons00,slcons0,fhydraul,xsilt,xsand,xclay
-   real, dimension(nstyp)           :: albwet,albdry
+   real, dimension(nstyp)           :: psild,psiwp
    real, dimension(nstyp)           :: soilcond0,soilcond1,soilcond2,slcons1_0
    real, dimension(nzgmax,nstyp)    :: slcons1
+   real, dimension(nscol)           :: alb_vis_dry,alb_nir_dry,alb_vis_wet,alb_nir_wet
    !---------------------------------------------------------------------------------------!
 
 
@@ -214,7 +216,7 @@ module leaf_coms
    real   , dimension(nvtyp+nvtyp_teb)        :: albv_green,albv_brown,emisv,sr_max,tai_max
    real   , dimension(nvtyp+nvtyp_teb)        :: sai,veg_clump,veg_frac,veg_ht,glai_max
    real   , dimension(nvtyp+nvtyp_teb)        :: gsw_max,dead_frac,leaf_width,stom_side
-   integer, dimension(nvtyp+nvtyp_teb)        :: kroot
+   integer, dimension(nvtyp+nvtyp_teb)        :: kroot,phenology
    real   , dimension(nzgmax,nvtyp+nvtyp_teb) :: root
    !---------------------------------------------------------------------------------------!
 
@@ -270,7 +272,7 @@ module leaf_coms
    real, parameter :: csh      = 5.0 ! C* for heat (eqn.20, not co2 char. scale)               
    real, parameter :: dl79     = 5.0 ! ???                                                     
    !----- Oncley and Dudhia (1995) model. -------------------------------------------------!
-   real, parameter :: bbeta      = 5.0    ! Beta used by Businger et al. (1971)
+   real, parameter :: beta_s   = 5.0    ! Beta used by Businger et al. (1971)
    !----- Beljaars and Holtslag (1991) model. ---------------------------------------------!
    real, parameter :: abh91       = -1.00         ! -a from equation  (28) and (32)
    real, parameter :: bbh91       = -twothirds    ! -b from equation  (28) and (32)
@@ -703,8 +705,12 @@ module leaf_coms
    !     This sub-routine initialises several parameters for the surface layer model.      !
    !---------------------------------------------------------------------------------------!
    subroutine sfclyr_init_params()
+      use rconstants, only : onesixth
       implicit none
-      
+      !----- External functions. ----------------------------------------------------------!
+      real, external :: cbrt ! Cubic root
+      !------------------------------------------------------------------------------------!
+     
       !----- Similar to CLM (2004), but with different phi_m for very unstable case. ------!
       zetac_um    = -1.5
       zetac_uh    = -0.5
@@ -746,7 +752,8 @@ module leaf_coms
    !    This function computes the stability  correction function for momentum.            !
    !---------------------------------------------------------------------------------------!
    real function psim(zeta,stable)
-      use rconstants, only : halfpi
+      use rconstants, only : halfpi   & ! intent(in)
+                           , onesixth ! ! intent(in)
       use mem_leaf  , only : istar
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
@@ -870,6 +877,7 @@ module leaf_coms
    !---------------------------------------------------------------------------------------!
    real function dpsimdzeta(zeta,stable)
       use mem_leaf  , only : istar
+      use rconstants, only : onesixth
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
       real   , intent(in) :: zeta   ! z/L, z is the height, and L the Obukhov length [ ---]

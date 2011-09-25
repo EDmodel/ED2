@@ -77,10 +77,10 @@ module farq_leuning
    !---------------------------------------------------------------------------------------!
    subroutine lphysiol_full(can_prss,can_rhos,can_shv,can_co2,ipft,leaf_par,leaf_temp      &
                            ,lint_shv,green_leaf_factor,leaf_aging_factor,llspan,vm_bar     &
-                           ,leaf_gbw,A_open,A_closed,gsw_open,gsw_closed,lsfc_shv_open     &
-                           ,lsfc_shv_closed,lsfc_co2_open,lsfc_co2_closed,lint_co2_open    &
-                           ,lint_co2_closed,leaf_resp,vmout,comppout,limit_flag            &
-                           ,old_st_data)
+                           ,leaf_gbw,h2o_stress,A_open,A_closed,gsw_open,gsw_closed        &
+                           ,lsfc_shv_open,lsfc_shv_closed,lsfc_co2_open,lsfc_co2_closed    &
+                           ,lint_co2_open,lint_co2_closed,leaf_resp,vmout,comppout         &
+                           ,limit_flag,old_st_data)
       use rk4_coms       , only : tiny_offset              & ! intent(in)
                                 , effarea_transp           ! ! intent(in)
       use c34constants   , only : stoma_data               & ! structure
@@ -92,6 +92,7 @@ module farq_leuning
       use pft_coms       , only : photosyn_pathway         & ! intent(in)
                                 , phenology                & ! intent(in)
                                 , D0                       & ! intent(in)
+                                , Dext                     & ! intent(in)
                                 , Vm0                      & ! intent(in)
                                 , vm_low_temp              & ! intent(in)
                                 , vm_high_temp             & ! intent(in)
@@ -145,6 +146,7 @@ module farq_leuning
       real(kind=4), intent(in)    :: llspan            ! Leaf life span         [     mnth]
       real(kind=4), intent(in)    :: vm_bar            ! Average Vm function    [µmol/m²/s]
       real(kind=4), intent(in)    :: leaf_gbw          ! B.lyr. cnd. of H2O     [  kg/m²/s]
+      real(kind=4), intent(in)    :: h2o_stress        ! Water stress factor    [      ---]
       real(kind=4), intent(out)   :: A_open            ! Photosyn. rate (op.)   [µmol/m²/s]
       real(kind=4), intent(out)   :: A_closed          ! Photosyn. rate (cl.)   [µmol/m²/s]
       real(kind=4), intent(out)   :: gsw_open          ! St. cnd. of H2O  (op.) [  kg/m²/s]
@@ -211,7 +213,8 @@ module farq_leuning
       ! Convert all variables to mol and Kelvin, when needed.                              !
       !------------------------------------------------------------------------------------!
       thispft%photo_pathway = photosyn_pathway(ipft)
-      thispft%D0            = dble(D0(ipft))
+      thispft%D0            = dble(D0(ipft))                                               &
+                            * exp (- dble(Dext(ipft)) * dble(h2o_stress))
       thispft%b             = dble(cuticular_cond(ipft)) * umol_2_mol8
       thispft%m             = dble(stomatal_slope(ipft))
       thispft%vm_low_temp   = dble(vm_low_temp(ipft))  + t008
@@ -561,7 +564,7 @@ module farq_leuning
          thigh_fun = 1.d0 + exp(lnexphigh)
          !---------------------------------------------------------------------------------!
 
-         !------ Correct rd. --------------------------------------------------------------!
+         !------ Correct Rd. --------------------------------------------------------------!
          aparms%leaf_resp = rd_nocorr / (tlow_fun * thigh_fun)
          !---------------------------------------------------------------------------------!
 

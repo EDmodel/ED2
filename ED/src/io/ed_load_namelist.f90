@@ -50,6 +50,7 @@ subroutine copy_nl(copy_type)
    use soil_coms            , only : find_soil_class           & ! function
                                    , isoilflg                  & ! intent(out)
                                    , nslcon                    & ! intent(out)
+                                   , isoilcol                  & ! intent(out)
                                    , slxclay                   & ! intent(out)
                                    , slxsand                   & ! intent(out)
                                    , slmstr                    & ! intent(out)
@@ -91,12 +92,20 @@ subroutine copy_nl(copy_type)
    use physiology_coms      , only : iphysiol                  & ! intent(out)
                                    , h2o_plant_lim             & ! intent(out)
                                    , n_plant_lim               & ! intent(out)
-                                   , vmfact                    & ! intent(out)
-                                   , mfact                     & ! intent(out)
-                                   , kfact                     & ! intent(out)
-                                   , gamfact                   & ! intent(out)
-                                   , d0fact                    & ! intent(out)
-                                   , alphafact                 & ! intent(out)
+                                   , vmfact_c3                 & ! intent(out)
+                                   , vmfact_c4                 & ! intent(out)
+                                   , mphoto_c3                 & ! intent(out)
+                                   , mphoto_c4                 & ! intent(out)
+                                   , kw_grass                  & ! intent(out)
+                                   , kw_tree                   & ! intent(out)
+                                   , gamma_c3                  & ! intent(out)
+                                   , gamma_c4                  & ! intent(out)
+                                   , d0_grass                  & ! intent(out)
+                                   , d0_tree                   & ! intent(out)
+                                   , d0_decay                  & ! intent(out)
+                                   , alpha_c3                  & ! intent(out)
+                                   , alpha_c4                  & ! intent(out)
+                                   , klowco2in                 & ! intent(out)
                                    , rrffact                   & ! intent(out)
                                    , growthresp                & ! intent(out)
                                    , quantum_efficiency_T      ! ! intent(out)
@@ -281,6 +290,7 @@ subroutine copy_nl(copy_type)
 
       isoilflg                  = nl%isoilflg
       nslcon                    = nl%nslcon
+      isoilcol                  = nl%isoilcol
       slxclay                   = nl%slxclay
       slxsand                   = nl%slxsand
       slmstr(1:nzgmax)          = nl%slmstr(1:nzgmax)
@@ -332,12 +342,20 @@ subroutine copy_nl(copy_type)
       clump_tree                = nl%clump_tree
       clump_grass               = nl%clump_grass
       h2o_plant_lim             = nl%h2o_plant_lim
-      vmfact                    = nl%vmfact
-      mfact                     = nl%mfact
-      kfact                     = nl%kfact
-      gamfact                   = nl%gamfact
-      d0fact                    = nl%d0fact
-      alphafact                 = nl%alphafact
+      vmfact_c3                 = nl%vmfact_c3
+      vmfact_c4                 = nl%vmfact_c4
+      mphoto_c3                 = nl%mphoto_c3
+      mphoto_c4                 = nl%mphoto_c4
+      kw_grass                  = nl%kw_grass
+      kw_tree                   = nl%kw_tree
+      gamma_c3                  = nl%gamma_c3
+      gamma_c4                  = nl%gamma_c4
+      d0_grass                  = nl%d0_grass
+      d0_tree                   = nl%d0_tree
+      d0_decay                  = nl%d0_decay
+      alpha_c3                  = nl%alpha_c3
+      alpha_c4                  = nl%alpha_c4
+      klowco2in                 = nl%klowco2in
       rrffact                   = nl%rrffact
       growthresp                = nl%growthresp
       thetacrit                 = nl%thetacrit

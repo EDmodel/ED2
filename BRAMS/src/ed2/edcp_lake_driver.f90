@@ -699,6 +699,7 @@ subroutine copy_lake_brams(i,j,ifm,mzg,mzs,initp)
       leaf_g(ifm)%soil_energy (k,i,j,1) = leaf_g(ifm)%soil_energy (mzg,i,j,1)
       leaf_g(ifm)%soil_water  (k,i,j,1) = leaf_g(ifm)%soil_water  (mzg,i,j,1)
    end do
+   leaf_g(ifm)%psibar_10d       (i,j,1) = 1.0
    !---------------------------------------------------------------------------------------!
 
    return

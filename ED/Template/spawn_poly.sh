@@ -93,44 +93,55 @@ do
    polysand=`echo ${oi}    | awk '{print $15}'`
    polyclay=`echo ${oi}    | awk '{print $16}'`
    polydepth=`echo ${oi}   | awk '{print $17}'`
-   slzres=`echo ${oi}      | awk '{print $18}'`
-   queue=`echo ${oi}       | awk '{print $19}'`
-   metdriver=`echo ${oi}   | awk '{print $20}'`
-   dtlsm=`echo ${oi}       | awk '{print $21}'`
-   vmfact=`echo ${oi}      | awk '{print $22}'`
-   mfact=`echo ${oi}       | awk '{print $23}'`
-   kfact=`echo ${oi}       | awk '{print $24}'`
-   gamfact=`echo ${oi}     | awk '{print $25}'`
-   d0fact=`echo ${oi}      | awk '{print $26}'`
-   alphafact=`echo ${oi}   | awk '{print $27}'`
-   rrffact=`echo ${oi}     | awk '{print $28}'`
-   growthresp=`echo ${oi}  | awk '{print $29}'`
-   isfclyrm=`echo ${oi}    | awk '{print $30}'`
-   icanturb=`echo ${oi}    | awk '{print $31}'`
-   ubmin=`echo ${oi}       | awk '{print $32}'`
-   ugbmin=`echo ${oi}      | awk '{print $33}'`
-   ustmin=`echo ${oi}      | awk '{print $34}'`
-   gamm=`echo ${oi}        | awk '{print $35}'`
-   gamh=`echo ${oi}        | awk '{print $36}'`
-   tprandtl=`echo ${oi}    | awk '{print $37}'`
-   ribmax=`echo ${oi}      | awk '{print $38}'`
-   atmco2=`echo ${oi}      | awk '{print $39}'`
-   thcrit=`echo ${oi}      | awk '{print $40}'`
-   smfire=`echo ${oi}      | awk '{print $41}'`
-   isoilbc=`echo ${oi}     | awk '{print $42}'`
-   imetrad=`echo ${oi}     | awk '{print $43}'`
-   ibranch=`echo ${oi}     | awk '{print $44}'`
-   icanrad=`echo ${oi}     | awk '{print $45}'`
-   ltransvis=`echo ${oi}   | awk '{print $46}'`
-   lreflectvis=`echo ${oi} | awk '{print $47}'`
-   ltransnir=`echo ${oi}   | awk '{print $48}'`
-   lreflectnir=`echo ${oi} | awk '{print $49}'`
-   orienttree=`echo ${oi}  | awk '{print $50}'`
-   orientgrass=`echo ${oi} | awk '{print $51}'`
-   clumptree=`echo ${oi}   | awk '{print $52}'`
-   clumpgrass=`echo ${oi}  | awk '{print $53}'`
-   ivegtdyn=`echo ${oi}    | awk '{print $54}'`
-   igndvap=`echo ${oi}     | awk '{print $55}'`
+   polycol=`echo ${oi}     | awk '{print $18}'`
+   slzres=`echo ${oi}      | awk '{print $19}'`
+   queue=`echo ${oi}       | awk '{print $20}'`
+   metdriver=`echo ${oi}   | awk '{print $21}'`
+   dtlsm=`echo ${oi}       | awk '{print $22}'`
+   vmfactc3=`echo ${oi}    | awk '{print $23}'`
+   vmfactc4=`echo ${oi}    | awk '{print $24}'`
+   mphotoc3=`echo ${oi}    | awk '{print $25}'`
+   mphotoc4=`echo ${oi}    | awk '{print $26}'`
+   kwgrass=`echo ${oi}     | awk '{print $27}'`
+   kwtree=`echo ${oi}      | awk '{print $28}'`
+   gammac3=`echo ${oi}     | awk '{print $29}'`
+   gammac4=`echo ${oi}     | awk '{print $30}'`
+   d0grass=`echo ${oi}     | awk '{print $31}'`
+   d0tree=`echo ${oi}      | awk '{print $32}'`
+   d0decay=`echo ${oi}     | awk '{print $33}'`
+   alphac3=`echo ${oi}     | awk '{print $34}'`
+   alphac4=`echo ${oi}     | awk '{print $35}'`
+   klowco2=`echo ${oi}     | awk '{print $36}'`
+   rrffact=`echo ${oi}     | awk '{print $37}'`
+   growthresp=`echo ${oi}  | awk '{print $38}'`
+   h2olimit=`echo ${oi}    | awk '{print $39}'`
+   isfclyrm=`echo ${oi}    | awk '{print $40}'`
+   icanturb=`echo ${oi}    | awk '{print $41}'`
+   ubmin=`echo ${oi}       | awk '{print $42}'`
+   ugbmin=`echo ${oi}      | awk '{print $43}'`
+   ustmin=`echo ${oi}      | awk '{print $44}'`
+   gamm=`echo ${oi}        | awk '{print $45}'`
+   gamh=`echo ${oi}        | awk '{print $46}'`
+   tprandtl=`echo ${oi}    | awk '{print $47}'`
+   ribmax=`echo ${oi}      | awk '{print $48}'`
+   atmco2=`echo ${oi}      | awk '{print $49}'`
+   thcrit=`echo ${oi}      | awk '{print $50}'`
+   smfire=`echo ${oi}      | awk '{print $51}'`
+   isoilbc=`echo ${oi}     | awk '{print $52}'`
+   imetrad=`echo ${oi}     | awk '{print $53}'`
+   ibranch=`echo ${oi}     | awk '{print $54}'`
+   icanrad=`echo ${oi}     | awk '{print $55}'`
+   crown=`echo   ${oi}     | awk '{print $56}'`
+   ltransvis=`echo ${oi}   | awk '{print $57}'`
+   lreflectvis=`echo ${oi} | awk '{print $58}'`
+   ltransnir=`echo ${oi}   | awk '{print $59}'`
+   lreflectnir=`echo ${oi} | awk '{print $60}'`
+   orienttree=`echo ${oi}  | awk '{print $61}'`
+   orientgrass=`echo ${oi} | awk '{print $62}'`
+   clumptree=`echo ${oi}   | awk '{print $63}'`
+   clumpgrass=`echo ${oi}  | awk '{print $64}'`
+   ivegtdyn=`echo ${oi}    | awk '{print $65}'`
+   igndvap=`echo ${oi}     | awk '{print $66}'`
    #---------------------------------------------------------------------------------------#
 
 
@@ -781,20 +792,30 @@ do
    sed -i s@mynslcon@${polyntext}@g          ${ED2IN}
    sed -i s@myslxsand@${polysand}@g          ${ED2IN}
    sed -i s@myslxclay@${polyclay}@g          ${ED2IN}
+   sed -i s@mysoilcol@${polycol}@g           ${ED2IN}
    sed -i s@mynzg@${polynzg}@g               ${ED2IN}
    sed -i s@mymetdriverdb@${metdriverdb}@g   ${ED2IN}
    sed -i s@mymetcyc1@${metcyc1}@g           ${ED2IN}
    sed -i s@mymetcycf@${metcycf}@g           ${ED2IN}
    sed -i s@mytoler@${toler}@g               ${ED2IN}
    sed -i s@RUNFLAG@${runt}@g                ${ED2IN}
-   sed -i s@myvmfact@${vmfact}@g             ${ED2IN}
-   sed -i s@mymfact@${mfact}@g               ${ED2IN}
-   sed -i s@mykfact@${kfact}@g               ${ED2IN}
-   sed -i s@mygamfact@${gamfact}@g           ${ED2IN}
-   sed -i s@myd0fact@${d0fact}@g             ${ED2IN}
-   sed -i s@myalphafact@${alphafact}@g       ${ED2IN}
+   sed -i s@myvmfactc3@${vmfactc3}@g         ${ED2IN}
+   sed -i s@myvmfactc4@${vmfactc4}@g         ${ED2IN}
+   sed -i s@mymphotoc3@${mphotoc3}@g         ${ED2IN}
+   sed -i s@mymphotoc4@${mphotoc4}@g         ${ED2IN}
+   sed -i s@mykwgrass@${kwgrass}@g           ${ED2IN}
+   sed -i s@mykwtree@${kwtree}@g             ${ED2IN}
+   sed -i s@mygammac3@${gammac3}@g           ${ED2IN}
+   sed -i s@mygammac4@${gammac4}@g           ${ED2IN}
+   sed -i s@myd0grass@${d0grass}@g           ${ED2IN}
+   sed -i s@myd0tree@${d0tree}@g             ${ED2IN}
+   sed -i s@myd0decay@${d0decay}@g           ${ED2IN}
+   sed -i s@myalphac3@${alphac3}@g           ${ED2IN}
+   sed -i s@myalphac4@${alphac4}@g           ${ED2IN}
+   sed -i s@myklowco2@${klowco2}@g           ${ED2IN}
    sed -i s@myrrffact@${rrffact}@g           ${ED2IN}
    sed -i s@mygrowthresp@${growthresp}@g     ${ED2IN}
+   sed -i s@myh2olimit@${h2olimit}@g         ${ED2IN}
    sed -i s@mysfclyrm@${isfclyrm}@g          ${ED2IN}
    sed -i s@myicanturb@${icanturb}@g         ${ED2IN}
    sed -i s@myatmco2@${atmco2}@g             ${ED2IN}
@@ -805,6 +826,7 @@ do
    sed -i s@mymetrad@${imetrad}@g            ${ED2IN}
    sed -i s@mybranch@${ibranch}@g            ${ED2IN}
    sed -i s@mycanrad@${icanrad}@g            ${ED2IN}
+   sed -i s@mycrown@${crown}@g               ${ED2IN}
    sed -i s@myltransvis@${ltransvis}@g       ${ED2IN}
    sed -i s@myltransnir@${ltransnir}@g       ${ED2IN}
    sed -i s@mylreflectvis@${lreflectvis}@g   ${ED2IN}

@@ -300,13 +300,22 @@ module ed_therm_lib
    ! the top soil or snow surface and is used for dew formation and snow evaporation.      !
    ! References:                                                                           !
    !                                                                                       !
+   ! P86  - Passerat de Silans, A., 1986: Transferts de masse et de chaleur dans un sol    !
+   !        stratifié soumis à une excitation amtosphérique naturelle. Comparaison:        !
+   !        Modèles-expérience. Thesis, Institut National Polytechnique de Grenoble.       !
+   !                                                                                       !
    ! NP89 - Noilhan, J., S. Planton, 1989: A simple parameterization of land surface       !
    !        processes for meteorological models. Mon. Wea. Rev., 117, 536-549.             !
+   !                                                                                       !
+   ! MN91 - Mahfouf, J. F., J. Noilhan, 1991: Comparative study of various formulations of !
+   !        evaporation from bare soil using in situ data. J. Appl. Meteorol., 30,         !
+   !        1354-1365.                                                                     !
    !                                                                                       !
    ! LP92 - Lee, T. J., R. A. Pielke, 1992: Estimating the soil surface specific humidity  !
    !        J. Appl. Meteorol., 31, 480-484.                                               !
    !                                                                                       !
    ! LP93 - Lee, T. J., R. A. Pielke, 1993: CORRIGENDUM, J. Appl. Meteorol., 32, 580.      !
+   !                                                                                       !
    !---------------------------------------------------------------------------------------!
    subroutine ed_grndvap(ksn,nsoil,topsoil_water,topsoil_temp,topsoil_fliq,sfcwater_temp   &
                         ,sfcwater_fliq,can_prss,can_shv,ground_shv,ground_ssh              &
@@ -368,7 +377,7 @@ module ed_therm_lib
          ground_ssh  = ground_ssh / (1.0 + ground_ssh)
          !----- Determine alpha. ----------------------------------------------------------!
          slpotvn      = soil(nsoil)%slpots                                                 &
-                      * (soil(nsoil)%slmsts / topsoil_water) ** soil(nsoil)%slbs
+                      / (topsoil_water / soil(nsoil)%slmsts) ** soil(nsoil)%slbs
          lnalpha     = gorh2o * slpotvn / ground_temp
          if (lnalpha > lnexp_min) then
             alpha   = exp(lnalpha)
@@ -386,15 +395,9 @@ module ed_therm_lib
          ! This is necessary to avoid evaporation to be large just slightly above the dry  !
          ! air soil, which was happening especially for those soil types rich in clay.     !
          !---------------------------------------------------------------------------------!
-         if (topsoil_water >= soil(nsoil)%sfldcap) then
-            beta   = 1.
-         elseif (topsoil_water <= soil(nsoil)%soilwp) then
-            beta   = 0.
-         else
-            smterm = (topsoil_water       - soil(nsoil)%soilcp)                            &
-                   / (soil(nsoil)%sfldcap - soil(nsoil)%soilcp)
-            beta   = .5 * (1. - cos (smterm * pi1))
-         end if
+         smterm = min(1.0, max(0.0, (topsoil_water       - soil(nsoil)%soilcp)             &
+                                  / (soil(nsoil)%sfldcap - soil(nsoil)%soilcp) ))
+         beta   = .5 * (1. - cos (smterm * pi1))
          !---------------------------------------------------------------------------------!
 
 
@@ -434,6 +437,14 @@ module ed_therm_lib
             !     MH91, test 4.                                                            !
             !------------------------------------------------------------------------------!
             ground_shv = max(can_shv, ground_ssh * alpha)
+            ggsoil     = ggsoil0 * exp(kksoil * smterm)
+            !------------------------------------------------------------------------------!
+
+         case (5)
+            !------------------------------------------------------------------------------!
+            !     Combination of NP89 and P86.                                             !
+            !------------------------------------------------------------------------------!
+            ground_shv = max(can_shv, ground_ssh * beta)
             ggsoil     = ggsoil0 * exp(kksoil * smterm)
             !------------------------------------------------------------------------------!
          end select
@@ -476,13 +487,22 @@ module ed_therm_lib
    ! the top soil or snow surface and is used for dew formation and snow evaporation.      !
    ! References:                                                                           !
    !                                                                                       !
+   ! P86  - Passerat de Silans, A., 1986: Transferts de masse et de chaleur dans un sol    !
+   !        stratifié soumis à une excitation amtosphérique naturelle. Comparaison:        !
+   !        Modèles-expérience. Thesis, Institut National Polytechnique de Grenoble.       !
+   !                                                                                       !
    ! NP89 - Noilhan, J., S. Planton, 1989: A simple parameterization of land surface       !
    !        processes for meteorological models. Mon. Wea. Rev., 117, 536-549.             !
+   !                                                                                       !
+   ! MN91 - Mahfouf, J. F., J. Noilhan, 1991: Comparative study of various formulations of !
+   !        evaporation from bare soil using in situ data. J. Appl. Meteorol., 30,         !
+   !        1354-1365.                                                                     !
    !                                                                                       !
    ! LP92 - Lee, T. J., R. A. Pielke, 1992: Estimating the soil surface specific humidity  !
    !        J. Appl. Meteorol., 31, 480-484.                                               !
    !                                                                                       !
    ! LP93 - Lee, T. J., R. A. Pielke, 1993: CORRIGENDUM, J. Appl. Meteorol., 32, 580.      !
+   !                                                                                       !
    !---------------------------------------------------------------------------------------!
    subroutine ed_grndvap8(ksn,topsoil_water,topsoil_temp,topsoil_fliq,sfcwater_temp        &
                          ,sfcwater_fliq,can_prss,can_shv,ground_shv,ground_ssh             &
@@ -592,7 +612,7 @@ module ed_therm_lib
          ground_ssh  = ground_ssh / (1.d0 + ground_ssh)
          !----- Determine alpha. ----------------------------------------------------------!
          slpotvn      = soil8(nsoil)%slpots                                                &
-                      * (soil8(nsoil)%slmsts / use_soil_h2o) ** soil8(nsoil)%slbs
+                      / (use_soil_h2o / soil8(nsoil)%slmsts) ** soil8(nsoil)%slbs
          lnalpha     = gorh2o8 * slpotvn / ground_temp
          if (lnalpha > lnexp_min8) then
             alpha   = exp(lnalpha)
@@ -612,15 +632,9 @@ module ed_therm_lib
          ! This is necessary to avoid evaporation to be large just slightly above the dry  !
          ! air soil, which was happening especially for those soil types rich in clay.     !
          !---------------------------------------------------------------------------------!
-         if (use_soil_h2o >= soil8(nsoil)%sfldcap) then
-            beta   = 1.d0
-         elseif (use_soil_h2o <= soil8(nsoil)%soilwp) then
-            beta   = 0.d0
-         else
-            smterm = (use_soil_h2o         - soil8(nsoil)%soilwp)                          &
-                   / (soil8(nsoil)%sfldcap - soil8(nsoil)%soilwp)
-            beta   = 5.d-1 * (1.d0 - cos (smterm * pi18))
-         end if
+         smterm = min(1.d0, max(0.d0, (use_soil_h2o         - soil8(nsoil)%soilcp)         &
+                                    / (soil8(nsoil)%sfldcap - soil8(nsoil)%soilcp) ))
+         beta   = 5.d-1 * (1.d0 - cos (smterm * pi18))
          !---------------------------------------------------------------------------------!
 
 
@@ -660,6 +674,14 @@ module ed_therm_lib
             !     MH91, test 4.                                                            !
             !------------------------------------------------------------------------------!
             ground_shv = max(can_shv, ground_ssh * alpha)
+            ggsoil     = ggsoil08 * exp(kksoil8 * smterm)
+            !------------------------------------------------------------------------------!
+
+         case (5)
+            !------------------------------------------------------------------------------!
+            !     Combination of NP89 and P86.                                             !
+            !------------------------------------------------------------------------------!
+            ground_shv = max(can_shv, ground_ssh * beta)
             ggsoil     = ggsoil08 * exp(kksoil8 * smterm)
             !------------------------------------------------------------------------------!
          end select

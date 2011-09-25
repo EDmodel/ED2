@@ -30,6 +30,8 @@ subroutine set_polygon_coordinates()
          !----- Assign the commonest soil type to the polygon. ----------------------------!
          edgrid_g(ifm)%ntext_soil(1:nzg,ipy) = work_v(ifm)%ntext(1,ipy)
          !---------------------------------------------------------------------------------!
+         
+         edgrid_g(ifm)%ncol_soil(ipy)        = work_v(ifm)%nscol(ipy)
       end do ploop
 
       
@@ -154,6 +156,13 @@ subroutine set_site_defprops()
                do k=1,nzg
                   cpoly%ntext_soil(k,isi) = work_v(ifm)%ntext(itext,ipy)
                end do
+               !---------------------------------------------------------------------------!
+
+
+               !---------------------------------------------------------------------------!
+               !     Use the polygon-level soil colour to populate the site-level.         !
+               !---------------------------------------------------------------------------!
+               cpoly%ncol_soil(isi) = work_v(ifm)%nscol(ipy)
                !---------------------------------------------------------------------------!
 
 

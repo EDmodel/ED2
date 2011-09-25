@@ -6,6 +6,7 @@ subroutine leaf_database(ofn,nsite,nlandsea,iaction,lat,lon,classout,pctout)
                          , shdf5_close_f & ! subroutine
                          , shdf5_irec_f  ! ! subroutine
    use soil_coms  , only : nslcon        & ! intent(in)
+                         , isoilcol      & ! intent(in)
                          , ed_nstyp      & ! intent(in)
                          , ed_nvtyp      ! ! intent(in)
    implicit none
@@ -283,6 +284,8 @@ subroutine leaf_database(ofn,nsite,nlandsea,iaction,lat,lon,classout,pctout)
                   call shdf5_irec_f(ndims,idims,'oge2',ivara=idato)
                case ('soil_text')
                   call shdf5_irec_f(ndims,idims,'fao',ivara=idato)
+               case ('soil_col')
+                  call shdf5_irec_f(ndims,idims,'colour',ivara=idato)
                case default
                   call fatal_error('Incorrect action specified in leaf_database'           &
                                   ,'leaf_database','leaf_database.f90')
@@ -297,6 +300,8 @@ subroutine leaf_database(ofn,nsite,nlandsea,iaction,lat,lon,classout,pctout)
                   idato(:,:) = 0
                case ('soil_text')
                   idato(:,:) = nslcon
+               case ('soil_col')
+                  idato(:,:) = isoilcol
                case default
                   call fatal_error('Incorrect action specified in leaf_database'           &
                                   ,'leaf_database','leaf_database.f90')
@@ -348,7 +353,7 @@ subroutine leaf_database(ofn,nsite,nlandsea,iaction,lat,lon,classout,pctout)
                      end do
                   end do
                      
-               case ('soil_text')
+               case ('soil_text','soil_col')
                   do j=j1,j2
                      do i=i1,i2
                         dq = idato(i,j)

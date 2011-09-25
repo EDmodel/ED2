@@ -152,7 +152,7 @@ subroutine radiate_driver(cgrid)
 
             !----- Get unnormalized radiative transfer information. -----------------------!
             call sfcrad_ed(cgrid%cosz(ipy),cpoly%cosaoi(isi),csite,nzg,nzs                 &
-                          ,cpoly%ntext_soil(:,isi),maxcohort,tuco                          &
+                          ,cpoly%ntext_soil(:,isi),cpoly%ncol_soil(isi),maxcohort,tuco     &
                           ,rshort_tot,cpoly%met(isi)%rshort_diffuse,cpoly%met(isi)%rlong   &
                           ,daytime,twilight)
             !------------------------------------------------------------------------------!
@@ -195,7 +195,7 @@ end subroutine radiate_driver
 !     This subroutine will drive the distribution of radiation among crowns, snow layers,  !
 ! and soil.                                                                                !
 !------------------------------------------------------------------------------------------!
-subroutine sfcrad_ed(cosz,cosaoi,csite,mzg,mzs,ntext_soil,maxcohort,tuco                   &
+subroutine sfcrad_ed(cosz,cosaoi,csite,mzg,mzs,ntext_soil,ncol_soil,maxcohort,tuco         &
                     ,rshort_tot,rshort_diffuse,rlong,daytime,twilight)
 
    use ed_state_vars        , only : sitetype             & ! structure
@@ -209,6 +209,7 @@ subroutine sfcrad_ed(cosz,cosaoi,csite,mzg,mzs,ntext_soil,maxcohort,tuco        
                                    , nir_beam_norm        & ! intent(in)
                                    , nir_diff_norm        ! ! intent(in)
    use soil_coms            , only : soil                 & ! intent(in)
+                                   , soilcol              & ! intent(in)
                                    , emisg                ! ! intent(in)
    use consts_coms          , only : stefan               ! ! intent(in)
    use ed_max_dims          , only : n_pft                ! ! intent(in)
@@ -220,6 +221,7 @@ subroutine sfcrad_ed(cosz,cosaoi,csite,mzg,mzs,ntext_soil,maxcohort,tuco        
    integer                         , intent(in)  :: mzg
    integer                         , intent(in)  :: mzs
    integer         , dimension(mzg), intent(in)  :: ntext_soil
+   integer                         , intent(in)  :: ncol_soil
    real                            , intent(in)  :: rshort_tot
    real                            , intent(in)  :: rshort_diffuse
    real                            , intent(in)  :: rlong
@@ -237,6 +239,7 @@ subroutine sfcrad_ed(cosz,cosaoi,csite,mzg,mzs,ntext_soil,maxcohort,tuco        
    integer                                      :: ico
    integer                                      :: cohort_count
    integer                                      :: nsoil
+   integer                                      :: colour
    integer                                      :: k
    integer                                      :: ksn
    real                                         :: fcpct
@@ -456,7 +459,8 @@ subroutine sfcrad_ed(cosz,cosaoi,csite,mzg,mzs,ntext_soil,maxcohort,tuco        
       !                          / (soil(nsoil)%slmsts        - soil(nsoil)%soilcp) ) )
       !    alg   = soil(nsoil)%albdry + fcpct * (soil(nsoil)%albwet - soil(nsoil)%albdry)
       ! end select
-      nsoil = ntext_soil(mzg)
+      nsoil  = ntext_soil(mzg)
+      colour = ncol_soil
       select case (nsoil)
       case (13)
          !----- Bedrock, use constants soil value for granite. ----------------------------!
@@ -468,14 +472,28 @@ subroutine sfcrad_ed(cosz,cosaoi,csite,mzg,mzs,ntext_soil,maxcohort,tuco        
          albedo_soil_par   = max (0.07, 0.14 * (1.0 - fcpct))
          albedo_soil_nir   = albedo_soil_par
       case default
-         !---------------------------------------------------------------------------------!
-         !      Other soils, we use the soil numbers from CLM-4.  The colour class must be !
-         ! given at RAMSIN.  At this point the value is the same for all points, but in    !
-         ! the future we may read their files if the results are promising.                !
-         !---------------------------------------------------------------------------------!
-         fcpct           = max(0., 0.11 - 0.40 * csite%soil_water(mzg,ipa))
-         albedo_soil_par = min(0.24, 0.12 + fcpct)
-         albedo_soil_nir = min(0.48, 0.24 + fcpct)
+         select case (colour)
+         case (21)
+            !------------------------------------------------------------------------------!
+            !     ED-2.1 soil colour.  Also, we use the ED-2.1 default method to determine !
+            ! the albedo.                                                                  !
+            !------------------------------------------------------------------------------!
+            fcpct           = csite%soil_water(mzg,ipa) / soil(nsoil)%slmsts
+            albedo_soil_par = max(0.14,0.31-0.34*fcpct)
+            albedo_soil_nir = albedo_soil_par
+         case default
+            !------------------------------------------------------------------------------!
+            !      Other soils, we use the soil numbers from CLM-4.  The colour class must !
+            ! be given at RAMSIN.  At this point the value is the same for all points, but !
+            ! in the future we may read their files if the results are promising.          !
+            !------------------------------------------------------------------------------!
+            fcpct           = max(0., 0.11 - 0.40 * csite%soil_water(mzg,ipa))
+            albedo_soil_par = min(soilcol(colour)%alb_vis_dry                              &
+                                 ,soilcol(colour)%alb_vis_wet  + fcpct)
+            albedo_soil_nir = min(soilcol(colour)%alb_nir_dry                             &
+                                 ,soilcol(colour)%alb_nir_wet  + fcpct)
+            !------------------------------------------------------------------------------!
+         end select
          !---------------------------------------------------------------------------------!
       end select
       !------------------------------------------------------------------------------------!

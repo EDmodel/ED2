@@ -118,7 +118,10 @@ module pft_coms
    !   Stomata begin to rapidly close once the difference between intercellular and        !
    ! boundary layer H2O mixing ratios exceed this value. [mol_H2O/mol_air].                !
    !---------------------------------------------------------------------------------------!
-   real, dimension(n_pft) :: D0 
+   real, dimension(n_pft) :: D0
+   !----- In case H2O_PLANT_LIM = 3, this will make D0 vary with soil moisture potential. -!
+   real, dimension(n_pft) :: Dext
+   !---------------------------------------------------------------------------------------!
 
    !----- Temperature [°C] below which leaf metabolic activity begins to rapidly decline. -!
    real, dimension(n_pft) :: Vm_low_temp 

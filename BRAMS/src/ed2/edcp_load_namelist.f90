@@ -43,14 +43,23 @@ subroutine read_ednl(iunit,filename)
                                    , maxpatch                              & ! intent(out)
                                    , maxcohort                             ! ! intent(out)
    use physiology_coms      , only : iphysiol                              & ! intent(out)
+                                   , quantum_efficiency_t                  & ! intent(out)
                                    , h2o_plant_lim                         & ! intent(out)
                                    , n_plant_lim                           & ! intent(out)
-                                   , vmfact                                & ! intent(out)
-                                   , mfact                                 & ! intent(out)
-                                   , kfact                                 & ! intent(out)
-                                   , gamfact                               & ! intent(out)
-                                   , d0fact                                & ! intent(out)
-                                   , alphafact                             & ! intent(out)
+                                   , vmfact_c3                             & ! intent(out)
+                                   , vmfact_c4                             & ! intent(out)
+                                   , mphoto_c3                             & ! intent(out)
+                                   , mphoto_c4                             & ! intent(out)
+                                   , kw_grass                              & ! intent(out)
+                                   , kw_tree                               & ! intent(out)
+                                   , gamma_c3                              & ! intent(out)
+                                   , gamma_c4                              & ! intent(out)
+                                   , d0_grass                              & ! intent(out)
+                                   , d0_tree                               & ! intent(out)
+                                   , d0_decay                              & ! intent(out)
+                                   , alpha_c3                              & ! intent(out)
+                                   , alpha_c4                              & ! intent(out)
+                                   , klowco2in                             & ! intent(out)
                                    , rrffact                               & ! intent(out)
                                    , growthresp                            ! ! intent(out)
    use phenology_coms       , only : iphen_scheme                          & ! intent(out)
@@ -168,6 +177,7 @@ subroutine read_ednl(iunit,filename)
                                    , imonthh                               & ! intent(in)
                                    , isoilflg                              ! ! intent(in)
    use mem_leaf             , only : nslcon                                & ! intent(in)
+                                   , isoilcol                              & ! intent(in)
                                    , slz                                   & ! intent(in)
                                    , stgoff                                & ! intent(in)
                                    , slmstr                                & ! intent(in)
@@ -210,10 +220,12 @@ subroutine read_ednl(iunit,filename)
                        ,iphen_scheme,radint,radslp,repro_scheme,lapse_scheme,crown_mod     &
                        ,icanrad,ltrans_vis,ltrans_nir,lreflect_vis,lreflect_nir            &
                        ,orient_tree,orient_grass,clump_tree,clump_grass,decomp_scheme      &
-                       ,h2o_plant_lim,vmfact,mfact,kfact,gamfact,d0fact,alphafact,rrffact  &
-                       ,growthresp,thetacrit,quantum_efficiency_t,n_plant_lim,n_decomp_lim &
-                       ,include_fire,sm_fire,ianth_disturb,icanturb,include_these_pft      &
-                       ,agri_stock,plantation_stock,pft_1st_check,maxpatch,maxcohort       &
+                       ,h2o_plant_lim,vmfact_c3,vmfact_c4,mphoto_c3,mphoto_c4,kw_grass     &
+                       ,kw_tree,gamma_c3,gamma_c4,d0_grass,d0_tree,d0_decay,alpha_c3       &
+                       ,alpha_c4,klowco2in,rrffact,growthresp,thetacrit                    &
+                       ,quantum_efficiency_t,n_plant_lim,n_decomp_lim,include_fire,sm_fire &
+                       ,ianth_disturb,icanturb,include_these_pft,agri_stock                &
+                       ,plantation_stock,pft_1st_check,maxpatch,maxcohort                  &
                        ,treefall_disturbance_rate,time2canopy,iprintpolys,npvars,printvars &
                        ,pfmtstr,ipmin,ipmax,imetrad,iphenys1,iphenysf,iphenyf1,iphenyff    &
                        ,iedcnfgf,event_file,phenpath
@@ -298,12 +310,20 @@ subroutine read_ednl(iunit,filename)
       write (unit=*,fmt=*) ' clump_grass               =',clump_grass
       write (unit=*,fmt=*) ' decomp_scheme             =',decomp_scheme
       write (unit=*,fmt=*) ' h2o_plant_lim             =',h2o_plant_lim
-      write (unit=*,fmt=*) ' vmfact                    =',vmfact
-      write (unit=*,fmt=*) ' mfact                     =',mfact
-      write (unit=*,fmt=*) ' kfact                     =',kfact
-      write (unit=*,fmt=*) ' gamfact                   =',gamfact
-      write (unit=*,fmt=*) ' d0fact                    =',d0fact
-      write (unit=*,fmt=*) ' alphafact                 =',alphafact
+      write (unit=*,fmt=*) ' vmfact_c3                 =',vmfact_c3
+      write (unit=*,fmt=*) ' vmfact_c4                 =',vmfact_c4
+      write (unit=*,fmt=*) ' mphoto_c3                 =',mphoto_c3
+      write (unit=*,fmt=*) ' mphoto_c4                 =',mphoto_c4
+      write (unit=*,fmt=*) ' kw_grass                  =',kw_grass
+      write (unit=*,fmt=*) ' kw_tree                   =',kw_tree
+      write (unit=*,fmt=*) ' gamma_c3                  =',gamma_c3
+      write (unit=*,fmt=*) ' gamma_c4                  =',gamma_c4
+      write (unit=*,fmt=*) ' d0_grass                  =',d0_grass
+      write (unit=*,fmt=*) ' d0_tree                   =',d0_tree
+      write (unit=*,fmt=*) ' d0_decay                  =',d0_decay
+      write (unit=*,fmt=*) ' alpha_c3                  =',alpha_c3
+      write (unit=*,fmt=*) ' alpha_c4                  =',alpha_c4
+      write (unit=*,fmt=*) ' klowco2in                 =',klowco2in
       write (unit=*,fmt=*) ' rrffact                   =',rrffact
       write (unit=*,fmt=*) ' growthresp                =',growthresp
       write (unit=*,fmt=*) ' thetacrit                 =',thetacrit
@@ -357,10 +377,11 @@ subroutine read_ednl(iunit,filename)
    call copy_in_bramsnl(expnme,runtype,itimez,idatez,imonthz,iyearz,itimea,idatea,imontha  &
                        ,iyeara,itimeh,idateh,imonthh,iyearh,radfrq,nnxp,nnyp,deltax        &
                        ,deltay,polelat,polelon,centlat,centlon,nstratx,nstraty,iclobber    &
-                       ,nzg,nzs,isoilflg,nslcon,slz,slmstr,stgoff,leaf_zrough,ngrids       &
-                       ,leaf_ubmin,leaf_ugbmin,leaf_ustmin,leaf_isoilbc,leaf_ipercol       &
-                       ,leaf_runoff_time,leaf_gamm,leaf_gamh,leaf_tprandtl,leaf_ribmax     &
-                       ,leaf_leaf_maxwhc)
+                       ,nzg,nzs,isoilflg,nslcon,isoilcol,slz,slmstr,stgoff,leaf_zrough     &
+                       ,ngrids,leaf_ubmin,leaf_ugbmin,leaf_ustmin,leaf_isoilbc             &
+                       ,leaf_ipercol,leaf_runoff_time,leaf_gamm,leaf_gamh,leaf_tprandtl    &
+                       ,leaf_ribmax,leaf_leaf_maxwhc)
+
    !---------------------------------------------------------------------------------------!
    !      The following variables can be defined in the regular ED2IN file for stand-alone !
    ! runs, but they cannot be changed in the coupled simulation (or they are never used    !
@@ -507,10 +528,10 @@ subroutine copy_in_bramsnl(expnme_b,runtype_b,itimez_b,idatez_b,imonthz_b,iyearz
                           ,itimea_b,idatea_b,imontha_b,iyeara_b,itimeh_b,idateh_b          &
                           ,imonthh_b,iyearh_b,radfrq_b,nnxp_b,nnyp_b,deltax_b,deltay_b     &
                           ,polelat_b,polelon_b,centlat_b,centlon_b,nstratx_b,nstraty_b     &
-                          ,iclobber_b,nzg_b,nzs_b,isoilflg_b,nslcon_b,slz_b,slmstr_b       &
-                          ,stgoff_b,zrough_b,ngrids_b,ubmin_b,ugbmin_b,ustmin_b,isoilbc_b  &
-                          ,ipercol_b,runoff_time_b,gamm_b,gamh_b,tprandtl_b,ribmax_b       &
-                          ,leaf_maxwhc_b)
+                          ,iclobber_b,nzg_b,nzs_b,isoilflg_b,nslcon_b,isoilcol_b,slz_b     &
+                          ,slmstr_b,stgoff_b,zrough_b,ngrids_b,ubmin_b,ugbmin_b,ustmin_b   &
+                          ,isoilbc_b,ipercol_b,runoff_time_b,gamm_b,gamh_b,tprandtl_b      &
+                          ,ribmax_b,leaf_maxwhc_b)
    use ed_misc_coms   , only : expnme            & ! intent(out)
                              , runtype           & ! intent(out)
                              , itimez            & ! intent(out)
@@ -544,6 +565,7 @@ subroutine copy_in_bramsnl(expnme_b,runtype_b,itimez_b,idatez_b,imonthz_b,iyearz
                              , nzs               ! ! intent(out)
    use soil_coms      , only : isoilflg          & ! intent(out)
                              , nslcon            & ! intent(out)
+                             , isoilcol          & ! intent(out)
                              , slmstr            & ! intent(out)
                              , zrough            & ! intent(out)
                              , slz               & ! intent(out)
@@ -597,6 +619,8 @@ subroutine copy_in_bramsnl(expnme_b,runtype_b,itimez_b,idatez_b,imonthz_b,iyearz
    integer                   , intent(in) :: nzs_b         ! Number of snow layers
    integer,dimension(maxgrds), intent(in) :: isoilflg_b    ! Method to initialise soil type
    integer                   , intent(in) :: nslcon_b      ! Soil type if constant for 
+                                                           !    all grids
+   integer                   , intent(in) :: isoilcol_b    ! Soil colour if constant for 
                                                            !    all grids
    real                      , intent(in) :: zrough_b      ! Soil roughness if constant...
    real, dimension(nzgmax)   , intent(in) :: slmstr_b      ! Initial soil moist. if const.
@@ -674,6 +698,7 @@ subroutine copy_in_bramsnl(expnme_b,runtype_b,itimez_b,idatez_b,imonthz_b,iyearz
 
    ribmax      = ribmax_b
    leaf_maxwhc = leaf_maxwhc_b
+   isoilcol    = isoilcol_b
    !---------------------------------------------------------------------------------------!
 
    return

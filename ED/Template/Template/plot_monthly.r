@@ -299,8 +299,8 @@ hovdi37 = list(vnam="albedo"     ,desc="SW albedo"                       ,unit="
                                  ,csch="muitas"                          ,plt=T)
 #----- Time series with several variables in it. ------------------------------------------#
 ntser=10
-tser01 = list(vnam   = c("gpp","plresp","hetresp","nee")
-             ,desc   = c("GPP","Plant resp.","Het. resp.","NEE")
+tser01 = list(vnam   = c("gpp","plresp","hetresp","nep")
+             ,desc   = c("GPP","Plant resp.","Het. resp.","NEP")
              ,colour = c("forestgreen","chartreuse","sienna","deepskyblue")
              ,lwd    = c(2.5,2.5,2.5,2.5)
              ,type   = ptype
@@ -2903,6 +2903,8 @@ for (place in myplaces){
          obsnow = "obs.fns"
       }else if(iata == "btr"){
          obsnow = "obs.s77"
+      }else if(iata == "bdf"){
+         obsnow = "obs.m34"
       }else{
          obsnow = paste("obs.",iata,sep="")
       }#end if
@@ -3076,6 +3078,8 @@ for (place in myplaces){
          obsnow = "obs.fns"
       }else if(iata == "btr"){
          obsnow = "obs.s77"
+      }else if(iata == "bdf"){
+         obsnow = "obs.m34"
       }else{
          obsnow = paste("obs.",iata,sep="")
       }#end if

@@ -1262,6 +1262,7 @@ $MODEL_OPTIONS
       !    2.  Test # 2 of Mahfouf and Noilhan (1991)                                      !
       !    3.  Test # 3 of Mahfouf and Noilhan (1991)                                      !
       !    4.  Test # 4 of Mahfouf and Noilhan (1991)                                      !
+      !    5.  Combination of test #1 (alpha) and test #2 (soil resistance).               !
       !    In all cases the beta term is modified so it approaches zero as soil moisture   !
       ! goes to dry air soil.                                                              !
       !------------------------------------------------------------------------------------!
@@ -1303,7 +1304,7 @@ $MODEL_OPTIONS
       GAMM     =  13.,
       GAMH     =  13.,
       TPRANDTL = 0.74,
-      RIBMAX   = 0.25,
+      RIBMAX   = 0.50,
       !------------------------------------------------------------------------------------!
 
 
@@ -1369,8 +1370,8 @@ $MODEL_OPTIONS
 
 
       !------------------------------------------------------------------------------------!
-      ! NSLCON -- LEAF-3 and ED-2 Soil classes that the model will use when ISOILFLG is    !
-      !           set to 2.  Possible values are:                                          !
+      ! NSLCON -- LEAF-3 and ED-2 soil texture classes that the model will use when        !
+      !           ISOILFLG is set to 2.  Possible values are:                              !
       !------------------------------------------------------------------------------------!
       !   1 -- sand               |   7 -- silty clay loam    |  13 -- bedrock             !
       !   2 -- loamy sand         |   8 -- clayey loam        |  14 -- silt                !
@@ -1381,6 +1382,39 @@ $MODEL_OPTIONS
       !------------------------------------------------------------------------------------!
       NSLCON   = 8,
       !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      ! ISOILCOL -- LEAF-3 and ED-2 soil colour classes that the model will use when       !
+      !             ISOILFLG is set to 2.  Soil classes are from 1 to 20 (1 = lightest;    !
+      !             20 = darkest).  The values are the same as CLM-4.0.  The table is the  !
+      !             albedo for visible and near infra-red.                                 !
+      !------------------------------------------------------------------------------------!
+      !                                                                                    !
+      !      |-----------------------------------------------------------------------|     !
+      !      |       |   Dry soil  |  Saturated  |       |   Dry soil  |  Saturated  |     !
+      !      | Class |-------------+-------------| Class +-------------+-------------|     !
+      !      |       |  VIS |  NIR |  VIS |  NIR |       |  VIS |  NIR |  VIS |  NIR |     !
+      !      |-------+------+------+------+------+-------+------+------+------+------|     !
+      !      |     1 | 0.36 | 0.61 | 0.25 | 0.50 |    11 | 0.24 | 0.37 | 0.13 | 0.26 |     !
+      !      |     2 | 0.34 | 0.57 | 0.23 | 0.46 |    12 | 0.23 | 0.35 | 0.12 | 0.24 |     !
+      !      |     3 | 0.32 | 0.53 | 0.21 | 0.42 |    13 | 0.22 | 0.33 | 0.11 | 0.22 |     !
+      !      |     4 | 0.31 | 0.51 | 0.20 | 0.40 |    14 | 0.20 | 0.31 | 0.10 | 0.20 |     !
+      !      |     5 | 0.30 | 0.49 | 0.19 | 0.38 |    15 | 0.18 | 0.29 | 0.09 | 0.18 |     !
+      !      |     6 | 0.29 | 0.48 | 0.18 | 0.36 |    16 | 0.16 | 0.27 | 0.08 | 0.16 |     !
+      !      |     7 | 0.28 | 0.45 | 0.17 | 0.34 |    17 | 0.14 | 0.25 | 0.07 | 0.14 |     !
+      !      |     8 | 0.27 | 0.43 | 0.16 | 0.32 |    18 | 0.12 | 0.23 | 0.06 | 0.12 |     !
+      !      |     9 | 0.26 | 0.41 | 0.15 | 0.30 |    19 | 0.10 | 0.21 | 0.05 | 0.10 |     !
+      !      |    10 | 0.25 | 0.39 | 0.14 | 0.28 |    20 | 0.08 | 0.16 | 0.04 | 0.08 |     !
+      !      |-----------------------------------------------------------------------|     !
+      !                                                                                    !
+      !   Soil type 21 is a special case in which we use the albedo method that used to be !
+      ! the default in BRAMS-4.0.6 and ED-2.1.                                             !
+      !------------------------------------------------------------------------------------!
+      ISOILCOL  = 6,
+      !------------------------------------------------------------------------------------!
+
 
 
       !------------------------------------------------------------------------------------!
@@ -2260,6 +2294,10 @@ $ED2_INFO
    !                  2.  Alternative and experimental method based on CLM.  It checks     !
    !                      the water potential only, with all contribution of transpiration !
    !                      accounted by gsw.  It also ignores root biomass.                 !
+   !                  3.  Tentative method.  FSW = 1, but D0 decays exponentially with     !
+   !                      soil potential.  The decay coefficient is a function of the      !
+   !                      ratio between leaves and root when on-allometry, so plants that  !
+   !                      invest more in roots take advantage.                             !
    !---------------------------------------------------------------------------------------!
    H2O_PLANT_LIM   = 1,
    !---------------------------------------------------------------------------------------!
@@ -2267,29 +2305,51 @@ $ED2_INFO
 
 
    !---------------------------------------------------------------------------------------!
-   !     These following variables are factors that multiply some of the ED-2.1 default    !
-   ! parameters.  Setting them to 1.0 will make them the default.  These are applied       !
-   ! mostly to tropical C3 plants.                                                         !
+   !     The following variables are factors that control photosynthesis and respiration.  !
+   ! Notice that some of them are relative values whereas others are absolute.             !
    !                                                                                       !
-   ! VMFACT     -- Factor multiplying the default Vm0                                      !
-   ! MFACT      -- Factor multiplying the stomatal slope M.                                !
-   ! KFACT      -- Factor multiplying the water conductance Kw.  This is used only when    !
+   ! VMFACT_C3  -- Factor multiplying the default Vm0 for C3 plants (1.0 = default).       !
+   ! VMFACT_C4  -- Factor multiplying the default Vm0 for C4 plants (1.0 = default).       !
+   ! MPHOTO_C3  -- Stomatal slope (M) for tropical C3 plants.  Conifers and temperate      !
+   !               plants will be scaled by MPHOTO_C3 * 6.4 / 8.0                          !
+   ! MPHOTO_C4  -- Stomatal slope (M) for C4 plants.                                       !
+   ! KW_GRASS   -- Water conductance for trees, in m2/yr/kgC_root.  This is used only when !
    !               H2O_PLANT_LIM = 1.                                                      !
-   ! GAMFACT    -- Factor multiplying the dark respiration factor (gamma)                  !
-   ! D0FACT     -- Factor multiplying the transpiration control in gsw (D0)                !
-   ! ALPHAFACT  -- Factor for changing the quantum yield of C3 plants.  This is only       !
-   !               applied when QUANTUM_EFFICIENCY_T = 0.                                  !
-   ! RRFFACT    -- Factor multiplying the root respiration factor.                         !
-   ! GROWTHRESP -- The actual growth respiration factor (tropical PFTs only).              !
+   ! KW_TREE    -- Water conductance for grasses, in m2/yr/kgC_root.  This is used only    !
+   !               when H2O_PLANT_LIM = 1.                                                 !
+   ! GAMMA_C3   -- The dark respiration factor (gamma) for C3 plants.  Subtropical         !
+   !               conifers will be scaled by GAMMA_C3 * 0.028 / 0.02                      !
+   ! GAMMA_C4   -- The dark respiration factor (gamma) for C4 plants.                      !
+   ! D0_GRASS   -- The transpiration control in gsw (D0) for ALL grasses.                  !
+   ! D0_TREE    -- The transpiration control in gsw (D0) for ALL trees.                    !
+   ! D0_DECAY   -- The decay function for D0 (used only when H2O_PLANT_LIM = 3).           !
+   !               The actual decay coefficient will be divided by q(pft).                 !
+   ! ALPHA_C3   -- Quantum yield of ALL C3 plants.  This is only applied when              !
+   !               QUANTUM_EFFICIENCY_T = 0.                                               !
+   ! ALPHA_C4   -- Quantum yield of C4 plants.  This is always applied.                    !
+   ! KLOWCO2IN  -- The coefficient that controls the PEP carboxylase limited rate of       !
+   !               carboxylation for C4 plants.                                            !
+   ! RRFFACT    -- Factor multiplying the root respiration factor for ALL PFTs.            !
+   !               (1.0 = default).                                                        !
+   ! GROWTHRESP -- The actual growth respiration factor (C3/C4 tropical PFTs only).        !
+   !               (1.0 = default).                                                        !
    !---------------------------------------------------------------------------------------!
-   VMFACT          =   1.2,
-   MFACT           = 1.125,
-   KFACT           =   3.0,
-   GAMFACT         =  0.75,
-   D0FACT          =  1.50,
-   ALPHAFACT       = 0.875,
-   RRFFACT         = 1.000,
-   GROWTHRESP      = 0.33333333333,
+   VMFACT_C3       =   1.25,
+   VMFACT_C4       =   1.25,
+   MPHOTO_C3       =    9.0,
+   MPHOTO_C4       =    5.2,
+   KW_GRASS        =   750.,
+   KW_TREE         =   450.,
+   GAMMA_C3        =  0.015,
+   GAMMA_C4        =  0.036,
+   D0_GRASS        =   0.15,
+   D0_TREE         =   0.15,
+   D0_DECAY        =   4.00,
+   ALPHA_C3        =  0.080,
+   ALPHA_C4        =  0.053,
+   KLOWCO2IN       =  4000.,
+   RRFFACT         =  1.000,
+   GROWTHRESP      =  0.33333333333,
    !---------------------------------------------------------------------------------------!
 
 

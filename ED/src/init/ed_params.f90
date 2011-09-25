@@ -881,7 +881,8 @@ subroutine init_can_air_params()
                              , gamma_mw99            & ! intent(out)
                              , nu_mw99               & ! intent(out)
                              , infunc                & ! intent(out)
-                             , ggveg_inf             & ! intent(out)
+                             , cs_dense0             & ! intent(out)
+                             , gamma_clm4            & ! intent(out)
                              , cdrag08               & ! intent(out)
                              , pm08                  & ! intent(out)
                              , c1_m978               & ! intent(out)
@@ -893,7 +894,8 @@ subroutine init_can_air_params()
                              , gamma_mw99_8          & ! intent(out)
                              , nu_mw99_8             & ! intent(out)
                              , infunc_8              & ! intent(out)
-                             , ggveg_inf8            & ! intent(out)
+                             , cs_dense08            & ! intent(out)
+                             , gamma_clm48           & ! intent(out)
                              , bl79                  & ! intent(out)
                              , csm                   & ! intent(out)
                              , csh                   & ! intent(out)
@@ -1186,9 +1188,12 @@ subroutine init_can_air_params()
 
 
    !---------------------------------------------------------------------------------------!
-   !     Parameter for CLM, the number right next to equation 5.101 of CLM techical note.  !
+   !     Parameters for CLM, at equation 5.103 of CLM-4 techical note.                     !
+   !     Oleson, K. W., et al.; Technical description of version 4.0 of the community land !
+   !        model (CLM) NCAR Technical Note NCAR/TN-478+STR, Boulder, CO, April 2010.      !
    !---------------------------------------------------------------------------------------!
-   ggveg_inf = 0.004
+   cs_dense0  = 0.004
+   gamma_clm4 = 0.5
    !---------------------------------------------------------------------------------------!
 
 
@@ -1282,7 +1287,7 @@ subroutine init_can_air_params()
    gamma_mw99_8          = dble(gamma_mw99          )
    nu_mw99_8             = dble(nu_mw99             )
    infunc_8              = dble(infunc              )
-   ggveg_inf8            = dble(ggveg_inf           )
+   cs_dense08            = dble(cs_dense0           )
    ggsoil08              = dble(ggsoil0             )
    kksoil8               = dble(kksoil              )
    zetac_um8             = dble(zetac_um            )
@@ -1403,6 +1408,7 @@ subroutine init_pft_photo_params()
 
    use ed_max_dims    , only : n_pft                   ! ! intent(in)
    use pft_coms       , only : D0                      & ! intent(out)
+                             , Dext                    & ! intent(out)
                              , Vm_low_temp             & ! intent(out)
                              , Vm_high_temp            & ! intent(out)
                              , Vm_decay_e              & ! intent(out)
@@ -1429,24 +1435,30 @@ subroutine init_pft_photo_params()
                              , umol_2_mol              & ! intent(in)
                              , yr_sec                  ! ! intent(in)
    use physiology_coms , only: iphysiol                & ! intent(in)
-                             , vmfact                  & ! intent(in)
-                             , mfact                   & ! intent(in)
-                             , gamfact                 & ! intent(in)
-                             , d0fact                  & ! intent(in)
-                             , alphafact               & ! intent(in)
-                             , kfact                   ! ! intent(in)
+                             , vmfact_c3               & ! intent(in)
+                             , vmfact_c4               & ! intent(in)
+                             , mphoto_c3               & ! intent(in)
+                             , mphoto_c4               & ! intent(in)
+                             , gamma_c3                & ! intent(in)
+                             , gamma_c4                & ! intent(in)
+                             , d0_grass                & ! intent(in)
+                             , d0_tree                 & ! intent(in)
+                             , alpha_c3                & ! intent(in)
+                             , alpha_c4                & ! intent(in)
+                             , kw_grass                & ! intent(in)
+                             , kw_tree                 ! ! intent(in)
    implicit none
    !---------------------------------------------------------------------------------------!
 
-   D0(1)                     = 0.025  ! 0.010 * d0fact
-   D0(2:4)                   = 0.020  ! 0.010 * d0fact
-   D0(5)                     = 0.010
-   D0(6:8)                   = 0.010
-   D0(9:11)                  = 0.010
-   D0(12:13)                 = 0.010
-   D0(14:15)                 = 0.010
-   D0(16)                    = 0.025  ! 0.010 * d0fact
-   D0(17)                    = 0.020  ! 0.010 * d0fact
+   D0(1)                     = d0_grass
+   D0(2:4)                   = d0_tree
+   D0(5)                     = d0_grass
+   D0(6:8)                   = d0_tree
+   D0(9:11)                  = d0_tree
+   D0(12:13)                 = d0_tree
+   D0(14:15)                 = d0_tree
+   D0(16)                    = d0_grass
+   D0(17)                    = d0_tree
 
    Vm_low_temp(1)            =  8.0             ! c4 grass
    Vm_low_temp(2)            =  8.0             ! early tropical
@@ -1498,21 +1510,21 @@ subroutine init_pft_photo_params()
 
 
    !------ Vm0 is the maximum photosynthesis capacity in µmol/m2/s. -----------------------!
-   Vm0(1)                    = 12.500 * vmfact ! 15.62500 (vmfact = 1.25)
-   Vm0(2)                    = 18.750 * vmfact ! 23.43750
-   Vm0(3)                    = 12.500 * vmfact ! 15.62500
-   Vm0(4)                    =  6.250 * vmfact !  7.81250
-   Vm0(5)                    = 18.30000
-   Vm0(6)                    = 11.35000        ! 15.625 * 0.7264
-   Vm0(7)                    = 11.35000        ! 15.625 * 0.7264
-   Vm0(8)                    =  4.54000        !  6.250 * 0.7264
-   Vm0(9)                    = 20.38707        ! 18.250 * 1.1171
-   Vm0(10)                   = 17.45469        ! 15.625 * 1.1171
-   Vm0(11)                   =  6.981875       !  6.250 * 1.1171
-   Vm0(12:13)                = 18.30000        ! 18.300
-   Vm0(14:15)                = 12.500 * vmfact ! 15.62500
-   Vm0(16)                   = 25.000 * vmfact ! 31.25000
-   Vm0(17)                   = 15.625 * vmfact ! 19.53125
+   Vm0(1)                    = 12.500000 * vmfact_c4
+   Vm0(2)                    = 18.750000 * vmfact_c3
+   Vm0(3)                    = 12.500000 * vmfact_c3
+   Vm0(4)                    =  6.250000 * vmfact_c3
+   Vm0(5)                    = 18.300000 * vmfact_c3
+   Vm0(6)                    = 11.350000 * vmfact_c3
+   Vm0(7)                    = 11.350000 * vmfact_c3
+   Vm0(8)                    =  4.540000 * vmfact_c3
+   Vm0(9)                    = 20.387075 * vmfact_c3
+   Vm0(10)                   = 17.454687 * vmfact_c3
+   Vm0(11)                   =  6.981875 * vmfact_c3
+   Vm0(12:13)                = 18.300000 * vmfact_c3
+   Vm0(14:15)                = 12.500000 * vmfact_c4
+   Vm0(16)                   = 20.000000 * vmfact_c3
+   Vm0(17)                   = 15.625000 * vmfact_c3
    !---------------------------------------------------------------------------------------!
 
 
@@ -1523,33 +1535,33 @@ subroutine init_pft_photo_params()
    !---------------------------------------------------------------------------------------!
    vm_hor(1:17)              = 3000.
    !----- Here we distinguish between C3 and C4 photosynthesis as in Collatz et al 91/92. -!
-   vm_q10(1)                 = 2.0
-   vm_q10(2:13)              = 2.0
-   vm_q10(14:15)             = 2.0
-   vm_q10(16:17)             = 2.0
+   vm_q10(1)                 = 2.4
+   vm_q10(2:13)              = 2.4
+   vm_q10(14:15)             = 2.4
+   vm_q10(16:17)             = 2.4
    !---------------------------------------------------------------------------------------!
 
 
    !---------------------------------------------------------------------------------------!
    !    Dark_respiration_factor is the lower-case gamma in Moorcroft et al. (2001).        !
    !---------------------------------------------------------------------------------------!
-   dark_respiration_factor(1)     = 0.048 * gamfact
-   dark_respiration_factor(2)     = 0.020 * gamfact
-   dark_respiration_factor(3)     = 0.020 * gamfact
-   dark_respiration_factor(4)     = 0.020 * gamfact
-   dark_respiration_factor(5)     = 0.020
-   dark_respiration_factor(6)     = 0.020
-   dark_respiration_factor(7)     = 0.020
-   dark_respiration_factor(8)     = 0.020
-   dark_respiration_factor(9)     = 0.020
-   dark_respiration_factor(10)    = 0.020
-   dark_respiration_factor(11)    = 0.020
-   dark_respiration_factor(12)    = 0.020
-   dark_respiration_factor(13)    = 0.020
-   dark_respiration_factor(14)    = 0.048 * gamfact
-   dark_respiration_factor(15)    = 0.048 * gamfact
-   dark_respiration_factor(16)    = 0.020 * gamfact
-   dark_respiration_factor(17)    = 0.028 * gamfact
+   dark_respiration_factor(1)     = gamma_c4
+   dark_respiration_factor(2)     = gamma_c3
+   dark_respiration_factor(3)     = gamma_c3
+   dark_respiration_factor(4)     = gamma_c3
+   dark_respiration_factor(5)     = gamma_c3
+   dark_respiration_factor(6)     = gamma_c3
+   dark_respiration_factor(7)     = gamma_c3
+   dark_respiration_factor(8)     = gamma_c3
+   dark_respiration_factor(9)     = gamma_c3
+   dark_respiration_factor(10)    = gamma_c3
+   dark_respiration_factor(11)    = gamma_c3
+   dark_respiration_factor(12)    = gamma_c3
+   dark_respiration_factor(13)    = gamma_c3
+   dark_respiration_factor(14)    = gamma_c3
+   dark_respiration_factor(15)    = gamma_c3
+   dark_respiration_factor(16)    = gamma_c3
+   dark_respiration_factor(17)    = gamma_c3 * 0.028 / 0.020
    !---------------------------------------------------------------------------------------!
 
 
@@ -1584,23 +1596,23 @@ subroutine init_pft_photo_params()
 
 
    !----- Define the stomatal slope (aka the M factor). -----------------------------------!
-   stomatal_slope(1)         =  5.2
-   stomatal_slope(2)         =  9.0    ! 8.0    * mfact
-   stomatal_slope(3)         =  9.0    ! 8.0    * mfact
-   stomatal_slope(4)         =  9.0    ! 8.0    * mfact
-   stomatal_slope(5)         =  8.0
-   stomatal_slope(6)         =  6.3949
-   stomatal_slope(7)         =  6.3949
-   stomatal_slope(8)         =  6.3949
-   stomatal_slope(9)         =  6.3949
-   stomatal_slope(10)        =  6.3949
-   stomatal_slope(11)        =  6.3949
-   stomatal_slope(12)        =  8.0
-   stomatal_slope(13)        =  8.0
-   stomatal_slope(14)        =  5.2
-   stomatal_slope(15)        =  5.2
-   stomatal_slope(16)        =  9.0
-   stomatal_slope(17)        =  7.2
+   stomatal_slope(1)         = mphoto_c4
+   stomatal_slope(2)         = mphoto_c3
+   stomatal_slope(3)         = mphoto_c3
+   stomatal_slope(4)         = mphoto_c3
+   stomatal_slope(5)         = mphoto_c3
+   stomatal_slope(6)         = mphoto_c3 * 6.3949 / 8.0
+   stomatal_slope(7)         = mphoto_c3 * 6.3949 / 8.0
+   stomatal_slope(8)         = mphoto_c3 * 6.3949 / 8.0
+   stomatal_slope(9)         = mphoto_c3 * 6.3949 / 8.0
+   stomatal_slope(10)        = mphoto_c3 * 6.3949 / 8.0
+   stomatal_slope(11)        = mphoto_c3 * 6.3949 / 8.0
+   stomatal_slope(12)        = mphoto_c3
+   stomatal_slope(13)        = mphoto_c3
+   stomatal_slope(14)        = mphoto_c4
+   stomatal_slope(15)        = mphoto_c4
+   stomatal_slope(16)        = mphoto_c3
+   stomatal_slope(17)        = mphoto_c3 * 6.4 / 8.0
  
    cuticular_cond(1)         =  8000.0
    cuticular_cond(2)         = 10000.0
@@ -1620,29 +1632,36 @@ subroutine init_pft_photo_params()
    cuticular_cond(16)        = 10000.0
    cuticular_cond(17)        =  1000.0
 
-   quantum_efficiency(1)     = 0.053
-   quantum_efficiency(2)     = 0.080 ! 0.08  * alphafact
-   quantum_efficiency(3)     = 0.080 ! 0.08  * alphafact
-   quantum_efficiency(4)     = 0.080 ! 0.08  * alphafact
-   quantum_efficiency(5)     = 0.080
-   quantum_efficiency(6)     = 0.080
-   quantum_efficiency(7)     = 0.080
-   quantum_efficiency(8)     = 0.080
-   quantum_efficiency(9)     = 0.080
-   quantum_efficiency(10)    = 0.080
-   quantum_efficiency(11)    = 0.080
-   quantum_efficiency(12)    = 0.080
-   quantum_efficiency(13)    = 0.080
-   quantum_efficiency(14)    = 0.053
-   quantum_efficiency(15)    = 0.053
-   quantum_efficiency(16)    = 0.080 ! 0.08  * alphafact
-   quantum_efficiency(17)    = 0.080 ! 0.08  * alphafact
+   quantum_efficiency(1)     = alpha_c4
+   quantum_efficiency(2)     = alpha_c3
+   quantum_efficiency(3)     = alpha_c3
+   quantum_efficiency(4)     = alpha_c3
+   quantum_efficiency(5)     = alpha_c3
+   quantum_efficiency(6)     = alpha_c3
+   quantum_efficiency(7)     = alpha_c3
+   quantum_efficiency(8)     = alpha_c3
+   quantum_efficiency(9)     = alpha_c3
+   quantum_efficiency(10)    = alpha_c3
+   quantum_efficiency(11)    = alpha_c3
+   quantum_efficiency(12)    = alpha_c3
+   quantum_efficiency(13)    = alpha_c3
+   quantum_efficiency(14)    = alpha_c4
+   quantum_efficiency(15)    = alpha_c4
+   quantum_efficiency(16)    = alpha_c3
+   quantum_efficiency(17)    = alpha_c3
 
    !---------------------------------------------------------------------------------------!
-   !     The KW parameter. Medvigy et al. (2009) and Moorcroft et al. (2001) give the      !
-   ! number in m²/yr/kg_C_root.  Here we must define it in m²/s/kg_C_root.                 !
+   !     The KW parameter. Medvigy et al. (2009) and Moorcroft et al. (2001), and the      !
+   ! namelist, give the number in m²/yr/kg_C_root.  Here we must convert it to             !
+   !  m²/s/kg_C_root.                                                                      !
    !---------------------------------------------------------------------------------------!
-   water_conductance(1:17) = 450. / yr_sec ! 150. / yr_sec * kfact
+   water_conductance(1)      = kw_grass / yr_sec
+   water_conductance(2:4)    = kw_tree  / yr_sec
+   water_conductance(5)      = kw_grass / yr_sec
+   water_conductance(6:11)   = kw_tree  / yr_sec
+   water_conductance(12:15)  = kw_grass / yr_sec
+   water_conductance(16)     = kw_grass / yr_sec
+   water_conductance(17)     = kw_tree  / yr_sec
    !---------------------------------------------------------------------------------------!
 
 
@@ -2957,8 +2976,10 @@ subroutine init_pft_derived_params()
                                    , min_cohort_size      & ! intent(out)
                                    , negligible_nplant    & ! intent(out)
                                    , c2n_recruit          & ! intent(out)
-                                   , lai_min              ! ! intent(out)
+                                   , lai_min              & ! intent(out)
+                                   , Dext                 ! ! intent(out)
    use phenology_coms       , only : elongf_min           ! ! intent(in)
+   use physiology_coms      , only : d0_decay             ! ! intent(in)
    use allometry            , only : h2dbh                & ! function
                                    , dbh2h                & ! function
                                    , dbh2bl               & ! function
@@ -3082,6 +3103,12 @@ subroutine init_pft_derived_params()
                                                     ,hgt_max(ipft),max_dbh(ipft)
       end if
       !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !    Dext is the decay coefficient for D0 when H2O_PLANT_LIM is set to 3.            !
+      !------------------------------------------------------------------------------------!
+      Dext(ipft) = D0_decay / q(ipft)
    end do
 
    if (print_zero_table) then
@@ -3209,7 +3236,8 @@ end subroutine init_disturb_params
 !                                                                                          !
 !------------------------------------------------------------------------------------------!
 subroutine init_physiology_params()
-   use physiology_coms, only : iphysiol            & ! intent(out)
+   use physiology_coms, only : iphysiol            & ! intent(in)
+                             , klowco2in           & ! intent(in)
                              , c34smin_lint_co2    & ! intent(out)
                              , c34smax_lint_co2    & ! intent(out)
                              , c34smax_gsw         & ! intent(out)
@@ -3424,9 +3452,9 @@ subroutine init_physiology_params()
    !---------------------------------------------------------------------------------------!
    !    The following parameter is the k coefficient in Foley et al. (1996) that is used   !
    ! to determine the CO2-limited photosynthesis for C4 grasses.  Notice that Foley et al. !
-   ! (1996) didn't correct for molar mass (the mmdoc term here).                           !
+   ! (1996) didn't correct for molar mass (the mmcod term here).                           !
    !---------------------------------------------------------------------------------------!
-   klowco2      = 18000. * mmdoc ! coefficient for low CO2                       [ mol/mol]
+   klowco2      = klowco2in * mmcod ! coefficient for low CO2                    [ mol/mol]
    !---------------------------------------------------------------------------------------!
 
 
@@ -3569,10 +3597,13 @@ subroutine init_soil_coms
    use soil_coms      , only : ed_nstyp              & ! intent(in)
                              , isoilflg              & ! intent(in)
                              , nslcon                & ! intent(in)
+                             , isoilcol              & ! intent(in)
                              , slxclay               & ! intent(in)
                              , slxsand               & ! intent(in)
                              , soil                  & ! intent(in)
                              , soil_class            & ! type
+                             , soilcol               & ! intent(in)
+                             , soilcol_class         & ! type
                              , soil8                 & ! intent(out)
                              , water_stab_thresh     & ! intent(out)
                              , snowmin               & ! intent(out)
@@ -3893,6 +3924,37 @@ subroutine init_soil_coms
 
 
 
+   !---------------------------------------------------------------------------------------!
+   !     Fill in the albedo information regarding the soil colour classes.                 !
+   !---------------------------------------------------------------------------------------!
+   !                    |    Dry soil   |   Saturated   |                                  !
+   !   Soil class       |---------------+---------------|                                  !
+   !                    |   VIS |   NIR |   VIS |   NIR |                                  !
+   !---------------------------------------------------------------------------------------!
+   soilcol = (/                                              & !
+       soilcol_class   (    0.36,   0.61,   0.25,   0.50  )  & ! 01 - Brightest
+      ,soilcol_class   (    0.34,   0.57,   0.23,   0.46  )  & ! 02
+      ,soilcol_class   (    0.32,   0.53,   0.21,   0.42  )  & ! 03
+      ,soilcol_class   (    0.31,   0.51,   0.20,   0.40  )  & ! 04
+      ,soilcol_class   (    0.30,   0.49,   0.19,   0.38  )  & ! 05
+      ,soilcol_class   (    0.29,   0.48,   0.18,   0.36  )  & ! 06
+      ,soilcol_class   (    0.28,   0.45,   0.17,   0.34  )  & ! 07
+      ,soilcol_class   (    0.27,   0.43,   0.16,   0.32  )  & ! 08
+      ,soilcol_class   (    0.26,   0.41,   0.15,   0.30  )  & ! 09
+      ,soilcol_class   (    0.25,   0.39,   0.14,   0.28  )  & ! 10
+      ,soilcol_class   (    0.24,   0.37,   0.13,   0.26  )  & ! 11
+      ,soilcol_class   (    0.23,   0.35,   0.12,   0.24  )  & ! 12
+      ,soilcol_class   (    0.22,   0.33,   0.11,   0.22  )  & ! 13
+      ,soilcol_class   (    0.20,   0.31,   0.10,   0.20  )  & ! 14
+      ,soilcol_class   (    0.18,   0.29,   0.09,   0.18  )  & ! 15
+      ,soilcol_class   (    0.16,   0.27,   0.08,   0.16  )  & ! 16
+      ,soilcol_class   (    0.14,   0.25,   0.07,   0.14  )  & ! 17
+      ,soilcol_class   (    0.12,   0.23,   0.06,   0.12  )  & ! 18
+      ,soilcol_class   (    0.10,   0.21,   0.05,   0.10  )  & ! 19
+      ,soilcol_class   (    0.08,   0.16,   0.04,   0.08  )  & ! 20 - Darkest
+      ,soilcol_class   (    0.00,   0.00,   0.00,   0.00  )  & ! 21 - ED-2.1, unused
+   /)
+   !---------------------------------------------------------------------------------------!
 
 
 
@@ -4212,7 +4274,7 @@ subroutine init_rk4_params()
    rk4min_can_temp   =  1.8400d2  ! Minimum canopy    temperature               [        K]
    rk4max_can_temp   =  3.5100d2  ! Maximum canopy    temperature               [        K]
    rk4min_can_shv    =  1.0000d-8 ! Minimum canopy    specific humidity         [kg/kg_air]
-   rk4max_can_shv    =  4.6000d-2 ! Maximum canopy    specific humidity         [kg/kg_air]
+   rk4max_can_shv    =  8.0000d-2 ! Maximum canopy    specific humidity         [kg/kg_air]
    rk4max_can_rhv    =  1.1000d0  ! Maximum canopy    relative humidity (**)    [      ---]
    rk4min_can_co2    =  3.0000d1  ! Minimum canopy    CO2 mixing ratio          [ µmol/mol]
    rk4max_can_co2    =  5.0000d4  ! Maximum canopy    CO2 mixing ratio          [ µmol/mol]

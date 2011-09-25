@@ -143,10 +143,15 @@ module canopy_air_coms
 
 
    !---------------------------------------------------------------------------------------!
-   !     Parameter for CLM, the number right next to equation 5.101 of CLM techical note.  !
+   !     Parameters for CLM, at equation 5.103 of CLM-4 techical note.                     !
+   !     Oleson, K. W., et al.; Technical description of version 4.0 of the community land !
+   !        model (CLM) NCAR Technical Note NCAR/TN-478+STR, Boulder, CO, April 2010.      !
    !---------------------------------------------------------------------------------------!
-   real(kind=4)               :: ggveg_inf
+   real(kind=4)               :: cs_dense0
+   real(kind=4)               :: gamma_clm4
    !---------------------------------------------------------------------------------------!
+
+
 
    !----- Double precision version of all variables above. --------------------------------!
    real(kind=8)                            :: dz_m978
@@ -161,7 +166,8 @@ module canopy_air_coms
    real(kind=8), dimension(3)              :: gamma_mw99_8
    real(kind=8), dimension(3)              :: nu_mw99_8
    real(kind=8)                            :: infunc_8
-   real(kind=8)                            :: ggveg_inf8
+   real(kind=8)                            :: cs_dense08
+   real(kind=8)                            :: gamma_clm48
    !=======================================================================================!
    !=======================================================================================!
 

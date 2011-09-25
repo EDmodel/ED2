@@ -312,8 +312,8 @@ integer function RAMS_getvar(stringg,itype,ngrd,a,b,flnm)
    ! the variable name.                                                                    !
    !---------------------------------------------------------------------------------------!
    select case (flnm(lenf-18:lenf-18))
-   case ('M','B')
-      string = trim(stringg)//'M'
+   !case ('M','B')
+   !   string = trim(stringg)//'M'
    case default
       string = trim(stringg)
    end select

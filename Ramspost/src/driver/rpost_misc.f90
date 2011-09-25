@@ -48,95 +48,103 @@
          
       return
       end
-!-------------------------------------------------------------------
-       Subroutine define_lim(ng,nxg,nyg,rlat1,dlat,rlon1,dlon, &
-                            lati,latf,loni,lonf,nxa,nxb,nya,nyb,proj,&
-			    nx,ny,rlat,rlon)
-       use rpost_dims
-       use misc_coms, only : glong, glatg
-       Dimension rlat(nx,ny),rlon(nx,ny)
 
-       real lati,latf,loni,lonf
-       character*(*) proj
-!       dimension nnxa(nYpmax),nnxb(nYpmax), &
-!                 nnya(nXpmax),nnyb(nXpmax)
+
+!==========================================================================================!
+!==========================================================================================!
+subroutine define_lim(ng,nxg,nyg,rlat1,dlat,rlon1,dlon,lati,latf,loni,lonf,nxa,nxb,nya,nyb &
+                     ,proj,nx,ny,rlat,rlon)
+
+   use rpost_dims
+   use misc_coms, only : glong, glatg
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   integer               , intent(in)    :: nx
+   integer               , intent(in)    :: ny
+   integer               , intent(in)    :: nxg
+   integer               , intent(in)    :: nyg
+   integer               , intent(in)    :: ng
+   real, dimension(nx,ny), intent(in)    :: rlat
+   real, dimension(nx,ny), intent(in)    :: rlon
+   real                  , intent(in)    :: lati
+   real                  , intent(in)    :: latf
+   real                  , intent(in)    :: loni
+   real                  , intent(in)    :: lonf
+   character(len=*)      , intent(in)    :: proj
+   integer               , intent(out)   :: nxa
+   integer               , intent(out)   :: nxb
+   integer               , intent(out)   :: nya
+   integer               , intent(out)   :: nyb
+   real                  , intent(out)   :: rlat1
+   real                  , intent(inout) :: dlat
+   real                  , intent(out)   :: rlon1
+   real                  , intent(inout) :: dlon
+   !----- Local variables. ----------------------------------------------------------------!
+   integer                             :: i
+   integer                             :: j
+   integer                             :: n
+   integer                             :: nlon
+   integer                             :: nlat
+   real                                :: x
+   real                                :: xx
+   !---------------------------------------------------------------------------------------!
        
 
-       do i=1,nxg
-       if(loni.le.glong(i)) go to 100
-!        print*,' i lon=',i,glong(i),loni
-       enddo
- 100   continue
-       nxa=max(i,1)
+   !----- Find the number of grid points. -------------------------------------------------!
+   xloop: do i=1,nxg
+      if (loni <= glong(i)) exit xloop
+   end do xloop
+   nxa = max(i,1)
 
-       do j=1,nyg
-       if(lati.le.glatg(j)) go to 101
-!        print*,' j lat=',j,glatg(j),lati
-       enddo
- 101   continue
-       nya=max(j,1)
-
-       nlon=abs(int(((lonf-loni))/dlon))+1
-       nlat=abs(int(((latf-lati))/dlat))+1
-       nxb=min(nxa+nlon,nxg)
-       nyb=min(nya+nlat,nyg)
-       rlon1=glong(nxa)
-       rlat1=glatg(nya)
-!----------19-07-2001
-
-       if(proj.ne.'YES'.AND.proj.ne.'yes') then
-       x=0
-       xx=0
-       do j=nya,nyb
-	x=x+rlon(nxa,j)
-	xx=xx+ (rlon(nxb,j)-rlon(nxa,j))/(nxb-nxa)
-       enddo
-       rlon1= x/(nyb-nya+1)
-       dlon =xx/(nyb-nya+1)
-       
-       x=0
-       xx=0
-       do n=nxa,nxb
-	x=x+rlat(n,nya)
-	xx=xx+ (rlat(n,nyb)-rlat(n,nya))/(nyb-nya)
-       enddo
-       rlat1= x/(nxb-nxa+1)
-       dlat =xx/(nxb-nxa+1)
-       
-       endif
+   yloop: do j=1,nyg
+      if (lati <= glatg(j)) exit yloop
+   end do yloop
+   nya = max(j,1)
 
 
+   nlon = abs( floor( (lonf-loni) / dlon ) ) + 1
+   nlat = abs( floor( (latf-lati) / dlat ) ) + 1
 
-!------------18-07-2001
-!       if(proj.ne.'YES'.AND.proj.ne.'yes') then
-!       call define_grid2(loni,lonf,lati,latf,nxg,nyg,&
-!                        rlat,rlon,nxa,nxb,nya,nyb)
-!	print*,nxa,nxb,nya,nyb
+   nxb   = min(nxa+nlon,nxg)
+   nyb   = min(nya+nlat,nyg)
+   rlon1 = glong(nxa)
+   rlat1 = glatg(nya)
 
-!       x=0.
-!       xx=0.
-!       do j=nya,nyb
-!	x=x+rlon(nxa,j)
-!!certo >>	x=x+rlon(nxa(j),j)
-!	xx=xx+ (rlon(nxb,j)-rlon(nxa,j))/(nx-1)
-!!certo>>>	xx=xx+ (rlon(nxb(j),j)-rlon(nxa(j),j))/(nx-1)
-!       enddo
-!       dep_glon1= x/ny
-!       dep_glon2=xx/ny
-!       
-!
-!>>>>>>>> aqui nxa e nxb dependem de j (nxa(j), nxb(j)
-!              nya == nya(i) 
-!	      nyb == nyb(i)
-!	      consertar na rotina define_grid2
-!   colocar dimension nxa(nYpmax) ...nxb(NYPMAX)
-!                    nya(nXmax)
-!-----------------------------
+   if (proj /= 'YES' .and. proj /= 'yes') then
+      x  = 0.
+      xx = 0.
+      do j=nya,nyb
+         x  = x  + rlon(nxa,j)
+         xx = xx + (rlon(nxb,j)-rlon(nxa,j)) / (nxb-nxa)
+      end do
+      rlon1 =  x / (nyb-nya+1)
+      dlon  = xx / (nyb-nya+1)
+   
+      x  = 0.
+      xx = 0.
+      do n=nxa,nxb
+         x  =  x + rlat(n,nya)
+         xx = xx + (rlat(n,nyb)-rlat(n,nya)) / (nyb-nya)
+      end do
+      rlat1 =  x / (nxb-nxa+1)
+      dlat  = xx / (nxb-nxa+1)
+   end if
+   
+   write (unit=*,fmt='(a,1x,es12.5)') ' LONI  = ',loni
+   write (unit=*,fmt='(a,1x,es12.5)') ' LONF  = ',lonf
+   write (unit=*,fmt='(a,1x,i6)'    ) ' NLON  = ',nlon
+   write (unit=*,fmt='(a,1x,es12.5)') ' RLON1 = ',rlon1
+   write (unit=*,fmt='(a,1x,es12.5)') ' DLON  = ',dlon
+   write (unit=*,fmt='(a,1x,es12.5)') ' LATI  = ',lati
+   write (unit=*,fmt='(a,1x,es12.5)') ' LATF  = ',latf
+   write (unit=*,fmt='(a,1x,i6)'    ) ' NLAT  = ',nlat
+   write (unit=*,fmt='(a,1x,es12.5)') ' RLAT1 = ',rlat1
+   write (unit=*,fmt='(a,1x,es12.5)') ' DLAT  = ',dlat
 
-
-!       print*,nxa,nya,nxb,nyb,nlon,nlat,rlon1,rlat1
-       return
-       end
+   return
+end subroutine define_lim
+!==========================================================================================!
+!==========================================================================================!
 !----------------------------------------------------------------
        subroutine define_grid2(nx,ny,loni,lonf,lati,latf,nxg,nyg,&
                         rlat,rlon,nxa,nxb,nya,nyb)

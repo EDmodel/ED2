@@ -85,9 +85,6 @@ program ramspost
   ! --- frequencia com as analises serao escrita     
   nstep = 1    
 
-  !---- Initialise surface layer parameters for the CLM-like similarity theory model.
-  call sfclyr_init_params()
-
   nrec=0
   ic=lastchar(gprefix)
   call RAMS_anal_init(nfiles,fln,fprefix,        &

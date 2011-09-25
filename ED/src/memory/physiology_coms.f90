@@ -66,16 +66,51 @@ module physiology_coms
    !---------------------------------------------------------------------------------------!
 
    !---------------------------------------------------------------------------------------!
-   !     These parameter will decide scaling factors for several physiological parameters. !
+   !     The following variables are factors that control photosynthesis and respiration.  !
+   ! Notice that some of them are relative values whereas others are absolute.             !
+   !                                                                                       !
+   ! VMFACT_C3  -- Factor multiplying the default Vm0 for C3 plants (1.0 = default).       !
+   ! VMFACT_C4  -- Factor multiplying the default Vm0 for C4 plants (1.0 = default).       !
+   ! MPHOTO_C3  -- Stomatal slope (M) for tropical C3 plants.  Conifers and temperate      !
+   !               plants will be scaled by MPHOTO_C3/8.0                                  !
+   ! MPHOTO_C4  -- Stomatal slope (M) for C4 plants.                                       !
+   ! KW_GRASS   -- Water conductance for trees, in m2/yr/kgC_root.  This is used only when !
+   !               H2O_PLANT_LIM = 1.                                                      !
+   ! KW_TREE    -- Water conductance for grasses, in m2/yr/kgC_root.  This is used only    !
+   !               when H2O_PLANT_LIM = 1.                                                 !
+   ! GAMMA_C3   -- The dark respiration factor (gamma) for tropical C3 plants.  Conifers   !
+   !               and temperate plants will be scaled by GAMMA_C3 / 0.02                  !
+   ! GAMMA_C4   -- The dark respiration factor (gamma) for C4 plants.                      !
+   ! D0_GRASS   -- The transpiration control in gsw (D0) for ALL grasses.                  !
+   ! D0_TREE    -- The transpiration control in gsw (D0) for ALL trees.                    !
+   ! D0_DECAY   -- The decay function for D0 (used only when H2O_PLANT_LIM = 3).           !
+   !               The actual decay coefficient will be divided by q(pft).                 !
+   ! ALPHA_C3   -- Quantum yield of ALL C3 plants.  This is only applied when              !
+   !               QUANTUM_EFFICIENCY_T = 0.                                               !
+   ! ALPHA_C4   -- Quantum yield of C4 plants.  This is always applied.                    !
+   ! KLOWCO2IN  -- The coefficient that controls the PEP carboxylase limited rate of       !
+   !               carboxylation for C4 plants.                                            !
+   ! RRFFACT    -- Factor multiplying the root respiration factor for ALL PFTs.            !
+   !               (1.0 = default).                                                        !
+   ! GROWTHRESP -- The actual growth respiration factor (C3/C4 tropical PFTs only).        !
+   !               (1.0 = default).                                                        !
    !---------------------------------------------------------------------------------------!
-   real(kind=4)               :: vmfact     ! Max. Rubisco capacity
-   real(kind=4)               :: mfact      ! Stomatal slope
-   real(kind=4)               :: kfact      ! Water conductance
-   real(kind=4)               :: gamfact    ! Dark respiration factor
-   real(kind=4)               :: d0fact     ! Transpiration effect on stom. conductance
-   real(kind=4)               :: alphafact  ! Quantum efficiency 
-   real(kind=4)               :: rrffact    ! Root respiration factor
-   real(kind=4)               :: growthresp ! Growth respiration factor (actual value)
+   real(kind=4)               :: vmfact_c3
+   real(kind=4)               :: vmfact_c4
+   real(kind=4)               :: mphoto_c3
+   real(kind=4)               :: mphoto_c4
+   real(kind=4)               :: kw_grass
+   real(kind=4)               :: kw_tree
+   real(kind=4)               :: gamma_c3
+   real(kind=4)               :: gamma_c4
+   real(kind=4)               :: d0_grass
+   real(kind=4)               :: d0_tree
+   real(kind=4)               :: d0_decay
+   real(kind=4)               :: alpha_c3
+   real(kind=4)               :: alpha_c4
+   real(kind=4)               :: klowco2in
+   real(kind=4)               :: rrffact
+   real(kind=4)               :: growthresp
    !---------------------------------------------------------------------------------------!
 
    !---------------------------------------------------------------------------------------!

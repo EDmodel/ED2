@@ -339,7 +339,8 @@ subroutine leaf3_timestep()
                            , leaf_g(ngrid)%veg_albedo  (i,j,ip)                            &
                            , leaf_g(ngrid)%veg_ndvip   (i,j,ip)                            &
                            , leaf_g(ngrid)%veg_ndvic   (i,j,ip)                            &
-                           , leaf_g(ngrid)%veg_ndvif   (i,j,ip)                            )
+                           , leaf_g(ngrid)%veg_ndvif   (i,j,ip)                            &
+                           , leaf_g(ngrid)%psibar_10d  (i,j,ip)                            )
             end if
             !------------------------------------------------------------------------------!
 
@@ -418,6 +419,7 @@ subroutine leaf3_timestep()
                if (iswrtyp > 0 .or. ilwrtyp > 0) then
                   call leaf3_sfcrad(nzg,nzs,ip                                             &
                                    ,leaf_g(ngrid)%soil_water       (:,i,j,ip)              &
+                                   ,leaf_g(ngrid)%soil_color       (  i,j,ip)              &
                                    ,leaf_g(ngrid)%soil_text        (:,i,j,ip)              &
                                    ,leaf_g(ngrid)%sfcwater_depth   (:,i,j,ip)              &
                                    ,leaf_g(ngrid)%patch_area       (  i,j,ip)              &
@@ -710,21 +712,28 @@ subroutine leaf3_timestep()
    !---------------------------------------------------------------------------------------!
 
 
+   !----- Update the 10-day running average for phenology. --------------------------------!
+   call update_psibar(mxp,myp,nzg,npatch,ia,iz,ja,jz,dtlt                                  &
+                     , leaf_g(ngrid)%soil_energy        , leaf_g(ngrid)%soil_water         &
+                     , leaf_g(ngrid)%soil_text          , leaf_g(ngrid)%leaf_class         &
+                     , leaf_g(ngrid)%psibar_10d         )
+   !---------------------------------------------------------------------------------------!
 
 
    !----- Apply lateral boundary conditions to leaf3 arrays -------------------------------!
    call leaf3_bcond(mxp,myp,nzg,nzs,npatch,ia,iz,ja,jz,jdim,ibcon                          &
                       , leaf_g(ngrid)%soil_water         , leaf_g(ngrid)%sfcwater_mass     &
                       , leaf_g(ngrid)%soil_energy        , leaf_g(ngrid)%sfcwater_energy   &
-                      , leaf_g(ngrid)%soil_text          , leaf_g(ngrid)%sfcwater_depth    &
+                      , leaf_g(ngrid)%soil_color         , leaf_g(ngrid)%soil_text         &
+                      , leaf_g(ngrid)%psibar_10d         , leaf_g(ngrid)%sfcwater_depth    &
                       , leaf_g(ngrid)%ustar              , leaf_g(ngrid)%tstar             &
                       , leaf_g(ngrid)%rstar              , leaf_g(ngrid)%cstar             &
                       , leaf_g(ngrid)%zeta               , leaf_g(ngrid)%ribulk            &
                       , leaf_g(ngrid)%veg_albedo         , leaf_g(ngrid)%veg_fracarea      &
                       , leaf_g(ngrid)%veg_lai            , leaf_g(ngrid)%veg_tai           &
                       , leaf_g(ngrid)%veg_rough          , leaf_g(ngrid)%veg_height        &
-                      , leaf_g(ngrid)%veg_displace       , leaf_g(ngrid)%patch_area        &   
-                      , leaf_g(ngrid)%patch_rough        , leaf_g(ngrid)%patch_wetind      &
+                      , leaf_g(ngrid)%veg_displace       , leaf_g(ngrid)%patch_area        &
+                      , leaf_g(ngrid)%patch_rough        , leaf_g(ngrid)%patch_wetind      &   
                       , leaf_g(ngrid)%leaf_class         , leaf_g(ngrid)%soil_rough        &
                       , leaf_g(ngrid)%sfcwater_nlev      , leaf_g(ngrid)%stom_condct       &
                       , leaf_g(ngrid)%ground_rsat        , leaf_g(ngrid)%ground_rvap       &

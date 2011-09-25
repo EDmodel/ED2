@@ -93,6 +93,7 @@ module ename_coms
       integer                                           :: nzs
       integer               , dimension(maxgrds)        :: isoilflg
       integer                                           :: nslcon
+      integer                                           :: isoilcol
       real                                              :: slxclay
       real                                              :: slxsand
       integer                                           :: isoilstateinit
@@ -149,12 +150,20 @@ module ename_coms
       real                                              :: clump_tree
       real                                              :: clump_grass
       integer                                           :: h2o_plant_lim
-      real                                              :: vmfact
-      real                                              :: mfact
-      real                                              :: kfact
-      real                                              :: gamfact
-      real                                              :: d0fact
-      real                                              :: alphafact
+      real                                              :: vmfact_c3
+      real                                              :: vmfact_c4
+      real                                              :: mphoto_c3
+      real                                              :: mphoto_c4
+      real                                              :: kw_grass
+      real                                              :: kw_tree
+      real                                              :: gamma_c3
+      real                                              :: gamma_c4
+      real                                              :: d0_grass
+      real                                              :: d0_tree
+      real                                              :: d0_decay
+      real                                              :: alpha_c3
+      real                                              :: alpha_c4
+      real                                              :: klowco2in
       real                                              :: rrffact
       real                                              :: growthresp
       real                                              :: thetacrit
@@ -324,6 +333,7 @@ module ename_coms
       enl%nzs                       = undef_integer
       enl%isoilflg                  = (/ (undef_integer,i=1,maxgrds) /)
       enl%nslcon                    = undef_integer
+      enl%isoilcol                  = undef_integer
       enl%slxclay                   = undef_real
       enl%slxsand                   = undef_real
       enl%isoilstateinit            = undef_integer
@@ -379,12 +389,20 @@ module ename_coms
       enl%clump_tree                = undef_real
       enl%clump_grass               = undef_real
       enl%h2o_plant_lim             = undef_integer
-      enl%vmfact                    = undef_real
-      enl%mfact                     = undef_real
-      enl%kfact                     = undef_real
-      enl%gamfact                   = undef_real
-      enl%d0fact                    = undef_real
-      enl%alphafact                 = undef_real
+      enl%vmfact_c3                 = undef_real
+      enl%vmfact_c4                 = undef_real
+      enl%mphoto_c3                 = undef_real
+      enl%mphoto_c4                 = undef_real
+      enl%kw_grass                  = undef_real
+      enl%kw_tree                   = undef_real
+      enl%gamma_c3                  = undef_real
+      enl%gamma_c4                  = undef_real
+      enl%d0_grass                  = undef_real
+      enl%d0_tree                   = undef_real
+      enl%d0_decay                  = undef_real
+      enl%alpha_c3                  = undef_real
+      enl%alpha_c4                  = undef_real
+      enl%klowco2in                 = undef_real
       enl%rrffact                   = undef_real
       enl%growthresp                = undef_real
       enl%thetacrit                 = undef_real

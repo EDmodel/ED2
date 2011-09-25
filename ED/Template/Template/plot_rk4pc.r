@@ -64,12 +64,12 @@ phovdi02 = list(vnam   = c("met.rshort","met.rlong","gnd.rshort"
                ,unit   = "W/m2"
                ,legpos = "topleft"
                ,plt    = TRUE)
-phovdi03 = list(vnam   = c("wflxgc","wflxca","wflxlc","wflxwc","transp","dewgnd")
+phovdi03 = list(vnam   = c("wflxgc","wflxca","wflxlc","wflxwc","transp")
                ,desc   = c("Ground->Canopy","Canopy->Air","Leaf->Canopy","Wood->Canopy"
-                          ,"Transpiration","Dew")
+                          ,"Transpiration")
                ,colour = c("firebrick","midnightblue","chartreuse","goldenrod"
-                          ,"darkolivegreen","deepskyblue")
-               ,lwd    = c(2.0,2.0,2.0,2.0,2.0,2.0)
+                          ,"darkolivegreen")
+               ,lwd    = c(2.0,2.0,2.0,2.0,2.0)
                ,type   = ptype
                ,plog   = ""
                ,prefix = "h2oflux"
@@ -733,7 +733,6 @@ for (place in myplaces){
       cpatch$wflxac          =   cpatch$wflxac       * day.sec
       cpatch$wflxca          = - cpatch$wflxac
       cpatch$transp          =   cpatch$transp       * day.sec
-      cpatch$dewgnd          =   cpatch$dewgnd       * day.sec
 
       #----- Canopy -> Atmosphere fluxes in W/m2. -----------------------------------------#
       cpatch$qwflxca         = -cpatch$wflxac      * alvl / day.sec

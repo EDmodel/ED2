@@ -7,15 +7,16 @@
 ! variable table should include the mpt1 flag (lateral boundary condition).                !
 !------------------------------------------------------------------------------------------!
 subroutine leaf3_bcond(m2,m3,mzg,mzs,npat,ia,iz,ja,jz,jdim,ibcon,soil_water,sfcwater_mass  &
-                      ,soil_energy,sfcwater_energy,soil_text,sfcwater_depth,ustar,tstar    &
-                      ,rstar,cstar,zeta,ribulk,veg_albedo,veg_fracarea,veg_lai,veg_tai     &
-                      ,veg_rough,veg_height,veg_displace,patch_area,patch_rough            &
-                      ,patch_wetind,leaf_class,soil_rough,sfcwater_nlev,stom_condct        &
-                      ,ground_rsat,ground_rvap,ground_temp,ground_fliq,veg_water,veg_hcap  &
-                      ,veg_energy,can_prss,can_theiv,can_theta,can_rvap,can_co2            &
-                      ,sensible_gc,sensible_vc,evap_gc,evap_vc,transp,gpp,plresp,resphet   &
-                      ,veg_ndvip,veg_ndvic,veg_ndvif,sflux_u,sflux_v,sflux_w,sflux_t       &
-                      ,sflux_r,sflux_c,albedt,rlongup,rshort_gnd,rlong_gnd)
+                      ,soil_energy,sfcwater_energy,soil_color,soil_text,psibar_10d         &
+                      ,sfcwater_depth,ustar,tstar,rstar,cstar,zeta,ribulk,veg_albedo       &
+                      ,veg_fracarea,veg_lai,veg_tai,veg_rough,veg_height,veg_displace      &
+                      ,patch_area,patch_rough,patch_wetind,leaf_class,soil_rough           &
+                      ,sfcwater_nlev,stom_condct,ground_rsat,ground_rvap,ground_temp       &
+                      ,ground_fliq,veg_water,veg_hcap,veg_energy,can_prss,can_theiv        &
+                      ,can_theta,can_rvap,can_co2,sensible_gc,sensible_vc,evap_gc,evap_vc  &
+                      ,transp,gpp,plresp,resphet,veg_ndvip,veg_ndvic,veg_ndvif,sflux_u     &
+                      ,sflux_v,sflux_w,sflux_t,sflux_r,sflux_c,albedt,rlongup,rshort_gnd   &
+                      ,rlong_gnd)
 
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
@@ -32,7 +33,9 @@ subroutine leaf3_bcond(m2,m3,mzg,mzs,npat,ia,iz,ja,jz,jdim,ibcon,soil_water,sfcw
    integer                        , intent(in)    :: ibcon
    real, dimension(mzg,m2,m3,npat), intent(inout) :: soil_water
    real, dimension(mzg,m2,m3,npat), intent(inout) :: soil_energy
+   real, dimension(    m2,m3,npat), intent(inout) :: soil_color
    real, dimension(mzg,m2,m3,npat), intent(inout) :: soil_text
+   real, dimension(    m2,m3,npat), intent(inout) :: psibar_10d
    real, dimension(mzs,m2,m3,npat), intent(inout) :: sfcwater_mass
    real, dimension(mzs,m2,m3,npat), intent(inout) :: sfcwater_energy
    real, dimension(mzs,m2,m3,npat), intent(inout) :: sfcwater_depth
@@ -99,16 +102,16 @@ subroutine leaf3_bcond(m2,m3,mzg,mzs,npat,ia,iz,ja,jz,jdim,ibcon,soil_water,sfcw
    if (iand(ibcon,1) /= 0) then
       do j=ja,jz
          call leaf3_clone(m2,m3,mzg,mzs,npat,2,1,j,j                                       &
-                         ,soil_water,sfcwater_mass,soil_energy,sfcwater_energy,soil_text   &
-                         ,sfcwater_depth,ustar,tstar,rstar,cstar,zeta,ribulk,veg_albedo    &
-                         ,veg_fracarea,veg_lai,veg_tai,veg_rough,veg_height,veg_displace   &
-                         ,patch_area,patch_rough,patch_wetind,leaf_class,soil_rough        &
-                         ,sfcwater_nlev,stom_condct,ground_rsat,ground_rvap,ground_temp    &
-                         ,ground_fliq,veg_water,veg_hcap,veg_energy,can_prss,can_theiv     &
-                         ,can_theta,can_rvap,can_co2,sensible_gc,sensible_vc,evap_gc       &
-                         ,evap_vc,transp,gpp,plresp,resphet,veg_ndvip,veg_ndvic,veg_ndvif  &
-                         ,sflux_u,sflux_v,sflux_w,sflux_t,sflux_r,sflux_c,albedt,rlongup   &
-                         ,rshort_gnd,rlong_gnd)
+                         ,soil_water,sfcwater_mass,soil_energy,sfcwater_energy,soil_color  &
+                         ,soil_text,psibar_10d,sfcwater_depth,ustar,tstar,rstar,cstar,zeta &
+                         ,ribulk,veg_albedo,veg_fracarea,veg_lai,veg_tai,veg_rough         &
+                         ,veg_height,veg_displace,patch_area,patch_rough,patch_wetind      &
+                         ,leaf_class,soil_rough,sfcwater_nlev,stom_condct,ground_rsat      &
+                         ,ground_rvap,ground_temp,ground_fliq,veg_water,veg_hcap           &
+                         ,veg_energy,can_prss,can_theiv,can_theta,can_rvap,can_co2         &
+                         ,sensible_gc,sensible_vc,evap_gc,evap_vc,transp,gpp,plresp        &
+                         ,resphet,veg_ndvip,veg_ndvic,veg_ndvif,sflux_u,sflux_v,sflux_w    &
+                         ,sflux_t,sflux_r,sflux_c,albedt,rlongup,rshort_gnd,rlong_gnd)
       end do
    end if
    !---------------------------------------------------------------------------------------!
@@ -121,16 +124,16 @@ subroutine leaf3_bcond(m2,m3,mzg,mzs,npat,ia,iz,ja,jz,jdim,ibcon,soil_water,sfcw
    if (iand(ibcon,2) /= 0) then
       do j=ja,jz
          call leaf3_clone(m2,m3,mzg,mzs,npat,m2-1,m2,j,j                                   &
-                         ,soil_water,sfcwater_mass,soil_energy,sfcwater_energy,soil_text   &
-                         ,sfcwater_depth,ustar,tstar,rstar,cstar,zeta,ribulk,veg_albedo    &
-                         ,veg_fracarea,veg_lai,veg_tai,veg_rough,veg_height,veg_displace   &
-                         ,patch_area,patch_rough,patch_wetind,leaf_class,soil_rough        &
-                         ,sfcwater_nlev,stom_condct,ground_rsat,ground_rvap,ground_temp    &
-                         ,ground_fliq,veg_water,veg_hcap,veg_energy,can_prss,can_theiv     &
-                         ,can_theta,can_rvap,can_co2,sensible_gc,sensible_vc,evap_gc       &
-                         ,evap_vc,transp,gpp,plresp,resphet,veg_ndvip,veg_ndvic,veg_ndvif  &
-                         ,sflux_u,sflux_v,sflux_w,sflux_t,sflux_r,sflux_c,albedt,rlongup   &
-                         ,rshort_gnd,rlong_gnd)
+                         ,soil_water,sfcwater_mass,soil_energy,sfcwater_energy,soil_color  &
+                         ,soil_text,psibar_10d,sfcwater_depth,ustar,tstar,rstar,cstar,zeta &
+                         ,ribulk,veg_albedo,veg_fracarea,veg_lai,veg_tai,veg_rough         &
+                         ,veg_height,veg_displace,patch_area,patch_rough,patch_wetind      &
+                         ,leaf_class,soil_rough,sfcwater_nlev,stom_condct,ground_rsat      &
+                         ,ground_rvap,ground_temp,ground_fliq,veg_water,veg_hcap           &
+                         ,veg_energy,can_prss,can_theiv,can_theta,can_rvap,can_co2         &
+                         ,sensible_gc,sensible_vc,evap_gc,evap_vc,transp,gpp,plresp        &
+                         ,resphet,veg_ndvip,veg_ndvic,veg_ndvif,sflux_u,sflux_v,sflux_w    &
+                         ,sflux_t,sflux_r,sflux_c,albedt,rlongup,rshort_gnd,rlong_gnd)
       end do
    end if
    !---------------------------------------------------------------------------------------!
@@ -142,16 +145,16 @@ subroutine leaf3_bcond(m2,m3,mzg,mzs,npat,ia,iz,ja,jz,jdim,ibcon,soil_water,sfcw
    if (jdim == 1 .and. iand(ibcon,4) /= 0) then
       do i = ia,iz
          call leaf3_clone(m2,m3,mzg,mzs,npat,i,i,2,1                                       &
-                         ,soil_water,sfcwater_mass,soil_energy,sfcwater_energy,soil_text   &
-                         ,sfcwater_depth,ustar,tstar,rstar,cstar,zeta,ribulk,veg_albedo    &
-                         ,veg_fracarea,veg_lai,veg_tai,veg_rough,veg_height,veg_displace   &
-                         ,patch_area,patch_rough,patch_wetind,leaf_class,soil_rough        &
-                         ,sfcwater_nlev,stom_condct,ground_rsat,ground_rvap,ground_temp    &
-                         ,ground_fliq,veg_water,veg_hcap,veg_energy,can_prss,can_theiv     &
-                         ,can_theta,can_rvap,can_co2,sensible_gc,sensible_vc,evap_gc       &
-                         ,evap_vc,transp,gpp,plresp,resphet,veg_ndvip,veg_ndvic,veg_ndvif  &
-                         ,sflux_u,sflux_v,sflux_w,sflux_t,sflux_r,sflux_c,albedt,rlongup   &
-                         ,rshort_gnd,rlong_gnd)
+                         ,soil_water,sfcwater_mass,soil_energy,sfcwater_energy,soil_color  &
+                         ,soil_text,psibar_10d,sfcwater_depth,ustar,tstar,rstar,cstar,zeta &
+                         ,ribulk,veg_albedo,veg_fracarea,veg_lai,veg_tai,veg_rough         &
+                         ,veg_height,veg_displace,patch_area,patch_rough,patch_wetind      &
+                         ,leaf_class,soil_rough,sfcwater_nlev,stom_condct,ground_rsat      &
+                         ,ground_rvap,ground_temp,ground_fliq,veg_water,veg_hcap           &
+                         ,veg_energy,can_prss,can_theiv,can_theta,can_rvap,can_co2         &
+                         ,sensible_gc,sensible_vc,evap_gc,evap_vc,transp,gpp,plresp        &
+                         ,resphet,veg_ndvip,veg_ndvic,veg_ndvif,sflux_u,sflux_v,sflux_w    &
+                         ,sflux_t,sflux_r,sflux_c,albedt,rlongup,rshort_gnd,rlong_gnd)
       end do
    end if
    !---------------------------------------------------------------------------------------!
@@ -163,16 +166,16 @@ subroutine leaf3_bcond(m2,m3,mzg,mzs,npat,ia,iz,ja,jz,jdim,ibcon,soil_water,sfcw
    if (jdim == 1 .and. iand(ibcon,8) /= 0) then
       do i = ia,iz
          call leaf3_clone(m2,m3,mzg,mzs,npat,i,i,m3-1,m3                                   &
-                         ,soil_water,sfcwater_mass,soil_energy,sfcwater_energy,soil_text   &
-                         ,sfcwater_depth,ustar,tstar,rstar,cstar,zeta,ribulk,veg_albedo    &
-                         ,veg_fracarea,veg_lai,veg_tai,veg_rough,veg_height,veg_displace   &
-                         ,patch_area,patch_rough,patch_wetind,leaf_class,soil_rough        &
-                         ,sfcwater_nlev,stom_condct,ground_rsat,ground_rvap,ground_temp    &
-                         ,ground_fliq,veg_water,veg_hcap,veg_energy,can_prss,can_theiv     &
-                         ,can_theta,can_rvap,can_co2,sensible_gc,sensible_vc,evap_gc       &
-                         ,evap_vc,transp,gpp,plresp,resphet,veg_ndvip,veg_ndvic,veg_ndvif  &
-                         ,sflux_u,sflux_v,sflux_w,sflux_t,sflux_r,sflux_c,albedt,rlongup   &
-                         ,rshort_gnd,rlong_gnd)
+                         ,soil_water,sfcwater_mass,soil_energy,sfcwater_energy,soil_color  &
+                         ,soil_text,psibar_10d,sfcwater_depth,ustar,tstar,rstar,cstar,zeta &
+                         ,ribulk,veg_albedo,veg_fracarea,veg_lai,veg_tai,veg_rough         &
+                         ,veg_height,veg_displace,patch_area,patch_rough,patch_wetind      &
+                         ,leaf_class,soil_rough,sfcwater_nlev,stom_condct,ground_rsat      &
+                         ,ground_rvap,ground_temp,ground_fliq,veg_water,veg_hcap           &
+                         ,veg_energy,can_prss,can_theiv,can_theta,can_rvap,can_co2         &
+                         ,sensible_gc,sensible_vc,evap_gc,evap_vc,transp,gpp,plresp        &
+                         ,resphet,veg_ndvip,veg_ndvic,veg_ndvif,sflux_u,sflux_v,sflux_w    &
+                         ,sflux_t,sflux_r,sflux_c,albedt,rlongup,rshort_gnd,rlong_gnd)
       end do
    end if
    !---------------------------------------------------------------------------------------!
@@ -183,16 +186,16 @@ subroutine leaf3_bcond(m2,m3,mzg,mzs,npat,ia,iz,ja,jz,jdim,ibcon,soil_water,sfcw
    !----- Southwestern corner -------------------------------------------------------------!
    if (iand(ibcon,5) /= 0 .or. (iand(ibcon,1) /= 0 .and. jdim == 0)) then
       call leaf3_clone(m2,m3,mzg,mzs,npat,2,1,1+jdim,1                                     &
-                      ,soil_water,sfcwater_mass,soil_energy,sfcwater_energy,soil_text      &
-                      ,sfcwater_depth,ustar,tstar,rstar,cstar,zeta,ribulk,veg_albedo       &
-                      ,veg_fracarea,veg_lai,veg_tai,veg_rough,veg_height,veg_displace      &
-                      ,patch_area,patch_rough,patch_wetind,leaf_class,soil_rough           &
-                      ,sfcwater_nlev,stom_condct,ground_rsat,ground_rvap,ground_temp       &
-                      ,ground_fliq,veg_water,veg_hcap,veg_energy,can_prss,can_theiv        &
-                      ,can_theta,can_rvap,can_co2,sensible_gc,sensible_vc,evap_gc          &
-                      ,evap_vc,transp,gpp,plresp,resphet,veg_ndvip,veg_ndvic,veg_ndvif     &
-                      ,sflux_u,sflux_v,sflux_w,sflux_t,sflux_r,sflux_c,albedt,rlongup      &
-                      ,rshort_gnd,rlong_gnd)
+                      ,soil_water,sfcwater_mass,soil_energy,sfcwater_energy,soil_color     &
+                      ,soil_text,psibar_10d,sfcwater_depth,ustar,tstar,rstar,cstar,zeta    &
+                      ,ribulk,veg_albedo,veg_fracarea,veg_lai,veg_tai,veg_rough            &
+                      ,veg_height,veg_displace,patch_area,patch_rough,patch_wetind         &
+                      ,leaf_class,soil_rough,sfcwater_nlev,stom_condct,ground_rsat         &
+                      ,ground_rvap,ground_temp,ground_fliq,veg_water,veg_hcap              &
+                      ,veg_energy,can_prss,can_theiv,can_theta,can_rvap,can_co2            &
+                      ,sensible_gc,sensible_vc,evap_gc,evap_vc,transp,gpp,plresp           &
+                      ,resphet,veg_ndvip,veg_ndvic,veg_ndvif,sflux_u,sflux_v,sflux_w       &
+                      ,sflux_t,sflux_r,sflux_c,albedt,rlongup,rshort_gnd,rlong_gnd)       
    end if
    !---------------------------------------------------------------------------------------!
 
@@ -202,16 +205,16 @@ subroutine leaf3_bcond(m2,m3,mzg,mzs,npat,ia,iz,ja,jz,jdim,ibcon,soil_water,sfcw
    !----- Southeastern corner -------------------------------------------------------------!
    if (iand(ibcon,6) /= 0 .or. (iand(ibcon,2) /= 0 .and. jdim == 0)) then
       call leaf3_clone(m2,m3,mzg,mzs,npat,m2-1,m2,1+jdim,1                                 &
-                      ,soil_water,sfcwater_mass,soil_energy,sfcwater_energy,soil_text      &
-                      ,sfcwater_depth,ustar,tstar,rstar,cstar,zeta,ribulk,veg_albedo       &
-                      ,veg_fracarea,veg_lai,veg_tai,veg_rough,veg_height,veg_displace      &
-                      ,patch_area,patch_rough,patch_wetind,leaf_class,soil_rough           &
-                      ,sfcwater_nlev,stom_condct,ground_rsat,ground_rvap,ground_temp       &
-                      ,ground_fliq,veg_water,veg_hcap,veg_energy,can_prss,can_theiv        &
-                      ,can_theta,can_rvap,can_co2,sensible_gc,sensible_vc,evap_gc          &
-                      ,evap_vc,transp,gpp,plresp,resphet,veg_ndvip,veg_ndvic,veg_ndvif     &
-                      ,sflux_u,sflux_v,sflux_w,sflux_t,sflux_r,sflux_c,albedt,rlongup      &
-                      ,rshort_gnd,rlong_gnd)
+                      ,soil_water,sfcwater_mass,soil_energy,sfcwater_energy,soil_color     &
+                      ,soil_text,psibar_10d,sfcwater_depth,ustar,tstar,rstar,cstar,zeta    &
+                      ,ribulk,veg_albedo,veg_fracarea,veg_lai,veg_tai,veg_rough            &
+                      ,veg_height,veg_displace,patch_area,patch_rough,patch_wetind         &
+                      ,leaf_class,soil_rough,sfcwater_nlev,stom_condct,ground_rsat         &
+                      ,ground_rvap,ground_temp,ground_fliq,veg_water,veg_hcap              &
+                      ,veg_energy,can_prss,can_theiv,can_theta,can_rvap,can_co2            &
+                      ,sensible_gc,sensible_vc,evap_gc,evap_vc,transp,gpp,plresp           &
+                      ,resphet,veg_ndvip,veg_ndvic,veg_ndvif,sflux_u,sflux_v,sflux_w       &
+                      ,sflux_t,sflux_r,sflux_c,albedt,rlongup,rshort_gnd,rlong_gnd)       
    end if
    !---------------------------------------------------------------------------------------!
 
@@ -221,16 +224,16 @@ subroutine leaf3_bcond(m2,m3,mzg,mzs,npat,ia,iz,ja,jz,jdim,ibcon,soil_water,sfcw
    !----- Northwestern corner -------------------------------------------------------------!
    if (iand(ibcon,9) /= 0 .or. (iand(ibcon,1) /= 0 .and. jdim == 0)) then
       call leaf3_clone(m2,m3,mzg,mzs,npat,2,1,m3-jdim,m3                                   &
-                      ,soil_water,sfcwater_mass,soil_energy,sfcwater_energy,soil_text      &
-                      ,sfcwater_depth,ustar,tstar,rstar,cstar,zeta,ribulk,veg_albedo       &
-                      ,veg_fracarea,veg_lai,veg_tai,veg_rough,veg_height,veg_displace      &
-                      ,patch_area,patch_rough,patch_wetind,leaf_class,soil_rough           &
-                      ,sfcwater_nlev,stom_condct,ground_rsat,ground_rvap,ground_temp       &
-                      ,ground_fliq,veg_water,veg_hcap,veg_energy,can_prss,can_theiv        &
-                      ,can_theta,can_rvap,can_co2,sensible_gc,sensible_vc,evap_gc          &
-                      ,evap_vc,transp,gpp,plresp,resphet,veg_ndvip,veg_ndvic,veg_ndvif     &
-                      ,sflux_u,sflux_v,sflux_w,sflux_t,sflux_r,sflux_c,albedt,rlongup      &
-                      ,rshort_gnd,rlong_gnd)
+                      ,soil_water,sfcwater_mass,soil_energy,sfcwater_energy,soil_color     &
+                      ,soil_text,psibar_10d,sfcwater_depth,ustar,tstar,rstar,cstar,zeta    &
+                      ,ribulk,veg_albedo,veg_fracarea,veg_lai,veg_tai,veg_rough            &
+                      ,veg_height,veg_displace,patch_area,patch_rough,patch_wetind         &
+                      ,leaf_class,soil_rough,sfcwater_nlev,stom_condct,ground_rsat         &
+                      ,ground_rvap,ground_temp,ground_fliq,veg_water,veg_hcap              &
+                      ,veg_energy,can_prss,can_theiv,can_theta,can_rvap,can_co2            &
+                      ,sensible_gc,sensible_vc,evap_gc,evap_vc,transp,gpp,plresp           &
+                      ,resphet,veg_ndvip,veg_ndvic,veg_ndvif,sflux_u,sflux_v,sflux_w       &
+                      ,sflux_t,sflux_r,sflux_c,albedt,rlongup,rshort_gnd,rlong_gnd)       
    end if
    !---------------------------------------------------------------------------------------!
 
@@ -240,16 +243,16 @@ subroutine leaf3_bcond(m2,m3,mzg,mzs,npat,ia,iz,ja,jz,jdim,ibcon,soil_water,sfcw
    !----- Northeastern corner -------------------------------------------------------------!
    if (iand(ibcon,10) /= 0 .or. (iand(ibcon,2) /= 0 .and. jdim == 0)) then
       call leaf3_clone(m2,m3,mzg,mzs,npat,m2-1,m2,m3-jdim,m3                               &
-                      ,soil_water,sfcwater_mass,soil_energy,sfcwater_energy,soil_text      &
-                      ,sfcwater_depth,ustar,tstar,rstar,cstar,zeta,ribulk,veg_albedo       &
-                      ,veg_fracarea,veg_lai,veg_tai,veg_rough,veg_height,veg_displace      &
-                      ,patch_area,patch_rough,patch_wetind,leaf_class,soil_rough           &
-                      ,sfcwater_nlev,stom_condct,ground_rsat,ground_rvap,ground_temp       &
-                      ,ground_fliq,veg_water,veg_hcap,veg_energy,can_prss,can_theiv        &
-                      ,can_theta,can_rvap,can_co2,sensible_gc,sensible_vc,evap_gc          &
-                      ,evap_vc,transp,gpp,plresp,resphet,veg_ndvip,veg_ndvic,veg_ndvif     &
-                      ,sflux_u,sflux_v,sflux_w,sflux_t,sflux_r,sflux_c,albedt,rlongup      &
-                      ,rshort_gnd,rlong_gnd)
+                      ,soil_water,sfcwater_mass,soil_energy,sfcwater_energy,soil_color     &
+                      ,soil_text,psibar_10d,sfcwater_depth,ustar,tstar,rstar,cstar,zeta    &
+                      ,ribulk,veg_albedo,veg_fracarea,veg_lai,veg_tai,veg_rough            &
+                      ,veg_height,veg_displace,patch_area,patch_rough,patch_wetind         &
+                      ,leaf_class,soil_rough,sfcwater_nlev,stom_condct,ground_rsat         &
+                      ,ground_rvap,ground_temp,ground_fliq,veg_water,veg_hcap              &
+                      ,veg_energy,can_prss,can_theiv,can_theta,can_rvap,can_co2            &
+                      ,sensible_gc,sensible_vc,evap_gc,evap_vc,transp,gpp,plresp           &
+                      ,resphet,veg_ndvip,veg_ndvic,veg_ndvif,sflux_u,sflux_v,sflux_w       &
+                      ,sflux_t,sflux_r,sflux_c,albedt,rlongup,rshort_gnd,rlong_gnd)       
    end if
    !---------------------------------------------------------------------------------------!
 
@@ -268,15 +271,16 @@ end subroutine leaf3_bcond
 !     This sub-routine will actually copy the boundary conditions.                         !
 !------------------------------------------------------------------------------------------!
 subroutine leaf3_clone(m2,m3,mzg,mzs,npat,isrc,idest,jsrc,jdest,soil_water                 &
-                      ,sfcwater_mass,soil_energy,sfcwater_energy,soil_text,sfcwater_depth  &
-                      ,ustar,tstar,rstar,cstar,zeta,ribulk,veg_albedo,veg_fracarea,veg_lai &
-                      ,veg_tai,veg_rough,veg_height,veg_displace,patch_area,patch_rough    &
-                      ,patch_wetind,leaf_class,soil_rough,sfcwater_nlev,stom_condct        &
-                      ,ground_rsat,ground_rvap,ground_temp,ground_fliq,veg_water,veg_hcap  &
-                      ,veg_energy,can_prss,can_theiv,can_theta,can_rvap,can_co2            &
-                      ,sensible_gc,sensible_vc,evap_gc,evap_vc,transp,gpp,plresp,resphet   &
-                      ,veg_ndvip,veg_ndvic,veg_ndvif,sflux_u,sflux_v,sflux_w,sflux_t       &
-                      ,sflux_r,sflux_c,albedt,rlongup,rshort_gnd,rlong_gnd)
+                      ,sfcwater_mass,soil_energy,sfcwater_energy,soil_color,soil_text      &
+                      ,psibar_10d,sfcwater_depth,ustar,tstar,rstar,cstar,zeta,ribulk       &
+                      ,veg_albedo,veg_fracarea,veg_lai,veg_tai,veg_rough,veg_height        &
+                      ,veg_displace,patch_area,patch_rough,patch_wetind,leaf_class         &
+                      ,soil_rough,sfcwater_nlev,stom_condct,ground_rsat,ground_rvap        &
+                      ,ground_temp,ground_fliq,veg_water,veg_hcap,veg_energy,can_prss      &
+                      ,can_theiv,can_theta,can_rvap,can_co2,sensible_gc,sensible_vc        &
+                      ,evap_gc,evap_vc,transp,gpp,plresp,resphet,veg_ndvip,veg_ndvic       &
+                      ,veg_ndvif,sflux_u,sflux_v,sflux_w,sflux_t,sflux_r,sflux_c,albedt    &
+                      ,rlongup,rshort_gnd,rlong_gnd)
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
    integer                        , intent(in)    :: m2
@@ -290,7 +294,9 @@ subroutine leaf3_clone(m2,m3,mzg,mzs,npat,isrc,idest,jsrc,jdest,soil_water      
    integer                        , intent(in)    :: jdest
    real, dimension(mzg,m2,m3,npat), intent(inout) :: soil_water
    real, dimension(mzg,m2,m3,npat), intent(inout) :: soil_energy
+   real, dimension(    m2,m3,npat), intent(inout) :: soil_color
    real, dimension(mzg,m2,m3,npat), intent(inout) :: soil_text
+   real, dimension(    m2,m3,npat), intent(inout) :: psibar_10d
    real, dimension(mzs,m2,m3,npat), intent(inout) :: sfcwater_mass
    real, dimension(mzs,m2,m3,npat), intent(inout) :: sfcwater_energy
    real, dimension(mzs,m2,m3,npat), intent(inout) :: sfcwater_depth
@@ -413,6 +419,8 @@ subroutine leaf3_clone(m2,m3,mzg,mzs,npat,isrc,idest,jsrc,jdest,soil_water      
       rshort_gnd     (idest,jdest,ipat) = rshort_gnd       (isrc,jsrc,ipat)
       rlong_gnd      (idest,jdest,ipat) = rlong_gnd        (isrc,jsrc,ipat)
 
+      soil_color     (idest,jdest,ipat) = soil_color       (isrc,jsrc,ipat)
+      psibar_10d     (idest,jdest,ipat) = psibar_10d       (isrc,jsrc,ipat)
       soilloop: do kzg = 1,mzg
          soil_water       (kzg,idest,jdest,ipat) = soil_water         (kzg,isrc,jsrc,ipat)
          soil_energy      (kzg,idest,jdest,ipat) = soil_energy        (kzg,isrc,jsrc,ipat)

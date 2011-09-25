@@ -1125,8 +1125,8 @@ subroutine opspec3
   end if
   
   ! Check whether the ground vapour method scheme the user chose is fine or not. 
-  if (isfcl /= 0 .and. (igrndvap < 0 .or. igrndvap > 4)) then
-     print *, 'fatal - IGRNDVAP must be between 0 and 4, and yours is set to '            &
+  if (isfcl /= 0 .and. (igrndvap < 0 .or. igrndvap > 5)) then
+     print *, 'fatal - IGRNDVAP must be between 0 and 5, and yours is set to '            &
             ,igrndvap,'...'
      ifaterr=ifaterr+1
   end if

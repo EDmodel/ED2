@@ -1631,6 +1631,8 @@ subroutine copy_avgvars_to_leaf(ifm)
             leaf_g(ifm)%soil_energy(k,ix,iy,ilp) = cpoly%avg_soil_energy(k,isi)
             leaf_g(ifm)%soil_water (k,ix,iy,ilp) = cpoly%avg_soil_water (k,isi)
          end do
+         leaf_g(ifm)%psibar_10d (ix,iy,ilp) = 1.0
+         leaf_g(ifm)%soil_color(ix,iy,ilp)  = real(cpoly%ncol_soil(isi))
          !---------------------------------------------------------------------------------!
 
 
