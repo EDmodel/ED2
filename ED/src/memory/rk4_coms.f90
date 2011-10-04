@@ -169,6 +169,7 @@ module rk4_coms
       real(kind=8), pointer, dimension(:) :: gsw_closed      ! Sto. cond. (cl.) [  kg/m²/s]
       real(kind=8), pointer, dimension(:) :: rshort_l        ! Absorbed SWRad.  [   J/m²/s]
       real(kind=8), pointer, dimension(:) :: rlong_l         ! Absorbed LWRad.  [   J/m²/s]
+      !------------------------------------------------------------------------------------!
 
 
       !----- Wood (cohort-level) variables. -----------------------------------------------!
@@ -186,6 +187,17 @@ module rk4_coms
       real(kind=8), pointer, dimension(:) :: wood_gbw        ! Bnd.lyr. condct. [  kg/m²/s]
       real(kind=8), pointer, dimension(:) :: rshort_w        ! Absorbed SWRad.  [   J/m²/s]
       real(kind=8), pointer, dimension(:) :: rlong_w         ! Absorbed LWRad.  [   J/m²/s]
+      !------------------------------------------------------------------------------------!
+
+
+
+      !----- Leaf+branchwood (cohort-level) variables. ------------------------------------!
+      real(kind=8), pointer, dimension(:) :: veg_energy      ! Internal energy  [     J/m²]
+      real(kind=8), pointer, dimension(:) :: veg_water       ! Sfc. water mass  [    kg/m²]
+      real(kind=8), pointer, dimension(:) :: veg_hcap        ! Heat capacity    [   J/m²/K]
+      logical     , pointer, dimension(:) :: veg_resolvable  ! resolve leaves?  [      T|F]
+      !------------------------------------------------------------------------------------!
+
 
 
       !----- General cohort-level properties. ---------------------------------------------!
@@ -414,20 +426,49 @@ module rk4_coms
    !=======================================================================================!
    !    The following variable will be loaded from the user's namelist.                    !
    !---------------------------------------------------------------------------------------!
-   integer                   :: ibranch_thermo ! This flag tells whether we consider the 
-                                               !    branch actively affecting heat capacity
-                                               !    and radiation interception. 
-                                               ! 0 - no (default);
-                                               ! 1 - yes (under development/test);
 
-   real                      :: rk4_tolerance  ! The RK4 tolerance (or epsilon).  While 
-                                               !    rk4eps is the actual variable used in
-                                               !    Runge-Kutta (a double precision vari-
-                                               !    able), rk4tol is the one given at the 
-                                               !    namelist (a single precision variable).
+   !---------------------------------------------------------------------------------------!
+   ! IBRANCH_THERMO -- This determines whether branches should be included in the          !
+   !                   0.  No branches in energy/radiation (ED-2.1 default);               !
+   !                   1.  Branches are accounted in the energy and radiation.  Branchwood !
+   !                       and leaf are treated separately in the canopy radiation scheme, !
+   !                       but solved as a single pool in the biophysics integration.      !
+   !                   2.  Similar to 1, but branches are treated as separate pools in the !
+   !                       biophysics (thus doubling the number of prognostic variables).  !
+   !---------------------------------------------------------------------------------------!
+   integer                   :: ibranch_thermo 
+   !---------------------------------------------------------------------------------------!
 
-   integer                   :: ipercol        ! This flag controls which percolation 
-                                               !    scheme we should use
+
+
+   !---------------------------------------------------------------------------------------!
+   ! RK4_TOLERANCE -- This is the relative tolerance for Runge-Kutta or Heun's             !
+   !                  integration.  Larger numbers will make runs go faster, at the        !
+   !                  expense of being less accurate.  Currently the valid range is        !
+   !                  between 1.e-7 and 1.e-1, but recommended values are between 1.e-4    !
+   !                  and 1.e-2.                                                           !
+   !---------------------------------------------------------------------------------------!
+   real                      :: rk4_tolerance
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   ! IPERCOL -- This controls percolation and infiltration.                                !
+   !            0.  Default method.  Assumes soil conductivity constant and for the        !
+   !                temporary surface water, it sheds liquid in excess of a 1:9 liquid-    !
+   !                -to-ice ratio through percolation.  Temporary surface water exists     !
+   !                only if the top soil layer is at saturation.                           !
+   !            1.  Constant soil conductivity, and it uses the percolation model as in    !
+   !                Anderson (1976) NOAA technical report NWS 19.  Temporary surface       !
+   !                water may exist after a heavy rain event, even if the soil doesn't     !
+   !                saturate.  Recommended value.                                          !
+   !            2.  Soil conductivity decreases with depth even for constant soil moisture !
+   !                , otherwise it is the same as 1.                                       !
+   !---------------------------------------------------------------------------------------!
+   integer                   :: ipercol
+   !---------------------------------------------------------------------------------------!
+
    !=======================================================================================!
    !=======================================================================================!
 
@@ -1067,6 +1108,10 @@ module rk4_coms
       allocate(y%wood_gbw         (maxcohort))
       allocate(y%rshort_w         (maxcohort))
       allocate(y%rlong_w          (maxcohort))
+      allocate(y%veg_energy       (maxcohort))
+      allocate(y%veg_water        (maxcohort))
+      allocate(y%veg_hcap         (maxcohort))
+      allocate(y%veg_resolvable   (maxcohort))
       allocate(y%nplant           (maxcohort))
       allocate(y%veg_wind         (maxcohort))
       allocate(y%lai              (maxcohort))
@@ -1145,6 +1190,10 @@ module rk4_coms
       nullify(y%wood_gbw         )
       nullify(y%rshort_w         )
       nullify(y%rlong_w          )
+      nullify(y%veg_energy       )
+      nullify(y%veg_water        )
+      nullify(y%veg_hcap         )
+      nullify(y%veg_resolvable   )
       nullify(y%nplant           )
       nullify(y%veg_wind         )
       nullify(y%lai              )
@@ -1221,6 +1270,10 @@ module rk4_coms
       if (associated(y%wood_gbw         )) y%wood_gbw         = 0.d0
       if (associated(y%rshort_w         )) y%rshort_w         = 0.d0
       if (associated(y%rlong_w          )) y%rlong_w          = 0.d0
+      if (associated(y%veg_energy       )) y%veg_energy       = 0.d0
+      if (associated(y%veg_water        )) y%veg_water        = 0.d0
+      if (associated(y%veg_hcap         )) y%veg_hcap         = 0.d0
+      if (associated(y%veg_resolvable   )) y%veg_resolvable   = .false.
       if (associated(y%nplant           )) y%nplant           = 0.d0
       if (associated(y%veg_wind         )) y%veg_wind         = 0.d0
       if (associated(y%lai              )) y%lai              = 0.d0
@@ -1297,6 +1350,10 @@ module rk4_coms
       if (associated(y%wood_gbw         )) deallocate(y%wood_gbw         )
       if (associated(y%rshort_w         )) deallocate(y%rshort_w         )
       if (associated(y%rlong_w          )) deallocate(y%rlong_w          )
+      if (associated(y%veg_energy       )) deallocate(y%veg_energy       )
+      if (associated(y%veg_water        )) deallocate(y%veg_water        )
+      if (associated(y%veg_hcap         )) deallocate(y%veg_hcap         )
+      if (associated(y%veg_resolvable   )) deallocate(y%veg_resolvable   )
       if (associated(y%nplant           )) deallocate(y%nplant           )
       if (associated(y%veg_wind         )) deallocate(y%veg_wind         )
       if (associated(y%lai              )) deallocate(y%lai              )

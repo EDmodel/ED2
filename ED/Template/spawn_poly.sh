@@ -3,9 +3,9 @@
 here=`pwd`
 there=`echo ${here} | sed s@/n/Moorcroft_Lab/Users@/n/moorcroft_scratch@g`
 desc=`basename ${here}`
-sitemet='/n/moorcroft_scratch/nlevine/data/ed2_data/site_met_driver'
+sitemet='/n/moorcroft_data/mlongo/data/ed2_data/site_met_driver'
 hvdmet='/n/home11/aantonarakis/EDrelease65/run/'
-bioinit='/n/moorcroft_data/mlongo/data/site_bio_data'
+bioinit='/n/moorcroft_data/mlongo/data/ed2_data/site_bio_data'
 sheffield='SHEF_NCEP_DRIVER_DS314'
 lonlat=${here}'/joborder.txt'
 
@@ -142,6 +142,7 @@ do
    clumpgrass=`echo ${oi}  | awk '{print $64}'`
    ivegtdyn=`echo ${oi}    | awk '{print $65}'`
    igndvap=`echo ${oi}     | awk '{print $66}'`
+   iphen=`echo ${oi}       | awk '{print $67}'`
    #---------------------------------------------------------------------------------------#
 
 
@@ -329,77 +330,72 @@ do
       metcyc1=2004
       metcycf=2006
       imetavg=1
-      iphen=2
       ;;
    Caxiuana)
       metdriverdb=${sitemet}'/Caxiuana/Caxiuana06_HEADER'
       metcyc1=1999
       metcycf=2003
       imetavg=1
-      iphen=2
       ;;
    Harvard)
       metdriverdb=${hvdmet}'/HARVARD_MET_93_09'
       metcyc1=1993
       metcycf=2008
       imetavg=1
-      iphen=1
       ;;
    Manaus_KM34)
       metdriverdb=${sitemet}'/Manaus_KM34/Manaus_KM34_HEADER'
       metcyc1=2002
       metcycf=2005
       imetavg=1
-      iphen=2
       ;;
    Reserva_Jaru)
       metdriverdb=${sitemet}'/Reserva_Jaru/Reserva_Jaru_HEADER'
       metcyc1=2000
       metcycf=2002
       imetavg=1
-      iphen=2
       ;;
    Reserva_Pe-de-Gigante)
       metdriverdb=${sitemet}'/Reserva_Pe_de_Gigante/Reserva_Pe-de-Gigante_HEADER'
       metcyc1=2001
       metcycf=2003
       imetavg=1
-      iphen=2
       ;;
    Santarem_KM67)
       metdriverdb=${sitemet}'/Santarem_KM67/Santarem_KM67_HEADER'
       metcyc1=2002
       metcycf=2004
       imetavg=1
-      iphen=2
       ;;
    Santarem_KM77)
       metdriverdb=${sitemet}'/Santarem_KM77/Santarem_KM77_HEADER'
       metcyc1=2001
       metcycf=2005
       imetavg=1
-      iphen=2
       ;;
    Santarem_KM83)
       metdriverdb=${sitemet}'/Santarem_KM83/Santarem_KM83_HEADER'
       metcyc1=2001
       metcycf=2003
       imetavg=1
-      iphen=2
       ;;
    Fazenda_NS)
       metdriverdb=${sitemet}'/Fazenda_Nossa_Senhora/Fazenda_Nossa_Senhora_HEADER'
       metcyc1=1999
       metcycf=2001
       imetavg=1
-      iphen=2
+      ;;
+   Guyaflux)
+      metdriverdb=${sitemet}'/Guyaflux/Guyaflux_HEADER'
+      metcyc1=2007
+      metcycf=2009
+      imetavg=1
       ;;
    *)
       metdriverdb=${here}/${polyname}/${sheffield}
       metcyc1=1969
       metcycf=2008
       imetavg=2
-      iphen=2
       ;;
    esac
    #---------------------------------------------------------------------------------------#

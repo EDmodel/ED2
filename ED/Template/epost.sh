@@ -111,6 +111,7 @@ do
    clumpgrass=`echo ${oi}  | awk '{print $64}'`
    ivegtdyn=`echo ${oi}    | awk '{print $65}'`
    igndvap=`echo ${oi}     | awk '{print $66}'`
+   iphen=`echo ${oi}       | awk '{print $67}'`
    #---------------------------------------------------------------------------------------#
 
 

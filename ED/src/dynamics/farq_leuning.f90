@@ -111,10 +111,10 @@ module farq_leuning
                                 , dark_respiration_factor  & ! intent(in)
                                 , stomatal_slope           & ! intent(in)
                                 , quantum_efficiency       ! ! intent(in)
-      use phenology_coms , only : vm_tran                  & ! intent(in)
-                                , vm_slop                  & ! intent(in)
-                                , vm_amp                   & ! intent(in)
-                                , vm_min                   ! ! intent(in)
+      use phenology_coms , only : vm0_tran                 & ! intent(in)
+                                , vm0_slope                & ! intent(in)
+                                , vm0_amp                  & ! intent(in)
+                                , vm0_min                  ! ! intent(in)
       use physiology_coms, only : c34smin_lint_co28        & ! intent(in)
                                 , c34smax_lint_co28        & ! intent(in)
                                 , gbh_2_gbw8               & ! intent(in)
@@ -242,7 +242,7 @@ module farq_leuning
       select case(phenology(ipft))
       case (3)
          !------ Light-controlled phenology. ----------------------------------------------!
-         thispft%vm0 = dble(vm_amp / (1.0 + (llspan/vm_tran)**vm_slop) + vm_min)           &
+         thispft%vm0 = dble(vm0_amp / (1.0 + (llspan/vm0_tran)**vm0_slope) + vm0_min)      &
                      * umol_2_mol8
          thispft%rd0 = dble(vm_bar) * umol_2_mol8 * dble(dark_respiration_factor(ipft))
       case default

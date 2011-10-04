@@ -182,14 +182,31 @@ subroutine update_turnover(cpoly, isi)
                              , sitetype           & ! structure
                              , patchtype          ! ! structure
    use pft_coms       , only : is_tropical        & ! intent(in)
-                             , sla                & ! intent(in)
+                             , phenology          & ! intent(in)
+                             , SLA                & ! intent(in)
+                             , sla_scale          & ! intent(in)
+                             , sla_inter          & ! intent(in)
+                             , sla_slope          & ! intent(in)
                              , leaf_turnover_rate ! ! intent(in)
-   use phenology_coms , only : rad_turnover_int   & ! intent(in)
-                             , rad_turnover_slope & ! intent(in)
-                             , vm_tran            & ! intent(in)
-                             , vm_slop            & ! intent(in)
-                             , vm_amp             & ! intent(in)
-                             , vm_min             ! ! intent(in)
+   use phenology_coms , only : radint             & ! intent(in)
+                             , radslp             & ! intent(in)
+                             , turnamp_window     & ! intent(out)
+                             , turnamp_wgt        & ! intent(out)
+                             , turnamp_min        & ! intent(out)
+                             , turnamp_max        & ! intent(out)
+                             , radto_min          & ! intent(out)
+                             , radto_max          & ! intent(out)
+                             , llspan_window      & ! intent(out)
+                             , llspan_wgt         & ! intent(out)
+                             , llspan_min         & ! intent(out)
+                             , llspan_max         & ! intent(out)
+                             , llspan_inf         & ! intent(out)
+                             , vm0_window         & ! intent(out)
+                             , vm0_wgt            & ! intent(out)
+                             , vm0_tran           & ! intent(out)
+                             , vm0_slope          & ! intent(out)
+                             , vm0_amp            & ! intent(out)
+                             , vm0_min            ! ! intent(out)
    use consts_coms    , only : day_sec            ! ! intent(in)
 
    implicit none
@@ -202,20 +219,13 @@ subroutine update_turnover(cpoly, isi)
    integer                        :: ipa
    integer                        :: ico
    integer                        :: ipft
-   real                           :: turnover0
-   real                           :: llspan0
-   real                           :: vm0
-   !----- Local constants -----------------------------------------------------------------!
-   real              , parameter  :: tfact10 = 0.1
-   real              , parameter  :: tfact60 = 1./60
-   real              , save       :: radcrit
-   logical           , save       :: first_time=.true.
+   real                           :: turnover_now
+   real                           :: turnamp_now
+   real                           :: llspan_now
+   real                           :: vm0_now
    !---------------------------------------------------------------------------------------!
 
-   if (first_time) then
-      first_time = .false.
-      radcrit = - rad_turnover_int / rad_turnover_slope
-   end if
+
 
    !----- Loop over patches. --------------------------------------------------------------!
    csite => cpoly%site(isi)
@@ -225,52 +235,81 @@ subroutine update_turnover(cpoly, isi)
       cohortloop: do ico = 1,cpatch%ncohorts
 
          ipft = cpatch%pft(ico)
-         
-         !write(unit=*,fmt='(a,1x,es12.5)') 'Rad_avg is       =', cpoly%rad_avg
-         
-         !----- Update turnover mulitplier. -----------------------------------------------!
-         if (cpoly%rad_avg(isi) < radcrit) then
-            turnover0 = 0.01
-         else
-            turnover0 = min(100.                                                           &
-                           , max(0.01                                                      &
-                                ,rad_turnover_int+rad_turnover_slope*cpoly%rad_avg(isi)))
-         end if
-         
-         !         write(unit=*,fmt='(a,1x,es12.5)') 'New Turnover is       =', turnover0
-                  
-         cpatch%turnover_amp(ico) = (1.0 - tfact10) * cpatch%turnover_amp(ico)             &
-                                  +        tfact10  * turnover0
 
-         !----- Update leaf lifespan. -----------------------------------------------------!
-         if (leaf_turnover_rate(ipft) > 0.) then
-            llspan0       = 12.0 / (cpatch%turnover_amp(ico) * leaf_turnover_rate(ipft))
-            if (llspan0 < 2.) then
-                llspan0=2.
-            elseif (llspan0 > 60.) then
-                llspan0 = 60.
+
+         !---------------------------------------------------------------------------------!
+         !     We must check whether the light phenology is to be applied for this PFT.    !
+         !---------------------------------------------------------------------------------!
+         select case (phenology(ipft))
+         case (3)
+            !------------------------------------------------------------------------------!
+            !      Find the target turnover rate amplitude (turnamp_now).                  !
+            !------------------------------------------------------------------------------!
+            if (cpoly%rad_avg(isi) <= radto_min) then
+               turnamp_now = turnamp_min
+            elseif (cpoly%rad_avg(isi) >= radto_max) then
+               turnamp_now = turnamp_max
+            else
+               turnamp_now = radint + radslp * cpoly%rad_avg(isi)
             end if
-         else
-            llspan0       = 9999.
-         end if
-         
-         !         write(unit=*,fmt='(a,1x,es12.5)') 'llspan0 is       =', llspan0
-         cpatch%llspan(ico) = (1.0 - tfact60) * cpatch%llspan(ico) + tfact60 * llspan0
-         !         write(unit=*,fmt='(a,1x,es12.5)') 'llspan(ico) is       =', cpatch%llspan(ico)         
+            !------------------------------------------------------------------------------!
 
-         !----- Update vm_bar. ------------------------------------------------------------!
-         vm0               = vm_amp / (1.0 + (cpatch%llspan(ico)/vm_tran)**vm_slop) + vm_min
-         cpatch%vm_bar(ico)= (1.0 - tfact60) * cpatch%vm_bar(ico) + tfact60 * vm0
 
-         !----- Update the specific leaf area (SLA). --------------------------------------!
-         if (is_tropical(ipft) .and. ipft /= 17) then
-            cpatch%sla(ico) =  10.0                                                        &
-                            ** ( 1.6923                                                    &
-                               - 0.3305 *log10(12.0 / ( cpatch%turnover_amp(ico)           &
-                                                      * leaf_turnover_rate(ipft)) ) )
-         else
-            cpatch%sla(ico) = sla(ipft)
-         end if
+            !------ The actual turnover amplitude is based on a running average. ----------!
+            cpatch%turnover_amp(ico) = (1.0 - turnamp_wgt) * cpatch%turnover_amp(ico)     &
+                                     +        turnamp_wgt  * turnamp_now
+            !------------------------------------------------------------------------------!
+
+
+
+            !------------------------------------------------------------------------------!
+            !     Update target leaf lifespan.                                             !
+            !------------------------------------------------------------------------------!
+            if (leaf_turnover_rate(ipft) > 0.) then
+               llspan_now = 12.0 / (cpatch%turnover_amp(ico) * leaf_turnover_rate(ipft))
+               !----- Make sure the life span is bounded. ---------------------------------!
+               if ( llspan_now < llspan_min) then
+                   llspan_now = llspan_min 
+               elseif (llspan_now > llspan_max) then
+                   llspan_now = llspan_max
+               end if
+               !---------------------------------------------------------------------------!
+            else
+               !---- Nothing lasts forever, so impose a maximum life span. ----------------!
+               llspan_now = llspan_inf
+               !---------------------------------------------------------------------------!
+            end if
+            !------------------------------------------------------------------------------!
+
+
+
+            !------------------------------------------------------------------------------!
+            !     The actual leaf lifespan is the weighted average.                        !
+            !------------------------------------------------------------------------------!
+            cpatch%llspan(ico) = (1.0 - llspan_wgt) * cpatch%llspan(ico)                   &
+                               +        llspan_wgt  * llspan_now
+            !------------------------------------------------------------------------------!
+
+
+
+            !----- Update the running average of the photosythetic capacity (Vm0). --------!
+            vm0_now = vm0_amp / (1.0 + (cpatch%llspan(ico) / vm0_tran)**vm0_slope)         &
+                    + vm0_min
+            cpatch%vm_bar(ico) = (1.0 - vm0_wgt) * cpatch%vm_bar(ico) + vm0_wgt * vm0_now
+            !------------------------------------------------------------------------------!
+
+
+
+            !----- Update the specific leaf area (SLA). -----------------------------------!
+            turnover_now    = cpatch%turnover_amp(ico) * leaf_turnover_rate(ipft)
+            cpatch%sla(ico) = 10.0 ** ( sla_inter                                          &
+                                      + sla_slope * log10( 12.0 / turnover_now ) )         &
+                            * sla_scale
+         case default
+            !----- The default is to keep these variables the same. -----------------------!
+            continue
+            !------------------------------------------------------------------------------!
+         end select
       end do cohortloop
 
    end do patchloop
@@ -472,7 +511,7 @@ subroutine pheninit_balive_bstorage(mzg,csite,ipa,ico,ntext_soil,green_leaf_fact
          else
             cpatch%elongf(ico) = 1.0
          end if
-      case (4)
+      case (3,4)
          cpatch%elongf(ico)  = max(0.0,min(1.0,cpatch%paw_avg(ico)))
       case default
          cpatch%elongf(ico)  = 1.0

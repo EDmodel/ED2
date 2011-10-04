@@ -2135,7 +2135,7 @@ subroutine init_pft_alloc_params()
                           , qsw                   & ! intent(out)
                           , init_density          & ! intent(out)
                           , agf_bs                & ! intent(out)
-                          , agf_bsi               & ! intent(out)
+                          , brf_wd                & ! intent(out)
                           , hgt_min               & ! intent(out)
                           , hgt_ref               & ! intent(out)
                           , hgt_max               & ! intent(out)
@@ -2156,17 +2156,13 @@ subroutine init_pft_alloc_params()
                           , bdead_crit            & ! intent(out)
                           , b1Bl                  & ! intent(out)
                           , b2Bl                  & ! intent(out)
+                          , b1WAI                 & ! intent(out)
+                          , b2WAI                 & ! intent(out)
                           , C2B                   & ! intent(out)
-                          , sapwood_ratio         & ! intent(out)
-                          , rbranch               & ! intent(out)
-                          , rdiamet               & ! intent(out)
-                          , rlength               & ! intent(out)
-                          , diammin               & ! intent(out)
-                          , ntrunk                & ! intent(out)
-                          , conijn_a              & ! intent(out)
-                          , conijn_b              & ! intent(out)
-                          , conijn_c              & ! intent(out)
-                          , conijn_d              ! ! intent(out)
+                          , sla_scale             & ! intent(out)
+                          , sla_inter             & ! intent(out)
+                          , sla_slope             & ! intent(out)
+                          , sapwood_ratio         ! ! intent(out)
    use allometry   , only : h2dbh                 & ! function
                           , dbh2bd                ! ! function
    use consts_coms , only : twothirds             & ! intent(in)
@@ -2222,8 +2218,12 @@ subroutine init_pft_alloc_params()
    character(len=str_len), parameter :: allom_file  = 'allom_param.txt'
    !---------------------------------------------------------------------------------------!
 
+
+
    !----- Carbon-to-biomass ratio of plant tissues. ---------------------------------------!
    C2B    = 2.0
+   !---------------------------------------------------------------------------------------! 
+
 
    !---------------------------------------------------------------------------------------! 
    !    This flag should be used to define whether the plant is tropical/subtropical or    !
@@ -2268,22 +2268,39 @@ subroutine init_pft_alloc_params()
    rho(17)    = 0.54
    !---------------------------------------------------------------------------------------!
 
-   !----- Specific leaf area [m² leaf / kg C] ---------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Specific leaf area [m² leaf / kg C].   For tropical PFTs, this is a turnover rate !
+   ! defined by the slope, intercept and scale.                                            !
+   !---------------------------------------------------------------------------------------!
+   !----- Old parameters. -----------------------------------------------------------------!
+   ! sla_scale =  1.0000
+   ! sla_inter =  1.6923
+   ! sla_slope = -0.3305
+   !----- New parameters. -----------------------------------------------------------------!
+   sla_scale =  0.1 * C2B
+   sla_inter =  2.4
+   sla_slope = -0.46
+
    !----- [KIM] - new tropical parameters. ------------------------------------------------!
-   SLA(1:4)   = 10.0**(2.4-0.46*log10(12.0/leaf_turnover_rate(1:4))) * C2B * 0.1
-   ! SLA(1:4) = 10.0**(1.6923-0.3305*log10(12.0/leaf_turnover_rate(1:4)))
-   SLA(5)     = 22.0
-   SLA(6)     =  6.0
-   SLA(7)     =  9.0
-   SLA(8)     = 10.0
-   SLA(9)     = 30.0
-   SLA(10)    = 24.2
-   SLA(11)    = 60.0
-   SLA(12:13) = 22.0
-   SLA(14:15) = 10.0**((2.4-0.46*log10(12.0/leaf_turnover_rate(14:15)))) * C2B * 0.1
-   ! SLA(14:15) = 10.0**(1.6923-0.3305*log10(12.0/leaf_turnover_rate(14:15)))
-   SLA(16)    = 10.0**(2.4-0.46*log10(12.0/leaf_turnover_rate(16))) * C2B * 0.1
-   SLA(17)    = 10.0
+   SLA( 1) = 10.0**(sla_inter + sla_slope * log10(12.0/leaf_turnover_rate( 1))) * sla_scale
+   SLA( 2) = 10.0**(sla_inter + sla_slope * log10(12.0/leaf_turnover_rate( 2))) * sla_scale
+   SLA( 3) = 10.0**(sla_inter + sla_slope * log10(12.0/leaf_turnover_rate( 3))) * sla_scale
+   SLA( 4) = 10.0**(sla_inter + sla_slope * log10(12.0/leaf_turnover_rate( 4))) * sla_scale
+   SLA( 5) = 22.0
+   SLA( 6) =  6.0
+   SLA( 7) =  9.0
+   SLA( 8) = 10.0
+   SLA( 9) = 30.0
+   SLA(10) = 24.2
+   SLA(11) = 60.0
+   SLA(12) = 22.0
+   SLA(13) = 22.0
+   SLA(14) = 10.0**(sla_inter + sla_slope * log10(12.0/leaf_turnover_rate(14))) * sla_scale
+   SLA(15) = 10.0**(sla_inter + sla_slope * log10(12.0/leaf_turnover_rate(15))) * sla_scale
+   SLA(16) = 10.0**(sla_inter + sla_slope * log10(12.0/leaf_turnover_rate(16))) * sla_scale
+   SLA(17) = 10.0
 
    !---------------------------------------------------------------------------------------!
    !    Fraction of vertical branches.  Values are from Poorter et al. (2006):             !
@@ -2385,13 +2402,6 @@ subroutine init_pft_alloc_params()
    hgt_ref(12:15) = 0.0
    hgt_ref(16)    = 0.0
    hgt_ref(17)    = 0.0
-   !---------------------------------------------------------------------------------------!
-
-
-
-   !----- Fraction of structural stem that is assumed to be above ground. -----------------!
-   agf_bs(1:17)   = 0.7
-   agf_bsi(1:17)  = 1. / agf_bs(1:17)
    !---------------------------------------------------------------------------------------!
 
 
@@ -2608,6 +2618,60 @@ subroutine init_pft_alloc_params()
 
 
    !---------------------------------------------------------------------------------------!
+   !    Use the equation by:                                                               !
+   !    Ahrends, B., C. Penne, O. Panferov, 2010: Impact of target diameter harvesting on  !
+   !        spatial and temporal pattern of drought risk in forest ecosystems under        !
+   !        climate change conditions.  The Open Geography Journal, 3, 91-102  (they       !
+   !        didn't develop the allometry, but the original reference is in German...)      !
+   !---------------------------------------------------------------------------------------!
+   !----- Intercept. ----------------------------------------------------------------------!
+   b1WAI(1)     = 0.0          ! No WAI for grasses
+   b1WAI(2:4)   = 0.0192 * 0.5 ! Broadleaf
+   b1WAI(5)     = 0.0          ! No WAI for grasses
+   b1WAI(6:8)   = 0.0553 * 0.5 ! Needleleaf
+   b1WAI(9:11)  = 0.0192 * 0.5 ! Broadleaf
+   b1WAI(12:16) = 0.0          ! No WAI for grasses
+   b1WAI(17)    = 0.0553 * 0.5 ! Needleleaf
+   !----- Slope. --------------------------------------------------------------------------!
+   b2WAI(1)     = 1.0          ! No WAI for grasses
+   b2WAI(2:4)   = 2.0947       ! Broadleaf
+   b2WAI(5)     = 1.0          ! No WAI for grasses
+   b2WAI(6:8)   = 1.9769       ! Needleleaf
+   b2WAI(9:11)  = 2.0947       ! Broadleaf
+   b2WAI(12:16) = 1.0          ! No WAI for grasses
+   b2WAI(17)    = 1.9769       ! Needleleaf
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !----- Fraction of structural stem that is assumed to be above ground. -----------------!
+   agf_bs(1:17)   = 0.7
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Fraction of above-ground wood that is assumed to be in branches and twigs.  Here  !
+   ! we must be careful to make sure that the fraction is 0 in case WAI is going to be     !
+   ! zero (e.g. grasses).                                                                  !
+   !---------------------------------------------------------------------------------------!
+   where (b1WAI(:) == 0.0)
+      !----- WAI is going to be zero, so branch biomass should be zero as well. -----------!
+      brf_wd(:) = 0.0
+      !------------------------------------------------------------------------------------!
+   elsewhere
+      !------------------------------------------------------------------------------------!
+      !     This may go outside the where loop eventually, for the time being assume the   !
+      ! same for all tree PFTs.                                                            !
+      !------------------------------------------------------------------------------------!
+      brf_wd(:) = 0.16
+      !------------------------------------------------------------------------------------!
+   end where
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
    !     DBH-Root depth allometry.  Check which allometry to use.  Notice that b?Rd have   !
    ! different meanings depending on the allometry. b?Vol is always defined because we     !
    ! may want to estimate the standing volume for other reasons (e.g. the characteristic   !
@@ -2672,70 +2736,6 @@ subroutine init_pft_alloc_params()
       close(unit=18,status='keep')
    end if
 
-   !---------------------------------------------------------------------------------------!
-   !    Define the branching parameters, following Järvelä (2004)                          !
-   !---------------------------------------------------------------------------------------!
-   !----- Branching ratio -----------------------------------------------------------------!
-   rbranch(1)     = 4.24
-   rbranch(2:4)   = 4.23
-   rbranch(5)     = 4.24
-   rbranch(6:8)   = 4.44
-   rbranch(9:11)  = 4.24
-   rbranch(12:15) = 4.24
-   rbranch(16)    = 4.24
-   rbranch(17)    = 4.44
-   !----- Diameter ratio ------------------------------------------------------------------!
-   rdiamet(1)     = 5.00
-   rdiamet(2:4)   = 1.86
-   rdiamet(5)     = 5.00
-   rdiamet(6:8)   = 2.04
-   rdiamet(9:11)  = 1.86
-   rdiamet(12:15) = 5.00
-   rdiamet(16)    = 5.00
-   rdiamet(17)    = 2.04
-   !----- Length ratio. Järvelä used rdiamet^2/3, so do we... -----------------------------!
-   rlength(1:17)  = rdiamet(1:17)**twothirds
-   !----- Minimum diameter to consider [cm]. ----------------------------------------------!
-   diammin(1:17)  = 1.0
-   !----- Number of trunks.  Usually this is 1. -------------------------------------------!
-   ntrunk(1:17)   = 1.0
-   
-   !---------------------------------------------------------------------------------------!
-   !     The following variables are used to fit a smooth curve in the (sparse) values     !
-   ! provided by Conijn (1995). This should be definitely improved...  The fitting curve   !
-   ! is a + b*erf(c*bbranch+d)
-   !---------------------------------------------------------------------------------------!
-   conijn_a(1)     = 1.0
-   conijn_a(2:4)   = 0.96305883
-   conijn_a(5)     = 1.0
-   conijn_a(6:11)  = 0.96305883
-   conijn_a(12:15) = 1.0
-   conijn_a(16)    = 1.0
-   conijn_a(17)    = 0.96305883
-
-   conijn_b(1)     = 0.0
-   conijn_b(2:4)   = -0.7178682
-   conijn_b(5)     = 0.0
-   conijn_b(6:11)  = -0.7178682
-   conijn_b(12:15) = 0.0
-   conijn_b(16)    = 0.0
-   conijn_b(17)    = -0.7178682
-
-   conijn_c(1)     = 0.0
-   conijn_c(2:4)   = 0.00490734
-   conijn_c(5)     = 0.0
-   conijn_c(6:11)  = 0.00490734
-   conijn_c(12:15) = 0.0
-   conijn_c(16)    = 0.0
-   conijn_c(17)    = 0.00490734
-
-   conijn_d(1)     = 0.0
-   conijn_d(2:4)   = -0.0456370
-   conijn_d(5)     = 0.0
-   conijn_d(6:11)  = -0.0456370
-   conijn_d(12:15) = 0.0
-   conijn_d(16)    = 0.0
-   conijn_d(17)    = -0.0456370
    return
 end subroutine init_pft_alloc_params
 !==========================================================================================!
@@ -4000,7 +4000,10 @@ end subroutine init_soil_coms
 subroutine init_phen_coms
    use consts_coms   , only : erad                     & ! intent(in)
                             , pio180                   ! ! intent(in)
-   use phenology_coms, only : retained_carbon_fraction & ! intent(out)
+   use phenology_coms, only : radint                   & ! intent(in)
+                            , radslp                   & ! intent(in)
+                            , thetacrit                & ! intent(in)
+                            , retained_carbon_fraction & ! intent(out)
                             , elongf_min               & ! intent(out)
                             , spot_phen                & ! intent(out)
                             , dl_tr                    & ! intent(out)
@@ -4009,37 +4012,73 @@ subroutine init_phen_coms
                             , phen_a                   & ! intent(out)
                             , phen_b                   & ! intent(out)
                             , phen_c                   & ! intent(out)
-                            , rad_turnover_int         & ! intent(out)
-                            , rad_turnover_slope       & ! intent(out)
-                            , vm_tran                  & ! intent(out)
-                            , vm_slop                  & ! intent(out)
-                            , vm_amp                   & ! intent(out)
-                            , vm_min                   & ! intent(out)
                             , max_phenology_dist       & ! intent(out)
-                            , radint                   & ! intent(out)
-                            , radslp                   & ! intent(out)
-                            , thetacrit                ! ! intent(in)
+                            , turnamp_window           & ! intent(out)
+                            , turnamp_wgt              & ! intent(out)
+                            , turnamp_min              & ! intent(out)
+                            , turnamp_max              & ! intent(out)
+                            , radto_min                & ! intent(out)
+                            , radto_max                & ! intent(out)
+                            , llspan_window            & ! intent(out)
+                            , llspan_wgt               & ! intent(out)
+                            , llspan_min               & ! intent(out)
+                            , llspan_max               & ! intent(out)
+                            , llspan_inf               & ! intent(out)
+                            , vm0_window               & ! intent(out)
+                            , vm0_wgt                  & ! intent(out)
+                            , vm0_tran                 & ! intent(out)
+                            , vm0_slope                & ! intent(out)
+                            , vm0_amp                  & ! intent(out)
+                            , vm0_min                  ! ! intent(out)
+
    implicit none
 
- 
+   !---------------------------------------------------------------------------------------!
+   !     Before plants drop their leaves, they retain this fraction of their leaf carbon   !
+   ! and nitrogen and put it into storage.                                                 !
+   !---------------------------------------------------------------------------------------!
    retained_carbon_fraction = 0.5
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !      Minimum elongation factor before plants give up completely and shed all remain-  !
+   ! ing leaves.                                                                           !
+   !---------------------------------------------------------------------------------------!
    elongf_min               = 0.05
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Flag that checks whether to Use soil potential rather than soil moisture to drive !
+   ! phenology.                                                                            !
+   !---------------------------------------------------------------------------------------!
    spot_phen                = thetacrit < 0.
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !      Leaf offset parameters are from:                                                 !
+   !      White et al. 1997, Global Biogeochemical Cycles 11(2) 217-234                    !
+   !---------------------------------------------------------------------------------------!
    dl_tr                    = 655.0
    st_tr1                   = 284.3
    st_tr2                   = 275.15
-  
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !      Phenology parameters for cold deciduous trees:                                   !
+   !      Botta et al. 2000, Global Change Biology, 6, 709--725                            !
+   !---------------------------------------------------------------------------------------!
    phen_a                   = -68.0
    phen_b                   = 638.0
    phen_c                   = -0.01
-
-   rad_turnover_int         = dble(radint)  !-11.3868
-   rad_turnover_slope       = dble(radslp)  !0.0824
-
-   vm_tran                  = 8.5
-   vm_slop                  = 7.0
-   vm_amp                   = 42.0
-   vm_min                   = 18.0
+   !---------------------------------------------------------------------------------------!
 
    !---------------------------------------------------------------------------------------!
    !     This variable is the maximum distance between the coordinates of a prescribed     !
@@ -4049,6 +4088,44 @@ subroutine init_phen_coms
    ! stop.                                                                                 !
    !---------------------------------------------------------------------------------------!
    max_phenology_dist       = 1.25 * erad * pio180
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !      Variables controlling the light phenology as in Kim et al. (20??)                !
+   !---------------------------------------------------------------------------------------!
+   !----- Turnover window for running average [days] --------------------------------------!
+   turnamp_window = 10.
+   !----- Turnover weight, the inverse of the window. -------------------------------------!
+   turnamp_wgt    = 1. / turnamp_window
+   !----- Minimum instantaneous turnover rate amplitude [n/d]. ----------------------------!
+   turnamp_min    = 0.01
+   !----- Maximum instantaneous turnover rate amplitude [n/d]. ----------------------------!
+   turnamp_max    = 100.
+   !----- Minimum radiation [W/m2], below which the turnover no longer responds. ----------!
+   radto_min       = (turnamp_min - radint) / radslp
+   !----- Maximum radiation [W/m2], above which the turnover no longer responds. ----------!
+   radto_max       = (turnamp_max - radint) / radslp
+   !----- Lifespan window for running average [days]. -------------------------------------!
+   llspan_window   = 60.
+   !----- Lifespan weight, the inverse of the window. -------------------------------------!
+   llspan_wgt      = 1. / llspan_window
+   !----- Minimum instantaneous life span [months]. ---------------------------------------!
+   llspan_min      = 2.0
+   !----- Maximum instantaneous life span [months]. ---------------------------------------!
+   llspan_max      = 60.
+   !----- Instantaneous life span in case the turnover rate is 0. -------------------------!
+   llspan_inf      = 9999.
+   !----- Vm0 window for running average [days]. ------------------------------------------!
+   vm0_window      = 60.
+   !----- Vm0 weight, the inverse of the window. ------------------------------------------!
+   vm0_wgt         = 1. / vm0_window
+   !----- Parameters that define the instantaneous Vm0 as a function of leaf life span. ---!
+   vm0_tran        =1.98    ! 8.5  
+   vm0_slope       =6.53    ! 7.0  
+   vm0_amp         =57.2    ! 42.0 
+   vm0_min         = 7.31   ! 18.0 
    !---------------------------------------------------------------------------------------!
 
    return

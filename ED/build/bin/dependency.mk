@@ -53,7 +53,8 @@ phenology_driv.o: ed_misc_coms.mod ed_state_vars.mod ed_therm_lib.mod
 phenology_driv.o: grid_coms.mod pft_coms.mod phenology_coms.mod soil_coms.mod
 photosyn_driv.o: consts_coms.mod ed_max_dims.mod ed_misc_coms.mod
 photosyn_driv.o: ed_state_vars.mod farq_leuning.mod met_driver_coms.mod
-photosyn_driv.o: pft_coms.mod physiology_coms.mod soil_coms.mod
+photosyn_driv.o: pft_coms.mod phenology_coms.mod physiology_coms.mod
+photosyn_driv.o: soil_coms.mod
 radiate_driver.o: allometry.mod canopy_layer_coms.mod canopy_radiation_coms.mod
 radiate_driver.o: consts_coms.mod ed_max_dims.mod ed_misc_coms.mod
 radiate_driver.o: ed_state_vars.mod grid_coms.mod soil_coms.mod

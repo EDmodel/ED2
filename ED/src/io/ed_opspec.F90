@@ -1449,9 +1449,9 @@ end do
       !------------------------------------------------------------------------------------!
       !   Check the branch thermodynamics.                                                 !
       !------------------------------------------------------------------------------------!
-      if (ibranch_thermo < 0 .or. ibranch_thermo > 3) then
+      if (ibranch_thermo < 0 .or. ibranch_thermo > 2) then
          write (reason,fmt='(a,1x,i4,a)')                                                  &
-                   'Invalid IBRANCH_THERMO, it must be between 0 and 3. Yours is set to'   &
+                   'Invalid IBRANCH_THERMO, it must be between 0 and 2. Yours is set to'   &
                    ,ibranch_thermo,'...'
          call opspec_fatal(reason,'opspec_misc')
          ifaterr = ifaterr +1

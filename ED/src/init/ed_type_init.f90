@@ -7,16 +7,18 @@
 subroutine init_ed_cohort_vars(cpatch,ico, lsl)
    use ed_state_vars , only : patchtype           ! ! structure
    use allometry     , only : dbh2krdepth         ! ! function
-   use pft_coms      , only : leaf_turnover_rate  & ! intent(in)
+   use pft_coms      , only : phenology           & ! intent(in)
+                            , leaf_turnover_rate  & ! intent(in)
                             , Vm0                 & ! intent(in)
                             , sla                 ! ! intent(in)
    use ed_misc_coms  , only : imoutput            & ! intent(in)
                             , idoutput            & ! intent(in)
                             , iqoutput            ! ! intent(in)
-   use phenology_coms, only : vm_tran             & ! intent(in)
-                            , vm_slop             & ! intent(in)
-                            , vm_amp              & ! intent(in)
-                            , vm_min              ! ! intent(in)
+   use phenology_coms, only : vm0_tran            & ! intent(in)
+                            , vm0_slope           & ! intent(in)
+                            , vm0_amp             & ! intent(in)
+                            , vm0_min             & ! intent(in)
+                            , llspan_inf          ! ! intent(in)
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
    type(patchtype), target     :: cpatch     ! Current patch
@@ -321,9 +323,9 @@ subroutine init_ed_cohort_vars(cpatch,ico, lsl)
    ! we assign a meaningless number just to make sure the variable is initialised.         !
    !---------------------------------------------------------------------------------------!
    if (leaf_turnover_rate(cpatch%pft(ico)) > 0.0) then
-      cpatch%llspan(ico) = 12.0/leaf_turnover_rate(cpatch%pft(ico))
+      cpatch%llspan(ico) = 12.0 / leaf_turnover_rate(cpatch%pft(ico))
    else
-      cpatch%llspan(ico) = 9999.
+      cpatch%llspan(ico) = llspan_inf
    end if
    !---------------------------------------------------------------------------------------!
 
@@ -333,8 +335,13 @@ subroutine init_ed_cohort_vars(cpatch,ico, lsl)
    ! specific leaf area (SLA) must be assigned with the default values.  These numbers     !
    ! will change only if the PFT uses a light-controlled phenology.                        !
    !---------------------------------------------------------------------------------------!
-   !cpatch%vm_bar(ico) = Vm0(cpatch%pft(ico))
-   cpatch%vm_bar(ico)= vm_amp / (1.0 + (cpatch%llspan(ico)/vm_tran)**vm_slop) + vm_min
+   select case(phenology(cpatch%pft(ico)))
+   case (3)
+      cpatch%vm_bar(ico) = vm0_amp / (1.0 + (cpatch%llspan(ico)/vm0_tran)**vm0_slope)      &
+                         + vm0_min
+   case default
+      cpatch%vm_bar(ico) = Vm0(cpatch%pft(ico))
+   end select
    cpatch%sla(ico) = sla(cpatch%pft(ico))
    !---------------------------------------------------------------------------------------!
 

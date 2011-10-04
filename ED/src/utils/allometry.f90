@@ -431,16 +431,10 @@ module allometry
    ! constant.  The wood area index WAI is found using the model proposed by Järvelä       !
    ! (2004) to find the specific projected area.                                           !
    !                                                                                       !
-   ! Järvelä, J., 2004: Determination of flow resistance caused by non-submerged woody     !
-   !                    vegetation. Intl. J. River Basin Management, 2, 61-70.             !
-   !                                                                                       !
-   !     There is also a very simplified estimation of branch area index, which is just a  !
-   ! simple curve adjusted with the information I found in Conijn (1995), which is actual- !
-   ! ly for the Sahel...                                                                   !
-   !                                                                                       !
-   ! Conijn, J.G., 1995: RECAFS: a model for resource competition and cycling in agro-     !
-   !                     forestry systems. Rapports Production Soudano-Sahélienne.         !
-   !                     Wageningen, 1995.                                                 !
+   !    Ahrends, B., C. Penne, O. Panferov, 2010: Impact of target diameter harvesting on  !
+   !        spatial and temporal pattern of drought risk in forest ecosystems under        !
+   !        climate change conditions.  The Open Geography Journal, 3, 91-102  (they       !
+   !        didn't develop the allometry, but the original reference is in German...)      !
    !---------------------------------------------------------------------------------------!
    subroutine area_indices(nplant,bleaf,bdead,balive,dbh,hite,pft,sla,lai,wpa,wai          &
                           ,crown_area,bsapwood)
@@ -448,16 +442,9 @@ module allometry
                              , is_grass        & ! intent(in)
                              , rho             & ! intent(in)
                              , C2B             & ! intent(in)
-                             , horiz_branch    & ! intent(in)
-                             , rbranch         & ! intent(in)
-                             , rdiamet         & ! intent(in)
-                             , rlength         & ! intent(in)
-                             , diammin         & ! intent(in)
-                             , ntrunk          & ! intent(in)
-                             , conijn_a        & ! intent(in)
-                             , conijn_b        & ! intent(in)
-                             , conijn_c        & ! intent(in)
-                             , conijn_d        ! ! intent(in)
+                             , max_dbh         & ! intent(in)
+                             , b1WAI           & ! intent(in)
+                             , b2WAI           ! ! intent(in)
       use consts_coms , only : onethird        & ! intent(in)
                              , pi1             ! ! intent(in)
       use rk4_coms    , only : ibranch_thermo  ! ! intent(in)
@@ -504,73 +491,15 @@ module allometry
          !----- Ignore branches and trunk. ------------------------------------------------!
          wpa  = 0.
          wai  = 0.
-      !------------------------------------------------------------------------------------!
-
-
-      case (1) 
          !---------------------------------------------------------------------------------!
-         !     Use curve fit based on Conijn (1995) model.   Find the total wood biomass   !
-         ! and the fraction corresponding to branches.                                     !
+
+      case (1,2)
          !---------------------------------------------------------------------------------!
-         bwood   = wood_biomass(bdead, bsapwood, pft)
-         if (is_grass(pft)) then
-            swa = conijn_a(pft)
-         else
-            swa = conijn_a(pft)                                                            &
-                + conijn_b(pft) * errorfun(conijn_c(pft)*C2B*bwood + conijn_d(pft))
-         end if
-         wai = nplant * bwood * swa
+         !    Solve branches using the equations from Ahrends et al. (2010).               !
+         !---------------------------------------------------------------------------------!
+         wai = nplant * b1WAI(pft) * min(dbh,max_dbh(pft)) ** b2WAI(pft)
          wpa = wai * dbh2ca(dbh,sla,pft)
          !---------------------------------------------------------------------------------!
-
-
-      case (2) 
-         !---------------------------------------------------------------------------------!
-         !     Use  Järvelä (2004) method.                                                 !
-         !---------------------------------------------------------------------------------!
-         !----- Now we check the first branching height, that will be the trunk height. ---!
-         blength = h2crownbh(hite,pft)
-         !----- Main branch diameter is DBH (in meters) -----------------------------------!
-         bdiamet = dbh * 0.01
-         !----- Minimum branch diameter (in meters) ---------------------------------------!
-         bdmin   = diammin(pft) * 0.01
-         !----- Number of main "branches" (trunk), this is usually 1. ---------------------!
-         nbranch = ntrunk(pft)
-
-         swa = nbranch * blength * bdiamet
-         !---------------------------------------------------------------------------------!
-         !     Initialize branch values with trunk.                                        !
-         !---------------------------------------------------------------------------------!
-         branchloop: do
-            if (bdiamet < bdmin) exit branchloop
-            !----- Updating branch habits. ------------------------------------------------!
-            bdiamet = bdiamet / rdiamet(pft)
-            blength = blength / rlength(pft)
-            nbranch = nbranch * rbranch(pft)
-            swa     = swa + nbranch * blength * bdiamet
-         end do branchloop
-         !----- The wood projected area and the wood area index. --------------------------!
-         wpa = nplant       * swa
-         wai = horiz_branch(pft) * wpa
-      case (3) 
-         !---------------------------------------------------------------------------------!
-         !    Use the equation by:                                                         !
-         !    Ahrends, B., C. Penne, O. Panferov, 2010: Impact of target diameter          !
-         !        harvesting on spatial and temporal pattern of drought risk in forest     !
-         !        ecosystems under climate change conditions.  The Open Geography Journal, !
-         !        3, 91-102  (they didn't develop the allometry, but the original          !
-         !        reference is in German...)                                               !
-         !---------------------------------------------------------------------------------!
-         select case (pft)
-         case (6:8,17)
-             !----- Conifers. -------------------------------------------------------------!
-             wai = nplant * 0.0553 * 0.5 * dbh ** 1.9769
-         case default
-             !----- Broadleaf trees and grasses. ------------------------------------------!
-             wai = nplant * 0.0192 * 0.5 * dbh ** 2.0947
-         end select
-         !---------------------------------------------------------------------------------!
-         wpa = wai * dbh2ca(dbh,sla,pft)
 
       end select
       !------------------------------------------------------------------------------------!

@@ -11,8 +11,9 @@ ed_model.o: ed_state_vars.mod grid_coms.mod mem_polygons.mod rk4_coms.mod
 ed_model.o: rk4_driver.mod
 canopy_struct_dynamics.o: allometry.mod canopy_air_coms.mod
 canopy_struct_dynamics.o: canopy_layer_coms.mod consts_coms.mod
-canopy_struct_dynamics.o: ed_state_vars.mod met_driver_coms.mod pft_coms.mod
-canopy_struct_dynamics.o: physiology_coms.mod rk4_coms.mod soil_coms.mod
+canopy_struct_dynamics.o: ed_state_vars.mod grid_coms.mod met_driver_coms.mod
+canopy_struct_dynamics.o: pft_coms.mod physiology_coms.mod rk4_coms.mod
+canopy_struct_dynamics.o: soil_coms.mod
 disturbance.o: allometry.mod consts_coms.mod decomp_coms.mod disturb_coms.mod
 disturbance.o: ed_max_dims.mod ed_misc_coms.mod ed_state_vars.mod
 disturbance.o: ed_therm_lib.mod fuse_fiss_utils.mod grid_coms.mod
@@ -52,7 +53,8 @@ phenology_driv.o: ed_misc_coms.mod ed_state_vars.mod ed_therm_lib.mod
 phenology_driv.o: grid_coms.mod pft_coms.mod phenology_coms.mod soil_coms.mod
 photosyn_driv.o: consts_coms.mod ed_max_dims.mod ed_misc_coms.mod
 photosyn_driv.o: ed_state_vars.mod farq_leuning.mod met_driver_coms.mod
-photosyn_driv.o: pft_coms.mod physiology_coms.mod soil_coms.mod
+photosyn_driv.o: pft_coms.mod phenology_coms.mod physiology_coms.mod
+photosyn_driv.o: soil_coms.mod
 radiate_driver.o: allometry.mod canopy_layer_coms.mod canopy_radiation_coms.mod
 radiate_driver.o: consts_coms.mod ed_max_dims.mod ed_misc_coms.mod
 radiate_driver.o: ed_state_vars.mod grid_coms.mod soil_coms.mod

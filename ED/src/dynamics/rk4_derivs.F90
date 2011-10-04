@@ -1531,6 +1531,12 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
          dthroughfall_tot  = dthroughfall_tot + dintercepted_max * initp%wai(ico) * taii
       end if
       !------------------------------------------------------------------------------------!
+
+
+      !------ Find the combined leaf + wood derivative. -----------------------------------!
+      dinitp%veg_energy(ico) = dinitp%leaf_energy(ico) + dinitp%wood_energy(ico)
+      dinitp%veg_water (ico) = dinitp%leaf_water (ico) + dinitp%wood_water (ico)
+      !------------------------------------------------------------------------------------!
    end do cohortloop
    !---------------------------------------------------------------------------------------!
 

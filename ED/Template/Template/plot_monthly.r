@@ -987,6 +987,21 @@ soilclim03 = list(vnam="soil.mstpot",desc = "(Negative) Soil moisture potential"
 
 
 
+#----- Time series. -----------------------------------------------------------------------#
+nsoilts  = 3
+soilts01 = list(vnam="soil.water" ,desc = "Soil moisture"
+               ,unit = "m3/m3"    ,csch = "imuitas"
+               ,pnlog=FALSE       ,plt  = TRUE)
+soilts02 = list(vnam="soil.temp"  ,desc = "Soil temperature"
+               ,unit = "C"        ,csch = "muitas"
+               ,pnlog=FALSE       ,plt  = TRUE)
+soilts03 = list(vnam="soil.mstpot",desc = "(Negative) Soil moisture potential"
+               ,unit = "m"        ,csch = "muitas"
+               ,pnlog=TRUE        ,plt  = TRUE)
+#------------------------------------------------------------------------------------------#
+
+
+
 
 #----- Loading some packages. -------------------------------------------------------------#
 library(hdf5)
@@ -1143,6 +1158,13 @@ for (o in 1:nsoilclim){
   ccc           = substring(100+o,2,3)
   scsc          = paste("soilclim",ccc,sep="")
   soilclim[[o]] = get(scsc)
+} #end for
+#----- Soil profile time series. ----------------------------------------------------------#
+soilts          = list()
+for (o in 1:nsoilts){
+  sss         = substring(100+o,2,3)
+  stst        = paste("soilts",sss,sep="")
+  soilts[[o]] = get(stst)
 } #end for
 #------------------------------------------------------------------------------------------#
 
@@ -3304,6 +3326,116 @@ for (place in myplaces){
                                  }#end if hovgrid
                                 }#end plot.axes
                      )
+
+            if (outform[o] == "x11"){
+               locator(n=1)
+               dev.off()
+            }else{
+               dev.off()
+            }#end if
+         } #end for outform
+      }#end if plotit
+   }#end for nhov
+   #---------------------------------------------------------------------------------------#
+
+
+
+
+
+   #---------------------------------------------------------------------------------------#
+   #   Plot the climatology of the soil properties.                                        #
+   #---------------------------------------------------------------------------------------#
+   for (sts in 1:nsoilts){
+
+      #----- Retrieve variable information from the list. ---------------------------------#
+      thissts    = soilts[[sts]]
+      vnam        = thissts$vnam
+      description = thissts$desc
+      unit        = thissts$unit
+      vcscheme    = thissts$csch
+      pnlog       = thissts$pnlog
+      plotit      = thissts$plt
+
+      if (plotit){
+
+         #---------------------------------------------------------------------------------#
+         #     Check if the directory exists.  If not, create it.                          #
+         #---------------------------------------------------------------------------------#
+         outdir  =  paste(outpref,"soilts",sep="/")
+         if (! file.exists(outdir)) dir.create(outdir)
+         print (paste("      + Time series profile of ",description,"..."))
+
+         #----- Find the number of rows and columns, and the axes. ------------------------#
+         timeaxis  = thismonth
+         soilaxis  = slz
+         nmon      = length(timeaxis)
+         nsoil     = nzg
+
+         #----- Convert the vector data into an array. ------------------------------------#
+         vararr  = get(vnam)
+
+         #----- Copy Decembers ans Januaries to make the edges buffered. ------------------#
+         first    = vararr[1,]
+         first    = c(first,first[nzg],first[nzg])
+
+         last     = vararr[totmon,]
+         last     = c(last[1],last[1],last)
+
+         #----- Bind first and last year to the array, to make the edges buffered. --------#
+         varbuff  = cbind(vararr[,1],vararr,vararr[,nzg])
+         varbuff  = rbind(first,varbuff,last)
+
+         #---------------------------------------------------------------------------------#
+         #      Expand the month and year axes.  Make the first and last time equal time   #
+         # steps.                                                                          #
+         #---------------------------------------------------------------------------------#
+         dwhen    = as.numeric(thismonth[2]-thismonth[1])
+         whenaxis = c(chron(as.numeric(thismonth[1]-dwhen))
+                     ,timeaxis
+                     ,chron(as.numeric(thismonth[totmon]+dwhen)))
+         soilaxis = -log(-1.0 * c( slz[1]*(slz[1]/slz[2])
+                                 , soilaxis
+                                 , slz[nzg]*(slz[nzg]/slz[nzg-1]) ))
+
+         if (pnlog){
+            vrange  = range(varbuff,na.rm=TRUE)
+            vlevels = pretty.log(x=vrange,n=ncolshov)
+            vnlev   = length(vlevels)
+         }else{
+            vrange  = range(varbuff,na.rm=TRUE)
+            vlevels = pretty(x=vrange,n=ncolshov)
+            vnlev   = length(vlevels)
+         }#end if
+
+         #----- Loop over formats. --------------------------------------------------------#
+         for (o in 1:nout){
+            fichier = paste(outdir,"/",vnam,"-",suffix,".",outform[o],sep="")
+            if(outform[o] == "x11"){
+               X11(width=size$width,height=size$height,pointsize=ptsz)
+            }else if(outform[o] == "png"){
+               png(filename=fichier,width=size$width*depth,height=size$height*depth
+                  ,pointsize=ptsz,res=depth)
+            }else if(outform[o] == "eps"){
+               postscript(file=fichier,width=size$width,height=size$height
+                         ,pointsize=ptsz,paper=paper)
+            }#end if
+
+            letitre = paste(description," - ",lieu,sep="")
+            sombreado(x=whenaxis,y=soilaxis,z=varbuff,levels=vlevels,nlevels=vnlev
+                     ,color.palette=get(vcscheme)
+                     ,plot.title=title(main=letitre,xlab="Month",ylab="Soil depth [m]"
+                                      ,cex.main=0.7)
+                     ,key.title=title(main=unit,cex.main=0.8)
+                     ,key.log=pnlog
+                     ,plot.axes={axis(side=1,at=whenplot6$levels
+                                     ,labels=whenplot6$labels,padj=whenplot6$padj)
+                                 axis(side=2,at=zat,labels=znice)
+                                 if (hovgrid){
+                                    abline(h=zat,v=whenplot6$levels,col="lightgray"
+                                          ,lty="dotted")
+                                 }#end if hovgrid
+                                }#end plot.axes
+                     )#end sombreado
 
             if (outform[o] == "x11"){
                locator(n=1)

@@ -5,26 +5,29 @@
 !------------------------------------------------------------------------------------------!
 subroutine canopy_photosynthesis(csite,cmet,mzg,ipa,lsl,ntext_soil                         &
                                 ,leaf_aging_factor,green_leaf_factor)
-   use ed_state_vars  , only : sitetype          & ! structure
-                             , patchtype         ! ! structure
-   use ed_max_dims    , only : n_pft             ! ! intent(in)
-   use pft_coms       , only : leaf_width        & ! intent(in)
-                             , water_conductance & ! intent(in)
-                             , include_pft       ! ! intent(in)
-   use soil_coms      , only : soil              & ! intent(in)
-                             , slz               & ! intent(in)
-                             , dslz              ! ! intent(in)
-   use consts_coms    , only : t00               & ! intent(in)
-                             , epi               & ! intent(in)
-                             , wdnsi             & ! intent(in)
-                             , wdns              & ! intent(in)
-                             , kgCday_2_umols    & ! intent(in)
-                             , lnexp_min         ! ! intent(in)
-   use ed_misc_coms   , only : current_time      ! ! intent(in)
-   use met_driver_coms, only : met_driv_state    ! ! structure
-   use physiology_coms, only : print_photo_debug & ! intent(in)
-                             , h2o_plant_lim     ! ! intent(in)
-   use farq_leuning   , only : lphysiol_full     ! ! sub-routine
+   use ed_state_vars  , only : sitetype           & ! structure
+                             , patchtype          ! ! structure
+   use ed_max_dims    , only : n_pft              ! ! intent(in)
+   use pft_coms       , only : leaf_width         & ! intent(in)
+                             , water_conductance  & ! intent(in)
+                             , include_pft        & ! intent(in)
+                             , vm0                & ! intent(in)
+                             , leaf_turnover_rate ! ! intent(in)
+   use soil_coms      , only : soil               & ! intent(in)
+                             , slz                & ! intent(in)
+                             , dslz               ! ! intent(in)
+   use consts_coms    , only : t00                & ! intent(in)
+                             , epi                & ! intent(in)
+                             , wdnsi              & ! intent(in)
+                             , wdns               & ! intent(in)
+                             , kgCday_2_umols     & ! intent(in)
+                             , lnexp_min          ! ! intent(in)
+   use ed_misc_coms   , only : current_time       ! ! intent(in)
+   use met_driver_coms, only : met_driv_state     ! ! structure
+   use physiology_coms, only : print_photo_debug  & ! intent(in)
+                             , h2o_plant_lim      ! ! intent(in)
+   use phenology_coms , only : llspan_inf         ! ! intent(in)
+   use farq_leuning   , only : lphysiol_full      ! ! sub-routine
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    type(sitetype)            , target      :: csite             ! Current site
@@ -40,6 +43,7 @@ subroutine canopy_photosynthesis(csite,cmet,mzg,ipa,lsl,ntext_soil              
    integer                                 :: ico                ! Current cohort #
    integer                                 :: tuco               ! Tallest used cohort
    integer                                 :: ipft
+   integer                                 :: tpft
    integer                                 :: k1
    integer                                 :: k2
    integer                                 :: kroot
@@ -71,6 +75,9 @@ subroutine canopy_photosynthesis(csite,cmet,mzg,ipa,lsl,ntext_soil              
    real                                    :: h2o_stress_avg
    real                                    :: available_water_lyr
    real                                    :: pss_available_water
+   real                                    :: vm0_tuco
+   real                                    :: llspan_tuco
+   integer, dimension(n_pft)               :: tuco_pft
    !---------------------------------------------------------------------------------------!
 
 
@@ -139,22 +146,39 @@ subroutine canopy_photosynthesis(csite,cmet,mzg,ipa,lsl,ntext_soil              
    !---------------------------------------------------------------------------------------!
    csite%A_o_max(1:n_pft,ipa) = 0.0
    csite%A_c_max(1:n_pft,ipa) = 0.0
+   !---------------------------------------------------------------------------------------!
+
+
 
    !---------------------------------------------------------------------------------------!
-   !     Find the tallest cohort with TAI above minimum, sufficient heat capacity, and not !
-   ! buried in snow.  The first two conditions are redundant, but we will keep them for    !
-   ! the time being, so it is going to be safer.                                           !
+   !     Find the tallest cohort amongst all cohorts in this patch that is resolved        !
+   ! (tuco).  In addition, we must find the tallest cohort for each PFT, so in case the    !
+   ! we are using the light phenology, we use that value for Vm0 and leaf life span.       !
    !---------------------------------------------------------------------------------------!
-   las = .false.
+   las         = .false.
+   tuco_pft(:) = 0
    do ico = 1,cpatch%ncohorts
+      ipft = cpatch%pft(ico)
+
       !----- If this is the tallest cohort to be used, we save its index. -----------------!
       if (.not. las .and. cpatch%leaf_resolvable(ico)) then
          las  = .true.
          tuco = ico
       end if
-   end do
+      !------------------------------------------------------------------------------------!
 
+
+
+      !----- If this is the tallest cohort for this specific PFT, we save the index too. --!
+      if (tuco_pft(ipft) == 0 .and. cpatch%leaf_resolvable(ico)) then
+         tuco_pft(ipft) = ico
+      end if
+      !------------------------------------------------------------------------------------!
+   end do
    !---------------------------------------------------------------------------------------!
+
+
+
    !---------------------------------------------------------------------------------------!
    !    There is at least one cohort that meet requirements.  And this is tallest one, so  !
    ! we can use it to compute the maximum photosynthetic rates, i.e., the rate the cohort  !
@@ -164,7 +188,38 @@ subroutine canopy_photosynthesis(csite,cmet,mzg,ipa,lsl,ntext_soil              
    if (las) then
       !----- We now loop over PFTs, not cohorts, skipping those we are not using. ---------!
       do ipft = 1, n_pft
+
          if (include_pft(ipft)) then
+
+            !------------------------------------------------------------------------------!
+            !      Find the tallest cohort for this PFT.  In case the patch no longer has  !
+            ! the PFT, then we just the default Vm0 and leaf life span.  This only matters !
+            ! for light-controlled phenology, not the standard cases.                      !
+            !------------------------------------------------------------------------------!
+            tpft = tuco_pft(ipft)
+            if (tpft == 0) then
+               !---------------------------------------------------------------------------!
+               !    This patch doesn't have any cohort of this PFT left, use default       !
+               ! values.                                                                   !
+               !---------------------------------------------------------------------------!
+               vm0_tuco    = Vm0(ipft)
+               if (leaf_turnover_rate(ipft) == 0.) then
+                  llspan_tuco = llspan_inf
+               else
+                  llspan_tuco = 12. / leaf_turnover_rate(ipft)
+               end if
+            else
+               !---------------------------------------------------------------------------!
+               !    Use Vm0 and leaf life span of the tallest cohort of this PFT, so we    !
+               ! avoid punishing or helping the plants too much in case the PFTs don't     !
+               ! match.                                                                    !
+               !---------------------------------------------------------------------------!
+               vm0_tuco    = cpatch%vm_bar(tpft)
+               llspan_tuco = cpatch%llspan(tpft)
+            end if
+            !------------------------------------------------------------------------------!
+
+
 
             !------------------------------------------------------------------------------!
             !    Scale photosynthetically active radiation per unit of leaf.               !
@@ -197,8 +252,8 @@ subroutine canopy_photosynthesis(csite,cmet,mzg,ipa,lsl,ntext_soil              
              , cpatch%lint_shv(tuco)       & ! Leaf intercellular spec. hum.    [    kg/kg]
              , green_leaf_factor(ipft)     & ! Greenness rel. to on-allometry   [      ---]
              , leaf_aging_factor(ipft)     & ! Ageing parameter to scale VM     [      ---]
-             , cpatch%llspan(tuco)         & ! Leaf life span                   [       yr]
-             , cpatch%vm_bar(tuco)         & ! Average Vm function              [µmol/m²/s]
+             , llspan_tuco                 & ! Leaf life span                   [       yr]
+             , vm0_tuco                    & ! Average Vm function              [µmol/m²/s]
              , cpatch%leaf_gbw(tuco)       & ! Aerodyn. condct. of water vapour [  kg/m²/s]
              , h2o_stress_avg              & ! Water stress parameter           [      ---]
              , csite%A_o_max(ipft,ipa)     & ! Photosynthesis rate     (open)   [µmol/m²/s]

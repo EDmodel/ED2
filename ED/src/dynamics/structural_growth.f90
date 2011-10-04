@@ -593,7 +593,7 @@ subroutine update_derived_cohort_props(cpatch,ico,green_leaf_factor,lsl)
    case (0,1)
 
       select case (phenology(cpatch%pft(ico)))
-      case (4)
+      case (3,4)
          cpatch%elongf(ico)  = max(0.0,min (1.0, cpatch%paw_avg(ico)))
       case default
          cpatch%elongf(ico)  = 1.0

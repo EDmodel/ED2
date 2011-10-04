@@ -862,8 +862,8 @@ subroutine sfcrad_ed(cosz,cosaoi,csite,mzg,mzs,ntext_soil,ncol_soil,maxcohort,tu
 
 
                !----- Find the near infrared absorption, so we average things properly. ---!
-               nir_v_beam    = rshort_v_beam    (il) - par_v_beam_array    (il)
-               nir_v_diffuse = rshort_v_diffuse (il) - par_v_diffuse_array (il)
+               nir_v_beam    = rshort_v_beam_array    (il) - par_v_beam_array    (il)
+               nir_v_diffuse = rshort_v_diffuse_array (il) - par_v_diffuse_array (il)
                !---------------------------------------------------------------------------!
 
 
@@ -872,20 +872,18 @@ subroutine sfcrad_ed(cosz,cosaoi,csite,mzg,mzs,ntext_soil,ncol_soil,maxcohort,tu
                !---------------------------------------------------------------------------!
                !    Split the layer radiation between leaf and branchwood.                 !
                !---------------------------------------------------------------------------!
-               !------ Visible (PAR). -----------------------------------------------------!
+               !------ Visible (PAR), only leaves need this (photsynthesis model). --------!
                cpatch%par_l_beam       (ico) = par_v_beam_array    (il) * wleaf_vis
                cpatch%par_l_diffuse    (ico) = par_v_diffuse_array (il) * wleaf_vis
-               cpatch%par_w_beam       (ico) = par_v_beam_array    (il) * wwood_vis
-               cpatch%par_w_diffuse    (ico) = par_v_diffuse_array (il) * wwood_vis
                !------ Total short wave radiation (PAR+NIR). ------------------------------!
                cpatch%rshort_l_beam    (ico) = par_v_beam_array    (il) * wleaf_vis        &
-                                             + nir_v_beam_array         * wleaf_nir
+                                             + nir_v_beam               * wleaf_nir
                cpatch%rshort_l_diffuse (ico) = par_v_diffuse_array (il) * wleaf_vis        &
-                                             + nir_v_diffuse_array      * wleaf_nir
+                                             + nir_v_diffuse            * wleaf_nir
                cpatch%rshort_w_beam    (ico) = par_v_beam_array    (il) * wwood_vis        &
-                                             + nir_v_beam_array         * wwood_nir
+                                             + nir_v_beam               * wwood_nir
                cpatch%rshort_w_diffuse (ico) = par_v_diffuse_array (il) * wwood_vis        &
-                                             + nir_v_diffuse_array      * wwood_nir
+                                             + nir_v_diffuse            * wwood_nir
                !----- Thermal infra-red (long wave). --------------------------------------!
                cpatch%rlong_l_surf     (ico) = lw_v_surf_array     (il) * wleaf_tir
                cpatch%rlong_l_incid    (ico) = lw_v_incid_array    (il) * wleaf_tir

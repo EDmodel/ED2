@@ -750,7 +750,7 @@ module rk4_driver
             write (unit=*,fmt='(a,1x,f9.4)')   ' + LATITUDE:     ',rk4site%lat
             write (unit=*,fmt='(a,1x,i6)')     ' + PATCH:        ',ipa
             write (unit=*,fmt='(a,1x,i6)')     ' + COHORT:       ',ico
-            write (unit=*,fmt='(a)')           ' + PATCH AGE:    ',csite%age(ipa)
+            write (unit=*,fmt='(a)')           ' + PATCH AGE:    '
             write (unit=*,fmt='(a,1x,es12.4)') '   - AGE:        ',csite%age(ipa)
             write (unit=*,fmt='(a,1x,i6)')     '   - DIST_TYPE:  ',csite%dist_type(ipa)
             write (unit=*,fmt='(a)')           ' + BUFFER_COHORT (initp):'
@@ -779,7 +779,7 @@ module rk4_driver
             write (unit=*,fmt='(a,1x,f9.4)')   ' + LATITUDE:     ',rk4site%lat
             write (unit=*,fmt='(a,1x,i6)')     ' + PATCH:        ',ipa
             write (unit=*,fmt='(a,1x,i6)')     ' + COHORT:       ',ico
-            write (unit=*,fmt='(a)')           ' + PATCH AGE:    ',csite%age(ipa)
+            write (unit=*,fmt='(a)')           ' + PATCH AGE:    '
             write (unit=*,fmt='(a,1x,es12.4)') '   - AGE:        ',csite%age(ipa)
             write (unit=*,fmt='(a,1x,i6)')     '   - DIST_TYPE:  ',csite%dist_type(ipa)
             write (unit=*,fmt='(a)')           ' + BUFFER_COHORT (initp):'

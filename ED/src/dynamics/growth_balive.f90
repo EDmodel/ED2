@@ -87,7 +87,7 @@ module growth_balive
 
                   !----- Update the elongation factor. ------------------------------------!
                   select case (phenology(ipft))
-                  case (4)
+                  case (3,4)
                      cpatch%elongf(ico) = max(0.0, min(1.0, cpatch%paw_avg(ico)))
                   case default
                      cpatch%elongf(ico) = 1.0
@@ -615,26 +615,50 @@ module growth_balive
       !------ Alias for plant functional type. --------------------------------------------!
       ipft = cpatch%pft(ico)
 
-      !------ Get the temperature dependence. ---------------------------------------------!
-      if (phenology(ipft) == 0) then
+      !------------------------------------------------------------------------------------!
+      !      Find the maintenance costs.  This will depend on the type of phenology that   !
+      ! the PFT has.   The tfact term applied converts the maintenance rates to            !
+      ! [kgC/plant/day].                                                                   !
+      !------------------------------------------------------------------------------------!
+      select case (phenology(ipft))
+      case (0)
+         !---------------------------------------------------------------------------------!
+         !     Evergreens, like pines.  The turnover rates will be adjusted by a function  !
+         ! of temperature, which approaches 0 as the temperature goes down.                !
+         !---------------------------------------------------------------------------------!
+         !------ Find a temperature dependence adjustment. --------------------------------!
          maintenance_temp_dep = 1.0 / (1.0 + exp(0.4 * (278.15 - tempk)))
-      else
-         maintenance_temp_dep = 1.0
-      end if
-
-      !----- Calculate maintenance demand (kgC/plant/year). -------------------------------!
-      cpatch%root_maintenance(ico) = root_turnover_rate(ipft) * br * maintenance_temp_dep
-      if (phenology(ipft) /= 3)then
-         cpatch%leaf_maintenance(ico) = leaf_turnover_rate(ipft) * bl * maintenance_temp_dep
-      else
+         !----- Scale maintenance by biomass and apply the temperature correction. --------!
          cpatch%leaf_maintenance(ico) = leaf_turnover_rate(ipft) * bl                      &
-                                      * cpatch%turnover_amp(ico) * maintenance_temp_dep
-      end if
+                                      * maintenance_temp_dep * tfact
+         cpatch%root_maintenance(ico) = root_turnover_rate(ipft) * br                      &
+                                      * maintenance_temp_dep * tfact
+         !---------------------------------------------------------------------------------!
+
+      case (3)
+         !---------------------------------------------------------------------------------!
+         !      Light phenology.  Leaf turnover rate will be adjusted according to the     !
+         ! amplitude that comes from the dependence on the radiation (running average).    !
+         ! Roots are the same as the other plants that don't depend on temperature.        !
+         !---------------------------------------------------------------------------------!
+         cpatch%root_maintenance(ico) = root_turnover_rate(ipft) * br * tfact
+         cpatch%leaf_maintenance(ico) = leaf_turnover_rate(ipft) * bl                      &
+                                      * cpatch%turnover_amp(ico) * tfact
+         !---------------------------------------------------------------------------------!
 
 
-      !----- Convert units of maintenance to [kgC/plant/day]. -----------------------------!
-      cpatch%leaf_maintenance(ico) = cpatch%leaf_maintenance(ico) * tfact
-      cpatch%root_maintenance(ico) = cpatch%root_maintenance(ico) * tfact
+      case default
+         !---------------------------------------------------------------------------------!
+         !      Ohter phenologies, use the standard turnover rates, scaled by biomass      !
+         ! only.                                                                           !
+         !---------------------------------------------------------------------------------!
+         cpatch%root_maintenance(ico) = root_turnover_rate(ipft) * br * tfact
+         cpatch%leaf_maintenance(ico) = leaf_turnover_rate(ipft) * bl * tfact
+         !---------------------------------------------------------------------------------!
+         
+      end select
+      !------------------------------------------------------------------------------------!
+
 
 
       !----- Compute daily C uptake [kgC/plant/day]. --------------------------------------!

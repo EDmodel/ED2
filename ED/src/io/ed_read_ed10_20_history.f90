@@ -21,7 +21,6 @@ subroutine read_ed10_ed20_history_file
                              , is_grass            & ! intent(in)
                              , include_pft         & ! intent(in)
                              , include_pft_ag      & ! intent(in)
-                             , phenology           & ! intent(in)
                              , pft_1st_check       & ! intent(in)
                              , include_these_pft   ! ! intent(in)
    use ed_misc_coms   , only : sfilin              & ! intent(in)

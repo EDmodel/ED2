@@ -71,6 +71,25 @@ module pft_coms
 
    !=======================================================================================!
    !=======================================================================================!
+   !     The following parameters aren't PFT-dependent, but they are used to determine     !
+   ! PFT-dependent properties.                                                             !
+   !---------------------------------------------------------------------------------------!
+   !----- Carbon-to-biomass ratio of plant tissues. ---------------------------------------!
+   real :: C2B
+   !----- Parameters used by the model that predicts SLA based on leaf life span. ---------!
+   real :: sla_scale
+   real :: sla_inter
+   real :: sla_slope 
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
    !    The following variables are flags that control which PFTs mare used in general,    !
    ! for agriculture and grasses.                                                          !
    !---------------------------------------------------------------------------------------!
@@ -311,11 +330,10 @@ module pft_coms
    real, dimension(n_pft) :: c2n_leaf
    !----- Recruit carbon to nitrogen ratio. -----------------------------------------------!
    real, dimension(n_pft) :: c2n_recruit 
-   !----- Carbon-to-biomass ratio of plant tissues. ---------------------------------------!
-   real :: C2B
    !----- Fraction of structural stem that is assumed to be above ground. -----------------!
    real, dimension(n_pft) :: agf_bs
-   real, dimension(n_pft) :: agf_bsi
+   !----- Fraction of above-ground wood biomass that is in the branches and twigs. --------!
+   real, dimension(n_pft) :: brf_wd
    !----- Supply coefficient for plant nitrogen uptake [m2/kgC_fine_root/day].  -----------!
    real :: plant_N_supply_scale
    !---------------------------------------------------------------------------------------!
@@ -372,6 +390,10 @@ module pft_coms
    real   , dimension(n_pft)    :: b1Ca
    !----- DBH-crown allometry slope.  All PFTs. -------------------------------------------!
    real   , dimension(n_pft)    :: b2Ca
+   !----- DBH-WAI allometry intercept.  All PFTs. -----------------------------------------!
+   real   , dimension(n_pft)    :: b1WAI
+   !----- DBH-WAI allometry slope.  All PFTs. ---------------------------------------------!
+   real   , dimension(n_pft)    :: b2WAI
    !----- Minimum DBH attainable by this PFT and minimum DBH at maximum height (cm). ------!
    real   , dimension(n_pft)    :: min_dbh
    real   , dimension(n_pft)    :: max_dbh 
@@ -446,37 +468,6 @@ module pft_coms
    real, dimension(n_pft) :: wat_dry_ratio_ngrn
    !-----  Second term in the RHS of equation 5 of Gu et al. (2007), assuming T=t3ple. ----!
    real, dimension(n_pfT) :: delta_c
-   !=======================================================================================!
-   !=======================================================================================!
-
-
-
-
-
-
-   !=======================================================================================!
-   !=======================================================================================!
-   !    The following parameters are used in the branching parametrisation (Järvelä 2004). !
-   !---------------------------------------------------------------------------------------!
-   !----- Branching ratio. ----------------------------------------------------------------!
-   real   , dimension(n_pft)    :: rbranch
-   !----- Diameter ratio. -----------------------------------------------------------------!
-   real   , dimension(n_pft)    :: rdiamet
-   !----- Length ratio. -------------------------------------------------------------------!
-   real   , dimension(n_pft)    :: rlength
-   !----- Minimum diameter allowed. -------------------------------------------------------!
-   real   , dimension(n_pft)    :: diammin
-   !----- Number of trunks (usually one). -------------------------------------------------!
-   real   , dimension(n_pft)    :: ntrunk
-   !---------------------------------------------------------------------------------------!
-   !     The following parameters are used only for effective branch area index, fitting a !
-   !  smooth curve for Conijn (1995) numbers.  This should be switched by a more realistic !
-   !  calculation at some point soon.                                                      !
-   !---------------------------------------------------------------------------------------!
-   real   , dimension(n_pft)    :: conijn_a
-   real   , dimension(n_pft)    :: conijn_b
-   real   , dimension(n_pft)    :: conijn_c
-   real   , dimension(n_pft)    :: conijn_d
    !=======================================================================================!
    !=======================================================================================!
 

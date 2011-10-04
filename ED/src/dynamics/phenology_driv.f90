@@ -270,7 +270,8 @@ subroutine update_phenology(doy, cpoly, isi, lat)
          ! 2. Cold deciduous    - these plants will drop their leaves when cold conditions !
          !                        happen.                                                  !
          ! 3. Light phenology   - these plants will control their leaf structure with      !
-         !                        the light history (last 10 days);                        !
+         !                        the light history (last 10 days).  On top of that, they  !
+         !                        are also drought-deciduous, similar to phenology 4;      !
          ! 4. Drought deciduous - similar to one, but the threshold is compared against    !
          !                        a 10-day running average rather than the instantaneous   !
          !                        value.                                                   !
@@ -414,7 +415,7 @@ subroutine update_phenology(doy, cpoly, isi, lat)
             end if
 
 
-         case (4) 
+         case (3,4) 
             !------------------------------------------------------------------------------!
             !    Drought deciduous.  Here we must check two possibilities:                 !
             !                                                                              !
@@ -645,7 +646,8 @@ subroutine update_phenology_eq_0(doy, cpoly, isi, lat)
          ! 2. Cold deciduous    - these plants will drop their leaves when cold conditions !
          !                        happen.                                                  !
          ! 3. Light phenology   - these plants will control their leaf structure with      !
-         !                        the light history (last 10 days);                        !
+         !                        the light history (last 10 days).  On top of that, they  !
+         !                        are also drought-deciduous, similar to phenology 4;      !
          ! 4. Drought deciduous - similar to one, but the threshold is compared against    !
          !                        a 10-day running average rather than the instantaneous   !
          !                        value.                                                   !
@@ -762,7 +764,7 @@ subroutine update_phenology_eq_0(doy, cpoly, isi, lat)
             end if
 
 
-         case (4) 
+         case (3,4) 
             !------------------------------------------------------------------------------!
             !    Drought deciduous.  Here we must check two possibilities:                 !
             !                                                                              !

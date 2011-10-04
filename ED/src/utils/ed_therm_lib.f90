@@ -51,7 +51,8 @@ module ed_therm_lib
                                       , c_ngrn_biom_dry     & ! intent(in)
                                       , wat_dry_ratio_ngrn  & ! intent(in)
                                       , delta_c             & ! intent(in)
-                                      , C2B                 ! ! intent(in)
+                                      , C2B                 & ! intent(in)
+                                      , brf_wd              ! ! intent(in)
       use rk4_coms             , only : ibranch_thermo      ! ! intent(in)
       use allometry            , only : wood_biomass        ! ! function
       implicit none
@@ -81,7 +82,10 @@ module ed_therm_lib
          !----- Find branch/twig specific heat and biomass. -------------------------------!
          spheat_wood = (c_ngrn_biom_dry(pft) + wat_dry_ratio_ngrn(pft) * cliq)             &
                      / (1. + wat_dry_ratio_ngrn(pft)) + delta_c(pft)
-         bwood = wood_biomass(bdead, bsapwood,pft)
+         
+         !----- Find the total branchwood biomass. ----------------------------------------!
+         bwood       = brf_wd(pft) * wood_biomass(bdead, bsapwood,pft)
+
       end select
 
       !----- Find the leaf specific heat. -------------------------------------------------!

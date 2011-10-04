@@ -613,13 +613,13 @@ $ED_NL
 
    !---------------------------------------------------------------------------------------!
    ! IBRANCH_THERMO -- This determines whether branches should be included in the          !
-   !                   vegetation thermodynamics and radiation or not.  This is under      !
-   !                   development, not fully tested, so we suggest leaving it as 0.       !
-   !                   Options are:                                                        !
-   !                   0.  No branches in energy/radiation;                                !
-   !                   1.  Use Conijn (1995) numbers;                                      !
-   !                   2.  Use parameterization from Jarvela (2004);                       !
-   !                   3.  Use the same allometry as Ahrends et al. (2010)                 !
+   !                   vegetation thermodynamics and radiation or not.                     !
+   !                   0.  No branches in energy/radiation (ED-2.1 default);               !
+   !                   1.  Branches are accounted in the energy and radiation.  Branchwood !
+   !                       and leaf are treated separately in the canopy radiation scheme, !
+   !                       but solved as a single pool in the biophysics integration.      !
+   !                   2.  Similar to 1, but branches are treated as separate pools in the !
+   !                       biophysics (thus doubling the number of prognostic variables).  !
    !---------------------------------------------------------------------------------------!
    NL%IBRANCH_THERMO = mybranch
    !---------------------------------------------------------------------------------------!

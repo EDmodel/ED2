@@ -356,6 +356,52 @@ end subroutine short_bdown_weissnorman
 
 !==========================================================================================!
 !==========================================================================================!
+!    This subroutine updates the 10-day running average of radiation, which is used for    !
+! phenology.                                                                               !
+!------------------------------------------------------------------------------------------!
+subroutine update_rad_avg(cgrid)
+   use ed_state_vars , only : edtype      & ! structure
+                            , polygontype & ! structure
+                            , sitetype    ! ! structure
+   use ed_misc_coms     , only : radfrq      ! ! intent(in)
+   use consts_coms   , only : day_sec     ! ! intent(in)
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   type(edtype)     , target    :: cgrid
+   !----- Local variables. ----------------------------------------------------------------!
+   type(polygontype), pointer   :: cpoly
+   type(sitetype)   , pointer   :: csite
+   integer                      :: ipy
+   integer                      :: isi
+   real                         :: tfact
+   !----- Local constants. ----------------------------------------------------------------!
+   real             , parameter :: tendays_sec = 10.*day_sec
+   !---------------------------------------------------------------------------------------!
+
+   tfact = radfrq/tendays_sec
+
+
+         
+   polyloop: do ipy = 1,cgrid%npolygons
+      cpoly => cgrid%polygon(ipy)
+      siteloop: do isi = 1,cpoly%nsites
+         cpoly%rad_avg(isi) = cpoly%rad_avg(isi) * (1.0 - tfact)                           &
+                            + cpoly%met(isi)%rshort * tfact
+      end do siteloop
+   end do polyloop
+
+   return
+end subroutine update_rad_avg
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
 !     This sub-routine prints the radiation information if the user wants detailed output  !
 !------------------------------------------------------------------------------------------!
 subroutine dump_radinfo(cgrid,ipy,mprev,mnext,prevmet_timea,nextmet_timea,met_frq          &
