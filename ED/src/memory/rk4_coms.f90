@@ -252,6 +252,12 @@ module rk4_coms
       real(kind=8) :: avg_heatstor_veg  ! Heat storage in vegetation
       !----- Carbon flux ------------------------------------------------------------------!
       real(kind=8) :: avg_carbon_ac     ! Free atm. -> canopy air
+      real(kind=8) :: avg_carbon_st     ! Canopy air storage flux
+      !----- Characteristic gradient scales (stars). --------------------------------------!
+      real(kind=8) :: avg_ustar         ! Friction velocity
+      real(kind=8) :: avg_tstar         ! Temperature
+      real(kind=8) :: avg_qstar         ! Specific humidity
+      real(kind=8) :: avg_cstar         ! CO2 mixing ratio
       !----- Soil fluxes ------------------------------------------------------------------!
       real(kind=8),pointer,dimension(:) :: avg_smoist_gg     ! Moisture flux between layers
       real(kind=8),pointer,dimension(:) :: avg_transloss     ! Transpired soil moisture sink
@@ -288,6 +294,7 @@ module rk4_coms
       real(kind=8) :: flx_heatstor_veg  ! Heat storage in vegetation
       !----- Carbon flux ------------------------------------------------------------------!
       real(kind=8) :: flx_carbon_ac     ! Free atm. -> canopy air
+      real(kind=8) :: flx_carbon_st     ! Canopy CO2 storage flux
       !----- Soil fluxes ------------------------------------------------------------------!
       real(kind=8),pointer,dimension(:) :: flx_smoist_gg     ! Moisture flux between layers
       real(kind=8),pointer,dimension(:) :: flx_transloss     ! Transpired soil moisture sink
@@ -365,10 +372,10 @@ module rk4_coms
       real(kind=8), dimension(:), pointer :: psiplusz
       !----- Hydraulic conductivity [m/s]. ------------------------------------------------!
       real(kind=8), dimension(:), pointer :: hydcond
-      !----- Liquid water above wilting point [m³/m³]. ------------------------------------!
-      real(kind=8), dimension(:), pointer :: soil_liq_wilt
-      !----- Liquid water available for photosynthesis [kg/m²]. ---------------------------!
-      real(kind=8), dimension(:), pointer :: available_liquid_water
+      !----- Available water factor at this layer [n/d]. ----------------------------------!
+      real(kind=8), dimension(:), pointer :: avail_h2o_lyr
+      !----- Integral of available water factor from top to this layer [n/d]. -------------!
+      real(kind=8), dimension(:), pointer :: avail_h2o_int
       !----- Extracted water by transpiration [kg/m²]. ------------------------------------!
       real(kind=8), dimension(:), pointer :: extracted_water
       !----- Heat resistance [Km²s/J]. ----------------------------------------------------!
@@ -943,9 +950,14 @@ module rk4_coms
       y%cpwp                           = 0.d0
       
       y%rasveg                         = 0.d0
-     
+
+      y%avg_ustar                      = 0.d0
+      y%avg_tstar                      = 0.d0
+      y%avg_qstar                      = 0.d0
+      y%avg_cstar                      = 0.d0
 
       y%avg_carbon_ac                  = 0.d0
+      y%avg_carbon_st                  = 0.d0
       y%avg_vapor_lc                   = 0.d0
       y%avg_vapor_wc                   = 0.d0
       y%avg_vapor_gc                   = 0.d0
@@ -970,6 +982,7 @@ module rk4_coms
       y%avg_drainage_heat              = 0.d0
 
       y%flx_carbon_ac                  = 0.d0
+      y%flx_carbon_st                  = 0.d0
       y%flx_vapor_lc                   = 0.d0
       y%flx_vapor_wc                   = 0.d0
       y%flx_vapor_gc                   = 0.d0
@@ -1545,9 +1558,9 @@ module rk4_coms
       allocate(rk4aux%hydcond                 (    0:mzg) )
       allocate(rk4aux%drysoil                 (    0:mzg) )
       allocate(rk4aux%satsoil                 (    0:mzg) )
-      allocate(rk4aux%soil_liq_wilt           (      mzg) )
-      allocate(rk4aux%available_liquid_water  (      mzg) )
-      allocate(rk4aux%extracted_water         (      mzg) )
+      allocate(rk4aux%avail_h2o_lyr           (    mzg+1) )
+      allocate(rk4aux%avail_h2o_int           (    mzg+1) )
+      allocate(rk4aux%extracted_water         (    mzg+1) )
       allocate(rk4aux%rfactor                 (  mzg+mzs) )
       allocate(rk4aux%hfluxgsc                (mzg+mzs+1) )
       allocate(rk4aux%w_flux                  (mzg+mzs+1) )
@@ -1580,8 +1593,8 @@ module rk4_coms
       nullify(rk4aux%hydcond                 )
       nullify(rk4aux%drysoil                 )
       nullify(rk4aux%satsoil                 )
-      nullify(rk4aux%soil_liq_wilt           )
-      nullify(rk4aux%available_liquid_water  )
+      nullify(rk4aux%avail_h2o_lyr           )
+      nullify(rk4aux%avail_h2o_int           )
       nullify(rk4aux%extracted_water         )
       nullify(rk4aux%rfactor                 )
       nullify(rk4aux%hfluxgsc                )
@@ -1606,41 +1619,18 @@ module rk4_coms
    subroutine zero_rk4_aux()
       implicit none
 
-      if (associated(rk4aux%psiplusz              ))                                       &
-         rk4aux%psiplusz              (:) = 0.d0
-
-      if (associated(rk4aux%hydcond               ))                                       &
-         rk4aux%hydcond               (:) = 0.d0
-
-      if (associated(rk4aux%drysoil               ))                                       &
-         rk4aux%drysoil               (:) = .false.
-
-      if (associated(rk4aux%satsoil               ))                                       &
-         rk4aux%satsoil               (:) = .false.
-
-      if (associated(rk4aux%soil_liq_wilt         ))                                       &
-         rk4aux%soil_liq_wilt         (:) = 0.d0
-
-      if (associated(rk4aux%available_liquid_water))                                       &
-         rk4aux%available_liquid_water(:) = 0.d0
-
-      if (associated(rk4aux%extracted_water       ))                                       &
-         rk4aux%extracted_water       (:) = 0.d0
-
-      if (associated(rk4aux%rfactor               ))                                       &
-         rk4aux%rfactor               (:) = 0.d0
-
-      if (associated(rk4aux%hfluxgsc              ))                                       &
-         rk4aux%hfluxgsc              (:) = 0.d0
-
-      if (associated(rk4aux%w_flux                ))                                       &
-         rk4aux%w_flux                (:) = 0.d0
-
-      if (associated(rk4aux%qw_flux               ))                                       &
-         rk4aux%qw_flux               (:) = 0.d0
-
-      if (associated(rk4aux%d_flux                ))                                       &
-         rk4aux%d_flux                (:) = 0.d0
+      if (associated(rk4aux%psiplusz        )) rk4aux%psiplusz        (:) = 0.d0
+      if (associated(rk4aux%hydcond         )) rk4aux%hydcond         (:) = 0.d0
+      if (associated(rk4aux%drysoil         )) rk4aux%drysoil         (:) = .false.
+      if (associated(rk4aux%satsoil         )) rk4aux%satsoil         (:) = .false.
+      if (associated(rk4aux%avail_h2o_lyr   )) rk4aux%avail_h2o_lyr   (:) = 0.d0
+      if (associated(rk4aux%avail_h2o_int   )) rk4aux%avail_h2o_int   (:) = 0.d0
+      if (associated(rk4aux%extracted_water )) rk4aux%extracted_water (:) = 0.d0
+      if (associated(rk4aux%rfactor         )) rk4aux%rfactor         (:) = 0.d0
+      if (associated(rk4aux%hfluxgsc        )) rk4aux%hfluxgsc        (:) = 0.d0
+      if (associated(rk4aux%w_flux          )) rk4aux%w_flux          (:) = 0.d0
+      if (associated(rk4aux%qw_flux         )) rk4aux%qw_flux         (:) = 0.d0
+      if (associated(rk4aux%d_flux          )) rk4aux%d_flux          (:) = 0.d0
 
       return
    end subroutine zero_rk4_aux
@@ -1659,41 +1649,18 @@ module rk4_coms
    subroutine deallocate_rk4_aux()
       implicit none
 
-      if (associated(rk4aux%psiplusz              ))                                       &
-         deallocate(rk4aux%psiplusz              )
-
-      if (associated(rk4aux%hydcond               ))                                       &
-         deallocate(rk4aux%hydcond               )
-
-      if (associated(rk4aux%drysoil               ))                                       &
-         deallocate(rk4aux%drysoil               )
-
-      if (associated(rk4aux%satsoil               ))                                       &
-         deallocate(rk4aux%satsoil               )
-
-      if (associated(rk4aux%soil_liq_wilt         ))                                       &
-         deallocate(rk4aux%soil_liq_wilt         )
-
-      if (associated(rk4aux%available_liquid_water))                                       &
-         deallocate(rk4aux%available_liquid_water)
-
-      if (associated(rk4aux%extracted_water       ))                                       &
-         deallocate(rk4aux%extracted_water       )
-
-      if (associated(rk4aux%rfactor               ))                                       &
-         deallocate(rk4aux%rfactor               )
-
-      if (associated(rk4aux%hfluxgsc              ))                                       &
-         deallocate(rk4aux%hfluxgsc              )
-
-      if (associated(rk4aux%w_flux                ))                                       &
-         deallocate(rk4aux%w_flux                )
-
-      if (associated(rk4aux%qw_flux               ))                                       &
-         deallocate(rk4aux%qw_flux               )
-
-      if (associated(rk4aux%d_flux                ))                                       &
-         deallocate(rk4aux%d_flux                )
+      if (associated(rk4aux%psiplusz        )) deallocate(rk4aux%psiplusz        )
+      if (associated(rk4aux%hydcond         )) deallocate(rk4aux%hydcond         )
+      if (associated(rk4aux%drysoil         )) deallocate(rk4aux%drysoil         )
+      if (associated(rk4aux%satsoil         )) deallocate(rk4aux%satsoil         )
+      if (associated(rk4aux%avail_h2o_lyr   )) deallocate(rk4aux%avail_h2o_lyr   )
+      if (associated(rk4aux%avail_h2o_int   )) deallocate(rk4aux%avail_h2o_int   )
+      if (associated(rk4aux%extracted_water )) deallocate(rk4aux%extracted_water )
+      if (associated(rk4aux%rfactor         )) deallocate(rk4aux%rfactor         )
+      if (associated(rk4aux%hfluxgsc        )) deallocate(rk4aux%hfluxgsc        )
+      if (associated(rk4aux%w_flux          )) deallocate(rk4aux%w_flux          )
+      if (associated(rk4aux%qw_flux         )) deallocate(rk4aux%qw_flux         )
+      if (associated(rk4aux%d_flux          )) deallocate(rk4aux%d_flux          )
 
       return
    end subroutine deallocate_rk4_aux

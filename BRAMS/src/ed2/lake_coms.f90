@@ -79,6 +79,7 @@ module lake_coms
       real(kind=8)  :: avg_sensible_ac
       real(kind=8)  :: avg_carbon_gc
       real(kind=8)  :: avg_carbon_ac
+      real(kind=8)  :: avg_carbon_st
       real(kind=8)  :: avg_sflux_u
       real(kind=8)  :: avg_sflux_w
       real(kind=8)  :: avg_sflux_v
@@ -88,6 +89,10 @@ module lake_coms
       real(kind=8)  :: avg_rshort_gnd
       real(kind=8)  :: avg_albedt
       real(kind=8)  :: avg_rlongup
+      real(kind=8)  :: avg_ustar
+      real(kind=8)  :: avg_tstar
+      real(kind=8)  :: avg_qstar
+      real(kind=8)  :: avg_cstar
    end type lakesitetype
    !---------------------------------------------------------------------------------------!
 
@@ -250,6 +255,7 @@ module lake_coms
       lake%avg_sensible_ac = 0.d0
       lake%avg_carbon_gc   = 0.d0
       lake%avg_carbon_ac   = 0.d0
+      lake%avg_carbon_st   = 0.d0
       lake%avg_sflux_u     = 0.d0
       lake%avg_sflux_w     = 0.d0
       lake%avg_sflux_v     = 0.d0
@@ -259,6 +265,10 @@ module lake_coms
       lake%avg_rshort_gnd  = 0.d0
       lake%avg_albedt      = 0.d0
       lake%avg_rlongup     = 0.d0
+      lake%avg_ustar       = 0.d0
+      lake%avg_tstar       = 0.d0
+      lake%avg_qstar       = 0.d0
+      lake%avg_cstar       = 0.d0
       !------------------------------------------------------------------------------------!
 
       return
@@ -317,6 +327,7 @@ module lake_coms
       lakeout%avg_sensible_ac = lakein%avg_sensible_ac
       lakeout%avg_carbon_gc   = lakein%avg_carbon_gc
       lakeout%avg_carbon_ac   = lakein%avg_carbon_ac
+      lakeout%avg_carbon_st   = lakein%avg_carbon_st
       lakeout%avg_sflux_u     = lakein%avg_sflux_u
       lakeout%avg_sflux_w     = lakein%avg_sflux_w
       lakeout%avg_sflux_v     = lakein%avg_sflux_v
@@ -326,6 +337,10 @@ module lake_coms
       lakeout%avg_rshort_gnd  = lakein%avg_rshort_gnd
       lakeout%avg_albedt      = lakein%avg_albedt
       lakeout%avg_rlongup     = lakein%avg_rlongup
+      lakeout%avg_ustar       = lakein%avg_ustar
+      lakeout%avg_tstar       = lakein%avg_tstar
+      lakeout%avg_qstar       = lakein%avg_qstar
+      lakeout%avg_cstar       = lakein%avg_cstar
       !------------------------------------------------------------------------------------!
 
       return
@@ -363,6 +378,7 @@ module lake_coms
       lake%avg_sensible_ac = lake%avg_sensible_ac  + dtim * dlakedt%avg_sensible_ac
       lake%avg_carbon_gc   = lake%avg_carbon_gc    + dtim * dlakedt%avg_carbon_gc
       lake%avg_carbon_ac   = lake%avg_carbon_ac    + dtim * dlakedt%avg_carbon_ac
+      lake%avg_carbon_st   = lake%avg_carbon_st    + dtim * dlakedt%avg_carbon_st
       lake%avg_sflux_u     = lake%avg_sflux_u      + dtim * dlakedt%avg_sflux_u
       lake%avg_sflux_w     = lake%avg_sflux_w      + dtim * dlakedt%avg_sflux_w
       lake%avg_sflux_v     = lake%avg_sflux_v      + dtim * dlakedt%avg_sflux_v
@@ -372,6 +388,10 @@ module lake_coms
       lake%avg_rshort_gnd  = lake%avg_rshort_gnd   + dtim * dlakedt%avg_rshort_gnd
       lake%avg_albedt      = lake%avg_albedt       + dtim * dlakedt%avg_albedt
       lake%avg_rlongup     = lake%avg_rlongup      + dtim * dlakedt%avg_rlongup
+      lake%avg_ustar       = lake%avg_ustar        + dtim * dlakedt%avg_ustar
+      lake%avg_tstar       = lake%avg_tstar        + dtim * dlakedt%avg_tstar
+      lake%avg_qstar       = lake%avg_qstar        + dtim * dlakedt%avg_qstar
+      lake%avg_cstar       = lake%avg_cstar        + dtim * dlakedt%avg_cstar
       !------------------------------------------------------------------------------------!
 
       return
@@ -411,7 +431,7 @@ module lake_coms
       lake%avg_sensible_gc     = lake%avg_sensible_gc * dttoti
       lake%avg_sensible_ac     = lake%avg_sensible_ac * dttoti
       lake%avg_carbon_gc       = lake%avg_carbon_gc   * dttoti
-      lake%avg_carbon_ac       = lake%avg_carbon_ac   * dttoti
+      lake%avg_carbon_st       = lake%avg_carbon_st   * dttoti
       lake%avg_sflux_u         = lake%avg_sflux_u     * dttoti
       lake%avg_sflux_w         = lake%avg_sflux_w     * dttoti
       lake%avg_sflux_v         = lake%avg_sflux_v     * dttoti
@@ -421,6 +441,10 @@ module lake_coms
       lake%avg_rshort_gnd      = lake%avg_rshort_gnd  * dttoti
       lake%avg_albedt          = lake%avg_albedt      * dttoti
       lake%avg_rlongup         = lake%avg_rlongup     * dttoti
+      lake%avg_ustar           = lake%avg_ustar       * dttoti
+      lake%avg_tstar           = lake%avg_tstar       * dttoti
+      lake%avg_qstar           = lake%avg_qstar       * dttoti
+      lake%avg_cstar           = lake%avg_cstar       * dttoti
       !------------------------------------------------------------------------------------!
 
       return

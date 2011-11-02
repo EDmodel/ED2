@@ -8,7 +8,7 @@
 !==========================================================================================!
 module micphys
 
-   use grid_dims, only: nzpmax, maxgrds
+   use grid_dims, only: nzpmax, maxgrds, str_len
 
    !---------------------------------------------------------------------------------------!
    !     The product [(nthz-1)  * dthz ] must equal 25.0.                                  !
@@ -137,7 +137,7 @@ module micphys
    real, dimension(nd1cr,nr2cr,nd2cr)  :: r1tabcr,c1tabcr
    real, dimension(nr2rr,nd2rr)        :: c2tabrr
 
-   character(len=256)                  :: coltabfn
+   character(len=str_len)              :: coltabfn
 
 
 end module micphys

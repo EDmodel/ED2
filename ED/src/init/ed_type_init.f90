@@ -419,7 +419,8 @@ subroutine init_ed_patch_vars(csite,ip1,ip2,lsl)
    
    csite%rlong_s(ip1:ip2) = 0.0
    
-   csite%avg_daily_temp(ip1:ip2) = 0.0
+   csite%avg_daily_temp      (ip1:ip2) = 0.0
+   csite%avg_monthly_gndwater(ip1:ip2) = 0.0
 
    csite%mean_rh(ip1:ip2) = 0.0
    csite%mean_nep(ip1:ip2) = 0.0
@@ -517,7 +518,12 @@ subroutine init_ed_patch_vars(csite,ip1,ip2,lsl)
    ! patches are created.                                                                  !
    !---------------------------------------------------------------------------------------!
    csite%avg_rk4step          (ip1:ip2) = 0.0
+   csite%avg_ustar            (ip1:ip2) = 0.0
+   csite%avg_tstar            (ip1:ip2) = 0.0
+   csite%avg_qstar            (ip1:ip2) = 0.0
+   csite%avg_cstar            (ip1:ip2) = 0.0
    csite%avg_carbon_ac        (ip1:ip2) = 0.0
+   csite%avg_carbon_st        (ip1:ip2) = 0.0
    csite%avg_vapor_lc         (ip1:ip2) = 0.0
    csite%avg_vapor_wc         (ip1:ip2) = 0.0
    csite%avg_vapor_gc         (ip1:ip2) = 0.0

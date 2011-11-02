@@ -8,12 +8,12 @@
 subroutine patch_array_size(npq,deltax  &
    ,ivegtflg,ivegtfn,isoilflg,isoilfn,ndviflg,ndvifn)
    use rconstants, only : spcon
-
+   use grid_dims, only : str_len
    implicit none
 
    integer :: npq,ivegtflg,isoilflg,ndviflg
    character(len=*) :: ivegtfn,isoilfn,ndvifn
-   character(len=256) :: h5name
+   character(len=str_len) :: h5name
    real :: deltax
 
    integer :: iblksiz,no,isbeg,iwbeg
@@ -768,11 +768,11 @@ end subroutine landuse_opqr
 !==========================================================================================!
 subroutine read_header(ofn,iblksizo,no,isbego,iwbego,offlat,offlon,deltallo  &
    ,ifield,h5name)
-
+use grid_dims, only  : str_len
 implicit none
 integer :: iblksizo,no,isbego,iwbego,lb
 real :: offlat,offlon,deltallo
-character :: ofn*(*),title*256,ifield*(*)
+character :: ofn*(*),title*str_len,ifield*(*)
 character :: h5name*(*)
 
 
@@ -816,7 +816,7 @@ subroutine fill_datp(n2,n3,no,iblksizo,isbego,iwbego  &
 use mem_mksfc
 use io_params, only : iuselai
 use leaf_coms, only : nstyp
-
+use grid_dims, only : str_len
 #if USE_HDF5
 use hdf5_utils
 #endif
@@ -834,7 +834,7 @@ integer :: n2,n3,no,iblksizo,isbego,iwbego,isoc,iwoc,iofr  &
 real :: rio,rjo,rno,platn,plonn,offlat,offlon  &
        ,glatp1,glonp1,deltallo,wio2,wjo2,wio1,wjo1
 
-character :: title1*3,title2*4,title3*256
+character :: title1*3,title2*4,title3*str_len
 
 logical l1,l2,h5,missing
 integer :: ndims,idims(4),ii,jj
@@ -1137,13 +1137,13 @@ do jfile = 1,jfile_max
                   jo = nint(rjo)
                   idatp = ichar(cdato(io,jo))
 
-                  datp(ip,jp,ir,jr) = float(mod(idatp+256,256))
+                  datp(ip,jp,ir,jr) = float(mod(idatp+str_len,str_len))
                case ('soil_text')
                   io = nint(rio)
                   jo = nint(rjo)
                   idatp = ichar(cdato(io,jo))
 
-                  datp(ip,jp,ir,jr) = float(mod(idatp+256,256))
+                  datp(ip,jp,ir,jr) = float(mod(idatp+str_len,str_len))
                   
                case ('ndvi')
                   io1 = max(1,min(int(rio),no-1))

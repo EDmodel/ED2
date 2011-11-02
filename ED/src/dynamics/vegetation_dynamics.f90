@@ -81,9 +81,7 @@ subroutine vegetation_dynamics(new_month,new_year)
          call reproduction(cgrid,current_time%month)
 
          !----- Update the fire disturbance rates. ----------------------------------------!
-         if (include_fire /= 0) then
-            call fire_frequency(current_time%month,cgrid)
-         end if
+         call fire_frequency(cgrid)
 
          !----- Update the disturbance rates. ---------------------------------------------!
          call site_disturbance_rates(current_time%month, current_time%year, cgrid)
@@ -216,9 +214,7 @@ subroutine vegetation_dynamics_eq_0(new_month,new_year)
          call reproduction_eq_0(cgrid,current_time%month)
 
          !----- Update the fire disturbance rates. ----------------------------------------!
-         if (include_fire /= 0) then
-            call fire_frequency(current_time%month,cgrid)
-         end if
+         call fire_frequency(cgrid)
 
          !----- Update the disturbance rates. ---------------------------------------------!
          call site_disturbance_rates(current_time%month, current_time%year, cgrid)

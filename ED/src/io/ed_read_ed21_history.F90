@@ -16,6 +16,8 @@ subroutine read_ed21_history_file
                              , q                       & ! intent(in)
                              , qsw                     & ! intent(in)
                              , hgt_min                 & ! intent(in)
+                             , min_dbh                 & ! intent(in)
+                             , min_bdead               & ! intent(in)
                              , is_grass                & ! intent(in)
                              , include_pft             & ! intent(in)
                              , include_pft_ag          & ! intent(in)
@@ -550,9 +552,11 @@ subroutine read_ed21_history_file
                         ipft = cpatch%pft(ico)
 
                         if (cpatch%bdead(ico) > 0.0) then
+                           cpatch%bdead(ico) = max(cpatch%bdead(ico),min_bdead(ipft))
                            cpatch%dbh(ico)   = bd2dbh(cpatch%pft(ico),cpatch%bdead(ico))
                            cpatch%hite(ico)  = dbh2h (cpatch%pft(ico),cpatch%dbh  (ico))
                         else
+                           cpatch%dbh(ico)   = max(cpatch%dbh(ico),min_dbh(ipft))
                            cpatch%hite(ico)  = dbh2h (cpatch%pft(ico),cpatch%dbh  (ico))
                            cpatch%bdead(ico) = dbh2bd(cpatch%dbh(ico),cpatch%pft  (ico))
                         end if
@@ -800,6 +804,8 @@ subroutine read_ed21_history_unstruct
                              , q                       & ! intent(in)
                              , qsw                     & ! intent(in)
                              , hgt_min                 & ! intent(in)
+                             , min_dbh                 & ! intent(in)
+                             , min_bdead               & ! intent(in)
                              , is_grass                & ! intent(in)
                              , include_pft             & ! intent(in)
                              , include_pft_ag          & ! intent(in)
@@ -1611,14 +1617,16 @@ subroutine read_ed21_history_unstruct
                            ipft = cpatch%pft(ico)
 
                            if (cpatch%bdead(ico) > 0.0) then
-                              cpatch%dbh(ico)   = bd2dbh(cpatch%pft(ico),cpatch%bdead(ico))
-                              cpatch%hite(ico)  = dbh2h (cpatch%pft(ico),cpatch%dbh  (ico))
+                              cpatch%bdead(ico) = max(cpatch%bdead(ico),min_bdead(ipft))
+                              cpatch%dbh(ico)   = bd2dbh(ipft,cpatch%bdead(ico))
+                              cpatch%hite(ico)  = dbh2h (ipft,cpatch%dbh  (ico))
                            else
-                              cpatch%hite(ico)  = dbh2h (cpatch%pft(ico),cpatch%dbh  (ico))
-                              cpatch%bdead(ico) = dbh2bd(cpatch%dbh(ico),cpatch%pft  (ico))
+                              cpatch%dbh(ico)   = max(cpatch%dbh(ico),min_dbh(ipft))
+                              cpatch%hite(ico)  = dbh2h (ipft,cpatch%dbh  (ico))
+                              cpatch%bdead(ico) = dbh2bd(cpatch%dbh  (ico),ipft)
                            end if
 
-                           cpatch%bleaf(ico)  = dbh2bl(cpatch%dbh(ico),cpatch%pft(ico))
+                           cpatch%bleaf(ico)  = dbh2bl(cpatch%dbh(ico),ipft)
 
                            !----- Find the other pools. -----------------------------------!
                            salloc  = (1.0 + q(ipft) + qsw(ipft) * cpatch%hite(ico))

@@ -18,6 +18,8 @@ subroutine read_ed10_ed20_history_file
                              , q                   & ! intent(in)
                              , qsw                 & ! intent(in)
                              , hgt_min             & ! intent(in)
+                             , min_dbh             & ! intent(in)
+                             , min_bdead           & ! intent(in)
                              , is_grass            & ! intent(in)
                              , include_pft         & ! intent(in)
                              , include_pft_ag      & ! intent(in)
@@ -242,15 +244,11 @@ subroutine read_ed10_ed20_history_file
             
             !----- Read the other information from the header (if there is any...). -------!
             nwater = 1
-            select case (ied_init_mode)
-            case (1)
+            if (ied_init_mode == 1 ) then
                read (unit=12,fmt=*) cdum,nwater
                read (unit=12,fmt=*) cdum,depth(1:nwater)
                read (unit=12,fmt=*)
-
-            case (2)
-               ! read(unit=12,fmt=*)!water patch
-            end select
+            end if
             
             !------------------------------------------------------------------------------!
             !     Now we loop over all patches and decide whether they should be included  !
@@ -666,7 +664,7 @@ subroutine read_ed10_ed20_history_file
                         select case(ied_init_mode)
                         case (6)
                            !----- Inventory.  Read DBH and find the other stuff. ----------!
-                           cpatch%dbh(ic2)   = dbh(ic)
+                           cpatch%dbh(ic2)   = max(dbh(ic),min_dbh(ipft(ic)))
                            cpatch%hite(ic2)  = dbh2h(ipft(ic),dbh(ic))
                            cpatch%bdead(ic2) = dbh2bd(dbh(ic),ipft(ic))
 
@@ -679,7 +677,7 @@ subroutine read_ed10_ed20_history_file
                            ! equations.                                                    !
                            !---------------------------------------------------------------!
                            if (bdead(ic) > 0.0) then
-                              cpatch%bdead(ic2) = bdead(ic)
+                              cpatch%bdead(ic2) = max(bdead(ic),min_bdead(ipft(ic)))
                               cpatch%dbh(ic2)   = bd2dbh(ipft(ic),bdead(ic))
                               cpatch%hite(ic2)  = dbh2h(ipft(ic),dbh(ic))
                            else

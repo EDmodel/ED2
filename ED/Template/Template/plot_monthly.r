@@ -1,13 +1,16 @@
 #----- Here is the user-defined variable section. -----------------------------------------#
-here           = "thispath" # Current directory.
+here           = "thispath"    # Current directory.
+there          = "thatpath"    # Directory where analyses/history are 
 srcdir         = "/n/Moorcroft_Lab/Users/mlongo/util/Rsc" # Source  directory.
 outroot        = "thisoutroot"
 monthbeg       = thismontha
 yearbeg        = thisyeara         # First year to consider
 yearend        = thisyearz         # Maximum year to consider
 myplaces       = c("thispoly")
-sasmonth       = c(2,5,8,11)
-outform        = "png"          # Formats for output file.  Supported formats are:
+sasmonth.short = c(2,5,8,11)
+sasmonth.long  = 5
+nyears.long    = 25
+outform        = "png"           # Formats for output file.  Supported formats are:
                                  #   - "X11" - for printing on screen
                                  #   - "eps" - for postscript printing
                                  #   - "png" - for PNG printing
@@ -30,9 +33,9 @@ ncolshov       = 200            # Target number of colours for Hovmoller diagram
 hovgrid        = TRUE           # Should I include a grid on the Hovmoller plots?
 
 legwhere       = "topleft"      # Where should I place the legend?
-inset          = 0.05           # inset distance between legend and edge of plot region.
+inset          = 0.01           # inset distance between legend and edge of plot region.
 legbg          = "white"        # Legend background colour.
-scalleg        = 0.32
+scalleg        = 0.20
 cex.main       = 0.8             # Scale coefficient for the title
 
 theta           = 315.                    # Azimuth for perspective projection
@@ -45,12 +48,11 @@ cexmin          = 0.5                     # Minimum "head" size of the lollipop
 cexmax          = 3.0                     # Maximum "head" size of the lollipop
 
 ylnudge         = 0.05                    # Nudging factor for ylimit
-ptype          = "l"                  # Type of plot
-ptyped         = "p"                  # Type of plot
-ptypeb         = "o"                  # Type of plot
+ptype          = "l"                      # Type of plot
+ptyped         = "p"                      # Type of plot
+ptypeb         = "o"                      # Type of plot
 
-tserdist        = TRUE          # Time series of disturbance rates
-
+tserdist        = TRUE                    # Time series of disturbance rates
 #------------------------------------------------------------------------------------------#
 #------------------------------------------------------------------------------------------#
 #     List of possible plots. In case you don't want some of them, simply switch plt to F. #
@@ -97,7 +99,35 @@ tsplot19 = list(vnam="rootresppft"  ,desc="Root respiration"          ,unit="m2/
                ,plt=T)
 tsplot20 = list(vnam="growthresppft",desc="Growth respiration"        ,unit="m2/m2"
                ,plt=T)
-#----- Time series per PFT. ---------------------------------------------------------------#
+#----- Time series per DBH and PFT. -------------------------------------------------------#
+ntspftdbh = 13
+tspftdbh01 = list(vnam="agbpftdbh"    ,desc="Above ground biomass"      ,unit="kgC/m2"
+                 ,plt=T)
+tspftdbh02 = list(vnam="laipftdbh"    ,desc="Leaf area index"           ,unit="m2/m2"
+                 ,plt=T)
+tspftdbh03 = list(vnam="waipftdbh"    ,desc="Wood area index"           ,unit="m2/m2"
+                 ,plt=T)
+tspftdbh04 = list(vnam="taipftdbh"    ,desc="Total area index"          ,unit="m2/m2"
+                 ,plt=T)
+tspftdbh05 = list(vnam="gpppftdbh"    ,desc="Gross primary productivity",unit="kgC/m2/yr"
+                 ,plt=T)
+tspftdbh06 = list(vnam="npppftdbh"    ,desc="Net primary productivity"  ,unit="kgC/m2/yr"
+                 ,plt=T)
+tspftdbh07 = list(vnam="mcopftdbh"    ,desc="Maintenance costs"         ,unit="kgC/m2/yr"
+                 ,plt=T)
+tspftdbh08 = list(vnam="cbapftdbh"    ,desc="Carbon balance"            ,unit="kgC/m2/yr"
+                 ,plt=T)
+tspftdbh09 = list(vnam="ldrpftdbh"    ,desc="Leaf drop"                 ,unit="kgC/m2/yr"
+                 ,plt=T)
+tspftdbh10 = list(vnam="fsopftdbh"    ,desc="Soil moisture stress"      ,unit="      ---"
+                 ,plt=T)
+tspftdbh11 = list(vnam="demandpftdbh" ,desc="Water demand"              ,unit="kgW/m2/dy"
+                 ,plt=T)
+tspftdbh12 = list(vnam="supplypftdbh" ,desc="Water supply"              ,unit="kgW/m2/dy"
+                 ,plt=T)
+tspftdbh13 = list(vnam="nplantpftdbh" ,desc="Plant density"             ,unit="plant/m2"
+                 ,plt=T)
+#----- Time series per Land use. ----------------------------------------------------------#
 ntslu    = 6
 lsplot01 = list(vnam="agblu"     ,desc="Above ground biomass"      ,unit="kgC/m2"    ,plt=F)
 lsplot02 = list(vnam="lailu"     ,desc="Leaf area index"           ,unit="m2/m2"     ,plt=F)
@@ -125,8 +155,8 @@ psas15 = list(vnam="nplantco" ,desc="Plant density"             ,unit="plant/m2"
 psas16 = list(vnam="laico"    ,desc="Leaf area index"           ,unit="m2/m2"       , plt=T)
 psas17 = list(vnam="waico"    ,desc="Wood area index"           ,unit="m2/m2"       , plt=T)
 psas18 = list(vnam="taico"    ,desc="Total area index"          ,unit="m2/m2"       , plt=T)
-psas19 = list(vnam="demandco" ,desc="Water demand"              ,unit="kg/m2_l/day" , plt=T)
-psas20 = list(vnam="supplyco" ,desc="Water supply"              ,unit="kg/m2_l/day" , plt=T)
+psas19 = list(vnam="demandco" ,desc="Water demand"              ,unit="kg/m2/day"   , plt=T)
+psas20 = list(vnam="supplyco" ,desc="Water supply"              ,unit="kg/m2/day"   , plt=T)
 psas21 = list(vnam="heightco" ,desc="Cohort height"             ,unit="m"           , plt=T)
 psas22 = list(vnam="gpplco"   ,desc="Gross primary productivity",unit="kgC/m2lf/yr" , plt=T)
 psas23 = list(vnam="baco"     ,desc="Basal area"                ,unit="m2"          , plt=T)
@@ -137,40 +167,6 @@ psas27 = list(vnam="bleafco"  ,desc="Leaf biomass"              ,unit="kgC/plant
 psas28 = list(vnam="brootco"  ,desc="Root biomass"              ,unit="kgC/plant"   , plt=T)
 psas29 = list(vnam="bswoodco" ,desc="Sapwood biomass"           ,unit="kgC/plant"   , plt=T)
 psas30 = list(vnam="bstoreco" ,desc="Storage biomass"           ,unit="kgC/plant"   , plt=T)
-#----- Time series of some variables per PFT, with size or age distribution. --------------#
-nfcpft  = 16
-fcpft01 = list(vnam="agbpftdbh",desc="Above-ground biomass"      ,unit="kgC/m2"
-                               ,cls="dbh",csch="iatlas",plt=F)
-fcpft02 = list(vnam="laipftdbh",desc="Leaf area index"           ,unit="m2/m2"
-                               ,cls="dbh",csch="iatlas",plt=F)
-fcpft03 = list(vnam="waipftdbh",desc="Wood area index"           ,unit="m2/m2"
-                               ,cls="dbh",csch="iatlas",plt=F)
-fcpft04 = list(vnam="taipftdbh",desc="Total area index"          ,unit="m2/m2"
-                               ,cls="dbh",csch="iatlas",plt=F)
-fcpft05 = list(vnam="gpppftdbh",desc="Gross primary productivity",unit="kgC/m2/yr"
-                               ,cls="dbh",csch="muitas",plt=F)
-fcpft06 = list(vnam="npppftdbh",desc="Net primary productivity"  ,unit="kgC/m2/yr"
-                               ,cls="dbh",csch="muitas",plt=F)
-fcpft07 = list(vnam="mcopftdbh",desc="Maintenance costs"         ,unit="kgC/m2/yr"
-                               ,cls="dbh",csch="muitas",plt=F)
-fcpft08 = list(vnam="cbapftdbh",desc="Carbon balance"            ,unit="kgC/m2/yr"
-                               ,cls="dbh",csch="muitas",plt=F)
-fcpft09 = list(vnam="agbpftage",desc="Above-ground biomass"      ,unit="kgC/m2"
-                               ,cls="age",csch="iatlas",plt=F)
-fcpft10 = list(vnam="laipftage",desc="Leaf area index"           ,unit="m2/m2"
-                               ,cls="age",csch="iatlas",plt=F)
-fcpft11 = list(vnam="waipftage",desc="Wood area index"           ,unit="m2/m2"
-                               ,cls="age",csch="iatlas",plt=F)
-fcpft12 = list(vnam="taipftage",desc="Total area index"          ,unit="m2/m2"
-                               ,cls="age",csch="iatlas",plt=F)
-fcpft13 = list(vnam="gpppftage",desc="Gross primary productivity",unit="kgC/m2/yr"
-                               ,cls="age",csch="muitas",plt=F)
-fcpft14 = list(vnam="npppftage",desc="Net primary productivity"  ,unit="kgC/m2/yr"
-                               ,cls="age",csch="muitas",plt=F)
-fcpft15 = list(vnam="mcopftage",desc="Maintenance costs"         ,unit="kgC/m2/yr"
-                               ,cls="age",csch="muitas",plt=F)
-fcpft16 = list(vnam="cbapftage",desc="Carbon balance"            ,unit="kgC/m2/yr"
-                               ,cls="age",csch="muitas",plt=F)
 #----- Box plots --------------------------------------------------------------------------#
 nbox = 24
 bplot01 = list(vnam="gpp"        ,desc="Gross Primary productivity"      ,unit="kgC/m2/yr"
@@ -1025,49 +1021,31 @@ options(locatorBell=FALSE)
 
 
 #----- Load some files with functions. ----------------------------------------------------#
-source(paste(srcdir,"atlas.r"      ,sep="/"))
-source(paste(srcdir,"charutils.r"  ,sep="/"))
-source(paste(srcdir,"census.r"     ,sep="/"))
-source(paste(srcdir,"cloudy.r"     ,sep="/"))
-source(paste(srcdir,"error.bar.r"  ,sep="/"))
-source(paste(srcdir,"globdims.r"   ,sep="/"))
-source(paste(srcdir,"locations.r"  ,sep="/"))
-source(paste(srcdir,"muitas.r"     ,sep="/"))
-source(paste(srcdir,"plotsize.r"   ,sep="/"))
-source(paste(srcdir,"pretty.log.r" ,sep="/"))
-source(paste(srcdir,"pretty.time.r",sep="/"))
-source(paste(srcdir,"qapply.r"     ,sep="/"))
-source(paste(srcdir,"rconstants.r" ,sep="/"))
-source(paste(srcdir,"soilutils.r"  ,sep="/"))
-source(paste(srcdir,"sombreado.r"  ,sep="/"))
-source(paste(srcdir,"southammap.r" ,sep="/"))
-source(paste(srcdir,"timeutils.r"  ,sep="/"))
+source(paste(srcdir,"atlas.r"          ,sep="/"))
+source(paste(srcdir,"charutils.r"      ,sep="/"))
+source(paste(srcdir,"census.r"         ,sep="/"))
+source(paste(srcdir,"cloudy.r"         ,sep="/"))
+source(paste(srcdir,"error.bar.r"      ,sep="/"))
+source(paste(srcdir,"globdims.r"       ,sep="/"))
+source(paste(srcdir,"locations.r"      ,sep="/"))
+source(paste(srcdir,"muitas.r"         ,sep="/"))
+source(paste(srcdir,"plotsize.r"       ,sep="/"))
+source(paste(srcdir,"pretty.log.r"     ,sep="/"))
+source(paste(srcdir,"pretty.time.r"    ,sep="/"))
+source(paste(srcdir,"qapply.r"         ,sep="/"))
+source(paste(srcdir,"rconstants.r"     ,sep="/"))
+source(paste(srcdir,"soilutils.r"      ,sep="/"))
+source(paste(srcdir,"sombreado.r"      ,sep="/"))
+source(paste(srcdir,"southammap.r"     ,sep="/"))
+source(paste(srcdir,"timeutils.r"      ,sep="/"))
+#----- These should be called after the others. --------------------------------------------#
+source(paste(srcdir,"physiology.coms.r",sep="/"))
+source(paste(srcdir,"pft.coms.r",sep="/"))
 
 
 #----- Load observations. -----------------------------------------------------------------#
 obsrfile = paste(srcdir,"LBA_MIP.v3.RData",sep="/")
 load(file=obsrfile)
-
-
-#----- Define some default legend colours and names. --------------------------------------#
-pftnames = c("C4 Grass","Early Tropical","Mid Tropical","Late Tropical","Temp. C3 Grass"
-             ,"North Pine","South Pine","Late Conifer","Early Temperate","Mid Temperate"
-             ,"Late Temperate","C3 Pasture","C3 Crop","C4 Pasture","C4 Crop"
-             ,"C3 Grass","Araucaria","Total")
-pftcols  = c("gold","chartreuse","limegreen","darkgreen","purple3"
-            ,"deepskyblue","aquamarine","midnightblue","darkorange3","sienna"
-            ,"firebrick","orchid","coral","gray45","olivedrab"
-            ,"goldenrod","steelblue","gray22")
-
-lunames = c("Agricultural","Secondary","Primary","Total")
-lucols  = c("goldenrod","chartreuse","darkgreen","gray22")
-
-distnames = c("Agr->Agr" ,"2nd->Agr" ,"Prim->Agr"
-              ,"Agr->2nd" ,"2nd->2nd" ,"Prim->2nd"
-              ,"Agr->Prim","2nd->Prim","Prim->Prim")
-distcols  = c("gold","darkorange2","firebrick"
-              ,"lightskyblue","turquoise","steelblue"
-              ,"palegreen","chartreuse","forestgreen")
 
 #----- Define plot window size ------------------------------------------------------------#
 size = plotsize(proje=FALSE,paper=paper)
@@ -1082,6 +1060,13 @@ for (s in 1:ntspft){
   tsts          = paste("tsplot",sss,sep="")
   tspft[[s]]    = get(tsts)
 } #end for
+#----- Time series by PFT and DBH plot. ---------------------------------------------------#
+tspftdbh = list()
+for (s in 1:ntspftdbh){
+  sss           = substring(100+s,2,3)
+  tsts          = paste("tspftdbh",sss,sep="")
+  tspftdbh[[s]] = get(tsts)
+} #end for
 #----- Time series by LU plot. ------------------------------------------------------------#
 tslu = list()
 for (s in 1:ntslu){
@@ -1095,13 +1080,6 @@ for (s in 1:npsas){
   sss           = substring(100+s,2,3)
   psps          = paste("psas",sss,sep="")
   sasplot[[s]]  = get(psps)
-} #end for
-#----- Time series of some variables per PFT, with size or age distribution. ---------------#
-fcpft = list()
-for (s in 1:nfcpft){
-  sss         = substring(100+s,2,3)
-  fcfc        = paste("fcpft",sss,sep="")
-  fcpft[[s]]  = get(fcfc)
 } #end for
 #----- Box plots --------------------------------------------------------------------------#
 bplot = list()
@@ -1182,7 +1160,7 @@ if (! file.exists(outroot)) dir.create(outroot)
 for (place in myplaces){
 
    #----- Retrieve default information about this place and set up some variables. --------#
-   thispoi = locations(where=place,here=here,yearbeg=yearbeg,yearend=yearend
+   thispoi = locations(where=place,here=there,yearbeg=yearbeg,yearend=yearend
                       ,monthbeg=monthbeg)
    inpref  = thispoi$pathin
    outmain = paste(outroot,place,sep="/")
@@ -1193,6 +1171,15 @@ for (place in myplaces){
    yeara   = thispoi$yeara
    yearz   = thispoi$yearz
    meszz   = thispoi$monz
+
+   #----- Decide how frequently the cohort-level variables should be saved. ---------------#
+   if (yearz - yeara + 1 <= nyears.long){
+      sasmonth = sasmonth.short
+   }else{
+      sasmonth = sasmonth.long
+   }#end if
+
+
 
    #----- Create the directories in case they don't exist. --------------------------------#
    if (! file.exists(outmain)) dir.create(outmain)
@@ -1207,22 +1194,19 @@ for (place in myplaces){
    #---------------------------------------------------------------------------------------#
    totmon      = (yearz-yeara-1)*12+meszz+(12-monthbeg+1)
    #----- Size (DBH) and age arrays. ------------------------------------------------------#
-   agbpftdbh      = array(data=0.,dim=c(totmon,ndbh,npft))
-   laipftdbh      = array(data=0.,dim=c(totmon,ndbh,npft))
-   waipftdbh      = array(data=0.,dim=c(totmon,ndbh,npft))
-   taipftdbh      = array(data=0.,dim=c(totmon,ndbh,npft))
-   gpppftdbh      = array(data=0.,dim=c(totmon,ndbh,npft))
-   npppftdbh      = array(data=0.,dim=c(totmon,ndbh,npft))
-   mcopftdbh      = array(data=0.,dim=c(totmon,ndbh,npft))
-   cbapftdbh      = array(data=0.,dim=c(totmon,ndbh,npft))
-   agbpftage      = array(data=0.,dim=c(totmon,nage,npft))
-   laipftage      = array(data=0.,dim=c(totmon,nage,npft))
-   waipftage      = array(data=0.,dim=c(totmon,nage,npft))
-   taipftage      = array(data=0.,dim=c(totmon,nage,npft))
-   gpppftage      = array(data=0.,dim=c(totmon,nage,npft))
-   npppftage      = array(data=0.,dim=c(totmon,nage,npft))
-   mcopftage      = array(data=0.,dim=c(totmon,nage,npft))
-   cbapftage      = array(data=0.,dim=c(totmon,nage,npft))
+   agbpftdbh      = array(data=0.,dim=c(totmon,ndbh+1,npft))
+   laipftdbh      = array(data=0.,dim=c(totmon,ndbh+1,npft))
+   waipftdbh      = array(data=0.,dim=c(totmon,ndbh+1,npft))
+   taipftdbh      = array(data=0.,dim=c(totmon,ndbh+1,npft))
+   gpppftdbh      = array(data=0.,dim=c(totmon,ndbh+1,npft))
+   npppftdbh      = array(data=0.,dim=c(totmon,ndbh+1,npft))
+   mcopftdbh      = array(data=0.,dim=c(totmon,ndbh+1,npft))
+   cbapftdbh      = array(data=0.,dim=c(totmon,ndbh+1,npft))
+   ldrpftdbh      = array(data=0.,dim=c(totmon,ndbh+1,npft))
+   fsopftdbh      = array(data=0.,dim=c(totmon,ndbh+1,npft))
+   demandpftdbh   = array(data=0.,dim=c(totmon,ndbh+1,npft))
+   supplypftdbh   = array(data=0.,dim=c(totmon,ndbh+1,npft))
+   nplantpftdbh   = array(data=0.,dim=c(totmon,ndbh+1,npft))
    #----- PFT arrays.   The "+1" column contains the total. -------------------------------#
    agbpft         = matrix(data=0,nrow=totmon,ncol=npft+1)
    bseedspft      = matrix(data=0,nrow=totmon,ncol=npft+1)
@@ -1779,14 +1763,10 @@ for (place in myplaces){
 
 
              sel               = laiconow > 1.e-10
-             demandconow       = mymont$MMEAN.PSI.OPEN     * day.sec
+             demandconow       = mymont$MMEAN.PSI.OPEN     * laiconow * day.sec
              supplyconow       = mymont$MMEAN.WATER.SUPPLY * day.sec
              gpplconow         = gppconow
-             demandconow[sel]  = demandconow[sel] / laiconow[sel]
-             supplyconow[sel]  = supplyconow[sel] / laiconow[sel]
              gpplconow  [sel]  = nplantconow[sel] * gppconow[sel] / laiconow[sel]
-             demandconow[!sel] = 0.
-             supplyconow[!sel] = 0.
              gpplconow  [!sel] = 0.
              #-----------------------------------------------------------------------------#
           }else{
@@ -1994,76 +1974,75 @@ for (place in myplaces){
                  selpft   = pftconow == p
                  sel      = selpft & seldbh
                  if (any(sel)){
-                    laipftdbh [m,d,p] = laipftdbh [m,d,p] + 
-                                        sum(laiconow [sel] * areaconow[sel])
-                    waipftdbh [m,d,p] = waipftdbh [m,d,p] + 
-                                        sum(waiconow [sel] * areaconow[sel])
-                    taipftdbh [m,d,p] = taipftdbh [m,d,p] + 
-                                        sum(taiconow [sel] * areaconow[sel])
-                    agbpftdbh [m,d,p] = agbpftdbh [m,d,p] + 
-                                        sum( nplantconow[sel] * agbconow   [sel]
-                                           * areaconow[sel])
-                    gpppftdbh [m,d,p] = gpppftdbh [m,d,p] + 
-                                        sum( nplantconow[sel] * gppconow   [sel]
-                                           * areaconow[sel])
-                    npppftdbh [m,d,p] = npppftdbh [m,d,p] +
-                                        sum( nplantconow[sel] * nppconow   [sel]
-                                           * areaconow[sel])
-                    mcopftdbh [m,d,p] = mcopftdbh [m,d,p] +
-                                        sum( nplantconow[sel] * mcostconow [sel]
-                                           * areaconow[sel])
-                    cbapftdbh [m,d,p] = cbapftdbh [m,d,p] +
-                                        sum( nplantconow[sel] * cbalconow  [sel]
-                                           * areaconow[sel])
+                    laipftdbh    [m,d,p] = laipftdbh [m,d,p] + 
+                                           sum(laiconow [sel] * areaconow[sel])
+                    waipftdbh    [m,d,p] = waipftdbh [m,d,p] + 
+                                           sum(waiconow [sel] * areaconow[sel])
+                    taipftdbh    [m,d,p] = taipftdbh [m,d,p] + 
+                                           sum(taiconow [sel] * areaconow[sel])
+                    nplantpftdbh [m,d,p] = nplantpftdbh [m,d,p] + 
+                                           sum(nplantconow [sel] * areaconow[sel])
+                    agbpftdbh    [m,d,p] = agbpftdbh [m,d,p] + 
+                                           sum( nplantconow[sel] * agbconow   [sel]
+                                              * areaconow[sel])
+                    gpppftdbh    [m,d,p] = gpppftdbh [m,d,p] + 
+                                           sum( nplantconow[sel] * gppconow   [sel]
+                                              * areaconow[sel])
+                    npppftdbh    [m,d,p] = npppftdbh [m,d,p] +
+                                           sum( nplantconow[sel] * nppconow   [sel]
+                                              * areaconow[sel])
+                    mcopftdbh    [m,d,p] = mcopftdbh [m,d,p] +
+                                           sum( nplantconow[sel] * mcostconow [sel]
+                                              * areaconow[sel])
+                    cbapftdbh    [m,d,p] = cbapftdbh [m,d,p] +
+                                           sum( nplantconow[sel] * cbalconow  [sel]
+                                              * areaconow[sel])
+                    ldrpftdbh    [m,d,p] = ldrpftdbh [m,d,p] +
+                                           sum( nplantconow[sel] * ldropconow [sel]
+                                              * areaconow[sel])
+                    fsopftdbh    [m,d,p] = fsopftdbh [m,d,p] +
+                                           sum( laiconow[sel]    * fsoconow [sel]
+                                              * areaconow[sel])
+                    demandpftdbh [m,d,p] = demandpftdbh [m,d,p] + 
+                                           sum(demandconow [sel] * areaconow[sel])
+                    supplypftdbh [m,d,p] = supplypftdbh [m,d,p] + 
+                                           sum(supplyconow [sel] * areaconow[sel])
                  }
              }
           }
-          #--------------------------------------------------------------------------------#
+          #------ Fso must be normalised by LAI. ------------------------------------------#
+          for (p in 1:npft){
+
+             #---- Find the total for this PFT and store at class ndbh + 1... -------------#
+             laipftdbh    [m,ndbh+1,p] = sum(laipftdbh    [m,1:ndbh,p])
+             waipftdbh    [m,ndbh+1,p] = sum(waipftdbh    [m,1:ndbh,p])
+             taipftdbh    [m,ndbh+1,p] = sum(taipftdbh    [m,1:ndbh,p])
+             nplantpftdbh [m,ndbh+1,p] = sum(nplantpftdbh [m,1:ndbh,p])
+             agbpftdbh    [m,ndbh+1,p] = sum(agbpftdbh    [m,1:ndbh,p])
+             gpppftdbh    [m,ndbh+1,p] = sum(gpppftdbh    [m,1:ndbh,p])
+             npppftdbh    [m,ndbh+1,p] = sum(npppftdbh    [m,1:ndbh,p])
+             mcopftdbh    [m,ndbh+1,p] = sum(mcopftdbh    [m,1:ndbh,p])
+             cbapftdbh    [m,ndbh+1,p] = sum(cbapftdbh    [m,1:ndbh,p])
+             ldrpftdbh    [m,ndbh+1,p] = sum(ldrpftdbh    [m,1:ndbh,p])
+             demandpftdbh [m,ndbh+1,p] = sum(demandpftdbh [m,1:ndbh,p])
+             supplypftdbh [m,ndbh+1,p] = sum(supplypftdbh [m,1:ndbh,p])
+             #-----------------------------------------------------------------------------#
 
 
-
-
-          #--------------------------------------------------------------------------------#
-          #      Build the age structure arrays.                                           #
-          #--------------------------------------------------------------------------------#
-          for (a in 1:nage){
-             if (all(is.na(agefac))){
-                selage   = rep(FALSE,times=length(agefac))
-             }else{
-                selage  = agefac == a
-             }#end if
-             for (p in 1:npft){
-                if (all(is.na(pftconow))){
-                   selpft   = rep(FALSE,times=length(pftconow))
-                }else{
-                   selpft   = pftconow == p
+             #----- Find the average Fsopen for each DBH class and amongst all classes. ---#
+             for (d in 1:ndbh){
+                if (laipftdbh[m,d,p] != 0){
+                   fsopftdbh[m,d,p] = fsopftdbh[m,d,p] / laipftdbh[m,d,p]
                 }#end if
-                sel    = selpft & selage
-                if (any(sel)){
-                    laipftage [m,a,p] = laipftage [m,a,p]  + 
-                                        sum(laiconow [sel] * areaconow[sel] / areaage[sel])
-                    waipftage [m,a,p] = waipftage [m,a,p]  + 
-                                        sum(waiconow [sel] * areaconow[sel] / areaage[sel])
-                    taipftage [m,a,p] = taipftage [m,a,p]  + 
-                                        sum(taiconow [sel] * areaconow[sel] / areaage[sel])
-                    agbpftage [m,a,p] = agbpftage [m,a,p]  + 
-                                        sum( nplantconow[sel] * agbconow [sel]   
-                                           * areaconow[sel]   / areaage[sel])
-                    gpppftage [m,a,p] = gpppftage [m,a,p]  + 
-                                        sum( nplantconow[sel] * gppconow [sel]   
-                                           * areaconow[sel]   / areaage[sel])
-                    npppftage [m,a,p] = npppftage [m,a,p]  + 
-                                        sum( nplantconow[sel] * nppconow [sel]
-                                           * areaconow[sel]   / areaage[sel])
-                    mcopftage [m,a,p] = mcopftage [m,a,p]  + 
-                                        sum( nplantconow[sel] * mcostconow [sel]
-                                           * areaconow[sel]   / areaage[sel])
-                    cbapftage [m,a,p] = cbapftage [m,a,p]  + 
-                                        sum( nplantconow[sel] * cbalconow [sel]
-                                           * areaconow[sel]   / areaage[sel])
-                }
-             }
-          }
+                if (laipftdbh[m,ndbh+1,p] != 0){
+                   fsopftdbh[m,ndbh+1,p] = ( sum( fsopftdbh[m,1:ndbh,p]
+                                                * laipftdbh[m,1:ndbh,p] )
+                                           / laipftdbh[m,ndbh+1,p] )
+                }#end for
+                #--------------------------------------------------------------------------#
+             }#end for
+             #-----------------------------------------------------------------------------#
+          }#end for
           #--------------------------------------------------------------------------------#
 
 
@@ -2406,7 +2385,8 @@ for (place in myplaces){
    #---------------------------------------------------------------------------------------#
    #      Define a suitable scale for those time series that uses thismonth...             #
    #---------------------------------------------------------------------------------------#
-   whenplot = pretty.time(thismonth,n=8)
+   whenplot6 = pretty.time(thismonth,n=6)
+   whenplot8 = pretty.time(thismonth,n=8)
    #---------------------------------------------------------------------------------------#
 
 
@@ -2507,18 +2487,20 @@ for (place in myplaces){
                ylimit[2] = ylimit[2] * ( 1. + sign(ylimit[2]) * ylnudge)
             }#end if
 
+            ylimit[2] = ylimit[2] + scalleg * (ylimit[2] - ylimit[1])
+
             letitre = paste(description,lieu,sep=" - ")
-            cols    = pftcols[selpft]
-            legs    = pftnames[selpft]
+            cols    = pft$colour[selpft]
+            legs    = pft$name  [selpft]
             plot(x=thismonth,y=thisvar[,1],type="n",main=letitre,ylim=ylimit
                 ,xlab="Time",xaxt="n",ylab=unit,cex.main=0.7)
-            axis(side=1,at=whenplot$levels,labels=whenplot$labels,padj=whenplot$padj)
+            axis(side=1,at=whenplot8$levels,labels=whenplot8$labels,padj=whenplot8$padj)
             if (plotgrid){ 
-               abline(v=whenplot$levels,h=axTicks(side=2),col="lightgray",lty="solid")
+               abline(v=whenplot8$levels,h=axTicks(side=2),col="lightgray",lty="solid")
             }#end if
             for (n in 1:(npft+1)){
                if (selpft[n]){
-                  lines(thismonth,thisvar[,n],type="l",col=pftcols[n],lwd=lwidth)
+                  lines(thismonth,thisvar[,n],type="l",col=pft$colour[n],lwd=lwidth)
                }#end if
             }#end for
             legend(x=legwhere,inset=inset,bg=legbg,legend=legs,col=cols,lwd=lwidth)
@@ -2530,6 +2512,96 @@ for (place in myplaces){
                dev.off()
             }#end if
          } #end for outform
+      }#end if (tseragbpft)
+   } #end for tseries
+   #---------------------------------------------------------------------------------------#
+
+
+
+
+   #---------------------------------------------------------------------------------------#
+   #      Time series by DBH, by PFT.                                                      #
+   #---------------------------------------------------------------------------------------#
+   #----- Find the PFTs to plot. ----------------------------------------------------------#
+   pftuse  = which(apply(X=agbpftdbh,MARGIN=3,FUN=sum) > 0.)
+   for (v in 1:ntspftdbh){
+      thistspftdbh   = tspftdbh[[v]]
+      vnam        = thistspftdbh$vnam
+      description = thistspftdbh$desc
+      unit        = thistspftdbh$unit
+      plotit      = thistspftdbh$plt
+      
+      #----- Load variable ----------------------------------------------------------------#
+      thisvar = get(vnam)
+
+      #----- Check whether the user wants to have this variable plotted. ------------------#
+      if (plotit && length(pftuse) > 0){
+
+         #---------------------------------------------------------------------------------#
+         #    Check whether the time series directory exists.  If not, create it.          #
+         #---------------------------------------------------------------------------------#
+         outdir = paste(outpref,"tsdbh",sep="/")
+         if (! file.exists(outdir)) dir.create(outdir)
+         outvar = paste(outdir,vnam,sep="/")
+         if (! file.exists(outvar)) dir.create(outvar)
+         #---------------------------------------------------------------------------------#
+
+         print (paste("      +",description,"time series for DBH class..."))
+
+
+         #---- Find the limit, and nudge it in case it is constant. -----------------------#
+         ylimit  = range(thisvar[,,pftuse],na.rm=TRUE)
+         if (ylimit[1] == ylimit[2] && ylimit[1] == 0){
+            ylimit = c(-1,1)
+         }else if(ylimit[1] == ylimit[2] ){
+            ylimit[1] = ylimit[1] * ( 1. - sign(ylimit[1]) * ylnudge)
+            ylimit[2] = ylimit[2] * ( 1. + sign(ylimit[2]) * ylnudge)
+         }#end if
+         ylimit[2] = ylimit[2] + scalleg * (ylimit[2] - ylimit[1])
+         #---------------------------------------------------------------------------------#
+
+         for (p in pftuse){
+
+            cpp = substring(100+p,2,3)
+            pftlab = paste("pft-",cpp,sep="")
+
+            print (paste("        -",pft$name[p]))
+
+
+            #----- Loop over output formats. ----------------------------------------------#
+            for (o in 1:nout){
+               fichier = paste(outvar,"/",vnam,"-",pftlab,"-",suffix,".",outform[o],sep="")
+               if(outform[o] == "x11"){
+                  X11(width=size$width,height=size$height,pointsize=ptsz)
+               }else if(outform[o] == "png"){
+                  png(filename=fichier,width=size$width*depth,height=size$height*depth
+                     ,pointsize=ptsz,res=depth)
+               }else if(outform[o] == "eps"){
+                  postscript(file=fichier,width=size$width,height=size$height
+                            ,pointsize=ptsz,paper=paper)
+               }#end if
+
+               letitre = paste(description,pft$name[p],lieu,sep=" - ")
+               plot(x=thismonth,y=thisvar[,1,p],type="n",main=letitre,ylim=ylimit
+                   ,xlab="Time",xaxt="n",ylab=unit,cex.main=0.7)
+               axis(side=1,at=whenplot8$levels,labels=whenplot8$labels,padj=whenplot8$padj)
+               if (plotgrid){ 
+                  abline(v=whenplot8$levels,h=axTicks(side=2),col="lightgray",lty="solid")
+               }#end if
+               for (d in 1:ndbh+1){
+                  lines(thismonth,thisvar[,d,p],type="l",col=dbhcols[d],lwd=lwidth)
+               }#end for
+               legend(x=legwhere,inset=inset,bg=legbg,legend=dbhnames,col=dbhcols
+                     ,ncol=2,title="DBH class",lwd=lwidth,cex=0.8)
+
+               if (outform[o] == "x11"){
+                  locator(n=1)
+                  dev.off()
+               }else{
+                  dev.off()
+               }#end if
+            } #end for outform
+         }#end for (p in pftuse)
       }#end if (tseragbpft)
    } #end for tseries
    #---------------------------------------------------------------------------------------#
@@ -2580,15 +2652,16 @@ for (place in myplaces){
                ylimit[1] = ylimit[1] * ( 1. - sign(ylimit[1]) * ylnudge)
                ylimit[2] = ylimit[2] * ( 1. + sign(ylimit[2]) * ylnudge)
             }#end if
+            ylimit[2] = ylimit[2] + scalleg * (ylimit[2] - ylimit[1])
 
             letitre = paste(description,lieu,sep=" - ")
             cols    = lucols[sellu]
             legs    = lunames[sellu]
             plot(thismonth,thisvar[,1],type="n",main=letitre,ylim=ylimit
                 ,xlab="Time",ylab=unit,xaxt="n",cex.main=0.7)
-            axis(side=1,at=whenplot$levels,labels=whenplot$labels,padj=whenplot$padj)
+            axis(side=1,at=whenplot8$levels,labels=whenplot8$labels,padj=whenplot8$padj)
             if (plotgrid){ 
-               abline(v=whenplot$levels,h=axTicks(side=2),col="lightgray",lty="solid")
+               abline(v=whenplot8$levels,h=axTicks(side=2),col="lightgray",lty="solid")
             }#end if
             for (n in 1:(nlu+1)){
                if (sellu[n]){
@@ -2640,14 +2713,16 @@ for (place in myplaces){
             ylimit[1] = ylimit[1] * ( 1. - sign(ylimit[1]) * ylnudge)
             ylimit[2] = ylimit[2] * ( 1. + sign(ylimit[2]) * ylnudge)
          }#end if
+         ylimit[2] = ylimit[2] + scalleg * (ylimit[2] - ylimit[1])
+
          letitre = paste("Disturbance rates",lieu,sep=" - ")
          cols    = NULL
          legs    = NULL
          plot(thismonth,dist[,1,1],type="n",main=letitre,ylim=ylimit
              ,xlab="Time",ylab="[1/yr]",xaxt="n",cex.main=0.7)
-            axis(side=1,at=whenplot$levels,labels=whenplot$labels,padj=whenplot$padj)
+            axis(side=1,at=whenplot8$levels,labels=whenplot8$labels,padj=whenplot8$padj)
             if (plotgrid){ 
-               abline(v=whenplot$levels,h=axTicks(side=2),col="lightgray",lty="solid")
+               abline(v=whenplot8$levels,h=axTicks(side=2),col="lightgray",lty="solid")
             }#end if
          n = 0
          for (jlu in 1:nlu){
@@ -2752,16 +2827,16 @@ for (place in myplaces){
             plot(x=thismonth,y=thisvar,type="n",main=letitre,xlab="Time"
                 ,ylim=ylimit,ylab=paste("[",unit,"]",sep=""),log=plog,xaxt="n"
                 ,cex.main=cex.main)
-            axis(side=1,at=whenplot$levels,labels=whenplot$labels,padj=whenplot$padj)
+            axis(side=1,at=whenplot8$levels,labels=whenplot8$labels,padj=whenplot8$padj)
             if (plotgrid){ 
-               abline(v=whenplot$levels,h=axTicks(side=2),col="lightgray",lty="solid")
+               abline(v=whenplot8$levels,h=axTicks(side=2),col="lightgray",lty="solid")
             }#end if
             for (l in 1:nlayers){
                thisvar = get(vnames[l])
                points(x=thismonth,y=thisvar,col=lcolours[l]
                      ,lwd=llwd[l],type=ltype,pch=16,cex=0.8)
             }#end for
-            legend(x=legpos,inset=0.05,legend=description,col=lcolours,lwd=llwd)
+            legend(x=legpos,inset=0.05,legend=description,col=lcolours,lwd=llwd,cex=0.8)
             if (outform[o] == "x11"){
                locator(n=1)
                dev.off()
@@ -3828,8 +3903,8 @@ for (place in myplaces){
                colww    = pftcols[pftww]
 
                pftin   = sort(unique(pftco[[ww]]))
-               colleg  = pftcols[pftin]
-               pftleg  = pftnames[pftin]
+               colleg  = pft$colour[pftin]
+               pftleg  = pft$name  [pftin]
 
 
                #----- Loop over output formats. -------------------------------------------#
@@ -3846,7 +3921,7 @@ for (place in myplaces){
                                ,pointsize=ptsz,paper=paper)
                   }#end if
 
-                  stcol   = pftcols[pftww]
+                  stcol   = pft$colour[pftww]
                   letitre = paste(description," - ",lieu,
                                   "\n Time :",mlist[mm],"/",thisyear,sep=" ")
                   lezlab  = paste(description," [",unit,"]",sep="")
@@ -3877,121 +3952,6 @@ for (place in myplaces){
          }#end for nameco
       } #end if
    }#end for npsas
-   #---------------------------------------------------------------------------------------#
-
-
-
-
-
-   #---------------------------------------------------------------------------------------#
-   #   Plot the filled contour plots as function of time and PFT.                          #
-   #---------------------------------------------------------------------------------------#
-   for (v in 1:nfcpft){
-
-      #----- Retrieve variable information from the list. ---------------------------------#
-      thisfc      = fcpft[[v]]
-      vnam        = thisfc$vnam
-      description = thisfc$desc
-      unit        = thisfc$unit
-      vcscheme    = thisfc$csch
-      vclass      = thisfc$cls
-      plotit      = thisfc$plt
-
-      if (plotit && any(selpft)){
-         #---------------------------------------------------------------------------------#
-         #      Define which class we are going to plot.                                   #
-         #---------------------------------------------------------------------------------#
-         if (vclass == "age"){
-            thisclass = classage
-            expclass  = c(classage[1]-dage,classage,classage[nage]+dage)
-            nclass    = nage
-            atclass   = pretty(classage)
-            leylab    = "Age class"
-         }else{ # if (vclass == "dbh"){
-            thisclass = classdbh
-            expclass  = c(classdbh[1]-ddbh,classdbh,classdbh[ndbh]+ddbh)
-            nclass    = ndbh
-            atclass   = pretty(classdbh)
-            leylab    = "DBH class"
-         }#end if vclass
-
-         #---------------------------------------------------------------------------------#
-         #     Check if the directory exists.  If not, create it.                          #
-         #---------------------------------------------------------------------------------#
-         outdir  =  paste(outpref,"fcpft",sep="/")
-         if (! file.exists(outdir)) dir.create(outdir)
-         print (paste("      + ",description," time series by ",leylab,"...",sep=""))
-
-         #----- Load this variable into "thisvar". ----------------------------------------#
-         thisvar = get(vnam)
-
-         #---------------------------------------------------------------------------------#
-         #     Define which PFTs to run.  Also, find the overall range amongst all PFTs,   #
-         # so all plants are in the same scale.                                            #
-         #---------------------------------------------------------------------------------#
-         selpftonly = selpft[1:npft]
-         pftrun  = seq(from=1,to=npft,by=1)[selpftonly]
-         vrange  = range(thisvar[,,selpftonly],na.rm=TRUE)
-         vlevels = pretty(x=vrange,n=ncolsfc)
-         vnlev   = length(vlevels)
-
-
-         for (p in pftrun){
-            if (p < 10){
-               cpcp = paste("0",p,sep="")
-            }else{
-               cpcp = as.character(p)
-            } #end if
-            for (o in 1:nout){
-               fichier = paste(outdir,"/",vnam,"-pft",cpcp,"-",suffix,".",outform[o]
-                              ,sep="")
-               if(outform[o] == "x11"){
-                  X11(width=size$width,height=size$height,pointsize=ptsz)
-               }else if(outform[o] == "png"){
-                  png(filename=fichier,width=size$width*depth,height=size$height*depth
-                     ,pointsize=ptsz,res=depth)
-               }else if(outform[o] == "eps"){
-                  postscript(file=fichier,width=size$width,height=size$height
-                            ,pointsize=ptsz,paper=paper)
-               }#end if
-
-               #----- Copy this PFT to a scratch array. -----------------------------------#
-               var00 = as.matrix(thisvar[,,p])
-               
-               #----- Expand the axis so all meaningful information is in the middle. -----#
-               before   = thismonth[1]-(thismonth[2]-thismonth[1])
-               after    = thismonth[tlast]+(thismonth[tlast]-thismonth[tlast-1])
-               expmonth = c(before,thismonth,after)
-               expmonth = chron(expmonth,out.format=c(dates="day-mon-yr",times=NULL))
-               zero     = rep(0,times=tlast)
-               expvar   = cbind(zero,var00,zero)
-               expvar   = rbind(expvar[1,],expvar,expvar[tlast,])
-
-               letitre = paste(description,".  PFT:",p," - ",lieu,sep="")
-               sombreado(x=expmonth,y=expclass,z=expvar,levels=vlevels,nlevels=vnlev
-                        ,color.palette=get(vcscheme)
-                        ,plot.title=title(main=letitre,xlab="Time",ylab=leylab,cex.main=0.7)
-                        ,key.title=title(main=unit,cex.main=0.8)
-                        ,plot.axes={axis(side=1,at=whenplot$levels,labels=whenplot$labels
-                                        ,padj=whenplot$padj)
-                                    axis(side=2,at=atclass)
-                                    if (fcgrid){ 
-                                       abline(v=whenplot$levels,h=atclass,col="lightgray"
-                                             ,lty="solid")
-                                    }#end if
-                                   }#end plot.axes
-                        )
-
-               if (outform[o] == "x11"){
-                  locator(n=1)
-                  dev.off()
-               }else{
-                  dev.off()
-               }#end if
-            } #end for outform
-         }#end for pftrun
-      }#end if plotit
-   }#end for nfcpft
    #---------------------------------------------------------------------------------------#
 }#end for places
 

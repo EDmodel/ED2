@@ -393,8 +393,15 @@ subroutine inc_rk4_patch(rkp, inc, fac, cpatch)
                                 + fac * inc%ebudget_loss2drainage
    end if
    if (fast_diagnostics) then
+      rkp%avg_ustar          = rkp%avg_ustar          + fac * inc%avg_ustar
+      rkp%avg_tstar          = rkp%avg_tstar          + fac * inc%avg_tstar
+      rkp%avg_qstar          = rkp%avg_qstar          + fac * inc%avg_qstar
+      rkp%avg_cstar          = rkp%avg_cstar          + fac * inc%avg_cstar
+
+
       rkp%avg_carbon_ac      = rkp%avg_carbon_ac      + fac * inc%avg_carbon_ac
-      
+      rkp%avg_carbon_st      = rkp%avg_carbon_st      + fac * inc%avg_carbon_st
+
       rkp%avg_vapor_lc       = rkp%avg_vapor_lc       + fac * inc%avg_vapor_lc
       rkp%avg_vapor_wc       = rkp%avg_vapor_wc       + fac * inc%avg_vapor_wc
       rkp%avg_vapor_gc       = rkp%avg_vapor_gc       + fac * inc%avg_vapor_gc
@@ -431,7 +438,8 @@ subroutine inc_rk4_patch(rkp, inc, fac, cpatch)
    !---------------------------------------------------------------------------------------!
    if (print_detailed) then
       rkp%flx_carbon_ac      = rkp%flx_carbon_ac      + fac * inc%avg_carbon_ac
-      
+      rkp%flx_carbon_st      = rkp%flx_carbon_st      + fac * inc%avg_carbon_st
+
       rkp%flx_vapor_lc       = rkp%flx_vapor_lc       + fac * inc%avg_vapor_lc
       rkp%flx_vapor_wc       = rkp%flx_vapor_wc       + fac * inc%avg_vapor_wc
       rkp%flx_vapor_gc       = rkp%flx_vapor_gc       + fac * inc%avg_vapor_gc
@@ -1298,7 +1306,12 @@ subroutine copy_rk4_patch(sourcep, targetp, cpatch)
       targetp%wbudget_storage        = sourcep%wbudget_storage
    end if
    if (fast_diagnostics) then
+      targetp%avg_ustar              = sourcep%avg_ustar
+      targetp%avg_tstar              = sourcep%avg_tstar
+      targetp%avg_qstar              = sourcep%avg_qstar
+      targetp%avg_cstar              = sourcep%avg_cstar
       targetp%avg_carbon_ac          = sourcep%avg_carbon_ac
+      targetp%avg_carbon_st          = sourcep%avg_carbon_st
       targetp%avg_vapor_lc           = sourcep%avg_vapor_lc
       targetp%avg_vapor_wc           = sourcep%avg_vapor_wc
       targetp%avg_vapor_gc           = sourcep%avg_vapor_gc
@@ -1329,6 +1342,7 @@ subroutine copy_rk4_patch(sourcep, targetp, cpatch)
 
    if (print_detailed) then
       targetp%flx_carbon_ac          = sourcep%flx_carbon_ac
+      targetp%flx_carbon_st          = sourcep%flx_carbon_st
       targetp%flx_vapor_lc           = sourcep%flx_vapor_lc
       targetp%flx_vapor_wc           = sourcep%flx_vapor_wc
       targetp%flx_vapor_gc           = sourcep%flx_vapor_gc

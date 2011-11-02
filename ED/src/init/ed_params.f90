@@ -1128,6 +1128,10 @@ subroutine init_can_air_params()
    !                                                                                       !
    ! M08 - Monteith, J. L., M. H. Unsworth, 2008. Principles of Environmental Physics,     !
    !       3rd. edition, Academic Press, Amsterdam, 418pp.  (Mostly Chapter 10).           !
+   !                                                                                       !
+   ! The coefficient B for flat plates under turbulent flow was changed to 0.19 so the     !
+   !     transition from laminar to turbulent regime will happen at Gr ~ 100,000, the      !
+   !     number suggested by M08.                                                          !
    !---------------------------------------------------------------------------------------!
    aflat_lami = 0.600    ! A (forced convection), laminar   flow
    nflat_lami = 0.500    ! n (forced convection), laminar   flow
@@ -1135,7 +1139,7 @@ subroutine init_can_air_params()
    nflat_turb = 0.800    ! n (forced convection), turbulent flow
    bflat_lami = 0.500    ! B (free   convection), laminar   flow
    mflat_lami = 0.250    ! m (free   convection), laminar   flow
-   bflat_turb = 0.130    ! B (free   convection), turbulent flow
+   bflat_turb = 0.190    ! B (free   convection), turbulent flow
    mflat_turb = onethird ! m (free   convection), turbulent flow
    ocyli_lami = 0.320    ! intercept (forced convection), laminar   flow
    acyli_lami = 0.510    ! A (forced convection), laminar   flow
@@ -1408,7 +1412,6 @@ subroutine init_pft_photo_params()
 
    use ed_max_dims    , only : n_pft                   ! ! intent(in)
    use pft_coms       , only : D0                      & ! intent(out)
-                             , Dext                    & ! intent(out)
                              , Vm_low_temp             & ! intent(out)
                              , Vm_high_temp            & ! intent(out)
                              , Vm_decay_e              & ! intent(out)
@@ -1523,7 +1526,7 @@ subroutine init_pft_photo_params()
    Vm0(11)                   =  6.981875 * vmfact_c3
    Vm0(12:13)                = 18.300000 * vmfact_c3
    Vm0(14:15)                = 12.500000 * vmfact_c4
-   Vm0(16)                   = 20.000000 * vmfact_c3
+   Vm0(16)                   = 21.875000 * vmfact_c3
    Vm0(17)                   = 15.625000 * vmfact_c3
    !---------------------------------------------------------------------------------------!
 
@@ -1673,10 +1676,10 @@ subroutine init_pft_photo_params()
    photosyn_pathway(16:17)   = 3
 
    !----- Leaf width [m].  This controls the boundary layer conductance. ------------------!
-   leaf_width( 1)    = 0.20
-   leaf_width( 2)    = 0.20
-   leaf_width( 3)    = 0.20
-   leaf_width( 4)    = 0.20
+   leaf_width( 1)    = 0.20 ! 0.05
+   leaf_width( 2)    = 0.20 ! 0.14
+   leaf_width( 3)    = 0.20 ! 0.14
+   leaf_width( 4)    = 0.20 ! 0.14
    leaf_width( 5)    = 0.05
    leaf_width( 6)    = 0.05
    leaf_width( 7)    = 0.05
@@ -1686,9 +1689,9 @@ subroutine init_pft_photo_params()
    leaf_width(11)    = 0.05
    leaf_width(12)    = 0.05
    leaf_width(13)    = 0.05
-   leaf_width(14)    = 0.20
-   leaf_width(15)    = 0.20
-   leaf_width(16)    = 0.20
+   leaf_width(14)    = 0.20 ! 0.05
+   leaf_width(15)    = 0.20 ! 0.05
+   leaf_width(16)    = 0.20 ! 0.05
    leaf_width(17)    = 0.05
    !---------------------------------------------------------------------------------------!
 
@@ -1923,7 +1926,8 @@ subroutine init_pft_mort_params()
                           , plant_min_temp             & ! intent(out)
                           , frost_mort                 ! ! intent(out)
    use consts_coms , only : t00                        & ! intent(in)
-                          , lnexp_max                  ! ! intent(in)
+                          , lnexp_max                  & ! intent(in)
+                          , twothirds                  ! ! intent(in)
    use disturb_coms, only : treefall_disturbance_rate  & ! intent(inout)
                           , time2canopy                ! ! intent(in)
 
@@ -2140,20 +2144,21 @@ subroutine init_pft_alloc_params()
                           , hgt_ref               & ! intent(out)
                           , hgt_max               & ! intent(out)
                           , min_dbh               & ! intent(out)
-                          , max_dbh               & ! intent(out)
+                          , dbh_crit              & ! intent(out)
+                          , min_bdead             & ! intent(out)
+                          , bdead_crit            & ! intent(out)
                           , b1Ht                  & ! intent(out)
                           , b2Ht                  & ! intent(out)
                           , b1Bs_small            & ! intent(out)
                           , b2Bs_small            & ! intent(out)
-                          , b1Bs_big              & ! intent(out)
-                          , b2Bs_big              & ! intent(out)
+                          , b1Bs_large            & ! intent(out)
+                          , b2Bs_large            & ! intent(out)
                           , b1Ca                  & ! intent(out)
                           , b2Ca                  & ! intent(out)
                           , b1Rd                  & ! intent(out)
                           , b2Rd                  & ! intent(out)
                           , b1Vol                 & ! intent(out)
                           , b2Vol                 & ! intent(out)
-                          , bdead_crit            & ! intent(out)
                           , b1Bl                  & ! intent(out)
                           , b2Bl                  & ! intent(out)
                           , b1WAI                 & ! intent(out)
@@ -2208,11 +2213,12 @@ subroutine init_pft_alloc_params()
    !     The "z" parameters were obtaining by using the original balive and computing      !
    ! bdead as the difference between the total biomass and the original balive.            !
    !---------------------------------------------------------------------------------------!
-   real, dimension(3)    , parameter :: aleaf       = (/ -1.259299,  1.679213,  4.985562 /)
-   real, dimension(3)    , parameter :: adead_small = (/ -1.494639,  2.453309,  1.597272 /)
-   real, dimension(3)    , parameter :: adead_big   = (/  2.105856,  2.423031, 50.198984 /)
-   real, dimension(3)    , parameter :: zdead_small = (/ -1.113827,  2.440483,  2.180632 /)
-   real, dimension(3)    , parameter :: zdead_big   = (/ 0.1362546,  2.421739,  6.9483532/)
+   real, dimension(3)    , parameter :: odead_small = (/-1.1138270, 2.4404830,  2.1806320/)
+   real, dimension(3)    , parameter :: odead_large = (/ 0.1362546, 2.4217390,  6.9483532/)
+   real, dimension(3)    , parameter :: ndead_small = (/-1.8822770, 2.4407750,  1.0082490/)
+   real, dimension(3)    , parameter :: ndead_large = (/-1.8229460, 2.4259890,  1.0011870/)
+   real, dimension(3)    , parameter :: nleaf       = (/-2.5108071, 1.2818788,  0.5912507/)
+   real, dimension(2)    , parameter :: ncrown_area = (/ 0.1184295, 1.0521197            /)
    !----- Other constants. ----------------------------------------------------------------!
    logical               , parameter :: write_allom = .false.
    character(len=str_len), parameter :: allom_file  = 'allom_param.txt'
@@ -2375,7 +2381,91 @@ subroutine init_pft_alloc_params()
 
 
    !---------------------------------------------------------------------------------------!
-   !    Minimum height of an individual.                                                   !
+   !   DBH/height allometry parameters.                                                    !
+   !                                                                                       !
+   !   WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! WARNING!    !
+   !   WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! WARNING!    !
+   !   WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! WARNING!    !
+   !   WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! WARNING!    !
+   !   WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! WARNING!    !
+   !   WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! WARNING!    !
+   !                                                                                       !
+   !   b1Ht, b2Ht, and hgt_ref are parameters that have different meaning for tropical and !
+   ! temperate PFTs, and the meaning for tropical PFTs depends on IALLOM...                !
+   !---------------------------------------------------------------------------------------!
+   !----- DBH-height allometry intercept [m]. ---------------------------------------------!
+   b1Ht(1:4)   = 0.0
+   b1Ht(5)     = 0.4778
+   b1Ht(6)     = 27.14
+   b1Ht(7)     = 27.14
+   b1Ht(8)     = 22.79
+   b1Ht(9)     = 22.6799
+   b1Ht(10)    = 25.18
+   b1Ht(11)    = 23.3874
+   b1Ht(12:13) = 0.4778
+   b1Ht(14:15) = 0.0
+   b1Ht(16)    = 0.0
+   b1Ht(17)    = 0.0
+   !----- DBH-height allometry slope [1/cm]. ----------------------------------------------!
+   b2Ht(1:4)   =  0.00
+   b2Ht(5)     = -0.75
+   b2Ht(6)     = -0.03884
+   b2Ht(7)     = -0.03884
+   b2Ht(8)     = -0.04445 
+   b2Ht(9)     = -0.06534
+   b2Ht(10)    = -0.04964
+   b2Ht(11)    = -0.05404
+   b2Ht(12:13) = -0.75
+   b2Ht(14:15) =  0.00
+   b2Ht(16)    =  0.00
+   b2Ht(17)    =  0.00
+   !----- Reference height for diameter/height allometry. ---------------------------------!
+   hgt_ref(1:5)   = 0.0
+   hgt_ref(6:11)  = 1.3
+   hgt_ref(12:15) = 0.0
+   hgt_ref(16)    = 0.0
+   hgt_ref(17)    = 0.0
+   !----- Assign the parameters for tropical PFTs depending on the chosen allometry. ------!
+   select case (iallom)
+   case (0:1)
+      !------------------------------------------------------------------------------------!
+      !     Use the original ED allometry, based on an unpublished paper by O'Brien et al. !
+      ! (1999).  There is an older reference from a similar group of authors, but it is    !
+      ! not the allometry used by ED.                                                      !
+      !------------------------------------------------------------------------------------!
+      do ipft=1,n_pft
+         if (is_tropical(ipft)) then
+            !----- Regular log-log fit, b1 is the intercept and b2 is the slope. ----------!
+            b1Ht   (ipft) = 0.37 * log(10.0)
+            b2Ht   (ipft) = 0.64
+            !----- hgt_ref is not used. ---------------------------------------------------!
+            ! hgt_ref(ipft) = 0.0
+         end if
+      end do
+   case (2)
+      !------------------------------------------------------------------------------------!
+      !     Use the allometry proposed by:                                                 !
+      !                                                                                    !
+      ! Poorter, L., L. Bongers, F. Bongers, 2006: Architecture of 54 moist-forest tree    !
+      !    species: traits, trade-offs, and functional groups.  Ecology, 87, 1289-1301.    !
+      !                                                                                    !
+      !------------------------------------------------------------------------------------!
+      do ipft=1,n_pft
+         if (is_tropical(ipft)) then
+            !----- b1Ht is their "a" and b2Ht is their "b". -------------------------------!
+            b1Ht   (ipft) = 0.0352
+            b2Ht   (ipft) = 0.694
+            !----- hgt_ref is their "Hmax". -----------------------------------------------!
+            hgt_ref(ipft) = 61.7
+         end if
+      end do
+   end select
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !    Minimum and maximum height allowed for each cohort.                                !
    !---------------------------------------------------------------------------------------!
    hgt_min(1)     = 0.50
    hgt_min(2:4)   = 0.50
@@ -2392,59 +2482,6 @@ subroutine init_pft_alloc_params()
    hgt_min(15)    = 0.50
    hgt_min(16)    = 0.50
    hgt_min(17)    = 0.50
-   !---------------------------------------------------------------------------------------!
-
-
-
-   !----- Reference height for diameter/height allometry (temperates only). ---------------!
-   hgt_ref(1:5)   = 0.0
-   hgt_ref(6:11)  = 1.3
-   hgt_ref(12:15) = 0.0
-   hgt_ref(16)    = 0.0
-   hgt_ref(17)    = 0.0
-   !---------------------------------------------------------------------------------------!
-
-
-
-   !---------------------------------------------------------------------------------------!
-   !   DBH/height allometry parameters.                                                    !
-   !                                                                                       !
-   !   WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! WARNING!    !
-   !   WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! WARNING!    !
-   !   WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! WARNING!    !
-   !   WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! WARNING!    !
-   !   WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! WARNING!    !
-   !   WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! WARNING!    !
-   !                                                                                       !
-   !   These parameters have different meaning for tropical and temperate PFTs...          !
-   !---------------------------------------------------------------------------------------!
-   !----- DBH-height allometry intercept [m]. ---------------------------------------------!
-   b1Ht(1:4)   = 0.37 * log(10.0)
-   b1Ht(5)     = 0.4778
-   b1Ht(6)     = 27.14
-   b1Ht(7)     = 27.14
-   b1Ht(8)     = 22.79
-   b1Ht(9)     = 22.6799
-   b1Ht(10)    = 25.18
-   b1Ht(11)    = 23.3874
-   b1Ht(12:13) = 0.4778
-   b1Ht(14:15) = 0.37 * log(10.0)
-   b1Ht(16)    = 0.37 * log(10.0)
-   b1Ht(17)    = 0.37 * log(10.0)
-   !----- DBH-height allometry slope [1/cm]. ----------------------------------------------!
-   b2Ht(1:4)   = 0.64
-   b2Ht(5)     = -0.75
-   b2Ht(6)     = -0.03884
-   b2Ht(7)     = -0.03884
-   b2Ht(8)     = -0.04445 
-   b2Ht(9)     = -0.06534
-   b2Ht(10)    = -0.04964
-   b2Ht(11)    = -0.05404
-   b2Ht(12:13) = -0.75
-   b2Ht(14:15) =  0.64
-   b2Ht(16)    =  0.64
-   b2Ht(17)    =  0.64
-
    !----- Maximum Height. -----------------------------------------------------------------!
    hgt_max( 1) = 1.50
    hgt_max( 2) = 35.0
@@ -2463,12 +2500,19 @@ subroutine init_pft_alloc_params()
    hgt_max(15) = 1.50
    hgt_max(16) = 1.50
    hgt_max(17) = 35.0
+   !---------------------------------------------------------------------------------------!
 
-   !----- Maximum DBH. --------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------! 
+   !   MIN_DBH  -- minimum DBH allowed for the PFT.                                        !
+   !   DBH_CRIT -- minimum DBH that brings the PFT to its tallest possible height.         !
+   !---------------------------------------------------------------------------------------!
    do ipft=1,n_pft
-      min_dbh(ipft) = h2dbh(hgt_min(ipft),ipft)
-      max_dbh(ipft) = h2dbh(hgt_max(ipft),ipft)
+      min_dbh (ipft) = h2dbh(hgt_min(ipft),ipft)
+      dbh_crit(ipft) = h2dbh(hgt_max(ipft),ipft)
    end do
+   !---------------------------------------------------------------------------------------!
 
 
    !---------------------------------------------------------------------------------------!
@@ -2501,20 +2545,22 @@ subroutine init_pft_alloc_params()
    b2Bl(14:15) = 0.0
    b2Bl(16)    = 0.0
    b2Bl(17)    = 0.0
+   !---------------------------------------------------------------------------------------!
+
    !------- Fill in the tropical PFTs, which are functions of wood density. ---------------!
    do ipft=1,n_pft
       if (is_tropical(ipft)) then
          select case(iallom)
-         case (0,2:4)
+         case (0,1)
             !---- ED-2.1 allometry. -------------------------------------------------------!
             b1Bl(ipft) = exp(a1 + c1l * b1Ht(ipft) + d1l * log(rho(ipft)))
             aux        = ( (a2l - a1) + b1Ht(ipft) * (c2l - c1l) + log(rho(ipft))          &
-                         * (d2l - d1l)) * (1.0/log(dcrit))
+                       * (d2l - d1l)) * (1.0/log(dcrit))
             b2Bl(ipft) = C2B * b2l + c2l * b2Ht(ipft) + aux
-         case (1)
+         case (2)
             !---- Based on modified Chave et al. (2001) allometry. ------------------------!
-            b1Bl(ipft) = C2B * exp(aleaf(1)) * rho(ipft) / aleaf(3)
-            b2Bl(ipft) = aleaf(2)
+            b1Bl(ipft) = C2B * exp(nleaf(1) + nleaf(3) * log(rho(ipft)))
+            b2Bl(ipft) = nleaf(2)
          end select
       end if
    end do
@@ -2557,8 +2603,8 @@ subroutine init_pft_alloc_params()
    !     The temperate PFTs use the same b1Bs and b2Bs for small and big trees, copy the   !
    ! values.                                                                               !
    !---------------------------------------------------------------------------------------!
-   b1Bs_big(:) = b1Bs_small(:)
-   b2Bs_big(:) = b2Bs_small(:)
+   b1Bs_large(:) = b1Bs_small(:)
+   b2Bs_large(:) = b2Bs_small(:)
    !------- Fill in the tropical PFTs, which are functions of wood density. ---------------!
    do ipft = 1, n_pft
       if (is_tropical(ipft)) then
@@ -2566,7 +2612,7 @@ subroutine init_pft_alloc_params()
          case (0)
             !---- ED-2.1 allometry. -------------------------------------------------------!
             b1Bs_small(ipft) = exp(a1 + c1d * b1Ht(ipft) + d1d * log(rho(ipft)))
-            b1Bs_big  (ipft) = exp(a1 + c1d * log(hgt_max(ipft)) + d1d * log(rho(ipft)))
+            b1Bs_large(ipft) = exp(a1 + c1d * log(hgt_max(ipft)) + d1d * log(rho(ipft)))
 
             aux              = ( (a2d - a1) + b1Ht(ipft) * (c2d - c1d) + log(rho(ipft))    &
                                * (d2d - d1d)) * (1.0/log(dcrit))
@@ -2574,27 +2620,38 @@ subroutine init_pft_alloc_params()
 
             aux              = ( (a2d - a1) + log(hgt_max(ipft)) * (c2d - c1d)             &
                                + log(rho(ipft)) * (d2d - d1d)) * (1.0/log(dcrit))
-            b2Bs_big  (ipft) = C2B * b2d + aux
+            b2Bs_large(ipft) = C2B * b2d + aux
 
          case (1)
             !---- Based on modified Chave et al. (2001) allometry. ------------------------!
-            b1Bs_small(ipft) = C2B * exp(adead_small(1)) * rho(ipft) / adead_small(3)
-            b2Bs_small(ipft) = adead_small(2)
-            b1Bs_big(ipft)   = C2B * exp(adead_big(1))   * rho(ipft) / adead_big(3)
-            b2Bs_big(ipft)   = adead_big(2)
+            b1Bs_small(ipft) = C2B * exp(odead_small(1)) * rho(ipft) / odead_small(3)
+            b2Bs_small(ipft) = odead_small(2)
+            b1Bs_large(ipft) = C2B * exp(odead_large(1)) * rho(ipft) / odead_large(3)
+            b2Bs_large(ipft) = odead_large(2)
 
-         case (2:4)
+         case (2)
             !---- Based an alternative modification of Chave et al. (2001) allometry. -----!
-            b1Bs_small(ipft) = C2B * exp(zdead_small(1)) * rho(ipft) / zdead_small(3)
-            b2Bs_small(ipft) = zdead_small(2)
-            b1Bs_big(ipft)   = C2B * exp(zdead_big(1))   * rho(ipft) / zdead_big(3)
-            b2Bs_big(ipft)   = zdead_big(2)
+            b1Bs_small(ipft) = C2B * exp(ndead_small(1) + ndead_small(3) * log(rho(ipft)))
+            b2Bs_small(ipft) = ndead_small(2)
+            b1Bs_large(ipft) = C2B * exp(ndead_large(1) + ndead_large(3) * log(rho(ipft)))
+            b2Bs_large(ipft) = ndead_large(2)
 
          end select
       end if
+      !------------------------------------------------------------------------------------!
 
-      !----- Assigned for both cases, although it is really only needed for tropical. -----!
-      bdead_crit(ipft) = dbh2bd(max_dbh(ipft),ipft)
+
+
+      !------------------------------------------------------------------------------------!
+      ! -- MIN_BDEAD is the minimum structural biomass possible.  This is used in the      !
+      !    initialisation only, to prevent cohorts to be less than the minimum size due to !
+      !    change in allometry.                                                            !
+      ! -- BDEAD_CRIT corresponds to BDEAD when DBH is exactly at DBH_CRIT.  This is       !
+      !    used to determine which b1Bs/b2Bs pair to use.                                  !
+      !------------------------------------------------------------------------------------!
+      min_bdead (ipft) = dbh2bd(min_dbh (ipft),ipft)
+      bdead_crit(ipft) = dbh2bd(dbh_crit(ipft),ipft)
+      !------------------------------------------------------------------------------------!
    end do
    !---------------------------------------------------------------------------------------!
 
@@ -2614,6 +2671,25 @@ subroutine init_pft_alloc_params()
    b2Ca(1:4)   = b2Ht(1:4) * 1.888
    b2Ca(5:13)  = 0.8068806
    b2Ca(14:17) = b2Ht(14:17) * 1.888
+   !------ Allometric coefficents. --------------------------------------------------------!
+   select case (iallom)
+   case (0,1)
+      !----- Original ED-2.1 --------------------------------------------------------------!
+      do ipft=1,n_pft
+         if (is_tropical(ipft)) then
+            b1Ca(ipft) = exp(-1.853) * exp(b1Ht(ipft)) ** 1.888
+            b2Ca(ipft) = b2Ht(ipft) * 1.888
+         end if
+      end do
+   case (2)
+      !----- Fitted values obtained using Poorter h->DBH to obtain function of DBH. -------!
+      do ipft=1,n_pft
+         if (is_tropical(ipft)) then
+            b1Ca(ipft) = exp(ncrown_area(1))
+            b2Ca(ipft) = ncrown_area(2)
+         end if
+      end do
+   end select
    !---------------------------------------------------------------------------------------!
 
 
@@ -2681,7 +2757,7 @@ subroutine init_pft_alloc_params()
    b2Vol(1:17)  = 2.0
 
    select case (iallom)
-   case (0:2)
+   case (0)
       b1Rd(1)     = - 0.700
       b1Rd(2:4)   = - exp(0.545 * log(10.))
       b1Rd(5)     = - 0.700
@@ -2695,17 +2771,7 @@ subroutine init_pft_alloc_params()
       b2Rd(6:11)  = 0.277
       b2Rd(12:16) = 0.000
       b2Rd(17)    = 0.277
-   case (3)
-      !------------------------------------------------------------------------------------!
-      !     Based on Kenzo et al. (2009), but we had to apply some correction to make it   !
-      ! dependent on DBH rather than Diameter at 0m.                                       !
-      ! Source: Kenzo, T., and co-authors: 2009.  Development of allometric relationships  !
-      !            for accurate estimation of above- and below-ground biomass in tropical  !
-      !            secondary forests in Sarawak, Malaysia. J. Trop. Ecology, 25, 371-386.  !
-      !------------------------------------------------------------------------------------!
-      b1Rd(1:17)  = -0.2185333
-      b2Rd(1:17)  =  0.5436442
-   case (4)
+   case (1:2)
       !------------------------------------------------------------------------------------!
       !     This is just a test, not based on any paper.  This is simply a fit that would  !
       ! put the roots 0.5m deep for plants 0.15m-tall and 5 m for plants 35-m tall.        !
@@ -2717,22 +2783,24 @@ subroutine init_pft_alloc_params()
 
    if (write_allom) then
       open (unit=18,file=trim(allom_file),status='replace',action='write')
-      write(unit=18,fmt='(209a)') ('-',n=1,209)
-      write(unit=18,fmt='(18(1x,a))') '         PFT','    Tropical','         Rho'         &
-                                     ,'        b1Ht','        b2Ht','        b1Bl'         &
-                                     ,'        b2Bl','  b1Bs_Small','  b2Bs_Small'         &
-                                     ,'    b1Bs_Big','    b1Bs_Big','        b1Bl'         &
-                                     ,'        b2Bl','     Hgt_min','     Hgt_max'         &
-                                     ,'     Min_DBH','     Max_DBH','   Bdead_CRT'
-      write(unit=18,fmt='(209a)') ('-',n=1,209)
+      write(unit=18,fmt='(260a)') ('-',n=1,260)
+      write(unit=18,fmt='(20(1x,a))') '         PFT','    Tropical','       Grass'         &
+                                     ,'         Rho','        b1Ht','        b2Ht'         &
+                                     ,'     Hgt_ref','        b1Bl','        b2Bl'         &
+                                     ,'  b1Bs_Small','  b2Bs_Small','  b1Bs_Large'         &
+                                     ,'  b1Bs_Large','        b1Ca','        b2Ca'         &
+                                     ,'     Hgt_min','     Hgt_max','     Min_DBH'         &
+                                     ,'    DBH_Crit','  Bdead_Crit'
+      write(unit=18,fmt='(260a)') ('-',n=1,260)
       do ipft=1,n_pft
-         write (unit=18,fmt='(8x,i5,12x,l1,16(1x,es12.5))')                                &
-                        ipft,is_tropical(ipft),rho(ipft),b1Ht(ipft),b2Ht(ipft),b1Bl(ipft)  &
-                       ,b2Bl(ipft),b1Bs_small(ipft),b2Bs_small(ipft),b1Bs_big(ipft)        &
-                       ,b2Bs_big(ipft),b1Ca(ipft),b2Ca(ipft),hgt_min(ipft),hgt_max(ipft)   &
-                       ,min_dbh(ipft),max_dbh(ipft),bdead_crit(ipft)
+         write (unit=18,fmt='(8x,i5,2(12x,l1),17(1x,es12.5))')                             &
+                        ipft,is_tropical(ipft),is_grass(ipft),rho(ipft),b1Ht(ipft)         &
+                       ,b2Ht(ipft),hgt_ref(ipft),b1Bl(ipft),b2Bl(ipft),b1Bs_small(ipft)    &
+                       ,b2Bs_small(ipft),b1Bs_large(ipft),b2Bs_large(ipft),b1Ca(ipft)      &
+                       ,b2Ca(ipft),hgt_min(ipft),hgt_max(ipft),min_dbh(ipft)               &
+                       ,dbh_crit(ipft),bdead_crit(ipft)
       end do
-      write(unit=18,fmt='(209a)') ('-',n=1,209)
+      write(unit=18,fmt='(260a)') ('-',n=1,260)
       close(unit=18,status='keep')
    end if
 
@@ -2921,14 +2989,19 @@ subroutine init_pft_repro_params()
 
    seed_rain(1:17)         = 0.01
 
-   nonlocal_dispersal(1:5) = 1.0
-   nonlocal_dispersal(6:7) = 0.766
-   nonlocal_dispersal(8)   = 0.001
-   nonlocal_dispersal(9)   = 1.0
-   nonlocal_dispersal(10)  = 0.325
-   nonlocal_dispersal(11)  = 0.074
-   nonlocal_dispersal(16)  = 1.0
-   nonlocal_dispersal(17)  = 0.766
+   nonlocal_dispersal(1)   =  1.000 ! 1.000
+   nonlocal_dispersal(2)   =  1.000 ! 0.900
+   nonlocal_dispersal(3)   =  1.000 ! 0.550
+   nonlocal_dispersal(4)   =  1.000 ! 0.200
+   nonlocal_dispersal(5)   =  1.000 ! 1.000
+   nonlocal_dispersal(6)   =  0.766 ! 0.766
+   nonlocal_dispersal(7)   =  0.766 ! 0.766
+   nonlocal_dispersal(8)   =  0.001 ! 0.001
+   nonlocal_dispersal(9)   =  1.000 ! 1.000
+   nonlocal_dispersal(10)  =  0.325 ! 0.325
+   nonlocal_dispersal(11)  =  0.074 ! 0.074
+   nonlocal_dispersal(16)  =  1.000 ! 1.000
+   nonlocal_dispersal(17)  =  0.766 ! 0.600
 
    repro_min_h(1)          = 0.0
    repro_min_h(2:4)        = 5.0
@@ -2971,15 +3044,13 @@ subroutine init_pft_derived_params()
                                    , sla                  & ! intent(in)
                                    , pft_name16           & ! intent(in)
                                    , hgt_max              & ! intent(in)
-                                   , max_dbh              & ! intent(in)
+                                   , dbh_crit             & ! intent(in)
                                    , min_recruit_size     & ! intent(out)
                                    , min_cohort_size      & ! intent(out)
                                    , negligible_nplant    & ! intent(out)
                                    , c2n_recruit          & ! intent(out)
-                                   , lai_min              & ! intent(out)
-                                   , Dext                 ! ! intent(out)
+                                   , lai_min              ! ! intent(out)
    use phenology_coms       , only : elongf_min           ! ! intent(in)
-   use physiology_coms      , only : d0_decay             ! ! intent(in)
    use allometry            , only : h2dbh                & ! function
                                    , dbh2h                & ! function
                                    , dbh2bl               & ! function
@@ -3017,7 +3088,7 @@ subroutine init_pft_derived_params()
                                               ,'   INIT_DENS','MIN_REC_SIZE'               &
                                               ,'MIN_COH_SIZE',' NEGL_NPLANT'               &
                                               ,'         SLA','     LAI_MIN'               &
-                                              ,'     HGT_MAX','     MAX_DBH'
+                                              ,'     HGT_MAX','    DBH_CRIT'
    end if
    min_plant_dens = onesixth * minval(init_density)
    do ipft = 1,n_pft
@@ -3033,8 +3104,8 @@ subroutine init_pft_derived_params()
       ! nplant so we ensure that the cohort is always terminated if its mortality rate is  !
       ! very high.                                                                         !
       !------------------------------------------------------------------------------------!
-      huge_dbh    = 3. * max_dbh(ipft)
-      huge_height = dbh2h(ipft, max_dbh(ipft))
+      huge_dbh    = 3. * dbh_crit(ipft)
+      huge_height = dbh2h(ipft, dbh_crit(ipft))
       bleaf_max   = dbh2bl(huge_dbh,ipft)
       bdead_max   = dbh2bd(huge_dbh,ipft)
       balive_max  = bleaf_max * (1.0 + q(ipft) + qsw(ipft) * huge_height)
@@ -3085,7 +3156,7 @@ subroutine init_pft_derived_params()
       !     The minimum LAI is the LAI of a plant at the minimum cohort size that is at    !
       ! approaching the minimum elongation factor that supports leaves.                                !
       !------------------------------------------------------------------------------------!
-      lai_min(ipft) = 1.e-4
+      lai_min(ipft) = 1.e-3
       !lai_min(ipft) = min(1.e-4,min_plant_dens * sla(ipft) * bleaf_min * (5. * elongf_min))
       !------------------------------------------------------------------------------------!
 
@@ -3100,15 +3171,9 @@ subroutine init_pft_derived_params()
                                                     ,min_cohort_size(ipft)                 &
                                                     ,negligible_nplant(ipft)               &
                                                     ,sla(ipft),lai_min(ipft)               &
-                                                    ,hgt_max(ipft),max_dbh(ipft)
+                                                    ,hgt_max(ipft),dbh_crit(ipft)
       end if
       !------------------------------------------------------------------------------------!
-
-
-      !------------------------------------------------------------------------------------!
-      !    Dext is the decay coefficient for D0 when H2O_PLANT_LIM is set to 3.            !
-      !------------------------------------------------------------------------------------!
-      Dext(ipft) = D0_decay / q(ipft)
    end do
 
    if (print_zero_table) then
@@ -3144,6 +3209,8 @@ subroutine init_disturb_params
                            , max_plantation_dist      ! ! intent(out)
    use consts_coms  , only : erad                     & ! intent(in)
                            , pio180                   ! ! intent(in)
+   use soil_coms    , only : slz                      ! ! intent(in)
+   use grid_coms    , only : nzg                      ! ! intent(in)
    implicit none
    
    !----- Minimum area that a patch must have to be created. ------------------------------!
@@ -3172,12 +3239,24 @@ subroutine init_disturb_params
    ! converted to meters falls below this threshold.                                       !
    !---------------------------------------------------------------------------------------!
    fire_dryness_threshold = 0.2
+   !---------------------------------------------------------------------------------------!
 
    !----- Maximum depth that will be considered in the average soil -----------------------!
    fire_smoist_depth     = -1.0
+   !---------------------------------------------------------------------------------------!
 
    !----- Dimensionless parameter controlling speed of fire spread. -----------------------!
    fire_parameter = 1.0
+   !---------------------------------------------------------------------------------------!
+
+   !----- Determine the top layer to consider for fires in case include_fire is 2. --------!
+   kfireloop: do k_fire_first=nzg-1,1,-1
+     if (slz(k_fire_first) < fire_smoist_depth) exit kfireloop
+   end do kfireloop
+   k_fire_first = k_fire_first + 1
+   !---------------------------------------------------------------------------------------!
+
+
 
    !----- Minimum plantation fraction to consider the site a plantation. ------------------!
    min_plantation_frac = 0.125
@@ -3620,6 +3699,7 @@ subroutine init_soil_coms
    use disturb_coms   , only : sm_fire               ! ! intent(in)
    use grid_coms      , only : ngrids                ! ! intent(in)
    use consts_coms    , only : grav                  & ! intent(in)
+                             , wdns                  & ! intent(in)
                              , hr_sec                & ! intent(in)
                              , day_sec               ! ! intent(in)
 
@@ -3672,7 +3752,7 @@ subroutine init_soil_coms
    ! (2nd line)          soilwp        slcons       slcons0 soilcond0     soilcond1        !
    ! (3rd line)       soilcond2       sfldcap        albwet    albdry         xsand        !
    ! (4th line)           xclay         xsilt       xrobulk     slden        soilld        !
-   ! (5th line)          soilfr                                                            !
+   ! (5th line)          soilfr       slpotwp       slpotfc   slpotld                      !
    !---------------------------------------------------------------------------------------!
    soil = (/                                                                               &
       !----- 1. Sand. ---------------------------------------------------------------------!
@@ -3680,103 +3760,103 @@ subroutine init_soil_coms
                  ,  0.032636854,  2.446421e-5,  0.000500000,   0.3000,       4.8000        &
                  ,      -2.7000,  0.132130936,        0.229,    0.352,        0.920        &
                  ,        0.030,        0.050,        1200.,    1600.,        0.000        &
-                 ,        0.000                                                    )       &
+                 ,        0.000,        0.000,        0.000,    0.000              )       &
       !----- 2. Loamy sand. ---------------------------------------------------------------!
       ,soil_class( -0.067406224,     0.385630,     3.794500, 1584809.,  0.041560499        &
                  ,  0.050323046,  1.776770e-5,  0.000600000,   0.3000,       4.6600        &
                  ,      -2.6000,  0.155181959,        0.212,    0.335,        0.825        &
                  ,        0.060,        0.115,        1250.,    1600.,        0.000        &
-                 ,        0.000                                                    )       &
+                 ,        0.000,        0.000,        0.000,    0.000              )       &
       !----- 3. Sandy loam. ---------------------------------------------------------------!
       ,soil_class( -0.114261521,     0.407210,     4.629000, 1587042.,  0.073495043        &
                  ,  0.085973722,  1.022660e-5,  0.000769000,   0.2900,       4.2700        &
                  ,      -2.3100,  0.194037750,        0.183,    0.307,        0.660        &
                  ,        0.110,        0.230,        1300.,    1600.,        0.000        &
-                 ,        0.000                                                    )       &
+                 ,        0.000,        0.000,        0.000,    0.000              )       &
       !----- 4. Silt loam. ----------------------------------------------------------------!
       ,soil_class( -0.566500112,     0.470680,     5.552000, 1568225.,  0.150665475        &
                  ,  0.171711257,  2.501101e-6,  0.000010600,   0.2700,       3.4700        &
                  ,      -1.7400,  0.273082063,        0.107,    0.250,        0.200        &
                  ,        0.160,        0.640,        1400.,    1600.,        0.000        &
-                 ,        0.000                                                    )       &
+                 ,        0.000,        0.000,        0.000,    0.000              )       &
       !----- 5. Loam. ---------------------------------------------------------------------!
       ,soil_class( -0.260075834,     0.440490,     5.646000, 1588082.,  0.125192234        &
                  ,  0.142369513,  4.532431e-6,  0.002200000,   0.2800,       3.6300        &
                  ,      -1.8500,  0.246915025,        0.140,    0.268,        0.410        &
                  ,        0.170,        0.420,        1350.,    1600.,        0.000        &
-                 ,        0.000                                                    )       &
+                 ,        0.000,        0.000,        0.000,    0.000              )       &
       !----- 6. Sandy clay loam. ----------------------------------------------------------!
       ,soil_class( -0.116869181,     0.411230,     7.162000, 1636224.,  0.136417267        &
                  ,  0.150969505,  6.593731e-6,  0.001500000,   0.2800,       3.7800        &
                  ,      -1.9600,  0.249629687,        0.163,    0.260,        0.590        &
                  ,        0.270,        0.140,        1350.,    1600.,        0.000        &
-                 ,        0.000                                                    )       &
+                 ,        0.000,        0.000,        0.000,    0.000              )       &
       !----- 7. Silty clay loam. ----------------------------------------------------------!
       ,soil_class( -0.627769194,     0.478220,     8.408000, 1621562.,  0.228171947        &
                  ,  0.248747504,  1.435262e-6,  0.000107000,   0.2600,       2.7300        &
                  ,      -1.2000,  0.333825332,        0.081,    0.195,        0.100        &
                  ,        0.340,        0.560,        1500.,    1600.,        0.000        &
-                 ,        0.000                                                    )       &
+                 ,        0.000,        0.000,        0.000,    0.000              )       &
       !----- 8. Clayey loam. --------------------------------------------------------------!
       ,soil_class( -0.281968114,     0.446980,     8.342000, 1636911.,  0.192624431        &
                  ,  0.210137962,  2.717260e-6,  0.002200000,   0.2700,       3.2300        &
                  ,      -1.5600,  0.301335491,        0.116,    0.216,        0.320        &
                  ,        0.340,        0.340,        1450.,    1600.,        0.000        &
-                 ,        0.000                                                    )       &
+                 ,        0.000,        0.000,        0.000,    0.000              )       &
       !----- 9. Sandy clay. ---------------------------------------------------------------!
       ,soil_class( -0.121283019,     0.415620,     9.538000, 1673422.,  0.182198910        &
                  ,  0.196607427,  4.314507e-6,  0.000002167,   0.2700,       3.3200        &
                  ,      -1.6300,  0.286363001,        0.144,    0.216,        0.520        &
                  ,        0.420,        0.060,        1450.,    1600.,        0.000        &
-                 ,        0.000                                                    )       &
+                 ,        0.000,        0.000,        0.000,    0.000              )       &
       !----- 10. Silty clay. --------------------------------------------------------------!
       ,soil_class( -0.601312179,     0.479090,    10.461000, 1652723.,  0.263228486        &
                  ,  0.282143846,  1.055191e-6,  0.000001033,   0.2500,       2.5800        &
                  ,      -1.0900,  0.360319788,        0.068,    0.159,        0.060        &
                  ,        0.470,        0.470,        1650.,    1600.,        0.000        &
-                 ,        0.000                                                    )       &
+                 ,        0.000,        0.000,        0.000,    0.000              )       &
       !----- 11. Clay. --------------------------------------------------------------------!
       ,soil_class( -0.299226464,     0.454400,    12.460000, 1692037.,  0.259868987        &
                  ,  0.275459057,  1.307770e-6,  0.000001283,   0.2500,       2.4000        &
                  ,      -0.9600,  0.353255209,        0.083,    0.140,        0.200        &
                  ,        0.600,        0.200,        1700.,    1600.,        0.000        &
-                 ,        0.000                                                    )       &
+                 ,        0.000,        0.000,        0.000,    0.000              )       &
       !----- 12. Peat. --------------------------------------------------------------------!
       ,soil_class( -0.534564359,     0.469200,     6.180000,  874000.,  0.167047523        &
                  ,  0.187868805,  2.357930e-6,  0.000008000,   0.0600,       0.4600        &
                  ,       0.0000,  0.285709966,        0.070,    0.140,       0.2000        &
                  ,       0.2000,       0.6000,         500.,     300.,        0.000        &
-                 ,        0.000                                                    )       &
+                 ,        0.000,        0.000,        0.000,    0.000              )       &
       !----- 13. Bedrock. -----------------------------------------------------------------!
       ,soil_class(    0.0000000,     0.000000,     0.000000, 2130000.,  0.000000000        &
                  ,  0.000000000,  0.000000e+0,  0.000000000,   4.6000,       0.0000        &
                  ,       0.0000,  0.000000001,        0.320,    0.320,       0.0000        &
                  ,       0.0000,       0.0000,           0.,       0.,        0.000        &
-                 ,        0.000                                                    )       &
+                 ,        0.000,        0.000,        0.000,    0.000              )       &
       !----- 14. Silt. --------------------------------------------------------------------!
       ,soil_class( -1.047128548,     0.492500,     3.862500, 1510052.,  0.112299080        &
                  ,  0.135518820,  2.046592e-6,  0.000010600,   0.2700,       3.4700        &
                  ,      -1.7400,  0.245247642,        0.092,    0.265,        0.075        &
                  ,        0.050,        0.875,        1400.,    1600.,        0.000        &
-                 ,        0.000                                                    )       &
+                 ,        0.000,        0.000,        0.000,    0.000              )       &
       !----- 15. Heavy clay. --------------------------------------------------------------!
       ,soil_class( -0.322106879,     0.461200,    15.630000, 1723619.,  0.296806035        &
                  ,  0.310916364,  7.286705e-7,  0.000001283,   0.2500,       2.4000        &
                  ,      -0.9600,  0.382110712,        0.056,    0.080,        0.100        &
                  ,        0.800,        0.100,        1700.,    1600.,        0.000        &
-                 ,        0.000                                                    )       &
+                 ,        0.000,        0.000,        0.000,    0.000              )       &
       !----- 16. Clayey sand. -------------------------------------------------------------!
       ,soil_class( -0.176502150,     0.432325,    11.230000, 1688353.,  0.221886929        &
                  ,  0.236704039,  2.426785e-6,  0.000001283,   0.2500,       2.4000        &
                  ,      -0.9600,  0.320146708,        0.115,    0.175,        0.375        &
                  ,        0.525,        0.100,        1700.,    1600.,        0.000        &
-                 ,        0.000                                                    )       &
+                 ,        0.000,        0.000,        0.000,    0.000              )       &
       !----- 17. Clayey silt. -------------------------------------------------------------!
       ,soil_class( -0.438278332,     0.467825,    11.305000, 1670103.,  0.261376708        &
                  ,  0.278711303,  1.174982e-6,  0.000001283,   0.2500,       2.4000        &
                  ,      -0.9600,  0.357014719,        0.075,    0.151,        0.125        &
                  ,        0.525,        0.350,        1700.,    1600.,        0.000        &
-                 ,        0.000                                                    )       &
+                 ,        0.000,        0.000,        0.000,    0.000              )       &
    /)
    !---------------------------------------------------------------------------------------!
 
@@ -3809,15 +3889,15 @@ subroutine init_soil_coms
          soil(nslcon)%slmsts  = (50.5 - 14.2*slxsand - 3.7*slxclay) / 100.
          !----- Soil field capacity[ m^3/m^3 ]. -------------------------------------------!
          soil(nslcon)%sfldcap = soil(nslcon)%slmsts                                        &
-                              *  ( (fieldcp_K/1000./day_sec)/soil(nslcon)%slcons)          &
+                              *  ( (fieldcp_K/wdns/day_sec)/soil(nslcon)%slcons)           &
                               ** (1. / (2.*soil(nslcon)%slbs+3.))
          !----- Dry soil capacity (at -3.1MPa) [ m^3/m^3 ]. -------------------------------!
          soil(nslcon)%soilcp  = soil(nslcon)%slmsts                                        &
-                              *  ( soil(nslcon)%slpots / (soilcp_MPa * 1000. / grav))      &
+                              *  ( soil(nslcon)%slpots / (soilcp_MPa * wdns / grav))       &
                               ** (1. / soil(nslcon)%slbs)
          !----- Wilting point capacity (at -1.5MPa) [ m^3/m^3 ]. --------------------------!
          soil(nslcon)%soilwp  = soil(nslcon)%slmsts                                        &
-                              *  ( soil(nslcon)%slpots / (soilwp_MPa * 1000. / grav))      &
+                              *  ( soil(nslcon)%slpots / (soilwp_MPa * wdns / grav))       &
                               ** ( 1. / soil(nslcon)%slbs)
          !---------------------------------------------------------------------------------!
 
@@ -3889,13 +3969,23 @@ subroutine init_soil_coms
    !           number (or 0), then the soil moisture is a fraction above dry air soil.  If !
    !           it is negative, the value is the potential in MPa.  This is not done for    !
    !           bedrock because it doesn't make sense.                                      !
+   !                                                                                       !
+   !     And find these two remaining properties:                                          !
+   ! SLPOTWP -- Soil potential at wilting point                                            !
+   ! SLPOTFC -- Soil potential at field capacity                                           !
+   ! SLPOTLD -- Soil potential at leaf drop critical soil moisture                         !
    !---------------------------------------------------------------------------------------!
    do nsoil=1,ed_nstyp
       select case (nsoil)
       case (13)
-         soil(nsoil)%soilld = 0.0
-         soil(nsoil)%soilfr = 0.0
+         soil(nsoil)%soilld  = 0.0
+         soil(nsoil)%soilfr  = 0.0
+         soil(nsoil)%slpotwp = 0.0
+         soil(nsoil)%slpotfc = 0.0
       case default
+         !---------------------------------------------------------------------------------!
+         !  Critical point for leaf drop.                                                  !
+         !---------------------------------------------------------------------------------!
          if (thetacrit >= 0.0) then
             !----- Soil moisture fraction. ------------------------------------------------!
             soil(nsoil)%soilld = soil(nsoil)%soilwp                                        &
@@ -3906,7 +3996,13 @@ subroutine init_soil_coms
                                *  ( soil(nsoil)%slpots / (thetacrit * 1000. / grav))       &
                                ** ( 1. / soil(nsoil)%slbs)
          end if
+         !---------------------------------------------------------------------------------!
 
+
+
+         !---------------------------------------------------------------------------------!
+         !  Critical point for fire.                                                       !
+         !---------------------------------------------------------------------------------!
          if (sm_fire >= 0.0) then
             !----- Soil moisture fraction. ------------------------------------------------!
             soil(nsoil)%soilfr = soil(nsoil)%soilcp                                        &
@@ -3917,6 +4013,24 @@ subroutine init_soil_coms
                                *  ( soil(nsoil)%slpots / (sm_fire * 1000. / grav))         &
                                ** ( 1. / soil(nsoil)%slbs)
          end if
+         !---------------------------------------------------------------------------------!
+
+
+
+         !---------------------------------------------------------------------------------!
+         !  Soil potential at wilting point and field capacity.                            !
+         !---------------------------------------------------------------------------------!
+         soil(nsoil)%slpotwp = soil(nsoil)%slpots                                          &
+                             / (soil(nsoil)%soilwp  / soil(nsoil)%slmsts)                  &
+                             ** soil(nsoil)%slbs
+         soil(nsoil)%slpotfc = soil(nsoil)%slpots                                          &
+                             / (soil(nsoil)%sfldcap / soil(nsoil)%slmsts)                  &
+                             ** soil(nsoil)%slbs
+         soil(nsoil)%slpotld = soil(nsoil)%slpots                                          &
+                             / (soil(nsoil)%soilld  / soil(nsoil)%slmsts)                  &
+                             ** soil(nsoil)%slbs
+         !---------------------------------------------------------------------------------!
+
       end select
    end do
    !---------------------------------------------------------------------------------------!
@@ -3981,6 +4095,9 @@ subroutine init_soil_coms
       soil8(nsoil)%slden     = dble(soil(nsoil)%slden    )
       soil8(nsoil)%soilld    = dble(soil(nsoil)%soilld   )
       soil8(nsoil)%soilfr    = dble(soil(nsoil)%soilfr   )
+      soil8(nsoil)%slpotwp   = dble(soil(nsoil)%slpotwp  )
+      soil8(nsoil)%slpotfc   = dble(soil(nsoil)%slpotfc  )
+      soil8(nsoil)%slpotld   = dble(soil(nsoil)%slpotld  )
    end do
    soil_rough8 = dble(soil_rough)
    snow_rough8 = dble(snow_rough)

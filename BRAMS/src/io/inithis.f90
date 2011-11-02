@@ -29,15 +29,18 @@ subroutine inithis()
    use ref_sounding
    use io_params
    use mem_scratch
-   use mem_aerad , only : nwave
-   use grid_dims , only : maxgrds
-   use mem_cuparm, only : nclouds,nnqparm
-   use therm_lib , only : virtt,vapour_on
+   use mem_aerad , only : nwave     ! ! intent(in)
+   use grid_dims , only : maxgrds   & ! intent(in)
+                        , str_len   ! ! intent(in)
+   use mem_cuparm, only : nclouds   & ! intent(in)
+                        , nnqparm   ! ! intent(in)
+   use therm_lib , only : virtt     & ! intent(in)
+                        , vapour_on ! ! intent(in)
 
    implicit none
 
    !----- Local variables -----------------------------------------------------------------!
-   character (len=256)                                  :: hnamel, hnamelh
+   character (len=str_len)                              :: hnamel, hnamelh
    character (len=2)                                    :: cng
    integer                                              :: ngrids1,ioutput1,nzg1,nzs1
    integer                                              :: npatch1,nclouds1

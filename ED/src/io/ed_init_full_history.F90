@@ -654,12 +654,32 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
      call hdf_getslab_r(cgrid%dmean_vapor_ac       (ipy:ipy) ,'DMEAN_VAPOR_AC        '     &
                        ,dsetrank,iparallel,.false.)                                        
 
+  if (associated(cgrid%dmean_ustar          ))                                             &
+     call hdf_getslab_r(cgrid%dmean_ustar          (ipy:ipy) ,'DMEAN_USTAR           '     &
+                       ,dsetrank,iparallel,.false.)                                        
+
+  if (associated(cgrid%dmean_tstar          ))                                             &
+     call hdf_getslab_r(cgrid%dmean_tstar          (ipy:ipy) ,'DMEAN_TSTAR           '     &
+                       ,dsetrank,iparallel,.false.)                                        
+
+  if (associated(cgrid%dmean_qstar          ))                                             &
+     call hdf_getslab_r(cgrid%dmean_qstar          (ipy:ipy) ,'DMEAN_QSTAR           '     &
+                       ,dsetrank,iparallel,.false.)                                        
+
+  if (associated(cgrid%dmean_cstar          ))                                             &
+     call hdf_getslab_r(cgrid%dmean_cstar          (ipy:ipy) ,'DMEAN_CSTAR           '     &
+                       ,dsetrank,iparallel,.false.)                                        
+
   if (associated(cgrid%dmean_nep            ))                                             &
      call hdf_getslab_r(cgrid%dmean_nep            (ipy:ipy) ,'DMEAN_NEP             '     &
                        ,dsetrank,iparallel,.false.)                                        
 
-  if (associated(cgrid%dmean_nee            ))                                             &
-     call hdf_getslab_r(cgrid%dmean_nee            (ipy:ipy) ,'DMEAN_NEE             '     &
+  if (associated(cgrid%dmean_carbon_ac      ))                                             &
+     call hdf_getslab_r(cgrid%dmean_carbon_ac      (ipy:ipy) ,'DMEAN_CARBON_AC       '     &
+                       ,dsetrank,iparallel,.false.)                                        
+
+  if (associated(cgrid%dmean_carbon_st      ))                                             &
+     call hdf_getslab_r(cgrid%dmean_carbon_st      (ipy:ipy) ,'DMEAN_CARBON_ST       '     &
                        ,dsetrank,iparallel,.false.)                                        
 
   if (associated(cgrid%dmean_plresp         ))                                             &
@@ -911,8 +931,28 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
      call hdf_getslab_r(cgrid%mmean_nep            (ipy:ipy) ,'MMEAN_NEP             '     &
                        ,dsetrank,iparallel,.false.)
  
-  if (associated(cgrid%mmean_nee            ))                                             &
-     call hdf_getslab_r(cgrid%mmean_nee            (ipy:ipy) ,'MMEAN_NEE             '     &
+  if (associated(cgrid%mmean_ustar          ))                                             &
+     call hdf_getslab_r(cgrid%mmean_ustar          (ipy:ipy) ,'MMEAN_USTAR           '     &
+                       ,dsetrank,iparallel,.false.)
+ 
+  if (associated(cgrid%mmean_tstar          ))                                             &
+     call hdf_getslab_r(cgrid%mmean_tstar          (ipy:ipy) ,'MMEAN_TSTAR           '     &
+                       ,dsetrank,iparallel,.false.)
+ 
+  if (associated(cgrid%mmean_qstar          ))                                             &
+     call hdf_getslab_r(cgrid%mmean_qstar          (ipy:ipy) ,'MMEAN_QSTAR           '     &
+                       ,dsetrank,iparallel,.false.)
+ 
+  if (associated(cgrid%mmean_cstar          ))                                             &
+     call hdf_getslab_r(cgrid%mmean_cstar          (ipy:ipy) ,'MMEAN_CSTAR           '     &
+                       ,dsetrank,iparallel,.false.)
+ 
+  if (associated(cgrid%mmean_carbon_ac      ))                                             &
+     call hdf_getslab_r(cgrid%mmean_carbon_ac      (ipy:ipy) ,'MMEAN_CARBON_AC       '     &
+                       ,dsetrank,iparallel,.false.)
+ 
+  if (associated(cgrid%mmean_carbon_st      ))                                             &
+     call hdf_getslab_r(cgrid%mmean_carbon_st      (ipy:ipy) ,'MMEAN_CARBON_ST       '     &
                        ,dsetrank,iparallel,.false.)
  
   if (associated(cgrid%mmean_plresp         ))                                             &
@@ -1091,8 +1131,12 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
      call hdf_getslab_r(cgrid%mmsqu_plresp      (ipy:ipy) ,'MMSQU_PLRESP             '     &
                        ,dsetrank,iparallel,.false.)
 
-  if (associated(cgrid%mmsqu_nee          ))                                               &
-     call hdf_getslab_r(cgrid%mmsqu_nee         (ipy:ipy) ,'MMSQU_NEE                '     &
+  if (associated(cgrid%mmsqu_carbon_ac    ))                                               &
+     call hdf_getslab_r(cgrid%mmsqu_carbon_ac   (ipy:ipy) ,'MMSQU_CARBON_AC          '     &
+                       ,dsetrank,iparallel,.false.)
+
+  if (associated(cgrid%mmsqu_carbon_st    ))                                               &
+     call hdf_getslab_r(cgrid%mmsqu_carbon_st   (ipy:ipy) ,'MMSQU_CARBON_ST          '     &
                        ,dsetrank,iparallel,.false.)
 
   if (associated(cgrid%mmsqu_nep          ))                                               &
@@ -1266,12 +1310,32 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
      call hdf_getslab_r(cgrid%qmean_vapor_ac       (:,ipy)   ,'QMEAN_VAPOR_AC        '     &
                        ,dsetrank,iparallel,.false.)                                        
 
+  if (associated(cgrid%qmean_ustar          ))                                             &
+     call hdf_getslab_r(cgrid%qmean_ustar          (:,ipy)   ,'QMEAN_USTAR           '     &
+                       ,dsetrank,iparallel,.false.)                                        
+
+  if (associated(cgrid%qmean_tstar          ))                                             &
+     call hdf_getslab_r(cgrid%qmean_tstar          (:,ipy)   ,'QMEAN_TSTAR           '     &
+                       ,dsetrank,iparallel,.false.)                                        
+
+  if (associated(cgrid%qmean_qstar          ))                                             &
+     call hdf_getslab_r(cgrid%qmean_qstar          (:,ipy)   ,'QMEAN_QSTAR           '     &
+                       ,dsetrank,iparallel,.false.)                                        
+
+  if (associated(cgrid%qmean_cstar          ))                                             &
+     call hdf_getslab_r(cgrid%qmean_cstar          (:,ipy)   ,'QMEAN_CSTAR           '     &
+                       ,dsetrank,iparallel,.false.)                                        
+
   if (associated(cgrid%qmean_nep            ))                                             &
      call hdf_getslab_r(cgrid%qmean_nep            (:,ipy)   ,'QMEAN_NEP             '     &
                        ,dsetrank,iparallel,.false.)                                        
 
-  if (associated(cgrid%qmean_nee            ))                                             &
-     call hdf_getslab_r(cgrid%qmean_nee            (:,ipy)   ,'QMEAN_NEE             '     &
+  if (associated(cgrid%qmean_carbon_ac      ))                                             &
+     call hdf_getslab_r(cgrid%qmean_carbon_ac      (:,ipy)   ,'QMEAN_CARBON_AC       '     &
+                       ,dsetrank,iparallel,.false.)                                        
+
+  if (associated(cgrid%qmean_carbon_st      ))                                             &
+     call hdf_getslab_r(cgrid%qmean_carbon_st      (:,ipy)   ,'QMEAN_CARBON_ST       '     &
                        ,dsetrank,iparallel,.false.)                                        
 
   if (associated(cgrid%qmean_plresp         ))                                             &
@@ -1426,8 +1490,12 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
      call hdf_getslab_r(cgrid%qmsqu_plresp         (:,ipy)   ,'QMSQU_PLRESP          '     &
                        ,dsetrank,iparallel,.false.)
 
-  if (associated(cgrid%qmsqu_nee       ))                                                  &
-     call hdf_getslab_r(cgrid%qmsqu_nee            (:,ipy)   ,'QMSQU_NEE             '     &
+  if (associated(cgrid%qmsqu_carbon_ac))                                                   &
+     call hdf_getslab_r(cgrid%qmsqu_carbon_ac      (:,ipy)   ,'QMSQU_CARBON_AC       '     &
+                       ,dsetrank,iparallel,.false.)
+
+  if (associated(cgrid%qmsqu_carbon_st))                                                   &
+     call hdf_getslab_r(cgrid%qmsqu_carbon_st      (:,ipy)   ,'QMSQU_CARBON_ST       '     &
                        ,dsetrank,iparallel,.false.)
 
   if (associated(cgrid%qmsqu_nep       ))                                                  &
@@ -2029,6 +2097,7 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
    call hdf_getslab_r(csite%ground_fliq,'GROUND_FLIQ ',dsetrank,iparallel,.false.)
    call hdf_getslab_r(csite%rough,'ROUGH ',dsetrank,iparallel,.true.)
    call hdf_getslab_r(csite%avg_daily_temp,'AVG_DAILY_TEMP ',dsetrank,iparallel,.true.)  
+   call hdf_getslab_r(csite%avg_monthly_gndwater,'AVG_MONTHLY_GNDWATER ',dsetrank,iparallel,.true.)  
    call hdf_getslab_r(csite%mean_rh,'MEAN_RH ',dsetrank,iparallel,.true.)
 
    if (associated(csite%dmean_rh       )) &

@@ -1145,7 +1145,6 @@ subroutine ed_opspec_misc
                                     , gamma_c4                     & ! intent(in)
                                     , d0_grass                     & ! intent(in)
                                     , d0_tree                      & ! intent(in)
-                                    , d0_decay                     & ! intent(in)
                                     , alpha_c3                     & ! intent(in)
                                     , alpha_c4                     & ! intent(in)
                                     , klowco2in                    & ! intent(in)
@@ -1484,9 +1483,9 @@ end do
       ifaterr = ifaterr +1
    end if
 
-   if (iallom < 0 .or. iallom > 4) then
+   if (iallom < 0 .or. iallom > 2) then
       write (reason,fmt='(a,1x,i4,a)')                                                     &
-                    'Invalid IALLOM, it must be between 0 and 4. Yours is set to'          &
+                    'Invalid IALLOM, it must be between 0 and 2. Yours is set to'          &
                     ,iallom,'...'
       call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
@@ -1515,9 +1514,9 @@ end do
       call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
    end if  
-   if (h2o_plant_lim < 0 .or. h2o_plant_lim > 3) then
+   if (h2o_plant_lim < 0 .or. h2o_plant_lim > 2) then
       write (reason,fmt='(a,1x,i4,a)')                                                     &
-                    'Invalid H2O_PLANT_LIM, it must be between 0 and 3.  Yours is set to'  &
+                    'Invalid H2O_PLANT_LIM, it must be between 0 and 2.  Yours is set to'  &
                     ,h2o_plant_lim,'...'
       call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
@@ -1555,17 +1554,17 @@ end do
       ifaterr = ifaterr +1
    end if
    
-  if (kw_grass < 15. .or. kw_grass > 1500.) then
+  if (kw_grass < 15. .or. kw_grass > 15000.) then
       write (reason,fmt='(a,1x,es12.5,a)')                                                 &
-                    'Invalid KW_GRASS, it must be between 15 and 1500.  Yours is set to'   &
+                    'Invalid KW_GRASS, it must be between 15 and 15000.  Yours is set to'  &
                     ,kw_grass,'...'
       call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
    end if
    
-  if (kw_tree < 15. .or. kw_tree > 1500.) then
+  if (kw_tree < 15. .or. kw_tree > 15000.) then
       write (reason,fmt='(a,1x,es12.5,a)')                                                 &
-                    'Invalid KW_TREE, it must be between 15 and 1500.  Yours is set to'    &
+                    'Invalid KW_TREE, it must be between 15 and 15000.  Yours is set to'   &
                     ,kw_tree,'...'
       call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
@@ -1599,14 +1598,6 @@ end do
       write (reason,fmt='(a,1x,es12.5,a)')                                                 &
                     'Invalid D0_TREE, it must be between 0.01 and 1. Yours is set to'      &
                     ,d0_tree,'...'
-      call opspec_fatal(reason,'opspec_misc')
-      ifaterr = ifaterr +1
-   end if
-
-   if (d0_decay < 0.01 .or. d0_decay > 30.) then
-      write (reason,fmt='(a,1x,es12.5,a)')                                                 &
-                    'Invalid D0_DECAY, it must be between 0.01 and 30. Yours is set to'    &
-                    ,d0_decay,'...'
       call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
    end if
@@ -1961,9 +1952,9 @@ end do
       ifaterr = ifaterr +1
    end if
     
-   if (ubmin < 0.0001 .or. ubmin > 1.0) then
+   if (ubmin < 0.0001 .or. ubmin > 2.0) then
       write (reason,fmt='(a,1x,es14.7,a)')                                                 &
-            'Invalid UBMIN, it must be between 0.0001 and 1.0.  Yours is set to'           &
+            'Invalid UBMIN, it must be between 0.0001 and 2.0.  Yours is set to'           &
            ,ustmin,'...'
       call opspec_fatal(reason,'opspec_misc')  
       ifaterr = ifaterr +1

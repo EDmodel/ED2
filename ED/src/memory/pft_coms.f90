@@ -138,8 +138,6 @@ module pft_coms
    ! boundary layer H2O mixing ratios exceed this value. [mol_H2O/mol_air].                !
    !---------------------------------------------------------------------------------------!
    real, dimension(n_pft) :: D0
-   !----- In case H2O_PLANT_LIM = 3, this will make D0 vary with soil moisture potential. -!
-   real, dimension(n_pft) :: Dext
    !---------------------------------------------------------------------------------------!
 
    !----- Temperature [°C] below which leaf metabolic activity begins to rapidly decline. -!
@@ -361,7 +359,6 @@ module pft_coms
    !----- Mass ratio between sapwood and leaves [kg_sapwood]/[kg_leaves]. -----------------!
    real   , dimension(n_pft)    :: qsw
    real   , dimension(n_pft)    :: sapwood_ratio ! AREA ratio
-   real   , dimension(n_pft)    :: hgt_ref ! ref height for diam/ht allom (Temperate)
    !---------------------------------------------------------------------------------------!
    !     DBH-height allometry intercept (m).  Notice that this variable has different      !
    ! meaning between temperate and tropical PFTs.                                          !
@@ -372,19 +369,22 @@ module pft_coms
    ! meaning between temperate and tropical PFTs.                                          !!
    !---------------------------------------------------------------------------------------!
    real   , dimension(n_pft)    :: b2Ht
+   !---------------------------------------------------------------------------------------!
+   !     Reference height for DBH -> height allometry.  They may not be used for tropical  !
+   ! PFTs but when they are, they have a different meaning from the temperate allometry.   !
+   !---------------------------------------------------------------------------------------!
+   real   , dimension(n_pft)    :: hgt_ref
    !----- DBH-stem allometry intercept.  All PFTs. ----------------------------------------!
    real   , dimension(n_pft)    :: b1Bs_small
    !----- DBH-stem allometry slope (dimensionless).  All PFTs. ----------------------------!
    real   , dimension(n_pft)    :: b2Bs_small
    !----- DBH-stem allometry intercept for large DBH cohorts. -----------------------------!
-   real   , dimension(n_pft)    :: b1Bs_big
+   real   , dimension(n_pft)    :: b1Bs_large
    !----- DBH-stem allometry slope for large DBH cohorts. ---------------------------------!
-   real   , dimension(n_pft)    :: b2Bs_big
-   !----- Critical Bdead, point in which plants stop growing vertically. ------------------!
-   real   , dimension(n_pft)    :: bdead_crit
-   !----- DBH-leaf allometry intercept (kg leaf biomass / plant * cm^{-b2Bl}).  All PFTs --!
+   real   , dimension(n_pft)    :: b2Bs_large
+   !----- DBH-leaf allometry intercept for all cohorts. All PFTs --------------------------!
    real   , dimension(n_pft)    :: b1Bl
-   !----- DBH-leaf allometry slope (dimensionless).  All PFTs -----------------------------!
+   !----- DBH-leaf allometry slope for all cohorts. All PFTs ------------------------------!
    real   , dimension(n_pft)    :: b2Bl
    !----- DBH-crown allometry intercept.  All PFTs. ---------------------------------------!
    real   , dimension(n_pft)    :: b1Ca
@@ -394,9 +394,14 @@ module pft_coms
    real   , dimension(n_pft)    :: b1WAI
    !----- DBH-WAI allometry slope.  All PFTs. ---------------------------------------------!
    real   , dimension(n_pft)    :: b2WAI
-   !----- Minimum DBH attainable by this PFT and minimum DBH at maximum height (cm). ------!
+   !----- Minimum DBH attainable by this PFT. ---------------------------------------------!
    real   , dimension(n_pft)    :: min_dbh
-   real   , dimension(n_pft)    :: max_dbh 
+   !----- Critical DBH for height/bdead, point in which plants stop growing vertically. ---!
+   real   , dimension(n_pft)    :: dbh_crit
+   !----- Minimum Bdead attainable by this PFT. -------------------------------------------!
+   real   , dimension(n_pft)    :: min_bdead
+   !----- Critical Bdead, point in which plants stop growing vertically. ------------------!
+   real   , dimension(n_pft)    :: bdead_crit
    !=======================================================================================!
    !=======================================================================================!
 

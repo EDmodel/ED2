@@ -294,8 +294,10 @@ end SUBROUTINE COMMIO
 !---------------------------------------------------------
 
 subroutine cio_pos_file(iun,cstr,ierr)
-  character*(*) cstr
-  character*128 line,csearch
+  use rpost_dims, only : str_len
+  character(len=*)       :: cstr
+  character(len=str_len) :: line
+  character(len=str_len) :: csearch
   !      print*,'cio_pos:',iun,cstr
 
   iend=0
@@ -330,9 +332,10 @@ end subroutine cio_pos_file
 !---------------------------------------------------------
 
 integer function cio_i(iun,irw,cstr,ia,n)
+  use rpost_dims, only : str_len
   integer ia(*)
   character*(*) cstr
-  character*256 string
+  character(len=str_len) :: string
 
   if (irw.eq.1) then
      call cio_pos_file (iun,cstr,cio_i)
@@ -362,9 +365,10 @@ end function cio_i
 !---------------------------------------------------------
 
 integer function cio_f(iun,irw,cstr,ia,n)
+  use rpost_dims, only : str_len
   real ia(*)
   character*(*) cstr
-  character*256 string
+  character(len=str_len) :: string
 
   if (irw.eq.1) then
      call cio_pos_file (iun,cstr,cio_f)
@@ -386,9 +390,10 @@ end function cio_f
 !---------------------------------------------------------
 
 integer function cio_f8(iun,irw,cstr,ia,n)
+  use rpost_dims, only : str_len
   real*8 ia(*)
   character*(*) cstr
-  character*256 string
+  character(len=str_len) :: string
 
   if (irw.eq.1) then
      call cio_pos_file (iun,cstr,cio_f8)
@@ -410,9 +415,10 @@ end function cio_f8
 !---------------------------------------------------------
 
 integer function cio_c(iun,irw,cstr,ia,n)
+  use rpost_dims, only : str_len
   character*(*) ia(*)
   character*(*) cstr
-  character*256 string
+  character(len=str_len) :: string
 
   if (irw.eq.1) then
      call cio_pos_file (iun,cstr,cio_c)
@@ -435,11 +441,12 @@ end function cio_c
 !---------------------------------------------------------
 !MLO - The next functions aren't really necessary, it's just to avoid ifort with -get-interfaces to screw up...
 integer function cio_i_sca(iun,irw,cstr,ia,n)
+use rpost_dims, only : str_len
 implicit none
 integer :: iun,irw,n
 integer ia
 character(len=*) :: cstr
-character(len=256) :: string
+character(len=str_len) :: string
 integer :: nn,i
 
 if (n /= 1) then
@@ -473,11 +480,12 @@ end function cio_i_sca
 !---------------------------------------------------------
 
 integer function cio_f_sca(iun,irw,cstr,ia,n)
+use rpost_dims, only : str_len
 implicit none
 integer :: iun,irw,n
 real ia
 character(len=*) :: cstr
-character(len=256) :: string
+character(len=str_len) :: string
 integer :: nn,i
 
 if (n /= 1) then
@@ -511,11 +519,12 @@ end function cio_f_sca
 !---------------------------------------------------------
 
 integer function cio_f8_sca(iun,irw,cstr,ia,n)
+use rpost_dims, only : str_len
 implicit none
 integer :: iun,irw,n
 real(kind=8) :: ia
 character(len=*) :: cstr
-character(len=256) :: string
+character(len=str_len) :: string
 integer :: nn,i
 
 if (n /= 1) then
@@ -549,11 +558,12 @@ end function cio_f8_sca
 !---------------------------------------------------------
 
 integer function cio_c_sca(iun,irw,cstr,ia,n)
+use rpost_dims, only : str_len
 implicit none
 integer :: iun,irw,n
 character(len=*) :: ia
 character(len=*) :: cstr
-character(len=256) :: string
+character(len=str_len) :: string
 integer :: nn,i
 
 if (n /= 1) then

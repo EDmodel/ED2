@@ -102,7 +102,6 @@ subroutine copy_nl(copy_type)
                                    , gamma_c4                  & ! intent(out)
                                    , d0_grass                  & ! intent(out)
                                    , d0_tree                   & ! intent(out)
-                                   , d0_decay                  & ! intent(out)
                                    , alpha_c3                  & ! intent(out)
                                    , alpha_c4                  & ! intent(out)
                                    , klowco2in                 & ! intent(out)
@@ -352,7 +351,6 @@ subroutine copy_nl(copy_type)
       gamma_c4                  = nl%gamma_c4
       d0_grass                  = nl%d0_grass
       d0_tree                   = nl%d0_tree
-      d0_decay                  = nl%d0_decay
       alpha_c3                  = nl%alpha_c3
       alpha_c4                  = nl%alpha_c4
       klowco2in                 = nl%klowco2in

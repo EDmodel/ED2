@@ -1,14 +1,37 @@
 #!/bin/bash
-here=`pwd`                    # ! Main path
-thisqueue='moorcroft2b'   # ! Queue where jobs should be submitted
-lonlat=${here}'/joborder.txt' # ! File with the job instructions
+here=`pwd`                            # ! Main path
+diskthere='/n/scratch2/moorcroft_lab' # ! Disk where the output files are
+thisqueue='moorcroft'                 # ! Queue where jobs should be submitted
+lonlat=${here}'/joborder.txt'         # ! File with the job instructions
 #----- Outroot is the main output directory. ----------------------------------------------#
 outroot='/n/moorcroftfs1/mlongo/diary/XXXXXXXXXXXXXX/figures/Template'
+#------------------------------------------------------------------------------------------#
+
+
+#----- Find the disk here to create the "there" path. -------------------------------------#
+moi=`whoami`
+namehere=`basename ${here}`
+diskhere=`dirname ${here}`
+while [ ${namehere} != ${moi} ]
+do
+   namehere=`basename ${diskhere}`
+   diskhere=`dirname ${diskhere}`
+done
+if [ 'x'${diskthere} == 'x' ]
+then
+   there=${here}
+else
+   there=`echo ${here} | sed s@${diskhere}@${diskthere}@g`
+fi
+#------------------------------------------------------------------------------------------#
 
 
 #----- Determine the number of polygons to run. -------------------------------------------#
 let npolys=`wc -l ${lonlat} | awk '{print $1 }'`-3
 echo 'Number of polygons: '${npolys}'...'
+#------------------------------------------------------------------------------------------#
+
+
 
 #------------------------------------------------------------------------------------------#
 #    List all the R scripts you want to run.                                               #
@@ -77,41 +100,41 @@ do
    gammac4=`echo ${oi}     | awk '{print $30}'`
    d0grass=`echo ${oi}     | awk '{print $31}'`
    d0tree=`echo ${oi}      | awk '{print $32}'`
-   d0decay=`echo ${oi}     | awk '{print $33}'`
-   alphac3=`echo ${oi}     | awk '{print $34}'`
-   alphac4=`echo ${oi}     | awk '{print $35}'`
-   klowco2=`echo ${oi}     | awk '{print $36}'`
-   rrffact=`echo ${oi}     | awk '{print $37}'`
-   growthresp=`echo ${oi}  | awk '{print $38}'`
-   h2olimit=`echo ${oi}    | awk '{print $39}'`
-   isfclyrm=`echo ${oi}    | awk '{print $40}'`
-   icanturb=`echo ${oi}    | awk '{print $41}'`
-   ubmin=`echo ${oi}       | awk '{print $42}'`
-   ugbmin=`echo ${oi}      | awk '{print $43}'`
-   ustmin=`echo ${oi}      | awk '{print $44}'`
-   gamm=`echo ${oi}        | awk '{print $45}'`
-   gamh=`echo ${oi}        | awk '{print $46}'`
-   tprandtl=`echo ${oi}    | awk '{print $47}'`
-   ribmax=`echo ${oi}      | awk '{print $48}'`
-   atmco2=`echo ${oi}      | awk '{print $49}'`
-   thcrit=`echo ${oi}      | awk '{print $50}'`
-   smfire=`echo ${oi}      | awk '{print $51}'`
-   isoilbc=`echo ${oi}     | awk '{print $52}'`
-   imetrad=`echo ${oi}     | awk '{print $53}'`
-   ibranch=`echo ${oi}     | awk '{print $54}'`
-   icanrad=`echo ${oi}     | awk '{print $55}'`
-   crown=`echo   ${oi}     | awk '{print $56}'`
-   ltransvis=`echo ${oi}   | awk '{print $57}'`
-   lreflectvis=`echo ${oi} | awk '{print $58}'`
-   ltransnir=`echo ${oi}   | awk '{print $59}'`
-   lreflectnir=`echo ${oi} | awk '{print $60}'`
-   orienttree=`echo ${oi}  | awk '{print $61}'`
-   orientgrass=`echo ${oi} | awk '{print $62}'`
-   clumptree=`echo ${oi}   | awk '{print $63}'`
-   clumpgrass=`echo ${oi}  | awk '{print $64}'`
-   ivegtdyn=`echo ${oi}    | awk '{print $65}'`
-   igndvap=`echo ${oi}     | awk '{print $66}'`
-   iphen=`echo ${oi}       | awk '{print $67}'`
+   alphac3=`echo ${oi}     | awk '{print $33}'`
+   alphac4=`echo ${oi}     | awk '{print $34}'`
+   klowco2=`echo ${oi}     | awk '{print $35}'`
+   rrffact=`echo ${oi}     | awk '{print $36}'`
+   growthresp=`echo ${oi}  | awk '{print $37}'`
+   h2olimit=`echo ${oi}    | awk '{print $38}'`
+   isfclyrm=`echo ${oi}    | awk '{print $39}'`
+   icanturb=`echo ${oi}    | awk '{print $40}'`
+   ubmin=`echo ${oi}       | awk '{print $41}'`
+   ugbmin=`echo ${oi}      | awk '{print $42}'`
+   ustmin=`echo ${oi}      | awk '{print $43}'`
+   gamm=`echo ${oi}        | awk '{print $44}'`
+   gamh=`echo ${oi}        | awk '{print $45}'`
+   tprandtl=`echo ${oi}    | awk '{print $46}'`
+   ribmax=`echo ${oi}      | awk '{print $47}'`
+   atmco2=`echo ${oi}      | awk '{print $48}'`
+   thcrit=`echo ${oi}      | awk '{print $49}'`
+   smfire=`echo ${oi}      | awk '{print $50}'`
+   isoilbc=`echo ${oi}     | awk '{print $51}'`
+   imetrad=`echo ${oi}     | awk '{print $52}'`
+   ibranch=`echo ${oi}     | awk '{print $53}'`
+   icanrad=`echo ${oi}     | awk '{print $54}'`
+   crown=`echo   ${oi}     | awk '{print $55}'`
+   ltransvis=`echo ${oi}   | awk '{print $56}'`
+   lreflectvis=`echo ${oi} | awk '{print $57}'`
+   ltransnir=`echo ${oi}   | awk '{print $58}'`
+   lreflectnir=`echo ${oi} | awk '{print $59}'`
+   orienttree=`echo ${oi}  | awk '{print $60}'`
+   orientgrass=`echo ${oi} | awk '{print $61}'`
+   clumptree=`echo ${oi}   | awk '{print $62}'`
+   clumpgrass=`echo ${oi}  | awk '{print $63}'`
+   ivegtdyn=`echo ${oi}    | awk '{print $64}'`
+   igndvap=`echo ${oi}     | awk '{print $65}'`
+   iphen=`echo ${oi}       | awk '{print $66}'`
+   iallom=`echo ${oi}      | awk '{print $67}'`
    #---------------------------------------------------------------------------------------#
 
 
@@ -204,6 +227,7 @@ do
       sed -i s@thispoly@${polyname}@g    ${here}/${polyname}/${script}
       sed -i s@thisoutroot@${outroot}@g  ${here}/${polyname}/${script}
       sed -i s@thispath@${here}@g        ${here}/${polyname}/${script}
+      sed -i s@thatpath@${there}@g       ${here}/${polyname}/${script}
       sed -i s@thisyeara@${thisyeara}@g  ${here}/${polyname}/${script}
       sed -i s@thismontha@${montha}@g    ${here}/${polyname}/${script}
       sed -i s@thisdatea@${thisdatea}@g  ${here}/${polyname}/${script}

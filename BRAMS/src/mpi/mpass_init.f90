@@ -70,6 +70,7 @@ end subroutine masterput_processid
 subroutine masterput_nl(master_num)
 
    use mem_all
+   use grid_dims          , only : str_len                     ! ! intent(in)
    use rpara
    use therm_lib          , only : level                       & ! intent(in)
                                   ,vapour_on                   & ! intent(in)
@@ -353,7 +354,7 @@ subroutine masterput_nl(master_num)
 
      call MPI_Bcast(ICHEMI,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
      call MPI_Bcast(ICHEMI_IN,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
-     call MPI_Bcast(CHEMDATA_IN(1:80),80,MPI_CHARACTER,mainnum,MPI_COMM_WORLD,ierr)
+     call MPI_Bcast(CHEMDATA_IN,str_len,MPI_CHARACTER,mainnum,MPI_COMM_WORLD,ierr)
      call MPI_Bcast(ISOURCE,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
      call MPI_Bcast(WEEKDAYIN(1:3),3,MPI_CHARACTER,mainnum,MPI_COMM_WORLD,ierr)
      call MPI_Bcast(EFSAT,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
@@ -884,6 +885,7 @@ subroutine nodeget_nl
 
    use mem_all
    use node_mod
+   use grid_dims          , only : str_len                     ! ! intent(in)
    use therm_lib          , only : level                       & ! intent(out)
                                   ,vapour_on                   & ! intent(out)
                                   ,cloud_on                    & ! intent(out)
@@ -1161,7 +1163,7 @@ subroutine nodeget_nl
 
      call MPI_Bcast(ICHEMI,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
      call MPI_Bcast(ICHEMI_IN,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
-     call MPI_Bcast(CHEMDATA_IN(1:80),80,MPI_CHARACTER,master_num,MPI_COMM_WORLD,ierr)
+     call MPI_Bcast(CHEMDATA_IN,str_len,MPI_CHARACTER,master_num,MPI_COMM_WORLD,ierr)
      call MPI_Bcast(ISOURCE,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
      call MPI_Bcast(WEEKDAYIN(1:3),3,MPI_CHARACTER,master_num,MPI_COMM_WORLD,ierr)
      call MPI_Bcast(EFSAT,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)

@@ -83,8 +83,6 @@ module physiology_coms
    ! GAMMA_C4   -- The dark respiration factor (gamma) for C4 plants.                      !
    ! D0_GRASS   -- The transpiration control in gsw (D0) for ALL grasses.                  !
    ! D0_TREE    -- The transpiration control in gsw (D0) for ALL trees.                    !
-   ! D0_DECAY   -- The decay function for D0 (used only when H2O_PLANT_LIM = 3).           !
-   !               The actual decay coefficient will be divided by q(pft).                 !
    ! ALPHA_C3   -- Quantum yield of ALL C3 plants.  This is only applied when              !
    !               QUANTUM_EFFICIENCY_T = 0.                                               !
    ! ALPHA_C4   -- Quantum yield of C4 plants.  This is always applied.                    !
@@ -105,7 +103,6 @@ module physiology_coms
    real(kind=4)               :: gamma_c4
    real(kind=4)               :: d0_grass
    real(kind=4)               :: d0_tree
-   real(kind=4)               :: d0_decay
    real(kind=4)               :: alpha_c3
    real(kind=4)               :: alpha_c4
    real(kind=4)               :: klowco2in

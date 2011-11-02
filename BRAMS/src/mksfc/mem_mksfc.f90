@@ -8,7 +8,7 @@
 
 
 Module mem_mksfc
-
+  use grid_dims, only : str_len
 
   Type sfcfile_vars
 
@@ -64,13 +64,13 @@ Module mem_mksfc
   integer, parameter :: maxsstdata=6666
   integer, dimension(maxsstdata,maxsfcgrids):: iyearvs,imonthvs,idatevs,ihourvs
   integer,dimension(maxsfcgrids)         :: nvsstf
-  character(len=128), dimension(maxsstdata,maxsfcgrids)     :: vsstfil
+  character(len=str_len), dimension(maxsstdata,maxsfcgrids)     :: vsstfil
   
   ! NDVI file creation variables
   integer, parameter :: maxndvidata=6666
   integer, dimension(maxndvidata,maxsfcgrids):: iyearvn,imonthvn,idatevn,ihourvn
   integer,dimension(maxsfcgrids)         :: nvndvif
-  character(len=128), dimension(maxndvidata,maxsfcgrids)     :: vndvifil
+  character(len=str_len), dimension(maxndvidata,maxsfcgrids)     :: vndvifil
   
 Contains
 

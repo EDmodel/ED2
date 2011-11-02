@@ -158,6 +158,9 @@ module soil_coms
       real(kind=4) :: slden      ! "Dry" soil density (porosity)                 [   kg/m3]
       real(kind=4) :: soilld     ! Soil moist. below which drought phen. happens [   m3/m3]
       real(kind=4) :: soilfr     ! Soil moist. below which fires may happen      [   m3/m3]
+      real(kind=4) :: slpotwp    ! Water potential for wilting point             [       m]
+      real(kind=4) :: slpotfc    ! Water potential for field capacity            [       m]
+      real(kind=4) :: slpotld    ! Water pot. below which drought phen happens   [       m]
    end type soil_class
    !----- Double precision version --------------------------------------------------------!
    type soil_class8
@@ -180,8 +183,11 @@ module soil_coms
       real(kind=8) :: xsilt      ! Percentage of silt                            [     ---]
       real(kind=8) :: xrobulk    ! Bulk density                                  [     ---]
       real(kind=8) :: slden      ! "Dry" soil density (porosity)                 [   kg/m3]
-      real(kind=4) :: soilld     ! Soil moist. below which drought phen. happens [   m3/m3]
-      real(kind=4) :: soilfr     ! Soil moist. below which fires may happen      [   m3/m3]
+      real(kind=8) :: soilld     ! Soil moist. below which drought phen. happens [   m3/m3]
+      real(kind=8) :: soilfr     ! Soil moist. below which fires may happen      [   m3/m3]
+      real(kind=8) :: slpotwp    ! Water potential for wilting point             [       m]
+      real(kind=8) :: slpotfc    ! Water potential for field capacity            [       m]
+      real(kind=8) :: slpotld    ! Water pot. below which drought phen happens   [       m]
    end type soil_class8
    !---------------------------------------------------------------------------------------!
    !----- To be filled in ed_params.f90. --------------------------------------------------!

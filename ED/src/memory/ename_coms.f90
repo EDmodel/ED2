@@ -160,7 +160,6 @@ module ename_coms
       real                                              :: gamma_c4
       real                                              :: d0_grass
       real                                              :: d0_tree
-      real                                              :: d0_decay
       real                                              :: alpha_c3
       real                                              :: alpha_c4
       real                                              :: klowco2in
@@ -399,7 +398,6 @@ module ename_coms
       enl%gamma_c4                  = undef_real
       enl%d0_grass                  = undef_real
       enl%d0_tree                   = undef_real
-      enl%d0_decay                  = undef_real
       enl%alpha_c3                  = undef_real
       enl%alpha_c4                  = undef_real
       enl%klowco2in                 = undef_real

@@ -298,10 +298,11 @@ end subroutine commio
 !---------------------------------------------------------
 
 subroutine cio_pos_file(iun,cstr,ierr)
+use grid_dims, only : str_len
 implicit none
 integer :: iun,ierr
 character(len=*) :: cstr
-character(len=256) :: line,csearch
+character(len=str_len) :: line,csearch
 
 integer :: nl,nc,iend,ilen
 
@@ -339,11 +340,12 @@ end
 !---------------------------------------------------------
 
 integer function cio_i(iun,irw,cstr,ia,n)
+use grid_dims, only : str_len
 implicit none
 integer :: iun,irw,n
 integer ia(*)
 character(len=*) :: cstr
-character(len=256) :: string
+character(len=str_len) :: string
 integer :: nn,i
 
 if (irw.eq.1) then
@@ -366,11 +368,12 @@ end function cio_i
 !---------------------------------------------------------
 
 integer function cio_f(iun,irw,cstr,ia,n)
+use grid_dims, only : str_len
 implicit none
 integer :: iun,irw,n
 real ia(*)
 character(len=*) :: cstr
-character(len=256) :: string
+character(len=str_len) :: string
 integer :: nn,i
 
 if (irw.eq.1) then
@@ -393,11 +396,12 @@ end function cio_f
 !---------------------------------------------------------
 
 integer function cio_f8(iun,irw,cstr,ia,n)
+use grid_dims, only : str_len
 implicit none
 integer :: iun,irw,n
 real(kind=8) :: ia(*)
 character(len=*) :: cstr
-character(len=256) :: string
+character(len=str_len) :: string
 integer :: nn,i
 
 if (irw.eq.1) then
@@ -420,11 +424,12 @@ end function cio_f8
 !---------------------------------------------------------
 
 integer function cio_c(iun,irw,cstr,ia,n)
+  use grid_dims, only : str_len
   implicit none
   integer :: iun,irw,n
   character(len=*) :: ia(*)
   character(len=*) :: cstr
-  character(len=256) :: string
+  character(len=str_len) :: string
   integer :: nn,i
 
   if (irw.eq.1) then
@@ -448,11 +453,12 @@ end function cio_c
 
 
 integer function cio_i_sca(iun,irw,cstr,ia,n)
+use grid_dims, only : str_len
 implicit none
 integer :: iun,irw,n
 integer ia
 character(len=*) :: cstr
-character(len=256) :: string
+character(len=str_len) :: string
 integer :: nn,i
 
 if (n /= 1) then
@@ -486,11 +492,12 @@ end function cio_i_sca
 !---------------------------------------------------------
 
 integer function cio_f_sca(iun,irw,cstr,ia,n)
+use grid_dims, only : str_len
 implicit none
 integer :: iun,irw,n
 real ia
 character(len=*) :: cstr
-character(len=256) :: string
+character(len=str_len) :: string
 integer :: nn,i
 
 if (n /= 1) then
@@ -524,11 +531,12 @@ end function cio_f_sca
 !---------------------------------------------------------
 
 integer function cio_f8_sca(iun,irw,cstr,ia,n)
+use grid_dims, only : str_len
 implicit none
 integer :: iun,irw,n
 real(kind=8) :: ia
 character(len=*) :: cstr
-character(len=256) :: string
+character(len=str_len) :: string
 integer :: nn,i
 
 if (n /= 1) then
@@ -562,11 +570,12 @@ end function cio_f8_sca
 !---------------------------------------------------------
 
 integer function cio_c_sca(iun,irw,cstr,ia,n)
+use grid_dims, only : str_len
 implicit none
 integer :: iun,irw,n
 character(len=*) :: ia
 character(len=*) :: cstr
-character(len=256) :: string
+character(len=str_len) :: string
 integer :: nn,i
 
 if (n /= 1) then

@@ -7,13 +7,13 @@
 !###########################################################################
 
 subroutine rams_read_header(flnm)
-
+use grid_dims, only : str_len
 use an_header
 
 implicit none
 
 character*(*) flnm
-character(len=128) :: flnm2
+character(len=str_len) :: flnm2
 integer lenf,nv
 
 

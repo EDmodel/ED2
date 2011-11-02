@@ -363,27 +363,32 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
       ! RK4.  Inside RK4 we only want the contribution of those variables during the span  !
       ! of one time step.                                                                  !
       !------------------------------------------------------------------------------------!
-      targetp%avg_carbon_ac      = dble(sourcesite%avg_carbon_ac(ipa)     )
-      targetp%avg_vapor_lc       = dble(sourcesite%avg_vapor_lc(ipa)      )
-      targetp%avg_vapor_wc       = dble(sourcesite%avg_vapor_wc(ipa)      )
-      targetp%avg_vapor_gc       = dble(sourcesite%avg_vapor_gc(ipa)      )
-      targetp%avg_wshed_vg       = dble(sourcesite%avg_wshed_vg(ipa)      )
-      targetp%avg_intercepted    = dble(sourcesite%avg_intercepted(ipa)   )
-      targetp%avg_throughfall    = dble(sourcesite%avg_throughfall(ipa)   )
-      targetp%avg_vapor_ac       = dble(sourcesite%avg_vapor_ac(ipa)      )
-      targetp%avg_transp         = dble(sourcesite%avg_transp(ipa)        )
-      targetp%avg_evap           = dble(sourcesite%avg_evap(ipa)          )
-      targetp%avg_drainage       = dble(sourcesite%avg_drainage(ipa)      )
-      targetp%avg_drainage_heat  = dble(sourcesite%avg_drainage_heat(ipa) )
-      targetp%avg_rshort_gnd     = dble(sourcesite%avg_rshort_gnd(ipa)    )
-      targetp%avg_rlong_gnd      = dble(sourcesite%avg_rlong_gnd(ipa)     )
-      targetp%avg_sensible_lc    = dble(sourcesite%avg_sensible_lc(ipa)   )
-      targetp%avg_sensible_wc    = dble(sourcesite%avg_sensible_wc(ipa)   )
-      targetp%avg_qwshed_vg      = dble(sourcesite%avg_qwshed_vg(ipa)     )
-      targetp%avg_qintercepted   = dble(sourcesite%avg_qintercepted(ipa)  )
-      targetp%avg_qthroughfall   = dble(sourcesite%avg_qthroughfall(ipa)  )
-      targetp%avg_sensible_gc    = dble(sourcesite%avg_sensible_gc(ipa)   )
-      targetp%avg_sensible_ac    = dble(sourcesite%avg_sensible_ac(ipa)   )
+      targetp%avg_ustar          = dble(sourcesite%avg_ustar         (ipa))
+      targetp%avg_tstar          = dble(sourcesite%avg_tstar         (ipa))
+      targetp%avg_qstar          = dble(sourcesite%avg_qstar         (ipa))
+      targetp%avg_cstar          = dble(sourcesite%avg_cstar         (ipa))
+      targetp%avg_carbon_ac      = dble(sourcesite%avg_carbon_ac     (ipa))
+      targetp%avg_carbon_st      = dble(sourcesite%avg_carbon_st     (ipa))
+      targetp%avg_vapor_lc       = dble(sourcesite%avg_vapor_lc      (ipa))
+      targetp%avg_vapor_wc       = dble(sourcesite%avg_vapor_wc      (ipa))
+      targetp%avg_vapor_gc       = dble(sourcesite%avg_vapor_gc      (ipa))
+      targetp%avg_wshed_vg       = dble(sourcesite%avg_wshed_vg      (ipa))
+      targetp%avg_intercepted    = dble(sourcesite%avg_intercepted   (ipa))
+      targetp%avg_throughfall    = dble(sourcesite%avg_throughfall   (ipa))
+      targetp%avg_vapor_ac       = dble(sourcesite%avg_vapor_ac      (ipa))
+      targetp%avg_transp         = dble(sourcesite%avg_transp        (ipa))
+      targetp%avg_evap           = dble(sourcesite%avg_evap          (ipa))
+      targetp%avg_drainage       = dble(sourcesite%avg_drainage      (ipa))
+      targetp%avg_drainage_heat  = dble(sourcesite%avg_drainage_heat (ipa))
+      targetp%avg_rshort_gnd     = dble(sourcesite%avg_rshort_gnd    (ipa))
+      targetp%avg_rlong_gnd      = dble(sourcesite%avg_rlong_gnd     (ipa))
+      targetp%avg_sensible_lc    = dble(sourcesite%avg_sensible_lc   (ipa))
+      targetp%avg_sensible_wc    = dble(sourcesite%avg_sensible_wc   (ipa))
+      targetp%avg_qwshed_vg      = dble(sourcesite%avg_qwshed_vg     (ipa))
+      targetp%avg_qintercepted   = dble(sourcesite%avg_qintercepted  (ipa))
+      targetp%avg_qthroughfall   = dble(sourcesite%avg_qthroughfall  (ipa))
+      targetp%avg_sensible_gc    = dble(sourcesite%avg_sensible_gc   (ipa))
+      targetp%avg_sensible_ac    = dble(sourcesite%avg_sensible_ac   (ipa))
 
       do k = rk4site%lsl, nzg
          targetp%avg_sensible_gg(k) = dble(sourcesite%avg_sensible_gg(k,ipa))
@@ -3815,33 +3820,34 @@ subroutine print_rk4_state(initp,fluxp,csite,ipa,elapsed,hdid)
    inquire(file=trim(detail_fout),exist=isthere)
    if (.not. isthere) then
       open  (unit=83,file=trim(detail_fout),status='replace',action='write')
-      write (unit=83,fmt=phfmt)  '         YEAR', '        MONTH', '          DAY'         &
-                               , '         TIME', '         HDID', '          LAI'         &
-                               , '          WAI', '          KSN', 'FLAG.SFCWATER'         &
-                               , '  FLAG.WFLXGC', '     ATM.PRSS', '     ATM.TEMP'         &
-                               , '      ATM.SHV', '      ATM.CO2', '     ATM.VELS'         &
-                               , '    ATM.PRATE', '   ATM.HEIGHT', '     ATM.RHOS'         &
-                               , '   ATM.RELHUM', '    ATM.THETA', '    ATM.THEIV'         &
-                               , '   MET.RSHORT', '    MET.RLONG', '     CAN.PRSS'         &
-                               , '     CAN.TEMP', '      CAN.SHV', '      CAN.CO2'         &
-                               , '    CAN.DEPTH', '     CAN.RHOS', '   CAN.RELHUM'         &
-                               , '    CAN.THETA', '    CAN.THEIV', '     SFC.TEMP'         &
-                               , '      SFC.SHV', '    LEAF.TEMP', '   LEAF.WATER'         &
-                               , '    WOOD.TEMP', '   WOOD.WATER', '       GGBARE'         &
-                               , '        GGVEG', '        GGNET', '      OPENCAN'         &
-                               , '    SOIL.TEMP', '   SOIL.WATER', '       SOILCP'         &
-                               , '       SOILWP', '       SOILFC', '       SLMSTS'         &
-                               , '        USTAR', '        TSTAR', '        QSTAR'         &
-                               , '        CSTAR', '         ZETA', '      RI.BULK'         &
-                               , '   GND.RSHORT', '    GND.RLONG', '       WFLXLC'         &
-                               , '       WFLXWC', '       WFLXGC', '       WFLXAC'         &
-                               , '       TRANSP', '        WSHED', '    INTERCEPT'         &
-                               , '  THROUGHFALL', '       HFLXGC', '       HFLXLC'         &
-                               , '       HFLXWC', '       HFLXAC', '       CFLXAC'         &
-                               , '        CWDRH', '       SOILRH', '          GPP'         &
-                               , '       PLRESP', ' PAR.BEAM.TOP', ' PAR.DIFF.TOP'         &
-                               , ' NIR.BEAM.TOP', ' NIR.DIFF.TOP', ' PAR.BEAM.BOT'         &
-                               , ' PAR.DIFF.BOT', ' NIR.BEAM.BOT', ' NIR.DIFF.BOT'
+      write (unit=83,fmt=phfmt)  '         YEAR' , '        MONTH', '          DAY'        &
+                               , '         TIME' , '         HDID', '          LAI'        &
+                               , '          WAI' , '          KSN', 'FLAG.SFCWATER'        &
+                               , '  FLAG.WFLXGC' , '     ATM.PRSS', '     ATM.TEMP'        &
+                               , '      ATM.SHV' , '      ATM.CO2', '     ATM.VELS'        &
+                               , '    ATM.PRATE' , '   ATM.HEIGHT', '     ATM.RHOS'        &
+                               , '   ATM.RELHUM' , '    ATM.THETA', '    ATM.THEIV'        &
+                               , '   MET.RSHORT' , '    MET.RLONG', '     CAN.PRSS'        &
+                               , '     CAN.TEMP' , '      CAN.SHV', '      CAN.CO2'        &
+                               , '    CAN.DEPTH' , '     CAN.RHOS', '   CAN.RELHUM'        &
+                               , '    CAN.THETA' , '    CAN.THEIV', '     SFC.TEMP'        &
+                               , '      SFC.SHV' , '    LEAF.TEMP', '   LEAF.WATER'        &
+                               , '    WOOD.TEMP' , '   WOOD.WATER', '       GGBARE'        &
+                               , '        GGVEG' , '        GGNET', '      OPENCAN'        &
+                               , '    SOIL.TEMP' , '   SOIL.WATER', '       SOILCP'        &
+                               , '       SOILWP' , '       SOILFC', '       SLMSTS'        &
+                               , '        USTAR' , '        TSTAR', '        QSTAR'        &
+                               , '        CSTAR' , '         ZETA', '      RI.BULK'        &
+                               , '   GND.RSHORT' , '    GND.RLONG', '       WFLXLC'        &
+                               , '       WFLXWC' , '       WFLXGC', '       WFLXAC'        &
+                               , '       TRANSP' , '        WSHED', '    INTERCEPT'        &
+                               , '  THROUGHFALL' , '       HFLXGC', '       HFLXLC'        &
+                               , '       HFLXWC' , '       HFLXAC', '       CFLXAC'        &
+                               , '       CFLXST' , '        CWDRH', '       SOILRH'        &
+                               , '          GPP' , '       PLRESP', ' PAR.BEAM.TOP'        &
+                               , ' PAR.DIFF.TOP' , ' NIR.BEAM.TOP', ' NIR.DIFF.TOP'        &
+                               , ' PAR.BEAM.BOT' , ' PAR.DIFF.BOT', ' NIR.BEAM.BOT'        &
+                               , ' NIR.DIFF.BOT'
                                
                                
                                
@@ -3881,10 +3887,11 @@ subroutine print_rk4_state(initp,fluxp,csite,ipa,elapsed,hdid)
                    , fluxp%flx_transp      , fluxp%flx_wshed_vg    , fluxp%flx_intercepted &
                    , fluxp%flx_throughfall , fluxp%flx_sensible_gc , fluxp%flx_sensible_lc &
                    , fluxp%flx_sensible_wc , fluxp%flx_sensible_ac , fluxp%flx_carbon_ac   &
-                   , initp%cwd_rh          , soil_rh               , sum_gpp               &
-                   , sum_plresp            , rk4site%par_beam      , rk4site%par_diffuse   &
-                   , rk4site%nir_beam      , rk4site%nir_diffuse   , par_b_beam            &
-                   , par_b_diff            , nir_b_beam            , nir_b_diff
+                   , fluxp%flx_carbon_st   , initp%cwd_rh          , soil_rh               &
+                   , sum_gpp               , sum_plresp            , rk4site%par_beam      &
+                   , rk4site%par_diffuse   , rk4site%nir_beam      , rk4site%nir_diffuse   &
+                   , par_b_beam            , par_b_diff            , nir_b_beam            &
+                   , nir_b_diff
 
    close(unit=83,status='keep')
    !---------------------------------------------------------------------------------------!

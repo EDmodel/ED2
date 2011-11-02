@@ -15,7 +15,7 @@ subroutine RAMS_anal_init(nfile,fnames,file_prefix,dep_zlev,iep_nx,iep_ny,iep_nz
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
    integer                                          , intent(out)   :: nfile
-   character(len=fnm_len), dimension(maxfiles)      , intent(in)    :: fnames
+   character(len=str_len), dimension(maxfiles)      , intent(in)    :: fnames
    real                  , dimension(nzpmax,maxgrds), intent(inout) :: dep_zlev
    integer                                          , intent(inout) :: iep_np
    integer                                          , intent(inout) :: iep_nc
@@ -25,8 +25,8 @@ subroutine RAMS_anal_init(nfile,fnames,file_prefix,dep_zlev,iep_nx,iep_ny,iep_nz
    integer               , dimension(       maxgrds), intent(inout) :: iep_ny
    integer               , dimension(       maxgrds), intent(inout) :: iep_nz
    !----- Internal variables. -------------------------------------------------------------!
-   character(len=fnm_len)                                           :: file_prefix
-   character(len=fnm_len)                                           :: fpref
+   character(len=str_len)                                           :: file_prefix
+   character(len=str_len)                                           :: fpref
    integer               , dimension(13)                            :: mondays
    integer                                                          :: maxmem
    integer                                                          :: nc
@@ -282,7 +282,7 @@ end subroutine RAMS_get_time_step
 integer function RAMS_getvar(stringg,itype,ngrd,a,b,flnm)
 
    use an_header
-   use rpost_dims, only : fnm_len     ! ! intent(inout)
+   use rpost_dims, only : str_len     ! ! intent(inout)
    use misc_coms , only : ifound      ! ! intent(inout)
 
    implicit none
@@ -294,7 +294,7 @@ integer function RAMS_getvar(stringg,itype,ngrd,a,b,flnm)
    integer                       , intent(out)   :: itype
    integer                       , intent(in)    :: ngrd
    !----- Local variables. ----------------------------------------------------------------!
-   character(len=fnm_len)                        :: flng
+   character(len=str_len)                        :: flng
    character(len=120)                            :: errmsg
    character(len=20)                             :: string
    integer                                       :: lenf

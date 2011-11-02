@@ -56,7 +56,6 @@ subroutine read_ednl(iunit,filename)
                                    , gamma_c4                              & ! intent(out)
                                    , d0_grass                              & ! intent(out)
                                    , d0_tree                               & ! intent(out)
-                                   , d0_decay                              & ! intent(out)
                                    , alpha_c3                              & ! intent(out)
                                    , alpha_c4                              & ! intent(out)
                                    , klowco2in                             & ! intent(out)
@@ -221,7 +220,7 @@ subroutine read_ednl(iunit,filename)
                        ,icanrad,ltrans_vis,ltrans_nir,lreflect_vis,lreflect_nir            &
                        ,orient_tree,orient_grass,clump_tree,clump_grass,decomp_scheme      &
                        ,h2o_plant_lim,vmfact_c3,vmfact_c4,mphoto_c3,mphoto_c4,kw_grass     &
-                       ,kw_tree,gamma_c3,gamma_c4,d0_grass,d0_tree,d0_decay,alpha_c3       &
+                       ,kw_tree,gamma_c3,gamma_c4,d0_grass,d0_tree,alpha_c3                &
                        ,alpha_c4,klowco2in,rrffact,growthresp,thetacrit                    &
                        ,quantum_efficiency_t,n_plant_lim,n_decomp_lim,include_fire,sm_fire &
                        ,ianth_disturb,icanturb,include_these_pft,agri_stock                &
@@ -320,7 +319,6 @@ subroutine read_ednl(iunit,filename)
       write (unit=*,fmt=*) ' gamma_c4                  =',gamma_c4
       write (unit=*,fmt=*) ' d0_grass                  =',d0_grass
       write (unit=*,fmt=*) ' d0_tree                   =',d0_tree
-      write (unit=*,fmt=*) ' d0_decay                  =',d0_decay
       write (unit=*,fmt=*) ' alpha_c3                  =',alpha_c3
       write (unit=*,fmt=*) ' alpha_c4                  =',alpha_c4
       write (unit=*,fmt=*) ' klowco2in                 =',klowco2in

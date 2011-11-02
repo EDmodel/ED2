@@ -1,46 +1,122 @@
 #!/bin/sh
 
+#==========================================================================================#
+#==========================================================================================#
+#    Main settings:                                                                        #
+#------------------------------------------------------------------------------------------#
+#----- Main path, usually set by `pwd` so you don't need to change it. --------------------#
 here=`pwd`
-there=`echo ${here} | sed s@/n/Moorcroft_Lab/Users@/n/moorcroft_scratch@g`
+#----- User name, usually set by `whoami` so you don't need to change it. -----------------#
+moi=`whoami`
+#----- Description of this simulation, used to create unique job names. -------------------#
 desc=`basename ${here}`
-sitemet='/n/moorcroft_data/mlongo/data/ed2_data/site_met_driver'
-hvdmet='/n/home11/aantonarakis/EDrelease65/run/'
+#----- Path where biomass initialisation files are: ---------------------------------------#
 bioinit='/n/moorcroft_data/mlongo/data/ed2_data/site_bio_data'
-sheffield='SHEF_NCEP_DRIVER_DS314'
+#----- File containing the list of jobs and their settings: -------------------------------#
 lonlat=${here}'/joborder.txt'
+#----- Should the output be in a disk other than the one set in "here"? -------------------#
+outthere='y'
+#----- Disk name (usually just the path until right before your own directory). -----------#
+diskthere='/n/scratch2/moorcroft_lab'
+#----- This is the default path with the met driver. --------------------------------------#
+sitemetdef='/n/moorcroft_data/mlongo/data/ed2_data/site_met_driver'
+#----- This is the header with the Sheffield data. ----------------------------------------#
+shefhead='SHEF_NCEP_DRIVER_DS314'
+#----- Should we use pseudo drought data? -------------------------------------------------#
+pseudodrought='n'
+#----- Path with default pseudo drought drivers. ------------------------------------------#
+pdroughtpathdef='/n/moorcroft_data/mlongo/data/ed2_data/pseudo_drought'
+#----- Should the met driver be copied to local scratch disks? ----------------------------#
+copy2scratch='y'
+#------------------------------------------------------------------------------------------#
+#    In case we should copy, this is the source where the data is organised to go.  This   #
+# will override sitemetdef and pdroughtpath.                                               #
+#------------------------------------------------------------------------------------------#
+packdatasrc='/n/data/moorcroft_lab/mlongo/stripe_1M_35'
 
-#----- History run variables. -------------------------------------------------------------#
-forcehisto=0     # Impose history start (0 = no, 1 = yes).  The following variables will 
-                 #    be used only whent forcehisto is 1.
+#------------------------------------------------------------------------------------------#
+#      History run variables.                                                              #
+#------------------------------------------------------------------------------------------#
+#----- Force history run (0 = no, 1 = yes). -----------------------------------------------#
+forcehisto=0
+#----- Path with the history file to be used. ---------------------------------------------#
 fullygrown='/n/moorcroftfs1/mlongo/EDBRAMS/debug/dbg_033/pdg_crash/histo/pedegigante'
-yearh='1510'
-monthh='07'
-dateh='01'
-timeh='0000'
-
+#----- Time that we shall use. ------------------------------------------------------------#
+yearh='1510'  # Year
+monthh='07'   # Month
+dateh='01'    # Day
+timeh='0000'  # Hour
+#----- Default tolerance. -----------------------------------------------------------------#
 toldef='0.01'
-initmode=6
 
+#------------------------------------------------------------------------------------------#
+#    ED initial mode:  currently accepted values are:                                      #
+# -1 : true bare ground run.                                                               #
+#  0 : near bare ground run.                                                               #
+#  5 : ED-2.1 restart (make sure SFILIN is set correctly in the Template ED2IN             #
+#  6 : Biomass initialisation files (only for those that we have such data).               #
+#------------------------------------------------------------------------------------------#
+initmode=6
+#------------------------------------------------------------------------------------------#
+
+#------------------------------------------------------------------------------------------#
+#    Name of the unrestricted_parallel scripts:                                            #
+# callunpa: script that calls callserial.sh for unrestricted_parallel runs.                #
+# unparun:  script that is submitted to unrestricted_parallel.                             #
+#------------------------------------------------------------------------------------------#
 callunpa=${here}'/callunpa.sh'
 unparun=${here}'/unparun.sh'
-hostlist=${here}'/hostlist.txt'
 
 #----- Executable name. -------------------------------------------------------------------#
 execname='ed_2.1-opt'
+#------------------------------------------------------------------------------------------#
+#==========================================================================================#
+#==========================================================================================#
+
+
+
+
+
+#==========================================================================================#
+#==========================================================================================#
+#==========================================================================================#
+#==========================================================================================#
+#     Unless you are going to modify the way jobs are submitted, you don't need to change  #
+# anything beyond this point.                                                              #
+#==========================================================================================#
+#==========================================================================================#
+#==========================================================================================#
+#==========================================================================================#
+
+
+#----- Set the main path for the site, pseudo drought and Sheffield met drivers. ----------#
+if [ ${copy2scratch} == 'y' -o ${copy2scratch} == 'Y' ]
+then
+   sitemet='/scratch/'${moi}'/met_driver/site_met_driver'
+   pdroughtpath='/scratch/'${moi}'/met_driver/pseudo_drought'
+   shefpath='/scratch/'${moi}'/met_driver/sheffield'
+else
+   sitemet=${sitemetdef}
+   pdroughtpath=${pdroughtpathdef}
+   shefpath=''
+fi
+#------------------------------------------------------------------------------------------#
+
+
 
 
 #----- Determine the number of polygons to run. -------------------------------------------#
 let npolys=`wc -l ${lonlat} | awk '{print $1 }'`-3
 echo 'Number of polygons: '${npolys}'...'
+#------------------------------------------------------------------------------------------#
+
+
 
 #----- Start a new callunpa.sh. -----------------------------------------------------------#
 rm -f ${callunpa}
 echo '#!/bin/sh' > ${callunpa}
-
-#----- Start a new host list. -------------------------------------------------------------#
-rm -f ${hostlist}
-touch ${hostlist}
 #------------------------------------------------------------------------------------------#
+
 
 
 #------------------------------------------------------------------------------------------#
@@ -53,7 +129,73 @@ then
    echo 'Copy the executable to the file before running this script!'
    exit 99
 fi
+#------------------------------------------------------------------------------------------#
 
+
+#------------------------------------------------------------------------------------------#
+#    Check whether we must create the "there" directory.                                   #
+#------------------------------------------------------------------------------------------#
+if [ ${outthere} == 'y' ] || [ ${outthere} == 'Y' ]
+then
+
+   basehere=`basename ${here}`
+   dirhere=`dirname ${here}`
+   while [ ${basehere} != ${moi} ]
+   do
+      basehere=`basename ${dirhere}`
+      dirhere=`dirname ${dirhere}`
+   done
+   diskhere=${dirhere}
+   echo '-------------------------------------------------------------------------------'
+   echo ' - Simulation control on disk: '${diskhere}
+   echo ' - Output on disk:             '${diskthere}
+   echo '-------------------------------------------------------------------------------'
+   there=`echo ${here} | sed s@${diskhere}@${diskthere}@g`
+else
+   basehere=`basename ${here}`
+   dirhere=`dirname ${here}`
+   while [ ${basehere} != ${moi} ]
+   do
+      basehere=`basename ${dirhere}`
+      dirhere=`dirname ${dirhere}`
+   done
+   diskhere=${dirhere}
+   diskthere=${dirhere}
+   echo '-------------------------------------------------------------------------------'
+   echo ' - Simulation control on disk: '${diskhere}
+   echo ' - Output on disk:             '${diskthere}
+   echo '-------------------------------------------------------------------------------'
+   there=${here}
+fi
+#------------------------------------------------------------------------------------------#
+
+
+
+#------------------------------------------------------------------------------------------#
+#    Make sure that the directory there exists, if not, create all parent directories      #
+# needed.                                                                                  #
+#------------------------------------------------------------------------------------------#
+while [ ! -s ${there} ]
+do
+   namecheck=`basename ${there}`
+   dircheck=`dirname ${there}`
+   while [ ! -s ${dircheck} ] && [ ${namecheck} != '/' ]
+   do
+      namecheck=`basename ${dircheck}`
+      dircheck=`dirname ${dircheck}`
+   done
+   
+   if [ ${namecheck} == '/' ]
+   then
+      echo 'Invalid disk for variable there:'
+      echo ' DISK ='${diskhere}
+      exit 58
+   else
+      echo 'Making directory: '${dircheck}/${namecheck}
+      mkdir ${dircheck}/${namecheck}
+   fi
+done
+#------------------------------------------------------------------------------------------#
 
 
 
@@ -69,6 +211,26 @@ while [ ${ff} -lt ${npolys} ]
 do
    let ff=${ff}+1
    let line=${ff}+3
+
+   #---------------------------------------------------------------------------------------#
+   #   Find a unique waiting time for callserial.sh.                                       #
+   #---------------------------------------------------------------------------------------#
+   if [ ${copy2scratch} == 'y' -o ${copy2scratch} == 'Y' ]
+   then
+      let wtime=${ff}%8
+      let wtime=${wtime}*20
+      nudge=`date +%S`
+      if [ ${nudge} -lt 10 ]
+      then 
+         nudge=`echo ${nudge} | awk '{print substr($1,2,1)}'`
+      fi
+      let nudge=${nudge}%15
+      let wtime=${wtime}+${nudge}
+      let wtime=${wtime}+2
+   else
+      wtime=999999
+   fi
+   #---------------------------------------------------------------------------------------#
 
    #---------------------------------------------------------------------------------------#
    #      Read the ffth line of the polygon list.  There must be smarter ways of doing     #
@@ -108,41 +270,41 @@ do
    gammac4=`echo ${oi}     | awk '{print $30}'`
    d0grass=`echo ${oi}     | awk '{print $31}'`
    d0tree=`echo ${oi}      | awk '{print $32}'`
-   d0decay=`echo ${oi}     | awk '{print $33}'`
-   alphac3=`echo ${oi}     | awk '{print $34}'`
-   alphac4=`echo ${oi}     | awk '{print $35}'`
-   klowco2=`echo ${oi}     | awk '{print $36}'`
-   rrffact=`echo ${oi}     | awk '{print $37}'`
-   growthresp=`echo ${oi}  | awk '{print $38}'`
-   h2olimit=`echo ${oi}    | awk '{print $39}'`
-   isfclyrm=`echo ${oi}    | awk '{print $40}'`
-   icanturb=`echo ${oi}    | awk '{print $41}'`
-   ubmin=`echo ${oi}       | awk '{print $42}'`
-   ugbmin=`echo ${oi}      | awk '{print $43}'`
-   ustmin=`echo ${oi}      | awk '{print $44}'`
-   gamm=`echo ${oi}        | awk '{print $45}'`
-   gamh=`echo ${oi}        | awk '{print $46}'`
-   tprandtl=`echo ${oi}    | awk '{print $47}'`
-   ribmax=`echo ${oi}      | awk '{print $48}'`
-   atmco2=`echo ${oi}      | awk '{print $49}'`
-   thcrit=`echo ${oi}      | awk '{print $50}'`
-   smfire=`echo ${oi}      | awk '{print $51}'`
-   isoilbc=`echo ${oi}     | awk '{print $52}'`
-   imetrad=`echo ${oi}     | awk '{print $53}'`
-   ibranch=`echo ${oi}     | awk '{print $54}'`
-   icanrad=`echo ${oi}     | awk '{print $55}'`
-   crown=`echo   ${oi}     | awk '{print $56}'`
-   ltransvis=`echo ${oi}   | awk '{print $57}'`
-   lreflectvis=`echo ${oi} | awk '{print $58}'`
-   ltransnir=`echo ${oi}   | awk '{print $59}'`
-   lreflectnir=`echo ${oi} | awk '{print $60}'`
-   orienttree=`echo ${oi}  | awk '{print $61}'`
-   orientgrass=`echo ${oi} | awk '{print $62}'`
-   clumptree=`echo ${oi}   | awk '{print $63}'`
-   clumpgrass=`echo ${oi}  | awk '{print $64}'`
-   ivegtdyn=`echo ${oi}    | awk '{print $65}'`
-   igndvap=`echo ${oi}     | awk '{print $66}'`
-   iphen=`echo ${oi}       | awk '{print $67}'`
+   alphac3=`echo ${oi}     | awk '{print $33}'`
+   alphac4=`echo ${oi}     | awk '{print $34}'`
+   klowco2=`echo ${oi}     | awk '{print $35}'`
+   rrffact=`echo ${oi}     | awk '{print $36}'`
+   growthresp=`echo ${oi}  | awk '{print $37}'`
+   h2olimit=`echo ${oi}    | awk '{print $38}'`
+   isfclyrm=`echo ${oi}    | awk '{print $39}'`
+   icanturb=`echo ${oi}    | awk '{print $40}'`
+   ubmin=`echo ${oi}       | awk '{print $41}'`
+   ugbmin=`echo ${oi}      | awk '{print $42}'`
+   ustmin=`echo ${oi}      | awk '{print $43}'`
+   gamm=`echo ${oi}        | awk '{print $44}'`
+   gamh=`echo ${oi}        | awk '{print $45}'`
+   tprandtl=`echo ${oi}    | awk '{print $46}'`
+   ribmax=`echo ${oi}      | awk '{print $47}'`
+   atmco2=`echo ${oi}      | awk '{print $48}'`
+   thcrit=`echo ${oi}      | awk '{print $49}'`
+   smfire=`echo ${oi}      | awk '{print $50}'`
+   isoilbc=`echo ${oi}     | awk '{print $51}'`
+   imetrad=`echo ${oi}     | awk '{print $52}'`
+   ibranch=`echo ${oi}     | awk '{print $53}'`
+   icanrad=`echo ${oi}     | awk '{print $54}'`
+   crown=`echo   ${oi}     | awk '{print $55}'`
+   ltransvis=`echo ${oi}   | awk '{print $56}'`
+   lreflectvis=`echo ${oi} | awk '{print $57}'`
+   ltransnir=`echo ${oi}   | awk '{print $58}'`
+   lreflectnir=`echo ${oi} | awk '{print $59}'`
+   orienttree=`echo ${oi}  | awk '{print $60}'`
+   orientgrass=`echo ${oi} | awk '{print $61}'`
+   clumptree=`echo ${oi}   | awk '{print $62}'`
+   clumpgrass=`echo ${oi}  | awk '{print $63}'`
+   ivegtdyn=`echo ${oi}    | awk '{print $64}'`
+   igndvap=`echo ${oi}     | awk '{print $65}'`
+   iphen=`echo ${oi}       | awk '{print $66}'`
+   iallom=`echo ${oi}      | awk '{print $67}'`
    #---------------------------------------------------------------------------------------#
 
 
@@ -153,7 +315,7 @@ do
       echo 'Order: '${ff}', updating a couple of files on '${here}/${polyname}'...'
       
       #----- Save the last tolerance in case we are going to make it more strict. ---------#
-      oldtol=`grep RK4_TOLERANCE ${here}/${polyname}/ED2IN | awk '{print $3}'`
+      oldtol=`grep NL%RK4_TOLERANCE ${here}/${polyname}/ED2IN | awk '{print $3}'`
       rm -f ${here}/${polyname}/ED2IN 
       rm -f ${here}/${polyname}/callserial.sh
       rm -f ${here}/${polyname}/callunpa.sh 
@@ -194,31 +356,30 @@ do
    # we simply copy the template, and assume initial run.  Otherwise, we must find out     #
    # where the simulation was when it stopped.                                             #
    #---------------------------------------------------------------------------------------#
-   if [ -s  ${here}/${polyname} ]
+   if [ -s  ${there}/${polyname} ]
    then
 
       #------------------------------------------------------------------------------------#
       #      This step is necessary because we may have killed the run while it was        #
       # writing, and as a result, the file may be corrupt.                                 #
       #------------------------------------------------------------------------------------#
-      nhdf5=`ls -1 ${here}/${polyname}/histo/* 2> /dev/null | wc -l`
+      nhdf5=`ls -1 ${there}/${polyname}/histo/* 2> /dev/null | wc -l`
       if [ ${nhdf5} -gt 0 ]
       then
-
          h5fine=0
 
-         while [ $h5fine -eq 0 ]
+         while [ ${h5fine} -eq 0 ]
          do
-            lasthdf5=`ls -1 ${here}/${polyname}/histo/* | tail -1`
+            lasthdf5=`ls -1 ${there}/${polyname}/histo/* | tail -1`
             h5dump -H ${lasthdf5} 1> /dev/null 2> ${here}/badfile.txt
 
             if [ -s ${here}/badfile.txt ]
             then
                /bin/rm -fv ${lasthdf5}
-               nhdf5=`ls -1 ${here}/${polyname}/histo/* 2> /dev/null | wc -l`
+               nhdf5=`ls -1 ${there}/${polyname}/histo/* 2> /dev/null | wc -l`
                if [ ${nhdf5} -eq 0 ]
                then
-                  hdf5fine=1
+                  h5fine=1
                fi
             else
                h5fine=1
@@ -255,6 +416,13 @@ do
       #------------------------------------------------------------------------------------#
 
    else
+   
+      #----- Make a copy of the directory "there" in case here and there aren't the same. -#
+      if [ ${here} != ${there} ]
+      then
+         cp -r ${here}/Template ${there}/${polyname}
+      fi
+   
       sed -i s@thispoly@${polyname}@g ${here}/${polyname}/whichrun.r
       sed -i s@thisqueue@${queue}@g   ${here}/${polyname}/whichrun.r
       sed -i s@pathhere@${here}@g     ${here}/${polyname}/whichrun.r
@@ -292,7 +460,7 @@ do
       crop=5
       plantation=8
       ;;
-   aei|asu|cnf|bnu|cwb|erm|igp|iqq|ipv|mgf|rao|sla|zpe|kna)
+   aei|asu|cnf|bnu|cwb|erm|iqq|ipv|mgf|rao|sla|zpe|kna)
       pfts='1,2,3,4,16,17'
       crop=16
       plantation=17
@@ -319,88 +487,156 @@ do
 
 
 
+   if [ ${pseudodrought} != 'y' ] && [ ${pseudodrought} != 'Y' ]
+   then
+      #------------------------------------------------------------------------------------#
+      #     Determine which meteorological data set to use.  Default is the Sheffield/NCEP #
+      # dataset, otherwise the site-level tower data is used.                              #
+      #------------------------------------------------------------------------------------#
+      case ${metdriver} in
+      Bananal_Island)
+         metdriverdb=${sitemet}'/Bananal_Island/Bananal_HEADER'
+         metcyc1=2004
+         metcycf=2006
+         imetavg=1
+         ;;
+      Caxiuana)
+         metdriverdb=${sitemet}'/Caxiuana/Caxiuana06_HEADER'
+         metcyc1=1999
+         metcycf=2003
+         imetavg=1
+         ;;
+      Harvard)
+         metdriverdb=${sitemet}'/Harvard_Forest/Harvard_Forest_HEADER'
+         metcyc1=1993
+         metcycf=2008
+         imetavg=1
+         ;;
+      Manaus_KM34)
+         metdriverdb=${sitemet}'/Manaus_KM34/Manaus_KM34_HEADER'
+         metcyc1=2002
+         metcycf=2005
+         imetavg=1
+         ;;
+      Reserva_Jaru)
+         metdriverdb=${sitemet}'/Reserva_Jaru/Reserva_Jaru_HEADER'
+         metcyc1=2000
+         metcycf=2002
+         imetavg=1
+         ;;
+      Reserva_Pe-de-Gigante)
+         metdriverdb=${sitemet}'/Reserva_Pe_de_Gigante/Reserva_Pe-de-Gigante_HEADER'
+         metcyc1=2001
+         metcycf=2003
+         imetavg=1
+         ;;
+      Santarem_KM67)
+         metdriverdb=${sitemet}'/Santarem_KM67/Santarem_KM67_HEADER'
+         metcyc1=2002
+         metcycf=2004
+         imetavg=1
+         ;;
+      Santarem_KM77)
+         metdriverdb=${sitemet}'/Santarem_KM77/Santarem_KM77_HEADER'
+         metcyc1=2001
+         metcycf=2005
+         imetavg=1
+         ;;
+      Santarem_KM83)
+         metdriverdb=${sitemet}'/Santarem_KM83/Santarem_KM83_HEADER'
+         metcyc1=2001
+         metcycf=2003
+         imetavg=1
+         ;;
+      Fazenda_NS)
+         metdriverdb=${sitemet}'/Fazenda_Nossa_Senhora/Fazenda_Nossa_Senhora_HEADER'
+         metcyc1=1999
+         metcycf=2001
+         imetavg=1
+         ;;
+      Guyaflux)
+         metdriverdb=${sitemet}'/Guyaflux/Guyaflux_HEADER'
+         metcyc1=2007
+         metcycf=2009
+         imetavg=1
+         ;;
+      Guyaflux_Natalia)
+         metdriverdb=${sitemet}'/Guyaflux_Natalia/Guyaflux_Natalia_HEADER'
+         metcyc1=2007
+         metcycf=2009
+         imetavg=1
+         ;;
+      Sheffield)
+         if [ 'x'${shefpath} == 'x' ]
+         then
+            metdriverdb=${here}/${polyname}/${shefhead}
+         else
+            metdriverdb=${shefpath}/${shefhead}
+         fi
+         metcyc1=1969
+         metcycf=2008
+         imetavg=2
+         ;;
+      *)
+         echo 'Met driver: '${metdriver}
+         echo 'Sorry, this met driver is not valid for regular runs'
+         exit 85
+         ;;
+      esac
+      #------------------------------------------------------------------------------------#
+   else
+      #------------------------------------------------------------------------------------#
+      #    Run a pseudo-drought simulation.  Find which settings to use based on the       #
+      # final part of the job name.                                                        #
+      #------------------------------------------------------------------------------------#
+      nchar=`echo ${polyname} | wc -m`
+      #------------------------------------------------------------------------------------#
+      #     There are two ways to define the drought flag.  If we define drought just as   #
+      # a on/off flag, or if we turn on and off each of the drought components.  We must   #
+      # figure out which one we are doing here.                                            #
+      #------------------------------------------------------------------------------------#
+      let dr0=${nchar}-9
+      drought=`echo ${polyname} | awk '{print substr($1,'${dr0}',9)}'`
+      if [ ${drought} == 'drought00' ]
+      then
+         metdesc='tmp00_shv00_rad00_raf00'
+      elif [ ${drought} == 'drought01' ]
+      then
+         metdesc='tmp01_shv00_rad01_raf01'
+      else
+         let mda=${nchar}-23
+         metdesc=`echo ${polyname} | awk '{print substr($1,'${mda}',23)}'`
+      fi
+      #------------------------------------------------------------------------------------#
 
+      case ${metdriver} in
+      Santarem_KM67)
+         metdriverdb=${pdroughtpath}'/Santarem_KM67/S67_'${metdesc}'_HEADER'
+         metcyc1=1600
+         metcycf=1609
+         imetavg=1
+         ;;
+      Santarem_KM77)
+         metdriverdb=${pdroughtpath}'/Santarem_KM77/S77_'${metdesc}'_HEADER'
+         metcyc1=1600
+         metcycf=1609
+         imetavg=1
+         ;;
+      Manaus_KM34)
+         metdriverdb=${pdroughtpath}'/Manaus_KM34/M34_'${metdesc}'_HEADER'
+         metcyc1=1600
+         metcycf=1609
+         imetavg=1
+         ;;
+      *)
+         echo 'Met driver: '${metdriver}
+         echo 'Sorry, this met driver is not valid for pseudo drought runs'
+         exit 84
+         ;;
+      esac
+      #------------------------------------------------------------------------------------#
+   fi
    #---------------------------------------------------------------------------------------#
-   #     Determine which meteorological data set to use.  Default is the Sheffield/NCEP    #
-   # dataset, otherwise the site-level tower data is used.                                 #
-   #---------------------------------------------------------------------------------------#
-   case ${metdriver} in
-   Bananal_Island)
-      metdriverdb=${sitemet}'/Bananal_Island/Bananal_HEADER'
-      metcyc1=2004
-      metcycf=2006
-      imetavg=1
-      ;;
-   Caxiuana)
-      metdriverdb=${sitemet}'/Caxiuana/Caxiuana06_HEADER'
-      metcyc1=1999
-      metcycf=2003
-      imetavg=1
-      ;;
-   Harvard)
-      metdriverdb=${hvdmet}'/HARVARD_MET_93_09'
-      metcyc1=1993
-      metcycf=2008
-      imetavg=1
-      ;;
-   Manaus_KM34)
-      metdriverdb=${sitemet}'/Manaus_KM34/Manaus_KM34_HEADER'
-      metcyc1=2002
-      metcycf=2005
-      imetavg=1
-      ;;
-   Reserva_Jaru)
-      metdriverdb=${sitemet}'/Reserva_Jaru/Reserva_Jaru_HEADER'
-      metcyc1=2000
-      metcycf=2002
-      imetavg=1
-      ;;
-   Reserva_Pe-de-Gigante)
-      metdriverdb=${sitemet}'/Reserva_Pe_de_Gigante/Reserva_Pe-de-Gigante_HEADER'
-      metcyc1=2001
-      metcycf=2003
-      imetavg=1
-      ;;
-   Santarem_KM67)
-      metdriverdb=${sitemet}'/Santarem_KM67/Santarem_KM67_HEADER'
-      metcyc1=2002
-      metcycf=2004
-      imetavg=1
-      ;;
-   Santarem_KM77)
-      metdriverdb=${sitemet}'/Santarem_KM77/Santarem_KM77_HEADER'
-      metcyc1=2001
-      metcycf=2005
-      imetavg=1
-      ;;
-   Santarem_KM83)
-      metdriverdb=${sitemet}'/Santarem_KM83/Santarem_KM83_HEADER'
-      metcyc1=2001
-      metcycf=2003
-      imetavg=1
-      ;;
-   Fazenda_NS)
-      metdriverdb=${sitemet}'/Fazenda_Nossa_Senhora/Fazenda_Nossa_Senhora_HEADER'
-      metcyc1=1999
-      metcycf=2001
-      imetavg=1
-      ;;
-   Guyaflux)
-      metdriverdb=${sitemet}'/Guyaflux/Guyaflux_HEADER'
-      metcyc1=2007
-      metcycf=2009
-      imetavg=1
-      ;;
-   *)
-      metdriverdb=${here}/${polyname}/${sheffield}
-      metcyc1=1969
-      metcycf=2008
-      imetavg=2
-      ;;
-   esac
-   #---------------------------------------------------------------------------------------#
-
-
 
 
 
@@ -756,7 +992,7 @@ do
          ;;
       esac
    else
-      thissfilin=${here}/${polyname}/histo/${polyname}
+      thissfilin=${there}/${polyname}/histo/${polyname}
    fi
    #---------------------------------------------------------------------------------------#
 
@@ -784,6 +1020,7 @@ do
    sed -i s@mycrop@${crop}@g                 ${ED2IN}
    sed -i s@myplantation@${plantation}@g     ${ED2IN}
    sed -i s@myiphen@${iphen}@g               ${ED2IN}
+   sed -i s@myallom@${iallom}@g              ${ED2IN}
    sed -i s@myisoilflg@${polyisoil}@g        ${ED2IN}
    sed -i s@mynslcon@${polyntext}@g          ${ED2IN}
    sed -i s@myslxsand@${polysand}@g          ${ED2IN}
@@ -805,7 +1042,6 @@ do
    sed -i s@mygammac4@${gammac4}@g           ${ED2IN}
    sed -i s@myd0grass@${d0grass}@g           ${ED2IN}
    sed -i s@myd0tree@${d0tree}@g             ${ED2IN}
-   sed -i s@myd0decay@${d0decay}@g           ${ED2IN}
    sed -i s@myalphac3@${alphac3}@g           ${ED2IN}
    sed -i s@myalphac4@${alphac4}@g           ${ED2IN}
    sed -i s@myklowco2@${klowco2}@g           ${ED2IN}
@@ -867,20 +1103,20 @@ do
 
    #----- Change the srun.sh file. --------------------------------------------------------#
    srun=${here}'/'${polyname}'/srun.sh'
-   sed -i s@pathhere@${here}@g     ${srun}
-   sed -i s@thispoly@${polyname}@g ${srun}
-   sed -i s@thisdesc@${desc}@g     ${srun}
+   sed -i s@pathhere@${here}@g      ${srun}
+   sed -i s@paththere@${there}@g    ${srun}
+   sed -i s@thispoly@${polyname}@g  ${srun}
+   sed -i s@thisdesc@${desc}@g      ${srun}
+   sed -i s@zzzzzzzz@${wtime}@g     ${srun}
+   sed -i s@myorder@${ff}@g         ${srun}
 
    #----- Change the callserial.sh file. --------------------------------------------------#
    callserial=${here}'/'${polyname}'/callserial.sh'
-   sed -i s@thisroot@${here}@g ${callserial}
-   sed -i s@thispoly@${polyname}@g ${callserial}
-   sed -i s@myexec@${execname}@g ${callserial}
-
-   if [ ${queue} == 'GC3' ]
-   then
-      queue='long_serial'
-   fi
+   sed -i s@thisroot@${here}@g          ${callserial}
+   sed -i s@thispoly@${polyname}@g      ${callserial}
+   sed -i s@myexec@${execname}@g        ${callserial}
+   sed -i s@myname@${moi}@g             ${callserial}
+   sed -i s@mypackdata@${packdatasrc}@g ${callserial}
 
    if [ ${queue} == 'unrestricted_parallel' ]
    then
@@ -891,47 +1127,63 @@ do
    fi
 
    #----- Make the shell script for the unrestricted_parallel. ----------------------------#
-   if [ ${queue} == 'unrestricted_parallel' ] && [ ${runt} == 'HISTORY' -o ${runt} == 'INITIAL' ]
+   if [ ${queue} == 'unrestricted_parallel' ] 
    then
-      touch ${callunpa}
-
-      #----- Add command to the node. -----------------------------------------------------#
-      let unpa=${unpa}+1
-      let submit=${unpa}%8 # % is mod operator
-      let wtime=${submit}*15
-      let wtime=${wtime}+2
-      mycomm="${here}/${polyname}/callserial.sh ${wtime} &"
-      echo ${mycomm} >> ${callunpa}
-      
-      lastunpa=${polyname}
-
-      #----- Finish the shell script and put it inside the node. --------------------------#
-      if [ ${submit} -eq 0 ]
+      if [ ${runt} == 'HISTORY' -o ${runt} == 'INITIAL' ]
       then
-         #----- Move callunpa to the polygon. ---------------------------------------------#
-         echo 'wait' >> ${callunpa}
-         chmod u+x ${callunpa}
-         mv ${callunpa} ${here}/${polyname} 
+         touch ${callunpa}
 
-         #----- Start a new callunpa. -----------------------------------------------------#
-         echo '#!/bin/sh' > ${callunpa}
+         #----- Add command to the node. --------------------------------------------------#
+         if [ ${copy2scratch} == 'y' -o ${copy2scratch} == 'Y' ]
+         then
+            let unpa=${unpa}+1
+            let submit=${unpa}%8 # % is mod operator
+            let wtime=${submit}*15
+            let wtime=${wtime}+2
+         else
+            wtime=999999
+         fi
 
-         #----- Create the shell script that will call bsub. ------------------------------#
-         echo '#!/bin/sh' > ${unparun}
-         bsub='bsub -q unrestricted_parallel'
-         bsub=${bsub}' -J '${polyname}
-         bsub=${bsub}' -o '${here}'/'${polyname}'/serial_lsf.out -n '${unpa}
-         bsub=${bsub}' < '${here}'/'${polyname}'/'`basename ${callunpa}`
-         echo ${bsub} >> ${unparun}
-         chmod u+x ${unparun}
-         mv ${unparun} ${here}/${polyname}
+         mycomm="${here}/${polyname}/callserial.sh ${wtime} &"
+         echo ${mycomm} >> ${callunpa}
+         
+         lastunpa=${polyname}
 
-         #----- Reset unpa for next job. --------------------------------------------------#
-         lastunpa='none'
-         unpa=0
+         #----- Finish the shell script and put it inside the node. -----------------------#
+         if [ ${submit} -eq 0 ]
+         then
+            #----- Move callunpa to the polygon. ------------------------------------------#
+            echo 'wait' >> ${callunpa}
+            chmod u+x ${callunpa}
+            mv ${callunpa} ${here}/${polyname} 
+
+            #----- Start a new callunpa. --------------------------------------------------#
+            echo '#!/bin/sh' > ${callunpa}
+
+            #----- Create the shell script that will call bsub. ---------------------------#
+            echo '#!/bin/sh' > ${unparun}
+            bsub='bsub -q unrestricted_parallel'
+            bsub=${bsub}' -J '${polyname}
+            bsub=${bsub}' -o '${here}'/'${polyname}'/serial_lsf.out -n '${unpa}
+            bsub=${bsub}' < '${here}'/'${polyname}'/'`basename ${callunpa}`
+            echo ${bsub} >> ${unparun}
+            chmod u+x ${unparun}
+            mv ${unparun} ${here}/${polyname}
+
+            #----- Reset unpa for next job. -----------------------------------------------#
+            lastunpa='none'
+            unpa=0
+         fi
+         #---------------------------------------------------------------------------------#
       fi
+      #------------------------------------------------------------------------------------#
    fi
+   #---------------------------------------------------------------------------------------#
 done
+#------------------------------------------------------------------------------------------#
+
+
+
 
 #----- Make sure that all jobs were submitted to unrestricted serial. ---------------------#
 if [ ${lastunpa} == 'none' ]
@@ -957,3 +1209,4 @@ else
    lastunpa='none'
    unpa=0
 fi
+#------------------------------------------------------------------------------------------#

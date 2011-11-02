@@ -44,6 +44,7 @@ subroutine soil_moisture_init(n1,n2,n3,mzg,npat,ifm,can_theta,can_prss,glat,glon
    use mem_leaf          , only : stgoff          & ! intent(in)
                                 , slmstr          & ! intent(in)
                                 , slz             ! ! intent(in)
+   use grid_dims         , only : str_len         ! ! intent(in)
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
    integer                           , intent(in)    :: n1
@@ -61,7 +62,7 @@ subroutine soil_moisture_init(n1,n2,n3,mzg,npat,ifm,can_theta,can_prss,glat,glon
    real   , dimension(    n2,n3,npat), intent(inout) :: psibar_10d
    real   , dimension(    n2,n3,npat), intent(in)    :: leaf_class
    !----- Local variables. ----------------------------------------------------------------!
-   character (len=256)                               :: usdata, usmodel
+   character (len=str_len)                           :: usdata, usmodel
    character (len=20)                                :: pref
    character (len=2)                                 :: cidate,cimon
    character (len=1)                                 :: cgrid

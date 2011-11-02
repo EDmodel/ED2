@@ -40,6 +40,7 @@ if (runflag == 1 .or. runflag == 2) then   ! Initialization(1) or file check(2)
    ! Find init and start date
    call date_make_big(iyeara,imontha,idatea,itimea*100  &
                 ,totdate_init)
+
    if (runtype == 'HISTORY') then
 
       call date_add_to_big(totdate_init,time,'s',totdate_start)
@@ -314,24 +315,25 @@ do ng = 1, ngrids
    !  start printing section
    !--------------------------------------------------------------
 
-   print*,' '
-   print*,' '
-   print*,' '
-   print*,'-------------------------------------------------------------'
-   print*,'-----------  NDVI Input File Inventory: Grid '//cgrid
-   print*,'-------------------------------------------------------------'
+   write(unit=*,fmt='(a)') ' '
+   write(unit=*,fmt='(a)') ' '
+   write(unit=*,fmt='(a)') ' '
+   write(unit=*,fmt='(a)') ' '
+   write(unit=*,fmt='(a)') '-------------------------------------------------------------'
+   write(unit=*,fmt='(10x,a,i5)') 'NDVI Input File Inventory:  Grid ',ng
+   write(unit=*,fmt='(a)') '-------------------------------------------------------------'
    do nf=1,nndvifiles(ng)
-      print*,  itotdate_ndvi(nf,ng),'   ',trim(fnames_ndvi(nf,ng))
-   enddo
-   print*,'------------------------------------------------------'
+      write(unit=*,fmt='(a14,3x,a)')  itotdate_ndvi(nf,ng),trim(fnames_ndvi(nf,ng))
+   end do
+   write(unit=*,fmt='(a)') '-------------------------------------------------------------'
 
-enddo
+end do
 
 ! Check the cyclic condition. Only relevant if we are updating in time.
 !   WE ARE ONLY ALLOWING CYCLIC ON ALL GRIDS
 if(indvicycdata > 0) then
    if(indvicycdata /= sum(nndvifiles(1:ngrids))) then
-      print*, 'All ndvi surface files do not have year 0000'
+      print*, 'None of the NDVI surface files has year 0000'
       print*, 'This confuses the gods and can not occur.'
       stop 'ndvi_inv'
    endif
@@ -355,6 +357,7 @@ subroutine ndvi_update(iswap,nfile)
 use mem_leaf
 use mem_grid
 use io_params
+use grid_dims, only : str_len
 
 implicit none
 
@@ -364,7 +367,7 @@ integer,save :: iun=25
 
 integer :: ng,nc,ip
 character(len=1) :: cgrid
-character(len=128) :: flnm
+character(len=str_len) :: flnm
 character(len=1) :: dummy
 
 
@@ -388,6 +391,8 @@ do ng=1,ngrids
    flnm=fnames_ndvi(nfile,ng)
    nc=len_trim(flnm)-4
    flnm(nc:nc)=cgrid
+
+    
 
    call rams_f_open(iun,flnm,'FORMATTED','OLD','READ',0)
    ! Skip header lines

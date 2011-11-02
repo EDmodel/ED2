@@ -15,7 +15,7 @@ use mem_grid
 use mem_varinit
 use grid_struct
 use rconstants
-
+use grid_dims, only : str_len
 implicit none
 
 integer :: iswap,ncond
@@ -29,7 +29,7 @@ real, allocatable, dimension(:,:) :: topt1
 real(kind=8) :: time1
 
 integer :: iyr,imn,idy,itm,ie,maxarr,maxarr2,ngr,maxx1,maxy1,maxz1
-character (len=80) :: hnameinh,prefix
+character (len=str_len) :: hnameinh,prefix
 character (len=2) :: cng
 integer, external :: cio_i,cio_f,cio_f8_sca,cio_i_sca,cio_f_sca
 integer,save :: iunhd=11,inhunt=10

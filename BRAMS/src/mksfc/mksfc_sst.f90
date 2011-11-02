@@ -11,12 +11,13 @@ subroutine sst_read_dataheader(ifm)
 
 use mem_mksfc
 use io_params
+use grid_dims, only : str_len
 
 implicit none
 integer :: ifm
 
 integer :: itime,nc
-character(len=256) :: flnm,line,line2
+character(len=str_len) :: flnm,line,line2
 character(len=1) :: dummy
 logical :: there
 integer, external :: lastslash
@@ -162,12 +163,12 @@ subroutine sst_write(ifm,ivt)
 use mem_mksfc
 use mem_grid
 use io_params
-
+use grid_dims, only : str_len
 implicit none
 integer :: ifm,ivt,i,j
 
 real :: glatr,glonr
-character(len=256) :: flnm
+character(len=str_len) :: flnm
 character(len=2) :: cgrid
 real(kind=8) :: zero
 

@@ -545,7 +545,7 @@ $END
    !              interpolate.                                                             !
    !---------------------------------------------------------------------------------------!
    IF_CUINV   =      0,
-   CU_PREFIX  = '/myoutpath/cumul/mysimul-C-',
+   CU_PREFIX  = 'myoutpath/cumul/mysimul-C-',
    TNUDCU     =   900.,
    WT_CU_GRID =     1.,   1.,   .5,
    TCU_BEG    =     0., 
@@ -889,7 +889,7 @@ $CUPARM_OPTIONS
    ! PS3: If NCLOUDS >= 3, then the middle ones will necessarily use Grell's               !
    !      parameterization.                                                                !
    !---------------------------------------------------------------------------------------!
-    NCLOUDS  = 2,
+   NCLOUDS  = 2,
    !---------------------------------------------------------------------------------------!
 
 
@@ -971,7 +971,7 @@ $CUPARM_OPTIONS
    !---------------------------------------------------------------------------------------!
    !     The following variables are scalars.                                              !
    !---------------------------------------------------------------------------------------!
-   CLD2PREC = 0.002,  ! Ratio of conversion of condensates to precipitation.       [   ---]
+   CLD2PREC = 0.001,  ! Ratio of conversion of condensates to precipitation.       [   ---]
    ZKBMAX   = 4000.,  ! Maximum AGL height in which updrafts can originate.        [     m]
    ZCUTDOWN = 3000.,  ! Maximum AGL height in which downdrafts can originate.      [     m]
    Z_DETR   = 1250.,  ! Top of the downdraft detrainment layer                     [     m]
@@ -1374,7 +1374,7 @@ $MODEL_OPTIONS
       !   1 -- sand               |   7 -- silty clay loam    |  13 -- bedrock             !
       !   2 -- loamy sand         |   8 -- clayey loam        |  14 -- silt                !
       !   3 -- sandy loam         |   9 -- sandy clay         |  15 -- heavy clay          !
-      !   4 -- silt loam          |  10 -- silty clay         |  16 -- clayey sand         !
+      !   4 -- silty loam         |  10 -- silty clay         |  16 -- clayey sand         !
       !   5 -- loam               |  11 -- clay               |  17 -- clayey silt         !
       !   6 -- sandy clay loam    |  12 -- peat                                            !
       !------------------------------------------------------------------------------------!
@@ -1410,7 +1410,7 @@ $MODEL_OPTIONS
       !   Soil type 21 is a special case in which we use the albedo method that used to be !
       ! the default in BRAMS-4.0.6 and ED-2.1.                                             !
       !------------------------------------------------------------------------------------!
-      ISOILCOL  = 6,
+      ISOILCOL  = 2,
       !------------------------------------------------------------------------------------!
 
 
@@ -1537,7 +1537,7 @@ $MODEL_OPTIONS
       !            2.  Soil conductivity decreases with depth even for constant soil       !
       !                moisture, otherwise it is the same as 1.                            !
       !------------------------------------------------------------------------------------!
-      IPERCOL         = 1,
+      IPERCOL         = 0,
       !------------------------------------------------------------------------------------!
 
 
@@ -1820,7 +1820,7 @@ $ED2_INFO
    !          If time is a problem, i.e., the runs are too slow, then try making it        !
    !          larger, but not much larger so to avoid problems...                          !
    !---------------------------------------------------------------------------------------!
-   DTLSM  = 200.0,
+   DTLSM  = 240.0,
    !---------------------------------------------------------------------------------------!
 
 
@@ -1994,7 +1994,7 @@ $ED2_INFO
    SOIL_DATABASE     = '/n/Moorcroft_Lab/Lab/data/ed2_data/faoOLD/FAO_',
    LU_DATABASE       = '/n/Moorcroft_Lab/Lab/data/ed2_data/land_use/glu/glu-',
    PLANTATION_FILE   = '',
-   LU_RESCALE_FILE   = '',
+   LU_RESCALE_FILE   = '/n/Moorcroft_Lab/Lab/data/ed2_data/21restart/rescale/SA1relative.lu.area-22km-2038.txt',
    THSUMS_DATABASE   = '/n/Moorcroft_Lab/Lab/data/ed2_data/ed_inputs/',
    !---------------------------------------------------------------------------------------!
 
@@ -2102,8 +2102,8 @@ $ED2_INFO
    !      coefficients for CO2 and O2, as in Farquhar et al. (1980) and in CLM.            !
    ! 2 -- Collatz et al. (1991).  We use the power (Q10) equations, with Collatz et al.    !
    !      parameters for compensation point, and the Michaelis-Mentel coefficients.  The   !
-   !      leaf respiration correction for high and low temperatures are the same as in     !
-   !      Moorcroft et al. (2001), but the correction for Vm is done like in Collatz.      !
+   !      correction for high and low temperatures are the same as in Moorcroft et al.     !
+   !      (2001).                                                                          !
    ! 3 -- Same as 2, except that we find Gamma* as in Farquhar et al. (1980) and in CLM.   !
    !---------------------------------------------------------------------------------------!
    IPHYSIOL = 2,
@@ -2114,16 +2114,21 @@ $ED2_INFO
    !---------------------------------------------------------------------------------------!
    ! IALLOM -- Which allometry to use (this affects tropical PFTs only)                    !
    !           0.  Original ED-2.1                                                         !
-   !           1.  Baker et al. (2004), equation 2, keeping the same balive:bdead ratio    !
-   !           2.  Baker et al. (2004), equation 2, keeping the same balive as in ED-2.1   !
-   !           3.  Same as 2, but using a DBH-> Root depth equation based on               !
-   !               Kenzo et al. (2009) for a secondary forest in Malaysia.  Roots will     !
-   !               be shallow, though...                                                   !
-   !           4.  Same as 2, but with an experimental root depth that makes canopy trees  !
-   !               to have root depths of 5m and grasses/seedlings at 0.5 to have root     !
-   !               depth of 0.5 m.                                                         !
+   !           1.  a. The coefficients for structural biomass are set so the total AGB     !
+   !                  is similar to Baker et al. (2004), equation 2.  Balive is the        !
+   !                  default ED-2.1;                                                      !
+   !               b. Experimental root depth that makes canopy trees to have root depths  !
+   !                  of 5m and grasses/seedlings at 0.5 to have root depth of 0.5 m.      !
+   !               c. Crown area defined as in Poorter et al. (2006), imposing maximum     !
+   !                  crown area                                                           !
+   !           2.  Similar to 1, but with a few extra changes.                             !
+   !               a. Height -> DBH allometry as in Poorter et al. (2006)                  !
+   !               b. Balive is retuned, starting from Saldarriga et al. (1998), the same  !
+   !                  starting point of ED-1.0, and the coefficients are adjusted for      !
+   !                  DBH > 10cm and DBH < 10 cm separately.  This should give more leaf   !
+   !                  biomass for seedlings and tall trees.                                !
    !---------------------------------------------------------------------------------------!
-   IALLOM          = 4,
+   IALLOM          = 2,
    !---------------------------------------------------------------------------------------!
 
 
@@ -2248,13 +2253,13 @@ $ED2_INFO
    !                 lim -> 0.  Black hole (0 itself is unacceptable)                      !
    !                        1.  Homogeneously spread over the layer (i.e., no clumping)    !
    !---------------------------------------------------------------------------------------!
-   ICANRAD        =      1,
-   LTRANS_VIS     =  0.028,
-   LTRANS_NIR     =  0.248,
-   LREFLECT_VIS   =  0.062,
-   LREFLECT_NIR   =  0.630,
-   ORIENT_TREE    =  0.250,
-   ORIENT_GRASS   = -0.300,
+   ICANRAD        =      0,
+   LTRANS_VIS     =  0.050,
+   LTRANS_NIR     =  0.270,
+   LREFLECT_VIS   =  0.100,
+   LREFLECT_NIR   =  0.540,
+   ORIENT_TREE    =  0.150,
+   ORIENT_GRASS   = -0.050,
    CLUMP_TREE     =  1.000,
    CLUMP_GRASS    =  1.000,
    !---------------------------------------------------------------------------------------!
@@ -2275,17 +2280,21 @@ $ED2_INFO
 
    !---------------------------------------------------------------------------------------!
    ! H2O_PLANT_LIM -- this determines whether plant photosynthesis can be limited by       !
-   !                  soil moisture, the FSW term:                                         !
-   !                  0.  No soil moisture limitation, FSW = 1                             !
-   !                  1.  Original ED-1.0/ED-2.0 method, where                             !
-   !                      FSW = Supply / (Demand + Supply)                                 !
-   !                  2.  Alternative and experimental method based on CLM.  It checks     !
-   !                      the water potential only, with all contribution of transpiration !
-   !                      accounted by gsw.  It also ignores root biomass.                 !
-   !                  3.  Tentative method.  FSW = 1, but D0 decays exponentially with     !
-   !                      soil potential.  The decay coefficient is a function of the      !
-   !                      ratio between leaves and root when on-allometry, so plants that  !
-   !                      invest more in roots take advantage.                             !
+   !                  soil moisture, the FSW, defined as FSW = Supply / (Demand + Supply). !
+   !                                                                                       !
+   !                  Demand is always the transpiration rates in case soil moisture is    !
+   !                  not limiting (the psi_0 term times LAI).  The supply is determined   !
+   !                  by Kw * nplant * Broot * Available_Water, and the definition of      !
+   !                  available water changes depending on H2O_PLANT_LIM:                  !
+   !                  0.  Force FSW = 1 (effectively available water is infinity).         !
+   !                  1.  Available water is the total soil water above wilting point,     !
+   !                      integrated across all layers within the rooting zone.            !
+   !                  2.  Available water is the soil water at field capacity minus        !
+   !                      wilting point, scaled by the so-called wilting factor:           !
+   !                      (psi(k) - (H - z(k)) - psi_wp) / (psi_fc - psi_wp)               !
+   !                      where psi is the matric potentital at layer k, z is the layer    !
+   !                      depth, H it the crown height and psi_fc and psi_wp are the       !
+   !                      matric potentials at wilting point and field capacity.  This is  !
    !---------------------------------------------------------------------------------------!
    H2O_PLANT_LIM   = 1,
    !---------------------------------------------------------------------------------------!
@@ -2303,16 +2312,14 @@ $ED2_INFO
    !               plants will be scaled by MPHOTO_C3 * 6.4 / 8.0                          !
    ! MPHOTO_C4  -- Stomatal slope (M) for C4 plants.                                       !
    ! KW_GRASS   -- Water conductance for trees, in m2/yr/kgC_root.  This is used only when !
-   !               H2O_PLANT_LIM = 1.                                                      !
+   !               H2O_PLANT_LIM is not 0.                                                 !
    ! KW_TREE    -- Water conductance for grasses, in m2/yr/kgC_root.  This is used only    !
-   !               when H2O_PLANT_LIM = 1.                                                 !
+   !               when H2O_PLANT_LIM is not 0.                                            !
    ! GAMMA_C3   -- The dark respiration factor (gamma) for C3 plants.  Subtropical         !
    !               conifers will be scaled by GAMMA_C3 * 0.028 / 0.02                      !
    ! GAMMA_C4   -- The dark respiration factor (gamma) for C4 plants.                      !
    ! D0_GRASS   -- The transpiration control in gsw (D0) for ALL grasses.                  !
    ! D0_TREE    -- The transpiration control in gsw (D0) for ALL trees.                    !
-   ! D0_DECAY   -- The decay function for D0 (used only when H2O_PLANT_LIM = 3).           !
-   !               The actual decay coefficient will be divided by q(pft).                 !
    ! ALPHA_C3   -- Quantum yield of ALL C3 plants.  This is only applied when              !
    !               QUANTUM_EFFICIENCY_T = 0.                                               !
    ! ALPHA_C4   -- Quantum yield of C4 plants.  This is always applied.                    !
@@ -2324,16 +2331,15 @@ $ED2_INFO
    !               (1.0 = default).                                                        !
    !---------------------------------------------------------------------------------------!
    VMFACT_C3       =   1.25,
-   VMFACT_C4       =   1.25,
+   VMFACT_C4       =   1.00,
    MPHOTO_C3       =    9.0,
-   MPHOTO_C4       =    5.2,
-   KW_GRASS        =   750.,
-   KW_TREE         =   450.,
+   MPHOTO_C4       =    5.0,
+   KW_GRASS        =   300.,
+   KW_TREE         =   300.,
    GAMMA_C3        =  0.015,
    GAMMA_C4        =  0.036,
-   D0_GRASS        =   0.15,
-   D0_TREE         =   0.15,
-   D0_DECAY        =   4.00,
+   D0_GRASS        =  0.015,
+   D0_TREE         =  0.015,
    ALPHA_C3        =  0.080,
    ALPHA_C4        =  0.053,
    KLOWCO2IN       =  4000.,
@@ -2353,7 +2359,7 @@ $ED2_INFO
    !                       ing point is by definition -1.5MPa, so make sure that the value !
    !                       is above -1.5.                                                  !
    !---------------------------------------------------------------------------------------!
-   THETACRIT       = -0.75,
+   THETACRIT       = -1.20,
    !---------------------------------------------------------------------------------------!
 
 
@@ -2410,7 +2416,7 @@ $ED2_INFO
    !                          greater than this value.                                     !
    !---------------------------------------------------------------------------------------!
    INCLUDE_FIRE    = 2,
-   SM_FIRE         = -1.40,
+   SM_FIRE         = 0.07,
    !---------------------------------------------------------------------------------------!
 
 
@@ -2421,7 +2427,7 @@ $ED2_INFO
    !                   0.  no anthropogenic disturbance.                                   !
    !                   1.  use anthropogenic disturbance dataset.                          !
    !---------------------------------------------------------------------------------------!
-   IANTH_DISTURB   = 0,
+   IANTH_DISTURB   = 1,
    !---------------------------------------------------------------------------------------!
 
 
@@ -2441,7 +2447,7 @@ $ED2_INFO
    !             4.  Same as 0, but if finds the ground conductance following CLM          !
    !                 technical note (equations 5.98-5.100).                                !
    !---------------------------------------------------------------------------------------!
-   ICANTURB        = 0,       
+   ICANTURB        = 4,       
    !---------------------------------------------------------------------------------------!
 
 
@@ -2502,7 +2508,7 @@ $ED2_INFO
    !              cohorts are too different, then the actual number of cohorts in a patch  !
    !              may exceed MAXCOHORT.                                                    !
    !---------------------------------------------------------------------------------------!
-   MAXPATCH  =  15,
+   MAXPATCH  =  10,
    MAXCOHORT =  60,
    !---------------------------------------------------------------------------------------!
 

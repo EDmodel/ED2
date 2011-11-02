@@ -708,6 +708,9 @@ module ed_state_vars
      ! Average daily temperature [K]
      real , pointer,dimension(:) :: avg_daily_temp  
 
+     ! Average monthly ground water [kg/m2], used for fire ignition
+     real , pointer,dimension(:) :: avg_monthly_gndwater
+
      ! average of rh [umol/m2/s] over FRQSTATE
      real , pointer,dimension(:) :: mean_rh
 
@@ -1029,9 +1032,13 @@ module ed_state_vars
      ! Notation
      ! ATM - atmosphere, CAS - canopy air space
 
-     !----- Moisture ---------------------------------------------------
 
-     real,pointer,dimension(:)   :: avg_carbon_ac   ! Average carbon flux, ATM -> CAS,       [umol/m2/s]
+     real,pointer,dimension(:)   :: avg_ustar       ! Average u*                              [      m/s]
+     real,pointer,dimension(:)   :: avg_tstar       ! Average Theta*                          [        K]
+     real,pointer,dimension(:)   :: avg_qstar       ! Average q*                              [    kg/kg]
+     real,pointer,dimension(:)   :: avg_cstar       ! Average CO2*                            [ umol/mol]
+     real,pointer,dimension(:)   :: avg_carbon_ac   ! Average carbon flux, ATM -> CAS         [umol/m2/s]
+     real,pointer,dimension(:)   :: avg_carbon_st   ! Average carbon flux storage             [umol/m2/s]
      real,pointer,dimension(:)   :: avg_vapor_lc    ! Average water vapor flux, Leaf -> CAS     [kg/m2/s]
      real,pointer,dimension(:)   :: avg_vapor_wc    ! Average water vapor flux, wood -> CAS     [kg/m2/s]
      real,pointer,dimension(:)   :: avg_vapor_gc    ! Average water vapor flux, GND -> CAS     [kg/m2/s]
@@ -1302,8 +1309,13 @@ module ed_state_vars
      !-------------------------------------------
      real,pointer,dimension(:)   :: avg_rshort_gnd ! Total absorbed radiation at the ground
      real,pointer,dimension(:)   :: avg_rlong_gnd  ! Total absorbed radiation at the ground
+     real,pointer,dimension(:)   :: avg_ustar      ! Average u*                              [      m/s]
+     real,pointer,dimension(:)   :: avg_tstar      ! Average Theta*                          [        K]
+     real,pointer,dimension(:)   :: avg_qstar      ! Average q*                              [    kg/kg]
+     real,pointer,dimension(:)   :: avg_cstar      ! Average CO2*                            [ umol/mol]
      real,pointer,dimension(:)   :: avg_carbon_ac  ! Vegetation to Canopy carbon dioxide flux
-     
+     real,pointer,dimension(:)   :: avg_carbon_st  ! Canopy carbon dioxide storage
+
      !----- Moisture ----------------------------
      !                                              | Description
      real,pointer,dimension(:)   :: avg_vapor_lc    ! Leaf to canopy air water flux [kg/m2/s]
@@ -1587,7 +1599,12 @@ module ed_state_vars
      
      real,pointer,dimension(:)   :: avg_rshort_gnd ! Total absorbed radiation at the ground
      real,pointer,dimension(:)   :: avg_rlong_gnd  ! Total absorbed radiation at the ground
+     real,pointer,dimension(:)   :: avg_ustar      ! Average u*                              [      m/s]
+     real,pointer,dimension(:)   :: avg_tstar      ! Average Theta*                          [        K]
+     real,pointer,dimension(:)   :: avg_qstar      ! Average q*                              [    kg/kg]
+     real,pointer,dimension(:)   :: avg_cstar      ! Average CO2*                            [ umol/mol]
      real,pointer,dimension(:)   :: avg_carbon_ac  ! Vegetation to Canopy carbon dioxide flux
+     real,pointer,dimension(:)   :: avg_carbon_st  ! Canopy carbon dioxide storage
      !----- Moisture Flux ----------------------------
 
      real,pointer,dimension(:)   :: avg_vapor_lc    ! Leaf to canopy air water flux
@@ -1793,7 +1810,12 @@ module ed_state_vars
      real, pointer, dimension(:)   :: dmean_sensible_wc    ! [      W/m2]
      real, pointer, dimension(:)   :: dmean_sensible_gc    ! [      W/m2]
      real, pointer, dimension(:)   :: dmean_sensible_ac    ! [      W/m2]
-     real, pointer, dimension(:)   :: dmean_nee            ! [ kgC/m²/yr]
+     real, pointer, dimension(:)   :: dmean_ustar          ! [       m/s]
+     real, pointer, dimension(:)   :: dmean_tstar          ! [         K]
+     real, pointer, dimension(:)   :: dmean_qstar          ! [     kg/kg]
+     real, pointer, dimension(:)   :: dmean_cstar          ! [  umol/mol]
+     real, pointer, dimension(:)   :: dmean_carbon_ac      ! [ umol/m²/s]
+     real, pointer, dimension(:)   :: dmean_carbon_st      ! [ umol/m²/s]
      real, pointer, dimension(:)   :: dmean_gpp            ! [ kgC/m²/yr]
      real, pointer, dimension(:)   :: dmean_nep            ! [ kgC/m²/yr]
      real, pointer, dimension(:)   :: dmean_plresp         ! [ kgC/m²/yr]
@@ -1865,7 +1887,12 @@ module ed_state_vars
      real, pointer, dimension(:,:)   :: qmean_sensible_wc    ! [      W/m2]
      real, pointer, dimension(:,:)   :: qmean_sensible_gc    ! [      W/m2]
      real, pointer, dimension(:,:)   :: qmean_sensible_ac    ! [      W/m2]
-     real, pointer, dimension(:,:)   :: qmean_nee            ! [ kgC/m²/yr]
+     real, pointer, dimension(:,:)   :: qmean_ustar          ! [       m/s]
+     real, pointer, dimension(:,:)   :: qmean_tstar          ! [         K]
+     real, pointer, dimension(:,:)   :: qmean_qstar          ! [     kg/kg]
+     real, pointer, dimension(:,:)   :: qmean_cstar          ! [  umol/mol]
+     real, pointer, dimension(:,:)   :: qmean_carbon_ac      ! [ umol/m²/s]
+     real, pointer, dimension(:,:)   :: qmean_carbon_st      ! [ umol/m²/s]
      real, pointer, dimension(:,:)   :: qmean_gpp            ! [ kgC/m²/yr]
      real, pointer, dimension(:,:)   :: qmean_nep            ! [ kgC/m²/yr]
      real, pointer, dimension(:,:)   :: qmean_plresp         ! [ kgC/m²/yr]
@@ -1920,7 +1947,8 @@ module ed_state_vars
      real, pointer, dimension(:,:) :: qmsqu_leaf_resp
      real, pointer, dimension(:,:) :: qmsqu_root_resp
      real, pointer, dimension(:,:) :: qmsqu_plresp
-     real, pointer, dimension(:,:) :: qmsqu_nee
+     real, pointer, dimension(:,:) :: qmsqu_carbon_ac
+     real, pointer, dimension(:,:) :: qmsqu_carbon_st
      real, pointer, dimension(:,:) :: qmsqu_nep
      real, pointer, dimension(:,:) :: qmsqu_rh
      real, pointer, dimension(:,:) :: qmsqu_sensible_ac
@@ -1987,7 +2015,12 @@ module ed_state_vars
      real, pointer, dimension(:)   :: mmean_sensible_wc    ! [      W/m²]
      real, pointer, dimension(:)   :: mmean_sensible_gc    ! [      W/m²]
      real, pointer, dimension(:)   :: mmean_sensible_ac    ! [      W/m²]
-     real, pointer, dimension(:)   :: mmean_nee            ! [ kgC/m²/yr]
+     real, pointer, dimension(:)   :: mmean_ustar          ! [       m/s]
+     real, pointer, dimension(:)   :: mmean_tstar          ! [         K]
+     real, pointer, dimension(:)   :: mmean_qstar          ! [     kg/kg]
+     real, pointer, dimension(:)   :: mmean_cstar          ! [  umol/mol]
+     real, pointer, dimension(:)   :: mmean_carbon_ac      ! [ umol/m²/s]
+     real, pointer, dimension(:)   :: mmean_carbon_st      ! [ umol/m²/s]
      real, pointer, dimension(:)   :: mmean_gpp            ! [ kgC/m²/yr]
      real, pointer, dimension(:)   :: mmean_nppleaf        ! [ kgC/m²/yr]
      real, pointer, dimension(:)   :: mmean_nppfroot       ! [ kgC/m²/yr]
@@ -2053,7 +2086,8 @@ module ed_state_vars
      real, pointer, dimension(:) :: mmsqu_leaf_resp
      real, pointer, dimension(:) :: mmsqu_root_resp
      real, pointer, dimension(:) :: mmsqu_plresp
-     real, pointer, dimension(:) :: mmsqu_nee
+     real, pointer, dimension(:) :: mmsqu_carbon_ac
+     real, pointer, dimension(:) :: mmsqu_carbon_st
      real, pointer, dimension(:) :: mmsqu_nep
      real, pointer, dimension(:) :: mmsqu_rh
      real, pointer, dimension(:) :: mmsqu_sensible_ac
@@ -2306,7 +2340,12 @@ contains
        allocate(cgrid%aux_s         (nzg,npolygons))
        allocate(cgrid%avg_rshort_gnd   (npolygons))
        allocate(cgrid%avg_rlong_gnd    (npolygons))
+       allocate(cgrid%avg_ustar        (npolygons))
+       allocate(cgrid%avg_tstar        (npolygons))
+       allocate(cgrid%avg_qstar        (npolygons))
+       allocate(cgrid%avg_cstar        (npolygons))
        allocate(cgrid%avg_carbon_ac    (npolygons))
+       allocate(cgrid%avg_carbon_st    (npolygons))
        allocate(cgrid%avg_qwshed_vg    (npolygons))
        allocate(cgrid%avg_qintercepted (npolygons))
        allocate(cgrid%avg_qthroughfall (npolygons))
@@ -2469,7 +2508,12 @@ contains
           allocate(cgrid%dmean_vapor_gc       (             npolygons))
           allocate(cgrid%dmean_vapor_lc       (             npolygons))
           allocate(cgrid%dmean_vapor_wc       (             npolygons))
-          allocate(cgrid%dmean_nee            (             npolygons))
+          allocate(cgrid%dmean_ustar          (             npolygons))
+          allocate(cgrid%dmean_tstar          (             npolygons))
+          allocate(cgrid%dmean_qstar          (             npolygons))
+          allocate(cgrid%dmean_cstar          (             npolygons))
+          allocate(cgrid%dmean_carbon_ac      (             npolygons))
+          allocate(cgrid%dmean_carbon_st      (             npolygons))
           allocate(cgrid%dmean_gpp            (             npolygons))
           allocate(cgrid%dmean_nppleaf        (             npolygons))
           allocate(cgrid%dmean_nppfroot       (             npolygons))
@@ -2561,7 +2605,12 @@ contains
           allocate(cgrid%mmean_sensible_gc    (             npolygons))
           allocate(cgrid%mmean_sensible_lc    (             npolygons))
           allocate(cgrid%mmean_sensible_wc    (             npolygons))
-          allocate(cgrid%mmean_nee            (             npolygons))
+          allocate(cgrid%mmean_ustar          (             npolygons))
+          allocate(cgrid%mmean_tstar          (             npolygons))
+          allocate(cgrid%mmean_qstar          (             npolygons))
+          allocate(cgrid%mmean_cstar          (             npolygons))
+          allocate(cgrid%mmean_carbon_ac      (             npolygons))
+          allocate(cgrid%mmean_carbon_st      (             npolygons))
           allocate(cgrid%mmean_gpp            (             npolygons))
           allocate(cgrid%mmean_nppleaf        (             npolygons))
           allocate(cgrid%mmean_nppfroot       (             npolygons))
@@ -2631,7 +2680,8 @@ contains
           allocate(cgrid%mmsqu_leaf_resp      (             npolygons))
           allocate(cgrid%mmsqu_root_resp      (             npolygons))
           allocate(cgrid%mmsqu_plresp         (             npolygons))
-          allocate(cgrid%mmsqu_nee            (             npolygons))
+          allocate(cgrid%mmsqu_carbon_ac      (             npolygons))
+          allocate(cgrid%mmsqu_carbon_st      (             npolygons))
           allocate(cgrid%mmsqu_nep            (             npolygons))
           allocate(cgrid%mmsqu_rh             (             npolygons))
           allocate(cgrid%mmsqu_sensible_ac    (             npolygons))
@@ -2671,7 +2721,12 @@ contains
           allocate(cgrid%qmean_sensible_gc    (     ndcycle, npolygons))
           allocate(cgrid%qmean_sensible_lc    (     ndcycle, npolygons))
           allocate(cgrid%qmean_sensible_wc    (     ndcycle, npolygons))
-          allocate(cgrid%qmean_nee            (     ndcycle, npolygons))
+          allocate(cgrid%qmean_ustar          (     ndcycle, npolygons))
+          allocate(cgrid%qmean_tstar          (     ndcycle, npolygons))
+          allocate(cgrid%qmean_qstar          (     ndcycle, npolygons))
+          allocate(cgrid%qmean_cstar          (     ndcycle, npolygons))
+          allocate(cgrid%qmean_carbon_ac      (     ndcycle, npolygons))
+          allocate(cgrid%qmean_carbon_st      (     ndcycle, npolygons))
           allocate(cgrid%qmean_gpp            (     ndcycle, npolygons))
           allocate(cgrid%qmean_nep            (     ndcycle, npolygons))
           allocate(cgrid%qmean_plresp         (     ndcycle, npolygons))
@@ -2720,7 +2775,8 @@ contains
           allocate(cgrid%qmsqu_leaf_resp      (     ndcycle, npolygons))
           allocate(cgrid%qmsqu_root_resp      (     ndcycle, npolygons))
           allocate(cgrid%qmsqu_plresp         (     ndcycle, npolygons))
-          allocate(cgrid%qmsqu_nee            (     ndcycle, npolygons))
+          allocate(cgrid%qmsqu_carbon_ac      (     ndcycle, npolygons))
+          allocate(cgrid%qmsqu_carbon_st      (     ndcycle, npolygons))
           allocate(cgrid%qmsqu_nep            (     ndcycle, npolygons))
           allocate(cgrid%qmsqu_rh             (     ndcycle, npolygons))
           allocate(cgrid%qmsqu_sensible_ac    (     ndcycle, npolygons))
@@ -2862,7 +2918,12 @@ contains
     allocate(cpoly%aux_s         (nzg,nsites))
     allocate(cpoly%avg_rshort_gnd   (nsites))
     allocate(cpoly%avg_rlong_gnd    (nsites))
+    allocate(cpoly%avg_ustar        (nsites))
+    allocate(cpoly%avg_tstar        (nsites))
+    allocate(cpoly%avg_qstar        (nsites))
+    allocate(cpoly%avg_cstar        (nsites))
     allocate(cpoly%avg_carbon_ac    (nsites))
+    allocate(cpoly%avg_carbon_st    (nsites))
     allocate(cpoly%avg_sensible_lc  (nsites))
     allocate(cpoly%avg_sensible_wc  (nsites))
     allocate(cpoly%avg_qwshed_vg    (nsites))
@@ -3029,6 +3090,7 @@ contains
     allocate(csite%old_stoma_vector_max(n_stoma_atts,n_pft,npatches))
 
     allocate(csite%avg_daily_temp(npatches))  
+    allocate(csite%avg_monthly_gndwater(npatches))  
     allocate(csite%mean_rh(npatches))
     allocate(csite%mean_nep(npatches))
     allocate(csite%wbudget_loss2atm(npatches))
@@ -3124,7 +3186,12 @@ contains
 
     allocate(csite%avg_rshort_gnd     (npatches))
     allocate(csite%avg_rlong_gnd      (npatches))
+    allocate(csite%avg_ustar          (npatches))
+    allocate(csite%avg_tstar          (npatches))
+    allocate(csite%avg_qstar          (npatches))
+    allocate(csite%avg_cstar          (npatches))
     allocate(csite%avg_carbon_ac      (npatches))
+    allocate(csite%avg_carbon_st      (npatches))
     allocate(csite%avg_rlongup        (npatches))
     allocate(csite%avg_albedo         (npatches))
     allocate(csite%avg_albedo_beam    (npatches))
@@ -3543,7 +3610,12 @@ contains
        nullify(cgrid%aux_s                   )
        nullify(cgrid%avg_rshort_gnd          )
        nullify(cgrid%avg_rlong_gnd           )
+       nullify(cgrid%avg_ustar               )
+       nullify(cgrid%avg_tstar               )
+       nullify(cgrid%avg_qstar               )
+       nullify(cgrid%avg_cstar               )
        nullify(cgrid%avg_carbon_ac           )
+       nullify(cgrid%avg_carbon_st           )
        nullify(cgrid%avg_sensible_lc         )
        nullify(cgrid%avg_sensible_wc         )
        nullify(cgrid%avg_qwshed_vg           )
@@ -3691,7 +3763,12 @@ contains
      nullify(cgrid%dmean_vapor_gc          )
      nullify(cgrid%dmean_vapor_lc          )
      nullify(cgrid%dmean_vapor_wc          )
-     nullify(cgrid%dmean_nee               )
+     nullify(cgrid%dmean_ustar             )
+     nullify(cgrid%dmean_tstar             )
+     nullify(cgrid%dmean_qstar             )
+     nullify(cgrid%dmean_cstar             )
+     nullify(cgrid%dmean_carbon_ac         )
+     nullify(cgrid%dmean_carbon_st         )
      nullify(cgrid%dmean_gpp               )
      nullify(cgrid%dmean_nppleaf           )
      nullify(cgrid%dmean_nppfroot          )
@@ -3760,7 +3837,12 @@ contains
      nullify(cgrid%lai_pft                 )
      nullify(cgrid%wpa_pft                 )
      nullify(cgrid%wai_pft                 )
-     nullify(cgrid%mmean_nee               )
+     nullify(cgrid%mmean_ustar             )
+     nullify(cgrid%mmean_tstar             )
+     nullify(cgrid%mmean_qstar             )
+     nullify(cgrid%mmean_cstar             )
+     nullify(cgrid%mmean_carbon_ac         )
+     nullify(cgrid%mmean_carbon_st         )
      nullify(cgrid%mmean_gpp               )
      nullify(cgrid%mmean_nppleaf           )
      nullify(cgrid%mmean_nppfroot          )
@@ -3844,7 +3926,8 @@ contains
      nullify(cgrid%mmsqu_leaf_resp         )
      nullify(cgrid%mmsqu_root_resp         )
      nullify(cgrid%mmsqu_plresp            )
-     nullify(cgrid%mmsqu_nee               )
+     nullify(cgrid%mmsqu_carbon_ac         )
+     nullify(cgrid%mmsqu_carbon_st         )
      nullify(cgrid%mmsqu_nep               )
      nullify(cgrid%mmsqu_rh                )
      nullify(cgrid%mmsqu_sensible_ac       )
@@ -3874,7 +3957,12 @@ contains
      nullify(cgrid%qmean_sensible_gc    )
      nullify(cgrid%qmean_sensible_wc    )
      nullify(cgrid%qmean_sensible_lc    )
-     nullify(cgrid%qmean_nee            )
+     nullify(cgrid%qmean_ustar          )
+     nullify(cgrid%qmean_tstar          )
+     nullify(cgrid%qmean_qstar          )
+     nullify(cgrid%qmean_cstar          )
+     nullify(cgrid%qmean_carbon_ac      )
+     nullify(cgrid%qmean_carbon_st      )
      nullify(cgrid%qmean_gpp            )
      nullify(cgrid%qmean_nep            )
      nullify(cgrid%qmean_plresp         )
@@ -3923,7 +4011,8 @@ contains
      nullify(cgrid%qmsqu_leaf_resp      )
      nullify(cgrid%qmsqu_root_resp      )
      nullify(cgrid%qmsqu_plresp         )
-     nullify(cgrid%qmsqu_nee            )
+     nullify(cgrid%qmsqu_carbon_ac      )
+     nullify(cgrid%qmsqu_carbon_st      )
      nullify(cgrid%qmsqu_nep            )
      nullify(cgrid%qmsqu_rh             )
      nullify(cgrid%qmsqu_sensible_ac    )
@@ -4053,7 +4142,12 @@ contains
     nullify(cpoly%aux_s         )
     nullify(cpoly%avg_rshort_gnd   )
     nullify(cpoly%avg_rlong_gnd    )
+    nullify(cpoly%avg_ustar        )
+    nullify(cpoly%avg_tstar        )
+    nullify(cpoly%avg_qstar        )
+    nullify(cpoly%avg_cstar        )
     nullify(cpoly%avg_carbon_ac    )
+    nullify(cpoly%avg_carbon_st    )
     nullify(cpoly%avg_sensible_lc  )
     nullify(cpoly%avg_sensible_wc  )
     nullify(cpoly%avg_qwshed_vg    )
@@ -4206,7 +4300,8 @@ contains
     nullify(csite%A_c_max) 
     nullify(csite%old_stoma_data_max)
     nullify(csite%old_stoma_vector_max)
-    nullify(csite%avg_daily_temp)  
+    nullify(csite%avg_daily_temp)
+    nullify(csite%avg_monthly_gndwater)
     nullify(csite%mean_rh)
     nullify(csite%dmean_rh)
     nullify(csite%mmean_rh)
@@ -4321,7 +4416,12 @@ contains
 
     nullify(csite%avg_rshort_gnd    )
     nullify(csite%avg_rlong_gnd     )
+    nullify(csite%avg_ustar         )
+    nullify(csite%avg_tstar         )
+    nullify(csite%avg_qstar         )
+    nullify(csite%avg_cstar         )
     nullify(csite%avg_carbon_ac     )
+    nullify(csite%avg_carbon_st     )
     nullify(csite%avg_rlongup       )
     nullify(csite%avg_albedo        )
     nullify(csite%avg_albedo_beam   )
@@ -4693,7 +4793,12 @@ contains
        if(associated(cgrid%aux_s                   )) deallocate(cgrid%aux_s                   )
        if(associated(cgrid%avg_rshort_gnd          )) deallocate(cgrid%avg_rshort_gnd          )
        if(associated(cgrid%avg_rlong_gnd           )) deallocate(cgrid%avg_rlong_gnd           )
+       if(associated(cgrid%avg_ustar               )) deallocate(cgrid%avg_ustar               )
+       if(associated(cgrid%avg_tstar               )) deallocate(cgrid%avg_tstar               )
+       if(associated(cgrid%avg_qstar               )) deallocate(cgrid%avg_qstar               )
+       if(associated(cgrid%avg_cstar               )) deallocate(cgrid%avg_cstar               )
        if(associated(cgrid%avg_carbon_ac           )) deallocate(cgrid%avg_carbon_ac           )
+       if(associated(cgrid%avg_carbon_st           )) deallocate(cgrid%avg_carbon_st           )
        if(associated(cgrid%avg_sensible_lc         )) deallocate(cgrid%avg_sensible_lc         )
        if(associated(cgrid%avg_sensible_wc         )) deallocate(cgrid%avg_sensible_wc         )
        if(associated(cgrid%avg_qwshed_vg           )) deallocate(cgrid%avg_qwshed_vg           )
@@ -4855,7 +4960,12 @@ contains
        if(associated(cgrid%dmean_vapor_gc          )) deallocate(cgrid%dmean_vapor_gc          )
        if(associated(cgrid%dmean_vapor_lc          )) deallocate(cgrid%dmean_vapor_lc          )
        if(associated(cgrid%dmean_vapor_wc          )) deallocate(cgrid%dmean_vapor_wc          )
-       if(associated(cgrid%dmean_nee               )) deallocate(cgrid%dmean_nee               )
+       if(associated(cgrid%dmean_ustar             )) deallocate(cgrid%dmean_ustar             )
+       if(associated(cgrid%dmean_tstar             )) deallocate(cgrid%dmean_tstar             )
+       if(associated(cgrid%dmean_qstar             )) deallocate(cgrid%dmean_qstar             )
+       if(associated(cgrid%dmean_cstar             )) deallocate(cgrid%dmean_cstar             )
+       if(associated(cgrid%dmean_carbon_ac         )) deallocate(cgrid%dmean_carbon_ac         )
+       if(associated(cgrid%dmean_carbon_st         )) deallocate(cgrid%dmean_carbon_st         )
        if(associated(cgrid%dmean_gpp               )) deallocate(cgrid%dmean_gpp               )
        if(associated(cgrid%dmean_nppleaf           )) deallocate(cgrid%dmean_nppleaf           )
        if(associated(cgrid%dmean_nppfroot          )) deallocate(cgrid%dmean_nppfroot          )
@@ -4943,7 +5053,12 @@ contains
        if(associated(cgrid%mmean_sensible_wc       )) deallocate(cgrid%mmean_sensible_wc       )
        if(associated(cgrid%mmean_sensible_gc       )) deallocate(cgrid%mmean_sensible_gc       )
        if(associated(cgrid%mmean_sensible_ac       )) deallocate(cgrid%mmean_sensible_ac       )
-       if(associated(cgrid%mmean_nee               )) deallocate(cgrid%mmean_nee               )
+       if(associated(cgrid%mmean_ustar             )) deallocate(cgrid%mmean_ustar             )
+       if(associated(cgrid%mmean_tstar             )) deallocate(cgrid%mmean_tstar             )
+       if(associated(cgrid%mmean_qstar             )) deallocate(cgrid%mmean_qstar             )
+       if(associated(cgrid%mmean_cstar             )) deallocate(cgrid%mmean_cstar             )
+       if(associated(cgrid%mmean_carbon_ac         )) deallocate(cgrid%mmean_carbon_ac         )
+       if(associated(cgrid%mmean_carbon_st         )) deallocate(cgrid%mmean_carbon_st         )
        if(associated(cgrid%mmean_nep               )) deallocate(cgrid%mmean_nep               )
        if(associated(cgrid%mmean_soil_temp         )) deallocate(cgrid%mmean_soil_temp         )
        if(associated(cgrid%mmean_soil_water        )) deallocate(cgrid%mmean_soil_water        )
@@ -5010,7 +5125,8 @@ contains
        if(associated(cgrid%mmsqu_leaf_resp         )) deallocate(cgrid%mmsqu_leaf_resp         )
        if(associated(cgrid%mmsqu_root_resp         )) deallocate(cgrid%mmsqu_root_resp         )
        if(associated(cgrid%mmsqu_plresp            )) deallocate(cgrid%mmsqu_plresp            )
-       if(associated(cgrid%mmsqu_nee               )) deallocate(cgrid%mmsqu_nee               )
+       if(associated(cgrid%mmsqu_carbon_ac         )) deallocate(cgrid%mmsqu_carbon_ac         )
+       if(associated(cgrid%mmsqu_carbon_st         )) deallocate(cgrid%mmsqu_carbon_st         )
        if(associated(cgrid%mmsqu_nep               )) deallocate(cgrid%mmsqu_nep               )
        if(associated(cgrid%mmsqu_rh                )) deallocate(cgrid%mmsqu_rh                )
        if(associated(cgrid%mmsqu_sensible_ac       )) deallocate(cgrid%mmsqu_sensible_ac       )
@@ -5040,7 +5156,12 @@ contains
     if(associated(cgrid%qmean_sensible_gc    )) deallocate(cgrid%qmean_sensible_gc    )
     if(associated(cgrid%qmean_sensible_lc    )) deallocate(cgrid%qmean_sensible_lc    )
     if(associated(cgrid%qmean_sensible_wc    )) deallocate(cgrid%qmean_sensible_wc    )
-    if(associated(cgrid%qmean_nee            )) deallocate(cgrid%qmean_nee            )
+    if(associated(cgrid%qmean_ustar          )) deallocate(cgrid%qmean_ustar          )
+    if(associated(cgrid%qmean_tstar          )) deallocate(cgrid%qmean_tstar          )
+    if(associated(cgrid%qmean_qstar          )) deallocate(cgrid%qmean_qstar          )
+    if(associated(cgrid%qmean_cstar          )) deallocate(cgrid%qmean_cstar          )
+    if(associated(cgrid%qmean_carbon_ac      )) deallocate(cgrid%qmean_carbon_ac      )
+    if(associated(cgrid%qmean_carbon_st      )) deallocate(cgrid%qmean_carbon_st      )
     if(associated(cgrid%qmean_gpp            )) deallocate(cgrid%qmean_gpp            )
     if(associated(cgrid%qmean_nep            )) deallocate(cgrid%qmean_nep            )
     if(associated(cgrid%qmean_plresp         )) deallocate(cgrid%qmean_plresp         )
@@ -5088,7 +5209,8 @@ contains
     if(associated(cgrid%qmsqu_leaf_resp      )) deallocate(cgrid%qmsqu_leaf_resp      )
     if(associated(cgrid%qmsqu_root_resp      )) deallocate(cgrid%qmsqu_root_resp      )
     if(associated(cgrid%qmsqu_plresp         )) deallocate(cgrid%qmsqu_plresp         )
-    if(associated(cgrid%qmsqu_nee            )) deallocate(cgrid%qmsqu_nee            )
+    if(associated(cgrid%qmsqu_carbon_ac      )) deallocate(cgrid%qmsqu_carbon_ac      )
+    if(associated(cgrid%qmsqu_carbon_st      )) deallocate(cgrid%qmsqu_carbon_st      )
     if(associated(cgrid%qmsqu_nep            )) deallocate(cgrid%qmsqu_nep            )
     if(associated(cgrid%qmsqu_rh             )) deallocate(cgrid%qmsqu_rh             )
     if(associated(cgrid%qmsqu_sensible_ac    )) deallocate(cgrid%qmsqu_sensible_ac    )
@@ -5221,7 +5343,12 @@ contains
     if(associated(cpoly%aux_s                       )) deallocate(cpoly%aux_s                       )
     if(associated(cpoly%avg_rshort_gnd              )) deallocate(cpoly%avg_rshort_gnd              )
     if(associated(cpoly%avg_rlong_gnd               )) deallocate(cpoly%avg_rlong_gnd               )
+    if(associated(cpoly%avg_ustar                   )) deallocate(cpoly%avg_ustar                   )
+    if(associated(cpoly%avg_tstar                   )) deallocate(cpoly%avg_tstar                   )
+    if(associated(cpoly%avg_qstar                   )) deallocate(cpoly%avg_qstar                   )
+    if(associated(cpoly%avg_cstar                   )) deallocate(cpoly%avg_cstar                   )
     if(associated(cpoly%avg_carbon_ac               )) deallocate(cpoly%avg_carbon_ac               )
+    if(associated(cpoly%avg_carbon_st               )) deallocate(cpoly%avg_carbon_st               )
     if(associated(cpoly%avg_sensible_lc             )) deallocate(cpoly%avg_sensible_lc             )
     if(associated(cpoly%avg_sensible_wc             )) deallocate(cpoly%avg_sensible_wc             )
     if(associated(cpoly%avg_qwshed_vg               )) deallocate(cpoly%avg_qwshed_vg               )
@@ -5376,6 +5503,7 @@ contains
     if(associated(csite%old_stoma_vector_max         )) deallocate(csite%old_stoma_vector_max         )
 
     if(associated(csite%avg_daily_temp               )) deallocate(csite%avg_daily_temp               )
+    if(associated(csite%avg_monthly_gndwater         )) deallocate(csite%avg_monthly_gndwater         )
     if(associated(csite%mean_rh                      )) deallocate(csite%mean_rh                      )
     if(associated(csite%dmean_rh                     )) deallocate(csite%dmean_rh                     )
     if(associated(csite%qmean_rh                     )) deallocate(csite%qmean_rh                     )
@@ -5489,7 +5617,12 @@ contains
 
     if(associated(csite%avg_rshort_gnd               )) deallocate(csite%avg_rshort_gnd               )
     if(associated(csite%avg_rlong_gnd                )) deallocate(csite%avg_rlong_gnd                )
+    if(associated(csite%avg_ustar                    )) deallocate(csite%avg_ustar                    )
+    if(associated(csite%avg_tstar                    )) deallocate(csite%avg_tstar                    )
+    if(associated(csite%avg_qstar                    )) deallocate(csite%avg_qstar                    )
+    if(associated(csite%avg_cstar                    )) deallocate(csite%avg_cstar                    )
     if(associated(csite%avg_carbon_ac                )) deallocate(csite%avg_carbon_ac                )
+    if(associated(csite%avg_carbon_st                )) deallocate(csite%avg_carbon_st                )
     if(associated(csite%avg_rlongup                  )) deallocate(csite%avg_rlongup                  )
     if(associated(csite%avg_albedo                   )) deallocate(csite%avg_albedo                   )
     if(associated(csite%avg_albedo_beam              )) deallocate(csite%avg_albedo_beam              )
@@ -5862,6 +5995,7 @@ contains
          osite%wpa(opa)                         = isite%wpa(ipa)
          osite%wai(opa)                         = isite%wai(ipa)
          osite%avg_daily_temp(opa)              = isite%avg_daily_temp(ipa)
+         osite%avg_monthly_gndwater(opa)        = isite%avg_monthly_gndwater(ipa)
          osite%mean_rh(opa)                     = isite%mean_rh(ipa)
          osite%mean_nep(opa)                    = isite%mean_nep(ipa)
          osite%wbudget_loss2atm(opa)            = isite%wbudget_loss2atm(ipa)
@@ -5958,7 +6092,12 @@ contains
 
          osite%avg_rshort_gnd     (opa)         = isite%avg_rshort_gnd     (ipa)
          osite%avg_rlong_gnd      (opa)         = isite%avg_rlong_gnd      (ipa)
+         osite%avg_ustar          (opa)         = isite%avg_ustar          (ipa)
+         osite%avg_tstar          (opa)         = isite%avg_tstar          (ipa)
+         osite%avg_qstar          (opa)         = isite%avg_qstar          (ipa)
+         osite%avg_cstar          (opa)         = isite%avg_cstar          (ipa)
          osite%avg_carbon_ac      (opa)         = isite%avg_carbon_ac      (ipa)
+         osite%avg_carbon_st      (opa)         = isite%avg_carbon_st      (ipa)
          osite%avg_rlongup        (opa)         = isite%avg_rlongup        (ipa)
          osite%avg_albedo         (opa)         = isite%avg_albedo         (ipa)
          osite%avg_albedo_beam    (opa)         = isite%avg_albedo_beam    (ipa)
@@ -6187,6 +6326,7 @@ contains
     siteout%wpa(1:inc)                  = pack(sitein%wpa,logmask)
     siteout%wai(1:inc)                  = pack(sitein%wai,logmask)
     siteout%avg_daily_temp(1:inc)       = pack(sitein%avg_daily_temp,logmask)
+    siteout%avg_monthly_gndwater(1:inc) = pack(sitein%avg_monthly_gndwater,logmask)
     siteout%mean_rh(1:inc)              = pack(sitein%mean_rh,logmask)
     siteout%mean_nep(1:inc)             = pack(sitein%mean_nep,logmask)
     siteout%wbudget_loss2atm(1:inc)     = pack(sitein%wbudget_loss2atm,logmask)
@@ -6283,7 +6423,12 @@ contains
 
     siteout%avg_rshort_gnd     (1:inc)  = pack(sitein%avg_rshort_gnd    ,logmask)
     siteout%avg_rlong_gnd      (1:inc)  = pack(sitein%avg_rlong_gnd     ,logmask)
+    siteout%avg_ustar          (1:inc)  = pack(sitein%avg_ustar         ,logmask)
+    siteout%avg_tstar          (1:inc)  = pack(sitein%avg_tstar         ,logmask)
+    siteout%avg_qstar          (1:inc)  = pack(sitein%avg_qstar         ,logmask)
+    siteout%avg_cstar          (1:inc)  = pack(sitein%avg_cstar         ,logmask)
     siteout%avg_carbon_ac      (1:inc)  = pack(sitein%avg_carbon_ac     ,logmask)
+    siteout%avg_carbon_st      (1:inc)  = pack(sitein%avg_carbon_st     ,logmask)
     siteout%avg_rlongup        (1:inc)  = pack(sitein%avg_rlongup       ,logmask)
     siteout%avg_albedo         (1:inc)  = pack(sitein%avg_albedo        ,logmask)
     siteout%avg_albedo_beam    (1:inc)  = pack(sitein%avg_albedo_beam   ,logmask)
@@ -8006,11 +8151,46 @@ contains
          call metadata_edio(nvar,igr,'Polygon averaged ground absorbed LW radiation','[W/m2]','ipoly') 
       end if
 
+      if (associated(cgrid%avg_ustar)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,cgrid%avg_ustar,nvar,igr,init,cgrid%pyglob_id, &
+              var_len,var_len_global,max_ptrs,'AVG_USTAR :11:hist:anal') 
+         call metadata_edio(nvar,igr,'Polygon averaged friction velocity','[m/s]','ipoly') 
+      end if
+
+      if (associated(cgrid%avg_tstar)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,cgrid%avg_tstar,nvar,igr,init,cgrid%pyglob_id, &
+              var_len,var_len_global,max_ptrs,'AVG_TSTAR :11:hist:anal') 
+         call metadata_edio(nvar,igr,'Polygon averaged characteristic temp. gradient','[K]','ipoly') 
+      end if
+
+      if (associated(cgrid%avg_qstar)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,cgrid%avg_qstar,nvar,igr,init,cgrid%pyglob_id, &
+              var_len,var_len_global,max_ptrs,'AVG_QSTAR :11:hist:anal') 
+         call metadata_edio(nvar,igr,'Polygon averaged characteristic specific humidity gradient','[kg/kg]','ipoly') 
+      end if
+
+      if (associated(cgrid%avg_cstar)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,cgrid%avg_cstar,nvar,igr,init,cgrid%pyglob_id, &
+              var_len,var_len_global,max_ptrs,'AVG_CSTAR :11:hist:anal') 
+         call metadata_edio(nvar,igr,'Polygon averaged characteristic CO2 gradient','[umol/mol]','ipoly') 
+      end if
+
       if (associated(cgrid%avg_carbon_ac)) then
          nvar=nvar+1
          call vtable_edio_r(npts,cgrid%avg_carbon_ac,nvar,igr,init,cgrid%pyglob_id, &
               var_len,var_len_global,max_ptrs,'AVG_CARBON_AC :11:hist:anal') 
          call metadata_edio(nvar,igr,'Polygon averaged vegetation to canopy air  CO2 flux','[umol/m2/s]','ipoly') 
+      end if
+
+      if (associated(cgrid%avg_carbon_st)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,cgrid%avg_carbon_st,nvar,igr,init,cgrid%pyglob_id, &
+              var_len,var_len_global,max_ptrs,'AVG_CARBON_ST :11:hist:anal') 
+         call metadata_edio(nvar,igr,'Polygon averaged canopy CO2 storage flux','[umol/m2/s]','ipoly') 
       end if
 
       if (associated(cgrid%avg_sensible_lc)) then
@@ -8932,11 +9112,46 @@ contains
       end if
 
       
-      if(associated(cgrid%dmean_nee)) then
+      if(associated(cgrid%dmean_ustar)) then
          nvar=nvar+1
-         call vtable_edio_r(npts,cgrid%dmean_nee,nvar,igr,init,cgrid%pyglob_id, &
-              var_len,var_len_global,max_ptrs,'DMEAN_NEE :11:hist:dail') 
-         call metadata_edio(nvar,igr,'Polygon Average Daily Integrated Net Ecosystem Exchange','[kgC/m2/yr]','ipoly') 
+         call vtable_edio_r(npts,cgrid%dmean_ustar,nvar,igr,init,cgrid%pyglob_id, &
+              var_len,var_len_global,max_ptrs,'DMEAN_USTAR :11:hist:dail') 
+         call metadata_edio(nvar,igr,'Polygon Average Daily friction velocity','[m/s]','ipoly') 
+      end if
+      
+      if(associated(cgrid%dmean_tstar)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,cgrid%dmean_tstar,nvar,igr,init,cgrid%pyglob_id, &
+              var_len,var_len_global,max_ptrs,'DMEAN_TSTAR :11:hist:dail') 
+         call metadata_edio(nvar,igr,'Polygon Average Daily temperature gradient scale','[K]','ipoly') 
+      end if
+      
+      if(associated(cgrid%dmean_qstar)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,cgrid%dmean_qstar,nvar,igr,init,cgrid%pyglob_id, &
+              var_len,var_len_global,max_ptrs,'DMEAN_QSTAR :11:hist:dail') 
+         call metadata_edio(nvar,igr,'Polygon Average Daily sp. humidity gradient scale','[K]','ipoly') 
+      end if
+      
+      if(associated(cgrid%dmean_cstar)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,cgrid%dmean_cstar,nvar,igr,init,cgrid%pyglob_id, &
+              var_len,var_len_global,max_ptrs,'DMEAN_CSTAR :11:hist:dail') 
+         call metadata_edio(nvar,igr,'Polygon Average Daily CO2 gradient scale','[K]','ipoly') 
+      end if
+
+      if(associated(cgrid%dmean_carbon_ac)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,cgrid%dmean_carbon_ac,nvar,igr,init,cgrid%pyglob_id, &
+              var_len,var_len_global,max_ptrs,'DMEAN_CARBON_AC :11:hist:dail') 
+         call metadata_edio(nvar,igr,'Polygon Average Daily Integrated CO2 flux','[umol/m2/s]','ipoly') 
+      end if
+      
+      if(associated(cgrid%dmean_carbon_st)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,cgrid%dmean_carbon_st,nvar,igr,init,cgrid%pyglob_id, &
+              var_len,var_len_global,max_ptrs,'DMEAN_CARBON_ST :11:hist:dail') 
+         call metadata_edio(nvar,igr,'Polygon Average Daily Integrated CO2 storage flux','[umol/m2/s]','ipoly') 
       end if
       
       
@@ -9411,10 +9626,45 @@ contains
          call metadata_edio(nvar,igr,'Polygon Average Monthly NPP daily','[kgC/m2/yr]','ipoly') 
       end if
       
-      if(associated(cgrid%mmean_nee)) then
+      if(associated(cgrid%mmean_ustar)) then
          nvar=nvar+1
-         call vtable_edio_r(npts,cgrid%mmean_nee,nvar,igr,init,cgrid%pyglob_id, &
-              var_len,var_len_global,max_ptrs,'MMEAN_NEE :11:hist:mont:dcyc') 
+         call vtable_edio_r(npts,cgrid%mmean_ustar,nvar,igr,init,cgrid%pyglob_id, &
+              var_len,var_len_global,max_ptrs,'MMEAN_USTAR :11:hist:mont:dcyc') 
+         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+      end if
+      
+      if(associated(cgrid%mmean_tstar)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,cgrid%mmean_tstar,nvar,igr,init,cgrid%pyglob_id, &
+              var_len,var_len_global,max_ptrs,'MMEAN_TSTAR :11:hist:mont:dcyc') 
+         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+      end if
+      
+      if(associated(cgrid%mmean_qstar)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,cgrid%mmean_qstar,nvar,igr,init,cgrid%pyglob_id, &
+              var_len,var_len_global,max_ptrs,'MMEAN_QSTAR :11:hist:mont:dcyc') 
+         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+      end if
+      
+      if(associated(cgrid%mmean_cstar)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,cgrid%mmean_cstar,nvar,igr,init,cgrid%pyglob_id, &
+              var_len,var_len_global,max_ptrs,'MMEAN_CSTAR :11:hist:mont:dcyc') 
+         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+      end if
+      
+      if(associated(cgrid%mmean_carbon_ac)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,cgrid%mmean_carbon_ac,nvar,igr,init,cgrid%pyglob_id, &
+              var_len,var_len_global,max_ptrs,'MMEAN_CARBON_AC :11:hist:mont:dcyc') 
+         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+      end if
+      
+      if(associated(cgrid%mmean_carbon_st)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,cgrid%mmean_carbon_st,nvar,igr,init,cgrid%pyglob_id, &
+              var_len,var_len_global,max_ptrs,'MMEAN_CARBON_ST :11:hist:mont:dcyc') 
          call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
       end if
       
@@ -9861,10 +10111,17 @@ contains
          call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
       end if
 
-      if(associated(cgrid%mmsqu_nee)) then
+      if(associated(cgrid%mmsqu_carbon_ac)) then
          nvar=nvar+1
-         call vtable_edio_r(npts,cgrid%mmsqu_nee,nvar,igr,init,cgrid%pyglob_id, &
-              var_len,var_len_global,max_ptrs,'MMSQU_NEE :11:hist:mont:dcyc') 
+         call vtable_edio_r(npts,cgrid%mmsqu_carbon_ac,nvar,igr,init,cgrid%pyglob_id, &
+              var_len,var_len_global,max_ptrs,'MMSQU_CARBON_AC :11:hist:mont:dcyc') 
+         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+      end if
+
+      if(associated(cgrid%mmsqu_carbon_st)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,cgrid%mmsqu_carbon_st,nvar,igr,init,cgrid%pyglob_id, &
+              var_len,var_len_global,max_ptrs,'MMSQU_CARBON_ST :11:hist:mont:dcyc') 
          call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
       end if
 
@@ -10081,10 +10338,45 @@ contains
          call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
       end if
 
-      if(associated(cgrid%qmean_nee)) then
+      if(associated(cgrid%qmean_ustar)) then
          nvar=nvar+1
-         call vtable_edio_r(npts,cgrid%qmean_nee,nvar,igr,init,cgrid%pyglob_id, &
-              var_len,var_len_global,max_ptrs,'QMEAN_NEE :-11:hist:dcyc') 
+         call vtable_edio_r(npts,cgrid%qmean_ustar,nvar,igr,init,cgrid%pyglob_id, &
+              var_len,var_len_global,max_ptrs,'QMEAN_USTAR :-11:hist:dcyc') 
+         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+      end if
+
+      if(associated(cgrid%qmean_tstar)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,cgrid%qmean_tstar,nvar,igr,init,cgrid%pyglob_id, &
+              var_len,var_len_global,max_ptrs,'QMEAN_TSTAR :-11:hist:dcyc') 
+         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+      end if
+
+      if(associated(cgrid%qmean_qstar)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,cgrid%qmean_qstar,nvar,igr,init,cgrid%pyglob_id, &
+              var_len,var_len_global,max_ptrs,'QMEAN_QSTAR :-11:hist:dcyc') 
+         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+      end if
+
+      if(associated(cgrid%qmean_cstar)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,cgrid%qmean_cstar,nvar,igr,init,cgrid%pyglob_id, &
+              var_len,var_len_global,max_ptrs,'QMEAN_CSTAR :-11:hist:dcyc') 
+         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+      end if
+
+      if(associated(cgrid%qmean_carbon_ac)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,cgrid%qmean_carbon_ac,nvar,igr,init,cgrid%pyglob_id, &
+              var_len,var_len_global,max_ptrs,'QMEAN_CARBON_AC :-11:hist:dcyc') 
+         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+      end if
+
+      if(associated(cgrid%qmean_carbon_st)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,cgrid%qmean_carbon_st,nvar,igr,init,cgrid%pyglob_id, &
+              var_len,var_len_global,max_ptrs,'QMEAN_CARBON_ST :-11:hist:dcyc') 
          call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
       end if
 
@@ -10403,10 +10695,17 @@ contains
          call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
       end if
 
-      if(associated(cgrid%qmsqu_nee)) then
+      if(associated(cgrid%qmsqu_carbon_ac)) then
          nvar=nvar+1
-         call vtable_edio_r(npts,cgrid%qmsqu_nee,nvar,igr,init,cgrid%pyglob_id, &
-              var_len,var_len_global,max_ptrs,'QMSQU_NEE :-11:hist:dcyc') 
+         call vtable_edio_r(npts,cgrid%qmsqu_carbon_ac,nvar,igr,init,cgrid%pyglob_id, &
+              var_len,var_len_global,max_ptrs,'QMSQU_CARBON_AC :-11:hist:dcyc') 
+         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+      end if
+
+      if(associated(cgrid%qmsqu_carbon_st)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,cgrid%qmsqu_carbon_st,nvar,igr,init,cgrid%pyglob_id, &
+              var_len,var_len_global,max_ptrs,'QMSQU_CARBON_ST :-11:hist:dcyc') 
          call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
       end if
 
@@ -12332,6 +12631,13 @@ contains
          call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
       end if  
 
+      if (associated(csite%avg_monthly_gndwater)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,csite%avg_monthly_gndwater,nvar,igr,init,csite%paglob_id, &
+           var_len,var_len_global,max_ptrs,'AVG_MONTHLY_GNDWATER :31:hist') 
+         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+      end if  
+
       if (associated(csite%co2budget_plresp)) then
          nvar=nvar+1
            call vtable_edio_r(npts,csite%co2budget_plresp,nvar,igr,init,csite%paglob_id, &
@@ -12868,10 +13174,45 @@ contains
          call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
       end if
 
+      if (associated(csite%avg_ustar)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,csite%avg_ustar,nvar,igr,init,csite%paglob_id, &
+           var_len,var_len_global,max_ptrs,'AVG_USTAR_PA :31:hist') 
+         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+      end if
+
+      if (associated(csite%avg_tstar)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,csite%avg_tstar,nvar,igr,init,csite%paglob_id, &
+           var_len,var_len_global,max_ptrs,'AVG_TSTAR_PA :31:hist') 
+         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+      end if
+
+      if (associated(csite%avg_qstar)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,csite%avg_qstar,nvar,igr,init,csite%paglob_id, &
+           var_len,var_len_global,max_ptrs,'AVG_QSTAR_PA :31:hist') 
+         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+      end if
+
+      if (associated(csite%avg_cstar)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,csite%avg_cstar,nvar,igr,init,csite%paglob_id, &
+           var_len,var_len_global,max_ptrs,'AVG_CSTAR_PA :31:hist') 
+         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+      end if
+
       if (associated(csite%avg_carbon_ac)) then
          nvar=nvar+1
            call vtable_edio_r(npts,csite%avg_carbon_ac,nvar,igr,init,csite%paglob_id, &
            var_len,var_len_global,max_ptrs,'AVG_CARBON_AC_PA :31:hist') 
+         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+      end if
+
+      if (associated(csite%avg_carbon_st)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,csite%avg_carbon_st,nvar,igr,init,csite%paglob_id, &
+           var_len,var_len_global,max_ptrs,'AVG_CARBON_ST_PA :31:hist') 
          call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
       end if
 
@@ -13319,7 +13660,7 @@ contains
       if (associated(cpatch%krdepth)) then
          nvar=nvar+1
            call vtable_edio_i(npts,cpatch%krdepth,nvar,igr,init,cpatch%coglob_id, &
-           var_len,var_len_global,max_ptrs,'KRDEPTH :40:hist:anal') 
+           var_len,var_len_global,max_ptrs,'KRDEPTH :40:hist:anal:dail:mont:dcyc:year') 
          call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
       end if
 

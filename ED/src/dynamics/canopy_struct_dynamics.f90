@@ -110,8 +110,7 @@ module canopy_struct_dynamics
                                   , rb_slope             & ! intent(in)
                                   , tprandtl             & ! intent(in)
                                   , zoobukhov            ! ! function
-      use canopy_layer_coms, only : crown_mod            & ! intent(in)
-                                  , ncanlyr              & ! intent(in)
+      use canopy_layer_coms, only : ncanlyr              & ! intent(in)
                                   , dzcan                & ! intent(in)
                                   , zztop0i              & ! intent(in)
                                   , ehgti                & ! intent(in)
@@ -410,45 +409,27 @@ module canopy_struct_dynamics
          !----- Find the wind at the top of the canopy. -----------------------------------!
          uh = reduced_wind(csite%ustar(ipa),csite%zeta(ipa),csite%ribulk(ipa),cmet%geoht   &
                           ,csite%veg_displace(ipa),cpatch%hite(1),csite%rough(ipa))
-         select case (crown_mod)
-         case (0)
-            !------------------------------------------------------------------------------!
-            !     This is the Leuning et al. (1995) with no modification, except that we   !
-            ! assume each cohort to be on top of each other (no ties), with very thin      !
-            ! depth and full patch coverage.                                               !
-            !------------------------------------------------------------------------------!
-            do ico=1,cpatch%ncohorts
-               !----- Find the extinction coefficients. -----------------------------------!
-               extinct_half = exp(- 0.25 * cpatch%lai(ico) / cpatch%crown_area(ico))
-               extinct_full = exp(- 0.50 * cpatch%lai(ico) / cpatch%crown_area(ico))
-
-               !----- Assume that wind is at the middle of the thin crown. ----------------!
-               cpatch%veg_wind(ico) = max(ugbmin, uh * extinct_half)
-               uh                   = uh * extinct_full
-            end do
+         !---------------------------------------------------------------------------------!
+         !     In this version we still base ourselves on the Leuning et al. (1995) model, !
+         ! assuming each cohort to be on top of each other (i.e. no ties).  We also assume !
+         ! extinction to be limited to the finite crown area, so the bottom can get a bit  !
+         ! windier.                                                                        !
+         !---------------------------------------------------------------------------------!
+         do ico=1,cpatch%ncohorts
+            !----- Find the extinction coefficients. --------------------------------------!
+            extinct_half = cpatch%crown_area(ico)                                          &
+                         * exp(- 0.25 * cpatch%lai(ico) / cpatch%crown_area(ico))          &
+                         + (1. - cpatch%crown_area(ico))
+            extinct_full = cpatch%crown_area(ico)                                          &
+                         * exp(- 0.50 * cpatch%lai(ico) / cpatch%crown_area(ico))          &
+                         + (1. - cpatch%crown_area(ico))
             !------------------------------------------------------------------------------!
 
-         case (1)
+            !----- Assume that wind is at the middle of the thin crown. -------------------!
+            cpatch%veg_wind(ico) = max(ugbmin, uh * extinct_half)
+            uh                   = uh * extinct_full
             !------------------------------------------------------------------------------!
-            !     In this version we still base ourselves on the Leuning et al. (1995)     !
-            ! model, but we assume extinction to be limited to the finite crown area.      !
-            ! Ties are not allowed in this case either.                                    !
-            !------------------------------------------------------------------------------!
-            do ico=1,cpatch%ncohorts
-               !----- Find the extinction coefficients. -----------------------------------!
-               extinct_half = cpatch%crown_area(ico)                                       &
-                            * exp(- 0.25 * cpatch%lai(ico) / cpatch%crown_area(ico))       &
-                            + (1. - cpatch%crown_area(ico))
-               extinct_full = cpatch%crown_area(ico)                                       &
-                            * exp(- 0.50 * cpatch%lai(ico) / cpatch%crown_area(ico))       &
-                            + (1. - cpatch%crown_area(ico))
-
-               !----- Assume that wind is at the middle of the thin crown. ----------------!
-               cpatch%veg_wind(ico) = max(ugbmin, uh * extinct_half)
-               uh                   = uh * extinct_full
-            end do
-            !------------------------------------------------------------------------------!
-         end select
+         end do
          !---------------------------------------------------------------------------------!
 
 
@@ -1307,8 +1288,7 @@ module canopy_struct_dynamics
                                   , gamma_clm48          & ! intent(in)
                                   , tprandtl8            & ! intent(in)
                                   , zoobukhov8           ! ! intent(in)
-      use canopy_layer_coms, only : crown_mod            & ! intent(in)
-                                  , ncanlyr              & ! intent(in)
+      use canopy_layer_coms, only : ncanlyr              & ! intent(in)
                                   , dzcan8               & ! intent(in)
                                   , zztop0i8             & ! intent(in)
                                   , ehgti8               & ! intent(in)
@@ -1575,43 +1555,24 @@ module canopy_struct_dynamics
          uh = reduced_wind8(initp%ustar,initp%zeta,initp%ribulk,rk4site%geoht              &
                            ,initp%veg_displace,dble(cpatch%hite(1)),initp%rough)
 
-         select case (crown_mod)
-         case (0)
-            !------------------------------------------------------------------------------!
-            !     This is the Leuning et al. (1995) with no modification, except that we   !
-            ! assume each cohort to be on top of each other (no ties), with very thin      !
-            ! depth and full patch coverage.                                               !
-            !------------------------------------------------------------------------------!
-            do ico=1,cpatch%ncohorts
-               !----- Find the extinction coefficients. -----------------------------------!
-               extinct_half = exp(- 2.5d-1 * initp%lai(ico) / initp%crown_area(ico))
-               extinct_full = exp(- 5.0d-1 * initp%lai(ico) / initp%crown_area(ico))
-
-               !----- Assume that wind is at the middle of the thin crown. ----------------!
-               initp%veg_wind(ico) = max(ugbmin8, uh * extinct_half)
-               uh                  = uh * extinct_full
-            end do
-
-         case (1)
-            !------------------------------------------------------------------------------!
-            !     In this version we still base ourselves on the Leuning et al. (1995)     !
-            ! model, but we assume extinction to be limited to the finite crown area.      !
-            ! Ties are not allowed in this case either.                                    !
-            !------------------------------------------------------------------------------!
-            do ico=1,cpatch%ncohorts
-               !----- Find the extinction coefficients. -----------------------------------!
-               extinct_half = initp%crown_area(ico)                                        &
-                            * exp(- 2.5d-1 * initp%lai(ico) / initp%crown_area(ico))       &
-                            + (1.d0 - initp%crown_area(ico))
-               extinct_full = initp%crown_area(ico)                                        &
-                            * exp(- 5.d-1 * initp%lai(ico) / initp%crown_area(ico))        &
-                            + (1.d0 - initp%crown_area(ico))
-               !----- Assume that wind is at the middle of the thin crown. ----------------!
-               initp%veg_wind(ico) = max(ugbmin8, uh * extinct_half)
-               uh                  = uh * extinct_full
-            end do
-
-         end select
+         !---------------------------------------------------------------------------------!
+         !     In this version we still base ourselves on the Leuning et al. (1995) model, !
+         ! assuming each cohort to be on top of each other (i.e. no ties).  We also assume !
+         ! extinction to be limited to the finite crown area, so the bottom can get a bit  !
+         ! windier.                                                                        !
+         !---------------------------------------------------------------------------------!
+         do ico=1,cpatch%ncohorts
+            !----- Find the extinction coefficients. --------------------------------------!
+            extinct_half = initp%crown_area(ico)                                           &
+                         * exp(- 2.5d-1 * initp%lai(ico) / initp%crown_area(ico))          &
+                         + (1.d0 - initp%crown_area(ico))
+            extinct_full = initp%crown_area(ico)                                           &
+                         * exp(- 5.d-1 * initp%lai(ico) / initp%crown_area(ico))           &
+                         + (1.d0 - initp%crown_area(ico))
+            !----- Assume that wind is at the middle of the thin crown. -------------------!
+            initp%veg_wind(ico) = max(ugbmin8, uh * extinct_half)
+            uh                  = uh * extinct_full
+         end do
          !---------------------------------------------------------------------------------!
 
 

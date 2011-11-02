@@ -1,7 +1,34 @@
 #!/bin/sh
-mainpath=`pwd`
-lonlat=${mainpath}'/joborder.txt'
+here=`pwd`
+moi=`whoami`
+diskthere='/n/scratch2/moorcroft_lab'
+lonlat=${here}'/joborder.txt'
+
+#----- Find the output path (both local and remote paths will be cleaned). ----------------#
+basehere=`basename ${here}`
+dirhere=`dirname ${here}`
+while [ ${basehere} != ${moi} ]
+do
+   basehere=`basename ${dirhere}`
+   dirhere=`dirname ${dirhere}`
+done
+diskhere=${dirhere}
+echo '-------------------------------------------------------------------------------'
+echo ' - Simulation control on disk: '${diskhere}
+echo ' - Output on disk:             '${diskthere}
+echo '-------------------------------------------------------------------------------'
+there=`echo ${here} | sed s@${diskhere}@${diskthere}@g`
+#------------------------------------------------------------------------------------------#
+
+
+
+
+#----- Determine the number of polygons to run. -------------------------------------------#
 let npolys=`wc -l ${lonlat} | awk '{print $1 }'`-3
+#------------------------------------------------------------------------------------------#
+
+
+
 
 #----- Check that the user is aware that it will remove everything... ---------------------#
 if [ 'x'${1} == 'x-d' ]
@@ -15,6 +42,9 @@ if [ ${proceed} != 'y' -a ${proceed} != 'Y' ]
 then
    exit
 fi
+#------------------------------------------------------------------------------------------#
+
+
 
 #----- Check that the user is aware that it will remove everything... ---------------------#
 echo ' '
@@ -57,6 +87,7 @@ do
    echo '  - Deletion will begin in '${delfun}' seconds...'
    sleep 1
 done
+#------------------------------------------------------------------------------------------#
 
 #------------------------------------------------------------------------------------------#
 #     Loop over all polygons.                                                              #
@@ -104,52 +135,53 @@ do
    gammac4=`echo ${oi}     | awk '{print $30}'`
    d0grass=`echo ${oi}     | awk '{print $31}'`
    d0tree=`echo ${oi}      | awk '{print $32}'`
-   d0decay=`echo ${oi}     | awk '{print $33}'`
-   alphac3=`echo ${oi}     | awk '{print $34}'`
-   alphac4=`echo ${oi}     | awk '{print $35}'`
-   klowco2=`echo ${oi}     | awk '{print $36}'`
-   rrffact=`echo ${oi}     | awk '{print $37}'`
-   growthresp=`echo ${oi}  | awk '{print $38}'`
-   h2olimit=`echo ${oi}    | awk '{print $39}'`
-   isfclyrm=`echo ${oi}    | awk '{print $40}'`
-   icanturb=`echo ${oi}    | awk '{print $41}'`
-   ubmin=`echo ${oi}       | awk '{print $42}'`
-   ugbmin=`echo ${oi}      | awk '{print $43}'`
-   ustmin=`echo ${oi}      | awk '{print $44}'`
-   gamm=`echo ${oi}        | awk '{print $45}'`
-   gamh=`echo ${oi}        | awk '{print $46}'`
-   tprandtl=`echo ${oi}    | awk '{print $47}'`
-   ribmax=`echo ${oi}      | awk '{print $48}'`
-   atmco2=`echo ${oi}      | awk '{print $49}'`
-   thcrit=`echo ${oi}      | awk '{print $50}'`
-   smfire=`echo ${oi}      | awk '{print $51}'`
-   isoilbc=`echo ${oi}     | awk '{print $52}'`
-   imetrad=`echo ${oi}     | awk '{print $53}'`
-   ibranch=`echo ${oi}     | awk '{print $54}'`
-   icanrad=`echo ${oi}     | awk '{print $55}'`
-   crown=`echo   ${oi}     | awk '{print $56}'`
-   ltransvis=`echo ${oi}   | awk '{print $57}'`
-   lreflectvis=`echo ${oi} | awk '{print $58}'`
-   ltransnir=`echo ${oi}   | awk '{print $59}'`
-   lreflectnir=`echo ${oi} | awk '{print $60}'`
-   orienttree=`echo ${oi}  | awk '{print $61}'`
-   orientgrass=`echo ${oi} | awk '{print $62}'`
-   clumptree=`echo ${oi}   | awk '{print $63}'`
-   clumpgrass=`echo ${oi}  | awk '{print $64}'`
-   ivegtdyn=`echo ${oi}    | awk '{print $65}'`
-   igndvap=`echo ${oi}     | awk '{print $66}'`
-   iphen=`echo ${oi}       | awk '{print $67}'`
+   alphac3=`echo ${oi}     | awk '{print $33}'`
+   alphac4=`echo ${oi}     | awk '{print $34}'`
+   klowco2=`echo ${oi}     | awk '{print $35}'`
+   rrffact=`echo ${oi}     | awk '{print $36}'`
+   growthresp=`echo ${oi}  | awk '{print $37}'`
+   h2olimit=`echo ${oi}    | awk '{print $38}'`
+   isfclyrm=`echo ${oi}    | awk '{print $39}'`
+   icanturb=`echo ${oi}    | awk '{print $40}'`
+   ubmin=`echo ${oi}       | awk '{print $41}'`
+   ugbmin=`echo ${oi}      | awk '{print $42}'`
+   ustmin=`echo ${oi}      | awk '{print $43}'`
+   gamm=`echo ${oi}        | awk '{print $44}'`
+   gamh=`echo ${oi}        | awk '{print $45}'`
+   tprandtl=`echo ${oi}    | awk '{print $46}'`
+   ribmax=`echo ${oi}      | awk '{print $47}'`
+   atmco2=`echo ${oi}      | awk '{print $48}'`
+   thcrit=`echo ${oi}      | awk '{print $49}'`
+   smfire=`echo ${oi}      | awk '{print $50}'`
+   isoilbc=`echo ${oi}     | awk '{print $51}'`
+   imetrad=`echo ${oi}     | awk '{print $52}'`
+   ibranch=`echo ${oi}     | awk '{print $53}'`
+   icanrad=`echo ${oi}     | awk '{print $54}'`
+   crown=`echo   ${oi}     | awk '{print $55}'`
+   ltransvis=`echo ${oi}   | awk '{print $56}'`
+   lreflectvis=`echo ${oi} | awk '{print $57}'`
+   ltransnir=`echo ${oi}   | awk '{print $58}'`
+   lreflectnir=`echo ${oi} | awk '{print $59}'`
+   orienttree=`echo ${oi}  | awk '{print $60}'`
+   orientgrass=`echo ${oi} | awk '{print $61}'`
+   clumptree=`echo ${oi}   | awk '{print $62}'`
+   clumpgrass=`echo ${oi}  | awk '{print $63}'`
+   ivegtdyn=`echo ${oi}    | awk '{print $64}'`
+   igndvap=`echo ${oi}     | awk '{print $65}'`
+   iphen=`echo ${oi}       | awk '{print $66}'`
+   iallom=`echo ${oi}      | awk '{print $67}'`
    #---------------------------------------------------------------------------------------#
 
 
 
-   therepath=`echo ${mainpath} | sed s@/n/Moorcroft_Lab/Users@/n/moorcroft_scratch@g`
    if [ 'x'${1} == 'x-d' ]
    then
-      rm -frv ${mainpath}'/'${polyname} 
-      rm -frv ${therepath}'/'${polyname} 
+      rm -frv ${here}'/'${polyname} 
+      rm -frv ${there}'/'${polyname} 
    else
-      cd ${mainpath}'/'${polyname}
+      cd ${here}'/'${polyname}
+      ./purge.sh
+      cd ${there}'/'${polyname}
       ./purge.sh
    fi
 done

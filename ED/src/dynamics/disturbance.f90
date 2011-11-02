@@ -1226,9 +1226,7 @@ module disturbance_utils
       use pft_coms       , only : q                        & ! intent(in)
                                 , qsw                      & ! intent(in)
                                 , sla                      & ! intent(in)
-                                , hgt_min                  & ! intent(in)
-                                , max_dbh                  & ! intent(in)
-                                , is_grass                 ! ! intent(in)
+                                , hgt_min                  ! ! intent(in)
       use ed_misc_coms   , only : dtlsm                    ! ! intent(in)
       use fuse_fiss_utils, only : sort_cohorts             ! ! sub-routine
       use ed_therm_lib   , only : calc_veg_hcap            ! ! function

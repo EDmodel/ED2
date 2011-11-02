@@ -213,11 +213,17 @@ subroutine normalize_averaged_vars(cgrid,frqsum,dtlsm)
             csite%avg_sensible_gc    (ipa) = csite%avg_sensible_gc    (ipa) * frqsumi
             csite%avg_sensible_ac    (ipa) = csite%avg_sensible_ac    (ipa) * frqsumi
             csite%avg_carbon_ac      (ipa) = csite%avg_carbon_ac      (ipa) * frqsumi
+            csite%avg_carbon_st      (ipa) = csite%avg_carbon_st      (ipa) * frqsumi
             csite%avg_runoff_heat    (ipa) = csite%avg_runoff_heat    (ipa) * frqsumi
             csite%avg_drainage_heat  (ipa) = csite%avg_drainage_heat  (ipa) * frqsumi
             csite%avg_rk4step        (ipa) = csite%avg_rk4step        (ipa) * frqsumi
 
-         
+            csite%avg_ustar          (ipa) = csite%avg_ustar          (ipa) * frqsumi
+            csite%avg_tstar          (ipa) = csite%avg_tstar          (ipa) * frqsumi
+            csite%avg_qstar          (ipa) = csite%avg_qstar          (ipa) * frqsumi
+            csite%avg_cstar          (ipa) = csite%avg_cstar          (ipa) * frqsumi
+
+
             do k=cpoly%lsl(isi),nzg
                csite%avg_sensible_gg(k,ipa) = csite%avg_sensible_gg(k,ipa) * frqsumi
                csite%avg_smoist_gg(k,ipa)   = csite%avg_smoist_gg(k,ipa)   * frqsumi
@@ -370,6 +376,11 @@ subroutine reset_averaged_vars(cgrid)
       cgrid%avg_soil_fracliq   (:,ipy) = 0.0
       cgrid%avg_soil_rootfrac  (:,ipy) = 0.0
 
+      cgrid%avg_ustar            (ipy) = 0.0
+      cgrid%avg_tstar            (ipy) = 0.0
+      cgrid%avg_qstar            (ipy) = 0.0
+      cgrid%avg_cstar            (ipy) = 0.0
+
       cgrid%avg_vapor_lc         (ipy) = 0.0
       cgrid%avg_vapor_wc         (ipy) = 0.0
       cgrid%avg_vapor_gc         (ipy) = 0.0
@@ -384,6 +395,7 @@ subroutine reset_averaged_vars(cgrid)
       cgrid%avg_drainage_heat    (ipy) = 0.0
       cgrid%aux                  (ipy) = 0.0
       cgrid%avg_carbon_ac        (ipy) = 0.0
+      cgrid%avg_carbon_st        (ipy) = 0.0
       cgrid%avg_sensible_lc      (ipy) = 0.0
       cgrid%avg_sensible_wc      (ipy) = 0.0
       cgrid%avg_qwshed_vg        (ipy) = 0.0
@@ -499,7 +511,12 @@ subroutine reset_averaged_vars(cgrid)
             csite%ebudget_residual(ipa)         = 0.0
             !----------------------------------------------------------------!
 
+            csite%avg_ustar    (ipa)        = 0.0
+            csite%avg_tstar    (ipa)        = 0.0
+            csite%avg_qstar    (ipa)        = 0.0
+            csite%avg_cstar    (ipa)        = 0.0
             csite%avg_carbon_ac(ipa)        = 0.0
+            csite%avg_carbon_st(ipa)        = 0.0
             csite%avg_vapor_lc(ipa)         = 0.0
             csite%avg_vapor_wc(ipa)         = 0.0
             csite%avg_vapor_gc(ipa)         = 0.0
@@ -1358,6 +1375,20 @@ subroutine integrate_ed_daily_output_flux(cgrid)
                                    + cgrid%avg_sensible_gc(ipy)
       cgrid%dmean_sensible_ac(ipy) = cgrid%dmean_sensible_ac(ipy)                          &
                                    + cgrid%avg_sensible_ac(ipy)
+      cgrid%dmean_carbon_ac (ipy)  = cgrid%dmean_carbon_ac   (ipy)                         &
+                                   + cgrid%avg_carbon_ac     (ipy)
+      cgrid%dmean_carbon_st (ipy)  = cgrid%dmean_carbon_st   (ipy)                         &
+                                   + cgrid%avg_carbon_st     (ipy)
+
+      cgrid%dmean_ustar     (ipy)  = cgrid%dmean_ustar       (ipy)                         &
+                                   + cgrid%avg_ustar         (ipy)
+      cgrid%dmean_tstar     (ipy)  = cgrid%dmean_tstar       (ipy)                         &
+                                   + cgrid%avg_tstar         (ipy)
+      cgrid%dmean_qstar     (ipy)  = cgrid%dmean_qstar       (ipy)                         &
+                                   + cgrid%avg_qstar         (ipy)
+      cgrid%dmean_cstar     (ipy)  = cgrid%dmean_cstar       (ipy)                         &
+                                   + cgrid%avg_cstar         (ipy)
+
 
       cgrid%dmean_rshort_gnd  (ipy) = cgrid%dmean_rshort_gnd   (ipy)                       &
                                     + cgrid%avg_rshort_gnd     (ipy)
@@ -1367,9 +1398,6 @@ subroutine integrate_ed_daily_output_flux(cgrid)
                                     + cgrid%avg_rlongup        (ipy)
       cgrid%dmean_rlong_albedo(ipy) = cgrid%dmean_rlong_albedo (ipy)                       &
                                     + cgrid%avg_rlong_albedo   (ipy)
-      !------ Integrate the NEE with the conventional NEE sign (< 0 = uptake). ------------!
-      cgrid%dmean_nee       (ipy) = cgrid%dmean_nee         (ipy)                          &
-                                  - cgrid%avg_carbon_ac     (ipy) * umols_2_kgCyr
       cgrid%dmean_leaf_resp (ipy) = cgrid%dmean_leaf_resp   (ipy)                          &
                                   + cgrid%avg_leaf_resp     (ipy) * umols_2_kgCyr
       cgrid%dmean_root_resp (ipy) = cgrid%dmean_root_resp   (ipy)                          &
@@ -1427,10 +1455,21 @@ subroutine integrate_ed_daily_output_flux(cgrid)
          cgrid%qmean_rh             (it,ipy) = cgrid%qmean_rh                    (it,ipy)  &
                                              + cgrid%avg_htroph_resp                (ipy)  &
                                              * umols_2_kgCyr
-         !------ Integrate the NEE with the conventional NEE sign (< 0 = uptake). ---------!
-         cgrid%qmean_nee            (it,ipy) = cgrid%qmean_nee                    (it,ipy) &
-                                             - cgrid%avg_carbon_ac                   (ipy) &
-                                             * umols_2_kgCyr
+
+         cgrid%qmean_ustar          (it,ipy) = cgrid%qmean_ustar                  (it,ipy) &
+                                             + cgrid%avg_ustar                       (ipy)
+         cgrid%qmean_tstar          (it,ipy) = cgrid%qmean_tstar                  (it,ipy) &
+                                             + cgrid%avg_tstar                       (ipy)
+         cgrid%qmean_qstar          (it,ipy) = cgrid%qmean_qstar                  (it,ipy) &
+                                             + cgrid%avg_qstar                       (ipy)
+         cgrid%qmean_cstar          (it,ipy) = cgrid%qmean_cstar                  (it,ipy) &
+                                             + cgrid%avg_cstar                       (ipy)
+
+         cgrid%qmean_carbon_ac      (it,ipy) = cgrid%qmean_carbon_ac              (it,ipy) &
+                                             + cgrid%avg_carbon_ac                   (ipy)
+         cgrid%qmean_carbon_st      (it,ipy) = cgrid%qmean_carbon_st              (it,ipy) &
+                                             + cgrid%avg_carbon_st                   (ipy)
+
          !----- Variables that were previously integrated to this time step. --------------!
          cgrid%qmean_sensible_lc    (it,ipy) = cgrid%qmean_sensible_lc            (it,ipy) &
                                              + cgrid%avg_sensible_lc                 (ipy)
@@ -1525,10 +1564,13 @@ subroutine integrate_ed_daily_output_flux(cgrid)
                                               * cgrid%avg_htroph_resp               (ipy)  &
                                               * umols_2_kgCyr * umols_2_kgCyr
 
-         cgrid%qmsqu_nee            (it,ipy)  = cgrid%qmsqu_nee                 (it,ipy)   &
+         cgrid%qmsqu_carbon_ac      (it,ipy)  = cgrid%qmsqu_carbon_ac           (it,ipy)   &
                                               + cgrid%avg_carbon_ac                (ipy)   &
-                                              * cgrid%avg_carbon_ac                (ipy)   &
-                                              * umols_2_kgCyr * umols_2_kgCyr
+                                              * cgrid%avg_carbon_ac                (ipy)
+
+         cgrid%qmsqu_carbon_st      (it,ipy)  = cgrid%qmsqu_carbon_st           (it,ipy)   &
+                                              + cgrid%avg_carbon_st                (ipy)   &
+                                              * cgrid%avg_carbon_st                (ipy)
 
          cgrid%qmsqu_sensible_ac    (it,ipy)  = cgrid%qmsqu_sensible_ac         (it,ipy)   &
                                               + cgrid%avg_sensible_ac              (ipy)   &
@@ -2147,8 +2189,14 @@ subroutine normalize_ed_daily_output_vars(cgrid)
       !     Flux variables, updated every frqsum, so these are normalized by               !
       ! frqsum/day_sec.                                                                    !
       !------------------------------------------------------------------------------------!
+      cgrid%dmean_ustar       (ipy)  = cgrid%dmean_ustar       (ipy)  * frqsum_o_daysec
+      cgrid%dmean_tstar       (ipy)  = cgrid%dmean_tstar       (ipy)  * frqsum_o_daysec
+      cgrid%dmean_qstar       (ipy)  = cgrid%dmean_qstar       (ipy)  * frqsum_o_daysec
+      cgrid%dmean_cstar       (ipy)  = cgrid%dmean_cstar       (ipy)  * frqsum_o_daysec
       cgrid%dmean_evap        (ipy)  = cgrid%dmean_evap        (ipy)  * frqsum_o_daysec
       cgrid%dmean_transp      (ipy)  = cgrid%dmean_transp      (ipy)  * frqsum_o_daysec
+      cgrid%dmean_carbon_ac   (ipy)  = cgrid%dmean_carbon_ac   (ipy)  * frqsum_o_daysec
+      cgrid%dmean_carbon_st   (ipy)  = cgrid%dmean_carbon_st   (ipy)  * frqsum_o_daysec
       cgrid%dmean_sensible_lc (ipy)  = cgrid%dmean_sensible_lc (ipy)  * frqsum_o_daysec
       cgrid%dmean_sensible_wc (ipy)  = cgrid%dmean_sensible_wc (ipy)  * frqsum_o_daysec
       cgrid%dmean_sensible_gc (ipy)  = cgrid%dmean_sensible_gc (ipy)  * frqsum_o_daysec
@@ -2163,7 +2211,6 @@ subroutine normalize_ed_daily_output_vars(cgrid)
       ! point in umol/m2/s.  We just multiply by one year in seconds and convert to kgC,   !
       ! so the units will be kgC/m2/yr.                                                    !
       !------------------------------------------------------------------------------------!
-      cgrid%dmean_nee        (ipy)  = cgrid%dmean_nee      (ipy) * frqsum_o_daysec
       cgrid%dmean_plresp     (ipy)  = cgrid%dmean_plresp   (ipy) * frqsum_o_daysec
       cgrid%dmean_nep        (ipy)  = cgrid%dmean_nep      (ipy) * frqsum_o_daysec
       cgrid%dmean_gpp_dbh  (:,ipy)  = cgrid%dmean_gpp_dbh(:,ipy) * frqsum_o_daysec
@@ -2575,7 +2622,13 @@ subroutine zero_ed_daily_output_vars(cgrid)
       cgrid%dmean_albedo_beam    (ipy) = 0.
       cgrid%dmean_albedo_diffuse (ipy) = 0.
 
-      cgrid%dmean_nee            (ipy) = 0.
+      cgrid%dmean_ustar          (ipy) = 0.
+      cgrid%dmean_tstar          (ipy) = 0.
+      cgrid%dmean_qstar          (ipy) = 0.
+      cgrid%dmean_cstar          (ipy) = 0.
+
+      cgrid%dmean_carbon_ac      (ipy) = 0.
+      cgrid%dmean_carbon_st      (ipy) = 0.
       cgrid%dmean_plresp         (ipy) = 0.
       cgrid%dmean_rh             (ipy) = 0.
       cgrid%dmean_leaf_resp      (ipy) = 0.
@@ -2765,8 +2818,18 @@ subroutine integrate_ed_monthly_output_vars(cgrid)
                                       + cgrid%dmean_albedo_beam   (ipy)
       cgrid%mmean_albedo_diffuse(ipy) = cgrid%mmean_albedo_diffuse(ipy)                    &
                                       + cgrid%dmean_albedo_diffuse(ipy)
-      cgrid%mmean_nee           (ipy) = cgrid%mmean_nee           (ipy)                    &
-                                      + cgrid%dmean_nee           (ipy)
+      cgrid%mmean_ustar         (ipy) = cgrid%mmean_ustar         (ipy)                    &
+                                      + cgrid%dmean_ustar         (ipy)
+      cgrid%mmean_tstar         (ipy) = cgrid%mmean_tstar         (ipy)                    &
+                                      + cgrid%dmean_tstar         (ipy)
+      cgrid%mmean_qstar         (ipy) = cgrid%mmean_qstar         (ipy)                    &
+                                      + cgrid%dmean_qstar         (ipy)
+      cgrid%mmean_cstar         (ipy) = cgrid%mmean_cstar         (ipy)                    &
+                                      + cgrid%dmean_cstar         (ipy)
+      cgrid%mmean_carbon_ac     (ipy) = cgrid%mmean_carbon_ac     (ipy)                    &
+                                      + cgrid%dmean_carbon_ac     (ipy)
+      cgrid%mmean_carbon_st     (ipy) = cgrid%mmean_carbon_st     (ipy)                    &
+                                      + cgrid%dmean_carbon_st     (ipy)
       cgrid%mmean_nep           (ipy) = cgrid%mmean_nep           (ipy)                    &
                                       + cgrid%dmean_nep           (ipy)
       cgrid%mmean_plresp        (ipy) = cgrid%mmean_plresp        (ipy)                    &
@@ -2872,9 +2935,12 @@ subroutine integrate_ed_monthly_output_vars(cgrid)
       cgrid%mmsqu_plresp     (ipy) = cgrid%mmsqu_plresp     (ipy)                          &
                                    + cgrid%dmean_plresp     (ipy)                          &
                                    * cgrid%dmean_plresp     (ipy)
-      cgrid%mmsqu_nee        (ipy) = cgrid%mmsqu_nee        (ipy)                          &
-                                   + cgrid%dmean_nee        (ipy)                          &
-                                   * cgrid%dmean_nee        (ipy)
+      cgrid%mmsqu_carbon_ac  (ipy) = cgrid%mmsqu_carbon_ac  (ipy)                          &
+                                   + cgrid%dmean_carbon_ac  (ipy)                          &
+                                   * cgrid%dmean_carbon_ac  (ipy)
+      cgrid%mmsqu_carbon_st  (ipy) = cgrid%mmsqu_carbon_st  (ipy)                          &
+                                   + cgrid%dmean_carbon_st  (ipy)                          &
+                                   * cgrid%dmean_carbon_st  (ipy)
       cgrid%mmsqu_nep        (ipy) = cgrid%mmsqu_nep        (ipy)                          &
                                    + cgrid%dmean_nep        (ipy)                          &
                                    * cgrid%dmean_nep        (ipy)
@@ -3156,7 +3222,12 @@ subroutine normalize_ed_monthly_output_vars(cgrid)
       cgrid%mmean_albedo         (ipy) = cgrid%mmean_albedo         (ipy) * ndaysi
       cgrid%mmean_albedo_beam    (ipy) = cgrid%mmean_albedo_beam    (ipy) * ndaysi
       cgrid%mmean_albedo_diffuse (ipy) = cgrid%mmean_albedo_diffuse (ipy) * ndaysi
-      cgrid%mmean_nee            (ipy) = cgrid%mmean_nee            (ipy) * ndaysi
+      cgrid%mmean_ustar          (ipy) = cgrid%mmean_ustar          (ipy) * ndaysi
+      cgrid%mmean_tstar          (ipy) = cgrid%mmean_tstar          (ipy) * ndaysi
+      cgrid%mmean_qstar          (ipy) = cgrid%mmean_qstar          (ipy) * ndaysi
+      cgrid%mmean_cstar          (ipy) = cgrid%mmean_cstar          (ipy) * ndaysi
+      cgrid%mmean_carbon_ac      (ipy) = cgrid%mmean_carbon_ac      (ipy) * ndaysi
+      cgrid%mmean_carbon_st      (ipy) = cgrid%mmean_carbon_st      (ipy) * ndaysi
       cgrid%mmean_nep            (ipy) = cgrid%mmean_nep            (ipy) * ndaysi
       cgrid%mmean_plresp         (ipy) = cgrid%mmean_plresp         (ipy) * ndaysi
       cgrid%mmean_rh             (ipy) = cgrid%mmean_rh             (ipy) * ndaysi
@@ -3219,7 +3290,8 @@ subroutine normalize_ed_monthly_output_vars(cgrid)
       cgrid%mmsqu_leaf_resp   (ipy) = cgrid%mmsqu_leaf_resp   (ipy) * ndaysi
       cgrid%mmsqu_root_resp   (ipy) = cgrid%mmsqu_root_resp   (ipy) * ndaysi
       cgrid%mmsqu_plresp      (ipy) = cgrid%mmsqu_plresp      (ipy) * ndaysi
-      cgrid%mmsqu_nee         (ipy) = cgrid%mmsqu_nee         (ipy) * ndaysi
+      cgrid%mmsqu_carbon_ac   (ipy) = cgrid%mmsqu_carbon_ac   (ipy) * ndaysi
+      cgrid%mmsqu_carbon_st   (ipy) = cgrid%mmsqu_carbon_st   (ipy) * ndaysi
       cgrid%mmsqu_nep         (ipy) = cgrid%mmsqu_nep         (ipy) * ndaysi
       cgrid%mmsqu_rh          (ipy) = cgrid%mmsqu_rh          (ipy) * ndaysi
       cgrid%mmsqu_sensible_ac (ipy) = cgrid%mmsqu_sensible_ac (ipy) * ndaysi
@@ -3646,7 +3718,12 @@ subroutine normalize_ed_monthly_output_vars(cgrid)
             cgrid%qmean_albedo        (t,ipy) = cgrid%qmean_albedo        (t,ipy)  * ndaysi
             cgrid%qmean_albedo_beam   (t,ipy) = cgrid%qmean_albedo_beam   (t,ipy)  * ndaysi
             cgrid%qmean_albedo_diffuse(t,ipy) = cgrid%qmean_albedo_diffuse(t,ipy)  * ndaysi
-            cgrid%qmean_nee           (t,ipy) = cgrid%qmean_nee           (t,ipy)  * ndaysi
+            cgrid%qmean_ustar         (t,ipy) = cgrid%qmean_ustar         (t,ipy)  * ndaysi
+            cgrid%qmean_tstar         (t,ipy) = cgrid%qmean_tstar         (t,ipy)  * ndaysi
+            cgrid%qmean_qstar         (t,ipy) = cgrid%qmean_qstar         (t,ipy)  * ndaysi
+            cgrid%qmean_cstar         (t,ipy) = cgrid%qmean_cstar         (t,ipy)  * ndaysi
+            cgrid%qmean_carbon_ac     (t,ipy) = cgrid%qmean_carbon_ac     (t,ipy)  * ndaysi
+            cgrid%qmean_carbon_st     (t,ipy) = cgrid%qmean_carbon_st     (t,ipy)  * ndaysi
             cgrid%qmean_pcpg          (t,ipy) = cgrid%qmean_pcpg          (t,ipy)  * ndaysi
             cgrid%qmean_evap          (t,ipy) = cgrid%qmean_evap          (t,ipy)  * ndaysi
             cgrid%qmean_transp        (t,ipy) = cgrid%qmean_transp        (t,ipy)  * ndaysi
@@ -3663,7 +3740,8 @@ subroutine normalize_ed_monthly_output_vars(cgrid)
             cgrid%qmsqu_leaf_resp     (t,ipy) = cgrid%qmsqu_leaf_resp     (t,ipy)  * ndaysi
             cgrid%qmsqu_root_resp     (t,ipy) = cgrid%qmsqu_root_resp     (t,ipy)  * ndaysi
             cgrid%qmsqu_plresp        (t,ipy) = cgrid%qmsqu_plresp        (t,ipy)  * ndaysi
-            cgrid%qmsqu_nee           (t,ipy) = cgrid%qmsqu_nee           (t,ipy)  * ndaysi
+            cgrid%qmsqu_carbon_ac     (t,ipy) = cgrid%qmsqu_carbon_ac     (t,ipy)  * ndaysi
+            cgrid%qmsqu_carbon_st     (t,ipy) = cgrid%qmsqu_carbon_st     (t,ipy)  * ndaysi
             cgrid%qmsqu_nep           (t,ipy) = cgrid%qmsqu_nep           (t,ipy)  * ndaysi
             cgrid%qmsqu_rh            (t,ipy) = cgrid%qmsqu_rh            (t,ipy)  * ndaysi
             cgrid%qmsqu_sensible_ac   (t,ipy) = cgrid%qmsqu_sensible_ac   (t,ipy)  * ndaysi
@@ -3775,7 +3853,12 @@ subroutine zero_ed_monthly_output_vars(cgrid)
       cgrid%mmean_albedo             (ipy) = 0.
       cgrid%mmean_albedo_beam        (ipy) = 0.
       cgrid%mmean_albedo_diffuse     (ipy) = 0.
-      cgrid%mmean_nee                (ipy) = 0.
+      cgrid%mmean_ustar              (ipy) = 0.
+      cgrid%mmean_tstar              (ipy) = 0.
+      cgrid%mmean_qstar              (ipy) = 0.
+      cgrid%mmean_cstar              (ipy) = 0.
+      cgrid%mmean_carbon_ac          (ipy) = 0.
+      cgrid%mmean_carbon_st          (ipy) = 0.
       cgrid%mmean_nep                (ipy) = 0.
       cgrid%mmean_plresp             (ipy) = 0.
       cgrid%mmean_rh                 (ipy) = 0.
@@ -3826,7 +3909,8 @@ subroutine zero_ed_monthly_output_vars(cgrid)
       cgrid%mmsqu_leaf_resp          (ipy) = 0.
       cgrid%mmsqu_root_resp          (ipy) = 0.
       cgrid%mmsqu_plresp             (ipy) = 0.
-      cgrid%mmsqu_nee                (ipy) = 0.
+      cgrid%mmsqu_carbon_ac          (ipy) = 0.
+      cgrid%mmsqu_carbon_st          (ipy) = 0.
       cgrid%mmsqu_nep                (ipy) = 0.
       cgrid%mmsqu_rh                 (ipy) = 0.
       cgrid%mmsqu_sensible_ac        (ipy) = 0.
@@ -3977,7 +4061,12 @@ subroutine zero_ed_monthly_output_vars(cgrid)
          cgrid%qmean_albedo        (:,ipy) = 0.0
          cgrid%qmean_albedo_beam   (:,ipy) = 0.0
          cgrid%qmean_albedo_diffuse(:,ipy) = 0.0
-         cgrid%qmean_nee           (:,ipy) = 0.0
+         cgrid%qmean_ustar         (:,ipy) = 0.0
+         cgrid%qmean_tstar         (:,ipy) = 0.0
+         cgrid%qmean_qstar         (:,ipy) = 0.0
+         cgrid%qmean_cstar         (:,ipy) = 0.0
+         cgrid%qmean_carbon_ac     (:,ipy) = 0.0
+         cgrid%qmean_carbon_st     (:,ipy) = 0.0
          cgrid%qmean_pcpg          (:,ipy) = 0.0
          cgrid%qmean_evap          (:,ipy) = 0.0
          cgrid%qmean_transp        (:,ipy) = 0.0
@@ -3994,7 +4083,8 @@ subroutine zero_ed_monthly_output_vars(cgrid)
          cgrid%qmsqu_leaf_resp     (:,ipy) = 0.0
          cgrid%qmsqu_root_resp     (:,ipy) = 0.0
          cgrid%qmsqu_plresp        (:,ipy) = 0.0
-         cgrid%qmsqu_nee           (:,ipy) = 0.0
+         cgrid%qmsqu_carbon_ac     (:,ipy) = 0.0
+         cgrid%qmsqu_carbon_st     (:,ipy) = 0.0
          cgrid%qmsqu_nep           (:,ipy) = 0.0
          cgrid%qmsqu_rh            (:,ipy) = 0.0
          cgrid%qmsqu_sensible_ac   (:,ipy) = 0.0

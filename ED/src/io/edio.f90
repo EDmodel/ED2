@@ -453,6 +453,7 @@ subroutine spatial_averages
             cpoly%avg_rlong_gnd(isi) = sum(csite%avg_rlong_gnd * csite%area ) * site_area_i
             cpoly%avg_rlongup(isi)   = sum(csite%avg_rlongup   * csite%area ) * site_area_i
             cpoly%avg_carbon_ac(isi) = sum(csite%avg_carbon_ac * csite%area ) * site_area_i
+            cpoly%avg_carbon_st(isi) = sum(csite%avg_carbon_st * csite%area ) * site_area_i
             cpoly%avg_vapor_lc(isi)  = sum(csite%avg_vapor_lc  * csite%area ) * site_area_i
             cpoly%avg_vapor_wc(isi)  = sum(csite%avg_vapor_wc  * csite%area ) * site_area_i
             cpoly%avg_vapor_gc(isi)  = sum(csite%avg_vapor_gc  * csite%area ) * site_area_i
@@ -495,6 +496,13 @@ subroutine spatial_averages
                                            * site_area_i
             cpoly%avg_rlong_albedo   (isi) = sum(csite%avg_rlong_albedo   * csite%area)    &
                                            * site_area_i
+
+
+            !----- Characteristic scales. -------------------------------------------------!
+            cpoly%avg_ustar       (isi) = sum(csite%avg_ustar * csite%area) * site_area_i
+            cpoly%avg_tstar       (isi) = sum(csite%avg_tstar * csite%area) * site_area_i
+            cpoly%avg_qstar       (isi) = sum(csite%avg_qstar * csite%area) * site_area_i
+            cpoly%avg_cstar       (isi) = sum(csite%avg_cstar * csite%area) * site_area_i
 
             !----- Extra variables for NACP intercomparision (MCD) ------------------------!
             cpoly%avg_fsc(isi)          = sum(csite%fast_soil_C        * csite%area )      &
@@ -1154,6 +1162,7 @@ subroutine spatial_averages
          cgrid%avg_rlong_gnd(ipy)    = sum(cpoly%avg_rlong_gnd    *cpoly%area)*poly_area_i
          cgrid%avg_rlongup  (ipy)    = sum(cpoly%avg_rlongup      *cpoly%area)*poly_area_i
          cgrid%avg_carbon_ac(ipy)    = sum(cpoly%avg_carbon_ac    *cpoly%area)*poly_area_i
+         cgrid%avg_carbon_st(ipy)    = sum(cpoly%avg_carbon_st    *cpoly%area)*poly_area_i
          cgrid%avg_vapor_lc(ipy)     = sum(cpoly%avg_vapor_lc     *cpoly%area)*poly_area_i
          cgrid%avg_vapor_wc(ipy)     = sum(cpoly%avg_vapor_wc     *cpoly%area)*poly_area_i
          cgrid%avg_vapor_gc(ipy)     = sum(cpoly%avg_vapor_gc     *cpoly%area)*poly_area_i
@@ -1180,6 +1189,12 @@ subroutine spatial_averages
          cgrid%avg_qthroughfall(ipy) = sum(cpoly%avg_qthroughfall *cpoly%area)*poly_area_i
          cgrid%avg_sensible_gc(ipy)  = sum(cpoly%avg_sensible_gc  *cpoly%area)*poly_area_i
          cgrid%avg_sensible_ac(ipy)  = sum(cpoly%avg_sensible_ac  *cpoly%area)*poly_area_i
+
+         !----- Average stars (characteristic scales). ------------------------------------!
+         cgrid%avg_ustar (ipy) = sum(cpoly%avg_ustar * cpoly%area) * poly_area_i
+         cgrid%avg_tstar (ipy) = sum(cpoly%avg_tstar * cpoly%area) * poly_area_i
+         cgrid%avg_qstar (ipy) = sum(cpoly%avg_qstar * cpoly%area) * poly_area_i
+         cgrid%avg_cstar (ipy) = sum(cpoly%avg_cstar * cpoly%area) * poly_area_i
 
          !----- Average albedo values. ----------------------------------------------------!
          cgrid%avg_albedo         (ipy) = sum(cpoly%avg_albedo         * cpoly%area)       &
