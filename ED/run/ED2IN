@@ -630,7 +630,9 @@ $ED_NL
 
 
    !---------------------------------------------------------------------------------------!
-   ! IALLOM -- Which allometry to use (this affects tropical PFTs only)                    !
+   ! IALLOM -- Which allometry to use (this mostly affects tropical PFTs.  Temperate PFTs  !
+   !           will use the new root allometry and the maximum crown area if IALLOM is set !
+   !           to 1 or 2).                                                                 !
    !           0.  Original ED-2.1                                                         !
    !           1.  a. The coefficients for structural biomass are set so the total AGB     !
    !                  is similar to Baker et al. (2004), equation 2.  Balive is the        !
@@ -641,10 +643,9 @@ $ED_NL
    !                  crown area                                                           !
    !           2.  Similar to 1, but with a few extra changes.                             !
    !               a. Height -> DBH allometry as in Poorter et al. (2006)                  !
-   !               b. Balive is retuned, starting from Saldarriga et al. (1998), the same  !
-   !                  starting point of ED-1.0, and the coefficients are adjusted for      !
-   !                  DBH > 10cm and DBH < 10 cm separately.  This should give more leaf   !
-   !                  biomass for seedlings and tall trees.                                !
+   !               b. Balive is retuned, using a few leaf biomass allometric equations for !
+   !                  a few genuses in Costa Rica.  References:                            !
+   !                  Cole and Ewel (2006), and Calvo Alvarado et al. (2008).              !
    !---------------------------------------------------------------------------------------!
    NL%IALLOM          = 1
    !---------------------------------------------------------------------------------------!
@@ -736,7 +737,7 @@ $ED_NL
    !              1.  Dietze (2008) model.  Cohorts have a finite radius, and cohorts are  !
    !                  stacked on the top of each other.                                    !
    !---------------------------------------------------------------------------------------!
-   NL%CROWN_MOD       = 0
+   NL%CROWN_MOD       = 1
    !---------------------------------------------------------------------------------------!
 
 
@@ -772,12 +773,12 @@ $ED_NL
    !                        1.  Homogeneously spread over the layer (i.e., no clumping)    !
    !---------------------------------------------------------------------------------------!
    NL%ICANRAD        =      0
-   NL%LTRANS_VIS     =  0.028
-   NL%LTRANS_NIR     =  0.248
-   NL%LREFLECT_VIS   =  0.062
-   NL%LREFLECT_NIR   =  0.630
-   NL%ORIENT_TREE    =  0.250
-   NL%ORIENT_GRASS   = -0.300
+   NL%LTRANS_VIS     =  0.050
+   NL%LTRANS_NIR     =  0.270
+   NL%LREFLECT_VIS   =  0.150
+   NL%LREFLECT_NIR   =  0.540
+   NL%ORIENT_TREE    =  0.150
+   NL%ORIENT_GRASS   = -0.150
    NL%CLUMP_TREE     =  1.000
    NL%CLUMP_GRASS    =  1.000
    !---------------------------------------------------------------------------------------!
@@ -822,29 +823,37 @@ $ED_NL
    !     The following variables are factors that control photosynthesis and respiration.  !
    ! Notice that some of them are relative values whereas others are absolute.             !
    !                                                                                       !
-   ! VMFACT_C3  -- Factor multiplying the default Vm0 for C3 plants (1.0 = default).       !
-   ! VMFACT_C4  -- Factor multiplying the default Vm0 for C4 plants (1.0 = default).       !
-   ! MPHOTO_C3  -- Stomatal slope (M) for tropical C3 plants.  Conifers and temperate      !
-   !               plants will be scaled by MPHOTO_C3 * 6.4 / 8.0                          !
-   ! MPHOTO_C4  -- Stomatal slope (M) for C4 plants.                                       !
-   ! KW_GRASS   -- Water conductance for trees, in m2/yr/kgC_root.  This is used only when !
-   !               H2O_PLANT_LIM is not 0.                                                 !
-   ! KW_TREE    -- Water conductance for grasses, in m2/yr/kgC_root.  This is used only    !
-   !               when H2O_PLANT_LIM is not 0.                                            !
-   ! GAMMA_C3   -- The dark respiration factor (gamma) for C3 plants.  Subtropical         !
-   !               conifers will be scaled by GAMMA_C3 * 0.028 / 0.02                      !
-   ! GAMMA_C4   -- The dark respiration factor (gamma) for C4 plants.                      !
-   ! D0_GRASS   -- The transpiration control in gsw (D0) for ALL grasses.                  !
-   ! D0_TREE    -- The transpiration control in gsw (D0) for ALL trees.                    !
-   ! ALPHA_C3   -- Quantum yield of ALL C3 plants.  This is only applied when              !
-   !               QUANTUM_EFFICIENCY_T = 0.                                               !
-   ! ALPHA_C4   -- Quantum yield of C4 plants.  This is always applied.                    !
-   ! KLOWCO2IN  -- The coefficient that controls the PEP carboxylase limited rate of       !
-   !               carboxylation for C4 plants.                                            !
-   ! RRFFACT    -- Factor multiplying the root respiration factor for ALL PFTs.            !
-   !               (1.0 = default).                                                        !
-   ! GROWTHRESP -- The actual growth respiration factor (C3/C4 tropical PFTs only).        !
-   !               (1.0 = default).                                                        !
+   ! VMFACT_C3     -- Factor multiplying the default Vm0 for C3 plants (1.0 = default).    !
+   ! VMFACT_C4     -- Factor multiplying the default Vm0 for C4 plants (1.0 = default).    !
+   ! MPHOTO_C3     -- Stomatal slope (M) for tropical C3 plants.  Conifers and temperate   !
+   !                  plants will be scaled by MPHOTO_C3 * 6.4 / 8.0                       !
+   ! MPHOTO_C4     -- Stomatal slope (M) for C4 plants.                                    !
+   ! KW_GRASS      -- Water conductance for trees, in m2/yr/kgC_root.  This is used only   !
+   !                  when H2O_PLANT_LIM is not 0.                                         !
+   ! KW_TREE       -- Water conductance for grasses, in m2/yr/kgC_root.  This is used only !
+   !                  when H2O_PLANT_LIM is not 0.                                         !
+   ! GAMMA_C3      -- The dark respiration factor (gamma) for C3 plants.  Subtropical      !
+   !                  conifers will be scaled by GAMMA_C3 * 0.028 / 0.02                   !
+   ! GAMMA_C4      -- The dark respiration factor (gamma) for C4 plants.                   !
+   ! D0_GRASS      -- The transpiration control in gsw (D0) for ALL grasses.               !
+   ! D0_TREE       -- The transpiration control in gsw (D0) for ALL trees.                 !
+   ! ALPHA_C3      -- Quantum yield of ALL C3 plants.  This is only applied when           !
+   !                  QUANTUM_EFFICIENCY_T = 0.                                            !
+   ! ALPHA_C4      -- Quantum yield of C4 plants.  This is always applied.                 !
+   ! KLOWCO2IN     -- The coefficient that controls the PEP carboxylase limited rate of    !
+   !                  carboxylation for C4 plants.                                         !
+   ! RRFFACT       -- Factor multiplying the root respiration factor for ALL PFTs.         !
+   !                  (1.0 = default).                                                     !
+   ! GROWTHRESP    -- The actual growth respiration factor (C3/C4 tropical PFTs only).     !
+   !                  (1.0 = default).                                                     !
+   ! LWIDTH_GRASS  -- Leaf width for grasses, in metres.  This controls the leaf boundary  !
+   !                  layer conductance (gbh and gbw).                                     !
+   ! LWIDTH_BLTREE -- Leaf width for trees, in metres.  This controls the leaf boundary    !
+   !                  layer conductance (gbh and gbw).  This is applied to broadleaf trees !
+   !                  only.                                                                !
+   ! LWIDTH_NLTREE -- Leaf width for trees, in metres.  This controls the leaf boundary    !
+   !                  layer conductance (gbh and gbw).  This is applied to conifer trees   !
+   !                  only.                                                                !
    !---------------------------------------------------------------------------------------!
    NL%VMFACT_C3       =   1.25
    NL%VMFACT_C4       =   1.00
@@ -861,6 +870,9 @@ $ED_NL
    NL%KLOWCO2IN       =  4000.
    NL%RRFFACT         = 1.000
    NL%GROWTHRESP      = 0.33333333333
+   NL%LWIDTH_GRASS    = 0.05
+   NL%LWIDTH_BLTREE   = 0.10
+   NL%LWIDTH_NLTREE   = 0.05
    !---------------------------------------------------------------------------------------!
 
 
@@ -876,7 +888,7 @@ $ED_NL
    !                       ing point is by definition -1.5MPa, so make sure that the value !
    !                       is above -1.5.                                                  !
    !---------------------------------------------------------------------------------------!
-   NL%THETACRIT       = -0.75
+   NL%THETACRIT       = -1.20
    !---------------------------------------------------------------------------------------!
 
 
@@ -933,7 +945,7 @@ $ED_NL
    !                          greater than this value.                                     !
    !---------------------------------------------------------------------------------------!
    NL%INCLUDE_FIRE    = 2
-   NL%SM_FIRE         = -1.40
+   NL%SM_FIRE         = 0.07
    !---------------------------------------------------------------------------------------!
 
 
@@ -964,7 +976,7 @@ $ED_NL
    !             4.  Same as 0, but if finds the ground conductance following CLM          !
    !                 technical note (equations 5.98-5.100).                                !
    !---------------------------------------------------------------------------------------!
-   NL%ICANTURB        = 0
+   NL%ICANTURB        = 4
    !---------------------------------------------------------------------------------------!
 
 
@@ -1022,7 +1034,7 @@ $ED_NL
    NL%GAMM            = 13.0
    NL%GAMH            = 13.0
    NL%TPRANDTL        = 0.74
-   NL%RIBMAX          = 0.25
+   NL%RIBMAX          = 0.50
    NL%LEAF_MAXWHC     = 0.11
    !---------------------------------------------------------------------------------------!
 
@@ -1110,7 +1122,7 @@ $ED_NL
    ! MIN_SITE_AREA -- This is the minimum fraction area of a given soil type that allows a !
    !                  site to be created (ignored if IED_INIT_MODE is set to 3).           !
    !---------------------------------------------------------------------------------------!
-   NL%MAXSITE       =   6
+   NL%MAXSITE       =   1
    NL%MAXPATCH      =  20
    NL%MAXCOHORT     =  80
    NL%MIN_SITE_AREA = 0.005
@@ -1243,8 +1255,8 @@ $ED_NL
    NL%ISHUFFLE    = 0
    NL%METCYC1     = 2002
    NL%METCYCF     = 2005
-   NL%IMETAVG     = 0
-   NL%IMETRAD     = 0
+   NL%IMETAVG     = 1
+   NL%IMETRAD     = 2
    NL%INITIAL_CO2 = 278.0
    !---------------------------------------------------------------------------------------!
 

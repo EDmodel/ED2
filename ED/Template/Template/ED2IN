@@ -650,7 +650,9 @@ $ED_NL
 
 
    !---------------------------------------------------------------------------------------!
-   ! IALLOM -- Which allometry to use (this affects tropical PFTs only)                    !
+   ! IALLOM -- Which allometry to use (this mostly affects tropical PFTs.  Temperate PFTs  !
+   !           will use the new root allometry and the maximum crown area if IALLOM is set !
+   !           to 1 or 2).                                                                 !
    !           0.  Original ED-2.1                                                         !
    !           1.  a. The coefficients for structural biomass are set so the total AGB     !
    !                  is similar to Baker et al. (2004), equation 2.  Balive is the        !
@@ -661,10 +663,9 @@ $ED_NL
    !                  crown area                                                           !
    !           2.  Similar to 1, but with a few extra changes.                             !
    !               a. Height -> DBH allometry as in Poorter et al. (2006)                  !
-   !               b. Balive is retuned, starting from Saldarriga et al. (1998), the same  !
-   !                  starting point of ED-1.0, and the coefficients are adjusted for      !
-   !                  DBH > 10cm and DBH < 10 cm separately.  This should give more leaf   !
-   !                  biomass for seedlings and tall trees.                                !
+   !               b. Balive is retuned, using a few leaf biomass allometric equations for !
+   !                  a few genuses in Costa Rica.  References:                            !
+   !                  Cole and Ewel (2006), and Calvo Alvarado et al. (2008).              !
    !---------------------------------------------------------------------------------------!
    NL%IALLOM          = myallom
    !---------------------------------------------------------------------------------------!
@@ -842,29 +843,37 @@ $ED_NL
    !     The following variables are factors that control photosynthesis and respiration.  !
    ! Notice that some of them are relative values whereas others are absolute.             !
    !                                                                                       !
-   ! VMFACT_C3  -- Factor multiplying the default Vm0 for C3 plants (1.0 = default).       !
-   ! VMFACT_C4  -- Factor multiplying the default Vm0 for C4 plants (1.0 = default).       !
-   ! MPHOTO_C3  -- Stomatal slope (M) for tropical C3 plants.  Conifers and temperate      !
-   !               plants will be scaled by MPHOTO_C3 * 6.4 / 8.0                          !
-   ! MPHOTO_C4  -- Stomatal slope (M) for C4 plants.                                       !
-   ! KW_GRASS   -- Water conductance for trees, in m2/yr/kgC_root.  This is used only when !
-   !               H2O_PLANT_LIM is not 0.                                                 !
-   ! KW_TREE    -- Water conductance for grasses, in m2/yr/kgC_root.  This is used only    !
-   !               when H2O_PLANT_LIM is not 0.                                            !
-   ! GAMMA_C3   -- The dark respiration factor (gamma) for C3 plants.  Subtropical         !
-   !               conifers will be scaled by GAMMA_C3 * 0.028 / 0.02                      !
-   ! GAMMA_C4   -- The dark respiration factor (gamma) for C4 plants.                      !
-   ! D0_GRASS   -- The transpiration control in gsw (D0) for ALL grasses.                  !
-   ! D0_TREE    -- The transpiration control in gsw (D0) for ALL trees.                    !
-   ! ALPHA_C3   -- Quantum yield of ALL C3 plants.  This is only applied when              !
-   !               QUANTUM_EFFICIENCY_T = 0.                                               !
-   ! ALPHA_C4   -- Quantum yield of C4 plants.  This is always applied.                    !
-   ! KLOWCO2IN  -- The coefficient that controls the PEP carboxylase limited rate of       !
-   !               carboxylation for C4 plants.                                            !
-   ! RRFFACT    -- Factor multiplying the root respiration factor for ALL PFTs.            !
-   !               (1.0 = default).                                                        !
-   ! GROWTHRESP -- The actual growth respiration factor (C3/C4 tropical PFTs only).        !
-   !               (1.0 = default).                                                        !
+   ! VMFACT_C3     -- Factor multiplying the default Vm0 for C3 plants (1.0 = default).    !
+   ! VMFACT_C4     -- Factor multiplying the default Vm0 for C4 plants (1.0 = default).    !
+   ! MPHOTO_C3     -- Stomatal slope (M) for tropical C3 plants.  Conifers and temperate   !
+   !                  plants will be scaled by MPHOTO_C3 * 6.4 / 8.0                       !
+   ! MPHOTO_C4     -- Stomatal slope (M) for C4 plants.                                    !
+   ! KW_GRASS      -- Water conductance for trees, in m2/yr/kgC_root.  This is used only   !
+   !                  when H2O_PLANT_LIM is not 0.                                         !
+   ! KW_TREE       -- Water conductance for grasses, in m2/yr/kgC_root.  This is used only !
+   !                  when H2O_PLANT_LIM is not 0.                                         !
+   ! GAMMA_C3      -- The dark respiration factor (gamma) for C3 plants.  Subtropical      !
+   !                  conifers will be scaled by GAMMA_C3 * 0.028 / 0.02                   !
+   ! GAMMA_C4      -- The dark respiration factor (gamma) for C4 plants.                   !
+   ! D0_GRASS      -- The transpiration control in gsw (D0) for ALL grasses.               !
+   ! D0_TREE       -- The transpiration control in gsw (D0) for ALL trees.                 !
+   ! ALPHA_C3      -- Quantum yield of ALL C3 plants.  This is only applied when           !
+   !                  QUANTUM_EFFICIENCY_T = 0.                                            !
+   ! ALPHA_C4      -- Quantum yield of C4 plants.  This is always applied.                 !
+   ! KLOWCO2IN     -- The coefficient that controls the PEP carboxylase limited rate of    !
+   !                  carboxylation for C4 plants.                                         !
+   ! RRFFACT       -- Factor multiplying the root respiration factor for ALL PFTs.         !
+   !                  (1.0 = default).                                                     !
+   ! GROWTHRESP    -- The actual growth respiration factor (C3/C4 tropical PFTs only).     !
+   !                  (1.0 = default).                                                     !
+   ! LWIDTH_GRASS  -- Leaf width for grasses, in metres.  This controls the leaf boundary  !
+   !                  layer conductance (gbh and gbw).                                     !
+   ! LWIDTH_BLTREE -- Leaf width for trees, in metres.  This controls the leaf boundary    !
+   !                  layer conductance (gbh and gbw).  This is applied to broadleaf trees !
+   !                  only.                                                                !
+   ! LWIDTH_NLTREE -- Leaf width for trees, in metres.  This controls the leaf boundary    !
+   !                  layer conductance (gbh and gbw).  This is applied to conifer trees   !
+   !                  only.                                                                !
    !---------------------------------------------------------------------------------------!
    NL%VMFACT_C3       = myvmfactc3
    NL%VMFACT_C4       = myvmfactc4
@@ -881,6 +890,9 @@ $ED_NL
    NL%KLOWCO2IN       = myklowco2
    NL%RRFFACT         = myrrffact
    NL%GROWTHRESP      = mygrowthresp
+   NL%LWIDTH_GRASS    = mylwidthgrass
+   NL%LWIDTH_BLTREE   = mylwidthbltree
+   NL%LWIDTH_NLTREE   = mylwidthnltree
    !---------------------------------------------------------------------------------------!
 
 

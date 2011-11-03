@@ -60,7 +60,10 @@ subroutine read_ednl(iunit,filename)
                                    , alpha_c4                              & ! intent(out)
                                    , klowco2in                             & ! intent(out)
                                    , rrffact                               & ! intent(out)
-                                   , growthresp                            ! ! intent(out)
+                                   , growthresp                            & ! intent(out)
+                                   , lwidth_grass                          & ! intent(out)
+                                   , lwidth_bltree                         & ! intent(out)
+                                   , lwidth_nltree                         ! ! intent(out)
    use phenology_coms       , only : iphen_scheme                          & ! intent(out)
                                    , repro_scheme                          & ! intent(out)
                                    , iphenys1                              & ! intent(out)
@@ -221,13 +224,13 @@ subroutine read_ednl(iunit,filename)
                        ,orient_tree,orient_grass,clump_tree,clump_grass,decomp_scheme      &
                        ,h2o_plant_lim,vmfact_c3,vmfact_c4,mphoto_c3,mphoto_c4,kw_grass     &
                        ,kw_tree,gamma_c3,gamma_c4,d0_grass,d0_tree,alpha_c3                &
-                       ,alpha_c4,klowco2in,rrffact,growthresp,thetacrit                    &
-                       ,quantum_efficiency_t,n_plant_lim,n_decomp_lim,include_fire,sm_fire &
-                       ,ianth_disturb,icanturb,include_these_pft,agri_stock                &
-                       ,plantation_stock,pft_1st_check,maxpatch,maxcohort                  &
-                       ,treefall_disturbance_rate,time2canopy,iprintpolys,npvars,printvars &
-                       ,pfmtstr,ipmin,ipmax,imetrad,iphenys1,iphenysf,iphenyf1,iphenyff    &
-                       ,iedcnfgf,event_file,phenpath
+                       ,alpha_c4,klowco2in,rrffact,growthresp,lwidth_grass,lwidth_bltree   &
+                       ,lwidth_nltree,thetacrit,quantum_efficiency_t,n_plant_lim           &
+                       ,n_decomp_lim,include_fire,sm_fire,ianth_disturb,icanturb           &
+                       ,include_these_pft,agri_stock,plantation_stock,pft_1st_check        &
+                       ,maxpatch,maxcohort,treefall_disturbance_rate,time2canopy           &
+                       ,iprintpolys,npvars,printvars,pfmtstr,ipmin,ipmax,imetrad,iphenys1  &
+                       ,iphenysf,iphenyf1,iphenyff,iedcnfgf,event_file,phenpath
 
    !----- Initialise some database variables with a non-sense path. -----------------------!
    soil_database   (:) = undef_path
@@ -324,6 +327,9 @@ subroutine read_ednl(iunit,filename)
       write (unit=*,fmt=*) ' klowco2in                 =',klowco2in
       write (unit=*,fmt=*) ' rrffact                   =',rrffact
       write (unit=*,fmt=*) ' growthresp                =',growthresp
+      write (unit=*,fmt=*) ' lwidth_grass              =',lwidth_grass
+      write (unit=*,fmt=*) ' lwidth_bltree             =',lwidth_bltree
+      write (unit=*,fmt=*) ' lwidth_nltree             =',lwidth_nltree
       write (unit=*,fmt=*) ' thetacrit                 =',thetacrit
       write (unit=*,fmt=*) ' quantum_efficiency_t      =',quantum_efficiency_t
       write (unit=*,fmt=*) ' n_plant_lim               =',n_plant_lim

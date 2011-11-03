@@ -165,6 +165,9 @@ module ename_coms
       real                                              :: klowco2in
       real                                              :: rrffact
       real                                              :: growthresp
+      real                                              :: lwidth_grass
+      real                                              :: lwidth_bltree
+      real                                              :: lwidth_nltree
       real                                              :: thetacrit
       integer                                           :: quantum_efficiency_T
       integer                                           :: n_plant_lim
@@ -403,6 +406,9 @@ module ename_coms
       enl%klowco2in                 = undef_real
       enl%rrffact                   = undef_real
       enl%growthresp                = undef_real
+      enl%lwidth_grass              = undef_real
+      enl%lwidth_bltree             = undef_real
+      enl%lwidth_nltree             = undef_real
       enl%thetacrit                 = undef_real
       enl%quantum_efficiency_T      = undef_integer
       enl%n_plant_lim               = undef_integer

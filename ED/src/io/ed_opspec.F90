@@ -1150,6 +1150,9 @@ subroutine ed_opspec_misc
                                     , klowco2in                    & ! intent(in)
                                     , rrffact                      & ! intent(in)
                                     , growthresp                   & ! intent(in)
+                                    , lwidth_grass                 & ! intent(in)
+                                    , lwidth_bltree                & ! intent(in)
+                                    , lwidth_nltree                & ! intent(in)
                                     , quantum_efficiency_T         ! ! intent(in)
    use decomp_coms           , only : n_decomp_lim                 ! ! intent(in)
    use disturb_coms          , only : include_fire                 & ! intent(in)
@@ -1638,6 +1641,30 @@ end do
       write (reason,fmt='(a,1x,es12.5,a)')                                                 &
                     'Invalid GROWTHRESP, it must be between 0 and 1. Yours is set to'      &
                     ,growthresp,'...'
+      call opspec_fatal(reason,'opspec_misc')
+      ifaterr = ifaterr +1
+   end if
+
+   if (lwidth_grass < 0.01 .or. lwidth_grass > 0.30) then
+      write (reason,fmt='(a,1x,es12.5,a)')                                                 &
+            'Invalid LWIDTH_GRASS, it must be between 0.01 and 0.30 Yours is set to'       &
+           ,lwidth_grass,'...'
+      call opspec_fatal(reason,'opspec_misc')
+      ifaterr = ifaterr +1
+   end if
+
+   if (lwidth_bltree < 0.01 .or. lwidth_bltree > 0.30) then
+      write (reason,fmt='(a,1x,es12.5,a)')                                                 &
+            'Invalid LWIDTH_BLTREE, it must be between 0.01 and 0.30 Yours is set to'      &
+           ,lwidth_bltree,'...'
+      call opspec_fatal(reason,'opspec_misc')
+      ifaterr = ifaterr +1
+   end if
+
+   if (lwidth_nltree < 0.01 .or. lwidth_nltree > 0.30) then
+      write (reason,fmt='(a,1x,es12.5,a)')                                                 &
+            'Invalid LWIDTH_NLTREE, it must be between 0.01 and 0.30 Yours is set to'      &
+           ,lwidth_nltree,'...'
       call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
    end if

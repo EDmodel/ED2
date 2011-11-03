@@ -107,6 +107,9 @@ subroutine copy_nl(copy_type)
                                    , klowco2in                 & ! intent(out)
                                    , rrffact                   & ! intent(out)
                                    , growthresp                & ! intent(out)
+                                   , lwidth_grass              & ! intent(out)
+                                   , lwidth_bltree             & ! intent(out)
+                                   , lwidth_nltree             & ! intent(out)
                                    , quantum_efficiency_T      ! ! intent(out)
    use phenology_coms       , only : iphen_scheme              & ! intent(out)
                                    , iphenys1                  & ! intent(out)
@@ -356,6 +359,9 @@ subroutine copy_nl(copy_type)
       klowco2in                 = nl%klowco2in
       rrffact                   = nl%rrffact
       growthresp                = nl%growthresp
+      lwidth_grass              = nl%lwidth_grass
+      lwidth_bltree             = nl%lwidth_bltree
+      lwidth_nltree             = nl%lwidth_nltree
       thetacrit                 = nl%thetacrit
       quantum_efficiency_T      = nl%quantum_efficiency_T
       radint                    = nl%radint

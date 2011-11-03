@@ -69,29 +69,37 @@ module physiology_coms
    !     The following variables are factors that control photosynthesis and respiration.  !
    ! Notice that some of them are relative values whereas others are absolute.             !
    !                                                                                       !
-   ! VMFACT_C3  -- Factor multiplying the default Vm0 for C3 plants (1.0 = default).       !
-   ! VMFACT_C4  -- Factor multiplying the default Vm0 for C4 plants (1.0 = default).       !
-   ! MPHOTO_C3  -- Stomatal slope (M) for tropical C3 plants.  Conifers and temperate      !
-   !               plants will be scaled by MPHOTO_C3/8.0                                  !
-   ! MPHOTO_C4  -- Stomatal slope (M) for C4 plants.                                       !
-   ! KW_GRASS   -- Water conductance for trees, in m2/yr/kgC_root.  This is used only when !
-   !               H2O_PLANT_LIM = 1.                                                      !
-   ! KW_TREE    -- Water conductance for grasses, in m2/yr/kgC_root.  This is used only    !
-   !               when H2O_PLANT_LIM = 1.                                                 !
-   ! GAMMA_C3   -- The dark respiration factor (gamma) for tropical C3 plants.  Conifers   !
-   !               and temperate plants will be scaled by GAMMA_C3 / 0.02                  !
-   ! GAMMA_C4   -- The dark respiration factor (gamma) for C4 plants.                      !
-   ! D0_GRASS   -- The transpiration control in gsw (D0) for ALL grasses.                  !
-   ! D0_TREE    -- The transpiration control in gsw (D0) for ALL trees.                    !
-   ! ALPHA_C3   -- Quantum yield of ALL C3 plants.  This is only applied when              !
-   !               QUANTUM_EFFICIENCY_T = 0.                                               !
-   ! ALPHA_C4   -- Quantum yield of C4 plants.  This is always applied.                    !
-   ! KLOWCO2IN  -- The coefficient that controls the PEP carboxylase limited rate of       !
-   !               carboxylation for C4 plants.                                            !
-   ! RRFFACT    -- Factor multiplying the root respiration factor for ALL PFTs.            !
-   !               (1.0 = default).                                                        !
-   ! GROWTHRESP -- The actual growth respiration factor (C3/C4 tropical PFTs only).        !
-   !               (1.0 = default).                                                        !
+   ! VMFACT_C3     -- Factor multiplying the default Vm0 for C3 plants (1.0 = default).    !
+   ! VMFACT_C4     -- Factor multiplying the default Vm0 for C4 plants (1.0 = default).    !
+   ! MPHOTO_C3     -- Stomatal slope (M) for tropical C3 plants.  Conifers and temperate   !
+   !                  plants will be scaled by MPHOTO_C3 * 6.4 / 8.0                       !
+   ! MPHOTO_C4     -- Stomatal slope (M) for C4 plants.                                    !
+   ! KW_GRASS      -- Water conductance for trees, in m2/yr/kgC_root.  This is used only   !
+   !                  when H2O_PLANT_LIM is not 0.                                         !
+   ! KW_TREE       -- Water conductance for grasses, in m2/yr/kgC_root.  This is used only !
+   !                  when H2O_PLANT_LIM is not 0.                                         !
+   ! GAMMA_C3      -- The dark respiration factor (gamma) for C3 plants.  Subtropical      !
+   !                  conifers will be scaled by GAMMA_C3 * 0.028 / 0.02                   !
+   ! GAMMA_C4      -- The dark respiration factor (gamma) for C4 plants.                   !
+   ! D0_GRASS      -- The transpiration control in gsw (D0) for ALL grasses.               !
+   ! D0_TREE       -- The transpiration control in gsw (D0) for ALL trees.                 !
+   ! ALPHA_C3      -- Quantum yield of ALL C3 plants.  This is only applied when           !
+   !                  QUANTUM_EFFICIENCY_T = 0.                                            !
+   ! ALPHA_C4      -- Quantum yield of C4 plants.  This is always applied.                 !
+   ! KLOWCO2IN     -- The coefficient that controls the PEP carboxylase limited rate of    !
+   !                  carboxylation for C4 plants.                                         !
+   ! RRFFACT       -- Factor multiplying the root respiration factor for ALL PFTs.         !
+   !                  (1.0 = default).                                                     !
+   ! GROWTHRESP    -- The actual growth respiration factor (C3/C4 tropical PFTs only).     !
+   !                  (1.0 = default).                                                     !
+   ! LWIDTH_GRASS  -- Leaf width for grasses, in metres.  This controls the leaf boundary  !
+   !                  layer conductance (gbh and gbw).                                     !
+   ! LWIDTH_BLTREE -- Leaf width for trees, in metres.  This controls the leaf boundary    !
+   !                  layer conductance (gbh and gbw).  This is applied to broadleaf trees !
+   !                  only.                                                                !
+   ! LWIDTH_NLTREE -- Leaf width for trees, in metres.  This controls the leaf boundary    !
+   !                  layer conductance (gbh and gbw).  This is applied to conifer trees   !
+   !                  only.                                                                !
    !---------------------------------------------------------------------------------------!
    real(kind=4)               :: vmfact_c3
    real(kind=4)               :: vmfact_c4
@@ -108,6 +116,9 @@ module physiology_coms
    real(kind=4)               :: klowco2in
    real(kind=4)               :: rrffact
    real(kind=4)               :: growthresp
+   real(kind=4)               :: lwidth_grass
+   real(kind=4)               :: lwidth_bltree
+   real(kind=4)               :: lwidth_nltree
    !---------------------------------------------------------------------------------------!
 
    !---------------------------------------------------------------------------------------!

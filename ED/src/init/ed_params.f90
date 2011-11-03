@@ -1449,7 +1449,10 @@ subroutine init_pft_photo_params()
                              , alpha_c3                & ! intent(in)
                              , alpha_c4                & ! intent(in)
                              , kw_grass                & ! intent(in)
-                             , kw_tree                 ! ! intent(in)
+                             , kw_tree                 & ! intent(in)
+                             , lwidth_grass            & ! intent(in)
+                             , lwidth_bltree           & ! intent(in)
+                             , lwidth_nltree           ! ! intent(in)
    implicit none
    !---------------------------------------------------------------------------------------!
 
@@ -1676,23 +1679,23 @@ subroutine init_pft_photo_params()
    photosyn_pathway(16:17)   = 3
 
    !----- Leaf width [m].  This controls the boundary layer conductance. ------------------!
-   leaf_width( 1)    = 0.20 ! 0.05
-   leaf_width( 2)    = 0.20 ! 0.14
-   leaf_width( 3)    = 0.20 ! 0.14
-   leaf_width( 4)    = 0.20 ! 0.14
-   leaf_width( 5)    = 0.05
-   leaf_width( 6)    = 0.05
-   leaf_width( 7)    = 0.05
-   leaf_width( 8)    = 0.05
-   leaf_width( 9)    = 0.05
-   leaf_width(10)    = 0.05
-   leaf_width(11)    = 0.05
-   leaf_width(12)    = 0.05
-   leaf_width(13)    = 0.05
-   leaf_width(14)    = 0.20 ! 0.05
-   leaf_width(15)    = 0.20 ! 0.05
-   leaf_width(16)    = 0.20 ! 0.05
-   leaf_width(17)    = 0.05
+   leaf_width( 1)    = lwidth_grass
+   leaf_width( 2)    = lwidth_bltree
+   leaf_width( 3)    = lwidth_bltree
+   leaf_width( 4)    = lwidth_bltree
+   leaf_width( 5)    = lwidth_grass
+   leaf_width( 6)    = lwidth_nltree
+   leaf_width( 7)    = lwidth_nltree
+   leaf_width( 8)    = lwidth_nltree
+   leaf_width( 9)    = lwidth_bltree
+   leaf_width(10)    = lwidth_bltree
+   leaf_width(11)    = lwidth_bltree
+   leaf_width(12)    = lwidth_grass
+   leaf_width(13)    = lwidth_grass
+   leaf_width(14)    = lwidth_grass
+   leaf_width(15)    = lwidth_grass
+   leaf_width(16)    = lwidth_grass
+   leaf_width(17)    = lwidth_nltree
    !---------------------------------------------------------------------------------------!
 
    return

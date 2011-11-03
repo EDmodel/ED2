@@ -323,7 +323,7 @@ subroutine h5_output(vtype)
             if (hdferr /= 0) then
                write(unit=*,fmt='(a)'      ) '--------------------------------------------'
                write(unit=*,fmt='(a)'      ) ' Could not create the HDF5 file.'
-               write(unit=*,fmt='(a,1x,i)' ) ' - File   : ',trim(anamel)
+               write(unit=*,fmt='(a,1x,a)' ) ' - File   : ',trim(anamel)
                write(unit=*,fmt='(a,1x,i)' ) ' - file_id: ',file_id
                write(unit=*,fmt='(a,1x,i)' ) ' - hdferr : ',hdferr
                write(unit=*,fmt='(a)'      ) '--------------------------------------------'
@@ -334,7 +334,7 @@ subroutine h5_output(vtype)
             if (hdferr /= 0) then
                write(unit=*,fmt='(a)'      ) '--------------------------------------------'
                write(unit=*,fmt='(a)'      ) ' Could not open the HDF5 file.'
-               write(unit=*,fmt='(a,1x,i)' ) ' - File   : ',trim(anamel)
+               write(unit=*,fmt='(a,1x,a)' ) ' - File   : ',trim(anamel)
                write(unit=*,fmt='(a,1x,i)' ) ' - file_id: ',file_id
                write(unit=*,fmt='(a,1x,i)' ) ' - hdferr : ',hdferr
                write(unit=*,fmt='(a)'      ) '--------------------------------------------'
