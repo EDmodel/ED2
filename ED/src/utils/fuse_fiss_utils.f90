@@ -354,6 +354,7 @@ module fuse_fiss_utils
                                      , b1Ht                & ! intent(in)
                                      , hgt_max             & ! intent(in)
                                      , sla                 & ! intent(in)
+                                     , is_grass            & ! intent(in)
                                      , hgt_ref             ! ! intent(in)
       use fusion_fission_coms , only : fusetol_h           & ! intent(in)
                                      , fusetol             & ! intent(in)
@@ -474,11 +475,19 @@ module fuse_fiss_utils
                   ! leaves fully flushed, this is the same as adding the individual LAIs,  !
                   ! but if they are not, we need to consider that LAI may grow...          !
                   !------------------------------------------------------------------------!
-                  lai_max = ( cpatch%nplant(recc)                                          &
-                            * dbh2bl(cpatch%dbh(recc),cpatch%pft(recc))                    &
-                            + cpatch%nplant(donc)                                          &
-                            * dbh2bl(cpatch%dbh(donc),cpatch%pft(donc)))                   &
-                          * cpatch%sla(recc)
+                  if (is_grass(cpatch%pft(donc))) then
+                      !--use actual bleaf for grass
+                      lai_max = ( cpatch%nplant(recc) * cpatch%bleaf(recc)                 &
+                                + cpatch%nplant(donc) * cpatch%bleaf(donc) )               &
+                                * cpatch%sla(recc)
+                  else
+                      !--use dbh for trees
+                      lai_max = ( cpatch%nplant(recc)                                      &
+                                * dbh2bl(cpatch%dbh(recc),cpatch%pft(recc))                &
+                                + cpatch%nplant(donc)                                      &
+                                * dbh2bl(cpatch%dbh(donc),cpatch%pft(donc)))               &
+                                * cpatch%sla(recc)
+                  end if
 
                   !----- Checking the total size of this cohort before and after fusion. --!
                   total_size = cpatch%nplant(donc) * ( cpatch%balive(donc)                 &
@@ -849,7 +858,8 @@ module fuse_fiss_utils
       cpatch%bdead(idt)                = cpatch%bdead(isc)
       cpatch%bleaf(idt)                = cpatch%bleaf(isc)
       cpatch%broot(idt)                = cpatch%broot(isc)
-      cpatch%bsapwood(idt)             = cpatch%bsapwood(isc)
+      cpatch%bsapwooda(idt)            = cpatch%bsapwooda(isc)
+      cpatch%bsapwoodb(idt)            = cpatch%bsapwoodb(isc)
       cpatch%phenology_status(idt)     = cpatch%phenology_status(isc)
       cpatch%balive(idt)               = cpatch%balive(isc)
       cpatch%lai(idt)                  = cpatch%lai(isc)
@@ -1152,8 +1162,10 @@ module fuse_fiss_utils
                                + cpatch%nplant(donc) * cpatch%balive(donc) ) *newni
       cpatch%broot(recc)     = ( cpatch%nplant(recc) * cpatch%broot(recc)                  &
                                + cpatch%nplant(donc) * cpatch%broot(donc) ) *newni
-      cpatch%bsapwood(recc)  = ( cpatch%nplant(recc) * cpatch%bsapwood(recc)               &
-                             + cpatch%nplant(donc) * cpatch%bsapwood(donc) ) *newni
+      cpatch%bsapwooda(recc) = ( cpatch%nplant(recc) * cpatch%bsapwooda(recc)              &
+                             + cpatch%nplant(donc) * cpatch%bsapwooda(donc) ) *newni
+      cpatch%bsapwoodb(recc) = ( cpatch%nplant(recc) * cpatch%bsapwoodb(recc)              &
+                             + cpatch%nplant(donc) * cpatch%bsapwoodb(donc) ) *newni
       cpatch%bstorage(recc)  = ( cpatch%nplant(recc) * cpatch%bstorage(recc)               &
                                + cpatch%nplant(donc) * cpatch%bstorage(donc) ) * newni
       cpatch%bseeds(recc)    = ( cpatch%nplant(recc) * cpatch%bseeds(recc)                 &
@@ -3795,7 +3807,8 @@ module fuse_fiss_utils
                                      , hgt_class  ! ! intent(in)
       use allometry           , only : dbh2bl     ! ! intent(in)
       use ed_max_dims         , only : n_pft      ! ! intent(in)
-      use pft_coms            , only : hgt_min    ! ! intent(in)
+      use pft_coms            , only : hgt_min    & ! intent(in)
+                                     , is_grass   ! ! intent(in)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       type(sitetype)         , target     :: csite     ! Current site
@@ -3842,8 +3855,14 @@ module fuse_fiss_utils
 
 
          !----- Find the potential (on-allometry) leaf area index. ------------------------!
-         lai_pot = cpatch%nplant(ico) * cpatch%sla(ico)                                    &
-                 * dbh2bl(cpatch%dbh(ico),ipft)
+         if (is_grass(ipft)) then
+             !--use actual bleaf for grass
+             lai_pot = cpatch%nplant(ico) * cpatch%sla(ico) * cpatch%bleaf(ico)
+         else
+             !--use dbh for trees
+             lai_pot = cpatch%nplant(ico) * cpatch%sla(ico)                                &
+                     * dbh2bl(cpatch%dbh(ico),ipft)
+         end if
          !---------------------------------------------------------------------------------!
 
 

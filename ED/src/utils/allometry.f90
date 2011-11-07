@@ -80,9 +80,6 @@ module allometry
       !----- Arguments --------------------------------------------------------------------!
       real   , intent(in) :: dbh
       integer, intent(in) :: ipft
-      !----- Local variables --------------------------------------------------------------!
-      real                :: agb
-      real                :: qd
       !------------------------------------------------------------------------------------!
 
       if (dbh <= max_dbh(ipft)) then
@@ -142,15 +139,53 @@ module allometry
 
 
 
+   !=======================================================================================!
+   !  Intended to replace dbh2bl and h2bl with a single generic function. This simplifies  !
+   ! the code in many other places for grasses.
+   !=======================================================================================!
+   real function size2bl(dbh,hite,ipft)
+      use pft_coms    , only : max_dbh     & ! intent(in), lookup table
+                             , C2B         & ! intent(in), lookup table
+                             , b1Bl        & ! intent(in), lookup table
+                             , b2Bl        & ! intent(in), lookup table
+                             , hgt_max     & ! intent(in), lookup table
+                             , is_grass    ! ! intent(in)
+
+      implicit none
+      !----- Arguments --------------------------------------------------------------------!
+      real   , intent(in) :: dbh
+      real   , intent(in) :: hite
+      integer, intent(in) :: ipft
+      !----- Local variables --------------------------------------------------------------!
+      real                :: mdbh
+      !------------------------------------------------------------------------------------!
+      
+      if (is_grass(ipft)) then 
+          !-- use height for grasses
+          mdbh   = min(h2dbh(hite,ipft),max_dbh(ipft))
+      else
+          !--use dbh for trees
+          mdbh   = min(dbh,max_dbh(ipft))
+      end if
+      
+      size2bl = b1Bl(ipft) / C2B * mdbh ** b2Bl(ipft)
+      
+      return
+   end function size2bl
+   !=======================================================================================!
+   !=======================================================================================!
+
 
 
    !=======================================================================================!
    !=======================================================================================!
    real function dbh2bl(dbh,ipft)
       use pft_coms    , only : max_dbh     & ! intent(in), lookup table
-                             , C2B         & ! intent(in)
+                             , C2B         & ! intent(in), lookup table
                              , b1Bl        & ! intent(in), lookup table
-                             , b2Bl        ! ! intent(in), lookup table
+                             , b2Bl        & ! intent(in), lookup table
+                             , hgt_max     & ! intent(in), lookup table
+                             , is_grass    ! ! intent(in)
 
       implicit none
       !----- Arguments --------------------------------------------------------------------!
@@ -158,12 +193,16 @@ module allometry
       integer, intent(in) :: ipft
       !----- Local variables --------------------------------------------------------------!
       real                :: mdbh
-      real                :: agb
-      real                :: qd
       !------------------------------------------------------------------------------------!
-
-
-      mdbh   = min(dbh,max_dbh(ipft))
+      
+      if (is_grass(ipft)) then 
+      !--- The grasses really shouldent use this function at all!
+          ! test grasses against maximum height rather than maximum dbh
+          mdbh = min(dbh, h2dbh(hgt_max(ipft),ipft))
+      else
+          mdbh   = min(dbh,max_dbh(ipft))
+      end if
+      
       dbh2bl = b1Bl(ipft) / C2B * mdbh ** b2Bl(ipft)
 
       return
@@ -173,6 +212,82 @@ module allometry
 
 
 
+   !=======================================================================================!
+   !           INVERSION OF DBH2BL                                                         !
+   !=======================================================================================!
+   real function bl2dbh(bleaf,ipft)
+      use pft_coms, only:  is_tropical & ! intent(in), lookup table
+                         , rho         & ! intent(in), lookup table
+                         , max_dbh     & ! intent(in), lookup table
+                         , hgt_max     & ! intent(in), lookup table
+                         , is_grass    & ! intent(in)
+                         , C2B         & ! intent(in)
+                         , b1Bl        & ! intent(in), lookup table
+                         , b2Bl        ! ! intent(in), lookup table
+   
+      implicit none
+      !----- Arguments --------------------------------------------------------------------!
+      real   , intent(in) :: bleaf
+      integer, intent(in) :: ipft
+      !----- Local variables --------------------------------------------------------------!
+      real                :: mdbh
+      !------------------------------------------------------------------------------------!
+
+      mdbh = (bleaf * C2B / b1Bl(ipft) ) ** (1./b2Bl(ipft))
+
+      if (is_grass(ipft)) then  
+          ! For grasses, limit maximum effective dbh by maximum height
+          bl2dbh = min(mdbh, h2dbh(hgt_max(ipft),ipft))
+      else
+          bl2dbh = min(mdbh, max_dbh(ipft))
+      end if
+
+      return
+    end function bl2dbh
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   real function bl2h(bleaf,ipft)
+
+      implicit none
+      !----- Arguments --------------------------------------------------------------------!
+      real   , intent(in) :: bleaf
+      integer, intent(in) :: ipft
+      !------------------------------------------------------------------------------------!
+      
+      !---Use existing allometric equations to convert leaves to height
+      bl2h = dbh2h(ipft,bl2dbh(bleaf,ipft))
+
+
+      return
+   end function bl2h
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   real function h2bl(hite,ipft)
+
+      implicit none
+      !----- Arguments --------------------------------------------------------------------!
+      real   , intent(in) :: hite
+      integer, intent(in) :: ipft
+      !------------------------------------------------------------------------------------!
+      
+      !---Use existing allometric equations to convert height to leaves
+      h2bl = dbh2bl(h2dbh(hite,ipft), ipft)
+
+
+      return
+   end function h2bl
+   !=======================================================================================!
+   !=======================================================================================!
 
 
 
@@ -183,6 +298,7 @@ module allometry
    real function dbh2ca(dbh,sla,ipft)
       use ed_misc_coms, only : iallom      ! ! intent(in)
       use pft_coms    , only : max_dbh     & ! intent(in)
+                             , hgt_max     & ! intent(in)
                              , is_tropical & ! intent(in)
                              , is_grass    & ! intent(in)
                              , b1Ca        & ! intent(in)
@@ -205,6 +321,7 @@ module allometry
       !   dbh2ca = 0.156766*hite**1.888
       !----- Based on Dietze and Clark (2008). --------------------------------------------!
       else
+
          loclai = sla * dbh2bl(dbh,ipft)
 
          select case (iallom)
@@ -214,7 +331,11 @@ module allometry
 
          case default
             !----- Impose a maximum crown area. -------------------------------------------!
-            dbh2ca = b1Ca(ipft) * min(dbh,max_dbh(ipft)) ** b2Ca(ipft)
+            if (is_grass(ipft)) then
+                 dbh2ca = b1Ca(ipft) * min(dbh,h2dbh(hgt_max(ipft),ipft) ) ** b2Ca(ipft)
+            else
+                 dbh2ca = b1Ca(ipft) * min(dbh,max_dbh(ipft)             ) ** b2Ca(ipft)
+            end if
 
          end select
       end if
@@ -364,55 +485,21 @@ module allometry
 
    !=======================================================================================!
    !=======================================================================================!
-   !     This subroutine finds the total above ground biomass corresponding to stems.      !
-   !---------------------------------------------------------------------------------------!
-   real function wood_biomass(bdead, bsapwood, pft)
-      use pft_coms, only:  agf_bs          ! ! intent(in)
-
-      implicit none
-      !----- Arguments --------------------------------------------------------------------!
-      real    , intent(in) :: bdead
-      real    , intent(in) :: bsapwood
-      integer , intent(in) :: pft
-      !----- Local variables --------------------------------------------------------------!
-      real                 :: bstem
-      real                 :: absapwood
-      !------------------------------------------------------------------------------------!
-
-      bstem        = agf_bs * bdead
-      absapwood    = agf_bs * bsapwood
-      wood_biomass = bstem + absapwood
-      return
-   end function wood_biomass
-   !=======================================================================================!
-   !=======================================================================================!
-
-
-
-
-
-
-   !=======================================================================================!
-   !=======================================================================================!
    !     This subroutine finds the total above ground biomass (wood + leaves)              !
    !---------------------------------------------------------------------------------------!
-   real function ed_biomass(bdead, balive, bleaf, pft, hite, bstorage, bsapwood)
+   real function ed_biomass(bdead, bleaf, bsapwooda)
       use pft_coms, only:  agf_bs ! ! intent(in)
 
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       real    , intent(in) :: bdead
-      real    , intent(in) :: balive
       real    , intent(in) :: bleaf
-      real    , intent(in) :: hite
-      real    , intent(in) :: bstorage
-      real    , intent(in) :: bsapwood
-      integer , intent(in) :: pft
+      real    , intent(in) :: bsapwooda
       !----- Local variables --------------------------------------------------------------!
       real                 :: bwood
       !------------------------------------------------------------------------------------!
 
-      bwood      = wood_biomass(bdead, bsapwood, pft)
+      bwood      = bsapwooda + bdead * agf_bs
       ed_biomass = bleaf + bwood
 
       return
@@ -444,9 +531,10 @@ module allometry
    !                     Wageningen, 1995.                                                 !
    !---------------------------------------------------------------------------------------!
    subroutine area_indices(nplant,bleaf,bdead,balive,dbh,hite,pft,sla,lai,wpa,wai          &
-                          ,crown_area,bsapwood)
+                          ,crown_area,bsapwooda)
       use pft_coms    , only : is_tropical     & ! intent(in)
                              , is_grass        & ! intent(in)
+                             , agf_bs          & ! intent(in)
                              , rho             & ! intent(in)
                              , C2B             & ! intent(in)
                              , horiz_branch    & ! intent(in)
@@ -469,7 +557,7 @@ module allometry
       real    , intent(in)  :: bleaf      ! Specific leaf biomass            [   kgC/plant]
       real    , intent(in)  :: bdead      ! Specific structural              [   kgC/plant]
       real    , intent(in)  :: balive     ! Specific live tissue biomass     [   kgC/plant]
-      real    , intent(in)  :: bsapwood   ! Specific sapwood biomass         [   kgC/plant]
+      real    , intent(in)  :: bsapwooda  ! Specific sapwood biomass above grnd[   kgC/plant]
       real    , intent(in)  :: dbh        ! Diameter at breast height        [          cm]
       real    , intent(in)  :: hite       ! Plant height                     [           m]
       real    , intent(in)  :: sla        ! Specific leaf area               [m²leaf/plant]
@@ -491,9 +579,14 @@ module allometry
       !----- First, we compute the LAI ----------------------------------------------------!
       lai = bleaf * nplant * sla
 
-
       !----- Find the crown area. ---------------------------------------------------------!
-      crown_area = min(1.0, nplant * dbh2ca(dbh,sla,pft))
+      if (is_grass(pft)) then
+          !-- use height for grasses
+          crown_area = min(1.0, nplant * dbh2ca(h2dbh(hite,pft),sla,pft))
+      else
+          !-- use dbh for treess
+          crown_area = min(1.0, nplant * dbh2ca(dbh,sla,pft))
+      end if
 
       !------------------------------------------------------------------------------------!
       !     Here we check whether we need to compute the branch, stem, and effective       !
@@ -513,7 +606,7 @@ module allometry
          !     Use curve fit based on Conijn (1995) model.   Find the total wood biomass   !
          ! and the fraction corresponding to branches.                                     !
          !---------------------------------------------------------------------------------!
-         bwood   = wood_biomass(bdead, bsapwood, pft)
+         bwood   = bsapwooda + bdead*agf_bs
          if (is_grass(pft)) then
             swa = conijn_a(pft)
          else

@@ -23,6 +23,7 @@ subroutine read_ed10_ed20_history_file
                              , include_pft_ag      & ! intent(in)
                              , phenology           & ! intent(in)
                              , pft_1st_check       & ! intent(in)
+                             , agf_bs              & ! intent(in)
                              , include_these_pft   ! ! intent(in)
    use ed_misc_coms   , only : sfilin              & ! intent(in)
                              , ied_init_mode       ! ! intent(in)
@@ -45,6 +46,7 @@ subroutine read_ed10_ed20_history_file
                              , h2dbh               & ! function
                              , dbh2bd              & ! function
                              , dbh2bl              & ! function
+                             , h2bl                & ! function
                              , ed_biomass          & ! function
                              , area_indices        ! ! subroutine
    use fuse_fiss_utils, only : sort_cohorts        & ! subroutine
@@ -696,13 +698,23 @@ subroutine read_ed10_ed20_history_file
                         !     Use allometry to define leaf and the other live biomass      !
                         ! pools.                                                           !
                         !------------------------------------------------------------------!
-                        cpatch%bleaf(ic2) = dbh2bl(dbh(ic),ipft(ic))
-                        cpatch%balive(ic2) = cpatch%bleaf(ic2) * (1.0 + q(ipft(ic))        &
-                                           + qsw(ipft(ic)) * cpatch%hite(ic2))
-                        cpatch%broot(ic2)  = cpatch%balive(ic2) * q(ipft(ic))              &
-                                           / ( 1.0 + q(ipft(ic)) + qsw(ipft(ic))           &
-                                             * cpatch%hite(ic2))
-                        cpatch%bsapwood(ic2) = cpatch%balive(ic2)                          &
+                        if (is_grass(ipft(ic))) then
+                            !--use height for grasses
+                            cpatch%bleaf(ic2) = h2bl(hite(ic), ipft(ic))
+                        else
+                            !--use dbh for trees
+                            cpatch%bleaf(ic2) = dbh2bl(dbh(ic),ipft(ic))
+                        end if
+                        cpatch%balive(ic2)    = cpatch%bleaf(ic2) * (1.0 + q(ipft(ic))     &
+                                              + qsw(ipft(ic)) * cpatch%hite(ic2))
+                        cpatch%broot(ic2)     = cpatch%balive(ic2) * q(ipft(ic))           &
+                                              / ( 1.0 + q(ipft(ic)) + qsw(ipft(ic))        &
+                                               * cpatch%hite(ic2))
+                        cpatch%bsapwooda(ic2) = agf_bs * cpatch%balive(ic2)                &
+                                             * qsw(ipft(ic))* cpatch%hite(ic2)             &
+                                             / ( 1.0 + q(ipft(ic)) + qsw(ipft(ic))         &
+                                               * cpatch%hite(ic2))
+                        cpatch%bsapwoodb(ic2) = (1.-agf_bs) * cpatch%balive(ic2)           &
                                              * qsw(ipft(ic))* cpatch%hite(ic2)             &
                                              / ( 1.0 + q(ipft(ic)) + qsw(ipft(ic))         &
                                                * cpatch%hite(ic2))
@@ -724,7 +736,7 @@ subroutine read_ed10_ed20_history_file
                                          ,cpatch%dbh(ic2), cpatch%hite(ic2)                &
                                          ,cpatch%pft(ic2), SLA(cpatch%pft(ic2))            &
                                          ,cpatch%lai(ic2),cpatch%wpa(ic2), cpatch%wai(ic2) &
-                                         ,cpatch%crown_area(ic2),cpatch%bsapwood(ic2))
+                                         ,cpatch%crown_area(ic2),cpatch%bsapwooda(ic2))
 
                         !----- Initialise the carbon balance. -----------------------------!
                         cpatch%cb    (1:12,ic2) = cb(1:12,ic)
@@ -733,10 +745,8 @@ subroutine read_ed10_ed20_history_file
                         cpatch%cb_max(  13,ic2) = 0.0
 
                         !----- Above ground biomass, use the allometry. -------------------!
-                        cpatch%agb(ic2) = ed_biomass(cpatch%bdead(ic2),cpatch%balive(ic2)  &
-                                                    ,cpatch%bleaf(ic2),cpatch%pft(ic2)     &
-                                                    ,cpatch%hite(ic2),cpatch%bstorage(ic2) &
-                                                    ,cpatch%bsapwood(ic2))
+                        cpatch%agb(ic2) = ed_biomass(cpatch%bdead(ic2),cpatch%bleaf(ic2)   &
+                                                    ,cpatch%bsapwooda(ic2))
                         cpatch%basarea(ic2)  = pio4 * cpatch%dbh(ic2) * cpatch%dbh(ic2)
 
                         !----- Growth rates, start with zero. -----------------------------!

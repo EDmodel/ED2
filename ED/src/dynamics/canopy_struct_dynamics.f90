@@ -129,6 +129,7 @@ module canopy_struct_dynamics
                                   , kin_visci            ! ! intent(in)
       use soil_coms        , only : snow_rough           & ! intent(in)
                                   , soil_rough           ! ! intent(in)
+      use pft_coms         , only : is_grass             ! ! intent(in)
       use allometry        , only : h2crownbh            & ! function
                                   , dbh2bl               ! ! function
       implicit none
@@ -860,8 +861,15 @@ module canopy_struct_dynamics
 
 
                !------ Estimate WAI. ------------------------------------------------------!
+               if (is_grass(ipft)) then
+                   !--use actual leaf mass for grass
+               waiuse = 0.10 * cpatch%nplant(ico) * cpatch%sla(ico)                        &
+                      * cpatch%bleaf(ico)
+               else
+                   !--use dbh for trees
                waiuse = 0.10 * cpatch%nplant(ico) * cpatch%sla(ico)                        &
                       * dbh2bl(cpatch%dbh(ico),ipft)
+               end if
                !---------------------------------------------------------------------------!
 
 
@@ -1442,6 +1450,7 @@ module canopy_struct_dynamics
                                   , kin_visci8           ! ! intent(in)
       use soil_coms        , only : snow_rough8          & ! intent(in)
                                   , soil_rough8          ! ! intent(in)
+      use pft_coms         , only : is_grass             ! ! intent(in)
       use allometry        , only : h2crownbh            & ! function
                                   , dbh2bl               ! ! function
       implicit none
@@ -2144,8 +2153,15 @@ module canopy_struct_dynamics
 
 
                !------ Estimate WAI. ------------------------------------------------------!
-               waiuse = 1.d-1 * initp%nplant(ico) * dble(cpatch%sla(ico))                  &
-                      * dble(dbh2bl(cpatch%dbh(ico),ipft))
+               if (is_grass(ipft)) then
+                   !--use actual leaf mass for grass
+                   waiuse = 1.d-1 * initp%nplant(ico) * dble(cpatch%sla(ico))              &
+                          * dble(cpatch%bleaf(ico))
+               else
+                   !--use dbh for trees
+                   waiuse = 1.d-1 * initp%nplant(ico) * dble(cpatch%sla(ico))              &
+                          * dble(dbh2bl(cpatch%dbh(ico),ipft))
+               end if
                !---------------------------------------------------------------------------!
 
 

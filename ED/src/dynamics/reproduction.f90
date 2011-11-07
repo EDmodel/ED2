@@ -151,6 +151,7 @@ subroutine reproduction(cgrid, month)
                      rectest%wood_temp = csite%can_temp(ipa)
                      rectest%hite      = hgt_min(ipft)
                      rectest%dbh       = h2dbh(rectest%hite, ipft)
+                     !--Do I need to remove this assignment to bdead for grasses? ---ALS===
                      rectest%bdead     = dbh2bd(rectest%dbh, ipft)
                      rectest%bleaf     = dbh2bl(rectest%dbh, ipft)
                      rectest%balive    = rectest%bleaf                                     &
@@ -177,6 +178,9 @@ subroutine reproduction(cgrid, month)
                      !     If we have reached this branch, we are in an agricultural       !
                      ! patch.  Send the seed litter to the soil pools for decomposition.   !
                      !---------------------------------------------------------------------!
+                     !---ALS=== dont send seet to litter!  Keep it for harvesting - need to change when I sort out what to do with the seed biomass for ag
+                     ! - maybe tree crops want to do this but I won't worry about that for now.
+                     
                      csite%fast_soil_N(ipa) = csite%fast_soil_N(ipa)                       &
                                             + csite%repro(ipft,ipa) / c2n_recruit(ipft)
                      csite%fast_soil_C(ipa) = csite%fast_soil_C(ipa)                       &
@@ -262,10 +266,8 @@ subroutine reproduction(cgrid, month)
                   !    Computing initial AGB and Basal Area. Their derivatives will be     !
                   ! zero.                                                                  !
                   !------------------------------------------------------------------------!
-                  cpatch%agb(ico)     = ed_biomass(cpatch%bdead(ico),cpatch%balive(ico)    &
-                                                  ,cpatch%bleaf(ico),cpatch%pft(ico)       &
-                                                  ,cpatch%hite(ico),cpatch%bstorage(ico)   &
-                                                  ,cpatch%bsapwood(ico))
+                  cpatch%agb(ico)     = ed_biomass(cpatch%bdead(ico),cpatch%bleaf(ico)     &
+                                                  ,cpatch%bsapwooda(ico))
                   cpatch%basarea(ico) = pio4 * cpatch%dbh(ico)  * cpatch%dbh(ico)
                   cpatch%dagb_dt(ico) = 0.0
                   cpatch%dba_dt(ico)  = 0.0
@@ -284,10 +286,10 @@ subroutine reproduction(cgrid, month)
                                    ,cpatch%balive(ico),cpatch%dbh(ico), cpatch%hite(ico)   &
                                    ,cpatch%pft(ico),cpatch%sla(ico), cpatch%lai(ico)       &
                                    ,cpatch%wpa(ico),cpatch%wai(ico)                        &
-                                   ,cpatch%crown_area(ico),cpatch%bsapwood(ico))
+                                   ,cpatch%crown_area(ico),cpatch%bsapwooda(ico))
                   !----- Find heat capacity and vegetation internal energy. ---------------!
                   call calc_veg_hcap(cpatch%bleaf(ico),cpatch%bdead(ico)                   &
-                                    ,cpatch%bsapwood(ico),cpatch%nplant(ico)               &
+                                    ,cpatch%bsapwooda(ico),cpatch%nplant(ico)              &
                                     ,cpatch%pft(ico)                                       &
                                     ,cpatch%leaf_hcap(ico),cpatch%wood_hcap(ico))
 

@@ -1319,14 +1319,12 @@ module disturbance_utils
       call area_indices(cpatch%nplant(nc),cpatch%bleaf(nc),cpatch%bdead(nc)                &
                        ,cpatch%balive(nc),cpatch%dbh(nc),cpatch%hite(nc),cpatch%pft(nc)    &
                        ,cpatch%sla(nc),cpatch%lai(nc),cpatch%wpa(nc),cpatch%wai(nc)        &
-                       ,cpatch%crown_area(nc),cpatch%bsapwood(nc))
+                       ,cpatch%crown_area(nc),cpatch%bsapwooda(nc))
 
 
       !----- Find the new basal area and above-ground biomass. ----------------------------!
-      cpatch%basarea(nc) = pio4 * cpatch%dbh(nc) * cpatch%dbh(nc)
-      cpatch%agb(nc)     = ed_biomass(cpatch%bdead(nc),cpatch%balive(nc),cpatch%bleaf(nc)  &
-                                     ,cpatch%pft(nc),cpatch%hite(nc) ,cpatch%bstorage(nc)  &
-                                     ,cpatch%bsapwood(nc))
+      cpatch%basarea(nc)= pio4 * cpatch%dbh(nc) * cpatch%dbh(nc)
+      cpatch%agb(nc)    = ed_biomass(cpatch%bdead(nc),cpatch%bleaf(nc),cpatch%bsapwooda(nc))
 
       cpatch%leaf_temp(nc)  = csite%can_temp(np)
       cpatch%leaf_water(nc) = 0.0
@@ -1336,7 +1334,7 @@ module disturbance_utils
       cpatch%wood_fliq(nc)  = 0.0
 
       !----- Because we assigned no water, the internal energy is simply hcap*T. ----------!
-      call calc_veg_hcap(cpatch%bleaf(nc),cpatch%bdead(nc),cpatch%bsapwood(nc)             &
+      call calc_veg_hcap(cpatch%bleaf(nc),cpatch%bdead(nc),cpatch%bsapwooda(nc)             &
                         ,cpatch%nplant(nc),cpatch%pft(nc)                                  &
                         ,cpatch%leaf_hcap(nc),cpatch%wood_hcap(nc))
 

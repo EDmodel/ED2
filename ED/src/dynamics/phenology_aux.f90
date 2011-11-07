@@ -342,12 +342,12 @@ subroutine first_phenology(cgrid)
                                 ,cpatch%balive(ico),cpatch%dbh(ico),cpatch%hite(ico)       &
                                 ,cpatch%pft(ico),cpatch%sla(ico),cpatch%lai(ico)           &
                                 ,cpatch%wpa(ico),cpatch%wai(ico),cpatch%crown_area(ico)    &
-                                ,cpatch%bsapwood(ico)) 
+                                ,cpatch%bsapwooda(ico)) 
                !---------------------------------------------------------------------------!
 
 
                !----- Find heat capacity and vegetation internal energy. ------------------!
-               call calc_veg_hcap(cpatch%bleaf(ico),cpatch%bdead(ico),cpatch%bsapwood(ico) &
+               call calc_veg_hcap(cpatch%bleaf(ico),cpatch%bdead(ico),cpatch%bsapwooda(ico) &
                                  ,cpatch%nplant(ico),cpatch%pft(ico)                       &
                                  ,cpatch%leaf_hcap(ico),cpatch%wood_hcap(ico) )
                cpatch%leaf_energy(ico) = cpatch%leaf_hcap(ico) * cpatch%leaf_temp(ico)
@@ -390,10 +390,13 @@ subroutine pheninit_balive_bstorage(mzg,csite,ipa,ico,ntext_soil,green_leaf_fact
    use phenology_coms, only : theta_crit          & ! intent(in)
                             , elongf_min          ! ! intent(in)
    use pft_coms      , only : phenology           & ! intent(in)
+                            , agf_bs              & ! intent(in)
+                            , is_grass            & ! intent(in)
                             , q                   & ! intent(in)
                             , qsw                 ! ! intent(in)
    use ed_max_dims   , only : n_pft               ! ! intent(in)
-   use allometry     , only : dbh2bl              ! ! function
+   use allometry     , only : dbh2bl              & ! function
+                            , h2bl                ! ! function
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    type(sitetype)                  , target     :: csite             ! Current site
@@ -463,7 +466,13 @@ subroutine pheninit_balive_bstorage(mzg,csite,ipa,ico,ntext_soil,green_leaf_fact
    !----- Compute the biomass of living tissues. ------------------------------------------!
    salloc               = 1.0 + q(ipft) + qsw(ipft) * cpatch%hite(ico)
    salloci              = 1.0 / salloc
-   bleaf_max            = dbh2bl(cpatch%dbh(ico),cpatch%pft(ico))
+   if (is_grass(ipft)) then
+       !--use height for grass
+       bleaf_max        = h2bl(  cpatch%hite(ico),cpatch%pft(ico))
+   else
+       !--use dbh for trees
+       bleaf_max        = dbh2bl(cpatch%dbh(ico) ,cpatch%pft(ico))
+   end if
    balive_max           = bleaf_max * salloc
    select case (cpatch%phenology_status(ico))
    case (2)
@@ -473,8 +482,10 @@ subroutine pheninit_balive_bstorage(mzg,csite,ipa,ico,ntext_soil,green_leaf_fact
       cpatch%bleaf(ico) = bleaf_max * cpatch%elongf(ico) 
    end select
    cpatch%broot(ico)    = balive_max * q(ipft)   * salloci
-   cpatch%bsapwood(ico) = balive_max * qsw(ipft) * cpatch%hite(ico) * salloci
-   cpatch%balive(ico)   = cpatch%bleaf(ico) + cpatch%broot(ico) + cpatch%bsapwood(ico)
+   cpatch%bsapwooda(ico)= balive_max * qsw(ipft) * cpatch%hite(ico) * salloci * agf_bs
+   cpatch%bsapwoodb(ico)= balive_max * qsw(ipft) * cpatch%hite(ico) * salloci * (1.-agf_bs)
+   cpatch%balive(ico)   = cpatch%bleaf(ico) + cpatch%broot(ico) + cpatch%bsapwooda(ico)    &
+                          + cpatch%bsapwoodb(ico)
    !---------------------------------------------------------------------------------------!
 
 

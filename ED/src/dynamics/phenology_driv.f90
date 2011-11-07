@@ -150,6 +150,7 @@ subroutine update_phenology(doy, cpoly, isi, lat)
                              , c2n_leaf                 & ! intent(in)
                              , q                        & ! intent(in)
                              , qsw                      & ! intent(in)
+                             , is_grass                 & ! intent(in)
                              , l2n_stem                 & ! intent(in)
                              , c2n_stem                 & ! intent(in)
                              , c2n_storage              ! ! intent(in)
@@ -168,6 +169,7 @@ subroutine update_phenology(doy, cpoly, isi, lat)
    use ed_misc_coms   , only : current_time             ! ! intent(in)
    use allometry      , only : area_indices             & ! subroutine
                              , ed_biomass               & ! function
+                             , h2bl                     & ! function
                              , dbh2bl                   ! ! function
 
    implicit none
@@ -416,8 +418,13 @@ subroutine update_phenology(doy, cpoly, isi, lat)
             !    moist conditions. Given this situation, leaves can start growing again.   !
             !------------------------------------------------------------------------------!
             cpatch%elongf(ico) = max(0.0, min (1.0, cpatch%paw_avg(ico)/theta_crit))
-            bl_max             = cpatch%elongf(ico) * dbh2bl(cpatch%dbh(ico),ipft)
-               
+            if (is_grass(ipft)) then
+                !--use height for grass
+                bl_max         = cpatch%elongf(ico) * h2bl(  cpatch%hite(ico),ipft)
+            else
+                !--use dbh for trees
+                bl_max         = cpatch%elongf(ico) * dbh2bl(cpatch%dbh(ico) ,ipft)
+            end if
 
             !----- In case it is too dry, drop all the leaves... --------------------------!
             if (cpatch%elongf(ico) < elongf_min) then
@@ -481,13 +488,11 @@ subroutine update_phenology(doy, cpoly, isi, lat)
                           ,cpatch%balive(ico),cpatch%dbh(ico),cpatch%hite(ico)             &
                           ,cpatch%pft(ico),cpatch%sla(ico),cpatch%lai(ico)                 &
                           ,cpatch%wpa(ico),cpatch%wai(ico),cpatch%crown_area(ico)          &
-                          ,cpatch%bsapwood(ico))
+                          ,cpatch%bsapwooda(ico))
 
          !----- Update above-ground biomass. ----------------------------------------------!
-         cpatch%agb(ico) = ed_biomass(cpatch%bdead(ico),cpatch%balive(ico)                 &
-                                     ,cpatch%bleaf(ico),cpatch%pft(ico)                    &
-                                     ,cpatch%hite(ico) ,cpatch%bstorage(ico)               &
-                                     ,cpatch%bsapwood(ico)) 
+         cpatch%agb(ico) = ed_biomass(cpatch%bdead(ico),cpatch%bleaf(ico)                  &
+                                     ,cpatch%bsapwooda(ico)) 
 
          !---------------------------------------------------------------------------------!
          !    The leaf biomass of the cohort has changed, update the vegetation energy -   !
@@ -495,7 +500,7 @@ subroutine update_phenology(doy, cpoly, isi, lat)
          !---------------------------------------------------------------------------------!
          old_leaf_hcap       = cpatch%leaf_hcap(ico)
          old_wood_hcap       = cpatch%wood_hcap(ico)
-         call calc_veg_hcap(cpatch%bleaf(ico),cpatch%bdead(ico),cpatch%bsapwood(ico)       &
+         call calc_veg_hcap(cpatch%bleaf(ico),cpatch%bdead(ico),cpatch%bsapwooda(ico)       &
                            ,cpatch%nplant(ico),cpatch%pft(ico)                             &
                            ,cpatch%leaf_hcap(ico),cpatch%wood_hcap(ico) )
          call update_veg_energy_cweh(csite,ipa,ico,old_leaf_hcap,old_wood_hcap)

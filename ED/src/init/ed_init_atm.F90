@@ -155,7 +155,7 @@ subroutine ed_init_atm()
                   
                   
                   call calc_veg_hcap(cpatch%bleaf(ico),cpatch%bdead(ico)                   &
-                                    ,cpatch%bsapwood(ico),cpatch%nplant(ico)               &
+                                    ,cpatch%bsapwooda(ico),cpatch%nplant(ico)              &
                                     ,cpatch%pft(ico)                                       &
                                     ,cpatch%leaf_hcap(ico),cpatch%wood_hcap(ico) )
 

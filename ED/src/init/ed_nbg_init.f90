@@ -115,7 +115,8 @@ subroutine init_nbg_cohorts(csite,lsl,ipa_a,ipa_z)
                                  , include_pft        & ! intent(in)
                                  , include_these_pft  & ! intent(in)
                                  , include_pft_ag     & ! intent(in)
-                                 , init_density       ! ! intent(in)
+                                 , init_density       & ! intent(in)
+                                 , agf_bs             ! ! intent(in)
    use consts_coms        , only : t3ple              & ! intent(in)
                                  , pio4               & ! intent(in)
                                  , kgom2_2_tonoha     & ! intent(in)
@@ -208,7 +209,7 @@ subroutine init_nbg_cohorts(csite,lsl,ipa_a,ipa_z)
          cpatch%bstorage(ico)         = 0.0
          cpatch%dbh(ico)              = h2dbh(cpatch%hite(ico),ipft)
          cpatch%bdead(ico)            = dbh2bd(cpatch%dbh(ico),ipft)
-         cpatch%bleaf(ico)            = dbh2bl(cpatch%dbh(ico),ipft)
+         cpatch%bleaf(ico)            = dbh2bl(cpatch%dbh(ico),ipft) !-ok for grasses, comes from height
          cpatch%sla(ico)              = sla(ipft)
 
 
@@ -217,21 +218,21 @@ subroutine init_nbg_cohorts(csite,lsl,ipa_a,ipa_z)
 
          cpatch%balive(ico)           = cpatch%bleaf(ico) * salloc
          cpatch%broot(ico)            = q(ipft) * cpatch%balive(ico) * salloci
-         cpatch%bsapwood(ico)         = qsw(ipft) * cpatch%hite(ico) * cpatch%balive(ico)  &
-                                      * salloci
+         cpatch%bsapwooda(ico)        = qsw(ipft) * cpatch%hite(ico) * cpatch%balive(ico)  &
+                                      * salloci * agf_bs
+         cpatch%bsapwoodb(ico)        = qsw(ipft) * cpatch%hite(ico) * cpatch%balive(ico)  &
+                                      * salloci * (1.-agf_bs)
 
          !----- Find the initial area indices (LAI, WPA, WAI). ----------------------------!
          call area_indices(cpatch%nplant(ico),cpatch%bleaf(ico),cpatch%bdead(ico)          &
                           ,cpatch%balive(ico),cpatch%dbh(ico), cpatch%hite(ico)            &
                           ,cpatch%pft(ico),cpatch%sla(ico),cpatch%lai(ico)                 &
                           ,cpatch%wpa(ico),cpatch%wai(ico),cpatch%crown_area(ico)          &
-                          ,cpatch%bsapwood(ico))
+                          ,cpatch%bsapwooda(ico))
 
          !----- Find the above-ground biomass and basal area. -----------------------------!
-         cpatch%agb(ico) = ed_biomass(cpatch%bdead(ico),cpatch%balive(ico)                 &
-                                     ,cpatch%bleaf(ico),cpatch%pft(ico)                    &
-                                     ,cpatch%hite(ico),cpatch%bstorage(ico)                &
-                                     ,cpatch%bsapwood(ico))
+         cpatch%agb(ico) = ed_biomass(cpatch%bdead(ico),cpatch%bleaf(ico)                  &
+                                     ,cpatch%bsapwooda(ico))
          cpatch%basarea(ico) = pio4 * cpatch%dbh(ico)*cpatch%dbh(ico)
 
          !----- Initialize other cohort-level variables. ----------------------------------!
@@ -277,7 +278,8 @@ subroutine init_cohorts_by_layers(csite,lsl,ipa_a,ipa_z)
                                  , include_pft        & ! intent(in)
                                  , include_these_pft  & ! intent(in)
                                  , include_pft_ag     & ! intent(in)
-                                 , init_density       ! ! intent(in)
+                                 , init_density       & ! intent(in)
+                                 , agf_bs             ! ! intent(in)
    use consts_coms        , only : t3ple              & ! intent(in)
                                  , pio4               & ! intent(in)
                                  , kgom2_2_tonoha     & ! intent(in)
@@ -345,7 +347,7 @@ subroutine init_cohorts_by_layers(csite,lsl,ipa_a,ipa_z)
          cpatch%bstorage(ico)         = 0.0
          cpatch%dbh(ico)              = h2dbh(cpatch%hite(ico),ipft)
          cpatch%bdead(ico)            = dbh2bd(cpatch%dbh(ico),ipft)
-         cpatch%bleaf(ico)            = dbh2bl(cpatch%dbh(ico),ipft)
+         cpatch%bleaf(ico)            = dbh2bl(cpatch%dbh(ico),ipft) !Ok for grasses, comes from height
          cpatch%sla(ico)              = sla(ipft)
 
 
@@ -354,8 +356,10 @@ subroutine init_cohorts_by_layers(csite,lsl,ipa_a,ipa_z)
 
          cpatch%balive(ico)           = cpatch%bleaf(ico) * salloc
          cpatch%broot(ico)            = q(ipft) * cpatch%balive(ico) * salloci
-         cpatch%bsapwood(ico)         = qsw(ipft) * cpatch%hite(ico) * cpatch%balive(ico)  &
-                                      * salloci
+         cpatch%bsapwooda(ico)        = qsw(ipft) * cpatch%hite(ico) * cpatch%balive(ico)  &
+                                      * salloci * agf_bs
+         cpatch%bsapwoodb(ico)        = qsw(ipft) * cpatch%hite(ico) * cpatch%balive(ico)  &
+                                      * salloci * (1.-agf_bs)
 
          !----- NPlant is defined such that the cohort LAI is equal to LAI0
          cpatch%nplant(ico)           = lai0 / (cpatch%bleaf(ico) * cpatch%sla(ico))
@@ -365,13 +369,11 @@ subroutine init_cohorts_by_layers(csite,lsl,ipa_a,ipa_z)
                           ,cpatch%balive(ico),cpatch%dbh(ico), cpatch%hite(ico)            &
                           ,cpatch%pft(ico),cpatch%sla(ico),cpatch%lai(ico)                 &
                           ,cpatch%wpa(ico),cpatch%wai(ico),cpatch%crown_area(ico)          &
-                          ,cpatch%bsapwood(ico))
+                          ,cpatch%bsapwooda(ico))
 
          !----- Find the above-ground biomass and basal area. -----------------------------!
-         cpatch%agb(ico) = ed_biomass(cpatch%bdead(ico),cpatch%balive(ico)                 &
-                                     ,cpatch%bleaf(ico),cpatch%pft(ico)                    &
-                                     ,cpatch%hite(ico),cpatch%bstorage(ico)                &
-                                     ,cpatch%bsapwood(ico))
+         cpatch%agb(ico) = ed_biomass(cpatch%bdead(ico),cpatch%bleaf(ico)                  &
+                                     ,cpatch%bsapwooda(ico))
          cpatch%basarea(ico) = pio4 * cpatch%dbh(ico) * cpatch%dbh(ico)
 
          !----- Initialize other cohort-level variables. ----------------------------------!

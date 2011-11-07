@@ -107,9 +107,12 @@ module ed_state_vars
 
      ! Biomass of fine roots (kgC/plant)
      real, pointer, dimension(:) :: broot
-     
-     ! Biomass of sapwood (kgC/plant)
-     real, pointer, dimension(:) :: bsapwood
+
+     ! Biomass of sapwood above ground (kgC/plant)
+     real, pointer, dimension(:) :: bsapwooda
+
+     ! Biomass of sapwood below ground (kgC/plant)
+     real, pointer, dimension(:) :: bsapwoodb
 
      ! Leaf area index (m2 leaf / m2 ground)
      real ,pointer,dimension(:) :: lai
@@ -1382,7 +1385,8 @@ module ed_state_vars
      real,pointer,dimension(:) :: avg_balive
      real,pointer,dimension(:) :: avg_bleaf
      real,pointer,dimension(:) :: avg_broot
-     real,pointer,dimension(:) :: avg_bsapwood
+     real,pointer,dimension(:) :: avg_bsapwooda
+     real,pointer,dimension(:) :: avg_bsapwoodb
      real,pointer,dimension(:) :: avg_bdead
      real,pointer,dimension(:) :: avg_fsn
      real,pointer,dimension(:) :: avg_msn
@@ -1662,7 +1666,8 @@ module ed_state_vars
      real,pointer,dimension(:) :: avg_balive
      real,pointer,dimension(:) :: avg_bleaf
      real,pointer,dimension(:) :: avg_broot
-     real,pointer,dimension(:) :: avg_bsapwood
+     real,pointer,dimension(:) :: avg_bsapwooda
+     real,pointer,dimension(:) :: avg_bsapwoodb
      real,pointer,dimension(:) :: avg_bseeds
      real,pointer,dimension(:) :: avg_bstorage
      real,pointer,dimension(:) :: avg_fsc
@@ -2371,7 +2376,8 @@ contains
        allocate(cgrid%avg_balive      (npolygons))
        allocate(cgrid%avg_bleaf       (npolygons))
        allocate(cgrid%avg_broot       (npolygons))
-       allocate(cgrid%avg_bsapwood    (npolygons))
+       allocate(cgrid%avg_bsapwooda   (npolygons))
+       allocate(cgrid%avg_bsapwoodb   (npolygons))
        allocate(cgrid%avg_bstorage    (npolygons))
        allocate(cgrid%avg_bseeds      (npolygons))
        allocate(cgrid%avg_fsc         (npolygons))
@@ -2837,37 +2843,37 @@ contains
     allocate(cpoly%avg_transp    (nsites))
     allocate(cpoly%avg_evap      (nsites))
     
-    allocate(cpoly%avg_smoist_gg (nzg,nsites))
-    allocate(cpoly%avg_transloss (nzg,nsites))
-    allocate(cpoly%avg_runoff        (nsites))
-    allocate(cpoly%avg_drainage  (nsites))
-    allocate(cpoly%avg_drainage_heat  (nsites))
-    allocate(cpoly%aux           (nsites))
-    allocate(cpoly%aux_s         (nzg,nsites))
-    allocate(cpoly%avg_rshort_gnd   (nsites))
-    allocate(cpoly%avg_rlong_gnd    (nsites))
-    allocate(cpoly%avg_carbon_ac    (nsites))
-    allocate(cpoly%avg_sensible_lc  (nsites))
-    allocate(cpoly%avg_sensible_wc  (nsites))
-    allocate(cpoly%avg_qwshed_vg    (nsites))
-    allocate(cpoly%avg_qintercepted (nsites))
-    allocate(cpoly%avg_qthroughfall (nsites))
-    allocate(cpoly%avg_sensible_gc  (nsites))
-    allocate(cpoly%avg_sensible_ac  (nsites))
-    allocate(cpoly%avg_sensible_gg  (nzg,nsites))
+    allocate(cpoly%avg_smoist_gg       (nzg,nsites))
+    allocate(cpoly%avg_transloss       (nzg,nsites))
+    allocate(cpoly%avg_runoff              (nsites))
+    allocate(cpoly%avg_drainage            (nsites))
+    allocate(cpoly%avg_drainage_heat       (nsites))
+    allocate(cpoly%aux                     (nsites))
+    allocate(cpoly%aux_s               (nzg,nsites))
+    allocate(cpoly%avg_rshort_gnd          (nsites))
+    allocate(cpoly%avg_rlong_gnd           (nsites))
+    allocate(cpoly%avg_carbon_ac           (nsites))
+    allocate(cpoly%avg_sensible_lc         (nsites))
+    allocate(cpoly%avg_sensible_wc         (nsites))
+    allocate(cpoly%avg_qwshed_vg           (nsites))
+    allocate(cpoly%avg_qintercepted        (nsites))
+    allocate(cpoly%avg_qthroughfall        (nsites))
+    allocate(cpoly%avg_sensible_gc         (nsites))
+    allocate(cpoly%avg_sensible_ac         (nsites))
+    allocate(cpoly%avg_sensible_gg     (nzg,nsites))
     allocate(cpoly%avg_runoff_heat         (nsites))
 
     ! Fast time state diagnostics
-    allocate(cpoly%avg_leaf_energy          (nsites))
-    allocate(cpoly%avg_leaf_hcap            (nsites))
-    allocate(cpoly%avg_leaf_temp            (nsites))
-    allocate(cpoly%avg_leaf_fliq            (nsites))
-    allocate(cpoly%avg_leaf_water           (nsites))
-    allocate(cpoly%avg_wood_energy          (nsites))
-    allocate(cpoly%avg_wood_hcap            (nsites))
-    allocate(cpoly%avg_wood_temp            (nsites))
-    allocate(cpoly%avg_wood_fliq            (nsites))
-    allocate(cpoly%avg_wood_water           (nsites))
+    allocate(cpoly%avg_leaf_energy         (nsites))
+    allocate(cpoly%avg_leaf_hcap           (nsites))
+    allocate(cpoly%avg_leaf_temp           (nsites))
+    allocate(cpoly%avg_leaf_fliq           (nsites))
+    allocate(cpoly%avg_leaf_water          (nsites))
+    allocate(cpoly%avg_wood_energy         (nsites))
+    allocate(cpoly%avg_wood_hcap           (nsites))
+    allocate(cpoly%avg_wood_temp           (nsites))
+    allocate(cpoly%avg_wood_fliq           (nsites))
+    allocate(cpoly%avg_wood_water          (nsites))
     allocate(cpoly%avg_can_temp            (nsites))
     allocate(cpoly%avg_can_shv             (nsites))
     allocate(cpoly%avg_can_co2             (nsites))
@@ -2894,18 +2900,19 @@ contains
     allocate(cpoly%avg_atm_prss            (nsites))
 
     !!!NACP
-    allocate(cpoly%avg_sfcw_depth           (nsites))
-    allocate(cpoly%avg_sfcw_energy          (nsites))
-    allocate(cpoly%avg_sfcw_mass            (nsites))
-    allocate(cpoly%avg_sfcw_fracliq         (nsites))
-    allocate(cpoly%avg_sfcw_tempk           (nsites))
+    allocate(cpoly%avg_sfcw_depth          (nsites))
+    allocate(cpoly%avg_sfcw_energy         (nsites))
+    allocate(cpoly%avg_sfcw_mass           (nsites))
+    allocate(cpoly%avg_sfcw_fracliq        (nsites))
+    allocate(cpoly%avg_sfcw_tempk          (nsites))
     allocate(cpoly%avg_fsc                 (nsites))
     allocate(cpoly%avg_stsc                (nsites))
     allocate(cpoly%avg_ssc                 (nsites))
     allocate(cpoly%avg_balive              (nsites))
     allocate(cpoly%avg_bleaf               (nsites))
     allocate(cpoly%avg_broot               (nsites))
-    allocate(cpoly%avg_bsapwood            (nsites))
+    allocate(cpoly%avg_bsapwooda           (nsites))
+    allocate(cpoly%avg_bsapwoodb           (nsites))
     allocate(cpoly%avg_bdead               (nsites))
     allocate(cpoly%avg_fsn                 (nsites))
     allocate(cpoly%avg_msn                 (nsites))
@@ -3234,7 +3241,8 @@ contains
     allocate(cpatch%phenology_status(ncohorts))
     allocate(cpatch%balive(ncohorts))
     allocate(cpatch%broot(ncohorts))
-    allocate(cpatch%bsapwood(ncohorts))
+    allocate(cpatch%bsapwooda(ncohorts))
+    allocate(cpatch%bsapwoodb(ncohorts))
     allocate(cpatch%lai(ncohorts))
     allocate(cpatch%wpa(ncohorts))
     allocate(cpatch%wai(ncohorts))
@@ -3590,19 +3598,20 @@ contains
        nullify(cgrid%avg_sfcw_mass      )
        nullify(cgrid%avg_sfcw_tempk     )
        nullify(cgrid%avg_sfcw_fracliq   )
-       nullify(cgrid%avg_bdead         )
-       nullify(cgrid%avg_balive        )
+       nullify(cgrid%avg_bdead          )
+       nullify(cgrid%avg_balive         )
        nullify(cgrid%avg_bleaf          )
        nullify(cgrid%avg_broot          )
-       nullify(cgrid%avg_bsapwood       )
+       nullify(cgrid%avg_bsapwooda      )
+       nullify(cgrid%avg_bsapwoodb      )
        nullify(cgrid%avg_bstorage       )
        nullify(cgrid%avg_bseeds         )
 
-       nullify(cgrid%avg_fsc           )
-       nullify(cgrid%avg_ssc           )
-       nullify(cgrid%avg_stsc          )
-       nullify(cgrid%avg_fsn           )
-       nullify(cgrid%avg_msn           )
+       nullify(cgrid%avg_fsc            )
+       nullify(cgrid%avg_ssc            )
+       nullify(cgrid%avg_stsc           )
+       nullify(cgrid%avg_fsn            )
+       nullify(cgrid%avg_msn            )
 
 
        
@@ -4091,7 +4100,8 @@ contains
     nullify(cpoly%avg_balive       )
     nullify(cpoly%avg_bleaf        )
     nullify(cpoly%avg_broot        )
-    nullify(cpoly%avg_bsapwood     )
+    nullify(cpoly%avg_bsapwooda    )
+    nullify(cpoly%avg_bsapwoodb    )
     nullify(cpoly%avg_bdead        )
     nullify(cpoly%avg_fsn          )
     nullify(cpoly%avg_msn          )
@@ -4393,7 +4403,8 @@ contains
     nullify(cpatch%phenology_status)
     nullify(cpatch%balive)
     nullify(cpatch%broot)
-    nullify(cpatch%bsapwood)
+    nullify(cpatch%bsapwooda)
+    nullify(cpatch%bsapwoodb)
     nullify(cpatch%lai)
     nullify(cpatch%wpa)
     nullify(cpatch%wai)
@@ -4747,7 +4758,8 @@ contains
        if(associated(cgrid%avg_balive              )) deallocate(cgrid%avg_balive          )
        if(associated(cgrid%avg_broot               )) deallocate(cgrid%avg_broot           )
        if(associated(cgrid%avg_bleaf               )) deallocate(cgrid%avg_bleaf           )
-       if(associated(cgrid%avg_bsapwood            )) deallocate(cgrid%avg_bsapwood        )
+       if(associated(cgrid%avg_bsapwooda           )) deallocate(cgrid%avg_bsapwooda       )
+       if(associated(cgrid%avg_bsapwoodb           )) deallocate(cgrid%avg_bsapwoodb       )
        if(associated(cgrid%avg_bstorage            )) deallocate(cgrid%avg_bstorage        )
        if(associated(cgrid%avg_bseeds              )) deallocate(cgrid%avg_bseeds          )
        if(associated(cgrid%avg_fsc                 )) deallocate(cgrid%avg_fsc             )
@@ -5256,7 +5268,8 @@ contains
 
     if(associated(cpoly%avg_bleaf                 )) deallocate(cpoly%avg_bleaf                 )
     if(associated(cpoly%avg_broot                 )) deallocate(cpoly%avg_broot                 )
-    if(associated(cpoly%avg_bsapwood              )) deallocate(cpoly%avg_bsapwood              )
+    if(associated(cpoly%avg_bsapwooda             )) deallocate(cpoly%avg_bsapwooda             )
+    if(associated(cpoly%avg_bsapwoodb             )) deallocate(cpoly%avg_bsapwoodb             )
     if(associated(cpoly%avg_bstorage              )) deallocate(cpoly%avg_bstorage              )
     if(associated(cpoly%avg_bseeds                )) deallocate(cpoly%avg_bseeds                )
 
@@ -5559,7 +5572,8 @@ contains
     if(associated(cpatch%phenology_status))    deallocate(cpatch%phenology_status)
     if(associated(cpatch%balive))              deallocate(cpatch%balive)
     if(associated(cpatch%broot))               deallocate(cpatch%broot)
-    if(associated(cpatch%bsapwood))            deallocate(cpatch%bsapwood)
+    if(associated(cpatch%bsapwooda))           deallocate(cpatch%bsapwooda)
+    if(associated(cpatch%bsapwoodb))           deallocate(cpatch%bsapwoodb)
     if(associated(cpatch%lai))                 deallocate(cpatch%lai)
     if(associated(cpatch%wpa))                 deallocate(cpatch%wpa)
     if(associated(cpatch%wai))                 deallocate(cpatch%wai)
@@ -6465,7 +6479,8 @@ contains
     patchout%phenology_status(1:inc) = pack(patchin%phenology_status,mask)
     patchout%balive(1:inc)           = pack(patchin%balive,mask)
     patchout%broot(1:inc)            = pack(patchin%broot,mask)
-    patchout%bsapwood(1:inc)         = pack(patchin%bsapwood,mask)
+    patchout%bsapwooda(1:inc)        = pack(patchin%bsapwooda,mask)
+    patchout%bsapwoodb(1:inc)        = pack(patchin%bsapwoodb,mask)
     patchout%lai(1:inc)              = pack(patchin%lai,mask)
     patchout%wpa(1:inc)              = pack(patchin%wpa,mask)
     patchout%wai(1:inc)              = pack(patchin%wai,mask)
@@ -6742,7 +6757,8 @@ contains
        patchout%phenology_status(iout) = patchin%phenology_status(iin)
        patchout%balive(iout)           = patchin%balive(iin)
        patchout%broot(iout)            = patchin%broot(iin)
-       patchout%bsapwood(iout)         = patchin%bsapwood(iin)
+       patchout%bsapwooda(iout)        = patchin%bsapwooda(iin)
+       patchout%bsapwoodb(iout)        = patchin%bsapwoodb(iin)
        patchout%lai(iout)              = patchin%lai(iin)
        patchout%wpa(iout)              = patchin%wpa(iin)
        patchout%wai(iout)              = patchin%wai(iin)
@@ -8280,11 +8296,18 @@ contains
          call metadata_edio(nvar,igr,'Poly Avg. Biomass -- fine roots','[kgC/m2]','ipoly') 
       end if
 
-      if (associated(cgrid%avg_bsapwood)) then
+      if (associated(cgrid%avg_bsapwooda)) then
          nvar=nvar+1
-         call vtable_edio_r(npts,cgrid%avg_bsapwood,nvar,igr,init,cgrid%pyglob_id, &
-              var_len,var_len_global,max_ptrs,'AVG_BSAPWOOD :11:hist:anal:year') 
-         call metadata_edio(nvar,igr,'Poly Avg. Biomass -- sapwood','[kgC/m2]','ipoly') 
+         call vtable_edio_r(npts,cgrid%avg_bsapwooda,nvar,igr,init,cgrid%pyglob_id, &
+              var_len,var_len_global,max_ptrs,'AVG_BSAPWOODA :11:hist:anal:year') 
+         call metadata_edio(nvar,igr,'Poly Avg. Biomass -- sapwood above ground','[kgC/m2]','ipoly') 
+      end if
+      
+      if (associated(cgrid%avg_bsapwoodb)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,cgrid%avg_bsapwoodb,nvar,igr,init,cgrid%pyglob_id, &
+              var_len,var_len_global,max_ptrs,'AVG_BSAPWOODB :11:hist:anal:year') 
+         call metadata_edio(nvar,igr,'Poly Avg. Biomass -- sapwood below ground','[kgC/m2]','ipoly') 
       end if
 
       if (associated(cgrid%avg_fsc)) then
@@ -13353,10 +13376,17 @@ contains
          call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
       end if
 
-      if (associated(cpatch%bsapwood)) then
+      if (associated(cpatch%bsapwooda)) then
          nvar=nvar+1
-           call vtable_edio_r(npts,cpatch%bsapwood,nvar,igr,init,cpatch%coglob_id, &
-           var_len,var_len_global,max_ptrs,'BSAPWOOD :41:hist:year:dail:anal:mont:dcyc') 
+           call vtable_edio_r(npts,cpatch%bsapwooda,nvar,igr,init,cpatch%coglob_id, &
+           var_len,var_len_global,max_ptrs,'BSAPWOODA :41:hist:year:dail:anal:mont:dcyc') 
+         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+      end if
+
+      if (associated(cpatch%bsapwoodb)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,cpatch%bsapwoodb,nvar,igr,init,cpatch%coglob_id, &
+           var_len,var_len_global,max_ptrs,'BSAPWOODB :41:hist:year:dail:anal:mont:dcyc') 
          call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
       end if
 

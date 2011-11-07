@@ -20,7 +20,8 @@ subroutine canopy_photosynthesis(csite,cmet,mzg,ipa,lsl,ntext_soil              
                              , wdnsi             & ! intent(in)
                              , wdns              & ! intent(in)
                              , kgCday_2_umols    & ! intent(in)
-                             , lnexp_min         ! ! intent(in)
+                             , lnexp_min         & ! intent(in)
+                             , tiny_num          ! ! intent(in)
    use ed_misc_coms   , only : current_time      ! ! intent(in)
    use met_driver_coms, only : met_driv_state    ! ! structure
    use physiology_coms, only : print_photo_debug & ! intent(in)
@@ -73,6 +74,7 @@ subroutine canopy_photosynthesis(csite,cmet,mzg,ipa,lsl,ntext_soil              
    real                                    :: psi_wilting
    real                                    :: psi_layer
    real                                    :: freezecor
+   real                                    :: water_demand
    real                                    :: pss_available_water
    !---------------------------------------------------------------------------------------!
 
@@ -342,20 +344,13 @@ subroutine canopy_photosynthesis(csite,cmet,mzg,ipa,lsl,ntext_soil              
                !---- No water limitation, fsw is always 1.0. ------------------------------!
                cpatch%fsw(ico) = 1.0
 
-            case (1)
-               !---- Original ED-1.0 scheme. ----------------------------------------------!
-               cpatch%fsw(ico) = cpatch%water_supply(ico)                                  &
-                               / max( 1.0e-20                                              &
-                                    , cpatch%water_supply(ico) + cpatch%psi_open(ico))
-            case (2)
-               !---------------------------------------------------------------------------!
-               !     Somewhat based on CLM, but we reduce the total amount of available    !
-               ! water by the fraction of root biomass belonging to this cohort.  We don't !
-               ! have the root profile up to now, assume they are evenly distributed       !
-               ! through all layers that have roots.                                       !
-               !---------------------------------------------------------------------------!
-               cpatch%fsw(ico) = wilting_factor(cpatch%krdepth(ico))
-
+            case (1,2)
+               water_demand    = cpatch%psi_open(ico) * cpatch%lai(ico)
+               if (cpatch%water_supply (ico) < tiny_num) then
+                  cpatch%fsw(ico) = 0.0
+               else
+                  cpatch%fsw(ico) = 1.0 / (1.0 + water_demand / cpatch%water_supply(ico))
+               end if
             end select
             !------------------------------------------------------------------------------!
 

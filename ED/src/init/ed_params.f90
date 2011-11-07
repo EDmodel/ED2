@@ -1439,7 +1439,14 @@ subroutine init_pft_photo_params()
    !     The KW parameter. Medvigy et al. (2009) and Moorcroft et al. (2001) give the      !
    ! number in m²/yr/kg_C_root.  Here we must define it in m²/s/kg_C_root.                 !
    !---------------------------------------------------------------------------------------!
-   water_conductance(1:17) = 450. / yr_sec ! 150. / yr_sec * kfact
+   !!water_conductance(1:17) = 450. / yr_sec ! 150. / yr_sec * kfact
+   water_conductance(1)      = 1250. / yr_sec
+   water_conductance(2:4)    = 450.  / yr_sec
+   water_conductance(5)      = 1250. / yr_sec
+   water_conductance(6:11)   = 450.  / yr_sec
+   water_conductance(12:15)  = 1250. / yr_sec
+   water_conductance(16)     = 1250. / yr_sec
+   water_conductance(17)     = 450.  / yr_sec
    !---------------------------------------------------------------------------------------!
 
 
@@ -1451,7 +1458,7 @@ subroutine init_pft_photo_params()
    photosyn_pathway(16:17)   = 3
 
    !----- Leaf width [m].  This controls the boundary layer conductance. ------------------!
-   leaf_width( 1)    = 0.20
+   leaf_width( 1)    = 0.05 !--ALS changed from 0.2 to 0.05 to reduce resistance
    leaf_width( 2)    = 0.20
    leaf_width( 3)    = 0.20
    leaf_width( 4)    = 0.20
@@ -1466,7 +1473,7 @@ subroutine init_pft_photo_params()
    leaf_width(13)    = 0.05
    leaf_width(14)    = 0.20
    leaf_width(15)    = 0.20
-   leaf_width(16)    = 0.20
+   leaf_width(16)    = 0.05 !--ALS changed from 0.2 to 0.05 to reduce resistance
    leaf_width(17)    = 0.05
    !---------------------------------------------------------------------------------------!
 
@@ -2752,7 +2759,7 @@ subroutine init_pft_derived_params()
 
       !----- Find the DBH and carbon pools associated with a newly formed recruit. --------!
       dbh        = h2dbh(hgt_min(ipft),ipft)
-      bleaf_min  = dbh2bl(dbh,ipft)
+      bleaf_min  = dbh2bl(dbh,ipft) !-ok for grasses, comes from height
       bdead_min  = dbh2bd(dbh,ipft)
       balive_min = bleaf_min * (1.0 + q(ipft) + qsw(ipft) * hgt_min(ipft))
 
@@ -2763,7 +2770,7 @@ subroutine init_pft_derived_params()
       !------------------------------------------------------------------------------------!
       huge_dbh    = 3. * max_dbh(ipft)
       huge_height = dbh2h(ipft, max_dbh(ipft))
-      bleaf_max   = dbh2bl(huge_dbh,ipft)
+      bleaf_max   = dbh2bl(huge_dbh,ipft) !-ok for grasses, comes from height
       bdead_max   = dbh2bd(huge_dbh,ipft)
       balive_max  = bleaf_max * (1.0 + q(ipft) + qsw(ipft) * huge_height)
       !------------------------------------------------------------------------------------!
@@ -3262,7 +3269,7 @@ subroutine init_physiology_params()
    !     Parameters that control debugging output.                                         !
    !---------------------------------------------------------------------------------------!
    !----- I should print detailed debug information. --------------------------------------!
-   print_photo_debug = .false.
+   print_photo_debug = .true.
    !----- File name prefix for the detailed information in case of debugging. -------------!
    photo_prefix      = 'photo_state_'
    !---------------------------------------------------------------------------------------!
@@ -3882,7 +3889,7 @@ subroutine init_rk4_params()
    !     Variables used to keep track on the error.                                        !
    !---------------------------------------------------------------------------------------!
    record_err     = .false.                  ! Compute and keep track of the errors.
-   print_detailed = .false.                  ! Print detailed information about the thermo-
+   print_detailed = .true.                  ! Print detailed information about the thermo-
                                              !    dynamic state.  This will create one file
                                              !    for each patch, so it is not recommended 
                                              !    for simulations that span over one month.
