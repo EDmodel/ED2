@@ -1137,8 +1137,12 @@ subroutine ed_opspec_misc
                                     , n_plant_lim                  & ! intent(in)
                                     , vmfact_c3                    & ! intent(in)
                                     , vmfact_c4                    & ! intent(in)
-                                    , mphoto_c3                    & ! intent(in)
+                                    , mphoto_trc3                  & ! intent(in)
+                                    , mphoto_tec3                  & ! intent(in)
                                     , mphoto_c4                    & ! intent(in)
+                                    , bphoto_blc3                  & ! intent(in)
+                                    , bphoto_nlc3                  & ! intent(in)
+                                    , bphoto_c4                    & ! intent(in)
                                     , kw_grass                     & ! intent(in)
                                     , kw_tree                      & ! intent(in)
                                     , gamma_c3                     & ! intent(in)
@@ -1153,6 +1157,8 @@ subroutine ed_opspec_misc
                                     , lwidth_grass                 & ! intent(in)
                                     , lwidth_bltree                & ! intent(in)
                                     , lwidth_nltree                & ! intent(in)
+                                    , q10_c3                       & ! intent(in)
+                                    , q10_c4                       & ! intent(in)
                                     , quantum_efficiency_T         ! ! intent(in)
    use decomp_coms           , only : n_decomp_lim                 ! ! intent(in)
    use disturb_coms          , only : include_fire                 & ! intent(in)
@@ -1541,10 +1547,18 @@ end do
       ifaterr = ifaterr +1
    end if
 
-   if (mphoto_c3 < 0.1 .or. mphoto_c3 > 20.) then
+   if (mphoto_trc3 < 0.1 .or. mphoto_trc3 > 20.) then
       write (reason,fmt='(a,1x,es12.5,a)')                                                 &
-                    'Invalid MPHOTO_C3, it must be between 0.1 and 20.  Yours is set to'   &
-                    ,mphoto_c3,'...'
+                    'Invalid MPHOTO_TRC3, it must be between 0.1 and 20.  Yours is set to' &
+                    ,mphoto_trc3,'...'
+      call opspec_fatal(reason,'opspec_misc')
+      ifaterr = ifaterr +1
+   end if
+
+   if (mphoto_tec3 < 0.1 .or. mphoto_tec3 > 20.) then
+      write (reason,fmt='(a,1x,es12.5,a)')                                                 &
+                    'Invalid MPHOTO_TEC3, it must be between 0.1 and 20.  Yours is set to' &
+                    ,mphoto_trc3,'...'
       call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
    end if
@@ -1556,7 +1570,31 @@ end do
       call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
    end if
-   
+ 
+   if (bphoto_blc3 < 500. .or. bphoto_blc3 > 50000.) then
+      write (reason,fmt='(a,1x,es12.5,a)')                                                 &
+                'Invalid BPHOTO_BLC3, it must be between 500. and 50000.  Yours is set to' &
+               ,bphoto_blc3,'...'
+      call opspec_fatal(reason,'opspec_misc')
+      ifaterr = ifaterr +1
+   end if
+ 
+   if (bphoto_nlc3 < 500. .or. bphoto_nlc3 > 50000.) then
+      write (reason,fmt='(a,1x,es12.5,a)')                                                 &
+                'Invalid BPHOTO_NLC3, it must be between 500. and 50000.  Yours is set to' &
+               ,bphoto_nlc3,'...'
+      call opspec_fatal(reason,'opspec_misc')
+      ifaterr = ifaterr +1
+   end if
+ 
+   if (bphoto_c4 < 500. .or. bphoto_c4 > 50000.) then
+      write (reason,fmt='(a,1x,es12.5,a)')                                                 &
+                'Invalid BPHOTO_C4, it must be between 500. and 50000.  Yours is set to'   &
+               ,bphoto_c4,'...'
+      call opspec_fatal(reason,'opspec_misc')
+      ifaterr = ifaterr +1
+   end if
+  
   if (kw_grass < 15. .or. kw_grass > 15000.) then
       write (reason,fmt='(a,1x,es12.5,a)')                                                 &
                     'Invalid KW_GRASS, it must be between 15 and 15000.  Yours is set to'  &
@@ -1665,6 +1703,22 @@ end do
       write (reason,fmt='(a,1x,es12.5,a)')                                                 &
             'Invalid LWIDTH_NLTREE, it must be between 0.01 and 0.30 Yours is set to'      &
            ,lwidth_nltree,'...'
+      call opspec_fatal(reason,'opspec_misc')
+      ifaterr = ifaterr +1
+   end if
+   
+   if (q10_c3 < 1.0 .or. q10_c3 > 10.) then
+      write (reason,fmt='(a,1x,es12.5,a)')                                                 &
+                    'Invalid Q10_C3, it must be between 1.0 and 10.  Yours is set to'      &
+                    ,q10_c3,'...'
+      call opspec_fatal(reason,'opspec_misc')
+      ifaterr = ifaterr +1
+   end if
+   
+   if (q10_c4 < 1.0 .or. q10_c4 > 10.) then
+      write (reason,fmt='(a,1x,es12.5,a)')                                                 &
+                    'Invalid Q10_C4, it must be between 1.0 and 10.  Yours is set to'      &
+                    ,q10_c4,'...'
       call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
    end if

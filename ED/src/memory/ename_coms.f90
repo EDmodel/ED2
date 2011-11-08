@@ -152,8 +152,12 @@ module ename_coms
       integer                                           :: h2o_plant_lim
       real                                              :: vmfact_c3
       real                                              :: vmfact_c4
-      real                                              :: mphoto_c3
+      real                                              :: mphoto_trc3
+      real                                              :: mphoto_tec3
       real                                              :: mphoto_c4
+      real                                              :: bphoto_blc3
+      real                                              :: bphoto_nlc3
+      real                                              :: bphoto_c4
       real                                              :: kw_grass
       real                                              :: kw_tree
       real                                              :: gamma_c3
@@ -168,6 +172,8 @@ module ename_coms
       real                                              :: lwidth_grass
       real                                              :: lwidth_bltree
       real                                              :: lwidth_nltree
+      real                                              :: q10_c3
+      real                                              :: q10_c4
       real                                              :: thetacrit
       integer                                           :: quantum_efficiency_T
       integer                                           :: n_plant_lim
@@ -393,8 +399,12 @@ module ename_coms
       enl%h2o_plant_lim             = undef_integer
       enl%vmfact_c3                 = undef_real
       enl%vmfact_c4                 = undef_real
-      enl%mphoto_c3                 = undef_real
+      enl%mphoto_trc3               = undef_real
+      enl%mphoto_tec3               = undef_real
       enl%mphoto_c4                 = undef_real
+      enl%bphoto_blc3               = undef_real
+      enl%bphoto_nlc3               = undef_real
+      enl%bphoto_c4                 = undef_real
       enl%kw_grass                  = undef_real
       enl%kw_tree                   = undef_real
       enl%gamma_c3                  = undef_real
@@ -409,6 +419,8 @@ module ename_coms
       enl%lwidth_grass              = undef_real
       enl%lwidth_bltree             = undef_real
       enl%lwidth_nltree             = undef_real
+      enl%q10_c3                    = undef_real
+      enl%q10_c4                    = undef_real
       enl%thetacrit                 = undef_real
       enl%quantum_efficiency_T      = undef_integer
       enl%n_plant_lim               = undef_integer

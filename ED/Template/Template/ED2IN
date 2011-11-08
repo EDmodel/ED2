@@ -845,9 +845,12 @@ $ED_NL
    !                                                                                       !
    ! VMFACT_C3     -- Factor multiplying the default Vm0 for C3 plants (1.0 = default).    !
    ! VMFACT_C4     -- Factor multiplying the default Vm0 for C4 plants (1.0 = default).    !
-   ! MPHOTO_C3     -- Stomatal slope (M) for tropical C3 plants.  Conifers and temperate   !
-   !                  plants will be scaled by MPHOTO_C3 * 6.4 / 8.0                       !
+   ! MPHOTO_TRC3   -- Stomatal slope (M) for tropical C3 plants                            !
+   ! MPHOTO_TEC3   -- Stomatal slope (M) for conifers and temperate C3 plants              !
    ! MPHOTO_C4     -- Stomatal slope (M) for C4 plants.                                    !
+   ! BPHOTO_BLC3   -- cuticular conductance for broadleaf C3 plants  [umol/m2/s]           !
+   ! BPHOTO_NLC3   -- cuticular conductance for needleleaf C3 plants [umol/m2/s]           !
+   ! BPHOTO_C4     -- cuticular conductance for C4 plants            [umol/m2/s]           !
    ! KW_GRASS      -- Water conductance for trees, in m2/yr/kgC_root.  This is used only   !
    !                  when H2O_PLANT_LIM is not 0.                                         !
    ! KW_TREE       -- Water conductance for grasses, in m2/yr/kgC_root.  This is used only !
@@ -874,11 +877,17 @@ $ED_NL
    ! LWIDTH_NLTREE -- Leaf width for trees, in metres.  This controls the leaf boundary    !
    !                  layer conductance (gbh and gbw).  This is applied to conifer trees   !
    !                  only.                                                                !
+   ! Q10_C3        -- Q10 factor for C3 plants (used only if IPHYSIOL is set to 2 or 3).   !
+   ! Q10_C4        -- Q10 factor for C4 plants (used only if IPHYSIOL is set to 2 or 3).   !
    !---------------------------------------------------------------------------------------!
    NL%VMFACT_C3       = myvmfactc3
    NL%VMFACT_C4       = myvmfactc4
-   NL%MPHOTO_C3       = mymphotoc3
+   NL%MPHOTO_TRC3     = mymphototrc3
+   NL%MPHOTO_TEC3     = mymphototec3
    NL%MPHOTO_C4       = mymphotoc4
+   NL%BPHOTO_BLC3     = mybphotoblc3
+   NL%BPHOTO_NLC3     = mybphotonlc3
+   NL%BPHOTO_C4       = mybphotoc4
    NL%KW_GRASS        = mykwgrass
    NL%KW_TREE         = mykwtree
    NL%GAMMA_C3        = mygammac3
@@ -893,6 +902,8 @@ $ED_NL
    NL%LWIDTH_GRASS    = mylwidthgrass
    NL%LWIDTH_BLTREE   = mylwidthbltree
    NL%LWIDTH_NLTREE   = mylwidthnltree
+   NL%Q10_C3          = myq10c3
+   NL%Q10_C4          = myq10c4
    !---------------------------------------------------------------------------------------!
 
 

@@ -4,7 +4,20 @@ diskthere='/n/scratch2/moorcroft_lab' # ! Disk where the output files are
 thisqueue='moorcroft'                 # ! Queue where jobs should be submitted
 lonlat=${here}'/joborder.txt'         # ! File with the job instructions
 #----- Outroot is the main output directory. ----------------------------------------------#
-outroot='/n/moorcroftfs1/mlongo/diary/XXXXXXXXXXXXXX/figures/Template'
+outroot='/n/moorcroftfs1/mlongo/diary/XXXXXXXXXXXXX/figures/Template'
+#------------------------------------------------------------------------------------------#
+
+#------------------------------------------------------------------------------------------#
+#    Tell whether to plot pseudo-drought or not.                                           #
+#------------------------------------------------------------------------------------------#
+droughtmark="FALSE"         # Should I plot a rectangle to show the drought?
+                            #     capital letters only: TRUE means yes, FALSE means no
+droughtyeara=1605           # Year that the first drought instance happens (even if it is 
+                            #     just the last bit)
+droughtyearz=1609           # Year that the last drought instance happens (even if it 
+                            #     partial)
+monthsdrought="c(12,1,2,3)" # List of months that get drought, if it starts late in the
+                            #     year, put the last month first.
 #------------------------------------------------------------------------------------------#
 
 
@@ -92,52 +105,58 @@ do
    dtlsm=`echo ${oi}        | awk '{print $22}'`
    vmfactc3=`echo ${oi}     | awk '{print $23}'`
    vmfactc4=`echo ${oi}     | awk '{print $24}'`
-   mphotoc3=`echo ${oi}     | awk '{print $25}'`
-   mphotoc4=`echo ${oi}     | awk '{print $26}'`
-   kwgrass=`echo ${oi}      | awk '{print $27}'`
-   kwtree=`echo ${oi}       | awk '{print $28}'`
-   gammac3=`echo ${oi}      | awk '{print $29}'`
-   gammac4=`echo ${oi}      | awk '{print $30}'`
-   d0grass=`echo ${oi}      | awk '{print $31}'`
-   d0tree=`echo ${oi}       | awk '{print $32}'`
-   alphac3=`echo ${oi}      | awk '{print $33}'`
-   alphac4=`echo ${oi}      | awk '{print $34}'`
-   klowco2=`echo ${oi}      | awk '{print $35}'`
-   rrffact=`echo ${oi}      | awk '{print $36}'`
-   growthresp=`echo ${oi}   | awk '{print $37}'`
-   lwidthgrass=`echo ${oi}  | awk '{print $38}'`
-   lwidthbltree=`echo ${oi} | awk '{print $39}'`
-   lwidthnltree=`echo ${oi} | awk '{print $40}'`
-   h2olimit=`echo ${oi}     | awk '{print $41}'`
-   isfclyrm=`echo ${oi}     | awk '{print $42}'`
-   icanturb=`echo ${oi}     | awk '{print $43}'`
-   ubmin=`echo ${oi}        | awk '{print $44}'`
-   ugbmin=`echo ${oi}       | awk '{print $45}'`
-   ustmin=`echo ${oi}       | awk '{print $46}'`
-   gamm=`echo ${oi}         | awk '{print $47}'`
-   gamh=`echo ${oi}         | awk '{print $48}'`
-   tprandtl=`echo ${oi}     | awk '{print $49}'`
-   ribmax=`echo ${oi}       | awk '{print $50}'`
-   atmco2=`echo ${oi}       | awk '{print $51}'`
-   thcrit=`echo ${oi}       | awk '{print $52}'`
-   smfire=`echo ${oi}       | awk '{print $53}'`
-   isoilbc=`echo ${oi}      | awk '{print $54}'`
-   imetrad=`echo ${oi}      | awk '{print $55}'`
-   ibranch=`echo ${oi}      | awk '{print $56}'`
-   icanrad=`echo ${oi}      | awk '{print $57}'`
-   crown=`echo   ${oi}      | awk '{print $58}'`
-   ltransvis=`echo ${oi}    | awk '{print $59}'`
-   lreflectvis=`echo ${oi}  | awk '{print $60}'`
-   ltransnir=`echo ${oi}    | awk '{print $61}'`
-   lreflectnir=`echo ${oi}  | awk '{print $62}'`
-   orienttree=`echo ${oi}   | awk '{print $63}'`
-   orientgrass=`echo ${oi}  | awk '{print $64}'`
-   clumptree=`echo ${oi}    | awk '{print $65}'`
-   clumpgrass=`echo ${oi}   | awk '{print $66}'`
-   ivegtdyn=`echo ${oi}     | awk '{print $67}'`
-   igndvap=`echo ${oi}      | awk '{print $68}'`
-   iphen=`echo ${oi}        | awk '{print $69}'`
-   iallom=`echo ${oi}       | awk '{print $70}'`
+   mphototrc3=`echo ${oi}   | awk '{print $25}'`
+   mphototec3=`echo ${oi}   | awk '{print $26}'`
+   mphotoc4=`echo ${oi}     | awk '{print $27}'`
+   bphotoblc3=`echo ${oi}   | awk '{print $28}'`
+   bphotonlc3=`echo ${oi}   | awk '{print $29}'`
+   bphotoc4=`echo ${oi}     | awk '{print $30}'`
+   kwgrass=`echo ${oi}      | awk '{print $31}'`
+   kwtree=`echo ${oi}       | awk '{print $32}'`
+   gammac3=`echo ${oi}      | awk '{print $33}'`
+   gammac4=`echo ${oi}      | awk '{print $34}'`
+   d0grass=`echo ${oi}      | awk '{print $35}'`
+   d0tree=`echo ${oi}       | awk '{print $36}'`
+   alphac3=`echo ${oi}      | awk '{print $37}'`
+   alphac4=`echo ${oi}      | awk '{print $38}'`
+   klowco2=`echo ${oi}      | awk '{print $39}'`
+   rrffact=`echo ${oi}      | awk '{print $40}'`
+   growthresp=`echo ${oi}   | awk '{print $41}'`
+   lwidthgrass=`echo ${oi}  | awk '{print $42}'`
+   lwidthbltree=`echo ${oi} | awk '{print $43}'`
+   lwidthnltree=`echo ${oi} | awk '{print $44}'`
+   q10c3=`echo ${oi}        | awk '{print $45}'`
+   q10c4=`echo ${oi}        | awk '{print $46}'`
+   h2olimit=`echo ${oi}     | awk '{print $47}'`
+   isfclyrm=`echo ${oi}     | awk '{print $48}'`
+   icanturb=`echo ${oi}     | awk '{print $49}'`
+   ubmin=`echo ${oi}        | awk '{print $50}'`
+   ugbmin=`echo ${oi}       | awk '{print $51}'`
+   ustmin=`echo ${oi}       | awk '{print $52}'`
+   gamm=`echo ${oi}         | awk '{print $53}'`
+   gamh=`echo ${oi}         | awk '{print $54}'`
+   tprandtl=`echo ${oi}     | awk '{print $55}'`
+   ribmax=`echo ${oi}       | awk '{print $56}'`
+   atmco2=`echo ${oi}       | awk '{print $57}'`
+   thcrit=`echo ${oi}       | awk '{print $58}'`
+   smfire=`echo ${oi}       | awk '{print $59}'`
+   isoilbc=`echo ${oi}      | awk '{print $60}'`
+   imetrad=`echo ${oi}      | awk '{print $61}'`
+   ibranch=`echo ${oi}      | awk '{print $62}'`
+   icanrad=`echo ${oi}      | awk '{print $63}'`
+   crown=`echo   ${oi}      | awk '{print $64}'`
+   ltransvis=`echo ${oi}    | awk '{print $65}'`
+   lreflectvis=`echo ${oi}  | awk '{print $66}'`
+   ltransnir=`echo ${oi}    | awk '{print $67}'`
+   lreflectnir=`echo ${oi}  | awk '{print $68}'`
+   orienttree=`echo ${oi}   | awk '{print $69}'`
+   orientgrass=`echo ${oi}  | awk '{print $70}'`
+   clumptree=`echo ${oi}    | awk '{print $71}'`
+   clumpgrass=`echo ${oi}   | awk '{print $72}'`
+   ivegtdyn=`echo ${oi}     | awk '{print $73}'`
+   igndvap=`echo ${oi}      | awk '{print $74}'`
+   iphen=`echo ${oi}        | awk '{print $75}'`
+   iallom=`echo ${oi}       | awk '{print $76}'`
    #---------------------------------------------------------------------------------------#
 
 
@@ -151,6 +170,12 @@ do
    #----- Retrieve some information from ED2IN. -------------------------------------------#
    iphysiol=`grep -i NL%IPHYSIOL ${here}/${polyname}/ED2IN | awk '{print $3}'`
    iallom=`grep -i NL%IALLOM ${here}/${polyname}/ED2IN | awk '{print $3}'`
+   
+   if [ ${droughtmark} == "TRUE" ]
+   then 
+      let yeara=${droughtyeara}-1
+      let yearz=${droughtyearz}+1
+   fi
 
    for script in ${rscripts}
    do
@@ -158,7 +183,7 @@ do
 
       case ${script} in
       plot_monthly.r)
-         let thisyeara=${yeara}+1
+         let thisyeara=${yeara}+0
          thisdatea=${datea}
          epostout='pmon_epost.out'
          epostlsf='pmon_epost.lsf'
@@ -227,22 +252,26 @@ do
       cp -f ${here}/Template/${script} ${here}/${polyname}
 
       #----- Switch the keywords by the current settings. ---------------------------------#
-      sed -i s@thispoly@${polyname}@g    ${here}/${polyname}/${script}
-      sed -i s@thisoutroot@${outroot}@g  ${here}/${polyname}/${script}
-      sed -i s@thispath@${here}@g        ${here}/${polyname}/${script}
-      sed -i s@thatpath@${there}@g       ${here}/${polyname}/${script}
-      sed -i s@thisyeara@${thisyeara}@g  ${here}/${polyname}/${script}
-      sed -i s@thismontha@${montha}@g    ${here}/${polyname}/${script}
-      sed -i s@thisdatea@${thisdatea}@g  ${here}/${polyname}/${script}
-      sed -i s@thishoura@${houra}@g      ${here}/${polyname}/${script}
-      sed -i s@thisminua@${minua}@g      ${here}/${polyname}/${script}
-      sed -i s@thisyearz@${yearz}@g      ${here}/${polyname}/${script}
-      sed -i s@thismonthz@${monthz}@g    ${here}/${polyname}/${script}
-      sed -i s@thisdatez@${datez}@g      ${here}/${polyname}/${script}
-      sed -i s@thishourz@${hourz}@g      ${here}/${polyname}/${script}
-      sed -i s@thisminuz@${minuz}@g      ${here}/${polyname}/${script}
-      sed -i s@myphysiol@${iphysiol}@g   ${here}/${polyname}/${script}
-      sed -i s@myallom@${iallom}@g       ${here}/${polyname}/${script}
+      sed -i s@thispoly@${polyname}@g             ${here}/${polyname}/${script}
+      sed -i s@thisoutroot@${outroot}@g           ${here}/${polyname}/${script}
+      sed -i s@thispath@${here}@g                 ${here}/${polyname}/${script}
+      sed -i s@thatpath@${there}@g                ${here}/${polyname}/${script}
+      sed -i s@thisyeara@${thisyeara}@g           ${here}/${polyname}/${script}
+      sed -i s@thismontha@${montha}@g             ${here}/${polyname}/${script}
+      sed -i s@thisdatea@${thisdatea}@g           ${here}/${polyname}/${script}
+      sed -i s@thishoura@${houra}@g               ${here}/${polyname}/${script}
+      sed -i s@thisminua@${minua}@g               ${here}/${polyname}/${script}
+      sed -i s@thisyearz@${yearz}@g               ${here}/${polyname}/${script}
+      sed -i s@thismonthz@${monthz}@g             ${here}/${polyname}/${script}
+      sed -i s@thisdatez@${datez}@g               ${here}/${polyname}/${script}
+      sed -i s@thishourz@${hourz}@g               ${here}/${polyname}/${script}
+      sed -i s@thisminuz@${minuz}@g               ${here}/${polyname}/${script}
+      sed -i s@myphysiol@${iphysiol}@g            ${here}/${polyname}/${script}
+      sed -i s@myallom@${iallom}@g                ${here}/${polyname}/${script}
+      sed -i s@mydroughtmark@${droughtmark}@g     ${here}/${polyname}/${script}
+      sed -i s@mydroughtyeara@${droughtyeara}@g   ${here}/${polyname}/${script}
+      sed -i s@mydroughtyearz@${droughtyearz}@g   ${here}/${polyname}/${script}
+      sed -i s@mymonthsdrought@${monthsdrought}@g ${here}/${polyname}/${script}
 
       #----- Run R to get the plots. ------------------------------------------------------#
       comm="R CMD BATCH ${here}/${polyname}/${script} ${here}/${polyname}/${epostout}"

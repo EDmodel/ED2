@@ -1440,8 +1440,12 @@ subroutine init_pft_photo_params()
    use physiology_coms , only: iphysiol                & ! intent(in)
                              , vmfact_c3               & ! intent(in)
                              , vmfact_c4               & ! intent(in)
-                             , mphoto_c3               & ! intent(in)
+                             , mphoto_trc3             & ! intent(in)
+                             , mphoto_tec3             & ! intent(in)
                              , mphoto_c4               & ! intent(in)
+                             , bphoto_blc3             & ! intent(in)
+                             , bphoto_nlc3             & ! intent(in)
+                             , bphoto_c4               & ! intent(in)
                              , gamma_c3                & ! intent(in)
                              , gamma_c4                & ! intent(in)
                              , d0_grass                & ! intent(in)
@@ -1452,7 +1456,9 @@ subroutine init_pft_photo_params()
                              , kw_tree                 & ! intent(in)
                              , lwidth_grass            & ! intent(in)
                              , lwidth_bltree           & ! intent(in)
-                             , lwidth_nltree           ! ! intent(in)
+                             , lwidth_nltree           & ! intent(in)
+                             , q10_c3                  & ! intent(in)
+                             , q10_c4                  ! ! intent(in)
    implicit none
    !---------------------------------------------------------------------------------------!
 
@@ -1529,7 +1535,7 @@ subroutine init_pft_photo_params()
    Vm0(11)                   =  6.981875 * vmfact_c3
    Vm0(12:13)                = 18.300000 * vmfact_c3
    Vm0(14:15)                = 12.500000 * vmfact_c4
-   Vm0(16)                   = 21.875000 * vmfact_c3
+   Vm0(16)                   = 25.000000 * vmfact_c3
    Vm0(17)                   = 15.625000 * vmfact_c3
    !---------------------------------------------------------------------------------------!
 
@@ -1541,10 +1547,10 @@ subroutine init_pft_photo_params()
    !---------------------------------------------------------------------------------------!
    vm_hor(1:17)              = 3000.
    !----- Here we distinguish between C3 and C4 photosynthesis as in Collatz et al 91/92. -!
-   vm_q10(1)                 = 2.4
-   vm_q10(2:13)              = 2.4
-   vm_q10(14:15)             = 2.4
-   vm_q10(16:17)             = 2.4
+   vm_q10(1)                 = q10_c4
+   vm_q10(2:13)              = q10_c3
+   vm_q10(14:15)             = q10_c4
+   vm_q10(16:17)             = q10_c3
    !---------------------------------------------------------------------------------------!
 
 
@@ -1603,40 +1609,41 @@ subroutine init_pft_photo_params()
 
    !----- Define the stomatal slope (aka the M factor). -----------------------------------!
    stomatal_slope(1)         = mphoto_c4
-   stomatal_slope(2)         = mphoto_c3
-   stomatal_slope(3)         = mphoto_c3
-   stomatal_slope(4)         = mphoto_c3
-   stomatal_slope(5)         = mphoto_c3
-   stomatal_slope(6)         = mphoto_c3 * 6.3949 / 8.0
-   stomatal_slope(7)         = mphoto_c3 * 6.3949 / 8.0
-   stomatal_slope(8)         = mphoto_c3 * 6.3949 / 8.0
-   stomatal_slope(9)         = mphoto_c3 * 6.3949 / 8.0
-   stomatal_slope(10)        = mphoto_c3 * 6.3949 / 8.0
-   stomatal_slope(11)        = mphoto_c3 * 6.3949 / 8.0
-   stomatal_slope(12)        = mphoto_c3
-   stomatal_slope(13)        = mphoto_c3
+   stomatal_slope(2)         = mphoto_trc3
+   stomatal_slope(3)         = mphoto_trc3
+   stomatal_slope(4)         = mphoto_trc3
+   stomatal_slope(5)         = mphoto_trc3
+   stomatal_slope(6)         = mphoto_tec3
+   stomatal_slope(7)         = mphoto_tec3
+   stomatal_slope(8)         = mphoto_tec3
+   stomatal_slope(9)         = mphoto_tec3
+   stomatal_slope(10)        = mphoto_tec3
+   stomatal_slope(11)        = mphoto_tec3
+   stomatal_slope(12)        = mphoto_trc3
+   stomatal_slope(13)        = mphoto_trc3
    stomatal_slope(14)        = mphoto_c4
    stomatal_slope(15)        = mphoto_c4
-   stomatal_slope(16)        = mphoto_c3
-   stomatal_slope(17)        = mphoto_c3 * 6.4 / 8.0
+   stomatal_slope(16)        = mphoto_trc3
+   stomatal_slope(17)        = mphoto_tec3
  
-   cuticular_cond(1)         =  8000.0
-   cuticular_cond(2)         = 10000.0
-   cuticular_cond(3)         = 10000.0
-   cuticular_cond(4)         = 10000.0
-   cuticular_cond(5)         = 10000.0
-   cuticular_cond(6)         =  1000.0
-   cuticular_cond(7)         =  1000.0
-   cuticular_cond(8)         =  1000.0
-   cuticular_cond(9)         = 20000.0
-   cuticular_cond(10)        = 20000.0
-   cuticular_cond(11)        = 20000.0
-   cuticular_cond(12)        = 10000.0
-   cuticular_cond(13)        = 10000.0
-   cuticular_cond(14)        = 10000.0
-   cuticular_cond(15)        = 10000.0
-   cuticular_cond(16)        = 10000.0
-   cuticular_cond(17)        =  1000.0
+   !----- Define the stomatal slope (aka the b term, given in umol/m2/s). -----------------!
+   cuticular_cond(1)         = bphoto_c4
+   cuticular_cond(2)         = bphoto_blc3
+   cuticular_cond(3)         = bphoto_blc3
+   cuticular_cond(4)         = bphoto_blc3
+   cuticular_cond(5)         = bphoto_blc3
+   cuticular_cond(6)         = bphoto_nlc3
+   cuticular_cond(7)         = bphoto_nlc3
+   cuticular_cond(8)         = bphoto_nlc3
+   cuticular_cond(9)         = bphoto_blc3
+   cuticular_cond(10)        = bphoto_blc3
+   cuticular_cond(11)        = bphoto_blc3
+   cuticular_cond(12)        = bphoto_blc3
+   cuticular_cond(13)        = bphoto_blc3
+   cuticular_cond(14)        = bphoto_c4
+   cuticular_cond(15)        = bphoto_c4
+   cuticular_cond(16)        = bphoto_blc3
+   cuticular_cond(17)        = bphoto_nlc3
 
    quantum_efficiency(1)     = alpha_c4
    quantum_efficiency(2)     = alpha_c3

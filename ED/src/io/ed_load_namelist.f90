@@ -94,8 +94,12 @@ subroutine copy_nl(copy_type)
                                    , n_plant_lim               & ! intent(out)
                                    , vmfact_c3                 & ! intent(out)
                                    , vmfact_c4                 & ! intent(out)
-                                   , mphoto_c3                 & ! intent(out)
+                                   , mphoto_trc3               & ! intent(out)
+                                   , mphoto_tec3               & ! intent(out)
                                    , mphoto_c4                 & ! intent(out)
+                                   , bphoto_blc3               & ! intent(out)
+                                   , bphoto_nlc3               & ! intent(out)
+                                   , bphoto_c4                 & ! intent(out)
                                    , kw_grass                  & ! intent(out)
                                    , kw_tree                   & ! intent(out)
                                    , gamma_c3                  & ! intent(out)
@@ -110,6 +114,8 @@ subroutine copy_nl(copy_type)
                                    , lwidth_grass              & ! intent(out)
                                    , lwidth_bltree             & ! intent(out)
                                    , lwidth_nltree             & ! intent(out)
+                                   , q10_c3                    & ! intent(out)
+                                   , q10_c4                    & ! intent(out)
                                    , quantum_efficiency_T      ! ! intent(out)
    use phenology_coms       , only : iphen_scheme              & ! intent(out)
                                    , iphenys1                  & ! intent(out)
@@ -346,8 +352,12 @@ subroutine copy_nl(copy_type)
       h2o_plant_lim             = nl%h2o_plant_lim
       vmfact_c3                 = nl%vmfact_c3
       vmfact_c4                 = nl%vmfact_c4
-      mphoto_c3                 = nl%mphoto_c3
+      mphoto_trc3               = nl%mphoto_trc3
+      mphoto_tec3               = nl%mphoto_tec3
       mphoto_c4                 = nl%mphoto_c4
+      bphoto_blc3               = nl%bphoto_blc3
+      bphoto_nlc3               = nl%bphoto_nlc3
+      bphoto_c4                 = nl%bphoto_c4
       kw_grass                  = nl%kw_grass
       kw_tree                   = nl%kw_tree
       gamma_c3                  = nl%gamma_c3
@@ -362,6 +372,8 @@ subroutine copy_nl(copy_type)
       lwidth_grass              = nl%lwidth_grass
       lwidth_bltree             = nl%lwidth_bltree
       lwidth_nltree             = nl%lwidth_nltree
+      q10_c3                    = nl%q10_c3
+      q10_c4                    = nl%q10_c4
       thetacrit                 = nl%thetacrit
       quantum_efficiency_T      = nl%quantum_efficiency_T
       radint                    = nl%radint

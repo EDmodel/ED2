@@ -109,6 +109,7 @@ subroutine integrate_lake(dtfull,htryio)
             ! Integrate, then update and correct diagnostic variables to avoid overshoot-  !
             ! ing, provided that the overshooting is small.                                !
             !------------------------------------------------------------------------------!
+            call clone_lakesite  (lake_buff%ytemp,lake_buff%y)
             call integ_lakesite  (lake_buff%ytemp,lake_buff%dydx,h)
             call lake_diagnostics(lake_buff%ytemp)
 

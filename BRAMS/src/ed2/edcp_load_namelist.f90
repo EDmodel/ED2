@@ -48,8 +48,12 @@ subroutine read_ednl(iunit,filename)
                                    , n_plant_lim                           & ! intent(out)
                                    , vmfact_c3                             & ! intent(out)
                                    , vmfact_c4                             & ! intent(out)
-                                   , mphoto_c3                             & ! intent(out)
+                                   , mphoto_trc3                           & ! intent(out)
+                                   , mphoto_tec3                           & ! intent(out)
                                    , mphoto_c4                             & ! intent(out)
+                                   , bphoto_blc3                           & ! intent(out)
+                                   , bphoto_nlc3                           & ! intent(out)
+                                   , bphoto_c4                             & ! intent(out)
                                    , kw_grass                              & ! intent(out)
                                    , kw_tree                               & ! intent(out)
                                    , gamma_c3                              & ! intent(out)
@@ -63,7 +67,9 @@ subroutine read_ednl(iunit,filename)
                                    , growthresp                            & ! intent(out)
                                    , lwidth_grass                          & ! intent(out)
                                    , lwidth_bltree                         & ! intent(out)
-                                   , lwidth_nltree                         ! ! intent(out)
+                                   , lwidth_nltree                         & ! intent(out)
+                                   , q10_c3                                & ! intent(out)
+                                   , q10_c4                                ! ! intent(out)
    use phenology_coms       , only : iphen_scheme                          & ! intent(out)
                                    , repro_scheme                          & ! intent(out)
                                    , iphenys1                              & ! intent(out)
@@ -222,15 +228,17 @@ subroutine read_ednl(iunit,filename)
                        ,iphen_scheme,radint,radslp,repro_scheme,lapse_scheme,crown_mod     &
                        ,icanrad,ltrans_vis,ltrans_nir,lreflect_vis,lreflect_nir            &
                        ,orient_tree,orient_grass,clump_tree,clump_grass,decomp_scheme      &
-                       ,h2o_plant_lim,vmfact_c3,vmfact_c4,mphoto_c3,mphoto_c4,kw_grass     &
+                       ,h2o_plant_lim,vmfact_c3,vmfact_c4,mphoto_trc3,mphoto_tec3          &
+                       ,mphoto_c4,bphoto_blc3,bphoto_nlc3,bphoto_nlc4,kw_grass             &
                        ,kw_tree,gamma_c3,gamma_c4,d0_grass,d0_tree,alpha_c3                &
                        ,alpha_c4,klowco2in,rrffact,growthresp,lwidth_grass,lwidth_bltree   &
-                       ,lwidth_nltree,thetacrit,quantum_efficiency_t,n_plant_lim           &
-                       ,n_decomp_lim,include_fire,sm_fire,ianth_disturb,icanturb           &
-                       ,include_these_pft,agri_stock,plantation_stock,pft_1st_check        &
-                       ,maxpatch,maxcohort,treefall_disturbance_rate,time2canopy           &
-                       ,iprintpolys,npvars,printvars,pfmtstr,ipmin,ipmax,imetrad,iphenys1  &
-                       ,iphenysf,iphenyf1,iphenyff,iedcnfgf,event_file,phenpath
+                       ,lwidth_nltree,q10_c3,q10_c4,thetacrit,quantum_efficiency_t         &
+                       ,n_plant_lim,n_decomp_lim,include_fire,sm_fire,ianth_disturb        &
+                       ,icanturb,include_these_pft,agri_stock,plantation_stock             &
+                       ,pft_1st_check,maxpatch,maxcohort,treefall_disturbance_rate         &
+                       ,time2canopy,iprintpolys,npvars,printvars,pfmtstr,ipmin,ipmax       &
+                       ,imetrad,iphenys1,iphenysf,iphenyf1,iphenyff,iedcnfgf,event_file    &
+                       ,phenpath
 
    !----- Initialise some database variables with a non-sense path. -----------------------!
    soil_database   (:) = undef_path
@@ -314,8 +322,12 @@ subroutine read_ednl(iunit,filename)
       write (unit=*,fmt=*) ' h2o_plant_lim             =',h2o_plant_lim
       write (unit=*,fmt=*) ' vmfact_c3                 =',vmfact_c3
       write (unit=*,fmt=*) ' vmfact_c4                 =',vmfact_c4
-      write (unit=*,fmt=*) ' mphoto_c3                 =',mphoto_c3
+      write (unit=*,fmt=*) ' mphoto_trc3               =',mphoto_trc3
+      write (unit=*,fmt=*) ' mphoto_tec3               =',mphoto_tec3
       write (unit=*,fmt=*) ' mphoto_c4                 =',mphoto_c4
+      write (unit=*,fmt=*) ' bphoto_blc3               =',bphoto_blc3
+      write (unit=*,fmt=*) ' bphoto_nlc3               =',bphoto_nlc3
+      write (unit=*,fmt=*) ' bphoto_c4                 =',bphoto_c4
       write (unit=*,fmt=*) ' kw_grass                  =',kw_grass
       write (unit=*,fmt=*) ' kw_tree                   =',kw_tree
       write (unit=*,fmt=*) ' gamma_c3                  =',gamma_c3
@@ -330,6 +342,8 @@ subroutine read_ednl(iunit,filename)
       write (unit=*,fmt=*) ' lwidth_grass              =',lwidth_grass
       write (unit=*,fmt=*) ' lwidth_bltree             =',lwidth_bltree
       write (unit=*,fmt=*) ' lwidth_nltree             =',lwidth_nltree
+      write (unit=*,fmt=*) ' q10_c3                    =',q10_c3
+      write (unit=*,fmt=*) ' q10_c4                    =',q10_c4
       write (unit=*,fmt=*) ' thetacrit                 =',thetacrit
       write (unit=*,fmt=*) ' quantum_efficiency_t      =',quantum_efficiency_t
       write (unit=*,fmt=*) ' n_plant_lim               =',n_plant_lim

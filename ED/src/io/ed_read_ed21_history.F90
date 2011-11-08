@@ -354,12 +354,12 @@ subroutine read_ed21_history_file
          memsize(1)   = int(1,8)            ! On both sides
          chnkoffs(1)  = int(dset_nzg - 1,8) ! Take the top layer, not the bottom
          memoffs(1)   = 0_8
-         globdims(2) = int(pysi_n(py_index),8)
-         chnkdims(2) = int(pysi_n(py_index),8)
-         memdims(2)  = int(pysi_n(py_index),8)
-         memsize(2)  = int(pysi_n(py_index),8)
-         chnkoffs(2) = 0_8
-         memoffs(2)  = 0_8
+         globdims(2)  = int(dset_npolygons_global,8)
+         chnkdims(2)  = 1_8
+         memdims(2)   = 1_8
+         memsize(2)   = 1_8
+         chnkoffs(2)  = int(py_index - 1,8)
+         memoffs(2)   = 0_8
          call hdf_getslab_i(cgrid%ntext_soil(nzg:nzg,ipy),'NTEXT_SOIL ',dsetrank           &
                            ,iparallel,.true.)
          !----- Now fill the soil column based on the top layer data. ---------------------!

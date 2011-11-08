@@ -71,9 +71,12 @@ module physiology_coms
    !                                                                                       !
    ! VMFACT_C3     -- Factor multiplying the default Vm0 for C3 plants (1.0 = default).    !
    ! VMFACT_C4     -- Factor multiplying the default Vm0 for C4 plants (1.0 = default).    !
-   ! MPHOTO_C3     -- Stomatal slope (M) for tropical C3 plants.  Conifers and temperate   !
-   !                  plants will be scaled by MPHOTO_C3 * 6.4 / 8.0                       !
+   ! MPHOTO_TRC3   -- Stomatal slope (M) for tropical C3 plants                            !
+   ! MPHOTO_TEC3   -- Stomatal slope (M) for conifers and temperate C3 plants              !
    ! MPHOTO_C4     -- Stomatal slope (M) for C4 plants.                                    !
+   ! BPHOTO_BLC3   -- cuticular conductance for broadleaf C3 plants  [umol/m2/s]           !
+   ! BPHOTO_NLC3   -- cuticular conductance for needleleaf C3 plants [umol/m2/s]           !
+   ! BPHOTO_C4     -- cuticular conductance for C4 plants            [umol/m2/s]           !
    ! KW_GRASS      -- Water conductance for trees, in m2/yr/kgC_root.  This is used only   !
    !                  when H2O_PLANT_LIM is not 0.                                         !
    ! KW_TREE       -- Water conductance for grasses, in m2/yr/kgC_root.  This is used only !
@@ -100,11 +103,17 @@ module physiology_coms
    ! LWIDTH_NLTREE -- Leaf width for trees, in metres.  This controls the leaf boundary    !
    !                  layer conductance (gbh and gbw).  This is applied to conifer trees   !
    !                  only.                                                                !
+   ! Q10_C3        -- Q10 factor for C3 plants (used only if IPHYSIOL is set to 2 or 3).   !
+   ! Q10_C4        -- Q10 factor for C4 plants (used only if IPHYSIOL is set to 2 or 3).   !
    !---------------------------------------------------------------------------------------!
    real(kind=4)               :: vmfact_c3
    real(kind=4)               :: vmfact_c4
-   real(kind=4)               :: mphoto_c3
+   real(kind=4)               :: mphoto_trc3
+   real(kind=4)               :: mphoto_tec3
    real(kind=4)               :: mphoto_c4
+   real(kind=4)               :: bphoto_blc3
+   real(kind=4)               :: bphoto_nlc3
+   real(kind=4)               :: bphoto_c4
    real(kind=4)               :: kw_grass
    real(kind=4)               :: kw_tree
    real(kind=4)               :: gamma_c3
@@ -119,6 +128,8 @@ module physiology_coms
    real(kind=4)               :: lwidth_grass
    real(kind=4)               :: lwidth_bltree
    real(kind=4)               :: lwidth_nltree
+   real(kind=4)               :: q10_c3
+   real(kind=4)               :: q10_c4
    !---------------------------------------------------------------------------------------!
 
    !---------------------------------------------------------------------------------------!
