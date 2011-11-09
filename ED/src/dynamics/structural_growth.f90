@@ -504,7 +504,12 @@ subroutine plant_structural_allocation(ipft,hite,lat,month,phen_status,f_bseeds,
          f_bseeds = r_fract(ipft)
       end if !!end Grass loop
       
-      f_bdead  = 1.0 - st_fract(ipft) - f_bseeds
+      if (is_grass(ipft)) then
+          f_bdead = 0.0
+      else
+          f_bdead  = 1.0 - st_fract(ipft) - f_bseeds
+      end if
+      
    else
       f_bdead  = 0.0
       f_bseeds = 0.0

@@ -1035,7 +1035,9 @@ subroutine alloc_plant_c_balance_grass(csite,ipa,ico,salloc,salloci,carbon_balan
                             , hgt_max      & ! intent(in)
                             , c2n_stem     ! ! intent(in)
    use decomp_coms   , only : f_labile     ! ! intent(in)
-   use allometry     , only : bl2h         ! ! function
+   use allometry     , only : bl2h         & ! function
+                            , h2dbh        & ! function
+                            , dbh2h        ! ! function
    implicit none
    !----- Arguments. -------------------------------------------------------------------!
    type(sitetype) , target        :: csite
@@ -1071,6 +1073,7 @@ subroutine alloc_plant_c_balance_grass(csite,ipa,ico,salloc,salloci,carbon_balan
    real                           :: tr_bsapwooda
    real                           :: tr_bsapwoodb
    real                           :: bl
+   real                           :: dbh_to_height
    logical                        :: on_allometry
    logical                        :: time_to_flush
    !------------------------------------------------------------------------------------!
@@ -1125,7 +1128,17 @@ subroutine alloc_plant_c_balance_grass(csite,ipa,ico,salloc,salloci,carbon_balan
          
          !----- update height for grasses to match new leaf mass -----------------------!
          cpatch%hite(ico) = bl2h(cpatch%bleaf(ico), ipft)
+         cpatch%dbh(ico)  = h2dbh(cpatch%hite(ico), ipft) !--effective_dbh value for grasses
              
+         !---ALS===
+         ! testing h2dbh against dbh2h to make sure that they get the same value -------!
+         dbh_to_height = dbh2h(ipft, cpatch%dbh(ico))
+         if (abs(cpatch%hite(ico) - dbh_to_height) > epsilon(1.)) then
+             write (unit=*,fmt='(a,1x,es12.4)') '   - dbh_to_height:      ',dbh_to_height
+             write (unit=*,fmt='(a,1x,es12.4)') '   - height:             ',cpatch%hite(ico)
+         end if
+         !---ALS===
+         
          !----- put remaining carbon in the storage pool -------------------------------!
          cpatch%bstorage(ico) = max(0.0, cpatch%bstorage(ico) + increment)
          !------------------------------------------------------------------------------!
