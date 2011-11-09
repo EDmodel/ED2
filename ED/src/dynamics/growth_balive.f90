@@ -38,6 +38,8 @@ module growth_balive
                                  , ed_biomass             ! ! function
       use mortality       , only : mortality_rates        ! ! subroutine
       use phenology_coms  , only : theta_crit             ! ! intent(in)
+      use fuse_fiss_utils , only : sort_cohorts           ! ! subroutine
+      
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
       type(edtype)     , target     :: cgrid
@@ -191,9 +193,15 @@ module growth_balive
                   balive_in = cpatch%balive(ico)
 
                   if(is_grass(ipft)) then
+                      !--may want to...
+                      !--- check carbon balance over the current month to test if this 
+                      !--- cohort should be terminated 
+                      !if cb_act/cb_max xxx ! monthly carbon balance is 
+                      
                       call alloc_plant_c_balance_grass(csite,ipa,ico,salloc,salloci        &
                                                 ,carbon_balance,nitrogen_uptake            &
                                                 ,cpoly%green_leaf_factor(ipft,isi))
+                      call sort_cohorts(cpatch)
 	              else
                       call alloc_plant_c_balance(csite,ipa,ico,salloc,salloci              &
                                                 ,carbon_balance,nitrogen_uptake            &
@@ -1199,6 +1207,8 @@ subroutine alloc_plant_c_balance_grass(csite,ipa,ico,salloc,salloci,carbon_balan
       !   Carbon balance is negative, take it out of storage.                           !
       !---------------------------------------------------------------------------------!
       increment =  cpatch%bstorage(ico) + carbon_balance
+      
+
 
       if (increment <= 0.0)  then  !-- carbon_balance > bstorage
          !----- Take carbon from the Storage pool first --------------------------------!

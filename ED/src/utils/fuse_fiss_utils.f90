@@ -628,11 +628,14 @@ module fuse_fiss_utils
 
       use ed_state_vars        , only : patchtype              ! ! structure
       use pft_coms             , only : q                      & ! intent(in), lookup table
-                                      , qsw                    ! ! intent(in), lookup table
+                                      , qsw                    & ! intent(in), lookup table
+                                      , is_grass               ! ! intent(in)
       use fusion_fission_coms  , only : lai_tol                ! ! intent(in)
       use ed_max_dims          , only : n_pft                  ! ! intent(in)
       use allometry            , only : dbh2h                  & ! function
                                       , bd2dbh                 & ! function
+                                      , bl2dbh                 & ! function
+                                      , bl2h                   & ! function
                                       , dbh2bd                 ! ! function
       use ed_misc_coms         , only : iqoutput               & ! intent(in)
                                       , imoutput               & ! intent(in)
@@ -783,13 +786,25 @@ module fuse_fiss_utils
                !---------------------------------------------------------------------------!
 
                !----- Tweaking bdead, to ensure carbon is conserved. ----------------------!
-               cpatch%bdead(ico)  = cpatch%bdead(ico) * (1.-epsilon)
-               cpatch%dbh  (ico)  = bd2dbh(cpatch%pft(ico), cpatch%bdead(ico))
-               cpatch%hite (ico)  = dbh2h(cpatch%pft(ico), cpatch%dbh(ico))
+               if (is_grass(cpatch%pft(ico))) then 
+                   !-- use bleaf for grass
+                   cpatch%bleaf(ico)  = cpatch%bleaf(ico) * (1.-epsilon)
+                   cpatch%dbh  (ico)  = bl2dbh(cpatch%bleaf(ico), cpatch%pft(ico))
+                   cpatch%hite (ico)  = bl2h(cpatch%bleaf(ico), cpatch%pft(ico))
 
-               cpatch%bdead(inew) = cpatch%bdead(inew) * (1.+epsilon)
-               cpatch%dbh  (inew) = bd2dbh(cpatch%pft(inew), cpatch%bdead(inew))
-               cpatch%hite (inew) = dbh2h(cpatch%pft(inew), cpatch%dbh(inew))
+                   cpatch%bleaf(inew)  = cpatch%bleaf(inew) * (1.+epsilon)
+                   cpatch%dbh  (inew)  = bl2dbh(cpatch%bleaf(inew), cpatch%pft(inew))
+                   cpatch%hite (inew)  = bl2h(cpatch%bleaf(inew), cpatch%pft(inew))               
+               else
+                   !-- use bdead for trees
+                   cpatch%bdead(ico)  = cpatch%bdead(ico) * (1.-epsilon)
+                   cpatch%dbh  (ico)  = bd2dbh(cpatch%pft(ico), cpatch%bdead(ico))
+                   cpatch%hite (ico)  = dbh2h(cpatch%pft(ico), cpatch%dbh(ico))
+
+                   cpatch%bdead(inew) = cpatch%bdead(inew) * (1.+epsilon)
+                   cpatch%dbh  (inew) = bd2dbh(cpatch%pft(inew), cpatch%bdead(inew))
+                   cpatch%hite (inew) = dbh2h(cpatch%pft(inew), cpatch%dbh(inew))
+               end if
                !---------------------------------------------------------------------------!
 
             end if
@@ -1099,11 +1114,14 @@ module fuse_fiss_utils
    subroutine fuse_2_cohorts(cpatch,donc,recc, newn,green_leaf_factor, can_prss,lsl)
       use ed_state_vars , only : patchtype              ! ! Structure
       use pft_coms      , only : q                      & ! intent(in), lookup table
-                               , qsw                    ! ! intent(in), lookup table
+                               , qsw                    & ! intent(in), lookup table
+                               , is_grass               ! ! intent(in)
       use therm_lib     , only : qwtk                   & ! subroutine
                                , rslif                  ! ! function
       use allometry     , only : dbh2krdepth            & ! function
                                , bd2dbh                 & ! function
+                               , bl2dbh                 & ! function
+                               , bl2h                   & ! function
                                , dbh2h                  ! ! function
       use ed_max_dims   , only : n_mort                 ! ! intent(in)
       use ed_misc_coms  , only : imoutput               & ! intent(in)
@@ -1147,12 +1165,23 @@ module fuse_fiss_utils
 
 
       !----- Conserve carbon by calculating bdead first. ----------------------------------!
-      cpatch%bdead(recc) = ( cpatch%nplant(recc) * cpatch%bdead(recc)                      &
-                           + cpatch%nplant(donc) * cpatch%bdead(donc) ) * newni
-
       !----- Then get dbh and hite from bdead. --------------------------------------------!
-      cpatch%dbh(recc)   = bd2dbh(cpatch%pft(recc), cpatch%bdead(recc))
-      cpatch%hite(recc)  = dbh2h(cpatch%pft(recc),  cpatch%dbh(recc))
+      if (is_grass(cpatch%pft(donc))) then
+          !--use bleaf for grass
+          cpatch%bleaf(recc) = ( cpatch%nplant(recc) * cpatch%bleaf(recc)                  &
+                               + cpatch%nplant(donc) * cpatch%bleaf(donc) ) * newni
+          cpatch%dbh(recc)   = bl2dbh(cpatch%bleaf(recc), cpatch%pft(recc))
+          cpatch%hite(recc)  = bl2h  (cpatch%bleaf(recc), cpatch%pft(recc))
+      else
+          !--use bdead for trees
+          cpatch%bdead(recc) = ( cpatch%nplant(recc) * cpatch%bdead(recc)                  &
+                               + cpatch%nplant(donc) * cpatch%bdead(donc) ) * newni
+          cpatch%dbh(recc)   = bd2dbh(cpatch%pft(recc), cpatch%bdead(recc))
+          cpatch%hite(recc)  = dbh2h(cpatch%pft(recc),  cpatch%dbh(recc))
+      end if
+
+
+
 
 
       !------------------------------------------------------------------------------------!
