@@ -461,7 +461,10 @@ subroutine pheninit_balive_bstorage(mzg,csite,ipa,ico,ntext_soil,green_leaf_fact
    end if
    !---------------------------------------------------------------------------------------!
 
-
+!--ALS - for the time being, lets set grass phenology_status to 0 always (evergreen)
+   if (is_grass(ipft)) then
+       cpatch%phenology_status(ico) = 0
+   end if
 
    !----- Compute the biomass of living tissues. ------------------------------------------!
    salloc               = 1.0 + q(ipft) + qsw(ipft) * cpatch%hite(ico)

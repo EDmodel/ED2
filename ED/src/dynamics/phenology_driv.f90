@@ -420,7 +420,7 @@ subroutine update_phenology(doy, cpoly, isi, lat)
             cpatch%elongf(ico) = max(0.0, min (1.0, cpatch%paw_avg(ico)/theta_crit))
             if (is_grass(ipft)) then
                 !--use height for grass
-                bl_max         = cpatch%elongf(ico) * h2bl(  cpatch%hite(ico),ipft)
+                bl_max         = cpatch%elongf(ico) * cpatch%bleaf(ico)
             else
                 !--use dbh for trees
                 bl_max         = cpatch%elongf(ico) * dbh2bl(cpatch%dbh(ico) ,ipft)

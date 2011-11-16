@@ -32,12 +32,8 @@ forestry.o: allometry.mod disturb_coms.mod disturbance_utils.mod ed_max_dims.mod
 forestry.o: ed_state_vars.mod fuse_fiss_utils.mod grid_coms.mod
 growth_balive.o: allometry.mod consts_coms.mod decomp_coms.mod ed_max_dims.mod
 growth_balive.o: ed_misc_coms.mod ed_state_vars.mod ed_therm_lib.mod
-growth_balive.o: grid_coms.mod mortality.mod pft_coms.mod phenology_coms.mod
-growth_balive.o: physiology_coms.mod
-growth_balive_testing.o: allometry.mod consts_coms.mod decomp_coms.mod
-growth_balive_testing.o: ed_max_dims.mod ed_misc_coms.mod ed_state_vars.mod
-growth_balive_testing.o: ed_therm_lib.mod grid_coms.mod mortality.mod
-growth_balive_testing.o: pft_coms.mod phenology_coms.mod physiology_coms.mod
+growth_balive.o: fuse_fiss_utils.mod grid_coms.mod mortality.mod pft_coms.mod
+growth_balive.o: phenology_coms.mod physiology_coms.mod
 heun_driver.o: canopy_air_coms.mod canopy_struct_dynamics.mod consts_coms.mod
 heun_driver.o: ed_max_dims.mod ed_misc_coms.mod ed_state_vars.mod grid_coms.mod
 heun_driver.o: hydrology_coms.mod met_driver_coms.mod rk4_coms.mod
@@ -253,7 +249,7 @@ farq_leuning.mod: farq_leuning.o
 fuse_fiss_utils.mod: fuse_fiss_utils.o
 fusion_fission_coms.mod: fusion_fission_coms.o
 grid_coms.mod: grid_coms.o
-growth_balive.mod: growth_balive_testing.o
+growth_balive.mod: growth_balive.o
 hdf5_coms.mod: hdf5_coms.o
 hdf5_utils.mod: hdf5_utils.o
 hydrology_coms.mod: hydrology_coms.o

@@ -252,7 +252,8 @@ module allometry
    !=======================================================================================!
    !=======================================================================================!
    real function bl2h(bleaf,ipft)
-
+      use pft_coms, only:  hgt_max     ! ! intent(in), lookup table
+      
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       real   , intent(in) :: bleaf
@@ -261,7 +262,10 @@ module allometry
       
       !---Use existing allometric equations to convert leaves to height
       bl2h = dbh2h(ipft,bl2dbh(bleaf,ipft))
-
+      
+      if (bl2h > hgt_max(ipft)) then
+          bl2h = hgt_max(ipft)
+      end if
 
       return
    end function bl2h

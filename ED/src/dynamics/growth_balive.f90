@@ -1100,7 +1100,7 @@ subroutine alloc_plant_c_balance_grass(csite,ipa,ico,salloc,salloci,carbon_balan
                    (cpatch%phenology_status(ico) == 1) 
 
    if (carbon_balance > 0.0 .or. time_to_flush) then 
-      if (cpatch%hite(ico) < hgt_max(ipft)) then ! - could use repro_min_h here instead
+      if ((cpatch%hite(ico) + epsilon(1.)) < hgt_max(ipft)) then ! - could use repro_min_h here instead
          !------------------------------------------------------------------------------!
          ! The grass is in a vegetative growth phase, put carbon into growth.           !
          ! if plant is drought stressed (elongf<1) then allow partial growth            !
@@ -1135,7 +1135,7 @@ subroutine alloc_plant_c_balance_grass(csite,ipa,ico,salloc,salloci,carbon_balan
          cpatch%today_nppdaily(ico)  = carbon_balance * cpatch%nplant(ico)
          
          !----- update height for grasses to match new leaf mass -----------------------!
-         cpatch%hite(ico) = bl2h(cpatch%bleaf(ico), ipft)
+         cpatch%hite(ico) = min(hgt_max(ipft), bl2h(cpatch%bleaf(ico), ipft))  !just in case the plant wants to grow too much this particular day
          cpatch%dbh(ico)  = h2dbh(cpatch%hite(ico), ipft) !--effective_dbh value for grasses
              
          !---ALS===
@@ -1254,13 +1254,13 @@ subroutine alloc_plant_c_balance_grass(csite,ipa,ico,salloc,salloci,carbon_balan
       cpatch%today_nppdaily(ico)   = carbon_balance * cpatch%nplant(ico)
    end if
 
+   write (unit=*,fmt='(a,1x,i12)')    '   ----COHORT:        ',ico
    write (unit=*,fmt='(a,1x,es12.4)') '   - CARBON BAL:      ',carbon_balance
-   write (unit=*,fmt='(a,1x,es12.4)') '   - ELONGF:          ',cpatch%elongf(ico)
+   write (unit=*,fmt='(a,1x,es12.4)') '   - HITE:            ',cpatch%hite(ico)
    write (unit=*,fmt='(a,1x,es12.4)') '   - BLEAF:           ',cpatch%bleaf(ico)
-   write (unit=*,fmt='(a,1x,es12.4)') '   - BROOT:           ',cpatch%broot(ico)
-   write (unit=*,fmt='(a,1x,es12.4)') '   - BSAPWOODA:       ',cpatch%bsapwooda(ico)
-   write (unit=*,fmt='(a,1x,es12.4)') '   - BSAPWOODB:       ',cpatch%bsapwoodb(ico)
-   write (unit=*,fmt='(a,1x,es12.4)') '   - TODAY_GPP:       ',cpatch%today_gpp(ico)
+   write (unit=*,fmt='(a,1x,es12.4)') '   - BDEAD:           ',cpatch%bdead(ico)
+   write (unit=*,fmt='(a,1x,i12)') '   - PHENOLOGY_STATUS:',cpatch%phenology_status(ico)
+   write (unit=*,fmt='(a,1x,es12.4)') '   - ELONGF:          ',cpatch%elongf(ico)
          
    return
 end subroutine alloc_plant_c_balance_grass
@@ -1304,7 +1304,7 @@ end subroutine alloc_plant_c_balance_grass
          N_uptake_pot = N_uptake_pot + carbon_balance_pot / c2n_storage
 
       elseif (cpatch%phenology_status(ico) == 1) then
-         ! this calculation of bl_max is wrong for grass, but they cant have phenology_status=1 yet
+         ! this calculation of bl_max is wrong for grass, but they should not have phenology_status=1 yet
          bl_max = dbh2bl(cpatch%dbh(ico),ipft) * green_leaf_factor * cpatch%elongf(ico)
          bl_pot = cpatch%bleaf(ico) + carbon_balance_pot
 

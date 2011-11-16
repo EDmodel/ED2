@@ -27,6 +27,7 @@ subroutine reproduction(cgrid, month)
                                  , q                     & ! intent(in)
                                  , sla                   & ! intent(in)
                                  , hgt_min               & ! intent(in)
+                                 , is_grass              & ! intent(in)
                                  , plant_min_temp        ! ! intent(in)
    use decomp_coms        , only : f_labile              ! ! intent(in)
    use ed_max_dims        , only : n_pft                 ! ! intent(in)
@@ -41,6 +42,8 @@ subroutine reproduction(cgrid, month)
    use allometry          , only : dbh2bd                & ! function
                                  , dbh2bl                & ! function
                                  , h2dbh                 & ! function
+                                 , h2bl                  & ! function
+                                 , dbh2h                 & ! function
                                  , ed_biomass            & ! function
                                  , area_indices          ! ! subroutine
    use grid_coms          , only : nzg                   ! ! intent(in)
@@ -149,11 +152,19 @@ subroutine reproduction(cgrid, month)
                      rectest%pft       = ipft
                      rectest%leaf_temp = csite%can_temp(ipa)
                      rectest%wood_temp = csite%can_temp(ipa)
+                     !- recruits start at minimum height and dbh and bleaf are calculated from that
                      rectest%hite      = hgt_min(ipft)
                      rectest%dbh       = h2dbh(rectest%hite, ipft)
-                     !--Do I need to remove this assignment to bdead for grasses? ---ALS===
-                     rectest%bdead     = dbh2bd(rectest%dbh, ipft)
-                     rectest%bleaf     = dbh2bl(rectest%dbh, ipft)
+                     
+                     if (is_grass(ipft)) then
+                         !-- set bdead to zero for grasses
+                         rectest%bdead     = 0.0
+                         rectest%bleaf     = h2bl(rectest%hite, ipft)
+                      else
+                         rectest%bdead     = dbh2bd(rectest%dbh, ipft)
+                         rectest%bleaf     = dbh2bl(rectest%dbh, ipft)
+                     end if
+                     
                      rectest%balive    = rectest%bleaf                                     &
                                        * (1.0 + q(ipft) + qsw(ipft) * rectest%hite)
                      rectest%nplant    = csite%repro(ipft,ipa)                             &
@@ -228,6 +239,8 @@ subroutine reproduction(cgrid, month)
                   cpatch%pft(ico)       = recruit(inew)%pft
                   cpatch%hite(ico)      = recruit(inew)%hite
                   cpatch%dbh(ico)       = recruit(inew)%dbh
+                  
+
                   !------------------------------------------------------------------------!
 
                   !----- Carry out standard initialization. -------------------------------!
@@ -240,7 +253,6 @@ subroutine reproduction(cgrid, month)
                   cpatch%nplant(ico)    = recruit(inew)%nplant
                   !------------------------------------------------------------------------!
 
-
                   !------------------------------------------------------------------------!
                   !     Even though we brought leaf biomass and biomass of the active      !
                   ! tissues, we will make them consistent with the initial amount of water !
@@ -249,7 +261,11 @@ subroutine reproduction(cgrid, month)
                   call pheninit_balive_bstorage(nzg,csite,ipa,ico,cpoly%ntext_soil(:,isi)  &
                                                ,cpoly%green_leaf_factor(:,isi))
                   !------------------------------------------------------------------------!
-
+      write (unit=*,fmt='(a,1x,i6)') ' ------New Recruit, ico:', ico
+      write (unit=*,fmt='(a,1x,es12.4)') ' - H from DBH:    ',dbh2h(cpatch%pft(ico),cpatch%dbh(ico))
+      write (unit=*,fmt='(a,1x,es12.4)') ' - HEIGHT:        ',cpatch%hite(ico)
+      write (unit=*,fmt='(a,1x,es12.4)') ' - BLEAF:         ',cpatch%bleaf(ico)
+      write (unit=*,fmt='(a,1x,es12.4)') ' - BDEAD:         ',cpatch%bdead(ico)
 
                   !----- Assign temperature after init_ed_cohort_vars... ------------------!
                   cpatch%leaf_temp(ico)  = recruit(inew)%leaf_temp

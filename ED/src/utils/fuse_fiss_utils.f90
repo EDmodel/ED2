@@ -497,7 +497,9 @@ module fuse_fiss_utils
                                                      + cpatch%bdead(recc)                  &
                                                      + cpatch%bstorage(recc) )
 
-
+                  
+                  
+                  
                   !------------------------------------------------------------------------!
                   !    Five conditions must be met to allow two cohorts to be fused:       !
                   ! 1. Both cohorts must have the same PFT;                                !

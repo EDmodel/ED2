@@ -45,6 +45,7 @@ subroutine structural_growth(cgrid, month)
    real                          :: salloci
    real                          :: balive_in
    real                          :: bdead_in
+   real                          :: bleaf_in
    real                          :: hite_in
    real                          :: dbh_in
    real                          :: nplant_in
@@ -90,6 +91,7 @@ subroutine structural_growth(cgrid, month)
                !----- Remember inputs in order to calculate increments later on. ----------!
                balive_in   = cpatch%balive(ico)
                bdead_in    = cpatch%bdead(ico)
+               bleaf_in    = cpatch%bleaf(ico)
                hite_in     = cpatch%hite(ico)
                dbh_in      = cpatch%dbh(ico)
                nplant_in   = cpatch%nplant(ico)
@@ -124,7 +126,7 @@ subroutine structural_growth(cgrid, month)
                !----- Grow plants; bdead gets fraction f_bdead of bstorage. ---------------!
                cpatch%bdead(ico) = cpatch%bdead(ico) + f_bdead * cpatch%bstorage(ico)
 
-
+               
                !------ NPP allocation to wood and course roots in KgC /m2 -----------------!
                cpatch%today_NPPwood(ico) = agf_bs * f_bdead * cpatch%bstorage(ico)         &
                                           * cpatch%nplant(ico)
@@ -482,7 +484,7 @@ subroutine plant_structural_allocation(ipft,hite,lat,month,phen_status,f_bseeds,
    ! deciduous plants), or if the plants are actively dropping leaves or off allometry.    !
    !---------------------------------------------------------------------------------------!
    if ((phenology(ipft) /= 2   .or.  late_spring) .and. phen_status == 0)    then
-
+         
          !---------------------------------------------------------------------------------!
          !---ALS=== This is where allocation to seeds is occuring.  It will need to be 
          ! modified but I'm leaving it for later --- GRASSES!  Want to add a functional form
@@ -490,32 +492,40 @@ subroutine plant_structural_allocation(ipft,hite,lat,month,phen_status,f_bseeds,
          ! growth_balive since it isn't actually structural growth
          !---------------------------------------------------------------------------------!
          
-      if (is_grass(ipft) .and. (hite + epsilon(1.)) >= hgt_max(ipft)) then !!Grass loop
-         !---------------------------------------------------------------------------------!
-         !    Grasses have reached the maximum height, stop growing in size and send       !
-         ! everything to reproduction.                                                     !
-         !---------------------------------------------------------------------------------!
-         f_bseeds = 1.0 - st_fract(ipft)
-      elseif (hite <= repro_min_h(ipft)) then
+      if (is_grass(ipft)) then !!Grass loop
+          if ((hite + epsilon(1.)) >= hgt_max(ipft)) then 
+             !-----------------------------------------------------------------------------!
+             !    Grasses have reached the maximum height, stop growing in size and send   !
+             ! everything to reproduction.                                                 !
+             !-----------------------------------------------------------------------------!
+             f_bseeds = 1.0 - st_fract(ipft)
+             f_bdead = 0.0
+          elseif ((hite + epsilon(1.)) <= repro_min_h(ipft)) then
+             !----- The plant is too short, invest as much as it can in growth. -----------!
+             f_bseeds = 0.0
+             f_bdead = 0.0
+          else ! repro_min_h < hite< hgt_max
+             !----- Plant is with a certain height, use prescribed reproduction rate. -----!
+             f_bseeds = r_fract(ipft)
+             f_bdead = 0.0
+          end if
+      elseif (hite <= repro_min_h(ipft)) then !! Tree loop
          !----- The plant is too short, invest as much as it can in growth. ---------------!
          f_bseeds = 0.0
+         f_bdead  = 1.0 - st_fract(ipft) - f_bseeds 
       else
          !----- Plant is with a certain height, use prescribed reproduction rate. ---------!
          f_bseeds = r_fract(ipft)
+         f_bdead  = 1.0 - st_fract(ipft) - f_bseeds 
       end if !!end Grass loop
-      
-      if (is_grass(ipft)) then
-          f_bdead = 0.0
-      else
-          f_bdead  = 1.0 - st_fract(ipft) - f_bseeds
-      end if
-      
    else
       f_bdead  = 0.0
       f_bseeds = 0.0
    end if 
    !---------------------------------------------------------------------------------------!
-          
+      write (unit=*,fmt='(a)') '------------allocation to repro----------'
+      write (unit=*,fmt='(a,1x,es12.4)') ' - f_bseeds:  ',f_bseeds
+      write (unit=*,fmt='(a,1x,es12.4)') ' - f_bdead:   ',f_bdead
    return
 end subroutine plant_structural_allocation
 !==========================================================================================!
@@ -590,7 +600,7 @@ subroutine update_derived_cohort_props(cpatch,ico,green_leaf_factor,lsl)
       
       if (is_grass(ipft)) then
       !---ALS== not sure what maximum leaf should be for grasses?  Use actual leaves for now.
-          bl_max = h2bl(cpatch%bleaf(ico),ipft)
+          bl_max = cpatch%bleaf(ico)
       else
           bl_max = dbh2bl(cpatch%dbh(ico),ipft) * green_leaf_factor * cpatch%elongf(ico)
       end if

@@ -116,6 +116,7 @@ subroutine init_nbg_cohorts(csite,lsl,ipa_a,ipa_z)
                                  , include_these_pft  & ! intent(in)
                                  , include_pft_ag     & ! intent(in)
                                  , init_density       & ! intent(in)
+                                 , is_grass           & ! intent(in)
                                  , agf_bs             ! ! intent(in)
    use consts_coms        , only : t3ple              & ! intent(in)
                                  , pio4               & ! intent(in)
@@ -124,6 +125,7 @@ subroutine init_nbg_cohorts(csite,lsl,ipa_a,ipa_z)
    use allometry          , only : h2dbh              & ! function
                                  , dbh2bd             & ! function
                                  , dbh2bl             & ! function
+                                 , h2bl               & ! function
                                  , ed_biomass         & ! function
                                  , area_indices       ! ! subroutine
    use fuse_fiss_utils    , only : sort_cohorts    ! ! subroutine
@@ -208,8 +210,15 @@ subroutine init_nbg_cohorts(csite,lsl,ipa_a,ipa_z)
          cpatch%phenology_status(ico) = 0
          cpatch%bstorage(ico)         = 0.0
          cpatch%dbh(ico)              = h2dbh(cpatch%hite(ico),ipft)
-         cpatch%bdead(ico)            = dbh2bd(cpatch%dbh(ico),ipft)
-         cpatch%bleaf(ico)            = dbh2bl(cpatch%dbh(ico),ipft) !-ok for grasses, comes from height
+         if (is_grass(ipft)) then
+             ! - grasses have no bdead and bleaf is calculated from height
+             cpatch%bdead(ico)        = 0.0
+             cpatch%bleaf(ico)        = h2bl(cpatch%hite(ico),ipft) 
+         else
+             ! - tree
+             cpatch%bdead(ico)        = dbh2bd(cpatch%dbh(ico),ipft)
+             cpatch%bleaf(ico)        = dbh2bl(cpatch%dbh(ico),ipft) 
+         end if
          cpatch%sla(ico)              = sla(ipft)
 
 
