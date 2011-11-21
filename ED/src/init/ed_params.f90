@@ -1242,7 +1242,7 @@ subroutine init_pft_photo_params()
    D0(9:11)                  = 0.010
    D0(12:13)                 = 0.010
    D0(14:15)                 = 0.010
-   D0(16)                    = 0.015  ! 0.010 * d0fact
+   D0(16)                    = 0.02  ! 0.010 * d0fact
    D0(17)                    = 0.015  ! 0.010 * d0fact
 
    Vm_low_temp(1)            = 13.0             ! c4 grass
@@ -1295,7 +1295,7 @@ subroutine init_pft_photo_params()
 
 
    !------ Vm0 is the maximum photosynthesis capacity in µmol/m2/s. -----------------------!
-   Vm0(1)                    = 13.75  ! 12.500 * vmfact
+   Vm0(1)                    = 12.5  ! 12.500 * vmfact
    Vm0(2)                    = 18.750 ! 18.750 * vmfact
    Vm0(3)                    = 12.500  ! 12.500 * vmfact
    Vm0(4)                    =  6.250 !  6.250 * vmfact
@@ -1308,7 +1308,7 @@ subroutine init_pft_photo_params()
    Vm0(11)                   =  6.981 !  6.250 * 1.1171
    Vm0(12:13)                = 18.300 ! 18.300
    Vm0(14:15)                = 15.000 ! 12.500 * vmfact
-   Vm0(16)                   = 24.0625 ! 21.875 * vmfact
+   Vm0(16)                   = 25*1.2 ! 21.875 * vmfact
    Vm0(17)                   = 18.750 ! 15.625 * vmfact
    !---------------------------------------------------------------------------------------!
 
@@ -1330,7 +1330,7 @@ subroutine init_pft_photo_params()
    !---------------------------------------------------------------------------------------!
    !    Dark_respiration_factor is the lower-case gamma in Moorcroft et al. (2001).        !
    !---------------------------------------------------------------------------------------!
-   dark_respiration_factor(1)     = 0.036
+   dark_respiration_factor(1)     = 0.04
    dark_respiration_factor(2)     = 0.015 ! 0.020 * gamfact
    dark_respiration_factor(3)     = 0.015 ! 0.020 * gamfact
    dark_respiration_factor(4)     = 0.015 ! 0.020 * gamfact
@@ -1432,7 +1432,7 @@ subroutine init_pft_photo_params()
    quantum_efficiency(13)    = 0.080
    quantum_efficiency(14)    = 0.053
    quantum_efficiency(15)    = 0.053
-   quantum_efficiency(16)    = 0.070 ! 0.08  * alphafact
+   quantum_efficiency(16)    = 0.080 ! 0.08  * alphafact
    quantum_efficiency(17)    = 0.070 ! 0.08  * alphafact
 
    !---------------------------------------------------------------------------------------!
@@ -1560,7 +1560,7 @@ subroutine init_pft_resp_params()
    growth_resp_factor(16)         = onethird
    growth_resp_factor(17)         = 0.4503
 
-   leaf_turnover_rate(1)          = 2.0
+   leaf_turnover_rate(1)          = 4.0
    leaf_turnover_rate(2)          = 1.0
    leaf_turnover_rate(3)          = 0.5
    leaf_turnover_rate(4)          = onethird
@@ -1575,7 +1575,7 @@ subroutine init_pft_resp_params()
    leaf_turnover_rate(13)         = 2.0
    leaf_turnover_rate(14)         = 2.0
    leaf_turnover_rate(15)         = 2.0
-   leaf_turnover_rate(16)         = 2.0
+   leaf_turnover_rate(16)         = 4.0
    leaf_turnover_rate(17)         = onesixth
 
    !----- Root turnover rate.  ------------------------------------------------------------!
@@ -3191,7 +3191,7 @@ subroutine init_physiology_params()
    ! to determine the CO2-limited photosynthesis for C4 grasses.  Notice that Foley et al. !
    ! (1996) didn't correct for molar mass (the mmdoc term here).                           !
    !---------------------------------------------------------------------------------------!
-   klowco2      = 18000. * mmdoc ! coefficient for low CO2                       [ mol/mol]
+   klowco2      = 4000. * mmcod ! coefficient for low CO2                       [ mol/mol]
    !---------------------------------------------------------------------------------------!
 
 
