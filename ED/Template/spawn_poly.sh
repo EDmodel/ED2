@@ -985,10 +985,28 @@ do
          thissfilin=${bioinit}'/pdg_ustein_newallom.'
          ;;
       fns)
-         thissfilin=${bioinit}'/fns.'
+         thissfilin=${bioinit}'/fns_c4.'
+         ;;
+      fns_c4)
+         thissfilin=${bioinit}'/fns_c4.'
+         ;;
+      fns_c3)
+         thissfilin=${bioinit}'/fns_c3.'
+         ;;
+      fns_34)
+         thissfilin=${bioinit}'/fns_c3c4.'
          ;;
       s77)
-         thissfilin=${bioinit}'/km77.'
+         thissfilin=${bioinit}'/km77_c3.'
+         ;;
+      s77_c3)
+         thissfilin=${bioinit}'/km77_c3.'
+         ;;
+      s77_c4)
+         thissfilin=${bioinit}'/km77_c4.'
+         ;;
+      s77_34)
+         thissfilin=${bioinit}'/km77_c3c4.'
          ;;
       cax)
          thissfilin=${bioinit}'/cax06_ustein_newallom.'

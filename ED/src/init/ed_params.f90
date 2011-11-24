@@ -1801,7 +1801,7 @@ subroutine init_pft_resp_params()
    growth_resp_factor(16)         = growthresp
    growth_resp_factor(17)         = 0.4503
 
-   leaf_turnover_rate(1)          = 2.0
+   leaf_turnover_rate(1)          = 4.0
    leaf_turnover_rate(2)          = 1.0
    leaf_turnover_rate(3)          = 0.5
    leaf_turnover_rate(4)          = onethird
@@ -1816,14 +1816,14 @@ subroutine init_pft_resp_params()
    leaf_turnover_rate(13)         = 2.0
    leaf_turnover_rate(14)         = 2.0
    leaf_turnover_rate(15)         = 2.0
-   leaf_turnover_rate(16)         = 2.0
+   leaf_turnover_rate(16)         = 4.0
    leaf_turnover_rate(17)         = onesixth
 
    !----- Root turnover rate.  ------------------------------------------------------------!
-   root_turnover_rate(1)          = 2.0
-   root_turnover_rate(2)          = 1.0
-   root_turnover_rate(3)          = 0.5
-   root_turnover_rate(4)          = onethird
+   root_turnover_rate(1)          = leaf_turnover_rate(1)
+   root_turnover_rate(2)          = leaf_turnover_rate(2)
+   root_turnover_rate(3)          = leaf_turnover_rate(3)
+   root_turnover_rate(4)          = leaf_turnover_rate(4)
    root_turnover_rate(5)          = 2.0
    root_turnover_rate(6)          = 3.927218 ! 0.333
    root_turnover_rate(7)          = 4.117847 ! 0.333
@@ -1833,10 +1833,10 @@ subroutine init_pft_resp_params()
    root_turnover_rate(11)         = 5.070992
    root_turnover_rate(12)         = onethird
    root_turnover_rate(13)         = onethird
-   root_turnover_rate(14)         = 2.0
-   root_turnover_rate(15)         = 2.0
-   root_turnover_rate(16)         = 2.0
-   root_turnover_rate(17)         = onesixth
+   root_turnover_rate(14)         = leaf_turnover_rate(14)
+   root_turnover_rate(15)         = leaf_turnover_rate(15)
+   root_turnover_rate(16)         = leaf_turnover_rate(16)
+   root_turnover_rate(17)         = leaf_turnover_rate(17)
 
    storage_turnover_rate(1)       = 0.00 ! 0.25
    storage_turnover_rate(2)       = 0.00 ! 0.25

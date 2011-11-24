@@ -13475,9 +13475,9 @@ contains
       !------------------------------------------------------------------------------------!
       npts = csite%npatches * n_dbh
 
-      if (associated(csite%co2budget_gpp)) then
+      if (associated(csite%co2budget_gpp_dbh)) then
          nvar=nvar+1
-           call vtable_edio_r(npts,csite%co2budget_gpp,nvar,igr,init,csite%paglob_id, &
+           call vtable_edio_r(npts,csite%co2budget_gpp_dbh,nvar,igr,init,csite%paglob_id, &
            var_len,var_len_global,max_ptrs,'CO2BUDGET_GPP_DBH :36:hist') 
          call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
       end if
