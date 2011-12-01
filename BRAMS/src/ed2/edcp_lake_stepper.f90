@@ -109,7 +109,7 @@ subroutine integrate_lake(dtfull,htryio)
             ! Integrate, then update and correct diagnostic variables to avoid overshoot-  !
             ! ing, provided that the overshooting is small.                                !
             !------------------------------------------------------------------------------!
-            call clone_lakesite  (lake_buff%ytemp,lake_buff%y)
+            call clone_lakesite  (lake_buff%y    ,lake_buff%ytemp)
             call integ_lakesite  (lake_buff%ytemp,lake_buff%dydx,h)
             call lake_diagnostics(lake_buff%ytemp)
 
@@ -145,7 +145,7 @@ subroutine integrate_lake(dtfull,htryio)
             ! ly, so we assign a standard large error (10.0).                              !
             !------------------------------------------------------------------------------!
             errmax = 1.d1
-         elseif (integration_scheme == 1) then
+         elseif (integration_scheme == 0 .or. integration_scheme == 3) then
             !------ Euler scheme, we can't estimate the error, assume it's fine. ----------!
             errmax = 1.d-1
          else
