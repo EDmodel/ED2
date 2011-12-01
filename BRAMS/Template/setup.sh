@@ -4,12 +4,13 @@
 #------------------------------------------------------------------------------------------#
 #   ADJUST SOME VARIABLES HERE!                                                            #
 #------------------------------------------------------------------------------------------#
-locdisk='/n/Moorcroft_Lab/Users'     # Local disk
-remdisk='/n/moorcroftfs1'            # Output directory
-queue='moorcroft2c'                  # Queue to be used
-whena='01-01-1999 00:00'             # Initial time for simulation
-whenz='03-01-1999 00:00'             # Final time for simulation
-isfcl=1                              # 1 = LEAF-3 run, 5 = ED-2.2 run
+here=`pwd`                             # Local disk
+moi=`whoami`                           # User name
+diskthere='/n/scratch2/moorcroft_lab'  # Output directory
+queue='camd'                           # Queue to be used
+whena='08-01-2008 00:00'               # Initial time for simulation
+whenz='09-01-2008 00:00'               # Final time for simulation
+isfcl=5                                # 1 = LEAF-3 run, 5 = ED-2.2 run
 
 #------------------------------------------------------------------------------------------#
 #------------------------------------------------------------------------------------------#
@@ -19,10 +20,58 @@ isfcl=1                              # 1 = LEAF-3 run, 5 = ED-2.2 run
 #   NO NEED TO CHANGE ANYTHING BEYOND THIS POINT UNLESS YOU'RE DEVELOPING THE SCRIPT!      #
 #------------------------------------------------------------------------------------------#
 
-#----- Define some paths and the name of this simulation. ---------------------------------#
-here=`pwd`
-there=`echo ${here} | sed s@${locdisk}@${remdisk}@g` 
+#----- Define the name of this simulation. ------------------------------------------------#
 thissim=`basename ${here}`
+#------------------------------------------------------------------------------------------#
+
+
+
+#------------------------------------------------------------------------------------------#
+#     Check the directories.                                                               #
+#------------------------------------------------------------------------------------------#
+basehere=`basename ${here}`
+dirhere=`dirname ${here}`
+while [ ${basehere} != ${moi} ]
+do
+   basehere=`basename ${dirhere}`
+   dirhere=`dirname ${dirhere}`
+done
+diskhere=${dirhere}
+echo '-------------------------------------------------------------------------------'
+echo ' - Simulation control on disk: '${diskhere}
+echo ' - Output on disk:             '${diskthere}
+echo '-------------------------------------------------------------------------------'
+there=`echo ${here} | sed s@${diskhere}@${diskthere}@g`
+#------------------------------------------------------------------------------------------#
+
+
+
+#------------------------------------------------------------------------------------------#
+#    Make sure that the directory there exists, if not, create all parent directories      #
+# needed.                                                                                  #
+#------------------------------------------------------------------------------------------#
+while [ ! -s ${there} ]
+do
+   namecheck=`basename ${there}`
+   dircheck=`dirname ${there}`
+   while [ ! -s ${dircheck} ] && [ ${namecheck} != '/' ]
+   do
+      namecheck=`basename ${dircheck}`
+      dircheck=`dirname ${dircheck}`
+   done
+   
+   if [ ${namecheck} == '/' ]
+   then
+      echo 'Invalid disk for variable there:'
+      echo ' DISK ='${diskhere}
+      exit 58
+   else
+      echo 'Making directory: '${dircheck}/${namecheck}
+      mkdir ${dircheck}/${namecheck}
+   fi
+done
+#------------------------------------------------------------------------------------------#
+
 
 
 #----- Extract the time from the whena and whenz variables. -------------------------------#
@@ -38,6 +87,10 @@ yearz=`echo ${whenz}  | awk '{print substr($1,7,4)}'`
 hourz=`echo ${whenz}  | awk '{print substr($2,1,2)}'`
 minuz=`echo ${whenz}  | awk '{print substr($2,4,2)}'`
 timez=${hourz}${minuz}
+#------------------------------------------------------------------------------------------#
+
+
+
 
 #------ Decide which soil moisture data set to use. ---------------------------------------#
 if [ ${yeara} -le 2004 ]
@@ -47,6 +100,7 @@ else
    smds='GPNR'
 fi
 #------------------------------------------------------------------------------------------#
+
 
 
 #----- Decide the number of patches based on isfcl. ---------------------------------------#
@@ -62,6 +116,8 @@ else
    echo ' Invalid ISFCL -> '${isfcl}'...'
    exit 1
 fi
+#------------------------------------------------------------------------------------------#
+
 
 echo 'I am going to set up the '${thissim}' simulation...'
 echo ' - Current directory: '${here}
@@ -177,4 +233,6 @@ else
 
    mv tothere ${there}
 fi
+#------------------------------------------------------------------------------------------#
+
 

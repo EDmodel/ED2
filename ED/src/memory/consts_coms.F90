@@ -44,7 +44,7 @@ Module consts_coms
      , b_gr_coeff   => gr_coeff   , b_mmh2oi     => mmh2oi     , b_lnexp_min  => lnexp_min &
      , b_lnexp_max  => lnexp_max  , b_huge_num   => huge_num   , b_tiny_num   => tiny_num  &
      , b_mmo2       => mmo2       , b_mmo3       => mmo3       , b_prefsea    => prefsea   &
-     , b_solar      => solar
+     , b_solar      => solar      , b_euler_gam  => euler_gam
 
    implicit none
 
@@ -104,6 +104,7 @@ Module consts_coms
    real, parameter :: huge_num   = b_huge_num   , tiny_num   = b_tiny_num
    real, parameter :: mmo2       = b_mmo2       , mmo3       = b_mmo3
    real, parameter :: prefsea    = b_prefsea    , solar      = b_solar
+   real, parameter :: euler_gam  = b_euler_gam
    !---------------------------------------------------------------------------------------!
 
 #else
@@ -121,6 +122,7 @@ Module consts_coms
    real, parameter :: pio180     = pi1/ 180.         ! Pi/180 (deg -> rad)      [      ---]
    real, parameter :: pi4        = pi1 * 4.          ! 4 Pi                     [      ---]
    real, parameter :: pio4       = pi1 /4.           ! Pi/4                     [      ---]
+   real, parameter :: euler_gam  = 0.577215664901533 ! Euler's constant         [      ---]
    !---------------------------------------------------------------------------------------!
 
 
@@ -510,6 +512,7 @@ Module consts_coms
    real(kind=8), parameter :: lnexp_max8      = dble(lnexp_max     )
    real(kind=8), parameter :: huge_num8       = dble(huge_num      )
    real(kind=8), parameter :: tiny_num8       = dble(tiny_num      )
+   real(kind=8), parameter :: euler_gam8      = dble(euler_gam     )
    !---------------------------------------------------------------------------------------!
 
 

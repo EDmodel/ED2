@@ -192,7 +192,7 @@ module rpost_coms
    character (len=10)     :: runtype
    character(len=1)       :: timeunit
    character (len=32)     :: vtabcust
-   character(len=80)      :: hfilin,afilin,hfilout,afilout,sfcfiles
+   character(len=str_len) :: hfilin,afilin,hfilout,afilout,sfcfiles
    character(len=20)      :: xlite,ylite,zlite
    !---------------------------------------------------------------------------------------!
 
@@ -215,7 +215,7 @@ module rpost_coms
 
 
    !---------------------------------------------------------------------------------------!
-   character(len=80), dimension(maxgrds) :: itoptfn,isstfn,ivegtfn,isoilfn
+   character(len=str_len), dimension(maxgrds) :: itoptfn,isstfn,ivegtfn,isoilfn
    !---------------------------------------------------------------------------------------!
 
 
@@ -293,8 +293,8 @@ module rpost_coms
 
 
    !---------------------------------------------------------------------------------------!
-   character(len=80)                     :: varfil1,varfil2,varfpfx
-   character(len=80), dimension(maxvarf) :: varfil
+   character(len=str_len)                     :: varfil1,varfil2,varfpfx
+   character(len=str_len), dimension(maxvarf) :: varfil
    !---------------------------------------------------------------------------------------!
 
 
@@ -308,9 +308,9 @@ module rpost_coms
 
 
    !---------------------------------------------------------------------------------------!
-   character(len=80)                             :: sstfpfx
-   character(len=80), dimension(maxgrds)         :: sstfil1,sstfil2
-   character(len=80), dimension(maxsstf,maxgrds) :: vsstfil,sstfil
+   character(len=str_len)                             :: sstfpfx
+   character(len=str_len), dimension(maxgrds)         :: sstfil1,sstfil2
+   character(len=str_len), dimension(maxsstf,maxgrds) :: vsstfil,sstfil
    !---------------------------------------------------------------------------------------!
 
 

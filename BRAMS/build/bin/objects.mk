@@ -336,6 +336,7 @@ OBJ_MODEL =                         \
 	mem_polygons.o              \
 	met_driver_coms.o           \
 	mortality.o                 \
+	multiple_scatter.o          \
 	optimiz_coms.o              \
 	phenology_aux.o             \
 	phenology_coms.o            \

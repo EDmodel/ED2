@@ -95,7 +95,33 @@ Module ed_misc_coms
    real    :: max_poihist_dist
    !---------------------------------------------------------------------------------------!
 
+
+
+
+
+   !---------------------------------------------------------------------------------------!
+   ! IVEGT_DYNAMICS -- The vegetation dynamics scheme.                                     !
+   !                   0.  No vegetation dynamics, the initial state will be preserved,    !
+   !                       even though the model will compute the potential values.  This  !
+   !                       option is useful for theoretical simulations only.              !
+   !                   1.  Normal ED vegetation dynamics (Moorcroft et al 2001).           !
+   !                       The normal option for almost any simulation.                    !
+   !---------------------------------------------------------------------------------------!
+   integer :: ivegt_dynamics
+   !---------------------------------------------------------------------------------------!
+
+
+
+
+   !---------------------------------------------------------------------------------------!
+   ! INTEGRATION_SCHEME -- The biophysics integration scheme.                              !
+   !                       0.  Euler step.  The fastest, but it doesn't estimate           !
+   !                           errors.                                                     !
+   !                       1.  Fourth-order Runge-Kutta method.  ED-2.1 default method     !
+   !                       2.  Heun's method (a second-order Runge-Kutta).                 !
+   !---------------------------------------------------------------------------------------!
    integer :: integration_scheme
+   !---------------------------------------------------------------------------------------!
 
 
    ! Control parameters for printing. Read in the namelist

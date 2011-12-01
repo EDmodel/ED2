@@ -230,7 +230,9 @@ end
 !***************************************************************************
 
 subroutine tokenize(str1,tokens,ntok,toksep,nsep)
-character*(*) str1,tokens(*),str*256
+use rpost_dims, only : str_len
+character*(*) str1,tokens(*)
+character(len=str_len) :: str
 character*1 toksep(nsep)
 
 ! this routine "parses" character string str into different pieces
@@ -266,7 +268,9 @@ end
 !***************************************************************************
 
 subroutine tokenize1(str1,tokens,ntok,toksep)
-character*(*) str1,tokens(*),str*256
+use rpost_dims, only : str_len
+character*(*) str1,tokens(*)
+character(len=str_len) :: str
 character*1 toksep
 
 ! this routine "parses" character string str into different pieces
@@ -321,8 +325,10 @@ end
 !***************************************************************************
 
 subroutine rams_intsort(ni,nums,cstr)
+use rpost_dims, only : str_len
 dimension nums(*)
-character cstr(*)*(*),cscr*200
+character cstr(*)*(*)
+character(len=str_len) :: cscr
 
 ! sort an array of character strings by an associated integer field
 
@@ -348,8 +354,10 @@ end
 !***************************************************************************
 
 subroutine rams_fltsort(ni,xnums,cstr)
+use rpost_dims, only : str_len
 dimension xnums(*)
-character cstr(*)*(*),cscr*200
+character cstr(*)*(*)
+character(len=str_len) :: cscr
 
 ! sort an array of character strings by an associated float field
 

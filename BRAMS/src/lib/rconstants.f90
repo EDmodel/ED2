@@ -25,6 +25,7 @@ Module rconstants
    real, parameter :: sqrtpii    = 0.564189583547756 ! 1/(pi**0.5)              [      ---]
    real, parameter :: sqrthalfpi = 1.2533141373155   ! (pi/2)**0.5              [      ---]
    real, parameter :: sqrttwopi  = 2. * sqrthalfpi   ! (2*pi)**0.5              [      ---]
+   real, parameter :: euler_gam  = 0.577215664901533 ! Euler's constant         [      ---]
    !---------------------------------------------------------------------------------------!
 
 
@@ -160,10 +161,12 @@ Module rconstants
    real, parameter :: rocv   = rdry / cv     ! Ra/Cv                            [     ----]
    real, parameter :: cpocv  = cp / cv       ! Cp/Cv                            [     ----]
    real, parameter :: cpor   = cp / rdry     ! Cp/Ra                            [     ----]
+   real, parameter :: cvor   = cv / rdry     ! Cp/Ra                            [     ----]
    real, parameter :: gocp   = grav / cp     ! g/Cp, dry adiabatic lapse rate   [      K/m]
    real, parameter :: gordry = grav / rdry   ! g/Ra                             [      K/m]
    real, parameter :: cpi    = 1. / cp       ! 1/Cp                             [   kg K/J]
    real, parameter :: cpi4   = 4. * cpi      ! 4/Cp                             [   kg K/J]
+   real, parameter :: p00or  = p00 / rdry    ! p0 ** (Ra/Cp)                    [   Pa^2/7]
    real, parameter :: p00k   = 26.8269579527 ! p0 ** (Ra/Cp)                    [   Pa^2/7]
    real, parameter :: p00ki  = 1. / p00k     ! p0 ** (-Ra/Cp)                   [  Pa^-2/7]
    !---------------------------------------------------------------------------------------!
@@ -437,6 +440,7 @@ Module rconstants
    real(kind=8), parameter :: lnexp_max8      = dble(lnexp_max     )
    real(kind=8), parameter :: huge_num8       = dble(huge_num      )
    real(kind=8), parameter :: tiny_num8       = dble(tiny_num      )
+   real(kind=8), parameter :: euler_gam8      = dble(euler_gam     )
    !---------------------------------------------------------------------------------------!
 
 

@@ -7,7 +7,7 @@
 !###########################################################################
 
 Module mem_emiss
-
+  use grid_dims, only : str_len
   !---------------------------------------------------------------------------
   integer             :: isource     !Flag for using emission module - EDF
   !This flag is set up in RAMSIN 
@@ -30,7 +30,7 @@ Module mem_emiss
   integer             :: ichemi, &   !for photochemical module activation - EDF
        ichemi_in   !flag for reading a previous run as initial values
   
-  character (len=256) :: CHEMDATA_IN !path for initial values reading
+  character (len=str_len) :: CHEMDATA_IN !path for initial values reading
   !---------------------------------------------------------------------------
 
 end Module

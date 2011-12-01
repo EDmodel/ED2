@@ -128,7 +128,8 @@ end subroutine ed_timestep
 !------------------------------------------------------------------------------------------!
 subroutine ed_coup_model(ifm)
    use ed_max_dims  , only : maxgrds            ! ! intent(in)
-   use ed_misc_coms , only : integration_scheme & ! intent(in)
+   use ed_misc_coms , only : ivegt_dynamics     & ! intent(in)
+                           , integration_scheme & ! intent(in)
                            , simtime            & ! variable type
                            , current_time       & ! intent(inout)
                            , frqfast            & ! intent(in)
@@ -365,9 +366,33 @@ subroutine ed_coup_model(ifm)
       ! this part of the code when all grids have reached this point.                      !
       !------------------------------------------------------------------------------------!
       if (new_day) then
-         
-         !----- Do phenology, growth, mortality, recruitment, disturbance. ----------------!
-         call vegetation_dynamics(new_month,new_year)
+
+         !---------------------------------------------------------------------------------!
+         !     Compute phenology, growth, mortality, recruitment, disturbance, and check   !
+         ! whether we will apply them to the ecosystem or not.                             !
+         !---------------------------------------------------------------------------------!
+         select case (ivegt_dynamics)
+         case (0)
+            !------------------------------------------------------------------------------!
+            !     Dummy vegetation dynamics, we compute the tendencies but we don't really !
+            ! apply to the vegetation, so they will remain constant throughout the entire  !
+            ! simulation.                                                                  !
+            !------------------------------------------------------------------------------!
+            call vegetation_dynamics_eq_0(new_month,new_year)
+            !------------------------------------------------------------------------------!
+
+         case (1)
+            !------------------------------------------------------------------------------!
+            !     Actual vegetation dynamics, we compute the tendencies and apply to the   !
+            ! vegetation.                                                                  !
+            !------------------------------------------------------------------------------!
+            call vegetation_dynamics(new_month,new_year)
+            !------------------------------------------------------------------------------!
+
+         end select
+         !---------------------------------------------------------------------------------!
+
+
          
          !---------------------------------------------------------------------------------!
          !    First day of a month.  On the monthly timestep we have performed various     !

@@ -6,9 +6,10 @@ subroutine soil_respiration(csite,ipa,mzg,ntext_soil)
 
    use ed_state_vars, only : sitetype                 & ! structure
                            , patchtype                ! ! structure
-   use soil_coms    , only : soil                     ! ! intent(in)
-   use pft_coms     , only : root_respiration_factor  ! ! intent(in)
-
+   use soil_coms    , only : soil                     & ! intent(in)
+                           , dslz                     & ! intent(in)
+                           , slz                      & ! intent(in)
+                           , nzg                      ! ! intent(in)
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
    type(sitetype)                , target     :: csite
@@ -19,36 +20,62 @@ subroutine soil_respiration(csite,ipa,mzg,ntext_soil)
    type(patchtype)               , pointer    :: cpatch
    integer                                    :: ico
    integer                                    :: ipft
-   real                                       :: r_resp_temp_fac
+   integer                                    :: k
+   integer                                    :: kroot
    real                                       :: Lc
-   real                                       :: r_resp
    !----- External functions. -------------------------------------------------------------!
-   real                          , external   :: resp_weight
+   real                          , external   :: het_resp_weight
+   real                          , external   :: root_resp_norm
    !---------------------------------------------------------------------------------------!
 
 
 
    !---------------------------------------------------------------------------------------!
-   !      This is the temperature dependence of root respiration.  Same for all cohorts.   !
+   !      Find the current root respiration.  This is done cohort by cohort because the    !
+   ! parameters may be different depending on the PFT, and also because each layer has a   !
+   ! different temperature.                                                                !
    !---------------------------------------------------------------------------------------!
-   r_resp_temp_fac = 1.0                                                                   &
-                   / (1.0 + exp(0.4 * ( 278.15 - csite%soil_tempk(mzg,ipa) ) ) )           &
-                   / (1.0 + exp(0.4 * ( csite%soil_tempk(mzg,ipa) - 318.15 ) ) )           &
-                   * exp( 10.41 - 3000.0/csite%soil_tempk(mzg,ipa) )
-
    cpatch => csite%patch(ipa)
    do ico = 1,cpatch%ncohorts
-      ipft = cpatch%pft(ico)
-      r_resp = root_respiration_factor(ipft) * r_resp_temp_fac * cpatch%broot(ico)        &
-             * cpatch%nplant(ico)
-      cpatch%root_respiration(ico) = r_resp
-      cpatch%mean_root_resp(ico)   = cpatch%mean_root_resp(ico)  + r_resp
-      cpatch%today_root_resp(ico)  = cpatch%today_root_resp(ico) + r_resp
+      ipft  = cpatch%pft(ico)
+      kroot = cpatch%krdepth(ico)
+
+      !------------------------------------------------------------------------------------!
+      !    Add "intensive" contribution of each layer, assuming that the roots are equally !
+      ! spread throughout the entire depth.                                                !
+      !------------------------------------------------------------------------------------!
+      cpatch%root_respiration(ico) = 0.0
+      do k = kroot,nzg
+         cpatch%root_respiration(ico) = cpatch%root_respiration(ico)                       &
+                                      + root_resp_norm(ipft,csite%soil_tempk(k,ipa))       &
+                                      * dslz(k)
+      end do
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !      Now we make the value in umol/m2/s, by dividing by the total depth and        !
+      ! multiplying by the total root biomass.  The minus sign is because slz is negative. !
+      !------------------------------------------------------------------------------------!
+      cpatch%root_respiration(ico) = - cpatch%root_respiration(ico) * cpatch%broot(ico)    &
+                                     * cpatch%nplant(ico) / slz(kroot)
+      !------------------------------------------------------------------------------------!
+
+
+      !----- Add this time step to the mean and daily mean root respiration. --------------!
+      cpatch%mean_root_resp(ico)   = cpatch%mean_root_resp(ico)                            &
+                                   + cpatch%root_respiration(ico)
+      cpatch%today_root_resp(ico)  = cpatch%today_root_resp(ico)                           &
+                                   + cpatch%root_respiration(ico)
+      !------------------------------------------------------------------------------------!
    end do
+   !---------------------------------------------------------------------------------------!
 
    !----- Compute soil/temperature modulation of heterotrophic respiration. ---------------!
-   csite%A_decomp(ipa) = resp_weight(csite%soil_tempk(mzg,ipa),csite%soil_water(mzg,ipa)   &
-                                    ,ntext_soil(mzg))
+   csite%A_decomp(ipa) = het_resp_weight(csite%soil_tempk(mzg,ipa)                         &
+                                        ,csite%soil_water(mzg,ipa)                         &
+                                        ,ntext_soil(mzg))
+   !---------------------------------------------------------------------------------------!
 
    !----- Compute nitrogen immobilization factor. -----------------------------------------!
    call resp_f_decomp(csite,ipa, Lc)
@@ -74,10 +101,111 @@ end subroutine soil_respiration
 
 !==========================================================================================!
 !==========================================================================================!
-!     This function computes the respiration limitation factor, which includes limitations !
-! due to temperature and moisture.                                                         !
+!     This function determines the normalised root respiration (umol/kg_fine_root/s) at a  !
+! given soil layer.                                                                        !
 !------------------------------------------------------------------------------------------!
-real function resp_weight(soil_tempk,soil_water,nsoil)
+real function root_resp_norm(ipft,soil_temp)
+   use pft_coms       , only : root_respiration_factor  & ! intent(in)
+                             , rrf_low_temp             & ! intent(in)
+                             , rrf_high_temp            & ! intent(in)
+                             , rrf_decay_e              & ! intent(in)
+                             , rrf_hor                  & ! intent(in)
+                             , rrf_q10                  ! ! intent(in)
+   use farq_leuning   , only : arrhenius                & ! function
+                             , collatz                  ! ! function
+   use soil_coms      , only : soil8                    ! ! intent(in)
+   use rk4_coms       , only : tiny_offset              ! ! intent(in)
+   use physiology_coms, only : iphysiol                 ! ! intent(in)
+   use consts_coms    , only : lnexp_min8               & ! intent(in)
+                             , lnexp_max8               & ! intent(in)
+                             , t008                     ! ! intent(in)
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   integer     , intent(in) :: ipft
+   real(kind=4), intent(in) :: soil_temp
+   !----- Local variables. ----------------------------------------------------------------!
+   real(kind=8)             :: soil_temp8
+   real(kind=8)             :: rrf08
+   real(kind=8)             :: rrf_low_temp8
+   real(kind=8)             :: rrf_high_temp8
+   real(kind=8)             :: rrf_decay_e8
+   real(kind=8)             :: rrf_hor8
+   real(kind=8)             :: rrf_q108
+   real(kind=8)             :: lnexplow
+   real(kind=8)             :: lnexphigh
+   real(kind=8)             :: tlow_fun
+   real(kind=8)             :: thigh_fun
+   real(kind=8)             :: rrf8
+   !----- External functions. -------------------------------------------------------------!
+   real(kind=4)             :: sngloff
+   !---------------------------------------------------------------------------------------!
+
+   !----- Copy some variables to double precision temporaries. ----------------------------!
+   soil_temp8      = dble(soil_temp                    )
+   rrf08           = dble(root_respiration_factor(ipft))
+   rrf_low_temp8   = dble(rrf_low_temp           (ipft)) + t008
+   rrf_high_temp8  = dble(rrf_high_temp          (ipft)) + t008
+   rrf_decay_e8    = dble(rrf_decay_e            (ipft))
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !    Compute the functions that will control the Rrf function for low and high temper-  !
+   ! ature.  In order to avoid floating point exceptions, we check whether the temperature !
+   ! will make the exponential too large or too small.                                     !
+   !---------------------------------------------------------------------------------------!
+   !----- Low temperature. ----------------------------------------------------------------!
+   lnexplow  = rrf_decay_e8 * (rrf_low_temp8  - soil_temp8)
+   lnexplow  = max(lnexp_min8,min(lnexp_max8,lnexplow))
+   tlow_fun  = 1.d0 +  exp(lnexplow)
+   !----- High temperature. ---------------------------------------------------------------!
+   lnexphigh = rrf_decay_e8 * (soil_temp8 - rrf_high_temp8)
+   lnexphigh = max(lnexp_min8,min(lnexp_max8,lnexphigh))
+   thigh_fun = 1.d0 + exp(lnexphigh)
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !    Decide which functional form to use based on the physiology.  This is just to make !
+   ! it look similar to the leaf respiration respiration.                                  !
+   !---------------------------------------------------------------------------------------!
+   select case (iphysiol)
+   case (0,1)
+      rrf_hor8 = dble(rrf_hor(ipft))
+      rrf8     = arrhenius(soil_temp8,rrf08,rrf_hor8) / (tlow_fun * thigh_fun)
+   case (2,3)
+      rrf_q108 = dble(rrf_q10(ipft))
+      rrf8     = collatz(soil_temp8,rrf08,rrf_q108)   / (tlow_fun * thigh_fun)
+   end select
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Convert result to single precision.                                               !
+   !---------------------------------------------------------------------------------------!
+   root_resp_norm = sngloff(rrf8,tiny_offset)
+   !---------------------------------------------------------------------------------------!
+
+
+   return
+end function root_resp_norm
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!     This function computes the heterotrophic respiration limitation factor, which        !
+! includes limitations due to temperature and soil moisture.                               !
+!------------------------------------------------------------------------------------------!
+real function het_resp_weight(soil_tempk,soil_water,nsoil)
 
    use decomp_coms, only : resp_temperature_increase  & ! intent(in)
                          , resp_opt_water             & ! intent(in)
@@ -125,10 +253,10 @@ real function resp_weight(soil_tempk,soil_water,nsoil)
    end if
    
    !----- Compute the weight, which is just the combination of both. ----------------------!
-   resp_weight = temperature_limitation * water_limitation
+   het_resp_weight = temperature_limitation * water_limitation
       
    return
-end function resp_weight
+end function het_resp_weight
 !==========================================================================================!
 !==========================================================================================!
 

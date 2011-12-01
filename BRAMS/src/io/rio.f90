@@ -35,7 +35,7 @@ subroutine history_start(name_name)
    !----- Arguments -----------------------------------------------------------------------!
    character(len=*)           , intent(in) :: name_name
    !----- Local variables -----------------------------------------------------------------!
-   character (len=256)                     :: hnamel, hnamelh
+   character (len=str_len)                 :: hnamel, hnamelh
    character (len=2)                       :: cng
    integer                    , save       :: iunhd=11
    integer                                 :: ngrids1,ioutput1,nzg1,nzs1,npatch1,nclouds1
@@ -214,6 +214,7 @@ subroutine hiswrt(restart)
    use mem_scratch
    use mem_grid
    use io_params
+   use grid_dims
 
    implicit none
 
@@ -223,8 +224,8 @@ subroutine hiswrt(restart)
    character (len=*)                           , intent(in) :: restart
    !----- Local variables -----------------------------------------------------------------!
    character(len=10)                                        :: c0, c1
-   character(len=128)                          , save       :: hnameold,hnameoldh
-   character(len=256)                                       :: hnamel,hnamelh
+   character(len=str_len)                      , save       :: hnameold,hnameoldh
+   character(len=str_len)                                   :: hnamel,hnamelh
    logical                                                  :: hereitis
    integer                                                  :: nv,nwordh,ngr,nvcnt
    integer                                     , save       :: iohunt=10, ncall=0

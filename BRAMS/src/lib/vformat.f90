@@ -134,6 +134,7 @@ end
 !--------------------------------------------------------
 
 subroutine vwrt(iunit,a,n,bias,fact,nbits,scr,type)
+use grid_dims, only : str_len
 implicit none
 integer :: iunit,n,nbits
 real :: a(n),scr(n)
@@ -142,7 +143,8 @@ real(kind=8) ::  bias, fact
 
 character(len=1) :: vc
 common/vform/vc(0:63)
-character :: line*80,form*5
+character(len=str_len) :: line
+character(len=5) :: form
 integer :: i,nvalline,nchs,ic,ii,isval,iii,iscr
 real :: scfct
 
@@ -184,6 +186,7 @@ end
 !--------------------------------------------------------
 
 subroutine vfirec(iunit,a,n,type)
+use grid_dims, only : str_len
 implicit none
 integer :: iunit,n
 real :: a(n)
@@ -191,7 +194,8 @@ character(len=*) :: type
 
 character(len=1) :: vc
 common/vform/vc(0:63)
-character :: line*80, cs*1
+character(len=str_len) :: line
+character(len=1) :: cs
 integer :: ich0,ich9,ichcz,ichca,ichla,ichlz
 integer :: i,nvalline,nchs,ic,ii,isval,iii,ics,nn,nbits,nc
 real :: bias,fact,facti,scfct
@@ -318,6 +322,7 @@ end
 !--------------------------------------------------------
 
 subroutine vwrti(iunit,ia,n,bias,fact,nbits,iscr)
+use grid_dims, only : str_len
 implicit none
 integer :: iunit,n,nbits
 integer :: ia(n),iscr(n)
@@ -326,7 +331,8 @@ integer :: i,nvalline,nchs,ic,ii,isval,iii,iiscr
 
 character(len=1) :: vc
 common/vform/vc(0:63)
-character line*80,form*5
+character(len=str_len) :: line
+character(len=5) :: form
 
 do 10 i=1,n
    iscr(i)=(ia(i)+bias)*fact+.001
@@ -358,13 +364,15 @@ end
 !--------------------------------------------------------
 
 subroutine viirec(iunit,ia,n)
+use grid_dims, only : str_len
 implicit none
 integer :: n,iunit
 integer :: ia(n)
 
 character(len=1) :: vc
 common/vform/vc(0:63)
-character line*80, cs*1
+character(len=str_len) :: line
+character(len=1) :: cs
 integer :: ich0,ich9,ichcz,ichca,ichla,ichlz
 
 integer :: nn,nbits,nvalline,nchs,i,ic,ii,isval,iii,ics,nc

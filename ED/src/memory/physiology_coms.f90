@@ -54,8 +54,6 @@ module physiology_coms
                                       !  3 -- Same as 2, except that the compensation point
                                       !       were found as functions of the Michaelis-
                                       !       Mentel constants for CO2 and O2 (like in F80)
-   !----- This flag controls whether to use the exact or small perturbation solution. -----!
-   integer                :: istoma_scheme
    !----- This flag controls whether the plants should be limited by nitrogen. ------------!
    integer                :: n_plant_lim
    !---------------------------------------------------------------------------------------!
@@ -68,17 +66,70 @@ module physiology_coms
    !---------------------------------------------------------------------------------------!
 
    !---------------------------------------------------------------------------------------!
-   !     These parameter will decide scaling factors for stomatal slope, Vm0, Kw, and the  !
-   ! dark respiration constant.                                                            !
+   !     The following variables are factors that control photosynthesis and respiration.  !
+   ! Notice that some of them are relative values whereas others are absolute.             !
+   !                                                                                       !
+   ! VMFACT_C3     -- Factor multiplying the default Vm0 for C3 plants (1.0 = default).    !
+   ! VMFACT_C4     -- Factor multiplying the default Vm0 for C4 plants (1.0 = default).    !
+   ! MPHOTO_TRC3   -- Stomatal slope (M) for tropical C3 plants                            !
+   ! MPHOTO_TEC3   -- Stomatal slope (M) for conifers and temperate C3 plants              !
+   ! MPHOTO_C4     -- Stomatal slope (M) for C4 plants.                                    !
+   ! BPHOTO_BLC3   -- cuticular conductance for broadleaf C3 plants  [umol/m2/s]           !
+   ! BPHOTO_NLC3   -- cuticular conductance for needleleaf C3 plants [umol/m2/s]           !
+   ! BPHOTO_C4     -- cuticular conductance for C4 plants            [umol/m2/s]           !
+   ! KW_GRASS      -- Water conductance for trees, in m2/yr/kgC_root.  This is used only   !
+   !                  when H2O_PLANT_LIM is not 0.                                         !
+   ! KW_TREE       -- Water conductance for grasses, in m2/yr/kgC_root.  This is used only !
+   !                  when H2O_PLANT_LIM is not 0.                                         !
+   ! GAMMA_C3      -- The dark respiration factor (gamma) for C3 plants.  Subtropical      !
+   !                  conifers will be scaled by GAMMA_C3 * 0.028 / 0.02                   !
+   ! GAMMA_C4      -- The dark respiration factor (gamma) for C4 plants.                   !
+   ! D0_GRASS      -- The transpiration control in gsw (D0) for ALL grasses.               !
+   ! D0_TREE       -- The transpiration control in gsw (D0) for ALL trees.                 !
+   ! ALPHA_C3      -- Quantum yield of ALL C3 plants.  This is only applied when           !
+   !                  QUANTUM_EFFICIENCY_T = 0.                                            !
+   ! ALPHA_C4      -- Quantum yield of C4 plants.  This is always applied.                 !
+   ! KLOWCO2IN     -- The coefficient that controls the PEP carboxylase limited rate of    !
+   !                  carboxylation for C4 plants.                                         !
+   ! RRFFACT       -- Factor multiplying the root respiration factor for ALL PFTs.         !
+   !                  (1.0 = default).                                                     !
+   ! GROWTHRESP    -- The actual growth respiration factor (C3/C4 tropical PFTs only).     !
+   !                  (1.0 = default).                                                     !
+   ! LWIDTH_GRASS  -- Leaf width for grasses, in metres.  This controls the leaf boundary  !
+   !                  layer conductance (gbh and gbw).                                     !
+   ! LWIDTH_BLTREE -- Leaf width for trees, in metres.  This controls the leaf boundary    !
+   !                  layer conductance (gbh and gbw).  This is applied to broadleaf trees !
+   !                  only.                                                                !
+   ! LWIDTH_NLTREE -- Leaf width for trees, in metres.  This controls the leaf boundary    !
+   !                  layer conductance (gbh and gbw).  This is applied to conifer trees   !
+   !                  only.                                                                !
+   ! Q10_C3        -- Q10 factor for C3 plants (used only if IPHYSIOL is set to 2 or 3).   !
+   ! Q10_C4        -- Q10 factor for C4 plants (used only if IPHYSIOL is set to 2 or 3).   !
    !---------------------------------------------------------------------------------------!
-   real(kind=4)               :: vmfact
-   real(kind=4)               :: mfact
-   real(kind=4)               :: kfact
-   real(kind=4)               :: gamfact
-   real(kind=4)               :: d0fact
-   real(kind=4)               :: alphafact
-   real(kind=4)               :: lwfact
-   real(kind=4)               :: thioff
+   real(kind=4)               :: vmfact_c3
+   real(kind=4)               :: vmfact_c4
+   real(kind=4)               :: mphoto_trc3
+   real(kind=4)               :: mphoto_tec3
+   real(kind=4)               :: mphoto_c4
+   real(kind=4)               :: bphoto_blc3
+   real(kind=4)               :: bphoto_nlc3
+   real(kind=4)               :: bphoto_c4
+   real(kind=4)               :: kw_grass
+   real(kind=4)               :: kw_tree
+   real(kind=4)               :: gamma_c3
+   real(kind=4)               :: gamma_c4
+   real(kind=4)               :: d0_grass
+   real(kind=4)               :: d0_tree
+   real(kind=4)               :: alpha_c3
+   real(kind=4)               :: alpha_c4
+   real(kind=4)               :: klowco2in
+   real(kind=4)               :: rrffact
+   real(kind=4)               :: growthresp
+   real(kind=4)               :: lwidth_grass
+   real(kind=4)               :: lwidth_bltree
+   real(kind=4)               :: lwidth_nltree
+   real(kind=4)               :: q10_c3
+   real(kind=4)               :: q10_c4
    !---------------------------------------------------------------------------------------!
 
    !---------------------------------------------------------------------------------------!

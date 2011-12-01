@@ -409,6 +409,39 @@ $ED_NL
    !---------------------------------------------------------------------------------------!
 
 
+
+   !---------------------------------------------------------------------------------------!
+   ! ISOILCOL -- LEAF-3 and ED-2 soil colour classes that the model will use when ISOILFLG !
+   !             is set to 2.  Soil classes are from 1 to 20 (1 = lightest; 20 = darkest). !
+   !             The values are the same as CLM-4.0.  The table is the albedo for visible  !
+   !             and near infra-red.                                                       !
+   !---------------------------------------------------------------------------------------!
+   !                                                                                       !
+   !       |-----------------------------------------------------------------------|       !
+   !       |       |   Dry soil  |  Saturated  |       |   Dry soil  |  Saturated  |       !
+   !       | Class |-------------+-------------| Class +-------------+-------------|       !
+   !       |       |  VIS |  NIR |  VIS |  NIR |       |  VIS |  NIR |  VIS |  NIR |       !
+   !       |-------+------+------+------+------+-------+------+------+------+------|       !
+   !       |     1 | 0.36 | 0.61 | 0.25 | 0.50 |    11 | 0.24 | 0.37 | 0.13 | 0.26 |       !
+   !       |     2 | 0.34 | 0.57 | 0.23 | 0.46 |    12 | 0.23 | 0.35 | 0.12 | 0.24 |       !
+   !       |     3 | 0.32 | 0.53 | 0.21 | 0.42 |    13 | 0.22 | 0.33 | 0.11 | 0.22 |       !
+   !       |     4 | 0.31 | 0.51 | 0.20 | 0.40 |    14 | 0.20 | 0.31 | 0.10 | 0.20 |       !
+   !       |     5 | 0.30 | 0.49 | 0.19 | 0.38 |    15 | 0.18 | 0.29 | 0.09 | 0.18 |       !
+   !       |     6 | 0.29 | 0.48 | 0.18 | 0.36 |    16 | 0.16 | 0.27 | 0.08 | 0.16 |       !
+   !       |     7 | 0.28 | 0.45 | 0.17 | 0.34 |    17 | 0.14 | 0.25 | 0.07 | 0.14 |       !
+   !       |     8 | 0.27 | 0.43 | 0.16 | 0.32 |    18 | 0.12 | 0.23 | 0.06 | 0.12 |       !
+   !       |     9 | 0.26 | 0.41 | 0.15 | 0.30 |    19 | 0.10 | 0.21 | 0.05 | 0.10 |       !
+   !       |    10 | 0.25 | 0.39 | 0.14 | 0.28 |    20 | 0.08 | 0.16 | 0.04 | 0.08 |       !
+   !       |-----------------------------------------------------------------------|       !
+   !                                                                                       !
+   !   Soil type 21 is a special case in which we use the albedo method that used to be    !
+   ! the default in ED-2.1.                                                                !
+   !---------------------------------------------------------------------------------------!
+   NL%ISOILCOL  = 21
+   !---------------------------------------------------------------------------------------!
+
+
+
    !---------------------------------------------------------------------------------------!
    !     These variables are used to define the soil properties when you don't want to use !
    ! the standard soil classes.                                                            !
@@ -522,6 +555,20 @@ $ED_NL
 
 
    !---------------------------------------------------------------------------------------!
+   ! IVEGT_DYNAMICS -- The vegetation dynamics scheme.                                     !
+   !                   0.  No vegetation dynamics, the initial state will be preserved,    !
+   !                       even though the model will compute the potential values.  This  !
+   !                       option is useful for theoretical simulations only.              !
+   !                   1.  Normal ED vegetation dynamics (Moorcroft et al 2001).           !
+   !                       The normal option for almost any simulation.                    !
+   !---------------------------------------------------------------------------------------!
+   NL%IVEGT_DYNAMICS = 1
+   !---------------------------------------------------------------------------------------!
+
+
+
+
+   !---------------------------------------------------------------------------------------!
    ! INTEGRATION_SCHEME -- The biophysics integration scheme.                              !
    !                       0.  Euler step.  The fastest, but it doesn't estimate           !
    !                           errors.                                                     !
@@ -549,13 +596,13 @@ $ED_NL
 
    !---------------------------------------------------------------------------------------!
    ! IBRANCH_THERMO -- This determines whether branches should be included in the          !
-   !                   vegetation thermodynamics and radiation or not.  This is under      !
-   !                   development, not fully tested, so we suggest leaving it as 0.       !
-   !                   Options are:                                                        !
-   !                   0.  No branches in energy/radiation;                                !
-   !                   1.  Use Conijn (1995) numbers;                                      !
-   !                   2.  Use parameterization from Jarvela (2004);                       !
-   !                   3.  Use the same allometry as Ahrends et al. (2010)                 !
+   !                   vegetation thermodynamics and radiation or not.                     !
+   !                   0.  No branches in energy/radiation (ED-2.1 default);               !
+   !                   1.  Branches are accounted in the energy and radiation.  Branchwood !
+   !                       and leaf are treated separately in the canopy radiation scheme, !
+   !                       but solved as a single pool in the biophysics integration.      !
+   !                   2.  Similar to 1, but branches are treated as separate pools in the !
+   !                       biophysics (thus doubling the number of prognostic variables).  !
    !---------------------------------------------------------------------------------------!
    NL%IBRANCH_THERMO = 0
    !---------------------------------------------------------------------------------------!
@@ -573,8 +620,8 @@ $ED_NL
    !      coefficients for CO2 and O2, as in Farquhar et al. (1980) and in CLM.            !
    ! 2 -- Collatz et al. (1991).  We use the power (Q10) equations, with Collatz et al.    !
    !      parameters for compensation point, and the Michaelis-Mentel coefficients.  The   !
-   !      leaf respiration correction for high and low temperatures are the same as in     !
-   !      Moorcroft et al. (2001), but the correction for Vm is done like in Collatz.      !
+   !      correction for high and low temperatures are the same as in Moorcroft et al.     !
+   !      (2001).                                                                          !
    ! 3 -- Same as 2, except that we find Gamma* as in Farquhar et al. (1980) and in CLM.   !
    !---------------------------------------------------------------------------------------!
    NL%IPHYSIOL = 2
@@ -582,31 +629,26 @@ $ED_NL
 
 
 
-
    !---------------------------------------------------------------------------------------!
-   ! ISTOMA_SCHEME -- This is the scheme used to compute stomatal conductance and          !
-   !                  photosynthesis.                                                      !
-   !                  0. Full, exact calculation each time.                                !
-   !                  1. (defunct) 'small perturbation' scheme.                            !
-   !---------------------------------------------------------------------------------------!
-   NL%ISTOMA_SCHEME   = 0
-   !---------------------------------------------------------------------------------------!
-
-
-
-   !---------------------------------------------------------------------------------------!
-   ! IALLOM -- Which allometry to use (this affects tropical PFTs only)                    !
+   ! IALLOM -- Which allometry to use (this mostly affects tropical PFTs.  Temperate PFTs  !
+   !           will use the new root allometry and the maximum crown area if IALLOM is set !
+   !           to 1 or 2).                                                                 !
    !           0.  Original ED-2.1                                                         !
-   !           1.  Baker et al. (2004), equation 2, keeping the same balive:bdead ratio    !
-   !           2.  Baker et al. (2004), equation 2, keeping the same balive as in ED-2.1   !
-   !           3.  Same as 2, but using a DBH-> Root depth equation based on               !
-   !               Kenzo et al. (2009) for a secondary forest in Malaysia.  Roots will     !
-   !               be shallow, though...                                                   !
-   !           4.  Same as 2, but with an experimental root depth that makes canopy trees  !
-   !               to have root depths of 5m and grasses/seedlings at 0.5 to have root     !
-   !               depth of 0.5 m.                                                         !
+   !           1.  a. The coefficients for structural biomass are set so the total AGB     !
+   !                  is similar to Baker et al. (2004), equation 2.  Balive is the        !
+   !                  default ED-2.1;                                                      !
+   !               b. Experimental root depth that makes canopy trees to have root depths  !
+   !                  of 5m and grasses/seedlings at 0.5 to have root depth of 0.5 m.      !
+   !               c. Crown area defined as in Poorter et al. (2006), imposing maximum     !
+   !                  crown area                                                           !
+   !           2.  Similar to 1, but with a few extra changes.                             !
+   !               a. Height -> DBH allometry as in Poorter et al. (2006)                  !
+   !               b. Balive is retuned, using a few leaf biomass allometric equations for !
+   !                  a few genuses in Costa Rica.  References:                            !
+   !                  Cole and Ewel (2006), and Calvo Alvarado et al. (2008).              !
    !---------------------------------------------------------------------------------------!
    NL%IALLOM          = 4
+
    !---------------------------------------------------------------------------------------!
 
 
@@ -695,28 +737,51 @@ $ED_NL
    !                  cohorts are stacked on the top of each other.                        !
    !              1.  Dietze (2008) model.  Cohorts have a finite radius, and cohorts are  !
    !                  stacked on the top of each other.                                    !
-   !              2.  Cohorts have a finite radius with horizontal, but they are no longer !
-   !                  organised by cohort index.  Instead, cohorts of the same height      !
-   !                  compete for light as the radiation is solved layer by layer rather   !
-   !                   than cohort by cohort.  This is still under development, ideas are  !
-   !                   welcome.                                                            !
    !---------------------------------------------------------------------------------------!
    NL%CROWN_MOD       = 1
    !---------------------------------------------------------------------------------------!
 
 
 
-
    !---------------------------------------------------------------------------------------!
-   ! ICAN_SWRAD -- This variable specifies which canopy radiation model to use for short-  !
-   !               wave radiation within the canopy:                                       !
-   !               0.  Beers law.  Added back just for theroretical tests, don't use it if !
-   !                   you are unsure.  This cannot be used with CROWN_MOD = 2.            !
-   !               1.  Two-stream model.  The default and recommended method.              !
+   !      The following variables control the canopy radiation solver.                     !
    !                                                                                       !
-   !               In either case longwave will be solved using two-stream model.          !
+   ! ICANRAD      -- Specifies how canopy radiation is solved.  This variable sets both    !
+   !                 shortwave and longwave.                                               !
+   !                 0.  Two-stream model (Medvigy 2006), with the possibility to apply    !
+   !                     finite crown area to direct shortwave radiation.                  !
+   !                 1.  Multiple-scattering model (Zhao and Qualls 2005,2006), with the   !
+   !                     possibility to apply finite crown area to all radiation fluxes.   !
+   ! LTRANS_VIS   -- Leaf transmittance for tropical plants - Visible/PAR                  !
+   ! LTRANS_NIR   -- Leaf transmittance for tropical plants - Near Infrared                !
+   ! LREFLECT_VIS -- Leaf reflectance for tropical plants - Visible/PAR                    !
+   ! LREFLECT_NIR -- Leaf reflectance for tropical plants - Near Infrared                  !
+   ! ORIENT_TREE  -- Leaf orientation factor for tropical trees.  Extremes are:            !
+   !                 -1.  All leaves are oriented in the vertical                          !
+   !                  0.  Leaf orientation is perfectly random                             !
+   !                  1.  All leaves are oriented in the horizontal                        !
+   !                  In practice, acceptable values range from -0.4 and 0.6               !
+   ! ORIENT_GRASS -- Leaf orientation factor for tropical grasses.  Extremes are:          !
+   !                 -1.  All leaves are oriented in the vertical                          !
+   !                  0.  Leaf orientation is perfectly random                             !
+   !                  1.  All leaves are oriented in the horizontal                        !
+   !                  In practice, acceptable values range from -0.4 and 0.6               !
+   ! CLUMP_TREE   -- Clumping factor for tropical trees.  Extremes are:                    !
+   !                 lim -> 0.  Black hole (0 itself is unacceptable)                      !
+   !                        1.  Homogeneously spread over the layer (i.e., no clumping)    !
+   ! CLUMP_GRASS  -- Clumping factor for tropical grasses.  Extremes are:                  !
+   !                 lim -> 0.  Black hole (0 itself is unacceptable)                      !
+   !                        1.  Homogeneously spread over the layer (i.e., no clumping)    !
    !---------------------------------------------------------------------------------------!
-   NL%ICAN_SWRAD      = 1
+   NL%ICANRAD        =      0
+   NL%LTRANS_VIS     =  0.050
+   NL%LTRANS_NIR     =  0.270
+   NL%LREFLECT_VIS   =  0.150
+   NL%LREFLECT_NIR   =  0.540
+   NL%ORIENT_TREE    =  0.150
+   NL%ORIENT_GRASS   = -0.150
+   NL%CLUMP_TREE     =  1.000
+   NL%CLUMP_GRASS    =  1.000
    !---------------------------------------------------------------------------------------!
 
 
@@ -735,49 +800,107 @@ $ED_NL
 
    !---------------------------------------------------------------------------------------!
    ! H2O_PLANT_LIM -- this determines whether plant photosynthesis can be limited by       !
-   !                  soil moisture, the FSW term:                                         !
-   !                  0.  No soil moisture limitation, FSW = 1                             !
-   !                  1.  Original ED-1.0/ED-2.0 method, where                             !
-   !                      FSW = Supply / (Demand + Supply)                                 !
-   !                  2.  Alternative and experimental method based on CLM.  It checks     !
-   !                      the water potential only, with all contribution of transpiration !
-   !                      accounted by gsw.  It also ignores root biomass.                 !
+   !                  soil moisture, the FSW, defined as FSW = Supply / (Demand + Supply). !
+   !                                                                                       !
+   !                  Demand is always the transpiration rates in case soil moisture is    !
+   !                  not limiting (the psi_0 term times LAI).  The supply is determined   !
+   !                  by Kw * nplant * Broot * Available_Water, and the definition of      !
+   !                  available water changes depending on H2O_PLANT_LIM:                  !
+   !                  0.  Force FSW = 1 (effectively available water is infinity).         !
+   !                  1.  Available water is the total soil water above wilting point,     !
+   !                      integrated across all layers within the rooting zone.            !
+   !                  2.  Available water is the soil water at field capacity minus        !
+   !                      wilting point, scaled by the so-called wilting factor:           !
+   !                      (psi(k) - (H - z(k)) - psi_wp) / (psi_fc - psi_wp)               !
+   !                      where psi is the matric potentital at layer k, z is the layer    !
+   !                      depth, H it the crown height and psi_fc and psi_wp are the       !
+   !                      matric potentials at wilting point and field capacity.           !
    !---------------------------------------------------------------------------------------!
    NL%H2O_PLANT_LIM   = 1
    !---------------------------------------------------------------------------------------!
 
 
    !---------------------------------------------------------------------------------------!
-   !     These following variables are factors that multiply some of the ED-2.1 default    !
-   ! parameters.  Setting them to 1.0 will make them the default.  These are applied       !
-   ! mostly to tropical C3 plants.                                                         !
+   !     The following variables are factors that control photosynthesis and respiration.  !
+   ! Notice that some of them are relative values whereas others are absolute.             !
    !                                                                                       !
-   ! VMFACT    -- Factor multiplying the default Vm0                                       !
-   ! MFACT     -- Factor multiplying the stomatal slope M.                                 !
-   ! KFACT     -- Factor multiplying the water conductance Kw.  This is used only when     !
-   !              H2O_PLANT_LIM = 1.                                                       !
-   ! GAMFACT   -- Factor multiplying the dark respiration factor (gamma)                   !
-   ! D0FACT    -- Factor multiplying the transpiration control in gsw (D0)                 !
-   ! ALPHAFACT -- Factor for changing the quantum yield of C3 plants.  This is only        !
-   !              applied when QUANTUM_EFFICIENCY_T = 0.                                   !
-   ! THETACRIT -- Leaf drought phenology threshold.  This is the relative soil moisture    !
-   !              above the wilting point below which the drought-deciduous plants will    !
-   !              start shedding their leaves                                              !
-   ! LWFACT    -- Factor for changing the leaf width (w)                                   !
-   ! THIOFF    -- Offset to be added to the Vm_high_temp                                   !
-   ! GGFACT    -- factor to multiply the ground to canopy conductance.  Default value      !
-   !              is 1.0.                                                                  !
+   ! VMFACT_C3     -- Factor multiplying the default Vm0 for C3 plants (1.0 = default).    !
+   ! VMFACT_C4     -- Factor multiplying the default Vm0 for C4 plants (1.0 = default).    !
+   ! MPHOTO_TRC3   -- Stomatal slope (M) for tropical C3 plants                            !
+   ! MPHOTO_TEC3   -- Stomatal slope (M) for conifers and temperate C3 plants              !
+   ! MPHOTO_C4     -- Stomatal slope (M) for C4 plants.                                    !
+   ! BPHOTO_BLC3   -- cuticular conductance for broadleaf C3 plants  [umol/m2/s]           !
+   ! BPHOTO_NLC3   -- cuticular conductance for needleleaf C3 plants [umol/m2/s]           !
+   ! BPHOTO_C4     -- cuticular conductance for C4 plants            [umol/m2/s]           !
+   ! KW_GRASS      -- Water conductance for trees, in m2/yr/kgC_root.  This is used only   !
+   !                  when H2O_PLANT_LIM is not 0.                                         !
+   ! KW_TREE       -- Water conductance for grasses, in m2/yr/kgC_root.  This is used only !
+   !                  when H2O_PLANT_LIM is not 0.                                         !
+   ! GAMMA_C3      -- The dark respiration factor (gamma) for C3 plants.  Subtropical      !
+   !                  conifers will be scaled by GAMMA_C3 * 0.028 / 0.02                   !
+   ! GAMMA_C4      -- The dark respiration factor (gamma) for C4 plants.                   !
+   ! D0_GRASS      -- The transpiration control in gsw (D0) for ALL grasses.               !
+   ! D0_TREE       -- The transpiration control in gsw (D0) for ALL trees.                 !
+   ! ALPHA_C3      -- Quantum yield of ALL C3 plants.  This is only applied when           !
+   !                  QUANTUM_EFFICIENCY_T = 0.                                            !
+   ! ALPHA_C4      -- Quantum yield of C4 plants.  This is always applied.                 !
+   ! KLOWCO2IN     -- The coefficient that controls the PEP carboxylase limited rate of    !
+   !                  carboxylation for C4 plants.                                         !
+   ! RRFFACT       -- Factor multiplying the root respiration factor for ALL PFTs.         !
+   !                  (1.0 = default).                                                     !
+   ! GROWTHRESP    -- The actual growth respiration factor (C3/C4 tropical PFTs only).     !
+   !                  (1.0 = default).                                                     !
+   ! LWIDTH_GRASS  -- Leaf width for grasses, in metres.  This controls the leaf boundary  !
+   !                  layer conductance (gbh and gbw).                                     !
+   ! LWIDTH_BLTREE -- Leaf width for trees, in metres.  This controls the leaf boundary    !
+   !                  layer conductance (gbh and gbw).  This is applied to broadleaf trees !
+   !                  only.                                                                !
+   ! LWIDTH_NLTREE -- Leaf width for trees, in metres.  This controls the leaf boundary    !
+   !                  layer conductance (gbh and gbw).  This is applied to conifer trees   !
+   !                  only.                                                                !
+   ! Q10_C3        -- Q10 factor for C3 plants (used only if IPHYSIOL is set to 2 or 3).   !
+   ! Q10_C4        -- Q10 factor for C4 plants (used only if IPHYSIOL is set to 2 or 3).   !
    !---------------------------------------------------------------------------------------!
-   NL%VMFACT          = 1.40
-   NL%MFACT           = 1.125
-   NL%KFACT           = 3.00
-   NL%GAMFACT         = 0.75
-   NL%D0FACT          = 1.50
-   NL%ALPHAFACT       = 0.875
-   NL%THETACRIT       = 0.11
-   NL%LWFACT          = 1.00
-   NL%THIOFF          = 0.00
-   NL%GGFACT          = 1.00
+   NL%VMFACT_C3       =   1.25
+   NL%VMFACT_C4       =   1.00
+   NL%MPHOTO_TRC3     =    9.0
+   NL%MPHOTO_TEC3     =    7.2
+   NL%MPHOTO_C4       =    5.0
+   NL%BPHOTO_BLC3     = 10000.
+   NL%BPHOTO_NLC3     = 1000.
+   NL%BPHOTO_C4       = 8000.
+   NL%KW_GRASS        =   300.
+   NL%KW_TREE         =   300.
+   NL%GAMMA_C3        =  0.015
+   NL%GAMMA_C4        =  0.036
+   NL%D0_GRASS        =  0.015
+   NL%D0_TREE         =  0.015
+   NL%ALPHA_C3        =  0.080
+   NL%ALPHA_C4        =  0.053
+   NL%KLOWCO2IN       =  4000.
+   NL%RRFFACT         =  1.000
+   NL%GROWTHRESP      =  0.33333333333
+   NL%LWIDTH_GRASS    = 0.05
+   NL%LWIDTH_BLTREE   = 0.10
+   NL%LWIDTH_NLTREE   = 0.05
+   NL%Q10_C3          = 2.4
+   NL%Q10_C4          = 2.4
+   !---------------------------------------------------------------------------------------!
+
+
+
+
+   !---------------------------------------------------------------------------------------!
+   ! THETACRIT -- Leaf drought phenology threshold.  The sign matters here:                !
+   !              >= 0. -- This is the relative soil moisture above the wilting point      !
+   !                       below which the drought-deciduous plants will start shedding    !
+   !                       their leaves                                                    !
+   !              <  0. -- This is the soil potential in MPa below which the drought-      !
+   !                       -deciduous plants will start shedding their leaves.  The wilt-  !
+   !                       ing point is by definition -1.5MPa, so make sure that the value !
+   !                       is above -1.5.                                                  !
+   !---------------------------------------------------------------------------------------!
+   NL%THETACRIT       = -1.20
    !---------------------------------------------------------------------------------------!
 
 
@@ -825,12 +948,16 @@ $ED_NL
    !                      often  will never allow fires.                                   !
    !                  2.  Fire will be triggered with enough biomass and the total soil    !
    !                      water at the top 75 cm falls below a threshold.                  !
-   ! SM_FIRE       -- Threshold to define the relative soil moisture above dry air of the  !
-   !                  top 75cm that will trigger fires.  Used only when include_fire is    !
-   !                  set to 2.                                                            !
+   ! SM_FIRE       -- This is used only when INCLUDE_FIRE = 2.  The sign here matters.     !
+   !                  >= 0. - Minimum relative soil moisture above dry air of the top 75cm !
+   !                          that will prevent fires to happen.                           !
+   !                  <  0. - Minimum mean soil moisture potential in MPa of the top 75 cm !
+   !                          that will prevent fires to happen.  The dry air soil         !
+   !                          potential is defined as -3.1 MPa, so make sure SM_FIRE   is  !
+   !                          greater than this value.                                     !
    !---------------------------------------------------------------------------------------!
    NL%INCLUDE_FIRE    = 2
-   NL%SM_FIRE         = 0.08
+   NL%SM_FIRE         = 0.07
    !---------------------------------------------------------------------------------------!
 
 
@@ -858,41 +985,27 @@ $ED_NL
    !                 sheltering factor.                                                    !
    !             3.  This is also based on Massman (1997), but with the option of varying  !
    !                 the drag and sheltering within the canopy.                            !
+   !             4.  Same as 0, but if finds the ground conductance following CLM          !
+   !                 technical note (equations 5.98-5.100).                                !
    !---------------------------------------------------------------------------------------!
-   NL%ICANTURB        = 2
-   !---------------------------------------------------------------------------------------!
-
-
-   !---------------------------------------------------------------------------------------!
-   ! I_BLYR_CONDCT -- This flag controls the boundary layer conductance.  This is for      !
-   !                  tests only and should be removed soon, so unless you know what you   !
-   !                  are doing, leave it as zero.                                         !
-   !                  0.  The Nusselt number for forced convection is estimated using the  !
-   !                      average winds, with no corrections                               !
-   !                  1.  The actual Nusselt number for forced convection is multiplied by !
-   !                      2.5 as the Reynolds number gets close or greater than 10,000.    !
-   !                  2.  The actual Nusselt number for forced convection is multiplied by !
-   !                      10. as the Reynolds number gets close or greater than 10,000.    !
-   !---------------------------------------------------------------------------------------!
-   NL%I_BLYR_CONDCT   = 0
+   NL%ICANTURB        = 4
    !---------------------------------------------------------------------------------------!
 
 
 
    !---------------------------------------------------------------------------------------!
    ! ISFCLYRM -- Similarity theory model.  The model that computes u*, T*, etc...          !
-   !    1.  BRAMS default, based on Louis (1979).  It uses empirical relations to estimate !
-   !        the flux based on the bulk Richardson number                                   !
-   !    2.  Oncley and Dudhia (1995) model, based on MM5.  It uses an empirical relation   !
-   !        between bulk Richardson  number and z/L, then computes the flux functions.     !
-   !    3.  Beljaars and Holtslag (1991) model. Similar to 2, but it finds z/L using a     !
-   !        root-finding method, and it has a different parametrisation for stable layers  !
-   !        that works better during night time.  This is the default and recommended      !
-   !        method.                                                                        !
-   !    4.  The parametrisation of Beljaars and Holtslag, but using z/L estimation as in   !
-   !        Oncley and Dudhia.                                                             !
-   !    5.  The parametrisation of Oncley and Dudhia, but using z/L estimation as in       !
-   !        Beljaars and Holtslag.                                                         !
+   ! 1.  BRAMS default, based on Louis (1979).  It uses empirical relations to             !
+   !     estimate the flux based on the bulk Richardson number                             !
+   !                                                                                       !
+   !       All models below use an interative method to find z/L, and the only change      !
+   !  is the functional form of the psi functions.                                         !
+   !                                                                                       !
+   ! 2.  Oncley and Dudhia (1995) model, based on MM5.                                     !
+   ! 3.  Beljaars and Holtslag (1991) model. Similar to 2, but it uses an alternative      !
+   !     method for the stable case that mixes more than the OD95.                         !
+   ! 4.  CLM (2004).  Similar to 2 and 3, but they have special functions to deal with     !
+   !     very stable and very stable cases.                                                !
    !---------------------------------------------------------------------------------------!
    NL%ISFCLYRM        = 3
    !---------------------------------------------------------------------------------------!
@@ -908,6 +1021,7 @@ $ED_NL
    !    2.  Test # 2 of Mahfouf and Noilhan (1991)                                         !
    !    3.  Test # 3 of Mahfouf and Noilhan (1991)                                         !
    !    4.  Test # 4 of Mahfouf and Noilhan (1991)                                         !
+   !    5.  Combination of test #1 (alpha) and test #2 (soil resistance).                  !
    !    In all cases the beta term is modified so it approaches zero as soil moisture goes !
    ! to dry air soil.                                                                      !
    !---------------------------------------------------------------------------------------!
@@ -926,19 +1040,13 @@ $ED_NL
    !                Ignored when ISTAR = 1                                                 !
    ! TPRANDTL    -- Turbulent Prandtl number                                               !
    !                Ignored when ISTAR = 1                                                 !
-   ! VH2VR       -- Ratio between vegetation roughness and vegetation height.              !
-   !                Ignored when ISFCL = 5 and ICANTURB = 2 or 3.                          !
-   ! VH2DH       -- Ratio between 0-plane displacement height and vegetation height.       !
-   !                Ignored when ISFCL = 5 and ICANTURB = 2 or 3.                          !
    ! RIBMAX      -- maximum bulk Richardson number.                                        !
    ! LEAF_MAXWHC -- Maximum water that can be intercepted by leaves, in kg/m2leaf.         !
    !---------------------------------------------------------------------------------------!
    NL%GAMM            = 13.0
    NL%GAMH            = 13.0
    NL%TPRANDTL        = 0.74
-   NL%VH2VR           = 0.13
-   NL%VH2DH           = 0.63
-   NL%RIBMAX          = 1.00
+   NL%RIBMAX          = 0.50
    NL%LEAF_MAXWHC     = 0.11
    !---------------------------------------------------------------------------------------!
 
@@ -1026,7 +1134,7 @@ $ED_NL
    ! MIN_SITE_AREA -- This is the minimum fraction area of a given soil type that allows a !
    !                  site to be created (ignored if IED_INIT_MODE is set to 3).           !
    !---------------------------------------------------------------------------------------!
-   NL%MAXSITE       =   6
+   NL%MAXSITE       =   1
    NL%MAXPATCH      =  20
    NL%MAXCOHORT     =  80
    NL%MIN_SITE_AREA = 0.005
@@ -1074,20 +1182,19 @@ $ED_NL
 
 
 
-   !---------------------------------------------------------------------------------------!
-   ! BETAPOWER -- power to apply in the ground evaporation model (see IED_GRNDVAP          !
-   !              references).  Default value is 1.0.                                      !
-   !---------------------------------------------------------------------------------------!
-   NL%BETAPOWER      = 1.0
-   !---------------------------------------------------------------------------------------!
-
-
-
 
    !---------------------------------------------------------------------------------------!
-   !  USTMIN -- minimum friction velocity, u*, in m/s.                                     !
+   !     The following variables control the minimum values of various velocities in the   !
+   ! canopy.  This is needed to avoid the air to be extremely still, or to avoid singular- !
+   ! ities.  When defining the values, keep in mind that UBMIN >= UGBMIN >= USTMIN.        !
+   !                                                                                       !
+   !  UBMIN  -- minimum wind speed at the top of the canopy air space               [ m/s] !
+   !  UGBMIN -- minimum wind speed at the leaf level                                [ m/s] !
+   !  USTMIN -- minimum friction velocity, u*, in m/s.                              [ m/s] !
    !---------------------------------------------------------------------------------------!
-   NL%USTMIN         = 0.0100
+   NL%UBMIN          = 0.65
+   NL%UGBMIN         = 0.25
+   NL%USTMIN         = 0.05
    !---------------------------------------------------------------------------------------!
 
 
@@ -1136,7 +1243,10 @@ $ED_NL
    !                   the  model is run.                                                  !
    ! IMETCYC1    -- First year with meteorological information                             !
    ! IMETCYCF    -- Last year with meteorological information                              !
-   ! IMETAVG     -- How the input radiation was originally averaged.                       !
+   ! IMETAVG     -- How the input radiation was originally averaged.  You must tell this   !
+   !                because ED-2.1 can make a interpolation accounting for the cosine of   !
+   !                zenith angle.                                                          !
+   !               -1.  I don't know, use linear interpolation.                            !
    !                0.  No average, the values are instantaneous                           !
    !                1.  Averages ending at the reference time                              !
    !                2.  Averages beginning at the reference time                           !
@@ -1157,8 +1267,8 @@ $ED_NL
    NL%ISHUFFLE    = 0
    NL%METCYC1     = 2002
    NL%METCYCF     = 2005
-   NL%IMETAVG     = 0
-   NL%IMETRAD     = 0
+   NL%IMETAVG     = 1
+   NL%IMETRAD     = 2
    NL%INITIAL_CO2 = 278.0
    !---------------------------------------------------------------------------------------!
 

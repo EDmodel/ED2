@@ -584,13 +584,12 @@ subroutine opspec3
   use mem_turb
   use mem_leaf
   use leaf_coms, only :     &
+          ubmin,            & ! intent(in)
+          ugbmin,           & ! intent(in)
           ustmin,           & ! intent(in)
-          ggfact,           & ! intent(in)
           lc_gamm => gamm,  & ! intent(in)
           lc_gamh => gamh,  & ! intent(in)
           tprandtl,         & ! intent(in)
-          vh2vr,            & ! intent(in)
-          vh2dh,            & ! intent(in)
           ribmax,           & ! intent(in)
           leaf_maxwhc,      & ! intent(in)
           min_patch_area,   & ! intent(in)
@@ -984,20 +983,25 @@ subroutine opspec3
      end select
   endif
   
-  if (betapower < 0.0 .or. betapower > 10.0) then
-     print *, 'FATAL - BETAPOWER must be between 0.0 and 10.0'
+  
+  if (ubmin < 1.e-4 .or. ubmin > 1.0) then
+     print *, 'FATAL - UBMIN must be between 0.0001 and 1.0'
      ifaterr = ifaterr + 1
   end if
-  
+
   if (ustmin < 1.e-4 .or. ustmin > 1.0) then
      print *, 'FATAL - USTMIN must be between 0.0001 and 1.0'
      ifaterr = ifaterr + 1
+  elseif (ustmin > ubmin) then
+     print *, 'FATAL - USTMIN must be less than UBMIN.  Check your namelist'
   end if
-  
-  if (ggfact < 0.0 .or. ggfact > 100.0) then
-     print *, 'FATAL - GGFACT must be between 0.0 and 100.0'
+
+  if (ugbmin < ustmin .or. ugbmin > ubmin) then
+     print *, 'FATAL - UGBMIN must be between USTMIN and UBMIN'
      ifaterr = ifaterr + 1
   end if
+
+
   
   if (lc_gamm < 0.1 .or. lc_gamm > 100.0) then
      print *, 'FATAL - GAMM must be between 0.1 and 100.'
@@ -1011,18 +1015,6 @@ subroutine opspec3
   
   if (tprandtl < 0.01 .or. tprandtl > 100.0) then
      print *, 'FATAL - TPRANDTL must be between 0.01 and 100.'
-     ifaterr = ifaterr + 1
-  end if
-  
-  if (vh2vr < 0.001 .or. vh2vr > 0.99) then
-     print *, 'FATAL - VH2VR must be between 0.001 and 0.99'
-     print *, vh2vr
-     ifaterr = ifaterr + 1
-  end if
-  
-  if (vh2dh <= vh2vr .or. vh2dh > 0.99) then
-     print *, 'FATAL - VH2DH must be greater than VH2VR and less than 0.99'
-     print *, vh2dh
      ifaterr = ifaterr + 1
   end if
   
@@ -1127,14 +1119,14 @@ subroutine opspec3
   end select
   
   ! Check whether the surface layer exchange scheme the user chose is okay. 
-  if (isfcl /= 0 .and. (istar < 1 .or. istar > 5)) then
-     print *, 'fatal - ISTAR must be between 1 and 5, and yours is set to ',istar,'...'
+  if (isfcl /= 0 .and. (istar < 1 .or. istar > 4)) then
+     print *, 'fatal - ISTAR must be between 1 and 4, and yours is set to ',istar,'...'
      ifaterr=ifaterr+1
   end if
   
   ! Check whether the ground vapour method scheme the user chose is fine or not. 
-  if (isfcl /= 0 .and. (igrndvap < 0 .or. igrndvap > 4)) then
-     print *, 'fatal - IGRNDVAP must be between 0 and 4, and yours is set to '            &
+  if (isfcl /= 0 .and. (igrndvap < 0 .or. igrndvap > 5)) then
+     print *, 'fatal - IGRNDVAP must be between 0 and 5, and yours is set to '            &
             ,igrndvap,'...'
      ifaterr=ifaterr+1
   end if

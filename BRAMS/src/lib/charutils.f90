@@ -243,12 +243,13 @@ end
 !***************************************************************************
 
 subroutine tokenize(str1,tokens,ntok,toksep,nsep)
+use grid_dims, only : str_len
 implicit none
 integer :: nsep,ntok
 character(len=*) :: str1,tokens(*)
 character(len=1) :: toksep(nsep)
 
-character(len=256) :: str
+character(len=str_len) :: str
 integer :: npt,nch,nc,ns
 
 ! this routine "parses" character string str into different pieces
@@ -284,12 +285,13 @@ end
 !***************************************************************************
 
 subroutine tokenize1(str1,tokens,ntok,toksep)
+use grid_dims, only : str_len
 implicit none
 integer :: ntok
 character(len=*) :: str1,tokens(*)
 character(len=1), intent(in) :: toksep
 
-character(len=256) :: str
+character(len=str_len) :: str
 integer :: nch,ist,npt,nc
 
 ! this routine "parses" character string str into different pieces
@@ -348,11 +350,12 @@ end
 !***************************************************************************
 
 subroutine rams_intsort(ni,nums,cstr)
+use grid_dims, only : str_len
 implicit none
 integer :: nums(*),ni
 character(len=*) :: cstr(*)
 
-character(len=200) :: cscr
+character(len=str_len) :: cscr
 integer :: n,mini,nm,nmm,nscr
 
 ! sort an array of character strings by an associated integer field
@@ -379,12 +382,13 @@ end
 !***************************************************************************
 
 subroutine rams_fltsort(ni,xnums,cstr)
+use grid_dims, only : str_len
 implicit none
 integer :: ni
 real :: xnums(*)
 character(len=*) :: cstr(*)
 
-character(len=200) :: cscr
+character(len=str_len) :: cscr
 integer :: n,nm,nmm
 real :: xmini,xnscr
 
@@ -557,6 +561,7 @@ end subroutine tolower
 !   These subroutines were in dateutils, but they fit better in this file...               !
 !------------------------------------------------------------------------------------------!
 subroutine RAMS_dintsort(ni,chnums,cstr)
+   use grid_dims, only : str_len
    implicit none
    integer :: ni
    character(len=14) :: chnums(*)
@@ -564,7 +569,7 @@ subroutine RAMS_dintsort(ni,chnums,cstr)
 
    ! sort an array of character strings by an associated character field
 
-   character(len=200) :: cscr
+   character(len=str_len) :: cscr
    character(len=14) :: mini,nscr
 
    integer :: n,nm,nmm

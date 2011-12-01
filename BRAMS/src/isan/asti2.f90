@@ -10,11 +10,11 @@ SUBROUTINE input_rawi (olat1,olat2,olon1,olon2)
 
 use isan_coms
 use rconstants
-
+use grid_dims, only : str_len
 implicit none
 real :: olat1,olat2,olon1,olon2
 
-character(len=256) :: line,line2
+character(len=str_len) :: line,line2
 character(len=32) :: cflags,tokens(40)
 
 real, dimension(maxlev) :: p,t,z,h,d,f,pp,zp,tp,hp,vz,uz,zz,rp,dz,fz

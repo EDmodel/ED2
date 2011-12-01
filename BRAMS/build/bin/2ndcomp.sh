@@ -332,6 +332,7 @@ rm -fv lsm_hyd.o                  lsm_hyd.mod
 rm -fv mem_polygons.o             mem_polygons.mod 
 rm -fv met_driver_coms.o          met_driver_coms.mod
 rm -fv mortality.o                mortality.mod
+rm -fv multiple_scatter.o         multilple_scatter.mod
 rm -fv optimiz_coms.o             optimiz_coms.mod
 rm -fv phenology_aux.o            phenology_aux.mod
 rm -fv phenology_coms.o           phenology_coms.mod

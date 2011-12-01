@@ -9,6 +9,7 @@ subroutine krig(n1,n2,n3,x,y,z,ndata,xd,yd,zd,ed,dvar,ngrid  &
   ,nnanzp,topt,var,varkrg,cazmod)
   
 use mem_oda
+use grid_dims, only : str_len
 
 implicit none
 
@@ -22,7 +23,7 @@ integer, parameter :: maxobs=7000,maxobs2=7000
 real, dimension(maxobs) :: xkp,ykp,zkp,dkp,c20,szg 
 real(kind=8), dimension(maxobs) :: alph,c2 
 real(kind=8), dimension(maxobs2) :: c1
-character(len=80) :: label
+character(len=str_len) :: label
 integer :: p0,p1,p2,p3
 
 real :: sx,sy,sz,szgm,r,dmean

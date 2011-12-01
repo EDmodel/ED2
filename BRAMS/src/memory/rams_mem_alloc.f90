@@ -11,7 +11,8 @@ subroutine rams_mem_alloc(proc_type)
 
    use mem_all
    use node_mod
-   use leaf_coms , only            : alloc_leafcol               ! ! sub-routine
+   use leaf_coms , only            : alloc_leafcol               & ! sub-routine
+                                   , sfclyr_init_params          ! ! sub-routine
    use io_params , only            : maxlite                     & ! intent(in)
                                    , lite_vars                   & ! intent(in)
                                    , nlite_vars                  & ! intent(in)
@@ -278,6 +279,8 @@ subroutine rams_mem_alloc(proc_type)
    ! Bob (1/10/2002) added the following line. Is this the right place for the long term?? !
    !---------------------------------------------------------------------------------------!
    call alloc_leafcol(nzg,nzs)
+   !----- Initialise some of the parameters for the CLM-based similarity theory model. ----!
+   call sfclyr_init_params()
    !---------------------------------------------------------------------------------------!
 
 

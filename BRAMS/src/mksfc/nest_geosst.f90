@@ -194,7 +194,8 @@ subroutine geonest_file(ifm)
    write (unit=*,fmt='(a)')         '-----------------------------------------------------'
    write (unit=*,fmt='(a)')         ' '
    call sfcinit_file(nnxp(ifm),nnyp(ifm),nzg,npatch,ifm,sfcfile_p(ifm)%patch_area          &
-                    ,sfcfile_p(ifm)%leaf_class,sfcfile_p(ifm)%soil_text)
+                    ,sfcfile_p(ifm)%leaf_class,sfcfile_p(ifm)%soil_color                   &
+                    ,sfcfile_p(ifm)%soil_text)
    !---------------------------------------------------------------------------------------!
 
 
@@ -226,8 +227,9 @@ subroutine geonest_file(ifm)
       call landuse_opqr(nnxp(ifm),nnyp(ifm),nzg,npatch,nvegpat,ivegtflg(ifm),ivegtfn(ifm)  &
                        ,isoilflg(ifm),isoilfn(ifm),ndviflg(ifm),ndvifn(ifm)                &
                        ,vndvifil(1,ifm),'veg',platn(ifm),plonn(ifm)                        &
-                       ,sfcfile_p(ifm)%soil_text,sfcfile_p(ifm)%patch_area                 &
-                       ,sfcfile_p(ifm)%leaf_class,sfcfile_p(ifm)%veg_ndvif)
+                       ,sfcfile_p(ifm)%soil_color,sfcfile_p(ifm)%soil_text                 &
+                       ,sfcfile_p(ifm)%patch_area,sfcfile_p(ifm)%leaf_class                &
+                       ,sfcfile_p(ifm)%veg_ndvif)
       !------------------------------------------------------------------------------------!
    end if
 
@@ -259,9 +261,10 @@ subroutine geonest_file(ifm)
       !----- Assign soil texture class from standard dataset. -----------------------------!
       call landuse_opqr(nnxp(ifm),nnyp(ifm),nzg,npatch,nvegpat,ivegtflg(ifm),ivegtfn(ifm)  &
                        ,isoilflg(ifm),isoilfn(ifm),ndviflg(ifm),ndvifn(ifm)                &
-                       ,vndvifil(1,ifm),'soil',platn(ifm),plonn(ifm)                       &
-                       ,sfcfile_p(ifm)%soil_text,sfcfile_p(ifm)%patch_area                 &
-                       ,sfcfile_p(ifm)%leaf_class,sfcfile_p(ifm)%veg_ndvif)
+                       ,vndvifil(1,ifm),'soil_text',platn(ifm),plonn(ifm)                  &
+                       ,sfcfile_p(ifm)%soil_color,sfcfile_p(ifm)%soil_text                 &
+                       ,sfcfile_p(ifm)%patch_area,sfcfile_p(ifm)%leaf_class                &
+                       ,sfcfile_p(ifm)%veg_ndvif)
       !------------------------------------------------------------------------------------!
    end if
    !---------------------------------------------------------------------------------------!
@@ -274,7 +277,8 @@ subroutine geonest_file(ifm)
    !  class, and NDVI in ruser.f90 subroutines.                                            !
    !---------------------------------------------------------------------------------------!
    call sfcinit_file_user(nnxp(ifm),nnyp(ifm),nzg,npatch,ifm,sfcfile_p(ifm)%patch_area     &
-                         ,sfcfile_p(ifm)%leaf_class,sfcfile_p(ifm)%soil_text)
+                         ,sfcfile_p(ifm)%leaf_class,sfcfile_p(ifm)%soil_color              &
+                         ,sfcfile_p(ifm)%soil_text)
    !---------------------------------------------------------------------------------------!
 
 
@@ -378,7 +382,8 @@ subroutine geonest_nofile(ngra,ngrb)
                          , basic_g(ifm)%pp                , basic_g(ifm)%rv                &
                          , scratch%vt3do                  , leaf_g(ifm)%seatp              &
                          , leaf_g(ifm)%seatf              , leaf_g(ifm)%soil_water         &
-                         , leaf_g(ifm)%soil_energy        , leaf_g(ifm)%soil_text          &
+                         , leaf_g(ifm)%soil_energy        , leaf_g(ifm)%psibar_10d         &
+                         , leaf_g(ifm)%soil_color         , leaf_g(ifm)%soil_text          &
                          , leaf_g(ifm)%sfcwater_mass      , leaf_g(ifm)%sfcwater_energy    &
                          , leaf_g(ifm)%sfcwater_depth     , leaf_g(ifm)%ustar              &
                          , leaf_g(ifm)%tstar              , leaf_g(ifm)%rstar              &
@@ -403,7 +408,8 @@ subroutine geonest_nofile(ngra,ngrb)
                          , leaf_g(ifm)%plresp             , leaf_g(ifm)%resphet            &
                          , leaf_g(ifm)%veg_ndvip          , leaf_g(ifm)%veg_ndvic          &
                          , leaf_g(ifm)%veg_ndvif          , leaf_g(ifm)%snow_mass          &
-                         , leaf_g(ifm)%snow_depth         , scratch%vt2dq                  &
+                         , leaf_g(ifm)%snow_depth         , leaf_g(ifm)%rshort_gnd         &
+                         , leaf_g(ifm)%rlong_gnd          , scratch%vt2dq                  &
                          , scratch%vt2dr                  , scratch%vt2ds                  &
                          , scratch%vt2da                  , scratch%vt2db                  &
                          , scratch%vt2dc                  , scratch%vt2dd                  &
@@ -459,7 +465,8 @@ subroutine geonest_nofile(ngra,ngrb)
                                 ,leaf_g(ifm)%can_theta       ,leaf_g(ifm)%can_prss         &
                                 ,grid_g(ifm)%glat            ,grid_g(ifm)%glon             &
                                 ,leaf_g(ifm)%soil_water      ,leaf_g(ifm)%soil_energy      &
-                                ,leaf_g(ifm)%soil_text       )
+                                ,leaf_g(ifm)%soil_text       ,leaf_g(ifm)%psibar_10d       &
+                                ,leaf_g(ifm)%leaf_class)
       end select
       !------------------------------------------------------------------------------------!
 
@@ -489,7 +496,8 @@ subroutine geonest_nofile(ngra,ngrb)
       !            , basic_g(ifm)%theta                , basic_g(ifm)%pi0                  &
       !            , basic_g(ifm)%pp                   , basic_g(ifm)%rv                   &
       !            , scratch%vt3do                     , leaf_g(ifm)%soil_water            &
-      !            , leaf_g(ifm)%soil_energy           , leaf_g(ifm)%soil_text             &
+      !            , leaf_g(ifm)%soil_energy           , leaf_g(ifm)%psibar_10d            &
+      !            , leaf_g(ifm)%soil_color            , leaf_g(ifm)%soil_text             &
       !            , leaf_g(ifm)%sfcwater_mass         , leaf_g(ifm)%sfcwater_energy       &
       !            , leaf_g(ifm)%sfcwater_depth        , leaf_g(ifm)%ustar                 &
       !            , leaf_g(ifm)%tstar                 , leaf_g(ifm)%rstar                 &
@@ -514,7 +522,8 @@ subroutine geonest_nofile(ngra,ngrb)
       !            , leaf_g(ifm)%plresp                , leaf_g(ifm)%resphet               &
       !            , leaf_g(ifm)%veg_ndvip             , leaf_g(ifm)%veg_ndvic             &
       !            , leaf_g(ifm)%veg_ndvif             , leaf_g(ifm)%snow_mass             &
-      !            , leaf_g(ifm)%snow_depth            , scratch%vt2dq                     &
+      !            , leaf_g(ifm)%snow_depth            , leaf_g(ifm)%rshort_gnd            &
+      !            , leaf_g(ifm)%rlong_gnd             , scratch%vt2dq                     &
       !            , scratch%vt2dr                     , scratch%vt2ds                     &
       !            , scratch%vt2da                     , scratch%vt2db                     &
       !            , scratch%vt2dc                     , scratch%vt2dd                     &

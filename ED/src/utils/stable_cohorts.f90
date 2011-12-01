@@ -107,8 +107,8 @@ subroutine is_resolvable(csite,ipa,ico,green_leaf_factor)
    !      set to zero when branch thermodynamics is turned off, so this will always be     !
    !      false in this case.                                                              !
    !---------------------------------------------------------------------------------------!
-   leaf_enough  = cpatch%lai(ico) > lai_min(ipft)
-   wood_enough  = cpatch%wai(ico) > lai_min(ipft)
+   leaf_enough  = cpatch%lai(ico) > lai_min(ipft) .and. cpatch%leaf_hcap(ico) > 0.0
+   wood_enough  = cpatch%wai(ico) > lai_min(ipft) .and. cpatch%wood_hcap(ico) > 0.0
    !---------------------------------------------------------------------------------------!
 
 

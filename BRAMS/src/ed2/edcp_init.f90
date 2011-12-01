@@ -357,7 +357,8 @@ subroutine init_master_work(ipara)
                work_e(ifm)%work    (il,jl)   = 0.
                work_e(ifm)%land    (il,jl)   = .false.
                work_e(ifm)%landfrac(il,jl)   = 0.
-               work_e(ifm)%ntext   (:,il,jl) = 0.
+               work_e(ifm)%nscol   (il,jl)   = 0
+               work_e(ifm)%ntext   (:,il,jl) = 0
                work_e(ifm)%soilfrac(:,il,jl) = 0.
                !---------------------------------------------------------------------------!
             end do iloop
@@ -413,10 +414,12 @@ subroutine init_master_work(ipara)
                          ,70,MPI_COMM_WORLD,ierr)
             call MPI_Send(work_e(ifm)%yatm    ,        xmax*ymax,MPI_INTEGER,machnum(nm)   &
                          ,71,MPI_COMM_WORLD,ierr)
-            call MPI_Send(work_e(ifm)%ntext   ,maxsite*xmax*ymax,MPI_INTEGER,machnum(nm)   &
+            call MPI_Send(work_e(ifm)%nscol   ,        xmax*ymax,MPI_INTEGER,machnum(nm)   &
                          ,72,MPI_COMM_WORLD,ierr)
-            call MPI_Send(work_e(ifm)%soilfrac,maxsite*xmax*ymax,MPI_REAL   ,machnum(nm)   &
+            call MPI_Send(work_e(ifm)%ntext   ,maxsite*xmax*ymax,MPI_INTEGER,machnum(nm)   &
                          ,73,MPI_COMM_WORLD,ierr)
+            call MPI_Send(work_e(ifm)%soilfrac,maxsite*xmax*ymax,MPI_REAL   ,machnum(nm)   &
+                         ,74,MPI_COMM_WORLD,ierr)
 
             !------------------------------------------------------------------------------!
             !     De-allocate the internal matrices, so we can re-allocate them for the    !
@@ -551,10 +554,12 @@ subroutine init_node_work()
                          ,mainnum,70,MPI_COMM_WORLD,status,ierr)
             call MPI_Recv(work_e(ifm)%yatm    ,        mmxp(ifm)*mmyp(ifm),MPI_INTEGER     &
                          ,mainnum,71,MPI_COMM_WORLD,status,ierr)
-            call MPI_Recv(work_e(ifm)%ntext   ,maxsite*mmxp(ifm)*mmyp(ifm),MPI_INTEGER     &
+            call MPI_Recv(work_e(ifm)%nscol   ,        mmxp(ifm)*mmyp(ifm),MPI_INTEGER     &
                          ,mainnum,72,MPI_COMM_WORLD,status,ierr)
-            call MPI_Recv(work_e(ifm)%soilfrac,maxsite*mmxp(ifm)*mmyp(ifm),MPI_REAL        &
+            call MPI_Recv(work_e(ifm)%ntext   ,maxsite*mmxp(ifm)*mmyp(ifm),MPI_INTEGER     &
                          ,mainnum,73,MPI_COMM_WORLD,status,ierr)
+            call MPI_Recv(work_e(ifm)%soilfrac,maxsite*mmxp(ifm)*mmyp(ifm),MPI_REAL        &
+                         ,mainnum,74,MPI_COMM_WORLD,status,ierr)
             write(unit=*,fmt='(a)')       ' - Matrices arrived here, thanks!'
          end if
       end do

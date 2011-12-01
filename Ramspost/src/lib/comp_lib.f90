@@ -2032,9 +2032,13 @@ end
 !                                                                                          !
 ! 1. Based on L79;                                                                         !
 ! 2. Based on: OD95, but with some terms computed as in L79 and B71 to avoid singular-     !
-!    ities.                                                                                !
+!    ities (now using the iterative method to find zeta).                                  !
 ! 3. Based on BH91, using an iterative method to find zeta, and using the modified         !
 !    equation for stable layers.                                                           !
+! 4. Based on CLM04, with special functions for very stable and very stable case, even     !
+!    though we use a different functional form for very unstable case for momentum.        !
+!    This is ensure that phi_m decreases monotonically as zeta becomes more negative.      !
+!    We use a power law of order of -1/6 instead.                                          !
 !                                                                                          !
 ! References:                                                                              !
 ! B71.  BUSINGER, J.A, et. al; Flux-Profile relationships in the atmospheric surface       !
@@ -2045,6 +2049,9 @@ end
 !           atmospheric models. J. Appl. Meteor., 30, 327-341, 1991.                       !
 ! OD95. ONCLEY, S.P.; DUDHIA, J.; Evaluation of surface fluxes from MM5 using observa-     !
 !           tions.  Mon. Wea. Rev., 123, 3344-3357, 1995.                                  !
+! CLM04. OLESON, K. W., et al.; Technical description of the community land model (CLM)    !
+!           NCAR Technical Note NCAR/TN-461+STR, Boulder, CO, May 2004.                    !
+!                                                                                          !
 !------------------------------------------------------------------------------------------!
 subroutine RAMS_reduced_prop(nx,ny,nz,np,ng,which,topt,theta_atm,rvap_atm,co2_atm,uspd_atm &
                             ,theta_can,rvap_can,co2_can,prss_can,zout,rough,rib,zeta,parea &
@@ -2280,70 +2287,22 @@ subroutine RAMS_reduced_prop(nx,ny,nz,np,ng,which,topt,theta_atm,rvap_atm,co2_at
                ured  = max(0., ustar(x,y,p) * lnzooz0m / (vonk * sqrt(fmo)))
                multh = tprandtl * ustar(x,y,p) * lnzooz0m / (vonk * ured * fho)
 
-            case (2,4)
+            case default
                !---------------------------------------------------------------------------!
                ! 2. Here we use the model proposed by OD95, the standard for MM5, but with !
-               !    some terms that were computed in B71 (namely, the "0" terms). which    !
-               !    prevent singularities.  Since we use OD95 to estimate zeta, which      !
-               !    avoids the computation of the Obukhov length L , we can't compute      !
-               !    zeta0 by its definition(z0/L). However we know zeta, so zeta0 can be   !
-               !    written as z0/z * zeta.                                                !
-               !                                                                           !
-               ! 4. We use the model proposed by BH91, but we find zeta using the          !
-               !    approximation given by OD95.                                           !
-               !---------------------------------------------------------------------------!
-               if (is_ed2) then 
-
-                  !----- We now compute the stability correction functions. ---------------!
-                  if (stable) then
-                     !----- Stable case. --------------------------------------------------!
-                     zeta(x,y,p) = rib(x,y,p) * lnzroz0m / (1.1 - 5.0 * rib(x,y,p))
-                  else
-                     !----- Unstable case. ------------------------------------------------!
-                     zeta(x,y,p) = rib(x,y,p) * lnzroz0m
-                  end if
-               end if
-
-               zetaom = (zout + rough(x,y,p)) * zeta(x,y,p) / zref
-               zetaoh = zetaom
-               zeta0m = rough(x,y,p) * zeta(x,y,p) / zref
-               zeta0h = zeta0m
-               !---------------------------------------------------------------------------!
-
-
-               !----- Re-compute the stars if this is an ED-2 run. ------------------------!
-               if (is_ed2) then
-                  ustar(x,y,p) = max (ustmin, vonk * uref                                  &
-                                            / (lnzroz0m - psim(zeta(x,y,p),stable,myistar) &
-                                                       + psim(zeta0m,stable,myistar)     ))
-
-                  !----- Finding the coefficient to scale the other stars. ----------------!
-                  c3    = vonk / (tprandtl * (lnzroz0m - psih(zeta(x,y,p),stable,myistar)  &
-                                                      + psih(zeta0m,stable,myistar)     ))
-                  !----- Computing the other scales. --------------------------------------!
-                  rstar(x,y,p) = c3 * (rvap_atm (x,y,2) - rvap_can (x,y,p)   )
-                  tstar(x,y,p) = c3 * (theta_atm(x,y,2) - theta_can(x,y,p)   )
-                  cstar(x,y,p) = c3 * (co2_atm  (x,y,2) - co2_can  (x,y,p)   )
-               end if
-               !---------------------------------------------------------------------------!
-
-
-               ured  = ustar(x,y,p) * ( lnzooz0m - psim(zetaom,stable,myistar)             &
-                                      + psim(zeta0m,stable,myistar) ) / vonk
-               multh = tprandtl     * ( lnzooz0m - psih(zetaoh,stable,myistar)             &
-                                      + psih(zeta0h,stable,myistar) ) / vonk
-
-            case (3,5)
-               !---------------------------------------------------------------------------!
+               !    some terms that were computed in B71 (namely, the "0" terms), which    !
+               !    prevent singularities.                                                 !
+               !    However we know zeta, so zeta0 can be written as z0/z * zeta.          !
                ! 3. Here we use the model proposed by BH91, which is almost the same as    !
-               !    the OD95 method, with the two following (important) differences.       !
-               !    a. Zeta (z/L) is actually found using the iterative method.            !
-               !    b. Stable functions are computed in a more generic way.  BH91 claim    !
-               !       that the oft-used approximation (-beta*zeta) can cause poor         !
-               !       ventilation of the stable layer, leading to decoupling between the  !
-               !       atmosphere and the canopy air space and excessive cooling.          !
-               ! 5. Similar as 3, but we compute the stable functions the same way as      !
-               !    OD95.                                                                  !
+               !    the OD95 method, except that the stable functions are computed in a    !
+               !    more generic way.  BH91 claim that the oft-used approximation          !
+               !    (-beta*zeta) can cause poor ventilation of the stable layer, leading   !
+               !    to decoupling between the atmosphere and the canopy air space and      !
+               !    excessive cooling.                                                     !
+               ! 4. Here we use a similar approach as in CLM04, excepth that the momentum  !
+               !    flux gradient function for the unstable case for momentum is switched  !
+               !    by a power of -1/6 (kind of the square of the heat one).  This is to   !
+               !    guarantee that the psi function doesn't have local maxima/minima.      !
                !---------------------------------------------------------------------------!
                if (is_ed2) then 
                   !----- Make sure that the bulk Richardson number is not above ribmax. ---!
