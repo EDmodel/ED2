@@ -1235,7 +1235,7 @@ subroutine init_pft_photo_params()
    implicit none
    !---------------------------------------------------------------------------------------!
 
-   D0(1)                     = 0.020  ! 0.010 * d0fact
+   D0(1)                     = 0.020 * d0fact ! 0.010 * d0fact
    D0(2:4)                   = 0.015  ! 0.010 * d0fact
    D0(5)                     = 0.010
    D0(6:8)                   = 0.010
@@ -1295,7 +1295,7 @@ subroutine init_pft_photo_params()
 
 
    !------ Vm0 is the maximum photosynthesis capacity in µmol/m2/s. -----------------------!
-   Vm0(1)                    = 12.5  ! 12.500 * vmfact
+   Vm0(1)                    = 12.5 * vmfact ! 12.500 * vmfact
    Vm0(2)                    = 18.750 ! 18.750 * vmfact
    Vm0(3)                    = 12.500  ! 12.500 * vmfact
    Vm0(4)                    =  6.250 !  6.250 * vmfact
@@ -1330,7 +1330,7 @@ subroutine init_pft_photo_params()
    !---------------------------------------------------------------------------------------!
    !    Dark_respiration_factor is the lower-case gamma in Moorcroft et al. (2001).        !
    !---------------------------------------------------------------------------------------!
-   dark_respiration_factor(1)     = 0.04
+   dark_respiration_factor(1)     = 0.04 * gamfact
    dark_respiration_factor(2)     = 0.015 ! 0.020 * gamfact
    dark_respiration_factor(3)     = 0.015 ! 0.020 * gamfact
    dark_respiration_factor(4)     = 0.015 ! 0.020 * gamfact
@@ -1381,7 +1381,7 @@ subroutine init_pft_photo_params()
 
 
    !----- Define the stomatal slope (aka the M factor). -----------------------------------!
-   stomatal_slope(1)         =  5.0
+   stomatal_slope(1)         =  5.0 * mfact
    stomatal_slope(2)         =  9.0 ! 8.0    * mfact
    stomatal_slope(3)         =  9.0 ! 8.0    * mfact
    stomatal_slope(4)         =  9.0 ! 8.0    * mfact
@@ -1996,7 +1996,8 @@ subroutine init_pft_alloc_params()
 
    !----- Specific leaf area [m² leaf / kg C] ---------------------------------------------!
    !----- [KIM] - new tropical parameters. ------------------------------------------------!
-   SLA(1:4)   = 10.0**(2.4-0.46*log10(12.0/leaf_turnover_rate(1:4))) * C2B * 0.1
+   SLA(1)     = 22.7 !--value from Mike Dietze: mean: 22.7, median 19.1, 95% CI: 5.7, 78.6
+   SLA(2:4)   = 10.0**(2.4-0.46*log10(12.0/leaf_turnover_rate(2:4))) * C2B * 0.1
    ! SLA(1:4) = 10.0**(1.6923-0.3305*log10(12.0/leaf_turnover_rate(1:4)))
    SLA(5)     = 22.0
    SLA(6)     =  6.0
@@ -2008,7 +2009,7 @@ subroutine init_pft_alloc_params()
    SLA(12:13) = 22.0
    SLA(14:15) = 10.0**((2.4-0.46*log10(12.0/leaf_turnover_rate(14:15)))) * C2B * 0.1
    ! SLA(14:15) = 10.0**(1.6923-0.3305*log10(12.0/leaf_turnover_rate(14:15)))
-   SLA(16)    = 10.0**(2.4-0.46*log10(12.0/leaf_turnover_rate(16))) * C2B * 0.1
+   SLA(16)    = 22.0
    SLA(17)    = 10.0
 
    !---------------------------------------------------------------------------------------!
