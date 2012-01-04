@@ -36,6 +36,7 @@ MASS=$(BRAMS_ROOT)/src/mass
 MEMORY=$(BRAMS_ROOT)/src/memory
 MICRO=$(BRAMS_ROOT)/src/micro
 MKSFC=$(BRAMS_ROOT)/src/mksfc
+MNTADVEC=$(BRAMS_ROOT)/src/mnt_advec
 MPI=$(BRAMS_ROOT)/src/mpi
 NESTING=$(BRAMS_ROOT)/src/nesting
 OLDGRELL=$(BRAMS_ROOT)/src/oldgrell

@@ -514,6 +514,11 @@ mem_mksfc.o : $(MKSFC)/mem_mksfc.f90
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90) 
 
+mem_mnt_advec.o : $(MNTADVEC)/mem_mnt_advec.f90
+	cp -f $< $(<F:.f90=.f90)
+	$(F90_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90) 
+
 mem_nestb.o : $(NESTING)/mem_nestb.f90
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
@@ -704,6 +709,16 @@ mksfc_top.o : $(MKSFC)/mksfc_top.f90
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90) 
 
+mnt_advec_aux.o : $(MNTADVEC)/mnt_advec_aux.f90
+	cp -f $< $(<F:.f90=.f90)
+	$(F90_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90)
+
+mnt_advec_main.o : $(MNTADVEC)/mnt_advec_main.f90
+	cp -f $< $(<F:.f90=.f90)
+	$(F90_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90)
+
 mod_advect_kit.o : $(CORE)/mod_advect_kit.f90
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
@@ -730,6 +745,11 @@ model.o : $(CORE)/model.f90
 	rm -f $(<F:.f90=.f90) 
 
 modsched.o : $(CORE)/modsched.f90
+	cp -f $< $(<F:.f90=.f90)
+	$(F90_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90) 
+
+mpass_advec.o : $(MPI)/mpass_advec.f90
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90) 

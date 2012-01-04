@@ -397,8 +397,8 @@ subroutine par_node_paths()
    !                  3 - meridional wind                                                  !
    !                  4 - perturbation of the Exner function                               !
    !  3rd dimension : grid number                                                          !
-   !  4th dimension : source node                                                          !
-   !  5th dimension : destination node                                                     !
+   !  4th dimension : destination node                                                     !
+   !  5th dimension : source node                                                          !
    !---------------------------------------------------------------------------------------!
    ipaths   (:,:,:,:,:) = 0
    igetpaths(  :,:,:,:) = 0

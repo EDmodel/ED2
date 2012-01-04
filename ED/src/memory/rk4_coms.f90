@@ -313,6 +313,7 @@ module rk4_coms
       real(kind=8) :: co2budget_storage
       real(kind=8) :: co2budget_loss2atm
       real(kind=8) :: ebudget_storage
+      real(kind=8) :: ebudget_netrad
       real(kind=8) :: ebudget_loss2atm
       real(kind=8) :: ebudget_loss2drainage
       real(kind=8) :: ebudget_loss2runoff
@@ -748,7 +749,7 @@ module rk4_coms
    !      Integrator error statistics.                                                     !
    !---------------------------------------------------------------------------------------!
    !----- Number of variables other than soil and surface that will be analysed. ----------!
-   integer                          , parameter   :: nerrfix = 20
+   integer                          , parameter   :: nerrfix = 21
 
    !----- Total number of variables that will be analysed. --------------------------------!
    integer                                        :: nerr
@@ -882,6 +883,7 @@ module rk4_coms
       y%co2budget_storage              = 0.d0
       y%co2budget_loss2atm             = 0.d0
       y%ebudget_storage                = 0.d0
+      y%ebudget_netrad                 = 0.d0
       y%ebudget_loss2atm               = 0.d0
       y%ebudget_loss2drainage          = 0.d0
       y%ebudget_loss2runoff            = 0.d0
@@ -1734,8 +1736,9 @@ module rk4_coms
       character(len=13), dimension(nerrfix), parameter :: err_lab_fix = (/                 &
            'CAN_THEIV    ','CAN_THETA    ','CAN_SHV      ','CAN_TEMP     ','CAN_PRSS     ' &
           ,'CAN_CO2      ','LEAF_WATER   ','LEAF_ENERGY  ','WOOD_WATER   ','WOOD_ENERGY  ' &
-          ,'VIRT_HEAT    ','VIRT_WATER   ','CO2B_STORAGE ','CO2B_LOSS2ATM','EB_LOSS2ATM  ' &
-          ,'WATB_LOSS2ATM','ENB_LOSS2DRA ','WATB_LOSS2DRA','ENB_STORAGE  ','WATB_STORAGE '/)
+          ,'VIRT_HEAT    ','VIRT_WATER   ','CO2B_STORAGE ','CO2B_LOSS2ATM','EB_NETRAD    ' &
+          ,'EB_LOSS2ATM  ','WATB_LOSS2ATM','ENB_LOSS2DRA ','WATB_LOSS2DRA','ENB_STORAGE  ' &
+          ,'WATB_STORAGE '/)
       !----- Local variables. -------------------------------------------------------------!
       integer                                          :: n
       character(len=13)                                :: err_lab_loc

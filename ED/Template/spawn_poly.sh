@@ -32,7 +32,7 @@ copy2scratch='y'
 #    In case we should copy, this is the source where the data is organised to go.  This   #
 # will override sitemetdef and pdroughtpath.                                               #
 #------------------------------------------------------------------------------------------#
-packdatasrc='/n/data/moorcroft_lab/mlongo/stripe_1M_35'
+packdatasrc='/n/moorcroft_data/mlongo/data/2scratch'
 
 #------------------------------------------------------------------------------------------#
 #      History run variables.                                                              #
@@ -539,6 +539,12 @@ do
          metcycf=2003
          imetavg=1
          ;;
+      Santarem_KM66)
+         metdriverdb=${sitemet}'/Santarem_KM66/Santarem_KM66_HEADER'
+         metcyc1=2002
+         metcycf=2005
+         imetavg=1
+         ;;
       Santarem_KM67)
          metdriverdb=${sitemet}'/Santarem_KM67/Santarem_KM67_HEADER'
          metcyc1=2002
@@ -619,6 +625,12 @@ do
       #------------------------------------------------------------------------------------#
 
       case ${metdriver} in
+      Santarem_KM66)
+         metdriverdb=${pdroughtpath}'/Santarem_KM66/S66_'${metdesc}'_HEADER'
+         metcyc1=1600
+         metcycf=1609
+         imetavg=1
+         ;;
       Santarem_KM67)
          metdriverdb=${pdroughtpath}'/Santarem_KM67/S67_'${metdesc}'_HEADER'
          metcyc1=1600
@@ -952,7 +964,7 @@ do
    then
       sed -i s@CRASHED@HISTORY@g ${here}/${polyname}/statusrun.txt
       runt='HISTORY'
-      toler=`calc.sh ${toler}/10`
+      # toler=`calc.sh ${toler}/10`
    fi
    #---------------------------------------------------------------------------------------#
 
@@ -969,6 +981,9 @@ do
    then
       thissfilin=${fullygrown}
       case ${polyiata} in
+      s66)
+         thissfilin=${bioinit}'/km67_ustein_newallom.'
+         ;;
       s67)
          thissfilin=${bioinit}'/km67_ustein_newallom.'
          ;;

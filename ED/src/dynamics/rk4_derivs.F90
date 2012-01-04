@@ -897,7 +897,8 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
    real(kind=8)                     :: water_supply      !
    real(kind=8)                     :: flux_area         ! Area between canopy and plant
    !----- Functions -----------------------------------------------------------------------!
-   real        , external           :: sngloff
+   real(kind=4), external           :: sngloff           ! Safe dble 2 single precision
+   real(kind=4), external           :: compute_netrad    ! Net radiation.
    !---------------------------------------------------------------------------------------!
 
 
@@ -913,7 +914,7 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
    !---------------------------------------------------------------------------------------!
    rho_ustar = initp%can_rhos * initp%ustar                          ! Aux. variable
    hflxac    = rho_ustar      * initp%tstar * initp%can_exner        ! Sensible Heat flux
-   eflxac    = rho_ustar      * initp%estar * cp8 * initp%can_temp   ! Enthalpy flux
+   eflxac    = rho_ustar      * initp%estar * initp%can_exner        ! Enthalpy flux
    wflxac    = rho_ustar      * initp%qstar                          ! Water flux
    cflxac    = rho_ustar      * initp%cstar * mmdryi8                ! CO2 flux [umol/m2/s]
    !---------------------------------------------------------------------------------------!
@@ -1634,7 +1635,7 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
    !     Integrate diagnostic variables - These are not activated unless fast file-type    !
    ! outputs are selected. This will speed up the integrator.                              !
    !---------------------------------------------------------------------------------------!
-   if (fast_diagnostics .or. print_detailed) then
+   if (fast_diagnostics .or. checkbudget .or. print_detailed) then
 
 
       dinitp%avg_carbon_ac    = cflxac                       ! Carbon flx,  Atmo->Canopy
@@ -1704,9 +1705,10 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
       dinitp%ebudget_loss2atm   = - eflxac
       dinitp%wbudget_loss2atm   = - wflxac
       dinitp%co2budget_storage  = dinitp%co2budget_storage + cflxgc + cflxlc_tot + cflxac
-      dinitp%ebudget_storage    = dinitp%ebudget_storage   + eflxac                        &
-                                + dinitp%avg_rshort_gnd    + dinitp%avg_rlong_gnd
-      dinitp%wbudget_storage    = dinitp%wbudget_storage   + wflxac
+      dinitp%ebudget_netrad     = dble(compute_netrad(csite,ipa))
+      dinitp%ebudget_storage    = dinitp%ebudget_storage   + dinitp%ebudget_netrad         &
+                                + rk4site%qpcpg - dinitp%ebudget_loss2atm  
+      dinitp%wbudget_storage    = dinitp%wbudget_storage   + wflxac + rk4site%pcpg
    end if
    !---------------------------------------------------------------------------------------!
 

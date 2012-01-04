@@ -627,6 +627,7 @@ subroutine opspec3
   
   use mem_basic, only : ico2, co2con
 
+  use mem_mnt_advec, only : iadvec
   implicit none
 
   integer :: ip,k,ifaterr,iwarerr,infoerr,ng,ngr,nc,nzz
@@ -1048,9 +1049,21 @@ subroutine opspec3
      ifaterr = ifaterr +1
   end if
 
+  if (iadvec < 1 .or. iadvec > 2) then 
+     print *, 'FATAL - IADVEC must be either 1 or 2.'
+     ifaterr=ifaterr+1
+  else if (iadvec == 2 .and if_adap /= 0) then
+     print *, 'FATAL - Monotonic advection is only allowed with sigma-z coordinates...'
+     print *, '        Either set iadvec to 1 or if_adap to 0!'
+     ifaterr=ifaterr+1
+  end if
+
 ![MLO - Some extra checks for mass and Medvidy's fix on Exner tendency
 ! Complete Exner tendency and vertical coordinate.
-  if (iexev == 2 .and. if_adap /= 0) then 
+  if (iexev < 1 .or. iexev > 2) then 
+    print *, 'FATAL - IEXEV must be either 1 or 2.'
+    ifaterr=ifaterr+1 
+  elseif (iexev == 2 .and. if_adap /= 0) then 
     print *, 'FATAL - IEXEV cannot be set to 2 with adaptive coordinate'
     ifaterr=ifaterr+1 
   end if

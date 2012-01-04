@@ -1,6 +1,6 @@
 #----- Here is the user-defined variable section. -----------------------------------------#
 here           = "thispath"                               # Current directory.
-srcdir         = "/n/Moorcroft_Lab/Users/mlongo/util/Rsc" # Property directory.
+srcdir         = "/n/moorcroft_data/mlongo/util/Rsc"      # Property directory.
 when           = c("thismontha/thisdatea/thisyeara","thishoura:thisminua:00")               # Time to grab the history
 outroot        = "thisoutroot"
 myplaces       = c("thispoly")                            # Places to find patch properties

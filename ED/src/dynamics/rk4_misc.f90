@@ -401,6 +401,7 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
       targetp%ebudget_storage       = dble(sourcesite%ebudget_initialstorage(ipa))
       targetp%wbudget_storage       = dble(sourcesite%wbudget_initialstorage(ipa))
       targetp%co2budget_loss2atm    = 0.d0
+      targetp%ebudget_netrad        = 0.d0
       targetp%ebudget_loss2atm      = 0.d0
       targetp%ebudget_loss2drainage = 0.d0
       targetp%ebudget_loss2runoff   = 0.d0
@@ -1179,6 +1180,7 @@ subroutine adjust_sfcw_properties(nzg,nzs,initp,hdid,csite,ipa)
 
    use rk4_coms      , only : rk4patchtype          & ! structure
                             , rk4site               & ! intent(in)
+                            , checkbudget           & ! intent(in)
                             , rk4min_sfcw_mass      & ! intent(in)
                             , rk4min_virt_water     & ! intent(in)
                             , rk4water_stab_thresh  & ! intent(in)
@@ -1242,9 +1244,13 @@ subroutine adjust_sfcw_properties(nzg,nzs,initp,hdid,csite,ipa)
    real(kind=8)                        :: energy_available
    real(kind=8)                        :: wmass_available
    real(kind=8)                        :: depth_available
+   real(kind=8)                        :: tempk_available
+   real(kind=8)                        :: fracliq_available
    real(kind=8)                        :: energy_needed
    real(kind=8)                        :: wmass_needed
    real(kind=8)                        :: depth_needed
+   real(kind=8)                        :: tempk_needed
+   real(kind=8)                        :: fracliq_needed
    real(kind=8)                        :: wmass_perc
    real(kind=8)                        :: energy_perc
    real(kind=8)                        :: depth_perc
@@ -1383,6 +1389,21 @@ subroutine adjust_sfcw_properties(nzg,nzs,initp,hdid,csite,ipa)
          !---------------------------------------------------------------------------------!
          initp%can_shv      = initp%can_shv       - wmass_needed  * wcapcani
          initp%avg_vapor_gc = initp%avg_vapor_gc  - wmass_needed * hdidi
+         !---------------------------------------------------------------------------------!
+
+
+
+         !---------------------------------------------------------------------------------!
+         !     Correct the storage.  Latent heat loss must be accounted for.               !
+         !---------------------------------------------------------------------------------!
+         if (checkbudget) then
+            !----- Find temperature and liquid fraction. ----------------------------------!
+            call qtk8(energy_needed/wmass_needed,tempk_needed,fracliq_needed)
+            !------------------------------------------------------------------------------!
+         end if
+         !---------------------------------------------------------------------------------!
+
+
 
          energy_input       = energy_needed
 
@@ -1398,6 +1419,7 @@ subroutine adjust_sfcw_properties(nzg,nzs,initp,hdid,csite,ipa)
          energy_available   = wmass_available * (alvi8 - initp%soil_fracliq(nzg) * alli8)
          depth_available    = wmass_available * ( initp%soil_fracliq(nzg) * wdnsi8         &
                                                 + (1.d0-initp%soil_fracliq(nzg)) * fdnsi8)
+         !---------------------------------------------------------------------------------!
 
          energy_input       = energy_available
 
@@ -1983,6 +2005,7 @@ end subroutine adjust_sfcw_properties
 subroutine adjust_topsoil_properties(initp,hdid,csite,ipa)
    use rk4_coms             , only : rk4patchtype         & ! structure
                                    , rk4site              & ! intent(in)
+                                   , checkbudget          & ! intent(in)
                                    , rk4eps               & ! intent(in)
                                    , rk4tiny_sfcw_mass    & ! intent(in)
                                    , rk4min_sfcw_mass     & ! intent(in)
@@ -2208,7 +2231,10 @@ subroutine adjust_topsoil_properties(initp,hdid,csite,ipa)
          initp%soil_energy(kt) = initp%soil_energy(kt) + energy_needed * dslzi8(kt)
          initp%soil_water (kb) = initp%soil_water (kb) - water_needed  * dslzi8(kb)*wdnsi8
          initp%soil_energy(kb) = initp%soil_energy(kb) - energy_needed * dslzi8(kb)
-         
+         !---------------------------------------------------------------------------------!
+
+
+
          !---------------------------------------------------------------------------------!
          !    We must also update the soil fluxes.                                         !
          !---------------------------------------------------------------------------------!
@@ -2270,10 +2296,12 @@ subroutine adjust_topsoil_properties(initp,hdid,csite,ipa)
          !---------------------------------------------------------------------------------!
          initp%soil_water(kt)  = initp%soil_water(kt)  + water_needed  * dslzi8(kt)*wdnsi8
          initp%soil_energy(kt) = initp%soil_energy(kt) + energy_needed * dslzi8(kt)
+         !---------------------------------------------------------------------------------!
 
          initp%can_shv         = initp%can_shv        - water_needed  * wcapcani
 
          initp%avg_vapor_gc    = initp%avg_vapor_gc  - water_needed * hdidi
+
          return
 
       elseif (water_available > 0.d0) then
@@ -2441,11 +2469,12 @@ subroutine adjust_topsoil_properties(initp,hdid,csite,ipa)
          !---------------------------------------------------------------------------------!
          energy_excess = water_excess * (alvi8 - initp%soil_fracliq(kt) * alli8)
 
-         !----- Sending the water and energy to the canopy. -------------------------------!
+         !----- Send the water and energy to the canopy. ----------------------------------!
          initp%soil_water(kt)  = initp%soil_water(kt)  - water_excess  * dslzi8(kt)*wdnsi8
          initp%soil_energy(kt) = initp%soil_energy(kt) - energy_excess * dslzi8(kt)
          initp%can_shv         = initp%can_shv         + water_excess  * wcapcani
          initp%avg_vapor_gc    = initp%avg_vapor_gc    + water_excess  * hdidi
+         !---------------------------------------------------------------------------------!
       end if
    end if
 
@@ -2471,6 +2500,7 @@ end subroutine adjust_topsoil_properties
 subroutine adjust_veg_properties(initp,hdid,csite,ipa)
    use rk4_coms             , only : rk4patchtype       & ! structure
                                    , rk4site            & ! intent(in)
+                                   , checkbudget        & ! intent(in)
                                    , rk4eps             & ! intent(in)
                                    , rk4min_veg_lwater  & ! intent(in)
                                    , rk4min_veg_temp    & ! intent(in)
@@ -2634,6 +2664,7 @@ subroutine adjust_veg_properties(initp,hdid,csite,ipa)
             if (print_detailed) then
                initp%cfx_qwshed(ico) = initp%cfx_qwshed(ico) + leaf_qwshed * hdidi
             end if
+            !------------------------------------------------------------------------------!
  
 
          elseif (initp%leaf_water(ico) < min_leaf_water) then
@@ -2647,6 +2678,7 @@ subroutine adjust_veg_properties(initp,hdid,csite,ipa)
             leaf_dew   = max(0.d0,- initp%leaf_water(ico))
             leaf_qboil = leaf_boil * (alvi8 - initp%leaf_fliq(ico) * alli8)
             leaf_qdew  = leaf_dew  * (alvi8 - initp%leaf_fliq(ico) * alli8)
+            !------------------------------------------------------------------------------!
 
 
             !----- Add the contribution of this cohort to the total boiling. --------------!
@@ -2654,18 +2686,23 @@ subroutine adjust_veg_properties(initp,hdid,csite,ipa)
             leaf_dew_tot   = leaf_dew_tot   + leaf_dew
             leaf_qboil_tot = leaf_qboil_tot + leaf_qboil
             leaf_qdew_tot  = leaf_qdew_tot  + leaf_qdew
+            !------------------------------------------------------------------------------!
+
 
             !----- Update cohort state variables. -----------------------------------------!
             initp%leaf_water (ico)  = 0.d0
             initp%veg_water  (ico)  = initp%veg_water(ico)    + leaf_dew  - leaf_boil
             initp%leaf_energy(ico)  = initp%leaf_energy(ico)  + leaf_qdew - leaf_qboil
             initp%veg_energy (ico)  = initp%veg_energy(ico)   + leaf_qdew - leaf_qboil
+            !------------------------------------------------------------------------------!
+
 
             !----- Update fluxes if needed be. --------------------------------------------!
             if (print_detailed) then
                initp%cfx_qwflxlc(ico) = initp%cfx_qwflxlc(ico)                             &
                                       + (leaf_qboil - leaf_qdew) * hdidi
             end if
+            !------------------------------------------------------------------------------!
          end if
       end if
       !------------------------------------------------------------------------------------!
@@ -2745,6 +2782,7 @@ subroutine adjust_veg_properties(initp,hdid,csite,ipa)
             wood_dew   = max(0.d0,- initp%wood_water(ico))
             wood_qboil = wood_boil * (alvi8 - initp%wood_fliq(ico) * alli8)
             wood_qdew  = wood_dew  * (alvi8 - initp%wood_fliq(ico) * alli8)
+            !------------------------------------------------------------------------------!
 
 
             !----- Add the contribution of this cohort to the total boiling. --------------!
@@ -2752,18 +2790,21 @@ subroutine adjust_veg_properties(initp,hdid,csite,ipa)
             wood_dew_tot   = wood_dew_tot   + wood_dew
             wood_qboil_tot = wood_qboil_tot + wood_qboil
             wood_qdew_tot  = wood_qdew_tot  + wood_qdew
+            !------------------------------------------------------------------------------!
 
             !----- Update cohort state variables. -----------------------------------------!
             initp%wood_water (ico) = 0.d0
             initp%veg_water  (ico) = initp%veg_water  (ico)  + wood_dew  - wood_boil
             initp%wood_energy(ico) = initp%wood_energy(ico)  + wood_qdew - wood_qboil
             initp%veg_energy (ico) = initp%veg_energy (ico)  + wood_qdew - wood_qboil
+            !------------------------------------------------------------------------------!
 
             !----- Update fluxes if needed be. --------------------------------------------!
             if (print_detailed) then
                initp%cfx_qwflxwc(ico) = initp%cfx_qwflxwc(ico)                             &
                                       + (wood_qboil - wood_qdew) * hdidi
             end if
+            !------------------------------------------------------------------------------!
          end if
       end if
       !------------------------------------------------------------------------------------!
@@ -3075,6 +3116,13 @@ subroutine print_errmax(errmax,yerr,yscal,cpatch,y,ytemp)
                                 ,yscal%co2budget_loss2atm)
       write(unit=*,fmt=onefmt) 'CO2LOSS2ATM:',errmax,yerr%co2budget_loss2atm               &
                               ,yscal%co2budget_loss2atm,troublemaker
+
+      errmax = max(errmax                                                                  &
+                  ,abs(yerr%ebudget_netrad/yscal%ebudget_netrad))
+      troublemaker = large_error(yerr%ebudget_netrad                                       &
+                                ,yscal%ebudget_netrad)
+      write(unit=*,fmt=onefmt) 'ENNETRAD:',errmax,yerr%ebudget_netrad                      &
+                              ,yscal%ebudget_netrad,troublemaker
 
       errmax = max(errmax                                                                  &
                   ,abs(yerr%ebudget_loss2atm/yscal%ebudget_loss2atm))

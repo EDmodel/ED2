@@ -2643,10 +2643,10 @@ module canopy_struct_dynamics
       end select
 
       !----- Compute the other scales. ----------------------------------------------------!
-      qstar = c3 *    (shv_atm   - shv_can   )
-      tstar = c3 *    (theta_atm - theta_can )
-      estar = c3 * log(theiv_atm / theiv_can )
-      cstar = c3 *    (co2_atm   - co2_can   )
+      qstar = c3 * (shv_atm   - shv_can   )
+      tstar = c3 * (theta_atm - theta_can )
+      estar = c3 * (theiv_atm - theiv_can )
+      cstar = c3 * (co2_atm   - co2_can   )
       !------------------------------------------------------------------------------------!
 
 
@@ -2973,10 +2973,10 @@ module canopy_struct_dynamics
 
 
       !----- Compute the other scales. ----------------------------------------------------!
-      qstar = c3 *    (shv_atm   - shv_can   )
-      tstar = c3 *    (theta_atm - theta_can )
-      estar = c3 * log(theiv_atm / theiv_can )
-      cstar = c3 *    (co2_atm   - co2_can   )
+      qstar = c3 * (shv_atm   - shv_can   )
+      tstar = c3 * (theta_atm - theta_can )
+      estar = c3 * (theiv_atm - theiv_can )
+      cstar = c3 * (co2_atm   - co2_can   )
       !------------------------------------------------------------------------------------!
 
 

@@ -72,6 +72,13 @@ subroutine rams_mem_alloc(proc_type)
                                    , zero_mass                   & ! subroutine
                                    , filltab_mass                ! ! subroutine
    use turb_coms            , only : assign_turb_params          ! ! subroutine
+   use mem_mnt_advec        , only : iadvec                      & ! intent(in)
+                                   , advec_g                     & ! intent(out)
+                                   , advecm_g                    & ! intent(out)
+                                   , nullify_advec               & ! subroutine
+                                   , alloc_advec                 & ! subroutine
+                                   , zero_advec                  & ! subroutine
+                                   , filltab_advec               ! ! subroutine
    use mem_grell_param                                           ! ! scalar parameters
    use mem_scratch1_grell                                        ! ! scratch 1
    use mem_scratch2_grell                                        ! ! scratch 2
@@ -301,6 +308,27 @@ subroutine rams_mem_alloc(proc_type)
       call filltab_micro(micro_g(ng),microm_g(ng),imean  &
            ,nmzp(ng),nmxp(ng),nmyp(ng),ng)
    end do
+   !---------------------------------------------------------------------------------------!
+
+
+   !----- Allocate Micro variables data type. ---------------------------------------------!
+   if (iadvec == 2) then
+      write (unit=*,fmt=*) ' [+] Advec allocation on node ',mynum,'...'
+      allocate(advec_g(ngrids),advecm_g(ngrids))
+      do ng=1,ngrids
+         call nullify_advec(advec_g(ng))
+         call nullify_advec(advecm_g(ng))
+         call alloc_advec(advec_g(ng),nmzp(ng),nmxp(ng),nmyp(ng))
+         if (imean == 1) then
+            call alloc_advec(advecm_g(ng),nmzp(ng),nmxp(ng),nmyp(ng))
+         elseif (imean == 0) then
+            call alloc_advec(advecm_g(ng),1,1,1)
+         end if
+         call zero_advec(advec_g(ng))
+         call zero_advec(advecm_g(ng))
+         call filltab_advec(advec_g(ng),advecm_g(ng),imean,nmzp(ng),nmxp(ng),nmyp(ng),ng)
+      end do
+   end if
    !---------------------------------------------------------------------------------------!
 
 

@@ -3421,6 +3421,10 @@ module fuse_fiss_utils
                                       ( csite%ebudget_residual(donp)  * csite%area(donp)   &
                                       + csite%ebudget_residual(recp)  * csite%area(recp) )
 
+      csite%ebudget_netrad(recp)      = newareai *                                         &
+                                      ( csite%ebudget_netrad  (donp)  * csite%area(donp)   &
+                                      + csite%ebudget_netrad  (recp)  * csite%area(recp) )
+
       csite%ebudget_loss2atm(recp)    = newareai *                                         &
                                       ( csite%ebudget_loss2atm(donp)  * csite%area(donp)   &
                                       + csite%ebudget_loss2atm(recp)  * csite%area(recp) )
@@ -3437,9 +3441,6 @@ module fuse_fiss_utils
                                    ( csite%ebudget_loss2drainage(donp) * csite%area(donp)  &
                                    + csite%ebudget_loss2drainage(recp) * csite%area(recp) )
 
-      csite%ebudget_netrad(recp)      = newareai *                                         &
-                                      ( csite%ebudget_netrad(donp) * csite%area(donp)      &
-                                      + csite%ebudget_netrad(recp) * csite%area(recp) )
 
       csite%ebudget_precipgain(recp)  = newareai *                                         &
                                   ( csite%ebudget_precipgain(donp) * csite%area(donp)      &

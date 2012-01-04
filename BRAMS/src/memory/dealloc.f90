@@ -46,7 +46,7 @@ subroutine dealloc_all()
   use mem_mass, only : mass_g, massm_g, dealloc_mass
   use mem_scratch1_grell, only : sc1_grell_g,dealloc_scratch1_grell
   use mem_tend, only : tend_g, dealloc_tend
-
+  use mem_mnt_advec, only : iadvec, advec_g, advecm_g, dealloc_advec
   implicit none
 
   ! deallocate all model memory.  Used on dynamic balance
@@ -92,6 +92,9 @@ subroutine dealloc_all()
      call dealloc_varinit(varinit_g(ng)) 
      call dealloc_varinit(varinitm_g(ng))
 
+     call dealloc_advec(advec_g(ng))
+     call dealloc_advec(advec_m(ng))
+
      call dealloc_mass(mass_g(ng))
      call dealloc_mass(massm_g(ng))
 
@@ -115,17 +118,18 @@ subroutine dealloc_all()
      endif
 
   enddo
-  if (allocated(tend_g   )) deallocate(tend_g                )
-  if (allocated(basic_g  )) deallocate(basic_g   ,basicm_g   )
-  if (allocated(cuparm_g )) deallocate(cuparm_g  ,cuparmm_g  )
-  if (allocated(grid_g   )) deallocate(grid_g    ,gridm_g    )
-  if (allocated(leaf_g   )) deallocate(leaf_g    ,leafm_g    )
-  if (allocated(micro_g  )) deallocate(micro_g   ,microm_g   )
-  if (allocated(radiate_g)) deallocate(radiate_g ,radiatem_g )
-  if (allocated(turb_g   )) deallocate(turb_g    ,turbm_g    )
-  if (allocated(varinit_g)) deallocate(varinit_g ,varinitm_g )
-  if (allocated(oda_g    )) deallocate(oda_g     ,odam_g     )
-  if (allocated(mass_g   )) deallocate(mass_g    ,massm_g    )
+  if (allocated(tend_g     )) deallocate(tend_g                 )
+  if (allocated(basic_g    )) deallocate(basic_g    ,basicm_g   )
+  if (allocated(cuparm_g   )) deallocate(cuparm_g   ,cuparmm_g  )
+  if (allocated(grid_g     )) deallocate(grid_g     ,gridm_g    )
+  if (allocated(leaf_g     )) deallocate(leaf_g     ,leafm_g    )
+  if (allocated(micro_g    )) deallocate(micro_g    ,microm_g   )
+  if (allocated(radiate_g  )) deallocate(radiate_g  ,radiatem_g )
+  if (allocated(turb_g     )) deallocate(turb_g     ,turbm_g    )
+  if (allocated(varinit_g  )) deallocate(varinit_g  ,varinitm_g )
+  if (allocated(oda_g      )) deallocate(oda_g      ,odam_g     )
+  if (allocated(mass_g     )) deallocate(mass_g     ,massm_g    )
+  if (allocated(advec_g    )) deallocate(advec_g    ,advecm_g   )
   if (allocated(sc1_grell_g)) deallocate(sc1_grell_g)
 
   if (TEB_SPM==1) then

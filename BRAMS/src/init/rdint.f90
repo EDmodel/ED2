@@ -34,6 +34,7 @@ subroutine initlz (name_name)
    use teb_spm_start      , only : TEB_SPM                   ! ! intent(in)
    use mem_teb            , only : teb_g                     ! ! intent(inout)
    use mem_teb_common     , only : tebc_g                    ! ! intent(inout)
+   use mem_mnt_advec      , only : iadvec                    ! ! intent(inout)
    use teb_vars_const     , only : iteb                      ! ! intent(in)
    use mem_gaspart        , only : gaspart_g                 ! ! intent(inout)
    use mem_emiss          , only : ichemi                    & ! intent(inout)
@@ -1111,18 +1112,18 @@ subroutine read_nl(filename)
                                  ,zkbmax,zcutdown,z_detr,max_heat,closure_type,maxens_lsf  &
                                  ,maxens_eff,maxens_cap
 
-   namelist /MODEL_OPTIONS/       naddsc,icorflg,iexev,imassflx,ibnd,jbnd,cphas,lsflg,nfpt &
-                                 ,distim,iswrtyp,ilwrtyp,icumfdbk,radfrq,lonrad,npatch     &
-                                 ,nvegpat,min_patch_area,isfcl,dtleaf,istar,igrndvap,ubmin &
-                                 ,ugbmin,ustmin,gamm,gamh,tprandtl,ribmax,leaf_maxwhc,ico2 &
-                                 ,co2con,nvgcon,pctlcon,nslcon,isoilcol,drtcon,zrough      &
-                                 ,albedo,seatmp,dthcon,soil_moist,soil_moist_fail          &
-                                 ,usdata_in,usmodel_in,slz,slmstr,stgoff,isoilbc,ipercol   &
-                                 ,runoff_time,if_urban_canopy,idiffk,ibruvais,ibotflx      &
-                                 ,ihorgrad,csx,csz,xkhkm,zkhkm,nna,nnb,nnc,akmin,akmax     &
-                                 ,hgtmin,hgtmax,level,icloud,irain,ipris,isnow,iaggr       &
-                                 ,igraup,ihail,cparm,rparm,pparm,sparm,aparm,gparm,hparm   &
-                                 ,gnu
+   namelist /MODEL_OPTIONS/       naddsc,icorflg,iadvec,iexev,imassflx,ibnd,jbnd,cphas     &
+                                 ,lsflg,nfpt,distim,iswrtyp,ilwrtyp,icumfdbk,radfrq,lonrad &
+                                 ,npatch,nvegpat,min_patch_area,isfcl,dtleaf,istar         &
+                                 ,igrndvap,ubmin,ugbmin,ustmin,gamm,gamh,tprandtl,ribmax   &
+                                 ,leaf_maxwhc,ico2,co2con,nvgcon,pctlcon,nslcon,isoilcol   &
+                                 ,drtcon,zrough,albedo,seatmp,dthcon,soil_moist            &
+                                 ,soil_moist_fail,usdata_in,usmodel_in,slz,slmstr,stgoff   &
+                                 ,isoilbc,ipercol,runoff_time,if_urban_canopy,idiffk       &
+                                 ,ibruvais,ibotflx,ihorgrad,csx,csz,xkhkm,zkhkm,nna,nnb    &
+                                 ,nnc,akmin,akmax,hgtmin,hgtmax,level,icloud,irain,ipris   &
+                                 ,isnow,iaggr,igraup,ihail,cparm,rparm,pparm,sparm,aparm   &
+                                 ,gparm,hparm,gnu
 
    namelist /MODEL_SOUND/         ipsflg,itsflg,irtsflg,iusflg,hs,ps,ts,rts,us,vs,co2s
 
@@ -1757,6 +1758,7 @@ subroutine read_nl(filename)
       write (unit=*,fmt='(a)')        ''
       write (unit=*,fmt=*) ' naddsc          =',naddsc
       write (unit=*,fmt=*) ' icorflg         =',icorflg
+      write (unit=*,fmt=*) ' iadvec          =',iadvec
       write (unit=*,fmt=*) ' iexev           =',iexev
       write (unit=*,fmt=*) ' imassflx        =',imassflx
       write (unit=*,fmt=*) ' ibnd            =',ibnd

@@ -1056,6 +1056,15 @@ $MODEL_OPTIONS
 
 
    !---------------------------------------------------------------------------------------!
+   ! IADVEC -- 1 - Original advection scheme                                               !
+   !           2 - Monotic advection scheme, as in Freitas et al. (2001, in press JAMES).  !
+   !---------------------------------------------------------------------------------------!
+   IADVEC   = 1,
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
    ! IEXEV -- Exner function tendency.                                                     !
    !          1 -- original BRAMS.  This ignores advection, compression and heating.  Not  !
    !               recommended, but this is the only option that works if IF_ADAP is 1.    !

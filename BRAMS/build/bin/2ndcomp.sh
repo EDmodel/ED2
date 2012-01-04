@@ -103,6 +103,7 @@ rm -fv mem_mass.o                 mem_mass.mod
 rm -fv mem_mclat.o                mem_mclat.mod
 rm -fv mem_micro.o                mem_micro.mod
 rm -fv mem_mksfc.o                mem_mksfc.mod
+rm -fv mem_mnt_advec.o            mem_mnt_advec.mod
 rm -fv mem_nestb.o                mem_nestb.mod
 rm -fv mem_oda.o                  mem_oda.mod
 rm -fv mem_opt_scratch.o          mem_opt_scratch.mod
@@ -143,12 +144,15 @@ rm -fv mksfc_ndvi.o               mksfc_ndvi.mod
 rm -fv mksfc_sfc.o                mksfc_sfc.mod
 rm -fv mksfc_sst.o                mksfc_sst.mod
 rm -fv mksfc_top.o                mksfc_top.mod
+rm -fv mnt_advec_aux.o            mnt_advec_aux.mod
+rm -fv mnt_advec_main.o           mnt_advec_main.mod
 rm -fv mod_advect_kit.o           mod_advect_kit.mod
 rm -fv mod_GhostBlock.o           mod_GhostBlock.mod
 rm -fv mod_GhostBlockPartition.o  mod_GhostBlockPartition.mod
 rm -fv mod_ozone.o                mod_ozone.mod
 rm -fv model.o                    model.mod
 rm -fv modsched.o                 modsched.mod
+rm -fv mpass_advec.o              mpass_advec.mod
 rm -fv mpass_cyclic.o             mpass_cyclic.mod
 rm -fv mpass_dtl.o                mpass_dtl.mod
 rm -fv mpass_feed.o               mpass_feed.mod

@@ -111,6 +111,7 @@ OBJ_MODEL =                         \
 	mem_mass.o                  \
 	mem_mclat.o                 \
 	mem_micro.o                 \
+	mem_mnt_advec.o             \
 	mem_mksfc.o                 \
 	mem_nestb.o                 \
 	mem_oda.o                   \
@@ -150,12 +151,15 @@ OBJ_MODEL =                         \
 	mksfc_sfc.o                 \
 	mksfc_sst.o                 \
 	mksfc_top.o                 \
+	mnt_advec_aux.o             \
+	mnt_advec_main.o            \
 	mod_advect_kit.o            \
 	mod_GhostBlock.o            \
 	mod_GhostBlockPartition.o   \
 	mod_ozone.o                 \
 	model.o                     \
 	modsched.o                  \
+	mpass_advec.o               \
 	mpass_cyclic.o              \
 	mpass_dtl.o                 \
 	mpass_feed.o                \

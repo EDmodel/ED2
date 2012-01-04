@@ -42,11 +42,11 @@ end subroutine update_budget
 
 !==========================================================================================!
 !==========================================================================================!
-subroutine compute_budget(csite,lsl,pcpg,qpcpg,ipa,wcurr_loss2atm,ecurr_loss2atm           &
-                         ,co2curr_loss2atm,wcurr_loss2drainage,ecurr_loss2drainage         &
-                         ,wcurr_loss2runoff,ecurr_loss2runoff,site_area                    &
-                         ,cbudget_nep,old_can_theiv,old_can_shv,old_can_co2,old_can_rhos   &
-                         ,old_can_temp)
+subroutine compute_budget(csite,lsl,pcpg,qpcpg,ipa,wcurr_loss2atm,ecurr_netrad             &
+                         ,ecurr_loss2atm,co2curr_loss2atm,wcurr_loss2drainage              &
+                         ,ecurr_loss2drainage,wcurr_loss2runoff,ecurr_loss2runoff          &
+                         ,site_area,cbudget_nep,old_can_enthalpy,old_can_shv,old_can_co2   &
+                         ,old_can_rhos,old_can_temp)
    use ed_state_vars, only : sitetype           ! ! structure
    use ed_misc_coms , only : dtlsm              & ! intent(in)
                            , fast_diagnostics   & ! intent(in)
@@ -56,6 +56,9 @@ subroutine compute_budget(csite,lsl,pcpg,qpcpg,ipa,wcurr_loss2atm,ecurr_loss2atm
                            , day_sec            & ! intent(in)
                            , rdry               & ! intent(in)
                            , cp                 & ! intent(in)
+                           , p00i               & ! intent(in)
+                           , rocp               & ! intent(in)
+                           , alvl               & ! intent(in)
                            , mmdryi             & ! intent(in)
                            , epim1              ! ! intent(in)
    use rk4_coms     , only : rk4eps             & ! intent(in)
@@ -66,6 +69,7 @@ subroutine compute_budget(csite,lsl,pcpg,qpcpg,ipa,wcurr_loss2atm,ecurr_loss2atm
    real                  , intent(in)    :: pcpg
    real                  , intent(in)    :: qpcpg
    real                  , intent(in)    :: co2curr_loss2atm
+   real                  , intent(in)    :: ecurr_netrad
    real                  , intent(in)    :: ecurr_loss2atm
    real                  , intent(in)    :: ecurr_loss2drainage
    real                  , intent(in)    :: ecurr_loss2runoff
@@ -76,7 +80,7 @@ subroutine compute_budget(csite,lsl,pcpg,qpcpg,ipa,wcurr_loss2atm,ecurr_loss2atm
    integer               , intent(in)    :: ipa
    real                  , intent(in)    :: site_area
    real                  , intent(inout) :: cbudget_nep
-   real                  , intent(in)    :: old_can_theiv
+   real                  , intent(in)    :: old_can_enthalpy
    real                  , intent(in)    :: old_can_shv
    real                  , intent(in)    :: old_can_co2
    real                  , intent(in)    :: old_can_rhos
@@ -98,7 +102,6 @@ subroutine compute_budget(csite,lsl,pcpg,qpcpg,ipa,wcurr_loss2atm,ecurr_loss2atm
    real                                  :: ebudget_finalstorage
    real                                  :: ebudget_deltastorage
    real                                  :: ecurr_precipgain
-   real                                  :: ecurr_netrad
    real                                  :: ecurr_denseffect
    real                                  :: ecurr_residual
    real                                  :: wbudget_finalstorage
@@ -112,16 +115,14 @@ subroutine compute_budget(csite,lsl,pcpg,qpcpg,ipa,wcurr_loss2atm,ecurr_loss2atm
    real                                  :: growth_resp
    real                                  :: storage_resp
    real                                  :: vleaf_resp
-   real                                  :: old_can_rhotemp
-   real                                  :: curr_can_rhotemp
-   real                                  :: old_can_lntheiv
-   real                                  :: curr_can_lntheiv
+   real                                  :: curr_can_exner
+   real                                  :: curr_can_enthalpy
    logical                               :: co2_ok
    logical                               :: energy_ok
    logical                               :: water_ok
    !----- Local constants. ----------------------------------------------------------------!
    character(len=13)     , parameter     :: fmtf='(a,1x,es14.7)'
-   logical               , parameter     :: print_debug = .false.
+   logical               , parameter     :: print_debug = .true.
    !----- External functions. -------------------------------------------------------------!
    real                  , external      :: compute_netrad
    real                  , external      :: compute_water_storage
@@ -137,11 +138,6 @@ subroutine compute_budget(csite,lsl,pcpg,qpcpg,ipa,wcurr_loss2atm,ecurr_loss2atm
    ecurr_precipgain = qpcpg * dtlsm
 
    !---------------------------------------------------------------------------------------!
-   !     Compute gain in energy due to radiation.                                          !
-   !---------------------------------------------------------------------------------------!
-   ecurr_netrad     = compute_netrad(csite,ipa) * dtlsm
-
-   !---------------------------------------------------------------------------------------!
    !     Compute the effect that change density had in the total canopy storage.           !
    !---------------------------------------------------------------------------------------!
    co2curr_denseffect  = ddens_dt_effect(old_can_rhos,csite%can_rhos(ipa)                  &
@@ -150,17 +146,17 @@ subroutine compute_budget(csite,lsl,pcpg,qpcpg,ipa,wcurr_loss2atm,ecurr_loss2atm
    wcurr_denseffect    = ddens_dt_effect(old_can_rhos,csite%can_rhos(ipa)                  &
                                         ,old_can_shv,csite%can_shv(ipa)                    &
                                         ,csite%can_depth(ipa),1.)
+   !---------------------------------------------------------------------------------------!
+
 
    !---------------------------------------------------------------------------------------!
-   !     For enthalpy, we must consider both density and temperature effects.              !
+   !     For enthalpy, we must find the current enthalpy first.                            !
    !---------------------------------------------------------------------------------------!
-   old_can_rhotemp  = old_can_rhos        * old_can_temp
-   curr_can_rhotemp = csite%can_rhos(ipa) * csite%can_temp(ipa)
-   old_can_lntheiv  = log(old_can_theiv)
-   curr_can_lntheiv = log(csite%can_theiv(ipa))
-   ecurr_denseffect    = ddens_dt_effect(old_can_rhotemp,curr_can_rhotemp                  &
-                                        ,old_can_lntheiv,curr_can_lntheiv                  &
-                                        ,csite%can_depth(ipa),cp)
+   curr_can_exner      = cp * (csite%can_prss(ipa) * p00i) ** rocp
+   curr_can_enthalpy   = curr_can_exner * csite%can_theiv(ipa)
+   ecurr_denseffect    = ddens_dt_effect(old_can_rhos,csite%can_rhos(ipa)                  &
+                                        ,old_can_enthalpy, curr_can_enthalpy               &
+                                        ,csite%can_depth(ipa),1.)
    !---------------------------------------------------------------------------------------!
    !     Compute the carbon flux components.                                               !
    !---------------------------------------------------------------------------------------!
@@ -197,14 +193,14 @@ subroutine compute_budget(csite,lsl,pcpg,qpcpg,ipa,wcurr_loss2atm,ecurr_loss2atm
                     - ( - co2curr_nep - co2curr_loss2atm)                                  &
                     - co2curr_denseffect
    !----- 2. Energy. ----------------------------------------------------------------------!
-   ecurr_residual = ebudget_deltastorage - ( ecurr_precipgain  + ecurr_netrad              &
-                                           - ecurr_loss2atm    - ecurr_loss2drainage       &
-                                           - ecurr_loss2runoff )                           &
-                                         - ecurr_denseffect
+   ecurr_residual   = ebudget_deltastorage - ( ecurr_precipgain  + ecurr_netrad            &
+                                             - ecurr_loss2atm    - ecurr_loss2drainage     &
+                                             - ecurr_loss2runoff )                         &
+                                           - ecurr_denseffect
    !----- 3. Water. -----------------------------------------------------------------------!
-   wcurr_residual = wbudget_deltastorage - ( wcurr_precipgain    - wcurr_loss2atm          &
-                                           - wcurr_loss2drainage - wcurr_loss2runoff)      &
-                                         - wcurr_denseffect
+   wcurr_residual   = wbudget_deltastorage - ( wcurr_precipgain    - wcurr_loss2atm        &
+                                             - wcurr_loss2drainage - wcurr_loss2runoff)    &
+                                           - wcurr_denseffect
    !---------------------------------------------------------------------------------------!
 
    !---------------------------------------------------------------------------------------!
@@ -214,25 +210,27 @@ subroutine compute_budget(csite,lsl,pcpg,qpcpg,ipa,wcurr_loss2atm,ecurr_loss2atm
    !---------------------------------------------------------------------------------------!
    if (checkbudget) then
       co2_ok  = abs(co2curr_residual) <= rk4eps * ( abs(co2budget_finalstorage)            &
-                                                  + abs(co2budget_deltastorage) * dtlsm)
+                                                  + abs(co2budget_deltastorage) )
       energy_ok = abs(ecurr_residual) <= rk4eps * ( abs(ebudget_finalstorage)              &
-                                                  + abs(ebudget_deltastorage)   * dtlsm)
+                                                  + abs(ebudget_deltastorage)   )
       water_ok  = abs(wcurr_residual) <= rk4eps * ( abs(wbudget_finalstorage)              &
-                                                  + abs(wbudget_deltastorage)   * dtlsm)
+                                                  + abs(wbudget_deltastorage)   )
 
       if (print_debug) then 
-         write (unit=56,fmt='(i4.4,2(1x,i2.2),1x,f6.0,5(1x,es14.7))')                      &
+         write (unit=56,fmt='(i4.4,2(1x,i2.2),1x,f6.0,6(1x,es14.7))')                      &
                 current_time%year,current_time%month,current_time%date                     &
                ,current_time%time                                                          &
+               ,co2budget_finalstorage                                                     &
                ,co2curr_residual/dtlsm                                                     &
                ,co2budget_deltastorage/dtlsm                                               &
                ,co2curr_nep/dtlsm                                                          &
                ,co2curr_denseffect/dtlsm                                                   &
                ,co2curr_loss2atm/dtlsm
 
-         write (unit=66,fmt='(i4.4,2(1x,i2.2),1x,f6.0,8(1x,es14.7))')                      &
+         write (unit=66,fmt='(i4.4,2(1x,i2.2),1x,f6.0,9(1x,es14.7))')                      &
                 current_time%year,current_time%month,current_time%date                     &
                ,current_time%time                                                          &
+               ,ebudget_finalstorage                                                       &
                ,ecurr_residual/dtlsm                                                       &
                ,ebudget_deltastorage/dtlsm                                                 &
                ,ecurr_precipgain/dtlsm                                                     &
@@ -242,9 +240,10 @@ subroutine compute_budget(csite,lsl,pcpg,qpcpg,ipa,wcurr_loss2atm,ecurr_loss2atm
                ,ecurr_loss2drainage/dtlsm                                                  &
                ,ecurr_loss2runoff/dtlsm
 
-         write (unit=76,fmt='(i4.4,2(1x,i2.2),1x,f6.0,7(1x,es14.7))')                      &
+         write (unit=76,fmt='(i4.4,2(1x,i2.2),1x,f6.0,8(1x,es14.7))')                      &
                 current_time%year,current_time%month,current_time%date                     &
                ,current_time%time                                                          &
+               ,wbudget_finalstorage                                                       &
                ,wcurr_residual*day_sec/dtlsm                                               &
                ,wbudget_deltastorage*day_sec/dtlsm                                         &
                ,wcurr_precipgain*day_sec/dtlsm                                             &
@@ -505,6 +504,8 @@ real function compute_energy_storage(csite, lsl, ipa)
    use grid_coms            , only : nzg                   ! ! intent(in)
    use soil_coms            , only : dslz                  ! ! intent(in)
    use consts_coms          , only : cp                    & ! intent(in)
+                                   , p00i                  & ! intent(in)
+                                   , rocp                  & ! intent(in)
                                    , cliq                  & ! intent(in)
                                    , cice                  & ! intent(in)
                                    , alvl                  & ! intent(in)
@@ -524,15 +525,21 @@ real function compute_energy_storage(csite, lsl, ipa)
    real                        :: sfcwater_storage
    real                        :: cas_storage
    real                        :: veg_storage
+   real                        :: can_exner
+   real                        :: can_enthalpy
    !---------------------------------------------------------------------------------------!
 
 
    cpatch => csite%patch(ipa)
+
    !----- 1. Computing internal energy stored at the soil. --------------------------------!
    soil_storage = 0.0
    do k = lsl, nzg
       soil_storage = soil_storage + csite%soil_energy(k,ipa) * dslz(k)
    end do
+   !---------------------------------------------------------------------------------------!
+
+
    !---------------------------------------------------------------------------------------!
    !   2. Computing internal energy stored at the temporary snow/water sfc. layer.         !
    !      Converting it to J/m2. 
@@ -542,11 +549,17 @@ real function compute_energy_storage(csite, lsl, ipa)
       sfcwater_storage = sfcwater_storage                                                  &
                        + csite%sfcwater_energy(k,ipa) * csite%sfcwater_mass(k,ipa)
    end do
+   !---------------------------------------------------------------------------------------!
+
 
    !---------------------------------------------------------------------------------------!
-   ! 3. Finding and value for canopy air total enthalpy .                                  !
+   ! 3. Find and value for canopy air total enthalpy .                                     !
    !---------------------------------------------------------------------------------------!
-   cas_storage = cp * csite%can_rhos(ipa) * csite%can_depth(ipa) * csite%can_theiv(ipa)
+   can_exner    = cp * (csite%can_prss(ipa) * p00i) ** rocp
+   can_enthalpy = can_exner * csite%can_theiv(ipa)
+   cas_storage  = csite%can_rhos(ipa) * csite%can_depth(ipa) * can_enthalpy
+   !---------------------------------------------------------------------------------------!
+
 
    !---------------------------------------------------------------------------------------!
    ! 4. Compute the internal energy stored in the plants.                                  !

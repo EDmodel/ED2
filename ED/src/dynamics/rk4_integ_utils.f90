@@ -388,6 +388,7 @@ subroutine inc_rk4_patch(rkp, inc, fac, cpatch)
                                 + fac * inc%wbudget_loss2drainage
 
       rkp%ebudget_storage       = rkp%ebudget_storage       + fac * inc%ebudget_storage
+      rkp%ebudget_netrad        = rkp%ebudget_netrad        + fac * inc%ebudget_netrad
       rkp%ebudget_loss2atm      = rkp%ebudget_loss2atm      + fac * inc%ebudget_loss2atm
       rkp%ebudget_loss2drainage = rkp%ebudget_loss2drainage                                &
                                 + fac * inc%ebudget_loss2drainage
@@ -798,6 +799,15 @@ subroutine get_yscal(y,dy,htry,yscal,cpatch)
          yscal%co2budget_loss2atm = max(yscal%co2budget_loss2atm,1.d-1)
       end if
 
+      if (abs(y%ebudget_netrad)  < tiny_offset .and.                                       &
+          abs(dy%ebudget_netrad) < tiny_offset) then
+         yscal%ebudget_netrad  = 1.d0
+      else 
+         yscal%ebudget_netrad  = abs(y%ebudget_netrad)                                     &
+                               + abs(dy%ebudget_netrad*htry)
+         yscal%ebudget_netrad = max(yscal%ebudget_netrad,1.d0)
+      end if
+
       if (abs(y%ebudget_loss2atm)  < tiny_offset .and.                                     &
           abs(dy%ebudget_loss2atm) < tiny_offset) then
          yscal%ebudget_loss2atm = 1.d0
@@ -862,6 +872,7 @@ subroutine get_yscal(y,dy,htry,yscal,cpatch)
    else 
       yscal%co2budget_storage       = huge_offset
       yscal%co2budget_loss2atm      = huge_offset
+      yscal%ebudget_netrad          = huge_offset
       yscal%ebudget_loss2atm        = huge_offset
       yscal%wbudget_loss2atm        = huge_offset
       yscal%ebudget_storage         = huge_offset
@@ -1061,29 +1072,33 @@ subroutine get_errmax(errmax,yerr,yscal,cpatch,y,ytemp)
       errmax = max(errmax,err)
       if(record_err .and. err > rk4eps) integ_err(14,1) = integ_err(14,1) + 1_8
 
-      err    = abs(yerr%ebudget_loss2atm/yscal%ebudget_loss2atm)
+      err    = abs(yerr%ebudget_netrad/yscal%ebudget_netrad)
       errmax = max(errmax,err)
       if(record_err .and. err > rk4eps) integ_err(15,1) = integ_err(15,1) + 1_8
 
-      err    = abs(yerr%wbudget_loss2atm/yscal%wbudget_loss2atm)
+      err    = abs(yerr%ebudget_loss2atm/yscal%ebudget_loss2atm)
       errmax = max(errmax,err)
       if(record_err .and. err > rk4eps) integ_err(16,1) = integ_err(16,1) + 1_8
 
-      err    = abs(yerr%ebudget_loss2drainage/yscal%ebudget_loss2drainage)
+      err    = abs(yerr%wbudget_loss2atm/yscal%wbudget_loss2atm)
       errmax = max(errmax,err)
       if(record_err .and. err > rk4eps) integ_err(17,1) = integ_err(17,1) + 1_8
 
-      err    = abs(yerr%wbudget_loss2drainage/yscal%wbudget_loss2drainage)
+      err    = abs(yerr%ebudget_loss2drainage/yscal%ebudget_loss2drainage)
       errmax = max(errmax,err)
       if(record_err .and. err > rk4eps) integ_err(18,1) = integ_err(18,1) + 1_8
 
-      err    = abs(yerr%ebudget_storage/yscal%ebudget_storage)
+      err    = abs(yerr%wbudget_loss2drainage/yscal%wbudget_loss2drainage)
       errmax = max(errmax,err)
       if(record_err .and. err > rk4eps) integ_err(19,1) = integ_err(19,1) + 1_8
 
-      err    = abs(yerr%wbudget_storage/yscal%wbudget_storage)
+      err    = abs(yerr%ebudget_storage/yscal%ebudget_storage)
       errmax = max(errmax,err)
       if(record_err .and. err > rk4eps) integ_err(20,1) = integ_err(20,1) + 1_8
+
+      err    = abs(yerr%wbudget_storage/yscal%wbudget_storage)
+      errmax = max(errmax,err)
+      if(record_err .and. err > rk4eps) integ_err(21,1) = integ_err(21,1) + 1_8
    end if
    !---------------------------------------------------------------------------------------!
 
@@ -1296,6 +1311,7 @@ subroutine copy_rk4_patch(sourcep, targetp, cpatch)
    if (checkbudget) then
       targetp%co2budget_storage      = sourcep%co2budget_storage
       targetp%co2budget_loss2atm     = sourcep%co2budget_loss2atm
+      targetp%ebudget_netrad         = sourcep%ebudget_netrad
       targetp%ebudget_loss2atm       = sourcep%ebudget_loss2atm
       targetp%ebudget_loss2drainage  = sourcep%ebudget_loss2drainage
       targetp%ebudget_loss2runoff    = sourcep%ebudget_loss2runoff

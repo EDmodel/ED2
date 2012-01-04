@@ -27,6 +27,10 @@ module rk4_driver
                                         , nzs                  ! ! intent(in)
       use canopy_struct_dynamics , only : canopy_turbulence8   ! ! subroutine
       use ed_misc_coms           , only : current_time         ! ! intent(in)
+      use consts_coms            , only : cp                   & ! intent(in)
+                                        , alvl                 & ! intent(in)
+                                        , p00i                 & ! intent(in)
+                                        , rocp                 ! ! intent(in)
       implicit none
 
       !----------- Use MPI timing calls, need declarations --------------------------------!
@@ -45,13 +49,15 @@ module rk4_driver
       integer                                 :: iun
       integer                                 :: nsteps
       real                                    :: wcurr_loss2atm
+      real                                    :: ecurr_netrad
       real                                    :: ecurr_loss2atm
       real                                    :: co2curr_loss2atm
       real                                    :: wcurr_loss2drainage
       real                                    :: ecurr_loss2drainage
       real                                    :: wcurr_loss2runoff
       real                                    :: ecurr_loss2runoff
-      real                                    :: old_can_theiv
+      real                                    :: old_can_enthalpy
+      real                                    :: old_can_exner
       real                                    :: old_can_shv
       real                                    :: old_can_co2
       real                                    :: old_can_rhos
@@ -117,11 +123,12 @@ module rk4_driver
 
 
                !----- Save the previous thermodynamic state. ------------------------------!
-               old_can_theiv    = csite%can_theiv(ipa)
                old_can_shv      = csite%can_shv(ipa)
                old_can_co2      = csite%can_co2(ipa)
                old_can_rhos     = csite%can_rhos(ipa)
                old_can_temp     = csite%can_temp(ipa)
+               old_can_exner    = cp * (csite%can_prss(ipa) * p00i) ** rocp
+               old_can_enthalpy = old_can_exner * csite%can_theiv(ipa)
                !---------------------------------------------------------------------------!
 
 
@@ -137,15 +144,19 @@ module rk4_driver
                                       ,cmet%geoht,cpoly%lsl(isi),cpoly%ntext_soil(:,isi)   &
                                       ,cpoly%green_leaf_factor(:,isi)                      &
                                       ,cgrid%lon(ipy),cgrid%lat(ipy),cgrid%cosz(ipy))
+               !---------------------------------------------------------------------------!
+
 
                !----- Compute current storage terms. --------------------------------------!
                call update_budget(csite,cpoly%lsl(isi),ipa,ipa)
+               !---------------------------------------------------------------------------!
+
 
                !---------------------------------------------------------------------------!
                !     Set up the integration patch.                                         !
                !---------------------------------------------------------------------------!
                call copy_patch_init(csite,ipa,integration_buff%initp)
-
+               !---------------------------------------------------------------------------!
 
 
                !----- Get photosynthesis, stomatal conductance, and transpiration. --------!
@@ -153,25 +164,35 @@ module rk4_driver
                                          ,cpoly%ntext_soil(:,isi)                          &
                                          ,cpoly%leaf_aging_factor(:,isi)                   &
                                          ,cpoly%green_leaf_factor(:,isi))
+               !---------------------------------------------------------------------------!
+
 
                !----- Compute root and heterotrophic respiration. -------------------------!
                call soil_respiration(csite,ipa,nzg,cpoly%ntext_soil(:,isi))
+               !---------------------------------------------------------------------------!
+
 
                !---------------------------------------------------------------------------!
                !     Set up the integration patch.                                         !
                !---------------------------------------------------------------------------!
                call copy_patch_init_carbon(csite,ipa,integration_buff%initp)
+               !---------------------------------------------------------------------------!
+
 
                !---------------------------------------------------------------------------!
                !    This is the driver for the integration process...                      !
                !---------------------------------------------------------------------------!
                call integrate_patch_rk4(csite,integration_buff%initp,ipa,wcurr_loss2atm    &
-                                       ,ecurr_loss2atm,co2curr_loss2atm                    &
+                                       ,ecurr_netrad,ecurr_loss2atm,co2curr_loss2atm       &
                                        ,wcurr_loss2drainage,ecurr_loss2drainage            &
                                        ,wcurr_loss2runoff,ecurr_loss2runoff,nsteps)
+               !---------------------------------------------------------------------------!
+
 
                !----- Add the number of steps into the step counter. ----------------------!
                cgrid%workload(13,ipy) = cgrid%workload(13,ipy) + real(nsteps)
+               !---------------------------------------------------------------------------!
+
 
                !---------------------------------------------------------------------------!
                !    Update the minimum monthly temperature, based on canopy temperature.   !
@@ -179,17 +200,20 @@ module rk4_driver
                if (cpoly%site(isi)%can_temp(ipa) < cpoly%min_monthly_temp(isi)) then
                   cpoly%min_monthly_temp(isi) = cpoly%site(isi)%can_temp(ipa)
                end if
-               
+               !---------------------------------------------------------------------------!
+
+
                !---------------------------------------------------------------------------!
                !     Compute the residuals.                                                !
                !---------------------------------------------------------------------------!
                call compute_budget(csite,cpoly%lsl(isi),cmet%pcpg,cmet%qpcpg,ipa           &
-                                  ,wcurr_loss2atm,ecurr_loss2atm,co2curr_loss2atm          &
-                                  ,wcurr_loss2drainage,ecurr_loss2drainage                 &
-                                  ,wcurr_loss2runoff,ecurr_loss2runoff,cpoly%area(isi)     &
-                                  ,cgrid%cbudget_nep(ipy),old_can_theiv,old_can_shv        &
-                                  ,old_can_co2,old_can_rhos,old_can_temp)
+                                  ,wcurr_loss2atm,ecurr_netrad,ecurr_loss2atm              &
+                                  ,co2curr_loss2atm,wcurr_loss2drainage                    &
+                                  ,ecurr_loss2drainage,wcurr_loss2runoff,ecurr_loss2runoff &
+                                  ,cpoly%area(isi),cgrid%cbudget_nep(ipy),old_can_enthalpy &
+                                  ,old_can_shv,old_can_co2,old_can_rhos,old_can_temp)
 
+               !---------------------------------------------------------------------------!
             end do patchloop
          end do siteloop
 
@@ -209,9 +233,10 @@ module rk4_driver
    !=======================================================================================!
    !     This subroutine will drive the integration process.                               !
    !---------------------------------------------------------------------------------------!
-   subroutine integrate_patch_rk4(csite,initp,ipa,wcurr_loss2atm,ecurr_loss2atm            &
-                                 ,co2curr_loss2atm,wcurr_loss2drainage,ecurr_loss2drainage &
-                                 ,wcurr_loss2runoff,ecurr_loss2runoff,nsteps)
+   subroutine integrate_patch_rk4(csite,initp,ipa,wcurr_loss2atm,ecurr_netrad              &
+                                 ,ecurr_loss2atm,co2curr_loss2atm,wcurr_loss2drainage      &
+                                 ,ecurr_loss2drainage,wcurr_loss2runoff,ecurr_loss2runoff  &
+                                 ,nsteps)
       use ed_state_vars   , only : sitetype             & ! structure
                                  , patchtype            ! ! structure
       use ed_misc_coms    , only : dtlsm                ! ! intent(in)
@@ -236,6 +261,7 @@ module rk4_driver
       type(rk4patchtype)    , target      :: initp
       integer               , intent(in)  :: ipa
       real                  , intent(out) :: wcurr_loss2atm
+      real                  , intent(out) :: ecurr_netrad
       real                  , intent(out) :: ecurr_loss2atm
       real                  , intent(out) :: co2curr_loss2atm
       real                  , intent(out) :: wcurr_loss2drainage
@@ -293,9 +319,9 @@ module rk4_driver
       !------------------------------------------------------------------------------------!
       ! Move the state variables from the integrated patch to the model patch.             !
       !------------------------------------------------------------------------------------!
-      call initp2modelp(tend-tbeg,initp,csite,ipa,wcurr_loss2atm,ecurr_loss2atm            &
-                       ,co2curr_loss2atm,wcurr_loss2drainage,ecurr_loss2drainage           &
-                       ,wcurr_loss2runoff,ecurr_loss2runoff)
+      call initp2modelp(tend-tbeg,initp,csite,ipa,wcurr_loss2atm,ecurr_netrad              &
+                       ,ecurr_loss2atm,co2curr_loss2atm,wcurr_loss2drainage                &
+                       ,ecurr_loss2drainage,wcurr_loss2runoff,ecurr_loss2runoff)
 
       return
    end subroutine integrate_patch_rk4
@@ -312,9 +338,9 @@ module rk4_driver
    !     This subroutine will copy the variables from the integration buffer to the state  !
    ! patch and cohorts.                                                                    !
    !---------------------------------------------------------------------------------------!
-   subroutine initp2modelp(hdid,initp,csite,ipa,wbudget_loss2atm,ebudget_loss2atm          &
-                          ,co2budget_loss2atm,wbudget_loss2drainage,ebudget_loss2drainage  &
-                          ,wbudget_loss2runoff,ebudget_loss2runoff)
+   subroutine initp2modelp(hdid,initp,csite,ipa,wbudget_loss2atm,ebudget_netrad            &
+                          ,ebudget_loss2atm,co2budget_loss2atm,wbudget_loss2drainage       &
+                          ,ebudget_loss2drainage,wbudget_loss2runoff,ebudget_loss2runoff)
       use rk4_coms             , only : rk4patchtype         & ! structure
                                       , rk4site              & ! intent(in)
                                       , rk4min_veg_temp      & ! intent(in)
@@ -347,6 +373,7 @@ module rk4_driver
       real(kind=8)      , intent(in)  :: hdid
       integer           , intent(in)  :: ipa
       real              , intent(out) :: wbudget_loss2atm
+      real              , intent(out) :: ebudget_netrad
       real              , intent(out) :: ebudget_loss2atm
       real              , intent(out) :: co2budget_loss2atm
       real              , intent(out) :: wbudget_loss2drainage
@@ -469,6 +496,7 @@ module rk4_driver
 
       if(checkbudget) then
          co2budget_loss2atm    = sngloff(initp%co2budget_loss2atm   ,tiny_offset)
+         ebudget_netrad        = sngloff(initp%ebudget_netrad       ,tiny_offset)
          ebudget_loss2atm      = sngloff(initp%ebudget_loss2atm     ,tiny_offset)
          ebudget_loss2drainage = sngloff(initp%ebudget_loss2drainage,tiny_offset)
          ebudget_loss2runoff   = sngloff(initp%ebudget_loss2runoff  ,tiny_offset)
@@ -477,6 +505,7 @@ module rk4_driver
          wbudget_loss2runoff   = sngloff(initp%wbudget_loss2runoff  ,tiny_offset)
       else
          co2budget_loss2atm             = 0.
+         ebudget_netrad                 = 0.
          ebudget_loss2atm               = 0.
          ebudget_loss2drainage          = 0.
          ebudget_loss2runoff            = 0.
