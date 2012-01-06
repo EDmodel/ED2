@@ -148,9 +148,7 @@ subroutine node_sendadv(iaflag)
             case (4)
                sendnow = vtab_r(nv,ngrid)%iadvw == 1
             case (5)
-               sendnow = trim(vtab_r(nv,ngrid)%vnam) == 'SCAL_IN'
-            case (6)
-               sendnow = trim(vtab_r(nv,ngrid)%vnam) == 'SCAL_OUT'
+               sendnow = trim(vtab_r(nv,ngrid)%name) == 'SCAL_IN'
             end select
             !------------------------------------------------------------------------------!
 
@@ -224,28 +222,30 @@ subroutine node_getadv(iaflag)
    !----- Module variables. ---------------------------------------------------------------!
    include 'interface.h'
    include 'mpif.h'
+   !----- Arguments. ----------------------------------------------------------------------!
+   integer                            , intent(in)   :: iaflag
    !----- Local variables. ----------------------------------------------------------------!
-   integer, dimension(MPI_STATUS_SIZE) :: status1
-   integer                             :: ierr
-   integer                             :: ipos
-   integer                             :: itype
-   integer                             :: nm
-   integer                             :: ibytes
-   integer                             :: msgid
-   integer                             :: ihostnum
-   integer                             :: i1
-   integer                             :: i2
-   integer                             :: j1
-   integer                             :: j2
-   integer                             :: fdzp
-   integer                             :: fdep
-   integer                             :: nmp
-   integer                             :: nv
-   integer                             :: node_src
-   integer                             :: mtc
-   integer                             :: mtp
-   integer                             :: nptsxy
-   logical                             :: getnow
+   integer, dimension(MPI_STATUS_SIZE)               :: status1
+   integer                                           :: ierr
+   integer                                           :: ipos
+   integer                                           :: itype
+   integer                                           :: nm
+   integer                                           :: ibytes
+   integer                                           :: msgid
+   integer                                           :: ihostnum
+   integer                                           :: i1
+   integer                                           :: i2
+   integer                                           :: j1
+   integer                                           :: j2
+   integer                                           :: fdzp
+   integer                                           :: fdep
+   integer                                           :: nmp
+   integer                                           :: nv
+   integer                                           :: node_src
+   integer                                           :: mtc
+   integer                                           :: mtp
+   integer                                           :: nptsxy
+   logical                                           :: getnow
    !---------------------------------------------------------------------------------------!
 
 
@@ -331,9 +331,7 @@ subroutine node_getadv(iaflag)
             case (4)
                getnow = vtab_r(nv,ngrid)%iadvw == 1
             case (5)
-               getnow = trim(vtab_r(nv,ngrid)%vnam) == 'SCAL_IN'
-            case (6)
-               getnow = trim(vtab_r(nv,ngrid)%vnam) == 'SCAL_OUT'
+               getnow = trim(vtab_r(nv,ngrid)%name) == 'SCAL_IN'
             end select
             !------------------------------------------------------------------------------!
 

@@ -54,7 +54,9 @@ echo 'Number of polygons: '${npolys}'...'
 #   - plot_photo.r   - This creates plots from the detailed output for Farquhar-Leuning.   #
 #   - plot_rk4pc.r   - This creates plots from the detailed output for Runge-Kutta.        #
 #                      (patch- and cohort-level).                                          #
-# 
+#   - plot_budget.r  - This creates plots from the detailed budget for Runge-Kutta.        #
+#                      (patch-level only).                                                 #
+#                                                                                          #
 #   The following scripts should work too, but I haven't tested them.                      #
 #   - plot_daily.r   - This creates plots from the daily mean output.                      #
 #   - plot_fast.r    - This creates plots from the analysis files.                         #
@@ -188,6 +190,13 @@ do
          epostout='pmon_epost.out'
          epostlsf='pmon_epost.lsf'
          epostjob='eb-pmon-'${polyiata}
+         ;;
+      plot_budget.r)
+         thisyeara=${yeara}
+         let thisdatea=${datea}+1
+         epostout='pbdg_epost.out'
+         epostlsf='pbdg_epost.lsf'
+         epostjob='eb-prk4-'${polyiata}
          ;;
       plot_rk4.r)
          thisyeara=${yeara}

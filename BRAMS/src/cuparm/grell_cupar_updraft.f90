@@ -119,7 +119,8 @@ recursive subroutine grell_find_cloud_lfc(mkx,mgmzp,kbmax,cap_max,wnorm_max,wwin
    use rconstants, only : epi        & ! intent(in)
                         , rdry       ! ! intent(in)
    use therm_lib , only : idealdens  & ! function
-                        , lcl_il     ! ! subroutine
+                        , lcl_il     & ! subroutine
+                        , thil2tqall ! ! subroutine
    use mem_cuparm, only : wcldbs     ! ! intent(in)
    implicit none
 
@@ -323,8 +324,10 @@ subroutine grell_buoy_below_lfc(mkx,mgmzp,klou,klfc,exner_cup,p_cup,theiv_cup,th
                                ,t_cup,qtot_cup,qvap_cup,qliq_cup,qice_cup,qsat_cup,co2_cup &
                                ,rho_cup,theivu_cld,thilu_cld,tu_cld,qtotu_cld,qvapu_cld    &
                                ,qliqu_cld,qiceu_cld,qsatu_cld,co2u_cld,rhou_cld,dbyu)
-   use rconstants, only : epi,rdry
-   use therm_lib , only : idealdens
+   use rconstants, only : epi        & ! intent(in)
+                        , rdry       ! ! intent(in)
+   use therm_lib , only : idealdens  & ! function
+                        , thil2tqall ! ! subroutine
    implicit none
 
    integer               , intent(in)   :: mkx        ! # of vertical layers
@@ -519,7 +522,7 @@ subroutine grell_most_thermo_updraft(preccld,check_top,mkx,mgmzp,klfc,ktpse,cld2
                                     ,qiceu_cld,qsatu_cld,co2u_cld,rhou_cld,dbyu,pwu_cld    &
                                     ,pwavu,klnb,ktop,ierr)
    use rconstants, only : epi,rdry, t00, toodry, toowet
-   use therm_lib , only : thetaeiv2thil, idealdens, toler, maxfpo
+   use therm_lib , only : thetaeiv2thil, thil2tqall, idealdens, toler, maxfpo
    implicit none
    !----- Several scalars. ----------------------------------------------------------------!
    logical               , intent(in)    :: preccld     ! Flag for precipitation

@@ -74,6 +74,7 @@ subroutine leaftw_derivs(mzg,mzs,initp,dinitp,csite,ipa)
    use ed_max_dims          , only : nzgmax                & ! intent(in)
                                    , nzsmax                ! ! intent(in)
    use consts_coms          , only : alvl8                 & ! intent(in)
+                                   , cliq8                 & ! intent(in)
                                    , cliqvlme8             & ! intent(in)
                                    , tsupercool8           & ! intent(in)
                                    , wdns8                 & ! intent(in)
@@ -116,6 +117,8 @@ subroutine leaftw_derivs(mzg,mzs,initp,dinitp,csite,ipa)
    integer             , intent(in) :: mzg              ! Number of ground layers
    integer             , intent(in) :: mzs              ! Number of snow/ponding layers
    !----- Local variables -----------------------------------------------------------------!
+   type(patchtype)     , pointer    :: cpatch           ! Current patch
+   integer                          :: ico              ! Cohort counter
    integer                          :: k                ! Level counter
    integer                          :: k1               ! Level counter
    integer                          :: k2               ! Level counter
@@ -141,9 +144,14 @@ subroutine leaftw_derivs(mzg,mzs,initp,dinitp,csite,ipa)
    real(kind=8)                     :: wilting_factor   ! Wilting factor
    real(kind=8)                     :: ext_weight       ! Layer weight for transpiration
    real(kind=8)                     :: wgpmid           ! Soil in between layers
-   real(kind=8)                     :: tloss            ! Transpired water loss 
    real(kind=8)                     :: wloss            ! Water loss due to transpiration
-   real(kind=8)                     :: qwloss           ! Energy loss due to transpiration
+   real(kind=8)                     :: wvlmeloss        ! Water loss due to transpiration
+   real(kind=8)                     :: wloss_tot        ! Total water loss amongst cohorts
+   real(kind=8)                     :: wvlmeloss_tot    ! Total water loss amongst cohorts
+   real(kind=8)                     :: qloss            ! Energy loss due to transpiration
+   real(kind=8)                     :: qvlmeloss        ! Energy loss due to transpiration
+   real(kind=8)                     :: qloss_tot        ! Total energy loss amongst cohorts
+   real(kind=8)                     :: qvlmeloss_tot    ! Total energy loss amongst cohorts
    real(kind=8)                     :: dqwt             ! Energy adjustment aux. variable
    real(kind=8)                     :: fracliq          ! Fraction of liquid water
    real(kind=8)                     :: tempk            ! Temperature
@@ -197,13 +205,24 @@ subroutine leaftw_derivs(mzg,mzs,initp,dinitp,csite,ipa)
 #endif
    !---------------------------------------------------------------------------------------!
 
+
+   !----- Set the pointer to the current patch. -------------------------------------------!
+   cpatch => csite%patch(ipa)
+   !---------------------------------------------------------------------------------------!
+
+
    !----- Copy the # of surface water/snow layers and bottom layer to aliases -------------!
    ksn  = initp%nlev_sfcwater
    klsl = rk4site%lsl
    kben = klsl - 1
-  
+   !---------------------------------------------------------------------------------------!
+
+
    !---- Flush auxiliary variables to zero. -----------------------------------------------!
    call zero_rk4_aux()
+   !---------------------------------------------------------------------------------------!
+
+
 
    !----- Make sure derivatives are flushed to zero. --------------------------------------!
    dinitp%soil_energy(:)     = 0.0d0
@@ -715,19 +734,45 @@ subroutine leaftw_derivs(mzg,mzs,initp,dinitp,csite,ipa)
                   ! (tloss) to m3/m3/s (wloss).  Also, find the internal energy loss       !
                   ! (qwloss) associated with the water loss.  Since plants can extract     !
                   ! liquid water only, the internal energy is assumed to be entirely in    !
-                  ! liquid phase.                                                          !
+                  ! liquid phase.  Because the actual conversion from liquid phase to      !
+                  ! vapour happens at the leaf level, the internal energy must stay with   !
+                  ! the leaves so energy is preserved.                                     !
                   !------------------------------------------------------------------------!
-                  tloss  = rk4aux%extracted_water(k1) * ext_weight
-                  wloss  = rk4aux%extracted_water(k1) * ext_weight * wdnsi8 * dslzi8(k2)
-                  qwloss = wloss * cliqvlme8 * (initp%soil_tempk(k2) - tsupercool8)
+                  wloss_tot      = 0.d0
+                  qloss_tot      = 0.d0
+                  wvlmeloss_tot  = 0.d0
+                  qvlmeloss_tot  = 0.d0
+                  do ico=1,cpatch%ncohorts
+                     !----- Find the loss from this cohort. -------------------------------!
+                     wloss         = rk4aux%extracted_water(ico,k1) * ext_weight
+                     qloss         = wloss * cliq8 * (initp%soil_tempk(k2) - tsupercool8)
+                     wvlmeloss     = wloss * wdnsi8 * dslzi8(k2)
+                     qvlmeloss     = wvlmeloss * cliqvlme8                                 &
+                                   * (initp%soil_tempk(k2) - tsupercool8)
+                     !---------------------------------------------------------------------!
+
+
+                     !----- Add the internal energy to the cohort. ------------------------!
+                     dinitp%leaf_energy(ico) = dinitp%leaf_energy(ico) + qloss
+                     dinitp%veg_energy(ico) = dinitp%veg_energy(ico)   + qloss
+                     !---------------------------------------------------------------------!
+
+
+                     !----- Integrate the total to be removed from this layer. ------------!
+                     wloss_tot     = wloss_tot     + wloss
+                     qloss_tot     = qloss_tot     + qloss
+                     wvlmeloss_tot = wvlmeloss_tot + wvlmeloss
+                     qvlmeloss_tot = qvlmeloss_tot + qvlmeloss
+                     !---------------------------------------------------------------------!
+                  end do
                   !------------------------------------------------------------------------!
 
 
 
                   !----- Update derivatives of water, energy, and transpiration. ----------!
-                  dinitp%soil_water   (k2) = dinitp%soil_water(k2)    - wloss
-                  dinitp%soil_energy  (k2) = dinitp%soil_energy(k2)   - qwloss
-                  dinitp%avg_transloss(k2) = dinitp%avg_transloss(k2) - tloss
+                  dinitp%soil_water   (k2) = dinitp%soil_water(k2)    - wvlmeloss_tot
+                  dinitp%soil_energy  (k2) = dinitp%soil_energy(k2)   - qvlmeloss_tot
+                  dinitp%avg_transloss(k2) = dinitp%avg_transloss(k2) - wloss_tot
                   !------------------------------------------------------------------------!
                end if
                !---------------------------------------------------------------------------!
@@ -914,8 +959,8 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
    !---------------------------------------------------------------------------------------!
    rho_ustar = initp%can_rhos * initp%ustar                          ! Aux. variable
    hflxac    = rho_ustar      * initp%tstar * initp%can_exner        ! Sensible Heat flux
-   eflxac    = rho_ustar      * initp%estar * initp%can_exner        ! Enthalpy flux
    wflxac    = rho_ustar      * initp%qstar                          ! Water flux
+   eflxac    = hflxac + alvl8 * wflxac                               ! Enthalpy flux
    cflxac    = rho_ustar      * initp%cstar * mmdryi8                ! CO2 flux [umol/m2/s]
    !---------------------------------------------------------------------------------------!
 
@@ -1290,7 +1335,7 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
 
 
          !----- We need to extract water from the soil equal to the transpiration. --------!
-         rk4aux%extracted_water(kroot) = rk4aux%extracted_water(kroot) + transp
+         rk4aux%extracted_water(ico,kroot) = rk4aux%extracted_water(ico,kroot) + transp
          !---------------------------------------------------------------------------------!
 
 
@@ -1619,13 +1664,15 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
    !     Update the log of potential temperature (entropy), water vapour specific mass,    !
    ! and CO2 mixing ratio of the canopy air space.                                         !
    ! wcapcan: can_rhos * can_depth                  (water capacity)                       !
-   ! hcapcan: can_rhos * can_depth * cp8 * can_temp (entropy capacity times temperature)   !
+   ! hcapcan: can_rhos * can_depth * can_exner      (entropy capacity times temperature)   !
    ! ccapcan: can_rhos * can_depth * mmdryi         (carbon capacity)                      !
    !---------------------------------------------------------------------------------------!
-   dinitp%can_lntheta = ( hflxgc + hflxlc_tot + hflxwc_tot + hflxac) * hcapcani
-   dinitp%can_shv     = ( wflxgc - dewgndflx + wflxlc_tot                                  &
-                        + wflxwc_tot + transp_tot +  wflxac)         * wcapcani
-   dinitp%can_co2     = ( cflxgc + cflxlc_tot + cflxac)              * ccapcani
+   dinitp%can_enthalpy = ( hflxgc + hflxlc_tot + hflxwc_tot                                &
+                         + qwflxgc - qdewgndflx + qwflxlc_tot + qwflxwc_tot + qtransp_tot  &
+                         + eflxac                                   ) * hcapcani
+   dinitp%can_shv      = ( wflxgc - dewgndflx + wflxlc_tot                                 &
+                         + wflxwc_tot + transp_tot +  wflxac        ) * wcapcani
+   dinitp%can_co2      = ( cflxgc + cflxlc_tot + cflxac             ) * ccapcani
    !---------------------------------------------------------------------------------------!
 
 
@@ -1702,13 +1749,16 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
    !---------------------------------------------------------------------------------------!
    if (checkbudget) then
       dinitp%co2budget_loss2atm = - cflxac
+      dinitp%ebudget_loss2et    = qwflxgc     - qdewgndflx                                 &
+                                + qwflxlc_tot + qwflxwc_tot + qtransp_tot
       dinitp%ebudget_loss2atm   = - eflxac
       dinitp%wbudget_loss2atm   = - wflxac
       dinitp%co2budget_storage  = dinitp%co2budget_storage + cflxgc + cflxlc_tot + cflxac
       dinitp%ebudget_netrad     = dble(compute_netrad(csite,ipa))
       dinitp%ebudget_storage    = dinitp%ebudget_storage   + dinitp%ebudget_netrad         &
-                                + rk4site%qpcpg - dinitp%ebudget_loss2atm  
-      dinitp%wbudget_storage    = dinitp%wbudget_storage   + wflxac + rk4site%pcpg
+                                + rk4site%qpcpg - dinitp%ebudget_loss2atm
+      dinitp%wbudget_storage    = dinitp%wbudget_storage + rk4site%pcpg                    &
+                                - dinitp%wbudget_loss2atm
    end if
    !---------------------------------------------------------------------------------------!
 

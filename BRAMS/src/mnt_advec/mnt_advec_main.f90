@@ -24,10 +24,12 @@ subroutine radvc_mnt_driver(m1,m2,m3,ia,iz,ja,jz,mynum)
    use grid_dims    , only : maxgrds        ! ! intent(in)
    use mem_grid     , only : ngrid          & ! intent(in)
                            , grid_g         & ! intent(in)
-                           , dzt            ! ! intent(in)
+                           , dzt            & ! intent(in)
+                           , dtlt           ! ! intent(in)
    use mem_basic    , only : basic_g        ! ! intent(in)
    use mem_mnt_advec, only : advec_g        ! ! intent(in)
-   use var_tables   , only : num_scalar     ! ! intent(in)
+   use var_tables   , only : num_scalar     & ! intent(in)
+                           , scalar_tab     ! ! intent(in)
    implicit none
 
    !----- Arguments. ----------------------------------------------------------------------!
@@ -60,10 +62,10 @@ subroutine radvc_mnt_driver(m1,m2,m3,ia,iz,ja,jz,mynum)
    ! spacing.                                                                              !
    !---------------------------------------------------------------------------------------!
    if (first_time(ngrid)) then
-      call init_grid_spacing( m1, m2, m3, grid_g(ngrid)%dxt   , grid_g(ngrid)%dyt          &
+      call init_grid_spacing( m1, m2, m3, grid_g (ngrid)%dxt  , grid_g (ngrid)%dyt         &
                                         , dzt                 , grid_g (ngrid)%fmapt       &
                                         , grid_g (ngrid)%rtgt , advec_g(ngrid)%dxtw        &
-                                        , grid_g(ifm)%dytw    , grid_g(ifm)%dztw           )
+                                        , advec_g(ngrid)%dytw , advec_g(ngrid)%dztw        )
       first_time(ngrid) = .false.
    end if
    !---------------------------------------------------------------------------------------!
@@ -98,10 +100,10 @@ subroutine radvc_mnt_driver(m1,m2,m3,ia,iz,ja,jz,mynum)
                       , basic_g(ngrid)%uc    , basic_g(ngrid)%up                           &
                       , basic_g(ngrid)%vc    , basic_g(ngrid)%vp                           &
                       , basic_g(ngrid)%wc    , basic_g(ngrid)%wp                           &
-                      , grid_g(ngrid)%fmpaui , grid_g(ngrid)%fmapvi                        &
-                      , grid_g(ngrid)%rtgt   , grid_g(ngrid)%rtgu                          &
-                      , grid_g(ngrid)%rtgv   , grid_g(ngrid)%f13t                          &
-                      , grid_g(ngrid)%f23t   , advec_g(ngrid)%uavg                         &
+                      , grid_g (ngrid)%fmapui, grid_g (ngrid)%fmapvi                       &
+                      , grid_g (ngrid)%rtgt  , grid_g (ngrid)%rtgu                         &
+                      , grid_g (ngrid)%rtgv  , grid_g (ngrid)%f13t                         &
+                      , grid_g (ngrid)%f23t  , advec_g(ngrid)%uavg                         &
                       , advec_g(ngrid)%vavg  , advec_g(ngrid)%wavg                         )
    !---------------------------------------------------------------------------------------!
 
@@ -133,8 +135,8 @@ subroutine radvc_mnt_driver(m1,m2,m3,ia,iz,ja,jz,mynum)
    !---------------------------------------------------------------------------------------!
    do nv=1,num_scalar(ngrid)
       !----- Use some pointers to make it easier to read. ---------------------------------!
-      scalarp => scalar_tab(n,ngrid)%var_p
-      scalart => scalar_tab(n,ngrid)%var_t
+      scalarp => scalar_tab(nv,ngrid)%var_p
+      scalart => scalar_tab(nv,ngrid)%var_t
       !------------------------------------------------------------------------------------!
 
 
@@ -149,7 +151,7 @@ subroutine radvc_mnt_driver(m1,m2,m3,ia,iz,ja,jz,mynum)
       !----- Make the advection for the X direction. --------------------------------------!
       do j=ja,jz
          do k=2,m1-1
-            call monotonic_advec( m2, ia, iz, dtime                                        &
+            call monotonic_advec( m2, ia, iz, dtlt                                         &
                                 , advec_g(ngrid)%scal_in (k,:,j)                           &
                                 , advec_g(ngrid)%uavg    (k,:,j)                           &
                                 , advec_g(ngrid)%den0_wal(k,:,j)                           &
@@ -176,7 +178,7 @@ subroutine radvc_mnt_driver(m1,m2,m3,ia,iz,ja,jz,mynum)
       !----- Make the advection for the Y direction. --------------------------------------!
       do i=ia,iz
          do k=2,m1-1
-            call monotonic_advec( m3, ja, jz, dtime                                        &
+            call monotonic_advec( m3, ja, jz, dtlt                                         &
                                 , advec_g(ngrid)%scal_in (k,i,:)                           &
                                 , advec_g(ngrid)%vavg    (k,i,:)                           &
                                 , advec_g(ngrid)%den1_wal(k,i,:)                           &
@@ -203,7 +205,7 @@ subroutine radvc_mnt_driver(m1,m2,m3,ia,iz,ja,jz,mynum)
       !----- Make the advection for the Y direction. --------------------------------------!
       do j=ja,jz
          do i=ia,iz
-            call monotonic_advec( m1, ka, kz, dtime                                        &
+            call monotonic_advec( m1, ka, kz, dtlt                                         &
                                 , advec_g(ngrid)%scal_in (:,i,j)                           &
                                 , advec_g(ngrid)%wavg    (:,i,j)                           &
                                 , advec_g(ngrid)%den2_wal(:,i,j)                           &
@@ -272,7 +274,7 @@ subroutine monotonic_advec(npts,na,nz,dtime,qp,wind,ddm1,ddp0,densn,delta_n,qc)
    integer                 , intent(in)    :: nz
    real                    , intent(in)    :: dtime
    real   , dimension(npts), intent(in)    :: qp
-   real   , dimension(npts), intent(in)    :: uwnd
+   real   , dimension(npts), intent(in)    :: wind
    real   , dimension(npts), intent(in)    :: ddm1
    real   , dimension(npts), intent(in)    :: ddp0
    real   , dimension(npts), intent(in)    :: densn
@@ -348,12 +350,12 @@ subroutine monotonic_advec(npts,na,nz,dtime,qp,wind,ddm1,ddp0,densn,delta_n,qc)
       ! qc ar time t + dtime.  If these limits are ever violated, then a non-monotonic     !
       ! (i.e. oscillatory) behaviour will happen.                                          !
       !------------------------------------------------------------------------------------!
-      if (u(nm1) >= 0.) then
+      if (wind(nm1) >= 0.) then
          qleft  = qp(nm1)
       else
          qleft  = qp(n)
       end if
-      if (u(n)   <  0.) then
+      if (wind(n)   <  0.) then
          qright = qp(np1)
       else
          qright = qp(n)
@@ -372,18 +374,18 @@ subroutine monotonic_advec(npts,na,nz,dtime,qp,wind,ddm1,ddp0,densn,delta_n,qc)
    !>->->->->->->->->->->->->->->->->->->->->->->->->->->->->->->->->->->->->->->->->->->->!
    !>->->->->->->->->->->->->->->->->->->->->->->->->->->->->->->->->->->->->->->->->->->->!
    !------ Leftmost boundary condition. ---------------------------------------------------!
-   if (uwnd(nam1) >= 0.0) flux(nam1) = qp(nam1) * wind(nam1) * dtime * densn(nam1)
+   if (wind(nam1) >= 0.0) flux(nam1) = qp(nam1) * wind(nam1) * dtime * densn(nam1)
    !------ Update values for those points that are experiencing westerly advection. -------!
    lrloop: do n=na,nz
       nm1 = n - 1
       np1 = n + 1
       !----- Solve this point only if the winds are coming from the west. -----------------!
-      if (uwnd(n) >= 0.0) then
+      if (wind(n) >= 0.0) then
          !---------------------------------------------------------------------------------!
          !    Check whether there is only outflow from this grid point, or there is        !
          ! inflow.                                                                         !
          !---------------------------------------------------------------------------------!
-         if (uwnd(nm1) < 0.0) then
+         if (wind(nm1) < 0.0) then
             !----- Outflow only. ----------------------------------------------------------!
             flux(n) = qp(n) * wind(n) * dtime * densn(n)
             !------------------------------------------------------------------------------!

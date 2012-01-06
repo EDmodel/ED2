@@ -43,11 +43,12 @@ end subroutine update_budget
 !==========================================================================================!
 !==========================================================================================!
 subroutine compute_budget(csite,lsl,pcpg,qpcpg,ipa,wcurr_loss2atm,ecurr_netrad             &
-                         ,ecurr_loss2atm,co2curr_loss2atm,wcurr_loss2drainage              &
-                         ,ecurr_loss2drainage,wcurr_loss2runoff,ecurr_loss2runoff          &
-                         ,site_area,cbudget_nep,old_can_enthalpy,old_can_shv,old_can_co2   &
-                         ,old_can_rhos,old_can_temp)
+                         ,ecurr_loss2et,ecurr_loss2atm,co2curr_loss2atm                    &
+                         ,wcurr_loss2drainage,ecurr_loss2drainage,wcurr_loss2runoff        &
+                         ,ecurr_loss2runoff,site_area,cbudget_nep,old_can_enthalpy         &
+                         ,old_can_shv,old_can_co2,old_can_rhos,old_can_temp)
    use ed_state_vars, only : sitetype           ! ! structure
+   use ed_max_dims  , only : str_len            ! ! intent(in)
    use ed_misc_coms , only : dtlsm              & ! intent(in)
                            , fast_diagnostics   & ! intent(in)
                            , current_time       ! ! intent(in)
@@ -62,74 +63,124 @@ subroutine compute_budget(csite,lsl,pcpg,qpcpg,ipa,wcurr_loss2atm,ecurr_netrad  
                            , mmdryi             & ! intent(in)
                            , epim1              ! ! intent(in)
    use rk4_coms     , only : rk4eps             & ! intent(in)
+                           , print_budget       & ! intent(in)
+                           , budget_pref        & ! intent(in)
                            , checkbudget        ! ! intent(in)
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
-   type(sitetype)        , target        :: csite
-   real                  , intent(in)    :: pcpg
-   real                  , intent(in)    :: qpcpg
-   real                  , intent(in)    :: co2curr_loss2atm
-   real                  , intent(in)    :: ecurr_netrad
-   real                  , intent(in)    :: ecurr_loss2atm
-   real                  , intent(in)    :: ecurr_loss2drainage
-   real                  , intent(in)    :: ecurr_loss2runoff
-   real                  , intent(in)    :: wcurr_loss2atm
-   real                  , intent(in)    :: wcurr_loss2drainage
-   real                  , intent(in)    :: wcurr_loss2runoff
-   integer               , intent(in)    :: lsl
-   integer               , intent(in)    :: ipa
-   real                  , intent(in)    :: site_area
-   real                  , intent(inout) :: cbudget_nep
-   real                  , intent(in)    :: old_can_enthalpy
-   real                  , intent(in)    :: old_can_shv
-   real                  , intent(in)    :: old_can_co2
-   real                  , intent(in)    :: old_can_rhos
-   real                  , intent(in)    :: old_can_temp
+   type(sitetype)                          , target        :: csite
+   real                                    , intent(inout) :: pcpg
+   real                                    , intent(inout) :: qpcpg
+   real                                    , intent(inout) :: co2curr_loss2atm
+   real                                    , intent(inout) :: ecurr_netrad
+   real                                    , intent(inout) :: ecurr_loss2et
+   real                                    , intent(inout) :: ecurr_loss2atm
+   real                                    , intent(inout) :: ecurr_loss2drainage
+   real                                    , intent(inout) :: ecurr_loss2runoff
+   real                                    , intent(inout) :: wcurr_loss2atm
+   real                                    , intent(inout) :: wcurr_loss2drainage
+   real                                    , intent(inout) :: wcurr_loss2runoff
+   integer                                 , intent(in)    :: lsl
+   integer                                 , intent(in)    :: ipa
+   real                                    , intent(in)    :: site_area
+   real                                    , intent(inout) :: cbudget_nep
+   real                                    , intent(in)    :: old_can_enthalpy
+   real                                    , intent(in)    :: old_can_shv
+   real                                    , intent(in)    :: old_can_co2
+   real                                    , intent(in)    :: old_can_rhos
+   real                                    , intent(in)    :: old_can_temp
    !----- Local variables -----------------------------------------------------------------!
-   real, dimension(n_dbh)                :: gpp_dbh
-   real                                  :: co2budget_finalstorage
-   real                                  :: co2budget_deltastorage
-   real                                  :: co2curr_gpp
-   real                                  :: co2curr_leafresp
-   real                                  :: co2curr_rootresp
-   real                                  :: co2curr_growthresp
-   real                                  :: co2curr_storageresp
-   real                                  :: co2curr_vleafresp
-   real                                  :: co2curr_hetresp
-   real                                  :: co2curr_nep
-   real                                  :: co2curr_denseffect
-   real                                  :: co2curr_residual
-   real                                  :: ebudget_finalstorage
-   real                                  :: ebudget_deltastorage
-   real                                  :: ecurr_precipgain
-   real                                  :: ecurr_denseffect
-   real                                  :: ecurr_residual
-   real                                  :: wbudget_finalstorage
-   real                                  :: wbudget_deltastorage
-   real                                  :: wcurr_precipgain
-   real                                  :: wcurr_denseffect
-   real                                  :: wcurr_residual
-   real                                  :: gpp
-   real                                  :: leaf_resp
-   real                                  :: root_resp
-   real                                  :: growth_resp
-   real                                  :: storage_resp
-   real                                  :: vleaf_resp
-   real                                  :: curr_can_exner
-   real                                  :: curr_can_enthalpy
-   logical                               :: co2_ok
-   logical                               :: energy_ok
-   logical                               :: water_ok
+   character(len=str_len)                                  :: budget_fout
+   real, dimension(n_dbh)                                  :: gpp_dbh
+   real                                                    :: co2budget_finalstorage
+   real                                                    :: co2budget_deltastorage
+   real                                                    :: co2curr_gpp
+   real                                                    :: co2curr_leafresp
+   real                                                    :: co2curr_rootresp
+   real                                                    :: co2curr_growthresp
+   real                                                    :: co2curr_storageresp
+   real                                                    :: co2curr_vleafresp
+   real                                                    :: co2curr_hetresp
+   real                                                    :: co2curr_nep
+   real                                                    :: co2curr_denseffect
+   real                                                    :: co2curr_residual
+   real                                                    :: ebudget_finalstorage
+   real                                                    :: ebudget_deltastorage
+   real                                                    :: ecurr_precipgain
+   real                                                    :: ecurr_denseffect
+   real                                                    :: ecurr_residual
+   real                                                    :: wbudget_finalstorage
+   real                                                    :: wbudget_deltastorage
+   real                                                    :: wcurr_precipgain
+   real                                                    :: wcurr_denseffect
+   real                                                    :: wcurr_residual
+   real                                                    :: curr_can_enthalpy
+   real                                                    :: gpp
+   real                                                    :: leaf_resp
+   real                                                    :: root_resp
+   real                                                    :: growth_resp
+   real                                                    :: storage_resp
+   real                                                    :: vleaf_resp
+   real                                                    :: co2_factor
+   real                                                    :: ene_factor
+   real                                                    :: h2o_factor
+   integer                                                 :: jpa
+   logical                                                 :: isthere
+   logical                                                 :: co2_ok
+   logical                                                 :: energy_ok
+   logical                                                 :: water_ok
    !----- Local constants. ----------------------------------------------------------------!
    character(len=13)     , parameter     :: fmtf='(a,1x,es14.7)'
-   logical               , parameter     :: print_debug = .true.
+   character(len=10)     , parameter     :: bhfmt='(30(a,1x))'
+   character(len=48)     , parameter     :: bbfmt='(3(i13,1x),27(es13.6,1x))'
    !----- External functions. -------------------------------------------------------------!
    real                  , external      :: compute_netrad
    real                  , external      :: compute_water_storage
    real                  , external      :: compute_energy_storage
    real                  , external      :: compute_co2_storage
    real                  , external      :: ddens_dt_effect
+   !----- Locally saved variables. --------------------------------------------------------!
+   logical               , save          :: first_time = .true.
    !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !      If this is the first time, we initialise all files with their headers.           !
+   !---------------------------------------------------------------------------------------!
+   if (first_time) then
+      do jpa = 1, csite%npatches
+         write(budget_fout,fmt='(2a,i4.4,a)') trim(budget_pref),'patch_',jpa,'.txt'
+         inquire(file=trim(budget_fout),exist=isthere)
+         if (isthere) then
+            !---- Open the file to delete when closing. -----------------------------------!
+            open (unit=86,file=trim(budget_fout),status='old',action='write')
+            close(unit=86,status='delete')
+         end if
+         !---------------------------------------------------------------------------------!
+
+         if (print_budget) then
+            !------------------------------------------------------------------------------!
+            open (unit=86,file=trim(budget_fout),status='replace',action='write')
+            write(unit=86,fmt=bhfmt)   '         YEAR' , '        MONTH' , '          DAY' &
+                                     , '         TIME' , '          LAI' , '          WAI' &
+                                     , '       HEIGHT' , '  CO2.STORAGE' , ' CO2.RESIDUAL' &
+                                     , ' CO2.DSTORAGE' , '      CO2.NEP' , ' CO2.DENS.EFF' &
+                                     , ' CO2.LOSS2ATM' , '  ENE.STORAGE' , ' ENE.RESIDUAL' &
+                                     , ' ENE.DSTORAGE' , '   ENE.PRECIP' , '   ENE.NETRAD' &
+                                     , ' ENE.DENS.EFF' , ' ENE.LOSS2ATM' , ' ENE.DRAINAGE' &
+                                     , '   ENE.RUNOFF' , '  H2O.STORAGE' , ' H2O.RESIDUAL' &
+                                     , ' H2O.DSTORAGE' , '   H2O.PRECIP' , ' H2O.DENS.EFF' &
+                                     , ' H2O.LOSS2ATM' , ' H2O.DRAINAGE' , '   H2O.RUNOFF'
+                                     
+            close(unit=86,status='keep')
+         end if
+      end do
+      first_time = .false.
+   end if
+   !---------------------------------------------------------------------------------------!
+
+
 
    !---------------------------------------------------------------------------------------!
    !     Compute gain in water and energy due to precipitation.                            !
@@ -152,11 +203,14 @@ subroutine compute_budget(csite,lsl,pcpg,qpcpg,ipa,wcurr_loss2atm,ecurr_netrad  
    !---------------------------------------------------------------------------------------!
    !     For enthalpy, we must find the current enthalpy first.                            !
    !---------------------------------------------------------------------------------------!
-   curr_can_exner      = cp * (csite%can_prss(ipa) * p00i) ** rocp
-   curr_can_enthalpy   = curr_can_exner * csite%can_theiv(ipa)
+   curr_can_enthalpy   = cp * (p00i * csite%can_prss(ipa)) ** rocp * csite%can_theta(ipa)  &
+                       + alvl * csite%can_shv(ipa)
    ecurr_denseffect    = ddens_dt_effect(old_can_rhos,csite%can_rhos(ipa)                  &
                                         ,old_can_enthalpy, curr_can_enthalpy               &
-                                        ,csite%can_depth(ipa),1.)
+                                        ,csite%can_depth(ipa),1.0)
+   !---------------------------------------------------------------------------------------!
+
+
    !---------------------------------------------------------------------------------------!
    !     Compute the carbon flux components.                                               !
    !---------------------------------------------------------------------------------------!
@@ -193,15 +247,67 @@ subroutine compute_budget(csite,lsl,pcpg,qpcpg,ipa,wcurr_loss2atm,ecurr_netrad  
                     - ( - co2curr_nep - co2curr_loss2atm)                                  &
                     - co2curr_denseffect
    !----- 2. Energy. ----------------------------------------------------------------------!
-   ecurr_residual   = ebudget_deltastorage - ( ecurr_precipgain  + ecurr_netrad            &
-                                             - ecurr_loss2atm    - ecurr_loss2drainage     &
-                                             - ecurr_loss2runoff )                         &
-                                           - ecurr_denseffect
+   ecurr_residual   = ebudget_deltastorage - ( ecurr_precipgain    + ecurr_netrad          &
+                                             - ecurr_loss2atm      - ecurr_loss2drainage   &
+                                             - ecurr_loss2runoff   ) - ecurr_denseffect
    !----- 3. Water. -----------------------------------------------------------------------!
    wcurr_residual   = wbudget_deltastorage - ( wcurr_precipgain    - wcurr_loss2atm        &
                                              - wcurr_loss2drainage - wcurr_loss2runoff)    &
                                            - wcurr_denseffect
    !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Integrate residuals.                                                              !
+   !---------------------------------------------------------------------------------------!
+   !----- 1. Canopy CO2. ------------------------------------------------------------------!
+   csite%co2budget_residual(ipa) = csite%co2budget_residual(ipa)  + co2curr_residual
+   !----- 2. Energy. ----------------------------------------------------------------------!
+   csite%ebudget_residual(ipa) = csite%ebudget_residual(ipa)      + ecurr_residual
+   !----- 3. Water. -----------------------------------------------------------------------!
+   csite%wbudget_residual(ipa) = csite%wbudget_residual(ipa)      + wcurr_residual
+   !---------------------------------------------------------------------------------------!
+
+   !---------------------------------------------------------------------------------------!
+   !    Integrate the terms that are part of the budget.                                   !
+   !---------------------------------------------------------------------------------------!
+   !----- 1. Carbon dioxide. --------------------------------------------------------------!
+   csite%co2budget_gpp(ipa)         = csite%co2budget_gpp(ipa)       + gpp        * dtlsm
+   csite%co2budget_gpp_dbh(:,ipa)   = csite%co2budget_gpp_dbh(:,ipa) + gpp_dbh(:) * dtlsm
+   csite%co2budget_plresp(ipa)      = csite%co2budget_plresp(ipa)                          &
+                                    + ( leaf_resp + root_resp + growth_resp + storage_resp &
+                                      + vleaf_resp ) * dtlsm
+   csite%co2budget_rh(ipa)          = csite%co2budget_rh(ipa) + csite%rh(ipa) * dtlsm
+   csite%co2budget_denseffect(ipa)  = csite%co2budget_denseffect(ipa) + co2curr_denseffect
+   csite%co2budget_loss2atm(ipa)    = csite%co2budget_loss2atm(ipa)   + co2curr_loss2atm
+   !----- 2. Energy. ----------------------------------------------------------------------!
+   csite%ebudget_precipgain(ipa)    = csite%ebudget_precipgain(ipa)    + ecurr_precipgain
+   csite%ebudget_netrad(ipa)        = csite%ebudget_netrad(ipa)        + ecurr_netrad
+   csite%ebudget_denseffect(ipa)    = csite%ebudget_denseffect(ipa)    + ecurr_denseffect
+   csite%ebudget_loss2et(ipa)       = csite%ebudget_loss2et(ipa)       + ecurr_loss2et
+   csite%ebudget_loss2atm(ipa)      = csite%ebudget_loss2atm(ipa)      + ecurr_loss2atm
+   csite%ebudget_loss2drainage(ipa) = csite%ebudget_loss2drainage(ipa)                     &
+                                    + ecurr_loss2drainage
+   csite%ebudget_loss2runoff(ipa)   = csite%ebudget_loss2runoff(ipa)                       &
+                                    + ecurr_loss2runoff
+   !----- 3. Water. -----------------------------------------------------------------------!
+   csite%wbudget_precipgain(ipa)    = csite%wbudget_precipgain(ipa) + wcurr_precipgain
+   csite%wbudget_denseffect(ipa)    = csite%wbudget_denseffect(ipa) + wcurr_denseffect
+   csite%wbudget_loss2atm(ipa)      = csite%wbudget_loss2atm(ipa)   + wcurr_loss2atm
+   csite%wbudget_loss2drainage(ipa) = csite%wbudget_loss2drainage(ipa)                     &
+                                    + wcurr_loss2drainage
+   csite%wbudget_loss2runoff(ipa)   = csite%wbudget_loss2runoff(ipa)                       &
+                                    + wcurr_loss2runoff
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Update density and initial storage for next step.                                 !
+   !---------------------------------------------------------------------------------------!
+   csite%wbudget_initialstorage(ipa)   = wbudget_finalstorage
+   csite%ebudget_initialstorage(ipa)   = ebudget_finalstorage
+   csite%co2budget_initialstorage(ipa) = co2budget_finalstorage
+
 
    !---------------------------------------------------------------------------------------!
    !    If the "check budget" option is activated (you can turn on and turn off by setting !
@@ -215,43 +321,6 @@ subroutine compute_budget(csite,lsl,pcpg,qpcpg,ipa,wcurr_loss2atm,ecurr_netrad  
                                                   + abs(ebudget_deltastorage)   )
       water_ok  = abs(wcurr_residual) <= rk4eps * ( abs(wbudget_finalstorage)              &
                                                   + abs(wbudget_deltastorage)   )
-
-      if (print_debug) then 
-         write (unit=56,fmt='(i4.4,2(1x,i2.2),1x,f6.0,6(1x,es14.7))')                      &
-                current_time%year,current_time%month,current_time%date                     &
-               ,current_time%time                                                          &
-               ,co2budget_finalstorage                                                     &
-               ,co2curr_residual/dtlsm                                                     &
-               ,co2budget_deltastorage/dtlsm                                               &
-               ,co2curr_nep/dtlsm                                                          &
-               ,co2curr_denseffect/dtlsm                                                   &
-               ,co2curr_loss2atm/dtlsm
-
-         write (unit=66,fmt='(i4.4,2(1x,i2.2),1x,f6.0,9(1x,es14.7))')                      &
-                current_time%year,current_time%month,current_time%date                     &
-               ,current_time%time                                                          &
-               ,ebudget_finalstorage                                                       &
-               ,ecurr_residual/dtlsm                                                       &
-               ,ebudget_deltastorage/dtlsm                                                 &
-               ,ecurr_precipgain/dtlsm                                                     &
-               ,ecurr_netrad/dtlsm                                                         &
-               ,ecurr_denseffect/dtlsm                                                     &
-               ,ecurr_loss2atm/dtlsm                                                       &
-               ,ecurr_loss2drainage/dtlsm                                                  &
-               ,ecurr_loss2runoff/dtlsm
-
-         write (unit=76,fmt='(i4.4,2(1x,i2.2),1x,f6.0,8(1x,es14.7))')                      &
-                current_time%year,current_time%month,current_time%date                     &
-               ,current_time%time                                                          &
-               ,wbudget_finalstorage                                                       &
-               ,wcurr_residual*day_sec/dtlsm                                               &
-               ,wbudget_deltastorage*day_sec/dtlsm                                         &
-               ,wcurr_precipgain*day_sec/dtlsm                                             &
-               ,wcurr_denseffect*day_sec/dtlsm                                             &
-               ,wcurr_loss2atm*day_sec/dtlsm                                               &
-               ,wcurr_loss2drainage*day_sec/dtlsm                                          &
-               ,wcurr_loss2runoff*day_sec/dtlsm
-      end if
 
 
       if (.not. co2_ok) then
@@ -285,7 +354,7 @@ subroutine compute_budget(csite,lsl,pcpg,qpcpg,ipa,wcurr_loss2atm,ecurr_netrad  
 
       if (.not. energy_ok) then
          write (unit=*,fmt='(a)') '|-----------------------------------------------------|'
-         write (unit=*,fmt='(a)') '|         !!! ): Energy budget failed :( !!!          |'
+         write (unit=*,fmt='(a)') '|         !!! ): Enthalpy budget failed :( !!!        |'
          write (unit=*,fmt='(a)') '|-----------------------------------------------------|'
          write (unit=*,fmt='(a,i4.4,2(1x,i2.2),1x,f6.0)') ' TIME           : ',           &
             current_time%year,current_time%month,current_time%date ,current_time%time
@@ -299,6 +368,7 @@ subroutine compute_budget(csite,lsl,pcpg,qpcpg,ipa,wcurr_loss2atm,ecurr_netrad  
          write (unit=*,fmt=fmtf ) ' PRECIPGAIN     : ',ecurr_precipgain
          write (unit=*,fmt=fmtf ) ' NETRAD         : ',ecurr_netrad
          write (unit=*,fmt=fmtf ) ' DENSITY_EFFECT : ',ecurr_denseffect
+         write (unit=*,fmt=fmtf ) ' LOSS2ET        : ',ecurr_loss2et
          write (unit=*,fmt=fmtf ) ' LOSS2ATM       : ',ecurr_loss2atm
          write (unit=*,fmt=fmtf ) ' LOSS2DRAINAGE  : ',ecurr_loss2drainage
          write (unit=*,fmt=fmtf ) ' LOSS2RUNOFF    : ',ecurr_loss2runoff
@@ -329,62 +399,71 @@ subroutine compute_budget(csite,lsl,pcpg,qpcpg,ipa,wcurr_loss2atm,ecurr_netrad  
          write (unit=*,fmt='(a)') ' '
       end if
 
+
+
+
+
+
+      if (print_budget) then 
+         co2_factor =      1. / dtlsm
+         ene_factor =      1. / dtlsm
+         h2o_factor = day_sec / dtlsm
+
+         !----- Fix the units so the terms are expressed as fluxes. -----------------------!
+         co2curr_residual       = co2curr_residual       * co2_factor
+         co2budget_deltastorage = co2budget_deltastorage * co2_factor
+         co2curr_nep            = co2curr_nep            * co2_factor
+         co2curr_denseffect     = co2curr_denseffect     * co2_factor
+         co2curr_loss2atm       = co2curr_loss2atm       * co2_factor
+         ecurr_residual         = ecurr_residual         * ene_factor
+         ebudget_deltastorage   = ebudget_deltastorage   * ene_factor
+         ecurr_precipgain       = ecurr_precipgain       * ene_factor
+         ecurr_netrad           = ecurr_netrad           * ene_factor
+         ecurr_denseffect       = ecurr_denseffect       * ene_factor
+         ecurr_loss2atm         = ecurr_loss2atm         * ene_factor
+         ecurr_loss2drainage    = ecurr_loss2drainage    * ene_factor
+         ecurr_loss2runoff      = ecurr_loss2runoff      * ene_factor
+         wcurr_residual         = wcurr_residual         * h2o_factor
+         wbudget_deltastorage   = wbudget_deltastorage   * h2o_factor
+         wcurr_precipgain       = wcurr_precipgain       * h2o_factor
+         wcurr_denseffect       = wcurr_denseffect       * h2o_factor
+         wcurr_loss2atm         = wcurr_loss2atm         * h2o_factor
+         wcurr_loss2drainage    = wcurr_loss2drainage    * h2o_factor
+         wcurr_loss2runoff      = wcurr_loss2runoff      * h2o_factor
+         !---------------------------------------------------------------------------------!
+
+
+         !---------------------------------------------------------------------------------!
+         !      Write the file.                                                            !
+         !---------------------------------------------------------------------------------!
+         write(budget_fout,fmt='(2a,i4.4,a)') trim(budget_pref),'patch_',ipa,'.txt'
+         open (unit=86,file=trim(budget_fout),status='old',action='write'                  &
+              ,position='append')
+         write(unit=86,fmt=bbfmt)                                                          &
+                 current_time%year      , current_time%month     , current_time%date       &
+               , current_time%time      , csite%lai(ipa)         , csite%wai(ipa)          &
+               , csite%veg_height(ipa)  , co2budget_finalstorage , co2curr_residual        &
+               , co2budget_deltastorage , co2curr_nep            , co2curr_denseffect      &
+               , co2curr_loss2atm       , ebudget_finalstorage   , ecurr_residual          &
+               , ebudget_deltastorage   , ecurr_precipgain       , ecurr_netrad            &
+               , ecurr_denseffect       , ecurr_loss2atm         , ecurr_loss2drainage     &
+               , ecurr_loss2runoff      , wbudget_finalstorage   , wcurr_residual          &
+               , wbudget_deltastorage   , wcurr_precipgain       , wcurr_denseffect        &
+               , wcurr_loss2atm         , wcurr_loss2drainage    , wcurr_loss2runoff       
+         close(unit=86,status='keep')
+         !---------------------------------------------------------------------------------!
+      end if
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !      Stop the run in case there is any leak of CO2, enthalpy, or water.            !
+      !------------------------------------------------------------------------------------!
       if (.not. (co2_ok .and. energy_ok .and. water_ok)) then
          call fatal_error('Budget check has failed, see message above!'      &
                          ,'compute_budget','budget_utils.f90')
       end if
    end if
-
-
-   !---------------------------------------------------------------------------------------!
-   !     Integrate residuals.                                                              !
-   !---------------------------------------------------------------------------------------!
-   !----- 1. Canopy CO2. ------------------------------------------------------------------!
-   csite%co2budget_residual(ipa) = csite%co2budget_residual(ipa)  + co2curr_residual
-   !----- 2. Energy. ----------------------------------------------------------------------!
-   csite%ebudget_residual(ipa) = csite%ebudget_residual(ipa)      + ecurr_residual
-   !----- 3. Water. -----------------------------------------------------------------------!
-   csite%wbudget_residual(ipa) = csite%wbudget_residual(ipa)      + wcurr_residual
-   !---------------------------------------------------------------------------------------!
-
-   !---------------------------------------------------------------------------------------!
-   !    Integrate the terms that are part of the budget.                                   !
-   !---------------------------------------------------------------------------------------!
-   !----- 1. Carbon dioxide. --------------------------------------------------------------!
-   csite%co2budget_gpp(ipa)         = csite%co2budget_gpp(ipa)       + gpp        * dtlsm
-   csite%co2budget_gpp_dbh(:,ipa)   = csite%co2budget_gpp_dbh(:,ipa) + gpp_dbh(:) * dtlsm
-   csite%co2budget_plresp(ipa)      = csite%co2budget_plresp(ipa)                          &
-                                    + ( leaf_resp + root_resp + growth_resp + storage_resp &
-                                      + vleaf_resp ) * dtlsm
-   csite%co2budget_rh(ipa)          = csite%co2budget_rh(ipa) + csite%rh(ipa) * dtlsm
-   csite%co2budget_denseffect(ipa)  = csite%co2budget_denseffect(ipa) + co2curr_denseffect
-   csite%co2budget_loss2atm(ipa)    = csite%co2budget_loss2atm(ipa)   + co2curr_loss2atm
-   !----- 2. Energy. ----------------------------------------------------------------------!
-   csite%ebudget_precipgain(ipa)    = csite%ebudget_precipgain(ipa)    + ecurr_precipgain
-   csite%ebudget_netrad(ipa)        = csite%ebudget_netrad(ipa)        + ecurr_netrad
-   csite%ebudget_denseffect(ipa)    = csite%ebudget_denseffect(ipa)    + ecurr_denseffect
-   csite%ebudget_loss2atm(ipa)      = csite%ebudget_loss2atm(ipa)      + ecurr_loss2atm
-   csite%ebudget_loss2drainage(ipa) = csite%ebudget_loss2drainage(ipa)                     &
-                                    + ecurr_loss2drainage
-   csite%ebudget_loss2runoff(ipa)   = csite%ebudget_loss2runoff(ipa)                       &
-                                    + ecurr_loss2runoff
-   !----- 3. Water. -----------------------------------------------------------------------!
-   csite%wbudget_precipgain(ipa)    = csite%wbudget_precipgain(ipa) + wcurr_precipgain
-   csite%wbudget_denseffect(ipa)    = csite%wbudget_denseffect(ipa) + wcurr_denseffect
-   csite%wbudget_loss2atm(ipa)      = csite%wbudget_loss2atm(ipa)   + wcurr_loss2atm
-   csite%wbudget_loss2drainage(ipa) = csite%wbudget_loss2drainage(ipa)                     &
-                                    + wcurr_loss2drainage
-   csite%wbudget_loss2runoff(ipa)   = csite%wbudget_loss2runoff(ipa)                       &
-                                    + wcurr_loss2runoff
-   !---------------------------------------------------------------------------------------!
-
-
-   !---------------------------------------------------------------------------------------!
-   !     Update density and initial storage for next step.                                 !
-   !---------------------------------------------------------------------------------------!
-   csite%wbudget_initialstorage(ipa)   = wbudget_finalstorage
-   csite%ebudget_initialstorage(ipa)   = ebudget_finalstorage
-   csite%co2budget_initialstorage(ipa) = co2budget_finalstorage
 
    return
 end subroutine compute_budget
@@ -433,8 +512,8 @@ real function compute_water_storage(csite, lsl,ipa)
    end do
    !----- 3. Add the water vapour floating in the canopy air space. -----------------------!
    compute_water_storage = compute_water_storage                                           &
-                            + csite%can_shv(ipa) * csite%can_depth(ipa)                    &
-                            * csite%can_rhos(ipa)
+                         + csite%can_shv(ipa) * csite%can_depth(ipa)                       &
+                         * csite%can_rhos(ipa)
    !----- 4. Add the water on the leaf and wood surfaces. ---------------------------------!
    do ico = 1,cpatch%ncohorts
       compute_water_storage = compute_water_storage + cpatch%leaf_water(ico)
@@ -525,7 +604,6 @@ real function compute_energy_storage(csite, lsl, ipa)
    real                        :: sfcwater_storage
    real                        :: cas_storage
    real                        :: veg_storage
-   real                        :: can_exner
    real                        :: can_enthalpy
    !---------------------------------------------------------------------------------------!
 
@@ -555,8 +633,8 @@ real function compute_energy_storage(csite, lsl, ipa)
    !---------------------------------------------------------------------------------------!
    ! 3. Find and value for canopy air total enthalpy .                                     !
    !---------------------------------------------------------------------------------------!
-   can_exner    = cp * (csite%can_prss(ipa) * p00i) ** rocp
-   can_enthalpy = can_exner * csite%can_theiv(ipa)
+   can_enthalpy = cp * ( (p00i * csite%can_prss(ipa)) ** rocp ) * csite%can_theta(ipa)     &
+                + alvl * csite%can_shv(ipa)
    cas_storage  = csite%can_rhos(ipa) * csite%can_depth(ipa) * can_enthalpy
    !---------------------------------------------------------------------------------------!
 
@@ -568,9 +646,12 @@ real function compute_energy_storage(csite, lsl, ipa)
    do ico = 1,cpatch%ncohorts
       veg_storage = veg_storage + cpatch%leaf_energy(ico) + cpatch%wood_energy(ico)
    end do
- 
+   !---------------------------------------------------------------------------------------!
+
+
    !----- 5. Integrating the total energy in ED. ------------------------------------------!
    compute_energy_storage = soil_storage + sfcwater_storage + cas_storage + veg_storage
+   !---------------------------------------------------------------------------------------!
 
    return
 end function compute_energy_storage

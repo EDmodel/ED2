@@ -49,14 +49,15 @@ subroutine heun_timestep(cgrid)
    real                                   :: veg_tai
    real                                   :: wcurr_loss2atm
    real                                   :: ecurr_netrad
+   real                                   :: ecurr_loss2et
    real                                   :: ecurr_loss2atm
    real                                   :: co2curr_loss2atm
    real                                   :: wcurr_loss2drainage
    real                                   :: ecurr_loss2drainage
    real                                   :: wcurr_loss2runoff
    real                                   :: ecurr_loss2runoff
-   real                                   :: old_can_exner
    real                                   :: old_can_enthalpy
+   real                                   :: old_can_exner
    real                                   :: old_can_shv
    real                                   :: old_can_co2
    real                                   :: old_can_rhos
@@ -114,8 +115,9 @@ subroutine heun_timestep(cgrid)
             old_can_co2      = csite%can_co2(ipa)
             old_can_rhos     = csite%can_rhos(ipa)
             old_can_temp     = csite%can_temp(ipa)
-            old_can_exner    = cp * (csite%can_prss(ipa) * p00i) ** rocp
-            old_can_enthalpy = old_can_exner * csite%can_theiv(ipa)
+            old_can_exner    = cp * ( p00i * csite%can_prss(ipa) ) ** rocp
+            old_can_enthalpy = old_can_exner * csite%can_theta(ipa)                        &
+                             + alvl * csite%can_shv(ipa)
             !------------------------------------------------------------------------------!
 
 
@@ -160,8 +162,8 @@ subroutine heun_timestep(cgrid)
             !     This is the step in which the derivatives are computed, we a structure   !
             ! that is very similar to the Runge-Kutta, though a simpler one.               !
             !------------------------------------------------------------------------------!
-            call integrate_patch_heun(csite,ipa,wcurr_loss2atm,ecurr_netrad,ecurr_loss2atm &
-                                     ,co2curr_loss2atm,wcurr_loss2drainage                 &
+            call integrate_patch_heun(csite,ipa,wcurr_loss2atm,ecurr_netrad,ecurr_loss2et  &
+                                     ,ecurr_loss2atm,co2curr_loss2atm,wcurr_loss2drainage  &
                                      ,ecurr_loss2drainage,wcurr_loss2runoff                &
                                      ,ecurr_loss2runoff,nsteps)
             !------------------------------------------------------------------------------!
@@ -187,7 +189,7 @@ subroutine heun_timestep(cgrid)
             !     Compute the residuals.                                                   !
             !------------------------------------------------------------------------------!
             call compute_budget(csite,cpoly%lsl(isi),cmet%pcpg,cmet%qpcpg,ipa              &
-                               ,wcurr_loss2atm,ecurr_netrad,ecurr_loss2atm                 &
+                               ,wcurr_loss2atm,ecurr_netrad,ecurr_loss2et,ecurr_loss2atm   &
                                ,co2curr_loss2atm,wcurr_loss2drainage,ecurr_loss2drainage   &
                                ,wcurr_loss2runoff,ecurr_loss2runoff,cpoly%area(isi)        &
                                ,cgrid%cbudget_nep(ipy),old_can_enthalpy,old_can_shv        &
@@ -212,9 +214,10 @@ end subroutine heun_timestep
 !     This subroutine will drive the integration process using the Heun method.  Notice    !
 ! that most of the Heun method utilises the subroutines from Runge-Kutta.                  !
 !------------------------------------------------------------------------------------------!
-subroutine integrate_patch_heun(csite,ipa,wcurr_loss2atm,ecurr_netrad,ecurr_loss2atm       &
-                               ,co2curr_loss2atm,wcurr_loss2drainage,ecurr_loss2drainage   &
-                               ,wcurr_loss2runoff,ecurr_loss2runoff,nsteps)
+subroutine integrate_patch_heun(csite,ipa,wcurr_loss2atm,ecurr_netrad,ecurr_loss2et        &
+                               ,ecurr_loss2atm,co2curr_loss2atm,wcurr_loss2drainage        &
+                               ,ecurr_loss2drainage,wcurr_loss2runoff,ecurr_loss2runoff    &
+                               ,nsteps)
    use ed_state_vars   , only : sitetype             & ! structure
                               , patchtype            ! ! structure
    use ed_misc_coms    , only : dtlsm                ! ! intent(in)
@@ -241,6 +244,7 @@ subroutine integrate_patch_heun(csite,ipa,wcurr_loss2atm,ecurr_netrad,ecurr_loss
    integer               , intent(in)  :: ipa
    real                  , intent(out) :: wcurr_loss2atm
    real                  , intent(out) :: ecurr_netrad
+   real                  , intent(out) :: ecurr_loss2et
    real                  , intent(out) :: ecurr_loss2atm
    real                  , intent(out) :: co2curr_loss2atm
    real                  , intent(out) :: wcurr_loss2drainage
@@ -301,8 +305,9 @@ subroutine integrate_patch_heun(csite,ipa,wcurr_loss2atm,ecurr_netrad,ecurr_loss
    ! Move the state variables from the integrated patch to the model patch.                !
    !---------------------------------------------------------------------------------------!
    call initp2modelp(tend-tbeg,integration_buff%initp,csite,ipa,wcurr_loss2atm             &
-                    ,ecurr_netrad,ecurr_loss2atm,co2curr_loss2atm,wcurr_loss2drainage      &
-                    ,ecurr_loss2drainage,wcurr_loss2runoff,ecurr_loss2runoff)
+                    ,ecurr_netrad,ecurr_loss2et,ecurr_loss2atm,co2curr_loss2atm            &
+                    ,wcurr_loss2drainage,ecurr_loss2drainage,wcurr_loss2runoff             &
+                    ,ecurr_loss2runoff)
 
    return
 end subroutine integrate_patch_heun

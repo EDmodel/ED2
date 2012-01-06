@@ -229,7 +229,7 @@ subroutine read_ednl(iunit,filename)
                        ,icanrad,ltrans_vis,ltrans_nir,lreflect_vis,lreflect_nir            &
                        ,orient_tree,orient_grass,clump_tree,clump_grass,decomp_scheme      &
                        ,h2o_plant_lim,vmfact_c3,vmfact_c4,mphoto_trc3,mphoto_tec3          &
-                       ,mphoto_c4,bphoto_blc3,bphoto_nlc3,bphoto_nlc4,kw_grass             &
+                       ,mphoto_c4,bphoto_blc3,bphoto_nlc3,bphoto_c4,kw_grass               &
                        ,kw_tree,gamma_c3,gamma_c4,d0_grass,d0_tree,alpha_c3                &
                        ,alpha_c4,klowco2in,rrffact,growthresp,lwidth_grass,lwidth_bltree   &
                        ,lwidth_nltree,q10_c3,q10_c4,thetacrit,quantum_efficiency_t         &

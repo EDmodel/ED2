@@ -23,8 +23,8 @@ module rk4_coms
    type rk4patchtype
 
       !----- Canopy air variables. --------------------------------------------------------!
+      real(kind=8)                        :: can_enthalpy ! Canopy enthalpy      [    J/m2]
       real(kind=8)                        :: can_theiv    ! Eq. pot. temperature [       K]
-      real(kind=8)                        :: can_lntheta  ! Log (theta)          [     ---]
       real(kind=8)                        :: can_theta    ! Pot. Temperature     [       K]
       real(kind=8)                        :: can_temp     ! Temperature          [       K]
       real(kind=8)                        :: can_shv      ! Specific humidity    [   kg/kg]
@@ -314,6 +314,7 @@ module rk4_coms
       real(kind=8) :: co2budget_loss2atm
       real(kind=8) :: ebudget_storage
       real(kind=8) :: ebudget_netrad
+      real(kind=8) :: ebudget_loss2et
       real(kind=8) :: ebudget_loss2atm
       real(kind=8) :: ebudget_loss2drainage
       real(kind=8) :: ebudget_loss2runoff
@@ -338,7 +339,6 @@ module rk4_coms
       real(kind=8)                    :: atm_tmp
       real(kind=8)                    :: atm_theta
       real(kind=8)                    :: atm_theiv
-      real(kind=8)                    :: atm_lntheta
       real(kind=8)                    :: atm_shv
       real(kind=8)                    :: atm_rvap
       real(kind=8)                    :: atm_rhv
@@ -370,28 +370,28 @@ module rk4_coms
    !---------------------------------------------------------------------------------------!
    type rk4auxtype
       !----- Total potential [m]. ---------------------------------------------------------!
-      real(kind=8), dimension(:), pointer :: psiplusz
+      real(kind=8), dimension(:)  , pointer :: psiplusz
       !----- Hydraulic conductivity [m/s]. ------------------------------------------------!
-      real(kind=8), dimension(:), pointer :: hydcond
+      real(kind=8), dimension(:)  , pointer :: hydcond
       !----- Available water factor at this layer [n/d]. ----------------------------------!
-      real(kind=8), dimension(:), pointer :: avail_h2o_lyr
+      real(kind=8), dimension(:)  , pointer :: avail_h2o_lyr
       !----- Integral of available water factor from top to this layer [n/d]. -------------!
-      real(kind=8), dimension(:), pointer :: avail_h2o_int
+      real(kind=8), dimension(:)  , pointer :: avail_h2o_int
       !----- Extracted water by transpiration [kg/m²]. ------------------------------------!
-      real(kind=8), dimension(:), pointer :: extracted_water
+      real(kind=8), dimension(:,:), pointer :: extracted_water
       !----- Heat resistance [Km²s/J]. ----------------------------------------------------!
-      real(kind=8), dimension(:), pointer :: rfactor
+      real(kind=8), dimension(:)  , pointer :: rfactor
       !----- Sensible heat flux at staggered layer (k = k-1/2) [W/m²]. --------------------!
-      real(kind=8), dimension(:), pointer :: hfluxgsc
+      real(kind=8), dimension(:)  , pointer :: hfluxgsc
       !----- Water flux at staggered layers (k = k-1/2) [kg/m²/s]. ------------------------!
-      real(kind=8), dimension(:), pointer :: w_flux
+      real(kind=8), dimension(:)  , pointer :: w_flux
       !----- Latent heat flux at staggered layers (k=k-1/2) [W/m²]. -----------------------!
-      real(kind=8), dimension(:), pointer :: qw_flux
+      real(kind=8), dimension(:)  , pointer :: qw_flux
       !----- Depth flux at staggered layers (k=k-1/2) [m/s]. ------------------------------!
-      real(kind=8), dimension(:), pointer :: d_flux
+      real(kind=8), dimension(:)  , pointer :: d_flux
       !----- Tests to check if the soil is too dry or too wet. ----------------------------!
-      logical     , dimension(:), pointer :: drysoil
-      logical     , dimension(:), pointer :: satsoil
+      logical     , dimension(:)  , pointer :: drysoil
+      logical     , dimension(:)  , pointer :: satsoil
    end type rk4auxtype
    !---------------------------------------------------------------------------------------!
 
@@ -582,6 +582,8 @@ module rk4_coms
                                   !     accross months, as the patches change.
    logical      :: print_thbnd    ! Flag to keep track of which variable is causing the
                                   !     most errors in the integrator.
+   logical      :: print_budget   ! Flag that tells whether the budget is to be printed
+                                  !     to a file.
    !---------------------------------------------------------------------------------------!
 
 
@@ -594,13 +596,6 @@ module rk4_coms
                                   !     supersat_ok is .false., but in this case
                                   !     only mixing with free atmosphere can cause
                                   !     the super-saturation).
-   logical      :: force_idealgas ! The integrator will adjust pressure every time 
-                                  !    step, including the internal ones, to make 
-                                  !    sure the ideal gas is respected.  If set to
-                                  !    false, it will keep pressure constant 
-                                  !    within on DTLSM time step, and not bother
-                                  !    forcing the canopy air space to respect the
-                                  !    ideal gas                                   [   T|F]
    logical      :: leaf_intercept ! This flag is to turn on and on the leaf interception.  
                                   !    Except for developer tests, this variable should be 
                                   !    always true.  
@@ -647,10 +642,10 @@ module rk4_coms
    !----- The following variables will be defined every time step. ------------------------!
    real(kind=8) :: rk4min_can_theta     ! Minimum canopy    potential temp.     [        K]
    real(kind=8) :: rk4max_can_theta     ! Maximum canopy    potential temp.     [        K]
-   real(kind=8) :: rk4min_can_lntheta   ! Minimum canopy    log of theta        [      ---]
-   real(kind=8) :: rk4max_can_lntheta   ! Maximum canopy    log of theta        [      ---]
    real(kind=8) :: rk4min_can_theiv     ! Minimum canopy    eq. pot. temp.      [        K]
    real(kind=8) :: rk4max_can_theiv     ! Maximum canopy    eq. pot. temp.      [        K]
+   real(kind=8) :: rk4min_can_enthalpy  ! Minimum canopy    enthalpy            [     J/m2]
+   real(kind=8) :: rk4max_can_enthalpy  ! Maximum canopy    enthalpy            [     J/m2]
    real(kind=8) :: rk4min_can_prss      ! Minimum canopy    pressure            [       Pa]
    real(kind=8) :: rk4max_can_prss      ! Maximum canopy    pressure            [       Pa]
    !---------------------------------------------------------------------------------------!
@@ -749,26 +744,36 @@ module rk4_coms
    !      Integrator error statistics.                                                     !
    !---------------------------------------------------------------------------------------!
    !----- Number of variables other than soil and surface that will be analysed. ----------!
-   integer                          , parameter   :: nerrfix = 21
+   integer                          , parameter   :: nerrfix = 22
+   !---------------------------------------------------------------------------------------!
+
 
    !----- Total number of variables that will be analysed. --------------------------------!
    integer                                        :: nerr
+   !---------------------------------------------------------------------------------------!
+
 
    !----- Default file name to be given to the error files. -------------------------------!
    character(len=str_len)                         :: errmax_fout
    character(len=str_len)                         :: sanity_fout
    character(len=str_len)                         :: thbnds_fout
    character(len=str_len)                         :: detail_pref
+   character(len=str_len)                         :: budget_pref
+   !---------------------------------------------------------------------------------------!
+
 
    !----- The error counter and label. ----------------------------------------------------!
    integer(kind=8)  , dimension(:,:), allocatable :: integ_err
    character(len=13), dimension(:)  , allocatable :: integ_lab
+   !---------------------------------------------------------------------------------------!
+
 
    !----- Offset needed for each of the following variables. ------------------------------!
    integer                                        :: osow ! Soil water.
    integer                                        :: osoe ! Soil energy.
    integer                                        :: oswe ! Surface water energy.
    integer                                        :: oswm ! Surface water mass.
+   !---------------------------------------------------------------------------------------!
    !=======================================================================================!
    !=======================================================================================!
 
@@ -884,6 +889,7 @@ module rk4_coms
       y%co2budget_loss2atm             = 0.d0
       y%ebudget_storage                = 0.d0
       y%ebudget_netrad                 = 0.d0
+      y%ebudget_loss2et                = 0.d0
       y%ebudget_loss2atm               = 0.d0
       y%ebudget_loss2drainage          = 0.d0
       y%ebudget_loss2runoff            = 0.d0
@@ -899,8 +905,8 @@ module rk4_coms
       y%can_rhv                        = 0.d0
       y%can_co2                        = 0.d0
       y%can_theta                      = 0.d0
+      y%can_enthalpy                   = 0.d0
       y%can_theiv                      = 0.d0
-      y%can_lntheta                    = 0.d0
       y%can_depth                      = 0.d0
       y%can_rhos                       = 0.d0
       y%can_prss                       = 0.d0
@@ -1543,11 +1549,12 @@ module rk4_coms
    !=======================================================================================!
    !    This subroutine will allocate the auxiliary variables.                             !
    !---------------------------------------------------------------------------------------!
-   subroutine allocate_rk4_aux(mzg,mzs)
+   subroutine allocate_rk4_aux(mzg,mzs,mcoh)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       integer            , intent(in) :: mzg
       integer            , intent(in) :: mzs
+      integer            , intent(in) :: mcoh
       !------------------------------------------------------------------------------------!
 
 
@@ -1556,18 +1563,18 @@ module rk4_coms
       call nullify_rk4_aux()
       !------------------------------------------------------------------------------------!
 
-      allocate(rk4aux%psiplusz                (    0:mzg) )
-      allocate(rk4aux%hydcond                 (    0:mzg) )
-      allocate(rk4aux%drysoil                 (    0:mzg) )
-      allocate(rk4aux%satsoil                 (    0:mzg) )
-      allocate(rk4aux%avail_h2o_lyr           (    mzg+1) )
-      allocate(rk4aux%avail_h2o_int           (    mzg+1) )
-      allocate(rk4aux%extracted_water         (    mzg+1) )
-      allocate(rk4aux%rfactor                 (  mzg+mzs) )
-      allocate(rk4aux%hfluxgsc                (mzg+mzs+1) )
-      allocate(rk4aux%w_flux                  (mzg+mzs+1) )
-      allocate(rk4aux%qw_flux                 (mzg+mzs+1) )
-      allocate(rk4aux%d_flux                  (    mzs+1) )
+      allocate(rk4aux%psiplusz                (          0:mzg) )
+      allocate(rk4aux%hydcond                 (          0:mzg) )
+      allocate(rk4aux%drysoil                 (          0:mzg) )
+      allocate(rk4aux%satsoil                 (          0:mzg) )
+      allocate(rk4aux%avail_h2o_lyr           (          mzg+1) )
+      allocate(rk4aux%avail_h2o_int           (          mzg+1) )
+      allocate(rk4aux%rfactor                 (        mzg+mzs) )
+      allocate(rk4aux%hfluxgsc                (      mzg+mzs+1) )
+      allocate(rk4aux%w_flux                  (      mzg+mzs+1) )
+      allocate(rk4aux%qw_flux                 (      mzg+mzs+1) )
+      allocate(rk4aux%d_flux                  (          mzs+1) )
+      allocate(rk4aux%extracted_water         (mcoh,     mzg+1) )
 
 
       !------ Flush the variables within this structure to zero. --------------------------!
@@ -1621,18 +1628,18 @@ module rk4_coms
    subroutine zero_rk4_aux()
       implicit none
 
-      if (associated(rk4aux%psiplusz        )) rk4aux%psiplusz        (:) = 0.d0
-      if (associated(rk4aux%hydcond         )) rk4aux%hydcond         (:) = 0.d0
-      if (associated(rk4aux%drysoil         )) rk4aux%drysoil         (:) = .false.
-      if (associated(rk4aux%satsoil         )) rk4aux%satsoil         (:) = .false.
-      if (associated(rk4aux%avail_h2o_lyr   )) rk4aux%avail_h2o_lyr   (:) = 0.d0
-      if (associated(rk4aux%avail_h2o_int   )) rk4aux%avail_h2o_int   (:) = 0.d0
-      if (associated(rk4aux%extracted_water )) rk4aux%extracted_water (:) = 0.d0
-      if (associated(rk4aux%rfactor         )) rk4aux%rfactor         (:) = 0.d0
-      if (associated(rk4aux%hfluxgsc        )) rk4aux%hfluxgsc        (:) = 0.d0
-      if (associated(rk4aux%w_flux          )) rk4aux%w_flux          (:) = 0.d0
-      if (associated(rk4aux%qw_flux         )) rk4aux%qw_flux         (:) = 0.d0
-      if (associated(rk4aux%d_flux          )) rk4aux%d_flux          (:) = 0.d0
+      if (associated(rk4aux%psiplusz        )) rk4aux%psiplusz        (:  ) = 0.d0
+      if (associated(rk4aux%hydcond         )) rk4aux%hydcond         (:  ) = 0.d0
+      if (associated(rk4aux%drysoil         )) rk4aux%drysoil         (:  ) = .false.
+      if (associated(rk4aux%satsoil         )) rk4aux%satsoil         (:  ) = .false.
+      if (associated(rk4aux%avail_h2o_lyr   )) rk4aux%avail_h2o_lyr   (:  ) = 0.d0
+      if (associated(rk4aux%avail_h2o_int   )) rk4aux%avail_h2o_int   (:  ) = 0.d0
+      if (associated(rk4aux%rfactor         )) rk4aux%rfactor         (:  ) = 0.d0
+      if (associated(rk4aux%hfluxgsc        )) rk4aux%hfluxgsc        (:  ) = 0.d0
+      if (associated(rk4aux%w_flux          )) rk4aux%w_flux          (:  ) = 0.d0
+      if (associated(rk4aux%qw_flux         )) rk4aux%qw_flux         (:  ) = 0.d0
+      if (associated(rk4aux%d_flux          )) rk4aux%d_flux          (:  ) = 0.d0
+      if (associated(rk4aux%extracted_water )) rk4aux%extracted_water (:,:) = 0.d0
 
       return
    end subroutine zero_rk4_aux
@@ -1657,12 +1664,12 @@ module rk4_coms
       if (associated(rk4aux%satsoil         )) deallocate(rk4aux%satsoil         )
       if (associated(rk4aux%avail_h2o_lyr   )) deallocate(rk4aux%avail_h2o_lyr   )
       if (associated(rk4aux%avail_h2o_int   )) deallocate(rk4aux%avail_h2o_int   )
-      if (associated(rk4aux%extracted_water )) deallocate(rk4aux%extracted_water )
       if (associated(rk4aux%rfactor         )) deallocate(rk4aux%rfactor         )
       if (associated(rk4aux%hfluxgsc        )) deallocate(rk4aux%hfluxgsc        )
       if (associated(rk4aux%w_flux          )) deallocate(rk4aux%w_flux          )
       if (associated(rk4aux%qw_flux         )) deallocate(rk4aux%qw_flux         )
       if (associated(rk4aux%d_flux          )) deallocate(rk4aux%d_flux          )
+      if (associated(rk4aux%extracted_water )) deallocate(rk4aux%extracted_water )
 
       return
    end subroutine deallocate_rk4_aux
@@ -1734,11 +1741,11 @@ module rk4_coms
       implicit none
       !----- Local constants. -------------------------------------------------------------!
       character(len=13), dimension(nerrfix), parameter :: err_lab_fix = (/                 &
-           'CAN_THEIV    ','CAN_THETA    ','CAN_SHV      ','CAN_TEMP     ','CAN_PRSS     ' &
+           'CAN_ENTHALPY ','CAN_THETA    ','CAN_SHV      ','CAN_TEMP     ','CAN_PRSS     ' &
           ,'CAN_CO2      ','LEAF_WATER   ','LEAF_ENERGY  ','WOOD_WATER   ','WOOD_ENERGY  ' &
           ,'VIRT_HEAT    ','VIRT_WATER   ','CO2B_STORAGE ','CO2B_LOSS2ATM','EB_NETRAD    ' &
-          ,'EB_LOSS2ATM  ','WATB_LOSS2ATM','ENB_LOSS2DRA ','WATB_LOSS2DRA','ENB_STORAGE  ' &
-          ,'WATB_STORAGE '/)
+          ,'EB_LOSS2ET   ','EB_LOSS2ATM  ','WATB_LOSS2ATM','ENB_LOSS2DRA ','WATB_LOSS2DRA' &
+          ,'ENB_STORAGE  ','WATB_STORAGE '/)
       !----- Local variables. -------------------------------------------------------------!
       integer                                          :: n
       character(len=13)                                :: err_lab_loc
@@ -1789,8 +1796,11 @@ module rk4_coms
                                    ,can_depth)
       use grid_coms   , only : nzg           ! ! intent(in)
       use consts_coms , only : p008          & ! intent(in)
+                             , p00i8         & ! intent(in)
                              , rocp8         & ! intent(in)
                              , cp8           & ! intent(in)
+                             , cpi8          & ! intent(in)
+                             , alvl8         & ! intent(in)
                              , rdry8         & ! intent(in)
                              , epim18        & ! intent(in)
                              , ep8           & ! intent(in)
@@ -1817,8 +1827,10 @@ module rk4_coms
       real(kind=8)                , intent(in) :: can_depth
       !----- Local variables. -------------------------------------------------------------!
       real(kind=8)                             :: can_prss_try
+      real(kind=8)                             :: can_exner_try
       real(kind=8)                             :: can_theta_try
       real(kind=8)                             :: can_theiv_try
+      real(kind=8)                             :: can_enthalpy_try
       integer                                  :: k
       integer                                  :: hour
       integer                                  :: minute
@@ -1909,9 +1921,6 @@ module rk4_coms
       can_theta_try      = can_temp * (p008 / rk4max_can_prss) ** rocp8
       rk4min_can_theta   = min(rk4min_can_theta,can_theta_try)
       rk4max_can_theta   = max(rk4max_can_theta,can_theta_try)
-      !----- 6. Find the logarithms. ------------------------------------------------------!
-      rk4min_can_lntheta = log(rk4min_can_theta)
-      rk4max_can_lntheta = log(rk4max_can_theta)
       !------------------------------------------------------------------------------------!
 
 
@@ -1936,6 +1945,48 @@ module rk4_coms
       rk4max_can_theiv = max(rk4max_can_theiv,can_theiv_try)
       !------------------------------------------------------------------------------------!
 
+
+
+      !------------------------------------------------------------------------------------!
+      !      Minimum and maximum enthalpy.                                                 !
+      !------------------------------------------------------------------------------------!
+      !----- 1. Initial value, the most extreme one. --------------------------------------!
+      rk4min_can_enthalpy = huge(1.d0)
+      rk4max_can_enthalpy = - huge(1.d0)
+      !----- 2. Minimum temperature. ------------------------------------------------------!
+      can_exner_try       = cp8 * (p00i8 * can_prss) ** rocp8
+      can_theta_try       = cp8 * rk4min_can_temp / can_exner_try
+      can_enthalpy_try    = can_exner_try * can_theta_try + alvl8 * can_shv
+      rk4min_can_enthalpy = min(rk4min_can_enthalpy,can_enthalpy_try)
+      rk4max_can_enthalpy = max(rk4max_can_enthalpy,can_enthalpy_try)
+      !----- 3. Maximum temperature. ------------------------------------------------------!
+      can_exner_try       = cp8 * (p00i8 * can_prss) ** rocp8
+      can_theta_try       = cp8 * rk4max_can_temp / can_exner_try
+      can_enthalpy_try    = can_exner_try * can_theta_try + alvl8 * can_shv
+      rk4min_can_enthalpy = min(rk4min_can_enthalpy,can_enthalpy_try)
+      rk4max_can_enthalpy = max(rk4max_can_enthalpy,can_enthalpy_try)
+      !----- 4. Minimum pressure. ---------------------------------------------------------!
+      can_exner_try       = cp8 * (p00i8 * rk4min_can_prss) ** rocp8
+      can_enthalpy_try    = can_exner_try * can_theta + alvl8 * can_shv
+      rk4min_can_enthalpy = min(rk4min_can_enthalpy,can_enthalpy_try)
+      rk4max_can_enthalpy = max(rk4max_can_enthalpy,can_enthalpy_try)
+      !----- 5. Maximum pressure. ---------------------------------------------------------!
+      can_exner_try       = cp8 * (p00i8 * rk4max_can_prss) ** rocp8
+      can_enthalpy_try    = can_exner_try * can_theta + alvl8 * can_shv
+      rk4min_can_enthalpy = min(rk4min_can_enthalpy,can_enthalpy_try)
+      rk4max_can_enthalpy = max(rk4max_can_enthalpy,can_enthalpy_try)
+      !----- 6. Minimum specific humidity. ------------------------------------------------!
+      can_exner_try       = cp8 * (p00i8 * can_prss) ** rocp8
+      can_enthalpy_try    = can_exner_try * can_theta + alvl8 * rk4min_can_shv
+      rk4min_can_enthalpy = min(rk4min_can_enthalpy,can_enthalpy_try)
+      rk4max_can_enthalpy = max(rk4max_can_enthalpy,can_enthalpy_try)
+      !----- 7. Maximum specific humidity. ------------------------------------------------!
+      can_exner_try       = cp8 * (p00i8 * can_prss) ** rocp8
+      can_enthalpy_try    = can_exner_try * can_theta + alvl8 * rk4max_can_shv
+      rk4min_can_enthalpy = min(rk4min_can_enthalpy,can_enthalpy_try)
+      rk4max_can_enthalpy = max(rk4max_can_enthalpy,can_enthalpy_try)
+      !------------------------------------------------------------------------------------!
+
       if (print_thbnd) then
          hour   = floor(nint(current_time%time) / hr_sec)
          minute = floor((nint(current_time%time) - hour * hr_sec) / min_sec)
@@ -1943,13 +1994,13 @@ module rk4_coms
 
          open (unit=39,file=trim(thbnds_fout),status='old',action='write'                  &
                       ,position='append')
-         write (unit=39,fmt='(6(i12,1x),10(es12.5,1x))')                                   &
+         write (unit=39,fmt='(6(i12,1x),12(es12.5,1x))')                                   &
                                  current_time%year, current_time%month,  current_time%date &
                               ,               hour,             minute,             second &
                               ,    rk4min_can_temp,    rk4max_can_temp,     rk4min_can_shv &
                               ,     rk4min_can_shv,   rk4min_can_theta,   rk4max_can_theta &
                               ,   rk4min_can_theiv,   rk4max_can_theiv,    rk4min_can_prss &
-                              ,    rk4max_can_prss
+                              ,    rk4max_can_prss,rk4min_can_enthalpy,rk4max_can_enthalpy
          close (unit=39,status='keep')
       end if
 

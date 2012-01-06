@@ -50,14 +50,15 @@ module rk4_driver
       integer                                 :: nsteps
       real                                    :: wcurr_loss2atm
       real                                    :: ecurr_netrad
+      real                                    :: ecurr_loss2et
       real                                    :: ecurr_loss2atm
       real                                    :: co2curr_loss2atm
       real                                    :: wcurr_loss2drainage
       real                                    :: ecurr_loss2drainage
       real                                    :: wcurr_loss2runoff
       real                                    :: ecurr_loss2runoff
-      real                                    :: old_can_enthalpy
       real                                    :: old_can_exner
+      real                                    :: old_can_enthalpy
       real                                    :: old_can_shv
       real                                    :: old_can_co2
       real                                    :: old_can_rhos
@@ -127,8 +128,9 @@ module rk4_driver
                old_can_co2      = csite%can_co2(ipa)
                old_can_rhos     = csite%can_rhos(ipa)
                old_can_temp     = csite%can_temp(ipa)
-               old_can_exner    = cp * (csite%can_prss(ipa) * p00i) ** rocp
-               old_can_enthalpy = old_can_exner * csite%can_theiv(ipa)
+               old_can_exner    = cp * (p00i * csite%can_prss(ipa)) ** rocp
+               old_can_enthalpy = old_can_exner * csite%can_theta(ipa)                     &
+                                + alvl * csite%can_shv(ipa)
                !---------------------------------------------------------------------------!
 
 
@@ -183,9 +185,10 @@ module rk4_driver
                !    This is the driver for the integration process...                      !
                !---------------------------------------------------------------------------!
                call integrate_patch_rk4(csite,integration_buff%initp,ipa,wcurr_loss2atm    &
-                                       ,ecurr_netrad,ecurr_loss2atm,co2curr_loss2atm       &
-                                       ,wcurr_loss2drainage,ecurr_loss2drainage            &
-                                       ,wcurr_loss2runoff,ecurr_loss2runoff,nsteps)
+                                       ,ecurr_netrad,ecurr_loss2et,ecurr_loss2atm          &
+                                       ,co2curr_loss2atm,wcurr_loss2drainage               &
+                                       ,ecurr_loss2drainage,wcurr_loss2runoff              &
+                                       ,ecurr_loss2runoff,nsteps)
                !---------------------------------------------------------------------------!
 
 
@@ -207,12 +210,11 @@ module rk4_driver
                !     Compute the residuals.                                                !
                !---------------------------------------------------------------------------!
                call compute_budget(csite,cpoly%lsl(isi),cmet%pcpg,cmet%qpcpg,ipa           &
-                                  ,wcurr_loss2atm,ecurr_netrad,ecurr_loss2atm              &
-                                  ,co2curr_loss2atm,wcurr_loss2drainage                    &
+                                  ,wcurr_loss2atm,ecurr_netrad,ecurr_loss2et               &
+                                  ,ecurr_loss2atm,co2curr_loss2atm,wcurr_loss2drainage     &
                                   ,ecurr_loss2drainage,wcurr_loss2runoff,ecurr_loss2runoff &
                                   ,cpoly%area(isi),cgrid%cbudget_nep(ipy),old_can_enthalpy &
                                   ,old_can_shv,old_can_co2,old_can_rhos,old_can_temp)
-
                !---------------------------------------------------------------------------!
             end do patchloop
          end do siteloop
@@ -234,9 +236,9 @@ module rk4_driver
    !     This subroutine will drive the integration process.                               !
    !---------------------------------------------------------------------------------------!
    subroutine integrate_patch_rk4(csite,initp,ipa,wcurr_loss2atm,ecurr_netrad              &
-                                 ,ecurr_loss2atm,co2curr_loss2atm,wcurr_loss2drainage      &
-                                 ,ecurr_loss2drainage,wcurr_loss2runoff,ecurr_loss2runoff  &
-                                 ,nsteps)
+                                 ,ecurr_loss2et,ecurr_loss2atm,co2curr_loss2atm            &
+                                 ,wcurr_loss2drainage,ecurr_loss2drainage                  &
+                                 ,wcurr_loss2runoff,ecurr_loss2runoff,nsteps)
       use ed_state_vars   , only : sitetype             & ! structure
                                  , patchtype            ! ! structure
       use ed_misc_coms    , only : dtlsm                ! ! intent(in)
@@ -262,6 +264,7 @@ module rk4_driver
       integer               , intent(in)  :: ipa
       real                  , intent(out) :: wcurr_loss2atm
       real                  , intent(out) :: ecurr_netrad
+      real                  , intent(out) :: ecurr_loss2et
       real                  , intent(out) :: ecurr_loss2atm
       real                  , intent(out) :: co2curr_loss2atm
       real                  , intent(out) :: wcurr_loss2drainage
@@ -320,7 +323,7 @@ module rk4_driver
       ! Move the state variables from the integrated patch to the model patch.             !
       !------------------------------------------------------------------------------------!
       call initp2modelp(tend-tbeg,initp,csite,ipa,wcurr_loss2atm,ecurr_netrad              &
-                       ,ecurr_loss2atm,co2curr_loss2atm,wcurr_loss2drainage                &
+                       ,ecurr_loss2et,ecurr_loss2atm,co2curr_loss2atm,wcurr_loss2drainage  &
                        ,ecurr_loss2drainage,wcurr_loss2runoff,ecurr_loss2runoff)
 
       return
@@ -339,8 +342,9 @@ module rk4_driver
    ! patch and cohorts.                                                                    !
    !---------------------------------------------------------------------------------------!
    subroutine initp2modelp(hdid,initp,csite,ipa,wbudget_loss2atm,ebudget_netrad            &
-                          ,ebudget_loss2atm,co2budget_loss2atm,wbudget_loss2drainage       &
-                          ,ebudget_loss2drainage,wbudget_loss2runoff,ebudget_loss2runoff)
+                          ,ebudget_loss2et,ebudget_loss2atm,co2budget_loss2atm             &
+                          ,wbudget_loss2drainage,ebudget_loss2drainage,wbudget_loss2runoff &
+                          ,ebudget_loss2runoff)
       use rk4_coms             , only : rk4patchtype         & ! structure
                                       , rk4site              & ! intent(in)
                                       , rk4min_veg_temp      & ! intent(in)
@@ -374,6 +378,7 @@ module rk4_driver
       integer           , intent(in)  :: ipa
       real              , intent(out) :: wbudget_loss2atm
       real              , intent(out) :: ebudget_netrad
+      real              , intent(out) :: ebudget_loss2et
       real              , intent(out) :: ebudget_loss2atm
       real              , intent(out) :: co2budget_loss2atm
       real              , intent(out) :: wbudget_loss2drainage
@@ -497,6 +502,7 @@ module rk4_driver
       if(checkbudget) then
          co2budget_loss2atm    = sngloff(initp%co2budget_loss2atm   ,tiny_offset)
          ebudget_netrad        = sngloff(initp%ebudget_netrad       ,tiny_offset)
+         ebudget_loss2et       = sngloff(initp%ebudget_loss2et      ,tiny_offset)
          ebudget_loss2atm      = sngloff(initp%ebudget_loss2atm     ,tiny_offset)
          ebudget_loss2drainage = sngloff(initp%ebudget_loss2drainage,tiny_offset)
          ebudget_loss2runoff   = sngloff(initp%ebudget_loss2runoff  ,tiny_offset)
@@ -506,6 +512,7 @@ module rk4_driver
       else
          co2budget_loss2atm             = 0.
          ebudget_netrad                 = 0.
+         ebudget_loss2et                = 0.
          ebudget_loss2atm               = 0.
          ebudget_loss2drainage          = 0.
          ebudget_loss2runoff            = 0.

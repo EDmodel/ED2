@@ -144,7 +144,7 @@ subroutine vtables2(var,varm,ng,npts,imean,tabstr)
 
          write(unit=*,fmt='(3(a,1x))')  'Illegal table specification for var:'             &
                                        ,tokens(1),ctab
-         call abort_fun('Bad settings.','vtables2','vtab_fill')
+         call abort_run('Bad settings.','vtables2','vtab_fill')
       end select
    end do
    !---------------------------------------------------------------------------------------!

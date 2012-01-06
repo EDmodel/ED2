@@ -93,7 +93,7 @@ subroutine dealloc_all()
      call dealloc_varinit(varinitm_g(ng))
 
      call dealloc_advec(advec_g(ng))
-     call dealloc_advec(advec_m(ng))
+     call dealloc_advec(advecm_g(ng))
 
      call dealloc_mass(mass_g(ng))
      call dealloc_mass(massm_g(ng))

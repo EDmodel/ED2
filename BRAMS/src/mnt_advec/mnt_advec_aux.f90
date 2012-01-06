@@ -16,8 +16,8 @@ subroutine init_grid_spacing(m1,m2,m3,dxt,dyt,dzt,fmapt,rtgt,dxtw,dytw,dztw)
    real   , dimension(   m2,m3), intent(in)  :: fmapt
    real   , dimension(   m2,m3), intent(in)  :: rtgt
    real   , dimension(m1,m2,m3), intent(out) :: dxtw
-   real   , dimension(m1,m2,m3), intent(out) :: dxtw
-   real   , dimension(m1 m2,m3), intent(out) :: dztw
+   real   , dimension(m1,m2,m3), intent(out) :: dytw
+   real   , dimension(m1,m2,m3), intent(out) :: dztw
    !----- Local variables. ----------------------------------------------------------------!
    integer                                   :: i
    integer                                   :: j
@@ -82,10 +82,10 @@ subroutine find_actual_densities(m1,m2,m3,rtp,rv,pp,pi0,theta,denst,densu,densv,
    integer                                     :: i
    integer                                     :: j
    integer                                     :: k
-   integer                                     :: exner
-   integer                                     :: pres
-   integer                                     :: temp
-   integer                                     :: tvir
+   real                                        :: exner
+   real                                        :: pres
+   real                                        :: temp
+   real                                        :: tvir
    !---------------------------------------------------------------------------------------!
 
 
@@ -143,8 +143,9 @@ end subroutine find_actual_densities
 !      This subroutine finds the average winds for the advection, and stores the values on !
 ! the "mid" variables.                                                                     !
 !------------------------------------------------------------------------------------------!
-subroutine find_avg_winds(m1,m2,m3,ia,iz,ja,jz,ka,kz,uc,up,vc,vp,wc,wp,fmpaui,fmapvi       &
+subroutine find_avg_winds(m1,m2,m3,ia,iz,ja,jz,ka,kz,uc,up,vc,vp,wc,wp,fmapui,fmapvi       &
                          ,rtgt,rtgu,rtgv,f13t,f23t,uavg,vavg,wavg)
+   use mem_grid, only : hw4  ! ! intent(in)
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
    integer                     , intent(in)    :: m1
@@ -223,7 +224,7 @@ subroutine find_avg_winds(m1,m2,m3,ia,iz,ja,jz,ka,kz,uc,up,vc,vp,wc,wp,fmpaui,fm
                         * ( f13t(i,j) * ( uavg(  k,  i,  j) + uavg(kp1,  i,  j)            &
                                         + uavg(  k,im1,  j) + uavg(kp1,im1,  j) )          &
                           + f23t(i,j) * ( vavg(  k,  i,  j) + vavg(kp1,  i,  j)            &
-                                        + vavg(  k,  i,jm1) + vavg(kp1,  i, jm) ) )        &
+                                        + vavg(  k,  i,jm1) + vavg(kp1,  i,jm1) ) )        &
                         + wavg(k,i,j) * rtgti
          end do
       end do

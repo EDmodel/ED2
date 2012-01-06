@@ -2134,6 +2134,7 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
    call hdf_getslab_r(csite%wbudget_precipgain,'WBUDGET_PRECIPGAIN ',dsetrank,iparallel,.true.)
    call hdf_getslab_r(csite%wbudget_loss2runoff,'WBUDGET_LOSS2RUNOFF ',dsetrank,iparallel,.true.)
    call hdf_getslab_r(csite%wbudget_initialstorage,'WBUDGET_INITIALSTORAGE ',dsetrank,iparallel,.true.)
+   call hdf_getslab_r(csite%ebudget_loss2et,'EBUDGET_LOSS2ET ',dsetrank,iparallel,.true.)
    call hdf_getslab_r(csite%ebudget_loss2atm,'EBUDGET_LOSS2ATM ',dsetrank,iparallel,.true.)
    call hdf_getslab_r(csite%ebudget_denseffect,'EBUDGET_DENSEFFECT ',dsetrank,iparallel,.true.)
    call hdf_getslab_r(csite%ebudget_loss2runoff,'EBUDGET_LOSS2RUNOFF ',dsetrank,iparallel,.true.)
@@ -2248,6 +2249,8 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
    call hdf_getslab_r(csite%ebudget_initialstorage    ,'EBUDGET_INITIALSTORAGE '           &
                      ,dsetrank,iparallel,.true.)
    call hdf_getslab_r(csite%ebudget_residual          ,'EBUDGET_RESIDUAL '                 &
+                     ,dsetrank,iparallel,.true.)
+   call hdf_getslab_r(csite%ebudget_loss2et           ,'EBUDGET_LOSS2ET '                  &
                      ,dsetrank,iparallel,.true.)
    call hdf_getslab_r(csite%ebudget_loss2atm          ,'EBUDGET_LOSS2ATM '                 &
                      ,dsetrank,iparallel,.true.)

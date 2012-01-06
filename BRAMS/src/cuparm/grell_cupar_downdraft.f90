@@ -285,8 +285,17 @@ subroutine grell_most_thermo_downdraft(mkx,mgmzp,klod,qtot,co2,mentrd_rate,cdd,p
                                       ,etad_cld,dzd_cld,thild_cld,td_cld,qtotd_cld         &
                                       ,qvapd_cld,qliqd_cld,qiced_cld,qsatd_cld,co2d_cld    &
                                       ,rhod_cld,dbyd,pwd_cld,pwev,ierr)
-   use rconstants, only: epi,rdry,t00,cpi,toodry,toowet
-   use therm_lib , only: thetaeiv2thil,toler,maxfpo,idealdens
+   use rconstants, only : epi           & ! intent(in)
+                        , rdry          & ! intent(in)
+                        , t00           & ! intent(in)
+                        , cpi           & ! intent(in)
+                        , toodry        & ! intent(in)
+                        , toowet        ! ! intent(in)
+   use therm_lib , only : thetaeiv2thil & ! subroutine
+                        , thil2tqall    & ! subroutine
+                        , toler         & ! intent(in)
+                        , maxfpo        & ! intent(in)
+                        , idealdens     ! ! function
    implicit none
    
    integer               , intent(in)    :: mkx, mgmzp  ! Grid dimesnsions

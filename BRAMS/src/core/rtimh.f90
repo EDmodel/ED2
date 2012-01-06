@@ -733,7 +733,7 @@ subroutine mpilbc_driver(action,izzflag)
          do iadv=1,4
             call node_sendadv(iadv)
          end do
-      case (default)
+      case default
          !----- Send only variabes corresponding to izzflag. ------------------------------!
          call node_sendadv(izzflag)
       end select
@@ -750,7 +750,7 @@ subroutine mpilbc_driver(action,izzflag)
          do iadv=1,4
             call node_getadv(iadv)
          end do
-      case (default)
+      case default
          !----- Get only variabes corresponding to izzflag. -------------------------------!
          call node_getadv(izzflag)
       end select
@@ -769,7 +769,7 @@ subroutine mpilbc_driver(action,izzflag)
             call node_sendadv(iadv)
             call node_getadv (iadv)
          end do
-      case (default)
+      case default
          !----- Get only variabes corresponding to izzflag. -------------------------------!
          call node_sendadv(izzflag)
          call node_getadv (izzflag)

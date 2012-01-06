@@ -1052,7 +1052,7 @@ subroutine opspec3
   if (iadvec < 1 .or. iadvec > 2) then 
      print *, 'FATAL - IADVEC must be either 1 or 2.'
      ifaterr=ifaterr+1
-  else if (iadvec == 2 .and if_adap /= 0) then
+  else if (iadvec == 2 .and. if_adap /= 0) then
      print *, 'FATAL - Monotonic advection is only allowed with sigma-z coordinates...'
      print *, '        Either set iadvec to 1 or if_adap to 0!'
      ifaterr=ifaterr+1

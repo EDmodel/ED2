@@ -514,7 +514,7 @@ subroutine init_fields(init)
 
       !----- ADV variables. ---------------------------------------------------------------!
       if (vtab_r(nv,1)%iadvt == 1 .or. vtab_r(nv,1)%iadvu == 1 .or.                        &
-          vrab_r(nv,1)%iadvv == 1 .or. vtab_r(nv,1)%iadvw == 1      ) then                 &
+          vtab_r(nv,1)%iadvv == 1 .or. vtab_r(nv,1)%iadvw == 1      ) then
          npvar_mpt4(idim) = npvar_mpt4(idim) + 1
       end if
       !------------------------------------------------------------------------------------!
@@ -647,7 +647,7 @@ subroutine init_fields(init)
    !      In case the boundary conditions are cyclic, initialise the cyclic structure.     !
    !---------------------------------------------------------------------------------------!
    if (ibnd == 4 .or. jbnd == 4) then
-      call node_cycinit(nnzp(1),nnxp(1),nnyp(1),npvar,nmachs,ibnd,jbnd,mynum)
+      call node_cycinit(nnzp(1),nnxp(1),nnyp(1),npvar_mpt1,nmachs,ibnd,jbnd,mynum)
    end if
    !---------------------------------------------------------------------------------------!
 

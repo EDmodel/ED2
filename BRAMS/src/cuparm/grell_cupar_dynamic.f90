@@ -117,7 +117,7 @@ subroutine grell_cupar_dynamic(cldd,clds,nclouds,dtime,maxens_cap,maxens_eff,max
       ,x_thilu_cld        & ! intent(out) - Ice-liquid potential temperature      [      K]
       ,zero_scratch_grell ! ! subroutine - Resets scratch variables to zero.
    use rconstants, only: toodry
-
+   use therm_lib , only : thil2tqall
    implicit none
    !---------------------------------------------------------------------------------------!
    ! List of arguments                                                                     !

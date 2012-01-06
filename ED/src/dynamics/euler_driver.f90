@@ -49,14 +49,15 @@ subroutine euler_timestep(cgrid)
    real                                   :: veg_tai
    real                                   :: wcurr_loss2atm
    real                                   :: ecurr_netrad
+   real                                   :: ecurr_loss2et
    real                                   :: ecurr_loss2atm
    real                                   :: co2curr_loss2atm
    real                                   :: wcurr_loss2drainage
    real                                   :: ecurr_loss2drainage
    real                                   :: wcurr_loss2runoff
    real                                   :: ecurr_loss2runoff
-   real                                   :: old_can_exner
    real                                   :: old_can_enthalpy
+   real                                   :: old_can_exner
    real                                   :: old_can_shv
    real                                   :: old_can_co2
    real                                   :: old_can_rhos
@@ -115,8 +116,9 @@ subroutine euler_timestep(cgrid)
             old_can_co2      = csite%can_co2(ipa)
             old_can_rhos     = csite%can_rhos(ipa)
             old_can_temp     = csite%can_temp(ipa)
-            old_can_exner    = cp * (csite%can_prss(ipa) * p00i) ** rocp
-            old_can_enthalpy = old_can_exner * csite%can_theiv(ipa)
+            old_can_exner    = cp * ( p00i * csite%can_prss(ipa) ) ** rocp
+            old_can_enthalpy = old_can_exner * csite%can_theta(ipa)                        &
+                             + alvl * csite%can_shv(ipa)
             !------------------------------------------------------------------------------!
 
 
@@ -178,9 +180,10 @@ subroutine euler_timestep(cgrid)
                                       ,integration_buff%dinitp,integration_buff%ytemp      &
                                       ,integration_buff%yscal,integration_buff%yerr        &
                                       ,integration_buff%dydx,ipa,wcurr_loss2atm            &
-                                      ,ecurr_netrad,ecurr_loss2atm,co2curr_loss2atm        &
-                                      ,wcurr_loss2drainage,ecurr_loss2drainage             &
-                                      ,wcurr_loss2runoff,ecurr_loss2runoff,nsteps)
+                                      ,ecurr_netrad,ecurr_loss2et,ecurr_loss2atm           &
+                                      ,co2curr_loss2atm,wcurr_loss2drainage                &
+                                      ,ecurr_loss2drainage,wcurr_loss2runoff               &
+                                      ,ecurr_loss2runoff,nsteps)
             !------------------------------------------------------------------------------!
 
 
@@ -205,7 +208,7 @@ subroutine euler_timestep(cgrid)
             !     Compute the residuals.                                                   !
             !------------------------------------------------------------------------------!
             call compute_budget(csite,cpoly%lsl(isi),cmet%pcpg,cmet%qpcpg,ipa              &
-                               ,wcurr_loss2atm,ecurr_netrad,ecurr_loss2atm                 &
+                               ,wcurr_loss2atm,ecurr_netrad,ecurr_loss2et,ecurr_loss2atm   &
                                ,co2curr_loss2atm,wcurr_loss2drainage,ecurr_loss2drainage   &
                                ,wcurr_loss2runoff,ecurr_loss2runoff,cpoly%area(isi)        &
                                ,cgrid%cbudget_nep(ipy),old_can_enthalpy,old_can_shv        &
@@ -231,7 +234,7 @@ end subroutine euler_timestep
 ! that most of the Euler method utilises the subroutines from Runge-Kutta.                 !
 !------------------------------------------------------------------------------------------!
 subroutine integrate_patch_euler(csite,initp,dinitp,ytemp,yscal,yerr,dydx,ipa              &
-                                ,wcurr_loss2atm,ecurr_netrad,ecurr_loss2atm                &
+                                ,wcurr_loss2atm,ecurr_netrad,ecurr_loss2et,ecurr_loss2atm  &
                                 ,co2curr_loss2atm,wcurr_loss2drainage,ecurr_loss2drainage  &
                                 ,wcurr_loss2runoff,ecurr_loss2runoff,nsteps)
    use ed_state_vars   , only : sitetype             & ! structure
@@ -266,6 +269,7 @@ subroutine integrate_patch_euler(csite,initp,dinitp,ytemp,yscal,yerr,dydx,ipa   
    integer               , intent(in)  :: ipa
    real                  , intent(out) :: wcurr_loss2atm
    real                  , intent(out) :: ecurr_netrad
+   real                  , intent(out) :: ecurr_loss2et
    real                  , intent(out) :: ecurr_loss2atm
    real                  , intent(out) :: co2curr_loss2atm
    real                  , intent(out) :: wcurr_loss2drainage
@@ -320,9 +324,9 @@ subroutine integrate_patch_euler(csite,initp,dinitp,ytemp,yscal,yerr,dydx,ipa   
    !---------------------------------------------------------------------------------------!
    ! Move the state variables from the integrated patch to the model patch.                !
    !---------------------------------------------------------------------------------------!
-   call initp2modelp(tend-tbeg,initp,csite,ipa,wcurr_loss2atm,ecurr_netrad,ecurr_loss2atm  &
-                    ,co2curr_loss2atm,wcurr_loss2drainage,ecurr_loss2drainage              &
-                    ,wcurr_loss2runoff,ecurr_loss2runoff)
+   call initp2modelp(tend-tbeg,initp,csite,ipa,wcurr_loss2atm,ecurr_netrad,ecurr_loss2et   &
+                    ,ecurr_loss2atm,co2curr_loss2atm,wcurr_loss2drainage                   &
+                    ,ecurr_loss2drainage,wcurr_loss2runoff,ecurr_loss2runoff)
 
    return
 end subroutine integrate_patch_euler

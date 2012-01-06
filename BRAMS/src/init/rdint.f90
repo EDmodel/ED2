@@ -1051,6 +1051,7 @@ subroutine read_nl(filename)
                                  , bulk_on8   => bulk_on   & ! intent(out)
                                  , level8     => level     ! ! intent(out)
    use rconstants         , only : vonk                    ! ! intent(in)
+   use mem_mnt_advec      , only : iadvec                  ! ! intent(in)
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
    character(len=*) , intent(in)   :: filename           ! file name with namelists

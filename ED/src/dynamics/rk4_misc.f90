@@ -74,13 +74,15 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
    targetp%can_co2      = dble(sourcesite%can_co2(ipa))
    targetp%can_depth    = dble(sourcesite%can_depth(ipa))
    targetp%can_rvap     = targetp%can_shv / (1.d0 - targetp%can_shv)
-
    !----- Update the canopy pressure and Exner function. ----------------------------------!
    targetp%can_prss     = reducedpress8(rk4site%atm_prss,rk4site%atm_theta,rk4site%atm_shv &
                                        ,rk4site%geoht,targetp%can_theta,targetp%can_shv    &
                                        ,targetp%can_depth)
    targetp%can_exner    = cp8 * (targetp%can_prss * p00i8) ** rocp8
+   !----- Initialise canopy air enthalpy. -------------------------------------------------!
+   targetp%can_enthalpy = targetp%can_exner * targetp%can_theta + alvl8 * targetp%can_shv
    !---------------------------------------------------------------------------------------!
+
 
 
    !----- Update the vegetation properties used for roughness. ----------------------------!
@@ -95,7 +97,6 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
    !     Update the natural logarithm of theta_eiv, temperature, density, relative         !
    ! humidity, and the saturation specific humidity.                                       !
    !---------------------------------------------------------------------------------------!
-   targetp%can_lntheta  = log(targetp%can_theta)
    targetp%can_temp     = cpi8 * targetp%can_theta * targetp%can_exner
    targetp%can_rhos     = idealdenssh8(targetp%can_prss,targetp%can_temp,targetp%can_shv)
    targetp%can_rhv      = rehuil8(targetp%can_prss,targetp%can_temp,targetp%can_rvap)
@@ -520,10 +521,8 @@ subroutine update_diagnostic_vars(initp, csite,ipa)
                                     , rk4min_sfcw_mass      & ! intent(in)
                                     , rk4min_virt_water     & ! intent(in)
                                     , rk4min_can_shv        & ! intent(in)
-                                    , rk4min_can_theta      & ! intent(in)
-                                    , rk4max_can_theta      & ! intent(in)
-                                    , rk4min_can_lntheta    & ! intent(in)
-                                    , rk4max_can_lntheta    & ! intent(in)
+                                    , rk4min_can_enthalpy   & ! intent(in)
+                                    , rk4max_can_enthalpy   & ! intent(in)
                                     , rk4min_can_temp       & ! intent(in)
                                     , rk4max_can_shv        & ! intent(in)
                                     , rk4min_veg_lwater     & ! intent(in)
@@ -537,7 +536,6 @@ subroutine update_diagnostic_vars(initp, csite,ipa)
                                     , rk4max_sfcw_temp      & ! intent(in)
                                     , rk4water_stab_thresh  & ! intent(in)
                                     , tiny_offset           & ! intent(in)
-                                    , force_idealgas        & ! intent(in)
                                     , rk4patchtype          ! ! structure
    use ed_state_vars         , only : sitetype              & ! structure
                                     , patchtype             ! ! structure
@@ -551,7 +549,8 @@ subroutine update_diagnostic_vars(initp, csite,ipa)
                                     , thetaeiv8             & ! function
                                     , rehuil8               & ! function
                                     , rslif8                & ! function
-                                    , thrhsh2temp8          ! ! function
+                                    , thetaeiv2thil8        & ! function
+                                    , thil2tqall8           ! ! function
    use consts_coms           , only : alvl8                 & ! intent(in)
                                     , wdns8                 & ! intent(in)
                                     , rdryi8                & ! intent(in)
@@ -580,7 +579,7 @@ subroutine update_diagnostic_vars(initp, csite,ipa)
    integer                          :: ksn
    integer                          :: kclosest
    logical                          :: ok_shv
-   logical                          :: ok_theta
+   logical                          :: ok_enthalpy
    logical                          :: ok_ground
    logical                          :: ok_sfcw
    logical                          :: ok_leaf
@@ -601,10 +600,10 @@ subroutine update_diagnostic_vars(initp, csite,ipa)
    !---------------------------------------------------------------------------------------!
 
    !----- Then we define some logicals to make the code cleaner. --------------------------!
-   ok_shv   = initp%can_shv     >= rk4min_can_shv     .and.                                &
-              initp%can_shv     <= rk4max_can_shv
-   ok_theta = initp%can_lntheta >= rk4min_can_lntheta .and.                                &
-              initp%can_lntheta <= rk4max_can_lntheta
+   ok_shv      = initp%can_shv      >= rk4min_can_shv        .and.                         &
+                 initp%can_shv      <= rk4max_can_shv
+   ok_enthalpy = initp%can_enthalpy >= rk4min_can_enthalpy   .and.                         &
+                 initp%can_enthalpy <= rk4max_can_enthalpy
 
    !---------------------------------------------------------------------------------------!
    !     Here we convert theta into temperature, potential temperature, and density, and   !
@@ -612,42 +611,34 @@ subroutine update_diagnostic_vars(initp, csite,ipa)
    ! log) should eventually become the prognostic variable for canopy air space entropy    !
    ! when we add condensed/frozen water in the canopy air space.                           !
    !---------------------------------------------------------------------------------------!
-   if (ok_shv .and. ok_theta) then
+   if (ok_shv .and. ok_enthalpy) then
 
-      !----- First, we update the canopy air potential temperature. -----------------------!
-      initp%can_theta = exp(initp%can_lntheta)
+      !----- Find the canopy air potential temperature. -----------------------------------!
+      initp%can_theta = (initp%can_enthalpy - alvl8 * initp%can_shv) / initp%can_exner
+      !------------------------------------------------------------------------------------!
 
+
+      !----- Find the (total) mixing ratio. -----------------------------------------------!
       initp%can_rvap  = initp%can_shv / (1.d0 - initp%can_shv)
-
-      !------------------------------------------------------------------------------------!
-      !    Here we find the temperature in different ways depending on whether we are      !
-      ! keeping pressure constant during one full time step or not.  If we are forcing     !
-      ! ideal gas to be always respected, then we don't know the pressure until we have    !
-      ! the temperature, so we compute the temperature based on potential temperature,     !
-      ! density, and specific humidity, then update pressure.  Otherwise, we compute the   !
-      ! temperature using the known pressure, even though this causes the ideal gas law to !
-      ! not be always satisfied.                                                           !
-      !------------------------------------------------------------------------------------!
-      if (force_idealgas) then
-         initp%can_temp  = thrhsh2temp8(initp%can_theta,initp%can_rhos,initp%can_shv)
-         initp%can_prss  = initp%can_rhos * rdry8 * initp%can_temp                         &
-                         * (1.d0 + epim18 * initp%can_shv)
-         initp%can_exner = cp8 * (initp%can_prss * p00i8) ** rocp8
-      else
-         initp%can_temp  = cpi8 * initp%can_theta * initp%can_exner
-      end if
       !------------------------------------------------------------------------------------!
 
 
+      !------------------------------------------------------------------------------------!
+      !    Find the temperature and the ice-vapour equivalent potential temperature.       !
+      !------------------------------------------------------------------------------------!
+      initp%can_temp  = cpi8 * initp%can_theta * initp%can_exner
+      initp%can_theiv = thetaeiv8(initp%can_theta,initp%can_prss,initp%can_temp            &
+                                 ,initp%can_rvap,initp%can_rvap)
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !     Find the derived humidity variables.                                           !
+      !------------------------------------------------------------------------------------!
       initp%can_rhv   = rehuil8(initp%can_prss,initp%can_temp,initp%can_rvap)
       initp%can_ssh   = rslif8(initp%can_prss,initp%can_temp)
       initp%can_ssh   = initp%can_ssh / (initp%can_ssh + 1.d0)
-      initp%can_theiv = thetaeiv8(initp%can_theta,initp%can_prss,initp%can_temp            &
-                                 ,initp%can_rvap,initp%can_rvap)
-   elseif (initp%can_lntheta >= rk4max_can_lntheta) then
-      initp%can_theta = rk4max_can_theta + 1.d0
-   elseif (initp%can_lntheta <= rk4min_can_lntheta) then
-      initp%can_theta = rk4min_can_theta - 1.d0
+      !------------------------------------------------------------------------------------!
    end if
    !---------------------------------------------------------------------------------------!
 
@@ -1150,7 +1141,7 @@ subroutine update_diagnostic_vars(initp, csite,ipa)
 
 
    !----- Compute canopy turbulence properties. -------------------------------------------!
-   if (ok_leaf .and. ok_wood .and. ok_shv .and. ok_theta .and. ok_ground) then
+   if (ok_leaf .and. ok_wood .and. ok_shv .and. ok_enthalpy .and. ok_ground) then
       call canopy_turbulence8(csite,initp,ipa)
    end if
    !---------------------------------------------------------------------------------------!
@@ -1191,7 +1182,8 @@ subroutine adjust_sfcw_properties(nzg,nzs,initp,hdid,csite,ipa)
                             , ipercol               & ! intent(in)
                             , rk4eps2               & ! intent(in)
                             , wcapcan               & ! intent(in)
-                            , wcapcani              ! ! intent(in)
+                            , wcapcani              & ! intent(in)
+                            , hcapcani              ! ! intent(in)
    use ed_state_vars , only : sitetype              & ! structure
                             , patchtype             ! ! structure
    use soil_coms     , only : soil8                 & ! intent(in)
@@ -1241,6 +1233,8 @@ subroutine adjust_sfcw_properties(nzg,nzs,initp,hdid,csite,ipa)
    real(kind=8)                        :: energy_free
    real(kind=8)                        :: wmass_free
    real(kind=8)                        :: depth_free
+   real(kind=8)                        :: tempk_free
+   real(kind=8)                        :: fracliq_free
    real(kind=8)                        :: energy_available
    real(kind=8)                        :: wmass_available
    real(kind=8)                        :: depth_available
@@ -1382,28 +1376,26 @@ subroutine adjust_sfcw_properties(nzg,nzs,initp,hdid,csite,ipa)
       !----- Find the amount available at the canopy air space. ---------------------------!
       wmass_available            = wcapcan * (initp%can_shv - 5.d0 * rk4min_can_shv)
       if ( wmass_available > wmass_needed) then
+
+
          !---------------------------------------------------------------------------------!
          !    There is enough water vapour. The transfer will require phase change, so the !
          ! energy transfer will be a latent heat flux.  Remove the water from the canopy   !
          ! air space.                                                                      !
          !---------------------------------------------------------------------------------!
-         initp%can_shv      = initp%can_shv       - wmass_needed  * wcapcani
-         initp%avg_vapor_gc = initp%avg_vapor_gc  - wmass_needed * hdidi
+         initp%can_shv      = initp%can_shv       - wmass_needed   * wcapcani
+         initp%avg_vapor_gc = initp%avg_vapor_gc  - wmass_needed   * hdidi
          !---------------------------------------------------------------------------------!
 
 
-
          !---------------------------------------------------------------------------------!
-         !     Correct the storage.  Latent heat loss must be accounted for.               !
+         !    Correct the storage and loss through evapotranspiration.                     !
          !---------------------------------------------------------------------------------!
-         if (checkbudget) then
-            !----- Find temperature and liquid fraction. ----------------------------------!
-            call qtk8(energy_needed/wmass_needed,tempk_needed,fracliq_needed)
-            !------------------------------------------------------------------------------!
-         end if
+         !if (checkbudget) then
+         !   initp%ebudget_loss2et = initp%ebudget_loss2et - energy_needed
+         !   initp%ebudget_storage = initp%ebudget_storage + energy_needed
+         !end if
          !---------------------------------------------------------------------------------!
-
-
 
          energy_input       = energy_needed
 
@@ -1416,16 +1408,22 @@ subroutine adjust_sfcw_properties(nzg,nzs,initp,hdid,csite,ipa)
          !    There is not enough water vapour. Dry down to the minimum, and hope for the  !
          ! best.                                                                           !
          !---------------------------------------------------------------------------------!
-         energy_available   = wmass_available * (alvi8 - initp%soil_fracliq(nzg) * alli8)
-         depth_available    = wmass_available * ( initp%soil_fracliq(nzg) * wdnsi8         &
-                                                + (1.d0-initp%soil_fracliq(nzg)) * fdnsi8)
-         !---------------------------------------------------------------------------------!
 
          energy_input       = energy_available
 
-         initp%can_shv      = initp%can_shv       - wmass_available * wcapcani
+         initp%can_shv      = initp%can_shv       - wmass_available  * wcapcani
          initp%avg_vapor_gc = initp%avg_vapor_gc  - wmass_available * hdidi
-         
+
+
+         !---------------------------------------------------------------------------------!
+         !     Correct the storage and the loss to evapotranspiration.                     !
+         !---------------------------------------------------------------------------------!
+         !if (checkbudget) then
+         !   initp%ebudget_loss2et = initp%ebudget_loss2et - energy_available
+         !   initp%ebudget_storage = initp%ebudget_storage + energy_available
+         !end if
+         !---------------------------------------------------------------------------------!
+
          wmass_free         = wmass_available  - wmass_needed 
          energy_free        = energy_available - energy_needed
          depth_free         = depth_available  - depth_needed
@@ -1710,15 +1708,37 @@ subroutine adjust_sfcw_properties(nzg,nzs,initp,hdid,csite,ipa)
          !----- Remove the water that can go to the soil. ---------------------------------!
          wmass_free  = wmass_free  - wmass_room
          energy_free = energy_free - energy_room
+         !---------------------------------------------------------------------------------!
+
 
          !----- Dump what we can dump on the top soil layer. ------------------------------!
          initp%soil_water(nzg)  = initp%soil_water(nzg)  + wmass_room  * dslzi8(nzg)       &
                                 * wdnsi8
          initp%soil_energy(nzg) = initp%soil_energy(nzg) + energy_room * dslzi8(nzg)
+         !---------------------------------------------------------------------------------!
 
-         !----- Boil the remaining. -------------------------------------------------------!
-         initp%can_shv      = initp%can_shv       + wmass_free  * wcapcani
-         initp%avg_vapor_gc = initp%avg_vapor_gc  + wmass_free  * hdidi
+
+         !---------------------------------------------------------------------------------!
+         !     Boil the remaining.                                                         !
+         !---------------------------------------------------------------------------------!
+         !------ Update the canopy air space properties. ----------------------------------!
+         initp%can_shv      = initp%can_shv       + wmass_free   * wcapcani
+         !------ Update the fluxes. -------------------------------------------------------!
+         initp%avg_vapor_gc = initp%avg_vapor_gc  + wmass_free   * hdidi
+         !---------------------------------------------------------------------------------!
+
+
+
+         !---------------------------------------------------------------------------------!
+         !      Remove the energy from the storage.                                        !
+         !---------------------------------------------------------------------------------!
+         !if (checkbudget) then
+         !   initp%ebudget_storage = initp%ebudget_storage - energy_free
+         !   initp%ebudget_loss2et = initp%ebudget_loss2et + energy_free
+         !end if
+         !---------------------------------------------------------------------------------!
+
+
 
          energy_input       = -energy_free
 
@@ -1751,15 +1771,38 @@ subroutine adjust_sfcw_properties(nzg,nzs,initp,hdid,csite,ipa)
          !----- Add the water that can come from the soil. --------------------------------!
          wmass_needed  = wmass_needed  - wmass_available
          energy_needed = energy_needed - energy_available
+         !---------------------------------------------------------------------------------!
+
 
          !----- Dump what we can dump on the top soil layer. ------------------------------!
          initp%soil_water(nzg)  = initp%soil_water(nzg)  - wmass_available  * dslzi8(nzg)  &
                                 * wdnsi8
          initp%soil_energy(nzg) = initp%soil_energy(nzg) - energy_available * dslzi8(nzg)
+         !---------------------------------------------------------------------------------!
 
-         !----- Condense the remaining, hoping for the best. ------------------------------!
-         initp%can_shv      = initp%can_shv       - wmass_needed  * wcapcani
-         initp%avg_vapor_gc = initp%avg_vapor_gc  - wmass_needed  * hdidi
+
+         !---------------------------------------------------------------------------------!
+         !     Condense the remaining, and hope for the best.                              !
+         !---------------------------------------------------------------------------------!
+         !----- Find the energy associated with the partial condensation. -----------------!
+         call qtk8(energy_needed/wmass_needed,tempk_needed,fracliq_needed)
+         energy_needed      = wmass_needed * (alvi8 - fracliq_needed * alli8)
+         !----- Update the canopy air space properties. -----------------------------------!
+         initp%can_shv      = initp%can_shv       - wmass_needed   * wcapcani
+         !----- Update the fluxes. --------------------------------------------------------!
+         initp%avg_vapor_gc = initp%avg_vapor_gc  - wmass_needed   * hdidi
+         !---------------------------------------------------------------------------------!
+
+
+         !---------------------------------------------------------------------------------!
+         !     Remove the energy from the storage.                                         !
+         !---------------------------------------------------------------------------------!
+         !if (checkbudget) then
+         !   initp%ebudget_storage = initp%ebudget_storage - energy_needed
+         !   initp%ebudget_loss2et = initp%ebudget_loss2et + energy_needed
+         !end if
+         !---------------------------------------------------------------------------------!
+
 
          energy_input       = - energy_needed
 
@@ -2063,6 +2106,9 @@ subroutine adjust_topsoil_properties(initp,hdid,csite,ipa)
    real(kind=8)                        :: energy_available
    real(kind=8)                        :: water_room
    real(kind=8)                        :: energy_room
+   real(kind=8)                        :: virtual_tempk
+   real(kind=8)                        :: virtual_fracliq
+   real(kind=8)                        :: virtual_qboil
    logical                             :: slightlymoist
    logical                             :: slightlydry
    !---------------------------------------------------------------------------------------!
@@ -2289,6 +2335,8 @@ subroutine adjust_topsoil_properties(initp,hdid,csite,ipa)
          ! decide whether it is going to be instant frost or dew (or both).                !
          !---------------------------------------------------------------------------------!
          energy_needed = water_needed * (alvi8 - initp%soil_fracliq(kt) * alli8)
+         !---------------------------------------------------------------------------------!
+
 
          !---------------------------------------------------------------------------------!
          !     Add the water and energy into the top layer, remove it from the canopy air  !
@@ -2299,8 +2347,18 @@ subroutine adjust_topsoil_properties(initp,hdid,csite,ipa)
          !---------------------------------------------------------------------------------!
 
          initp%can_shv         = initp%can_shv        - water_needed  * wcapcani
-
          initp%avg_vapor_gc    = initp%avg_vapor_gc  - water_needed * hdidi
+         !---------------------------------------------------------------------------------!
+
+
+         !---------------------------------------------------------------------------------!
+         !     Correct the storage and the loss to evapotranspiration.                     !
+         !---------------------------------------------------------------------------------!
+         !if (checkbudget) then
+         !   initp%ebudget_storage = initp%ebudget_storage + energy_needed
+         !   initp%ebudget_loss2et = initp%ebudget_loss2et - energy_needed
+         !end if
+         !---------------------------------------------------------------------------------!
 
          return
 
@@ -2324,6 +2382,17 @@ subroutine adjust_topsoil_properties(initp,hdid,csite,ipa)
 
          initp%can_shv         = initp%can_shv        - water_available  * wcapcani
          initp%avg_vapor_gc    = initp%avg_vapor_gc   - water_available  * hdidi
+         !---------------------------------------------------------------------------------!
+
+
+         !---------------------------------------------------------------------------------!
+         !     Correct the energy budget.                                                  !
+         !---------------------------------------------------------------------------------!
+         !if (checkbudget) then
+         !   initp%ebudget_storage = initp%ebudget_storage + energy_available
+         !   initp%ebudget_loss2et = initp%ebudget_loss2et - energy_available
+         !end if
+         !---------------------------------------------------------------------------------!
 
          return
       end if
@@ -2388,14 +2457,23 @@ subroutine adjust_topsoil_properties(initp,hdid,csite,ipa)
       ! shouldn't be enough to cause trouble.                                              !
       !------------------------------------------------------------------------------------!
       if (initp%virtual_water > rk4eps * rk4eps * rk4tiny_sfcw_mass) then 
-         initp%can_shv      = initp%can_shv      + initp%virtual_water  * wcapcani 
 
+         !----- Correct the canopy air space and fluxes. ----------------------------------!
+         initp%can_shv      = initp%can_shv      + initp%virtual_water  * wcapcani 
          initp%avg_vapor_gc = initp%avg_vapor_gc + initp%virtual_water  * hdidi
+         !---------------------------------------------------------------------------------!
+
+         !---------------------------------------------------------------------------------!
+         !      The virtual layer doesn't count as part of the storage, so we don't need   !
+         ! to correct it.                                                                  !
+         !---------------------------------------------------------------------------------!
+
          
          !----- Say goodbye to the virtual layer... ---------------------------------------!
          initp%virtual_energy = 0.d0
          initp%virtual_water  = 0.d0
          initp%virtual_depth  = 0.d0
+         !---------------------------------------------------------------------------------!
       elseif (initp%virtual_water > 0.d0) then
          !---------------------------------------------------------------------------------!
          !    The amount of water is so small that round-off errors are bound to become    !
@@ -2475,8 +2553,20 @@ subroutine adjust_topsoil_properties(initp,hdid,csite,ipa)
          initp%can_shv         = initp%can_shv         + water_excess  * wcapcani
          initp%avg_vapor_gc    = initp%avg_vapor_gc    + water_excess  * hdidi
          !---------------------------------------------------------------------------------!
+
+
+         !---------------------------------------------------------------------------------!
+         !      Correct the storage term.                                                  !
+         !---------------------------------------------------------------------------------!
+         !if (checkbudget) then
+         !   initp%ebudget_storage = initp%ebudget_storage - energy_excess
+         !   initp%ebudget_loss2et = initp%ebudget_loss2et + energy_excess
+         !end if
+         !---------------------------------------------------------------------------------!
       end if
+      !------------------------------------------------------------------------------------!
    end if
+   !---------------------------------------------------------------------------------------!
 
    return
 end subroutine adjust_topsoil_properties
@@ -2844,10 +2934,11 @@ subroutine adjust_veg_properties(initp,hdid,csite,ipa)
 
    end select
 
-   !----- Update the canopy air specific humidity. ----------------------------------------!
-   initp%can_shv  = initp%can_shv                                                          &
-                  + (leaf_boil_tot + wood_boil_tot - leaf_dew_tot - wood_dew_tot)          &
-                  * wcapcani
+   !----- Update the canopy air specific humidity and entropy. ----------------------------!
+   initp%can_shv     = initp%can_shv                                                       &
+                     + (leaf_boil_tot  + wood_boil_tot  - leaf_dew_tot  - wood_dew_tot)    &
+                     * wcapcani
+   !---------------------------------------------------------------------------------------!
 
 
    !----- Updating output fluxes ----------------------------------------------------------!
@@ -2872,6 +2963,18 @@ subroutine adjust_veg_properties(initp,hdid,csite,ipa)
                           + (wood_boil_tot - wood_dew_tot)      * hdidi
    end if
    !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Update the budget variables.                                                      !
+   !---------------------------------------------------------------------------------------!
+   !if (checkbudget) then
+   !   initp%ebudget_storage = initp%ebudget_storage - ( leaf_qboil_tot + wood_qboil_tot    &
+   !                                                   - leaf_qdew_tot  - wood_qdew_tot )
+   !   initp%ebudget_loss2et = initp%ebudget_loss2et + ( leaf_qboil_tot + wood_qboil_tot    &
+   !                                                   - leaf_qdew_tot  - wood_qdew_tot )
+   !end if
 
    return
 end subroutine adjust_veg_properties
@@ -2922,10 +3025,10 @@ subroutine print_errmax(errmax,yerr,yscal,cpatch,y,ytemp)
    write(unit=*,fmt='(5(a,1x))')  'Name            ','   Max.Error','   Abs.Error'&
                                 &,'       Scale','Problem(T|F)'
 
-   errmax       = max(0.0,abs(yerr%can_lntheta/yscal%can_lntheta))
-   troublemaker = large_error(yerr%can_theiv,yscal%can_theiv)
-   write(unit=*,fmt=onefmt) 'CAN_LNTHETA:',errmax,yerr%can_lntheta,yscal%can_lntheta       &
-                                          ,troublemaker
+   errmax       = max(0.0,abs(yerr%can_enthalpy/yscal%can_enthalpy))
+   troublemaker = large_error(yerr%can_enthalpy,yscal%can_enthalpy)
+   write(unit=*,fmt=onefmt) 'CAN_ENTHALPY:',errmax,yerr%can_enthalpy,yscal%can_enthalpy    &
+                                           ,troublemaker
 
    errmax       = max(errmax,abs(yerr%can_shv/yscal%can_shv))
    troublemaker = large_error(yerr%can_shv,yscal%can_shv)
@@ -3570,14 +3673,14 @@ subroutine print_rk4patch(y,csite,ipa)
                                       ,csite%lai(ipa),y%can_depth,y%can_co2,y%can_prss     &
                                       ,y%ggnet
    write (unit=*,fmt='(80a)') ('-',k=1,80)
-   write (unit=*,fmt='(8(a12,1x))')  '    CAN_RHOS','   CAN_THEIV','   CAN_THETA'          &
+   write (unit=*,fmt='(9(a12,1x))')  '    CAN_RHOS','   CAN_THEIV','   CAN_THETA'          &
                                     ,'    CAN_TEMP','     CAN_SHV','     CAN_SSH'          &
-                                    ,'    CAN_RVAP','     CAN_RHV'
+                                    ,'    CAN_RVAP','     CAN_RHV','CAN_ENTHALPY'
                                      
                                      
-   write (unit=*,fmt='(8(es12.4,1x))')   y%can_rhos , y%can_theiv, y%can_theta             &
+   write (unit=*,fmt='(9(es12.4,1x))')   y%can_rhos , y%can_theiv, y%can_theta             &
                                        , y%can_temp , y%can_shv  , y%can_ssh               &
-                                       , y%can_rvap , y%can_rhv
+                                       , y%can_rvap , y%can_rhv  , y%can_enthalpy
                                        
 
    write (unit=*,fmt='(80a)') ('-',k=1,80)
@@ -3709,8 +3812,8 @@ subroutine print_rk4_state(initp,fluxp,csite,ipa,elapsed,hdid)
    real(kind=8)                       :: nir_b_diff
    real(kind=8)                       :: elapsec
    !----- Local constants. ----------------------------------------------------------------!
-   character(len=10), parameter :: phfmt='(82(a,1x))'
-   character(len=48), parameter :: pbfmt='(3(i13,1x),4(es13.6,1x),3(i13,1x),72(es13.6,1x))'
+   character(len=10), parameter :: phfmt='(83(a,1x))'
+   character(len=48), parameter :: pbfmt='(3(i13,1x),4(es13.6,1x),3(i13,1x),73(es13.6,1x))'
    character(len=10), parameter :: chfmt='(57(a,1x))'
    character(len=48), parameter :: cbfmt='(3(i13,1x),2(es13.6,1x),3(i13,1x),49(es13.6,1x))'
    !----- Locally saved variables. --------------------------------------------------------!
@@ -3878,24 +3981,24 @@ subroutine print_rk4_state(initp,fluxp,csite,ipa,elapsed,hdid)
                                , '   MET.RSHORT' , '    MET.RLONG', '     CAN.PRSS'        &
                                , '     CAN.TEMP' , '      CAN.SHV', '      CAN.CO2'        &
                                , '    CAN.DEPTH' , '     CAN.RHOS', '   CAN.RELHUM'        &
-                               , '    CAN.THETA' , '    CAN.THEIV', '     SFC.TEMP'        &
-                               , '      SFC.SHV' , '    LEAF.TEMP', '   LEAF.WATER'        &
-                               , '    WOOD.TEMP' , '   WOOD.WATER', '       GGBARE'        &
-                               , '        GGVEG' , '        GGNET', '      OPENCAN'        &
-                               , '    SOIL.TEMP' , '   SOIL.WATER', '       SOILCP'        &
-                               , '       SOILWP' , '       SOILFC', '       SLMSTS'        &
-                               , '        USTAR' , '        TSTAR', '        QSTAR'        &
-                               , '        CSTAR' , '         ZETA', '      RI.BULK'        &
-                               , '   GND.RSHORT' , '    GND.RLONG', '       WFLXLC'        &
-                               , '       WFLXWC' , '       WFLXGC', '       WFLXAC'        &
-                               , '       TRANSP' , '        WSHED', '    INTERCEPT'        &
-                               , '  THROUGHFALL' , '       HFLXGC', '       HFLXLC'        &
-                               , '       HFLXWC' , '       HFLXAC', '       CFLXAC'        &
-                               , '       CFLXST' , '        CWDRH', '       SOILRH'        &
-                               , '          GPP' , '       PLRESP', ' PAR.BEAM.TOP'        &
-                               , ' PAR.DIFF.TOP' , ' NIR.BEAM.TOP', ' NIR.DIFF.TOP'        &
-                               , ' PAR.BEAM.BOT' , ' PAR.DIFF.BOT', ' NIR.BEAM.BOT'        &
-                               , ' NIR.DIFF.BOT'
+                               , '    CAN.THETA' , '    CAN.THEIV', ' CAN.ENTHALPY'        &
+                               , '     SFC.TEMP', '      SFC.SHV' , '    LEAF.TEMP'        &
+                               , '   LEAF.WATER', '    WOOD.TEMP' , '   WOOD.WATER'        &
+                               , '       GGBARE', '        GGVEG' , '        GGNET'        &
+                               , '      OPENCAN', '    SOIL.TEMP' , '   SOIL.WATER'        &
+                               , '       SOILCP', '       SOILWP' , '       SOILFC'        &
+                               , '       SLMSTS', '        USTAR' , '        TSTAR'        &
+                               , '        QSTAR', '        CSTAR' , '         ZETA'        &
+                               , '      RI.BULK', '   GND.RSHORT' , '    GND.RLONG'        &
+                               , '       WFLXLC', '       WFLXWC' , '       WFLXGC'        &
+                               , '       WFLXAC', '       TRANSP' , '        WSHED'        &
+                               , '    INTERCEPT', '  THROUGHFALL' , '       HFLXGC'        &
+                               , '       HFLXLC', '       HFLXWC' , '       HFLXAC'        &
+                               , '       CFLXAC', '       CFLXST' , '        CWDRH'        &
+                               , '       SOILRH', '          GPP' , '       PLRESP'        &
+                               , ' PAR.BEAM.TOP', ' PAR.DIFF.TOP' , ' NIR.BEAM.TOP'        &
+                               , ' NIR.DIFF.TOP', ' PAR.BEAM.BOT' , ' PAR.DIFF.BOT'        &
+                               , ' NIR.BEAM.BOT', ' NIR.DIFF.BOT'
                                
                                
                                
@@ -3922,24 +4025,24 @@ subroutine print_rk4_state(initp,fluxp,csite,ipa,elapsed,hdid)
                    , rk4site%rshort        , rk4site%rlong         , initp%can_prss        &
                    , initp%can_temp        , initp%can_shv         , initp%can_co2         &
                    , initp%can_depth       , initp%can_rhos        , initp%can_rhv         &
-                   , initp%can_theta       , initp%can_theiv       , initp%ground_temp     &
-                   , initp%ground_shv      , avg_leaf_temp         , sum_leaf_water        &
-                   , avg_wood_temp         , sum_wood_water        , initp%ggbare          &
-                   , initp%ggveg           , initp%ggnet           , initp%opencan_frac    &
-                   , initp%soil_tempk(nzg) , initp%soil_water(nzg) , soil8(nsoil)%soilcp   &
-                   , soil8(nsoil)%soilwp   , soil8(nsoil)%sfldcap  , soil8(nsoil)%slmsts   &
-                   , initp%ustar           , initp%tstar           , initp%qstar           &
-                   , initp%cstar           , initp%zeta            , initp%ribulk          &
-                   , fluxp%flx_rshort_gnd  , fluxp%flx_rlong_gnd   , fluxp%flx_vapor_lc    &
-                   , fluxp%flx_vapor_wc    , fluxp%flx_vapor_gc    , fluxp%flx_vapor_ac    &
-                   , fluxp%flx_transp      , fluxp%flx_wshed_vg    , fluxp%flx_intercepted &
-                   , fluxp%flx_throughfall , fluxp%flx_sensible_gc , fluxp%flx_sensible_lc &
-                   , fluxp%flx_sensible_wc , fluxp%flx_sensible_ac , fluxp%flx_carbon_ac   &
-                   , fluxp%flx_carbon_st   , initp%cwd_rh          , soil_rh               &
-                   , sum_gpp               , sum_plresp            , rk4site%par_beam      &
-                   , rk4site%par_diffuse   , rk4site%nir_beam      , rk4site%nir_diffuse   &
-                   , par_b_beam            , par_b_diff            , nir_b_beam            &
-                   , nir_b_diff
+                   , initp%can_theta       , initp%can_theiv       , initp%can_enthalpy    &
+                   , initp%ground_temp     , initp%ground_shv      , avg_leaf_temp         &
+                   , sum_leaf_water        , avg_wood_temp         , sum_wood_water        &
+                   , initp%ggbare          , initp%ggveg           , initp%ggnet           &
+                   , initp%opencan_frac    , initp%soil_tempk(nzg) , initp%soil_water(nzg) &
+                   , soil8(nsoil)%soilcp   , soil8(nsoil)%soilwp   , soil8(nsoil)%sfldcap  &
+                   , soil8(nsoil)%slmsts   , initp%ustar           , initp%tstar           &
+                   , initp%qstar           , initp%cstar           , initp%zeta            &
+                   , initp%ribulk          , fluxp%flx_rshort_gnd  , fluxp%flx_rlong_gnd   &
+                   , fluxp%flx_vapor_lc    , fluxp%flx_vapor_wc    , fluxp%flx_vapor_gc    &
+                   , fluxp%flx_vapor_ac    , fluxp%flx_transp      , fluxp%flx_wshed_vg    &
+                   , fluxp%flx_intercepted , fluxp%flx_throughfall , fluxp%flx_sensible_gc &
+                   , fluxp%flx_sensible_lc , fluxp%flx_sensible_wc , fluxp%flx_sensible_ac &
+                   , fluxp%flx_carbon_ac   , fluxp%flx_carbon_st   , initp%cwd_rh          &
+                   , soil_rh               , sum_gpp               , sum_plresp            &
+                   , rk4site%par_beam      , rk4site%par_diffuse   , rk4site%nir_beam      &
+                   , rk4site%nir_diffuse   , par_b_beam            , par_b_diff            &
+                   , nir_b_beam            , nir_b_diff
 
    close(unit=83,status='keep')
    !---------------------------------------------------------------------------------------!

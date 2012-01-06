@@ -142,7 +142,7 @@ subroutine odeint(h1,csite,ipa,nsteps)
                                    integration_buff%y%sfcwater_depth(ksn)                  &
                                  - wfreeb*wdnsi8
 
-               !----- Recompute the energy removing runoff --------------------------------!
+               !----- Remove internal energy lost due to runoff. --------------------------!
                integration_buff%y%sfcwater_energy(ksn) =                                   &
                                      integration_buff%y%sfcwater_energy(ksn) - qwfree
 
@@ -293,7 +293,6 @@ subroutine copy_met_2_rk4site(mzg,vels,atm_theiv,atm_theta,atm_tmp,atm_shv,atm_c
 
    !----- Find the other variables that require a little math. ----------------------------!
    rk4site%vels                  = max(ubmin8,dble(vels))
-   rk4site%atm_lntheta           = log(rk4site%atm_theta)
    rk4site%atm_rvap              = rk4site%atm_shv / (1.d0 - rk4site%atm_shv)
    rk4site%atm_rhv               = rehuil8(rk4site%atm_prss,rk4site%atm_tmp                &
                                           ,rk4site%atm_rvap)
@@ -339,7 +338,7 @@ subroutine inc_rk4_patch(rkp, inc, fac, cpatch)
    integer                         :: k      ! Counter
    !---------------------------------------------------------------------------------------!
 
-   rkp%can_lntheta  = rkp%can_lntheta  + fac * inc%can_lntheta
+   rkp%can_enthalpy = rkp%can_enthalpy + fac * inc%can_enthalpy
    rkp%can_shv      = rkp%can_shv      + fac * inc%can_shv
    rkp%can_co2      = rkp%can_co2      + fac * inc%can_co2
 
@@ -389,6 +388,7 @@ subroutine inc_rk4_patch(rkp, inc, fac, cpatch)
 
       rkp%ebudget_storage       = rkp%ebudget_storage       + fac * inc%ebudget_storage
       rkp%ebudget_netrad        = rkp%ebudget_netrad        + fac * inc%ebudget_netrad
+      rkp%ebudget_loss2et       = rkp%ebudget_loss2et       + fac * inc%ebudget_loss2et
       rkp%ebudget_loss2atm      = rkp%ebudget_loss2atm      + fac * inc%ebudget_loss2atm
       rkp%ebudget_loss2drainage = rkp%ebudget_loss2drainage                                &
                                 + fac * inc%ebudget_loss2drainage
@@ -536,9 +536,9 @@ subroutine get_yscal(y,dy,htry,yscal,cpatch)
    integer                        :: ico                   ! Current cohort ID
    !---------------------------------------------------------------------------------------!
 
-   yscal%can_lntheta =  abs(y%can_lntheta) + abs(dy%can_lntheta  * htry)
-   yscal%can_shv     =  abs(y%can_shv    ) + abs(dy%can_shv      * htry)
-   yscal%can_co2     =  abs(y%can_co2    ) + abs(dy%can_co2      * htry)
+   yscal%can_enthalpy =  abs(y%can_enthalpy) + abs(dy%can_enthalpy * htry)
+   yscal%can_shv      =  abs(y%can_shv     ) + abs(dy%can_shv      * htry)
+   yscal%can_co2      =  abs(y%can_co2     ) + abs(dy%can_co2      * htry)
 
    !---------------------------------------------------------------------------------------!
    !     We don't solve pressure prognostically, so the scale cannot be computed based on  !
@@ -808,6 +808,15 @@ subroutine get_yscal(y,dy,htry,yscal,cpatch)
          yscal%ebudget_netrad = max(yscal%ebudget_netrad,1.d0)
       end if
 
+      if (abs(y%ebudget_loss2et)  < tiny_offset .and.                                      &
+          abs(dy%ebudget_loss2et) < tiny_offset) then
+         yscal%ebudget_loss2et = 1.d0
+      else 
+         yscal%ebudget_loss2et = abs(y%ebudget_loss2et)                                   &
+                               + abs(dy%ebudget_loss2et*htry)
+         yscal%ebudget_loss2et = max(yscal%ebudget_loss2et,1.d0)
+      end if
+
       if (abs(y%ebudget_loss2atm)  < tiny_offset .and.                                     &
           abs(dy%ebudget_loss2atm) < tiny_offset) then
          yscal%ebudget_loss2atm = 1.d0
@@ -873,6 +882,7 @@ subroutine get_yscal(y,dy,htry,yscal,cpatch)
       yscal%co2budget_storage       = huge_offset
       yscal%co2budget_loss2atm      = huge_offset
       yscal%ebudget_netrad          = huge_offset
+      yscal%ebudget_loss2et         = huge_offset
       yscal%ebudget_loss2atm        = huge_offset
       yscal%wbudget_loss2atm        = huge_offset
       yscal%ebudget_storage         = huge_offset
@@ -946,7 +956,7 @@ subroutine get_errmax(errmax,yerr,yscal,cpatch,y,ytemp)
    ! temperature, water vapour mixing ratio and carbon dioxide mixing ratio are accounted. !
    ! Temperature and density will be also checked for sanity.                              !
    !---------------------------------------------------------------------------------------!
-   err    = abs(yerr%can_lntheta/yscal%can_lntheta)
+   err    = abs(yerr%can_enthalpy/yscal%can_enthalpy)
    errmax = max(errmax,err)
    if(record_err .and. err > rk4eps) integ_err(1,1) = integ_err(1,1) + 1_8 
 
@@ -1076,29 +1086,33 @@ subroutine get_errmax(errmax,yerr,yscal,cpatch,y,ytemp)
       errmax = max(errmax,err)
       if(record_err .and. err > rk4eps) integ_err(15,1) = integ_err(15,1) + 1_8
 
-      err    = abs(yerr%ebudget_loss2atm/yscal%ebudget_loss2atm)
+      err    = abs(yerr%ebudget_loss2et/yscal%ebudget_loss2et)
       errmax = max(errmax,err)
       if(record_err .and. err > rk4eps) integ_err(16,1) = integ_err(16,1) + 1_8
 
-      err    = abs(yerr%wbudget_loss2atm/yscal%wbudget_loss2atm)
+      err    = abs(yerr%ebudget_loss2atm/yscal%ebudget_loss2atm)
       errmax = max(errmax,err)
       if(record_err .and. err > rk4eps) integ_err(17,1) = integ_err(17,1) + 1_8
 
-      err    = abs(yerr%ebudget_loss2drainage/yscal%ebudget_loss2drainage)
+      err    = abs(yerr%wbudget_loss2atm/yscal%wbudget_loss2atm)
       errmax = max(errmax,err)
       if(record_err .and. err > rk4eps) integ_err(18,1) = integ_err(18,1) + 1_8
 
-      err    = abs(yerr%wbudget_loss2drainage/yscal%wbudget_loss2drainage)
+      err    = abs(yerr%ebudget_loss2drainage/yscal%ebudget_loss2drainage)
       errmax = max(errmax,err)
       if(record_err .and. err > rk4eps) integ_err(19,1) = integ_err(19,1) + 1_8
 
-      err    = abs(yerr%ebudget_storage/yscal%ebudget_storage)
+      err    = abs(yerr%wbudget_loss2drainage/yscal%wbudget_loss2drainage)
       errmax = max(errmax,err)
       if(record_err .and. err > rk4eps) integ_err(20,1) = integ_err(20,1) + 1_8
 
-      err    = abs(yerr%wbudget_storage/yscal%wbudget_storage)
+      err    = abs(yerr%ebudget_storage/yscal%ebudget_storage)
       errmax = max(errmax,err)
       if(record_err .and. err > rk4eps) integ_err(21,1) = integ_err(21,1) + 1_8
+
+      err    = abs(yerr%wbudget_storage/yscal%wbudget_storage)
+      errmax = max(errmax,err)
+      if(record_err .and. err > rk4eps) integ_err(22,1) = integ_err(22,1) + 1_8
    end if
    !---------------------------------------------------------------------------------------!
 
@@ -1174,8 +1188,8 @@ subroutine copy_rk4_patch(sourcep, targetp, cpatch)
    integer                         :: k
    !---------------------------------------------------------------------------------------!
 
+   targetp%can_enthalpy     = sourcep%can_enthalpy
    targetp%can_theiv        = sourcep%can_theiv
-   targetp%can_lntheta      = sourcep%can_lntheta
    targetp%can_theta        = sourcep%can_theta
    targetp%can_temp         = sourcep%can_temp
    targetp%can_shv          = sourcep%can_shv
@@ -1312,6 +1326,7 @@ subroutine copy_rk4_patch(sourcep, targetp, cpatch)
       targetp%co2budget_storage      = sourcep%co2budget_storage
       targetp%co2budget_loss2atm     = sourcep%co2budget_loss2atm
       targetp%ebudget_netrad         = sourcep%ebudget_netrad
+      targetp%ebudget_loss2et        = sourcep%ebudget_loss2et
       targetp%ebudget_loss2atm       = sourcep%ebudget_loss2atm
       targetp%ebudget_loss2drainage  = sourcep%ebudget_loss2drainage
       targetp%ebudget_loss2runoff    = sourcep%ebudget_loss2runoff
@@ -1424,6 +1439,7 @@ subroutine initialize_rk4patches(init)
                             , patchtype             ! ! structure
    use rk4_coms      , only : integration_buff      & ! structure
                             , deallocate_rk4_coh    & ! structure
+                            , deallocate_rk4_aux    & ! structure
                             , allocate_rk4_patch    & ! structure
                             , allocate_rk4_coh      & ! structure
                             , allocate_rk4_aux      ! ! structure
@@ -1461,9 +1477,6 @@ subroutine initialize_rk4patches(init)
       call allocate_rk4_patch(integration_buff%dydx  )
       call allocate_rk4_patch(integration_buff%yerr  )
       call allocate_rk4_patch(integration_buff%ytemp )
-
-      !------ Allocate and initialise the auxiliary structure. ----------------------------!
-      call allocate_rk4_aux(nzg,nzs)
 
 
       !------------------------------------------------------------------------------------!
@@ -1511,6 +1524,9 @@ subroutine initialize_rk4patches(init)
       call deallocate_rk4_coh(integration_buff%yerr  )
       call deallocate_rk4_coh(integration_buff%ytemp )
 
+      !------ De-allocate the auxiliary structure. ----------------------------------------!
+      call deallocate_rk4_aux()
+
       !------------------------------------------------------------------------------------!
       !     The following structures are allocated/deallocated depending on the            !
       ! integration method.                                                                !
@@ -1556,6 +1572,8 @@ subroutine initialize_rk4patches(init)
    call allocate_rk4_coh(maxcohort,integration_buff%dydx  )
    call allocate_rk4_coh(maxcohort,integration_buff%yerr  )
    call allocate_rk4_coh(maxcohort,integration_buff%ytemp )
+   !---------------------------------------------------------------------------------------!
+
 
    !---------------------------------------------------------------------------------------!
    !     The following structures are allocated/deallocated depending on the integration   !
@@ -1575,6 +1593,12 @@ subroutine initialize_rk4patches(init)
       call allocate_rk4_coh(maxcohort,integration_buff%ak2   )
       call allocate_rk4_coh(maxcohort,integration_buff%ak3   )
    end select
+   !---------------------------------------------------------------------------------------!
+
+
+   !------ Allocate and initialise the auxiliary structure. -------------------------------!
+   call allocate_rk4_aux(nzg,nzs,maxcohort)
+   !---------------------------------------------------------------------------------------!
 
    return
 end subroutine initialize_rk4patches

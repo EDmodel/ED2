@@ -272,6 +272,7 @@ subroutine normalize_averaged_vars(cgrid,frqsum,dtlsm)
             csite%ebudget_precipgain(ipa)    = csite%ebudget_precipgain(ipa)    * frqsumi
             csite%ebudget_netrad(ipa)        = csite%ebudget_netrad(ipa)        * frqsumi
             csite%ebudget_denseffect(ipa)    = csite%ebudget_denseffect(ipa)    * frqsumi
+            csite%ebudget_loss2et(ipa)       = csite%ebudget_loss2et(ipa)       * frqsumi
             csite%ebudget_loss2atm(ipa)      = csite%ebudget_loss2atm(ipa)      * frqsumi
             csite%ebudget_loss2drainage(ipa) = csite%ebudget_loss2drainage(ipa) * frqsumi
             csite%ebudget_loss2runoff(ipa)   = csite%ebudget_loss2runoff(ipa)   * frqsumi
@@ -504,6 +505,7 @@ subroutine reset_averaged_vars(cgrid)
             !----------------------------------------------------------------!
             csite%ebudget_precipgain(ipa)       = 0.0
             csite%ebudget_netrad(ipa)           = 0.0
+            csite%ebudget_loss2et(ipa)          = 0.0
             csite%ebudget_loss2atm(ipa)         = 0.0
             csite%ebudget_loss2runoff(ipa)      = 0.0
             csite%ebudget_loss2drainage(ipa)    = 0.0

@@ -15,7 +15,6 @@ module lake_coms
       real(kind=8)  :: atm_tmp
       real(kind=8)  :: atm_theta
       real(kind=8)  :: atm_theiv
-      real(kind=8)  :: atm_lntheta
       real(kind=8)  :: atm_shv
       real(kind=8)  :: atm_rvap
       real(kind=8)  :: atm_rhv
@@ -48,6 +47,7 @@ module lake_coms
    !---------------------------------------------------------------------------------------!
    type lakesitetype
       real(kind=8)  :: can_temp
+      real(kind=8)  :: can_enthalpy
       real(kind=8)  :: can_theiv
       real(kind=8)  :: can_theta
       real(kind=8)  :: can_shv
@@ -56,7 +56,6 @@ module lake_coms
       real(kind=8)  :: can_co2
       real(kind=8)  :: can_prss
       real(kind=8)  :: can_rvap
-      real(kind=8)  :: can_lntheta
       real(kind=8)  :: can_exner
       real(kind=8)  :: can_rhos
       real(kind=8)  :: can_depth
@@ -224,6 +223,7 @@ module lake_coms
 
       !----- Reset the variables. ---------------------------------------------------------!
       lake%can_temp        = 0.d0
+      lake%can_enthalpy    = 0.d0
       lake%can_theiv       = 0.d0
       lake%can_theta       = 0.d0
       lake%can_shv         = 0.d0
@@ -232,7 +232,6 @@ module lake_coms
       lake%can_co2         = 0.d0
       lake%can_prss        = 0.d0
       lake%can_rvap        = 0.d0
-      lake%can_lntheta     = 0.d0
       lake%can_exner       = 0.d0
       lake%can_rhos        = 0.d0
       lake%can_depth       = 0.d0
@@ -296,6 +295,7 @@ module lake_coms
 
       !----- Reset the variables. ---------------------------------------------------------!
       lakeout%can_temp        = lakein%can_temp
+      lakeout%can_enthalpy    = lakein%can_enthalpy
       lakeout%can_theiv       = lakein%can_theiv
       lakeout%can_theta       = lakein%can_theta
       lakeout%can_shv         = lakein%can_shv
@@ -304,7 +304,6 @@ module lake_coms
       lakeout%can_co2         = lakein%can_co2
       lakeout%can_prss        = lakein%can_prss
       lakeout%can_rvap        = lakein%can_rvap
-      lakeout%can_lntheta     = lakein%can_lntheta
       lakeout%can_exner       = lakein%can_exner
       lakeout%can_rhos        = lakein%can_rhos
       lakeout%can_depth       = lakein%can_depth
@@ -370,7 +369,7 @@ module lake_coms
       !----- Integrate the variables. -----------------------------------------------------!
       lake%can_shv         = lake%can_shv          + dtim * dlakedt%can_shv
       lake%can_co2         = lake%can_co2          + dtim * dlakedt%can_co2
-      lake%can_lntheta     = lake%can_lntheta      + dtim * dlakedt%can_lntheta
+      lake%can_enthalpy    = lake%can_enthalpy     + dtim * dlakedt%can_enthalpy
       lake%lake_temp       = lake%lake_temp        + dtim * dlakedt%lake_temp
       lake%avg_vapor_gc    = lake%avg_vapor_gc     + dtim * dlakedt%avg_vapor_gc
       lake%avg_vapor_ac    = lake%avg_vapor_ac     + dtim * dlakedt%avg_vapor_ac
@@ -471,10 +470,10 @@ module lake_coms
       real(kind=8)      , intent(in) :: htry
       !------------------------------------------------------------------------------------!
 
-      lakescal%can_lntheta = abs(lake%can_lntheta) + abs(dlakedt%can_lntheta * htry)
-      lakescal%can_shv     = abs(lake%can_shv    ) + abs(dlakedt%can_shv     * htry)
-      lakescal%can_co2     = abs(lake%can_co2    ) + abs(dlakedt%can_co2     * htry)
-      lakescal%lake_temp   = abs(lake%lake_temp  ) + abs(dlakedt%lake_temp   * htry)
+      lakescal%can_enthalpy = abs(lake%can_enthalpy) + abs(dlakedt%can_enthalpy * htry)
+      lakescal%can_shv      = abs(lake%can_shv     ) + abs(dlakedt%can_shv      * htry)
+      lakescal%can_co2      = abs(lake%can_co2     ) + abs(dlakedt%can_co2      * htry)
+      lakescal%lake_temp    = abs(lake%lake_temp   ) + abs(dlakedt%lake_temp    * htry)
 
 
       return
@@ -514,7 +513,7 @@ module lake_coms
       ! worst guess in the end.  We only check prognostic variables.                       !
       !------------------------------------------------------------------------------------!
       !----- 1. Log of potential temperature. ---------------------------------------------!
-      err    = abs(lakeerr%can_lntheta / lakescal%can_lntheta)
+      err    = abs(lakeerr%can_enthalpy / lakescal%can_enthalpy)
       errmax = max(errmax,err)
       !----- 2. Specific humidity. --------------------------------------------------------!
       err    = abs(lakeerr%can_shv / lakescal%can_shv)

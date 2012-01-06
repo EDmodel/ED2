@@ -502,11 +502,6 @@ subroutine copy_met_2_lake(i,j,ifm,dsst_dt)
 
 
 
-   !----- Log of potential temperature. ---------------------------------------------------!
-   lakemet%atm_lntheta  = log(lakemet%atm_theta)
-   !---------------------------------------------------------------------------------------!
-
-
 
    !----- Pressure. -----------------------------------------------------------------------!
    lakemet%atm_prss  = (lakemet%atm_exner * cpi8) ** cpor8 * p008

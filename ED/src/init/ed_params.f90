@@ -4403,15 +4403,16 @@ subroutine init_rk4_params()
                              , effarea_evap           & ! intent(out)
                              , effarea_transp         & ! intent(out)
                              , leaf_intercept         & ! intent(out)
-                             , force_idealgas         & ! intent(out)
                              , supersat_ok            & ! intent(out)
                              , record_err             & ! intent(out)
                              , print_detailed         & ! intent(out)
+                             , print_budget           & ! intent(out)
                              , print_thbnd            & ! intent(out)
                              , errmax_fout            & ! intent(out)
                              , sanity_fout            & ! intent(out)
                              , thbnds_fout            & ! intent(out)
-                             , detail_pref            ! ! intent(out)
+                             , detail_pref            & ! intent(out)
+                             , budget_pref            ! ! intent(out)
    implicit none
 
    !---------------------------------------------------------------------------------------!
@@ -4463,10 +4464,12 @@ subroutine init_rk4_params()
                                              !    for each patch, so it is not recommended 
                                              !    for simulations that span over one month.
    print_thbnd    = .false.                  ! Make a file with thermodynamic boundaries.
+   print_budget   = .false.                  ! Make a file with budget terms.
    errmax_fout    = 'error_max_count.txt'    ! File with the maximum error count 
    sanity_fout    = 'sanity_check_count.txt' ! File with the sanity check count
    thbnds_fout    = 'thermo_bounds.txt'      ! File with the thermodynamic boundaries.
    detail_pref    = 'thermo_state_'          ! Prefix for the detailed thermodynamic file
+   budget_pref    = 'budget_state_'          ! File with the thermodynamic boundaries.
    !---------------------------------------------------------------------------------------!
 
 
@@ -4555,16 +4558,6 @@ subroutine init_rk4_params()
    ! sphere will not stop, but that is unlikely.                                           !
    !---------------------------------------------------------------------------------------!
    supersat_ok = .false.
-   !---------------------------------------------------------------------------------------!
-
-
-   !---------------------------------------------------------------------------------------!
-   !     The integrator will adjust pressure every time step, including the internal ones, !
-   ! to make sure the ideal gas is respected.  If set to false, it will keep pressure      !
-   ! constant within on DTLSM time step, and not bother forcing the canopy air space to    !
-   ! respect the ideal gas equation.                                                       !
-   !---------------------------------------------------------------------------------------!
-   force_idealgas = .false.
    !---------------------------------------------------------------------------------------!
 
 

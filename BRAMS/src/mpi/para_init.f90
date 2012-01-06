@@ -149,7 +149,7 @@ subroutine node_decomp(init)
 
          !----- ADV variables. ------------------------------------------------------------!
          if (vtab_r(nv,1)%iadvt == 1 .or. vtab_r(nv,1)%iadvu == 1 .or.                     &
-             vrab_r(nv,1)%iadvv == 1 .or. vtab_r(nv,1)%iadvw == 1      ) then              &
+             vtab_r(nv,1)%iadvv == 1 .or. vtab_r(nv,1)%iadvw == 1      ) then
             npvar_mpt4(idim) = npvar_mpt4(idim) + 1
          end if
          !---------------------------------------------------------------------------------!

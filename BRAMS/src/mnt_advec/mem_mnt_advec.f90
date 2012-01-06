@@ -111,13 +111,10 @@ module mem_mnt_advec
 
    !=======================================================================================!
    !=======================================================================================!
-   subroutine nullify_advec(advec,m1,m2,m3)
+   subroutine nullify_advec(advec)
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
       type(advec_vars), intent(inout) :: advec
-      integer         , intent(in)    :: m1
-      integer         , intent(in)    :: m2
-      integer         , intent(in)    :: m3
       !------------------------------------------------------------------------------------!
 
       
@@ -222,13 +219,13 @@ module mem_mnt_advec
 
    !=======================================================================================!
    !=======================================================================================!
-   subroutine filltab_advec(advec,advecmm,imean,n1,n2,n3,ng)
+   subroutine filltab_advec(advec,advecm,imean,n1,n2,n3,ng)
       use var_tables
 
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
-      type (cuparm_vars) , intent(in) :: advec
-      type (cuparm_vars) , intent(in) :: advecm
+      type(advec_vars)   , intent(in) :: advec
+      type(advec_vars)   , intent(in) :: advecm
       integer            , intent(in) :: imean
       integer            , intent(in) :: n1
       integer            , intent(in) :: n2

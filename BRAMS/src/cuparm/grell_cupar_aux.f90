@@ -251,6 +251,7 @@ subroutine initial_thermo_grell(m1,dtime,thp,theta,rtp,co2p,pi0,pp,pc,wp,dn0,tke
            rslif        & ! Function that finds the saturation mixing ratio
           ,thetaeiv     & ! Function that finds Thetae_iv  
           ,thil2temp    & ! Function that gives temperature from theta_il, rliq and rice.
+          ,thil2tqall   & ! Function that finds temperature and condensed phase from thil.
           ,idealdens    ! ! Function that gives the density for ideal gasses
 
    implicit none

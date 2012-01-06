@@ -10,6 +10,7 @@ subroutine copy_lake_init(i,j,ifm,initp)
                                     , ccapcani         ! ! intent(in)
    use consts_coms           , only : cp8              & ! intent(in)
                                     , cpi8             & ! intent(in)
+                                    , alvl8            & ! intent(in)
                                     , p00i8            & ! intent(in)
                                     , rocp8            ! ! intent(in)
    use therm_lib8            , only : reducedpress8    & ! function
@@ -22,7 +23,7 @@ subroutine copy_lake_init(i,j,ifm,initp)
                                     , can_depth_min    ! ! intent(in)
    use canopy_air_coms       , only : ustmin8          ! ! intent(in)
    use canopy_struct_dynamics, only : ed_stars8        & ! intent(in)
-                                    , can_whcap8       ! ! intent(in)
+                                    , can_whccap8      ! ! intent(in)
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
    integer           , intent(in) :: i
@@ -35,39 +36,39 @@ subroutine copy_lake_init(i,j,ifm,initp)
 
 
    !------ First we copy those variables that do not change with pressure. ----------------!
-   initp%can_co2      = dble(leaf_g(ifm)%can_co2  (i,j,1))
-   initp%can_theta    = dble(leaf_g(ifm)%can_theta(i,j,1))
-   initp%can_theiv    = dble(leaf_g(ifm)%can_theiv(i,j,1))
-   initp%can_rvap     = dble(leaf_g(ifm)%can_rvap (i,j,1))
-   initp%can_depth    = dble(can_depth_min)
+   initp%can_co2       = dble(leaf_g(ifm)%can_co2  (i,j,1))
+   initp%can_theta     = dble(leaf_g(ifm)%can_theta(i,j,1))
+   initp%can_theiv     = dble(leaf_g(ifm)%can_theiv(i,j,1))
+   initp%can_rvap      = dble(leaf_g(ifm)%can_rvap (i,j,1))
+   initp%can_depth     = dble(can_depth_min)
 
    !------ Convert mixing ratio to specific humidity. -------------------------------------!
-   initp%can_shv      = initp%can_rvap / (1.d0 + initp%can_rvap)
+   initp%can_shv       = initp%can_rvap / (1.d0 + initp%can_rvap)
 
-   !------ Find the derived properties. ---------------------------------------------------!
-   initp%can_lntheta  = log(initp%can_theta)
+   initp%can_prss      = reducedpress8(lakemet%atm_prss,lakemet%atm_theta,lakemet%atm_shv  &
+                                      ,lakemet%geoht,initp%can_theta,initp%can_shv         &
+                                      ,initp%can_depth)
 
-   initp%can_prss     = reducedpress8(lakemet%atm_prss,lakemet%atm_theta,lakemet%atm_shv   &
-                                     ,lakemet%geoht,initp%can_theta,initp%can_shv          &
-                                     ,initp%can_depth)
+   initp%can_exner     = cp8 * (initp%can_prss * p00i8) ** rocp8
 
-   initp%can_exner    = cp8 * (initp%can_prss * p00i8) ** rocp8
+   initp%can_temp      = cpi8 * initp%can_theta * initp%can_exner
 
-   initp%can_temp     = cpi8 * initp%can_theta * initp%can_exner
+   !------ Find enthalpy, which will be a prognostic variable within the time step. -------!
+   initp%can_enthalpy  = initp%can_exner * initp%can_theta + alvl8 * initp%can_shv
 
-   initp%can_rhos     = idealdenssh8(initp%can_prss,initp%can_temp,initp%can_shv)
-   initp%can_rhv      = rehuil8(initp%can_prss,initp%can_temp,initp%can_rvap)
-   initp%can_ssh      = rslif8(initp%can_prss,initp%can_temp)
-   initp%can_ssh      = initp%can_ssh / (initp%can_ssh + 1.d0)
+   initp%can_rhos      = idealdenssh8(initp%can_prss,initp%can_temp,initp%can_shv)
+   initp%can_rhv       = rehuil8(initp%can_prss,initp%can_temp,initp%can_rvap)
+   initp%can_ssh       = rslif8(initp%can_prss,initp%can_temp)
+   initp%can_ssh       = initp%can_ssh / (initp%can_ssh + 1.d0)
    !---------------------------------------------------------------------------------------!
 
    !------ Copy in the sea surface temperature and find associated values. ----------------!
-   initp%lake_temp    = dble(leaf_g(ifm)%ground_temp(i,j,1))
-   initp%lake_fliq    = 1.d0 ! No sea ice for the time being...
+   initp%lake_temp     = dble(leaf_g(ifm)%ground_temp(i,j,1))
+   initp%lake_fliq     = 1.d0 ! No sea ice for the time being...
    !------ Find the mixing ratio, then convert to specific humidity. ----------------------!
-   initp%lake_ssh     = rslif8(initp%can_prss,initp%lake_temp)
-   initp%lake_ssh     = initp%lake_ssh / (initp%lake_ssh + 1.d0)
-   initp%lake_shv     = initp%lake_ssh
+   initp%lake_ssh      = rslif8(initp%can_prss,initp%lake_temp)
+   initp%lake_ssh      = initp%lake_ssh / (initp%lake_ssh + 1.d0)
+   initp%lake_shv      = initp%lake_ssh
    !---------------------------------------------------------------------------------------!
 
 
@@ -98,8 +99,8 @@ subroutine copy_lake_init(i,j,ifm,initp)
    !---------------------------------------------------------------------------------------!
    !     Calculate the heat and mass storage capacity of the canopy.                       !
    !---------------------------------------------------------------------------------------!
-   call can_whcap8(initp%can_rhos,initp%can_temp,initp%can_depth                           &
-                  ,wcapcan,wcapcani,hcapcani,ccapcani)
+   call can_whccap8(initp%can_rhos,initp%can_exner,initp%can_depth                         &
+                   ,wcapcan,wcapcani,hcapcani,ccapcani)
    !---------------------------------------------------------------------------------------!
 
 
@@ -125,14 +126,13 @@ subroutine lake_diagnostics(initp)
    use rk4_coms              , only : rk4min_can_shv        & ! intent(in)
                                     , rk4min_can_theta      & ! intent(in)
                                     , rk4max_can_theta      & ! intent(in)
-                                    , rk4min_can_lntheta    & ! intent(in)
-                                    , rk4max_can_lntheta    & ! intent(in)
+                                    , rk4min_can_enthalpy   & ! intent(in)
+                                    , rk4max_can_enthalpy   & ! intent(in)
                                     , rk4min_can_temp       & ! intent(in)
                                     , rk4max_can_shv        & ! intent(in)
                                     , rk4min_sfcw_temp      & ! intent(in)
                                     , rk4max_sfcw_temp      & ! intent(in)
-                                    , tiny_offset           & ! intent(in)
-                                    , force_idealgas        ! ! intent(in)
+                                    , tiny_offset           ! ! intent(in)
    use lake_coms             , only : lakesitetype          & ! structure
                                     , lakemet               & ! intent(in)
                                     , wcapcan               & ! intent(in)
@@ -141,6 +141,7 @@ subroutine lake_diagnostics(initp)
                                     , ccapcani              ! ! intent(in)
    use consts_coms           , only : cp8                   & ! intent(in)
                                     , cpi8                  & ! intent(in)
+                                    , alvl8                 & ! intent(in)
                                     , p00i8                 & ! intent(in)
                                     , rdry8                 & ! intent(in)
                                     , epim18                & ! intent(in)
@@ -156,13 +157,13 @@ subroutine lake_diagnostics(initp)
                                     , can_depth_min         ! ! intent(in)
    use canopy_air_coms       , only : ustmin8               ! ! intent(in)
    use canopy_struct_dynamics, only : ed_stars8             & ! intent(in)
-                                    , can_whcap8            ! ! intent(in)
+                                    , can_whccap8           ! ! intent(in)
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
    type(lakesitetype), target       :: initp
    !----- Local variables. ----------------------------------------------------------------!
    logical                          :: ok_shv
-   logical                          :: ok_theta
+   logical                          :: ok_enthalpy
    logical                          :: ok_ground
    logical                          :: ok_flpoint
    !----- External functions. -------------------------------------------------------------!
@@ -174,8 +175,8 @@ subroutine lake_diagnostics(initp)
    !---------------------------------------------------------------------------------------!
    !     Sanity check.                                                                     !
    !---------------------------------------------------------------------------------------!
-   ok_flpoint = is_finite8(initp%can_shv)  .and. is_finite8(initp%can_lntheta) .and.       &
-                is_finite8(initp%can_prss) .and. is_finite8(initp%can_co2)     .and.       &
+   ok_flpoint = is_finite8(initp%can_shv)  .and. is_finite8(initp%can_enthalpy) .and.      &
+                is_finite8(initp%can_prss) .and. is_finite8(initp%can_co2)      .and.      &
                 is_finite8(initp%lake_temp)
    if (.not. ok_flpoint) then
       write(unit=*,fmt='(a)'          ) '-------------------------------------------------'
@@ -186,7 +187,6 @@ subroutine lake_diagnostics(initp)
       write(unit=*,fmt='(a,1x,es12.5)') ' - Temp           :',lakemet%atm_tmp
       write(unit=*,fmt='(a,1x,es12.5)') ' - Theta          :',lakemet%atm_theta
       write(unit=*,fmt='(a,1x,es12.5)') ' - Theiv          :',lakemet%atm_theiv
-      write(unit=*,fmt='(a,1x,es12.5)') ' - Lntheta        :',lakemet%atm_lntheta
       write(unit=*,fmt='(a,1x,es12.5)') ' - Shv            :',lakemet%atm_shv
       write(unit=*,fmt='(a,1x,es12.5)') ' - Rvap           :',lakemet%atm_rvap
       write(unit=*,fmt='(a,1x,es12.5)') ' - Rel. hum.      :',lakemet%atm_rhv
@@ -211,7 +211,7 @@ subroutine lake_diagnostics(initp)
       write(unit=*,fmt='(a,1x,es12.5)') '    * Temp        :',initp%can_temp
       write(unit=*,fmt='(a,1x,es12.5)') '    * Theta       :',initp%can_theta
       write(unit=*,fmt='(a,1x,es12.5)') '    * Theiv       :',initp%can_theiv
-      write(unit=*,fmt='(a,1x,es12.5)') '    * Lntheta     :',initp%can_lntheta
+      write(unit=*,fmt='(a,1x,es12.5)') '    * Enthalpy    :',initp%can_enthalpy
       write(unit=*,fmt='(a,1x,es12.5)') '    * Shv         :',initp%can_shv
       write(unit=*,fmt='(a,1x,es12.5)') '    * Rvap        :',initp%can_rvap
       write(unit=*,fmt='(a,1x,es12.5)') '    * Rel. hum.   :',initp%can_rhv
@@ -262,12 +262,12 @@ subroutine lake_diagnostics(initp)
 
 
    !----- Then we define some logicals to make the code cleaner. --------------------------!
-   ok_shv    = initp%can_shv     >= rk4min_can_shv       .and.                             &
-               initp%can_shv     <= rk4max_can_shv
-   ok_theta  = initp%can_lntheta >= rk4min_can_lntheta   .and.                             &
-               initp%can_lntheta <= rk4max_can_lntheta
-   ok_ground = initp%lake_temp   >= rk4min_sfcw_temp     .and.                             &
-               initp%lake_temp   <= rk4max_sfcw_temp
+   ok_shv       = initp%can_shv      >= rk4min_can_shv       .and.                         &
+                  initp%can_shv      <= rk4max_can_shv
+   ok_enthalpy  = initp%can_enthalpy >= rk4min_can_enthalpy  .and.                         &
+                  initp%can_enthalpy <= rk4max_can_enthalpy
+   ok_ground    = initp%lake_temp    >= rk4min_sfcw_temp     .and.                         &
+                  initp%lake_temp    <= rk4max_sfcw_temp
    !---------------------------------------------------------------------------------------!
 
 
@@ -280,12 +280,13 @@ subroutine lake_diagnostics(initp)
    ! log) should eventually become the prognostic variable for canopy air space entropy    !
    ! when we add condensed/frozen water in the canopy air space.                           !
    !---------------------------------------------------------------------------------------!
-   if (ok_shv .and. ok_theta) then
+   if (ok_shv .and. ok_enthalpy) then
 
-      !----- First, we update the canopy air potential temperature. -----------------------!
-      initp%can_theta = exp(initp%can_lntheta)
+      !----- Find the canopy air potential temperature. -----------------------------------!
+      initp%can_theta = (initp%can_enthalpy - alvl8 * initp%can_shv) / initp%can_exner
+      !------------------------------------------------------------------------------------!
 
-      !----- Update the canop air 
+      !----- Update the canopy air space mixing ratio. ------------------------------------!
       initp%can_rvap  = initp%can_shv / (1.d0 - initp%can_shv)
 
       !------------------------------------------------------------------------------------!
@@ -297,14 +298,7 @@ subroutine lake_diagnostics(initp)
       ! temperature using the known pressure, even though this causes the ideal gas law to !
       ! not be always satisfied.                                                           !
       !------------------------------------------------------------------------------------!
-      if (force_idealgas) then
-         initp%can_temp  = thrhsh2temp8(initp%can_theta,initp%can_rhos,initp%can_shv)
-         initp%can_prss  = initp%can_rhos * rdry8 * initp%can_temp                         &
-                         * (1.d0 + epim18 * initp%can_shv)
-         initp%can_exner = cp8 * (initp%can_prss * p00i8) ** rocp8
-      else
-         initp%can_temp  = cpi8 * initp%can_theta * initp%can_exner
-      end if
+      initp%can_temp  = cpi8 * initp%can_theta * initp%can_exner
       !------------------------------------------------------------------------------------!
 
 
@@ -340,17 +334,9 @@ subroutine lake_diagnostics(initp)
       !------------------------------------------------------------------------------------!
       !     Calculate the heat and mass storage capacity of the canopy.                    !
       !------------------------------------------------------------------------------------!
-      call can_whcap8(initp%can_rhos,initp%can_temp,initp%can_depth                        &
-                     ,wcapcan,wcapcani,hcapcani,ccapcani)
+      call can_whccap8(initp%can_rhos,initp%can_temp,initp%can_depth                       &
+                      ,wcapcan,wcapcani,hcapcani,ccapcani)
       !------------------------------------------------------------------------------------!
-
-   elseif (initp%can_lntheta >= rk4max_can_lntheta) then
-      !----- CAS is too hot, put a non-sense temperature so the sanity check fails. -------!
-      initp%can_theta = rk4max_can_theta + 1.d0
-
-   elseif (initp%can_lntheta <= rk4min_can_lntheta) then
-      !----- CAS is too cold, put a non-sense temperature so the sanity check fails. ------!
-      initp%can_theta = rk4min_can_theta - 1.d0
    end if
    !---------------------------------------------------------------------------------------!
 
@@ -391,6 +377,7 @@ subroutine lake_derivs(initp,dinitp)
                                     , albt_min            & ! intent(in)
                                     , albt_max            ! ! intent(in)
    use consts_coms           , only : cp8                 & ! intent(in)
+                                    , alvl8               & ! intent(in)
                                     , mmdryi8             & ! intent(in)
                                     , stefan8             ! ! intent(in)
    use canopy_struct_dynamics, only : vertical_vel_flux8  ! ! function
@@ -401,8 +388,10 @@ subroutine lake_derivs(initp,dinitp)
    !----- Local variables. ----------------------------------------------------------------!
    real(kind=8)       :: wflxac
    real(kind=8)       :: hflxac
+   real(kind=8)       :: eflxac
    real(kind=8)       :: cflxac
    real(kind=8)       :: wflxgc
+   real(kind=8)       :: qwflxgc
    real(kind=8)       :: hflxgc
    real(kind=8)       :: cflxgc
    real(kind=8)       :: rho_ustar
@@ -414,6 +403,7 @@ subroutine lake_derivs(initp,dinitp)
    rho_ustar = initp%can_rhos * initp%ustar
    wflxac    = rho_ustar * initp%qstar
    hflxac    = rho_ustar * initp%tstar * initp%can_exner
+   eflxac    = hflxac + alvl8 * wflxac
    cflxac    = rho_ustar * initp%cstar * mmdryi8
    !---------------------------------------------------------------------------------------!
 
@@ -421,6 +411,7 @@ subroutine lake_derivs(initp,dinitp)
 
    !----- Find the ground => canopy air space fluxes. -------------------------------------!
    wflxgc    =       initp%can_rhos * initp%gglake * (initp%lake_shv  - initp%can_shv )
+   qwflxgc   = alvl8 * wflxgc
    hflxgc    = cp8 * initp%can_rhos * initp%gglake * (initp%lake_temp - initp%can_temp)
    cflxgc    = 0.d0 ! We should add a simple ocean flux model at some point in the future.
    !---------------------------------------------------------------------------------------!
@@ -428,9 +419,9 @@ subroutine lake_derivs(initp,dinitp)
 
 
    !----- Find the derivatives of the canopy air space. -----------------------------------!
-   dinitp%can_shv     = (wflxgc + wflxac) * wcapcani
-   dinitp%can_lntheta = (hflxgc + hflxac) * hcapcani
-   dinitp%can_co2     = (cflxgc + cflxac) * ccapcani
+   dinitp%can_shv      = ( wflxgc           + wflxac ) * wcapcani
+   dinitp%can_enthalpy = ( hflxgc + qwflxgc + eflxac ) * hcapcani
+   dinitp%can_co2      = ( cflxgc           + cflxac ) * ccapcani
    !---------------------------------------------------------------------------------------!
 
 
@@ -503,8 +494,10 @@ end subroutine lake_derivs
 subroutine lake_derived_thbounds(can_rhos,can_theta,can_temp,can_shv,can_rvap,can_prss     &
                                 ,can_depth)
    use consts_coms , only : p008                & ! intent(in)
+                          , p00i8               & ! intent(in)
                           , rocp8               & ! intent(in)
                           , cp8                 & ! intent(in)
+                          , alvl8               & ! intent(in)
                           , rdry8               & ! intent(in)
                           , epim18              & ! intent(in)
                           , ep8                 & ! intent(in)
@@ -526,9 +519,9 @@ subroutine lake_derived_thbounds(can_rhos,can_theta,can_temp,can_shv,can_rvap,ca
                           , rk4max_can_temp     & ! intent(in)
                           , rk4min_can_shv      & ! intent(in)
                           , rk4max_can_shv      & ! intent(in)
-                          , rk4max_can_rvap      & ! intent(in)
-                          , rk4min_can_lntheta  & ! intent(in)
-                          , rk4max_can_lntheta  ! ! intent(in)
+                          , rk4max_can_rvap     & ! intent(in)
+                          , rk4min_can_enthalpy & ! intent(in)
+                          , rk4max_can_enthalpy ! ! intent(in)
    implicit none
    !----- Arguments. -------------------------------------------------------------------!
    real(kind=8)                , intent(in) :: can_rhos
@@ -542,6 +535,8 @@ subroutine lake_derived_thbounds(can_rhos,can_theta,can_temp,can_shv,can_rvap,ca
    real(kind=8)                             :: can_prss_try
    real(kind=8)                             :: can_theta_try
    real(kind=8)                             :: can_theiv_try
+   real(kind=8)                             :: can_exner_try
+   real(kind=8)                             :: can_enthalpy_try
    integer                                  :: k
    !---------------------------------------------------------------------------------------!
 
@@ -602,9 +597,6 @@ subroutine lake_derived_thbounds(can_rhos,can_theta,can_temp,can_shv,can_rvap,ca
    can_theta_try      = can_temp * (p008 / rk4max_can_prss) ** rocp8
    rk4min_can_theta   = min(rk4min_can_theta,can_theta_try)
    rk4max_can_theta   = max(rk4max_can_theta,can_theta_try)
-   !----- 6. Find the logarithms. ---------------------------------------------------------!
-   rk4min_can_lntheta = log(rk4min_can_theta)
-   rk4max_can_lntheta = log(rk4max_can_theta)
    !---------------------------------------------------------------------------------------!
 
 
@@ -627,6 +619,48 @@ subroutine lake_derived_thbounds(can_rhos,can_theta,can_temp,can_shv,can_rvap,ca
    can_theta_try    = can_temp * (p008 / can_prss) ** rocp8
    can_theiv_try    = thetaeivs8(can_theta_try,can_temp,rk4max_can_rvap,0.d0,0.d0)
    rk4max_can_theiv = max(rk4max_can_theiv,can_theiv_try)
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !      Minimum and maximum enthalpy.                                                    !
+   !---------------------------------------------------------------------------------------!
+   !----- 1. Initial value, the most extreme one. -----------------------------------------!
+   rk4min_can_enthalpy = huge(1.d0)
+   rk4max_can_enthalpy = - huge(1.d0)
+   !----- 2. Minimum temperature. ---------------------------------------------------------!
+   can_exner_try       = cp8 * (p00i8 * can_prss) ** rocp8
+   can_theta_try       = cp8 * rk4min_can_temp / can_exner_try
+   can_enthalpy_try    = can_exner_try * can_theta_try + alvl8 * can_shv
+   rk4min_can_enthalpy = min(rk4min_can_enthalpy,can_enthalpy_try)
+   rk4max_can_enthalpy = max(rk4max_can_enthalpy,can_enthalpy_try)
+   !----- 3. Maximum temperature. ---------------------------------------------------------!
+   can_exner_try       = cp8 * (p00i8 * can_prss) ** rocp8
+   can_theta_try       = cp8 * rk4max_can_temp / can_exner_try
+   can_enthalpy_try    = can_exner_try * can_theta_try + alvl8 * can_shv
+   rk4min_can_enthalpy = min(rk4min_can_enthalpy,can_enthalpy_try)
+   rk4max_can_enthalpy = max(rk4max_can_enthalpy,can_enthalpy_try)
+   !----- 4. Minimum pressure. ------------------------------------------------------------!
+   can_exner_try       = cp8 * (p00i8 * rk4min_can_prss) ** rocp8
+   can_enthalpy_try    = can_exner_try * can_theta + alvl8 * can_shv
+   rk4min_can_enthalpy = min(rk4min_can_enthalpy,can_enthalpy_try)
+   rk4max_can_enthalpy = max(rk4max_can_enthalpy,can_enthalpy_try)
+   !----- 5. Maximum pressure. ------------------------------------------------------------!
+   can_exner_try       = cp8 * (p00i8 * rk4max_can_prss) ** rocp8
+   can_enthalpy_try    = can_exner_try * can_theta + alvl8 * can_shv
+   rk4min_can_enthalpy = min(rk4min_can_enthalpy,can_enthalpy_try)
+   rk4max_can_enthalpy = max(rk4max_can_enthalpy,can_enthalpy_try)
+   !----- 6. Minimum specific humidity. ---------------------------------------------------!
+   can_exner_try       = cp8 * (p00i8 * can_prss) ** rocp8
+   can_enthalpy_try    = can_exner_try * can_theta + alvl8 * rk4min_can_shv
+   rk4min_can_enthalpy = min(rk4min_can_enthalpy,can_enthalpy_try)
+   rk4max_can_enthalpy = max(rk4max_can_enthalpy,can_enthalpy_try)
+   !----- 7. Maximum specific humidity. ---------------------------------------------------!
+   can_exner_try       = cp8 * (p00i8 * can_prss) ** rocp8
+   can_enthalpy_try    = can_exner_try * can_theta + alvl8 * rk4max_can_shv
+   rk4min_can_enthalpy = min(rk4min_can_enthalpy,can_enthalpy_try)
+   rk4max_can_enthalpy = max(rk4max_can_enthalpy,can_enthalpy_try)
    !---------------------------------------------------------------------------------------!
 
    return
@@ -659,6 +693,8 @@ subroutine lake_sanity_check(y,reject_step,dydx,h,print_problems)
                        , rk4max_can_temp       & ! intent(in)
                        , rk4min_can_theiv      & ! intent(in)
                        , rk4max_can_theiv      & ! intent(in)
+                       , rk4min_can_enthalpy   & ! intent(in)
+                       , rk4max_can_enthalpy   & ! intent(in)
                        , rk4min_can_prss       & ! intent(in)
                        , rk4max_can_prss       & ! intent(in)
                        , rk4min_can_co2        & ! intent(in)
@@ -687,12 +723,13 @@ subroutine lake_sanity_check(y,reject_step,dydx,h,print_problems)
    !---------------------------------------------------------------------------------------!
    !   Check whether the canopy air equivalent potential temperature is off.               !
    !---------------------------------------------------------------------------------------!
-   if (y%can_theiv > rk4max_can_theiv .or. y%can_theiv < rk4min_can_theiv ) then
+   if (y%can_enthalpy > rk4max_can_enthalpy .or. y%can_theiv < rk4min_can_theiv ) then
       reject_step = .true.
       if (print_problems) then
          write(unit=*,fmt='(a)')           '==========================================='
-         write(unit=*,fmt='(a)')           ' + Canopy air theta_Eiv is off-track...'
+         write(unit=*,fmt='(a)')           ' + Canopy air enthalpy is off-track...'
          write(unit=*,fmt='(a)')           '-------------------------------------------'
+         write(unit=*,fmt='(a,1x,es12.4)') ' CAN_ENTHALPY:      ',y%can_enthalpy
          write(unit=*,fmt='(a,1x,es12.4)') ' CAN_THEIV:         ',y%can_theiv
          write(unit=*,fmt='(a,1x,es12.4)') ' CAN_THETA:         ',y%can_theta
          write(unit=*,fmt='(a,1x,es12.4)') ' CAN_SHV:           ',y%can_shv
@@ -704,7 +741,7 @@ subroutine lake_sanity_check(y,reject_step,dydx,h,print_problems)
          write(unit=*,fmt='(a,1x,es12.4)') ' CAN_PRSS:          ',y%can_prss
          write(unit=*,fmt='(a,1x,es12.4)') ' LAKE_TEMP:         ',y%lake_temp
          write(unit=*,fmt='(a,1x,es12.4)') ' LAKE_SHV:          ',y%lake_shv
-         write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_LNTHETA )/Dt:',dydx%can_lntheta
+         write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_ENTHALPY)/Dt:',dydx%can_enthalpy
          write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_SHV     )/Dt:',dydx%can_shv
          write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_CO2     )/Dt:',dydx%can_co2
          write(unit=*,fmt='(a,1x,es12.4)') ' D(LAKE_TEMP   )/Dt:',dydx%lake_temp
@@ -727,6 +764,7 @@ subroutine lake_sanity_check(y,reject_step,dydx,h,print_problems)
          write(unit=*,fmt='(a)')           '==========================================='
          write(unit=*,fmt='(a)')           ' + Canopy air pot. temp. is off-track...'
          write(unit=*,fmt='(a)')           '-------------------------------------------'
+         write(unit=*,fmt='(a,1x,es12.4)') ' CAN_ENTHALPY:      ',y%can_enthalpy
          write(unit=*,fmt='(a,1x,es12.4)') ' CAN_THEIV:         ',y%can_theiv
          write(unit=*,fmt='(a,1x,es12.4)') ' CAN_THETA:         ',y%can_theta
          write(unit=*,fmt='(a,1x,es12.4)') ' CAN_SHV:           ',y%can_shv
@@ -738,7 +776,7 @@ subroutine lake_sanity_check(y,reject_step,dydx,h,print_problems)
          write(unit=*,fmt='(a,1x,es12.4)') ' CAN_PRSS:          ',y%can_prss
          write(unit=*,fmt='(a,1x,es12.4)') ' LAKE_TEMP:         ',y%lake_temp
          write(unit=*,fmt='(a,1x,es12.4)') ' LAKE_SHV:          ',y%lake_shv
-         write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_LNTHETA )/Dt:',dydx%can_lntheta
+         write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_ENTHALPY)/Dt:',dydx%can_enthalpy
          write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_SHV     )/Dt:',dydx%can_shv
          write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_CO2     )/Dt:',dydx%can_co2
          write(unit=*,fmt='(a,1x,es12.4)') ' D(LAKE_TEMP   )/Dt:',dydx%lake_temp
@@ -761,6 +799,7 @@ subroutine lake_sanity_check(y,reject_step,dydx,h,print_problems)
          write(unit=*,fmt='(a)')           '==========================================='
          write(unit=*,fmt='(a)')           ' + Canopy air sp. humidity is off-track...'
          write(unit=*,fmt='(a)')           '-------------------------------------------'
+         write(unit=*,fmt='(a,1x,es12.4)') ' CAN_ENTHALPY:      ',y%can_enthalpy
          write(unit=*,fmt='(a,1x,es12.4)') ' CAN_THEIV:         ',y%can_theiv
          write(unit=*,fmt='(a,1x,es12.4)') ' CAN_THETA:         ',y%can_theta
          write(unit=*,fmt='(a,1x,es12.4)') ' CAN_SHV:           ',y%can_shv
@@ -772,7 +811,7 @@ subroutine lake_sanity_check(y,reject_step,dydx,h,print_problems)
          write(unit=*,fmt='(a,1x,es12.4)') ' CAN_PRSS:          ',y%can_prss
          write(unit=*,fmt='(a,1x,es12.4)') ' LAKE_TEMP:         ',y%lake_temp
          write(unit=*,fmt='(a,1x,es12.4)') ' LAKE_SHV:          ',y%lake_shv
-         write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_LNTHETA )/Dt:',dydx%can_lntheta
+         write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_ENTHALPY)/Dt:',dydx%can_enthalpy
          write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_SHV     )/Dt:',dydx%can_shv
          write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_CO2     )/Dt:',dydx%can_co2
          write(unit=*,fmt='(a,1x,es12.4)') ' D(LAKE_TEMP   )/Dt:',dydx%lake_temp
@@ -795,6 +834,7 @@ subroutine lake_sanity_check(y,reject_step,dydx,h,print_problems)
          write(unit=*,fmt='(a)')           '==========================================='
          write(unit=*,fmt='(a)')           ' + Canopy air temperature is off-track...'
          write(unit=*,fmt='(a)')           '-------------------------------------------'
+         write(unit=*,fmt='(a,1x,es12.4)') ' CAN_ENTHALPY:      ',y%can_enthalpy
          write(unit=*,fmt='(a,1x,es12.4)') ' CAN_THEIV:         ',y%can_theiv
          write(unit=*,fmt='(a,1x,es12.4)') ' CAN_THETA:         ',y%can_theta
          write(unit=*,fmt='(a,1x,es12.4)') ' CAN_SHV:           ',y%can_shv
@@ -806,7 +846,7 @@ subroutine lake_sanity_check(y,reject_step,dydx,h,print_problems)
          write(unit=*,fmt='(a,1x,es12.4)') ' CAN_PRSS:          ',y%can_prss
          write(unit=*,fmt='(a,1x,es12.4)') ' LAKE_TEMP:         ',y%lake_temp
          write(unit=*,fmt='(a,1x,es12.4)') ' LAKE_SHV:          ',y%lake_shv
-         write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_LNTHETA )/Dt:',dydx%can_lntheta
+         write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_ENTHALPY)/Dt:',dydx%can_enthalpy
          write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_SHV     )/Dt:',dydx%can_shv
          write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_CO2     )/Dt:',dydx%can_co2
          write(unit=*,fmt='(a,1x,es12.4)') ' D(LAKE_TEMP   )/Dt:',dydx%lake_temp
@@ -829,6 +869,7 @@ subroutine lake_sanity_check(y,reject_step,dydx,h,print_problems)
          write(unit=*,fmt='(a)')           '==========================================='
          write(unit=*,fmt='(a)')           ' + Canopy air pressure is off-track...'
          write(unit=*,fmt='(a)')           '-------------------------------------------'
+         write(unit=*,fmt='(a,1x,es12.4)') ' CAN_ENTHALPY:      ',y%can_enthalpy
          write(unit=*,fmt='(a,1x,es12.4)') ' CAN_THEIV:         ',y%can_theiv
          write(unit=*,fmt='(a,1x,es12.4)') ' CAN_THETA:         ',y%can_theta
          write(unit=*,fmt='(a,1x,es12.4)') ' CAN_SHV:           ',y%can_shv
@@ -840,7 +881,7 @@ subroutine lake_sanity_check(y,reject_step,dydx,h,print_problems)
          write(unit=*,fmt='(a,1x,es12.4)') ' CAN_PRSS:          ',y%can_prss
          write(unit=*,fmt='(a,1x,es12.4)') ' LAKE_TEMP:         ',y%lake_temp
          write(unit=*,fmt='(a,1x,es12.4)') ' LAKE_SHV:          ',y%lake_shv
-         write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_LNTHETA )/Dt:',dydx%can_lntheta
+         write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_ENTHALPY)/Dt:',dydx%can_enthalpy
          write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_SHV     )/Dt:',dydx%can_shv
          write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_CO2     )/Dt:',dydx%can_co2
          write(unit=*,fmt='(a,1x,es12.4)') ' D(LAKE_TEMP   )/Dt:',dydx%lake_temp
@@ -864,6 +905,7 @@ subroutine lake_sanity_check(y,reject_step,dydx,h,print_problems)
          write(unit=*,fmt='(a)')           '==========================================='
          write(unit=*,fmt='(a)')           ' + Canopy air CO2 is off-track...'
          write(unit=*,fmt='(a)')           '-------------------------------------------'
+         write(unit=*,fmt='(a,1x,es12.4)') ' CAN_ENTHALPY:      ',y%can_enthalpy
          write(unit=*,fmt='(a,1x,es12.4)') ' CAN_THEIV:         ',y%can_theiv
          write(unit=*,fmt='(a,1x,es12.4)') ' CAN_THETA:         ',y%can_theta
          write(unit=*,fmt='(a,1x,es12.4)') ' CAN_SHV:           ',y%can_shv
@@ -875,7 +917,7 @@ subroutine lake_sanity_check(y,reject_step,dydx,h,print_problems)
          write(unit=*,fmt='(a,1x,es12.4)') ' CAN_PRSS:          ',y%can_prss
          write(unit=*,fmt='(a,1x,es12.4)') ' LAKE_TEMP:         ',y%lake_temp
          write(unit=*,fmt='(a,1x,es12.4)') ' LAKE_SHV:          ',y%lake_shv
-         write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_LNTHETA )/Dt:',dydx%can_lntheta
+         write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_ENTHALPY)/Dt:',dydx%can_enthalpy
          write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_SHV     )/Dt:',dydx%can_shv
          write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_CO2     )/Dt:',dydx%can_co2
          write(unit=*,fmt='(a,1x,es12.4)') ' D(LAKE_TEMP   )/Dt:',dydx%lake_temp
@@ -899,6 +941,7 @@ subroutine lake_sanity_check(y,reject_step,dydx,h,print_problems)
          write(unit=*,fmt='(a)')           '==========================================='
          write(unit=*,fmt='(a)')           ' + Lake(SST) temperature is off-track...'
          write(unit=*,fmt='(a)')           '-------------------------------------------'
+         write(unit=*,fmt='(a,1x,es12.4)') ' CAN_ENTHALPY:      ',y%can_enthalpy
          write(unit=*,fmt='(a,1x,es12.4)') ' CAN_THEIV:         ',y%can_theiv
          write(unit=*,fmt='(a,1x,es12.4)') ' CAN_THETA:         ',y%can_theta
          write(unit=*,fmt='(a,1x,es12.4)') ' CAN_SHV:           ',y%can_shv
@@ -910,7 +953,7 @@ subroutine lake_sanity_check(y,reject_step,dydx,h,print_problems)
          write(unit=*,fmt='(a,1x,es12.4)') ' CAN_PRSS:          ',y%can_prss
          write(unit=*,fmt='(a,1x,es12.4)') ' LAKE_TEMP:         ',y%lake_temp
          write(unit=*,fmt='(a,1x,es12.4)') ' LAKE_SHV:          ',y%lake_shv
-         write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_LNTHETA )/Dt:',dydx%can_lntheta
+         write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_ENTHALPY)/Dt:',dydx%can_enthalpy
          write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_SHV     )/Dt:',dydx%can_shv
          write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_CO2     )/Dt:',dydx%can_co2
          write(unit=*,fmt='(a,1x,es12.4)') ' D(LAKE_TEMP   )/Dt:',dydx%lake_temp
@@ -932,16 +975,17 @@ subroutine lake_sanity_check(y,reject_step,dydx,h,print_problems)
       write(unit=*,fmt='(a)')           ' '
       write(unit=*,fmt='(a)')           ' 1. CANOPY AIR SPACE: '
       write(unit=*,fmt='(a)')           ' '
-      write(unit=*,fmt='(6(a,1x))')     '   MIN_THEIV','   MAX_THEIV','     MIN_SHV'    &
+      write(unit=*,fmt='(6(a,1x))')     '   MIN_THEIV','   MAX_THEIV','     MIN_SHV'       &
                                        ,'     MAX_SHV','     MIN_RHV','     MAX_RHV'
-      write(unit=*,fmt='(6(es12.5,1x))')  rk4min_can_theiv,rk4max_can_theiv             &
-                                         ,rk4min_can_shv  ,rk4max_can_shv                &
+      write(unit=*,fmt='(6(es12.5,1x))')  rk4min_can_theiv,rk4max_can_theiv                &
+                                         ,rk4min_can_shv  ,rk4max_can_shv                  &
                                          ,rk4min_can_rhv  ,rk4max_can_rhv
       write(unit=*,fmt='(a)') ' '
-      write(unit=*,fmt='(4(a,1x))')     '    MIN_TEMP','    MAX_TEMP','   MIN_THETA'    &
-                                       ,'   MAX_THETA'
-      write(unit=*,fmt='(4(es12.5,1x))') rk4min_can_temp ,rk4max_can_temp               &
-                                        ,rk4min_can_theta,rk4max_can_theta
+      write(unit=*,fmt='(4(a,1x))')     '    MIN_TEMP','    MAX_TEMP','   MIN_THETA'       &
+                                       ,'   MAX_THETA','MIN_ENTHALPY','MAX_ENTHALPY'
+      write(unit=*,fmt='(4(es12.5,1x))') rk4min_can_temp    ,rk4max_can_temp               &
+                                        ,rk4min_can_theta   ,rk4max_can_theta              &
+                                        ,rk4min_can_enthalpy,rk4max_can_enthalpy
       write(unit=*,fmt='(a)') ' '
       write(unit=*,fmt='(4(a,1x))')     '    MIN_PRSS','    MAX_PRSS','     MIN_CO2'    &
                                        ,'     MAX_CO2'
@@ -1140,11 +1184,12 @@ subroutine print_lake_errmax(errmax,yerr,yscal,y,ytemp)
                                      ,'   Rel.Error','   Abs.Error','       Scale'         &
                                      ,'Problem(T|F)'
 
-   thiserr      = abs(yerr%can_lntheta/yscal%can_lntheta)
+   thiserr      = abs(yerr%can_enthalpy/yscal%can_enthalpy)
    errmax       = max(errmax,thiserr)
-   troublemaker = large_error(yerr%can_theiv,yscal%can_theiv)
-   write(unit=*,fmt=onefmt) 'CAN_LNTHETA:',thiserr,ytemp%can_lntheta,y%can_lntheta         &
-                                          ,yerr%can_lntheta,yscal%can_lntheta,troublemaker
+   troublemaker = large_error(yerr%can_enthalpy,yscal%can_enthalpy)
+   write(unit=*,fmt=onefmt) 'CAN_ENTHALPY:',thiserr,ytemp%can_enthalpy,y%can_enthalpy      &
+                                           ,yerr%can_enthalpy,yscal%can_enthalpy           &
+                                           ,troublemaker
 
    thiserr      = abs(yerr%can_shv/yscal%can_shv)
    errmax       = max(errmax,thiserr)

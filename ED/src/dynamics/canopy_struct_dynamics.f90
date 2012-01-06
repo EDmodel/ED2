@@ -276,8 +276,8 @@ module canopy_struct_dynamics
          !---------------------------------------------------------------------------------!
          !     Calculate the heat and mass storage capacity of the canopy.                 !
          !---------------------------------------------------------------------------------!
-         call can_whcap(csite%can_rhos(ipa),csite%can_temp(ipa),csite%can_depth(ipa)       &
-                       ,wcapcan,wcapcani,hcapcani,ccapcani)
+         call can_whccap(csite%can_rhos(ipa),csite%can_prss(ipa),csite%can_depth(ipa)      &
+                        ,wcapcan,wcapcani,hcapcani,ccapcani)
          !---------------------------------------------------------------------------------!
          return
       end if
@@ -489,8 +489,8 @@ module canopy_struct_dynamics
          !---------------------------------------------------------------------------------!
          !     Calculate the heat and mass storage capacity of the canopy.                 !
          !---------------------------------------------------------------------------------!
-         call can_whcap(csite%can_rhos(ipa),csite%can_temp(ipa),csite%can_depth(ipa)       &
-                       ,wcapcan,wcapcani,hcapcani,ccapcani)
+         call can_whccap(csite%can_rhos(ipa),csite%can_prss(ipa),csite%can_depth(ipa)      &
+                        ,wcapcan,wcapcani,hcapcani,ccapcani)
          !---------------------------------------------------------------------------------!
 
 
@@ -655,8 +655,8 @@ module canopy_struct_dynamics
          !---------------------------------------------------------------------------------!
          !     Calculate the heat and mass storage capacity of the canopy.                 !
          !---------------------------------------------------------------------------------!
-         call can_whcap(csite%can_rhos(ipa),csite%can_temp(ipa),csite%can_depth(ipa)       &
-                       ,wcapcan,wcapcani,hcapcani,ccapcani)
+         call can_whccap(csite%can_rhos(ipa),csite%can_prss(ipa),csite%can_depth(ipa)      &
+                        ,wcapcan,wcapcani,hcapcani,ccapcani)
          !---------------------------------------------------------------------------------!
 
 
@@ -1168,8 +1168,8 @@ module canopy_struct_dynamics
          !---------------------------------------------------------------------------------!
          !     Calculate the heat and mass storage capacity of the canopy.                 !
          !---------------------------------------------------------------------------------!
-         call can_whcap(csite%can_rhos(ipa),csite%can_temp(ipa),csite%can_depth(ipa)       &
-                       ,wcapcan,wcapcani,hcapcani,ccapcani)
+         call can_whccap(csite%can_rhos(ipa),csite%can_prss(ipa),csite%can_depth(ipa)      &
+                        ,wcapcan,wcapcani,hcapcani,ccapcani)
          !---------------------------------------------------------------------------------!
 
       end select
@@ -1439,8 +1439,8 @@ module canopy_struct_dynamics
          !---------------------------------------------------------------------------------!
          !     Calculate the heat and mass storage capacity of the canopy.                 !
          !---------------------------------------------------------------------------------!
-         call can_whcap8(initp%can_rhos,initp%can_temp,initp%can_depth                     &
-                        ,wcapcan,wcapcani,hcapcani,ccapcani)
+         call can_whccap8(initp%can_rhos,initp%can_exner,initp%can_depth                   &
+                         ,wcapcan,wcapcani,hcapcani,ccapcani)
          !---------------------------------------------------------------------------------!
          
          return
@@ -1648,8 +1648,8 @@ module canopy_struct_dynamics
          !---------------------------------------------------------------------------------!
          !     Calculate the heat and mass storage capacity of the canopy.                 !
          !---------------------------------------------------------------------------------!
-         call can_whcap8(initp%can_rhos,initp%can_temp,initp%can_depth                     &
-                        ,wcapcan,wcapcani,hcapcani,ccapcani)
+         call can_whccap8(initp%can_rhos,initp%can_exner,initp%can_depth                   &
+                         ,wcapcan,wcapcani,hcapcani,ccapcani)
          !---------------------------------------------------------------------------------!
 
 
@@ -1810,8 +1810,8 @@ module canopy_struct_dynamics
          !---------------------------------------------------------------------------------!
          !     Calculate the heat and mass storage capacity of the canopy.                 !
          !---------------------------------------------------------------------------------!
-         call can_whcap8(initp%can_rhos,initp%can_temp,initp%can_depth                     &
-                        ,wcapcan,wcapcani,hcapcani,ccapcani)
+         call can_whccap8(initp%can_rhos,initp%can_exner,initp%can_depth                   &
+                         ,wcapcan,wcapcani,hcapcani,ccapcani)
          !---------------------------------------------------------------------------------!
 
 
@@ -2323,8 +2323,8 @@ module canopy_struct_dynamics
          !---------------------------------------------------------------------------------!
          !     Calculate the heat and mass storage capacity of the canopy.                 !
          !---------------------------------------------------------------------------------!
-         call can_whcap8(initp%can_rhos,initp%can_temp,initp%can_depth                     &
-                        ,wcapcan,wcapcani,hcapcani,ccapcani)
+         call can_whccap8(initp%can_rhos,initp%can_exner,initp%can_depth                   &
+                         ,wcapcan,wcapcani,hcapcani,ccapcani)
          !---------------------------------------------------------------------------------!
 
       end select
@@ -3309,27 +3309,44 @@ module canopy_struct_dynamics
    !     Calculate some canopy air space properties, such as the total mass and depth, and !
    ! also the total capacities (carbon, water, and heat).                                  !
    !---------------------------------------------------------------------------------------!
-   subroutine can_whcap(can_rhos,can_temp,can_depth,wcapcan,wcapcani,hcapcani,ccapcani)
+   subroutine can_whccap(can_rhos,can_prss,can_depth,wcapcan,wcapcani,hcapcani,ccapcani)
       use consts_coms, only : cpi    & ! intent(in)
+                            , cp     & ! intent(in)
+                            , p00i   & ! intent(in)
+                            , rocp   & ! intent(in)
                             , mmdry  ! ! intent(in)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       real(kind=4), intent(in)  :: can_rhos
-      real(kind=4), intent(in)  :: can_temp
+      real(kind=4), intent(in)  :: can_prss
       real(kind=4), intent(in)  :: can_depth
       real(kind=4), intent(out) :: wcapcan
       real(kind=4), intent(out) :: wcapcani
       real(kind=4), intent(out) :: hcapcani
       real(kind=4), intent(out) :: ccapcani
+      !----- Local variables. -------------------------------------------------------------!
+      real(kind=4)              :: can_exner
       !------------------------------------------------------------------------------------!
 
+      !----- Find the Exner function. -----------------------------------------------------!
+      can_exner = cp * (p00i * can_prss) ** rocp
+      !------------------------------------------------------------------------------------!
+
+      !----- Find the water capacity and its inverse. -------------------------------------!
       wcapcan  = can_rhos * can_depth
       wcapcani = 1.0 / wcapcan
-      hcapcani = cpi * wcapcani / can_temp
+      !------------------------------------------------------------------------------------!
+
+      !------ The inverse of entropy capacity divided by potential temperature. -----------!
+      hcapcani = wcapcani ! / can_exner
+      !------------------------------------------------------------------------------------!
+
+      !------ The inverse of CO2 capacity. ------------------------------------------------!
       ccapcani = mmdry * wcapcani
+      !------------------------------------------------------------------------------------!
 
       return
-   end subroutine can_whcap
+   end subroutine can_whccap
    !=======================================================================================!
    !=======================================================================================!
 
@@ -3348,7 +3365,7 @@ module canopy_struct_dynamics
    ! (or the canopy depth) must be allowed to change over time, so work can be done by the !
    ! canopy or into the canopy.                                                            !
    !---------------------------------------------------------------------------------------!
-   subroutine can_whcap8(can_rhos,can_temp,can_depth,wcapcan,wcapcani,hcapcani,ccapcani)
+   subroutine can_whccap8(can_rhos,can_exner,can_depth,wcapcan,wcapcani,hcapcani,ccapcani)
       use consts_coms, only : cpi8    & ! intent(in)
                             , rdry8   & ! intent(in)
                             , ep8     & ! intent(in)
@@ -3357,7 +3374,7 @@ module canopy_struct_dynamics
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       real(kind=8), intent(in)  :: can_rhos
-      real(kind=8), intent(in)  :: can_temp
+      real(kind=8), intent(in)  :: can_exner
       real(kind=8), intent(in)  :: can_depth
       real(kind=8), intent(out) :: wcapcan
       real(kind=8), intent(out) :: wcapcani
@@ -3365,12 +3382,21 @@ module canopy_struct_dynamics
       real(kind=8), intent(out) :: ccapcani
       !------------------------------------------------------------------------------------!
 
+      !----- Find the water capacity and its inverse. -------------------------------------!
       wcapcan  = can_rhos * can_depth
       wcapcani = 1.d0 / wcapcan
-      hcapcani = cpi8 * wcapcani / can_temp
+      !------------------------------------------------------------------------------------!
+
+      !------ The inverse of entropy capacity divided by potential temperature. -----------!
+      hcapcani = wcapcani ! / can_exner
+      !------------------------------------------------------------------------------------!
+
+      !------ The inverse of CO2 capacity. ------------------------------------------------!
       ccapcani = mmdry8 * wcapcani
+      !------------------------------------------------------------------------------------!
+
       return
-   end subroutine can_whcap8
+   end subroutine can_whccap8
    !=======================================================================================!
    !=======================================================================================!
 

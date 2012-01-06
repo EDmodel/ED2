@@ -754,6 +754,10 @@ module ed_state_vars
      ! Residual of the water budget (kg_H2O/m2/s)
      real , pointer,dimension(:) :: wbudget_residual
 
+     ! Mean latent heat flux lost to the canopy air space and no longer tracked
+     ! (J/m2/s)
+     real , pointer,dimension(:) :: ebudget_loss2et
+
      ! Mean sensible heat transfer from the canopy air to the atmosphere
      ! (J/m2/s)
      real , pointer,dimension(:) :: ebudget_loss2atm
@@ -3100,6 +3104,7 @@ contains
     allocate(csite%wbudget_loss2drainage(npatches))
     allocate(csite%wbudget_initialstorage(npatches))
     allocate(csite%wbudget_residual(npatches))
+    allocate(csite%ebudget_loss2et(npatches))
     allocate(csite%ebudget_loss2atm(npatches))
     allocate(csite%ebudget_denseffect(npatches))
     allocate(csite%ebudget_loss2runoff(npatches))
@@ -4323,6 +4328,7 @@ contains
     nullify(csite%wbudget_loss2drainage)
     nullify(csite%wbudget_initialstorage)
     nullify(csite%wbudget_residual)
+    nullify(csite%ebudget_loss2et)
     nullify(csite%ebudget_loss2atm)
     nullify(csite%ebudget_denseffect)
     nullify(csite%ebudget_loss2runoff)
@@ -5525,6 +5531,7 @@ contains
     if(associated(csite%wbudget_loss2drainage        )) deallocate(csite%wbudget_loss2drainage        )
     if(associated(csite%wbudget_initialstorage       )) deallocate(csite%wbudget_initialstorage       )
     if(associated(csite%wbudget_residual             )) deallocate(csite%wbudget_residual             )
+    if(associated(csite%ebudget_loss2et              )) deallocate(csite%ebudget_loss2et              )
     if(associated(csite%ebudget_loss2atm             )) deallocate(csite%ebudget_loss2atm             )
     if(associated(csite%ebudget_denseffect           )) deallocate(csite%ebudget_denseffect           )
     if(associated(csite%ebudget_loss2runoff          )) deallocate(csite%ebudget_loss2runoff          )
@@ -6005,6 +6012,7 @@ contains
          osite%wbudget_loss2drainage(opa)       = isite%wbudget_loss2drainage(ipa)
          osite%wbudget_initialstorage(opa)      = isite%wbudget_initialstorage(ipa)
          osite%wbudget_residual(opa)            = isite%wbudget_residual(ipa)
+         osite%ebudget_loss2et(opa)             = isite%ebudget_loss2et(ipa)
          osite%ebudget_loss2atm(opa)            = isite%ebudget_loss2atm(ipa)
          osite%ebudget_denseffect(opa)          = isite%ebudget_denseffect(ipa)
          osite%ebudget_loss2runoff(opa)         = isite%ebudget_loss2runoff(ipa)
@@ -6336,6 +6344,7 @@ contains
     siteout%wbudget_loss2drainage(1:inc)     = pack(sitein%wbudget_loss2drainage,logmask)
     siteout%wbudget_initialstorage(1:inc)    = pack(sitein%wbudget_initialstorage,logmask)
     siteout%wbudget_residual(1:inc)          = pack(sitein%wbudget_residual,logmask)
+    siteout%ebudget_loss2et(1:inc)           = pack(sitein%ebudget_loss2et,logmask)
     siteout%ebudget_loss2atm(1:inc)          = pack(sitein%ebudget_loss2atm,logmask)
     siteout%ebudget_denseffect(1:inc)        = pack(sitein%ebudget_denseffect,logmask)
     siteout%ebudget_loss2runoff(1:inc)       = pack(sitein%ebudget_loss2runoff,logmask)
@@ -12529,6 +12538,13 @@ contains
          nvar=nvar+1
            call vtable_edio_r(npts,csite%wbudget_residual,nvar,igr,init,csite%paglob_id, &
            var_len,var_len_global,max_ptrs,'WBUDGET_RESIDUAL :31:hist') 
+         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+      end if
+
+      if (associated(csite%ebudget_loss2et)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,csite%ebudget_loss2et,nvar,igr,init,csite%paglob_id,  &
+           var_len,var_len_global,max_ptrs,'EBUDGET_LOSS2ET :31:hist') 
          call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
       end if
 

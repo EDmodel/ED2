@@ -3055,6 +3055,654 @@ module therm_lib8
 
    !=======================================================================================!
    !=======================================================================================!
+   !     This subroutine computes a consistent set of temperature and condensated phases   !
+   ! mixing ratio for a given theta_il, Exner function, and total mixing ratio. This is    !
+   ! very similar to the function thil2temp, except that now we don't know rliq and rice,  !
+   ! and for this reason they also become functions of temperature, since they are defined !
+   ! as rtot-rsat(T,p), remembering that rtot and p are known. If the air is not           !
+   ! saturated, we rather use the fact that theta_il = theta and skip the hassle.          !
+   ! Otherwise, we use iterative methods.  We will always try Newton's method, since it    !
+   ! converges fast. The caveat is that Newton may fail, and it actually does fail very    !
+   ! close to the triple point, because the saturation vapour pressure function has a      !
+   ! "kink" at the triple point (continuous, but not differentiable).  If that's the case, !
+   ! then we fall back to a modified regula falsi (Illinois) method, which is a mix of     !
+   ! secant and bisection and will converge.                                               !
+   !---------------------------------------------------------------------------------------!
+   subroutine thil2tqall8(thil,exner,pres,rtot,rliq,rice,temp,rvap,rsat)
+      use rconstants, only : alvl8     & ! intent(in)
+                           , alvi8     & ! intent(in)
+                           , allii8    & ! intent(in)
+                           , cp8       & ! intent(in)
+                           , cpi8      & ! intent(in)
+                           , t008      & ! intent(in)
+                           , toodry8   & ! intent(in)
+                           , t3ple8    & ! intent(in)
+                           , ttripoli8 ! ! intent(in)
+
+      implicit none
+      !----- Arguments. -------------------------------------------------------------------!
+      real(kind=8), intent(in)    :: thil      ! Ice-liquid water potential temp.  [     K]
+      real(kind=8), intent(in)    :: exner     ! Exner function                    [J/kg/K]
+      real(kind=8), intent(in)    :: pres      ! Pressure                          [    Pa]
+      real(kind=8), intent(in)    :: rtot      ! Total mixing ratio                [ kg/kg]
+      real(kind=8), intent(out)   :: rliq      ! Liquid water mixing ratio         [ kg/kg]
+      real(kind=8), intent(out)   :: rice      ! Ice mixing ratio                  [ kg/kg]
+      real(kind=8), intent(inout) :: temp      ! Temperature                       [     K]
+      real(kind=8), intent(out)   :: rvap      ! Water vapour mixing ratio         [ kg/kg]
+      real(kind=8), intent(out)   :: rsat      ! Sat. water vapour mixing ratio    [ kg/kg]
+      !----- Local variables --------------------------------------------------------------!
+      real(kind=8)                :: tempa     ! Lower bound for regula falsi iteration
+      real(kind=8)                :: tempz     ! Upper bound for regula falsi iteration
+      real(kind=8)                :: t1stguess ! Book keeping temperature 1st guess 
+      real(kind=8)                :: fun1st    ! Book keeping 1st guess function
+      real(kind=8)                :: funa      ! Function evaluation at tempa
+      real(kind=8)                :: funz      ! Function evaluation at tempz
+      real(kind=8)                :: funnow    ! Function at this iteration.
+      real(kind=8)                :: delta     ! Aux. var in case we need regula falsi.
+      real(kind=8)                :: deriv     ! Derivative of this function.
+      integer                     :: itn       ! Iteration counter
+      integer                     :: itb       ! Iteration counter
+      integer                     :: ii        ! Iteration counter
+      logical                     :: converged ! Convergence handle
+      logical                     :: zside     ! Aux. Flag, for two purposes:
+                                               ! 1. Found a 2nd guess for regula falsi.
+                                               ! 2. I retained the "zside" (T/F)
+      !------------------------------------------------------------------------------------!
+
+      t1stguess = temp
+
+      !------------------------------------------------------------------------------------!
+      !      First check: try to find temperature assuming sub-saturation and check if     !
+      ! this is the case. If it is, then there is no need to go through the iterative      !
+      ! loop.                                                                              !
+      !------------------------------------------------------------------------------------!
+      tempz  = cpi8 * thil * exner
+      rsat   = max(toodry8,rslif8(pres,tempz))
+      if (tempz >= t3ple8) then
+         rliq = max(0.d0,rtot-rsat)
+         rice = 0.d0
+      else
+         rice = max(0.d0,rtot-rsat)
+         rliq = 0.d0
+      end if
+      rvap = rtot-rliq-rice
+      !------------------------------------------------------------------------------------!
+
+      !------------------------------------------------------------------------------------!
+      !    If rtot < rsat, this is not saturated, we can leave the subroutine and bypass   !
+      ! the iterative part.                                                                !
+      !------------------------------------------------------------------------------------!
+      if (rtot < rsat) then
+         temp = tempz
+         return
+      end if
+
+      !------------------------------------------------------------------------------------!
+      !   If not, then use the temperature the user gave as first guess and solve          !
+      ! iteratively.  We use the user instead of what we just found because if the air is  !
+      ! saturated, then this can be too far off which may be bad for Newton's method.      !
+      !------------------------------------------------------------------------------------!
+      tempz = temp
+      rsat   = max(toodry8,rslif8(pres,tempz))
+      if (tempz >= t3ple8) then
+         rliq = max(0.d0,rtot-rsat)
+         rice = 0.d0
+      else
+         rice = max(0.d0,rtot-rsat)
+         rliq = 0.d0
+      end if
+      rvap = rtot-rliq-rice
+
+
+      !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
+      !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
+      !write (unit=46,fmt='(a)') '--------------------------------------------------------'
+      !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
+      !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
+
+
+      !------------------------------------------------------------------------------------!
+      !     Finding the function. We are seeking a temperature which is associated with    !
+      ! the theta_il we provided. Thus, the function is simply the difference between the  !
+      ! theta_il associated with our guess and the actual theta_il.                        !
+      !------------------------------------------------------------------------------------!
+      funnow = theta_iceliq8(exner,tempz,rliq,rice)
+      !----- Updating the derivative. -----------------------------------------------------!
+      deriv  = dthetail_dt8(.false.,funnow,exner,pres,tempz,rliq,rice)
+      funnow = funnow - thil
+      fun1st = funnow
+
+      !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
+      !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
+      !write (unit=46,fmt='(a,1x,i5,1x,6(a,1x,f11.4,1x),a,1x,es11.4,1x)')                  &
+      !   'NEWTON: it=',0,'temp=',tempz-t00,'rsat=',1000.*rsat,'rliq=',1000.*rliq          &
+      !  ,'rice=',1000.*rice,'rvap=',1000.*rvap,'fun=',funnow,'deriv=',deriv
+      !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
+      !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
+
+      !------------------------------------------------------------------------------------!
+      !    Now we enter at the Newton's method iterative loop. We are always going to try  !
+      ! this first, because it's fast, but if it turns out to be a dangerous choice or if  !
+      ! it doesn't converge fast, we will fall back to regula falsi.                       !
+      !    We start by initialising the flag and copying temp to tempz, the newest guess.  !
+      !------------------------------------------------------------------------------------!
+      converged=.false.
+      newloop: do itn=1,maxfpo/6
+         !---------------------------------------------------------------------------------!
+         !     Saving previous guess. We also save the function is in case we give up on   !
+         ! Newton's and switch to regula falsi.                                            !
+         !---------------------------------------------------------------------------------!
+         funa  = funnow
+         tempa = tempz
+
+         !----- Go to bisection if the derivative is too flat (too dangerous...) ----------!
+         if (abs(deriv) < toler8) exit newloop
+
+         tempz = tempa - funnow / deriv
+
+         !----- Finding the mixing ratios associated with this guess ----------------------!
+         rsat  = max(toodry8,rslif8(pres,tempz))
+         if (tempz >= t3ple8) then
+            rliq = max(0.d0,rtot-rsat)
+            rice = 0.d0
+         else
+            rice = max(0.d0,rtot-rsat)
+            rliq = 0.d0
+         end if
+         rvap = rtot-rliq-rice
+
+         !----- Updating the function -----------------------------------------------------!
+         funnow = theta_iceliq8(exner,tempz,rliq,rice)
+         !----- Updating the derivative. --------------------------------------------------!
+         deriv  = dthetail_dt8(.false.,funnow,exner,pres,tempz,rliq,rice)
+         funnow = funnow - thil
+
+         !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
+         !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
+         !write (unit=46,fmt='(a,1x,i5,1x,6(a,1x,f11.4,1x),a,1x,es11.4,1x)')               &
+         !   'NEWTON: it=',itn,'temp=',tempz-t00,'rsat=',1000.*rsat,'rliq=',1000.*rliq     &
+         !  ,'rice=',1000.*rice,'rvap=',1000.*rvap,'fun=',funnow,'deriv=',deriv
+         !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
+         !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
+         
+         converged = abs(tempa-tempz) < toler8*tempz
+         !---------------------------------------------------------------------------------!
+         !   Convergence. The temperature will be the mid-point between tempa and tempz.   !
+         ! Fix the mixing ratios and return. But first check for converged due to luck. If !
+         ! the guess gives a root, then that's it. It looks unlikely, but it actually      !
+         ! happens sometimes and if not checked it becomes a singularity.                  !
+         !---------------------------------------------------------------------------------!
+         if (funnow == 0.d0) then
+            temp = tempz
+            converged = .true.
+            exit newloop
+         elseif (converged) then
+            temp = 5.d-1 * (tempa+tempz)
+            rsat  = max(toodry8,rslif8(pres,temp))
+            if (temp >= t3ple8) then
+               rliq = max(0.d0,rtot-rsat)
+               rice = 0.d0
+            else
+               rice = max(0.d0,rtot-rsat)
+               rliq = 0.d0
+            end if
+            rvap = rtot-rliq-rice
+            exit newloop
+         end if
+
+      end do newloop
+      !------------------------------------------------------------------------------------!
+
+      !----- For debugging only -----------------------------------------------------------!
+      itb = itn+1
+
+      if (.not. converged) then
+         !---------------------------------------------------------------------------------!
+         !    If I reach this point, then it means that Newton's method failed finding the !
+         ! equilibrium, so we are going to use the regula falsi instead.  If Newton's      !
+         ! method didn't converge, we use tempa as one guess and now we seek a tempz with  !
+         ! opposite sign.                                                                  !
+         !---------------------------------------------------------------------------------!
+         !----- Check funa and funnow have opposite signs. If so, we are ready to go ------!
+         if (funa*funnow < 0.d0) then
+            funz = funnow
+            zside = .true.
+         !----- Otherwise, checking whether the 1st guess had opposite sign. --------------!
+         elseif (funa*fun1st < 0.d0 ) then
+            funz = fun1st
+            zside = .true.
+         !---------------------------------------------------------------------------------!
+         !    Looking for a guess. Extrapolate funa linearly, trying to get the -funa.  We !
+         ! don't need it to be funa, just with the opposite sign.  If that's not enough,   !
+         ! we keep going further... Force the guesses to be at least 1K apart              !
+         !---------------------------------------------------------------------------------!
+         else
+            if (abs(funnow-funa) < 1.d2*toler8*tempa) then
+               delta = 1.d2*toler8*tempa
+            else
+               delta = max(abs(funa)*abs((tempz-tempa)/(funnow-funa)),1.d2*toler8*tempa)
+            end if
+            tempz = tempa + delta
+            funz  = funa
+            !----- Just to enter at least once. The 1st time tempz=tempa-2*delta ----------!
+            zside = .false. 
+            zgssloop: do itb=1,maxfpo
+                tempz = tempa + dble((-1)**itb * (itb+3)/2) * delta
+                rsat   = max(toodry8,rslif8(pres,tempz))
+                if (tempz >= t3ple8) then
+                   rliq = max(0.d0,rtot-rsat)
+                   rice = 0.d0
+                else
+                   rice = max(0.d0,rtot-rsat)
+                   rliq = 0.d0
+                end if
+                rvap = rtot-rliq-rice
+                funz = theta_iceliq8(exner,tempz,rliq,rice) - thil
+                zside = funa*funz < 0.d0
+                if (zside) exit zgssloop
+            end do zgssloop
+            if (.not. zside) then
+               write (unit=*,fmt='(60a1)')        ('-',ii=1,60)
+               write (unit=*,fmt='(a)')           ' THIL2TQALL8: NO SECOND GUESS FOR YOU!'
+               write (unit=*,fmt='(a)')           ' '
+               write (unit=*,fmt='(a)')           ' -> Input: '
+               write (unit=*,fmt='(a,1x,f12.5)')  '    THETA_IL [     K]:',thil
+               write (unit=*,fmt='(a,1x,f12.5)')  '    PRESS    [   hPa]:',0.01*pres
+               write (unit=*,fmt='(a,1x,f12.5)')  '    EXNER    [J/kg/K]:',exner
+               write (unit=*,fmt='(a,1x,f12.5)')  '    RTOT     [  g/kg]:',1000.*rtot
+               write (unit=*,fmt='(a,1x,f12.5)')  '    T1ST     [  degC]:',t1stguess-t008
+               write (unit=*,fmt='(a,1x,f12.5)')  '    TEMPA    [  degC]:',tempa-t008
+               write (unit=*,fmt='(a,1x,f12.5)')  '    TEMPZ    [  degC]:',tempz-t008
+               write (unit=*,fmt='(a,1x,f12.5)')  '    FUNNOW   [     K]:',funnow
+               write (unit=*,fmt='(a,1x,f12.5)')  '    FUNA     [     K]:',funa
+               write (unit=*,fmt='(a,1x,f12.5)')  '    FUNZ     [     K]:',funz
+               write (unit=*,fmt='(a,1x,f12.5)')  '    DELTA    [     K]:',delta
+               write (unit=*,fmt='(60a1)')        ('-',ii=1,60)
+
+               call abort_run('Failed finding the second guess for regula falsi'           &
+                             ,'thil2tqall8','therm_lib8.f90')
+            end if
+         end if
+         !---------------------------------------------------------------------------------!
+
+         !---------------------------------------------------------------------------------!
+         !     Now we loop until convergence is achieved.  One important thing to notice   !
+         ! is that Newton's method fail only when T is almost T3ple, which means that ice  !
+         ! and liquid should be present, and we are trying to find the saturation point    !
+         ! with all ice or all liquid. This will converge but the final answer will        !
+         ! contain significant error. To reduce it we redistribute the condensates between !
+         ! ice and liquid conserving the total condensed mixing ratio.                     !
+         !---------------------------------------------------------------------------------!
+         fpoloop: do itb=itn,maxfpo
+            temp = (funz*tempa-funa*tempz)/(funz-funa)
+            !----- Checking whether this guess will fall outside the range ----------------!
+            if (abs(temp-tempa) > abs(tempz-tempa) .or.                                    &
+                abs(temp-tempz) > abs(tempz-tempa)) then
+               temp = 5.d-1*(tempa+tempz)
+            end if
+            !----- Distributing vapour into the three phases ------------------------------!
+            rsat   = max(toodry8,rslif8(pres,temp))
+            rvap   = min(rtot,rsat)
+            if (temp >= t3ple8) then
+               rliq = max(0.d0,rtot-rsat)
+               rice = 0.d0
+            else
+               rliq = 0.d0
+               rice = max(0.d0,rtot-rsat)
+            end if
+            !----- Updating function ------------------------------------------------------!
+            funnow = theta_iceliq8(exner,temp,rliq,rice) - thil
+
+            !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
+            !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
+            !write (unit=46,fmt='(a,1x,i5,1x,10(a,1x,f11.4,1x))')                          &
+            !   'REGFAL: it=',itb,'temp=',temp-t00,'tempa=',tempa-t00,'tempz=',tempz-t00   &
+            !  ,'rsat=',1000.*rsat,'rliq=',1000.*rliq,'rice=',1000.*rice                   &
+            !  ,'rvap=',1000.*rvap,'fun=',funnow,'funa=',funa,'funz=',funz
+            !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
+            !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
+
+            !------------------------------------------------------------------------------!
+            !    Checking for convergence or lucky guess. If it did, return, we found the  !
+            ! solution. Otherwise, constrain the guesses.                                  !
+            !------------------------------------------------------------------------------!
+            converged = abs(temp-tempa) < toler8*temp .and. abs(temp-tempz) < toler8*temp 
+            if (funnow == 0.d0 .or. converged) then
+               converged = .true.
+               exit fpoloop
+            elseif (funnow*funa < 0.d0) then 
+               tempz = temp
+               funz  = funnow
+               !----- If we are updating zside again, modify aside (Illinois method) ------!
+               if (zside) funa=funa * 5.d-1
+               !----- We just updated zside, setting zside to true. -----------------------!
+               zside = .true.
+            elseif (funnow*funz < 0.d0) then
+               tempa = temp
+               funa  = funnow
+               !----- If we are updating aside again, modify zside (Illinois method) ------!
+               if (.not.zside) funz = funz * 5.d-1
+               !----- We just updated aside, setting zside to false -----------------------!
+               zside = .false.
+            end if
+
+         end do fpoloop
+
+         !---------------------------------------------------------------------------------!
+         !    Almost done... Usually when the method goes through regula falsi, it means   !
+         ! that the temperature is too close to the triple point, and often all three      !
+         ! phases will coexist.  The problem with the method is that it converges for      !
+         ! temperature, but whenever regula falsi is called the function evaluation is     !
+         ! usually far from zero.  This can be improved by finding a better partition      !
+         ! between ice and liquid given the temperature and saturation mixing ratio we     !
+         ! just found. So just to round these edges, we will invert the ice-liquid         !
+         ! potential temperature using the set of temperature and rsat, and fiding the     !
+         ! liquid mixing ratio.                                                            !
+         !---------------------------------------------------------------------------------!
+         if (abs(temp-t3ple8) < toler8*temp) then
+            rliq = min(rtot-rsat,max(0.d0,                                                 &
+                       allii8*(alvi8*(rtot-rsat)+cp8*max(temp,ttripoli8)                   &
+                            *log(cpi8*exner*thil/temp))))
+            rice = max(0.d0,rtot-rsat-rliq)
+            funnow = theta_iceliq8(exner,temp,rliq,rice) - thil
+         end if
+         !---------------------------------------------------------------------------------!
+
+         itb=itb+1
+      end if
+
+      if (.not. converged) then
+         write (unit=*,fmt='(60a1)')        ('-',ii=1,60)
+         write (unit=*,fmt='(a)')           ' THIL2TQALL8 failed!'
+         write (unit=*,fmt='(a)')           ' '
+         write (unit=*,fmt='(a)')           ' -> Input: '
+         write (unit=*,fmt='(a,1x,f12.5)')  '    THETA_IL [     K]:',thil
+         write (unit=*,fmt='(a,1x,f12.5)')  '    EXNER    [J/kg/K]:',exner
+         write (unit=*,fmt='(a,1x,f12.5)')  '    RTOT     [  g/kg]:',1000.*rtot
+         write (unit=*,fmt='(a)')           ' '
+         write (unit=*,fmt='(a)')           ' -> Output: '
+         write (unit=*,fmt='(a,1x,i12)')    '    ITERATIONS       :',itb
+         write (unit=*,fmt='(a,1x,f12.5)')  '    TEMP     [    °C]:',temp-t008
+         write (unit=*,fmt='(a,1x,f12.5)')  '    RVAP     [  g/kg]:',1000.*rvap
+         write (unit=*,fmt='(a,1x,f12.5)')  '    RLIQ     [  g/kg]:',1000.*rliq
+         write (unit=*,fmt='(a,1x,f12.5)')  '    RICE     [  g/kg]:',1000.*rice
+         write (unit=*,fmt='(a,1x,f12.5)')  '    TEMPA    [    °C]:',tempa-t008
+         write (unit=*,fmt='(a,1x,f12.5)')  '    TEMPZ    [    °C]:',tempz-t008
+         write (unit=*,fmt='(a,1x,es12.5)') '    FUNA     [     K]:',funnow
+         write (unit=*,fmt='(a,1x,es12.5)') '    FUNZ     [     K]:',funnow
+         write (unit=*,fmt='(a,1x,es12.5)') '    DERIV    [   ---]:',deriv
+         write (unit=*,fmt='(a,1x,es12.5)') '    ERR_A    [   ---]:',abs(temp-tempa)/temp
+         write (unit=*,fmt='(a,1x,es12.5)') '    ERR_Z    [   ---]:',abs(temp-tempz)/temp
+         write (unit=*,fmt='(a)')           ' '
+         write (unit=*,fmt='(60a1)')        ('-',ii=1,60)
+         call abort_run('Failed finding equilibrium, I gave up!','thil2tqall8'             &
+                       ,'therm_lib8.f90')
+      end if
+      !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
+      !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
+      !write (unit=46,fmt='(a,1x,i5,1x,6(a,1x,f11.4,1x))')                                 &
+      !   'ANSWER: it=',itb,'funf=',funnow,'temp=',temp-t00                                &
+      !  ,'rsat=',1000.*rsat,'rliq=',1000.*rliq,'rice=',1000.*rice,'rvap=',1000.*rvap
+      !write (unit=46,fmt='(a)') '----------------------------------------------------------'
+      !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
+      !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
+      return
+   end subroutine thil2tqall8
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !     This subroutine computes a consistent set of temperature and condensated phases   !
+   ! mixing ratio for a given theta_il, Exner function, and total mixing ratio.  This is   !
+   ! very similar to the function thil2temp, except that now we don't know rliq.  Rliq     !
+   ! becomes a function of temperature, since it is defined as rtot-rsat(T,p), remembering !
+   ! that rtot and p are known. If the air is not saturated, we use the fact that theta_il !
+   ! is theta and skip the hassle.  Otherwise, we use iterative methods.  We will always   !
+   ! try Newton's method, since it converges fast.  Not always will Newton converge, and   !
+   ! if that's the case we use a modified regula falsi (Illinois) method.  This method is  !
+   ! a mix of secant and bisection and will always converge.                               !
+   !---------------------------------------------------------------------------------------!
+   subroutine thil2tqliq8(thil,exner,pres,rtot,rliq,temp,rvap,rsat)
+      use rconstants, only : alvl8     & ! intent(in)
+                           , cp8       & ! intent(in)
+                           , cpi8      & ! intent(in)
+                           , toodry8   & ! intent(in)
+                           , ttripoli8 ! ! intent(in)
+      implicit none
+      !----- Arguments. -------------------------------------------------------------------!
+      real(kind=8), intent(in)    :: thil      ! Ice-liquid water potential temp.  [     K]
+      real(kind=8), intent(in)    :: exner     ! Exner function                    [J/kg/K]
+      real(kind=8), intent(in)    :: pres      ! Pressure                          [    Pa]
+      real(kind=8), intent(in)    :: rtot      ! Total mixing ratio                [ kg/kg]
+      real(kind=8), intent(out)   :: rliq      ! Liquid water mixing ratio         [ kg/kg]
+      real(kind=8), intent(inout) :: temp      ! Temperature                       [     K]
+      real(kind=8), intent(out)   :: rvap      ! Water vapour mixing ratio         [ kg/kg]
+      real(kind=8), intent(out)   :: rsat      ! Sat. water vapour mixing ratio    [ kg/kg]
+      !----- Local variables --------------------------------------------------------------!
+      real(kind=8)                :: tempa     ! Lower bound for regula falsi iteration
+      real(kind=8)                :: tempz     ! Upper bound for regula falsi iteration
+      real(kind=8)                :: t1stguess ! Book keeping temperature 1st guess 
+      real(kind=8)                :: fun1st    ! Book keeping 1st guess function
+      real(kind=8)                :: funa      ! Function evaluation at tempa
+      real(kind=8)                :: funz      ! Function evaluation at tempz
+      real(kind=8)                :: funnow    ! Function at this iteration.
+      real(kind=8)                :: delta     ! Aux. var in case we need regula falsi.
+      real(kind=8)                :: deriv     ! Derivative of this function.
+      integer                     :: itn       ! Iteration counter
+      integer                     :: itb       ! Iteration counter
+      logical                     :: converged ! Convergence handle
+      logical                     :: zside     ! Aux. Flag, for two purposes:
+                                               ! 1. Found a 2nd guess for regula falsi.
+                                               ! 2. I retained the "zside" (T/F)
+      !------------------------------------------------------------------------------------!
+
+
+
+
+      !------------------------------------------------------------------------------------!
+      !      First check: try to find temperature assuming sub-saturation and check if     !
+      ! this is the case. If it is, then there is no need to go through the iterative      !
+      ! loop.                                                                              !
+      !------------------------------------------------------------------------------------!
+      tempz = cpi8 * thil * exner
+      rsat  = max(toodry8,rslf8(pres,tempz))
+      rliq  = max(0.d0,rtot-rsat)
+      rvap  = rtot-rliq
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !    If rtot < rsat, this is not saturated, we can leave the subroutine and bypass   !
+      ! the iterative part.                                                                !
+      !------------------------------------------------------------------------------------!
+      if (rtot < rsat) then
+         temp = tempz
+         return
+      end if
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !   If not, then use the temperature the user gave as first guess and solve          !
+      ! iteratively.  We use the user instead of what we just found because if the air is  !
+      ! saturated, then this can be too far off which may be bad for Newton's method.      !
+      !------------------------------------------------------------------------------------!
+      tempz = temp
+      rsat   = max(toodry8,rslf8(pres,tempz))
+      rliq = max(0.d0,rtot-rsat)
+      rvap = rtot-rliq
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !     Finding the function. We are seeking a temperature which is associated with    !
+      ! the theta_il we provided. Thus, the function is simply the difference between the  !
+      ! theta_il associated with our guess and the actual theta_il.                        !
+      !------------------------------------------------------------------------------------!
+      funnow = theta_iceliq8(exner,tempz,rliq,0.d0) ! Finding thil from our guess
+      deriv  = dthetail_dt8(.false.,funnow,exner,pres,tempz,rliq)
+      funnow = funnow - thil ! Computing the function
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !    Now we enter at the Newton's method iterative loop. We are always going to try  !
+      ! this first, because it's fast, but if it turns out to be a dangerous choice or if  !
+      ! it doesn't converge fast, we will fall back to regula falsi.                       !
+      !    We start by initialising the flag and copying temp to tempz, the newest guess.  !
+      !------------------------------------------------------------------------------------!
+      converged=.false.
+      newloop: do itn=1,maxfpo/6
+         !---------------------------------------------------------------------------------!
+         !     Saving previous guess. We also save the function is in case we give up on   !
+         ! Newton's and switch to regula falsi.                                            !
+         !---------------------------------------------------------------------------------!
+         funa  = funnow
+         tempa = tempz
+
+         !----- Go to bisection if the derivative is too flat (too dangerous...) ----------!
+         if (abs(deriv) < toler8) exit newloop
+
+         tempz = tempa - funnow / deriv
+
+         !----- Finding the mixing ratios associated with this guess ----------------------!
+         rsat  = max(toodry8,rslf8(pres,tempz))
+         rliq = max(0.d0,rtot-rsat)
+         rvap = rtot-rliq
+
+         !----- Updating the function -----------------------------------------------------!
+         funnow = theta_iceliq8(exner,tempz,rliq,0.d0)
+         !----- Updating the derivative. --------------------------------------------------!
+         deriv = dthetail_dt8(.false.,funnow,exner,pres,tempz,rliq)
+         funnow = funnow - thil
+
+         converged = abs(tempa-tempz) < toler8*tempz
+         !---------------------------------------------------------------------------------!
+         !   Convergence. The temperature will be the mid-point between tempa and tempz.   !
+         ! Fix the mixing ratios and return. But first check for converged due to luck. If !
+         ! the guess gives a root, then that's it. It looks unlikely, but it actually      !
+         ! happens sometimes and if not checked it becomes a singularity.                  !
+         !---------------------------------------------------------------------------------!
+         if (funnow == 0.d0) then
+            temp = tempz
+            converged = .true.
+            exit newloop
+         elseif (converged) then
+            temp = 5.d-1 * (tempa+tempz)
+            rsat  = max(toodry8,rslf8(pres,temp))
+            rliq = max(0.d0,rtot-rsat)
+            rvap = rtot-rliq
+            exit newloop
+         end if
+
+      end do newloop
+      !---------------------------------------------------------------------------------------!
+
+
+      if (.not. converged) then
+         !---------------------------------------------------------------------------------!
+         !    If I reach this point, then it means that Newton's method failed finding the !
+         ! equilibrium, so we are going to use the regula falsi instead.  If Newton's      !
+         ! method didn't converge, we use tempa as one guess and now we seek a tempz with  !
+         ! opposite sign.                                                                  !
+         !---------------------------------------------------------------------------------!
+         !----- Check funa and funnow have opposite signs. If so, we are ready to go ------!
+         if (funa*funnow < 0.d0) then
+            funz = funnow
+            zside = .true.
+         !---------------------------------------------------------------------------------!
+         !    Looking for a guess. Extrapolate funa linearly, trying to get the -funa.  We !
+         ! don't need it to be funa, just with the opposite sign.  If that's not enough,   !
+         ! we keep going further... Force the guesses to be at least 1K apart              !
+         !---------------------------------------------------------------------------------!
+         else
+            if (abs(funnow-funa) < toler8*tempa) then
+               delta = 1.d2*toler8*tempa
+            else
+               delta = max(abs(funa*(tempz-tempa)/(funnow-funa)),1.d2*toler8*tempa)
+            end if
+            tempz = tempa + delta
+            funz  = funa
+            !----- Just to enter at least once. The 1st time tempz=tempa-2*delta ----------!
+            zside = .false. 
+            zgssloop: do itb=1,maxfpo
+               tempz = tempz + dble((-1)**itb * (itb+3)/2) * delta
+               rsat  = max(toodry8,rslf8(pres,tempz))
+               rliq  = max(0.d0,rtot-rsat)
+               rvap  = rtot-rliq
+               funz  = theta_iceliq8(exner,tempz,rliq,0.d0) - thil
+               zside = funa*funz < 0.d0
+               if (zside) exit zgssloop
+            end do zgssloop
+            if (.not. zside)                                                               &
+               call abort_run('Failed finding the second guess for regula falsi'           &
+                             ,'thil2tqliq','rthrm.f90')
+         end if
+         !---------------------------------------------------------------------------------!
+
+         !---------------------------------------------------------------------------------!
+         !     Now we loop until convergence is achieved.                                  !
+         !---------------------------------------------------------------------------------!
+         fpoloop: do itb=itn,maxfpo
+            temp = (funz*tempa-funa*tempz)/(funz-funa)
+            !----- Distributing vapour into the three phases ------------------------------!
+            rsat   = max(toodry8,rslf8(pres,temp))
+            rvap   = min(rtot,rsat)
+            rliq   = max(0.d0,rtot-rsat)
+            !----- Updating function ------------------------------------------------------!
+            funnow = theta_iceliq8(exner,tempz,rliq,0.d0) - thil
+
+            !------------------------------------------------------------------------------!
+            !    Checking for convergence or lucky guess. If it did, return, we found the  !
+            ! solution. Otherwise, constrain the guesses.                                  !
+            !------------------------------------------------------------------------------!
+            converged = abs(temp-tempa)< toler8*temp  .and. abs(temp-tempz) < toler8*temp
+            if (funnow == 0.d0 .or. converged) then
+               converged = .true.
+               exit fpoloop
+            elseif (funnow*funa < 0.d0) then 
+               tempz = temp
+               funz  = funnow
+               !----- If we are updating zside again, modify aside (Illinois method) ------!
+               if (zside) funa=funa * 5.d-1
+               !----- We just updated zside, setting zside to true. -----------------------!
+               zside = .true.
+            else
+               tempa = temp
+               funa  = funnow
+               !----- If we are updating aside again, modify zside (Illinois method) ------!
+               if (.not.zside) funz = funz * 5.d-1
+               !----- We just updated aside, setting zside to false -----------------------!
+               zside = .false. 
+            end if
+
+         end do fpoloop
+
+      end if
+
+      if (.not. converged) call abort_run('Failed finding equilibrium, I gave up!'         &
+                                         ,'thil2tqliq8','therm_lib8.f90')
+      return
+   end subroutine thil2tqliq8
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
    !    This subroutine computes the temperature and fraction of liquid water from the     !
    ! internal energy .   This requires double precision arguments.                         !
    !---------------------------------------------------------------------------------------!
