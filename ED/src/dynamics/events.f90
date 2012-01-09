@@ -347,16 +347,20 @@ subroutine event_harvest(agb_frac8,bgb_frac8,fol_frac8,stor_frac8)
                  
                  pft = cpatch%pft(ico)                 
                  !! calc new pool sizes
+
                  ialloc     =  1.0 / (1.0 + q(pft) + qsw(pft) * cpatch%hite(ico))
-                 bdead_new  = cpatch%bdead(ico) *                                           &
-                                       (1.0-agb_frac*agf_bs - bgb_frac*(1.0-agf_bs))
-                 bswa_new   = cpatch%balive(ico) * qsw(pft) * cpatch%hite(ico) * agf_bs     &
-                              * ialloc * (1.0-agb_frac*agf_bs - bgb_frac*(1.0-agf_bs))
-                 bswb_new   = cpatch%balive(ico) * qsw(pft) * cpatch%hite(ico) * (1.-agf_bs) &
-                              * ialloc * (1.0-agb_frac*agf_bs - bgb_frac*(1.0-agf_bs))
-                 bstore_new = cpatch%bstorage(ico)*(1.0-stor_frac)
-                 bleaf_new  = cpatch%balive(ico) * ialloc *(1.0-fol_frac)
-                 bfr_new    = cpatch%balive(ico) * q(pft) * ialloc * (1.0-bgb_frac)
+                 bdead_new  = cpatch%bdead(ico) *                                        &
+                              (1.0-agb_frac * agf_bs(pft) - bgb_frac*(1.0-agf_bs(pft)))
+                 bswa_new   = cpatch%balive(ico) * qsw(pft) * cpatch%hite(ico)           &
+                              * agf_bs(pft) * ialloc * (1.0-agb_frac*agf_bs(pft)         &
+                              - bgb_frac*(1.0-agf_bs(pft)))
+                 bswb_new   = cpatch%balive(ico) * qsw(pft) * cpatch%hite(ico)           &
+                              * (1.-agf_bs(pft)) * ialloc                                &
+                              * (1.0-agb_frac*agf_bs(pft) - bgb_frac*(1.0-agf_bs(pft)))
+
+                 bstore_new = cpatch%bstorage(ico) * (1.0-stor_frac)
+                 bleaf_new  = cpatch%balive(ico)   * ialloc *(1.0-fol_frac)
+                 bfr_new    = cpatch%balive(ico)   * q(pft) * ialloc * (1.0-bgb_frac)
 
                  !! move residual frac to debris/litter pools
                    !! For now assume 100% removal [[needs to be updated]]
@@ -405,7 +409,7 @@ subroutine event_harvest(agb_frac8,bgb_frac8,fol_frac8,stor_frac8)
                  !----- Update basal area and above-ground biomass. -----------------------!
                  cpatch%basarea(ico) = pio4 * cpatch%dbh(ico) * cpatch%dbh(ico)            
                  cpatch%agb(ico)     = ed_biomass(cpatch%bdead(ico),cpatch%bleaf(ico)      &
-                                                 ,cpatch%bsapwooda(ico))     
+                                                 ,cpatch%bsapwooda(ico),cpatch%pft(ico))   
                  !-------------------------------------------------------------------------!
                  !    Here we are leaving all water in the branches and twigs... Do not    !
                  ! worry, if there is any, it will go down through shedding the next       !

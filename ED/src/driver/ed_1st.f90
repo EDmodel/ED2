@@ -175,9 +175,6 @@ subroutine ed_1st_node(init)
    call ed_nodeget_processid(1)
    call ed_nodeget_nl
 
-   !----- Load ecosystem parameters, now that the namelist is loaded. ---------------------!
-   call load_ed_ecosystem_params()
-
    !----- Get the meteorological driver header. -------------------------------------------!
    call ed_nodeget_met_header()
    call MPI_Barrier(MPI_COMM_WORLD,ierr)

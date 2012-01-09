@@ -1,10 +1,10 @@
 module emission_source_map
-
+  use grid_dims, only : str_len
   integer            :: nvar,nlat,nlon
   real               :: lonW,latS,dlon,dlat
 
-  character(len=256) :: FIREMAPFN
-  character(len=256) :: TRACERSFN
+  character(len=str_len) :: FIREMAPFN
+  character(len=str_len) :: TRACERSFN
 
   integer, parameter :: nsources=3, ngases=4, nplumesource=12, nz_orig=50
   character(LEN=10),dimension(ngases),parameter :: gas=(/'CO        ', &
@@ -44,12 +44,13 @@ module emission_source_map
       use mem_grid_dim_defs, only: nmxp, nmyp, nmzp ! intent(in)
       use mem_scalar, only: scalar_g ! intent(inout)
       use extras, only: extra3d ! intent(inout)
-      
+      use grid_dims, only : str_len
+    
       implicit none
 
       ! Local Variables:
       !character(len=14), parameter :: define_proc='last_sources'
-      character(len=256)           :: fname
+      character(len=str_len)       :: fname
       character(len=2)             :: cgrid
       character(len=10)            :: tracer
       logical                      :: there
@@ -358,6 +359,7 @@ module emission_source_map
     !----------------------------------------------------------------------
 
     subroutine read_sources_plume(plumerise, fname, plume, qsc_orig) 
+      use grid_dims, only : str_len
 
     implicit none
     ! Arguments:
@@ -367,9 +369,9 @@ module emission_source_map
     real, pointer                :: qsc_orig(:,:,:)
     
     ! Local Variables:
-    integer            :: iunit, ifname, i
-    character(len=128) :: cmessage
-    character(len=9)   :: date
+    integer                :: iunit, ifname, i
+    character(len=str_len) :: cmessage
+    character(len=9)       :: date
 
     iunit=2
     IFname=len_trim(fname)

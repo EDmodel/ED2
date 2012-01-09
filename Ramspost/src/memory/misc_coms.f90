@@ -4,8 +4,9 @@
 ! did not belong to any of the modules in rcommons.h                                       !
 !------------------------------------------------------------------------------------------!
 module misc_coms
-   use rpost_dims, only : nxpmax & ! intent(in)
-                        , nypmax ! ! intent(in)
+   use rpost_dims, only : nxpmax  & ! intent(in)
+                        , nypmax  & ! intent(in)
+                        , str_len ! ! intent(in)
    !----- Former getvar block. ------------------------------------------------------------!
    integer :: ierr_getvar
    integer :: ifound
@@ -30,7 +31,7 @@ module misc_coms
 
 
    !----- Former pageout block. -----------------------------------------------------------!
-   character(len=132), dimension(80) :: page
+   character(len=str_len), dimension(80) :: page
 
    !----- Former vform block. -------------------------------------------------------------!
    character(len=1), dimension(0:63) :: vc

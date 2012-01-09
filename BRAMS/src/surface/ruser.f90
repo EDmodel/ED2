@@ -244,7 +244,7 @@ end
 !*****************************************************************************
 
 subroutine sfcinit_file_user(n2,n3,mzg,npat,ifm  &
-   ,patch_area,leaf_class,soil_text)
+   ,patch_area,leaf_class,soil_color,soil_text)
 
 use rconstants
 
@@ -255,7 +255,7 @@ implicit none
 integer :: n2,n3,mzg,npat,ifm,i,j,k,ipat
 
 real, dimension(mzg,n2,n3,npat) :: soil_text
-real, dimension(n2,n3,npat) :: patch_area,leaf_class
+real, dimension(n2,n3,npat) :: patch_area,leaf_class,soil_color
 
 !  This subroutine is the intended location for a user to customize the
 !  PATCH_AREA, leaf_class, and SOIL_TEXT arrays.  It is called after all
@@ -353,17 +353,17 @@ end
 ! required by the user.                                                                    !
 !------------------------------------------------------------------------------------------!
 subroutine sfcinit_nofile_user(n1,n2,n3,mzg,mzs,npat,ifm,theta,pi0,pp,rv,co2p,soil_water   &
-                              ,soil_energy,soil_text,sfcwater_mass,sfcwater_energy         &
-                              ,sfcwater_depth,ustar,tstar,rstar,cstar,zeta,ribulk          &
-                              ,veg_fracarea,veg_agb,veg_lai,veg_tai,veg_rough,veg_height   &
-                              ,veg_displace,veg_albedo,patch_area,patch_rough              &
+                              ,soil_energy,psibar_10d,soil_color,soil_text,sfcwater_mass   &
+                              ,sfcwater_energy,sfcwater_depth,ustar,tstar,rstar,cstar,zeta &
+                              ,ribulk,veg_fracarea,veg_agb,veg_lai,veg_tai,veg_rough       &
+                              ,veg_height,veg_displace,veg_albedo,patch_area,patch_rough   &
                               ,patch_wetind,leaf_class,soil_rough,sfcwater_nlev            &
                               ,stom_condct,ground_rsat,ground_rvap,ground_temp,ground_fliq &
                               ,veg_water,veg_hcap,veg_energy,can_prss,can_theiv,can_theta  &
                               ,can_rvap,can_co2,sensible_gc,sensible_vc,evap_gc,evap_vc    &
                               ,transp,gpp,plresp,resphet,veg_ndvip,veg_ndvic,veg_ndvif     &
-                              ,snow_mass,snow_depth,cosz,rlongup,albedt,rvv,prsv,piv,vt2da &
-                              ,vt2db,glat,glon,zot,flpw,rtgt)
+                              ,snow_mass,snow_depth,rshort_gnd,rlong_gnd,cosz,rlongup      &
+                              ,albedt,rvv,prsv,piv,vt2da,vt2db,glat,glon,zot,flpw,rtgt)
 
    use mem_grid
    use mem_leaf
@@ -394,6 +394,8 @@ subroutine sfcinit_nofile_user(n1,n2,n3,mzg,mzs,npat,ifm,theta,pi0,pp,rv,co2p,so
    real, dimension(   n2,n3)      , intent(in)    :: cosz
    real, dimension(mzg,n2,n3,npat), intent(inout) :: soil_water
    real, dimension(mzg,n2,n3,npat), intent(inout) :: soil_energy
+   real, dimension(    n2,n3,npat), intent(inout) :: soil_color
+   real, dimension(    n2,n3,npat), intent(inout) :: psibar_10d
    real, dimension(mzg,n2,n3,npat), intent(inout) :: soil_text
    real, dimension(mzs,n2,n3,npat), intent(inout) :: sfcwater_mass
    real, dimension(mzs,n2,n3,npat), intent(inout) :: sfcwater_energy
@@ -442,6 +444,8 @@ subroutine sfcinit_nofile_user(n1,n2,n3,mzg,mzs,npat,ifm,theta,pi0,pp,rv,co2p,so
    real, dimension(    n2,n3,npat), intent(inout) :: veg_ndvip
    real, dimension(    n2,n3,npat), intent(inout) :: veg_ndvic
    real, dimension(    n2,n3,npat), intent(inout) :: veg_ndvif
+   real, dimension(    n2,n3,npat), intent(inout) :: rshort_gnd
+   real, dimension(    n2,n3,npat), intent(inout) :: rlong_gnd
    real, dimension(   n2,n3)      , intent(inout) :: rlongup
    real, dimension(   n2,n3)      , intent(inout) :: albedt
    real, dimension(   n2,n3)      , intent(inout) :: rvv
@@ -650,12 +654,13 @@ subroutine sfcinit_nofile_user(n1,n2,n3,mzg,mzs,npat,ifm,theta,pi0,pp,rv,co2p,so
    !            end if
 
 
-   !            call vegndvi(ifm,patch_area  (i,j,ipat) ,leaf_class(i,j,ipat)              &
-   !                            ,veg_fracarea(i,j,ipat) ,veg_lai   (i,j,ipat)              &
-   !                            ,veg_tai     (i,j,ipat) ,veg_rough (i,j,ipat)              &
-   !                            ,veg_height  (i,j,ipat) ,veg_albedo(i,j,ipat)              &
-   !                            ,veg_ndvip   (i,j,ipat) ,veg_ndvic (i,j,ipat)              &
-   !                            ,veg_ndvif   (i,j,ipat)                                    )
+   !            call vegndvi(ifm, patch_area      (i,j,ipat) , leaf_class   (i,j,ipat)     &
+   !                            , veg_fracarea    (i,j,ipat) , veg_lai      (i,j,ipat)     &
+   !                            , veg_tai         (i,j,ipat) , veg_rough    (i,j,ipat)     &
+   !                            , veg_height      (i,j,ipat) , veg_displace (i,j,ipat)     &
+   !                            , veg_albedo      (i,j,ipat) , veg_ndvip    (i,j,ipat)     &
+   !                            , veg_ndvic       (i,j,ipat) , veg_ndvif    (i,j,ipat)     &
+   !                           , psibar_10d      (i,j,ipat) )
 
    !            call leaf_grndvap(soil_energy(mzg,i,j,ipat),soil_water     (mzg,i,j,ipat)  &
    !                             ,soil_text  (mzg,i,j,ipat),sfcwater_energy(mzs,i,j,ipat)  &
@@ -665,15 +670,15 @@ subroutine sfcinit_nofile_user(n1,n2,n3,mzg,mzs,npat,ifm,theta,pi0,pp,rv,co2p,so
    !                             ,ground_fliq    (i,j,ipat))
 
    !          call sfcrad( nzg, nzs, ipat                                                  &
-   !                          , soil_water     (:,i,j,ipat) , soil_text      (:,i,j,ipat)  &
-   !                          , sfcwater_depth (:,i,j,ipat) , patch_area     (  i,j,ipat)  &
-   !                          , veg_fracarea   (  i,j,ipat) , leaf_class     (  i,j,ipat)  &
-   !                          , veg_albedo     (  i,j,ipat) , sfcwater_nlev  (  i,j,ipat)  &
-   !                          , rshort         (  i,j     ) , rlong          (  i,j     )  &
-   !                          , albedt         (  i,j     ) , rlongup        (  i,j     )  &
-   !                          , cosz           (  i,j     ) , g_urban                      &
-   !                          , emis_town                   , alb_town                     &
-   !                          , ts_town                     )
+   !                          , soil_water     (:,i,j,ipat) , soil_color     (  i,j,ipat)  &
+   !                          , soil_text      (:,i,j,ipat) , sfcwater_depth (:,i,j,ipat)  &
+   !                          , patch_area     (  i,j,ipat) , veg_fracarea   (  i,j,ipat)  &
+   !                          , leaf_class     (  i,j,ipat) , veg_albedo     (  i,j,ipat)  &
+   !                          , sfcwater_nlev  (  i,j,ipat) , rshort         (  i,j     )  &
+   !                          , rlong          (  i,j     ) , albedt         (  i,j     )  &
+   !                          , rlongup        (  i,j     ) , cosz           (  i,j     )  &
+   !                          , g_urban                     , emis_town                    &
+   !                          , alb_town                    , ts_town                      )
    !         end do patchloop
    !      end do iloop
    !   end do jloop

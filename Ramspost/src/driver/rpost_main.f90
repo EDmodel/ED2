@@ -14,19 +14,26 @@ program ramspost
   ! -----------------------
 
   use rpost_coms
-  use rpost_dims, only : fnm_len & ! intent(in)
-                       , str_len ! ! intent(in)
+  use rpost_dims, only  : str_len            ! ! intent(in)
   use brams_data
-  character(len=fnm_len), dimension(maxfiles) :: fln
+  use leaf_coms , only  : sfclyr_init_params ! ! sub-routine
+  character(len=str_len), dimension(maxfiles) :: fln
   character(len=str_len)                      :: inp
-  character(len=fnm_len)                      :: fprefix
-  character(len=fnm_len)                      :: gprefix
-  character(len=fnm_len)                      :: cfln
-  character*40 vpln(200),cdum1
-  character*10 vp(200),vpun(200),cdum2,proj,anl2gra
-  character*1 cgrid
-  character*2 ccgrid,patchnumber,cldnumber
-  character*3 cmo(12)
+  character(len=str_len)                      :: fprefix
+  character(len=str_len)                      :: gprefix
+  character(len=str_len)                      :: cfln
+  character(len=40), dimension(200)           :: vpln
+  character(len=40)                           :: cdum1
+  character(len=20), dimension(200)           :: vp
+  character(len=20), dimension(200)           :: vpun
+  character(len=20)                           :: cdum2
+  character(len=20)                           :: proj
+  character(len=20)                           :: anl2gra
+  character(len=1)                            :: cgrid
+  character(len=2)                            :: ccgrid
+  character(len=2)                            :: patchnumber
+  character(len=2)                            :: cldnumber
+  character(len=3), dimension(12)             :: cmo
   character*15 chdate,chstep,xchstep
   integer nvp,nfiles,nzvp(200),nrec,ipresslev,iplevs(nplmax)
   integer inplevs,zlevmax(maxgrds),ndim(200),iproj,ianl2gra,icld
@@ -59,7 +66,7 @@ program ramspost
   dimension dep_zlev(nzpmax,maxgrds),iep_nx(maxgrds),       &
        iep_ny(maxgrds),iep_nz(maxgrds),dep_glat(2,maxgrds), dep_glon(2,maxgrds)
 
-  character*600 wfln(maxfiles)
+  character(len=str_len), dimension(maxfiles) ::  wfln
 
   ! -----------------------------
   ! -   INITIALIZING ROUTINES   -
@@ -686,65 +693,6 @@ subroutine ep_setdate(iyear1,imonth1,idate1,strtim,itrec)
 
   return
 end subroutine ep_setdate
-
-!***************************************************************
-!     New version that just uses ls and the /tmp directory
-
-subroutine RAMS_filelist(fnames,file_prefix,nfile)
-  character fnames(*)*(*),file_prefix*(*)
-  character file*600,command*600
-
-  ! This version uses nfile as flag for whether to stop if no files exist.
-  !    If nfile.ge.0, then stop
-
-  iflag=nfile
-
-  nfile = 0
-  print *, ' '
-  print *, 'RAMS file analysis: Checking directory - ',file_prefix
-
-  iprelen=index(file_prefix,' ')
-  if(iprelen.eq.0) iprelen=len(file_prefix)
-
-  command=  &
-       '/bin/ls -1 '//file_prefix(1:iprelen)//' >./.RAMS_filelist'
-  call system(command)
-  command= 'chmod 777 ./.RAMS_filelist'
-  call system(command)
-
-  !     Open the directory list and read through the files
-  iun=98
-  open(unit=iun,file='./.RAMS_filelist',status='old',err=15)
-  rewind iun
-
-  do nf=1,1000000
-     read(iun,'(a128)',end=30,err=30) file
-     fnames(nf) = file
-  enddo
-
-30 continue
-
-  close(iun)
-  command= '/bin/rm -f ./.RAMS_filelist'
-  call system(command)
-
-  nfile=nf-1
-
-  if (nfile .eq. 0) then
-     print *, 'No RAMS files for prefix:',file_prefix
-     if(iflag.ge.0) stop './.RAMS_filelist-no_files'
-  endif
-
-  return 
-
-15 print *, 'RAMS_filelist: Error opening ./.RAMS_filelist'
-  stop './.RAMS_filelist-/tmp file error : run again'
-  return
-
-100 continue
-
-  return
-end subroutine RAMS_filelist
 
 !*****************************************************************************
 

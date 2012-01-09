@@ -1,13 +1,16 @@
 #----- Here is the user-defined variable section. -----------------------------------------#
-here           = "thispath" # Current directory.
+here           = "thispath"    # Current directory.
+there          = "thatpath"    # Directory where analyses/history are 
 srcdir         = "/n/Moorcroft_Lab/Users/mlongo/util/Rsc" # Source  directory.
 outroot        = "thisoutroot"
 monthbeg       = thismontha
 yearbeg        = thisyeara         # First year to consider
 yearend        = thisyearz         # Maximum year to consider
 myplaces       = c("thispoly")
-sasmonth       = c(2,5,8,11)
-outform        = "png"          # Formats for output file.  Supported formats are:
+sasmonth.short = c(2,5,8,11)
+sasmonth.long  = 5
+nyears.long    = 25
+outform        = "png"           # Formats for output file.  Supported formats are:
                                  #   - "X11" - for printing on screen
                                  #   - "eps" - for postscript printing
                                  #   - "png" - for PNG printing
@@ -30,9 +33,9 @@ ncolshov       = 200            # Target number of colours for Hovmoller diagram
 hovgrid        = TRUE           # Should I include a grid on the Hovmoller plots?
 
 legwhere       = "topleft"      # Where should I place the legend?
-inset          = 0.05           # inset distance between legend and edge of plot region.
+inset          = 0.01           # inset distance between legend and edge of plot region.
 legbg          = "white"        # Legend background colour.
-scalleg        = 0.32
+scalleg        = 0.20
 cex.main       = 0.8             # Scale coefficient for the title
 
 theta           = 315.                    # Azimuth for perspective projection
@@ -45,660 +48,16 @@ cexmin          = 0.5                     # Minimum "head" size of the lollipop
 cexmax          = 3.0                     # Maximum "head" size of the lollipop
 
 ylnudge         = 0.05                    # Nudging factor for ylimit
-ptype          = "l"                  # Type of plot
-ptyped         = "p"                  # Type of plot
-ptypeb         = "o"                  # Type of plot
+ptype          = "l"                      # Type of plot
+ptyped         = "p"                      # Type of plot
+ptypeb         = "o"                      # Type of plot
 
-tserdist        = TRUE          # Time series of disturbance rates
+tserdist        = TRUE                    # Time series of disturbance rates
 
-#------------------------------------------------------------------------------------------#
-#------------------------------------------------------------------------------------------#
-#     List of possible plots. In case you don't want some of them, simply switch plt to F. #
-#------------------------------------------------------------------------------------------#
-#----- Time series per PFT. ---------------------------------------------------------------#
-ntspft   = 17
-tsplot01 = list(vnam="agbpft"    ,desc="Above ground biomass"      ,unit="kgC/m2"    ,plt=T)
-tsplot02 = list(vnam="laipft"    ,desc="Leaf area index"           ,unit="m2/m2"     ,plt=T)
-tsplot03 = list(vnam="waipft"    ,desc="Wood area index"           ,unit="m2/m2"     ,plt=T)
-tsplot04 = list(vnam="taipft"    ,desc="Total area index"          ,unit="m2/m2"     ,plt=T)
-tsplot05 = list(vnam="bseedspft" ,desc="Seed biomass"              ,unit="kgC/m2"    ,plt=T)
-tsplot06 = list(vnam="gpppft"    ,desc="Gross primary productivity",unit="kgC/m2/yr" ,plt=T)
-tsplot07 = list(vnam="npppft"    ,desc="Net primary productivity"  ,unit="kgC/m2/yr" ,plt=T)
-tsplot08 = list(vnam="mcopft"    ,desc="Maintenance costs"         ,unit="kgC/m2/yr" ,plt=T)
-tsplot09 = list(vnam="cbapft"    ,desc="Carbon balance"            ,unit="kgC/m2/yr" ,plt=T)
-tsplot10 = list(vnam="ldroppft"  ,desc="Leaf drop"                 ,unit="kgC/m2/yr" ,plt=T)
-tsplot11 = list(vnam="balivepft" ,desc="Biomass of active tissues" ,unit="kgC/m2"    ,plt=T)
-tsplot12 = list(vnam="bdeadpft"  ,desc="Structural biomass"        ,unit="kgC/m2"    ,plt=T)
-tsplot13 = list(vnam="bleafpft"  ,desc="Leaf biomass"              ,unit="kgC/m2"    ,plt=T)
-tsplot14 = list(vnam="brootpft"  ,desc="Root biomass"              ,unit="kgC/m2"    ,plt=T)
-tsplot15 = list(vnam="bswoodpft" ,desc="Sapwood biomass"           ,unit="kgC/m2"    ,plt=T)
-tsplot16 = list(vnam="bstorepft" ,desc="Storage biomass"           ,unit="kgC/m2"    ,plt=T)
-tsplot17 = list(vnam="basareapft",desc="Basal area"                ,unit="m2/m2"     ,plt=T)
-#----- Time series per PFT. ---------------------------------------------------------------#
-ntslu    = 6
-lsplot01 = list(vnam="agblu"     ,desc="Above ground biomass"      ,unit="kgC/m2"    ,plt=F)
-lsplot02 = list(vnam="lailu"     ,desc="Leaf area index"           ,unit="m2/m2"     ,plt=F)
-lsplot03 = list(vnam="gpplu"     ,desc="Gross primary productivity",unit="kgC/m2/yr" ,plt=F)
-lsplot04 = list(vnam="npplu"     ,desc="Net primary productivity"  ,unit="kgC/m2/yr" ,plt=F)
-lsplot05 = list(vnam="arealu"    ,desc="Fraction of area"          ,unit=""          ,plt=F)
-lsplot06 = list(vnam="basarealu" ,desc="Basal area"                ,unit="m2/m2"     ,plt=F)
-#----- Size (DBH) and age structure of cohort level variables. ----------------------------#
-npsas  = 30
-psas01 = list(vnam="lightco"  ,desc="Light level"               ,unit="--"          , plt=T)
-psas02 = list(vnam="beamextco",desc="Downward direct light"     ,unit="--"          , plt=T)
-psas03 = list(vnam="diffextco",desc="Downward diffuse light"    ,unit="--"          , plt=T)
-psas04 = list(vnam="parlco"   ,desc="Absorbed PAR "             ,unit="W/m2"        , plt=T)
-psas05 = list(vnam="lambdaco" ,desc="Light extinction"          ,unit="m2/m2"       , plt=T)
-psas06 = list(vnam="gppco"    ,desc="Gross primary productivity",unit="kgC/plant/yr", plt=T)
-psas07 = list(vnam="respco"   ,desc="Total plant respiration"   ,unit="kgC/plant/yr", plt=T)
-psas08 = list(vnam="nppco"    ,desc="Net primary productivity"  ,unit="kgC/plant/yr", plt=T)
-psas09 = list(vnam="cbrbarco" ,desc="Relative carbon balance"   ,unit="--"          , plt=T)
-psas10 = list(vnam="cbalco"   ,desc="Carbon balance"            ,unit="kgC/plant/yr", plt=T)
-psas11 = list(vnam="mcostco"  ,desc="Maintenance costs"         ,unit="kgC/plant/yr", plt=T)
-psas12 = list(vnam="ncbmortco",desc="Mortality due to Neg. CB"  ,unit="1/yr"        , plt=T)
-psas13 = list(vnam="agbco"    ,desc="Above-ground biomass"      ,unit="kgC/plant"   , plt=T)
-psas14 = list(vnam="fsoco"    ,desc="Fraction of open stomata"  ,unit="--"          , plt=T)
-psas15 = list(vnam="nplantco" ,desc="Plant density"             ,unit="plant/m2"    , plt=T)
-psas16 = list(vnam="laico"    ,desc="Leaf area index"           ,unit="m2/m2"       , plt=T)
-psas17 = list(vnam="waico"    ,desc="Wood area index"           ,unit="m2/m2"       , plt=T)
-psas18 = list(vnam="taico"    ,desc="Total area index"          ,unit="m2/m2"       , plt=T)
-psas19 = list(vnam="demandco" ,desc="Water demand"              ,unit="kg/m2_l/day" , plt=T)
-psas20 = list(vnam="supplyco" ,desc="Water supply"              ,unit="kg/m2_l/day" , plt=T)
-psas21 = list(vnam="heightco" ,desc="Cohort height"             ,unit="m"           , plt=T)
-psas22 = list(vnam="gpplco"   ,desc="Gross primary productivity",unit="kgC/m2lf/yr" , plt=T)
-psas23 = list(vnam="baco"     ,desc="Basal area"                ,unit="m2"          , plt=T)
-psas24 = list(vnam="ldropco"  ,desc="Leaf drop"                 ,unit="kgC/plant/yr", plt=T)
-psas25 = list(vnam="baliveco" ,desc="Biomass of active tissues" ,unit="kgC/plant"   , plt=T)
-psas26 = list(vnam="bdeadco"  ,desc="Structural biomass"        ,unit="kgC/plant"   , plt=T)
-psas27 = list(vnam="bleafco"  ,desc="Leaf biomass"              ,unit="kgC/plant"   , plt=T)
-psas28 = list(vnam="brootco"  ,desc="Root biomass"              ,unit="kgC/plant"   , plt=T)
-psas29 = list(vnam="bswoodco" ,desc="Sapwood biomass"           ,unit="kgC/plant"   , plt=T)
-psas30 = list(vnam="bstoreco" ,desc="Storage biomass"           ,unit="kgC/plant"   , plt=T)
-#----- Time series of some variables per PFT, with size or age distribution. --------------#
-nfcpft  = 16
-fcpft01 = list(vnam="agbpftdbh",desc="Above-ground biomass"      ,unit="kgC/m2"
-                               ,cls="dbh",csch="iatlas",plt=F)
-fcpft02 = list(vnam="laipftdbh",desc="Leaf area index"           ,unit="m2/m2"
-                               ,cls="dbh",csch="iatlas",plt=F)
-fcpft03 = list(vnam="waipftdbh",desc="Wood area index"           ,unit="m2/m2"
-                               ,cls="dbh",csch="iatlas",plt=F)
-fcpft04 = list(vnam="taipftdbh",desc="Total area index"          ,unit="m2/m2"
-                               ,cls="dbh",csch="iatlas",plt=F)
-fcpft05 = list(vnam="gpppftdbh",desc="Gross primary productivity",unit="kgC/m2/yr"
-                               ,cls="dbh",csch="muitas",plt=F)
-fcpft06 = list(vnam="npppftdbh",desc="Net primary productivity"  ,unit="kgC/m2/yr"
-                               ,cls="dbh",csch="muitas",plt=F)
-fcpft07 = list(vnam="mcopftdbh",desc="Maintenance costs"         ,unit="kgC/m2/yr"
-                               ,cls="dbh",csch="muitas",plt=F)
-fcpft08 = list(vnam="cbapftdbh",desc="Carbon balance"            ,unit="kgC/m2/yr"
-                               ,cls="dbh",csch="muitas",plt=F)
-fcpft09 = list(vnam="agbpftage",desc="Above-ground biomass"      ,unit="kgC/m2"
-                               ,cls="age",csch="iatlas",plt=F)
-fcpft10 = list(vnam="laipftage",desc="Leaf area index"           ,unit="m2/m2"
-                               ,cls="age",csch="iatlas",plt=F)
-fcpft11 = list(vnam="waipftage",desc="Wood area index"           ,unit="m2/m2"
-                               ,cls="age",csch="iatlas",plt=F)
-fcpft12 = list(vnam="taipftage",desc="Total area index"          ,unit="m2/m2"
-                               ,cls="age",csch="iatlas",plt=F)
-fcpft13 = list(vnam="gpppftage",desc="Gross primary productivity",unit="kgC/m2/yr"
-                               ,cls="age",csch="muitas",plt=F)
-fcpft14 = list(vnam="npppftage",desc="Net primary productivity"  ,unit="kgC/m2/yr"
-                               ,cls="age",csch="muitas",plt=F)
-fcpft15 = list(vnam="mcopftage",desc="Maintenance costs"         ,unit="kgC/m2/yr"
-                               ,cls="age",csch="muitas",plt=F)
-fcpft16 = list(vnam="cbapftage",desc="Carbon balance"            ,unit="kgC/m2/yr"
-                               ,cls="age",csch="muitas",plt=F)
-#----- Box plots --------------------------------------------------------------------------#
-nbox = 24
-bplot01 = list(vnam="gpp"        ,desc="Gross Primary productivity"      ,unit="kgC/m2/yr"
-                                 ,plt=T)
-bplot02 = list(vnam="plresp"     ,desc="Plant respiration"               ,unit="kgC/m2/yr"
-                                 ,plt=T)
-bplot03 = list(vnam="hetresp"    ,desc="Heterotrophic respiration"       ,unit="kgC/m2/yr"
-                                 ,plt=T)
-bplot04 = list(vnam="nep"        ,desc="Net ecosystem production"        ,unit="kgC/m2/yr"
-                                 ,plt=T)
-bplot05 = list(vnam="sens"       ,desc="Sensible heat flux"              ,unit="W/m2"
-                                 ,plt=T)
-bplot06 = list(vnam="evap"       ,desc="Evaporation  "                   ,unit="kg/m2/day"
-                                 ,plt=T)
-bplot07 = list(vnam="transp"     ,desc="Transpiration"                   ,unit="kg/m2/day"
-                                 ,plt=T)
-bplot08 = list(vnam="atm.temp"   ,desc="Atmospheric temperature"         ,unit="degC"
-                                 ,plt=T)
-bplot09 = list(vnam="atm.shv"    ,desc="Atmospheric specific humidity"   ,unit="g/kg"
-                                 ,plt=T)
-bplot10 = list(vnam="atm.co2"    ,desc="Atmospheric CO2 mixing ratio"    ,unit="umol/mol"
-                                 ,plt=T)
-bplot11 = list(vnam="can.temp"   ,desc="Canopy air temperature"          ,unit="degC"
-                                 ,plt=T)
-bplot12 = list(vnam="can.shv"    ,desc="Canopy air specific humidity"    ,unit="g/kg"
-                                 ,plt=T)
-bplot13 = list(vnam="can.co2"    ,desc="Canopy air CO2 mixing ratio"     ,unit="umol/mol"
-                                 ,plt=T)
-bplot14 = list(vnam="rain"       ,desc="Total monthly precipitation"     ,unit="mm"
-                                 ,plt=T)
-bplot15 = list(vnam="leaf.temp"  ,desc="Leaf temperature"                ,unit="degC"
-                                 ,plt=T)
-bplot16 = list(vnam="wood.temp"  ,desc="Wood temperature"                ,unit="degC"
-                                 ,plt=T)
-bplot17 = list(vnam="gnd.temp"   ,desc="Ground temperature"              ,unit="degC"
-                                 ,plt=T)
-bplot18 = list(vnam="et"         ,desc="Evapotranspiration"              ,unit="kg/m2/day"
-                                 ,plt=T)
-bplot19 = list(vnam="fs.open"    ,desc="Fraction of open stomata"        ,unit="---"
-                                 ,plt=T)
-bplot20 = list(vnam="rshort"     ,desc="Downward Shortwave radiation"    ,unit="W/m2"
-                                 ,plt=T)
-bplot21 = list(vnam="rlong"      ,desc="Downward Longwave radiation"     ,unit="W/m2"
-                                 ,plt=T)
-bplot22 = list(vnam="gnd.shv"    ,desc="Ground specific humidity"        ,unit="g/kg"
-                                 ,plt=T)
-bplot23 = list(vnam="rshort.beam",desc="Direct incident SW radiation"    ,unit="W/m2"
-                                 ,plt=T)
-bplot24 = list(vnam="rshort.diff",desc="Diffuse incident SW radiation"   ,unit="W/m2"
-                                 ,plt=T)
-#----- Similar to Hovmoller diagrams. -----------------------------------------------------#
-nhov = 37
-hovdi01 = list(vnam="gpp"        ,desc="Gross Primary productivity"      ,unit="kgC/m2/yr"
-                                 ,csch="atlas"                           ,plt=T)
-hovdi02 = list(vnam="plresp"     ,desc="Plant respiration"               ,unit="kgC/m2/yr"
-                                 ,csch="muitas"                          ,plt=T)
-hovdi03 = list(vnam="hetresp"    ,desc="Heterotrophic respiration"       ,unit="kgC/m2/yr"
-                                 ,csch="muitas"                          ,plt=T)
-hovdi04 = list(vnam="npp"        ,desc="Net primary production"          ,unit="kgC/m2/yr"
-                                 ,csch="muitas"                          ,plt=T)
-hovdi05 = list(vnam="sens"       ,desc="Sensible heat flux"              ,unit="W/m2"
-                                 ,csch="muitas"                          ,plt=T)
-hovdi06 = list(vnam="evap"       ,desc="Evaporation"                     ,unit="kg/m2/day"
-                                 ,csch="imuitas"                         ,plt=T)
-hovdi07 = list(vnam="transp"     ,desc="Transpiration"                   ,unit="kg/m2/day"
-                                 ,csch="imuitas"                         ,plt=T)
-hovdi08 = list(vnam="atm.temp"   ,desc="Atmospheric temperature"         ,unit="degC"
-                                 ,csch="muitas"                          ,plt=T)
-hovdi09 = list(vnam="atm.shv"    ,desc="Atmospheric specific humidity"   ,unit="g/kg"
-                                 ,csch="imuitas"                         ,plt=T)
-hovdi10 = list(vnam="atm.co2"    ,desc="Atmospheric CO2 mixing ratio"    ,unit="umol/mol"
-                                 ,csch="muitas"                          ,plt=F)
-hovdi11 = list(vnam="can.temp"   ,desc="Canopy air temperature"          ,unit="degC"
-                                 ,csch="muitas"                          ,plt=T)
-hovdi12 = list(vnam="can.shv"    ,desc="Canopy air specific humidity"    ,unit="g/kg"
-                                 ,csch="imuitas"                         ,plt=T)
-hovdi13 = list(vnam="can.co2"    ,desc="Canopy air CO2 mixing ratio"     ,unit="umol/mol"
-                                 ,csch="muitas"                          ,plt=T)
-hovdi14 = list(vnam="rain"       ,desc="Total monthly precipitation"     ,unit="mm"
-                                 ,csch="imuitas"                         ,plt=T)
-hovdi15 = list(vnam="leaf.temp"  ,desc="Leaf temperature"                ,unit="degC"
-                                 ,csch="muitas"                          ,plt=T)
-hovdi16 = list(vnam="wood.temp"  ,desc="Wood temperature"                ,unit="degC"
-                                 ,csch="muitas"                          ,plt=T)
-hovdi17 = list(vnam="gnd.temp"   ,desc="Ground temperature"              ,unit="degC"
-                                 ,csch="muitas"                          ,plt=T)
-hovdi18 = list(vnam="gnd.shv"    ,desc="Ground specific humidity"        ,unit="g/kg"
-                                 ,csch="imuitas"                         ,plt=T)
-hovdi19 = list(vnam="workload"   ,desc="Workload"                        ,unit="steps/day"
-                                 ,csch="muitas"                          ,plt=T)
-hovdi20 = list(vnam="et"         ,desc="Evapotranspiration"              ,unit="kg/m2/day"
-                                 ,csch="imuitas"                         ,plt=T)
-hovdi21 = list(vnam="fs.open"    ,desc="Fraction of open stomata"        ,unit="---"
-                                 ,csch="imuitas"                         ,plt=T)
-hovdi22 = list(vnam="specwork"   ,desc="Specific workload"           ,unit="steps/patch/day"
-                                 ,csch="muitas"                          ,plt=T)
-hovdi23 = list(vnam="wflxgc"     ,desc="Ground evaporation"              ,unit="kg/m2/day"
-                                 ,csch="imuitas"                         ,plt=T)
-hovdi24 = list(vnam="wflxlc"     ,desc="Leaf evaporation"                ,unit="kg/m2/day"
-                                 ,csch="imuitas"                         ,plt=T)
-hovdi25 = list(vnam="wflxwc"     ,desc="Wood evaporation"                ,unit="kg/m2/day"
-                                 ,csch="imuitas"                         ,plt=T)
-hovdi26 = list(vnam="nep"        ,desc="Net ecosystem production"        ,unit="kgC/m2/yr"
-                                 ,csch="muitas"                          ,plt=T)
-hovdi27 = list(vnam="nee"        ,desc="Net ecosystem exchange"          ,unit="kgC/m2/yr"
-                                 ,csch="imuitas"                         ,plt=T)
-hovdi28 = list(vnam="cba"         ,desc="Carbon balance"                 ,unit="kgC/m2/day"
-                                 ,csch="atlas"                           ,plt=T)
-hovdi29 = list(vnam="mco"        ,desc="Maintenance costs"               ,unit="kgC/m2/yr"
-                                 ,csch="iatlas"                          ,plt=T)
-hovdi30 = list(vnam="ldrop"      ,desc="Leaf drop"                       ,unit="kgC/m2/yr"
-                                 ,csch="iatlas"                          ,plt=T)
-hovdi31 = list(vnam="rshort"     ,desc="Downward shortwave radiation"    ,unit="W/m2"
-                                 ,csch="icloudy"                         ,plt=T)
-hovdi32 = list(vnam="rlong"      ,desc="Downward longwave radiation"     ,unit="W/m2"
-                                 ,csch="cloudy"                          ,plt=T)
-hovdi33 = list(vnam="rshort.gnd" ,desc="Abs. gnd. shortwave radiation"   ,unit="W/m2"
-                                 ,csch="icloudy"                         ,plt=T)
-hovdi34 = list(vnam="rlong.gnd"  ,desc="Abs. gnd. longwave radiation"    ,unit="W/m2"
-                                 ,csch="cloudy"                          ,plt=T)
-hovdi35 = list(vnam="rshort.beam",desc="Direct incident SW radiation"    ,unit="W/m2"
-                                 ,csch="icloudy"                         ,plt=T)
-hovdi36 = list(vnam="rshort.diff",desc="Diffuse incident SW radiation"   ,unit="W/m2"
-                                 ,csch="icloudy"                         ,plt=T)
-hovdi37 = list(vnam="albedo"     ,desc="SW albedo"                       ,unit="---"
-                                 ,csch="muitas"                          ,plt=T)
-#----- Time series with several variables in it. ------------------------------------------#
-ntser=9
-tser01 = list(vnam   = c("gpp","plresp","hetresp","nee")
-             ,desc   = c("GPP","Plant resp.","Het. resp.","NEE")
-             ,colour = c("forestgreen","chartreuse","sienna","deepskyblue")
-             ,lwd    = c(1.5,1.5,1.5,1.5)
-             ,type   = ptype
-             ,plog   = ""
-             ,prefix = "carbflux"
-             ,theme  = "Carbon fluxes"
-             ,unit   = "kgC/m2/yr"
-             ,legpos = "topleft"
-             ,plt    = TRUE)
-tser02 = list(vnam   = c("rshort","rlong","latent","sens")
-             ,desc   = c("Down SW","Down LW","Latent","Sensible")
-             ,colour = c("goldenrod","lawngreen","midnightblue","firebrick")
-             ,lwd    = c(1.5,1.5,1.5,1.5)
-             ,type   = ptype
-             ,plog   = ""
-             ,prefix = "eneflux"
-             ,theme  = "Energy fluxes"
-             ,unit   = "W/m2"
-             ,legpos = "topleft"
-             ,plt    = TRUE)
-tser03 = list(vnam   = c("wflxgc","et","wflxlc","wflxwc","transp")
-             ,desc   = c("Ground->Canopy","Canopy->Atm","Leaf->Canopy"
-                        ,"Wood->Canopy","Transpiration")
-             ,colour = c("firebrick","midnightblue","chartreuse"
-                        ,"goldenrod","darkolivegreen")
-             ,lwd    = c(1.5,1.5,1.5,1.5,1.5)
-             ,type   = ptype
-             ,plog   = ""
-             ,prefix = "h2oflux"
-             ,theme  = "Water fluxes"
-             ,unit   = "kg/m2/day"
-             ,legpos = "topleft"
-             ,plt    = TRUE)
-tser04 = list(vnam   = c("atm.temp","can.temp","leaf.temp","wood.temp","gnd.temp")
-             ,desc   = c("Atmosphere","Canopy air","Leaf","Wood","Ground")
-             ,colour = c("deepskyblue","gray21","chartreuse","goldenrod","sienna")
-             ,lwd    = c(1.5,1.5,1.5,1.5,1.5)
-             ,type   = ptype
-             ,plog   = ""
-             ,prefix = "temperature"
-             ,theme  = "Temperature"
-             ,unit   = "degC"
-             ,legpos = "topleft"
-             ,plt    = TRUE)
-tser05 = list(vnam   = c("atm.shv","can.shv","gnd.shv")
-             ,desc   = c("Atmosphere","Canopy air","Ground")
-             ,colour = c("deepskyblue","gray21","sienna")
-             ,lwd    = c(1.5,1.5,1.5)
-             ,type   = ptype
-             ,plog   = ""
-             ,prefix = "h2ovapour"
-             ,theme  = "Water vapour mixing ratio"
-             ,unit   = "g/kg"
-             ,legpos = "topleft"
-             ,plt    = TRUE)
-tser06 = list(vnam   = c("atm.co2","can.co2")
-             ,desc   = c("Atmosphere","Canopy air")
-             ,colour = c("deepskyblue","lawngreen")
-             ,lwd    = c(1.5,1.5)
-             ,type   = ptype
-             ,plog   = ""
-             ,prefix = "co2"
-             ,theme  = "CO2 mixing ratio"
-             ,unit   = "umol/mol"
-             ,legpos = "topleft"
-             ,plt    = TRUE)
-tser07 = list(vnam   = c("rain")
-             ,desc   = c("Precipitation")
-             ,colour = c("midnightblue")
-             ,lwd    = c(2.5)
-             ,type   = ptype
-             ,plog   = ""
-             ,prefix = "prec"
-             ,theme  = "Precipitation rate"
-             ,unit   = "mm/hr"
-             ,legpos = "bottomleft"
-             ,plt    = TRUE)
-tser08 = list(vnam   = c("npat.global")
-             ,desc   = c("Patch count")
-             ,colour = c("darkorange3")
-             ,lwd    = c(2.5)
-             ,type   = ptype
-             ,plog   = ""
-             ,prefix = "npatch"
-             ,theme  = "Total number of patches"
-             ,unit   = "---"
-             ,legpos = "topleft"
-             ,plt    = TRUE)
-tser09 = list(vnam   = c("ncoh.global")
-             ,desc   = c("Cohort count")
-             ,colour = c("limegreen")
-             ,lwd    = c(2.5)
-             ,type   = ptype
-             ,plog   = ""
-             ,prefix = "ncohort"
-             ,theme  = "Total number of cohorts"
-             ,unit   = "---"
-             ,legpos = "topleft"
-             ,plt    = TRUE)
-#------------------------------------------------------------------------------------------#
-
-
-
-
-#----- "Climatology of the mean diurnal cycle with several variables in it. ---------------#
-nclim=12
-clim01 = list(vnam   = c("gpp","plresp","hetresp","nep","nee")
-             ,desc   = c("GPP","Plant resp.","Het. resp.","NEP","NEE")
-             ,colour = c("chartreuse","goldenrod","sienna","forestgreen","deepskyblue")
-             ,lwd    = c(2.5,2.5,2.5,2.5,2.5)
-             ,type   = ptype
-             ,plog   = ""
-             ,prefix = "carbflux"
-             ,theme  = "Carbon fluxes"
-             ,unit   = "kgC/m2/yr"
-             ,legpos = "topleft"
-             ,plt    = TRUE)
-clim02 = list(vnam   = c("rshort","rlong","rlongup","latent","sens")
-             ,desc   = c("Down SW","Down LW","Up LW","Latent","Sensible")
-             ,colour = c("goldenrod","lawngreen","purple4","midnightblue","firebrick")
-             ,lwd    = c(2.5,2.5,2.5,2.5,2.5)
-             ,type   = ptype
-             ,plog   = ""
-             ,prefix = "eneflux"
-             ,theme  = "Energy fluxes"
-             ,unit   = "W/m2"
-             ,legpos = "topleft"
-             ,plt    = TRUE)
-clim03 = list(vnam   = c("wflxgc","et","wflxlc","wflxwc","transp")
-             ,desc   = c("Ground->Canopy","Canopy->Air","Leaf->Canopy"
-                        ,"Wood->Canopy","Transpiration")
-             ,colour = c("firebrick","midnightblue","chartreuse"
-                        ,"goldenrod","darkolivegreen")
-             ,lwd    = c(2.5,2.5,2.5,2.5,2.5)
-             ,type   = ptype
-             ,plog   = ""
-             ,prefix = "h2oflux"
-             ,theme  = "Water fluxes"
-             ,unit   = "kg/m2/day"
-             ,legpos = "topleft"
-             ,plt    = TRUE)
-clim04 = list(vnam   = c("atm.temp","can.temp","leaf.temp","wood.temp","gnd.temp")
-             ,desc   = c("Atmosphere","Canopy air","Leaf","Wood","Ground")
-             ,colour = c("deepskyblue","gray21","chartreuse","goldenrod","sienna")
-             ,lwd    = c(2.5,2.5,2.5,2.5,2.5)
-             ,type   = ptype
-             ,plog   = ""
-             ,prefix = "temperature"
-             ,theme  = "Temperature"
-             ,unit   = "degC"
-             ,legpos = "topleft"
-             ,plt    = TRUE)
-clim05 = list(vnam   = c("atm.shv","can.shv","gnd.shv")
-             ,desc   = c("Atmosphere","Canopy air","Ground")
-             ,colour = c("deepskyblue","gray21","sienna")
-             ,lwd    = c(2.5,2.5,2.5)
-             ,type   = ptype
-             ,plog   = ""
-             ,prefix = "h2ovapour"
-             ,theme  = "Water vapour mixing ratio"
-             ,unit   = "g/kg"
-             ,legpos = "topleft"
-             ,plt    = TRUE)
-clim06 = list(vnam   = c("atm.co2","can.co2")
-             ,desc   = c("Atmosphere","Canopy air")
-             ,colour = c("deepskyblue","lawngreen")
-             ,lwd    = c(2.5,2.5)
-             ,type   = ptype
-             ,plog   = ""
-             ,prefix = "co2"
-             ,theme  = "CO2 mixing ratio"
-             ,unit   = "umol/mol"
-             ,legpos = "bottomleft"
-             ,plt    = TRUE)
-clim07 = list(vnam   = c("rain")
-             ,desc   = c("Precipitation")
-             ,colour = c("midnightblue")
-             ,lwd    = c(2.5)
-             ,type   = ptype
-             ,plog   = ""
-             ,prefix = "prec"
-             ,theme  = "Precipitation rate"
-             ,unit   = "mm/hr"
-             ,legpos = "topleft"
-             ,plt    = TRUE)
-clim08 = list(vnam   = c("fs.open")
-             ,desc   = c("Fraction of open stomata")
-             ,colour = c("green3")
-             ,lwd    = c(2.5)
-             ,type   = ptype
-             ,plog   = ""
-             ,prefix = "fsopen"
-             ,theme  = "Fraction of open stomata"
-             ,unit   = "---"
-             ,legpos = "bottomleft"
-             ,plt    = TRUE)
-clim09 = list(vnam   = c("rshort","rshort.beam","rshort.diff","rshort.gnd")
-             ,desc   = c("Down Top canopy","Beam","Diffuse","Abs. Ground")
-             ,colour = c("deepskyblue","goldenrod","gray33","firebrick")
-             ,lwd    = c(2.5,2.5,2.5,2.5)
-             ,type   = ptype
-             ,plog   = ""
-             ,prefix = "rshort"
-             ,theme  = "Short wave radiation"
-             ,unit   = "W/m2"
-             ,legpos = "topleft"
-             ,plt    = TRUE)
-clim10 = list(vnam   = c("rlong","rlongup","rlong.gnd")
-             ,desc   = c("Down Top canopy","Upward LW","Abs. Ground")
-             ,colour = c("deepskyblue","firebrick","goldenrod")
-             ,lwd    = c(2.5,2.5,2.5)
-             ,type   = ptype
-             ,plog   = ""
-             ,prefix = "rlong"
-             ,theme  = "Long wave radiation"
-             ,unit   = "W/m2"
-             ,legpos = "topleft"
-             ,plt    = TRUE)
-clim11 = list(vnam   = c("albedo","albedo.beam","albedo.diff","rlong.albedo")
-             ,desc   = c("SW Albedo (Net)","SW Albedo (Beam)","SW Albedo (Diff)"
-                        ,"LW Albedo")
-             ,colour = c("deepskyblue","goldenrod","gray33","firebrick")
-             ,lwd    = c(2.5,2.5,2.5,2.5)
-             ,type   = ptype
-             ,plog   = ""
-             ,prefix = "albedo"
-             ,theme  = "Albedo"
-             ,unit   = "---"
-             ,legpos = "topleft"
-             ,plt    = TRUE)
-clim12 = list(vnam   = c("hflxgc","sens","hflxlc","hflxwc")
-             ,desc   = c("Ground->Canopy","Canopy->Air","Leaf->Canopy","Wood->Canopy")
-             ,colour = c("firebrick","midnightblue","chartreuse","goldenrod")
-             ,lwd    = c(2.5,2.5,2.5)
-             ,type   = ptype
-             ,plog   = ""
-             ,prefix = "heatflux"
-             ,theme  = "Sensible heat fluxes"
-             ,unit   = "kg/m2/day"
-             ,legpos = "topleft"
-             ,plt    = TRUE)
-#------------------------------------------------------------------------------------------#
-
-
-#----- Similar to Hovmoller diagrams, but with month/year in the y axis and hour in x. ----#
-nhdcyc  = 29
-hdcyc01 = list(vnam="gpp"       ,desc="Gross Primary productivity"      ,unit="kgC/m2/yr"
-                                ,csch="atlas"                           ,plt=T)
-hdcyc02 = list(vnam="plresp"    ,desc="Plant respiration"               ,unit="kgC/m2/yr"
-                                ,csch="muitas"                          ,plt=T)
-hdcyc03 = list(vnam="hetresp"   ,desc="Heterotrophic respiration"       ,unit="kgC/m2/yr"
-                                ,csch="muitas"                          ,plt=T)
-hdcyc04 = list(vnam="sens"      ,desc="Sensible heat flux"              ,unit="W/m2"     
-                                ,csch="muitas"                          ,plt=T)
-hdcyc05 = list(vnam="evap"      ,desc="Evaporation"                     ,unit="kg/m2/day"     
-                                ,csch="imuitas"                         ,plt=T)
-hdcyc06 = list(vnam="transp"    ,desc="Transpiration"                   ,unit="kg/m2/day"     
-                                ,csch="imuitas"                         ,plt=T)
-hdcyc07 = list(vnam="atm.temp"  ,desc="Atmospheric temperature"         ,unit="degC"     
-                                ,csch="muitas"                          ,plt=T)
-hdcyc08 = list(vnam="atm.shv"   ,desc="Atmospheric specific humidity"   ,unit="g/kg"     
-                                ,csch="imuitas"                         ,plt=T)
-hdcyc09 = list(vnam="atm.co2"   ,desc="Atmospheric CO2 mixing ratio"    ,unit="umol/mol" 
-                                ,csch="muitas"                          ,plt=F)
-hdcyc10 = list(vnam="can.temp"  ,desc="Canopy air temperature"          ,unit="degC"     
-                                ,csch="muitas"                          ,plt=T)
-hdcyc11 = list(vnam="can.shv"   ,desc="Canopy air specific humidity"    ,unit="g/kg"     
-                                ,csch="imuitas"                         ,plt=T)
-hdcyc12 = list(vnam="can.co2"   ,desc="Canopy air CO2 mixing ratio"     ,unit="umol/mol" 
-                                ,csch="muitas"                          ,plt=T)
-hdcyc13 = list(vnam="rain"      ,desc="Total monthly precipitation"     ,unit="mm"       
-                                ,csch="imuitas"                         ,plt=T)
-hdcyc14 = list(vnam="leaf.temp" ,desc="Leaf temperature"                ,unit="degC"     
-                                ,csch="muitas"                          ,plt=T)
-hdcyc15 = list(vnam="wood.temp" ,desc="Wood temperature"                ,unit="degC"     
-                                ,csch="muitas"                          ,plt=T)
-hdcyc16 = list(vnam="gnd.temp"  ,desc="Ground temperature"              ,unit="degC"     
-                                ,csch="muitas"                          ,plt=T)
-hdcyc17 = list(vnam="gnd.shv"   ,desc="Ground specific humidity"        ,unit="g/kg"     
-                                ,csch="imuitas"                         ,plt=T)
-hdcyc18 = list(vnam="et"        ,desc="'Evapotranspiration"             ,unit="kg/m2/day"     
-                                ,csch="imuitas"                         ,plt=T)
-hdcyc19 = list(vnam="fs.open"   ,desc="Fraction of open stomata"        ,unit="---"     
-                                ,csch="imuitas"                         ,plt=T)
-hdcyc20 = list(vnam="wflxgc"    ,desc="Ground evaporation"              ,unit="kg/m2/day"     
-                                ,csch="imuitas"                         ,plt=T)
-hdcyc21 = list(vnam="wflxlc"    ,desc="Leaf evaporation"                ,unit="kg/m2/day"     
-                                ,csch="imuitas"                         ,plt=T)
-hdcyc22 = list(vnam="wflxwc"    ,desc="Wood evaporation"                ,unit="kg/m2/day"     
-                                ,csch="imuitas"                         ,plt=T)
-hdcyc23 = list(vnam="nep"       ,desc="Net ecosystem production"        ,unit="kgC/m2/yr"
-                                ,csch="muitas"                          ,plt=T)
-hdcyc24 = list(vnam="nee"       ,desc="Net ecosystem exchange"          ,unit="kgC/m2/yr"
-                                ,csch="imuitas"                         ,plt=T)
-hdcyc25 = list(vnam="rshort"    ,desc="Downward shortwave radiation"    ,unit="W/m2"
-                                ,csch="icloudy"                         ,plt=T)
-hdcyc26 = list(vnam="rlong"     ,desc="Downward longwave radiation"     ,unit="W/m2"
-                                ,csch="cloudy"                          ,plt=T)
-hdcyc27 = list(vnam="rshort.gnd",desc="Abs. gnd. shortwave radiation"   ,unit="W/m2"
-                                ,csch="icloudy"                         ,plt=T)
-hdcyc28 = list(vnam="rlong.gnd" ,desc="Abs. gnd. longwave radiation"    ,unit="W/m2"
-                                ,csch="cloudy"                          ,plt=T)
-hdcyc29 = list(vnam="albedo"    ,desc="Shortwave albedo"                ,unit="---"
-                                ,csch="muitas"                          ,plt=T)
-#------------------------------------------------------------------------------------------#
-
-
-
-
-#----- Comparison between observations and model averages. --------------------------------#
-ncompdcyc = 3
-compdcyc01 = list( vnam   = "gpp"
-                 , desc   = "Gross Primary Productivity"
-                 , unit   = "kgC/m2/yr"
-                 , plotsd = TRUE
-                 , colour = c("darkgreen","gray14")
-                 , errcol = c("chartreuse","gray61")
-                 , angle  = c(45,-45)
-                 , dens   = c(40, 40)
-                 , lwd    = c(2.5,2.5)
-                 , shwd   = c(1.0,1.0)
-                 , type   = "o"
-                 , plog   = ""
-                 , legpos = "topleft"
-                 , plt    = TRUE)
-compdcyc02 = list( vnam   = "nee"
-                 , desc   = "Net Ecosystem Exchange"
-                 , unit   = "kgC/m2/yr"
-                 , plotsd = TRUE
-                 , colour = c("darkgreen","gray14")
-                 , errcol = c("chartreuse","gray61")
-                 , angle  = c(45,-45)
-                 , dens   = c(40, 40)
-                 , lwd    = c(2.5,2.5)
-                 , shwd   = c(1.0,1.0)
-                 , type   = "o"
-                 , plog   = ""
-                 , legpos = "bottomleft"
-                 , plt    = TRUE)
-compdcyc03 = list( vnam   = "et"
-                 , desc   = "Evapotranspiration"
-                 , unit   = "kgH2O/m2/day"
-                 , plotsd = TRUE
-                 , colour = c("midnightblue","gray14")
-                 , errcol = c("steelblue","gray61")
-                 , angle  = c(45,-45)
-                 , dens   = c(40, 40)
-                 , lwd    = c(2.5,2.5)
-                 , shwd   = c(1.0,1.0)
-                 , type   = "o"
-                 , plog   = ""
-                 , legpos = "topleft"
-                 , plt    = TRUE)
-#------------------------------------------------------------------------------------------#
-
-
-
-
-#----- Comparison between observations and model averages. --------------------------------#
-ncompmmean = 3
-compmmean01 = list( vnam   = "gpp"
-                  , desc   = "Gross Primary Productivity"
-                  , unit   = "kgC/m2/yr"
-                  , plotsd = TRUE
-                  , colour = c("darkgreen","gray14")
-                  , errcol = c("chartreuse","gray61")
-                  , angle  = c(45,-45)
-                  , dens   = c(40, 40)
-                  , lwd    = c(2.5,2.5)
-                  , shwd   = c(1.0,1.0)
-                  , type   = "o"
-                  , plog   = ""
-                  , legpos = "topleft"
-                  , plt    = TRUE)
-compmmean02 = list( vnam   = "nee"
-                  , desc   = "Net Ecosystem Exchange"
-                  , unit   = "kgC/m2/yr"
-                  , plotsd = TRUE
-                  , colour = c("darkgreen","gray14")
-                  , errcol = c("chartreuse","gray61")
-                  , angle  = c(45,-45)
-                  , dens   = c(40, 40)
-                  , lwd    = c(2.5,2.5)
-                  , shwd   = c(1.0,1.0)
-                  , type   = "o"
-                  , plog   = ""
-                  , legpos = "topleft"
-                  , plt    = TRUE)
-compmmean03 = list( vnam   = "et"
-                  , desc   = "Evapotranspiration"
-                  , unit   = "kgH2O/m2/day"
-                  , plotsd = TRUE
-                  , colour = c("midnightblue","gray14")
-                  , errcol = c("steelblue","gray61")
-                  , angle  = c(45,-45)
-                  , dens   = c(40, 40)
-                  , lwd    = c(2.5,2.5)
-                  , shwd   = c(1.0,1.0)
-                  , type   = "o"
-                  , plog   = ""
-                  , legpos = "topleft"
-                  , plt    = TRUE)
-#------------------------------------------------------------------------------------------#
-
-
-
-#----- Annual mean. -----------------------------------------------------------------------#
-nsoilclim  = 3
-soilclim01 = list(vnam="soil.water" ,desc = "Soil moisture"
-                 ,unit = "m3/m3"    ,csch = "imuitas"
-                 ,pnlog=FALSE       ,plt  = TRUE)
-soilclim02 = list(vnam="soil.temp"  ,desc = "Soil temperature"
-                 ,unit = "C"        ,csch = "muitas"
-                 ,pnlog=FALSE       ,plt  = TRUE)
-soilclim03 = list(vnam="soil.mstpot",desc = "(Negative) Soil moisture potential"
-                 ,unit = "m"        ,csch = "muitas"
-                 ,pnlog=TRUE        ,plt  = TRUE)
-#------------------------------------------------------------------------------------------#
-
-
-
+drought.mark    = mydroughtmark
+drought.yeara   = mydroughtyeara
+drought.yearz   = mydroughtyearz
+months.drought  = mymonthsdrought
 
 #----- Loading some packages. -------------------------------------------------------------#
 library(hdf5)
@@ -722,140 +81,35 @@ options(locatorBell=FALSE)
 
 
 #----- Load some files with functions. ----------------------------------------------------#
-source(paste(srcdir,"atlas.r"      ,sep="/"))
-source(paste(srcdir,"charutils.r"  ,sep="/"))
-source(paste(srcdir,"census.r"     ,sep="/"))
-source(paste(srcdir,"cloudy.r"     ,sep="/"))
-source(paste(srcdir,"error.bar.r"  ,sep="/"))
-source(paste(srcdir,"globdims.r"   ,sep="/"))
-source(paste(srcdir,"locations.r"  ,sep="/"))
-source(paste(srcdir,"muitas.r"     ,sep="/"))
-source(paste(srcdir,"plotsize.r"   ,sep="/"))
-source(paste(srcdir,"pretty.log.r" ,sep="/"))
-source(paste(srcdir,"pretty.time.r",sep="/"))
-source(paste(srcdir,"qapply.r"     ,sep="/"))
-source(paste(srcdir,"rconstants.r" ,sep="/"))
-source(paste(srcdir,"soilutils.r"  ,sep="/"))
-source(paste(srcdir,"sombreado.r"  ,sep="/"))
-source(paste(srcdir,"southammap.r" ,sep="/"))
-source(paste(srcdir,"timeutils.r"  ,sep="/"))
+source(paste(srcdir,"atlas.r"           ,sep="/"))
+source(paste(srcdir,"charutils.r"       ,sep="/"))
+source(paste(srcdir,"census.r"          ,sep="/"))
+source(paste(srcdir,"cloudy.r"          ,sep="/"))
+source(paste(srcdir,"error.bar.r"       ,sep="/"))
+source(paste(srcdir,"globdims.r"        ,sep="/"))
+source(paste(srcdir,"locations.r"       ,sep="/"))
+source(paste(srcdir,"muitas.r"          ,sep="/"))
+source(paste(srcdir,"plotsize.r"        ,sep="/"))
+source(paste(srcdir,"pmonthly_varlist.r",sep="/"))
+source(paste(srcdir,"pretty.log.r"      ,sep="/"))
+source(paste(srcdir,"pretty.time.r"     ,sep="/"))
+source(paste(srcdir,"qapply.r"          ,sep="/"))
+source(paste(srcdir,"rconstants.r"      ,sep="/"))
+source(paste(srcdir,"soilutils.r"       ,sep="/"))
+source(paste(srcdir,"sombreado.r"       ,sep="/"))
+source(paste(srcdir,"southammap.r"      ,sep="/"))
+source(paste(srcdir,"timeutils.r"       ,sep="/"))
+#----- These should be called after the others. --------------------------------------------#
+source(paste(srcdir,"physiology.coms.r",sep="/"))
+source(paste(srcdir,"pft.coms.r"       ,sep="/"))
 
 
 #----- Load observations. -----------------------------------------------------------------#
-obsrfile = paste(srcdir,"LBA_MIP.RData",sep="/")
+obsrfile = paste(srcdir,"LBA_MIP.v4.RData",sep="/")
 load(file=obsrfile)
-
-
-#----- Define some default legend colours and names. --------------------------------------#
-pftnames = c("C4 Grass","Early Tropical","Mid Tropical","Late Tropical","Temp. C3 Grass"
-             ,"North Pine","South Pine","Late Conifer","Early Temperate","Mid Temperate"
-             ,"Late Temperate","C3 Pasture","C3 Crop","C4 Pasture","C4 Crop"
-             ,"C3 Grass","Araucaria","Total")
-pftcols  = c("gold","chartreuse","limegreen","darkgreen","purple3"
-            ,"deepskyblue","aquamarine","midnightblue","darkorange3","sienna"
-            ,"firebrick","orchid","coral","gray45","olivedrab"
-            ,"goldenrod","steelblue","gray22")
-
-lunames = c("Agricultural","Secondary","Primary","Total")
-lucols  = c("goldenrod","chartreuse","darkgreen","gray22")
-
-distnames = c("Agr->Agr" ,"2nd->Agr" ,"Prim->Agr"
-              ,"Agr->2nd" ,"2nd->2nd" ,"Prim->2nd"
-              ,"Agr->Prim","2nd->Prim","Prim->Prim")
-distcols  = c("gold","darkorange2","firebrick"
-              ,"lightskyblue","turquoise","steelblue"
-              ,"palegreen","chartreuse","forestgreen")
 
 #----- Define plot window size ------------------------------------------------------------#
 size = plotsize(proje=FALSE,paper=paper)
-
-#------------------------------------------------------------------------------------------#
-#     Using brute force to concatenate the plotting lists.                                 #
-#------------------------------------------------------------------------------------------#
-#----- Time series by PFT plot. -----------------------------------------------------------#
-tspft = list()
-for (s in 1:ntspft){
-  sss           = substring(100+s,2,3)
-  tsts          = paste("tsplot",sss,sep="")
-  tspft[[s]]    = get(tsts)
-} #end for
-#----- Time series by LU plot. ------------------------------------------------------------#
-tslu = list()
-for (s in 1:ntslu){
-  sss           = substring(100+s,2,3)
-  lulu          = paste("lsplot",sss,sep="")
-  tslu[[s]]     = get(lulu)
-} #end for
-#----- Size (DBH) and age structure cohort level variables. -------------------------------#
-sasplot = list()
-for (s in 1:npsas){
-  sss           = substring(100+s,2,3)
-  psps          = paste("psas",sss,sep="")
-  sasplot[[s]]  = get(psps)
-} #end for
-#----- Time series of some variables per PFT, with size or age distribution. ---------------#
-fcpft = list()
-for (s in 1:nfcpft){
-  sss         = substring(100+s,2,3)
-  fcfc        = paste("fcpft",sss,sep="")
-  fcpft[[s]]  = get(fcfc)
-} #end for
-#----- Box plots --------------------------------------------------------------------------#
-bplot = list()
-for (s in 1:nbox){
-  sss         = substring(100+s,2,3)
-  bpbp        = paste("bplot",sss,sep="")
-  bplot[[s]]  = get(bpbp)
-} #end for
-#----- Hovmoller diagram ------------------------------------------------------------------#
-hovdi = list()
-for (s in 1:nhov){
-  sss         = substring(100+s,2,3)
-  hdhd        = paste("hovdi",sss,sep="")
-  hovdi[[s]]  = get(hdhd)
-} #end for
-#----- Time series ------------------------------------------------------------------------#
-tser      = list()
-for (s in 1:ntser){
-  sss         = substring(100+s,2,3)
-  tsts        = paste("tser",sss,sep="")
-  tser[[s]]   = get(tsts)
-} #end for
-#----- Time series of "mean diurnal cycle climatology" ------------------------------------#
-clim      = list()
-for (s in 1:nclim){
-  sss        = substring(100+s,2,3)
-  clcl       = paste("clim",sss,sep="")
-  clim[[s]]  = get(clcl)
-} #end for
-#----- Hovmoller diagram ------------------------------------------------------------------#
-hdcyc      = list()
-for (s in 1:nhdcyc){
-  sss        = substring(100+s,2,3)
-  hdhd       = paste("hdcyc",sss,sep="")
-  hdcyc[[s]] = get(hdhd)
-} #end for
-#----- Comparison of mean diurnal cycle ---------------------------------------------------#
-compdcyc      = list()
-for (o in 1:ncompdcyc){
-  ccc          = substring(100+o,2,3)
-  cpcp         = paste("compdcyc",ccc,sep="")
-  compdcyc[[o]] = get(cpcp)
-} #end for
-#----- Comparison of monthly means --------------------------------------------------------#
-compmmean      = list()
-for (o in 1:ncompmmean){
-  ccc            = substring(100+o,2,3)
-  cmcm           = paste("compmmean",ccc,sep="")
-  compmmean[[o]] = get(cmcm)
-} #end for
-#----- Soil profile climatology. ----------------------------------------------------------#
-soilclim      = list()
-for (o in 1:nsoilclim){
-  ccc           = substring(100+o,2,3)
-  scsc          = paste("soilclim",ccc,sep="")
-  soilclim[[o]] = get(scsc)
-} #end for
 #------------------------------------------------------------------------------------------#
 
 
@@ -872,7 +126,7 @@ if (! file.exists(outroot)) dir.create(outroot)
 for (place in myplaces){
 
    #----- Retrieve default information about this place and set up some variables. --------#
-   thispoi = locations(where=place,here=here,yearbeg=yearbeg,yearend=yearend
+   thispoi = locations(where=place,here=there,yearbeg=yearbeg,yearend=yearend
                       ,monthbeg=monthbeg)
    inpref  = thispoi$pathin
    outmain = paste(outroot,place,sep="/")
@@ -883,6 +137,15 @@ for (place in myplaces){
    yeara   = thispoi$yeara
    yearz   = thispoi$yearz
    meszz   = thispoi$monz
+
+   #----- Decide how frequently the cohort-level variables should be saved. ---------------#
+   if (yearz - yeara + 1 <= nyears.long){
+      sasmonth = sasmonth.short
+   }else{
+      sasmonth = sasmonth.long
+   }#end if
+
+
 
    #----- Create the directories in case they don't exist. --------------------------------#
    if (! file.exists(outmain)) dir.create(outmain)
@@ -897,121 +160,137 @@ for (place in myplaces){
    #---------------------------------------------------------------------------------------#
    totmon      = (yearz-yeara-1)*12+meszz+(12-monthbeg+1)
    #----- Size (DBH) and age arrays. ------------------------------------------------------#
-   agbpftdbh    = array(data=0.,dim=c(totmon,ndbh,npft))
-   laipftdbh    = array(data=0.,dim=c(totmon,ndbh,npft))
-   waipftdbh    = array(data=0.,dim=c(totmon,ndbh,npft))
-   taipftdbh    = array(data=0.,dim=c(totmon,ndbh,npft))
-   gpppftdbh    = array(data=0.,dim=c(totmon,ndbh,npft))
-   npppftdbh    = array(data=0.,dim=c(totmon,ndbh,npft))
-   mcopftdbh    = array(data=0.,dim=c(totmon,ndbh,npft))
-   cbapftdbh    = array(data=0.,dim=c(totmon,ndbh,npft))
-   agbpftage    = array(data=0.,dim=c(totmon,nage,npft))
-   laipftage    = array(data=0.,dim=c(totmon,nage,npft))
-   waipftage    = array(data=0.,dim=c(totmon,nage,npft))
-   taipftage    = array(data=0.,dim=c(totmon,nage,npft))
-   gpppftage    = array(data=0.,dim=c(totmon,nage,npft))
-   npppftage    = array(data=0.,dim=c(totmon,nage,npft))
-   mcopftage    = array(data=0.,dim=c(totmon,nage,npft))
-   cbapftage    = array(data=0.,dim=c(totmon,nage,npft))
+   agbpftdbh      = array(data=0.,dim=c(totmon,ndbh+1,npft))
+   laipftdbh      = array(data=0.,dim=c(totmon,ndbh+1,npft))
+   waipftdbh      = array(data=0.,dim=c(totmon,ndbh+1,npft))
+   taipftdbh      = array(data=0.,dim=c(totmon,ndbh+1,npft))
+   gpppftdbh      = array(data=0.,dim=c(totmon,ndbh+1,npft))
+   npppftdbh      = array(data=0.,dim=c(totmon,ndbh+1,npft))
+   mcopftdbh      = array(data=0.,dim=c(totmon,ndbh+1,npft))
+   cbapftdbh      = array(data=0.,dim=c(totmon,ndbh+1,npft))
+   ldrpftdbh      = array(data=0.,dim=c(totmon,ndbh+1,npft))
+   fsopftdbh      = array(data=0.,dim=c(totmon,ndbh+1,npft))
+   demandpftdbh   = array(data=0.,dim=c(totmon,ndbh+1,npft))
+   supplypftdbh   = array(data=0.,dim=c(totmon,ndbh+1,npft))
+   nplantpftdbh   = array(data=0.,dim=c(totmon,ndbh+1,npft))
+   ncbmortpftdbh  = array(data=0.,dim=c(totmon,ndbh+1,npft))
    #----- PFT arrays.   The "+1" column contains the total. -------------------------------#
-   agbpft       = matrix(data=0,nrow=totmon,ncol=npft+1)
-   bseedspft    = matrix(data=0,nrow=totmon,ncol=npft+1)
-   laipft       = matrix(data=0,nrow=totmon,ncol=npft+1)
-   waipft       = matrix(data=0,nrow=totmon,ncol=npft+1)
-   taipft       = matrix(data=0,nrow=totmon,ncol=npft+1)
-   gpppft       = matrix(data=0,nrow=totmon,ncol=npft+1)
-   npppft       = matrix(data=0,nrow=totmon,ncol=npft+1)
-   mcopft       = matrix(data=0,nrow=totmon,ncol=npft+1)
-   cbapft       = matrix(data=0,nrow=totmon,ncol=npft+1)
-   ldroppft     = matrix(data=0,nrow=totmon,ncol=npft+1)
-   balivepft    = matrix(data=0,nrow=totmon,ncol=npft+1)
-   bdeadpft     = matrix(data=0,nrow=totmon,ncol=npft+1)
-   bleafpft     = matrix(data=0,nrow=totmon,ncol=npft+1)
-   brootpft     = matrix(data=0,nrow=totmon,ncol=npft+1)
-   bswoodpft    = matrix(data=0,nrow=totmon,ncol=npft+1)
-   bstorepft    = matrix(data=0,nrow=totmon,ncol=npft+1)
-   basareapft   = matrix(data=0,nrow=totmon,ncol=npft+1)
+   agbpft         = matrix(data=0,nrow=totmon,ncol=npft+1)
+   bseedspft      = matrix(data=0,nrow=totmon,ncol=npft+1)
+   nplantpft      = matrix(data=0,nrow=totmon,ncol=npft+1)
+   laipft         = matrix(data=0,nrow=totmon,ncol=npft+1)
+   waipft         = matrix(data=0,nrow=totmon,ncol=npft+1)
+   taipft         = matrix(data=0,nrow=totmon,ncol=npft+1)
+   gpppft         = matrix(data=0,nrow=totmon,ncol=npft+1)
+   npppft         = matrix(data=0,nrow=totmon,ncol=npft+1)
+   mcopft         = matrix(data=0,nrow=totmon,ncol=npft+1)
+   cbapft         = matrix(data=0,nrow=totmon,ncol=npft+1)
+   ldroppft       = matrix(data=0,nrow=totmon,ncol=npft+1)
+   balivepft      = matrix(data=0,nrow=totmon,ncol=npft+1)
+   bdeadpft       = matrix(data=0,nrow=totmon,ncol=npft+1)
+   bleafpft       = matrix(data=0,nrow=totmon,ncol=npft+1)
+   brootpft       = matrix(data=0,nrow=totmon,ncol=npft+1)
+   bswoodpft      = matrix(data=0,nrow=totmon,ncol=npft+1)
+   bstorepft      = matrix(data=0,nrow=totmon,ncol=npft+1)
+   basareapft     = matrix(data=0,nrow=totmon,ncol=npft+1)
+   leafresppft    = matrix(data=0,nrow=totmon,ncol=npft+1)
+   rootresppft    = matrix(data=0,nrow=totmon,ncol=npft+1)
+   growthresppft  = matrix(data=0,nrow=totmon,ncol=npft+1)
 
    #----- LU arrays.   The "+1" column contains the total. --------------------------------#
-   agblu       = matrix(data=0,nrow=totmon,ncol=nlu+1)
-   lailu       = matrix(data=0,nrow=totmon,ncol=nlu+1)
-   gpplu       = matrix(data=0,nrow=totmon,ncol=nlu+1)
-   npplu       = matrix(data=0,nrow=totmon,ncol=nlu+1)
-   arealu      = matrix(data=0,nrow=totmon,ncol=nlu+1)
-   basarealu   = matrix(data=0,nrow=totmon,ncol=nlu+1)
+   agblu          = matrix(data=0,nrow=totmon,ncol=nlu+1)
+   lailu          = matrix(data=0,nrow=totmon,ncol=nlu+1)
+   gpplu          = matrix(data=0,nrow=totmon,ncol=nlu+1)
+   npplu          = matrix(data=0,nrow=totmon,ncol=nlu+1)
+   arealu         = matrix(data=0,nrow=totmon,ncol=nlu+1)
+   basarealu      = matrix(data=0,nrow=totmon,ncol=nlu+1)
    #----- Miscellaneous arrays. -----------------------------------------------------------#
-   dist         = array(NA,dim=c(totmon,nlu,nlu))
+   dist           = array(NA,dim=c(totmon,nlu,nlu))
    #----- Polygon level vectors. ----------------------------------------------------------#
-   gpp            = NULL
-   plresp         = NULL
-   hetresp        = NULL
-   mco            = NULL
-   npp            = NULL
-   cba            = NULL
-   ldrop          = NULL
-   npp            = NULL
-   nep            = NULL
-   nee            = NULL
-   evap           = NULL
-   transp         = NULL
-   atm.temp       = NULL
-   can.temp       = NULL
-   atm.co2        = NULL
-   can.co2        = NULL
-   leaf.temp      = NULL
-   wood.temp      = NULL
-   atm.shv        = NULL
-   can.shv        = NULL
-   can.co2        = NULL
-   sens           = NULL
-   latent         = NULL
-   et             = NULL
-   agb            = NULL
-   lai            = NULL
-   wai            = NULL
-   tai            = NULL
-   area           = NULL
-   rain           = NULL
-   gnd.temp       = NULL
-   gnd.shv        = NULL
-   workload       = NULL
-   specwork       = NULL
-   fs.open        = NULL
-   hflxgc         = NULL
-   hflxlc         = NULL
-   hflxwc         = NULL
-   wflxgc         = NULL
-   wflxlc         = NULL
-   wflxwc         = NULL
-   et             = NULL
-   rshort         = NULL
-   rshort.beam    = NULL
-   rshort.diff    = NULL
-   rlong          = NULL
-   rshort.gnd     = NULL
-   rlong.gnd      = NULL
-   rlongup        = NULL
-   albedo         = NULL
-   albedo.beam    = NULL
-   albedo.diff    = NULL
-   rlong.albedo   = NULL
-   npat.global    = NULL
-   ncoh.global    = NULL
-   mmsqu.gpp      = NULL
-   mmsqu.plresp   = NULL
-   mmsqu.hetresp  = NULL
-   mmsqu.nee      = NULL
-   mmsqu.sens     = NULL
-   mmsqu.hflxlc   = NULL
-   mmsqu.hflxwc   = NULL
-   mmsqu.hflxgc   = NULL
-   mmsqu.et       = NULL
-   mmsqu.latent   = NULL
-   mmsqu.wflxlc   = NULL
-   mmsqu.wflxwc   = NULL
-   mmsqu.wflxgc   = NULL
-   mmsqu.evap     = NULL
-   mmsqu.transp   = NULL
+   gpp             = NULL
+   npp             = NULL
+   plresp          = NULL
+   leaf.resp       = NULL
+   root.resp       = NULL
+   growth.resp     = NULL
+   hetresp         = NULL
+   mco             = NULL
+   npp             = NULL
+   cba             = NULL
+   ldrop           = NULL
+   nep             = NULL
+   nee             = NULL
+   cflxca          = NULL
+   cflxst          = NULL
+   evap            = NULL
+   transp          = NULL
+   ustar           = NULL
+   atm.vels        = NULL
+   atm.prss        = NULL
+   atm.temp        = NULL
+   can.prss        = NULL
+   can.temp        = NULL
+   atm.co2         = NULL
+   can.co2         = NULL
+   leaf.temp       = NULL
+   wood.temp       = NULL
+   atm.shv         = NULL
+   can.shv         = NULL
+   can.co2         = NULL
+   hflxca          = NULL
+   qwflxca         = NULL
+   wflxca          = NULL
+   agb             = NULL
+   nplant          = NULL
+   lai             = NULL
+   wai             = NULL
+   tai             = NULL
+   area            = NULL
+   rain            = NULL
+   gnd.temp        = NULL
+   gnd.shv         = NULL
+   workload        = NULL
+   specwork        = NULL
+   fs.open         = NULL
+   hflxgc          = NULL
+   hflxlc          = NULL
+   hflxwc          = NULL
+   wflxgc          = NULL
+   wflxlc          = NULL
+   wflxwc          = NULL
+   et              = NULL
+   rshort          = NULL
+   rshort.beam     = NULL
+   rshort.diff     = NULL
+   rlong           = NULL
+   rshort.gnd      = NULL
+   rlong.gnd       = NULL
+   rlongup         = NULL
+   albedo          = NULL
+   albedo.beam     = NULL
+   albedo.diff     = NULL
+   rlong.albedo    = NULL
+   npat.global     = NULL
+   ncoh.global     = NULL
+   mmsqu.gpp       = NULL
+   mmsqu.plresp    = NULL
+   mmsqu.leaf.resp = NULL
+   mmsqu.root.resp = NULL
+   mmsqu.plresp    = NULL
+   mmsqu.hetresp   = NULL
+   mmsqu.cflxca    = NULL
+   mmsqu.cflxst    = NULL
+   mmsqu.hflxca    = NULL
+   mmsqu.hflxlc    = NULL
+   mmsqu.hflxwc    = NULL
+   mmsqu.hflxgc    = NULL
+   mmsqu.wflxca    = NULL
+   mmsqu.qwflxca   = NULL
+   mmsqu.wflxlc    = NULL
+   mmsqu.wflxwc    = NULL
+   mmsqu.wflxgc    = NULL
+   mmsqu.evap      = NULL
+   mmsqu.transp    = NULL
 
    #----- Cohort level lists. -------------------------------------------------------------#
    lightco      = list()
@@ -1056,6 +335,36 @@ for (place in myplaces){
    myear        = NULL
 
    first.time   = TRUE
+
+
+   #---------------------------------------------------------------------------------------#
+   #     Make a list with the time span of each drought so we can plot rectangles showing  #
+   # the drought.                                                                          #
+   #---------------------------------------------------------------------------------------#
+   drought = list()
+   year    = drought.yeara
+   ndrought = length(months.drought)
+   n        = 0
+   overyear = months.drought[1] > months.drought[ndrought]
+   for (year in seq(from=drought.yeara,to=drought.yearz-as.integer(overyear),by=1)){
+      n             = n + 1
+      
+      #----- Define the beginning and the end of the drought. -----------------------------#
+      month.start   = months.drought[1]
+      month.end     = 1 + (months.drought[ndrought] %% 12)
+      year.start    = year
+      year.end      = year + as.integer(month.end == 1) + 1
+
+      drought.whena = chron(dates=paste(month.start,1,year.start,sep="/"))
+      drought.whenz = chron(dates=paste(month.end  ,1,year.end  ,sep="/"))
+      drought[[n]]  = c(drought.whena,drought.whenz)
+   }#end for
+   #----- ndrought becomes the number of blocks with drought. -----------------------------#
+   ndrought = length(drought)
+   #---------------------------------------------------------------------------------------#
+
+
+
 
    #----- Loop over years. ----------------------------------------------------------------#
    for (year in yeara:yearz){
@@ -1123,16 +432,22 @@ for (place in myplaces){
              #----- Mean diurnal cycle. ---------------------------------------------------#
              dcycmean                = list()
              dcycmean$gpp            = matrix(data=0,nrow=totmon,ncol=ndcycle)
+             dcycmean$npp            = matrix(data=0,nrow=totmon,ncol=ndcycle)
              dcycmean$plresp         = matrix(data=0,nrow=totmon,ncol=ndcycle)
+             dcycmean$leaf.resp      = matrix(data=0,nrow=totmon,ncol=ndcycle)
+             dcycmean$root.resp      = matrix(data=0,nrow=totmon,ncol=ndcycle)
+             dcycmean$growth.resp    = matrix(data=0,nrow=totmon,ncol=ndcycle)
              dcycmean$hetresp        = matrix(data=0,nrow=totmon,ncol=ndcycle)
              dcycmean$nep            = matrix(data=0,nrow=totmon,ncol=ndcycle)
              dcycmean$nee            = matrix(data=0,nrow=totmon,ncol=ndcycle)
-             dcycmean$sens           = matrix(data=0,nrow=totmon,ncol=ndcycle)
+             dcycmean$cflxca         = matrix(data=0,nrow=totmon,ncol=ndcycle)
+             dcycmean$cflxst         = matrix(data=0,nrow=totmon,ncol=ndcycle)
+             dcycmean$hflxca         = matrix(data=0,nrow=totmon,ncol=ndcycle)
              dcycmean$hflxlc         = matrix(data=0,nrow=totmon,ncol=ndcycle)
              dcycmean$hflxwc         = matrix(data=0,nrow=totmon,ncol=ndcycle)
              dcycmean$hflxgc         = matrix(data=0,nrow=totmon,ncol=ndcycle)
-             dcycmean$latent         = matrix(data=0,nrow=totmon,ncol=ndcycle)
-             dcycmean$et             = matrix(data=0,nrow=totmon,ncol=ndcycle)
+             dcycmean$qwflxca        = matrix(data=0,nrow=totmon,ncol=ndcycle)
+             dcycmean$wflxca         = matrix(data=0,nrow=totmon,ncol=ndcycle)
              dcycmean$wflxlc         = matrix(data=0,nrow=totmon,ncol=ndcycle)
              dcycmean$wflxwc         = matrix(data=0,nrow=totmon,ncol=ndcycle)
              dcycmean$wflxgc         = matrix(data=0,nrow=totmon,ncol=ndcycle)
@@ -1151,6 +466,7 @@ for (place in myplaces){
              dcycmean$atm.prss       = matrix(data=0,nrow=totmon,ncol=ndcycle)
              dcycmean$can.prss       = matrix(data=0,nrow=totmon,ncol=ndcycle)
              dcycmean$atm.vels       = matrix(data=0,nrow=totmon,ncol=ndcycle)
+             dcycmean$ustar          = matrix(data=0,nrow=totmon,ncol=ndcycle)
              dcycmean$fs.open        = matrix(data=0,nrow=totmon,ncol=ndcycle)
              dcycmean$rain           = matrix(data=0,nrow=totmon,ncol=ndcycle)
              dcycmean$rshort         = matrix(data=0,nrow=totmon,ncol=ndcycle)
@@ -1167,16 +483,21 @@ for (place in myplaces){
 
              dcycmsqu             = list()
              dcycmsqu$gpp         = matrix(data=0,nrow=totmon,ncol=ndcycle)
+             dcycmsqu$npp         = matrix(data=0,nrow=totmon,ncol=ndcycle)
              dcycmsqu$plresp      = matrix(data=0,nrow=totmon,ncol=ndcycle)
+             dcycmsqu$leaf.resp   = matrix(data=0,nrow=totmon,ncol=ndcycle)
+             dcycmsqu$root.resp   = matrix(data=0,nrow=totmon,ncol=ndcycle)
              dcycmsqu$hetresp     = matrix(data=0,nrow=totmon,ncol=ndcycle)
              dcycmsqu$nep         = matrix(data=0,nrow=totmon,ncol=ndcycle)
              dcycmsqu$nee         = matrix(data=0,nrow=totmon,ncol=ndcycle)
-             dcycmsqu$sens        = matrix(data=0,nrow=totmon,ncol=ndcycle)
+             dcycmsqu$cflxca      = matrix(data=0,nrow=totmon,ncol=ndcycle)
+             dcycmsqu$cflxst      = matrix(data=0,nrow=totmon,ncol=ndcycle)
+             dcycmsqu$hflxca      = matrix(data=0,nrow=totmon,ncol=ndcycle)
              dcycmsqu$hflxlc      = matrix(data=0,nrow=totmon,ncol=ndcycle)
              dcycmsqu$hflxwc      = matrix(data=0,nrow=totmon,ncol=ndcycle)
              dcycmsqu$hflxgc      = matrix(data=0,nrow=totmon,ncol=ndcycle)
-             dcycmsqu$et          = matrix(data=0,nrow=totmon,ncol=ndcycle)
-             dcycmsqu$latent      = matrix(data=0,nrow=totmon,ncol=ndcycle)
+             dcycmsqu$qwflxca     = matrix(data=0,nrow=totmon,ncol=ndcycle)
+             dcycmsqu$wflxca      = matrix(data=0,nrow=totmon,ncol=ndcycle)
              dcycmsqu$wflxlc      = matrix(data=0,nrow=totmon,ncol=ndcycle)
              dcycmsqu$wflxwc      = matrix(data=0,nrow=totmon,ncol=ndcycle)
              dcycmsqu$wflxgc      = matrix(data=0,nrow=totmon,ncol=ndcycle)
@@ -1197,44 +518,57 @@ for (place in myplaces){
 
 
           #----- Load the simple variables. -----------------------------------------------#
-          gpp       = c(gpp              ,   mymont$MMEAN.GPP                            )
-          plresp    = c(plresp           ,   mymont$MMEAN.PLRESP                         )
-          hetresp   = c(hetresp          ,   mymont$MMEAN.RH                             )
-          nep       = c(nep              ,   mymont$MMEAN.NEP                            )
-          npp       = c(npp              ,   mymont$MMEAN.GPP - mymont$MMEAN.PLRESP      )
-          nee       = c(nee              ,   mymont$MMEAN.NEE                            )
-          sens      = c(sens             , - mymont$MMEAN.SENSIBLE.AC                    )
-          hflxlc    = c(hflxlc           ,   mymont$MMEAN.SENSIBLE.LC                    )
-          hflxwc    = c(hflxwc           ,   mymont$MMEAN.SENSIBLE.WC                    )
-          hflxgc    = c(hflxgc           ,   mymont$MMEAN.SENSIBLE.GC                    )
-          latent    = c(latent           , - mymont$MMEAN.VAPOR.AC    * alvl             )
-          et        = c(et               , - mymont$MMEAN.VAPOR.AC    * day.sec          )
-          wflxlc    = c(wflxlc           ,   mymont$MMEAN.VAPOR.LC    * day.sec          )
-          wflxwc    = c(wflxwc           ,   mymont$MMEAN.VAPOR.WC    * day.sec          )
-          wflxgc    = c(wflxgc           ,   mymont$MMEAN.VAPOR.GC    * day.sec          )
-          evap      = c(evap             ,   mymont$MMEAN.EVAP        * day.sec          )
-          transp    = c(transp           ,   mymont$MMEAN.TRANSP      * day.sec          )
+          gpp             = c(gpp              ,   mymont$MMEAN.GPP                      )
+          plresp          = c(plresp           ,   mymont$MMEAN.PLRESP                   )
+          leaf.resp       = c(leaf.resp        ,   mymont$MMEAN.LEAF.RESP                )
+          root.resp       = c(root.resp        ,   mymont$MMEAN.ROOT.RESP                )
+          growth.resp     = c(growth.resp      ,   mymont$MMEAN.GROWTH.RESP              )
+          hetresp         = c(hetresp          ,   mymont$MMEAN.RH                       )
+          nep             = c(nep              ,   mymont$MMEAN.NEP                      )
+          nee             = c(nee              , - mymont$MMEAN.CARBON.AC                
+                                                 + mymont$MMEAN.CARBON.ST                )
+          cflxca          = c(cflxca           , - mymont$MMEAN.CARBON.AC                )
+          cflxst          = c(cflxst           ,   mymont$MMEAN.CARBON.ST                )
+          hflxca          = c(hflxca           , - mymont$MMEAN.SENSIBLE.AC              )
+          hflxlc          = c(hflxlc           ,   mymont$MMEAN.SENSIBLE.LC              )
+          hflxwc          = c(hflxwc           ,   mymont$MMEAN.SENSIBLE.WC              )
+          hflxgc          = c(hflxgc           ,   mymont$MMEAN.SENSIBLE.GC              )
+          qwflxca         = c(qwflxca          , - mymont$MMEAN.VAPOR.AC    * alvl       )
+          wflxca          = c(wflxca           , - mymont$MMEAN.VAPOR.AC    * day.sec    )
+          wflxlc          = c(wflxlc           ,   mymont$MMEAN.VAPOR.LC    * day.sec    )
+          wflxwc          = c(wflxwc           ,   mymont$MMEAN.VAPOR.WC    * day.sec    )
+          wflxgc          = c(wflxgc           ,   mymont$MMEAN.VAPOR.GC    * day.sec    )
+          evap            = c(evap             ,   mymont$MMEAN.EVAP        * day.sec    )
+          transp          = c(transp           ,   mymont$MMEAN.TRANSP      * day.sec    )
 
-          mmsqu.gpp     = c(mmsqu.gpp    ,mymont$MMSQU.GPP                               )
-          mmsqu.plresp  = c(mmsqu.plresp ,mymont$MMSQU.PLRESP                            )
-          mmsqu.hetresp = c(mmsqu.hetresp,mymont$MMSQU.RH                                )
-          mmsqu.nee     = c(mmsqu.nee    ,mymont$MMSQU.NEE                               )
-          mmsqu.sens    = c(mmsqu.sens   ,mymont$MMSQU.SENSIBLE.AC                       )
-          mmsqu.hflxlc  = c(mmsqu.hflxlc ,mymont$MMSQU.SENSIBLE.LC                       )
-          mmsqu.hflxwc  = c(mmsqu.hflxwc ,mymont$MMSQU.SENSIBLE.WC                       )
-          mmsqu.hflxgc  = c(mmsqu.hflxgc ,mymont$MMSQU.SENSIBLE.GC                       )
-          mmsqu.et      = c(mmsqu.et     ,mymont$MMSQU.VAPOR.AC  * day.sec * day.sec     )
-          mmsqu.latent  = c(mmsqu.latent ,mymont$MMSQU.VAPOR.AC  * alvl    * alvl        )
-          mmsqu.wflxlc  = c(mmsqu.wflxlc ,mymont$MMSQU.VAPOR.LC  * day.sec * day.sec     )
-          mmsqu.wflxwc  = c(mmsqu.wflxwc ,mymont$MMSQU.VAPOR.WC  * day.sec * day.sec     )
-          mmsqu.wflxgc  = c(mmsqu.wflxgc ,mymont$MMSQU.VAPOR.GC  * day.sec * day.sec     )
-          mmsqu.evap    = c(mmsqu.evap   ,mymont$MMSQU.EVAP      * day.sec * day.sec     )
-          mmsqu.transp  = c(mmsqu.transp ,mymont$MMSQU.TRANSP    * day.sec * day.sec     )
+          mmsqu.gpp       = c(mmsqu.gpp    ,mymont$MMSQU.GPP                             )
+          mmsqu.plresp    = c(mmsqu.plresp ,mymont$MMSQU.PLRESP                          )
+          mmsqu.leaf.resp = c(mmsqu.leaf.resp ,mymont$MMSQU.PLRESP                       )
+          mmsqu.root.resp = c(mmsqu.root.resp ,mymont$MMSQU.PLRESP                       )
+          mmsqu.hetresp   = c(mmsqu.hetresp,mymont$MMSQU.RH                              )
+          mmsqu.cflxca    = c(mmsqu.cflxca ,mymont$MMSQU.CARBON.AC                       )
+          mmsqu.cflxst    = c(mmsqu.cflxst ,mymont$MMSQU.CARBON.ST                       )
+          mmsqu.hflxca    = c(mmsqu.hflxca ,mymont$MMSQU.SENSIBLE.AC                     )
+          mmsqu.hflxlc    = c(mmsqu.hflxlc ,mymont$MMSQU.SENSIBLE.LC                     )
+          mmsqu.hflxwc    = c(mmsqu.hflxwc ,mymont$MMSQU.SENSIBLE.WC                     )
+          mmsqu.hflxgc    = c(mmsqu.hflxgc ,mymont$MMSQU.SENSIBLE.GC                     )
+          mmsqu.wflxca    = c(mmsqu.wflxca ,mymont$MMSQU.VAPOR.AC  * day.sec * day.sec   )
+          mmsqu.qwflxca   = c(mmsqu.qwflxca,mymont$MMSQU.VAPOR.AC  * alvl    * alvl      )
+          mmsqu.wflxlc    = c(mmsqu.wflxlc ,mymont$MMSQU.VAPOR.LC  * day.sec * day.sec   )
+          mmsqu.wflxwc    = c(mmsqu.wflxwc ,mymont$MMSQU.VAPOR.WC  * day.sec * day.sec   )
+          mmsqu.wflxgc    = c(mmsqu.wflxgc ,mymont$MMSQU.VAPOR.GC  * day.sec * day.sec   )
+          mmsqu.evap      = c(mmsqu.evap   ,mymont$MMSQU.EVAP      * day.sec * day.sec   )
+          mmsqu.transp    = c(mmsqu.transp ,mymont$MMSQU.TRANSP    * day.sec * day.sec   )
 
+          ustar         = c(ustar        ,mymont$MMEAN.USTAR                             )
+
+          atm.vels      = c(atm.vels     ,mymont$MMEAN.ATM.VELS                          )
+          atm.prss      = c(atm.prss     ,mymont$MMEAN.ATM.PRSS  * 0.01                  )
           atm.temp      = c(atm.temp     ,mymont$MMEAN.ATM.TEMP  - t00                   )
           atm.shv       = c(atm.shv      ,mymont$MMEAN.ATM.SHV   * kg2g                  )
           atm.co2       = c(atm.co2      ,mymont$MMEAN.ATM.CO2                           )
 
+          can.prss      = c(can.prss     ,mymont$MMEAN.CAN.PRSS  * 0.01                  )
           can.temp      = c(can.temp     ,mymont$MMEAN.CAN.TEMP  - t00                   )
           can.shv       = c(can.shv      ,mymont$MMEAN.CAN.SHV   * kg2g                  )
           can.co2       = c(can.co2      ,mymont$MMEAN.CAN.CO2                           )
@@ -1287,15 +621,20 @@ for (place in myplaces){
           #--------------------------------------------------------------------------------#
           dcycmean$gpp         [m,] = mymont$QMEAN.GPP
           dcycmean$plresp      [m,] = mymont$QMEAN.PLRESP
+          dcycmean$npp         [m,] = mymont$QMEAN.GPP - mymont$QMEAN.PLRESP
+          dcycmean$leaf.resp   [m,] = mymont$QMEAN.LEAF.RESP
+          dcycmean$root.resp   [m,] = mymont$QMEAN.ROOT.RESP
           dcycmean$hetresp     [m,] = mymont$QMEAN.RH
           dcycmean$nep         [m,] = mymont$QMEAN.NEP
-          dcycmean$nee         [m,] = mymont$QMEAN.NEE
-          dcycmean$sens        [m,] = - mymont$QMEAN.SENSIBLE.AC
+          dcycmean$nee         [m,] = - mymont$QMEAN.CARBON.AC + mymont$QMEAN.CARBON.ST
+          dcycmean$cflxca      [m,] = - mymont$QMEAN.CARBON.AC
+          dcycmean$cflxst      [m,] = - mymont$QMEAN.CARBON.ST
+          dcycmean$hflxca      [m,] = - mymont$QMEAN.SENSIBLE.AC
           dcycmean$hflxlc      [m,] = mymont$QMEAN.SENSIBLE.LC
           dcycmean$hflxwc      [m,] = mymont$QMEAN.SENSIBLE.WC
           dcycmean$hflxgc      [m,] = mymont$QMEAN.SENSIBLE.GC
-          dcycmean$et          [m,] = - mymont$QMEAN.VAPOR.AC         * day.sec
-          dcycmean$latent      [m,] = - mymont$QMEAN.VAPOR.AC         * alvl
+          dcycmean$wflxca      [m,] = - mymont$QMEAN.VAPOR.AC         * day.sec
+          dcycmean$qwflxca     [m,] = - mymont$QMEAN.VAPOR.AC         * alvl
           dcycmean$wflxlc      [m,] = mymont$QMEAN.VAPOR.LC           * day.sec
           dcycmean$wflxwc      [m,] = mymont$QMEAN.VAPOR.WC           * day.sec
           dcycmean$wflxgc      [m,] = mymont$QMEAN.VAPOR.GC           * day.sec
@@ -1313,9 +652,10 @@ for (place in myplaces){
           dcycmean$gnd.shv     [m,] = mymont$QMEAN.GND.SHV            * kg2g
           dcycmean$atm.co2     [m,] = mymont$QMEAN.ATM.CO2
           dcycmean$can.co2     [m,] = mymont$QMEAN.CAN.CO2
-          dcycmean$atm.prss    [m,] = mymont$QMEAN.ATM.PRSS
-          dcycmean$can.prss    [m,] = mymont$QMEAN.CAN.PRSS
           dcycmean$atm.vels    [m,] = mymont$QMEAN.ATM.VELS
+          dcycmean$ustar       [m,] = mymont$QMEAN.USTAR
+          dcycmean$atm.prss    [m,] = mymont$QMEAN.ATM.PRSS * 0.01
+          dcycmean$can.prss    [m,] = mymont$QMEAN.CAN.PRSS * 0.01
           dcycmean$fs.open     [m,] = mymont$QMEAN.FS.OPEN
           dcycmean$rain        [m,] = mymont$QMEAN.PCPG               * day.sec
           dcycmean$rshort      [m,] = mymont$QMEAN.RSHORT
@@ -1332,15 +672,18 @@ for (place in myplaces){
 
           dcycmsqu$gpp         [m,] = mymont$QMSQU.GPP
           dcycmsqu$plresp      [m,] = mymont$QMSQU.PLRESP
+          dcycmsqu$leaf.resp   [m,] = mymont$QMSQU.LEAF.RESP
+          dcycmsqu$root.resp   [m,] = mymont$QMSQU.ROOT.RESP
           dcycmsqu$hetresp     [m,] = mymont$QMSQU.RH
           dcycmsqu$nep         [m,] = mymont$QMSQU.NEP
-          dcycmsqu$nee         [m,] = mymont$QMSQU.NEE
-          dcycmsqu$sens        [m,] = mymont$QMSQU.SENSIBLE.AC
+          dcycmsqu$cflxca      [m,] = mymont$QMSQU.CARBON.AC
+          dcycmsqu$cflxst      [m,] = mymont$QMSQU.CARBON.ST
+          dcycmsqu$hflxca      [m,] = mymont$QMSQU.SENSIBLE.AC
           dcycmsqu$hflxlc      [m,] = mymont$QMSQU.SENSIBLE.LC
           dcycmsqu$hflxwc      [m,] = mymont$QMSQU.SENSIBLE.WC
           dcycmsqu$hflxgc      [m,] = mymont$QMSQU.SENSIBLE.GC
-          dcycmsqu$et          [m,] = mymont$QMSQU.VAPOR.AC    * day.sec * day.sec
-          dcycmsqu$latent      [m,] = mymont$QMSQU.VAPOR.AC    * alvl    * alvl
+          dcycmsqu$wflxca      [m,] = mymont$QMSQU.VAPOR.AC    * day.sec * day.sec
+          dcycmsqu$qwflxca     [m,] = mymont$QMSQU.VAPOR.AC    * alvl    * alvl
           dcycmsqu$wflxlc      [m,] = mymont$QMSQU.VAPOR.WC    * day.sec * day.sec
           dcycmsqu$wflxwc      [m,] = mymont$QMSQU.VAPOR.LC    * day.sec * day.sec
           dcycmsqu$wflxgc      [m,] = mymont$QMSQU.VAPOR.GC    * day.sec * day.sec
@@ -1401,101 +744,104 @@ for (place in myplaces){
              areapaage  = tapply(X=areapa,INDEX=agepafac,sum,na.rm=TRUE)
              areaage    = areapaage[as.character(agefac)]
 
-             pftconow      = mymont$PFT
-             nplantconow   = mymont$NPLANT
-             heightconow   = mymont$HITE
-             baconow       = mymont$BA.CO
-             agbconow      = mymont$AGB.CO
-             bseedsconow   = mymont$BSEEDS.CO
-             laiconow      = mymont$LAI.CO
-             waiconow      = mymont$WAI.CO
-             taiconow      = laiconow + waiconow
-             gppconow      = mymont$MMEAN.GPP.CO
-             respconow     = ( mymont$MMEAN.LEAF.RESP.CO   + mymont$MMEAN.ROOT.RESP.CO
-                             + mymont$MMEAN.GROWTH.RESP.CO + mymont$MMEAN.STORAGE.RESP.CO
-                             + mymont$MMEAN.VLEAF.RESP.CO  )
-             nppconow      = gppconow-respconow
-             cbalconow     = mymont$MMEAN.CB
-             mcostconow    = mymont$MMEAN.LEAF.MAINTENANCE + mymont$MMEAN.ROOT.MAINTENANCE
-             ldropconow    = mymont$MMEAN.LEAF.DROP.CO
-             cbrbarconow   = mymont$CBR.BAR
-             ncbmortconow  = mymont$MMEAN.MORT.RATE[,2]
-             fsoconow      = mymont$MMEAN.FS.OPEN.CO
-             lightconow    = mymont$MMEAN.LIGHT.LEVEL
-             lambdaconow   = mymont$MMEAN.LAMBDA.LIGHT.CO
-             beamextconow  = mymont$MMEAN.BEAMEXT.LEVEL
-             diffextconow  = mymont$MMEAN.BEAMEXT.LEVEL
-             parlconow     = mymont$MMEAN.PAR.L
+             pftconow        = mymont$PFT
+             nplantconow     = mymont$NPLANT
+             heightconow     = mymont$HITE
+             baconow         = mymont$BA.CO
+             agbconow        = mymont$AGB.CO
+             bseedsconow     = mymont$BSEEDS.CO
+             laiconow        = mymont$LAI.CO
+             waiconow        = mymont$WAI.CO
+             taiconow        = laiconow + waiconow
+             gppconow        = mymont$MMEAN.GPP.CO
+             leafrespconow   = mymont$MMEAN.LEAF.RESP.CO
+             rootrespconow   = mymont$MMEAN.ROOT.RESP.CO
+             growthrespconow = mymont$MMEAN.GROWTH.RESP.CO
+             respconow       = ( mymont$MMEAN.LEAF.RESP.CO   + mymont$MMEAN.ROOT.RESP.CO
+                               + mymont$MMEAN.GROWTH.RESP.CO + mymont$MMEAN.STORAGE.RESP.CO
+                               + mymont$MMEAN.VLEAF.RESP.CO  )
+             nppconow        = gppconow-respconow
+             cbalconow       = mymont$MMEAN.CB
+             mcostconow      = ( mymont$MMEAN.LEAF.MAINTENANCE
+                               + mymont$MMEAN.ROOT.MAINTENANCE )
+             ldropconow      = mymont$MMEAN.LEAF.DROP.CO
+             cbrbarconow     = mymont$CBR.BAR
+             ncbmortconow    = mymont$MMEAN.MORT.RATE[,2]
+             fsoconow        = mymont$MMEAN.FS.OPEN.CO
+             lightconow      = mymont$MMEAN.LIGHT.LEVEL
+             lambdaconow     = mymont$MMEAN.LAMBDA.LIGHT.CO
+             beamextconow    = mymont$MMEAN.BEAMEXT.LEVEL
+             diffextconow    = mymont$MMEAN.BEAMEXT.LEVEL
+             parlconow       = mymont$MMEAN.PAR.L
 
-             baliveconow   = mymont$BALIVE
-             bdeadconow    = mymont$BDEAD
-             bleafconow    = mymont$BLEAF
-             brootconow    = mymont$BROOT
-             bswoodconow   = mymont$BSAPWOOD
-             bstoreconow   = mymont$BSTORAGE
+             baliveconow     = mymont$BALIVE
+             bdeadconow      = mymont$BDEAD
+             bleafconow      = mymont$BLEAF
+             brootconow      = mymont$BROOT
+             bswoodconow     = mymont$BSAPWOOD
+             bstoreconow     = mymont$BSTORAGE
 
 
              sel               = laiconow > 1.e-10
-             demandconow       = mymont$MMEAN.PSI.OPEN     * day.sec
+             demandconow       = mymont$MMEAN.PSI.OPEN     * laiconow * day.sec
              supplyconow       = mymont$MMEAN.WATER.SUPPLY * day.sec
              gpplconow         = gppconow
-             demandconow[sel]  = demandconow[sel] / laiconow[sel]
-             supplyconow[sel]  = supplyconow[sel] / laiconow[sel]
              gpplconow  [sel]  = nplantconow[sel] * gppconow[sel] / laiconow[sel]
-             demandconow[!sel] = 0.
-             supplyconow[!sel] = 0.
              gpplconow  [!sel] = 0.
              #-----------------------------------------------------------------------------#
           }else{
              #----- Make everything NA. ---------------------------------------------------#
-             areaconow     = NA
-             luconow       = NA
-             dbhconow      = NA
-             dbhbks        = NA
-             dbhcut        = NA
-             dbhlevs       = NA
-             dbhfac        = NA
-             ageconow      = NA
-             agebks        = NA
-             agecut        = NA
-             agelevs       = NA
-             agefac        = NA
-             agepacut      = NA
-             agepafac      = NA
-             areapaage     = NA
-             areaage       = NA
-             pftconow      = NA
-             nplantconow   = NA
-             heightconow   = NA
-             agbconow      = NA
-             baconow       = NA
-             bseedsconow   = NA
-             laiconow      = NA
-             waiconow      = NA
-             taiconow      = NA
-             gppconow      = NA
-             gpplconow     = NA
-             respconow     = NA
-             nppconow      = NA
-             cbalconow     = NA
-             mcostconow    = NA
-             ldropconow    = NA
-             cbrbarconow   = NA
-             ncbmortconow  = NA
-             fsoconow      = NA
-             lightconow    = NA
-             lambdaconow   = NA
-             beamextconow  = NA
-             diffextconow  = NA
-             parlconow     = NA
-             demandconow   = NA
-             supplyconow   = NA
-             baliveconow   = NA
-             bdeadconow    = NA
-             bleafconow    = NA
-             brootconow    = NA
-             bswoodconow   = NA
-             bstoreconow   = NA
+             areaconow       = NA
+             luconow         = NA
+             dbhconow        = NA
+             dbhbks          = NA
+             dbhcut          = NA
+             dbhlevs         = NA
+             dbhfac          = NA
+             ageconow        = NA
+             agebks          = NA
+             agecut          = NA
+             agelevs         = NA
+             agefac          = NA
+             agepacut        = NA
+             agepafac        = NA
+             areapaage       = NA
+             areaage         = NA
+             pftconow        = NA
+             nplantconow     = NA
+             heightconow     = NA
+             agbconow        = NA
+             baconow         = NA
+             bseedsconow     = NA
+             laiconow        = NA
+             waiconow        = NA
+             taiconow        = NA
+             gppconow        = NA
+             gpplconow       = NA
+             leafrespconow   = NA
+             rootrespconow   = NA
+             growthrespconow = NA
+             respconow       = NA 
+             nppconow        = NA 
+             cbalconow       = NA 
+             mcostconow      = NA 
+             ldropconow      = NA 
+             cbrbarconow     = NA 
+             ncbmortconow    = NA 
+             fsoconow        = NA 
+             lightconow      = NA 
+             lambdaconow     = NA 
+             beamextconow    = NA 
+             diffextconow    = NA 
+             parlconow       = NA 
+             demandconow     = NA 
+             supplyconow     = NA 
+             baliveconow     = NA 
+             bdeadconow      = NA 
+             bleafconow      = NA 
+             brootconow      = NA 
+             bswoodconow     = NA 
+             bstoreconow     = NA 
           }#end if
 
           #----- Define some classes that can be defined even when no cohorts exist. ------#
@@ -1517,72 +863,88 @@ for (place in myplaces){
                  sel      = pftconow == p
               }#end if
               if (any(sel)){
-                 laipft    [m,p] = laipft     [m,p] + sum(laiconow [sel] * areaconow[sel])
-                 waipft    [m,p] = waipft     [m,p] + sum(waiconow [sel] * areaconow[sel])
-                 taipft    [m,p] = taipft     [m,p] + sum(taiconow [sel] * areaconow[sel])
+                 #----- "Extensive" variables, add them. ----------------------------------#
+                 nplantpft[m,p] = nplantpft[m,p] + sum(nplantconow[sel] * areaconow[sel])
+                 laipft   [m,p] = laipft   [m,p] + sum(laiconow   [sel] * areaconow[sel])
+                 waipft   [m,p] = waipft   [m,p] + sum(waiconow   [sel] * areaconow[sel])
+                 taipft   [m,p] = taipft   [m,p] + sum(taiconow   [sel] * areaconow[sel])
 
-                 basareapft[m,p] = ( basareapft [m,p] 
-                                   + sum( nplantconow[sel] * baconow [sel]   
-                                        * areaconow[sel]))
-                 agbpft    [m,p] = ( agbpft [m,p] 
-                                   + sum( nplantconow[sel] * agbconow [sel]   
-                                        * areaconow[sel]))
-                 bseedspft [m,p] = ( bseedspft [m,p]
-                                   + sum( nplantconow[sel] * bseedsconow [sel] 
-                                        * areaconow [sel]))
-                 gpppft    [m,p] = ( gpppft [m,p]
-                                   + sum( nplantconow[sel] * gppconow [sel]
-                                        * areaconow[sel]))
-                 npppft    [m,p] = ( npppft [m,p]
-                                   + sum( nplantconow[sel] * nppconow [sel]  
-                                        * areaconow[sel]))
-                 mcopft    [m,p] = ( mcopft [m,p]
-                                   + sum( nplantconow[sel] * mcostconow [sel]
-                                        * areaconow[sel]))
-                 cbapft    [m,p] = ( cbapft [m,p] 
-                                   + sum( nplantconow[sel] * cbalconow [sel]  
-                                        * areaconow[sel]))
-                 ldroppft  [m,p] = ( ldroppft [m,p] 
-                                   + sum( nplantconow[sel] * ldropconow [sel]  
-                                        * areaconow[sel]))
-                 balivepft [m,p] = ( balivepft [m,p]
-                                   + sum( nplantconow[sel] * baliveconow[sel]
-                                        * areaconow[sel]))
-                 bdeadpft  [m,p] = ( bdeadpft [m,p]
-                                   + sum( nplantconow[sel] * bdeadconow[sel]
-                                        * areaconow[sel]))
-                 bleafpft  [m,p] = ( bleafpft [m,p]
-                                   + sum( nplantconow[sel] * bleafconow[sel]
-                                        * areaconow[sel]))
-                 brootpft  [m,p] = ( brootpft [m,p]
-                                   + sum( nplantconow[sel] * brootconow[sel]
-                                        * areaconow[sel]))
-                 bswoodpft [m,p] = ( bswoodpft [m,p]
-                                   + sum( nplantconow[sel] * bswoodconow[sel]
-                                        * areaconow[sel]))
-                 bstorepft [m,p] = ( bstorepft [m,p]
-                                   + sum( nplantconow[sel] * bstoreconow[sel]
-                                        * areaconow[sel]))
+                 #----- "Intensive" variables, nplant or LAI are used as weights. ---------#
+                 basareapft[m,p]    = ( basareapft [m,p] 
+                                      + sum( nplantconow[sel] * baconow [sel]   
+                                           * areaconow[sel]))
+                 agbpft    [m,p]    = ( agbpft [m,p] 
+                                      + sum( nplantconow[sel] * agbconow [sel]   
+                                           * areaconow[sel]))
+                 bseedspft [m,p]    = ( bseedspft [m,p]
+                                      + sum( nplantconow[sel] * bseedsconow [sel] 
+                                           * areaconow [sel]))
+                 gpppft    [m,p]    = ( gpppft [m,p]
+                                      + sum( nplantconow[sel] * gppconow [sel]
+                                           * areaconow[sel]))
+                 npppft    [m,p]    = ( npppft [m,p]
+                                      + sum( nplantconow[sel] * nppconow [sel]  
+                                           * areaconow[sel]))
+                 mcopft    [m,p]    = ( mcopft [m,p]
+                                      + sum( nplantconow[sel] * mcostconow [sel]
+                                           * areaconow[sel]))
+                 cbapft    [m,p]    = ( cbapft [m,p] 
+                                      + sum( nplantconow[sel] * cbalconow [sel]  
+                                           * areaconow[sel]))
+                 ldroppft  [m,p]    = ( ldroppft [m,p] 
+                                      + sum( nplantconow[sel] * ldropconow [sel]  
+                                           * areaconow[sel]))
+                 balivepft [m,p]    = ( balivepft [m,p]
+                                      + sum( nplantconow[sel] * baliveconow[sel]
+                                           * areaconow[sel]))
+                 bdeadpft  [m,p]    = ( bdeadpft [m,p]
+                                      + sum( nplantconow[sel] * bdeadconow[sel]
+                                           * areaconow[sel]))
+                 bleafpft  [m,p]    = ( bleafpft [m,p]
+                                      + sum( nplantconow[sel] * bleafconow[sel]
+                                           * areaconow[sel]))
+                 brootpft  [m,p]    = ( brootpft [m,p]
+                                      + sum( nplantconow[sel] * brootconow[sel]
+                                           * areaconow[sel]))
+                 bswoodpft [m,p]    = ( bswoodpft [m,p]
+                                      + sum( nplantconow[sel] * bswoodconow[sel]
+                                           * areaconow[sel]))
+                 bstorepft [m,p]    = ( bstorepft [m,p]
+                                      + sum( nplantconow[sel] * bstoreconow[sel]
+                                           * areaconow[sel]))
+                 leafresppft[m,p]   = ( leafresppft [m,p] 
+                                      + sum( nplantconow[sel] * leafrespconow[sel]
+                                           * areaconow[sel]))
+                 rootresppft[m,p]   = ( rootresppft [m,p] 
+                                      + sum( nplantconow[sel] * rootrespconow[sel]
+                                           * areaconow[sel]))
+                 growthresppft[m,p] = ( growthresppft [m,p] 
+                                      + sum( nplantconow[sel] * growthrespconow[sel]
+                                           * areaconow[sel]))
               }
           }
           #------ Find the total. ---------------------------------------------------------#
-          laipft     [m,npft+1] = sum(laipft     [m,1:npft],na.rm=TRUE)
-          waipft     [m,npft+1] = sum(waipft     [m,1:npft],na.rm=TRUE)
-          taipft     [m,npft+1] = sum(taipft     [m,1:npft],na.rm=TRUE)
-          agbpft     [m,npft+1] = sum(agbpft     [m,1:npft],na.rm=TRUE)
-          bseedspft  [m,npft+1] = sum(bseedspft  [m,1:npft],na.rm=TRUE)
-          gpppft     [m,npft+1] = sum(gpppft     [m,1:npft],na.rm=TRUE)
-          npppft     [m,npft+1] = sum(npppft     [m,1:npft],na.rm=TRUE)
-          mcopft     [m,npft+1] = sum(mcopft     [m,1:npft],na.rm=TRUE)
-          cbapft     [m,npft+1] = sum(cbapft     [m,1:npft],na.rm=TRUE)
-          ldroppft   [m,npft+1] = sum(ldroppft   [m,1:npft],na.rm=TRUE)
-          balivepft  [m,npft+1] = sum(balivepft  [m,1:npft],na.rm=TRUE)
-          bdeadpft   [m,npft+1] = sum(bdeadpft   [m,1:npft],na.rm=TRUE)
-          bleafpft   [m,npft+1] = sum(bleafpft   [m,1:npft],na.rm=TRUE)
-          brootpft   [m,npft+1] = sum(brootpft   [m,1:npft],na.rm=TRUE)
-          bswoodpft  [m,npft+1] = sum(bswoodpft  [m,1:npft],na.rm=TRUE)
-          bstorepft  [m,npft+1] = sum(bstorepft  [m,1:npft],na.rm=TRUE)
-          basareapft [m,npft+1] = sum(basareapft [m,1:npft],na.rm=TRUE)
+          nplantpft    [m,npft+1] = sum(nplantpft    [m,1:npft],na.rm=TRUE)
+          laipft       [m,npft+1] = sum(laipft       [m,1:npft],na.rm=TRUE)
+          waipft       [m,npft+1] = sum(waipft       [m,1:npft],na.rm=TRUE)
+          taipft       [m,npft+1] = sum(taipft       [m,1:npft],na.rm=TRUE)
+          agbpft       [m,npft+1] = sum(agbpft       [m,1:npft],na.rm=TRUE)
+          bseedspft    [m,npft+1] = sum(bseedspft    [m,1:npft],na.rm=TRUE)
+          gpppft       [m,npft+1] = sum(gpppft       [m,1:npft],na.rm=TRUE)
+          npppft       [m,npft+1] = sum(npppft       [m,1:npft],na.rm=TRUE)
+          mcopft       [m,npft+1] = sum(mcopft       [m,1:npft],na.rm=TRUE)
+          cbapft       [m,npft+1] = sum(cbapft       [m,1:npft],na.rm=TRUE)
+          ldroppft     [m,npft+1] = sum(ldroppft     [m,1:npft],na.rm=TRUE)
+          balivepft    [m,npft+1] = sum(balivepft    [m,1:npft],na.rm=TRUE)
+          bdeadpft     [m,npft+1] = sum(bdeadpft     [m,1:npft],na.rm=TRUE)
+          bleafpft     [m,npft+1] = sum(bleafpft     [m,1:npft],na.rm=TRUE)
+          brootpft     [m,npft+1] = sum(brootpft     [m,1:npft],na.rm=TRUE)
+          bswoodpft    [m,npft+1] = sum(bswoodpft    [m,1:npft],na.rm=TRUE)
+          bstorepft    [m,npft+1] = sum(bstorepft    [m,1:npft],na.rm=TRUE)
+          basareapft   [m,npft+1] = sum(basareapft   [m,1:npft],na.rm=TRUE)
+          leafresppft  [m,npft+1] = sum(leafresppft  [m,1:npft],na.rm=TRUE)
+          rootresppft  [m,npft+1] = sum(rootresppft  [m,1:npft],na.rm=TRUE)
+          growthresppft[m,npft+1] = sum(growthresppft[m,1:npft],na.rm=TRUE)
           #--------------------------------------------------------------------------------#
 
 
@@ -1636,76 +998,96 @@ for (place in myplaces){
                  selpft   = pftconow == p
                  sel      = selpft & seldbh
                  if (any(sel)){
-                    laipftdbh [m,d,p] = laipftdbh [m,d,p] + 
-                                        sum(laiconow [sel] * areaconow[sel])
-                    waipftdbh [m,d,p] = waipftdbh [m,d,p] + 
-                                        sum(waiconow [sel] * areaconow[sel])
-                    taipftdbh [m,d,p] = taipftdbh [m,d,p] + 
-                                        sum(taiconow [sel] * areaconow[sel])
-                    agbpftdbh [m,d,p] = agbpftdbh [m,d,p] + 
-                                        sum( nplantconow[sel] * agbconow   [sel]
-                                           * areaconow[sel])
-                    gpppftdbh [m,d,p] = gpppftdbh [m,d,p] + 
-                                        sum( nplantconow[sel] * gppconow   [sel]
-                                           * areaconow[sel])
-                    npppftdbh [m,d,p] = npppftdbh [m,d,p] +
-                                        sum( nplantconow[sel] * nppconow   [sel]
-                                           * areaconow[sel])
-                    mcopftdbh [m,d,p] = mcopftdbh [m,d,p] +
-                                        sum( nplantconow[sel] * mcostconow [sel]
-                                           * areaconow[sel])
-                    cbapftdbh [m,d,p] = cbapftdbh [m,d,p] +
-                                        sum( nplantconow[sel] * cbalconow  [sel]
-                                           * areaconow[sel])
+                    laipftdbh    [m,d,p] = laipftdbh [m,d,p] + 
+                                           sum(laiconow [sel] * areaconow[sel])
+                    waipftdbh    [m,d,p] = waipftdbh [m,d,p] + 
+                                           sum(waiconow [sel] * areaconow[sel])
+                    taipftdbh    [m,d,p] = taipftdbh [m,d,p] + 
+                                           sum(taiconow [sel] * areaconow[sel])
+                    nplantpftdbh [m,d,p] = nplantpftdbh [m,d,p] + 
+                                           sum(nplantconow [sel] * areaconow[sel])
+                    agbpftdbh    [m,d,p] = agbpftdbh [m,d,p] + 
+                                           sum( nplantconow[sel] * agbconow   [sel]
+                                              * areaconow[sel])
+                    gpppftdbh    [m,d,p] = gpppftdbh [m,d,p] + 
+                                           sum( nplantconow[sel] * gppconow   [sel]
+                                              * areaconow[sel])
+                    npppftdbh    [m,d,p] = npppftdbh [m,d,p] +
+                                           sum( nplantconow[sel] * nppconow   [sel]
+                                              * areaconow[sel])
+                    mcopftdbh    [m,d,p] = mcopftdbh [m,d,p] +
+                                           sum( nplantconow[sel] * mcostconow [sel]
+                                              * areaconow[sel])
+                    cbapftdbh    [m,d,p] = cbapftdbh [m,d,p] +
+                                           sum( nplantconow[sel] * cbalconow  [sel]
+                                              * areaconow[sel])
+                    ldrpftdbh    [m,d,p] = ldrpftdbh [m,d,p] +
+                                           sum( nplantconow[sel] * ldropconow [sel]
+                                              * areaconow[sel])
+                    fsopftdbh    [m,d,p] = fsopftdbh [m,d,p] +
+                                           sum( laiconow[sel]    * fsoconow [sel]
+                                              * areaconow[sel])
+                    ncbmortpftdbh[m,d,p] = ncbmortpftdbh [m,d,p] + 
+                                           sum( nplantconow[sel] * ncbmortconow   [sel]
+                                              * areaconow[sel])
+                    demandpftdbh [m,d,p] = demandpftdbh [m,d,p] + 
+                                           sum(demandconow [sel] * areaconow[sel])
+                    supplypftdbh [m,d,p] = supplypftdbh [m,d,p] + 
+                                           sum(supplyconow [sel] * areaconow[sel])
                  }
              }
           }
-          #--------------------------------------------------------------------------------#
+          #------ Fso must be normalised by LAI. ------------------------------------------#
+          for (p in 1:npft){
+
+             #---- Find the total for this PFT and store at class ndbh + 1... -------------#
+             laipftdbh    [m,ndbh+1,p] = sum(laipftdbh    [m,1:ndbh,p])
+             waipftdbh    [m,ndbh+1,p] = sum(waipftdbh    [m,1:ndbh,p])
+             taipftdbh    [m,ndbh+1,p] = sum(taipftdbh    [m,1:ndbh,p])
+             nplantpftdbh [m,ndbh+1,p] = sum(nplantpftdbh [m,1:ndbh,p])
+             agbpftdbh    [m,ndbh+1,p] = sum(agbpftdbh    [m,1:ndbh,p])
+             gpppftdbh    [m,ndbh+1,p] = sum(gpppftdbh    [m,1:ndbh,p])
+             npppftdbh    [m,ndbh+1,p] = sum(npppftdbh    [m,1:ndbh,p])
+             mcopftdbh    [m,ndbh+1,p] = sum(mcopftdbh    [m,1:ndbh,p])
+             cbapftdbh    [m,ndbh+1,p] = sum(cbapftdbh    [m,1:ndbh,p])
+             ldrpftdbh    [m,ndbh+1,p] = sum(ldrpftdbh    [m,1:ndbh,p])
+             demandpftdbh [m,ndbh+1,p] = sum(demandpftdbh [m,1:ndbh,p])
+             supplypftdbh [m,ndbh+1,p] = sum(supplypftdbh [m,1:ndbh,p])
+             #-----------------------------------------------------------------------------#
 
 
-
-
-          #--------------------------------------------------------------------------------#
-          #      Build the age structure arrays.                                           #
-          #--------------------------------------------------------------------------------#
-          for (a in 1:nage){
-             if (all(is.na(agefac))){
-                selage   = rep(FALSE,times=length(agefac))
-             }else{
-                selage  = agefac == a
-             }#end if
-             for (p in 1:npft){
-                if (all(is.na(pftconow))){
-                   selpft   = rep(FALSE,times=length(pftconow))
-                }else{
-                   selpft   = pftconow == p
+             #----- Find the average Fsopen for each DBH class and amongst all classes. ---#
+             for (d in 1:ndbh){
+                if (laipftdbh[m,d,p] != 0){
+                   fsopftdbh[m,d,p] = fsopftdbh[m,d,p] / laipftdbh[m,d,p]
                 }#end if
-                sel    = selpft & selage
-                if (any(sel)){
-                    laipftage [m,a,p] = laipftage [m,a,p]  + 
-                                        sum(laiconow [sel] * areaconow[sel] / areaage[sel])
-                    waipftage [m,a,p] = waipftage [m,a,p]  + 
-                                        sum(waiconow [sel] * areaconow[sel] / areaage[sel])
-                    taipftage [m,a,p] = taipftage [m,a,p]  + 
-                                        sum(taiconow [sel] * areaconow[sel] / areaage[sel])
-                    agbpftage [m,a,p] = agbpftage [m,a,p]  + 
-                                        sum( nplantconow[sel] * agbconow [sel]   
-                                           * areaconow[sel]   / areaage[sel])
-                    gpppftage [m,a,p] = gpppftage [m,a,p]  + 
-                                        sum( nplantconow[sel] * gppconow [sel]   
-                                           * areaconow[sel]   / areaage[sel])
-                    npppftage [m,a,p] = npppftage [m,a,p]  + 
-                                        sum( nplantconow[sel] * nppconow [sel]
-                                           * areaconow[sel]   / areaage[sel])
-                    mcopftage [m,a,p] = mcopftage [m,a,p]  + 
-                                        sum( nplantconow[sel] * mcostconow [sel]
-                                           * areaconow[sel]   / areaage[sel])
-                    cbapftage [m,a,p] = cbapftage [m,a,p]  + 
-                                        sum( nplantconow[sel] * cbalconow [sel]
-                                           * areaconow[sel]   / areaage[sel])
-                }
-             }
-          }
+                if (laipftdbh[m,ndbh+1,p] != 0){
+                   fsopftdbh[m,ndbh+1,p] = ( sum( fsopftdbh[m,1:ndbh,p]
+                                                * laipftdbh[m,1:ndbh,p] )
+                                           / laipftdbh[m,ndbh+1,p] )
+                }#end for
+                #--------------------------------------------------------------------------#
+             }#end for
+             #-----------------------------------------------------------------------------#
+
+
+             #-----------------------------------------------------------------------------#
+             #     Find the average mortality rate for each DBH class and amongst all      #
+             # classes.                                                                    #
+             #-----------------------------------------------------------------------------#
+             for (d in 1:ndbh){
+                if (nplantpftdbh[m,d,p] != 0){
+                   ncbmortpftdbh[m,d,p] = ncbmortpftdbh[m,d,p] / nplantpftdbh[m,d,p]
+                }#end if
+                if (nplantpftdbh[m,ndbh+1,p] != 0){
+                   ncbmortpftdbh[m,ndbh+1,p] = ( sum( ncbmortpftdbh[m,1:ndbh,p]
+                                                    * nplantpftdbh [m,1:ndbh,p] )
+                                               / nplantpftdbh[m,ndbh+1,p] )
+                }#end for
+                #--------------------------------------------------------------------------#
+             }#end for
+             #-----------------------------------------------------------------------------#
+          }#end for
           #--------------------------------------------------------------------------------#
 
 
@@ -1714,14 +1096,15 @@ for (place in myplaces){
           #--------------------------------------------------------------------------------#
           #       Build the derived variables.                                             #
           #--------------------------------------------------------------------------------#
-          npp   = c(npp  ,sum(npppft  [m,]) )
-          mco   = c(mco  ,sum(mcopft  [m,]) )
-          cba   = c(cba  ,sum(cbapft  [m,]) )
-          lai   = c(lai  ,sum(laipft  [m,]) )
-          wai   = c(wai  ,sum(waipft  [m,]) )
-          tai   = c(tai  ,sum(taipft  [m,]) )
-          agb   = c(agb  ,sum(agbpft  [m,]) )
-          ldrop = c(ldrop,sum(ldroppft[m,]) )
+          npp    = c(npp   ,sum(npppft   [m,1:npft]) )
+          mco    = c(mco   ,sum(mcopft   [m,1:npft]) )
+          cba    = c(cba   ,sum(cbapft   [m,1:npft]) )
+          nplant = c(nplant,sum(nplantpft[m,1:npft]) )
+          lai    = c(lai   ,sum(laipft   [m,1:npft]) )
+          wai    = c(wai   ,sum(waipft   [m,1:npft]) )
+          tai    = c(tai   ,sum(taipft   [m,1:npft]) )
+          agb    = c(agb   ,sum(agbpft   [m,1:npft]) )
+          ldrop  = c(ldrop ,sum(ldroppft [m,1:npft]) )
           #--------------------------------------------------------------------------------#
 
 
@@ -1791,42 +1174,60 @@ for (place in myplaces){
    print ("      * Aggregating the monthly mean...")
    mont12mn             = list()
    mont12mn$gpp         = tapply(X=gpp          ,INDEX=mfac,FUN=mean,na.rm=TRUE)
+   mont12mn$npp         = tapply(X=npp          ,INDEX=mfac,FUN=mean,na.rm=TRUE)
+   mont12mn$nep         = tapply(X=nep          ,INDEX=mfac,FUN=mean,na.rm=TRUE)
    mont12mn$plresp      = tapply(X=plresp       ,INDEX=mfac,FUN=mean,na.rm=TRUE)
+   mont12mn$leaf.resp   = tapply(X=leaf.resp    ,INDEX=mfac,FUN=mean,na.rm=TRUE)
+   mont12mn$root.resp   = tapply(X=root.resp    ,INDEX=mfac,FUN=mean,na.rm=TRUE)
+   mont12mn$growth.resp = tapply(X=growth.resp  ,INDEX=mfac,FUN=mean,na.rm=TRUE)
    mont12mn$hetresp     = tapply(X=hetresp      ,INDEX=mfac,FUN=mean,na.rm=TRUE)
+   mont12mn$cflxca      = tapply(X=cflxca       ,INDEX=mfac,FUN=mean,na.rm=TRUE)
+   mont12mn$cflxst      = tapply(X=cflxst       ,INDEX=mfac,FUN=mean,na.rm=TRUE)
    mont12mn$nee         = tapply(X=nee          ,INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mont12mn$sens        = tapply(X=sens         ,INDEX=mfac,FUN=mean,na.rm=TRUE)
+   mont12mn$hflxca      = tapply(X=hflxca       ,INDEX=mfac,FUN=mean,na.rm=TRUE)
    mont12mn$hflxlc      = tapply(X=hflxlc       ,INDEX=mfac,FUN=mean,na.rm=TRUE)
    mont12mn$hflxwc      = tapply(X=hflxwc       ,INDEX=mfac,FUN=mean,na.rm=TRUE)
    mont12mn$hflxgc      = tapply(X=hflxgc       ,INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mont12mn$et          = tapply(X=et           ,INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mont12mn$latent      = tapply(X=latent       ,INDEX=mfac,FUN=mean,na.rm=TRUE)
+   mont12mn$wflxca      = tapply(X=wflxca       ,INDEX=mfac,FUN=mean,na.rm=TRUE)
+   mont12mn$qwflxca     = tapply(X=qwflxca      ,INDEX=mfac,FUN=mean,na.rm=TRUE)
    mont12mn$wflxlc      = tapply(X=wflxlc       ,INDEX=mfac,FUN=mean,na.rm=TRUE)
    mont12mn$wflxwc      = tapply(X=wflxwc       ,INDEX=mfac,FUN=mean,na.rm=TRUE)
    mont12mn$wflxgc      = tapply(X=wflxgc       ,INDEX=mfac,FUN=mean,na.rm=TRUE)
    mont12mn$evap        = tapply(X=evap         ,INDEX=mfac,FUN=mean,na.rm=TRUE)
    mont12mn$transp      = tapply(X=transp       ,INDEX=mfac,FUN=mean,na.rm=TRUE)
+   mont12mn$rain        = tapply(X=rain         ,INDEX=mfac,FUN=mean,na.rm=TRUE)
+   mont12mn$atm.temp    = tapply(X=atm.temp     ,INDEX=mfac,FUN=mean,na.rm=TRUE)
+   mont12mn$rshort      = tapply(X=rshort       ,INDEX=mfac,FUN=mean,na.rm=TRUE)
+   mont12mn$rlong       = tapply(X=rlong        ,INDEX=mfac,FUN=mean,na.rm=TRUE)
+   mont12mn$atm.shv     = tapply(X=atm.shv      ,INDEX=mfac,FUN=mean,na.rm=TRUE)
+   mont12mn$atm.co2     = tapply(X=atm.co2      ,INDEX=mfac,FUN=mean,na.rm=TRUE)
+   mont12mn$atm.prss    = tapply(X=atm.prss     ,INDEX=mfac,FUN=mean,na.rm=TRUE)
+   mont12mn$atm.vels    = tapply(X=atm.vels     ,INDEX=mfac,FUN=mean,na.rm=TRUE)
+   mont12mn$ustar       = tapply(X=ustar        ,INDEX=mfac,FUN=mean,na.rm=TRUE)
    mont12mn$soil.temp   = qapply(mat=soil.temp  ,index=mfac,bycol=T,func=mean,na.rm=T)
    mont12mn$soil.water  = qapply(mat=soil.water ,index=mfac,bycol=T,func=mean,na.rm=T)
    mont12mn$soil.mstpot = qapply(mat=soil.mstpot,index=mfac,bycol=T,func=mean,na.rm=T)
-
    #----- Find the mean sum of squares. ---------------------------------------------------#
    print ("      * Aggregating the monthly mean sum of squares...")
-   mont12sq         = list()
-   mont12sq$gpp     = tapply(X=mmsqu.gpp    ,INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mont12sq$plresp  = tapply(X=mmsqu.plresp ,INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mont12sq$hetresp = tapply(X=mmsqu.hetresp,INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mont12sq$nee     = tapply(X=mmsqu.nee    ,INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mont12sq$sens    = tapply(X=mmsqu.sens   ,INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mont12sq$hflxlc  = tapply(X=mmsqu.hflxlc ,INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mont12sq$hflxwc  = tapply(X=mmsqu.hflxwc ,INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mont12sq$hflxgc  = tapply(X=mmsqu.hflxgc ,INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mont12sq$et      = tapply(X=mmsqu.et     ,INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mont12sq$latent  = tapply(X=mmsqu.latent ,INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mont12sq$wflxlc  = tapply(X=mmsqu.wflxlc ,INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mont12sq$wflxwc  = tapply(X=mmsqu.wflxwc ,INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mont12sq$wflxgc  = tapply(X=mmsqu.wflxgc ,INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mont12sq$evap    = tapply(X=mmsqu.evap   ,INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mont12sq$transp  = tapply(X=mmsqu.transp ,INDEX=mfac,FUN=mean,na.rm=TRUE)
+   mont12sq           = list()
+   mont12sq$gpp       = tapply(X=mmsqu.gpp       ,INDEX=mfac,FUN=mean,na.rm=TRUE)
+   mont12sq$plresp    = tapply(X=mmsqu.plresp    ,INDEX=mfac,FUN=mean,na.rm=TRUE)
+   mont12sq$leaf.resp = tapply(X=mmsqu.leaf.resp ,INDEX=mfac,FUN=mean,na.rm=TRUE)
+   mont12sq$root.resp = tapply(X=mmsqu.root.resp ,INDEX=mfac,FUN=mean,na.rm=TRUE)
+   mont12sq$hetresp   = tapply(X=mmsqu.hetresp   ,INDEX=mfac,FUN=mean,na.rm=TRUE)
+   mont12sq$cflxca    = tapply(X=mmsqu.cflxca    ,INDEX=mfac,FUN=mean,na.rm=TRUE)
+   mont12sq$cflxst    = tapply(X=mmsqu.cflxst    ,INDEX=mfac,FUN=mean,na.rm=TRUE)
+   mont12sq$hflxca    = tapply(X=mmsqu.hflxca    ,INDEX=mfac,FUN=mean,na.rm=TRUE)
+   mont12sq$hflxlc    = tapply(X=mmsqu.hflxlc    ,INDEX=mfac,FUN=mean,na.rm=TRUE)
+   mont12sq$hflxwc    = tapply(X=mmsqu.hflxwc    ,INDEX=mfac,FUN=mean,na.rm=TRUE)
+   mont12sq$hflxgc    = tapply(X=mmsqu.hflxgc    ,INDEX=mfac,FUN=mean,na.rm=TRUE)
+   mont12sq$wflxca    = tapply(X=mmsqu.wflxca    ,INDEX=mfac,FUN=mean,na.rm=TRUE)
+   mont12sq$qwflxca   = tapply(X=mmsqu.qwflxca   ,INDEX=mfac,FUN=mean,na.rm=TRUE)
+   mont12sq$wflxlc    = tapply(X=mmsqu.wflxlc    ,INDEX=mfac,FUN=mean,na.rm=TRUE)
+   mont12sq$wflxwc    = tapply(X=mmsqu.wflxwc    ,INDEX=mfac,FUN=mean,na.rm=TRUE)
+   mont12sq$wflxgc    = tapply(X=mmsqu.wflxgc    ,INDEX=mfac,FUN=mean,na.rm=TRUE)
+   mont12sq$evap      = tapply(X=mmsqu.evap      ,INDEX=mfac,FUN=mean,na.rm=TRUE)
+   mont12sq$transp    = tapply(X=mmsqu.transp    ,INDEX=mfac,FUN=mean,na.rm=TRUE)
    #---------------------------------------------------------------------------------------#
    #   Here we convert the sum of squares into standard deviation. The standard devi-      #
    # ation can be written in two different ways, and we will use the latter because it     #
@@ -1841,39 +1242,55 @@ for (place in myplaces){
    #---------------------------------------------------------------------------------------#
    print ("      * Finding the standard deviation...")
    srnorm1 = sqrt(1./(1. - 1. / moncensus))
-   srnorm1[!is.finite(srnorm1)] = NA
+   srnorm1[!is.finite(srnorm1)] = 0.
    mont12sd            = list()
-   mont12sd$gpp     = sqrt(mont12sq$gpp     - mont12mn$gpp^2     ) * srnorm1
-   mont12sd$plresp  = sqrt(mont12sq$plresp  - mont12mn$plresp^2  ) * srnorm1
-   mont12sd$hetresp = sqrt(mont12sq$hetresp - mont12mn$hetresp^2 ) * srnorm1
-   mont12sd$nee     = sqrt(mont12sq$nee     - mont12mn$nee^2     ) * srnorm1
-   mont12sd$sens    = sqrt(mont12sq$sens    - mont12mn$sens^2    ) * srnorm1
-   mont12sd$hflxlc  = sqrt(mont12sq$hflxlc  - mont12mn$hflxlc^2  ) * srnorm1
-   mont12sd$hflxwc  = sqrt(mont12sq$hflxwc  - mont12mn$hflxwc^2  ) * srnorm1
-   mont12sd$hflxgc  = sqrt(mont12sq$hflxgc  - mont12mn$hflxgc^2  ) * srnorm1
-   mont12sd$et      = sqrt(mont12sq$et      - mont12mn$et^2      ) * srnorm1
-   mont12sd$latent  = sqrt(mont12sq$latent  - mont12mn$latent^2  ) * srnorm1
-   mont12sd$wflxlc  = sqrt(mont12sq$wflxlc  - mont12mn$wflxlc^2  ) * srnorm1
-   mont12sd$wflxwc  = sqrt(mont12sq$wflxwc  - mont12mn$wflxwc^2  ) * srnorm1
-   mont12sd$wflxgc  = sqrt(mont12sq$wflxgc  - mont12mn$wflxgc^2  ) * srnorm1
-   mont12sd$evap    = sqrt(mont12sq$evap    - mont12mn$evap^2    ) * srnorm1
-   mont12sd$transp  = sqrt(mont12sq$transp  - mont12mn$transp^2  ) * srnorm1
-   #----- Discard the standard deviations that may have somehow become NaN. ---------------#
-   mont12sd$gpp     [!is.finite(mont12mn$gpp     )] = NA
-   mont12sd$plresp  [!is.finite(mont12mn$plresp  )] = NA
-   mont12sd$hetresp [!is.finite(mont12mn$hetresp )] = NA
-   mont12sd$nee     [!is.finite(mont12mn$nee     )] = NA
-   mont12sd$sens    [!is.finite(mont12mn$sens    )] = NA
-   mont12sd$hflxlc  [!is.finite(mont12mn$hflxlc  )] = NA
-   mont12sd$hflxlc  [!is.finite(mont12mn$hflxwc  )] = NA
-   mont12sd$hflxgc  [!is.finite(mont12mn$hflxgc  )] = NA
-   mont12sd$et      [!is.finite(mont12mn$et      )] = NA
-   mont12sd$latent  [!is.finite(mont12mn$latent  )] = NA
-   mont12sd$wflxlc  [!is.finite(mont12mn$wflxlc  )] = NA
-   mont12sd$wflxwc  [!is.finite(mont12mn$wflxwc  )] = NA
-   mont12sd$wflxgc  [!is.finite(mont12mn$wflxgc  )] = NA
-   mont12sd$evap    [!is.finite(mont12mn$evap    )] = NA
-   mont12sd$transp  [!is.finite(mont12mn$transp  )] = NA
+   mont12sd$gpp        = sqrt(mont12sq$gpp        - mont12mn$gpp^2        ) * srnorm1
+   mont12sd$plresp     = sqrt(mont12sq$plresp     - mont12mn$plresp^2     ) * srnorm1
+   mont12sd$leaf.resp  = sqrt(mont12sq$leaf.resp  - mont12mn$leaf.resp^2  ) * srnorm1
+   mont12sd$root.resp  = sqrt(mont12sq$root.resp  - mont12mn$root.resp^2  ) * srnorm1
+   mont12sd$hetresp    = sqrt(mont12sq$hetresp    - mont12mn$hetresp^2    ) * srnorm1
+   mont12sd$cflxca     = sqrt(mont12sq$cflxca     - mont12mn$cflxca^2     ) * srnorm1
+   mont12sd$cflxst     = sqrt(mont12sq$cflxst     - mont12mn$cflxst^2     ) * srnorm1
+   mont12sd$hflxca     = sqrt(mont12sq$hflxca     - mont12mn$hflxca^2     ) * srnorm1
+   mont12sd$hflxlc     = sqrt(mont12sq$hflxlc     - mont12mn$hflxlc^2     ) * srnorm1
+   mont12sd$hflxwc     = sqrt(mont12sq$hflxwc     - mont12mn$hflxwc^2     ) * srnorm1
+   mont12sd$hflxgc     = sqrt(mont12sq$hflxgc     - mont12mn$hflxgc^2     ) * srnorm1
+   mont12sd$wflxca     = sqrt(mont12sq$wflxca     - mont12mn$wflxca^2     ) * srnorm1
+   mont12sd$qwflxca    = sqrt(mont12sq$qwflxca    - mont12mn$qwflxca^2    ) * srnorm1
+   mont12sd$wflxlc     = sqrt(mont12sq$wflxlc     - mont12mn$wflxlc^2     ) * srnorm1
+   mont12sd$wflxwc     = sqrt(mont12sq$wflxwc     - mont12mn$wflxwc^2     ) * srnorm1
+   mont12sd$wflxgc     = sqrt(mont12sq$wflxgc     - mont12mn$wflxgc^2     ) * srnorm1
+   mont12sd$evap       = sqrt(mont12sq$evap       - mont12mn$evap^2       ) * srnorm1
+   mont12sd$transp     = sqrt(mont12sq$transp     - mont12mn$transp^2     ) * srnorm1
+   #---------------------------------------------------------------------------------------#
+   #     Set standard deviations that became NaN to 0.  This usually happens when we run   #
+   # the post-processing script when the simulation hasn't run for more than 2 years.  We  #
+   # can't find the standard deviation because the number of degrees of freedom becomes 0. #
+   #---------------------------------------------------------------------------------------#
+   mont12sd$gpp        [!is.finite(mont12mn$gpp        )] = 0.
+   mont12sd$plresp     [!is.finite(mont12mn$plresp     )] = 0.
+   mont12sd$leaf.resp  [!is.finite(mont12mn$leaf.resp  )] = 0.
+   mont12sd$root.resp  [!is.finite(mont12mn$root.resp  )] = 0.
+   mont12sd$hetresp    [!is.finite(mont12mn$hetresp    )] = 0.
+   mont12sd$cflxca     [!is.finite(mont12mn$cflxca     )] = 0.
+   mont12sd$cflxst     [!is.finite(mont12mn$cflxst     )] = 0.
+   mont12sd$hflxca     [!is.finite(mont12mn$hflxca     )] = 0.
+   mont12sd$hflxlc     [!is.finite(mont12mn$hflxlc     )] = 0.
+   mont12sd$hflxlc     [!is.finite(mont12mn$hflxwc     )] = 0.
+   mont12sd$hflxgc     [!is.finite(mont12mn$hflxgc     )] = 0.
+   mont12sd$wflxca     [!is.finite(mont12mn$wflxca     )] = 0.
+   mont12sd$qwflxca    [!is.finite(mont12mn$qwflxca    )] = 0.
+   mont12sd$wflxlc     [!is.finite(mont12mn$wflxlc     )] = 0.
+   mont12sd$wflxwc     [!is.finite(mont12mn$wflxwc     )] = 0.
+   mont12sd$wflxgc     [!is.finite(mont12mn$wflxgc     )] = 0.
+   mont12sd$evap       [!is.finite(mont12mn$evap       )] = 0.
+   mont12sd$transp     [!is.finite(mont12mn$transp     )] = 0.
+   #---------------------------------------------------------------------------------------#
+   #     Estimate the standard deviation of NPP, NEP, and NEE.                             #
+   #---------------------------------------------------------------------------------------#
+   mont12sd$npp  = sqrt(mont12sd$gpp^2    + mont12sd$plresp^2)
+   mont12sd$nep  = sqrt(mont12sd$gpp^2    + mont12sd$plresp^2 + mont12sd$hetresp^2)
+   mont12sd$nee  = sqrt(mont12sd$cflxca^2 + mont12sd$cflxst^2)
    #---------------------------------------------------------------------------------------#
 
 
@@ -1884,16 +1301,21 @@ for (place in myplaces){
    print ("    - Aggregating the monthly mean of the diurnal cycle...")
    dcyc12mn             = list()
    dcyc12mn$gpp         = qapply(dcycmean$gpp         ,index=mfac,bycol=T,func=mean,na.rm=T)
+   dcyc12mn$npp         = qapply(dcycmean$npp         ,index=mfac,bycol=T,func=mean,na.rm=T)
    dcyc12mn$plresp      = qapply(dcycmean$plresp      ,index=mfac,bycol=T,func=mean,na.rm=T)
+   dcyc12mn$leaf.resp   = qapply(dcycmean$leaf.resp   ,index=mfac,bycol=T,func=mean,na.rm=T)
+   dcyc12mn$root.resp   = qapply(dcycmean$root.resp   ,index=mfac,bycol=T,func=mean,na.rm=T)
    dcyc12mn$hetresp     = qapply(dcycmean$hetresp     ,index=mfac,bycol=T,func=mean,na.rm=T)
    dcyc12mn$nep         = qapply(dcycmean$nep         ,index=mfac,bycol=T,func=mean,na.rm=T)
    dcyc12mn$nee         = qapply(dcycmean$nee         ,index=mfac,bycol=T,func=mean,na.rm=T)
-   dcyc12mn$sens        = qapply(dcycmean$sens        ,index=mfac,bycol=T,func=mean,na.rm=T)
+   dcyc12mn$cflxca      = qapply(dcycmean$cflxca      ,index=mfac,bycol=T,func=mean,na.rm=T)
+   dcyc12mn$cflxst      = qapply(dcycmean$cflxst      ,index=mfac,bycol=T,func=mean,na.rm=T)
+   dcyc12mn$hflxca      = qapply(dcycmean$hflxca      ,index=mfac,bycol=T,func=mean,na.rm=T)
    dcyc12mn$hflxlc      = qapply(dcycmean$hflxlc      ,index=mfac,bycol=T,func=mean,na.rm=T)
    dcyc12mn$hflxwc      = qapply(dcycmean$hflxwc      ,index=mfac,bycol=T,func=mean,na.rm=T)
    dcyc12mn$hflxgc      = qapply(dcycmean$hflxgc      ,index=mfac,bycol=T,func=mean,na.rm=T)
-   dcyc12mn$et          = qapply(dcycmean$et          ,index=mfac,bycol=T,func=mean,na.rm=T)
-   dcyc12mn$latent      = qapply(dcycmean$latent      ,index=mfac,bycol=T,func=mean,na.rm=T)
+   dcyc12mn$wflxca      = qapply(dcycmean$wflxca      ,index=mfac,bycol=T,func=mean,na.rm=T)
+   dcyc12mn$qwflxca     = qapply(dcycmean$qwflxca     ,index=mfac,bycol=T,func=mean,na.rm=T)
    dcyc12mn$wflxlc      = qapply(dcycmean$wflxlc      ,index=mfac,bycol=T,func=mean,na.rm=T)
    dcyc12mn$wflxwc      = qapply(dcycmean$wflxwc      ,index=mfac,bycol=T,func=mean,na.rm=T)
    dcyc12mn$wflxgc      = qapply(dcycmean$wflxgc      ,index=mfac,bycol=T,func=mean,na.rm=T)
@@ -1912,6 +1334,7 @@ for (place in myplaces){
    dcyc12mn$atm.prss    = qapply(dcycmean$atm.prss    ,index=mfac,bycol=T,func=mean,na.rm=T)
    dcyc12mn$can.prss    = qapply(dcycmean$can.prss    ,index=mfac,bycol=T,func=mean,na.rm=T)
    dcyc12mn$atm.vels    = qapply(dcycmean$atm.vels    ,index=mfac,bycol=T,func=mean,na.rm=T)
+   dcyc12mn$ustar       = qapply(dcycmean$ustar       ,index=mfac,bycol=T,func=mean,na.rm=T)
    dcyc12mn$fs.open     = qapply(dcycmean$fs.open     ,index=mfac,bycol=T,func=mean,na.rm=T)
    dcyc12mn$rain        = qapply(dcycmean$rain        ,index=mfac,bycol=T,func=mean,na.rm=T)
    dcyc12mn$rshort      = qapply(dcycmean$rshort      ,index=mfac,bycol=T,func=mean,na.rm=T)
@@ -1931,15 +1354,18 @@ for (place in myplaces){
    dcyc12sq            = list()
    dcyc12sq$gpp        = qapply(dcycmsqu$gpp       ,index=mfac,bycol=T,func=mean,na.rm=T)
    dcyc12sq$plresp     = qapply(dcycmsqu$plresp    ,index=mfac,bycol=T,func=mean,na.rm=T)
+   dcyc12sq$leaf.resp  = qapply(dcycmsqu$leaf.resp ,index=mfac,bycol=T,func=mean,na.rm=T)
+   dcyc12sq$root.resp  = qapply(dcycmsqu$root.resp ,index=mfac,bycol=T,func=mean,na.rm=T)
    dcyc12sq$hetresp    = qapply(dcycmsqu$hetresp   ,index=mfac,bycol=T,func=mean,na.rm=T)
    dcyc12sq$nep        = qapply(dcycmsqu$nep       ,index=mfac,bycol=T,func=mean,na.rm=T)
-   dcyc12sq$nee        = qapply(dcycmsqu$nee       ,index=mfac,bycol=T,func=mean,na.rm=T)
-   dcyc12sq$sens       = qapply(dcycmsqu$sens      ,index=mfac,bycol=T,func=mean,na.rm=T)
+   dcyc12sq$cflxca     = qapply(dcycmsqu$cflxca    ,index=mfac,bycol=T,func=mean,na.rm=T)
+   dcyc12sq$cflxst     = qapply(dcycmsqu$cflxst    ,index=mfac,bycol=T,func=mean,na.rm=T)
+   dcyc12sq$hflxca     = qapply(dcycmsqu$hflxca    ,index=mfac,bycol=T,func=mean,na.rm=T)
    dcyc12sq$hflxlc     = qapply(dcycmsqu$hflxlc    ,index=mfac,bycol=T,func=mean,na.rm=T)
    dcyc12sq$hflxwc     = qapply(dcycmsqu$hflxwc    ,index=mfac,bycol=T,func=mean,na.rm=T)
    dcyc12sq$hflxgc     = qapply(dcycmsqu$hflxgc    ,index=mfac,bycol=T,func=mean,na.rm=T)
-   dcyc12sq$et         = qapply(dcycmsqu$et        ,index=mfac,bycol=T,func=mean,na.rm=T)
-   dcyc12sq$latent     = qapply(dcycmsqu$latent    ,index=mfac,bycol=T,func=mean,na.rm=T)
+   dcyc12sq$wflxca     = qapply(dcycmsqu$wflxca    ,index=mfac,bycol=T,func=mean,na.rm=T)
+   dcyc12sq$qwflxca    = qapply(dcycmsqu$qwflxca   ,index=mfac,bycol=T,func=mean,na.rm=T)
    dcyc12sq$wflxlc     = qapply(dcycmsqu$wflxlc    ,index=mfac,bycol=T,func=mean,na.rm=T)
    dcyc12sq$wflxwc     = qapply(dcycmsqu$wflxwc    ,index=mfac,bycol=T,func=mean,na.rm=T)
    dcyc12sq$wflxgc     = qapply(dcycmsqu$wflxgc    ,index=mfac,bycol=T,func=mean,na.rm=T)
@@ -1959,39 +1385,77 @@ for (place in myplaces){
    #---------------------------------------------------------------------------------------#
    print ("    - Finding the standard deviation...")
    srnorm1 = sqrt(1./(1. - 1. / moncnt))
-   srnorm1[!is.finite(srnorm1)] = NA
+   srnorm1[!is.finite(srnorm1)] = 0.
    dcyc12sd            = list()
    dcyc12sd$gpp        = sqrt(dcyc12sq$gpp      -dcyc12mn$gpp^2             )*srnorm1
    dcyc12sd$plresp     = sqrt(dcyc12sq$plresp   -dcyc12mn$plresp^2          )*srnorm1
+   dcyc12sd$leaf.resp  = sqrt(dcyc12sq$leaf.resp-dcyc12mn$leaf.resp^2       )*srnorm1
+   dcyc12sd$root.resp  = sqrt(dcyc12sq$root.resp-dcyc12mn$root.resp^2       )*srnorm1
    dcyc12sd$hetresp    = sqrt(dcyc12sq$hetresp  -dcyc12mn$hetresp^2         )*srnorm1
    dcyc12sd$nep        = sqrt(dcyc12sq$nep      -dcyc12mn$nep^2             )*srnorm1
-   dcyc12sd$nee        = sqrt(dcyc12sq$nee      -dcyc12mn$nee^2             )*srnorm1
-   dcyc12sd$sens       = sqrt(dcyc12sq$sens     -dcyc12mn$sens^2            )*srnorm1
+   dcyc12sd$cflxca     = sqrt(dcyc12sq$cflxca   -dcyc12mn$cflxca^2          )*srnorm1
+   dcyc12sd$cflxst     = sqrt(dcyc12sq$cflxst   -dcyc12mn$cflxst^2          )*srnorm1
+   dcyc12sd$hflxca     = sqrt(dcyc12sq$hflxca   -dcyc12mn$hflxca^2          )*srnorm1
    dcyc12sd$hflxlc     = sqrt(dcyc12sq$hflxlc   -dcyc12mn$hflxlc^2          )*srnorm1
    dcyc12sd$hflxwc     = sqrt(dcyc12sq$hflxwc   -dcyc12mn$hflxwc^2          )*srnorm1
    dcyc12sd$hflxgc     = sqrt(dcyc12sq$hflxgc   -dcyc12mn$hflxgc^2          )*srnorm1
-   dcyc12sd$et         = sqrt(dcyc12sq$et       -dcyc12mn$et^2              )*srnorm1
-   dcyc12sd$latent     = sqrt(dcyc12sq$latent   -dcyc12mn$latent^2          )*srnorm1
+   dcyc12sd$wflxca     = sqrt(dcyc12sq$wflxca   -dcyc12mn$wflxca^2          )*srnorm1
+   dcyc12sd$qwflxca    = sqrt(dcyc12sq$qwflxca  -dcyc12mn$qwflxca^2         )*srnorm1
    dcyc12sd$wflxlc     = sqrt(dcyc12sq$wflxlc   -dcyc12mn$wflxlc^2          )*srnorm1
    dcyc12sd$wflxwc     = sqrt(dcyc12sq$wflxwc   -dcyc12mn$wflxwc^2          )*srnorm1
    dcyc12sd$wflxgc     = sqrt(dcyc12sq$wflxgc   -dcyc12mn$wflxgc^2          )*srnorm1
    dcyc12sd$transp     = sqrt(dcyc12sq$transp   -dcyc12mn$transp^2          )*srnorm1
-   #----- Discard the standard deviations that may have somehow become NaN. ---------------#
-   dcyc12sd$gpp     [!is.finite(dcyc12sd$gpp    )] = NA
-   dcyc12sd$plresp  [!is.finite(dcyc12sd$plresp )] = NA
-   dcyc12sd$hetresp [!is.finite(dcyc12sd$hetresp)] = NA
-   dcyc12sd$nep     [!is.finite(dcyc12sd$nep    )] = NA
-   dcyc12sd$nee     [!is.finite(dcyc12sd$nee    )] = NA
-   dcyc12sd$sens    [!is.finite(dcyc12sd$sens   )] = NA
-   dcyc12sd$hflxlc  [!is.finite(dcyc12sd$hflxlc )] = NA
-   dcyc12sd$hflxwc  [!is.finite(dcyc12sd$hflxwc )] = NA
-   dcyc12sd$hflxgc  [!is.finite(dcyc12sd$hflxgc )] = NA
-   dcyc12sd$et      [!is.finite(dcyc12sd$et     )] = NA
-   dcyc12sd$latent  [!is.finite(dcyc12sd$latent )] = NA
-   dcyc12sd$wflxlc  [!is.finite(dcyc12sd$wflxlc )] = NA
-   dcyc12sd$wflxwc  [!is.finite(dcyc12sd$wflxwc )] = NA
-   dcyc12sd$wflxgc  [!is.finite(dcyc12sd$wflxgc )] = NA
-   dcyc12sd$transp  [!is.finite(dcyc12sd$transp )] = NA
+   #---------------------------------------------------------------------------------------#
+   #     Set standard deviations that became NaN to 0.  This usually happens when we run   #
+   # the post-processing script when the simulation hasn't run for more than 2 years.  We  #
+   # can't find the standard deviation because the number of degrees of freedom becomes 0. #
+   #---------------------------------------------------------------------------------------#
+   dcyc12sd$gpp        [!is.finite(dcyc12sd$gpp       )] = 0.
+   dcyc12sd$plresp     [!is.finite(dcyc12sd$plresp    )] = 0.
+   dcyc12sd$leaf.resp  [!is.finite(dcyc12sd$leaf.resp )] = 0.
+   dcyc12sd$root.resp  [!is.finite(dcyc12sd$root.resp )] = 0.
+   dcyc12sd$hetresp    [!is.finite(dcyc12sd$hetresp   )] = 0.
+   dcyc12sd$nep        [!is.finite(dcyc12sd$nep       )] = 0.
+   dcyc12sd$cflxca     [!is.finite(dcyc12sd$cflxca    )] = 0.
+   dcyc12sd$cflxst     [!is.finite(dcyc12sd$cflxst    )] = 0.
+   dcyc12sd$hflxca     [!is.finite(dcyc12sd$hflxca    )] = 0.
+   dcyc12sd$hflxlc     [!is.finite(dcyc12sd$hflxlc    )] = 0.
+   dcyc12sd$hflxwc     [!is.finite(dcyc12sd$hflxwc    )] = 0.
+   dcyc12sd$hflxgc     [!is.finite(dcyc12sd$hflxgc    )] = 0.
+   dcyc12sd$wflxca     [!is.finite(dcyc12sd$wflxca    )] = 0.
+   dcyc12sd$qwflxca    [!is.finite(dcyc12sd$qwflxca   )] = 0.
+   dcyc12sd$wflxlc     [!is.finite(dcyc12sd$wflxlc    )] = 0.
+   dcyc12sd$wflxwc     [!is.finite(dcyc12sd$wflxwc    )] = 0.
+   dcyc12sd$wflxgc     [!is.finite(dcyc12sd$wflxgc    )] = 0.
+   dcyc12sd$transp     [!is.finite(dcyc12sd$transp    )] = 0.
+   #---------------------------------------------------------------------------------------#
+   #      Estimate NPP and NEE standard deviation.                                         #
+   #---------------------------------------------------------------------------------------#
+   dcyc12sd$npp = sqrt(dcyc12sd$gpp^2    + dcyc12sd$plresp^2)
+   dcyc12sd$nee = sqrt(dcyc12sd$cflxca^2 + dcyc12sd$cflxst^2)
+   #---------------------------------------------------------------------------------------#
+
+
+
+   #---------------------------------------------------------------------------------------#
+   #     Remove all elements of the DBH/PFT class that do not have a single valid cohort   #
+   # at any given time.                                                                    #
+   #---------------------------------------------------------------------------------------#
+   empty = nplantpftdbh == 0
+   agbpftdbh      [empty] = NA
+   laipftdbh      [empty] = NA
+   waipftdbh      [empty] = NA
+   taipftdbh      [empty] = NA
+   gpppftdbh      [empty] = NA
+   npppftdbh      [empty] = NA
+   mcopftdbh      [empty] = NA
+   cbapftdbh      [empty] = NA
+   ldrpftdbh      [empty] = NA
+   fsopftdbh      [empty] = NA
+   demandpftdbh   [empty] = NA
+   supplypftdbh   [empty] = NA
+   nplantpftdbh   [empty] = NA
+   ncbmortpftdbh  [empty] = NA
    #---------------------------------------------------------------------------------------#
 
 
@@ -2016,7 +1480,8 @@ for (place in myplaces){
    #---------------------------------------------------------------------------------------#
    #      Define a suitable scale for those time series that uses thismonth...             #
    #---------------------------------------------------------------------------------------#
-   whenplot = pretty.time(thismonth,n=8)
+   whenplot6 = pretty.time(thismonth,n=6)
+   whenplot8 = pretty.time(thismonth,n=8)
    #---------------------------------------------------------------------------------------#
 
 
@@ -2081,6 +1546,7 @@ for (place in myplaces){
       vnam        = thistspft$vnam
       description = thistspft$desc
       unit        = thistspft$unit
+      plog        = thistspft$plog
       plotit      = thistspft$plt
 
       #----- Check whether the user wants to have this variable plotted. ------------------#
@@ -2095,6 +1561,13 @@ for (place in myplaces){
 
          #----- Load variable -------------------------------------------------------------#
          thisvar = get(vnam)
+         if (plog){
+            #----- Eliminate non-positive values in case it is a log plot. ----------------#
+            thisvar[thisvar <= 0] = NA
+         }#end if
+         #---------------------------------------------------------------------------------#
+
+
 
          #----- Loop over output formats. -------------------------------------------------#
          for (o in 1:nout){
@@ -2108,27 +1581,64 @@ for (place in myplaces){
                postscript(file=fichier,width=size$width,height=size$height
                          ,pointsize=ptsz,paper=paper)
             }#end if
-            #---- Find the limit, and nudge it in case it is constant. --------------------#
-            ylimit  = range(thisvar[,selpft],na.rm=TRUE)
-            if (ylimit[1] == ylimit[2] && ylimit[1] == 0){
-               ylimit = c(-1,1)
-            }else if(ylimit[1] == ylimit[2] ){
-               ylimit[1] = ylimit[1] * ( 1. - sign(ylimit[1]) * ylnudge)
-               ylimit[2] = ylimit[2] * ( 1. + sign(ylimit[2]) * ylnudge)
+
+
+            #------------------------------------------------------------------------------#
+            #     Find the limit, make some room for the legend, and in case the field is  #
+            # a constant, nudge the limits so the plot command will not complain.          #
+            #------------------------------------------------------------------------------#
+            if (plog){
+               xylog   = "y"
+               ylimit  = range(log(thisvar[,selpft]),na.rm=TRUE)
+               if (any(! is.finite(ylimit)) || (ylimit[1] == ylimit[2] && ylimit[1] == 0)){
+                  ylimit = c(-1,1)
+               }else if (ylimit[1] == ylimit[2] ){
+                  ylimit[1] = ylimit[1] * ( 1. - sign(ylimit[1]) * ylnudge)
+                  ylimit[2] = ylimit[2] * ( 1. + sign(ylimit[2]) * ylnudge)
+               }else{
+                  ylimit[2] = ylimit[2] + scalleg * (ylimit[2] - ylimit[1])
+               }#end if
+               ydrought  = c(ylimit[1] - 0.5 * (ylimit[2]-ylimit[1])
+                            ,ylimit[2] + 0.5 * (ylimit[2]-ylimit[1]))
+               ylimit    = exp(ylimit)
+            }else{
+               ylimit  = range(thisvar[,selpft],na.rm=TRUE)
+               xylog=""
+               if (ylimit[1] == ylimit[2] && ylimit[1] == 0){
+                  ylimit = c(-1,1)
+               }else if(ylimit[1] == ylimit[2] ){
+                  ylimit[1] = ylimit[1] * ( 1. - sign(ylimit[1]) * ylnudge)
+                  ylimit[2] = ylimit[2] * ( 1. + sign(ylimit[2]) * ylnudge)
+               }#end if
+               ylimit[2] = ylimit[2] + scalleg * (ylimit[2] - ylimit[1])
+               ydrought  = c(ylimit[1] - 0.5 * (ylimit[2]-ylimit[1])
+                            ,ylimit[2] + 0.5 * (ylimit[2]-ylimit[1]))
             }#end if
+            #------------------------------------------------------------------------------#
+
+
 
             letitre = paste(description,lieu,sep=" - ")
-            cols    = pftcols[selpft]
-            legs    = pftnames[selpft]
+            cols    = pft$colour[selpft]
+            legs    = pft$name  [selpft]
             plot(x=thismonth,y=thisvar[,1],type="n",main=letitre,ylim=ylimit
                 ,xlab="Time",xaxt="n",ylab=unit,cex.main=0.7)
-            axis(side=1,at=whenplot$levels,labels=whenplot$labels,padj=whenplot$padj)
+            axis(side=1,at=whenplot8$levels,labels=whenplot8$labels,padj=whenplot8$padj)
+
+            if (drought.mark){
+               for (n in 1:ndrought){
+                  rect(xleft  = drought[[n]][1],ybottom = ydrought[1]
+                      ,xright = drought[[n]][2],ytop    = ydrought[2]
+                      ,col    = "gray84",border=NA)
+               }#end for
+            }#end if
+            
             if (plotgrid){ 
-               abline(v=whenplot$levels,h=axTicks(side=2),col="lightgray",lty="solid")
+               abline(v=whenplot8$levels,h=axTicks(side=2),col="gray52",lty="solid")
             }#end if
             for (n in 1:(npft+1)){
                if (selpft[n]){
-                  lines(thismonth,thisvar[,n],type="l",col=pftcols[n],lwd=lwidth)
+                  lines(thismonth,thisvar[,n],type="l",col=pft$colour[n],lwd=lwidth)
                }#end if
             }#end for
             legend(x=legwhere,inset=inset,bg=legbg,legend=legs,col=cols,lwd=lwidth)
@@ -2148,6 +1658,131 @@ for (place in myplaces){
 
 
    #---------------------------------------------------------------------------------------#
+   #      Time series by DBH, by PFT.                                                      #
+   #---------------------------------------------------------------------------------------#
+   #----- Find the PFTs to plot. ----------------------------------------------------------#
+   pftuse  = which(apply(X=agbpftdbh,MARGIN=3,FUN=sum,na.rm=TRUE) > 0.)
+   for (v in 1:ntspftdbh){
+      thistspftdbh   = tspftdbh[[v]]
+      vnam        = thistspftdbh$vnam
+      description = thistspftdbh$desc
+      unit        = thistspftdbh$unit
+      plog        = thistspftdbh$plog
+      plotit      = thistspftdbh$plt
+      
+      #----- Load variable ----------------------------------------------------------------#
+      thisvar = get(vnam)
+      if (plog){
+         xylog="y"
+         thisvar[thisvar <= 0] = NA
+      }else{
+         xylog=""
+      }#end if
+      #----- Check whether the user wants to have this variable plotted. ------------------#
+      if (plotit && length(pftuse) > 0 && any(is.finite(thisvar))){
+
+         #---------------------------------------------------------------------------------#
+         #    Check whether the time series directory exists.  If not, create it.          #
+         #---------------------------------------------------------------------------------#
+         outdir = paste(outpref,"tsdbh",sep="/")
+         if (! file.exists(outdir)) dir.create(outdir)
+         outvar = paste(outdir,vnam,sep="/")
+         if (! file.exists(outvar)) dir.create(outvar)
+         #---------------------------------------------------------------------------------#
+
+         print (paste("      +",description,"time series for DBH class..."))
+
+
+         #---------------------------------------------------------------------------------#
+         #     Find the limit, make some room for the legend, and in case the field is a   #
+         # constant, nudge the limits so the plot command will not complain.               #
+         #---------------------------------------------------------------------------------#
+         if (plog){
+            xylog   = "y"
+            ylimit  = range(log(thisvar[,,pftuse]),na.rm=TRUE)
+            if (any(! is.finite(ylimit)) || (ylimit[1] == ylimit[2] && ylimit[1] == 0)){
+               ylimit = c(-1,1)
+            }else if (ylimit[1] == ylimit[2] ){
+               ylimit[1] = ylimit[1] * ( 1. - sign(ylimit[1]) * ylnudge)
+               ylimit[2] = ylimit[2] * ( 1. + sign(ylimit[2]) * ylnudge)
+            }else{
+               ylimit[2] = ylimit[2] + scalleg * (ylimit[2] - ylimit[1])
+            }#end if
+            ydrought  = c(ylimit[1] - 0.5 * (ylimit[2]-ylimit[1])
+                         ,ylimit[2] + 0.5 * (ylimit[2]-ylimit[1]))
+            ylimit    = exp(ylimit)
+         }else{
+            ylimit  = range(thisvar[,,pftuse],na.rm=TRUE)
+            xylog=""
+            if (ylimit[1] == ylimit[2] && ylimit[1] == 0){
+               ylimit = c(-1,1)
+            }else if(ylimit[1] == ylimit[2] ){
+               ylimit[1] = ylimit[1] * ( 1. - sign(ylimit[1]) * ylnudge)
+               ylimit[2] = ylimit[2] * ( 1. + sign(ylimit[2]) * ylnudge)
+            }#end if
+            ylimit[2] = ylimit[2] + scalleg * (ylimit[2] - ylimit[1])
+            ydrought  = c(ylimit[1] - 0.5 * (ylimit[2]-ylimit[1])
+                         ,ylimit[2] + 0.5 * (ylimit[2]-ylimit[1]))
+         }#end if
+         #---------------------------------------------------------------------------------#
+
+         for (p in pftuse){
+
+            cpp = substring(100+p,2,3)
+            pftlab = paste("pft-",cpp,sep="")
+
+            print (paste("        -",pft$name[p]))
+
+
+            #----- Loop over output formats. ----------------------------------------------#
+            for (o in 1:nout){
+               fichier = paste(outvar,"/",vnam,"-",pftlab,"-",suffix,".",outform[o],sep="")
+               if(outform[o] == "x11"){
+                  X11(width=size$width,height=size$height,pointsize=ptsz)
+               }else if(outform[o] == "png"){
+                  png(filename=fichier,width=size$width*depth,height=size$height*depth
+                     ,pointsize=ptsz,res=depth)
+               }else if(outform[o] == "eps"){
+                  postscript(file=fichier,width=size$width,height=size$height
+                            ,pointsize=ptsz,paper=paper)
+               }#end if
+
+               letitre = paste(description,pft$name[p],lieu,sep=" - ")
+               plot(x=thismonth,y=thisvar[,1,p],type="n",main=letitre,ylim=ylimit
+                   ,xlab="Time",xaxt="n",ylab=unit,cex.main=0.7,log=xylog)
+               axis(side=1,at=whenplot8$levels,labels=whenplot8$labels,padj=whenplot8$padj)
+               if (drought.mark){
+                  for (n in 1:ndrought){
+                     rect(xleft  = drought[[n]][1],ybottom = ydrought[1]
+                         ,xright = drought[[n]][2],ytop    = ydrought[2]
+                         ,col    = "gray84",border=NA)
+                  }#end for
+               }#end if
+               if (plotgrid){ 
+                  abline(v=whenplot8$levels,h=axTicks(side=2),col="gray52",lty="solid")
+               }#end if
+               for (d in seq(from=1,to=ndbh+1,by=1)){
+                  lines(thismonth,thisvar[,d,p],type="l",col=dbhcols[d],lwd=lwidth)
+               }#end for
+               legend(x=legwhere,inset=inset,bg=legbg,legend=dbhnames,col=dbhcols
+                     ,ncol=2,title="DBH class",lwd=lwidth,cex=0.8)
+
+               if (outform[o] == "x11"){
+                  locator(n=1)
+                  dev.off()
+               }else{
+                  dev.off()
+               }#end if
+            } #end for outform
+         }#end for (p in pftuse)
+      }#end if (tseragbpft)
+   } #end for tseries
+   #---------------------------------------------------------------------------------------#
+
+
+
+
+   #---------------------------------------------------------------------------------------#
    #      Time series by LU.                                                               #
    #---------------------------------------------------------------------------------------#
    for (v in 1:ntslu){
@@ -2155,6 +1790,7 @@ for (place in myplaces){
       vnam        = thistslu$vnam
       description = thistslu$desc
       unit        = thistslu$unit
+      plog        = thistslu$plog
       plotit      = thistslu$plt
 
       #----- Check whether the user wants to have this variable plotted. ------------------#
@@ -2167,8 +1803,15 @@ for (place in myplaces){
          if (! file.exists(outdir)) dir.create(outdir)
          print (paste("      +",description,"time series for all LUs..."))
 
+
+
          #----- Load variable -------------------------------------------------------------#
          thisvar = get(vnam)
+         if (plog){
+            #----- Eliminate non-positive values in case it is a log plot. ----------------#
+            thisvar[thisvar <= 0] = NA
+         }#end if
+         #---------------------------------------------------------------------------------#
 
          #----- Loop over output formats. -------------------------------------------------#
          for (o in 1:nout){
@@ -2182,23 +1825,57 @@ for (place in myplaces){
                postscript(file=fichier,width=size$width,height=size$height
                          ,pointsize=ptsz,paper=paper)
             }#end if
-            #---- Find the limit, and nudge it in case it is constant. --------------------#
-            ylimit  = range(thisvar[,sellu],na.rm=TRUE)
-            if (ylimit[1] == ylimit[2] && ylimit[1] == 0){
-               ylimit = c(-1,1)
-            }else if(ylimit[1] == ylimit[2] ){
-               ylimit[1] = ylimit[1] * ( 1. - sign(ylimit[1]) * ylnudge)
-               ylimit[2] = ylimit[2] * ( 1. + sign(ylimit[2]) * ylnudge)
+
+
+            #------------------------------------------------------------------------------#
+            #     Find the limit, make some room for the legend, and in case the field is  #
+            # a constant, nudge the limits so the plot command will not complain.          #
+            #------------------------------------------------------------------------------#
+            if (plog){
+               xylog   = "y"
+               ylimit  = range(log(thisvar[,selpft]),na.rm=TRUE)
+               if (any(! is.finite(ylimit)) || (ylimit[1] == ylimit[2] && ylimit[1] == 0)){
+                  ylimit = c(-1,1)
+               }else if (ylimit[1] == ylimit[2] ){
+                  ylimit[1] = ylimit[1] * ( 1. - sign(ylimit[1]) * ylnudge)
+                  ylimit[2] = ylimit[2] * ( 1. + sign(ylimit[2]) * ylnudge)
+               }else{
+                  ylimit[2] = ylimit[2] + scalleg * (ylimit[2] - ylimit[1])
+               }#end if
+               ydrought  = c(ylimit[1] - 0.5 * (ylimit[2]-ylimit[1])
+                            ,ylimit[2] + 0.5 * (ylimit[2]-ylimit[1]))
+               ylimit    = exp(ylimit)
+            }else{
+               ylimit  = range(thisvar[,selpft],na.rm=TRUE)
+               xylog=""
+               if (ylimit[1] == ylimit[2] && ylimit[1] == 0){
+                  ylimit = c(-1,1)
+               }else if(ylimit[1] == ylimit[2] ){
+                  ylimit[1] = ylimit[1] * ( 1. - sign(ylimit[1]) * ylnudge)
+                  ylimit[2] = ylimit[2] * ( 1. + sign(ylimit[2]) * ylnudge)
+               }#end if
+               ylimit[2] = ylimit[2] + scalleg * (ylimit[2] - ylimit[1])
+               ydrought  = c(ylimit[1] - 0.5 * (ylimit[2]-ylimit[1])
+                            ,ylimit[2] + 0.5 * (ylimit[2]-ylimit[1]))
             }#end if
+            #------------------------------------------------------------------------------#
 
             letitre = paste(description,lieu,sep=" - ")
             cols    = lucols[sellu]
             legs    = lunames[sellu]
             plot(thismonth,thisvar[,1],type="n",main=letitre,ylim=ylimit
                 ,xlab="Time",ylab=unit,xaxt="n",cex.main=0.7)
-            axis(side=1,at=whenplot$levels,labels=whenplot$labels,padj=whenplot$padj)
+            axis(side=1,at=whenplot8$levels,labels=whenplot8$labels,padj=whenplot8$padj)
+
+            if (drought.mark){
+               for (n in 1:ndrought){
+                  rect(xleft  = drought[[n]][1],ybottom = ydrought[1]
+                      ,xright = drought[[n]][2],ytop    = ydrought[2]
+                      ,col    = "gray84",border=NA)
+               }#end for
+            }#end if
             if (plotgrid){ 
-               abline(v=whenplot$levels,h=axTicks(side=2),col="lightgray",lty="solid")
+               abline(v=whenplot8$levels,h=axTicks(side=2),col="gray52",lty="solid")
             }#end if
             for (n in 1:(nlu+1)){
                if (sellu[n]){
@@ -2238,6 +1915,11 @@ for (place in myplaces){
             postscript(file=fichier,width=size$width,height=size$height
                       ,pointsize=ptsz,paper=paper)
          }#end if
+
+         #---------------------------------------------------------------------------------#
+         #     Find the limit, make some room for the legend, and in case the field is a   #
+         #  constant, nudge the limits so the plot command will not complain.              #
+         #---------------------------------------------------------------------------------#
          ylimit  = NULL
          for (jlu in 1:nlu){
             for (ilu in 1:nlu){
@@ -2250,14 +1932,26 @@ for (place in myplaces){
             ylimit[1] = ylimit[1] * ( 1. - sign(ylimit[1]) * ylnudge)
             ylimit[2] = ylimit[2] * ( 1. + sign(ylimit[2]) * ylnudge)
          }#end if
+         ylimit[2] = ylimit[2] + scalleg * (ylimit[2] - ylimit[1])
+         ydrought  = c(ylimit[1] - 0.5 * (ylimit[2]-ylimit[1])
+                      ,ylimit[2] + 0.5 * (ylimit[2]-ylimit[1]))
+         #---------------------------------------------------------------------------------#
+
          letitre = paste("Disturbance rates",lieu,sep=" - ")
          cols    = NULL
          legs    = NULL
          plot(thismonth,dist[,1,1],type="n",main=letitre,ylim=ylimit
              ,xlab="Time",ylab="[1/yr]",xaxt="n",cex.main=0.7)
-            axis(side=1,at=whenplot$levels,labels=whenplot$labels,padj=whenplot$padj)
+            axis(side=1,at=whenplot8$levels,labels=whenplot8$labels,padj=whenplot8$padj)
+            if (drought.mark){
+               for (n in 1:ndrought){
+                  rect(xleft  = drought[[n]][1],ybottom = ydrought[1]
+                      ,xright = drought[[n]][2],ytop    = ydrought[2]
+                      ,col    = "gray84",border=NA)
+               }#end for
+            }#end if
             if (plotgrid){ 
-               abline(v=whenplot$levels,h=axTicks(side=2),col="lightgray",lty="solid")
+               abline(v=whenplot8$levels,h=axTicks(side=2),col="gray52",lty="solid")
             }#end if
          n = 0
          for (jlu in 1:nlu){
@@ -2312,25 +2006,49 @@ for (place in myplaces){
          #---------------------------------------------------------------------------------#
          outdir = paste(outpref,"tseries",sep="/")
          if (! file.exists(outdir)) dir.create(outdir)
-         print (paste("      +",description,"time series for several variables..."))
+         print (paste("      +",theme,"time series for several variables..."))
 
 
          #----- Define the number of layers. ----------------------------------------------#
          nlayers   = length(vnames)
+         #---------------------------------------------------------------------------------#
+
+
+
+         #---------------------------------------------------------------------------------#
+         #     Find the limit, make some room for the legend, and in case the field is a   #
+         # constant, nudge the limits so the plot command will not complain.               #
+         #---------------------------------------------------------------------------------#
          ylimit    = NULL
          for (l in 1:nlayers){
             thisvar = get(vnames[l])
             ylimit  = range(c(ylimit,thisvar),na.rm=TRUE)
          }#end for
-         if (ylimit[1] == ylimit[2]  & ylimit[1] == 0){
-            ylimit[1] = -1
-            ylimit[2] =  1
-         }else if (ylimit[1] == ylimit[2] & ylimit[1] > 0){
-            ylimit[2] = (1.0+scalleg) * ylimit[1]
-         }else if (ylimit[1] == ylimit[2] & ylimit[1] < 0){
-            ylimit[2] = (1.0-scalleg) * ylimit[1]
+         if (plog){
+            xylog   = "y"
+            ylimit  = range(ylimit,na.rm=TRUE)
+            if (any(! is.finite(ylimit)) || (ylimit[1] == ylimit[2] && ylimit[1] == 0)){
+               ylimit = c(-1,1)
+            }else if (ylimit[1] == ylimit[2] ){
+               ylimit[1] = ylimit[1] * ( 1. - sign(ylimit[1]) * ylnudge)
+               ylimit[2] = ylimit[2] * ( 1. + sign(ylimit[2]) * ylnudge)
+            }else{
+               ylimit[2] = ylimit[2] + scalleg * (ylimit[2] - ylimit[1])
+            }#end if
+            ydrought  = c(ylimit[1] - 0.5 * (ylimit[2]-ylimit[1])
+                         ,ylimit[2] + 0.5 * (ylimit[2]-ylimit[1]))
+            ylimit    = exp(ylimit)
          }else{
+            xylog=""
+            if (ylimit[1] == ylimit[2] && ylimit[1] == 0){
+               ylimit = c(-1,1)
+            }else if(ylimit[1] == ylimit[2] ){
+               ylimit[1] = ylimit[1] * ( 1. - sign(ylimit[1]) * ylnudge)
+               ylimit[2] = ylimit[2] * ( 1. + sign(ylimit[2]) * ylnudge)
+            }#end if
             ylimit[2] = ylimit[2] + scalleg * (ylimit[2] - ylimit[1])
+            ydrought  = c(ylimit[1] - 0.5 * (ylimit[2]-ylimit[1])
+                         ,ylimit[2] + 0.5 * (ylimit[2]-ylimit[1]))
          }#end if
          #---------------------------------------------------------------------------------#
 
@@ -2360,18 +2078,25 @@ for (place in myplaces){
             letitre = paste(theme," - ",lieu," \n"," Time series: ",theme,sep="")
 
             plot(x=thismonth,y=thisvar,type="n",main=letitre,xlab="Time"
-                ,ylim=ylimit,ylab=paste("[",unit,"]",sep=""),log=plog,xaxt="n"
+                ,ylim=ylimit,ylab=paste("[",unit,"]",sep=""),log=xylog,xaxt="n"
                 ,cex.main=cex.main)
-            axis(side=1,at=whenplot$levels,labels=whenplot$labels,padj=whenplot$padj)
+            axis(side=1,at=whenplot8$levels,labels=whenplot8$labels,padj=whenplot8$padj)
+            if (drought.mark){
+               for (n in 1:ndrought){
+                  rect(xleft  = drought[[n]][1],ybottom = ydrought[1]
+                      ,xright = drought[[n]][2],ytop    = ydrought[2]
+                      ,col    = "gray84",border=NA)
+               }#end for
+            }#end if
             if (plotgrid){ 
-               abline(v=whenplot$levels,h=axTicks(side=2),col="lightgray",lty="solid")
+               abline(v=whenplot8$levels,h=axTicks(side=2),col="gray52",lty="solid")
             }#end if
             for (l in 1:nlayers){
                thisvar = get(vnames[l])
                points(x=thismonth,y=thisvar,col=lcolours[l]
                      ,lwd=llwd[l],type=ltype,pch=16,cex=0.8)
             }#end for
-            legend(x=legpos,inset=0.05,legend=description,col=lcolours,lwd=llwd)
+            legend(x=legpos,inset=0.05,legend=description,col=lcolours,lwd=llwd,cex=0.8)
             if (outform[o] == "x11"){
                locator(n=1)
                dev.off()
@@ -2476,7 +2201,7 @@ for (place in myplaces){
                    ,cex.main=cex.main)
                axis(side=1,at=dcycplot$levels,labels=dcycplot$labels,padj=dcycplot$padj)
                if (plotgrid){ 
-                  abline(v=dcycplot$levels,h=axTicks(side=2),col="lightgray",lty="solid")
+                  abline(v=dcycplot$levels,h=axTicks(side=2),col="gray52",lty="solid")
                }#end if
                for (l in 1:nlayers){
                   thisvar = dcyc12mn[[vnames[l]]]
@@ -2525,7 +2250,7 @@ for (place in myplaces){
       plotit       = compnow$plt
 
       #----- Check whether there are observations for this particular site. ---------------#
-      if (iata == "mao"){
+      if (iata == "mao" | iata == "bdf"){
          obsnow = "obs.m34"
       }else if(iata == "stm"){
          obsnow = "obs.s67"
@@ -2563,14 +2288,32 @@ for (place in myplaces){
          outtheme = paste(outdir,vname,sep="/")
          if (! file.exists(outtheme)) dir.create(outtheme)
          print (paste("      +",description,"comparison..."))
+         #---------------------------------------------------------------------------------# 
+
 
 
          #----- Define the number of layers. ----------------------------------------------#
          thismean  = dcyc12mn[[vname]]
          thissdev  = dcyc12sd[[vname]]
+         #---------------------------------------------------------------------------------# 
+
+
+
+         #---------------------------------------------------------------------------------# 
+         #    Some variables have no standard deviation in the model.  Make them 0 if this #
+         # is the case.                                                                    #
+         #---------------------------------------------------------------------------------# 
+         if (length(thissdev) == 0){
+            thissdev = 0. * thismean
+         }#end if
+         #---------------------------------------------------------------------------------# 
+
+
          #----- Append the last hour before the first one. --------------------------------#
          thismean  = cbind(thismean[,ndcycle],thismean)
          thissdev  = cbind(thissdev[,ndcycle],thissdev)
+         #---------------------------------------------------------------------------------# 
+
 
          #----- Find the plot range. ------------------------------------------------------#
          if (plotsd){
@@ -2616,7 +2359,7 @@ for (place in myplaces){
                    ,cex.main=cex.main)
                axis(side=1,at=dcycplot$levels,labels=dcycplot$labels,padj=dcycplot$padj)
                if (plotgrid){ 
-                  abline(v=dcycplot$levels,h=axTicks(side=2),col="lightgray",lty="solid")
+                  abline(v=dcycplot$levels,h=axTicks(side=2),col="gray52",lty="solid")
                }#end if
                if (plotsd){
                   err.x = c(thisday,rev(thisday),NA,thisday,rev(thisday))
@@ -2680,7 +2423,7 @@ for (place in myplaces){
       plotit       = compnow$plt
 
       #----- Check whether there are observations for this particular site. ---------------#
-      if (iata == "mao"){
+      if (iata == "mao" | iata == "bdf"){
          obsnow = "obs.m34"
       }else if(iata == "stm"){
          obsnow = "obs.s67"
@@ -2709,6 +2452,9 @@ for (place in myplaces){
          sdvar   = paste("msdev",vname,sep=".")
          obsmean = thisobs[[mnvar]]
          obssdev = thisobs[[sdvar]]
+         #---------------------------------------------------------------------------------#
+
+
 
          #---------------------------------------------------------------------------------#
          #    Check whether the time series directory exists.  If not, create it.          #
@@ -2716,11 +2462,27 @@ for (place in myplaces){
          outdir   = paste(outpref,"compmmean",sep="/")
          if (! file.exists(outdir)) dir.create(outdir)
          print (paste("      - ",description,"comparison..."))
+         #---------------------------------------------------------------------------------#
+
 
 
          #----- Define the number of layers. ----------------------------------------------#
          thismean  = mont12mn[[vname]]
          thissdev  = mont12sd[[vname]]
+         #---------------------------------------------------------------------------------# 
+
+
+
+         #---------------------------------------------------------------------------------# 
+         #    Some variables have no standard deviation in the model.  Make them 0 if this #
+         # is the case.                                                                    #
+         #---------------------------------------------------------------------------------# 
+         if (length(thissdev) == 0){
+            thissdev = 0. * thismean
+         }#end if
+         #---------------------------------------------------------------------------------# 
+
+
 
          #----- Find the plot range. ------------------------------------------------------#
          if (plotsd){
@@ -2768,7 +2530,7 @@ for (place in myplaces){
                 ,cex.main=cex.main)
             axis(side=1,at=montplot$levels,labels=montplot$labels,padj=montplot$padj)
             if (plotgrid){ 
-               abline(v=montplot$levels,h=axTicks(side=2),col="lightgray",lty="solid")
+               abline(v=montplot$levels,h=axTicks(side=2),col="gray52",lty="solid")
             }#end if
             if (plotsd){
                err.x = c(montmont,rev(montmont),NA,montmont,rev(montmont))
@@ -2828,7 +2590,7 @@ for (place in myplaces){
          print (paste("      + Climatology profile of ",description,"..."))
 
          #----- Find the number of rows and columns, and the axes. ------------------------#
-         monaxis  = sort(unique(monnum[sel]))
+         monaxis  = sort(unique(monnum))
          soilaxis = slz
          nmon     = length(monaxis)
          nsoil    = nzg
@@ -2891,10 +2653,120 @@ for (place in myplaces){
                      ,plot.axes={axis(side=1,at=monat,labels=monlab)
                                  axis(side=2,at=zat,labels=znice)
                                  if (hovgrid){
-                                    abline(h=zat,v=monat,col="lightgray",lty="dotted")
+                                    abline(h=zat,v=monat,col="gray52",lty="dotted")
                                  }#end if hovgrid
                                 }#end plot.axes
                      )
+
+            if (outform[o] == "x11"){
+               locator(n=1)
+               dev.off()
+            }else{
+               dev.off()
+            }#end if
+         } #end for outform
+      }#end if plotit
+   }#end for nhov
+   #---------------------------------------------------------------------------------------#
+
+
+
+
+
+   #---------------------------------------------------------------------------------------#
+   #   Plot the climatology of the soil properties.                                        #
+   #---------------------------------------------------------------------------------------#
+   for (sts in 1:nsoilts){
+
+      #----- Retrieve variable information from the list. ---------------------------------#
+      thissts    = soilts[[sts]]
+      vnam        = thissts$vnam
+      description = thissts$desc
+      unit        = thissts$unit
+      vcscheme    = thissts$csch
+      pnlog       = thissts$pnlog
+      plotit      = thissts$plt
+
+      if (plotit){
+
+         #---------------------------------------------------------------------------------#
+         #     Check if the directory exists.  If not, create it.                          #
+         #---------------------------------------------------------------------------------#
+         outdir  =  paste(outpref,"soilts",sep="/")
+         if (! file.exists(outdir)) dir.create(outdir)
+         print (paste("      + Time series profile of ",description,"..."))
+
+         #----- Find the number of rows and columns, and the axes. ------------------------#
+         timeaxis  = thismonth
+         soilaxis  = slz
+         nmon      = length(timeaxis)
+         nsoil     = nzg
+
+         #----- Convert the vector data into an array. ------------------------------------#
+         vararr  = get(vnam)
+
+         #----- Copy Decembers ans Januaries to make the edges buffered. ------------------#
+         first    = vararr[1,]
+         first    = c(first,first[nzg],first[nzg])
+
+         last     = vararr[totmon,]
+         last     = c(last[1],last[1],last)
+
+         #----- Bind first and last year to the array, to make the edges buffered. --------#
+         varbuff  = cbind(vararr[,1],vararr,vararr[,nzg])
+         varbuff  = rbind(first,varbuff,last)
+
+         #---------------------------------------------------------------------------------#
+         #      Expand the month and year axes.  Make the first and last time equal time   #
+         # steps.                                                                          #
+         #---------------------------------------------------------------------------------#
+         dwhen    = as.numeric(thismonth[2]-thismonth[1])
+         whenaxis = c(chron(as.numeric(thismonth[1]-dwhen))
+                     ,timeaxis
+                     ,chron(as.numeric(thismonth[totmon]+dwhen)))
+         soilaxis = -log(-1.0 * c( slz[1]*(slz[1]/slz[2])
+                                 , soilaxis
+                                 , slz[nzg]*(slz[nzg]/slz[nzg-1]) ))
+
+         if (pnlog){
+            vrange  = range(varbuff,na.rm=TRUE)
+            vlevels = pretty.log(x=vrange,n=ncolshov)
+            vnlev   = length(vlevels)
+         }else{
+            vrange  = range(varbuff,na.rm=TRUE)
+            vlevels = pretty(x=vrange,n=ncolshov)
+            vnlev   = length(vlevels)
+         }#end if
+
+         #----- Loop over formats. --------------------------------------------------------#
+         for (o in 1:nout){
+            fichier = paste(outdir,"/",vnam,"-",suffix,".",outform[o],sep="")
+            if(outform[o] == "x11"){
+               X11(width=size$width,height=size$height,pointsize=ptsz)
+            }else if(outform[o] == "png"){
+               png(filename=fichier,width=size$width*depth,height=size$height*depth
+                  ,pointsize=ptsz,res=depth)
+            }else if(outform[o] == "eps"){
+               postscript(file=fichier,width=size$width,height=size$height
+                         ,pointsize=ptsz,paper=paper)
+            }#end if
+
+            letitre = paste(description," - ",lieu,sep="")
+            sombreado(x=whenaxis,y=soilaxis,z=varbuff,levels=vlevels,nlevels=vnlev
+                     ,color.palette=get(vcscheme)
+                     ,plot.title=title(main=letitre,xlab="Month",ylab="Soil depth [m]"
+                                      ,cex.main=0.7)
+                     ,key.title=title(main=unit,cex.main=0.8)
+                     ,key.log=pnlog
+                     ,plot.axes={axis(side=1,at=whenplot6$levels
+                                     ,labels=whenplot6$labels,padj=whenplot6$padj)
+                                 axis(side=2,at=zat,labels=znice)
+                                 if (hovgrid){
+                                    abline(h=zat,v=whenplot6$levels,col="gray52"
+                                          ,lty="dotted")
+                                 }#end if hovgrid
+                                }#end plot.axes
+                     )#end sombreado
 
             if (outform[o] == "x11"){
                locator(n=1)
@@ -3009,10 +2881,10 @@ for (place in myplaces){
                                  axis(side=2,at=yrat)
                                  if (hovgrid){
                                     for (yl in yrat){
-                                       abline(h=yl,col="lightgray",lty="dotted")
+                                       abline(h=yl,col="gray52",lty="dotted")
                                     } #end for yl
                                     for (ml in monat){
-                                       abline(v=ml,col="lightgray",lty="dotted")
+                                       abline(v=ml,col="gray52",lty="dotted")
                                     } #end for ml
                                  }#end if hovgrid
                                 }#end plot.axes
@@ -3104,7 +2976,7 @@ for (place in myplaces){
                                  axis(side=2,at=dcycplot$levels,labels=dcycplot$labels)
                                  if (hovgrid){
                                     abline(v=hdcycplot$levels,h=dcycplot$levels
-                                          ,col="lightgray",lty="dotted")
+                                          ,col="gray52",lty="dotted")
                                  }#end if hovgrid
                                 }#end plot.axes
                      )
@@ -3284,11 +3156,11 @@ for (place in myplaces){
                                          ,rep(NA,times=ncohnow)))
                pchww    = rep(c(NA,16,NA),times=ncohnow)
                cexww    = rep(cexww,each=3)
-               colww    = pftcols[pftww]
+               colww    = pft$colour[pftww]
 
                pftin   = sort(unique(pftco[[ww]]))
-               colleg  = pftcols[pftin]
-               pftleg  = pftnames[pftin]
+               colleg  = pft$colour[pftin]
+               pftleg  = pft$name  [pftin]
 
 
                #----- Loop over output formats. -------------------------------------------#
@@ -3305,7 +3177,7 @@ for (place in myplaces){
                                ,pointsize=ptsz,paper=paper)
                   }#end if
 
-                  stcol   = pftcols[pftww]
+                  stcol   = pft$colour[pftww]
                   letitre = paste(description," - ",lieu,
                                   "\n Time :",mlist[mm],"/",thisyear,sep=" ")
                   lezlab  = paste(description," [",unit,"]",sep="")
@@ -3336,121 +3208,6 @@ for (place in myplaces){
          }#end for nameco
       } #end if
    }#end for npsas
-   #---------------------------------------------------------------------------------------#
-
-
-
-
-
-   #---------------------------------------------------------------------------------------#
-   #   Plot the filled contour plots as function of time and PFT.                          #
-   #---------------------------------------------------------------------------------------#
-   for (v in 1:nfcpft){
-
-      #----- Retrieve variable information from the list. ---------------------------------#
-      thisfc      = fcpft[[v]]
-      vnam        = thisfc$vnam
-      description = thisfc$desc
-      unit        = thisfc$unit
-      vcscheme    = thisfc$csch
-      vclass      = thisfc$cls
-      plotit      = thisfc$plt
-
-      if (plotit && any(selpft)){
-         #---------------------------------------------------------------------------------#
-         #      Define which class we are going to plot.                                   #
-         #---------------------------------------------------------------------------------#
-         if (vclass == "age"){
-            thisclass = classage
-            expclass  = c(classage[1]-dage,classage,classage[nage]+dage)
-            nclass    = nage
-            atclass   = pretty(classage)
-            leylab    = "Age class"
-         }else{ # if (vclass == "dbh"){
-            thisclass = classdbh
-            expclass  = c(classdbh[1]-ddbh,classdbh,classdbh[ndbh]+ddbh)
-            nclass    = ndbh
-            atclass   = pretty(classdbh)
-            leylab    = "DBH class"
-         }#end if vclass
-
-         #---------------------------------------------------------------------------------#
-         #     Check if the directory exists.  If not, create it.                          #
-         #---------------------------------------------------------------------------------#
-         outdir  =  paste(outpref,"fcpft",sep="/")
-         if (! file.exists(outdir)) dir.create(outdir)
-         print (paste("      + ",description," time series by ",leylab,"...",sep=""))
-
-         #----- Load this variable into "thisvar". ----------------------------------------#
-         thisvar = get(vnam)
-
-         #---------------------------------------------------------------------------------#
-         #     Define which PFTs to run.  Also, find the overall range amongst all PFTs,   #
-         # so all plants are in the same scale.                                            #
-         #---------------------------------------------------------------------------------#
-         selpftonly = selpft[1:npft]
-         pftrun  = seq(from=1,to=npft,by=1)[selpftonly]
-         vrange  = range(thisvar[,,selpftonly],na.rm=TRUE)
-         vlevels = pretty(x=vrange,n=ncolsfc)
-         vnlev   = length(vlevels)
-
-
-         for (p in pftrun){
-            if (p < 10){
-               cpcp = paste("0",p,sep="")
-            }else{
-               cpcp = as.character(p)
-            } #end if
-            for (o in 1:nout){
-               fichier = paste(outdir,"/",vnam,"-pft",cpcp,"-",suffix,".",outform[o]
-                              ,sep="")
-               if(outform[o] == "x11"){
-                  X11(width=size$width,height=size$height,pointsize=ptsz)
-               }else if(outform[o] == "png"){
-                  png(filename=fichier,width=size$width*depth,height=size$height*depth
-                     ,pointsize=ptsz,res=depth)
-               }else if(outform[o] == "eps"){
-                  postscript(file=fichier,width=size$width,height=size$height
-                            ,pointsize=ptsz,paper=paper)
-               }#end if
-
-               #----- Copy this PFT to a scratch array. -----------------------------------#
-               var00 = as.matrix(thisvar[,,p])
-               
-               #----- Expand the axis so all meaningful information is in the middle. -----#
-               before   = thismonth[1]-(thismonth[2]-thismonth[1])
-               after    = thismonth[tlast]+(thismonth[tlast]-thismonth[tlast-1])
-               expmonth = c(before,thismonth,after)
-               expmonth = chron(expmonth,out.format=c(dates="day-mon-yr",times=NULL))
-               zero     = rep(0,times=tlast)
-               expvar   = cbind(zero,var00,zero)
-               expvar   = rbind(expvar[1,],expvar,expvar[tlast,])
-
-               letitre = paste(description,".  PFT:",p," - ",lieu,sep="")
-               sombreado(x=expmonth,y=expclass,z=expvar,levels=vlevels,nlevels=vnlev
-                        ,color.palette=get(vcscheme)
-                        ,plot.title=title(main=letitre,xlab="Time",ylab=leylab,cex.main=0.7)
-                        ,key.title=title(main=unit,cex.main=0.8)
-                        ,plot.axes={axis(side=1,at=whenplot$levels,labels=whenplot$labels
-                                        ,padj=whenplot$padj)
-                                    axis(side=2,at=atclass)
-                                    if (fcgrid){ 
-                                       abline(v=whenplot$levels,h=atclass,col="lightgray"
-                                             ,lty="solid")
-                                    }#end if
-                                   }#end plot.axes
-                        )
-
-               if (outform[o] == "x11"){
-                  locator(n=1)
-                  dev.off()
-               }else{
-                  dev.off()
-               }#end if
-            } #end for outform
-         }#end for pftrun
-      }#end if plotit
-   }#end for nfcpft
    #---------------------------------------------------------------------------------------#
 }#end for places
 

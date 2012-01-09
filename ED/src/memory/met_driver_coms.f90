@@ -153,7 +153,7 @@ module met_driver_coms
    !---------------------------------------------------------------------------------------!
 
    type(met_driv_state) :: lapse
-  
+
    !---------------------------------------------------------------------------------------!
    !     The following variables define the lower and upper limits accepted by ED-2.  The  !
    ! actual values can be set in ed_params.f90.                                            !
@@ -178,6 +178,20 @@ module met_driver_coms
    real :: vels_max
    real :: geoht_min
    real :: geoht_max
+   !---------------------------------------------------------------------------------------!
+
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     The following variables control whether to print debugging output when inter-     !
+   ! polating radiation variables.                                                         !
+   !---------------------------------------------------------------------------------------!
+   logical                :: print_radinterp
+   character(len=str_len) :: vbdsf_file
+   character(len=str_len) :: vddsf_file
+   character(len=str_len) :: nbdsf_file
+   character(len=str_len) :: nddsf_file
    !---------------------------------------------------------------------------------------!
 
 end module met_driver_coms

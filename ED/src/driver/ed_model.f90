@@ -4,7 +4,8 @@
 !------------------------------------------------------------------------------------------!
 subroutine ed_model()
   
-   use ed_misc_coms  , only : integration_scheme  & ! intent(in)
+   use ed_misc_coms  , only : ivegt_dynamics      & ! intent(in)
+                            , integration_scheme  & ! intent(in)
                             , current_time        & ! intent(in)
                             , frqfast             & ! intent(in)
                             , frqstate            & ! intent(in)
@@ -363,8 +364,31 @@ subroutine ed_model()
             call reset_integ_err()
          end if
 
-         !----- Do phenology, growth, mortality, recruitment, disturbance. ----------------!
-         call vegetation_dynamics(new_month,new_year)
+
+         !---------------------------------------------------------------------------------!
+         !     Compute phenology, growth, mortality, recruitment, disturbance, and check   !
+         ! whether we will apply them to the ecosystem or not.                             !
+         !---------------------------------------------------------------------------------!
+         select case (ivegt_dynamics)
+         case (0)
+            !------------------------------------------------------------------------------!
+            !     Dummy vegetation dynamics, we compute the tendencies but we don't really !
+            ! apply to the vegetation, so they will remain constant throughout the entire  !
+            ! simulation.                                                                  !
+            !------------------------------------------------------------------------------!
+            call vegetation_dynamics_eq_0(new_month,new_year)
+            !------------------------------------------------------------------------------!
+
+         case (1)
+            !------------------------------------------------------------------------------!
+            !     Actual vegetation dynamics, we compute the tendencies and apply to the   !
+            ! vegetation.                                                                  !
+            !------------------------------------------------------------------------------!
+            call vegetation_dynamics(new_month,new_year)
+            !------------------------------------------------------------------------------!
+
+         end select
+         !---------------------------------------------------------------------------------!
 
          !----- First day of a month. -----------------------------------------------------!
          if (new_month) then

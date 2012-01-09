@@ -11,11 +11,12 @@ subroutine geodat(n2,n3,datr,hfn,ofn,vt2da,vt2db,ngr,vnam)
 use mem_grid
 use io_params
 use rconstants, only: spcon
+use grid_dims, only : str_len
 
 implicit none
 integer :: n2,n3,ngr
 real ::  vt2da(*),vt2db(*),datr(n2,n3)
-character(len=80) :: hfn,ofn,title
+character(len=str_len) :: hfn,ofn,title
 character(len=3) :: vnam
 
 integer :: lb,iblksizo,no,isbego,iwbego,iodim,mof,niq,njq,np
@@ -103,6 +104,7 @@ subroutine sfcopqr(no,mof,np,niq,njq,n2,n3,xt,yt,platn,plonn  &
      ,ofn,offlat,offlon,vnam,ngr,itopsflg,iz0flg)
 
 use teb_spm_start, only: TEB_SPM
+use grid_dims, only : str_len
 
 implicit none
 integer :: no,mof,np,niq,njq,n2,n3,iblksizo,isbego,iwbego,ngr  &
@@ -110,12 +112,12 @@ integer :: no,mof,np,niq,njq,n2,n3,iblksizo,isbego,iwbego,ngr  &
 real :: dato(no,no,mof),datp(np,np),datq(niq,njq),datr(n2,n3)  &
          ,xt(n2),yt(n3)
 real :: erad,deltallo,deltaxp,deltayp,deltaxq,deltayq,offlat,offlon  
-character(len=80) :: ofn,title3
+character(len=str_len) :: ofn,title3
 character(len=3) :: title1,vnam
 character(len=4) :: title2
 logical l1,l2
 integer,parameter :: maxmiss=1000
-character(len=80) :: fnmiss(maxmiss)
+character(len=str_len) :: fnmiss(maxmiss)
 real, allocatable :: sdq(:,:),shaq(:,:),sdr(:,:),datre(:,:)
 real, allocatable :: iso(:),iwo(:)
 
@@ -523,17 +525,18 @@ END
 !**********************************************************************
 
 subroutine dted(no,pathname,lat,lon,dato)
+use grid_dims, only : str_len
 implicit none
 integer :: no,lat,lon
 real :: dato(no,no)
-character(len=80) :: pathname
+character(len=str_len) :: pathname
 
 !     Let's try and bypass all the bookeeping and just read the file
 !     Note that the latitude bands are 5 degrees less than those
 !     specified in the original code from Sarma since we are not
 !     considering the max latitude but rather the start latitude.
 
-character(len=80) :: fname
+character(len=str_len) :: fname
 integer :: ifact,notfnd
 
 ifact = 6
@@ -557,6 +560,7 @@ end
 ! ----------------------------------------------------------------------
 
 subroutine dtedint(no,iwres,lon,lat,notfnd,pathname,dato)
+use grid_dims, only : str_len
 implicit none
 integer :: no,iwres,lon,lat,notfnd
 real :: dato(no,no)
@@ -572,11 +576,11 @@ character*(*) pathname
 !     new input data holding arrays:
 
 real readin2(360000)
-character*16 newname1*80,fmtstr*5,newne*6
+character*16 newname1*str_len,fmtstr*5,newne*6
 character*3  degns,degew
 character*12 dtedfile
 character*4 subdir
-character*80 extdted,callname
+character(len=str_len) :: extdted,callname
 real :: dtedwk(600,600)
 integer :: no_blanks,i,num_chrs,ifile,lc,isave,ndtx,ndty,ik,jk,ibtre,j,id
 real :: rvaln,wt

@@ -11,6 +11,7 @@ module ed_work_vars
       real   , dimension(  :,:), pointer :: landfrac
       real   , dimension(:,:,:), pointer :: soilfrac
       integer, dimension(:,:,:), pointer :: ntext
+      integer, dimension(  :,:), pointer :: nscol
       integer, dimension(  :,:), pointer :: xatm
       integer, dimension(  :,:), pointer :: yatm
    end type work_vars
@@ -23,6 +24,7 @@ module ed_work_vars
       real   , dimension(:  ), pointer :: landfrac
       real   , dimension(:,:), pointer :: soilfrac
       integer, dimension(:,:), pointer :: ntext
+      integer, dimension(:  ), pointer :: nscol
       integer, dimension(:  ), pointer :: xid
       integer, dimension(:  ), pointer :: yid
    end type work_vecs
@@ -65,6 +67,7 @@ module ed_work_vars
       allocate (worke%landfrac(      n2,n3))
       allocate (worke%soilfrac(nsite,n2,n3))
       allocate (worke%ntext   (nsite,n2,n3))
+      allocate (worke%nscol   (      n2,n3))
       !------------------------------------------------------------------------------------!
 
       return
@@ -95,6 +98,7 @@ module ed_work_vars
       if (associated(worke%landfrac )) nullify (worke%landfrac)
       if (associated(worke%soilfrac )) nullify (worke%soilfrac)
       if (associated(worke%ntext    )) nullify (worke%ntext   )
+      if (associated(worke%nscol    )) nullify (worke%nscol   )
 
       return
    end subroutine ed_nullify_work
@@ -121,6 +125,8 @@ module ed_work_vars
       if (associated(worke%landfrac    )) deallocate (worke%landfrac    )
       if (associated(worke%soilfrac    )) deallocate (worke%soilfrac    )
       if (associated(worke%ntext       )) deallocate (worke%ntext       )
+      if (associated(worke%nscol       )) deallocate (worke%nscol       )
+
       return
    end subroutine ed_dealloc_work
    !=======================================================================================!
@@ -150,6 +156,7 @@ module ed_work_vars
       allocate (workv%landfrac(      npolys))
       allocate (workv%soilfrac(nsite,npolys))
       allocate (workv%ntext   (nsite,npolys))
+      allocate (workv%nscol   (      npolys))
       allocate (workv%xid     (      npolys))
       allocate (workv%yid     (      npolys))
       !------------------------------------------------------------------------------------!
@@ -179,6 +186,7 @@ module ed_work_vars
       if (associated(workv%landfrac))   nullify(workv%landfrac)
       if (associated(workv%soilfrac))   nullify(workv%soilfrac)
       if (associated(workv%ntext   ))   nullify(workv%ntext   )
+      if (associated(workv%nscol   ))   nullify(workv%nscol   )
       if (associated(workv%xid     ))   nullify(workv%xid     )
       if (associated(workv%yid     ))   nullify(workv%yid     )
 
@@ -207,6 +215,7 @@ module ed_work_vars
       if (associated(workv%landfrac))   deallocate(workv%landfrac)
       if (associated(workv%soilfrac))   deallocate(workv%soilfrac)
       if (associated(workv%ntext   ))   deallocate(workv%ntext   )
+      if (associated(workv%nscol   ))   deallocate(workv%nscol   )
       if (associated(workv%xid     ))   deallocate(workv%xid     )
       if (associated(workv%yid     ))   deallocate(workv%yid     )
 

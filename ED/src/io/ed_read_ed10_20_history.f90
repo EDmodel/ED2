@@ -18,10 +18,11 @@ subroutine read_ed10_ed20_history_file
                              , q                   & ! intent(in)
                              , qsw                 & ! intent(in)
                              , hgt_min             & ! intent(in)
+                             , min_dbh             & ! intent(in)
+                             , min_bdead           & ! intent(in)
                              , is_grass            & ! intent(in)
                              , include_pft         & ! intent(in)
                              , include_pft_ag      & ! intent(in)
-                             , phenology           & ! intent(in)
                              , pft_1st_check       & ! intent(in)
                              , agf_bs              & ! intent(in)
                              , include_these_pft   ! ! intent(in)
@@ -202,6 +203,7 @@ subroutine read_ed10_ed20_history_file
             cgrid%ntext_soil(2,ipy) = 2
             cgrid%ntext_soil(3,ipy) = 3
             cgrid%ntext_soil(4,ipy) = 3
+            cgrid%ncol_soil(ipy)    = 10
          end if
 
 
@@ -244,15 +246,11 @@ subroutine read_ed10_ed20_history_file
             
             !----- Read the other information from the header (if there is any...). -------!
             nwater = 1
-            select case (ied_init_mode)
-            case (1)
+            if (ied_init_mode == 1 ) then
                read (unit=12,fmt=*) cdum,nwater
                read (unit=12,fmt=*) cdum,depth(1:nwater)
                read (unit=12,fmt=*)
-
-            case (2)
-               ! read(unit=12,fmt=*)!water patch
-            end select
+            end if
             
             !------------------------------------------------------------------------------!
             !     Now we loop over all patches and decide whether they should be included  !
@@ -668,7 +666,7 @@ subroutine read_ed10_ed20_history_file
                         select case(ied_init_mode)
                         case (6)
                            !----- Inventory.  Read DBH and find the other stuff. ----------!
-                           cpatch%dbh(ic2)   = dbh(ic)
+                           cpatch%dbh(ic2)   = max(dbh(ic),min_dbh(ipft(ic)))
                            cpatch%hite(ic2)  = dbh2h(ipft(ic),dbh(ic))
                            cpatch%bdead(ic2) = dbh2bd(dbh(ic),ipft(ic))
 
@@ -681,7 +679,7 @@ subroutine read_ed10_ed20_history_file
                            ! equations.                                                    !
                            !---------------------------------------------------------------!
                            if (bdead(ic) > 0.0) then
-                              cpatch%bdead(ic2) = bdead(ic)
+                              cpatch%bdead(ic2) = max(bdead(ic),min_bdead(ipft(ic)))
                               cpatch%dbh(ic2)   = bd2dbh(ipft(ic),bdead(ic))
                               cpatch%hite(ic2)  = dbh2h(ipft(ic),dbh(ic))
                            else
@@ -710,11 +708,11 @@ subroutine read_ed10_ed20_history_file
                         cpatch%broot(ic2)     = cpatch%balive(ic2) * q(ipft(ic))           &
                                               / ( 1.0 + q(ipft(ic)) + qsw(ipft(ic))        &
                                                * cpatch%hite(ic2))
-                        cpatch%bsapwooda(ic2) = agf_bs * cpatch%balive(ic2)                &
+                        cpatch%bsapwooda(ic2) = agf_bs(ipft(ic)) * cpatch%balive(ic2)                &
                                              * qsw(ipft(ic))* cpatch%hite(ic2)             &
                                              / ( 1.0 + q(ipft(ic)) + qsw(ipft(ic))         &
                                                * cpatch%hite(ic2))
-                        cpatch%bsapwoodb(ic2) = (1.-agf_bs) * cpatch%balive(ic2)           &
+                        cpatch%bsapwoodb(ic2) = (1.-agf_bs(ipft(ic))) * cpatch%balive(ic2)           &
                                              * qsw(ipft(ic))* cpatch%hite(ic2)             &
                                              / ( 1.0 + q(ipft(ic)) + qsw(ipft(ic))         &
                                                * cpatch%hite(ic2))
@@ -746,7 +744,7 @@ subroutine read_ed10_ed20_history_file
 
                         !----- Above ground biomass, use the allometry. -------------------!
                         cpatch%agb(ic2) = ed_biomass(cpatch%bdead(ic2),cpatch%bleaf(ic2)   &
-                                                    ,cpatch%bsapwooda(ic2))
+                                                    ,cpatch%bsapwooda(ic2),cpatch%pft(ic2))
                         cpatch%basarea(ic2)  = pio4 * cpatch%dbh(ic2) * cpatch%dbh(ic2)
 
                         !----- Growth rates, start with zero. -----------------------------!

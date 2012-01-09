@@ -140,6 +140,8 @@ recursive subroutine read_ed_xml_config(filename)
 
          call getConfigSTRING  ('history_out_filepath','misc',i,cval,texist)
          if(texist) sfilout = trim(cval)
+         call getConfigINT  ('ivegt_dynamics','misc',i,ival,texist)
+         if(texist) ivegt_dynamics = ival
          call getConfigINT  ('integration_scheme','misc',i,ival,texist)
          if(texist) integration_scheme = ival
 
@@ -211,18 +213,22 @@ recursive subroutine read_ed_xml_config(filename)
            call getConfigREAL  ('SLA','pft',i,rval,texist)
            if(texist) SLA(myPFT) = real(rval)
            call getConfigREAL  ('b1Bl','pft',i,rval,texist)
-           if(texist) b1Bl(myPFT) = real(rval)
+           if (texist) then
+              b1Bl(myPFT) = real(rval)
+           end if
            call getConfigREAL  ('b2Bl','pft',i,rval,texist)
-           if(texist) b2Bl(myPFT) = real(rval)
+           if (texist) then
+              b2Bl(myPFT) = real(rval)
+           end if
            call getConfigREAL  ('b1Bs','pft',i,rval,texist)
            if (texist) then
               b1Bs_small(myPFT) = real(rval)
-              b1Bs_big(myPFT)   = real(rval)
+              b1Bs_large(myPFT)   = real(rval)
            end if
            call getConfigREAL  ('b2Bs','pft',i,rval,texist)
            if (texist) then
               b2Bs_small(myPFT) = real(rval)
-              b2Bs_big  (myPFT) = real(rval)
+              b2Bs_large(myPFT) = real(rval)
            end if
            call getConfigREAL  ('b1Ht','pft',i,rval,texist)
            if(texist) b1Ht(myPFT) = real(rval)
@@ -288,8 +294,8 @@ recursive subroutine read_ed_xml_config(filename)
            if(texist) c2n_recruit(myPFT) = real(rval)
 !!$           call getConfigREAL  ('c2n_storage','pft',i,rval,texist)
 !!$           if(texist) c2n_storage(myPFT) = real(rval)
-           call getConfigREAL  ('max_dbh','pft',i,rval,texist)
-           if(texist) max_dbh(myPFT) = real(rval)
+           call getConfigREAL  ('dbh_crit','pft',i,rval,texist)
+           if(texist) dbh_crit(myPFT) = real(rval)
            call getConfigREAL  ('rho','pft',i,rval,texist)
            if(texist) rho(myPFT) = real(rval)
            call getConfigREAL  ('D0','pft',i,rval,texist)
@@ -361,7 +367,7 @@ recursive subroutine read_ed_xml_config(filename)
         call getConfigREAL  ('C2B','pftconst',i,rval,texist)
         if(texist) C2B = real(rval)
         call getConfigREAL  ('agf_bs','pftconst',i,rval,texist)
-        if(texist) agf_bs = real(rval)
+        if(texist) agf_bs(:) = real(rval)
         call getConfigREAL  ('frost_mort','pftconst',i,rval,texist)
         if(texist) frost_mort = real(rval)
         
@@ -490,8 +496,6 @@ recursive subroutine read_ed_xml_config(filename)
         if(texist) rlong_min = real(rval) 
         call getConfigREAL  ('veg_temp_min','radiation',i,rval,texist)
         if(texist) rk4min_veg_temp = rval ! This is double precision. 
-        call getConfigREAL  ('mubar','radiation',i,rval,texist)
-        if(texist) mubar = rval
         call getConfigREAL  ('visible_fraction','radiation',i,rval,texist)
         if(texist) visible_fraction = real(rval)
         call getConfigREAL  ('visible_fraction_dir','radiation',i,rval,texist)
@@ -701,7 +705,7 @@ recursive subroutine read_ed_xml_config(filename)
         call getConfigREAL  ('retained_carbon_fraction','phenology',i,rval,texist)
         if(texist)  retained_carbon_fraction = real(rval)
         call getConfigREAL  ('theta_crit','phenology',i,rval,texist)
-        if(texist)  theta_crit= real(rval)
+        if(texist)  thetacrit= real(rval)
         call getConfigREAL  ('dl_tr','phenology',i,rval,texist)
         if(texist)  dl_tr = real(rval)
         call getConfigREAL  ('st_tr1','phenology',i,rval,texist)
@@ -742,8 +746,6 @@ recursive subroutine read_ed_xml_config(filename)
         
         call libxml2f90__ll_selecttag('DOWN','physiology',i)
 
-        call getConfigINT  ('istoma_scheme','physiology',i,ival,texist)
-        if(texist) istoma_scheme = ival
         call getConfigINT  ('n_plant_lim','physiology',i,ival,texist)
         if(texist) n_plant_lim = ival
         
@@ -980,9 +982,7 @@ subroutine write_ed_xml_config
         call putConfigREAL("b1Bl",b1Bl(i))
         call putConfigREAL("b2Bl",b2Bl(i))
         call putConfigREAL("b1Bs",b1Bs_small(i))
-        b1Bs_big(i) = b1Bs_big(i)
         call putConfigREAL("b2Bs",b2Bs_small(i))
-        b2Bs_big(i) = b2Bs_big(i)
         call putConfigREAL("b1Ht",b1Ht(i))
         call putConfigREAL("b2Ht",b2Ht(i))
         call putConfigREAL("Vm0",Vm0(i))
@@ -1005,7 +1005,7 @@ subroutine write_ed_xml_config
         call putConfigREAL("qsw",qsw(i))
         call putConfigREAL("c2n_leaf",c2n_leaf(i))
         call putConfigREAL("c2n_recruit",c2n_recruit(i))
-        call putConfigREAL("max_dbh",max_dbh(i))
+        call putConfigREAL("dbh_crit",dbh_crit(i))
         call putConfigREAL("rho",rho(i))
         call putConfigREAL("D0",D0(i))
         call putConfigREAL("mort1",mort1(i))

@@ -597,13 +597,13 @@ subroutine copy_lake_brams(i,j,ifm,mzg,mzs,initp)
    !     Transfer model scalars back to global arrays.                                     !
    !---------------------------------------------------------------------------------------!
    !----- Stars. --------------------------------------------------------------------------!
-   ed_fluxf_g(ifm)%ustar (i,j,1) = sngloff(initp%ustar  ,tiny_lakeoff)
-   ed_fluxf_g(ifm)%tstar (i,j,1) = sngloff(initp%tstar  ,tiny_lakeoff)
-   ed_fluxf_g(ifm)%cstar (i,j,1) = sngloff(initp%cstar  ,tiny_lakeoff)
-   ed_fluxf_g(ifm)%zeta  (i,j,1) = sngloff(initp%zeta   ,tiny_lakeoff)
-   ed_fluxf_g(ifm)%ribulk(i,j,1) = sngloff(initp%ribulk ,tiny_lakeoff)
+   ed_fluxf_g(ifm)%ustar (i,j,1) = sngloff(initp%avg_ustar,tiny_lakeoff)
+   ed_fluxf_g(ifm)%tstar (i,j,1) = sngloff(initp%avg_tstar,tiny_lakeoff)
+   ed_fluxf_g(ifm)%cstar (i,j,1) = sngloff(initp%avg_cstar,tiny_lakeoff)
+   ed_fluxf_g(ifm)%zeta  (i,j,1) = sngloff(initp%zeta     ,tiny_lakeoff)
+   ed_fluxf_g(ifm)%ribulk(i,j,1) = sngloff(initp%ribulk   ,tiny_lakeoff)
    !----- Water vapour:  we must convert specific humidity back to mixing ratio. ----------!
-   ed_fluxf_g(ifm)%rstar (i,j,1) = sngloff( initp%qstar                                    &
+   ed_fluxf_g(ifm)%rstar (i,j,1) = sngloff( initp%avg_qstar                                &
                                           / ( (1.d0-lakemet%atm_shv)                       &
                                             * (1.d0 - initp%can_shv))                      &
                                          , tiny_lakeoff)
@@ -623,8 +623,10 @@ subroutine copy_lake_brams(i,j,ifm,mzg,mzs,initp)
 
 
    !----- Radiation-related variables. ----------------------------------------------------!
-   ed_fluxf_g(ifm)%albedt (i,j,1) = sngloff(initp%avg_albedt  ,tiny_lakeoff)
-   ed_fluxf_g(ifm)%rlongup(i,j,1) = sngloff(initp%avg_rlongup ,tiny_lakeoff)
+   ed_fluxf_g(ifm)%albedt     (i,j,1) = sngloff(initp%avg_albedt     ,tiny_lakeoff)
+   ed_fluxf_g(ifm)%rlongup    (i,j,1) = sngloff(initp%avg_rlongup    ,tiny_lakeoff)
+   ed_fluxf_g(ifm)%rshort_gnd (i,j,1) = sngloff(initp%avg_rshort_gnd ,tiny_lakeoff)
+   ed_fluxf_g(ifm)%rlong_gnd  (i,j,1) = 0.0
    !---------------------------------------------------------------------------------------!
 
 
@@ -697,6 +699,7 @@ subroutine copy_lake_brams(i,j,ifm,mzg,mzs,initp)
       leaf_g(ifm)%soil_energy (k,i,j,1) = leaf_g(ifm)%soil_energy (mzg,i,j,1)
       leaf_g(ifm)%soil_water  (k,i,j,1) = leaf_g(ifm)%soil_water  (mzg,i,j,1)
    end do
+   leaf_g(ifm)%psibar_10d       (i,j,1) = 1.0
    !---------------------------------------------------------------------------------------!
 
    return

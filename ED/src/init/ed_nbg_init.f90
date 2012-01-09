@@ -208,7 +208,6 @@ subroutine init_nbg_cohorts(csite,lsl,ipa_a,ipa_z)
          cpatch%nplant(ico)           = init_density(ipft)
          cpatch%hite(ico)             = hgt_min(ipft)
          cpatch%phenology_status(ico) = 0
-         cpatch%bstorage(ico)         = 0.0
          cpatch%dbh(ico)              = h2dbh(cpatch%hite(ico),ipft)
          if (is_grass(ipft)) then
              ! - grasses have no bdead and bleaf is calculated from height
@@ -228,9 +227,11 @@ subroutine init_nbg_cohorts(csite,lsl,ipa_a,ipa_z)
          cpatch%balive(ico)           = cpatch%bleaf(ico) * salloc
          cpatch%broot(ico)            = q(ipft) * cpatch%balive(ico) * salloci
          cpatch%bsapwooda(ico)        = qsw(ipft) * cpatch%hite(ico) * cpatch%balive(ico)  &
-                                      * salloci * agf_bs
+                                      * salloci * agf_bs(ipft)
          cpatch%bsapwoodb(ico)        = qsw(ipft) * cpatch%hite(ico) * cpatch%balive(ico)  &
-                                      * salloci * (1.-agf_bs)
+                                      * salloci * (1.-agf_bs(ipft))
+         cpatch%bstorage(ico)         = 0.5 * ( cpatch%bleaf(ico) + cpatch%broot(ico)      &
+                                              + cpatch%bsapwooda(ico)+ cpatch%bsapwoodb(ico))
 
          !----- Find the initial area indices (LAI, WPA, WAI). ----------------------------!
          call area_indices(cpatch%nplant(ico),cpatch%bleaf(ico),cpatch%bdead(ico)          &
@@ -241,7 +242,7 @@ subroutine init_nbg_cohorts(csite,lsl,ipa_a,ipa_z)
 
          !----- Find the above-ground biomass and basal area. -----------------------------!
          cpatch%agb(ico) = ed_biomass(cpatch%bdead(ico),cpatch%bleaf(ico)                  &
-                                     ,cpatch%bsapwooda(ico))
+                                     ,cpatch%bsapwooda(ico),cpatch%pft(ico))
          cpatch%basarea(ico) = pio4 * cpatch%dbh(ico)*cpatch%dbh(ico)
 
          !----- Initialize other cohort-level variables. ----------------------------------!
@@ -366,9 +367,9 @@ subroutine init_cohorts_by_layers(csite,lsl,ipa_a,ipa_z)
          cpatch%balive(ico)           = cpatch%bleaf(ico) * salloc
          cpatch%broot(ico)            = q(ipft) * cpatch%balive(ico) * salloci
          cpatch%bsapwooda(ico)        = qsw(ipft) * cpatch%hite(ico) * cpatch%balive(ico)  &
-                                      * salloci * agf_bs
+                                      * salloci * agf_bs(ipft)
          cpatch%bsapwoodb(ico)        = qsw(ipft) * cpatch%hite(ico) * cpatch%balive(ico)  &
-                                      * salloci * (1.-agf_bs)
+                                      * salloci * (1.-agf_bs(ipft))
 
          !----- NPlant is defined such that the cohort LAI is equal to LAI0
          cpatch%nplant(ico)           = lai0 / (cpatch%bleaf(ico) * cpatch%sla(ico))
@@ -382,7 +383,7 @@ subroutine init_cohorts_by_layers(csite,lsl,ipa_a,ipa_z)
 
          !----- Find the above-ground biomass and basal area. -----------------------------!
          cpatch%agb(ico) = ed_biomass(cpatch%bdead(ico),cpatch%bleaf(ico)                  &
-                                     ,cpatch%bsapwooda(ico))
+                                     ,cpatch%bsapwooda(ico),cpatch%pft(ico))
          cpatch%basarea(ico) = pio4 * cpatch%dbh(ico) * cpatch%dbh(ico)
 
          !----- Initialize other cohort-level variables. ----------------------------------!

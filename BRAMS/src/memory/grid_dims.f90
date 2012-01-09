@@ -45,7 +45,7 @@ module grid_dims
    integer, parameter :: nxpmax  =  600
    integer, parameter :: nypmax  =  600
    integer, parameter :: nzpmax  =  132
-   integer, parameter :: nzgmax  =   20
+   integer, parameter :: nzgmax  =  100
    integer, parameter :: maxsclr =  150
    integer, parameter :: maxhp   = 1000
    integer, parameter :: maxdim  = max(nxpmax,nypmax,nzpmax+10,nzgmax)

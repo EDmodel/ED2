@@ -123,6 +123,11 @@ rpost_dims.o: $(RPOST_MEMORY)/rpost_dims.f90
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)
 
+rpost_filelist.o: $(RPOST_UTILS)/rpost_filelist.f90
+	cp -f $< $(<F:.f90=.f90)
+	$(F90_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90)
+
 rpost_misc.o: $(RPOST_DRIVER)/rpost_misc.f90
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)

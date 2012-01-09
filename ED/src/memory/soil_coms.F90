@@ -16,6 +16,7 @@ module soil_coms
                            , nzs       ! ! intent(in)
 #if defined(COUPLED)
    use leaf_coms    , only : nstyp     & ! intent(in)
+                           , nscol     & ! intent(in)
                            , nvtyp     & ! intent(in)
                            , nvtyp_teb ! ! intent(in)
 #endif
@@ -25,9 +26,11 @@ module soil_coms
   !----- These variables depend on whether it's a coupled or stand alone model. -----------!
 #if defined(COUPLED)
    integer, parameter :: ed_nstyp = nstyp          ! total # of soil textural classes
+   integer, parameter :: ed_nscol = nscol          ! total # of soil colour classes
    integer, parameter :: ed_nvtyp = nvtyp+nvtyp_teb
 #else
    integer, parameter :: ed_nstyp = 17             ! total # of soil textural classes
+   integer, parameter :: ed_nscol = 21             ! total # of soil colour classes
    integer, parameter :: ed_nvtyp = 21
 #endif
 
@@ -37,6 +40,7 @@ module soil_coms
    integer                                    :: isoilbc        ! Bottom layer bnd. cond.
    integer, dimension(maxgrds)                :: isoilflg       ! Soil initialization flag.
    integer                                    :: nslcon         ! Default soil texture
+   integer                                    :: isoilcol       ! Default soil texture
    real                                       :: slxclay        ! Clay soil fraction
    real                                       :: slxsand        ! Sand soil fraction
    real                                       :: zrough         ! Default soil roughness.
@@ -50,7 +54,6 @@ module soil_coms
    integer                                    :: isoilstateinit ! Soil state initial cond. 
    integer                                    :: isoildepthflg  ! Soil depth initial cond. 
    real                                       :: runoff_time    ! Default runoff time scale.
-   real                                       :: betapower      ! Power for gnd evaporation
    !---------------------------------------------------------------------------------------!
 
 
@@ -69,14 +72,6 @@ module soil_coms
    integer      :: infiltration_method ! Infiltration scheme (for rk4_derivs)    [     0|1]
    real         :: freezecoef          ! Coeff. for infiltration of frozen water [     ---]
    real(kind=8) :: freezecoef8         ! Coeff. for infiltration of frozen water [     ---]
-   !---------------------------------------------------------------------------------------!
-
-
-   !---------------------------------------------------------------------------------------!
-   !     The following variables are assigned in ed_params.f90 based on namelist           !
-   ! variables.                                                                            !
-   !---------------------------------------------------------------------------------------!
-   real(kind=8) :: betapower8 ! Power for ground evaporation
    !---------------------------------------------------------------------------------------!
 
 
@@ -161,6 +156,11 @@ module soil_coms
       real(kind=4) :: xsilt      ! Percentage of silt                            [     ---]
       real(kind=4) :: xrobulk    ! Bulk density                                  [     ---]
       real(kind=4) :: slden      ! "Dry" soil density (porosity)                 [   kg/m3]
+      real(kind=4) :: soilld     ! Soil moist. below which drought phen. happens [   m3/m3]
+      real(kind=4) :: soilfr     ! Soil moist. below which fires may happen      [   m3/m3]
+      real(kind=4) :: slpotwp    ! Water potential for wilting point             [       m]
+      real(kind=4) :: slpotfc    ! Water potential for field capacity            [       m]
+      real(kind=4) :: slpotld    ! Water pot. below which drought phen happens   [       m]
    end type soil_class
    !----- Double precision version --------------------------------------------------------!
    type soil_class8
@@ -183,11 +183,31 @@ module soil_coms
       real(kind=8) :: xsilt      ! Percentage of silt                            [     ---]
       real(kind=8) :: xrobulk    ! Bulk density                                  [     ---]
       real(kind=8) :: slden      ! "Dry" soil density (porosity)                 [   kg/m3]
+      real(kind=8) :: soilld     ! Soil moist. below which drought phen. happens [   m3/m3]
+      real(kind=8) :: soilfr     ! Soil moist. below which fires may happen      [   m3/m3]
+      real(kind=8) :: slpotwp    ! Water potential for wilting point             [       m]
+      real(kind=8) :: slpotfc    ! Water potential for field capacity            [       m]
+      real(kind=8) :: slpotld    ! Water pot. below which drought phen happens   [       m]
    end type soil_class8
    !---------------------------------------------------------------------------------------!
    !----- To be filled in ed_params.f90. --------------------------------------------------!
    type(soil_class8), dimension(ed_nstyp)            :: soil8 
    type(soil_class) , dimension(ed_nstyp)            :: soil
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Define soil colour structure.                                                     !
+   !---------------------------------------------------------------------------------------!
+   type soilcol_class
+      real(kind=4) :: alb_vis_dry
+      real(kind=4) :: alb_nir_dry
+      real(kind=4) :: alb_vis_wet
+      real(kind=4) :: alb_nir_wet
+   end type soilcol_class
+   !----- To be filled in ed_params.f90. --------------------------------------------------!
+   type(soilcol_class), dimension(ed_nscol) :: soilcol
+   !---------------------------------------------------------------------------------------!
 
 
  ! Look-up tables for vegetation and soil properties:

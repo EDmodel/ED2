@@ -291,7 +291,6 @@ subroutine inventory_mat_forests(cpoly,isi,area_mature_primary,agb_mature_primar
                             , patchtype           ! ! structure
    use disturb_coms  , only : plantation_rotation & ! intent(in)
                             , mature_harvest_age  ! ! intent(in)
-   use allometry     , only : ed_biomass          ! ! function
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    type(polygontype) , target      :: cpoly
@@ -531,8 +530,7 @@ subroutine harv_mat_patches(cpoly,isi,newp,lambda_mature_primary                
          ! insert survivors subroutine here just to generalise, with the target biomass    !
          ! the survivorship should be 0.                                                   !
          !---------------------------------------------------------------------------------!
-         call accum_dist_litt(csite,newp,ipa,new_lu,dA,cpoly%loss_fraction(new_lu,isi)     &
-                             ,poly_dist_type,mindbh_harvest)
+         call accum_dist_litt(csite,newp,ipa,new_lu,dA,poly_dist_type,mindbh_harvest)
       end if
    end do
 
@@ -622,8 +620,7 @@ subroutine harv_immat_patches(cpoly,isi, newp, harvest_deficit,total_harvest_are
          total_harvest_area = total_harvest_area + dA
          csite%area(ipa)    = csite%area(ipa) - dA
          call increment_patch_vars(csite,newp,ipa, dA)
-         call accum_dist_litt(csite,newp,ipa,new_lu,dA,cpoly%loss_fraction(new_lu,isi)     &
-                             ,poly_dist_type,mindbh_harvest)
+         call accum_dist_litt(csite,newp,ipa,new_lu,dA,poly_dist_type,mindbh_harvest)
       end if
    end do patchloop1
 
@@ -669,8 +666,7 @@ subroutine harv_immat_patches(cpoly,isi, newp, harvest_deficit,total_harvest_are
          csite%area(ipa)    = csite%area(ipa) - dA
 
          call increment_patch_vars(csite,newp,ipa,dA)
-         call accum_dist_litt(csite,newp,ipa,new_lu,dA,cpoly%loss_fraction(new_lu,isi)     &
-                             ,poly_dist_type,mindbh_harvest)
+         call accum_dist_litt(csite,newp,ipa,new_lu,dA,poly_dist_type,mindbh_harvest)
       end if
    end do patchloop2
 
