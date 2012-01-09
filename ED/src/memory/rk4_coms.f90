@@ -1853,12 +1853,12 @@ module rk4_coms
 
          if (print_thbnd) then
             open (unit=39,file=trim(thbnds_fout),status='replace',action='write')
-            write(unit=39,fmt='(16(a,1x))')  '        YEAR','       MONTH','         DAY'  &
+            write(unit=39,fmt='(18(a,1x))')  '        YEAR','       MONTH','         DAY'  &
                                             ,'        HOUR','        MINU','        SECO'  &
                                             ,'    MIN_TEMP','    MAX_TEMP','     MIN_SHV'  &
                                             ,'     MAX_SHV','   MIN_THETA','   MAX_THETA'  &
                                             ,'   MIN_THEIV','   MAX_THEIV','    MIN_PRSS'  &
-                                            ,'    MAX_PRSS'
+                                            ,'    MAX_PRSS','MIN_ENTHALPY','MAX_ENTHALPY'
             close(unit=39,status='keep')
          end if
          firsttime = .false.
@@ -1874,25 +1874,9 @@ module rk4_coms
       !------------------------------------------------------------------------------------!
       !----- 1. Initial value, the most extreme one. --------------------------------------!
       rk4min_can_prss = reducedpress8(rk4site%atm_prss,rk4site%atm_theta,rk4site%atm_shv   &
-                                     ,5.d-1*rk4site%geoht,can_theta,can_shv,can_depth)
+                                     ,9.d-1*rk4site%geoht,can_theta,can_shv,can_depth)
       rk4max_can_prss = reducedpress8(rk4site%atm_prss,rk4site%atm_theta,rk4site%atm_shv   &
                                      ,1.1d0*rk4site%geoht,can_theta,can_shv,can_depth)
-      !----- 2. Minimum temperature. ------------------------------------------------------!
-      can_prss_try    = can_rhos * rdry8 * rk4min_can_temp * (1.d0 + epim18 * can_shv)
-      rk4min_can_prss = min(rk4min_can_prss,can_prss_try)
-      rk4max_can_prss = max(rk4max_can_prss,can_prss_try)
-      !----- 3. Maximum temperature. ------------------------------------------------------!
-      can_prss_try    = can_rhos * rdry8 * rk4max_can_temp * (1.d0 + epim18 * can_shv)
-      rk4min_can_prss = min(rk4min_can_prss,can_prss_try)
-      rk4max_can_prss = max(rk4max_can_prss,can_prss_try)
-      !----- 4. Minimum specific humidity. ------------------------------------------------!
-      can_prss_try    = can_rhos * rdry8 * can_temp * (1.d0 + epim18 * rk4min_can_shv)
-      rk4min_can_prss = min(rk4min_can_prss,can_prss_try)
-      rk4max_can_prss = max(rk4max_can_prss,can_prss_try)
-      !----- 5. Maximum specific humidity. ------------------------------------------------!
-      can_prss_try    = can_rhos * rdry8 * can_temp * (1.d0 + epim18 * rk4max_can_shv)
-      rk4min_can_prss = min(rk4min_can_prss,can_prss_try)
-      rk4max_can_prss = max(rk4max_can_prss,can_prss_try)
       !------------------------------------------------------------------------------------!
 
 
@@ -1998,7 +1982,7 @@ module rk4_coms
                                  current_time%year, current_time%month,  current_time%date &
                               ,               hour,             minute,             second &
                               ,    rk4min_can_temp,    rk4max_can_temp,     rk4min_can_shv &
-                              ,     rk4min_can_shv,   rk4min_can_theta,   rk4max_can_theta &
+                              ,     rk4max_can_shv,   rk4min_can_theta,   rk4max_can_theta &
                               ,   rk4min_can_theiv,   rk4max_can_theiv,    rk4min_can_prss &
                               ,    rk4max_can_prss,rk4min_can_enthalpy,rk4max_can_enthalpy
          close (unit=39,status='keep')

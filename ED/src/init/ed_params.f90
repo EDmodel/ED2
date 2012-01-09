@@ -4481,7 +4481,7 @@ subroutine init_rk4_params()
    rk4min_can_temp   =  1.8400d2  ! Minimum canopy    temperature               [        K]
    rk4max_can_temp   =  3.5100d2  ! Maximum canopy    temperature               [        K]
    rk4min_can_shv    =  1.0000d-8 ! Minimum canopy    specific humidity         [kg/kg_air]
-   rk4max_can_shv    =  8.0000d-2 ! Maximum canopy    specific humidity         [kg/kg_air]
+   rk4max_can_shv    =  6.0000d-2 ! Maximum canopy    specific humidity         [kg/kg_air]
    rk4max_can_rhv    =  1.1000d0  ! Maximum canopy    relative humidity (**)    [      ---]
    rk4min_can_co2    =  3.0000d1  ! Minimum canopy    CO2 mixing ratio          [ µmol/mol]
    rk4max_can_co2    =  5.0000d4  ! Maximum canopy    CO2 mixing ratio          [ µmol/mol]

@@ -521,10 +521,11 @@ subroutine update_diagnostic_vars(initp, csite,ipa)
                                     , rk4min_sfcw_mass      & ! intent(in)
                                     , rk4min_virt_water     & ! intent(in)
                                     , rk4min_can_shv        & ! intent(in)
+                                    , rk4max_can_shv        & ! intent(in)
                                     , rk4min_can_enthalpy   & ! intent(in)
                                     , rk4max_can_enthalpy   & ! intent(in)
-                                    , rk4min_can_temp       & ! intent(in)
-                                    , rk4max_can_shv        & ! intent(in)
+                                    , rk4min_can_theta      & ! intent(in)
+                                    , rk4max_can_theta      & ! intent(in)
                                     , rk4min_veg_lwater     & ! intent(in)
                                     , rk4min_veg_temp       & ! intent(in)
                                     , rk4max_veg_temp       & ! intent(in)
@@ -580,6 +581,7 @@ subroutine update_diagnostic_vars(initp, csite,ipa)
    integer                          :: kclosest
    logical                          :: ok_shv
    logical                          :: ok_enthalpy
+   logical                          :: ok_theta
    logical                          :: ok_ground
    logical                          :: ok_sfcw
    logical                          :: ok_leaf
@@ -617,28 +619,46 @@ subroutine update_diagnostic_vars(initp, csite,ipa)
       initp%can_theta = (initp%can_enthalpy - alvl8 * initp%can_shv) / initp%can_exner
       !------------------------------------------------------------------------------------!
 
-
-      !----- Find the (total) mixing ratio. -----------------------------------------------!
-      initp%can_rvap  = initp%can_shv / (1.d0 - initp%can_shv)
+      !----- Check whether the potential temperature makes sense or not. ------------------!
+      ok_theta = initp%can_theta >= rk4min_can_theta .and.                                 &
+                 initp%can_theta <= rk4max_can_theta
       !------------------------------------------------------------------------------------!
 
 
-      !------------------------------------------------------------------------------------!
-      !    Find the temperature and the ice-vapour equivalent potential temperature.       !
-      !------------------------------------------------------------------------------------!
-      initp%can_temp  = cpi8 * initp%can_theta * initp%can_exner
-      initp%can_theiv = thetaeiv8(initp%can_theta,initp%can_prss,initp%can_temp            &
-                                 ,initp%can_rvap,initp%can_rvap)
-      !------------------------------------------------------------------------------------!
-
 
       !------------------------------------------------------------------------------------!
-      !     Find the derived humidity variables.                                           !
+      !      Compute the other canopy air parameters only if the potential temperature     !
+      ! makes sense.  Sometimes enthalpy makes sense even though the temperature is bad,   !
+      ! because can_shv is way off in the opposite direction of temperature.               !
       !------------------------------------------------------------------------------------!
-      initp%can_rhv   = rehuil8(initp%can_prss,initp%can_temp,initp%can_rvap)
-      initp%can_ssh   = rslif8(initp%can_prss,initp%can_temp)
-      initp%can_ssh   = initp%can_ssh / (initp%can_ssh + 1.d0)
-      !------------------------------------------------------------------------------------!
+      if (ok_theta) then
+
+         !----- Find the (total) mixing ratio. --------------------------------------------!
+         initp%can_rvap  = initp%can_shv / (1.d0 - initp%can_shv)
+         !---------------------------------------------------------------------------------!
+
+
+
+         !---------------------------------------------------------------------------------!
+         !    Find the temperature and the ice-vapour equivalent potential temperature.    !
+         !---------------------------------------------------------------------------------!
+         initp%can_temp  = cpi8 * initp%can_theta * initp%can_exner
+         initp%can_theiv = thetaeiv8(initp%can_theta,initp%can_prss,initp%can_temp         &
+                                    ,initp%can_rvap,initp%can_rvap)
+         !---------------------------------------------------------------------------------!
+
+
+         !---------------------------------------------------------------------------------!
+         !     Find the derived humidity variables.                                        !
+         !---------------------------------------------------------------------------------!
+         initp%can_rhv   = rehuil8(initp%can_prss,initp%can_temp,initp%can_rvap)
+         initp%can_ssh   = rslif8(initp%can_prss,initp%can_temp)
+         initp%can_ssh   = initp%can_ssh / (initp%can_ssh + 1.d0)
+         !---------------------------------------------------------------------------------!
+      end if
+   else
+      !----- Either enthalpy or specific humidity is screwed, reject theta too. -----------!
+      ok_theta = .false.
    end if
    !---------------------------------------------------------------------------------------!
 
@@ -1141,7 +1161,7 @@ subroutine update_diagnostic_vars(initp, csite,ipa)
 
 
    !----- Compute canopy turbulence properties. -------------------------------------------!
-   if (ok_leaf .and. ok_wood .and. ok_shv .and. ok_enthalpy .and. ok_ground) then
+   if (ok_leaf .and. ok_wood .and. ok_shv .and. ok_theta .and. ok_ground) then
       call canopy_turbulence8(csite,initp,ipa)
    end if
    !---------------------------------------------------------------------------------------!
