@@ -11,16 +11,16 @@ SUBROUTINE isan_driver (name_name)
   use isan_coms
   use mem_grid
   use io_params
-
+  use grid_dims, only : str_len
   implicit none
 
   character(len=*) :: name_name
 
   character :: csuff*3 !,locfn*80,locfna*80
-  character(len=256) :: locfn, locfna
+  character(len=str_len) :: locfn, locfna
 
   ! fnames dimensioned by a max number of files possible
-  character(len=128) :: fnames(maxisfiles)
+  character(len=str_len) :: fnames(maxisfiles)
 
   integer, dimension(maxgrds) :: itoptn,iglatn,iglonn
   integer :: ifm,icm,ng,i,k,ifileok

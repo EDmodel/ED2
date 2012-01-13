@@ -230,6 +230,10 @@ elseif (vnam == 'sfcwater_temp'  ) then
 elseif (vnam == 'sfcwater_depth' ) then
         vnam2 = '[sfcwater_depth (m)]     '
         k2 = nzs
+elseif (vnam == 'soil_color'     ) then
+        vnam2 = '[Soil colour]            '
+elseif (vnam == 'psibar_10d'     ) then
+        vnam2 = '[Psibar_10d (m3/m3)]     '
 elseif (vnam == 'ustar'          ) then
         vnam2 = '[ustar (m/s)]            '
 elseif (vnam == 'tstar'          ) then
@@ -374,6 +378,14 @@ do k = k1,k2
             elseif (vnam == 'sfcwater_depth' ) then
                call plin(nc,j,ipat,3,1.               &
                   ,leaf%sfcwater_depth(k,i1:i2,j,ipat)   &
+                  ,leaf%patch_area(i1:i2,j,ipat))
+            elseif (vnam == 'soil_color'          ) then
+               call plin(nc,j,ipat,3,1.               &
+                  ,leaf%soil_color(i1:i2,j,ipat)      &
+                  ,leaf%patch_area(i1:i2,j,ipat))
+            elseif (vnam == 'psibar_10d'          ) then
+               call plin(nc,j,ipat,3,1.               &
+                  ,leaf%psibar_10d(i1:i2,j,ipat)      &
                   ,leaf%patch_area(i1:i2,j,ipat))
             elseif (vnam == 'ustar'          ) then
                call plin(nc,j,ipat,3,1.               &

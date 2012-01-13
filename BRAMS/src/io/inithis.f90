@@ -29,15 +29,18 @@ subroutine inithis()
    use ref_sounding
    use io_params
    use mem_scratch
-   use mem_aerad , only : nwave
-   use grid_dims , only : maxgrds
-   use mem_cuparm, only : nclouds,nnqparm
-   use therm_lib , only : virtt,vapour_on
+   use mem_aerad , only : nwave     ! ! intent(in)
+   use grid_dims , only : maxgrds   & ! intent(in)
+                        , str_len   ! ! intent(in)
+   use mem_cuparm, only : nclouds   & ! intent(in)
+                        , nnqparm   ! ! intent(in)
+   use therm_lib , only : virtt     & ! intent(in)
+                        , vapour_on ! ! intent(in)
 
    implicit none
 
    !----- Local variables -----------------------------------------------------------------!
-   character (len=256)                                  :: hnamel, hnamelh
+   character (len=str_len)                              :: hnamel, hnamelh
    character (len=2)                                    :: cng
    integer                                              :: ngrids1,ioutput1,nzg1,nzs1
    integer                                              :: npatch1,nclouds1
@@ -280,7 +283,8 @@ subroutine inithis()
 
             !----- 3D variables (nzp,nxp,npatch) that can be interpolated -----------------!
             elseif (vtab_r(nv,1)%idim_type == 6 .and. hr_table(nvh)%string /= 'LEAF_CLASS' &
-                   .and. hr_table(nvh)%string /= 'PATCH_AREA' ) then
+                   .and. hr_table(nvh)%string /= 'PATCH_AREA'                              &
+                   .and. hr_table(nvh)%string /= 'SOIL_COLOR' ) then
 
                call hi_interp(1,nnxp1(ngr),nnyp1(ngr),1,scr,xmn1(:,ngr),xtn1(:,ngr)        &
                              ,ymn1(:,ngr),ytn1(:,ngr),zmn1(:,ngr),ztn1(:,ngr)              &
@@ -482,21 +486,22 @@ subroutine sfcinit_hstart()
                               ,leaf_g(ifm)%veg_albedo                  (i,j,ipat)          &
                               ,leaf_g(ifm)%veg_ndvip                   (i,j,ipat)          &
                               ,leaf_g(ifm)%veg_ndvic                   (i,j,ipat)          &
-                              ,leaf_g(ifm)%veg_ndvif                   (i,j,ipat)          )
+                              ,leaf_g(ifm)%veg_ndvif                   (i,j,ipat)          &
+                              ,leaf_g(ifm)%psibar_10d                  (i,j,ipat) )
                end if
 
                !----- Find the surface saturation mixing ratio. ---------------------------!
-               call leaf_grndvap(leaf_g(ifm)%soil_energy           (nzg,i,j,ipat)          &
-                                ,leaf_g(ifm)%soil_water            (nzg,i,j,ipat)          &
-                                ,leaf_g(ifm)%soil_text             (nzg,i,j,ipat)          &
-                                ,leaf_g(ifm)%sfcwater_energy       (nzs,i,j,ipat)          &
-                                ,leaf_g(ifm)%sfcwater_nlev             (i,j,ipat)          &
-                                ,leaf_g(ifm)%can_rvap                  (i,j,ipat)          &
-                                ,leaf_g(ifm)%can_prss                  (i,j,ipat)          &
-                                ,leaf_g(ifm)%ground_rsat               (i,j,ipat)          &
-                                ,leaf_g(ifm)%ground_rvap               (i,j,ipat)          &
-                                ,leaf_g(ifm)%ground_temp               (i,j,ipat)          &
-                                ,leaf_g(ifm)%ground_fliq               (i,j,ipat)          )
+               call leaf3_grndvap(leaf_g(ifm)%soil_energy           (nzg,i,j,ipat)         &
+                                 ,leaf_g(ifm)%soil_water            (nzg,i,j,ipat)         &
+                                 ,leaf_g(ifm)%soil_text             (nzg,i,j,ipat)         &
+                                 ,leaf_g(ifm)%sfcwater_energy       (nzs,i,j,ipat)         &
+                                 ,leaf_g(ifm)%sfcwater_nlev             (i,j,ipat)         &
+                                 ,leaf_g(ifm)%can_rvap                  (i,j,ipat)         &
+                                 ,leaf_g(ifm)%can_prss                  (i,j,ipat)         &
+                                 ,leaf_g(ifm)%ground_rsat               (i,j,ipat)         &
+                                 ,leaf_g(ifm)%ground_rvap               (i,j,ipat)         &
+                                 ,leaf_g(ifm)%ground_temp               (i,j,ipat)         &
+                                 ,leaf_g(ifm)%ground_fliq               (i,j,ipat)         )
 
             end do patchloop
          end do iloop

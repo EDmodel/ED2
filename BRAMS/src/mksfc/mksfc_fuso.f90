@@ -13,6 +13,7 @@ use mem_grid
 use mem_teb
 use mem_gaspart
 use io_params
+use grid_dims, only : str_len
   USE teb_vars_const, only: iteb
   USE mem_emiss, only : ichemi,isource !for gas emission 
 
@@ -20,7 +21,7 @@ implicit none
 
 integer :: ifm,i,j
 
-character(len=128) :: flnm
+character(len=str_len) :: flnm
 character(len=2) :: cgrid
 character(len=1) :: dummy
 logical :: there
@@ -67,6 +68,7 @@ subroutine fuso_check(ifm,ierr)
 
 use mem_grid
 use io_params
+use grid_dims, only : str_len
 
 ! This subroutine checks for the existence of a surface file for
 ! grid number ifm, and if it exists, also checks for agreement of
@@ -83,7 +85,7 @@ integer :: lc,isfc_marker,isfc_ver,nsfx,nsfy  &
    ,nsifusoflg
 real ::  sfdx,sfdy,sfplat,sfplon,sflat,sflon,glatr,glonr
 
-character(len=128) :: flnm
+character(len=str_len) :: flnm
 character(len=2) :: cgrid
 logical there
 
@@ -174,12 +176,13 @@ subroutine fuso_write(ifm)
 use mem_mksfc
 use mem_grid
 use io_params
+use grid_dims, only : str_len
 
 implicit none
 
 integer :: ifm,ip,k,i,j
 real :: glatr,glonr
-character(len=128) :: flnm
+character(len=str_len) :: flnm
 character(len=2) :: cgrid
 
 !     write surface characteristics, one file for each grid

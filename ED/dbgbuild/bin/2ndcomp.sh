@@ -74,6 +74,7 @@ rm -fv lsm_hyd.?90                   lsm_hyd.o                  lsm_hyd.mod
 rm -fv mem_polygons.?90              mem_polygons.o             mem_polygons.mod 
 rm -fv met_driver_coms.?90           met_driver_coms.o          met_driver_coms.mod 
 rm -fv mortality.?90                 mortality.o                mortality.mod 
+rm -fv multiple_scatter.?90          multiple_scatter.o         multiple_scatter.mod
 rm -fv numutils.?90                  numutils.o                 numutils.mod 
 rm -fv optimiz_coms.?90              optimiz_coms.o             optimiz_coms.mod 
 rm -fv phenology_aux.?90             phenology_aux.o            phenology_aux.mod 

@@ -93,6 +93,7 @@ module ename_coms
       integer                                           :: nzs
       integer               , dimension(maxgrds)        :: isoilflg
       integer                                           :: nslcon
+      integer                                           :: isoilcol
       real                                              :: slxclay
       real                                              :: slxsand
       integer                                           :: isoilstateinit
@@ -129,27 +130,51 @@ module ename_coms
   
 
       !----- Options for model dynamics. --------------------------------------------------!
+      integer                                           :: ivegt_dynamics
       integer                                           :: integration_scheme
       real                                              :: rk4_tolerance
       integer                                           :: ibranch_thermo
       integer                                           :: iphysiol
-      integer                                           :: istoma_scheme
       integer                                           :: iallom
       integer                                           :: iphen_scheme
       integer                                           :: repro_scheme
       integer                                           :: lapse_scheme
       integer                                           :: crown_mod
-      integer                                           :: ican_swrad
+      integer                                           :: icanrad
+      real                                              :: ltrans_vis
+      real                                              :: ltrans_nir
+      real                                              :: lreflect_vis
+      real                                              :: lreflect_nir
+      real                                              :: orient_tree
+      real                                              :: orient_grass
+      real                                              :: clump_tree
+      real                                              :: clump_grass
       integer                                           :: h2o_plant_lim
-      real                                              :: vmfact
-      real                                              :: mfact
-      real                                              :: kfact
-      real                                              :: gamfact
-      real                                              :: d0fact
-      real                                              :: alphafact
+      real                                              :: vmfact_c3
+      real                                              :: vmfact_c4
+      real                                              :: mphoto_trc3
+      real                                              :: mphoto_tec3
+      real                                              :: mphoto_c4
+      real                                              :: bphoto_blc3
+      real                                              :: bphoto_nlc3
+      real                                              :: bphoto_c4
+      real                                              :: kw_grass
+      real                                              :: kw_tree
+      real                                              :: gamma_c3
+      real                                              :: gamma_c4
+      real                                              :: d0_grass
+      real                                              :: d0_tree
+      real                                              :: alpha_c3
+      real                                              :: alpha_c4
+      real                                              :: klowco2in
+      real                                              :: rrffact
+      real                                              :: growthresp
+      real                                              :: lwidth_grass
+      real                                              :: lwidth_bltree
+      real                                              :: lwidth_nltree
+      real                                              :: q10_c3
+      real                                              :: q10_c4
       real                                              :: thetacrit
-      real                                              :: lwfact
-      real                                              :: thioff
       integer                                           :: quantum_efficiency_T
       integer                                           :: n_plant_lim
       integer                                           :: n_decomp_lim
@@ -158,7 +183,6 @@ module ename_coms
       real                                              :: sm_fire
       integer                                           :: ianth_disturb
       integer                                           :: icanturb
-      integer                                           :: i_blyr_condct
       integer                                           :: isfclyrm
       integer                                           :: ied_grndvap
       integer                                           :: ipercol
@@ -169,16 +193,14 @@ module ename_coms
       real                                              :: treefall_disturbance_rate
       real                                              :: Time2Canopy
       real                                              :: runoff_time
-      real                                              :: betapower
+      real                                              :: ubmin
+      real                                              :: ugbmin
       real                                              :: ustmin
       real                                              :: gamm
       real                                              :: gamh
       real                                              :: tprandtl
-      real                                              :: vh2vr
-      real                                              :: vh2dh
       real                                              :: ribmax
       real                                              :: leaf_maxwhc
-      real                                              :: ggfact
 
       !----- Options for printing polygon vectors/arrays to standard output. --------------!
       integer                                           :: iprintpolys
@@ -319,6 +341,7 @@ module ename_coms
       enl%nzs                       = undef_integer
       enl%isoilflg                  = (/ (undef_integer,i=1,maxgrds) /)
       enl%nslcon                    = undef_integer
+      enl%isoilcol                  = undef_integer
       enl%slxclay                   = undef_real
       enl%slxsand                   = undef_real
       enl%isoilstateinit            = undef_integer
@@ -354,27 +377,51 @@ module ename_coms
       enl%ed_reg_lonmax             = (/ (undef_real,i=1,max_ed_regions) /)
  
 
+      enl%ivegt_dynamics            = undef_integer
       enl%integration_scheme        = undef_integer
       enl%rk4_tolerance             = undef_real
       enl%ibranch_thermo            = undef_integer
       enl%iphysiol                  = undef_integer
-      enl%istoma_scheme             = undef_integer
       enl%iallom                    = undef_integer
       enl%iphen_scheme              = undef_integer
       enl%repro_scheme              = undef_integer
       enl%lapse_scheme              = undef_integer
       enl%crown_mod                 = undef_integer
-      enl%ican_swrad                = undef_integer
+      enl%icanrad                   = undef_integer
+      enl%ltrans_vis                = undef_real
+      enl%ltrans_nir                = undef_real
+      enl%lreflect_vis              = undef_real
+      enl%lreflect_nir              = undef_real
+      enl%orient_tree               = undef_real
+      enl%orient_grass              = undef_real
+      enl%clump_tree                = undef_real
+      enl%clump_grass               = undef_real
       enl%h2o_plant_lim             = undef_integer
-      enl%vmfact                    = undef_real
-      enl%mfact                     = undef_real
-      enl%kfact                     = undef_real
-      enl%gamfact                   = undef_real
-      enl%d0fact                    = undef_real
-      enl%alphafact                 = undef_real
+      enl%vmfact_c3                 = undef_real
+      enl%vmfact_c4                 = undef_real
+      enl%mphoto_trc3               = undef_real
+      enl%mphoto_tec3               = undef_real
+      enl%mphoto_c4                 = undef_real
+      enl%bphoto_blc3               = undef_real
+      enl%bphoto_nlc3               = undef_real
+      enl%bphoto_c4                 = undef_real
+      enl%kw_grass                  = undef_real
+      enl%kw_tree                   = undef_real
+      enl%gamma_c3                  = undef_real
+      enl%gamma_c4                  = undef_real
+      enl%d0_grass                  = undef_real
+      enl%d0_tree                   = undef_real
+      enl%alpha_c3                  = undef_real
+      enl%alpha_c4                  = undef_real
+      enl%klowco2in                 = undef_real
+      enl%rrffact                   = undef_real
+      enl%growthresp                = undef_real
+      enl%lwidth_grass              = undef_real
+      enl%lwidth_bltree             = undef_real
+      enl%lwidth_nltree             = undef_real
+      enl%q10_c3                    = undef_real
+      enl%q10_c4                    = undef_real
       enl%thetacrit                 = undef_real
-      enl%lwfact                    = undef_real
-      enl%thioff                    = undef_real
       enl%quantum_efficiency_T      = undef_integer
       enl%n_plant_lim               = undef_integer
       enl%n_decomp_lim              = undef_integer
@@ -383,7 +430,6 @@ module ename_coms
       enl%sm_fire                   = undef_real
       enl%ianth_disturb             = undef_integer
       enl%icanturb                  = undef_integer
-      enl%i_blyr_condct             = undef_integer
       enl%isfclyrm                  = undef_integer
       enl%ipercol                   = undef_integer
 
@@ -395,16 +441,14 @@ module ename_coms
       enl%treefall_disturbance_rate = undef_real
       enl%Time2Canopy               = undef_real
       enl%runoff_time               = undef_real
-      enl%betapower                 = undef_real
+      enl%ubmin                     = undef_real
+      enl%ugbmin                    = undef_real
       enl%ustmin                    = undef_real
       enl%gamm                      = undef_real
       enl%gamh                      = undef_real
       enl%tprandtl                  = undef_real
-      enl%vh2vr                     = undef_real
-      enl%vh2dh                     = undef_real
       enl%ribmax                    = undef_real
       enl%leaf_maxwhc               = undef_real
-      enl%ggfact                    = undef_real
 
       enl%iprintpolys               = undef_integer
       enl%npvars                    = undef_integer

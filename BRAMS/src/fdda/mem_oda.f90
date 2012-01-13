@@ -8,7 +8,7 @@
 
 
 module mem_oda
-
+  use grid_dims, only : str_len
 
   type oda_vars
 
@@ -25,7 +25,7 @@ module mem_oda
   integer, parameter :: maxodafiles=1000, maxodasta=2000, maxodagrids=10
   integer, parameter :: maxodanzp=200, maxodatimes=3*maxodafiles
 
-  character(len=128), dimension(maxodafiles) :: fnames_upa, fnames_sfc
+  character(len=str_len), dimension(maxodafiles) :: fnames_upa, fnames_sfc
   character(len=14) , dimension(maxodafiles) :: itotdate_upa,itotdate_sfc
   character(len=8)  , dimension(maxodasta)   :: staid_sfc, staid_upa
   integer, dimension(maxodasta)              :: ntimes_sfc, ntimes_upa
@@ -33,7 +33,7 @@ module mem_oda
 
   ! Namelist inputs
 
-  character(len=128) :: oda_upaprefix,oda_sfcprefix
+  character(len=str_len) :: oda_upaprefix,oda_sfcprefix
   integer :: if_oda
   real :: frqoda,todabeg,todaend,tnudoda,wt_oda_grid(maxodagrids)  &
        ,oda_sfc_til,oda_sfc_tel,oda_upa_til,oda_upa_tel  &

@@ -108,17 +108,17 @@ module mem_cuparm
    !    Miscellaneous parameters                                                           !
    !---------------------------------------------------------------------------------------!
    !----- Parameters for inverse cumulus --------------------------------------------------!
-   integer           , parameter             :: maxcufiles=100, maxcugrids=10
-   integer                                   :: if_cuinv
-   real(kind=8)                              :: tcu_beg,tcu_end
-   real                                      :: cu_til,cu_tel,tnudcu
-   real              , dimension(maxcugrids) :: wt_cu_grid
-   character(len=128)                        :: cu_prefix
-   character(len=128), dimension(maxcufiles) :: fnames_cu
-   character(len=14) , dimension(maxcufiles) :: itotdate_cu
-   real(kind=8)      , dimension(maxcufiles) :: cu_times
-   integer                                   :: ncufiles,ncufl
-   real(kind=8)                              :: cutime1,cutime2
+   integer               , parameter             :: maxcufiles=100, maxcugrids=10
+   integer                                       :: if_cuinv
+   real(kind=8)                                  :: tcu_beg,tcu_end
+   real                                          :: cu_til,cu_tel,tnudcu
+   real                  , dimension(maxcugrids) :: wt_cu_grid
+   character(len=str_len)                        :: cu_prefix
+   character(len=str_len), dimension(maxcufiles) :: fnames_cu
+   character(len=14)     , dimension(maxcufiles) :: itotdate_cu
+   real(kind=8)          , dimension(maxcufiles) :: cu_times
+   integer                                       :: ncufiles,ncufl
+   real(kind=8)                                  :: cutime1,cutime2
    !----- Parameter for Kuo parameterization ----------------------------------------------!
    real                                      :: wcldbs ! Minimum vertical velocity trigger.
    !---------------------------------------------------------------------------------------!

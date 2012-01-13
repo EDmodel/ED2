@@ -346,6 +346,108 @@ end subroutine reproduction
 
 
 
+!==========================================================================================!
+!==========================================================================================!
+!      This subroutine will bypass all reproduction.                                       !
+!------------------------------------------------------------------------------------------!
+subroutine reproduction_eq_0(cgrid, month)
+   use ed_state_vars      , only : edtype                & ! structure
+                                 , polygontype           & ! structure
+                                 , sitetype              & ! structure
+                                 , patchtype             & ! structure
+                                 , allocate_patchtype    & ! subroutine
+                                 , copy_patchtype        & ! subroutine
+                                 , deallocate_patchtype  ! ! subroutine
+   use pft_coms           , only : recruittype           & ! structure
+                                 , zero_recruit          & ! subroutine
+                                 , copy_recruit          & ! subroutine
+                                 , seedling_mortality    & ! intent(in)
+                                 , c2n_stem              & ! intent(in)
+                                 , l2n_stem              & ! intent(in)
+                                 , min_recruit_size      & ! intent(in)
+                                 , c2n_recruit           & ! intent(in)
+                                 , seed_rain             & ! intent(in)
+                                 , include_pft           & ! intent(in)
+                                 , include_pft_ag        & ! intent(in)
+                                 , qsw                   & ! intent(in)
+                                 , q                     & ! intent(in)
+                                 , sla                   & ! intent(in)
+                                 , hgt_min               & ! intent(in)
+                                 , plant_min_temp        ! ! intent(in)
+   use decomp_coms        , only : f_labile              ! ! intent(in)
+   use ed_max_dims        , only : n_pft                 ! ! intent(in)
+   use fuse_fiss_utils    , only : sort_cohorts          & ! subroutine
+                                 , terminate_cohorts     & ! subroutine
+                                 , fuse_cohorts          & ! subroutine
+                                 , split_cohorts         ! ! subroutine
+   use phenology_coms     , only : repro_scheme          ! ! intent(in)
+   use mem_polygons       , only : maxcohort             ! ! intent(in)
+   use consts_coms        , only : pio4                  ! ! intent(in)
+   use ed_therm_lib       , only : calc_veg_hcap         ! ! function
+   use allometry          , only : dbh2bd                & ! function
+                                 , dbh2bl                & ! function
+                                 , h2dbh                 & ! function
+                                 , ed_biomass            & ! function
+                                 , area_indices          ! ! subroutine
+   use grid_coms          , only : nzg                   ! ! intent(in)
+   implicit none
+   !----- Arguments -----------------------------------------------------------------------!
+   type(edtype)     , target     :: cgrid
+   integer          , intent(in) :: month
+   !----- Local variables -----------------------------------------------------------------!
+   type(polygontype), pointer          :: cpoly
+   type(sitetype)   , pointer          :: csite
+   type(patchtype)  , pointer          :: cpatch
+   type(patchtype)  , pointer          :: temppatch
+   type(recruittype), dimension(n_pft) :: recruit
+   type(recruittype)                   :: rectest
+   integer                             :: ipy
+   integer                             :: isi
+   integer                             :: ipa
+   integer                             :: ico
+   !----- Saved variables -----------------------------------------------------------------!
+   logical          , save             :: first_time = .true.
+   !---------------------------------------------------------------------------------------!
+
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !    If this is the first time, check whether the user wants reproduction.  If not,     !
+   ! kill all potential recruits and send their biomass to the litter pool.                !
+   !---------------------------------------------------------------------------------------!
+   seedling_mortality(1:n_pft) = 1.0
+   !---------------------------------------------------------------------------------------!
+
+
+   !----- The big loops start here. -------------------------------------------------------!
+   polyloop: do ipy = 1,cgrid%npolygons
+      cpoly => cgrid%polygon(ipy)
+
+      siteloop: do isi = 1,cpoly%nsites
+         csite => cpoly%site(isi)
+
+         !---------------------------------------------------------------------------------!
+         !    Zero all reproduction stuff...                                               !
+         !---------------------------------------------------------------------------------!
+         patchloop: do ipa = 1,csite%npatches
+            call zero_recruit(n_pft,recruit)
+            csite%repro(:,ipa)  = 0.0
+         end do patchloop
+
+         !----- Reset minimum monthly temperature. ----------------------------------------!
+         cpoly%min_monthly_temp(isi) = huge(1.)
+      end do siteloop
+   end do polyloop
+   return
+end subroutine reproduction_eq_0
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
 
 !==========================================================================================!
 !==========================================================================================!

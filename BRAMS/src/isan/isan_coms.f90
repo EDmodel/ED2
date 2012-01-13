@@ -8,6 +8,7 @@
 
 
 Module isan_coms
+  use grid_dims, only : str_len
 
   !---------------------------------------------------------------------------
   !    Configuration COMMON blocks for RAMS isentropic data analysis package.
@@ -37,9 +38,9 @@ Module isan_coms
   integer :: ioflgisz,ioflgvar,natime,iszstage,ivrstage,iyear,imonth,idate  &
        ,ihour,isan_inc,i1st_flg,iupa_flg,isfc_flg
   !---------------------------------------------------------------------------
-  character(len=256)  :: innpr,inrawi,insrfce
+  character(len=str_len)  :: innpr,inrawi,insrfce
 
-  character(len=256) :: varpfx, iapr, iarawi, iasrfce 
+  character(len=str_len) :: varpfx, iapr, iarawi, iasrfce 
   ! Modif. by ALF
 
   character(len=8)   :: pdata,guess1st

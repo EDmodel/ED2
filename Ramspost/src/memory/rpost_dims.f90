@@ -74,8 +74,7 @@ module rpost_dims
    !     strlen is the typical length of character variables, in particular those used for !
    ! file names.                                                                           !
    !---------------------------------------------------------------------------------------!
-   integer, parameter :: str_len = 256
-   integer, parameter :: fnm_len = 600
+   integer, parameter :: str_len = 600
    !---------------------------------------------------------------------------------------!
 
 

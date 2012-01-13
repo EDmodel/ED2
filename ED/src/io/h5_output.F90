@@ -323,7 +323,7 @@ subroutine h5_output(vtype)
             if (hdferr /= 0) then
                write(unit=*,fmt='(a)'      ) '--------------------------------------------'
                write(unit=*,fmt='(a)'      ) ' Could not create the HDF5 file.'
-               write(unit=*,fmt='(a,1x,i)' ) ' - File   : ',trim(anamel)
+               write(unit=*,fmt='(a,1x,a)' ) ' - File   : ',trim(anamel)
                write(unit=*,fmt='(a,1x,i)' ) ' - file_id: ',file_id
                write(unit=*,fmt='(a,1x,i)' ) ' - hdferr : ',hdferr
                write(unit=*,fmt='(a)'      ) '--------------------------------------------'
@@ -334,7 +334,7 @@ subroutine h5_output(vtype)
             if (hdferr /= 0) then
                write(unit=*,fmt='(a)'      ) '--------------------------------------------'
                write(unit=*,fmt='(a)'      ) ' Could not open the HDF5 file.'
-               write(unit=*,fmt='(a,1x,i)' ) ' - File   : ',trim(anamel)
+               write(unit=*,fmt='(a,1x,a)' ) ' - File   : ',trim(anamel)
                write(unit=*,fmt='(a,1x,i)' ) ' - file_id: ',file_id
                write(unit=*,fmt='(a,1x,i)' ) ' - hdferr : ',hdferr
                write(unit=*,fmt='(a)'      ) '--------------------------------------------'
@@ -676,7 +676,7 @@ subroutine h5_output(vtype)
                       ,'cmp')
          open (unit=79,file=trim(anamel),form='formatted',status='replace')
          write(unit=79,fmt='(a)') 'history write completed'
-         write(unit=* ,fmt=*    ) 'Completed History Write: ',trim(anamel)
+         write(unit=* ,fmt='(2a)') ' - Completed History Write: ',trim(anamel)
          close(unit=79,status='keep')
       end if
 

@@ -342,12 +342,15 @@ end function julday1000
 
 !==========================================================================================!
 !==========================================================================================!
+!     This function runs a check on whether the year is leap or not, based on Gregorian    !
+! calendar.                                                                                !
+!------------------------------------------------------------------------------------------!
 logical function isleap(year)
-   !This function runs a check on whether the year is leap or not, based 
-   ! on Gregorian calendar
+   !----- Arguments. ----------------------------------------------------------------------!
    integer, intent(in) :: year
-   isleap = (mod(year,400) == 0) .or.  &
-            (mod(year,4) == 0 .and. mod(year,100) /= 0)
+   !---------------------------------------------------------------------------------------!
+
+   isleap = (mod(year,400) == 0) .or. (mod(year,4) == 0 .and. mod(year,100) /= 0)
 
    return
 end function isleap

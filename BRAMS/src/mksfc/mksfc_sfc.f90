@@ -12,13 +12,14 @@ subroutine sfc_read(ifm)
 use mem_grid
 use mem_leaf
 use io_params
+use grid_dims, only : str_len
 
 implicit none
 
 integer :: ifm,ifileok,ipat,k,i,j
 logical :: there
 
-character(len=128) :: flnm
+character(len=str_len) :: flnm
 character(len=2) :: cgrid
 character(len=1) :: dummy
 
@@ -54,6 +55,10 @@ do ipat = 1,npatch
 enddo
 
 do ipat = 1,npatch
+   call vfirec(25,leaf_g(ifm)%soil_color(:,:,ipat),nnxp(ifm)*nnyp(ifm),'LIN')
+enddo
+
+do ipat = 1,npatch
    call vfirec(25,leaf_g(ifm)%soil_text(:,:,:,ipat),nzg*nnxp(ifm)*nnyp(ifm),'LIN')
 enddo
 
@@ -68,6 +73,7 @@ subroutine sfc_check(ifm,ierr)
 
 use mem_grid
 use io_params
+use grid_dims, only : str_len
 
 ! This subroutine checks for the existence of a surface file for
 ! grid number ifm, and if it exists, also checks for agreement of
@@ -84,7 +90,7 @@ integer :: lc,isfc_marker,isfc_ver,nsfx,nsfy,nsfzg  &
    ,nsivegtflg,nsisoilflg,nsnofilflg,nspatch
 real ::  sfdx,sfdy,sfplat,sfplon,sflat,sflon,glatr,glonr
 
-character(len=128) :: flnm
+character(len=str_len) :: flnm
 character(len=2) :: cgrid
 logical there
 
@@ -162,12 +168,13 @@ subroutine sfc_write(ifm)
 use mem_mksfc
 use mem_grid
 use io_params
+use grid_dims, only : str_len
 
 implicit none
 
 integer :: ifm,ip,k,i,j
 real :: glatr,glonr
-character(len=128) :: flnm
+character(len=str_len) :: flnm
 character(len=2) :: cgrid
 
 !     write surface characteristics, one file for each grid
@@ -200,6 +207,10 @@ enddo
 
 do ip = 1,npatch
    call vforec(25,sfcfile_p(ifm)%leaf_class(:,:,ip),nnxyp(ifm),24,scrx,'LIN')
+enddo
+
+do ip = 1,npatch
+   call vforec(25,sfcfile_p(ifm)%soil_color(:,:,ip),nnxyp(ifm),24,scrx,'LIN')
 enddo
 
 do ip = 1,npatch
