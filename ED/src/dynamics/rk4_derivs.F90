@@ -753,8 +753,8 @@ subroutine leaftw_derivs(mzg,mzs,initp,dinitp,csite,ipa)
 
 
                      !----- Add the internal energy to the cohort. ------------------------!
-                     dinitp%leaf_energy(ico) = dinitp%leaf_energy(ico) + qloss
-                     dinitp%veg_energy(ico) = dinitp%veg_energy(ico)   + qloss
+                     dinitp%leaf_energy(ico) = dinitp%leaf_energy(ico)  + qloss
+                     dinitp%veg_energy(ico) = dinitp%veg_energy(ico)    + qloss
                      !---------------------------------------------------------------------!
 
 
