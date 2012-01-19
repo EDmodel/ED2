@@ -36,6 +36,7 @@ module rk4_coms
       real(kind=8)                        :: can_rhos     ! Canopy air density   [   kg/m³]
       real(kind=8)                        :: can_prss     ! Pressure             [      Pa]
       real(kind=8)                        :: can_exner    ! Exner function       [  J/kg/K]
+      real(kind=8)                        :: can_cp       ! Specific heat        [  J/kg/K]
       !------------------------------------------------------------------------------------!
 
 
@@ -314,7 +315,6 @@ module rk4_coms
       real(kind=8) :: co2budget_loss2atm
       real(kind=8) :: ebudget_storage
       real(kind=8) :: ebudget_netrad
-      real(kind=8) :: ebudget_loss2et
       real(kind=8) :: ebudget_loss2atm
       real(kind=8) :: ebudget_loss2drainage
       real(kind=8) :: ebudget_loss2runoff
@@ -336,6 +336,8 @@ module rk4_coms
       real(kind=8), dimension(n_pft)  :: green_leaf_factor
       real(kind=8)                    :: atm_rhos
       real(kind=8)                    :: vels
+      real(kind=8)                    :: atm_enthalpy
+      real(kind=8)                    :: atm_tmp_zcan
       real(kind=8)                    :: atm_tmp
       real(kind=8)                    :: atm_theta
       real(kind=8)                    :: atm_theiv
@@ -728,6 +730,8 @@ module rk4_coms
    real(kind=8)    :: zoveg
    real(kind=8)    :: zveg
    real(kind=8)    :: wcapcan
+   real(kind=8)    :: hcapcan
+   real(kind=8)    :: ccapcan
    real(kind=8)    :: wcapcani
    real(kind=8)    :: hcapcani
    real(kind=8)    :: ccapcani
@@ -744,7 +748,7 @@ module rk4_coms
    !      Integrator error statistics.                                                     !
    !---------------------------------------------------------------------------------------!
    !----- Number of variables other than soil and surface that will be analysed. ----------!
-   integer                          , parameter   :: nerrfix = 22
+   integer                          , parameter   :: nerrfix = 21
    !---------------------------------------------------------------------------------------!
 
 
@@ -889,7 +893,6 @@ module rk4_coms
       y%co2budget_loss2atm             = 0.d0
       y%ebudget_storage                = 0.d0
       y%ebudget_netrad                 = 0.d0
-      y%ebudget_loss2et                = 0.d0
       y%ebudget_loss2atm               = 0.d0
       y%ebudget_loss2drainage          = 0.d0
       y%ebudget_loss2runoff            = 0.d0
@@ -911,6 +914,7 @@ module rk4_coms
       y%can_rhos                       = 0.d0
       y%can_prss                       = 0.d0
       y%can_exner                      = 0.d0
+      y%can_cp                         = 0.d0
       y%veg_height                     = 0.d0
       y%veg_displace                   = 0.d0
       y%veg_rough                      = 0.d0
@@ -1744,8 +1748,8 @@ module rk4_coms
            'CAN_ENTHALPY ','CAN_THETA    ','CAN_SHV      ','CAN_TEMP     ','CAN_PRSS     ' &
           ,'CAN_CO2      ','LEAF_WATER   ','LEAF_ENERGY  ','WOOD_WATER   ','WOOD_ENERGY  ' &
           ,'VIRT_HEAT    ','VIRT_WATER   ','CO2B_STORAGE ','CO2B_LOSS2ATM','EB_NETRAD    ' &
-          ,'EB_LOSS2ET   ','EB_LOSS2ATM  ','WATB_LOSS2ATM','ENB_LOSS2DRA ','WATB_LOSS2DRA' &
-          ,'ENB_STORAGE  ','WATB_STORAGE '/)
+          ,'EB_LOSS2ATM  ','WATB_LOSS2ATM','ENB_LOSS2DRA ','WATB_LOSS2DRA','ENB_STORAGE  ' &
+          ,'WATB_STORAGE '/)
       !----- Local variables. -------------------------------------------------------------!
       integer                                          :: n
       character(len=13)                                :: err_lab_loc
@@ -1795,20 +1799,16 @@ module rk4_coms
    subroutine find_derived_thbounds(can_rhos,can_theta,can_temp,can_shv,can_rvap,can_prss  &
                                    ,can_depth)
       use grid_coms   , only : nzg           ! ! intent(in)
-      use consts_coms , only : p008          & ! intent(in)
-                             , p00i8         & ! intent(in)
-                             , rocp8         & ! intent(in)
-                             , cp8           & ! intent(in)
-                             , cpi8          & ! intent(in)
-                             , alvl8         & ! intent(in)
-                             , rdry8         & ! intent(in)
+      use consts_coms , only : rdry8         & ! intent(in)
                              , epim18        & ! intent(in)
                              , ep8           & ! intent(in)
                              , mmdryi8       & ! intent(in)
-                             , day_sec       & ! intent(in)
                              , hr_sec        & ! intent(in)
                              , min_sec       ! ! intent(in)
-      use therm_lib8  , only : thetaeiv8     & ! function
+      use therm_lib8  , only : pq2exner8     & ! function
+                             , extq2theta8   & ! function
+                             , tq2enthalpy8  & ! function
+                             , thetaeiv8     & ! function
                              , thetaeivs8    & ! function
                              , idealdenssh8  & ! function
                              , reducedpress8 & ! function
@@ -1890,19 +1890,33 @@ module rk4_coms
       rk4min_can_theta   =  huge(1.d0)
       rk4max_can_theta   = -huge(1.d0)
       !----- 2. Minimum temperature. ------------------------------------------------------!
-      can_theta_try      = rk4min_can_temp * (p008 / can_prss) ** rocp8
+      can_exner_try      = pq2exner8(can_prss,can_shv,.true.)
+      can_theta_try      = extq2theta8(can_exner_try,rk4min_can_temp,can_shv,.true.)
       rk4min_can_theta   = min(rk4min_can_theta,can_theta_try)
       rk4max_can_theta   = max(rk4max_can_theta,can_theta_try)
       !----- 3. Maximum temperature. ------------------------------------------------------!
-      can_theta_try      = rk4max_can_temp * (p008 / can_prss) ** rocp8
+      can_exner_try      = pq2exner8(can_prss,can_shv,.true.)
+      can_theta_try      = extq2theta8(can_exner_try,rk4max_can_temp,can_shv,.true.)
       rk4min_can_theta   = min(rk4min_can_theta,can_theta_try)
       rk4max_can_theta   = max(rk4max_can_theta,can_theta_try)
       !----- 4. Minimum pressure. ---------------------------------------------------------!
-      can_theta_try      = can_temp * (p008 / rk4min_can_prss) ** rocp8
+      can_exner_try      = pq2exner8(rk4min_can_prss,can_shv,.true.)
+      can_theta_try      = extq2theta8(can_exner_try,can_temp,can_shv,.true.)
       rk4min_can_theta   = min(rk4min_can_theta,can_theta_try)
       rk4max_can_theta   = max(rk4max_can_theta,can_theta_try)
       !----- 5. Maximum pressure. ---------------------------------------------------------!
-      can_theta_try      = can_temp * (p008 / rk4max_can_prss) ** rocp8
+      can_exner_try      = pq2exner8(rk4max_can_prss,can_shv,.true.)
+      can_theta_try      = extq2theta8(can_exner_try,can_temp,can_shv,.true.)
+      rk4min_can_theta   = min(rk4min_can_theta,can_theta_try)
+      rk4max_can_theta   = max(rk4max_can_theta,can_theta_try)
+      !----- 6. Minimum specific humidity. ------------------------------------------------!
+      can_exner_try      = pq2exner8(can_prss,rk4min_can_shv,.true.)
+      can_theta_try      = extq2theta8(can_exner_try,can_temp,rk4min_can_shv,.true.)
+      rk4min_can_theta   = min(rk4min_can_theta,can_theta_try)
+      rk4max_can_theta   = max(rk4max_can_theta,can_theta_try)
+      !----- 7. Maximum specific humidity. ------------------------------------------------!
+      can_exner_try      = pq2exner8(can_prss,rk4max_can_shv,.true.)
+      can_theta_try      = extq2theta8(can_exner_try,can_temp,rk4max_can_shv,.true.)
       rk4min_can_theta   = min(rk4min_can_theta,can_theta_try)
       rk4max_can_theta   = max(rk4max_can_theta,can_theta_try)
       !------------------------------------------------------------------------------------!
@@ -1916,15 +1930,18 @@ module rk4_coms
       rk4min_can_theiv = rk4min_can_theta
       rk4max_can_theiv = -huge(1.d0)
       !----- 2. Maximum temperature. ------------------------------------------------------!
-      can_theta_try    = rk4max_can_temp * (p008 / can_prss) ** rocp8
+      can_exner_try    = pq2exner8(can_prss,can_shv,.true.)
+      can_theta_try    = extq2theta8(can_exner_try,rk4max_can_temp,can_shv,.true.)
       can_theiv_try    = thetaeivs8(can_theta_try,rk4max_can_temp,can_rvap,0.d0,0.d0)
       rk4max_can_theiv = max(rk4max_can_theiv,can_theiv_try)
       !----- 3. Minimum pressure. ---------------------------------------------------------!
-      can_theta_try    = can_temp * (p008 / rk4min_can_prss) ** rocp8
+      can_exner_try    = pq2exner8(rk4min_can_prss,can_shv,.true.)
+      can_theta_try    = extq2theta8(can_exner_try,can_temp,can_shv,.true.)
       can_theiv_try    = thetaeivs8(can_theta_try,can_temp,can_rvap,0.d0,0.d0)
       rk4max_can_theiv = max(rk4max_can_theiv,can_theiv_try)
       !----- 4. Maximum vapour mixing ratio. ----------------------------------------------!
-      can_theta_try    = can_temp * (p008 / can_prss) ** rocp8
+      can_exner_try    = pq2exner8(can_prss,rk4max_can_shv,.true.)
+      can_theta_try    = extq2theta8(can_exner_try,can_temp,rk4max_can_shv,.true.)
       can_theiv_try    = thetaeivs8(can_theta_try,can_temp,rk4max_can_rvap,0.d0,0.d0)
       rk4max_can_theiv = max(rk4max_can_theiv,can_theiv_try)
       !------------------------------------------------------------------------------------!
@@ -1938,35 +1955,19 @@ module rk4_coms
       rk4min_can_enthalpy = huge(1.d0)
       rk4max_can_enthalpy = - huge(1.d0)
       !----- 2. Minimum temperature. ------------------------------------------------------!
-      can_exner_try       = cp8 * (p00i8 * can_prss) ** rocp8
-      can_theta_try       = cp8 * rk4min_can_temp / can_exner_try
-      can_enthalpy_try    = can_exner_try * can_theta_try + alvl8 * can_shv
+      can_enthalpy_try    = tq2enthalpy8(rk4min_can_temp,can_shv,.true.)
       rk4min_can_enthalpy = min(rk4min_can_enthalpy,can_enthalpy_try)
       rk4max_can_enthalpy = max(rk4max_can_enthalpy,can_enthalpy_try)
       !----- 3. Maximum temperature. ------------------------------------------------------!
-      can_exner_try       = cp8 * (p00i8 * can_prss) ** rocp8
-      can_theta_try       = cp8 * rk4max_can_temp / can_exner_try
-      can_enthalpy_try    = can_exner_try * can_theta_try + alvl8 * can_shv
+      can_enthalpy_try    = tq2enthalpy8(rk4max_can_temp,can_shv,.true.)
       rk4min_can_enthalpy = min(rk4min_can_enthalpy,can_enthalpy_try)
       rk4max_can_enthalpy = max(rk4max_can_enthalpy,can_enthalpy_try)
-      !----- 4. Minimum pressure. ---------------------------------------------------------!
-      can_exner_try       = cp8 * (p00i8 * rk4min_can_prss) ** rocp8
-      can_enthalpy_try    = can_exner_try * can_theta + alvl8 * can_shv
+      !----- 4. Minimum specific humidity. ------------------------------------------------!
+      can_enthalpy_try    = tq2enthalpy8(can_temp,rk4min_can_shv,.true.)
       rk4min_can_enthalpy = min(rk4min_can_enthalpy,can_enthalpy_try)
       rk4max_can_enthalpy = max(rk4max_can_enthalpy,can_enthalpy_try)
-      !----- 5. Maximum pressure. ---------------------------------------------------------!
-      can_exner_try       = cp8 * (p00i8 * rk4max_can_prss) ** rocp8
-      can_enthalpy_try    = can_exner_try * can_theta + alvl8 * can_shv
-      rk4min_can_enthalpy = min(rk4min_can_enthalpy,can_enthalpy_try)
-      rk4max_can_enthalpy = max(rk4max_can_enthalpy,can_enthalpy_try)
-      !----- 6. Minimum specific humidity. ------------------------------------------------!
-      can_exner_try       = cp8 * (p00i8 * can_prss) ** rocp8
-      can_enthalpy_try    = can_exner_try * can_theta + alvl8 * rk4min_can_shv
-      rk4min_can_enthalpy = min(rk4min_can_enthalpy,can_enthalpy_try)
-      rk4max_can_enthalpy = max(rk4max_can_enthalpy,can_enthalpy_try)
-      !----- 7. Maximum specific humidity. ------------------------------------------------!
-      can_exner_try       = cp8 * (p00i8 * can_prss) ** rocp8
-      can_enthalpy_try    = can_exner_try * can_theta + alvl8 * rk4max_can_shv
+      !----- 5. Maximum specific humidity. ------------------------------------------------!
+      can_enthalpy_try    = tq2enthalpy8(can_temp,rk4max_can_shv,.true.)
       rk4min_can_enthalpy = min(rk4min_can_enthalpy,can_enthalpy_try)
       rk4max_can_enthalpy = max(rk4max_can_enthalpy,can_enthalpy_try)
       !------------------------------------------------------------------------------------!

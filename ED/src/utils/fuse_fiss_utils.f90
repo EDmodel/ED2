@@ -1110,7 +1110,7 @@ module fuse_fiss_utils
       use ed_state_vars , only : patchtype              ! ! Structure
       use pft_coms      , only : q                      & ! intent(in), lookup table
                                , qsw                    ! ! intent(in), lookup table
-      use therm_lib     , only : qwtk                   & ! subroutine
+      use therm_lib     , only : uextcm2tl              & ! subroutine
                                , rslif                  ! ! function
       use allometry     , only : dbh2krdepth            & ! function
                                , bd2dbh                 & ! function
@@ -1221,10 +1221,11 @@ module fuse_fiss_utils
       !------------------------------------------------------------------------------------!
       if ( cpatch%leaf_hcap(recc) > 0. ) then
          !----- Update temperature using the standard thermodynamics. ---------------------!
-         call qwtk(cpatch%leaf_energy(recc),cpatch%leaf_water(recc),cpatch%leaf_hcap(recc) &
-                  ,cpatch%leaf_temp(recc),cpatch%leaf_fliq(recc))
+         call uextcm2tl(cpatch%leaf_energy(recc),cpatch%leaf_water(recc)                   &
+                       ,cpatch%leaf_hcap(recc),cpatch%leaf_temp(recc)                      &
+                       ,cpatch%leaf_fliq(recc))
       else 
-         !----- Leaf temperature cannot be found using qwtk, this is a singularity. -------!
+         !----- Leaf temperature cannot be found using uextcm2tl, this is a singularity. --!
          cpatch%leaf_temp(recc)  = newni                                                   &
                                  * ( cpatch%leaf_temp(recc)  * cpatch%nplant(recc)         &
                                    + cpatch%leaf_temp(donc)  * cpatch%nplant(donc))
@@ -1232,10 +1233,11 @@ module fuse_fiss_utils
       end if
       if ( cpatch%wood_hcap(recc) > 0. ) then
          !----- Update temperature using the standard thermodynamics. ---------------------!
-         call qwtk(cpatch%wood_energy(recc),cpatch%wood_water(recc),cpatch%wood_hcap(recc) &
-                  ,cpatch%wood_temp(recc),cpatch%wood_fliq(recc))
+         call uextcm2tl(cpatch%wood_energy(recc),cpatch%wood_water(recc)                   &
+                       ,cpatch%wood_hcap(recc),cpatch%wood_temp(recc)                      &
+                       ,cpatch%wood_fliq(recc))
       else 
-         !----- Wood temperature cannot be found using qwtk, this is a singularity. -------!
+         !----- Wood temperature cannot be found using uextcm2tl, this is a singularity. --!
          cpatch%wood_temp(recc)  = newni                                                   &
                                  * ( cpatch%wood_temp(recc)  * cpatch%nplant(recc)         &
                                    + cpatch%wood_temp(donc)  * cpatch%nplant(donc))
@@ -2994,10 +2996,7 @@ module fuse_fiss_utils
       use ed_max_dims        , only : n_pft                 & ! intent(in)
                                     , n_dbh                 ! ! intent(in)
       use mem_polygons       , only : maxcohort             ! ! intent(in)
-      use consts_coms        , only : cpi                   & ! intent(in)
-                                    , cpor                  & ! intent(in)
-                                    , p00                   ! ! intent(in)
-      use therm_lib          , only : qwtk                  ! ! function
+      use therm_lib          , only : uextcm2tl             ! ! function
       use ed_misc_coms       , only : iqoutput              & ! intent(in)
                                     , idoutput              & ! intent(in)
                                     , imoutput              & ! intent(in)
@@ -3425,10 +3424,6 @@ module fuse_fiss_utils
                                       ( csite%ebudget_netrad  (donp)  * csite%area(donp)   &
                                       + csite%ebudget_netrad  (recp)  * csite%area(recp) )
 
-      csite%ebudget_loss2et(recp)     = newareai *                                         &
-                                      ( csite%ebudget_loss2et (donp)  * csite%area(donp)   &
-                                      + csite%ebudget_loss2et (recp)  * csite%area(recp) )
-
       csite%ebudget_loss2atm(recp)    = newareai *                                         &
                                       ( csite%ebudget_loss2atm(donp)  * csite%area(donp)   &
                                       + csite%ebudget_loss2atm(recp)  * csite%area(recp) )
@@ -3602,9 +3597,9 @@ module fuse_fiss_utils
       ! user may have disabled branchwood thermodynamics.                                  !
       !------------------------------------------------------------------------------------!
       if (csite%avg_leaf_hcap(recp) > 0.) then
-         call qwtk(csite%avg_leaf_energy(recp),csite%avg_leaf_water(recp)                  &
-                  ,csite%avg_leaf_hcap(recp),csite%avg_leaf_temp(recp)                     &
-                  ,csite%avg_leaf_fliq(recp))
+         call uextcm2tl(csite%avg_leaf_energy(recp),csite%avg_leaf_water(recp)             &
+                       ,csite%avg_leaf_hcap(recp),csite%avg_leaf_temp(recp)                &
+                       ,csite%avg_leaf_fliq(recp))
       else
          csite%avg_leaf_temp(recp) = newareai                                              &
                                    * ( csite%avg_leaf_temp(donp) * csite%area(donp)        &
@@ -3614,9 +3609,9 @@ module fuse_fiss_utils
                                      + csite%avg_leaf_fliq(recp) * csite%area(recp) )
       end if
       if (csite%avg_wood_hcap(recp) > 0.) then
-         call qwtk(csite%avg_wood_energy(recp),csite%avg_wood_water(recp)                  &
-                  ,csite%avg_wood_hcap(recp),csite%avg_wood_temp(recp)                     &
-                  ,csite%avg_wood_fliq(recp))
+         call uextcm2tl(csite%avg_wood_energy(recp),csite%avg_wood_water(recp)             &
+                       ,csite%avg_wood_hcap(recp),csite%avg_wood_temp(recp)                &
+                       ,csite%avg_wood_fliq(recp))
       else
          csite%avg_wood_temp(recp) = newareai                                              &
                                    * ( csite%avg_wood_temp(donp) * csite%area(donp)        &

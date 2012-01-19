@@ -127,17 +127,20 @@ module canopy_struct_dynamics
                                   , windext_half         & ! intent(out)
                                   , zero_canopy_layer    ! ! subroutine
       use consts_coms      , only : vonk                 & ! intent(in)
-                                  , cp                   & ! intent(in)
-                                  , cpi                  & ! intent(in)
                                   , grav                 & ! intent(in)
                                   , epim1                & ! intent(in)
                                   , sqrt2o2              & ! intent(in)
                                   , srthree              & ! intent(in)
                                   , onethird             & ! intent(in)
                                   , twothirds            & ! intent(in)
-                                  , kin_visci            ! ! intent(in)
+                                  , kin_visci            & ! intent(in)
+                                  , cpdry                & ! intent(in)
+                                  , cph2o                ! ! intent(in)
       use soil_coms        , only : snow_rough           & ! intent(in)
                                   , soil_rough           ! ! intent(in)
+      use therm_lib        , only : pq2exner             & ! function
+                                  , exthq2temp           & ! function
+                                  , tq2enthalpy          ! ! function
       use allometry        , only : h2crownbh            & ! function
                                   , dbh2bl               ! ! function
       implicit none
@@ -166,7 +169,12 @@ module canopy_struct_dynamics
       logical        :: acomp        ! Flag to check for convergence            [      T|F]
       real           :: rasveg       ! Resistance of vegetated ground           [      s/m]
       real           :: atm_thetav   ! Free atmosphere virtual potential temp.  [        K]
-      real           :: can_thetav   ! Free atmosphere virtual potential temp.  [        K]
+      real           :: can_thetav   ! Canopy air space virtual potential temp. [        K]
+      real           :: atm_exn_zcan ! Atmospheric Exner function at can. depth [   J/kg/K]
+      real           :: atm_tmp_zcan ! Atmospheric temperature at can. depth    [        K]
+      real           :: can_enthalpy ! Canopy air space specific enthalpy.      [     J/kg]
+      real           :: atm_enthalpy ! Free atmosphere specific enthalpy.       [     J/kg]
+      real           :: can_cp       ! Canopy air space specific heat           [   J/kg/K]
       real           :: ldga_bk      ! Cumulative leaf drag area                [      ---]
       real           :: lyrhalf      ! Half the contrib. of this layer to zeta  [      1/m]
       real           :: sigmakm      ! Km coefficient at z=h                    [        m]
@@ -180,8 +188,10 @@ module canopy_struct_dynamics
       real           :: estar        ! Equivalent potential temperature         [        K]
       real           :: gbhmos_min   ! Minimum boundary layer heat conductance. [      m/s]
       real           :: wcapcan      ! Canopy air space water capacity          [    kg/m2]
+      real           :: hcapcan      ! Canopy air space enthalpy capacity       [     J/m2]
+      real           :: ccapcan      ! Canopy air space CO2 capacity            [   mol/m2]
       real           :: wcapcani     ! Inverse of the guy above                 [    m2/kg]
-      real           :: hcapcani     ! Inverse of canopy air space heat cap.    [   m2.K/J]
+      real           :: hcapcani     ! Inverse of canopy air space enthalpy cap.[     m2/J]
       real           :: ccapcani     ! Inverse of canopy air space CO2 capacity [   m2/mol]
       real           :: ustarouh     ! The ratio of ustar over u(h)             [      ---]
       real           :: nn           ! In-canopy wind attenuation scal. param.  [      ---]
@@ -235,6 +245,30 @@ module canopy_struct_dynamics
       atm_thetav = cmet%atm_theta       * (1. + epim1 * cmet%atm_shv      )
       can_thetav = csite%can_theta(ipa) * (1. + epim1 * csite%can_shv(ipa))
       stable     = atm_thetav >= can_thetav
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !     Find the free atmosphere enthalpy at the canopy air space height.              !
+      !------------------------------------------------------------------------------------!
+      atm_exn_zcan  = pq2exner(csite%can_prss(ipa),cmet%atm_shv,.true.)
+      atm_tmp_zcan  = exthq2temp(atm_exn_zcan,cmet%atm_theta,cmet%atm_shv,.true.)
+      atm_enthalpy  = tq2enthalpy(atm_tmp_zcan,cmet%atm_shv,.true.)
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !     Find the enthalpy of the canopy air space.                                     !
+      !------------------------------------------------------------------------------------!
+      can_enthalpy  = tq2enthalpy(csite%can_temp(ipa),csite%can_shv(ipa),.true.)
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !     Find the specific heat at constant pressure for this canopy air space.         !
+      !------------------------------------------------------------------------------------!
+      can_cp     = (1.0 - csite%can_shv(ipa)) * cpdry + csite%can_shv(ipa) * cph2o
+      !------------------------------------------------------------------------------------!
 
 
 
@@ -254,14 +288,18 @@ module canopy_struct_dynamics
          !----- Calculate the surface roughness inside the canopy. ------------------------!
          csite%rough(ipa) = soil_rough * (1.0 - csite%snowfac(ipa))                        &
                           + snow_rough * csite%snowfac(ipa)
-         
-         !----- Finding the characteristic scales (a.k.a. stars). -------------------------!
-         call ed_stars(cmet%atm_theta,cmet%atm_theiv,cmet%atm_shv,cmet%atm_co2             &
-                      ,csite%can_theta(ipa),csite%can_theiv(ipa),csite%can_shv(ipa)        &
+         !---------------------------------------------------------------------------------!
+
+
+         !----- Find the characteristic scales (a.k.a. stars). ----------------------------!
+         call ed_stars(cmet%atm_theta,atm_enthalpy,cmet%atm_shv,cmet%atm_co2               &
+                      ,csite%can_theta(ipa),can_enthalpy,csite%can_shv(ipa)                &
                       ,csite%can_co2(ipa),cmet%geoht,csite%veg_displace(ipa),cmet%vels     &
                       ,csite%rough(ipa),csite%ustar(ipa),csite%tstar(ipa),estar            &
                       ,csite%qstar(ipa),csite%cstar(ipa),csite%zeta(ipa),csite%ribulk(ipa) &
                       ,csite%ggbare(ipa))
+         !---------------------------------------------------------------------------------!
+
 
          !---------------------------------------------------------------------------------!
          !      This is a bare ground cohort, so there is no vegetated ground.  Assign     !
@@ -276,8 +314,8 @@ module canopy_struct_dynamics
          !---------------------------------------------------------------------------------!
          !     Calculate the heat and mass storage capacity of the canopy.                 !
          !---------------------------------------------------------------------------------!
-         call can_whccap(csite%can_rhos(ipa),csite%can_prss(ipa),csite%can_depth(ipa)      &
-                        ,wcapcan,wcapcani,hcapcani,ccapcani)
+         call can_whccap(csite%can_rhos(ipa),csite%can_depth(ipa)                          &
+                        ,wcapcan,hcapcan,ccapcan,wcapcani,hcapcani,ccapcani)
          !---------------------------------------------------------------------------------!
          return
       end if
@@ -347,8 +385,8 @@ module canopy_struct_dynamics
          !      Get ustar for the ABL, assume it is a dynamic shear layer that generates a !
          ! logarithmic profile of velocity.                                                !
          !---------------------------------------------------------------------------------!
-         call ed_stars(cmet%atm_theta,cmet%atm_theiv,cmet%atm_shv,cmet%atm_co2             &
-                      ,csite%can_theta(ipa),csite%can_theiv(ipa),csite%can_shv(ipa)        &
+         call ed_stars(cmet%atm_theta,atm_enthalpy,cmet%atm_shv,cmet%atm_co2               &
+                      ,csite%can_theta(ipa),can_enthalpy,csite%can_shv(ipa)                &
                       ,csite%can_co2(ipa),cmet%geoht,csite%veg_displace(ipa),cmet%vels     &
                       ,csite%rough(ipa),csite%ustar(ipa),csite%tstar(ipa),estar            &
                       ,csite%qstar(ipa),csite%cstar(ipa),csite%zeta(ipa),csite%ribulk(ipa) &
@@ -453,6 +491,7 @@ module canopy_struct_dynamics
                                                  ,csite%can_temp(ipa)                      &
                                                  ,csite%can_shv(ipa)                       &
                                                  ,csite%can_rhos(ipa)                      &
+                                                 ,can_cp                                   &
                                                  ,gbhmos_min                               &
                                                  ,cpatch%leaf_gbh(ico)                     &
                                                  ,cpatch%leaf_gbw(ico))
@@ -472,6 +511,7 @@ module canopy_struct_dynamics
                                                  ,csite%can_temp(ipa)                      &
                                                  ,csite%can_shv(ipa)                       &
                                                  ,csite%can_rhos(ipa)                      &
+                                                 ,can_cp                                   &
                                                  ,gbhmos_min                               &
                                                  ,cpatch%wood_gbh(ico)                     &
                                                  ,cpatch%wood_gbw(ico))
@@ -489,8 +529,8 @@ module canopy_struct_dynamics
          !---------------------------------------------------------------------------------!
          !     Calculate the heat and mass storage capacity of the canopy.                 !
          !---------------------------------------------------------------------------------!
-         call can_whccap(csite%can_rhos(ipa),csite%can_prss(ipa),csite%can_depth(ipa)      &
-                        ,wcapcan,wcapcani,hcapcani,ccapcani)
+         call can_whccap(csite%can_rhos(ipa),csite%can_depth(ipa)                          &
+                        ,wcapcan,hcapcan,ccapcan,wcapcani,hcapcani,ccapcani)
          !---------------------------------------------------------------------------------!
 
 
@@ -553,8 +593,8 @@ module canopy_struct_dynamics
          !      Get ustar for the ABL, assume it is a dynamic shear layer that generates a !
          ! logarithmic profile of velocity.                                                !
          !---------------------------------------------------------------------------------!
-         call ed_stars(cmet%atm_theta,cmet%atm_theiv,cmet%atm_shv,cmet%atm_co2             &
-                      ,csite%can_theta(ipa),csite%can_theiv(ipa),csite%can_shv(ipa)        &
+         call ed_stars(cmet%atm_theta,atm_enthalpy,cmet%atm_shv,cmet%atm_co2               &
+                      ,csite%can_theta(ipa),can_enthalpy,csite%can_shv(ipa)                &
                       ,csite%can_co2(ipa),cmet%geoht,csite%veg_displace(ipa),cmet%vels     &
                       ,csite%rough(ipa),csite%ustar(ipa),csite%tstar(ipa),estar            &
                       ,csite%qstar(ipa),csite%cstar(ipa),csite%zeta(ipa),csite%ribulk(ipa) &
@@ -620,6 +660,7 @@ module canopy_struct_dynamics
                                                  ,csite%can_temp(ipa)                      &
                                                  ,csite%can_shv(ipa)                       &
                                                  ,csite%can_rhos(ipa)                      &
+                                                 ,can_cp                                   &
                                                  ,gbhmos_min                               &
                                                  ,cpatch%leaf_gbh(ico)                     &
                                                  ,cpatch%leaf_gbw(ico))
@@ -639,6 +680,7 @@ module canopy_struct_dynamics
                                                  ,csite%can_temp(ipa)                      &
                                                  ,csite%can_shv(ipa)                       &
                                                  ,csite%can_rhos(ipa)                      &
+                                                 ,can_cp                                   &
                                                  ,gbhmos_min                               &
                                                  ,cpatch%wood_gbh(ico)                     &
                                                  ,cpatch%wood_gbw(ico))
@@ -655,8 +697,8 @@ module canopy_struct_dynamics
          !---------------------------------------------------------------------------------!
          !     Calculate the heat and mass storage capacity of the canopy.                 !
          !---------------------------------------------------------------------------------!
-         call can_whccap(csite%can_rhos(ipa),csite%can_prss(ipa),csite%can_depth(ipa)      &
-                        ,wcapcan,wcapcani,hcapcani,ccapcani)
+         call can_whccap(csite%can_rhos(ipa),csite%can_depth(ipa)                          &
+                        ,wcapcan,hcapcan,ccapcan,wcapcani,hcapcani,ccapcani)
          !---------------------------------------------------------------------------------!
 
 
@@ -913,9 +955,12 @@ module canopy_struct_dynamics
 
 
 
-         !----- Find the characteristic scales (a.k.a. stars). ----------------------------!
-         call ed_stars(cmet%atm_theta,cmet%atm_theiv,cmet%atm_shv,cmet%atm_co2             &
-                      ,csite%can_theta(ipa),csite%can_theiv(ipa),csite%can_shv(ipa)        &
+         !---------------------------------------------------------------------------------!
+         !      Get ustar for the ABL, assume it is a dynamic shear layer that generates a !
+         ! logarithmic profile of velocity.                                                !
+         !---------------------------------------------------------------------------------!
+         call ed_stars(cmet%atm_theta,atm_enthalpy,cmet%atm_shv,cmet%atm_co2               &
+                      ,csite%can_theta(ipa),can_enthalpy,csite%can_shv(ipa)                &
                       ,csite%can_co2(ipa),cmet%geoht,csite%veg_displace(ipa),cmet%vels     &
                       ,csite%rough(ipa),csite%ustar(ipa),csite%tstar(ipa),estar            &
                       ,csite%qstar(ipa),csite%cstar(ipa),csite%zeta(ipa),csite%ribulk(ipa) &
@@ -967,6 +1012,7 @@ module canopy_struct_dynamics
                                                  ,csite%can_temp(ipa)                      &
                                                  ,csite%can_shv(ipa)                       &
                                                  ,csite%can_rhos(ipa)                      &
+                                                 ,can_cp                                   &
                                                  ,gbhmos_min                               &
                                                  ,cpatch%leaf_gbh(ico)                     &
                                                  ,cpatch%leaf_gbw(ico))
@@ -986,6 +1032,7 @@ module canopy_struct_dynamics
                                                  ,csite%can_temp(ipa)                      &
                                                  ,csite%can_shv(ipa)                       &
                                                  ,csite%can_rhos(ipa)                      &
+                                                 ,can_cp                                   &
                                                  ,gbhmos_min                               &
                                                  ,cpatch%wood_gbh(ico)                     &
                                                  ,cpatch%wood_gbw(ico))
@@ -1168,8 +1215,8 @@ module canopy_struct_dynamics
          !---------------------------------------------------------------------------------!
          !     Calculate the heat and mass storage capacity of the canopy.                 !
          !---------------------------------------------------------------------------------!
-         call can_whccap(csite%can_rhos(ipa),csite%can_prss(ipa),csite%can_depth(ipa)      &
-                        ,wcapcan,wcapcani,hcapcani,ccapcani)
+         call can_whccap(csite%can_rhos(ipa),csite%can_depth(ipa)                          &
+                        ,wcapcan,hcapcan,ccapcan,wcapcani,hcapcani,ccapcani)
          !---------------------------------------------------------------------------------!
 
       end select
@@ -1261,6 +1308,8 @@ module canopy_struct_dynamics
                                   , tiny_offset          & ! intent(in)
                                   , ibranch_thermo       & ! intent(in)
                                   , wcapcan              & ! intent(out)
+                                  , hcapcan              & ! intent(out)
+                                  , ccapcan              & ! intent(out)
                                   , wcapcani             & ! intent(out)
                                   , hcapcani             & ! intent(out)
                                   , ccapcani             ! ! intent(out)
@@ -1305,7 +1354,6 @@ module canopy_struct_dynamics
                                   , windext_half8        & ! intent(out)
                                   , zero_canopy_layer    ! ! subroutine
       use consts_coms      , only : vonk8                & ! intent(in)
-                                  , cpi8                 & ! intent(in)
                                   , grav8                & ! intent(in)
                                   , epim18               & ! intent(in)
                                   , sqrt2o28             & ! intent(in)
@@ -1416,9 +1464,9 @@ module canopy_struct_dynamics
          !----- Calculate the surface roughness inside the canopy. ------------------------!
          initp%rough = soil_rough8 *(1.d0 - initp%snowfac) + snow_rough8 * initp%snowfac
          
-         !----- Finding the characteristic scales (a.k.a. stars). -------------------------!
-         call ed_stars8(rk4site%atm_theta,rk4site%atm_theiv,rk4site%atm_shv                &
-                       ,rk4site%atm_co2,initp%can_theta ,initp%can_theiv ,initp%can_shv    &
+         !----- Find the characteristic scales (a.k.a. stars). ----------------------------!
+         call ed_stars8(rk4site%atm_theta,rk4site%atm_enthalpy,rk4site%atm_shv             &
+                       ,rk4site%atm_co2,initp%can_theta ,initp%can_enthalpy,initp%can_shv  &
                        ,initp%can_co2,rk4site%geoht,initp%veg_displace,rk4site%vels        &
                        ,initp%rough,initp%ustar,initp%tstar,initp%estar,initp%qstar        &
                        ,initp%cstar,initp%zeta,initp%ribulk,initp%ggbare)
@@ -1439,8 +1487,8 @@ module canopy_struct_dynamics
          !---------------------------------------------------------------------------------!
          !     Calculate the heat and mass storage capacity of the canopy.                 !
          !---------------------------------------------------------------------------------!
-         call can_whccap8(initp%can_rhos,initp%can_exner,initp%can_depth                   &
-                         ,wcapcan,wcapcani,hcapcani,ccapcani)
+         call can_whccap8(initp%can_rhos,initp%can_depth                                   &
+                         ,wcapcan,hcapcan,ccapcan,wcapcani,hcapcani,ccapcani)
          !---------------------------------------------------------------------------------!
          
          return
@@ -1496,8 +1544,8 @@ module canopy_struct_dynamics
          !      Get ustar for the ABL, assume it is a dynamic shear layer that generates a !
          ! logarithmic profile of velocity.                                                !
          !---------------------------------------------------------------------------------!
-         call ed_stars8(rk4site%atm_theta,rk4site%atm_theiv,rk4site%atm_shv                &
-                       ,rk4site%atm_co2,initp%can_theta ,initp%can_theiv,initp%can_shv     &
+         call ed_stars8(rk4site%atm_theta,rk4site%atm_enthalpy,rk4site%atm_shv             &
+                       ,rk4site%atm_co2,initp%can_theta ,initp%can_enthalpy,initp%can_shv  &
                        ,initp%can_co2,rk4site%geoht,initp%veg_displace,rk4site%vels        &
                        ,initp%rough,initp%ustar,initp%tstar,initp%estar,initp%qstar        &
                        ,initp%cstar,initp%zeta,initp%ribulk,initp%ggbare)
@@ -1594,7 +1642,8 @@ module canopy_struct_dynamics
                !---------------------------------------------------------------------------!
                call leaf_aerodynamic_conductances8(ipft,initp%veg_wind(ico)                &
                                                   ,initp%leaf_temp(ico),initp%can_temp     &
-                                                  ,initp%can_shv,initp%can_rhos,gbhmos_min &
+                                                  ,initp%can_shv,initp%can_rhos            &
+                                                  ,initp%can_cp,gbhmos_min                 &
                                                   ,initp%leaf_gbh(ico),initp%leaf_gbw(ico) &
                                                   ,initp%leaf_reynolds(ico)                &
                                                   ,initp%leaf_grashof(ico)                 &
@@ -1622,7 +1671,8 @@ module canopy_struct_dynamics
                call wood_aerodynamic_conductances8(ipft,cpatch%dbh(ico),cpatch%hite(ico)   &
                                                   ,initp%veg_wind(ico)                     &
                                                   ,initp%wood_temp(ico),initp%can_temp     &
-                                                  ,initp%can_shv,initp%can_rhos,gbhmos_min &
+                                                  ,initp%can_shv,initp%can_rhos            &
+                                                  ,initp%can_cp,gbhmos_min                 &
                                                   ,initp%wood_gbh(ico),initp%wood_gbw(ico) &
                                                   ,initp%wood_reynolds(ico)                &
                                                   ,initp%wood_grashof(ico)                 &
@@ -1648,8 +1698,8 @@ module canopy_struct_dynamics
          !---------------------------------------------------------------------------------!
          !     Calculate the heat and mass storage capacity of the canopy.                 !
          !---------------------------------------------------------------------------------!
-         call can_whccap8(initp%can_rhos,initp%can_exner,initp%can_depth                   &
-                         ,wcapcan,wcapcani,hcapcani,ccapcani)
+         call can_whccap8(initp%can_rhos,initp%can_depth                                   &
+                         ,wcapcan,hcapcan,ccapcan,wcapcani,hcapcani,ccapcani)
          !---------------------------------------------------------------------------------!
 
 
@@ -1698,11 +1748,12 @@ module canopy_struct_dynamics
          !      Get ustar for the ABL, assume it is a dynamic shear layer that generates a !
          ! logarithmic profile of velocity.                                                !
          !---------------------------------------------------------------------------------!
-         call ed_stars8(rk4site%atm_theta,rk4site%atm_theiv,rk4site%atm_shv                &
-                       ,rk4site%atm_co2,initp%can_theta,initp%can_theiv,initp%can_shv      &
+         call ed_stars8(rk4site%atm_theta,rk4site%atm_enthalpy,rk4site%atm_shv             &
+                       ,rk4site%atm_co2,initp%can_theta ,initp%can_enthalpy,initp%can_shv  &
                        ,initp%can_co2,rk4site%geoht,initp%veg_displace,rk4site%vels        &
                        ,initp%rough,initp%ustar,initp%tstar,initp%estar,initp%qstar        &
                        ,initp%cstar,initp%zeta,initp%ribulk,initp%ggbare)
+         !---------------------------------------------------------------------------------!
 
 
          !---------------------------------------------------------------------------------!
@@ -1754,7 +1805,8 @@ module canopy_struct_dynamics
                !---------------------------------------------------------------------------!
                call leaf_aerodynamic_conductances8(ipft,initp%veg_wind(ico)                &
                                                   ,initp%leaf_temp(ico),initp%can_temp     &
-                                                  ,initp%can_shv,initp%can_rhos,gbhmos_min &
+                                                  ,initp%can_shv,initp%can_rhos            &
+                                                  ,initp%can_cp,gbhmos_min                 &
                                                   ,initp%leaf_gbh(ico),initp%leaf_gbw(ico) &
                                                   ,initp%leaf_reynolds(ico)                &
                                                   ,initp%leaf_grashof(ico)                 &
@@ -1782,7 +1834,8 @@ module canopy_struct_dynamics
                call wood_aerodynamic_conductances8(ipft,cpatch%dbh(ico),cpatch%hite(ico)   &
                                                   ,initp%veg_wind(ico)                     &
                                                   ,initp%wood_temp(ico),initp%can_temp     &
-                                                  ,initp%can_shv,initp%can_rhos,gbhmos_min &
+                                                  ,initp%can_shv,initp%can_rhos            &
+                                                  ,initp%can_cp,gbhmos_min                 &
                                                   ,initp%wood_gbh(ico),initp%wood_gbw(ico) &
                                                   ,initp%wood_reynolds(ico)                &
                                                   ,initp%wood_grashof(ico)                 &
@@ -1810,8 +1863,8 @@ module canopy_struct_dynamics
          !---------------------------------------------------------------------------------!
          !     Calculate the heat and mass storage capacity of the canopy.                 !
          !---------------------------------------------------------------------------------!
-         call can_whccap8(initp%can_rhos,initp%can_exner,initp%can_depth                   &
-                         ,wcapcan,wcapcani,hcapcani,ccapcani)
+         call can_whccap8(initp%can_rhos,initp%can_depth                                   &
+                         ,wcapcan,hcapcan,ccapcan,wcapcani,hcapcani,ccapcani)
          !---------------------------------------------------------------------------------!
 
 
@@ -2056,8 +2109,8 @@ module canopy_struct_dynamics
 
 
          !----- Calculate ustar, tstar, qstar, and cstar. ---------------------------------!
-         call ed_stars8(rk4site%atm_theta,rk4site%atm_theiv,rk4site%atm_shv                &
-                       ,rk4site%atm_co2,initp%can_theta,initp%can_theiv,initp%can_shv      &
+         call ed_stars8(rk4site%atm_theta,rk4site%atm_enthalpy,rk4site%atm_shv             &
+                       ,rk4site%atm_co2,initp%can_theta ,initp%can_enthalpy,initp%can_shv  &
                        ,initp%can_co2,rk4site%geoht,initp%veg_displace,rk4site%vels        &
                        ,initp%rough,initp%ustar,initp%tstar,initp%estar,initp%qstar        &
                        ,initp%cstar,initp%zeta,initp%ribulk,initp%ggbare)
@@ -2102,7 +2155,8 @@ module canopy_struct_dynamics
                !---------------------------------------------------------------------------!
                call leaf_aerodynamic_conductances8(ipft,initp%veg_wind(ico)                &
                                                   ,initp%leaf_temp(ico),initp%can_temp     &
-                                                  ,initp%can_shv,initp%can_rhos,gbhmos_min &
+                                                  ,initp%can_shv,initp%can_rhos            &
+                                                  ,initp%can_cp,gbhmos_min                 &
                                                   ,initp%leaf_gbh(ico),initp%leaf_gbw(ico) &
                                                   ,initp%leaf_reynolds(ico)                &
                                                   ,initp%leaf_grashof(ico)                 &
@@ -2130,7 +2184,8 @@ module canopy_struct_dynamics
                call wood_aerodynamic_conductances8(ipft,cpatch%dbh(ico),cpatch%hite(ico)   &
                                                   ,initp%veg_wind(ico)                     &
                                                   ,initp%wood_temp(ico),initp%can_temp     &
-                                                  ,initp%can_shv,initp%can_rhos,gbhmos_min &
+                                                  ,initp%can_shv,initp%can_rhos            &
+                                                  ,initp%can_cp,gbhmos_min                 &
                                                   ,initp%wood_gbh(ico),initp%wood_gbw(ico) &
                                                   ,initp%wood_reynolds(ico)                &
                                                   ,initp%wood_grashof(ico)                 &
@@ -2323,8 +2378,8 @@ module canopy_struct_dynamics
          !---------------------------------------------------------------------------------!
          !     Calculate the heat and mass storage capacity of the canopy.                 !
          !---------------------------------------------------------------------------------!
-         call can_whccap8(initp%can_rhos,initp%can_exner,initp%can_depth                   &
-                         ,wcapcan,wcapcani,hcapcani,ccapcani)
+         call can_whccap8(initp%can_rhos,initp%can_depth                                   &
+                         ,wcapcan,hcapcan,ccapcan,wcapcani,hcapcani,ccapcani)
          !---------------------------------------------------------------------------------!
 
       end select
@@ -2375,7 +2430,7 @@ module canopy_struct_dynamics
    !           NCAR Technical Note NCAR/TN-461+STR, Boulder, CO, May 2004.                 !
    !                                                                                       !
    !---------------------------------------------------------------------------------------!
-   subroutine ed_stars(theta_atm,theiv_atm,shv_atm,co2_atm,theta_can,theiv_can             &
+   subroutine ed_stars(theta_atm,enthalpy_atm,shv_atm,co2_atm,theta_can,enthalpy_can       &
                       ,shv_can,co2_can,zref,dheight,uref,rough,ustar,tstar,estar,qstar     &
                       ,cstar,zeta,rib,ggbare)
       use consts_coms     , only : grav          & ! intent(in)
@@ -2397,57 +2452,58 @@ module canopy_struct_dynamics
                                  , zoobukhov     ! ! function
       use rk4_coms        , only : rk4_tolerance ! ! intent(in)
       implicit none
-      !----- Arguments --------------------------------------------------------------------!
-      real, intent(in)  :: theta_atm    ! Above canopy air pot. temperature     [        K]
-      real, intent(in)  :: theiv_atm    ! Above canopy air eq. pot. temperature [        K]
-      real, intent(in)  :: shv_atm      ! Above canopy vapour spec. hum.        [kg/kg_air]
-      real, intent(in)  :: co2_atm      ! CO2 mixing ratio                      [ µmol/mol]
-      real, intent(in)  :: theta_can    ! Canopy air potential temperature      [        K]
-      real, intent(in)  :: theiv_can    ! Canopy air eq. pot. temperature       [        K]
-      real, intent(in)  :: shv_can      ! Canopy air vapour spec. humidity      [kg/kg_air]
-      real, intent(in)  :: co2_can      ! Canopy air CO2 mixing ratio           [ µmol/mol]
-      real, intent(in)  :: zref         ! Height at reference point             [        m]
-      real, intent(in)  :: dheight      ! Zero-plane displacement height        [        m]
-      real, intent(in)  :: uref         ! Wind speed at reference height        [      m/s]
-      real, intent(in)  :: rough        ! Roughness                             [        m]
-      real, intent(out) :: ustar        ! U*, friction velocity                 [      m/s]
-      real, intent(out) :: qstar        ! Specific humidity turbulence scale    [kg/kg_air]
-      real, intent(out) :: tstar        ! Temperature turbulence scale          [        K]
-      real, intent(out) :: estar        ! Equivalent pot. temp. turb. scale     [        K]
-      real, intent(out) :: cstar        ! CO2 mixing ratio turbulence scale     [ µmol/mol]
-      real, intent(out) :: zeta         ! z/(Obukhov length).                   [    -----]
-      real, intent(out) :: rib          ! Bulk richardson number.               [    -----]
-      real, intent(out) :: ggbare       ! Ground conductance                    [      m/s]
-      !----- Local variables --------------------------------------------------------------!
-      logical           :: stable       ! Stable state
-      real              :: zoz0m        ! zref/rough(momentum)
-      real              :: lnzoz0m      ! ln[zref/rough(momentum)]
-      real              :: zoz0h        ! zref/rough(heat)
-      real              :: lnzoz0h      ! ln[zref/rough(heat)]
-      real              :: c3           ! coefficient to find the other stars
-      real              :: uuse         ! Wind for too stable cases (Rib > Ribmax)
+      !----- Arguments. -------------------------------------------------------------------!
+      real(kind=4), intent(in)  :: theta_atm    ! Above canopy air pot. temp.   [        K]
+      real(kind=4), intent(in)  :: enthalpy_atm ! Above can. air spec. enthalpy [ J/kg_air]
+      real(kind=4), intent(in)  :: shv_atm      ! Above can. vapour spec. hum.  [kg/kg_air]
+      real(kind=4), intent(in)  :: co2_atm      ! CO2 mixing ratio              [ µmol/mol]
+      real(kind=4), intent(in)  :: theta_can    ! Canopy air pot. temperature   [        K]
+      real(kind=4), intent(in)  :: enthalpy_can ! Canopy air specific enthalpy  [ J/kg_air]
+      real(kind=4), intent(in)  :: shv_can      ! Canopy air vapour spec. hum.  [kg/kg_air]
+      real(kind=4), intent(in)  :: co2_can      ! Canopy air CO2 mixing ratio   [ µmol/mol]
+      real(kind=4), intent(in)  :: zref         ! Height at reference point     [        m]
+      real(kind=4), intent(in)  :: dheight      ! Zero-plane displacement hgt.  [        m]
+      real(kind=4), intent(in)  :: uref         ! Wind speed at reference hgt.  [      m/s]
+      real(kind=4), intent(in)  :: rough        ! Roughness                     [        m]
+      real(kind=4), intent(out) :: ustar        ! U*, friction velocity         [      m/s]
+      real(kind=4), intent(out) :: qstar        ! Specific humidity turb. scale [kg/kg_air]
+      real(kind=4), intent(out) :: tstar        ! Temperature turbulence scale  [        K]
+      real(kind=4), intent(out) :: estar        ! Spec. enthalpy turb. scale    [ J/kg_air]
+      real(kind=4), intent(out) :: cstar        ! CO2 mixing ratio turb. scale  [ µmol/mol]
+      real(kind=4), intent(out) :: zeta         ! z/(Obukhov length).           [    -----]
+      real(kind=4), intent(out) :: rib          ! Bulk richardson number.       [    -----]
+      real(kind=4), intent(out) :: ggbare       ! Ground conductance            [      m/s]
+      !----- Local variables. -------------------------------------------------------------!
+      logical                   :: stable       ! Stable state                  [      T|F]
+      real(kind=4)              :: zoz0m        ! zref/rough(momentum)          [    -----]
+      real(kind=4)              :: lnzoz0m      ! ln[zref/rough(momentum)]      [    -----]
+      real(kind=4)              :: zoz0h        ! zref/rough(heat)              [    -----]
+      real(kind=4)              :: lnzoz0h      ! ln[zref/rough(heat)]          [    -----]
+      real(kind=4)              :: c3           ! aux. coefficient              [    -----]
+      real(kind=4)              :: uuse         ! Wind for when (Rib > Ribmax)  [      m/s]
       !----- Local variables, used by L79. ------------------------------------------------!
-      real              :: a2           ! Drag coefficient in neutral conditions
-      real              :: c1           ! a2 * vels
-      real              :: fm           ! Stability parameter for momentum
-      real              :: fh           ! Stability parameter for heat
-      real              :: c2           ! Part of the c coeff. common to momentum & heat.
-      real              :: cm           ! c coefficient times |Rib|^1/2 for momentum.
-      real              :: ch           ! c coefficient times |Rib|^1/2 for heat.
-      real              :: ee           ! (z/z0)^1/3 -1. for eqn. 20 w/o assuming z/z0 >> 1.
-      !----- Local variables, used by others. ---------------------------------------------!
-      real              :: zeta0m       ! roughness(momentum)/(Obukhov length).
-      real              :: zeta0h       ! roughness(heat)/(Obukhov length).
-      real              :: utotal       ! Total wind (actual + convective)
-      real              :: uconv        ! Convective velocity
-      real              :: uconv_prev   ! Previous convective velocity
-      real              :: change       ! Difference in convective velocity
+      real(kind=4)              :: a2           ! Drag coefficient in neutral conditions
+      real(kind=4)              :: c1           ! a2 * vels
+      real(kind=4)              :: fm           ! Stability parameter for momentum
+      real(kind=4)              :: fh           ! Stability parameter for heat
+      real(kind=4)              :: c2           ! Part of the c coefficient common
+                                                !      to momentum & heat.
+      real(kind=4)              :: cm           ! c times |Rib|^1/2 for momentum.
+      real(kind=4)              :: ch           ! c times |Rib|^1/2 for heat.
+      real(kind=4)              :: ee           ! (z/z0)^1/3 -1. for eqn. 20
+      !----- Local variables, used by other schemes. --------------------------------------!
+      real(kind=4)              :: zeta0m       ! roughness(momentum)/(Obukhov length).
+      real(kind=4)              :: zeta0h       ! roughness(heat)/(Obukhov length).
+      real(kind=4)              :: utotal       ! Total wind (actual + convective)
+      real(kind=4)              :: uconv        ! Convective velocity
+      real(kind=4)              :: uconv_prev   ! Previous convective velocity
+      real(kind=4)              :: change       ! Difference in convective velocity
       integer           :: icnt         ! Iteration counter
       !----- Aux. environment conditions. -------------------------------------------------!
-      real              :: thetav_atm   ! Atmos. virtual potential temperature  [        K]
-      real              :: thetav_can   ! Canopy air virtual pot. temperature   [        K]
+      real(kind=4)              :: thetav_atm   ! Atmos. virtual pot. temp.     [        K]
+      real(kind=4)              :: thetav_can   ! Canopy air virtual pot. temp. [        K]
       !----- External functions. ----------------------------------------------------------!
-      real, external    :: cbrt              ! Cubic root
+      real(kind=4), external    :: cbrt         ! Cubic root
       !------------------------------------------------------------------------------------!
 
 
@@ -2643,10 +2699,10 @@ module canopy_struct_dynamics
       end select
 
       !----- Compute the other scales. ----------------------------------------------------!
-      qstar = c3 * (shv_atm   - shv_can   )
-      tstar = c3 * (theta_atm - theta_can )
-      estar = c3 * (theiv_atm - theiv_can )
-      cstar = c3 * (co2_atm   - co2_can   )
+      qstar = c3 * (shv_atm      - shv_can      )
+      tstar = c3 * (theta_atm    - theta_can    )
+      estar = c3 * (enthalpy_atm - enthalpy_can )
+      cstar = c3 * (co2_atm      - co2_can      )
       !------------------------------------------------------------------------------------!
 
 
@@ -2704,8 +2760,8 @@ module canopy_struct_dynamics
    !           NCAR Technical Note NCAR/TN-461+STR, Boulder, CO, May 2004.                 !
    !                                                                                       !
    !---------------------------------------------------------------------------------------!
-   subroutine ed_stars8(theta_atm,theiv_atm,shv_atm,co2_atm                                &
-                       ,theta_can,theiv_can,shv_can,co2_can                                &
+   subroutine ed_stars8(theta_atm,enthalpy_atm,shv_atm,co2_atm                             &
+                       ,theta_can,enthalpy_can,shv_can,co2_can                             &
                        ,zref,dheight,uref,rough,ustar,tstar,estar,qstar,cstar,zeta,rib     &
                        ,ggbare)
       use consts_coms     , only : grav8         & ! intent(in)
@@ -2729,41 +2785,42 @@ module canopy_struct_dynamics
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       real(kind=8), intent(in)  :: theta_atm    ! Above canopy air pot. temp.   [        K]
-      real(kind=8), intent(in)  :: theiv_atm    ! Above canopy air eq. pot. T   [        K]
-      real(kind=8), intent(in)  :: shv_atm      ! Above canopy vap. spec. hum.  [kg/kg_air]
-      real(kind=8), intent(in)  :: co2_atm      ! Above canopy CO2 mix. ratio   [ µmol/mol]
-      real(kind=8), intent(in)  :: theta_can    ! Canopy air potential temp.    [        K]
-      real(kind=8), intent(in)  :: theiv_can    ! Canopy air eq. pot. temp.     [        K]
+      real(kind=8), intent(in)  :: enthalpy_atm ! Above can. air spec. enthalpy [ J/kg_air]
+      real(kind=8), intent(in)  :: shv_atm      ! Above can. vapour spec. hum.  [kg/kg_air]
+      real(kind=8), intent(in)  :: co2_atm      ! CO2 mixing ratio              [ µmol/mol]
+      real(kind=8), intent(in)  :: theta_can    ! Canopy air pot. temperature   [        K]
+      real(kind=8), intent(in)  :: enthalpy_can ! Canopy air specific enthalpy  [ J/kg_air]
       real(kind=8), intent(in)  :: shv_can      ! Canopy air vapour spec. hum.  [kg/kg_air]
-      real(kind=8), intent(in)  :: co2_can      ! Canopy air CO2 spec. volume   [ µmol/mol]
+      real(kind=8), intent(in)  :: co2_can      ! Canopy air CO2 mixing ratio   [ µmol/mol]
       real(kind=8), intent(in)  :: zref         ! Height at reference point     [        m]
-      real(kind=8), intent(in)  :: dheight      ! 0-plane displacement height   [        m]
-      real(kind=8), intent(in)  :: uref         ! Wind speed at ref. height     [      m/s]
+      real(kind=8), intent(in)  :: dheight      ! Zero-plane displacement hgt.  [        m]
+      real(kind=8), intent(in)  :: uref         ! Wind speed at reference hgt.  [      m/s]
       real(kind=8), intent(in)  :: rough        ! Roughness                     [        m]
       real(kind=8), intent(out) :: ustar        ! U*, friction velocity         [      m/s]
-      real(kind=8), intent(out) :: qstar        ! Specific hum. turb. scale     [kg/kg_air]
-      real(kind=8), intent(out) :: tstar        ! Temperature turb. scale       [        K]
-      real(kind=8), intent(out) :: estar        ! Theta_E turbulence scale      [        K]
+      real(kind=8), intent(out) :: qstar        ! Specific humidity turb. scale [kg/kg_air]
+      real(kind=8), intent(out) :: tstar        ! Temperature turbulence scale  [        K]
+      real(kind=8), intent(out) :: estar        ! Spec. enthalpy turb. scale    [ J/kg_air]
       real(kind=8), intent(out) :: cstar        ! CO2 mixing ratio turb. scale  [ µmol/mol]
-      real(kind=8), intent(out) :: zeta         ! z/(Obukhov length)            [      ---]
-      real(kind=8), intent(out) :: rib          ! Bulk richardson number.       [      ---]
-      real(kind=8), intent(out) :: ggbare       ! Ground conductance.           [      m/s]
+      real(kind=8), intent(out) :: zeta         ! z/(Obukhov length).           [    -----]
+      real(kind=8), intent(out) :: rib          ! Bulk richardson number.       [    -----]
+      real(kind=8), intent(out) :: ggbare       ! Ground conductance            [      m/s]
       !----- Local variables --------------------------------------------------------------!
-      logical                   :: stable       ! Stable state
-      real(kind=8)              :: zoz0m        ! zref/rough(momentum)
-      real(kind=8)              :: lnzoz0m      ! ln[zref/rough(momentum)]
-      real(kind=8)              :: zoz0h        ! zref/rough(heat)
-      real(kind=8)              :: lnzoz0h      ! ln[zref/rough(heat)]
-      real(kind=8)              :: c3           ! coefficient to find the other stars
-      real(kind=8)              :: uuse         ! Wind for too stable cases (Rib > Ribmax)
+      logical                   :: stable       ! Stable state                  [      T|F]
+      real(kind=8)              :: zoz0m        ! zref/rough(momentum)          [    -----]
+      real(kind=8)              :: lnzoz0m      ! ln[zref/rough(momentum)]      [    -----]
+      real(kind=8)              :: zoz0h        ! zref/rough(heat)              [    -----]
+      real(kind=8)              :: lnzoz0h      ! ln[zref/rough(heat)]          [    -----]
+      real(kind=8)              :: c3           ! aux. coefficient              [    -----]
+      real(kind=8)              :: uuse         ! Wind for when (Rib > Ribmax)  [      m/s]
       !----- Local variables, used by L79. ------------------------------------------------!
       real(kind=8)              :: a2           ! Drag coefficient in neutral conditions
       real(kind=8)              :: c1           ! a2 * vels
       real(kind=8)              :: fm           ! Stability parameter for momentum
       real(kind=8)              :: fh           ! Stability parameter for heat
-      real(kind=8)              :: c2           ! Part of the c  common to momentum & heat.
-      real(kind=8)              :: cm           ! c coeff. times |Rib|^1/2 for momentum.
-      real(kind=8)              :: ch           ! c coefficient times |Rib|^1/2 for heat.
+      real(kind=8)              :: c2           ! Part of the c coefficient common
+                                                !      to momentum & heat.
+      real(kind=8)              :: cm           ! c times |Rib|^1/2 for momentum.
+      real(kind=8)              :: ch           ! c times |Rib|^1/2 for heat.
       real(kind=8)              :: ee           ! (z/z0)^1/3 -1. for eqn. 20
       !----- Local variables, used by others. ---------------------------------------------!
       real(kind=8)              :: zeta0m       ! roughness(momentum)/(Obukhov length).
@@ -2973,10 +3030,10 @@ module canopy_struct_dynamics
 
 
       !----- Compute the other scales. ----------------------------------------------------!
-      qstar = c3 * (shv_atm   - shv_can   )
-      tstar = c3 * (theta_atm - theta_can )
-      estar = c3 * (theiv_atm - theiv_can )
-      cstar = c3 * (co2_atm   - co2_can   )
+      qstar = c3 * (shv_atm      - shv_can      )
+      tstar = c3 * (theta_atm    - theta_can    )
+      estar = c3 * (enthalpy_atm - enthalpy_can )
+      cstar = c3 * (co2_atm      - co2_can      )
       !------------------------------------------------------------------------------------!
 
 
@@ -3309,27 +3366,20 @@ module canopy_struct_dynamics
    !     Calculate some canopy air space properties, such as the total mass and depth, and !
    ! also the total capacities (carbon, water, and heat).                                  !
    !---------------------------------------------------------------------------------------!
-   subroutine can_whccap(can_rhos,can_prss,can_depth,wcapcan,wcapcani,hcapcani,ccapcani)
-      use consts_coms, only : cpi    & ! intent(in)
-                            , cp     & ! intent(in)
-                            , p00i   & ! intent(in)
-                            , rocp   & ! intent(in)
-                            , mmdry  ! ! intent(in)
+   subroutine can_whccap(can_rhos,can_depth,wcapcan,hcapcan,ccapcan                        &
+                        ,wcapcani,hcapcani,ccapcani)
+      use consts_coms, only : mmdry  & ! intent(in)
+                            , mmdryi ! ! intent(in)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
-      real(kind=4), intent(in)  :: can_rhos
-      real(kind=4), intent(in)  :: can_prss
-      real(kind=4), intent(in)  :: can_depth
-      real(kind=4), intent(out) :: wcapcan
-      real(kind=4), intent(out) :: wcapcani
-      real(kind=4), intent(out) :: hcapcani
-      real(kind=4), intent(out) :: ccapcani
-      !----- Local variables. -------------------------------------------------------------!
-      real(kind=4)              :: can_exner
-      !------------------------------------------------------------------------------------!
-
-      !----- Find the Exner function. -----------------------------------------------------!
-      can_exner = cp * (p00i * can_prss) ** rocp
+      real(kind=4), intent(in)  :: can_rhos  ! Canopy air density                 [  kg/m3]
+      real(kind=4), intent(in)  :: can_depth ! Depth of canopy air space          [      m]
+      real(kind=4), intent(out) :: wcapcan   ! Water capacity - canopy air space  [  kg/m2]
+      real(kind=4), intent(out) :: hcapcan   ! Enthalpy capacity - CAS            [  kg/m2]
+      real(kind=4), intent(out) :: ccapcan   ! CO2 capacity - CAS                 [ mol/m2]
+      real(kind=4), intent(out) :: wcapcani  ! Inverse of water capacity          [  m2/kg]
+      real(kind=4), intent(out) :: hcapcani  ! Inverse of enthalpy capcity        [  m2/kg]
+      real(kind=4), intent(out) :: ccapcani  ! Inverse of CO2 capacity            [ m2/mol]
       !------------------------------------------------------------------------------------!
 
       !----- Find the water capacity and its inverse. -------------------------------------!
@@ -3337,11 +3387,21 @@ module canopy_struct_dynamics
       wcapcani = 1.0 / wcapcan
       !------------------------------------------------------------------------------------!
 
-      !------ The inverse of entropy capacity divided by potential temperature. -----------!
-      hcapcani = wcapcani ! / can_exner
+      !------------------------------------------------------------------------------------!
+      !       Because we track specific enthalpy [J/kg], the value is the same as water    !
+      ! capacity.                                                                          !
+      !------------------------------------------------------------------------------------!
+      hcapcan  = wcapcan
+      hcapcani = wcapcani
       !------------------------------------------------------------------------------------!
 
-      !------ The inverse of CO2 capacity. ------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !     The CO2 capacity must be in mol/m2 rather than kg/m2, since CO2 variable is in !
+      ! umol/mol.                                                                          !
+      !------------------------------------------------------------------------------------!
+      ccapcan  = mmdryi * wcapcan
       ccapcani = mmdry * wcapcani
       !------------------------------------------------------------------------------------!
 
@@ -3365,21 +3425,20 @@ module canopy_struct_dynamics
    ! (or the canopy depth) must be allowed to change over time, so work can be done by the !
    ! canopy or into the canopy.                                                            !
    !---------------------------------------------------------------------------------------!
-   subroutine can_whccap8(can_rhos,can_exner,can_depth,wcapcan,wcapcani,hcapcani,ccapcani)
-      use consts_coms, only : cpi8    & ! intent(in)
-                            , rdry8   & ! intent(in)
-                            , ep8     & ! intent(in)
-                            , mmdry8  ! ! intent(in)
-      
+   subroutine can_whccap8(can_rhos,can_depth,wcapcan,hcapcan,ccapcan                       &
+                        ,wcapcani,hcapcani,ccapcani)
+      use consts_coms, only : mmdry8  & ! intent(in)
+                            , mmdryi8 ! ! intent(in)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
-      real(kind=8), intent(in)  :: can_rhos
-      real(kind=8), intent(in)  :: can_exner
-      real(kind=8), intent(in)  :: can_depth
-      real(kind=8), intent(out) :: wcapcan
-      real(kind=8), intent(out) :: wcapcani
-      real(kind=8), intent(out) :: hcapcani
-      real(kind=8), intent(out) :: ccapcani
+      real(kind=8), intent(in)  :: can_rhos  ! Canopy air density                 [  kg/m3]
+      real(kind=8), intent(in)  :: can_depth ! Depth of canopy air space          [      m]
+      real(kind=8), intent(out) :: wcapcan   ! Water capacity - canopy air space  [  kg/m2]
+      real(kind=8), intent(out) :: hcapcan   ! Enthalpy capacity - CAS            [  kg/m2]
+      real(kind=8), intent(out) :: ccapcan   ! CO2 capacity - CAS                 [ mol/m2]
+      real(kind=8), intent(out) :: wcapcani  ! Inverse of water capacity          [  m2/kg]
+      real(kind=8), intent(out) :: hcapcani  ! Inverse of enthalpy capcity        [  m2/kg]
+      real(kind=8), intent(out) :: ccapcani  ! Inverse of CO2 capacity            [ m2/mol]
       !------------------------------------------------------------------------------------!
 
       !----- Find the water capacity and its inverse. -------------------------------------!
@@ -3387,11 +3446,21 @@ module canopy_struct_dynamics
       wcapcani = 1.d0 / wcapcan
       !------------------------------------------------------------------------------------!
 
-      !------ The inverse of entropy capacity divided by potential temperature. -----------!
-      hcapcani = wcapcani ! / can_exner
+      !------------------------------------------------------------------------------------!
+      !       Because we track specific enthalpy [J/kg], the value is the same as water    !
+      ! capacity.                                                                          !
+      !------------------------------------------------------------------------------------!
+      hcapcan  = wcapcan
+      hcapcani = wcapcani
       !------------------------------------------------------------------------------------!
 
-      !------ The inverse of CO2 capacity. ------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !     The CO2 capacity must be in mol/m2 rather than kg/m2, since CO2 variable is in !
+      ! umol/mol.                                                                          !
+      !------------------------------------------------------------------------------------!
+      ccapcan  = mmdryi8 * wcapcan
       ccapcani = mmdry8 * wcapcani
       !------------------------------------------------------------------------------------!
 
@@ -3421,7 +3490,7 @@ module canopy_struct_dynamics
    ! - gbw is in kg_H2O/m2/s.                                                              !
    !---------------------------------------------------------------------------------------!
    subroutine leaf_aerodynamic_conductances(ipft,veg_wind,leaf_temp,can_temp,can_shv       &
-                                           ,can_rhos,gbhmos_min,leaf_gbh,leaf_gbw)
+                                           ,can_rhos,can_cp,gbhmos_min,leaf_gbh,leaf_gbw)
       use pft_coms       , only : leaf_width ! ! intent(in)
       use canopy_air_coms, only : aflat_lami & ! intent(in)
                                 , nflat_lami & ! intent(in)
@@ -3433,8 +3502,7 @@ module canopy_struct_dynamics
                                 , mflat_turb ! ! intent(in)
       use consts_coms    , only : gr_coeff   & ! intent(in)
                                 , th_diffi   & ! intent(in)
-                                , th_diff    & ! intent(in)
-                                , cp         ! ! intent(in)
+                                , th_diff    ! ! intent(in)
       use physiology_coms, only : gbh_2_gbw  ! ! intent(in)
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
@@ -3444,6 +3512,7 @@ module canopy_struct_dynamics
       real(kind=4)   , intent(in)  :: can_temp        ! Canopy air temperature  [        K]
       real(kind=4)   , intent(in)  :: can_shv         ! Canopy air spec. hum.   [    kg/kg]
       real(kind=4)   , intent(in)  :: can_rhos        ! Canopy air density      [    kg/m³]
+      real(kind=4)   , intent(in)  :: can_cp          ! Canopy air spec. heat   [   J/kg/K]
       real(kind=4)   , intent(in)  :: gbhmos_min      ! Min. Heat  conductance  [      m/s]
       real(kind=4)   , intent(out) :: leaf_gbh        ! Heat  conductance       [ J/K/m²/s]
       real(kind=4)   , intent(out) :: leaf_gbw        ! Water conductance       [  kg/m²/s]
@@ -3506,7 +3575,7 @@ module canopy_struct_dynamics
       ! entropy and water fluxes [J/K/m²/s and kg/m²/s, respectively].                     !
       !------------------------------------------------------------------------------------!
       gbh_mos  = max(gbhmos_min, free_gbh_mos + forced_gbh_mos)
-      leaf_gbh =             gbh_mos * can_rhos * cp
+      leaf_gbh =             gbh_mos * can_rhos * can_cp
       leaf_gbw = gbh_2_gbw * gbh_mos * can_rhos
       !------------------------------------------------------------------------------------!
 
@@ -3536,7 +3605,7 @@ module canopy_struct_dynamics
    ! - gbw is in kg_H2O/m2/s.                                                              !
    !---------------------------------------------------------------------------------------!
    subroutine leaf_aerodynamic_conductances8(ipft,veg_wind,leaf_temp,can_temp,can_shv      &
-                                            ,can_rhos,gbhmos_min,leaf_gbh,leaf_gbw         &
+                                            ,can_rhos,can_cp,gbhmos_min,leaf_gbh,leaf_gbw  &
                                             ,reynolds,grashof,nusselt_free,nusselt_forced)
       use pft_coms       , only : leaf_width  ! ! intent(in)
       use canopy_air_coms, only : aflat_lami8 & ! intent(in)
@@ -3549,8 +3618,7 @@ module canopy_struct_dynamics
                                 , mflat_turb8 ! ! intent(in)
       use consts_coms    , only : gr_coeff8   & ! intent(in)
                                 , th_diffi8   & ! intent(in)
-                                , th_diff8    & ! intent(in)
-                                , cp8         ! ! intent(in)
+                                , th_diff8    ! ! intent(in)
       use physiology_coms, only : gbh_2_gbw8  ! ! intent(in)
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
@@ -3560,6 +3628,7 @@ module canopy_struct_dynamics
       real(kind=8)   , intent(in)  :: can_temp        ! Canopy air temperature  [        K]
       real(kind=8)   , intent(in)  :: can_shv         ! Canopy air spec. hum.   [    kg/kg]
       real(kind=8)   , intent(in)  :: can_rhos        ! Canopy air density      [    kg/m³]
+      real(kind=8)   , intent(in)  :: can_cp          ! Canopy air spec. heat   [   J/kg/K]
       real(kind=8)   , intent(in)  :: gbhmos_min      ! Min. heat  conductance  [      m/s]
       real(kind=8)   , intent(out) :: leaf_gbh        ! Heat  conductance       [ J/K/m²/s]
       real(kind=8)   , intent(out) :: leaf_gbw        ! Water conductance       [  kg/m²/s]
@@ -3622,7 +3691,7 @@ module canopy_struct_dynamics
       ! entropy and water fluxes [J/K/m²/s and kg/m²/s, respectively].                     !
       !------------------------------------------------------------------------------------!
       gbh_mos  = max(gbhmos_min, free_gbh_mos + forced_gbh_mos)
-      leaf_gbh =              gbh_mos * can_rhos * cp8
+      leaf_gbh =              gbh_mos * can_rhos * can_cp
       leaf_gbw = gbh_2_gbw8 * gbh_mos * can_rhos
       !------------------------------------------------------------------------------------!
 
@@ -3652,7 +3721,8 @@ module canopy_struct_dynamics
    ! - gbw is in kg_H2O/m2/s.                                                              !
    !---------------------------------------------------------------------------------------!
    subroutine wood_aerodynamic_conductances(ipft,dbh,height,veg_wind,wood_temp,can_temp    &
-                                           ,can_shv,can_rhos,gbhmos_min,wood_gbh,wood_gbw)
+                                           ,can_shv,can_rhos,can_cp,gbhmos_min,wood_gbh    &
+                                           ,wood_gbw)
       use allometry      , only : dbh2vol    ! ! intent(in)
       use canopy_air_coms, only : acyli_lami & ! intent(in)
                                 , ocyli_lami & ! intent(in)
@@ -3666,8 +3736,7 @@ module canopy_struct_dynamics
                                 , mcyli_turb ! ! intent(in)
       use consts_coms    , only : gr_coeff   & ! intent(in)
                                 , th_diffi   & ! intent(in)
-                                , th_diff    & ! intent(in)
-                                , cp         ! ! intent(in)
+                                , th_diff    ! ! intent(in)
       use physiology_coms, only : gbh_2_gbw  ! ! intent(in)
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
@@ -3679,6 +3748,7 @@ module canopy_struct_dynamics
       real(kind=4)   , intent(in)  :: can_temp        ! Canopy air temperature  [        K]
       real(kind=4)   , intent(in)  :: can_shv         ! Canopy air spec. hum.   [    kg/kg]
       real(kind=4)   , intent(in)  :: can_rhos        ! Canopy air density      [    kg/m³]
+      real(kind=4)   , intent(in)  :: can_cp          ! Canopy air spec. heat   [   J/kg/K]
       real(kind=4)   , intent(in)  :: gbhmos_min      ! Min. Heat  conductance  [      m/s]
       real(kind=4)   , intent(out) :: wood_gbh        ! Heat  conductance       [ J/K/m²/s]
       real(kind=4)   , intent(out) :: wood_gbw        ! Water conductance       [  kg/m²/s]
@@ -3748,7 +3818,7 @@ module canopy_struct_dynamics
       ! entropy and water fluxes [J/K/m²/s and kg/m²/s, respectively].                     !
       !------------------------------------------------------------------------------------!
       gbh_mos  = max(gbhmos_min, free_gbh_mos + forced_gbh_mos)
-      wood_gbh =             gbh_mos * can_rhos * cp
+      wood_gbh =             gbh_mos * can_rhos * can_cp
       wood_gbw = gbh_2_gbw * gbh_mos * can_rhos
       !------------------------------------------------------------------------------------!
 
@@ -3778,8 +3848,9 @@ module canopy_struct_dynamics
    ! - gbw is in kg_H2O/m2/s.                                                              !
    !---------------------------------------------------------------------------------------!
    subroutine wood_aerodynamic_conductances8(ipft,dbh,height,veg_wind,wood_temp,can_temp   &
-                                            ,can_shv,can_rhos,gbhmos_min,wood_gbh,wood_gbw &
-                                            ,reynolds,grashof,nusselt_free,nusselt_forced)
+                                            ,can_shv,can_rhos,can_cp,gbhmos_min,wood_gbh   &
+                                            ,wood_gbw,reynolds,grashof,nusselt_free        &
+                                            ,nusselt_forced)
       use allometry      , only : dbh2vol     ! ! intent(in)
       use canopy_air_coms, only : ocyli_lami8 & ! intent(in)
                                 , acyli_lami8 & ! intent(in)
@@ -3793,8 +3864,7 @@ module canopy_struct_dynamics
                                 , mcyli_turb8 ! ! intent(in)
       use consts_coms    , only : gr_coeff8   & ! intent(in)
                                 , th_diffi8   & ! intent(in)
-                                , th_diff8    & ! intent(in)
-                                , cp8         ! ! intent(in)
+                                , th_diff8    ! ! intent(in)
       use physiology_coms, only : gbh_2_gbw8  ! ! intent(in)
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
@@ -3806,6 +3876,7 @@ module canopy_struct_dynamics
       real(kind=8)   , intent(in)  :: can_temp        ! Canopy air temperature  [        K]
       real(kind=8)   , intent(in)  :: can_shv         ! Canopy air spec. hum.   [    kg/kg]
       real(kind=8)   , intent(in)  :: can_rhos        ! Canopy air density      [    kg/m³]
+      real(kind=8)   , intent(in)  :: can_cp          ! Canopy air spec. heat   [   J/kg/K]
       real(kind=8)   , intent(in)  :: gbhmos_min      ! Min. heat  conductance  [      m/s]
       real(kind=8)   , intent(out) :: wood_gbh        ! Heat  conductance       [ J/K/m²/s]
       real(kind=8)   , intent(out) :: wood_gbw        ! Water conductance       [  kg/m²/s]
@@ -3875,7 +3946,7 @@ module canopy_struct_dynamics
       ! entropy and water fluxes [J/K/m²/s and kg/m²/s, respectively].                     !
       !------------------------------------------------------------------------------------!
       gbh_mos  = max(gbhmos_min, free_gbh_mos + forced_gbh_mos)
-      wood_gbh =              gbh_mos * can_rhos * cp8
+      wood_gbh =              gbh_mos * can_rhos * can_cp
       wood_gbw = gbh_2_gbw8 * gbh_mos * can_rhos
       !------------------------------------------------------------------------------------!
 

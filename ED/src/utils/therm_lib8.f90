@@ -26,25 +26,31 @@ module therm_lib8
    ! accurate the result, but it will slow down the run.  Notice that we are using the     !
    ! tolerance that is based on the single precision...                                    !
    !---------------------------------------------------------------------------------------!
-   real(kind=8), parameter ::   toler8  = dble(toler4)
+   real(kind=8), parameter ::   toler8  = dble(toler4) ! Relative tolerance for iterative 
+                                                       !    methods.  The smaller the 
+                                                       !    value, the more accurate the 
+                                                       !    result, but smaller values will
+                                                       !    slow down the run.
+   integer     , parameter ::   maxfpo = maxfpo4       ! Maximum # of iterations before 
+                                                       !    crashing for false position 
+                                                       !    method.
+   integer     , parameter ::   maxit  = maxit4        ! Maximum # of iterations before 
+                                                       !    crashing, for other methods.
+   integer     , parameter ::   maxlev = maxlev4       ! Maximum # of levels for adaptive     
+                                                       !    quadrature methods.    
+   logical     , parameter ::   newthermo = newthermo4 ! Use new thermodynamics [T|F]
+   !---------------------------------------------------------------------------------------!
 
 
-   integer, parameter ::   maxfpo = maxfpo4         ! Maximum # of iterations before crash-
-                                                    !   ing for false position method.
-
-   integer, parameter ::   maxit  = maxit4          ! Maximum # of iterations before crash-
-                                                    !   ing, for other methods.
-
-   integer, parameter ::   maxlev = maxlev4         ! Maximum # of levels for adaptive     
-                                                    !   quadrature methods.    
-
-   logical, parameter ::   newthermo = newthermo4   ! Use new thermodynamics [T|F]
 
    !---------------------------------------------------------------------------------------!
    !   This is the "level" variable, that used to be in micphys. Since it affects more the !
    ! thermodynamics choices than the microphysics, it was moved to here.                   !
    !---------------------------------------------------------------------------------------!
    integer, parameter ::   level = level4
+   !---------------------------------------------------------------------------------------!
+
+
 
    !---------------------------------------------------------------------------------------!
    !    The following three variables are just the logical tests on variable "level",      !
@@ -79,6 +85,7 @@ module therm_lib8
    real(kind=8), dimension(2)  , parameter :: ttt_108 = (/4.15d-2     , 2.188d2 /)
    !---------------------------------------------------------------------------------------!
 
+
    !---------------------------------------------------------------------------------------!
    !     These constants came from the paper in which the saturation vapour pressure is    !
    ! based on:                                                                             !
@@ -91,32 +98,37 @@ module therm_lib8
    !        what was on the original code...                                               !
    !---------------------------------------------------------------------------------------!
    !----- Coefficients for esat (liquid) --------------------------------------------------!
-   real(kind=8), dimension(0:8), parameter :: cll8 =   &
-        (/ .6105851d+03,  .4440316d+02,  .1430341d+01  &
-        , .2641412d-01,  .2995057d-03,  .2031998d-05   &
-        , .6936113d-08,  .2564861d-11, -.3704404d-13 /)
+   real(kind=8), dimension(0:8), parameter :: cll8 = (/  .6105851d+03,  .4440316d+02       &
+                                                      ,  .1430341d+01,  .2641412d-01       &
+                                                      ,  .2995057d-03,  .2031998d-05       &
+                                                      ,  .6936113d-08,  .2564861d-11       &
+                                                      , -.3704404d-13                /)
    !----- Coefficients for esat (ice) -----------------------------------------------------!
-   real(kind=8), dimension(0:8), parameter :: cii8 =   &
-        (/ .6114327d+03,  .5027041d+02,  .1875982d+01  &
-        , .4158303d-01,  .5992408d-03,  .5743775d-05   &
-        , .3566847d-07,  .1306802d-09,  .2152144d-12 /)
+   real(kind=8), dimension(0:8), parameter :: cii8 = (/  .6114327d+03,  .5027041d+02       &
+                                                      ,  .1875982d+01,  .4158303d-01       &
+                                                      ,  .5992408d-03,  .5743775d-05       &
+                                                      ,  .3566847d-07,  .1306802d-09       &
+                                                      ,  .2152144d-12                /)
    !----- Coefficients for d(esat)/dT (liquid) --------------------------------------------!
-   real(kind=8), dimension(0:8), parameter :: dll8 =   &
-        (/ .4443216d+02,  .2861503d+01,  .7943347d-01  &
-        , .1209650d-02,  .1036937d-04,  .4058663d-07   &
-        ,-.5805342d-10, -.1159088d-11, -.3189651d-14 /)
+   real(kind=8), dimension(0:8), parameter :: dll8 = (/  .4443216d+02,  .2861503d+01       &
+                                                      ,  .7943347d-01,  .1209650d-02       &
+                                                      ,  .1036937d-04,  .4058663d-07       &
+                                                      , -.5805342d-10, -.1159088d-11       &
+                                                      , -.3189651d-14                /)
    !----- Coefficients for esat (ice) -----------------------------------------------------!
-   real(kind=8), dimension(0:8), parameter :: dii8 =   &
-        (/ .5036342d+02,  .3775758d+01,  .1269736d+00  &
-        , .2503052d-02,  .3163761d-04,  .2623881d-06   &
-        , .1392546d-08,  .4315126d-11,  .5961476d-14 /)
+   real(kind=8), dimension(0:8), parameter :: dii8 = (/  .5036342d+02,  .3775758d+01       &
+                                                      ,  .1269736d+00,  .2503052d-02       &
+                                                      ,  .3163761d-04,  .2623881d-06       &
+                                                      ,  .1392546d-08,  .4315126d-11       &
+                                                      ,  .5961476d-14                /)
    !---------------------------------------------------------------------------------------!
-
    !=======================================================================================!
    !=======================================================================================!
 
 
    contains
+
+
 
    !=======================================================================================!
    !=======================================================================================!
@@ -124,27 +136,43 @@ module therm_lib8
    ! Kelvin temperature. This expression came from MK05, equation (10).                    !
    !---------------------------------------------------------------------------------------!
    real(kind=8) function eslf8(temp,l1funout,l2funout,ttfunout)
-      use consts_coms, only : t008
+      use consts_coms, only : t008 ! ! intent(in)
       implicit none
-      real(kind=8), intent(in)            :: temp
-      real(kind=8), intent(out), optional :: l1funout,ttfunout,l2funout
-      real(kind=8)                        :: l1fun,ttfun,l2fun,x
+      !----- Required arguments. ----------------------------------------------------------!
+      real(kind=8), intent(in)            :: temp     ! Temperature                [     K]
+      !----- Optional arguments. ----------------------------------------------------------!
+      real(kind=8), intent(out), optional :: l1funout ! Function for high temperatures
+      real(kind=8), intent(out), optional :: ttfunout ! Interpolation function
+      real(kind=8), intent(out), optional :: l2funout ! Function for low temperatures
+      !----- Local variables. -------------------------------------------------------------!
+      real(kind=8)                        :: l1fun    ! 
+      real(kind=8)                        :: ttfun    ! 
+      real(kind=8)                        :: l2fun    ! 
+      real(kind=8)                        :: x        ! 
+      !------------------------------------------------------------------------------------!
 
+
+
+      !------------------------------------------------------------------------------------!
+      !     Choose between the old and the new thermodynamics.                             !
+      !------------------------------------------------------------------------------------!
       if (newthermo) then
          !----- Updated method, using MK05 ------------------------------------------------!
-         l1fun  = l01_108(0) + l01_108(1)/temp + l01_108(2)*log(temp) + l01_108(3) * temp
-         l2fun  = l02_108(0) + l02_108(1)/temp + l02_108(2)*log(temp) + l02_108(3) * temp
-         ttfun  = tanh(ttt_108(1) * (temp - ttt_108(2)))
-         eslf8  = exp(l1fun + ttfun*l2fun)
+         l1fun = l01_108(0) + l01_108(1)/temp + l01_108(2)*log(temp) + l01_108(3) * temp
+         l2fun = l02_108(0) + l02_108(1)/temp + l02_108(2)*log(temp) + l02_108(3) * temp
+         ttfun = tanh(ttt_108(1) * (temp - ttt_108(2)))
+         eslf8 = exp(l1fun + ttfun*l2fun)
+         !---------------------------------------------------------------------------------!
 
          if (present(l1funout)) l1funout = l1fun
          if (present(l2funout)) l2funout = l2fun
          if (present(ttfunout)) ttfunout = ttfun
       else
          !----- Original method, using polynomial fit (FWC92) -----------------------------!
-         x     = max(-8.d1,temp-t008)
+         x     = max(-8.0d1,temp-t008)
          eslf8 = cll8(0) + x * (cll8(1) + x * (cll8(2) + x * (cll8(3) + x * (cll8(4)       &
                          + x * (cll8(5) + x * (cll8(6) + x * (cll8(7) + x * cll8(8)) ))))))
+         !---------------------------------------------------------------------------------!
 
          if (present(l1funout)) l1funout = eslf8
          if (present(l2funout)) l2funout = eslf8
@@ -167,26 +195,41 @@ module therm_lib8
    ! Kelvin temperature, based on MK05 equation (7).                                       !
    !---------------------------------------------------------------------------------------!
    real(kind=8) function esif8(temp,iifunout)
-      use consts_coms, only : t008
+      use consts_coms, only : t008 ! ! intent(in)
       implicit none
-      real(kind=8), intent(in)            :: temp
+      !----- Required arguments. ----------------------------------------------------------!
+      real(kind=8), intent(in)            :: temp     ! Temperature                 [    K]
+      !----- Optional arguments. ----------------------------------------------------------!
       real(kind=8), intent(out), optional :: iifunout
-      real(kind=8)                        :: iifun,x
+      !----- Local variables. -------------------------------------------------------------!
+      real(kind=8)                        :: iifun
+      real(kind=8)                        :: x
+      !------------------------------------------------------------------------------------!
 
+
+      !------------------------------------------------------------------------------------!
+      !     Choose between the old and the new thermodynamics.                             !
+      !------------------------------------------------------------------------------------!
       if (newthermo) then
+
          !----- Updated method, using MK05 ------------------------------------------------!
-         iifun  = iii_78(0) + iii_78(1)/temp + iii_78(2) * log(temp) + iii_78(3) * temp
-         esif8  = exp(iifun)
-      
+         iifun = iii_78(0) + iii_78(1)/temp + iii_78(2) * log(temp) + iii_78(3) * temp
+         esif8 = exp(iifun)
+         !---------------------------------------------------------------------------------!
+
+
          if (present(iifunout)) iifunout=iifun
       else
          !----- Original method, using polynomial fit (FWC92) -----------------------------!
-         x=max(-8.d1,temp-t008)
+         x     = max(-8.d1,temp-t008)
          esif8 = cii8(0) + x * (cii8(1) + x * (cii8(2) + x * (cii8(3) + x * (cii8(4)       &
-                         + x * (cii8(5) + x * (cii8(6) + x * (cii8(7) + x * cii8(8)) ))))))
+                        + x * (cii8(5) + x * (cii8(6) + x * (cii8(7) + x * cii8(8))))))))
+         !---------------------------------------------------------------------------------!
 
          if (present(iifunout)) iifunout=esif8
       end if
+      !------------------------------------------------------------------------------------!
+
       return
    end function esif8
    !=======================================================================================!
@@ -204,23 +247,43 @@ module therm_lib8
    ! below or above the triple point.                                                      !
    !---------------------------------------------------------------------------------------!
    real(kind=8) function eslif8(temp,useice)
-      use consts_coms, only: t3ple8
+      use consts_coms, only : t3ple8 ! ! intent(in)
       implicit none
+      !----- Required arguments. ----------------------------------------------------------!
       real(kind=8), intent(in)           :: temp
+      !----- Optional arguments. ----------------------------------------------------------!
       logical     , intent(in), optional :: useice
-      logical                            :: brrr_cold
+      !----- Local variables. -------------------------------------------------------------!
+      logical                            :: frozen
+      !------------------------------------------------------------------------------------!
 
+
+      !------------------------------------------------------------------------------------!
+      !     Decide which function to use (saturation for liquid water or ice).             !
+      !------------------------------------------------------------------------------------!
       if (present(useice)) then
-         brrr_cold = useice  .and. temp < t3ple8
+         frozen = useice  .and. temp < t3ple8
       else 
-         brrr_cold = bulk_on .and. temp < t3ple8
+         frozen = bulk_on .and. temp < t3ple8
       end if
+      !------------------------------------------------------------------------------------!
 
-      if (brrr_cold) then
-         eslif8 = esif8(temp) ! Ice saturation vapour pressure 
+
+
+      !------------------------------------------------------------------------------------!
+      !      Call the appropriate function depending on the temperature and whether ice    !
+      ! thermodynamics is to be used.                                                      !
+      !------------------------------------------------------------------------------------!
+      if (frozen) then
+         !----- Saturation vapour pressure for ice. ---------------------------------------!
+         eslif8 = esif8(temp)
+         !---------------------------------------------------------------------------------!
       else
-         eslif8 = eslf8(temp) ! Liquid saturation vapour pressure
+         !----- Saturation vapour pressure for liquid. ------------------------------------!
+         eslif8 = eslf8(temp)
+         !---------------------------------------------------------------------------------!
       end if
+      !------------------------------------------------------------------------------------!
 
       return
    end function eslif8
@@ -238,13 +301,28 @@ module therm_lib8
    ! of pressure and Kelvin temperature.                                                   !
    !---------------------------------------------------------------------------------------!
    real(kind=8) function rslf8(pres,temp)
-      use consts_coms, only : ep8,toodry8
+      use consts_coms, only : ep8     & ! intent(in)
+                            , toodry8 ! ! intent(in)
       implicit none
-      real(kind=8), intent(in) :: pres,temp
-      real(kind=8)             :: esl
+      !----- Arguments. -------------------------------------------------------------------!
+      real(kind=8), intent(in) :: pres ! Pressure                                   [   Pa]
+      real(kind=8), intent(in) :: temp ! Temperature                                [    K]
+      !----- Local variables. -------------------------------------------------------------!
+      real(kind=8)             :: esl  ! Saturation vapour pressure                 [   Pa]
+      !------------------------------------------------------------------------------------!
 
-      esl   = eslf8(temp)
+
+      !----- First we find the saturation vapour pressure. --------------------------------!
+      esl  = eslf8(temp)
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !     Use the usual relation between pressure and vapour pressure to find the mixing !
+      ! ratio.                                                                             !
+      !------------------------------------------------------------------------------------!
       rslf8 = max(toodry8,ep8*esl/(pres-esl))
+      !------------------------------------------------------------------------------------!
 
       return
    end function rslf8
@@ -262,13 +340,28 @@ module therm_lib8
    ! pressure and Kelvin temperature.                                                      !
    !---------------------------------------------------------------------------------------!
    real(kind=8) function rsif8(pres,temp)
-      use consts_coms, only : ep8,toodry8
+      use consts_coms, only : ep8     & ! intent(in)
+                            , toodry8 ! ! intent(in)
       implicit none
-      real(kind=8), intent(in) :: pres,temp
-      real(kind=8)             :: esi
+      !----- Arguments. -------------------------------------------------------------------!
+      real(kind=8), intent(in) :: pres ! Pressure                                   [   Pa]
+      real(kind=8), intent(in) :: temp ! Temperature                                [    K]
+      !----- Local variables. -------------------------------------------------------------!
+      real(kind=8)             :: esi  ! Saturation vapour pressure                 [   Pa]
+      !------------------------------------------------------------------------------------!
 
-      esi   = esif8(temp)
+
+      !----- First we find the saturation vapour pressure. --------------------------------!
+      esi  = esif8(temp)
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !     Use the usual relation between pressure and vapour pressure to find the mixing !
+      ! ratio.                                                                             !
+      !------------------------------------------------------------------------------------!
       rsif8 = max(toodry8,ep8*esi/(pres-esi))
+      !------------------------------------------------------------------------------------!
 
       return
    end function rsif8
@@ -286,28 +379,54 @@ module therm_lib8
    ! depending on temperature, as a function of pressure and Kelvin temperature.           !
    !---------------------------------------------------------------------------------------!
    real(kind=8) function rslif8(pres,temp,useice)
-      use consts_coms, only: t3ple8,ep8
+      use consts_coms, only : t3ple8 & ! intent(in)
+                            , ep8    ! ! intent(in)
       implicit none
-      real(kind=8), intent(in)           :: pres,temp
+      !----- Required arguments. ----------------------------------------------------------!
+      real(kind=8), intent(in)           :: pres
+      real(kind=8), intent(in)           :: temp
+      !----- Optional arguments. ----------------------------------------------------------!
       logical     , intent(in), optional :: useice
+      !----- Local variables. -------------------------------------------------------------!
       real(kind=8)                       :: esz
-      logical                            :: brrr_cold
+      logical                            :: frozen
+      !------------------------------------------------------------------------------------!
 
-      !----- Checking which saturation (liquid or ice) I should use here ------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !     Decide which function to use (saturation for liquid water or ice).             !
+      !------------------------------------------------------------------------------------!
       if (present(useice)) then
-         brrr_cold = useice  .and. temp < t3ple8
+         frozen = useice  .and. temp < t3ple8
       else 
-         brrr_cold = bulk_on .and. temp < t3ple8
+         frozen = bulk_on .and. temp < t3ple8
       end if
-    
-      !----- Finding the saturation vapour pressure ---------------------------------------!
-      if (brrr_cold) then
-         esz = esif8(temp)
-      else
-         esz = eslf8(temp)
-      end if
+      !------------------------------------------------------------------------------------!
 
+
+      !------------------------------------------------------------------------------------!
+      !      Call the appropriate function depending on the temperature and whether ice    !
+      ! thermodynamics is to be used.                                                      !
+      !------------------------------------------------------------------------------------!
+      if (frozen) then
+         !----- Saturation vapour pressure for ice. ---------------------------------------!
+         esz = esif8(temp)
+         !---------------------------------------------------------------------------------!
+      else
+         !----- Saturation vapour pressure for liquid. ------------------------------------!
+         esz = eslf8(temp)
+         !---------------------------------------------------------------------------------!
+      end if
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !     Use the usual relation between pressure and vapour pressure to find the mixing !
+      ! ratio.                                                                             !
+      !------------------------------------------------------------------------------------!
       rslif8 = ep8 * esz / (pres - esz)
+      !------------------------------------------------------------------------------------!
 
       return
    end function rslif8
@@ -326,12 +445,28 @@ module therm_lib8
    ! function of temperature in Kelvin.                                                    !
    !---------------------------------------------------------------------------------------!
    real(kind=8) function rhovsl8(temp)
-      use consts_coms, only : rh2o8
+      use consts_coms, only : rh2o8 ! ! intent(in)
       implicit none
-      real(kind=8), intent(in) :: temp
-      real(kind=8)             :: eequ
-      eequ    = eslf8(temp)
+      !----- Arguments. -------------------------------------------------------------------!
+      real(kind=8), intent(in) :: temp ! Temperature                                [    K]
+      !----- Local variables. -------------------------------------------------------------!
+      real(kind=8)             :: eequ ! Saturation vapour pressure                 [   Pa]
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !     Find the equilibrium (saturation) vapour pressure.                             !
+      !------------------------------------------------------------------------------------!
+      eequ = eslf8(temp)
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !    Find the saturation density.                                                    !
+      !------------------------------------------------------------------------------------!
       rhovsl8 = eequ / (rh2o8 * temp)
+      !------------------------------------------------------------------------------------!
+
       return
    end function rhovsl8
    !=======================================================================================!
@@ -349,12 +484,28 @@ module therm_lib8
    ! function of temperature in Kelvin.                                                    !
    !---------------------------------------------------------------------------------------!
    real(kind=8) function rhovsi8(temp)
-      use consts_coms, only : rh2o8
+      use consts_coms, only : rh2o8 ! ! intent(in)
       implicit none
-      real(kind=8), intent(in) :: temp
-      real(kind=8)             :: eequ
-      eequ   = esif8(temp)
+      !----- Arguments. -------------------------------------------------------------------!
+      real(kind=8), intent(in) :: temp ! Temperature                                [    K]
+      !----- Local variables. -------------------------------------------------------------!
+      real(kind=8)             :: eequ ! Saturation vapour pressure                 [   Pa]
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !     Find the equilibrium (saturation) vapour pressure.                             !
+      !------------------------------------------------------------------------------------!
+      eequ = esif8(temp)
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !    Find the saturation density.                                                    !
+      !------------------------------------------------------------------------------------!
       rhovsi8 = eequ / (rh2o8 * temp)
+      !------------------------------------------------------------------------------------!
+
       return
    end function rhovsi8
    !=======================================================================================!
@@ -373,19 +524,35 @@ module therm_lib8
    ! temperature.                                                                          !
    !---------------------------------------------------------------------------------------!
    real(kind=8) function rhovsil8(temp,useice)
-      use consts_coms, only : rh2o8
+      use consts_coms, only : rh2o8 ! ! intent(in)
       implicit none
+      !----- Required arguments. ----------------------------------------------------------!
       real(kind=8), intent(in)           :: temp
+      !----- Optional arguments. ----------------------------------------------------------!
       logical     , intent(in), optional :: useice
+      !----- Local variables. -------------------------------------------------------------!
       real(kind=8)                       :: eequ
+      !------------------------------------------------------------------------------------!
 
+
+      !------------------------------------------------------------------------------------!
+      !     Pass the "useice" argument to eslif, so it may decide whether ice thermo-      !
+      ! dynamics is to be used.                                                            !
+      !------------------------------------------------------------------------------------!
       if (present(useice)) then
          eequ = eslif8(temp,useice)
       else
          eequ = eslif8(temp)
       end if
+      !------------------------------------------------------------------------------------!
 
+
+
+      !------------------------------------------------------------------------------------!
+      !    Find the saturation density.                                                    !
+      !------------------------------------------------------------------------------------!
       rhovsil8 = eequ / (rh2o8 * temp)
+      !------------------------------------------------------------------------------------!
 
       return
    end function rhovsil8
@@ -403,24 +570,39 @@ module therm_lib8
    ! pressure with respect to temperature as a function of Kelvin temperature.             !
    !---------------------------------------------------------------------------------------!
    real(kind=8) function eslfp8(temp)
-      use consts_coms, only: t008
+      use consts_coms, only : t008 ! ! intent(in)
       implicit none
+      !------ Arguments. ------------------------------------------------------------------!
       real(kind=8), intent(in) :: temp
-      real(kind=8)             :: esl,l2fun,ttfun,l1prime,l2prime,ttprime,x
+      !------ Local variables. ------------------------------------------------------------!
+      real(kind=8)             :: esl
+      real(kind=8)             :: l2fun
+      real(kind=8)             :: ttfun
+      real(kind=8)             :: l1prime
+      real(kind=8)             :: l2prime
+      real(kind=8)             :: ttprime
+      real(kind=8)             :: x
+      !------------------------------------------------------------------------------------!
 
+
+
+      !------------------------------------------------------------------------------------!
+      !      Decide which function to use, based on the thermodynamics.                    !
+      !------------------------------------------------------------------------------------!
       if (newthermo) then
          !----- Updated method, using MK05 ------------------------------------------------!
          esl     = eslf8(temp,l2funout=l2fun,ttfunout=ttfun)
          l1prime = -l01_108(1)/(temp*temp) + l01_108(2)/temp + l01_108(3)
          l2prime = -l02_108(1)/(temp*temp) + l02_108(2)/temp + l02_108(3)
-         ttprime =  ttt_108(1)*(1.-ttfun*ttfun)
+         ttprime =  ttt_108(1)*(1.d0 - ttfun*ttfun)
          eslfp8  = esl * (l1prime + l2prime*ttfun + l2fun*ttprime)
       else
          !----- Original method, using polynomial fit (FWC92) -----------------------------!
-         x=max(-8.d1,temp-t008)
+         x      = max(-8.d1,temp-t008)
          eslfp8 = dll8(0) + x * (dll8(1) + x * (dll8(2) + x * (dll8(3) + x * (dll8(4)      &
-                          + x * (dll8(5) + x * (dll8(6) + x * (dll8(7) + x * dll8(8)) ))))))
+                          + x * (dll8(5) + x * (dll8(6) + x * (dll8(7) + x * dll8(8))))))))
       end if
+      !------------------------------------------------------------------------------------!
 
 
       return
@@ -439,22 +621,33 @@ module therm_lib8
    ! with respect to temperature as a function of Kelvin temperature.                      !
    !---------------------------------------------------------------------------------------!
    real(kind=8) function esifp8(temp)
-      use consts_coms, only: t008
+      use consts_coms, only : t008 ! ! intent(in)
       implicit none
+      !------ Arguments. ------------------------------------------------------------------!
       real(kind=8), intent(in) :: temp
-      real(kind=8)             :: esi,iiprime,x
+      !------ Local variables. ------------------------------------------------------------!
+      real(kind=8)             :: esi
+      real(kind=8)             :: iiprime
+      real(kind=8)             :: x
+      !------------------------------------------------------------------------------------!
 
+
+
+      !------------------------------------------------------------------------------------!
+      !      Decide which function to use, based on the thermodynamics.                    !
+      !------------------------------------------------------------------------------------!
       if (newthermo) then
          !----- Updated method, using MK05 ------------------------------------------------!
-         esi      = esif8(temp)
-         iiprime  = -iii_78(1)/(temp*temp) + iii_78(2)/temp + iii_78(3)
-         esifp8   = esi * iiprime
+         esi     = esif8(temp)
+         iiprime = -iii_78(1)/(temp*temp) + iii_78(2)/temp + iii_78(3)
+         esifp8  = esi * iiprime
       else
          !----- Original method, using polynomial fit (FWC92) -----------------------------!
-         x=max(-8.d1,temp-t008)
+         x      = max(-8.d1,temp-t008)
          esifp8 = dii8(0) + x * (dii8(1) + x * (dii8(2) + x * (dii8(3) + x * (dii8(4)      &
-                          + x * (dii8(5) + x * (dii8(6) + x * (dii8(7) + x * dii8(8)) ))))))
+                          + x * (dii8(5) + x * (dii8(6) + x * (dii8(7) + x * dii8(8))))))))
       end if
+      !------------------------------------------------------------------------------------!
 
       return
    end function esifp8
@@ -473,23 +666,43 @@ module therm_lib8
    ! whether the temperature is below or above the triple point.                           !
    !---------------------------------------------------------------------------------------!
    real(kind=8) function eslifp8(temp,useice)
-      use consts_coms, only: t3ple8
+      use consts_coms, only : t3ple8 ! ! intent(in)
       implicit none
+      !------ Arguments. ------------------------------------------------------------------!
       real(kind=8), intent(in)           :: temp
+      !------ Local variables. ------------------------------------------------------------!
       logical     , intent(in), optional :: useice
-      logical                            :: brrr_cold
+      logical                            :: frozen
+      !------------------------------------------------------------------------------------!
 
+
+
+      !------------------------------------------------------------------------------------!
+      !     Decide which function to use (saturation for liquid water or ice).             !
+      !------------------------------------------------------------------------------------!
       if (present(useice)) then
-         brrr_cold = useice  .and. temp < t3ple8
+         frozen = useice  .and. temp < t3ple8
       else 
-         brrr_cold = bulk_on .and. temp < t3ple8
+         frozen = bulk_on .and. temp < t3ple8
       end if
+      !------------------------------------------------------------------------------------!
 
-      if (brrr_cold) then
-         eslifp8 = esifp8(temp) ! d(Ice saturation vapour pressure)/dT
+
+
+      !------------------------------------------------------------------------------------!
+      !      Call the appropriate function depending on the temperature and whether ice    !
+      ! thermodynamics is to be used.                                                      !
+      !------------------------------------------------------------------------------------!
+      if (frozen) then
+         !----- d(Saturation vapour pressure)/dT for ice. ---------------------------------!
+         eslifp8 = esifp8(temp)
+         !---------------------------------------------------------------------------------!
       else
-         eslifp8 = eslfp8(temp) ! d(Liquid saturation vapour pressure)/dT
+         !----- d(Saturation vapour pressure)/dT for liquid water. ------------------------!
+         eslifp8 = eslfp8(temp)
+         !---------------------------------------------------------------------------------!
       end if
+      !------------------------------------------------------------------------------------!
 
       return
    end function eslifp8
@@ -509,16 +722,36 @@ module therm_lib8
    ! ture.                                                                                 !
    !---------------------------------------------------------------------------------------!
    real(kind=8) function rslfp8(pres,temp)
-      use consts_coms, only: ep8
+      use consts_coms, only : ep8 ! ! intent(in)
       implicit none
-      real(kind=8), intent(in) :: pres,temp
-      real(kind=8)             :: desdt,esl,pdry
+      !----- Arguments. -------------------------------------------------------------------!
+      real(kind=8), intent(in) :: pres  ! Pressure                                 [    Pa]
+      real(kind=8), intent(in) :: temp  ! Temperature                              [     K]
+      !----- Local variables. -------------------------------------------------------------!
+      real(kind=8)             :: esl   ! Partial pressure                         [    Pa]
+      real(kind=8)             :: desdt ! Derivative of partial pressure of water  [  Pa/K]
+      real(kind=8)             :: pdry  ! Partial pressure of dry air              [    Pa]
+      !------------------------------------------------------------------------------------!
 
-      esl     = eslf8(temp)
-      desdt   = eslfp8(temp)
-      
-      pdry    = pres-esl
+
+
+      !------------------------------------------------------------------------------------!
+      !     Find the partial pressure of water vapour and its derivative, using temper-    !
+      ! ature.                                                                             !
+      !------------------------------------------------------------------------------------!
+      esl    = eslf8(temp)
+      desdt  = eslfp8(temp)
+      !------------------------------------------------------------------------------------!
+
+
+      !----- Find the partial pressure of dry air. ----------------------------------------!
+      pdry   = pres-esl
+      !------------------------------------------------------------------------------------!
+
+
+      !----- Find the partial derivative of mixing ratio. ---------------------------------!
       rslfp8  = ep8 * pres * desdt / (pdry*pdry)
+      !------------------------------------------------------------------------------------!
 
       return
    end function rslfp8
@@ -538,17 +771,35 @@ module therm_lib8
    ! ture.                                                                                 !
    !---------------------------------------------------------------------------------------!
    real(kind=8) function rsifp8(pres,temp)
-      use consts_coms, only: ep8
+      use consts_coms, only : ep8 ! ! intent(in)
       implicit none
-      real(kind=8), intent(in) :: pres,temp
-      real(kind=8)             :: desdt,esi,pdry
+      !----- Arguments. -------------------------------------------------------------------!
+      real(kind=8), intent(in) :: pres  ! Pressure                                 [    Pa]
+      real(kind=8), intent(in) :: temp  ! Temperature                              [     K]
+      !----- Local variables. -------------------------------------------------------------!
+      real(kind=8)             :: esi   ! Partial pressure                         [    Pa]
+      real(kind=8)             :: desdt ! Derivative of partial pressure of water  [  Pa/K]
+      real(kind=8)             :: pdry  ! Partial pressure of dry air              [    Pa]
+      !------------------------------------------------------------------------------------!
 
-      esi     = esif8(temp)
-      desdt   = esifp8(temp)
-      
-      pdry    = pres-esi
+
+      !------------------------------------------------------------------------------------!
+      !     Find the partial pressure of water vapour and its derivative, using temper-    !
+      ! ature.                                                                             !
+      !------------------------------------------------------------------------------------!
+      esi    = esif8(temp)
+      desdt  = esifp8(temp)
+      !------------------------------------------------------------------------------------!
+
+
+      !----- Find the partial pressure of dry air. ----------------------------------------!
+      pdry   = pres-esi
+      !------------------------------------------------------------------------------------!
+
+
+      !----- Find the partial derivative of mixing ratio. ---------------------------------!
       rsifp8  = ep8 * pres * desdt / (pdry*pdry)
-
+      !------------------------------------------------------------------------------------!
       return
    end function rsifp8
    !=======================================================================================!
@@ -567,23 +818,41 @@ module therm_lib8
    ! ture.                                                                                 !
    !---------------------------------------------------------------------------------------!
    real(kind=8) function rslifp8(pres,temp,useice)
-      use consts_coms, only: t3ple8
+      use consts_coms, only: t3ple8 ! ! intent(in)
       implicit none
-      real(kind=8), intent(in)           :: pres,temp
-      logical     , intent(in), optional :: useice
-      logical                            :: brrr_cold
+      !----- Required arguments. ----------------------------------------------------------!
+      real(kind=8), intent(in)           :: pres   ! Pressure                      [    Pa]
+      real(kind=8), intent(in)           :: temp   ! Temperature                   [     K]
+      !----- Optional arguments. ----------------------------------------------------------!
+      logical     , intent(in), optional :: useice ! May use ice thermodynamics?   [   T|F]
+      !----- Local variables. -------------------------------------------------------------!
+      real(kind=8)                       :: desdt  ! Derivative of vapour pressure [  Pa/K]
+      logical                            :: frozen ! Use the ice thermodynamics    [   T|F]
+      !------------------------------------------------------------------------------------!
 
+
+
+      !------------------------------------------------------------------------------------!
+      !     Decide whether to use liquid water of ice for saturation, based on the temper- !
+      ! ature and the settings.                                                            !
+      !------------------------------------------------------------------------------------!
       if (present(useice)) then
-         brrr_cold = useice  .and. temp < t3ple8
+         frozen = useice  .and. temp < t3ple8
       else 
-         brrr_cold = bulk_on .and. temp < t3ple8
+         frozen = bulk_on .and. temp < t3ple8
       end if
+      !------------------------------------------------------------------------------------!
 
-      if (brrr_cold) then
-         rslifp8=rsifp8(pres,temp)
+
+      !------------------------------------------------------------------------------------!
+      !     Call the function depending on the previous check.                             !
+      !------------------------------------------------------------------------------------!
+      if (frozen) then
+         rslifp8 = rsifp8(pres,temp)
       else
-         rslifp8=rslfp8(pres,temp)
+         rslifp8 = rslfp8(pres,temp)
       end if
+      !------------------------------------------------------------------------------------!
 
       return
    end function rslifp8
@@ -602,14 +871,29 @@ module therm_lib8
    ! a function of temperature in Kelvin.                                                  !
    !---------------------------------------------------------------------------------------!
    real(kind=8) function rhovslp8(temp)
-      use consts_coms, only : rh2o8
+      use consts_coms, only : rh2o8 ! ! intent(in)
       implicit none
-      real(kind=8), intent(in) :: temp
-      real(kind=8)             :: es,desdt
+      !----- Required arguments. ----------------------------------------------------------!
+      real(kind=8), intent(in) :: temp   ! Temperature                             [     K]
+      !----- Local variables. -------------------------------------------------------------!
+      real(kind=8)             :: es     ! Vapour pressure                         [    Pa]
+      real(kind=8)             :: desdt  ! Vapour pressure derivative              [  Pa/K]
+      !------------------------------------------------------------------------------------!
 
-      es       = eslf8(temp)
-      desdt    = eslfp8(temp)
+
+
+      !------------------------------------------------------------------------------------!
+      !     Find the partial pressure of water vapour and its derivative, using temper-    !
+      ! ature.                                                                             !
+      !------------------------------------------------------------------------------------!
+      es    = eslf8(temp)
+      desdt = eslfp8(temp)
+      !------------------------------------------------------------------------------------!
+
+
+      !----- Find the partial derivative of saturation density . --------------------------!
       rhovslp8 = (desdt-es/temp) / (rh2o8 * temp)
+      !------------------------------------------------------------------------------------!
 
       return
    end function rhovslp8
@@ -628,14 +912,29 @@ module therm_lib8
    ! function of temperature in Kelvin.                                                    !
    !---------------------------------------------------------------------------------------!
    real(kind=8) function rhovsip8(temp)
-      use consts_coms, only : rh2o8
+      use consts_coms, only : rh2o8 ! ! intent(in)
       implicit none
-      real(kind=8), intent(in) :: temp
-      real(kind=8)             :: es,desdt
+      !----- Required arguments. ----------------------------------------------------------!
+      real(kind=8), intent(in) :: temp   ! Temperature                             [     K]
+      !----- Local variables. -------------------------------------------------------------!
+      real(kind=8)             :: es     ! Vapour pressure                         [    Pa]
+      real(kind=8)             :: desdt  ! Vapour pressure derivative              [  Pa/K]
+      !------------------------------------------------------------------------------------!
 
-      es       = esif8(temp)
-      desdt    = esifp8(temp)
-      rhovsip8 = (desdt-es/temp) / (rh2o8 * temp)
+
+
+      !------------------------------------------------------------------------------------!
+      !     Find the partial pressure of water vapour and its derivative, using temper-    !
+      ! ature.                                                                             !
+      !------------------------------------------------------------------------------------!
+      es    = esif8(temp)
+      desdt = esifp8(temp)
+      !------------------------------------------------------------------------------------!
+
+
+      !----- Find the partial derivative of saturation density . --------------------------!
+      rhovsip8 = (desdt - es/temp) / (rh2o8 * temp)
+      !------------------------------------------------------------------------------------!
 
       return
    end function rhovsip8
@@ -655,23 +954,39 @@ module therm_lib8
    ! based on the temperature.                                                             !
    !---------------------------------------------------------------------------------------!
    real(kind=8) function rhovsilp8(temp,useice)
-      use consts_coms, only: t3ple8
+      use consts_coms, only : t3ple8 ! ! intent(in)
       implicit none
-      real(kind=8), intent(in)           :: temp
-      logical     , intent(in), optional :: useice
-      logical                            :: brrr_cold
+      !----- Required arguments. ----------------------------------------------------------!
+      real(kind=8), intent(in)           :: temp   ! Temperature                   [     K]
+      !----- Optional arguments. ----------------------------------------------------------!
+      logical     , intent(in), optional :: useice ! May use ice thermodynamics?   [   T|F]
+      !----- Local variables. -------------------------------------------------------------!
+      logical                            :: frozen ! Derivative of vapour pressure [  Pa/K]
+      !------------------------------------------------------------------------------------!
 
+
+
+      !------------------------------------------------------------------------------------!
+      !     Decide whether to use liquid water of ice for saturation, based on the temper- !
+      ! ature and the settings.                                                            !
+      !------------------------------------------------------------------------------------!
       if (present(useice)) then
-         brrr_cold = useice  .and. temp < t3ple8
+         frozen = useice  .and. temp < t3ple8
       else 
-         brrr_cold = bulk_on .and. temp < t3ple8
+         frozen = bulk_on .and. temp < t3ple8
       end if
+      !------------------------------------------------------------------------------------!
 
-      if (brrr_cold) then
+
+      !------------------------------------------------------------------------------------!
+      !     Call the function depending on the previous check.                             !
+      !------------------------------------------------------------------------------------!
+      if (frozen) then
          rhovsilp8 = rhovsip8(temp)
       else
          rhovsilp8 = rhovslp8(temp)
       end if
+      !------------------------------------------------------------------------------------!
 
       return
    end function rhovsilp8
@@ -694,65 +1009,93 @@ module therm_lib8
    !---------------------------------------------------------------------------------------!
    real(kind=8) function tslf8(pvap)
 
-       implicit none
-      !----- Argument ---------------------------------------------------------------------!
+      implicit none
+      !----- Arguments. -------------------------------------------------------------------!
       real(kind=8), intent(in) :: pvap      ! Saturation vapour pressure           [    Pa]
-      !----- Local variables for iterative method -----------------------------------------!
+      !----- Local variables for iterative method. ----------------------------------------!
       real(kind=8)             :: deriv     ! Function derivative                  [    Pa]
       real(kind=8)             :: fun       ! Function for which we seek a root.   [    Pa]
       real(kind=8)             :: funa      ! Smallest  guess function             [    Pa]
       real(kind=8)             :: funz      ! Largest   guess function             [    Pa]
       real(kind=8)             :: tempa     ! Smallest guess (or previous guess)   [    Pa]
-      real(kind=8)             :: tempz     ! Largest guess (or new guess )        [    Pa]
+      real(kind=8)             :: tempz     ! Largest guess (new guess in Newton)  [    Pa]
       real(kind=8)             :: delta     ! Aux. var --- 2nd guess for bisection [      ]
-      integer                  :: itn,itb   ! Iteration counter                    [   ---]
+      integer                  :: itn       ! Iteration counter                    [   ---]
+      integer                  :: itb       ! Iteration counter                    [   ---]
       logical                  :: converged ! Convergence handle                   [   ---]
-      logical                  :: zside     ! Flag to check for 1-sided approach.  [   ---]
+      logical                  :: zside     ! Flag to check for one-sided approach [   ---]
       !------------------------------------------------------------------------------------!
 
-      !----- First Guess, using Bolton (1980) equation 11, giving es in Pa and T in K -----!
+      !----- First Guess, use Bolton (1980) equation 11, giving es in Pa and T in K -------!
       tempa = (2.965d1 * log(pvap) - 5.01678d3)/(log(pvap)-2.40854d1)
       funa  = eslf8(tempa) - pvap
       deriv = eslfp8(tempa)
-      !----- Copying just in case it fails at the first iteration -------------------------!
+      !------------------------------------------------------------------------------------!
+
+
+      !----- Copy just in case it fails at the first iteration ----------------------------!
       tempz = tempa
       fun   = funa
-      
+      !------------------------------------------------------------------------------------!
+
+
       !----- Enter Newton's method loop: --------------------------------------------------!
       converged = .false.
       newloop: do itn = 1,maxfpo/6
          if (abs(deriv) < toler8) exit newloop !----- Too dangerous, go with bisection ----!
-         !----- Copying the previous guess ------------------------------------------------!
+
+         !----- Copy the previous guess. --------------------------------------------------!
          tempa = tempz
          funa  = fun
-         !----- New guess, its function and derivative evaluation -------------------------!
+         !---------------------------------------------------------------------------------!
+
+
+         !----- New guess, its function, and derivative evaluation. -----------------------!
          tempz = tempa - fun/deriv
          fun   = eslf8(tempz) - pvap
          deriv = eslfp8(tempz)
-         
+         !---------------------------------------------------------------------------------!
+
+
+         !----- Check convergence. --------------------------------------------------------!
          converged = abs(tempa-tempz) < toler8 * tempz
          if (converged) then
             tslf8 = 5.d-1 * (tempa+tempz)
             return
-         elseif (fun == 0.d0) then !Converged by luck!
+         elseif (fun == 0.0d0) then 
+            !----- Converged by luck. -----------------------------------------------------!
             tslf8 = tempz
             return
          end if
+         !---------------------------------------------------------------------------------!
       end do newloop
+      !------------------------------------------------------------------------------------!
+
+
 
       !------------------------------------------------------------------------------------!
-      !     If I reached this point then it's because Newton's method failed. Using bisec- !
-      ! tion instead.                                                                      !
+      !     If we have reached this point, then Newton's method has failed.  Use bisection !
+      ! instead.  For bisection, we need two guesses whose function has opposite signs.    !
       !------------------------------------------------------------------------------------!
       if (funa * fun < 0.d0) then
+         !----- We already have two guesses with opposite signs. --------------------------!
          funz  = fun
          zside = .true.
+         !---------------------------------------------------------------------------------!
       else
-         if (abs(fun-funa) < 1.d2 * toler8 * tempa) then
-            delta = 1.d2 * toler8 * tempa
+         !----- Need to find the guesses with opposite signs. -----------------------------!
+         if (abs(fun-funa) < 1.d2*toler8*tempa) then
+            delta = 1.d2*toler8*tempa
          else
-            delta = max(abs(funa * (tempz-tempa)/(fun-funa)),1.d2 * toler8 * tempa)
+            delta = max(abs(funa * (tempz-tempa)/(fun-funa)),1.d2*toler8*tempa)
          end if
+         !---------------------------------------------------------------------------------!
+
+
+         !---------------------------------------------------------------------------------!
+         !    Try guesses on both sides of the first guess, increasingly further away      !
+         ! until we spot a good guess.                                                     !
+         !---------------------------------------------------------------------------------!
          tempz = tempa + delta
          zside = .false.
          zgssloop: do itb=1,maxfpo
@@ -762,11 +1105,22 @@ module therm_lib8
             if (zside) exit zgssloop
          end do zgssloop
          if (.not. zside) then
-            write (unit=*,fmt='(a)') ' No second guess for you...'
-            write (unit=*,fmt='(2(a,1x,es14.7))') 'tempa=',tempa,'funa=',funa
-            write (unit=*,fmt='(2(a,1x,es14.7))') 'tempz=',tempz,'func=',funz
+            write (unit=*,fmt='(a)')           '------------------------------------------'
+            write (unit=*,fmt='(a)')           ' Failed finding the second guess:'
+            write (unit=*,fmt='(a)')           '------------------------------------------'
+            write (unit=*,fmt='(a)')           ' '
+            write (unit=*,fmt='(a)')           ' Input:   '
+            write (unit=*,fmt='(a,1x,es14.7)') ' + pvap  =',pvap
+            write (unit=*,fmt='(a)')           ' '
+            write (unit=*,fmt='(a)')           ' Output:  '
+            write (unit=*,fmt='(a,1x,es14.7)') ' + tempa =',tempa
+            write (unit=*,fmt='(a,1x,es14.7)') ' + funa  =',funa
+            write (unit=*,fmt='(a,1x,es14.7)') ' + tempz =',tempz
+            write (unit=*,fmt='(a,1x,es14.7)') ' + func  =',funz
+            write (unit=*,fmt='(a)')           ' '
+            write (unit=*,fmt='(a)')           '------------------------------------------'
             call fatal_error('Failed finding the second guess for regula falsi'            &
-                          ,'tslf8','therm_lib8.f90')
+                            ,'tslf8','therm_lib8.f90')
          end if
       end if
 
@@ -775,38 +1129,54 @@ module therm_lib8
          tslf8 =  (funz*tempa-funa*tempz)/(funz-funa)
 
          !---------------------------------------------------------------------------------!
-         !     Now that we updated the guess, check whether they are really close. If so,  !
+         !     Now that we updated the guess, check whether they are really close.  If so, !
          ! it converged, I can use this as my guess.                                       !
          !---------------------------------------------------------------------------------!
          converged = abs(tslf8-tempa) < toler8 * tslf8
          if (converged) exit bisloop
 
-         !------ Finding the new function -------------------------------------------------!
+         !------ Find the new function evaluation. ----------------------------------------!
          fun       =  eslf8(tslf8) - pvap
+         !---------------------------------------------------------------------------------!
 
-         !------ Defining my new interval based on the intermediate value theorem. --------!
+
+         !------ Define the new interval based on the intermediate value theorem. ---------!
          if (fun*funa < 0.d0 ) then
             tempz = tslf8
             funz  = fun
-            !----- If we are updating zside again, modify aside (Illinois method) ---------!
-            if (zside) funa=funa * 5.d-1
-            !----- We just updated zside, setting zside to true. --------------------------!
+            !----- If we are updating zside again, modify aside (Illinois method). --------!
+            if (zside) funa = funa * 5.d-1
+            !----- We have just updated zside, so we set zside to true. -------------------!
             zside = .true.
          else
             tempa = tslf8
             funa   = fun
-            !----- If we are updating aside again, modify aside (Illinois method) ---------!
-            if (.not. zside) funz=funz * 5.d-1
-            !----- We just updated aside, setting aside to true. --------------------------!
+            !----- If we are updating aside again, modify zside (Illinois method). --------!
+            if (.not. zside) funz = funz * 5.d-1
+            !----- We have just updated aside, so we set zside to false. ------------------!
             zside = .false.
          end if
       end do bisloop
 
       if (.not.converged) then
-         call fatal_error('Temperature didn''t converge, giving up!!!'                     &
-                       ,'tslf8','therm_lib8.f90')
+         write (unit=*,fmt='(a)')           '------------------------------------------'
+         write (unit=*,fmt='(a)')           ' Failed finding the solution:'
+         write (unit=*,fmt='(a)')           '------------------------------------------'
+         write (unit=*,fmt='(a)')           ' '
+         write (unit=*,fmt='(a)')           ' Input:   '
+         write (unit=*,fmt='(a,1x,es14.7)') ' + pvap  =',pvap
+         write (unit=*,fmt='(a)')           ' '
+         write (unit=*,fmt='(a)')           ' Output:  '
+         write (unit=*,fmt='(a,1x,es14.7)') ' + tempa =',tempa
+         write (unit=*,fmt='(a,1x,es14.7)') ' + funa  =',funa
+         write (unit=*,fmt='(a,1x,es14.7)') ' + tempz =',tempz
+         write (unit=*,fmt='(a,1x,es14.7)') ' + func  =',funz
+         write (unit=*,fmt='(a)')           ' '
+         write (unit=*,fmt='(a)')           '------------------------------------------'
+         call fatal_error('Temperature didn''t converge, we give up!!!'                    &
+                         ,'tslf8','therm_lib8.f90')
       end if
-      
+
       return
    end function tslf8
    !=======================================================================================!
@@ -828,7 +1198,7 @@ module therm_lib8
    real(kind=8) function tsif8(pvap)
 
       implicit none
-      !----- Argument ---------------------------------------------------------------------!
+      !----- Arguments. -------------------------------------------------------------------!
       real(kind=8), intent(in) :: pvap      ! Saturation vapour pressure           [    Pa]
       !----- Local variables for iterative method -----------------------------------------!
       real(kind=8)             :: deriv     ! Function derivative                  [    Pa]
@@ -836,56 +1206,81 @@ module therm_lib8
       real(kind=8)             :: funa      ! Smallest  guess function             [    Pa]
       real(kind=8)             :: funz      ! Largest   guess function             [    Pa]
       real(kind=8)             :: tempa     ! Smallest guess (or previous guess)   [    Pa]
-      real(kind=8)             :: tempz     ! Largest   guess (or new guess)       [    Pa]
+      real(kind=8)             :: tempz     ! Largest guess (new guess in Newton)  [    Pa]
       real(kind=8)             :: delta     ! Aux. var --- 2nd guess for bisection [      ]
-      integer                  :: itn,itb   ! Iteration counter                    [   ---]
+      integer                  :: itn
+      integer                  :: itb       ! Iteration counter                    [   ---]
       logical                  :: converged ! Convergence handle                   [   ---]
       logical                  :: zside     ! Flag to check for one-sided approach [   ---]
       !------------------------------------------------------------------------------------!
 
-      !----- First Guess, using Murphy-Koop (2005), equation 8. ---------------------------!
+      !----- First Guess, use Murphy-Koop (2005), equation 8. -----------------------------!
       tempa = (1.814625d0 * log(pvap) +6.190134d3)/(2.9120d1 - log(pvap))
       funa  = esif8(tempa) - pvap
       deriv = esifp8(tempa)
-      !----- Copying just in case it fails at the first iteration -------------------------!
+      !------------------------------------------------------------------------------------!
+
+
+      !----- Copy just in case it fails at the first iteration ----------------------------!
       tempz = tempa
       fun   = funa
-      
+      !------------------------------------------------------------------------------------!
+
+
       !----- Enter Newton's method loop: --------------------------------------------------!
       converged = .false.
       newloop: do itn = 1,maxfpo/6
          if (abs(deriv) < toler8) exit newloop !----- Too dangerous, go with bisection ----!
-         !----- Copying the previous guess ------------------------------------------------!
+
+         !----- Copy the previous guess. --------------------------------------------------!
          tempa = tempz
          funa  = fun
-         !----- New guess, its function and derivative evaluation -------------------------!
+
+
+         !----- New guess, its function, and derivative evaluation. -----------------------!
          tempz = tempa - fun/deriv
          fun   = esif8(tempz) - pvap
          deriv = esifp8(tempz)
-         
+         !---------------------------------------------------------------------------------!
+
+
+         !----- Check convergence. --------------------------------------------------------!
          converged = abs(tempa-tempz) < toler8 * tempz
          if (converged) then
-            tsif8 = 5.d-1*(tempa+tempz)
+            tsif8 = 5.d-1 * (tempa+tempz)
             return
          elseif (fun == 0.d0) then
             tsif8 = tempz
             return
          end if
       end do newloop
+      !------------------------------------------------------------------------------------!
+
+
 
       !------------------------------------------------------------------------------------!
-      !     If I reached this point then it's because Newton's method failed. Using bisec- !
-      ! tion instead.                                                                      !
+      !     If we have reached this point, then Newton's method has failed.  Use bisection !
+      ! instead.  For bisection, we need two guesses whose function has opposite signs.    !
       !------------------------------------------------------------------------------------!
       if (funa * fun < 0.d0) then
+         !----- We already have two guesses with opposite signs. --------------------------!
          funz  = fun
          zside = .true.
+         !---------------------------------------------------------------------------------!
       else
-         if (abs(fun-funa) < 1.d2 * toler8 * tempa) then
-            delta = 1.d2 * toler8 * delta
+         !----- Need to find the guesses with opposite signs. -----------------------------!
+         if (abs(fun-funa) < 1.d2*toler8*tempa) then
+            delta = 1.d2*toler8*delta
          else
-            delta = max(abs(funa * (tempz-tempa)/(fun-funa)),1.d2 * toler8 * tempa)
+            delta = max(abs(funa * (tempz-tempa)/(fun-funa)),1.d2*toler8*tempa)
          end if
+         !---------------------------------------------------------------------------------!
+
+
+         !---------------------------------------------------------------------------------!
+         !    Try guesses on both sides of the first guess, increasingly further away      !
+         ! until we spot a good guess.                                                     !
+         !---------------------------------------------------------------------------------!
          tempz = tempa + delta
          zside = .false.
          zgssloop: do itb=1,maxfpo
@@ -895,11 +1290,22 @@ module therm_lib8
             if (zside) exit zgssloop
          end do zgssloop
          if (.not. zside) then
-            write (unit=*,fmt='(a)') ' No second guess for you...'
-            write (unit=*,fmt='(2(a,1x,es14.7))') 'tempa=',tempa,'funa=',funa
-            write (unit=*,fmt='(2(a,1x,es14.7))') 'tempz=',tempz,'func=',funz
+            write (unit=*,fmt='(a)')           '------------------------------------------'
+            write (unit=*,fmt='(a)')           ' Failed finding the second guess:'
+            write (unit=*,fmt='(a)')           '------------------------------------------'
+            write (unit=*,fmt='(a)')           ' '
+            write (unit=*,fmt='(a)')           ' Input:   '
+            write (unit=*,fmt='(a,1x,es14.7)') ' + pvap  =',pvap
+            write (unit=*,fmt='(a)')           ' '
+            write (unit=*,fmt='(a)')           ' Output:  '
+            write (unit=*,fmt='(a,1x,es14.7)') ' + tempa =',tempa
+            write (unit=*,fmt='(a,1x,es14.7)') ' + funa  =',funa
+            write (unit=*,fmt='(a,1x,es14.7)') ' + tempz =',tempz
+            write (unit=*,fmt='(a,1x,es14.7)') ' + func  =',funz
+            write (unit=*,fmt='(a)')           ' '
+            write (unit=*,fmt='(a)')           '------------------------------------------'
             call fatal_error('Failed finding the second guess for regula falsi'            &
-                          ,'tsif8','therm_lib8.f90')
+                            ,'tsif8','therm_lib8.f90')
          end if
       end if
 
@@ -908,36 +1314,53 @@ module therm_lib8
          tsif8 =  (funz*tempa-funa*tempz)/(funz-funa)
 
          !---------------------------------------------------------------------------------!
-         !     Now that we updated the guess, check whether they are really close. If so,  !
+         !     Now that we updated the guess, check whether they are really close.  If so, !
          ! it converged, I can use this as my guess.                                       !
          !---------------------------------------------------------------------------------!
          converged = abs(tsif8-tempa) < toler8 * tsif8
          if (converged) exit bisloop
+         !---------------------------------------------------------------------------------!
 
-         !------ Finding the new function -------------------------------------------------!
+         !------ Find the new function evaluation. ----------------------------------------!
          fun       =  esif8(tsif8) - pvap
+         !---------------------------------------------------------------------------------!
 
-         !------ Defining my new interval based on the intermediate value theorem. --------!
-         if (fun*funa < 0. ) then
+
+         !------ Define the new interval based on the intermediate value theorem. ---------!
+         if (fun*funa < 0.d0 ) then
             tempz = tsif8
             funz  = fun
-            !----- If we are updating zside again, modify aside (Illinois method) ---------!
-            if (zside) funa=funa * 5.d-1
-            !----- We just updated zside, setting zside to true. --------------------------!
+            !----- If we are updating zside again, modify aside (Illinois method). --------!
+            if (zside) funa = funa * 5.d-1
+            !----- We have just updated zside, so we set zside to true. -------------------!
             zside = .true.
          else
             tempa = tsif8
             funa   = fun
-            !----- If we are updating aside again, modify aside (Illinois method) ---------!
-            if (.not. zside) funz=funz * 5.d-1
-            !----- We just updated aside, setting aside to true. --------------------------!
+            !----- If we are updating aside again, modify aside (Illinois method). --------!
+            if (.not. zside) funz = funz * 5.d-1
+            !----- We have just updated aside, so we set zside to false. ------------------!
             zside = .false.
          end if
       end do bisloop
 
       if (.not.converged) then
-         call fatal_error('Temperature didn''t converge, giving up!!!'                     &
-                       ,'tsif8','therm_lib8.f90')
+         write (unit=*,fmt='(a)')           '------------------------------------------'
+         write (unit=*,fmt='(a)')           ' Failed finding the solution:'
+         write (unit=*,fmt='(a)')           '------------------------------------------'
+         write (unit=*,fmt='(a)')           ' '
+         write (unit=*,fmt='(a)')           ' Input:   '
+         write (unit=*,fmt='(a,1x,es14.7)') ' + pvap  =',pvap
+         write (unit=*,fmt='(a)')           ' '
+         write (unit=*,fmt='(a)')           ' Output:  '
+         write (unit=*,fmt='(a,1x,es14.7)') ' + tempa =',tempa
+         write (unit=*,fmt='(a,1x,es14.7)') ' + funa  =',funa
+         write (unit=*,fmt='(a,1x,es14.7)') ' + tempz =',tempz
+         write (unit=*,fmt='(a,1x,es14.7)') ' + func  =',funz
+         write (unit=*,fmt='(a)')           ' '
+         write (unit=*,fmt='(a)')           '------------------------------------------'
+         call fatal_error('Temperature didn''t converge, we give up!!!'                    &
+                         ,'tsif8','therm_lib8.f90')
       end if
       
       return
@@ -956,29 +1379,40 @@ module therm_lib8
    ! This is truly the inverse of eslf and esif.                                           !
    !---------------------------------------------------------------------------------------!
    real(kind=8) function tslif8(pvap,useice)
-      use consts_coms, only: es3ple8
+      use consts_coms, only : es3ple8 ! ! intent(in)
 
       implicit none
-      real(kind=8), intent(in)           :: pvap
-      logical     , intent(in), optional :: useice
-      logical                            :: brrr_cold
-      
+      !----- Required arguments. ----------------------------------------------------------!
+      real(kind=8), intent(in)           :: pvap   ! Vapour pressure                [   Pa]
+      !----- Optional arguments. ----------------------------------------------------------!
+      logical     , intent(in), optional :: useice ! May use ice thermodynamics     [  T|F]
+      !----- Local variables. -------------------------------------------------------------!
+      logical                            :: frozen ! Will use ice thermodynamics    [  T|F]
       !------------------------------------------------------------------------------------!
-      !    Since pvap is a function of temperature only, we can check the triple point     !
+
+
+
+      !------------------------------------------------------------------------------------!
+      !     Since pvap is a function of temperature only, we can check the triple point    !
       ! from the saturation at the triple point, like what we would do for temperature.    !
       !------------------------------------------------------------------------------------!
       if (present(useice)) then
-         brrr_cold = useice  .and. pvap < es3ple8
+         frozen = useice  .and. pvap < es3ple8
       else 
-         brrr_cold = bulk_on .and. pvap < es3ple8
+         frozen = bulk_on .and. pvap < es3ple8
       end if
+      !------------------------------------------------------------------------------------!
 
 
-      if (brrr_cold) then
+      !------------------------------------------------------------------------------------!
+      !     Call the function depending on whether we should use ice.                      !
+      !------------------------------------------------------------------------------------!
+      if (frozen) then
          tslif8 = tsif8(pvap)
       else
          tslif8 = tslf8(pvap)
       end if
+      !------------------------------------------------------------------------------------!
 
       return
    end function tslif8
@@ -993,19 +1427,34 @@ module therm_lib8
    !=======================================================================================!
    !=======================================================================================!
    !     This fucntion computes the dew point temperature given the pressure and vapour    !
-   ! mixing ratio. THIS IS DEWPOINT ONLY, WHICH MEANS THAT IT WILL IGNORE ICE EFFECT. For  !
-   ! a full, triple-point dependent routine use DEWFROSTPOINT                              !
+   ! mixing ratio. THIS IS DEW POINT ONLY, WHICH MEANS THAT IT WILL IGNORE ICE EFFECT. For !
+   ! a full, triple-point dependent routine use DEWFROSTPOINT.                             !
    !---------------------------------------------------------------------------------------!
    real(kind=8) function dewpoint8(pres,rsat)
-      use consts_coms, only: ep8,toodry8
-
+      use consts_coms, only : ep8     & ! intent(in)
+                            , toodry8 ! ! intent(in)
       implicit none
-      real(kind=8), intent(in) :: pres, rsat
-      real(kind=8)             :: rsatoff, pvsat
-      
+      !----- Arguments. -------------------------------------------------------------------!
+      real(kind=8), intent(in) :: pres    ! Pressure                               [    Pa]
+      real(kind=8), intent(in) :: rsat    ! Saturation mixing ratio                [ kg/kg]
+      !----- Local variables. -------------------------------------------------------------!
+      real(kind=8)             :: rsatoff ! Non-singular saturation mixing ratio   [ kg/kg]
+      real(kind=8)             :: pvsat   ! Saturation vapour pressure             [    Pa]
+      !------------------------------------------------------------------------------------!
+
+
+      !----- Make sure mixing ratio is positive. ------------------------------------------!
       rsatoff   = max(toodry8,rsat)
-      pvsat     = pres*rsatoff / (ep8 + rsatoff)
+      !------------------------------------------------------------------------------------!
+
+
+      !----- Find the saturation vapour pressure. -----------------------------------------!
+      pvsat     = pres * rsatoff / (ep8 + rsatoff)
+      !------------------------------------------------------------------------------------!
+
+      !----- Dew point is going to be the saturation temperature. -------------------------!
       dewpoint8 = tslf8(pvsat)
+      !------------------------------------------------------------------------------------!
 
       return
    end function dewpoint8
@@ -1020,19 +1469,34 @@ module therm_lib8
    !=======================================================================================!
    !=======================================================================================!
    !     This fucntion computes the frost point temperature given the pressure and vapour  !
-   ! mixing ratio. THIS IS FROSTPOINT ONLY, WHICH MEANS THAT IT WILL IGNORE LIQUID EFFECT. !
-   ! For a full, triple-point dependent routine use DEWFROSTPOINT                          !
+   ! mixing ratio. THIS IS FROST POINT ONLY, WHICH MEANS THAT IT WILL IGNORE LIQUID        !
+   ! EFFECT.  For a full, triple-point dependent routine use DEWFROSTPOINT.                !
    !---------------------------------------------------------------------------------------!
    real(kind=8) function frostpoint8(pres,rsat)
-      use consts_coms, only: ep8,toodry8
-
+      use consts_coms, only : ep8     & ! intent(in)
+                            , toodry8 ! ! intent(in)
       implicit none
-      real(kind=8), intent(in) :: pres, rsat
-      real(kind=8)             :: rsatoff, pvsat
-      
+      !----- Arguments. -------------------------------------------------------------------!
+      real(kind=8), intent(in) :: pres    ! Pressure                               [    Pa]
+      real(kind=8), intent(in) :: rsat    ! Saturation mixing ratio                [ kg/kg]
+      !----- Local variables for iterative method. ----------------------------------------!
+      real(kind=8)             :: rsatoff ! Non-singular saturation mixing ratio   [ kg/kg]
+      real(kind=8)             :: pvsat   ! Saturation vapour pressure             [    Pa]
+      !------------------------------------------------------------------------------------!
+
+
+      !----- Make sure mixing ratio is positive. ------------------------------------------!
       rsatoff     = max(toodry8,rsat)
+      !------------------------------------------------------------------------------------!
+
+
+      !----- Find the saturation vapour pressure. -----------------------------------------!
       pvsat       = pres*rsatoff / (ep8 + rsatoff)
+      !------------------------------------------------------------------------------------!
+
+      !----- Frost point is going to be the saturation temperature. -----------------------!
       frostpoint8 = tsif8(pvsat)
+      !------------------------------------------------------------------------------------!
 
       return
    end function frostpoint8
@@ -1051,20 +1515,36 @@ module therm_lib8
    ! the triple point vapour pressure, finding dewpoint or frostpoint accordingly.         !
    !---------------------------------------------------------------------------------------!
    real(kind=8) function dewfrostpoint8(pres,rsat,useice)
-      use consts_coms, only: ep8,toodry8
+      use consts_coms, only : ep8     & ! intent(in)
+                            , toodry8 ! ! intent(in)
 
       implicit none
-      real(kind=8), intent(in)           :: pres, rsat
-      logical     , intent(in), optional :: useice
-      real(kind=8)                       :: rsatoff, pvsat
+      !----- Required arguments. ----------------------------------------------------------!
+      real(kind=8), intent(in)           :: pres    ! Pressure                     [    Pa]
+      real(kind=8), intent(in)           :: rsat    ! Saturation mixing ratio      [ kg/kg]
+      !----- Optional arguments. ----------------------------------------------------------!
+      logical     , intent(in), optional :: useice  ! May use ice thermodynamics   [   T|F]
+      !----- Local variables. -------------------------------------------------------------!
+      real(kind=8)                       :: rsatoff ! Non-singular sat. mix. rat.  [ kg/kg]
+      real(kind=8)                       :: pvsat   ! Saturation vapour pressure   [    Pa]
+      !------------------------------------------------------------------------------------!
 
-      rsatoff       = max(toodry8,rsat)
+
+      !----- Make sure mixing ratio is positive. ------------------------------------------!
+      rsatoff  = max(toodry8,rsat)
+      !------------------------------------------------------------------------------------!
+
+      !----- Find the saturation vapour pressure. -----------------------------------------!
       pvsat         = pres*rsatoff / (ep8 + rsatoff)
+      !------------------------------------------------------------------------------------!
+
+      !----- Dew (frost) point is going to be the saturation temperature. -----------------!
       if (present(useice)) then
          dewfrostpoint8 = tslif8(pvsat,useice)
       else
          dewfrostpoint8 = tslif8(pvsat)
       end if
+      !------------------------------------------------------------------------------------!
       return
    end function dewfrostpoint8
    !=======================================================================================!
@@ -1079,26 +1559,46 @@ module therm_lib8
    !=======================================================================================!
    !     This function computes the vapour mixing ratio based on the pressure [Pa], tem-   !
    ! perature [K] and relative humidity [fraction]. IT ALWAYS ASSUME THAT RELATIVE HUMI-   !
-   ! DITY IS WITH RESPECT TO THE LIQUID PHASE.  ptrh2rvapil checks which one to use        !
+   ! DITY IS WITH RESPECT TO THE LIQUID PHASE.  Ptrh2rvapil checks which one to use        !
    ! depending on whether temperature is more or less than the triple point.               !
    !---------------------------------------------------------------------------------------!
    real(kind=8) function ptrh2rvapl8(relh,pres,temp)
-      use consts_coms, only: ep8,toodry8
-
+      use consts_coms, only : ep8     & ! intent(in)
+                            , toodry8 ! ! intent(in)
       implicit none
-      real(kind=8), intent(in)           :: relh, pres, temp
-      real(kind=8)                       :: rsath, relhh
 
+      !----- Arguments. -------------------------------------------------------------------!
+      real(kind=8), intent(in) :: relh   ! Relative humidity                       [    --]
+      real(kind=8), intent(in) :: pres   ! Pressure                                [    Pa]
+      real(kind=8), intent(in) :: temp   ! Temperature                             [     K]
+      !----- Local variables. -------------------------------------------------------------!
+      real(kind=8)             :: rsath  ! Non-singular saturation mixing ratio    [ kg/kg]
+      real(kind=8)             :: relhh  ! Bounded relative humidity               [    --]
+      !------------------------------------------------------------------------------------!
+
+
+      !---- Find the saturation mixing ratio for the given temperature. -------------------!
       rsath = max(toodry8,rslf8(pres,temp))
-      relhh = min(1.d0,max(0.d0,relh))
+      !------------------------------------------------------------------------------------!
 
+      !---- Make sure relative humidity is bounded. ---------------------------------------!
+      relhh = min(1.d0,max(0.d0,relh))
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !     Choose the right thermodynamics.                                               !
+      !------------------------------------------------------------------------------------!
       if (newthermo) then
-         !----- Considering that Rel.Hum. is based on vapour pressure ---------------------!
-         ptrh2rvapl8 = max(toodry8,ep8 * relhh * rsath / (ep8 + (1.d0-relhh)*rsath))
+         !----- Consider that Rel.Hum. is based on vapour pressure. -----------------------!
+         ptrh2rvapl8 = max(toodry8,ep8 * relhh * rsath / (ep8 + (1.d0 -relhh)*rsath))
+         !---------------------------------------------------------------------------------!
       else
-         !----- Original RAMS way to compute mixing ratio ---------------------------------!
+         !----- Original RAMS way to compute mixing ratio. --------------------------------!
          ptrh2rvapl8 = max(toodry8,relhh*rsath)
+         !---------------------------------------------------------------------------------!
       end if
+      !------------------------------------------------------------------------------------!
 
       return
    end function ptrh2rvapl8
@@ -1118,22 +1618,41 @@ module therm_lib8
    ! on whether temperature is more or less than the triple point.                         !
    !---------------------------------------------------------------------------------------!
    real(kind=8) function ptrh2rvapi8(relh,pres,temp)
-      use consts_coms, only: ep8,toodry8
-
+      use consts_coms, only : ep8     & ! intent(in)
+                            , toodry8 ! ! intent(in)
       implicit none
-      real(kind=8), intent(in)           :: relh, pres, temp
-      real(kind=8)                       :: rsath, relhh
+      !----- Arguments. -------------------------------------------------------------------!
+      real(kind=8), intent(in) :: relh   ! Relative humidity                       [    --]
+      real(kind=8), intent(in) :: pres   ! Pressure                                [    Pa]
+      real(kind=8), intent(in) :: temp   ! Temperature                             [     K]
+      !----- Local variables. -------------------------------------------------------------!
+      real(kind=8)             :: rsath  ! Non-singular saturation mixing ratio    [ kg/kg]
+      real(kind=8)             :: relhh  ! Bounded relative humidity               [    --]
+      !------------------------------------------------------------------------------------!
 
+
+      !---- Find the saturation mixing ratio for the given temperature. -------------------!
       rsath = max(toodry8,rsif8(pres,temp))
-      relhh = min(1.d0,max(0.d0,relh))
+      !------------------------------------------------------------------------------------!
 
+      !---- Make sure relative humidity is bounded. ---------------------------------------!
+      relhh = min(1.d0,max(0.d0,relh))
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !     Choose the right thermodynamics.                                               !
+      !------------------------------------------------------------------------------------!
       if (newthermo) then
-         !----- Considering that Rel.Hum. is based on vapour pressure ---------------------!
-         ptrh2rvapi8 = max(toodry8,ep8 * relhh * rsath / (ep8 + (1.d0-relhh)*rsath))
+         !----- Consider that Rel.Hum. is based on vapour pressure. -----------------------!
+         ptrh2rvapi8 = max(toodry8,ep8 * relhh * rsath / (ep8 + (1.d0 - relhh) * rsath))
+         !---------------------------------------------------------------------------------!
       else
-         !----- Original RAMS way to compute mixing ratio ---------------------------------!
+         !----- Original RAMS way to compute mixing ratio. --------------------------------!
          ptrh2rvapi8 = max(toodry8,relhh*rsath)
+         !---------------------------------------------------------------------------------!
       end if
+      !------------------------------------------------------------------------------------!
 
       return
    end function ptrh2rvapi8
@@ -1152,30 +1671,62 @@ module therm_lib8
    ! decide between ice or liquid saturation and whether ice should be considered.         !
    !---------------------------------------------------------------------------------------!
    real(kind=8) function ptrh2rvapil8(relh,pres,temp,useice)
-      use consts_coms, only: ep8,toodry8,t3ple8
+      use consts_coms, only : ep8      & ! intent(in)
+                            , toodry8  & ! intent(in)
+                            , t3ple8   ! ! intent(in)
 
       implicit none
-      real(kind=8), intent(in)           :: relh, pres, temp
-      logical     , intent(in), optional :: useice
-      real(kind=8)                       :: rsath, relhh
-      logical                            :: brrr_cold
+      !----- Required arguments. ----------------------------------------------------------!
+      real(kind=8), intent(in)           :: relh   ! Relative humidity             [    --]
+      real(kind=8), intent(in)           :: pres   ! Pressure                      [    Pa]
+      real(kind=8), intent(in)           :: temp   ! Temperature                   [     K]
+      !----- Optional arguments. ----------------------------------------------------------!
+      logical     , intent(in), optional :: useice ! May use ice thermodynamics    [   T|F]
+      !----- Local variables. -------------------------------------------------------------!
+      real(kind=8)                       :: rsath  ! Non-singular sat. mix. ratio  [ kg/kg]
+      real(kind=8)                       :: relhh  ! Bounded relative humidity     [    --]
+      logical                            :: frozen ! Will use ice thermodynamics   [   T|F]
+      !------------------------------------------------------------------------------------!
 
-      !----- Checking whether I use the user or the default check for ice saturation. -----!
+
+      !----- Check whether to use the user's or the default flag for ice saturation. ------!
       if (present(useice)) then
-         brrr_cold = useice .and. temp < t3ple8
+         frozen = useice  .and. temp < t3ple8
       else
-         brrr_cold = bulk_on .and. temp < t3ple8
+         frozen = bulk_on .and. temp < t3ple8
       end if
+      !------------------------------------------------------------------------------------!
 
-      if (brrr_cold) then
+
+      !------------------------------------------------------------------------------------!
+      !     Find the saturation mixing ratio (ice or liquid, depending on frozen.          !
+      !------------------------------------------------------------------------------------!
+      if (frozen) then
          rsath = max(toodry8,rsif8(pres,temp))
       else
          rsath = max(toodry8,rslf8(pres,temp))
       end if
+      !------------------------------------------------------------------------------------!
 
+
+      !---- Make sure relative humidity is bounded. ---------------------------------------!
       relhh = min(1.d0,max(0.d0,relh))
-      
-      ptrh2rvapil8 = max(toodry8,ep8 * relhh * rsath / (ep8 + (1.d0-relhh)*rsath))
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !     Choose the right thermodynamics.                                               !
+      !------------------------------------------------------------------------------------!
+      if (newthermo) then
+         !----- Consider that Rel.Hum. is based on vapour pressure. -----------------------!
+         ptrh2rvapil8 = max(toodry8,ep8 * relhh * rsath / (ep8 + (1.d0-relhh)*rsath))
+         !---------------------------------------------------------------------------------!
+      else
+         !----- Original RAMS way to compute mixing ratio. --------------------------------!
+         ptrh2rvapil8 = max(toodry8,relhh*rsath)
+         !---------------------------------------------------------------------------------!
+      end if
+      !------------------------------------------------------------------------------------!
 
       return
    end function ptrh2rvapil8
@@ -1197,25 +1748,38 @@ module therm_lib8
    !    also used in the microphysics, where supersaturation does happen and needs to be   !
    !    accounted.                                                                         !
    !---------------------------------------------------------------------------------------!
-   real(kind=8) function rehul8(pres,temp,rvpr)
-      use consts_coms, only: ep8,toodry8
+   real(kind=8) function rehul8(pres,temp,rvap)
+      use consts_coms, only : ep8     & ! intent(in)
+                            , toodry8 ! ! intent(in)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
-      real(kind=8), intent(in)           :: pres     ! Air pressure                [    Pa]
-      real(kind=8), intent(in)           :: temp     ! Temperature                 [     K]
-      real(kind=8), intent(in)           :: rvpr     ! Vapour mixing ratio         [ kg/kg]
+      real(kind=8), intent(in) :: pres    ! Air pressure                           [    Pa]
+      real(kind=8), intent(in) :: temp    ! Temperature                            [     K]
+      real(kind=8), intent(in) :: rvap    ! Vapour mixing ratio                    [ kg/kg]
       !----- Local variables --------------------------------------------------------------!
-      real(kind=8)                       :: rvprsat  ! Saturation mixing ratio     [ kg/kg]
+      real(kind=8)             :: rvapsat ! Non-singular saturation mixing ratio   [ kg/kg]
       !------------------------------------------------------------------------------------!
 
-      rvprsat = max(toodry8,rslf8(pres,temp))
+
+      !---- Find the saturation mixing ratio for the given temperature. -------------------!
+      rvapsat = max(toodry8,rslf8(pres,temp))
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !     Choose the right thermodynamics.                                               !
+      !------------------------------------------------------------------------------------!
       if (newthermo) then
-         !----- This is based on relative humidity being defined with vapour pressure -----!
-         rehul8 = max(0.d0,rvpr*(ep8+rvprsat)/(rvprsat*(ep8+rvpr)))
+         !----- This is based on relative humidity being defined with vapour pressure. ----!
+         rehul8 = max(0.d0,rvap*(ep8 + rvapsat)/(rvapsat * (ep8 + rvap)))
+         !---------------------------------------------------------------------------------!
       else
          !----- Original formula used by RAMS ---------------------------------------------!
-         rehul8 = max(0.d0,rvpr/rvprsat)
+         rehul8 = max(0.d0,rvap/rvapsat)
+         !---------------------------------------------------------------------------------!
       end if
+      !------------------------------------------------------------------------------------!
+
       return
    end function rehul8
    !=======================================================================================!
@@ -1236,25 +1800,38 @@ module therm_lib8
    !    also used in the microphysics, where supersaturation does happen and needs to be   !
    !    accounted.                                                                         !
    !---------------------------------------------------------------------------------------!
-   real(kind=8) function rehui8(pres,temp,rvpr)
-      use consts_coms, only: ep8,toodry8
+   real(kind=8) function rehui8(pres,temp,rvap)
+      use consts_coms, only : ep8     & ! intent(in)
+                            , toodry8 ! ! intent(in)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
-      real(kind=8), intent(in)           :: pres     ! Air pressure                [    Pa]
-      real(kind=8), intent(in)           :: temp     ! Temperature                 [     K]
-      real(kind=8), intent(in)           :: rvpr     ! Vapour mixing ratio         [ kg/kg]
+      real(kind=8), intent(in) :: pres    ! Air pressure                           [    Pa]
+      real(kind=8), intent(in) :: temp    ! Temperature                            [     K]
+      real(kind=8), intent(in) :: rvap    ! Vapour mixing ratio                    [ kg/kg]
       !----- Local variables --------------------------------------------------------------!
-      real(kind=8)                       :: rvprsat  ! Saturation mixing ratio     [ kg/kg]
+      real(kind=8)             :: rvapsat ! Saturation mixing ratio                [ kg/kg]
       !------------------------------------------------------------------------------------!
 
-      rvprsat = max(toodry8,rsif8(pres,temp))
+
+      !---- Find the saturation mixing ratio for the given temperature. -------------------!
+      rvapsat = max(toodry8, rsif8(pres,temp))
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !     Choose the right thermodynamics.                                               !
+      !------------------------------------------------------------------------------------!
       if (newthermo) then
-         !----- This is based on relative humidity being defined with vapour pressure -----!
-         rehui8 = max(0.d0,rvpr*(ep8+rvprsat)/(rvprsat*(ep8+rvpr)))
+         !----- This is based on relative humidity being defined with vapour pressure. ----!
+         rehui8 = max(0.d0, rvap * (ep8 + rvapsat) / (rvapsat * (ep8+rvap) ) )
+         !---------------------------------------------------------------------------------!
       else
          !----- Original formula used by RAMS ---------------------------------------------!
-         rehui8 = max(0.d0,rvpr/rvprsat)
+         rehui8 = max(0.d0, rvap / rvapsat)
+         !---------------------------------------------------------------------------------!
       end if
+      !------------------------------------------------------------------------------------!
+
       return
    end function rehui8
    !=======================================================================================!
@@ -1278,32 +1855,39 @@ module therm_lib8
    !    accounted.                                                                         !
    !---------------------------------------------------------------------------------------!
    real(kind=8) function rehuil8(pres,temp,rvap,useice)
-      use consts_coms, only: t3ple8
+      use consts_coms, only : t3ple8 ! ! intent(in)
       implicit none
-      !----- Arguments --------------------------------------------------------------------!
-      real(kind=8), intent(in)           :: pres      ! Air pressure               [    Pa]
-      real(kind=8), intent(in)           :: temp      ! Temperature                [     K]
-      real(kind=8), intent(in)           :: rvap      ! Vapour mixing ratio        [ kg/kg]
-      logical     , intent(in), optional :: useice    ! Should I consider ice?     [   T|F]
+      !----- Required arguments. ----------------------------------------------------------!
+      real(kind=8), intent(in)           :: pres    ! Air pressure                 [    Pa]
+      real(kind=8), intent(in)           :: temp    ! Temperature                  [     K]
+      real(kind=8), intent(in)           :: rvap    ! Vapour mixing ratio          [ kg/kg]
+      !----- Optional arguments. ----------------------------------------------------------!
+      logical     , intent(in), optional :: useice  ! May use ice thermodynamics   [   T|F]
       !----- Local variables --------------------------------------------------------------!
-      real(kind=8)                       :: rvapsat   ! Saturation mixing ratio    [ kg/kg]
-      logical                            :: brrr_cold ! I'll use ice sat. now      [   T|F]
+      real(kind=8)                       :: rvapsat ! Saturation mixing ratio      [ kg/kg]
+      logical                            :: frozen  ! Will use ice saturation now  [   T|F]
       !------------------------------------------------------------------------------------!
       
       !------------------------------------------------------------------------------------!
-      !    Checking whether I should go with ice or liquid saturation.                     !
+      !    Check whether we should use ice or liquid saturation.                           !
       !------------------------------------------------------------------------------------!
       if (present(useice)) then
-         brrr_cold = useice  .and. temp < t3ple8
+         frozen = useice  .and. temp < t3ple8
       else 
-         brrr_cold = bulk_on .and. temp < t3ple8
+         frozen = bulk_on .and. temp < t3ple8
       end if
+      !------------------------------------------------------------------------------------!
 
-      if (brrr_cold) then
+
+      !------------------------------------------------------------------------------------!
+      !     Call the routine that matches "frozen" better.                                 !
+      !------------------------------------------------------------------------------------!
+      if (frozen) then
          rehuil8 = rehui8(pres,temp,rvap)
       else
          rehuil8 = rehul8(pres,temp,rvap)
       end if
+      !------------------------------------------------------------------------------------!
 
       return
    end function rehuil8
@@ -1323,23 +1907,33 @@ module therm_lib8
    ! 2. This can be used for virtual potential temperature, just give potential tempera-   !
    !    ture instead of temperature.                                                       !
    !---------------------------------------------------------------------------------------!
-   real(kind=8) function tv2temp8(tvir,rvpr,rtot)
-      use consts_coms, only: epi8
+   real(kind=8) function tv2temp8(tvir,rvap,rtot)
+      use consts_coms, only : epi8 ! ! intent(in)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       real(kind=8), intent(in)           :: tvir     ! Virtual temperature          [    K]
-      real(kind=8), intent(in)           :: rvpr     ! Vapour mixing ratio          [kg/kg]
+      real(kind=8), intent(in)           :: rvap     ! Vapour mixing ratio          [kg/kg]
       real(kind=8), intent(in), optional :: rtot     ! Total mixing ratio           [kg/kg]
-      !----- Local variable ---------------------------------------------------------------!
-      real                               :: rtothere ! Internal rtot                [kg/kg]
+      !----- Local variables. -------------------------------------------------------------!
+      real(kind=8)                       :: rtothere ! Total or vapour mixing ratio [kg/kg]
+      !------------------------------------------------------------------------------------!
 
+
+      !------------------------------------------------------------------------------------!
+      !      Prefer using total mixing ratio, but if it isn't provided, then use vapour    !
+      ! as total (no condensation).                                                        !
+      !------------------------------------------------------------------------------------!
       if (present(rtot)) then
         rtothere = rtot
       else
-        rtothere = rvpr
+        rtothere = rvap
       end if
+      !------------------------------------------------------------------------------------!
 
-      tv2temp8 = tvir * (1.d0 + rtothere) / (1.d0 + epi8*rvpr)
+
+      !----- Convert using a generalised function. ----------------------------------------!
+      tv2temp8 = tvir * (1.d0 + rtothere) / (1.d0 + epi8 * rvap)
+      !------------------------------------------------------------------------------------!
 
       return
    end function tv2temp8
@@ -1359,23 +1953,33 @@ module therm_lib8
    ! 2. This can be used for virtual potential temperature, just give potential tempera-   !
    !    ture instead of temperature.                                                       !
    !---------------------------------------------------------------------------------------!
-   real(kind=8) function virtt8(temp,rvpr,rtot)
-      use consts_coms, only: epi8
+   real(kind=8) function virtt8(temp,rvap,rtot)
+      use consts_coms, only: epi8 ! ! intent(in)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       real(kind=8), intent(in)           :: temp     ! Temperature                  [    K]
-      real(kind=8), intent(in)           :: rvpr     ! Vapour mixing ratio          [kg/kg]
+      real(kind=8), intent(in)           :: rvap     ! Vapour mixing ratio          [kg/kg]
       real(kind=8), intent(in), optional :: rtot     ! Total mixing ratio           [kg/kg]
       !----- Local variable ---------------------------------------------------------------!
-      real                       :: rtothere ! Internal rtot, to deal with optional [kg/kg]
+      real(kind=8)                       :: rtothere ! Total or vapour mixing ratio [kg/kg]
+      !------------------------------------------------------------------------------------!
 
+
+      !------------------------------------------------------------------------------------!
+      !      Prefer using total mixing ratio, but if it isn't provided, then use vapour    !
+      ! as total (no condensation).                                                        !
+      !------------------------------------------------------------------------------------!
       if (present(rtot)) then
         rtothere = rtot
       else
-        rtothere = rvpr
+        rtothere = rvap
       end if
+      !------------------------------------------------------------------------------------!
 
-      virtt8 = temp * (1.d0 + epi8 * rvpr) / (1.d0 + rtothere)
+
+      !----- Convert using a generalised function. ----------------------------------------!
+      virtt8 = temp * (1.d0 + epi8 * rvap) / (1.d0 + rtothere)
+      !------------------------------------------------------------------------------------!
 
       return
    end function virtt8
@@ -1393,24 +1997,34 @@ module therm_lib8
    ! gas law. The condensed phase will be taken into account if the user provided both     !
    ! the vapour and the total mixing ratios.                                               !
    !---------------------------------------------------------------------------------------!
-   real(kind=8) function idealdens8(pres,temp,rvpr,rtot)
-      use consts_coms, only: rdry8
+   real(kind=8) function idealdens8(pres,temp,rvap,rtot)
+      use consts_coms, only : rdry8 ! ! intent(in)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
-      real(kind=8), intent(in)           :: pres ! Pressure                         [   Pa]
-      real(kind=8), intent(in)           :: temp ! Temperature                      [    K]
-      real(kind=8), intent(in)           :: rvpr ! Vapour mixing ratio              [kg/kg]
-      real(kind=8), intent(in), optional :: rtot ! Total mixing ratio               [kg/kg]
+      real(kind=8), intent(in)           :: pres ! Pressure                        [    Pa]
+      real(kind=8), intent(in)           :: temp ! Temperature                     [     K]
+      real(kind=8), intent(in)           :: rvap ! Vapour mixing ratio             [ kg/kg]
+      real(kind=8), intent(in), optional :: rtot ! Total mixing ratio              [ kg/kg]
       !----- Local variable ---------------------------------------------------------------!
-      real(kind=8)                       :: tvir ! Virtual temperature              [    K]
+      real(kind=8)                       :: tvir ! Virtual temperature             [     K]
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !      Prefer using total mixing ratio, but if it isn't provided, then use vapour    !
+      ! as total (no condensation).                                                        !
       !------------------------------------------------------------------------------------!
       if (present(rtot)) then
-        tvir = virtt8(temp,rvpr,rtot)
+        tvir = virtt8(temp,rvap,rtot)
       else
-        tvir = virtt8(temp,rvpr)
+        tvir = virtt8(temp,rvap)
       end if
+      !------------------------------------------------------------------------------------!
 
+
+      !----- Convert using the definition of virtual temperature. -------------------------!
       idealdens8 = pres / (rdry8 * tvir)
+      !------------------------------------------------------------------------------------!
 
       return
    end function idealdens8
@@ -1433,21 +2047,30 @@ module therm_lib8
                             , epi8  ! ! intent(in)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
-      real(kind=8), intent(in)           :: pres ! Pressure                         [   Pa]
-      real(kind=8), intent(in)           :: temp ! Temperature                      [    K]
-      real(kind=8), intent(in)           :: qvpr ! Vapour specific mass             [kg/kg]
-      real(kind=8), intent(in), optional :: qtot ! Total water specific mass        [kg/kg]
+      real(kind=8), intent(in)           :: pres ! Pressure                        [    Pa]
+      real(kind=8), intent(in)           :: temp ! Temperature                     [     K]
+      real(kind=8), intent(in)           :: qvpr ! Vapour specific mass            [ kg/kg]
+      real(kind=8), intent(in), optional :: qtot ! Total water specific mass       [ kg/kg]
       !----- Local variables. -------------------------------------------------------------!
-      real(kind=8)                       :: qall ! Either qtot or qvpr...           [kg/kg]
+      real(kind=8)                       :: qall ! Either qtot or qvpr...          [ kg/kg]
       !------------------------------------------------------------------------------------!
 
+
+      !------------------------------------------------------------------------------------!
+      !      Prefer using total specific humidity, but if it isn't provided, then use      !
+      ! vapour phase as the total (no condensation).                                       !
+      !------------------------------------------------------------------------------------!
       if (present(qtot)) then
         qall = qtot
       else
         qall = qvpr
       end if
+      !------------------------------------------------------------------------------------!
 
+
+      !----- Convert using a generalised function. ----------------------------------------!
       idealdenssh8 = pres / (rdry8 * temp * (1.d0 - qall + epi8 * qvpr))
+      !------------------------------------------------------------------------------------!
 
       return
    end function idealdenssh8
@@ -1466,37 +2089,69 @@ module therm_lib8
    !---------------------------------------------------------------------------------------!
    real(kind=8) function reducedpress8(pres,thetaref,shvref,zref,thetacan,shvcan,zcan)
       use consts_coms, only : epim18    & ! intent(in)
-                            , p00k8     & ! intent(in)
-                            , rocp8     & ! intent(in)
-                            , cpor8     & ! intent(in)
-                            , cp8       & ! intent(in)
+                            , cpdry8    & ! intent(in)
+                            , cph2o8    & ! intent(in)
+                            , rdry8     & ! intent(in)
+                            , rh2o8     & ! intent(in)
+                            , p008      & ! intent(in)
                             , grav8     ! ! intent(in)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
-      real(kind=8), intent(in)   :: pres     ! Pressure                        [        Pa]
-      real(kind=8), intent(in)   :: thetaref ! Potential temperature           [         K]
-      real(kind=8), intent(in)   :: shvref   ! Vapour specific mass            [     kg/kg]
-      real(kind=8), intent(in)   :: zref     ! Height at reference level       [         m]
-      real(kind=8), intent(in)   :: thetacan ! Potential temperature           [         K]
-      real(kind=8), intent(in)   :: shvcan   ! Vapour specific mass            [     kg/kg]
-      real(kind=8), intent(in)   :: zcan     ! Height at canopy level          [         m]
+      real(kind=8), intent(in) :: pres     ! Pressure                            [      Pa]
+      real(kind=8), intent(in) :: thetaref ! Potential temperature               [       K]
+      real(kind=8), intent(in) :: shvref   ! Vapour specific mass                [   kg/kg]
+      real(kind=8), intent(in) :: zref     ! Height at reference level           [       m]
+      real(kind=8), intent(in) :: thetacan ! Potential temperature               [       K]
+      real(kind=8), intent(in) :: shvcan   ! Vapour specific mass                [   kg/kg]
+      real(kind=8), intent(in) :: zcan     ! Height at canopy level              [       m]
       !------Local variables. -------------------------------------------------------------!
-      real(kind=8)               :: pinc     ! Pressure increment              [ Pa^(R/cp)]
-      real(kind=8)               :: thvbar   ! Average virtual pot. temper.    [         K]
+      real(kind=8)             :: rref     ! Gas constant at ref. height         [  J/kg/K]
+      real(kind=8)             :: rcan     ! Gas constant at canopy air space    [  J/kg/K]
+      real(kind=8)             :: rbar     ! Mean gas constant                   [  J/kg/K]
+      real(kind=8)             :: cpref    ! Specific heat at ref. height        [  J/kg/K]
+      real(kind=8)             :: cpcan    ! Specific heat at canopy air space   [  J/kg/K]
+      real(kind=8)             :: cpbar    ! Mean specific heat                  [  J/kg/K]
+      real(kind=8)             :: rocpbar  ! Mean (R/Cp)                         [  J/kg/K]
+      real(kind=8)             :: cporbar  ! Mean (Cp/R)                         [  J/kg/K]
+      real(kind=8)             :: pinc     ! Pressure increment                  [ Pa^R/cp]
+      real(kind=8)             :: thetabar ! Average potential temperature       [       K]
       !------------------------------------------------------------------------------------!
 
+
       !------------------------------------------------------------------------------------!
-      !      First we compute the average virtual potential temperature between the canopy !
-      ! top and the reference level.                                                       !
+      !      First we find the gas constants and specific heats at reference height and at !
+      ! the canopy air space interface.                                                    !
       !------------------------------------------------------------------------------------!
-      thvbar = 5.d-1 * ( thetaref * (1.d0 + epim18 * shvref)                               &
-                       + thetacan * (1.d0 + epim18 * shvcan))
+      !----- Gas constant. ----------------------------------------------------------------!
+      rref    = rdry8 * (1.d0 + epim18 * shvref)
+      rcan    = rdry8 * (1.d0 + epim18 * shvcan)
+      !----- Specific heat. ---------------------------------------------------------------!
+      cpref   = (1.d0 - shvref) * cpdry8 + shvref * cph2o8
+      cpcan   = (1.d0 - shvref) * cpdry8 + shvref * cph2o8
+      !----- Average values. --------------------------------------------------------------!
+      rbar    = 5.d-1 * (rref  + rcan)
+      cpbar   = 5.d-1 * (cpref + cpcan)
+      rocpbar = rbar / cpbar
+      cporbar = 1.d0 / rocpbar
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !      Compute the average potential temperature between the canopy top and the      !
+      ! reference level.                                                                   !
+      !------------------------------------------------------------------------------------!
+      thetabar = 5.d-1 * (thetaref + thetacan)
+      !------------------------------------------------------------------------------------!
+
 
       !----- Then, we find the pressure gradient scale. -----------------------------------!
-      pinc = grav8 * p00k8 * (zref - zcan) / (cp8 * thvbar)
+      pinc   = grav8 * p008**rocpbar * (zref - zcan) / (cpbar * thetabar)
+      !------------------------------------------------------------------------------------!
+
 
       !----- And we can find the reduced pressure. ----------------------------------------!
-      reducedpress8 = (pres**rocp8 + pinc ) ** cpor8
+      reducedpress8 = ( pres**rocpbar + pinc ) ** cporbar
+      !------------------------------------------------------------------------------------!
 
       return
    end function reducedpress8
@@ -1508,50 +2163,273 @@ module therm_lib8
 
 
 
+
    !=======================================================================================!
    !=======================================================================================!
-   !     This function computes the enthalpy given the pressure, temperature, vapour       !
-   ! specific humidity, and height.  Currently it doesn't compute mixed phase air, but     !
-   ! adding it should be straight forward (finding the inverse is another story...).       !
+   !     This function computes the Exner function [J/kg/K], given the pressure and        !
+   ! humidity (either specific humidity or mixing ratio).                                  !
    !---------------------------------------------------------------------------------------!
-   real(kind=8) function ptqz2enthalpy8(pres,temp,qvpr,zref)
-      use consts_coms, only : ep8       & ! intent(in)
-                            , grav8     & ! intent(in)
-                            , t3ple8    & ! intent(in)
-                            , eta3ple8  & ! intent(in)
-                            , cimcp8    & ! intent(in)
-                            , clmcp8    & ! intent(in)
-                            , cp8       & ! intent(in)
-                            , alvi8     ! ! intent(in)
+   real(kind=8) function pq2exner8(pres,humi,is_shv)
+      use consts_coms, only : p00i8           & ! intent(in)
+                            , cpdry8          & ! intent(in)
+                            , cph2o8          & ! intent(in)
+                            , rdry8           & ! intent(in)
+                            , epim18          ! ! intent(in)
+
+      implicit none
+      !----- Arguments. -------------------------------------------------------------------!
+      real(kind=8), intent(in) :: pres   ! Pressure                               [     Pa]
+      real(kind=8), intent(in) :: humi   ! Humidity (spec. hum. or mixing ratio)  [  kg/kg]
+      logical     , intent(in) :: is_shv ! Input humidity is specific humidity    [    T|F]
+      !----- Local variables. -------------------------------------------------------------!
+      real(kind=8)             :: shv    ! Specific humidity                      [  kg/kg]
+      real(kind=8)             :: cpair  ! Specific heat at constant pressure     [ J/kg/K]
+      real(kind=8)             :: rair   ! Gas constant for this air              [ J/kg/K]
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !     Convert input humidity to specific humidity.                                   !
+      !------------------------------------------------------------------------------------!
+      if (is_shv) then
+         shv = humi
+      else
+         shv = humi / (humi + 1.d0)
+      end if
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !     Find the humid air specific heat and gas constant.                             !
+      !------------------------------------------------------------------------------------!
+      cpair = (1.d0 - shv) * cpdry8 + shv * cph2o8
+      rair  = (1.d0 + epim18 * shv) * rdry8
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !     Find potential temperature.                                                    !
+      !------------------------------------------------------------------------------------!
+      pq2exner8 = cpair * ( pres * p00i8 ) ** (rair/cpair)
+      !------------------------------------------------------------------------------------!
+
+      return
+   end function pq2exner8
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !     This function computes the pressure [Pa], given the Exner function and humidity   !
+   ! (either specific humidity or mixing ratio).                                           !
+   !---------------------------------------------------------------------------------------!
+   real(kind=8) function qex2press8(exner,humi,is_shv)
+      use consts_coms, only : p008            & ! intent(in)
+                            , cpdry8          & ! intent(in)
+                            , cph2o8          & ! intent(in)
+                            , rdry8           & ! intent(in)
+                            , epim18          ! ! intent(in)
+
+      implicit none
+      !----- Arguments. -------------------------------------------------------------------!
+      real(kind=8), intent(in) :: exner  ! Exner function                         [ J/kg/K]
+      real(kind=8), intent(in) :: humi   ! Humidity (spec. hum. or mixing ratio)  [  kg/kg]
+      logical     , intent(in) :: is_shv ! Input humidity is specific humidity    [    T|F]
+      !----- Local variables. -------------------------------------------------------------!
+      real(kind=8)             :: shv    ! Specific humidity                      [  kg/kg]
+      real(kind=8)             :: cpair  ! Specific heat at constant pressure     [ J/kg/K]
+      real(kind=8)             :: rair   ! Gas constant for this air              [ J/kg/K]
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !     Convert input humidity to specific humidity.                                   !
+      !------------------------------------------------------------------------------------!
+      if (is_shv) then
+         shv = humi
+      else
+         shv = humi / (humi + 1.d0)
+      end if
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !     Find the humid air specific heat and gas constant.                             !
+      !------------------------------------------------------------------------------------!
+      cpair = (1.d0 - shv) * cpdry8 + shv * cph2o8
+      rair  = (1.d0 + epim18 * shv) * rdry8
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !     Find potential temperature.                                                    !
+      !------------------------------------------------------------------------------------!
+      qex2press8 = p008 * ( exner / cpair ) ** (cpair/rair)
+      !------------------------------------------------------------------------------------!
+
+      return
+   end function qex2press8
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !     This function computes the potential temperature [K], given the Exner function,   !
+   ! temperature and humidity (either specific humidity or mixing ratio).                  !
+   !---------------------------------------------------------------------------------------!
+   real(kind=8) function extq2theta8(exner,temp,humi,is_shv)
+      use consts_coms, only : cpdry8          & ! intent(in)
+                            , cph2o8          ! ! intent(in)
+
+      implicit none
+      !----- Arguments. -------------------------------------------------------------------!
+      real(kind=8), intent(in) :: exner  ! Exner function                         [ J/kg/K]
+      real(kind=8), intent(in) :: temp   ! Temperature                            [      K]
+      real(kind=8), intent(in) :: humi   ! Humidity (spec. hum. or mixing ratio)  [  kg/kg]
+      logical     , intent(in) :: is_shv ! Input humidity is specific humidity    [    T|F]
+      !----- Local variables. -------------------------------------------------------------!
+      real(kind=8)             :: shv    ! Specific humidity                      [  kg/kg]
+      real(kind=8)             :: cpair  ! Specific heat at constant pressure     [ J/kg/K]
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !     Convert input humidity to specific humidity.                                   !
+      !------------------------------------------------------------------------------------!
+      if (is_shv) then
+         shv = humi
+      else
+         shv = humi / (humi + 1.d0)
+      end if
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !     Find the humid air specific heat and gas constant.                             !
+      !------------------------------------------------------------------------------------!
+      cpair = (1.d0 - shv) * cpdry8 + shv * cph2o8
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !     Find potential temperature.                                                    !
+      !------------------------------------------------------------------------------------!
+      extq2theta8 = cpair * temp / exner
+      !------------------------------------------------------------------------------------!
+
+      return
+   end function extq2theta8
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !     This function computes the temperature [K], given the Exner function, potential   !
+   ! temperature and humidity (either specific humidity or mixing ratio).                  !
+   !---------------------------------------------------------------------------------------!
+   real(kind=8) function exthq2temp8(exner,theta,humi,is_shv)
+      use consts_coms, only : p00i8           & ! intent(in)
+                            , cpdry8          & ! intent(in)
+                            , cph2o8          & ! intent(in)
+                            , rdry8           & ! intent(in)
+                            , epim18          ! ! intent(in)
+
+      implicit none
+      !----- Arguments. -------------------------------------------------------------------!
+      real(kind=8), intent(in) :: exner  ! Exner function                         [ J/kg/K]
+      real(kind=8), intent(in) :: theta  ! Potential temperature                  [      K]
+      real(kind=8), intent(in) :: humi   ! Humidity (spec. hum. or mixing ratio)  [  kg/kg]
+      logical     , intent(in) :: is_shv ! Input humidity is specific humidity    [    T|F]
+      !----- Local variables. -------------------------------------------------------------!
+      real(kind=8)             :: shv    ! Specific humidity                      [  kg/kg]
+      real(kind=8)             :: cpair  ! Specific heat at constant pressure     [ J/kg/K]
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !     Convert input humidity to specific humidity.                                   !
+      !------------------------------------------------------------------------------------!
+      if (is_shv) then
+         shv = humi
+      else
+         shv = humi / (humi + 1.d0)
+      end if
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !     Find the humid air specific heat and gas constant.                             !
+      !------------------------------------------------------------------------------------!
+      cpair = (1.d0 - shv) * cpdry8 + shv * cph2o8
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !     Find potential temperature.                                                    !
+      !------------------------------------------------------------------------------------!
+      exthq2temp8 = exner * theta / cpair
+      !------------------------------------------------------------------------------------!
+
+      return
+   end function exthq2temp8
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !     This function computes the specific internal energy of water [J/kg], given the    !
+   ! temperature and liquid fraction.                                                      !
+   !---------------------------------------------------------------------------------------!
+   real(kind=8) function tl2uint8(temp,fliq)
+      use consts_coms, only : cice8           & ! intent(in)
+                            , cliq8           & ! intent(in)
+                            , tsupercool_liq8 ! ! intent(in)
+                            
       implicit none
       !----- Arguments --------------------------------------------------------------------!
-      real(kind=8), intent(in) :: pres  ! Pressure                                 [    Pa]
       real(kind=8), intent(in) :: temp  ! Temperature                              [     K]
-      real(kind=8), intent(in) :: qvpr  ! Vapour specific mass                     [ kg/kg]
-      real(kind=8), intent(in) :: zref  ! Reference height                         [     m]
-      !------Local variables. -------------------------------------------------------------!
-      real(kind=8)             :: tequ  ! Dew-frost temperature                    [     K]
-      real(kind=8)             :: pequ  ! Equlibrium vapour pressure               [    Pa]
+      real(kind=8), intent(in) :: fliq  ! Fraction liquid water                    [ kg/kg]
       !------------------------------------------------------------------------------------!
 
-      !----- First, we find the equilibrium vapour pressure and dew/frost point. ----------!
-      pequ = pres * qvpr / (ep8 + (1.d0 - ep8) * qvpr)
-      tequ = tslif8(pequ)
+
 
       !------------------------------------------------------------------------------------!
-      !     Then, based on dew/frost point, we compute the enthalpy. This accounts whether !
-      ! we would have to dew or frost formation if the temperature dropped to the          !
-      ! equilibrium point.  Notice that if supersaturation exists, this will still give a  !
-      ! number that makes sense, similar to the internal energy of supercooled water.      !
+      !     Internal energy is given by the sum of internal energies of ice and liquid     !
+      ! phases.                                                                            !
       !------------------------------------------------------------------------------------!
-      if (tequ <= t3ple8) then
-         ptqz2enthalpy8 = cp8 * temp + qvpr * (cimcp8 * tequ + alvi8   ) + grav8 * zref
-      else
-         ptqz2enthalpy8 = cp8 * temp + qvpr * (clmcp8 * tequ + eta3ple8) + grav8 * zref
-      end if
+      tl2uint8 = (1.d0 - fliq) * cice8 * temp + fliq * cliq8 * (temp - tsupercool_liq8)
+      !------------------------------------------------------------------------------------!
 
       return
-   end function ptqz2enthalpy8
+   end function tl2uint8
    !=======================================================================================!
    !=======================================================================================!
 
@@ -1560,88 +2438,212 @@ module therm_lib8
 
 
 
+
    !=======================================================================================!
    !=======================================================================================!
-   !     This function computes the temperature given the enthalpy, pressure, vapour       !
-   ! specific humidity, and reference height.  Currently it doesn't compute mixed phase    !
-   ! air, but adding it wouldn't be horribly hard, though it would require some root       !
-   ! finding.                                                                              !
+   !     This function computes the internal energy of water [J/m²] or [  J/m³], given the !
+   ! temperature [K], the heat capacity of the "dry" part [J/m²/K] or [J/m³/K], water mass !
+   ! [ kg/m²] or [ kg/m³], and liquid fraction [---].                                      !
    !---------------------------------------------------------------------------------------!
-   real(kind=8) function hpqz2temp8(enthalpy,pres,qvpr,zref)
-      use consts_coms, only : ep8       & ! intent(in)
-                            , grav8     & ! intent(in)
-                            , t3ple8    & ! intent(in)
-                            , eta3ple8  & ! intent(in)
-                            , cimcp8    & ! intent(in)
-                            , clmcp8    & ! intent(in)
-                            , cpi8      & ! intent(in)
-                            , alvi8     ! ! intent(in)
+   real(kind=8) function cmtl2uext8(dryhcap,wmass,temp,fliq)
+      use consts_coms, only : cice8           & ! intent(in)
+                            , cliq8           & ! intent(in)
+                            , tsupercool_liq8 ! ! intent(in)
+                            
+      implicit none
+      !----- Arguments. -------------------------------------------------------------------!
+      real(kind=8), intent(in)  :: wmass   ! Mass                      [ kg/m²] or [ kg/m³]
+      real(kind=8), intent(in)  :: dryhcap ! Heat cap. of "dry" part   [J/m²/K] or [J/m³/K]
+      real(kind=8), intent(in)  :: temp    ! Temperature                           [     K]
+      real(kind=8), intent(in)  :: fliq    ! Liquid fraction (0-1)                 [   ---]
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !     Internal energy is given by the sum of internal energies of dry part, plus the !
+      ! contribution of ice and liquid phases.                                             !
+      !------------------------------------------------------------------------------------!
+      cmtl2uext8 = dryhcap * temp + wmass * ( (1.d0 - fliq) * cice8 * temp                 &
+                                            + fliq * cliq8 * (temp - tsupercool_liq8) )
+      !------------------------------------------------------------------------------------!
+
+      return
+   end function cmtl2uext8
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !     This function computes the specific enthalpy [J/kg] given the temperature and     !
+   ! humidity (either mixing ratio or specific humidity).  If we assume that latent heat   !
+   ! of vaporisation is a linear function of temperature (equivalent to assume that        !
+   ! specific heats are constants and that the thermal expansion of liquids and solids are !
+   ! negligible), then the saturation disappears and the enthalpy becomes a straight-      !
+   ! forward state function.  In case we are accounting for the water exchange only        !
+   ! (latent heat), set the specific humidity to 1.0 and multiply the result by water mass !
+   ! or water flux.                                                                        !
+   !---------------------------------------------------------------------------------------!
+   real(kind=8) function tq2enthalpy8(temp,humi,is_shv)
+      use consts_coms, only : cpdry8          & ! intent(in)
+                            , cph2o8          & ! intent(in)
+                            , tsupercool_vap8 ! ! intent(in)
+                            
+      implicit none
+      !----- Arguments. -------------------------------------------------------------------!
+      real(kind=8), intent(in) :: temp   ! Temperature                             [     K]
+      real(kind=8), intent(in) :: humi   ! Humidity (spec. hum. or mixing ratio)   [ kg/kg]
+      logical     , intent(in) :: is_shv ! Input humidity is specific humidity     [   T|F]
+      !----- Local variables. -------------------------------------------------------------!
+      real(kind=8)             :: shv    ! Specific humidity                       [ kg/kg]
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !     Copy specific humidity to shv.                                                 !
+      !------------------------------------------------------------------------------------!
+      if (is_shv) then
+         shv = humi
+      else
+         shv = humi / (humi + 1.d0)
+      end if
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !     Enthalpy is the combination of dry and moist enthalpies, with the latter being !
+      ! allowed to change phase.                                                           !
+      !------------------------------------------------------------------------------------!
+      tq2enthalpy8 = (1.d0 - shv) * cpdry8 * temp + shv * cph2o8 * (temp - tsupercool_vap8)
+      !------------------------------------------------------------------------------------!
+
+      return
+   end function tq2enthalpy8
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !     This function computes the temperature [K] given the specific enthalpy and        !
+   ! humidity.  If we assume that latent heat of vaporisation is a linear function of      !
+   ! temperature (equivalent to assume that specific heats are constants and that the      !
+   ! thermal expansion of liquid and water are negligible), then the saturation disappears !
+   ! and the enthalpy becomes a straightforward state function.  In case you are looking   !
+   ! at water exchange only, set the specific humidity to 1.0 and multiply the result by   !
+   ! the water mass or water flux.                                                         !
+   !---------------------------------------------------------------------------------------!
+   real(kind=8) function hq2temp8(enthalpy,humi,is_shv)
+      use consts_coms, only : cpdry8          & ! intent(in)
+                            , cph2o8          & ! intent(in)
+                            , tsupercool_vap8 ! ! intent(in)
+                            
       implicit none
       !----- Arguments --------------------------------------------------------------------!
-      real(kind=8), intent(in) :: enthalpy ! Enthalpy...                           [  J/kg]
-      real(kind=8), intent(in) :: pres     ! Pressure                              [    Pa]
-      real(kind=8), intent(in) :: qvpr     ! Vapour specific mass                  [ kg/kg]
-      real(kind=8), intent(in) :: zref     ! Reference height                      [     m]
-      !------Local variables. -------------------------------------------------------------!
-      real(kind=8)             :: tequ     ! Dew-frost temperature                 [     K]
-      real(kind=8)             :: pequ     ! Equlibrium vapour pressure            [    Pa]
+      real(kind=8), intent(in) :: enthalpy ! Specific enthalpy                     [  J/kg]
+      real(kind=8), intent(in) :: humi     ! Humidity (spec. hum. or mixing ratio) [ kg/kg]
+      logical     , intent(in) :: is_shv   ! Input humidity is specific humidity   [   T|F]
+      !----- Local variables. -------------------------------------------------------------!
+      real(kind=8)             :: shv      ! Specific humidity                     [ kg/kg]
       !------------------------------------------------------------------------------------!
 
-      !----- First, we find the equilibrium vapour pressure and dew/frost point. ----------!
-      pequ = pres * qvpr / (ep8 + (1.d0 - ep8) * qvpr)
-      tequ = tslif8(pequ)
 
       !------------------------------------------------------------------------------------!
-      !     Then, based on dew/frost point, we compute the temperature. This accounts      !
-      ! whether we would have to dew or frost formation if the temperature dropped to the  !
-      ! equilibrium point.  Notice that if supersaturation exists, this will still give a  !
-      ! temperature that makes sense (but less than the dew/frost point), similar to the   !
-      ! internal energy of supercooled water.                                              !
+      !     Copy specific humidity to shv.                                                 !
       !------------------------------------------------------------------------------------!
-      if (tequ <= t3ple8) then
-         hpqz2temp8 = cpi8 * (enthalpy - qvpr * (cimcp8 * tequ + alvi8   ) - grav8 * zref)
+      if (is_shv) then
+         shv = humi
       else
-         hpqz2temp8 = cpi8 * (enthalpy - qvpr * (clmcp8 * tequ + eta3ple8) - grav8 * zref)
+         shv = humi / (humi + 1.d0)
       end if
-
-      return
-   end function hpqz2temp8
-   !=======================================================================================!
-   !=======================================================================================!
-
-
-
-
-
-
-   !=======================================================================================!
-   !=======================================================================================!
-   !     This function finds the temperature given the potential temperature, density, and !
-   ! specific humidity.  This comes from a combination of the definition of potential      !
-   ! temperature and the ideal gas law, to eliminate pressure, when pressure is also       !
-   ! unknown.                                                                              !
-   !---------------------------------------------------------------------------------------!
-   real(kind=8) function thrhsh2temp8(theta,dens,qvpr)
-      use consts_coms, only : cpocv8  & ! intent(in)
-                            , p00i8   & ! intent(in)
-                            , rdry8   & ! intent(in)
-                            , epim18  & ! intent(in)
-                            , rocv8   ! ! intent(in)
-      implicit none
-      !----- Arguments --------------------------------------------------------------------!
-      real(kind=8), intent(in) :: theta    ! Potential temperature                 [     K]
-      real(kind=8), intent(in) :: dens     ! Density                               [    Pa]
-      real(kind=8), intent(in) :: qvpr     ! Specific humidity                     [ kg/kg]
       !------------------------------------------------------------------------------------!
 
-      thrhsh2temp8 = theta ** cpocv8                                                       &
-                   * (p00i8 * dens * rdry8 * (1.d0 + epim18 * qvpr)) ** rocv8
+
+
+      !------------------------------------------------------------------------------------!
+      !     Enthalpy is the combination of dry and moist enthalpies, with the latter being !
+      ! allowed to change phase.                                                           !
+      !------------------------------------------------------------------------------------!
+      hq2temp8 = ( enthalpy + shv * cph2o8 * tsupercool_vap8 )                             &
+               / ( (1.d0 - shv) * cpdry8 + shv * cph2o8 )
+      !------------------------------------------------------------------------------------!
 
       return
-   end function thrhsh2temp8
+   end function hq2temp8
    !=======================================================================================!
    !=======================================================================================!
 
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !     This function finds the latent heat of vaporisation for a given temperature.  If  !
+   ! we use the definition of latent heat (difference in enthalpy between liquid and       !
+   ! vapour phases), and assume that the specific heats are constants, latent heat becomes !
+   ! a linear function of temperature.                                                     !
+   !---------------------------------------------------------------------------------------!
+   real(kind=8) function alvl8(temp)
+      use consts_coms, only : alvl38  & ! intent(in)
+                            , dcpvl8  & ! intent(in)
+                            , t3ple8  ! ! intent(in)
+      implicit none
+      !----- Arguments. -------------------------------------------------------------------!
+      real(kind=8), intent(in) :: temp
+      !------------------------------------------------------------------------------------!
+
+
+      !----- Linear function, using latent heat at the triple point as reference. ---------!
+      alvl8 = alvl38 + dcpvl8 * (temp - t3ple8)
+      !------------------------------------------------------------------------------------!
+
+      return
+   end function alvl8
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !     This function finds the latent heat of sublimation for a given temperature.  If   !
+   ! we use the definition of latent heat (difference in enthalpy between ice and vapour   !
+   ! phases), and assume that the specific heats are constants, latent heat becomes a      !
+   ! linear function of temperature.                                                       !
+   !---------------------------------------------------------------------------------------!
+   real(kind=8) function alvi8(temp)
+      use consts_coms, only : alvi38  & ! intent(in)
+                            , dcpvi8  & ! intent(in)
+                            , t3ple8  ! ! intent(in)
+      implicit none
+      !----- Arguments. -------------------------------------------------------------------!
+      real(kind=8), intent(in) :: temp
+      !------------------------------------------------------------------------------------!
+
+
+      !----- Linear function, using latent heat at the triple point as reference. ---------!
+      alvi8 = alvi38 + dcpvi8 * (temp - t3ple8)
+      !------------------------------------------------------------------------------------!
+
+      return
+   end function alvi8
+   !=======================================================================================!
+   !=======================================================================================!
 
 
 
@@ -1653,39 +2655,53 @@ module therm_lib8
    ! function [J/kg/K], temperature [K], and liquid and ice mixing ratios [kg/kg].         !
    !---------------------------------------------------------------------------------------!
    real(kind=8) function theta_iceliq8(exner,temp,rliq,rice)
-      use consts_coms, only: alvl8, alvi8, cp8, ttripoli8, htripoli8, htripolii8
+      use consts_coms, only : alvl38      & ! intent(in)
+                            , alvi38      & ! intent(in)
+                            , cpdry8      & ! intent(in)
+                            , ttripoli8   & ! intent(in)
+                            , htripoli8   & ! intent(in)
+                            , htripolii8  ! ! intent(in)
 
       implicit none
       !----- Arguments --------------------------------------------------------------------!
-      real(kind=8), intent(in) :: exner ! Exner function                           [J/kg/K]
-      real(kind=8), intent(in) :: temp  ! Temperature                              [     K]
-      real(kind=8), intent(in) :: rliq  ! Liquid mixing ratio                      [ kg/kg]
-      real(kind=8), intent(in) :: rice  ! Ice mixing ratio                         [ kg/kg]
+      real(kind=8), intent(in) :: exner ! Exner function                          [ J/kg/K]
+      real(kind=8), intent(in) :: temp  ! Temperature                             [      K]
+      real(kind=8), intent(in) :: rliq  ! Liquid mixing ratio                     [  kg/kg]
+      real(kind=8), intent(in) :: rice  ! Ice mixing ratio                        [  kg/kg]
       !----- Local variables --------------------------------------------------------------!
-      real(kind=8)             :: hh    ! Enthalpy associated with sensible heat   [  J/kg]
-      real(kind=8)             :: qq    ! Enthalpy associated with latent heat     [  J/kg]
+      real(kind=8)             :: hh    ! Enthalpy associated with sensible heat  [   J/kg]
+      real(kind=8)             :: qq    ! Enthalpy associated with latent heat    [   J/kg]
       !------------------------------------------------------------------------------------!
 
-      !----- Finding the enthalpies -------------------------------------------------------!
-      hh = cp8 * temp
-      qq  = alvl8*rliq + alvi8 * rice
-      
+
+      !----- Find the enthalpies. ---------------------------------------------------------!
+      hh = cpdry8 * temp
+      qq = alvl38 * rliq + alvi38 * rice
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !      Solve the thermodynamics.  For the new thermodynamics we don't approximate    !
+      ! the exponential to a linear function.                                              !
+      !------------------------------------------------------------------------------------!
       if (newthermo) then
-      
-         !----- Deciding how to compute, based on temperature -----------------------------!
+         !----- Decide how to compute, based on temperature. ------------------------------!
          if (temp > ttripoli8) then
-            theta_iceliq8 = hh * exp(-qq/hh) / exner
+            theta_iceliq8 = hh * exp(-qq / hh) / exner
          else
             theta_iceliq8 = hh * exp(-qq * htripolii8) / exner
          end if
+         !---------------------------------------------------------------------------------!
       else
-         !----- Deciding how to compute, based on temperature -----------------------------!
+         !----- Decide how to compute, based on temperature. ------------------------------!
          if (temp > ttripoli8) then
             theta_iceliq8 = hh * hh / (exner * ( hh + qq))
          else
             theta_iceliq8 = hh * htripoli8 / (exner * ( htripoli8 + qq))
          end if
+         !---------------------------------------------------------------------------------!
       end if
+      !------------------------------------------------------------------------------------!
 
       return
    end function theta_iceliq8
@@ -1703,7 +2719,13 @@ module therm_lib8
    ! to temperature, useful in iterative methods.                                          !
    !---------------------------------------------------------------------------------------!
    real(kind=8) function dthetail_dt8(condconst,thil,exner,pres,temp,rliq,ricein)
-      use consts_coms, only: alvl8, alvi8, cp8, ttripoli8,htripoli8,htripolii8,t3ple8
+      use consts_coms, only : alvl38      & ! intent(in)
+                            , alvi38      & ! intent(in)
+                            , cpdry8      & ! intent(in)
+                            , ttripoli8   & ! intent(in)
+                            , htripoli8   & ! intent(in)
+                            , htripolii8  & ! intent(in)
+                            , t3ple8      ! ! intent(in)
 
       implicit none
       !----- Arguments --------------------------------------------------------------------!
@@ -1721,25 +2743,44 @@ module therm_lib8
       real(kind=8)                       :: qq         ! Latent heat enthalpy      [  J/kg]
       logical                            :: thereisice ! Is ice present            [   ---]
       !------------------------------------------------------------------------------------!
-      
+
+
       !------------------------------------------------------------------------------------!
-      !   Checking whether I should consider ice or not.                                   !
+      !   Check whether we should consider ice thermodynamics or not.                      !
       !------------------------------------------------------------------------------------!
       thereisice = present(ricein)
-      
       if (thereisice) then
          rice=ricein
       else
          rice=0.d0
       end if
-      
-      !----- No condensation, dthetail_dt is a constant -----------------------------------!
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !     Check whether the current state has condensed water.                           !
+      !------------------------------------------------------------------------------------!
       if (rliq+rice == 0.d0) then
+         !----- No condensation, so dthetail_dt is a constant. ----------------------------!
          dthetail_dt8 = thil/temp
          return
+         !---------------------------------------------------------------------------------!
       else
-         hh    = cp8  * temp                            !----- Sensible heat enthalpy
-         qq    = alvl8* rliq + alvi8 * rice             !----- Latent heat enthalpy
+         !---------------------------------------------------------------------------------!
+         !     Condensation exists.  Compute some auxiliary variables.                     !
+         !---------------------------------------------------------------------------------!
+
+
+         !---- Sensible heat enthalpy. ----------------------------------------------------!
+         hh = cpdry8 * temp
+         !---------------------------------------------------------------------------------!
+
+
+         !----- Latent heat enthalpy. -----------------------------------------------------!
+         qq = alvl38 * rliq + alvi38 * rice
+         !---------------------------------------------------------------------------------!
+
+
          !---------------------------------------------------------------------------------!
          !    This is the term L×[d(rs)/dt]×T. L may be either the vapourisation or        !
          ! sublimation latent heat, depending on the temperature and whether we are consi- !
@@ -1749,27 +2790,37 @@ module therm_lib8
          if (condconst) then
             ldrst = 0.d0
          elseif (thereisice .and. temp < t3ple8) then
-            ldrst = alvi8*rsifp8(pres,temp)*temp
+            ldrst = alvi38 * rsifp8(pres,temp) * temp
          else
-            ldrst = alvl8*rslfp8(pres,temp)*temp  
+            ldrst = alvl38 * rslfp8(pres,temp) * temp  
          end if
+         !---------------------------------------------------------------------------------!
       end if
+      !------------------------------------------------------------------------------------!
 
+
+
+      !------------------------------------------------------------------------------------!
+      !     Find the condensed phase consistent with the thermodynamics used.              !
+      !------------------------------------------------------------------------------------!
       if (newthermo) then
-         !----- Deciding how to compute, based on temperature -----------------------------!
+         !----- Decide how to compute, based on temperature -------------------------------!
          if (temp > ttripoli8) then
-            dthetail_dt8 = thil * (1. + (ldrst + qq)/hh) / temp
+            dthetail_dt8 = thil * ( 1.d0 + (ldrst + qq) / hh  ) / temp
          else
-            dthetail_dt8 = thil * (1. + ldrst*htripolii8) / temp
+            dthetail_dt8 = thil * ( 1.d0 + ldrst * htripolii8 ) / temp
          end if
+         !---------------------------------------------------------------------------------!
       else
          !----- Deciding how to compute, based on temperature -----------------------------!
          if (temp > ttripoli8) then
-            dthetail_dt8 = thil * (1.d0 + (ldrst + qq)/(hh+qq)) / temp
+            dthetail_dt8 = thil * ( 1.d0 + (ldrst + qq) / (hh+qq) ) / temp
          else
-            dthetail_dt8 = thil * (1.d0 + ldrst/(htripoli8 + alvl8*rliq)) / temp
+            dthetail_dt8 = thil * ( 1.d0 + ldrst / (htripoli8 + alvl38 *rliq ) ) / temp
          end if
+         !---------------------------------------------------------------------------------!
       end if
+      !------------------------------------------------------------------------------------!
 
       return
    end function dthetail_dt8
@@ -1790,24 +2841,25 @@ module therm_lib8
    ! ature.                                                                                !
    !---------------------------------------------------------------------------------------!
    real(kind=8) function thil2temp8(thil,exner,pres,rliq,rice,t1stguess)
-      use consts_coms, only : cp8        & ! intent(in)
-                            , cpi8       & ! intent(in)
-                            , alvl8      & ! intent(in)
-                            , alvi8      & ! intent(in)
-                            , t008       & ! intent(in)
-                            , t3ple8     & ! intent(in)
-                            , ttripoli8  & ! intent(in)
-                            , htripolii8 & ! intent(in)
-                            , cpi48      ! ! intent(in)
+      use consts_coms, only : cpdry8      & ! intent(in)
+                            , cpdryi8     & ! intent(in)
+                            , cpdryi48    & ! intent(in)
+                            , alvl38      & ! intent(in)
+                            , alvi38      & ! intent(in)
+                            , t008        & ! intent(in)
+                            , t3ple8      & ! intent(in)
+                            , ttripoli8   & ! intent(in)
+                            , htripolii8  ! ! intent(in)
       implicit none
-      !----- Arguments --------------------------------------------------------------------!
+      !----- Arguments. -------------------------------------------------------------------!
       real(kind=8), intent(in) :: thil      ! Ice-liquid water potential temp.     [     K]
       real(kind=8), intent(in) :: exner     ! Exner function                       [J/kg/K]
       real(kind=8), intent(in) :: pres      ! Pressure                             [    Pa]
       real(kind=8), intent(in) :: rliq      ! Liquid water mixing ratio            [ kg/kg]
       real(kind=8), intent(in) :: rice      ! Ice mixing ratio                     [ kg/kg]
       real(kind=8), intent(in) :: t1stguess ! 1st. guess for temperature           [     K]
-      !----- Local variables for iterative method -----------------------------------------!
+      !----- Local variables. -------------------------------------------------------------!
+      real(kind=8)             :: til       ! Ice liquid temperature               [     K]
       real(kind=8)             :: deriv     ! Function derivative 
       real(kind=8)             :: fun       ! Function for which we seek a root.
       real(kind=8)             :: funa      ! Smallest  guess function
@@ -1815,29 +2867,40 @@ module therm_lib8
       real(kind=8)             :: tempa     ! Smallest  guess (or previous guess in Newton)
       real(kind=8)             :: tempz     ! Largest   guess (or new guess in Newton)
       real(kind=8)             :: delta     ! Aux. var to compute 2nd guess for bisection
-      integer                  :: itn,itb   ! Iteration counter
-      logical                  :: converged ! Convergence handle
+      integer                  :: itn       ! Iteration counter
+      integer                  :: itb       ! Iteration counter
+      logical                  :: converged ! Convergence flag
       logical                  :: zside     ! Flag to check for one-sided approach...
-      real(kind=8)             :: til       ! Ice liquid temperature               [     K]
       !------------------------------------------------------------------------------------!
 
 
-      !----- 1st. of all, check whether there is condensation. If not, theta_il = theta ---!
-      if (rliq+rice == 0.d0) then
-         thil2temp8 = cpi8 * thil * exner
+      !------------------------------------------------------------------------------------!
+      !     First we check for conditions that don't require iterative root-finding.       !
+      !------------------------------------------------------------------------------------!
+      if (rliq + rice == 0.d0) then
+         !----- No condensation.  Theta_il is the same as theta. --------------------------!
+         thil2temp8 = cpdryi8 * thil * exner
          return
-      !----- If not, check whether we are using the old thermo or the new one -------------!
+         !---------------------------------------------------------------------------------!
       elseif (.not. newthermo) then
-         til = cpi8 * thil * exner
+         !---------------------------------------------------------------------------------!
+         !    There is condensation but we are using the old thermodynamics, which can be  !
+         ! solved analytically.                                                            !
+         !---------------------------------------------------------------------------------!
+         til = cpdryi8 * thil * exner
          if (t1stguess > ttripoli8) then
-            thil2temp8 = 5.d-1 * (til + sqrt(til * ( til                                   &
-                                                   + cpi48 * (alvl8*rliq + alvi8*rice))))
+            thil2temp8 = 5.d-1                                                             &
+                       * (til + sqrt( til                                                  &
+                                    * (til + cpdryi48 * (alvl38 * rliq + alvi38 * rice))))
          else
-            thil2temp8 = til * ( 1.d0 + (alvl8*rliq+alvi8*rice) * htripolii8)
+            thil2temp8 = til * ( 1.d0 + (alvl38 * rliq + alvi38 * rice) * htripolii8)
          end if
          return
+         !---------------------------------------------------------------------------------!
       end if
       !------------------------------------------------------------------------------------!
+
+
 
       !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
       !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
@@ -1848,11 +2911,15 @@ module therm_lib8
       !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
       !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
 
-      !----- If not, iterate: For the Newton's 1st. guess, use t1stguess ------------------!
+      !------------------------------------------------------------------------------------!
+      !      If we have reached this point, we must use root-finding method.  For the      !
+      ! Newton's 1st. guess, use t1stguess.                                                !
+      !------------------------------------------------------------------------------------!
       tempz     = t1stguess
       fun       = theta_iceliq8(exner,tempz,rliq,rice)
       deriv     = dthetail_dt8(.true.,fun,exner,pres,tempz,rliq,rice)
       fun       = fun - thil
+      !------------------------------------------------------------------------------------!
 
       !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
       !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
@@ -1863,12 +2930,13 @@ module therm_lib8
       !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
       if (fun == 0.d0) then
          thil2temp8 = tempz
-         converged  = .true.
+         converged = .true.
          return
       else 
          tempa = tempz
          funa  = fun
       end if
+
       !----- Enter loop: it will probably skip when the air is not saturated --------------!
       converged = .false.
       newloop: do itn=1,maxfpo/6
@@ -1887,37 +2955,41 @@ module therm_lib8
          !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
          !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
 
-         converged = abs(tempa-tempz) < toler8 * tempz
+         converged = abs(tempa-tempz) < toler8*tempz
          !----- Converged, happy with that, return the average b/w the 2 previous guesses -!
          if (fun == 0.d0) then
             thil2temp8 = tempz
-            converged = .true.
+            converged  = .true.
             return
          elseif(converged) then
             thil2temp8 = 5.d-1 * (tempa+tempz)
             return
          end if
       end do newloop
-      
       !------------------------------------------------------------------------------------!
-      !     If I reached this point then it's because Newton's method failed. Using bisec- !
-      ! tion instead.                                                                      !
+
+
+      !------------------------------------------------------------------------------------!
+      !     If we have reached this point then Newton's method failed.  Use bisection      !
+      ! instead.  For bisection, We need two guesses whose function evaluations have       !
+      ! opposite sign.                                                                     !
       !------------------------------------------------------------------------------------!
       if (funa * fun < 0.d0) then
+         !----- Guesses have opposite sign. -----------------------------------------------!
          funz  = fun
          zside = .true.
       else
          if (abs(fun-funa) < toler8 * tempa) then
             delta = 1.d2 * toler8 * tempa
          else 
-            delta = max(abs(funa * (tempz-tempa)/(fun-funa)), 1.d2 * toler8 * tempa)
+            delta = max(abs(funa * (tempz-tempa)/(fun-funa)),1.d2 * toler8 * tempa)
          end if
          tempz = tempa + delta
          zside = .false.
          zgssloop: do itb=1,maxfpo
             tempz = tempa + dble((-1)**itb * (itb+3)/2) * delta
             funz  = theta_iceliq8(exner,tempz,rliq,rice) - thil
-            zside = funa * funz < 0.d0
+            zside = funa*funz < 0.d0
             if (zside) exit zgssloop
          end do zgssloop
          if (.not. zside) then
@@ -1930,7 +3002,7 @@ module therm_lib8
             write (unit=*,fmt='(2(a,1x,es14.7,1x))') 'tempz=',tempz,'funz=',funz
             write (unit=*,fmt='(1(a,1x,es14.7,1x))') 'delta=',delta
             call fatal_error('Failed finding the second guess for regula falsi'            &
-                          ,'thil2temp8','therm_lib8.f90')
+                            ,'thil2temp8','therm_lib8.f90')
          end if
       end if
 
@@ -1942,7 +3014,7 @@ module therm_lib8
          !     Now that we updated the guess, check whether they are really close. If so,  !
          ! it converged, I can use this as my guess.                                       !
          !---------------------------------------------------------------------------------!
-         converged = abs(thil2temp8-tempa) < toler8 * thil2temp8
+         converged = abs(thil2temp8 - tempa) < toler8 * thil2temp8
          if (converged) exit bisloop
 
          !------ Finding the new function -------------------------------------------------!
@@ -1962,14 +3034,14 @@ module therm_lib8
             tempz = thil2temp8
             funz  = fun
             !----- If we are updating zside again, modify aside (Illinois method) ---------!
-            if (zside) funa=funa * 5.d-1
+            if (zside) funa = funa * 5.d-1
             !----- We just updated zside, setting zside to true. --------------------------!
             zside = .true.
          else
-            tempa = thil2temp8
+            tempa  = thil2temp8
             funa   = fun
             !----- If we are updating aside again, modify aside (Illinois method) ---------!
-            if (.not. zside) funz=funz * 5.d-1
+            if (.not. zside) funz = funz * 5.d-1
             !----- We just updated aside, setting aside to true. --------------------------!
             zside = .false.
          end if
@@ -2003,13 +3075,13 @@ module therm_lib8
          write (unit=*,fmt='(a,1x,f12.4)' ) 'funa            [     K] =',funa
          write (unit=*,fmt='(a,1x,f12.4)' ) 'funz            [     K] =',funz
          write (unit=*,fmt='(a,1x,f12.4)' ) 'deriv           [  ----] =',deriv
-         write (unit=*,fmt='(a,1x,es12.4)') 'toler           [  ----] =',toler8
+         write (unit=*,fmt='(a,1x,es12.4)') 'toler8          [  ----] =',toler8
          write (unit=*,fmt='(a,1x,es12.4)') 'error           [  ----] ='                   &
-                                                          ,abs(thil2temp8-tempa)/thil2temp8
+                                           , abs(thil2temp8-tempa)/thil2temp8
          write (unit=*,fmt='(a,1x,f12.4)' ) 'thil2temp8      [     K] =',thil2temp8
 
          call fatal_error('Temperature didn''t converge, giving up!!!'                     &
-                       ,'thil2temp8','therm_lib8.f90')
+                         ,'thil2temp8','therm_lib8.f90')
       end if
 
       return
@@ -2025,55 +3097,63 @@ module therm_lib8
    !=======================================================================================!
    !=======================================================================================!
    !     This function computes the partial derivative of temperature as a function of the !
-   ! saturation mixing ratio [kg/kg],, keeping pressure constant. This is based on the     !
+   ! saturation mixing ratio [kg/kg], keeping pressure constant.  This is based on the     !
    ! ice-liquid potential temperature equation.                                            !
    !---------------------------------------------------------------------------------------!
    real(kind=8) function dtempdrs8(exner,thil,temp,rliq,rice,rconmin)
-      use consts_coms, only: alvl8, alvi8, cp8, cpi8, ttripoli8, htripolii8
+      use consts_coms, only : alvl38      & ! intent(in)
+                            , alvi38      & ! intent(in)
+                            , cpdry8      & ! intent(in)
+                            , cpdryi8     & ! intent(in)
+                            , ttripoli8   & ! intent(in)
+                            , htripolii8  ! ! intent(in)
 
       implicit none
       !----- Arguments --------------------------------------------------------------------!
-      real(kind=8), intent(in) :: exner   ! Exner function                         [J/kg/K]
-      real(kind=8), intent(in) :: thil    ! Ice-liquid potential temperature (*)   [     K]
-      real(kind=8), intent(in) :: temp    ! Temperature                            [     K]
-      real(kind=8), intent(in) :: rliq    ! Liquid mixing ratio                    [ kg/kg]
-      real(kind=8), intent(in) :: rice    ! Ice mixing ratio                       [ kg/kg]
-      real(kind=8), intent(in) :: rconmin ! Minimum non-zero cond. mixing ratio    [ kg/kg]
+      real(kind=8), intent(in) :: exner   ! Exner function                        [ J/kg/K]
+      real(kind=8), intent(in) :: thil    ! Ice-liquid potential temperature (*)  [      K]
+      real(kind=8), intent(in) :: temp    ! Temperature                           [      K]
+      real(kind=8), intent(in) :: rliq    ! Liquid mixing ratio                   [  kg/kg]
+      real(kind=8), intent(in) :: rice    ! Ice mixing ratio                      [  kg/kg]
+      real(kind=8), intent(in) :: rconmin ! Min. non-zero condensate mix. ratio   [  kg/kg]
       !------------------------------------------------------------------------------------!
       ! (*) Thil is not used in this formulation but it may be used should you opt by      !
       !     other ways to compute theta_il, so don't remove this argument.                 !
       !------------------------------------------------------------------------------------!
       !----- Local variables --------------------------------------------------------------!
-      real(kind=8)             :: qhydm   ! Enthalpy associated with latent heat   [  J/kg]
-      real(kind=8)             :: hh      ! Enthalpy associated with sensible heat [  J/kg]
-      real(kind=8)             :: rcon    ! Condensate mixing ratio                [ kg/kg]
-      real(kind=8)             :: til     ! Ice-liquid temperature                 [     K]
+      real(kind=8)             :: qhydm     ! Enth. associated w/ latent heat     [   J/kg]
+      real(kind=8)             :: hh        ! Enth. associated w/ sensible heat   [   J/kg]
+      real(kind=8)             :: rcon      ! Condensate mixing ratio             [  kg/kg]
+      real(kind=8)             :: til       ! Ice-liquid temperature              [      K]
       !------------------------------------------------------------------------------------!
-            
-      !----- Finding the temperature and hydrometeor terms --------------------------------!
-      qhydm = alvl8 * rliq + alvi8 * rice
-      rcon  = rliq+rice
+
+
+      !----- Find the temperature and hydrometeor terms. ----------------------------------!
+      qhydm = alvl38 * rliq + alvi38 * rice
+      rcon  = rliq + rice
       if (rcon < rconmin) then
          dtempdrs8 = 0.d0
       elseif (newthermo) then
-         hh    = cp8 * temp
+         hh    = cpdry8 * temp
          !---------------------------------------------------------------------------------!
-         !    Deciding how to compute, based on temperature and whether condensates exist. !
+         !    Decide how to compute, based on temperature and whether condensates exist.   !
          !---------------------------------------------------------------------------------!
          if (temp > ttripoli8) then
-            dtempdrs8 = - temp * qhydm / (rcon * (hh+qhydm))
+            dtempdrs8 = - temp * qhydm / ( rcon * (hh+qhydm) )
          else
             dtempdrs8 = - temp * qhydm * htripolii8 / rcon
          end if
       else
-         til   = cpi8 * thil * exner
-         !----- Deciding how to compute, based on temperature -----------------------------!
+         til   = cpdryi8 * thil * exner
+         !----- Decide how to compute, based on temperature. ------------------------------!
          if (temp > ttripoli8) then
-            dtempdrs8 = - til * qhydm /( rcon * cp8 * (2.d0*temp-til))
+            dtempdrs8 = - til * qhydm / ( rcon * cpdry8 * (2.*temp-til))
          else
             dtempdrs8 = - til * qhydm * htripolii8 / rcon
          end if
+         !---------------------------------------------------------------------------------!
       end if
+      !------------------------------------------------------------------------------------!
 
       return
    end function dtempdrs8
@@ -2088,15 +3168,18 @@ module therm_lib8
    !=======================================================================================!
    !=======================================================================================!
    !     This fucntion computes the change of ice-liquid potential temperature due to      !
-   ! sedimentation. The arguments are ice-liquid potential temperature, potential temper-  !
+   ! sedimentation.  The arguments are ice-liquid potential temperature, potential temper- !
    ! ature and temperature in Kelvin, the old and new mixing ratio [kg/kg] and the old and !
    ! new enthalpy [J/kg].                                                                  !
    !---------------------------------------------------------------------------------------!
    real(kind=8) function dthil_sedimentation8(thil,theta,temp,rold,rnew,qrold,qrnew)
-      use consts_coms, only: ttripoli8,cp8,alvi8,alvl8
+      use consts_coms, only : ttripoli8 & ! intent(in)
+                            , cpdry8    & ! intent(in)
+                            , alvi38    & ! intent(in)
+                            , alvl38    ! ! intent(in)
 
       implicit none
-      !----- Arguments --------------------------------------------------------------------!
+      !----- Argument. --------------------------------------------------------------------!
       real(kind=8), intent(in) :: thil  ! Ice-liquid potential temperature         [     K]
       real(kind=8), intent(in) :: theta ! Potential temperature                    [     K]
       real(kind=8), intent(in) :: temp  ! Temperature                              [     K]
@@ -2106,13 +3189,19 @@ module therm_lib8
       real(kind=8), intent(in) :: qrnew ! New hydrometeor latent enthalpy          [  J/kg]
       !------------------------------------------------------------------------------------!
 
+
+
+      !------------------------------------------------------------------------------------!
+      !    Find the derivative based on the thermodynamics.                                !
+      !------------------------------------------------------------------------------------!
       if (newthermo) then
-         dthil_sedimentation8 = - thil * (alvi8 * (rnew-rold) - (qrnew-qrold))             &
-                                        / (cp8 * max(temp,ttripoli8))
+         dthil_sedimentation8 = - thil * (alvi38 * (rnew-rold) - (qrnew-qrold))            &
+                                       / (cpdry8 * max(temp,ttripoli8))
       else
-         dthil_sedimentation8 = - thil*thil * (alvi8*(rnew-rold) - (qrnew-qrold))          &
-                                        / (cp8 * max(temp,ttripoli8) * theta)
+         dthil_sedimentation8 = - thil * thil * (alvi38 *(rnew-rold) - (qrnew-qrold))      &
+                                       / (cpdry8 * max(temp,ttripoli8) * theta)
       end if
+      !------------------------------------------------------------------------------------!
 
       return
    end function dthil_sedimentation8
@@ -2126,39 +3215,48 @@ module therm_lib8
 
    !=======================================================================================!
    !=======================================================================================!
-   !    This function computes the ice-vapour equivalent potential temperature from        !
-   !  theta_iland the total mixing ratio. This is equivalent to the equivalent potential   !
+   !     This function computes the ice-vapour equivalent potential temperature from       !
+   ! theta_iland the total mixing ratio.  This is equivalent to the equivalent potential   !
    ! temperature considering also the effects of fusion/melting/sublimation.               !
-   !    In case you want to find thetae (i.e. without ice) simply provide the logical      !
-   ! useice as .false. .                                                                   !
+   !     In case you want to find thetae (i.e. without ice) simply set the the logical     !
+   ! useice to .false. .                                                                   !
    !---------------------------------------------------------------------------------------!
    real(kind=8) function thetaeiv8(thil,pres,temp,rvap,rtot,useice)
-      use consts_coms, only : alvl8,alvi8,cp8,ep8,p008,rocp8,ttripoli8,t3ple8
       implicit none
-      !----- Arguments --------------------------------------------------------------------!
-      real(kind=8), intent(in)           :: thil   ! Ice-liquid water pot. temp.   [     K]
+      !----- Required arguments. ----------------------------------------------------------!
+      real(kind=8), intent(in)           :: thil   ! Ice-liquid potential temp.    [     K]
       real(kind=8), intent(in)           :: pres   ! Pressure                      [    Pa]
       real(kind=8), intent(in)           :: temp   ! Temperature                   [     K]
       real(kind=8), intent(in)           :: rvap   ! Water vapour mixing ratio     [ kg/kg]
       real(kind=8), intent(in)           :: rtot   ! Total mixing ratio            [ kg/kg]
+      !----- Optional arguments. ----------------------------------------------------------!
       logical     , intent(in), optional :: useice ! Should I use ice?             [   T|F]
-      !----- Local variables for iterative method -----------------------------------------!
+      !----- Local variables. -------------------------------------------------------------!
       real(kind=8)                       :: tlcl   ! Internal LCL temperature      [     K]
       real(kind=8)                       :: plcl   ! Lifting condensation pressure [    Pa]
-      real(kind=8)                       :: dzlcl  ! Thickness of layer beneath LCL[     m]
+      real(kind=8)                       :: dzlcl  ! Thickness of lyr. beneath LCL [     m]
       !------------------------------------------------------------------------------------!
 
+
+
+      !------------------------------------------------------------------------------------!
+      !     Find the liquid condensation level (LCL).                                      !
+      !------------------------------------------------------------------------------------!
       if (present(useice)) then
          call lcl_il8(thil,pres,temp,rtot,rvap,tlcl,plcl,dzlcl,useice)
       else
          call lcl_il8(thil,pres,temp,rtot,rvap,tlcl,plcl,dzlcl)
       end if
+      !------------------------------------------------------------------------------------!
+
+
 
       !------------------------------------------------------------------------------------!
       !     The definition of the thetae_iv is the thetae_ivs at the LCL. The LCL, in turn !
       ! is the point in which rtot = rvap = rsat, so at the LCL rliq = rice = 0.           !
       !------------------------------------------------------------------------------------!
       thetaeiv8  = thetaeivs8(thil,tlcl,rtot,0.d0,0.d0)
+      !------------------------------------------------------------------------------------!
 
       return
    end function thetaeiv8
@@ -2179,41 +3277,47 @@ module therm_lib8
    !    IMPORTANT!!! This CANNOT BE USED to compute d(Thetae_ivs)/dT, because here         !
    !                 we assume that T(LCL) and saturation mixing ratio are known and       !
    !                 constants, and that the LCL pressure (actually the saturation  vapour !
-   !                 pressure at the LCL) is a function of temperature. In case you want   !
+   !                 pressure at the LCL) is a function of temperature.  In case you want  !
    !                 d(Thetae_ivs)/dT, use the dthetaeivs_dt function instead.             !
    !---------------------------------------------------------------------------------------!
    real(kind=8) function dthetaeiv_dtlcl8(theiv,tlcl,rtot,eslcl,useice)
-      use consts_coms, only : rocp8,aklv8,ttripoli8
+      use consts_coms, only : rocp8       & ! intent(in)
+                            , aklv8       & ! intent(in)
+                            , ttripoli8   ! ! intent(in)
       implicit none
-      !----- Arguments --------------------------------------------------------------------!
-      real(kind=8), intent(in)           :: theiv    ! Ice-vapour equiv. pot. temp. [    K]
-      real(kind=8), intent(in)           :: tlcl     ! LCL temperature              [    K]
-      real(kind=8), intent(in)           :: rtot     ! Total mixing ratio (rs @ LCL)[   Pa]
-      real(kind=8), intent(in)           :: eslcl    ! LCL saturation vapour press. [   Pa]
-      logical     , intent(in), optional :: useice   ! Flag for considering ice     [  T|F]
+      !----- Required arguments. ----------------------------------------------------------!
+      real(kind=8), intent(in)           :: theiv    ! Ice-vap. equiv. pot. temp. [      K]
+      real(kind=8), intent(in)           :: tlcl     ! LCL temperature            [      K]
+      real(kind=8), intent(in)           :: rtot     ! Total mixing ratio         [  kg/kg]
+      real(kind=8), intent(in)           :: eslcl    ! LCL sat. vapour pressure   [     Pa]
+      !----- Optional arguments. ----------------------------------------------------------!
+      logical     , intent(in), optional :: useice   ! Flag for considering ice   [    T|F]
       !----- Local variables --------------------------------------------------------------!
-      real(kind=8)                       :: desdtlcl ! Sat. vapour pres. deriv.     [ Pa/K]
+      real(kind=8)                       :: desdtlcl ! Sat. vapour pres. deriv.   [   Pa/K]
       !------------------------------------------------------------------------------------!
 
 
 
-      !----- Finding the derivative of rs with temperature --------------------------------!
+      !----- Find the derivative of rs with temperature. ----------------------------------!
       if (present(useice)) then
          desdtlcl = eslifp8(tlcl,useice)
       else
          desdtlcl = eslifp8(tlcl)
       end if
+      !------------------------------------------------------------------------------------!
 
 
 
-      !----- Finding the derivative. Depending on the temperature, use different eqn. -----!
+      !----- Find the derivative.  The function has a kink at ttripoli. -------------------!
       if (tlcl > ttripoli8) then
-         dthetaeiv_dtlcl8 = theiv * (1.d0 - rocp8*tlcl*desdtlcl/eslcl - aklv8*rtot/tlcl)   &
+         dthetaeiv_dtlcl8 = theiv                                                          &
+                          * (1.d0 - rocp8 * tlcl * desdtlcl / eslcl - aklv8 * rtot / tlcl) &
                           / tlcl
       else
-         dthetaeiv_dtlcl8 = theiv * (1.d0 - rocp8*tlcl*desdtlcl/eslcl                  )   &
-                          / tlcl
+         dthetaeiv_dtlcl8 = theiv                                                          &
+                          * (1.d0 - rocp8 * tlcl * desdtlcl / eslcl ) / tlcl
       end if
+      !------------------------------------------------------------------------------------!
 
       return
    end function dthetaeiv_dtlcl8
@@ -2243,21 +3347,28 @@ module therm_lib8
    ! sion between the three phases is already taken care of.                               !
    !---------------------------------------------------------------------------------------!
    real(kind=8) function thetaeivs8(thil,temp,rsat,rliq,rice)
-      use consts_coms, only : aklv8, ttripoli8
+      use consts_coms, only : aklv8     & ! intent(in)
+                            , ttripoli8 ! ! intent(in)
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
-      real(kind=8), intent(in)   :: thil     ! Ice-liquid water potential temp.    [     K]
-      real(kind=8), intent(in)   :: temp     ! Temperature                         [     K]
-      real(kind=8), intent(in)   :: rsat     ! Sat. water vapour mixing ratio      [ kg/kg]
-      real(kind=8), intent(in)   :: rliq     ! Liquid water mixing ratio           [ kg/kg]
-      real(kind=8), intent(in)   :: rice     ! Ice mixing ratio                    [ kg/kg]
-      !----- Local variables. -------------------------------------------------------------!
-      real(kind=8)               :: rtots    ! Saturated mixing ratio              [     K]
+      real(kind=8), intent(in) :: thil  ! Theta_il, ice-liquid water pot. temp.    [     K]
+      real(kind=8), intent(in) :: temp  ! Temperature                              [     K]
+      real(kind=8), intent(in) :: rsat  ! Saturation water vapour mixing ratio     [ kg/kg]
+      real(kind=8), intent(in) :: rliq  ! Liquid water mixing ratio                [ kg/kg]
+      real(kind=8), intent(in) :: rice  ! Ice mixing ratio                         [ kg/kg]
+      !----- Local variables --------------------------------------------------------------!
+      real(kind=8)             :: rtots ! Saturated mixing ratio                   [     K]
       !------------------------------------------------------------------------------------!
 
-      rtots      = rsat+rliq+rice
-      
+
+      !------ Find the total saturation mixing ratio. -------------------------------------!
+      rtots = rsat + rliq + rice
+      !------------------------------------------------------------------------------------!
+
+
+      !------ Find the saturation equivalent potential temperature. -----------------------!
       thetaeivs8 = thil * exp ( aklv8 * rtots / max(temp,ttripoli8))
+      !------------------------------------------------------------------------------------!
 
       return
    end function thetaeivs8
@@ -2281,35 +3392,40 @@ module therm_lib8
    !                 d(Thetae_iv)/d(T_LCL), use the dthetaeiv_dtlcl function instead.      !
    !---------------------------------------------------------------------------------------!
    real(kind=8) function dthetaeivs_dt8(theivs,temp,pres,rsat,useice)
-      use consts_coms, only : aklv8,alvl8,ttripoli8,htripolii8
+      use consts_coms, only : aklv8      & ! intent(in)
+                            , alvl38     & ! intent(in)
+                            , ttripoli8  & ! intent(in)
+                            , htripolii8 ! ! intent(in)
       implicit none
-      !----- Arguments --------------------------------------------------------------------!
+      !----- Required arguments. ----------------------------------------------------------!
       real(kind=8), intent(in)           :: theivs ! Sat. ice-vap. eq. pot. temp. [      K]
       real(kind=8), intent(in)           :: temp   ! Temperature                  [      K]
       real(kind=8), intent(in)           :: pres   ! Pressure                     [     Pa]
       real(kind=8), intent(in)           :: rsat   ! Saturation mixing ratio      [  kg/kg]
+      !----- Optional arguments. ----------------------------------------------------------!
       logical     , intent(in), optional :: useice ! Flag for considering ice     [    T|F]
       !----- Local variables --------------------------------------------------------------!
-      real(kind=8)                       :: drsdt  ! Saturated mixing ratio deriv.[kg/kg/K]
+      real(kind=8)                       :: drsdt  ! Sat. mixing ratio derivative [kg/kg/K]
       !------------------------------------------------------------------------------------!
 
 
-      !----- Finding the derivative of rs with temperature --------------------------------!
+      !----- Find the derivative of rs with temperature. ----------------------------------!
       if (present(useice)) then
          drsdt = rslifp8(pres,temp,useice)
       else
          drsdt = rslifp8(pres,temp)
       end if
+      !------------------------------------------------------------------------------------!
 
 
-      !----- Finding the derivative. Depending on the temperature, use different eqn. -----!
+      !----- Find the derivative.  Depending on the temperature, use different eqn. -------!
       if (temp > ttripoli8) then
          dthetaeivs_dt8 = theivs * (1.d0 + aklv8 * (drsdt*temp-rsat)/temp ) / temp
       else
-         dthetaeivs_dt8 = theivs * (1.d0 + alvl8 * drsdt * temp * htripolii8 ) / temp
+         dthetaeivs_dt8 = theivs * (1.d0 + alvl38 * drsdt * temp * htripolii8 ) / temp
       end if
+      !------------------------------------------------------------------------------------!
 
-      
       return
    end function dthetaeivs_dt8
    !=======================================================================================!
@@ -2332,41 +3448,56 @@ module therm_lib8
    !    a particular case.                                                                 !
    !---------------------------------------------------------------------------------------!
    real(kind=8) function thetaeiv2thil8(theiv,pres,rtot,useice)
-      use consts_coms, only : alvl8,cp8,ep8,p008,rocp8,ttripoli8,t3ple8,t008
+      use consts_coms, only : ep8       & ! intent(in)
+                            , alvl38    & ! intent(in)
+                            , cpdry8    & ! intent(in)
+                            , p008      & ! intent(in)
+                            , rocp8     & ! intent(in)
+                            , ttripoli8 & ! intent(in)
+                            , t3ple8    & ! intent(in)
+                            , t008      ! ! intent(in)
       implicit none
-      !----- Arguments --------------------------------------------------------------------!
+      !----- Required arguments. ----------------------------------------------------------!
       real(kind=8), intent(in)           :: theiv     ! Ice vap. equiv. pot. temp. [     K]
       real(kind=8), intent(in)           :: pres      ! Pressure                   [    Pa]
       real(kind=8), intent(in)           :: rtot      ! Total mixing ratio         [ kg/kg]
-      logical     , intent(in), optional :: useice    ! Flag for ice thermo        [   T|F]
+      !----- Optional arguments. ----------------------------------------------------------!
+      logical     , intent(in), optional :: useice    ! May I use ice thermodyn.   [   T|F]
       !----- Local variables for iterative method -----------------------------------------!
       real(kind=8)                       :: pvap      ! Sat. vapour pressure
       real(kind=8)                       :: theta     ! Potential temperature
       real(kind=8)                       :: deriv     ! Function derivative 
       real(kind=8)                       :: funnow    ! Function for which we seek a root.
-      real(kind=8)                       :: funa      ! Smallest  guess function
-      real(kind=8)                       :: funz      ! Largest   guess function
-      real(kind=8)                       :: tlcla     ! Smallest  guess (or old guess)
-      real(kind=8)                       :: tlclz     ! Largest   guess (or new guess)
+      real(kind=8)                       :: funa      ! Smallest guess function
+      real(kind=8)                       :: funz      ! Largest guess function
+      real(kind=8)                       :: tlcla     ! Smallest guess (Newton: old guess)
+      real(kind=8)                       :: tlclz     ! Largest guess (Newton: new guess)
       real(kind=8)                       :: tlcl      ! What will be the LCL temperature
       real(kind=8)                       :: es00      ! Defined as p00*rt/(epsilon + rt)
       real(kind=8)                       :: delta     ! Aux. variable (For 2nd guess).
-      integer                            :: itn,itb   ! Iteration counters
+      integer                            :: itn       ! Iteration counters
+      integer                            :: itb       ! Iteration counters
       integer                            :: ii        ! Another counter
       logical                            :: converged ! Convergence handle
-      logical                            :: zside     ! Aux. flag - sides for Regula Falsi
-      logical                            :: brrr_cold ! Flag - considering ice thermo.
+      logical                            :: zside     ! Side checker for Regula Falsi
+      logical                            :: frozen    ! Will use ice thermodynamics
       !------------------------------------------------------------------------------------!
-    
-      !----- Filling the flag for ice thermo that will be always present ------------------!
+
+
+
+      !----- Fill the flag for ice thermodynamics so it will be present. ------------------!
       if (present(useice)) then
-         brrr_cold = useice
+         frozen = useice
       else
-         brrr_cold = bulk_on
+         frozen = bulk_on
       end if
-    
-      !----- Finding es00, which is a constant --------------------------------------------!
+      !------------------------------------------------------------------------------------!
+
+
+
+      !----- Find es00, which is a constant. ----------------------------------------------!
       es00 = p008 * rtot / (ep8 + rtot)
+      !------------------------------------------------------------------------------------!
 
 
       !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
@@ -2381,11 +3512,12 @@ module therm_lib8
       !     The 1st. guess, we assume we are lucky and right at the LCL.                   !
       !------------------------------------------------------------------------------------!
       pvap      = pres * rtot / (ep8 + rtot) 
-      tlclz     = tslif8(pvap,brrr_cold)
-      theta     = tlclz * (es00/pvap)**rocp8
+      tlclz     = tslif8(pvap,frozen)
+      theta     = tlclz * (es00 / pvap) ** rocp8
       funnow    = thetaeivs8(theta,tlclz,rtot,0.d0,0.d0)
-      deriv     = dthetaeiv_dtlcl8(funnow,tlclz,rtot,pvap,brrr_cold)
+      deriv     = dthetaeiv_dtlcl8(funnow,tlclz,rtot,pvap,frozen)
       funnow    = funnow - theiv
+      !------------------------------------------------------------------------------------!
 
       !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
       !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
@@ -2394,25 +3526,29 @@ module therm_lib8
       !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
       !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
 
-      !----- Putting something in tlcla in case we never loop through Newton's method -----!
+      !----- Put something in tlcla in case we never loop through Newton's method. --------!
       tlcla     = tlclz
       funa      = funnow
       converged = .false.
+      !------------------------------------------------------------------------------------!
 
       !----- Looping: Newton's iterative method -------------------------------------------!
       newloop: do itn=1,maxfpo/6
          if (abs(deriv) < toler8) exit newloop !----- Too dangerous, skip to bisection ----!
-         !----- Updating guesses ----------------------------------------------------------!
+         !----- Update guesses. -----------------------------------------------------------!
          tlcla   = tlclz
          funa    = funnow
          tlclz   = tlcla - funnow/deriv
+         !---------------------------------------------------------------------------------!
 
-         !----- Updating the function evaluation and its derivative -----------------------!
-         pvap    = eslif8(tlclz,brrr_cold)
+
+         !----- Update the function evaluation and its derivative. ------------------------!
+         pvap    = eslif8(tlclz,frozen)
          theta   = tlclz * (es00/pvap)**rocp8
          funnow  = thetaeivs8(theta,tlclz,rtot,0.d0,0.d0)
-         deriv   = dthetaeiv_dtlcl8(funnow,tlclz,rtot,pvap,brrr_cold)
+         deriv   = dthetaeiv_dtlcl8(funnow,tlclz,rtot,pvap,frozen)
          funnow  = funnow - theiv
+         !---------------------------------------------------------------------------------!
 
          !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
          !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
@@ -2429,7 +3565,7 @@ module therm_lib8
             converged = .true.
             exit newloop
          elseif (converged) then
-            tlcl = 5.d-1 *(tlcla+tlclz)
+            tlcl = 5.d-1*(tlcla+tlclz)
             funz = funnow
             exit newloop
          end if
@@ -2441,14 +3577,14 @@ module therm_lib8
       !------------------------------------------------------------------------------------!
       if (.not. converged) then
          !----- Set funz, and check whether funa and funz already have opposite sign. -----!
-         funz  = funnow
-         zside = .true.
+         funz = funnow
+         zside=.true.
          if (funa*funnow > 0.d0) then
             !----- We fix funa, and try a funz that will work as 2nd guess ----------------!
-            if (abs(funz-funa) < toler8 * tlcla) then
-               delta = 1.d2 * toler8 * tlcla
+            if (abs(funz-funa) < toler8*tlcla) then
+               delta = 1.d2*toler8*tlcla
             else
-               delta = max(abs(funa*(tlclz-tlcla)/(funz-funa)),1.d2 * toler8 * tlcla)
+               delta = max(abs(funa*(tlclz-tlcla)/(funz-funa)),1.d2*toler8*tlcla)
             end if
             tlclz = tlcla + delta
 
@@ -2463,7 +3599,7 @@ module therm_lib8
             zgssloop: do itb=1,maxfpo
                !----- So the first time tlclz = tlcla - 2*delta ---------------------------!
                tlclz = tlcla + dble((-1)**itb * (itb+3)/2) * delta
-               pvap  = eslif8(tlclz,brrr_cold)
+               pvap  = eslif8(tlclz,frozen)
                theta = tlclz * (es00/pvap)**rocp8
                funz  = thetaeivs8(theta,tlclz,rtot,0.d0,0.d0) - theiv
 
@@ -2487,17 +3623,17 @@ module therm_lib8
                write (unit=*,fmt='(2(a,1x,es14.7,1x))') 'tlcla =',tlcla ,'funa  =',funa
                write (unit=*,fmt='(2(a,1x,es14.7,1x))') 'tlclz =',tlclz ,'funz  =',funz
                call fatal_error('Failed finding the second guess for regula falsi'         &
-                             ,'thetaeiv2thil8','therm_lib8.f90')
+                               ,'thetaeiv2thil8','therm_lib8.f90')
             end if
          end if
-         !---- Continue iterative method --------------------------------------------------!
+         !---- Continue iterative method. -------------------------------------------------!
          fpoloop: do itb=itn+1,maxfpo
 
-            !----- Updating the guess -----------------------------------------------------!
+            !----- Update the guess. ------------------------------------------------------!
             tlcl   = (funz*tlcla-funa*tlclz)/(funz-funa)
 
             !----- Updating function evaluation -------------------------------------------!
-            pvap   = eslif8(tlcl,brrr_cold)
+            pvap   = eslif8(tlcl,frozen)
             theta  = tlcl * (es00/pvap)**rocp8
             funnow = thetaeivs8(theta,tlcl,rtot,0.d0,0.d0) - theiv
 
@@ -2509,7 +3645,7 @@ module therm_lib8
             !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
 
             !------------------------------------------------------------------------------!
-            !    Checking for convergence. If it did, return, we found the solution.       !
+            !    Check for convergence. If it did, return, we found the solution.          !
             ! Otherwise, constrain the guesses.                                            !
             !------------------------------------------------------------------------------!
             converged = abs(tlcl-tlcla) < toler8 * tlcl
@@ -2534,7 +3670,7 @@ module therm_lib8
       end if
 
       if (converged) then 
-         thetaeiv2thil8  = theiv * exp (- alvl8 * rtot / (cp8 * max(tlcl,ttripoli8)) )
+         thetaeiv2thil8  = theiv * exp (- alvl38 * rtot / (cpdry8 * max(tlcl,ttripoli8)) )
          !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
          !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
          !write (unit=36,fmt='(a,1x,i5,1x,3(a,1x,f11.4,1x),2(a,1x,es11.4,1x))')             &
@@ -2568,8 +3704,8 @@ module therm_lib8
          write (unit=*,fmt='(a)')           ' '
          write (unit=*,fmt='(60a1)')        ('-',ii=1,60)
 
-         call fatal_error('TLCL didn''t converge, gave up!','thetaeiv2thil8'               &
-                         ,'therm_lib8.f90')
+         call fatal_error('TLCL didn''t converge, qgave up!'                               &
+                         ,'thetaeiv2thil8','therm_lib8.f90')
       end if
 
       return
@@ -2594,7 +3730,13 @@ module therm_lib8
    !      when level >= 3 and to ignore otherwise.                                         !
    !---------------------------------------------------------------------------------------!
    subroutine thetaeivs2temp8(theivs,pres,theta,temp,rsat,useice)
-      use consts_coms, only : alvl8,cp8,ep8,p008,rocp8,ttripoli8,t008
+      use consts_coms, only : alvl38     & ! intent(in)
+                            , cpdry8     & ! intent(in)
+                            , ep8        & ! intent(in)
+                            , p008       & ! intent(in)
+                            , rocp8      & ! intent(in)
+                            , ttripoli8  & ! intent(in)
+                            , t008       ! ! intent(in)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       real(kind=8), intent(in)            :: theivs     ! Sat. thetae_iv          [      K]
@@ -2602,49 +3744,60 @@ module therm_lib8
       real(kind=8), intent(out)           :: theta      ! Potential temperature   [      K]
       real(kind=8), intent(out)           :: temp       ! Temperature             [      K]
       real(kind=8), intent(out)           :: rsat       ! Saturation mixing ratio [  kg/kg]
-      logical     , intent(in) , optional :: useice     ! Flag for ice thermo     [    T|F]
+      logical     , intent(in) , optional :: useice     ! May use ice thermodyn.  [    T|F]
       !----- Local variables, with other thermodynamic properties -------------------------!
-      real(kind=8)                        :: exnernormi ! 1./ (Norm. Exner fctn)  [    ---]
-      logical                             :: brrr_cold  ! Flag for ice thermo     [    T|F]
+      real(kind=8)                        :: exnernormi ! 1./ (Norm. Exner func.) [    ---]
+      logical                             :: frozen     ! Will use ice thermodyn. [    T|F]
       !----- Local variables for iterative method -----------------------------------------!
       real(kind=8)                        :: deriv      ! Function derivative 
-      real(kind=8)                        :: funnow     ! Function for which we seek a root.
-      real(kind=8)                        :: funa       ! Smallest  guess function
-      real(kind=8)                        :: funz       ! Largest   guess function
-      real(kind=8)                        :: tempa      ! Smallest  guess (or previous)
-      real(kind=8)                        :: tempz      ! Largest   guess (or new)
-      real(kind=8)                        :: delta      ! Aux. var. for 2nd guess finding.
-      integer                             :: itn,itb    ! Iteration counters
+      real(kind=8)                        :: funnow     ! Current function evaluation
+      real(kind=8)                        :: funa       ! Smallest guess function
+      real(kind=8)                        :: funz       ! Largest guess function
+      real(kind=8)                        :: tempa      ! Smallest guess (Newton: previous)
+      real(kind=8)                        :: tempz      ! Largest guess (Newton: new)
+      real(kind=8)                        :: delta      ! Aux. variable for 2nd guess.
+      integer                             :: itn        ! Iteration counter
+      integer                             :: itb        ! Iteration counter
       logical                             :: converged  ! Convergence handle
-      logical                             :: zside      ! Check sides (Regula Falsi)
+      logical                             :: zside      ! Flag for side check.
       !------------------------------------------------------------------------------------!
-    
-      !----- Setting up the ice check, in case useice is not present. ---------------------!
+
+
+      !----- Set up the ice check, in case useice is not present. -------------------------!
       if (present(useice)) then
-         brrr_cold = useice
+         frozen = useice
       else 
-         brrr_cold = bulk_on
+         frozen = bulk_on
       end if
-    
+      !------------------------------------------------------------------------------------!
+
+
+
       !----- Finding the inverse of normalised Exner, which is constant in this routine ---!
       exnernormi = (p008 /pres) ** rocp8
+      !------------------------------------------------------------------------------------!
+
+
 
       !------------------------------------------------------------------------------------!
       !     The 1st. guess, no idea, guess 0°C.                                            !
       !------------------------------------------------------------------------------------!
       tempz     = t008
       theta     = tempz * exnernormi
-      rsat      = rslif8(pres,tempz,brrr_cold)
+      rsat      = rslif8(pres,tempz,frozen)
       funnow    = thetaeivs8(theta,tempz,rsat,0.d0,0.d0)
-      deriv     = dthetaeivs_dt8(funnow,tempz,pres,rsat,brrr_cold)
+      deriv     = dthetaeivs_dt8(funnow,tempz,pres,rsat,frozen)
       funnow    = funnow - theivs
+      !------------------------------------------------------------------------------------!
 
-      !----- Saving here just in case Newton is aborted at the 1st guess ------------------!
+
+      !----- Copy here just in case Newton is aborted at the 1st guess. -------------------!
       tempa     = tempz
       funa      = funnow
+      !------------------------------------------------------------------------------------!
 
       converged = .false.
-      !----- Looping ----------------------------------------------------------------------!
+      !----- Newton's method loop. --------------------------------------------------------!
       newloop: do itn=1,maxfpo/6
          if (abs(deriv) < toler8) exit newloop !----- Too dangerous, skip to bisection ----!
          !----- Updating guesses ----------------------------------------------------------!
@@ -2653,67 +3806,72 @@ module therm_lib8
          
          tempz   = tempa - funnow/deriv
          theta   = tempz * exnernormi
-         rsat    = rslif8(pres,tempz,brrr_cold)
+         rsat    = rslif8(pres,tempz,frozen)
          funnow  = thetaeivs8(theta,tempz,rsat,0.d0,0.d0)
-         deriv   = dthetaeivs_dt8(funnow,tempz,pres,rsat,brrr_cold)
+         deriv   = dthetaeivs_dt8(funnow,tempz,pres,rsat,frozen)
          funnow  = funnow - theivs
 
-         converged = abs(tempa-tempz) < toler8 * tempz
+         converged = abs(tempa-tempz) < toler8*tempz
          if (funnow == 0.d0) then
             converged =.true.
             temp = tempz
             exit newloop
          elseif (converged) then
-            temp = 5.d-1 * (tempa+tempz)
+            temp = 5.d-1*(tempa+tempz)
             exit newloop
          end if
       end do newloop
 
       !------------------------------------------------------------------------------------!
-      !     If I reached this point then it's because Newton's method failed. Using bisec- !
-      ! tion instead.                                                                      !
+      !     If we have reached this point then it's because Newton's method failed.  Use   !
+      ! bisection instead.                                                                 !
       !------------------------------------------------------------------------------------!
       if (.not. converged) then
          !----- Set funz, and check whether funa and funz already have opposite sign. -----!
          funz  = funnow
          zside = .false.
+         !---------------------------------------------------------------------------------!
+
          if (funa*funnow > 0.d0) then
             !----- We fix funa, and try a funz that will work as 2nd guess ----------------!
-            if (abs(funz-funa) < toler8 * tempa) then
-               delta = 1.d2 * toler8 * tempa
+            if (abs(funz-funa) < toler8*tempa) then
+               delta = 1.d2*toler8*tempa
             else
-               delta = max(abs(funa*(tempz-tempa)/(funz-funa)), 1.d2 * toler8 * tempa)
+               delta = max(abs(funa*(tempz-tempa)/(funz-funa)),1.d2*toler8*tempa)
             end if
+            !------------------------------------------------------------------------------!
+
             tempz = tempa + delta
             zgssloop: do itb=1,maxfpo
                !----- So this will be +1 -1 +2 -2 etc. ------------------------------------!
                tempz = tempz + dble((-1)**itb * (itb+3)/2) * delta
                theta = tempz * exnernormi
-               rsat  = rslif8(pres,tempz,brrr_cold)
+               rsat  = rslif8(pres,tempz,frozen)
                funz  = thetaeivs8(theta,tempz,rsat,0.d0,0.d0) - theivs
                zside = funa*funz < 0.d0
                if (zside) exit zgssloop
             end do zgssloop
-            if (.not. zside)                                                               &
+            if (.not. zside) then
                call fatal_error('Failed finding the second guess for regula falsi'         &
-                             ,'thetaes2temp','therm_lib.f90')
+                               ,'thetaes2temp8','therm_lib8.f90')
+            end if
          end if
          !---- Continue iterative method --------------------------------------------------!
          fpoloop: do itb=itn+1,maxfpo
-            if (abs(funz-funa) < toler8 * tempa) then
-               temp   = 5.d-1 * (tempa+tempz)
+            if (abs(funz-funa) < toler8*tempa) then
+               temp   = 5.d-1*(tempa+tempz)
             else
                temp   = (funz*tempa-funa*tempz)/(funz-funa)
             end if
             theta  = temp * exnernormi
-            rsat   = rslif8(pres,temp,brrr_cold)
+            rsat   = rslif8(pres,temp,frozen)
             funnow = thetaeivs8(theta,temp,rsat,0.d0,0.d0) - theivs
 
             !------------------------------------------------------------------------------!
             !    Checking for convergence. If it did, return, we found the solution.       !
             ! Otherwise, constrain the guesses.                                            !
             !------------------------------------------------------------------------------!
-            converged = abs(temp-tempa) < toler8 * temp
+            converged = abs(temp-tempa) < toler8*temp
             if (converged) then
                exit fpoloop
             elseif (funnow*funa < 0.d0) then 
@@ -2737,10 +3895,10 @@ module therm_lib8
       if (converged) then 
          !----- Compute theta and rsat with temp just for consistency ---------------------!
          theta = temp * exnernormi
-         rsat  = rslif8(pres,temp,brrr_cold)
+         rsat  = rslif8(pres,temp,frozen)
       else
          call fatal_error('Temperature didn''t converge, I gave up!'                       &
-                       ,'thetaes2temp8','therm_lib8.f90')
+                         ,'thetaes2temp8','therm_lib8.f90')
       end if
 
       return
@@ -2786,71 +3944,84 @@ module therm_lib8
    ! 3. In case you don't want ice, simply pass useice=.false.. Otherwise let the model    !
    !    decide by itself based on the LEVEL variable.                                      !
    !---------------------------------------------------------------------------------------!
-   subroutine lcl_il8(thil,pres,temp,rtot,rvpr,tlcl,plcl,dzlcl,useice)
-      use consts_coms, only: cpog8, alvl8,alvi8,cp8,ep8,p008,rocp8,ttripoli8,t3ple8,t008
+   subroutine lcl_il8(thil,pres,temp,rtot,rvap,tlcl,plcl,dzlcl,useice)
+      use consts_coms, only : cpog8     & ! intent(in)
+                            , ep8       & ! intent(in)
+                            , p008      & ! intent(in)
+                            , rocp8     & ! intent(in)
+                            , ttripoli8 & ! intent(in)
+                            , t3ple8    & ! intent(in)
+                            , t008      ! ! intent(in)
       implicit none
-      !----- Arguments --------------------------------------------------------------------!
-      real(kind=8), intent(in)            :: thil   ! Ice liquid pot. temp. (*)   [      K]
-      real(kind=8), intent(in)            :: pres   ! Pressure                    [     Pa]
-      real(kind=8), intent(in)            :: temp   ! Temperature                 [      K]
-      real(kind=8), intent(in)            :: rtot   ! Total mixing ratio          [  kg/kg]
-      real(kind=8), intent(in)            :: rvpr   ! Vapour mixing ratio         [  kg/kg]
-      real(kind=8), intent(out)           :: tlcl   ! LCL temperature             [      K]
-      real(kind=8), intent(out)           :: plcl   ! LCL pressure                [     Pa]
-      real(kind=8), intent(out)           :: dzlcl  ! Sub-LCL layer thickness     [      m]
-      logical     , intent(in) , optional :: useice ! Ice thermodynamics?         [    T|F]
-      !----- Local variables for iterative method -----------------------------------------!
-      real(kind=8) :: pvap       ! Sat. vapour pressure
-      real(kind=8) :: deriv      ! Function derivative 
-      real(kind=8) :: funnow     ! Function for which we seek a root.
-      real(kind=8) :: funa       ! Smallest  guess function
-      real(kind=8) :: funz       ! Largest   guess function
-      real(kind=8) :: tlcla      ! Smallest  guess (or previous guess in Newton)
-      real(kind=8) :: tlclz      ! Largest   guess (or new guess in Newton)
-      real(kind=8) :: es00       ! Defined as p00*rt/(epsilon + rt)
-      real(kind=8) :: delta      ! Aux. variable in case bisection is needed.
-      integer      :: itn,itb    ! Iteration counters
-      logical      :: converged  ! Convergence handle
-      logical      :: zside      ! Aux. flag, to check sides for Regula Falsi
-      !----- Other local variables --------------------------------------------------------!
-      logical      :: brrr_cold ! This requires ice thermodynamics         [    T|F]
+      !----- Required arguments. ----------------------------------------------------------!
+      real(kind=8), intent(in)            :: thil      ! Ice liquid pot. temp. (*)[      K]
+      real(kind=8), intent(in)            :: pres      ! Pressure                 [     Pa]
+      real(kind=8), intent(in)            :: temp      ! Temperature              [      K]
+      real(kind=8), intent(in)            :: rtot      ! Total mixing ratio       [  kg/kg]
+      real(kind=8), intent(in)            :: rvap      ! Vapour mixing ratio      [  kg/kg]
+      real(kind=8), intent(out)           :: tlcl      ! LCL temperature          [      K]
+      real(kind=8), intent(out)           :: plcl      ! LCL pressure             [     Pa]
+      real(kind=8), intent(out)           :: dzlcl     ! Sub-LCL layer thickness  [      m]
       !------------------------------------------------------------------------------------!
       ! (*) This is the most general variable. Thil is exactly theta for no condensation   !
       !     condition, and it is the liquid potential temperature if no ice is present.    !
       !------------------------------------------------------------------------------------!
+      !----- Optional arguments. ----------------------------------------------------------!
+      logical     , intent(in) , optional :: useice    ! May use ice thermodyn.?  [    T|F]
+      !----- Local variables. -------------------------------------------------------------!
+      real(kind=8)                        :: pvap      ! Sat. vapour pressure
+      real(kind=8)                        :: deriv     ! Function derivative 
+      real(kind=8)                        :: funnow    ! Current function evaluation
+      real(kind=8)                        :: funa      ! Smallest guess function
+      real(kind=8)                        :: funz      ! Largest  guess function
+      real(kind=8)                        :: tlcla     ! Smallest guess (Newton: previous)
+      real(kind=8)                        :: tlclz     ! Largest guess (Newton: new)
+      real(kind=8)                        :: es00      ! Defined as p00*rt/(epsilon + rt)
+      real(kind=8)                        :: delta     ! Aux. variable for bisection
+      integer                             :: itn       ! Iteration counter
+      integer                             :: itb       ! Iteration counter
+      logical                             :: converged ! Convergence flag
+      logical                             :: zside     ! Flag to check sides
+      logical                             :: frozen    ! Will use ice thermodyn.  [    T|F]
+      !------------------------------------------------------------------------------------!
 
+
+      !------------------------------------------------------------------------------------!
+      !     Check whether ice thermodynamics is the way to go.                             !
+      !------------------------------------------------------------------------------------!
       if (present(useice)) then
-         brrr_cold = useice
+         frozen = useice
       else 
-         brrr_cold = bulk_on
+         frozen = bulk_on
       end if
-
-      !----- Finding es00, which is a constant --------------------------------------------!
-      es00 = p008 * rtot / (ep8 + rtot)
-
-
       !------------------------------------------------------------------------------------!
-      !     The 1st. guess, use equation 21 from Bolton (1980). For this we'll need the    !
-      ! vapour pressure.                                                                   !
-      !------------------------------------------------------------------------------------!
-      pvap      = pres * rvpr / (ep8 + rvpr)
 
       !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
       !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
       !write (unit=21,fmt='(a)') '----------------------------------------------------------'
       !write (unit=21,fmt='(a,1x,i5,1x,5(a,1x,f11.4,1x))')                                  &
       !   'INPUT : it=',-1,'thil=',thil,'pres=',0.01*pres,'temp=',temp-t00                  &
-      !        ,'rvpr=',rvpr*1000.,'rtot=',rtot*1000.
+      !        ,'rvap=',rvap*1000.,'rtot=',rtot*1000.
       !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
       !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
 
+
+      !----- Find es00, which is a constant. ----------------------------------------------!
+      es00 = p008 * rtot / (ep8 + rtot)
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !     The 1st. guess, use equation 21 from Bolton (1980). For this we'll need the    !
+      ! vapour pressure.                                                                   !
+      !------------------------------------------------------------------------------------!
+      pvap      = pres * rvap / (ep8 + rvap)
       tlclz     = 5.5d1 + 2.840d3 / (3.5d0 * log(temp) - log(1.d-2*pvap) - 4.805d0)
-
-      pvap      = eslif8(tlclz,brrr_cold)
-
+      pvap      = eslif8(tlclz,frozen)
       funnow    = tlclz * (es00/pvap)**rocp8 - thil
-
-      deriv     = (funnow+thil)*(1.d0/tlclz - rocp8*eslifp8(tlclz,brrr_cold)/pvap) 
+      deriv     = (funnow+thil)*(1.d0/tlclz - rocp8*eslifp8(tlclz,frozen)/pvap)
+      !------------------------------------------------------------------------------------!
 
       !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
       !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
@@ -2860,21 +4031,24 @@ module therm_lib8
       !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
       tlcla     = tlclz
       funa      = funnow
-      !------------------------------------------------------------------------------------!
-      !     Looping: Newton's method.                                                      !
-      !------------------------------------------------------------------------------------!
 
+
+      !------------------------------------------------------------------------------------!
+      !      First loop: Newton's method.                                                  !
+      !------------------------------------------------------------------------------------!
       newloop: do itn=1,maxfpo/6
-         if (abs(deriv) < toler8) exit newloop !----- Too dangerous, skip to bisection ----!
-         !----- Updating guesses ----------------------------------------------------------!
+         !----- If derivative is too small, skip Newton's and try bisection instead. ------!
+         if (abs(deriv) < toler8) exit newloop
+         !---------------------------------------------------------------------------------!
+
+
+         !----- Otherwise, update guesses. ------------------------------------------------!
          tlcla  = tlclz
          funa   = funnow
-         
          tlclz  = tlcla - funnow/deriv
-         
-         pvap   = eslif8(tlclz,brrr_cold)
+         pvap   = eslif8(tlclz,frozen)
          funnow = tlclz * (es00/pvap)**rocp8 - thil
-         deriv  = (funnow+thil)*(1.d0/tlclz - rocp8*eslifp8(tlclz,brrr_cold)/pvap)
+         deriv  = (funnow+thil)*(1.d0/tlclz - rocp8*eslifp8(tlclz,frozen)/pvap)
 
          !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
          !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
@@ -2884,42 +4058,55 @@ module therm_lib8
          !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
          !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
 
-         !------------------------------------------------------------------------------!
-         !   Convergence may happen when we get close guesses.                          !
-         !------------------------------------------------------------------------------!
-         converged = abs(tlcla-tlclz) < toler8 * tlclz
+         !---------------------------------------------------------------------------------!
+         !      Check for convergence.                                                     !
+         !---------------------------------------------------------------------------------!
+         converged = abs(tlcla-tlclz) < toler8*tlclz
          if (converged) then
+            !----- Guesses are almost identical, average them. ----------------------------!
             tlcl = 5.d-1*(tlcla+tlclz)
             funz = funnow
             exit newloop
+            !------------------------------------------------------------------------------!
          elseif (funnow == 0.d0) then
+            !----- We've hit the answer by luck, copy the answer. -------------------------!
             tlcl = tlclz
             funz = funnow
             converged = .true.
             exit newloop
+            !------------------------------------------------------------------------------!
          end if
       end do newloop
+      !------------------------------------------------------------------------------------!
 
+
+
+      !------------------------------------------------------------------------------------!
+      !      Check whether Newton's method has converged.                                  !
+      !------------------------------------------------------------------------------------!
       if (.not. converged) then
          !---------------------------------------------------------------------------------!
-         !     If I reached this point then it's because Newton's method failed. Using re- !
-         ! gula falsi instead. First, I need to find two guesses that give me functions    !
-         ! with opposite signs. If funa and funnow have opposite signs, then we are all    !
-         ! set.                                                                            !
+         !     Newton's method has failed.  We use regula falsi instead.  First, we must   !
+         ! find two guesses whose function evaluations have opposite signs.                !
          !---------------------------------------------------------------------------------!
          if (funa*funnow < 0.d0 ) then
+            !----- We already have two good guesses. --------------------------------------!
             funz  = funnow
             zside = .true.
-         !----- They have the same sign, seeking the other guess --------------------------!
+            !------------------------------------------------------------------------------!
          else
+            !------------------------------------------------------------------------------!
+            !     We need to find another guess with opposite sign.                        !
+            !------------------------------------------------------------------------------!
 
             !----- We fix funa, and try a funz that will work as 2nd guess ----------------!
-            if (abs(funnow-funa) < toler8 * tlcla) then
-               delta = 1.d2 * toler8 * tlcla
+            if (abs(funnow-funa) < toler8*tlcla) then
+               delta = 1.d2*toler8*tlcla
             else
-               delta = max(abs(funa*(tlclz-tlcla)/(funnow-funa)),1.d2 * toler8 * tlcla)
+               delta = max(abs(funa*(tlclz-tlcla)/(funnow-funa)),1.d2*toler8*tlcla)
             end if
             tlclz = tlcla + delta
+            !------------------------------------------------------------------------------!
 
             !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
             !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
@@ -2933,8 +4120,10 @@ module therm_lib8
 
                !----- So the first time tlclz = tlcla - 2*delta ---------------------------!
                tlclz = tlcla + dble((-1)**itb * (itb+3)/2) * delta
-               pvap  = eslif8(tlclz,brrr_cold)
+               pvap  = eslif8(tlclz,frozen)
                funz  = tlclz * (es00/pvap)**rocp8 - thil
+               !---------------------------------------------------------------------------!
+
 
                !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
                !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
@@ -2953,23 +4142,27 @@ module therm_lib8
                write (unit=*,fmt='(a,1x,es14.7)') 'TEMP =',temp
                write (unit=*,fmt='(a,1x,es14.7)') 'PRES =',pres
                write (unit=*,fmt='(a,1x,es14.7)') 'RTOT =',rtot
-               write (unit=*,fmt='(a,1x,es14.7)') 'RVPR =',rvpr
+               write (unit=*,fmt='(a,1x,es14.7)') 'RVAP =',rvap
                write (unit=*,fmt='(a)') ' ============ Failed guess... ==========='
                write (unit=*,fmt='(2(a,1x,es14.7))') 'TLCLA =',tlcla,'FUNA =',funa
                write (unit=*,fmt='(2(a,1x,es14.7))') 'TLCLZ =',tlclz,'FUNC =',funz
                write (unit=*,fmt='(2(a,1x,es14.7))') 'DELTA =',delta,'FUNN =',funnow
                call fatal_error('Failed finding the second guess for regula falsi'         &
-                             ,'lcl_il8','therm_lib8.f90')
+                               ,'lcl_il8','therm_lib8.f90')
             end if
          end if
-         !---- Continue iterative method --------------------------------------------------!
+         !---------------------------------------------------------------------------------!
+
+
+         !---------------------------------------------------------------------------------!
+         !      We have the guesses, solve the regula falsi method.                        !
+         !---------------------------------------------------------------------------------!
          fpoloop: do itb=itn+1,maxfpo
-
-            tlcl = (funz*tlcla-funa*tlclz)/(funz-funa)
-
-            pvap = eslif8(tlcl,brrr_cold)
-
+            !----- Update guess and function evaluation. ----------------------------------!
+            tlcl   = (funz*tlcla-funa*tlclz)/(funz-funa)
+            pvap   = eslif8(tlcl,frozen)
             funnow = tlcl * (es00/pvap)**rocp8 - thil
+            !------------------------------------------------------------------------------!
 
             !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
             !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
@@ -2979,8 +4172,8 @@ module therm_lib8
             !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
 
             !------------------------------------------------------------------------------!
-            !    Checking for convergence. If it did, return, we found the solution.       !
-            ! Otherwise, constrain the guesses.                                            !
+            !    Check for convergence.  If it did, return, we found the solution.         !
+            ! Otherwise, we update one of the guesses.                                     !
             !------------------------------------------------------------------------------!
             converged = abs(tlcl-tlcla) < toler8*tlcl .and.  abs(tlcl-tlclz) < toler8*tlcl
             if (funnow == 0.d0 .or. converged) then
@@ -2991,23 +4184,41 @@ module therm_lib8
                funz  = funnow
                !----- If we are updating zside again, modify aside (Illinois method) ------!
                if (zside) funa=funa * 5.d-1
-               !----- We just updated zside, setting zside to true. -----------------------!
+               !---------------------------------------------------------------------------!
+
+
+               !----- We have just updated zside, sett zside to true. ---------------------!
                zside = .true.
+               !---------------------------------------------------------------------------!
             else
                tlcla = tlcl
                funa  = funnow
                !----- If we are updating aside again, modify zside (Illinois method) ------!
                if (.not.zside) funz = funz * 5.d-1
-               !----- We just updated aside, setting zside to false -----------------------!
+               !---------------------------------------------------------------------------!
+
+
+               !----- We have just updated aside, set zside to false. ---------------------!
                zside = .false. 
+               !---------------------------------------------------------------------------!
             end if
          end do fpoloop
       end if
-      !----- Finding the other LCL thermodynamic variables --------------------------------!
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !     Check whether we have succeeded or not.                                        !
+      !------------------------------------------------------------------------------------!
       if (converged) then 
-         pvap  = eslif8(tlcl,brrr_cold)
-         plcl  = (ep8 + rvpr) * pvap / rvpr
+         !----- We have found a solution, find the remaining LCL properties. --------------!
+         pvap  = eslif8(tlcl,frozen)
+         plcl  = (ep8 + rvap) * pvap / rvap
          dzlcl = max(cpog8*(temp-tlcl),0.d0)
+         !---------------------------------------------------------------------------------!
+
+
          !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
          !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
          !write (unit=21,fmt='(a,1x,i5,1x,3(a,1x,f11.4,1x),3(a,1x,es11.4,1x))')             &
@@ -3028,7 +4239,7 @@ module therm_lib8
          write (unit=*,fmt='(a,1x,f12.4)' ) 'Pressure        [   hPa] =',1.d-2*pres
          write (unit=*,fmt='(a,1x,f12.4)' ) 'Temperature     [    °C] =',temp-t008
          write (unit=*,fmt='(a,1x,f12.4)' ) 'rtot            [  g/kg] =',1.d3*rtot
-         write (unit=*,fmt='(a,1x,f12.4)' ) 'rvpr            [  g/kg] =',10.d3*rvpr
+         write (unit=*,fmt='(a,1x,f12.4)' ) 'rvap            [  g/kg] =',1.d3*rvap
          write (unit=*,fmt='(a)') ' '
          write (unit=*,fmt='(a)') ' Last iteration outcome.'
          write (unit=*,fmt='(a,1x,f12.4)' ) 'tlcla           [    °C] =',tlcla-t008
@@ -3037,7 +4248,7 @@ module therm_lib8
          write (unit=*,fmt='(a,1x,f12.4)' ) 'funa            [     K] =',funa
          write (unit=*,fmt='(a,1x,f12.4)' ) 'funz            [     K] =',funz
          write (unit=*,fmt='(a,1x,f12.4)' ) 'deriv           [  ----] =',deriv
-         write (unit=*,fmt='(a,1x,es12.4)') 'toler           [  ----] =',toler8
+         write (unit=*,fmt='(a,1x,es12.4)') 'toler8          [  ----] =',toler8
          write (unit=*,fmt='(a,1x,es12.4)') 'error           [  ----] ='                   &
                                                             ,abs(tlclz-tlcla)/tlclz
          write (unit=*,fmt='(a,1x,f12.4)' ) 'tlcl            [    °C] =',tlcl
@@ -3069,11 +4280,11 @@ module therm_lib8
    ! secant and bisection and will converge.                                               !
    !---------------------------------------------------------------------------------------!
    subroutine thil2tqall8(thil,exner,pres,rtot,rliq,rice,temp,rvap,rsat)
-      use consts_coms, only : alvl8     & ! intent(in)
-                            , alvi8     & ! intent(in)
+      use consts_coms, only : alvl38    & ! intent(in)
+                            , alvi38    & ! intent(in)
                             , allii8    & ! intent(in)
-                            , cp8       & ! intent(in)
-                            , cpi8      & ! intent(in)
+                            , cpdry8    & ! intent(in)
+                            , cpdryi8   & ! intent(in)
                             , t008      & ! intent(in)
                             , toodry8   & ! intent(in)
                             , t3ple8    & ! intent(in)
@@ -3116,7 +4327,7 @@ module therm_lib8
       ! this is the case. If it is, then there is no need to go through the iterative      !
       ! loop.                                                                              !
       !------------------------------------------------------------------------------------!
-      tempz  = cpi8 * thil * exner
+      tempz  = cpdryi8 * thil * exner
       rsat   = max(toodry8,rslif8(pres,tempz))
       if (tempz >= t3ple8) then
          rliq = max(0.d0,rtot-rsat)
@@ -3162,8 +4373,8 @@ module therm_lib8
 
 
       !------------------------------------------------------------------------------------!
-      !     Finding the function. We are seeking a temperature which is associated with    !
-      ! the theta_il we provided. Thus, the function is simply the difference between the  !
+      !     Find the function. We are seeking a temperature which is associated with the   !
+      ! theta_il we provided. Thus, the function is simply the difference between the      !
       ! theta_il associated with our guess and the actual theta_il.                        !
       !------------------------------------------------------------------------------------!
       funnow = theta_iceliq8(exner,tempz,rliq,rice)
@@ -3171,6 +4382,7 @@ module therm_lib8
       deriv  = dthetail_dt8(.false.,funnow,exner,pres,tempz,rliq,rice)
       funnow = funnow - thil
       fun1st = funnow
+      !------------------------------------------------------------------------------------!
 
       !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
       !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
@@ -3265,11 +4477,11 @@ module therm_lib8
          !---------------------------------------------------------------------------------!
          !----- Check funa and funnow have opposite signs. If so, we are ready to go ------!
          if (funa*funnow < 0.d0) then
-            funz = funnow
+            funz  = funnow
             zside = .true.
          !----- Otherwise, checking whether the 1st guess had opposite sign. --------------!
          elseif (funa*fun1st < 0.d0 ) then
-            funz = fun1st
+            funz  = fun1st
             zside = .true.
          !---------------------------------------------------------------------------------!
          !    Looking for a guess. Extrapolate funa linearly, trying to get the -funa.  We !
@@ -3277,8 +4489,8 @@ module therm_lib8
          ! we keep going further... Force the guesses to be at least 1K apart              !
          !---------------------------------------------------------------------------------!
          else
-            if (abs(funnow-funa) < 1.d2*toler8*tempa) then
-               delta = 1.d2*toler8*tempa
+            if (abs(funnow-funa) < 1.d2 * toler8 * tempa) then
+               delta = 1.d2 * toler8 * tempa
             else
                delta = max(abs(funa)*abs((tempz-tempa)/(funnow-funa)),1.d2*toler8*tempa)
             end if
@@ -3303,13 +4515,13 @@ module therm_lib8
             end do zgssloop
             if (.not. zside) then
                write (unit=*,fmt='(60a1)')        ('-',ii=1,60)
-               write (unit=*,fmt='(a)')           ' THIL2TQALL8: NO SECOND GUESS FOR YOU!'
+               write (unit=*,fmt='(a)')           ' THIL2TQALL: NO SECOND GUESS FOR YOU!'
                write (unit=*,fmt='(a)')           ' '
                write (unit=*,fmt='(a)')           ' -> Input: '
                write (unit=*,fmt='(a,1x,f12.5)')  '    THETA_IL [     K]:',thil
-               write (unit=*,fmt='(a,1x,f12.5)')  '    PRESS    [   hPa]:',0.01*pres
+               write (unit=*,fmt='(a,1x,f12.5)')  '    PRESS    [   hPa]:',1.d-2*pres
                write (unit=*,fmt='(a,1x,f12.5)')  '    EXNER    [J/kg/K]:',exner
-               write (unit=*,fmt='(a,1x,f12.5)')  '    RTOT     [  g/kg]:',1000.*rtot
+               write (unit=*,fmt='(a,1x,f12.5)')  '    RTOT     [  g/kg]:',1.d3*rtot
                write (unit=*,fmt='(a,1x,f12.5)')  '    T1ST     [  degC]:',t1stguess-t008
                write (unit=*,fmt='(a,1x,f12.5)')  '    TEMPA    [  degC]:',tempa-t008
                write (unit=*,fmt='(a,1x,f12.5)')  '    TEMPZ    [  degC]:',tempz-t008
@@ -3374,7 +4586,7 @@ module therm_lib8
                tempz = temp
                funz  = funnow
                !----- If we are updating zside again, modify aside (Illinois method) ------!
-               if (zside) funa=funa * 5.d-1
+               if (zside) funa = funa * 5.d-1
                !----- We just updated zside, setting zside to true. -----------------------!
                zside = .true.
             elseif (funnow*funz < 0.d0) then
@@ -3385,8 +4597,10 @@ module therm_lib8
                !----- We just updated aside, setting zside to false -----------------------!
                zside = .false.
             end if
-
+            !------------------------------------------------------------------------------!
          end do fpoloop
+         !---------------------------------------------------------------------------------!
+
 
          !---------------------------------------------------------------------------------!
          !    Almost done... Usually when the method goes through regula falsi, it means   !
@@ -3401,15 +4615,15 @@ module therm_lib8
          !---------------------------------------------------------------------------------!
          if (abs(temp-t3ple8) < toler8*temp) then
             rliq = min(rtot-rsat,max(0.d0,                                                 &
-                       allii8*(alvi8*(rtot-rsat)+cp8*max(temp,ttripoli8)                   &
-                            *log(cpi8*exner*thil/temp))))
+                       allii8*(alvi38*(rtot-rsat)+cpdry8*max(temp,ttripoli8)               &
+                            *log(cpdryi8*exner*thil/temp))))
             rice = max(0.d0,rtot-rsat-rliq)
             funnow = theta_iceliq8(exner,temp,rliq,rice) - thil
          end if
          !---------------------------------------------------------------------------------!
-
          itb=itb+1
       end if
+      !------------------------------------------------------------------------------------!
 
       if (.not. converged) then
          write (unit=*,fmt='(60a1)')        ('-',ii=1,60)
@@ -3418,14 +4632,14 @@ module therm_lib8
          write (unit=*,fmt='(a)')           ' -> Input: '
          write (unit=*,fmt='(a,1x,f12.5)')  '    THETA_IL [     K]:',thil
          write (unit=*,fmt='(a,1x,f12.5)')  '    EXNER    [J/kg/K]:',exner
-         write (unit=*,fmt='(a,1x,f12.5)')  '    RTOT     [  g/kg]:',1000.*rtot
+         write (unit=*,fmt='(a,1x,f12.5)')  '    RTOT     [  g/kg]:',1.d3*rtot
          write (unit=*,fmt='(a)')           ' '
          write (unit=*,fmt='(a)')           ' -> Output: '
          write (unit=*,fmt='(a,1x,i12)')    '    ITERATIONS       :',itb
          write (unit=*,fmt='(a,1x,f12.5)')  '    TEMP     [    °C]:',temp-t008
-         write (unit=*,fmt='(a,1x,f12.5)')  '    RVAP     [  g/kg]:',1000.*rvap
-         write (unit=*,fmt='(a,1x,f12.5)')  '    RLIQ     [  g/kg]:',1000.*rliq
-         write (unit=*,fmt='(a,1x,f12.5)')  '    RICE     [  g/kg]:',1000.*rice
+         write (unit=*,fmt='(a,1x,f12.5)')  '    RVAP     [  g/kg]:',1.d3*rvap
+         write (unit=*,fmt='(a,1x,f12.5)')  '    RLIQ     [  g/kg]:',1.d3*rliq
+         write (unit=*,fmt='(a,1x,f12.5)')  '    RICE     [  g/kg]:',1.d3*rice
          write (unit=*,fmt='(a,1x,f12.5)')  '    TEMPA    [    °C]:',tempa-t008
          write (unit=*,fmt='(a,1x,f12.5)')  '    TEMPZ    [    °C]:',tempz-t008
          write (unit=*,fmt='(a,1x,es12.5)') '    FUNA     [     K]:',funnow
@@ -3469,9 +4683,7 @@ module therm_lib8
    ! a mix of secant and bisection and will always converge.                               !
    !---------------------------------------------------------------------------------------!
    subroutine thil2tqliq8(thil,exner,pres,rtot,rliq,temp,rvap,rsat)
-      use consts_coms, only : alvl8     & ! intent(in)
-                            , cp8       & ! intent(in)
-                            , cpi8      & ! intent(in)
+      use consts_coms, only : cpdryi8   & ! intent(in)
                             , toodry8   & ! intent(in)
                             , ttripoli8 ! ! intent(in)
       implicit none
@@ -3510,7 +4722,7 @@ module therm_lib8
       ! this is the case. If it is, then there is no need to go through the iterative      !
       ! loop.                                                                              !
       !------------------------------------------------------------------------------------!
-      tempz = cpi8 * thil * exner
+      tempz = cpdryi8 * thil * exner
       rsat  = max(toodry8,rslf8(pres,tempz))
       rliq  = max(0.d0,rtot-rsat)
       rvap  = rtot-rliq
@@ -3536,9 +4748,9 @@ module therm_lib8
       ! saturated, then this can be too far off which may be bad for Newton's method.      !
       !------------------------------------------------------------------------------------!
       tempz = temp
-      rsat   = max(toodry8,rslf8(pres,tempz))
-      rliq = max(0.d0,rtot-rsat)
-      rvap = rtot-rliq
+      rsat  = max(toodry8,rslf8(pres,tempz))
+      rliq  = max(0.d0,rtot-rsat)
+      rvap  = rtot-rliq
       !------------------------------------------------------------------------------------!
 
 
@@ -3603,11 +4815,13 @@ module therm_lib8
             rvap = rtot-rliq
             exit newloop
          end if
-
+         !---------------------------------------------------------------------------------!
       end do newloop
       !---------------------------------------------------------------------------------------!
 
 
+
+      !---------------------------------------------------------------------------------------!
       if (.not. converged) then
          !---------------------------------------------------------------------------------!
          !    If I reach this point, then it means that Newton's method failed finding the !
@@ -3673,7 +4887,7 @@ module therm_lib8
                tempz = temp
                funz  = funnow
                !----- If we are updating zside again, modify aside (Illinois method) ------!
-               if (zside) funa=funa * 5.d-1
+               if (zside) funa = funa * 5.d-1
                !----- We just updated zside, setting zside to true. -----------------------!
                zside = .true.
             else
@@ -3684,7 +4898,7 @@ module therm_lib8
                !----- We just updated aside, setting zside to false -----------------------!
                zside = .false. 
             end if
-
+            !------------------------------------------------------------------------------!
          end do fpoloop
 
       end if
@@ -3704,105 +4918,133 @@ module therm_lib8
    !=======================================================================================!
    !=======================================================================================!
    !    This subroutine computes the temperature and fraction of liquid water from the     !
-   ! internal energy .   This requires double precision arguments.                         !
+   ! intensive internal energy [J/kg].                                                     !
    !---------------------------------------------------------------------------------------!
-   subroutine qtk8(q,tempk,fracliq)
-      use consts_coms, only: cliqi8,cicei8,allii8,t3ple8,qicet38,qliqt38,tsupercool8
+   subroutine uint2tl8(uint,temp,fliq)
+      use consts_coms, only : cliqi8          & ! intent(in)
+                            , cicei8          & ! intent(in)
+                            , allii8          & ! intent(in)
+                            , t3ple8          & ! intent(in)
+                            , uiicet38        & ! intent(in)
+                            , uiliqt38        & ! intent(in)
+                            , tsupercool_liq8 ! ! intent(in)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
-      real(kind=8), intent(in)  :: q        ! Internal energy                     [   J/kg]
-      real(kind=8), intent(out) :: tempk    ! Temperature                         [      K]
-      real(kind=8), intent(out) :: fracliq  ! Liquid Fraction (0-1)               [    ---]
+      real(kind=8), intent(in)  :: uint     ! Internal energy                     [   J/kg]
+      real(kind=8), intent(out) :: temp     ! Temperature                         [      K]
+      real(kind=8), intent(out) :: fliq  ! Liquid Fraction (0-1)               [    ---]
       !------------------------------------------------------------------------------------!
 
 
-      !----- Internal energy below qwfroz, all ice  ---------------------------------------!
-      if (q <= dble(qicet38)) then
-         fracliq = 0.d0
-         tempk   = q * cicei8 
-      !----- Internal energy, above qwmelt, all liquid ------------------------------------!
-      elseif (q >= dble(qliqt38)) then
-         fracliq = 1.d0
-         tempk   = q * cliqi8 + tsupercool8
-      !----- Changing phase, it must be at freezing point ---------------------------------!
+      !------------------------------------------------------------------------------------!
+      !     Compare the internal energy with the reference values to decide which phase    !
+      ! the water is.                                                                      !
+      !------------------------------------------------------------------------------------!
+      if (uint <= uiicet38) then
+         !----- Internal energy below qwfroz, all ice  ------------------------------------!
+         fliq = 0.d0
+         temp    = uint * cicei8
+         !---------------------------------------------------------------------------------!
+      elseif (uint >= uiliqt38) then
+         !----- Internal energy, above qwmelt, all liquid ---------------------------------!
+         fliq = 1.d0
+         temp    = uint * cliqi8 + tsupercool_liq8
+         !---------------------------------------------------------------------------------!
       else
-         fracliq = (q-qicet38) * allii8
-         tempk   = t3ple8
-      endif
-      !------------------------------------------------------------------------------------!
-
-      return
-   end subroutine qtk8
-   !=======================================================================================!
-   !=======================================================================================!
-
-
-
-
-
-
-   !=======================================================================================!
-   !=======================================================================================!
-   !    This subroutine computes the temperature (Kelvin) and liquid fraction from inter-  !
-   ! nal energy (J/m² or J/m³), mass (kg/m² or kg/m³), and heat capacity (J/m²/K or        !
-   ! J/m³/K).                                                                              !
-   ! This routine requires an 8-byte double precision floating point value for density.    !
-   !---------------------------------------------------------------------------------------!
-   subroutine qwtk8(qw,w,dryhcap,tempk,fracliq)
-      use consts_coms, only: cliqi8,cliq8,cicei8,cice8,allii8,alli8,t3ple8,tsupercool8
-      implicit none
-      !----- Arguments --------------------------------------------------------------------!
-      real(kind=8), intent(in)  :: qw      ! Internal energy           [  J/m²] or [  J/m³]
-      real(kind=8), intent(in)  :: w       ! Density                   [ kg/m²] or [ kg/m³]
-      real(kind=8), intent(in)  :: dryhcap ! Heat capacity, nonwater   [J/m²/K] or [J/m³/K]
-      real(kind=8), intent(out) :: tempk   ! Temperature                           [     K]
-      real(kind=8), intent(out) :: fracliq ! Liquid fraction (0-1)                 [   ---]
-      !----- Local variable ---------------------------------------------------------------!
-      real(kind=8)              :: qwfroz  ! qw of ice at triple pt.   [  J/m²] or [  J/m³] 
-      real(kind=8)              :: qwmelt  ! qw of liquid at triple pt.[  J/m²] or [  J/m³]
-      !------------------------------------------------------------------------------------!
-
-      !----- Converting melting heat to J/m² or J/m³ --------------------------------------!
-      qwfroz = (dryhcap + w*cice8) * t3ple8
-      qwmelt = qwfroz   + w*alli8
-      !------------------------------------------------------------------------------------!
-      
-      !------------------------------------------------------------------------------------!
-      !    This is analogous to the qtk computation, we should analyse the magnitude of    !
-      ! the internal energy to choose between liquid, ice, or both by comparing with our.  !
-      ! know boundaries.                                                                   !
-      !------------------------------------------------------------------------------------!
-
-      !----- Internal energy below qwfroz, all ice  ---------------------------------------!
-      if (qw < qwfroz) then
-         fracliq = 0.d0
-         tempk   = qw  / (cice8 * w + dryhcap)
-      !----- Internal energy, above qwmelt, all liquid ------------------------------------!
-      elseif (qw > qwmelt) then
-         fracliq = 1.d0
-         tempk   = (qw + w * cliq8 * tsupercool8) / (dryhcap + w*cliq8)
-      !------------------------------------------------------------------------------------!
-      !    We are at the freezing point.  If water mass is so tiny that the internal       !
-      ! energy of frozen and melted states are the same given the machine precision, then  !
-      ! we assume that water content is negligible and we impose 50% frozen for            !
-      ! simplicity.                                                                        !
-      !------------------------------------------------------------------------------------!
-      elseif (qwfroz == qwmelt) then
-         fracliq = 5.d-1
-         tempk   = t3ple8
-      !------------------------------------------------------------------------------------!
-      !    Changing phase, it must be at freezing point.  The max and min are here just to !
-      ! avoid tiny deviations beyond 0. and 1. due to floating point arithmetics.          !
-      !------------------------------------------------------------------------------------!
-      else
-         fracliq = min(1.d0,max(0.d0,(qw - qwfroz) * allii8 / w))
-         tempk = t3ple8
+         !----- Changing phase, it must be at freezing point ------------------------------!
+         fliq = (uint - uiicet38) * allii8
+         temp    = t3ple8
+         !---------------------------------------------------------------------------------!
       end if
       !------------------------------------------------------------------------------------!
 
       return
-   end subroutine qwtk8
+   end subroutine uint2tl8
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !    This subroutine computes the temperature (Kelvin) and liquid fraction from         !
+   ! extensive internal energy (J/m² or J/m³), water mass (kg/m² or kg/m³), and heat       !
+   ! capacity (J/m²/K or J/m³/K).                                                          !
+   !---------------------------------------------------------------------------------------!
+   subroutine uextcm2tl8(uext,wmass,dryhcap,temp,fliq)
+      use consts_coms, only : cliqi8          & ! intent(in)
+                            , cliq8           & ! intent(in)
+                            , cicei8          & ! intent(in)
+                            , cice8           & ! intent(in)
+                            , allii8          & ! intent(in)
+                            , alli8           & ! intent(in)
+                            , t3ple8          & ! intent(in)
+                            , tsupercool_liq8 ! ! intent(in)
+      implicit none
+      !----- Arguments --------------------------------------------------------------------!
+      real(kind=8), intent(in)  :: uext    ! Extensive internal energy [  J/m²] or [  J/m³]
+      real(kind=8), intent(in)  :: wmass   ! Water mass                [ kg/m²] or [ kg/m³]
+      real(kind=8), intent(in)  :: dryhcap ! Heat cap. of "dry" part   [J/m²/K] or [J/m³/K]
+      real(kind=8), intent(out) :: temp    ! Temperature                           [     K]
+      real(kind=8), intent(out) :: fliq    ! Liquid fraction (0-1)                 [   ---]
+      !----- Local variable ---------------------------------------------------------------!
+      real(kind=8)              :: uefroz  ! qw of ice at triple pt.   [  J/m²] or [  J/m³] 
+      real(kind=8)              :: uemelt  ! qw of liq. at triple pt.  [  J/m²] or [  J/m³]
+      !------------------------------------------------------------------------------------!
+
+
+
+      !----- Convert melting heat to J/m² or J/m³ -----------------------------------------!
+      uefroz = (dryhcap + wmass * cice8) * t3ple8
+      uemelt = uefroz   + wmass * alli8
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !    This is analogous to the uint2tl8 computation, we should analyse the magnitude  !
+      ! of the internal energy to choose between liquid, ice, or both by comparing with    !
+      ! the known boundaries.                                                              !
+      !------------------------------------------------------------------------------------!
+      if (uext < uefroz) then
+         !----- Internal energy below qwfroz, all ice  ------------------------------------!
+         fliq = 0.d0
+         temp = uext  / (cice8 * wmass + dryhcap)
+         !---------------------------------------------------------------------------------!
+      elseif (uext > uemelt) then
+         !----- Internal energy, above qwmelt, all liquid ---------------------------------!
+         fliq = 1.d0
+         temp = (uext + wmass * cliq8 * tsupercool_liq8) / (dryhcap + wmass * cliq8)
+         !---------------------------------------------------------------------------------!
+      elseif (uefroz == uemelt) then
+         !---------------------------------------------------------------------------------!
+         !    We are at the freezing point.  If water mass is so tiny that the internal    !
+         ! energy of frozen and melted states are the same given the machine precision,    !
+         ! then we assume that water content is negligible and we impose 50% frozen for    !
+         ! simplicity.                                                                     !
+         !---------------------------------------------------------------------------------!
+         fliq = 5.d-1
+         temp = t3ple8
+         !---------------------------------------------------------------------------------!
+      else
+         !---------------------------------------------------------------------------------!
+         !    Changing phase, it must be at freezing point.  The max and min are here just !
+         ! to avoid tiny deviations beyond 0. and 1. due to floating point arithmetics.    !
+         !---------------------------------------------------------------------------------!
+         fliq = min(1.d0,max(0.d0,(uext - uefroz) * allii8 / wmass))
+         temp = t3ple8
+         !---------------------------------------------------------------------------------!
+      end if
+      !------------------------------------------------------------------------------------!
+
+      return
+   end subroutine uextcm2tl8
    !=======================================================================================!
    !=======================================================================================!
 end module therm_lib8
+!==========================================================================================!
+!==========================================================================================!
 

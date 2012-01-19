@@ -43,10 +43,10 @@ end subroutine update_budget
 !==========================================================================================!
 !==========================================================================================!
 subroutine compute_budget(csite,lsl,pcpg,qpcpg,ipa,wcurr_loss2atm,ecurr_netrad             &
-                         ,ecurr_loss2et,ecurr_loss2atm,co2curr_loss2atm                    &
-                         ,wcurr_loss2drainage,ecurr_loss2drainage,wcurr_loss2runoff        &
-                         ,ecurr_loss2runoff,site_area,cbudget_nep,old_can_enthalpy         &
-                         ,old_can_shv,old_can_co2,old_can_rhos,old_can_temp)
+                         ,ecurr_loss2atm,co2curr_loss2atm,wcurr_loss2drainage              &
+                         ,ecurr_loss2drainage,wcurr_loss2runoff,ecurr_loss2runoff          &
+                         ,site_area,cbudget_nep,old_can_enthalpy,old_can_shv,old_can_co2   &
+                         ,old_can_rhos,old_can_temp)
    use ed_state_vars, only : sitetype           ! ! structure
    use ed_max_dims  , only : str_len            ! ! intent(in)
    use ed_misc_coms , only : dtlsm              & ! intent(in)
@@ -56,16 +56,13 @@ subroutine compute_budget(csite,lsl,pcpg,qpcpg,ipa,wcurr_loss2atm,ecurr_netrad  
    use consts_coms  , only : umol_2_kgC         & ! intent(in)
                            , day_sec            & ! intent(in)
                            , rdry               & ! intent(in)
-                           , cp                 & ! intent(in)
-                           , p00i               & ! intent(in)
-                           , rocp               & ! intent(in)
-                           , alvl               & ! intent(in)
                            , mmdryi             & ! intent(in)
                            , epim1              ! ! intent(in)
    use rk4_coms     , only : rk4eps             & ! intent(in)
                            , print_budget       & ! intent(in)
                            , budget_pref        & ! intent(in)
                            , checkbudget        ! ! intent(in)
+   use therm_lib    , only : tq2enthalpy        ! ! function
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    type(sitetype)                          , target        :: csite
@@ -73,7 +70,6 @@ subroutine compute_budget(csite,lsl,pcpg,qpcpg,ipa,wcurr_loss2atm,ecurr_netrad  
    real                                    , intent(inout) :: qpcpg
    real                                    , intent(inout) :: co2curr_loss2atm
    real                                    , intent(inout) :: ecurr_netrad
-   real                                    , intent(inout) :: ecurr_loss2et
    real                                    , intent(inout) :: ecurr_loss2atm
    real                                    , intent(inout) :: ecurr_loss2drainage
    real                                    , intent(inout) :: ecurr_loss2runoff
@@ -203,8 +199,7 @@ subroutine compute_budget(csite,lsl,pcpg,qpcpg,ipa,wcurr_loss2atm,ecurr_netrad  
    !---------------------------------------------------------------------------------------!
    !     For enthalpy, we must find the current enthalpy first.                            !
    !---------------------------------------------------------------------------------------!
-   curr_can_enthalpy   = cp * (p00i * csite%can_prss(ipa)) ** rocp * csite%can_theta(ipa)  &
-                       + alvl * csite%can_shv(ipa)
+   curr_can_enthalpy   = tq2enthalpy(csite%can_temp(ipa),csite%can_shv(ipa),.true.)
    ecurr_denseffect    = ddens_dt_effect(old_can_rhos,csite%can_rhos(ipa)                  &
                                         ,old_can_enthalpy, curr_can_enthalpy               &
                                         ,csite%can_depth(ipa),1.0)
@@ -284,7 +279,6 @@ subroutine compute_budget(csite,lsl,pcpg,qpcpg,ipa,wcurr_loss2atm,ecurr_netrad  
    csite%ebudget_precipgain(ipa)    = csite%ebudget_precipgain(ipa)    + ecurr_precipgain
    csite%ebudget_netrad(ipa)        = csite%ebudget_netrad(ipa)        + ecurr_netrad
    csite%ebudget_denseffect(ipa)    = csite%ebudget_denseffect(ipa)    + ecurr_denseffect
-   csite%ebudget_loss2et(ipa)       = csite%ebudget_loss2et(ipa)       + ecurr_loss2et
    csite%ebudget_loss2atm(ipa)      = csite%ebudget_loss2atm(ipa)      + ecurr_loss2atm
    csite%ebudget_loss2drainage(ipa) = csite%ebudget_loss2drainage(ipa)                     &
                                     + ecurr_loss2drainage
@@ -368,7 +362,6 @@ subroutine compute_budget(csite,lsl,pcpg,qpcpg,ipa,wcurr_loss2atm,ecurr_netrad  
          write (unit=*,fmt=fmtf ) ' PRECIPGAIN     : ',ecurr_precipgain
          write (unit=*,fmt=fmtf ) ' NETRAD         : ',ecurr_netrad
          write (unit=*,fmt=fmtf ) ' DENSITY_EFFECT : ',ecurr_denseffect
-         write (unit=*,fmt=fmtf ) ' LOSS2ET        : ',ecurr_loss2et
          write (unit=*,fmt=fmtf ) ' LOSS2ATM       : ',ecurr_loss2atm
          write (unit=*,fmt=fmtf ) ' LOSS2DRAINAGE  : ',ecurr_loss2drainage
          write (unit=*,fmt=fmtf ) ' LOSS2RUNOFF    : ',ecurr_loss2runoff
@@ -582,15 +575,8 @@ real function compute_energy_storage(csite, lsl, ipa)
                                    , patchtype             ! ! structure
    use grid_coms            , only : nzg                   ! ! intent(in)
    use soil_coms            , only : dslz                  ! ! intent(in)
-   use consts_coms          , only : cp                    & ! intent(in)
-                                   , p00i                  & ! intent(in)
-                                   , rocp                  & ! intent(in)
-                                   , cliq                  & ! intent(in)
-                                   , cice                  & ! intent(in)
-                                   , alvl                  & ! intent(in)
-                                   , alli                  & ! intent(in)
-                                   , t3ple                 ! ! intent(in)
    use rk4_coms             , only : toosparse             ! ! intent(in)
+   use therm_lib            , only : tq2enthalpy           ! ! function
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    type(sitetype) , target     :: csite
@@ -633,8 +619,7 @@ real function compute_energy_storage(csite, lsl, ipa)
    !---------------------------------------------------------------------------------------!
    ! 3. Find and value for canopy air total enthalpy .                                     !
    !---------------------------------------------------------------------------------------!
-   can_enthalpy = cp * ( (p00i * csite%can_prss(ipa)) ** rocp ) * csite%can_theta(ipa)     &
-                + alvl * csite%can_shv(ipa)
+   can_enthalpy = tq2enthalpy(csite%can_temp(ipa),csite%can_shv(ipa),.true.)
    cas_storage  = csite%can_rhos(ipa) * csite%can_depth(ipa) * can_enthalpy
    !---------------------------------------------------------------------------------------!
 

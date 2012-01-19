@@ -30,10 +30,8 @@ subroutine odeint(h1,csite,ipa,nsteps)
                              , nzs                    ! ! intent(in)
    use soil_coms      , only : dslz8                  & ! intent(in)
                              , runoff_time            ! ! intent(in)
-   use consts_coms    , only : cliq8                  & ! intent(in)
-                             , t3ple8                 & ! intent(in)
-                             , tsupercool8            & ! intent(in)
-                             , wdnsi8                 ! ! intent(in)
+   use consts_coms    , only : wdnsi8                 ! ! intent(in)
+   use therm_lib8     , only : tl2uint8               ! ! intent(in)
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    type(sitetype)            , target      :: csite            ! Current site
@@ -131,8 +129,7 @@ subroutine odeint(h1,csite,ipa,nsteps)
                       * integration_buff%y%sfcwater_mass(ksn)                              &
                       * (integration_buff%y%sfcwater_fracliq(ksn) - 1.d-1) / 9.d-1
 
-               qwfree = wfreeb                                                             &
-                      * cliq8 * (integration_buff%y%sfcwater_tempk(ksn) - tsupercool8 )
+               qwfree = wfreeb * tl2uint8(integration_buff%y%sfcwater_tempk(ksn),1.d0)
 
                integration_buff%y%sfcwater_mass(ksn) =                                     &
                                    integration_buff%y%sfcwater_mass(ksn)                   &
@@ -218,19 +215,26 @@ end subroutine odeint
 ! is to ensure all variables are in double precision, so consistent with the buffer vari-  !
 ! ables.                                                                                   !
 !------------------------------------------------------------------------------------------!
-subroutine copy_met_2_rk4site(mzg,vels,atm_theiv,atm_theta,atm_tmp,atm_shv,atm_co2,zoff    &
-                             ,exner,pcpg,qpcpg,dpcpg,prss,rshort,rlong,par_beam            &
-                             ,par_diffuse,nir_beam,nir_diffuse,geoht,lsl,ntext_soil        &
-                             ,green_leaf_factor,lon,lat,cosz)
+subroutine copy_met_2_rk4site(mzg,can_theta,can_shv,can_depth,vels,atm_theiv,atm_theta     &
+                             ,atm_tmp,atm_shv,atm_co2,zoff,exner,pcpg,qpcpg,dpcpg,prss     &
+                             ,rshort,rlong,par_beam,par_diffuse,nir_beam,nir_diffuse,geoht &
+                             ,lsl,ntext_soil,green_leaf_factor,lon,lat,cosz)
    use ed_max_dims    , only : n_pft         ! ! intent(in)
    use rk4_coms       , only : rk4site       ! ! structure
    use canopy_air_coms, only : ubmin8        ! ! intent(in)
    use therm_lib8     , only : rehuil8       & ! function
+                             , reducedpress8 & ! function
+                             , tq2enthalpy8  & ! function
+                             , pq2exner8     & ! function
+                             , exthq2temp8   & ! function
                              , idealdenssh8  ! ! function
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    integer                  , intent(in) :: mzg
    integer                  , intent(in) :: lsl
+   real                     , intent(in) :: can_theta
+   real                     , intent(in) :: can_shv
+   real                     , intent(in) :: can_depth
    real                     , intent(in) :: vels
    real                     , intent(in) :: atm_theiv
    real                     , intent(in) :: atm_theta
@@ -256,7 +260,12 @@ subroutine copy_met_2_rk4site(mzg,vels,atm_theiv,atm_theta,atm_tmp,atm_shv,atm_c
    real                     , intent(in) :: lat
    real                     , intent(in) :: cosz
    !----- Local variables. ----------------------------------------------------------------!
-   integer             :: ipft
+   integer                               :: ipft
+   real(kind=8)                          :: can_theta8
+   real(kind=8)                          :: can_shv8
+   real(kind=8)                          :: can_depth8
+   real(kind=8)                          :: can_prss8
+   real(kind=8)                          :: can_exner8
    !---------------------------------------------------------------------------------------!
 
    
@@ -291,13 +300,35 @@ subroutine copy_met_2_rk4site(mzg,vels,atm_theiv,atm_theta,atm_tmp,atm_shv,atm_c
    !---------------------------------------------------------------------------------------!
 
 
+
+   !---------------------------------------------------------------------------------------!
+   !     Copy the canopy air space properties to double precision scratch variables.       !
+   !---------------------------------------------------------------------------------------!
+   can_theta8 = dble(can_theta)
+   can_shv8   = dble(can_shv  )
+   can_depth8 = dble(can_depth)
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Find the pressure and Exner functions at the canopy depth, find the temperature   !
+   ! of the air above canopy at the canopy depth, and the specific enthalpy at that level. !
+   !---------------------------------------------------------------------------------------!
+   can_prss8            = reducedpress8(rk4site%atm_prss,rk4site%atm_theta,rk4site%atm_shv &
+                                       ,rk4site%geoht,can_theta8,can_shv8,can_depth8)
+   can_exner8           = pq2exner8(can_prss8,rk4site%atm_shv,.true.)
+   rk4site%atm_tmp_zcan = exthq2temp8(can_exner8,rk4site%atm_theta,rk4site%atm_shv,.true.)
+   rk4site%atm_enthalpy = tq2enthalpy8(rk4site%atm_tmp_zcan,rk4site%atm_shv,.true.)
+   !---------------------------------------------------------------------------------------!
+
+
+
    !----- Find the other variables that require a little math. ----------------------------!
-   rk4site%vels                  = max(ubmin8,dble(vels))
-   rk4site%atm_rvap              = rk4site%atm_shv / (1.d0 - rk4site%atm_shv)
-   rk4site%atm_rhv               = rehuil8(rk4site%atm_prss,rk4site%atm_tmp                &
-                                          ,rk4site%atm_rvap)
-   rk4site%atm_rhos              = idealdenssh8(rk4site%atm_prss,rk4site%atm_tmp           &
-                                               ,rk4site%atm_shv)
+   rk4site%vels     = max(ubmin8,dble(vels))
+   rk4site%atm_rvap = rk4site%atm_shv / (1.d0 - rk4site%atm_shv)
+   rk4site%atm_rhv  = rehuil8(rk4site%atm_prss,rk4site%atm_tmp,rk4site%atm_rvap)
+   rk4site%atm_rhos = idealdenssh8(rk4site%atm_prss,rk4site%atm_tmp,rk4site%atm_shv)
    !---------------------------------------------------------------------------------------!
 
 
@@ -388,7 +419,6 @@ subroutine inc_rk4_patch(rkp, inc, fac, cpatch)
 
       rkp%ebudget_storage       = rkp%ebudget_storage       + fac * inc%ebudget_storage
       rkp%ebudget_netrad        = rkp%ebudget_netrad        + fac * inc%ebudget_netrad
-      rkp%ebudget_loss2et       = rkp%ebudget_loss2et       + fac * inc%ebudget_loss2et
       rkp%ebudget_loss2atm      = rkp%ebudget_loss2atm      + fac * inc%ebudget_loss2atm
       rkp%ebudget_loss2drainage = rkp%ebudget_loss2drainage                                &
                                 + fac * inc%ebudget_loss2drainage
@@ -516,9 +546,7 @@ subroutine get_yscal(y,dy,htry,yscal,cpatch)
                                    , checkbudget           ! ! intent(in)
    use grid_coms            , only : nzg                   & ! intent(in)
                                    , nzs                   ! ! intent(in)
-   use consts_coms          , only : cliq8                 & ! intent(in)
-                                   , qliqt38               & ! intent(in)
-                                   , wdnsi8                ! ! intent(in)
+   use consts_coms          , only : wdnsi8                ! ! intent(in)
    use soil_coms            , only : isoilbc               & ! intent(in)
                                    , dslzi8                ! ! intent(in)
    implicit none
@@ -808,15 +836,6 @@ subroutine get_yscal(y,dy,htry,yscal,cpatch)
          yscal%ebudget_netrad = max(yscal%ebudget_netrad,1.d0)
       end if
 
-      if (abs(y%ebudget_loss2et)  < tiny_offset .and.                                      &
-          abs(dy%ebudget_loss2et) < tiny_offset) then
-         yscal%ebudget_loss2et = 1.d0
-      else 
-         yscal%ebudget_loss2et = abs(y%ebudget_loss2et)                                   &
-                               + abs(dy%ebudget_loss2et*htry)
-         yscal%ebudget_loss2et = max(yscal%ebudget_loss2et,1.d0)
-      end if
-
       if (abs(y%ebudget_loss2atm)  < tiny_offset .and.                                     &
           abs(dy%ebudget_loss2atm) < tiny_offset) then
          yscal%ebudget_loss2atm = 1.d0
@@ -882,7 +901,6 @@ subroutine get_yscal(y,dy,htry,yscal,cpatch)
       yscal%co2budget_storage       = huge_offset
       yscal%co2budget_loss2atm      = huge_offset
       yscal%ebudget_netrad          = huge_offset
-      yscal%ebudget_loss2et         = huge_offset
       yscal%ebudget_loss2atm        = huge_offset
       yscal%wbudget_loss2atm        = huge_offset
       yscal%ebudget_storage         = huge_offset
@@ -1086,33 +1104,29 @@ subroutine get_errmax(errmax,yerr,yscal,cpatch,y,ytemp)
       errmax = max(errmax,err)
       if(record_err .and. err > rk4eps) integ_err(15,1) = integ_err(15,1) + 1_8
 
-      err    = abs(yerr%ebudget_loss2et/yscal%ebudget_loss2et)
-      errmax = max(errmax,err)
-      if(record_err .and. err > rk4eps) integ_err(16,1) = integ_err(16,1) + 1_8
-
       err    = abs(yerr%ebudget_loss2atm/yscal%ebudget_loss2atm)
       errmax = max(errmax,err)
-      if(record_err .and. err > rk4eps) integ_err(17,1) = integ_err(17,1) + 1_8
+      if(record_err .and. err > rk4eps) integ_err(16,1) = integ_err(17,1) + 1_8
 
       err    = abs(yerr%wbudget_loss2atm/yscal%wbudget_loss2atm)
       errmax = max(errmax,err)
-      if(record_err .and. err > rk4eps) integ_err(18,1) = integ_err(18,1) + 1_8
+      if(record_err .and. err > rk4eps) integ_err(17,1) = integ_err(18,1) + 1_8
 
       err    = abs(yerr%ebudget_loss2drainage/yscal%ebudget_loss2drainage)
       errmax = max(errmax,err)
-      if(record_err .and. err > rk4eps) integ_err(19,1) = integ_err(19,1) + 1_8
+      if(record_err .and. err > rk4eps) integ_err(18,1) = integ_err(19,1) + 1_8
 
       err    = abs(yerr%wbudget_loss2drainage/yscal%wbudget_loss2drainage)
       errmax = max(errmax,err)
-      if(record_err .and. err > rk4eps) integ_err(20,1) = integ_err(20,1) + 1_8
+      if(record_err .and. err > rk4eps) integ_err(19,1) = integ_err(20,1) + 1_8
 
       err    = abs(yerr%ebudget_storage/yscal%ebudget_storage)
       errmax = max(errmax,err)
-      if(record_err .and. err > rk4eps) integ_err(21,1) = integ_err(21,1) + 1_8
+      if(record_err .and. err > rk4eps) integ_err(20,1) = integ_err(21,1) + 1_8
 
       err    = abs(yerr%wbudget_storage/yscal%wbudget_storage)
       errmax = max(errmax,err)
-      if(record_err .and. err > rk4eps) integ_err(22,1) = integ_err(22,1) + 1_8
+      if(record_err .and. err > rk4eps) integ_err(21,1) = integ_err(22,1) + 1_8
    end if
    !---------------------------------------------------------------------------------------!
 
@@ -1197,6 +1211,7 @@ subroutine copy_rk4_patch(sourcep, targetp, cpatch)
    targetp%can_rhos         = sourcep%can_rhos
    targetp%can_prss         = sourcep%can_prss
    targetp%can_exner        = sourcep%can_exner
+   targetp%can_cp           = sourcep%can_cp
    targetp%can_depth        = sourcep%can_depth
    targetp%can_rvap         = sourcep%can_rvap
    targetp%can_rhv          = sourcep%can_rhv
@@ -1326,7 +1341,6 @@ subroutine copy_rk4_patch(sourcep, targetp, cpatch)
       targetp%co2budget_storage      = sourcep%co2budget_storage
       targetp%co2budget_loss2atm     = sourcep%co2budget_loss2atm
       targetp%ebudget_netrad         = sourcep%ebudget_netrad
-      targetp%ebudget_loss2et        = sourcep%ebudget_loss2et
       targetp%ebudget_loss2atm       = sourcep%ebudget_loss2atm
       targetp%ebudget_loss2drainage  = sourcep%ebudget_loss2drainage
       targetp%ebudget_loss2runoff    = sourcep%ebudget_loss2runoff

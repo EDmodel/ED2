@@ -2134,7 +2134,6 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
    call hdf_getslab_r(csite%wbudget_precipgain,'WBUDGET_PRECIPGAIN ',dsetrank,iparallel,.true.)
    call hdf_getslab_r(csite%wbudget_loss2runoff,'WBUDGET_LOSS2RUNOFF ',dsetrank,iparallel,.true.)
    call hdf_getslab_r(csite%wbudget_initialstorage,'WBUDGET_INITIALSTORAGE ',dsetrank,iparallel,.true.)
-   call hdf_getslab_r(csite%ebudget_loss2et,'EBUDGET_LOSS2ET ',dsetrank,iparallel,.true.)
    call hdf_getslab_r(csite%ebudget_loss2atm,'EBUDGET_LOSS2ATM ',dsetrank,iparallel,.true.)
    call hdf_getslab_r(csite%ebudget_denseffect,'EBUDGET_DENSEFFECT ',dsetrank,iparallel,.true.)
    call hdf_getslab_r(csite%ebudget_loss2runoff,'EBUDGET_LOSS2RUNOFF ',dsetrank,iparallel,.true.)
@@ -2249,8 +2248,6 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
    call hdf_getslab_r(csite%ebudget_initialstorage    ,'EBUDGET_INITIALSTORAGE '           &
                      ,dsetrank,iparallel,.true.)
    call hdf_getslab_r(csite%ebudget_residual          ,'EBUDGET_RESIDUAL '                 &
-                     ,dsetrank,iparallel,.true.)
-   call hdf_getslab_r(csite%ebudget_loss2et           ,'EBUDGET_LOSS2ET '                  &
                      ,dsetrank,iparallel,.true.)
    call hdf_getslab_r(csite%ebudget_loss2atm          ,'EBUDGET_LOSS2ATM '                 &
                      ,dsetrank,iparallel,.true.)
@@ -2539,12 +2536,10 @@ subroutine fill_history_patch(cpatch,paco_index,ncohorts_global,green_leaf_facto
        filespace,memspace, &
        globdims,chnkdims,chnkoffs,cnt,stride, &
        memdims,memoffs,memsize
-  use consts_coms, only: cliq,cice,t3ple,tsupercool
   use c34constants,only: n_stoma_atts
   use ed_max_dims,only: n_pft, n_mort
   use allometry, only : dbh2ca
   use ed_misc_coms, only : ndcycle
-  use therm_lib, only : qwtk
   implicit none
 
 #if USE_INTERF

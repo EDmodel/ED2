@@ -272,7 +272,6 @@ subroutine normalize_averaged_vars(cgrid,frqsum,dtlsm)
             csite%ebudget_precipgain(ipa)    = csite%ebudget_precipgain(ipa)    * frqsumi
             csite%ebudget_netrad(ipa)        = csite%ebudget_netrad(ipa)        * frqsumi
             csite%ebudget_denseffect(ipa)    = csite%ebudget_denseffect(ipa)    * frqsumi
-            csite%ebudget_loss2et(ipa)       = csite%ebudget_loss2et(ipa)       * frqsumi
             csite%ebudget_loss2atm(ipa)      = csite%ebudget_loss2atm(ipa)      * frqsumi
             csite%ebudget_loss2drainage(ipa) = csite%ebudget_loss2drainage(ipa) * frqsumi
             csite%ebudget_loss2runoff(ipa)   = csite%ebudget_loss2runoff(ipa)   * frqsumi
@@ -505,7 +504,6 @@ subroutine reset_averaged_vars(cgrid)
             !----------------------------------------------------------------!
             csite%ebudget_precipgain(ipa)       = 0.0
             csite%ebudget_netrad(ipa)           = 0.0
-            csite%ebudget_loss2et(ipa)          = 0.0
             csite%ebudget_loss2atm(ipa)         = 0.0
             csite%ebudget_loss2runoff(ipa)      = 0.0
             csite%ebudget_loss2drainage(ipa)    = 0.0
@@ -2022,9 +2020,7 @@ subroutine normalize_ed_daily_output_vars(cgrid)
                                    , n_dbh         & ! intent(in)
                                    , n_age         & ! intent(in)
                                    , n_dist_types  ! ! intent(in)
-   use consts_coms          , only : cpi           & ! intent(in)
-                                   , alvl          & ! intent(in)
-                                   , day_sec       & ! intent(in)
+   use consts_coms          , only : day_sec       & ! intent(in)
                                    , umols_2_kgCyr & ! intent(in)
                                    , yr_day        & ! intent(in)
                                    , p00i          & ! intent(in)
@@ -2034,7 +2030,7 @@ subroutine normalize_ed_daily_output_vars(cgrid)
                                    , ddbhi         & ! intent(in)
                                    , dagei         ! ! intent(in)
    use pft_coms             , only : init_density  ! ! intent(in)
-   use therm_lib            , only : qwtk          & ! subroutine
+   use therm_lib            , only : uextcm2tl     & ! subroutine
                                    , idealdenssh   ! ! function
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
@@ -2144,8 +2140,8 @@ subroutine normalize_ed_daily_output_vars(cgrid)
 
       !----- Find the leaf temperature, only when the mean heat capacity is non-zero. -----!
       if (cgrid%dmean_leaf_hcap(ipy) > 0.) then
-         call qwtk(cgrid%dmean_leaf_energy(ipy),cgrid%dmean_leaf_water(ipy)                &
-                  ,cgrid%dmean_leaf_hcap(ipy),cgrid%dmean_leaf_temp(ipy),veg_fliq)
+         call uextcm2tl(cgrid%dmean_leaf_energy(ipy),cgrid%dmean_leaf_water(ipy)           &
+                       ,cgrid%dmean_leaf_hcap(ipy),cgrid%dmean_leaf_temp(ipy),veg_fliq)
       else
          cgrid%dmean_leaf_temp(ipy) = cgrid%dmean_gnd_temp(ipy)
       end if
@@ -2156,8 +2152,8 @@ subroutine normalize_ed_daily_output_vars(cgrid)
 
       !----- Find the leaf temperature, only when the mean heat capacity is non-zero. -----!
       if (cgrid%dmean_wood_hcap(ipy) > 0.) then
-         call qwtk(cgrid%dmean_wood_energy(ipy),cgrid%dmean_wood_water(ipy)                &
-                  ,cgrid%dmean_wood_hcap(ipy),cgrid%dmean_wood_temp(ipy),veg_fliq)
+         call uextcm2tl(cgrid%dmean_wood_energy(ipy),cgrid%dmean_wood_water(ipy)           &
+                       ,cgrid%dmean_wood_hcap(ipy),cgrid%dmean_wood_temp(ipy),veg_fliq)
       else
          cgrid%dmean_wood_temp(ipy) = cgrid%dmean_gnd_temp(ipy)
       end if
@@ -3126,7 +3122,7 @@ subroutine normalize_ed_monthly_output_vars(cgrid)
                                    , yr_day        ! ! intent(in)
    use pft_coms             , only : init_density  ! ! intent(in)
    use therm_lib            , only : idealdenssh   & ! function
-                                   , qwtk          ! ! function
+                                   , uextcm2tl     ! ! function
    use allometry            , only : ed_biomass    ! ! function
 
    implicit none
@@ -3327,14 +3323,14 @@ subroutine normalize_ed_monthly_output_vars(cgrid)
       ! there is some heat storage.                                                        !
       !------------------------------------------------------------------------------------!
       if (cgrid%mmean_leaf_hcap(ipy) > 0.) then
-         call qwtk(cgrid%mmean_leaf_energy(ipy),cgrid%mmean_leaf_water(ipy)                &
-                  ,cgrid%mmean_leaf_hcap(ipy),cgrid%mmean_leaf_temp(ipy),veg_fliq)
+         call uextcm2tl(cgrid%mmean_leaf_energy(ipy),cgrid%mmean_leaf_water(ipy)           &
+                       ,cgrid%mmean_leaf_hcap(ipy),cgrid%mmean_leaf_temp(ipy),veg_fliq)
       else
          cgrid%mmean_leaf_temp(ipy) = cgrid%mmean_can_temp(ipy)
       end if
       if (cgrid%mmean_wood_hcap(ipy) > 0.) then
-         call qwtk(cgrid%mmean_wood_energy(ipy),cgrid%mmean_wood_water(ipy)                &
-                  ,cgrid%mmean_wood_hcap(ipy),cgrid%mmean_wood_temp(ipy),veg_fliq)
+         call uextcm2tl(cgrid%mmean_wood_energy(ipy),cgrid%mmean_wood_water(ipy)           &
+                       ,cgrid%mmean_wood_hcap(ipy),cgrid%mmean_wood_temp(ipy),veg_fliq)
       else
          cgrid%mmean_wood_temp(ipy) = cgrid%mmean_can_temp(ipy)
       end if
@@ -3773,16 +3769,16 @@ subroutine normalize_ed_monthly_output_vars(cgrid)
             ! canopy air space temperature.                                                !
             !------------------------------------------------------------------------------!
             if (cgrid%qmean_leaf_hcap(t,ipy) > 0.) then
-               call qwtk(cgrid%qmean_leaf_energy(t,ipy),cgrid%qmean_leaf_water(t,ipy)      &
-                        ,cgrid%qmean_leaf_hcap(t,ipy),cgrid%qmean_leaf_temp(t,ipy)         &
-                        ,veg_fliq)
+               call uextcm2tl(cgrid%qmean_leaf_energy(t,ipy),cgrid%qmean_leaf_water(t,ipy) &
+                             ,cgrid%qmean_leaf_hcap(t,ipy),cgrid%qmean_leaf_temp(t,ipy)    &
+                             ,veg_fliq)
             else
                cgrid%qmean_leaf_temp(t,ipy) = cgrid%qmean_can_temp (t,ipy)
             end if
             if (cgrid%qmean_wood_hcap(t,ipy) > 0.) then
-               call qwtk(cgrid%qmean_wood_energy(t,ipy),cgrid%qmean_wood_water(t,ipy)      &
-                        ,cgrid%qmean_wood_hcap(t,ipy),cgrid%qmean_wood_temp(t,ipy)         &
-                        ,veg_fliq)
+               call uextcm2tl(cgrid%qmean_wood_energy(t,ipy),cgrid%qmean_wood_water(t,ipy) &
+                             ,cgrid%qmean_wood_hcap(t,ipy),cgrid%qmean_wood_temp(t,ipy)    &
+                             ,veg_fliq)
             else
                cgrid%qmean_wood_temp(t,ipy) = cgrid%qmean_can_temp (t,ipy)
             end if

@@ -20,14 +20,7 @@ subroutine heun_timestep(cgrid)
    use ed_max_dims           , only : n_dbh              ! ! intent(in)
    use soil_coms             , only : soil_rough         & ! intent(in)
                                     , snow_rough         ! ! intent(in)
-   use consts_coms           , only : cp                 & ! intent(in)
-                                    , alvl               & ! intent(in)
-                                    , p00i               & ! intent(in)
-                                    , rocp               & ! intent(in)
-                                    , mmdryi             & ! intent(in)
-                                    , day_sec            & ! intent(in)
-                                    , umol_2_kgC         ! ! intent(in)
-   use canopy_struct_dynamics, only : canopy_turbulence8 ! ! subroutine
+   use therm_lib             , only : tq2enthalpy        ! ! function
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    type(edtype)             , target      :: cgrid
@@ -49,7 +42,6 @@ subroutine heun_timestep(cgrid)
    real                                   :: veg_tai
    real                                   :: wcurr_loss2atm
    real                                   :: ecurr_netrad
-   real                                   :: ecurr_loss2et
    real                                   :: ecurr_loss2atm
    real                                   :: co2curr_loss2atm
    real                                   :: wcurr_loss2drainage
@@ -57,7 +49,6 @@ subroutine heun_timestep(cgrid)
    real                                   :: wcurr_loss2runoff
    real                                   :: ecurr_loss2runoff
    real                                   :: old_can_enthalpy
-   real                                   :: old_can_exner
    real                                   :: old_can_shv
    real                                   :: old_can_co2
    real                                   :: old_can_rhos
@@ -115,9 +106,7 @@ subroutine heun_timestep(cgrid)
             old_can_co2      = csite%can_co2(ipa)
             old_can_rhos     = csite%can_rhos(ipa)
             old_can_temp     = csite%can_temp(ipa)
-            old_can_exner    = cp * ( p00i * csite%can_prss(ipa) ) ** rocp
-            old_can_enthalpy = old_can_exner * csite%can_theta(ipa)                        &
-                             + alvl * csite%can_shv(ipa)
+            old_can_enthalpy = tq2enthalpy(csite%can_temp(ipa),csite%can_shv(ipa),.true.)
             !------------------------------------------------------------------------------!
 
 
@@ -125,32 +114,47 @@ subroutine heun_timestep(cgrid)
             !------------------------------------------------------------------------------!
             !    Copy the meteorological variables to the rk4site structure.               !
             !------------------------------------------------------------------------------!
-            call copy_met_2_rk4site(nzg,cmet%vels,cmet%atm_theiv,cmet%atm_theta            &
-                                   ,cmet%atm_tmp,cmet%atm_shv,cmet%atm_co2,cmet%geoht      &
-                                   ,cmet%exner,cmet%pcpg,cmet%qpcpg,cmet%dpcpg,cmet%prss   &
-                                   ,cmet%rshort,cmet%rlong,cmet%par_beam,cmet%par_diffuse  &
-                                   ,cmet%nir_beam,cmet%nir_diffuse,cmet%geoht              &
-                                   ,cpoly%lsl(isi),cpoly%ntext_soil(:,isi)                 &
-                                   ,cpoly%green_leaf_factor(:,isi)                         &
-                                   ,cgrid%lon(ipy),cgrid%lat(ipy),cgrid%cosz(ipy))
+            call copy_met_2_rk4site(nzg,csite%can_theta(ipa),csite%can_shv(ipa)            &
+                                   ,csite%can_depth(ipa),cmet%vels,cmet%atm_theiv          &
+                                   ,cmet%atm_theta,cmet%atm_tmp,cmet%atm_shv,cmet%atm_co2  &
+                                   ,cmet%geoht,cmet%exner,cmet%pcpg,cmet%qpcpg,cmet%dpcpg  &
+                                   ,cmet%prss,cmet%rshort,cmet%rlong,cmet%par_beam         &
+                                   ,cmet%par_diffuse,cmet%nir_beam,cmet%nir_diffuse        &
+                                   ,cmet%geoht,cpoly%lsl(isi),cpoly%ntext_soil(:,isi)      &
+                                   ,cpoly%green_leaf_factor(:,isi),cgrid%lon(ipy)          &
+                                   ,cgrid%lat(ipy),cgrid%cosz(ipy))
+            !------------------------------------------------------------------------------!
+
+
 
             !----- Compute current storage terms. -----------------------------------------!
             call update_budget(csite,cpoly%lsl(isi),ipa,ipa)
+            !------------------------------------------------------------------------------!
+
 
 
             !------------------------------------------------------------------------------!
             !     Set up the integration patch.                                            !
             !------------------------------------------------------------------------------!
             call copy_patch_init(csite,ipa,integration_buff%initp)
+            !------------------------------------------------------------------------------!
+
+
 
             !----- Get photosynthesis, stomatal conductance, and transpiration. -----------!
             call canopy_photosynthesis(csite,cmet,nzg,ipa,cpoly%lsl(isi)                   &
                                       ,cpoly%ntext_soil(:,isi)                             &
                                       ,cpoly%leaf_aging_factor(:,isi)                      &
                                       ,cpoly%green_leaf_factor(:,isi))
+            !------------------------------------------------------------------------------!
+
+
 
             !----- Compute root and heterotrophic respiration. ----------------------------!
             call soil_respiration(csite,ipa,nzg,cpoly%ntext_soil(:,isi))
+            !------------------------------------------------------------------------------!
+
+
 
             !------------------------------------------------------------------------------!
             !     Set up the remaining, carbon-dependent variables to the buffer.          !
@@ -162,8 +166,8 @@ subroutine heun_timestep(cgrid)
             !     This is the step in which the derivatives are computed, we a structure   !
             ! that is very similar to the Runge-Kutta, though a simpler one.               !
             !------------------------------------------------------------------------------!
-            call integrate_patch_heun(csite,ipa,wcurr_loss2atm,ecurr_netrad,ecurr_loss2et  &
-                                     ,ecurr_loss2atm,co2curr_loss2atm,wcurr_loss2drainage  &
+            call integrate_patch_heun(csite,ipa,wcurr_loss2atm,ecurr_netrad,ecurr_loss2atm &
+                                     ,co2curr_loss2atm,wcurr_loss2drainage                 &
                                      ,ecurr_loss2drainage,wcurr_loss2runoff                &
                                      ,ecurr_loss2runoff,nsteps)
             !------------------------------------------------------------------------------!
@@ -189,7 +193,7 @@ subroutine heun_timestep(cgrid)
             !     Compute the residuals.                                                   !
             !------------------------------------------------------------------------------!
             call compute_budget(csite,cpoly%lsl(isi),cmet%pcpg,cmet%qpcpg,ipa              &
-                               ,wcurr_loss2atm,ecurr_netrad,ecurr_loss2et,ecurr_loss2atm   &
+                               ,wcurr_loss2atm,ecurr_netrad,ecurr_loss2atm                 &
                                ,co2curr_loss2atm,wcurr_loss2drainage,ecurr_loss2drainage   &
                                ,wcurr_loss2runoff,ecurr_loss2runoff,cpoly%area(isi)        &
                                ,cgrid%cbudget_nep(ipy),old_can_enthalpy,old_can_shv        &
@@ -214,19 +218,15 @@ end subroutine heun_timestep
 !     This subroutine will drive the integration process using the Heun method.  Notice    !
 ! that most of the Heun method utilises the subroutines from Runge-Kutta.                  !
 !------------------------------------------------------------------------------------------!
-subroutine integrate_patch_heun(csite,ipa,wcurr_loss2atm,ecurr_netrad,ecurr_loss2et        &
-                               ,ecurr_loss2atm,co2curr_loss2atm,wcurr_loss2drainage        &
-                               ,ecurr_loss2drainage,wcurr_loss2runoff,ecurr_loss2runoff    &
-                               ,nsteps)
+subroutine integrate_patch_heun(csite,ipa,wcurr_loss2atm,ecurr_netrad,ecurr_loss2atm       &
+                               ,co2curr_loss2atm,wcurr_loss2drainage,ecurr_loss2drainage   &
+                               ,wcurr_loss2runoff,ecurr_loss2runoff,nsteps)
    use ed_state_vars   , only : sitetype             & ! structure
                               , patchtype            ! ! structure
    use ed_misc_coms    , only : dtlsm                ! ! intent(in)
    use soil_coms       , only : soil_rough           & ! intent(in)
                               , snow_rough           ! ! intent(in)
    use canopy_air_coms , only : exar8                ! ! intent(in)
-   use consts_coms     , only : vonk8                & ! intent(in)
-                              , cp8                  & ! intent(in)
-                              , cpi8                 ! ! intent(in)
    use rk4_coms        , only : integration_vars     & ! structure
                               , integration_buff     & ! structure
                               , rk4site              & ! intent(inout)
@@ -244,7 +244,6 @@ subroutine integrate_patch_heun(csite,ipa,wcurr_loss2atm,ecurr_netrad,ecurr_loss
    integer               , intent(in)  :: ipa
    real                  , intent(out) :: wcurr_loss2atm
    real                  , intent(out) :: ecurr_netrad
-   real                  , intent(out) :: ecurr_loss2et
    real                  , intent(out) :: ecurr_loss2atm
    real                  , intent(out) :: co2curr_loss2atm
    real                  , intent(out) :: wcurr_loss2drainage
@@ -305,9 +304,8 @@ subroutine integrate_patch_heun(csite,ipa,wcurr_loss2atm,ecurr_netrad,ecurr_loss
    ! Move the state variables from the integrated patch to the model patch.                !
    !---------------------------------------------------------------------------------------!
    call initp2modelp(tend-tbeg,integration_buff%initp,csite,ipa,wcurr_loss2atm             &
-                    ,ecurr_netrad,ecurr_loss2et,ecurr_loss2atm,co2curr_loss2atm            &
-                    ,wcurr_loss2drainage,ecurr_loss2drainage,wcurr_loss2runoff             &
-                    ,ecurr_loss2runoff)
+                    ,ecurr_netrad,ecurr_loss2atm,co2curr_loss2atm,wcurr_loss2drainage      &
+                    ,ecurr_loss2drainage,wcurr_loss2runoff,ecurr_loss2runoff)
 
    return
 end subroutine integrate_patch_heun
@@ -362,10 +360,9 @@ subroutine heun_integ(h1,csite,ipa,nsteps)
                              , time                   ! ! intent(in)
    use soil_coms      , only : dslz8                  & ! intent(in)
                              , runoff_time            ! ! intent(in)
-   use consts_coms    , only : cliq8                  & ! intent(in)
-                             , t3ple8                 & ! intent(in)
-                             , tsupercool8            & ! intent(in)
+   use consts_coms    , only : t3ple8                 & ! intent(in)
                              , wdnsi8                 ! ! intent(in)
+   use therm_lib8     , only : tl2uint8               ! ! intent(in)
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    type(sitetype)            , target      :: csite            ! Current site
@@ -633,8 +630,7 @@ subroutine heun_integ(h1,csite,ipa,nsteps)
                wfreeb = min(1.d0,dtrk4*runoff_time_i)                                      &
                       * integration_buff%y%sfcwater_mass(ksn)                              &
                       * (integration_buff%y%sfcwater_fracliq(ksn) - 1.d-1) / 9.d-1
-               qwfree = wfreeb * cliq8                                                     &
-                      * (integration_buff%y%sfcwater_tempk(ksn) - tsupercool8 )
+               qwfree = wfreeb * tl2uint8(integration_buff%y%sfcwater_tempk(ksn),1.d0)
 
                integration_buff%y%sfcwater_mass(ksn) =                                     &
                                   integration_buff%y%sfcwater_mass(ksn)  - wfreeb

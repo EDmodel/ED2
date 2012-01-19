@@ -804,31 +804,24 @@ subroutine update_met_drivers(cgrid)
                                    , dtlsm             ! ! intent(in)
    use canopy_air_coms      , only : ubmin             ! ! intent(in)
    use canopy_radiation_coms, only : cosz_min          ! ! intent(in)
-   use consts_coms          , only : rdry              & ! intent(in)
-                                   , cice              & ! intent(in)
-                                   , cliq              & ! intent(in)
-                                   , alli              & ! intent(in)
-                                   , rocp              & ! intent(in)
-                                   , p00               & ! intent(in)
-                                   , p00i              & ! intent(in)
-                                   , cp                & ! intent(in)
-                                   , cpi               & ! intent(in)
-                                   , day_sec           & ! intent(in)
+   use consts_coms          , only : day_sec           & ! intent(in)
                                    , t00               & ! intent(in)
                                    , t3ple             & ! intent(in)
                                    , wdnsi             & ! intent(in)
                                    , toodry            & ! intent(in)
-                                   , tsupercool        & ! intent(in)
                                    , pio180            & ! intent(in)
                                    , tiny_num          ! ! intent(in)
    use pft_coms             , only : include_pft       & ! intent(in)
                                    , hgt_max           ! ! intent(in)
    use ed_max_dims          , only : n_pft             ! ! intent(in)
    use therm_lib            , only : rslif             & ! function
+                                   , tl2uint           & ! function
                                    , ptrh2rvapil       & ! function
+                                   , pq2exner          & ! function
+                                   , extq2theta        & ! function
+                                   , exthq2temp        & ! function
                                    , thetaeiv          & ! function
-                                   , rehuil            & ! function
-                                   , qtk               ! ! function
+                                   , rehuil            ! ! function
 
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
@@ -849,20 +842,22 @@ subroutine update_met_drivers(cgrid)
    integer                    :: ipy
    integer                    :: isi
    integer                    :: ipft
-   real                       :: wnext
-   real                       :: wprev
-   real                       :: dtnext
-   real                       :: dtprev
-   real                       :: rvaux
-   real                       :: rvsat
-   real                       :: min_shv 
-   real                       :: temp0
-   real                       :: theta_prev
-   real                       :: theta_next
-   real                       :: relhum
-   real                       :: snden            ! snow density (kg/m3)
-   real                       :: fice             ! Ice fraction precipication
-   real                       :: fliq             ! Liquid fraction precipitation
+   real(kind=4)               :: wnext
+   real(kind=4)               :: wprev
+   real(kind=4)               :: dtnext
+   real(kind=4)               :: dtprev
+   real(kind=4)               :: rvaux
+   real(kind=4)               :: rvsat
+   real(kind=4)               :: min_shv 
+   real(kind=4)               :: temp0
+   real(kind=4)               :: theta_prev
+   real(kind=4)               :: theta_next
+   real(kind=4)               :: exner_prev
+   real(kind=4)               :: exner_next
+   real(kind=4)               :: relhum
+   real(kind=4)               :: snden            ! snow density (kg/m3)
+   real(kind=4)               :: fice             ! Ice fraction precipication
+   real(kind=4)               :: fliq             ! Liquid fraction precipitation
    real(kind=4)               :: secz_prev        ! Mean of sec(zenith angle) - previous
    real(kind=4)               :: secz_next        ! Mean of sec(zenith angle) - next
    real(kind=4)               :: fperp_prev       ! Perpendicular flux - previous
@@ -1421,7 +1416,6 @@ subroutine update_met_drivers(cgrid)
                !---------------------------------------------------------------------------!
                do ipy = 1,cgrid%npolygons
                   cgrid%met(ipy)%prss  = cgrid%metinput(ipy)%pres(mprev)
-                  cgrid%met(ipy)%exner = cp * (p00i * cgrid%met(ipy)%prss)**rocp
                end do
 
             case('hgt')     !----- Air pressure. ------------------------------ [      m] -!
@@ -1493,9 +1487,13 @@ subroutine update_met_drivers(cgrid)
                ! potential temperature                                           [      K] !
                !---------------------------------------------------------------------------!
                do ipy = 1,cgrid%npolygons
-                  cgrid%met(ipy)%atm_theta = cgrid%metinput(ipy)%tmp(mprev)                &
-                                           * (p00 / cgrid%metinput(ipy)%pres(mprev))       &
-                                           ** rocp
+                  exner_prev               = pq2exner  (cgrid%metinput(ipy)%pres(mprev)    &
+                                                       ,cgrid%metinput(ipy)%sh  (mprev)    &
+                                                       ,.true.)
+                  cgrid%met(ipy)%atm_theta = extq2theta(exner_prev                         &
+                                                       ,cgrid%metinput(ipy)%tmp (mprev)    &
+                                                       ,cgrid%metinput(ipy)%sh  (mprev)    &
+                                                       ,.true.)
                end do
 
             case('co2')     !----- CO2 mixing ratio. -------------------------- [    ppm] -!
@@ -1629,7 +1627,6 @@ subroutine update_met_drivers(cgrid)
                do ipy = 1,cgrid%npolygons
                   cgrid%met(ipy)%prss  = cgrid%metinput(ipy)%pres(mnext) * wnext           &
                                        + cgrid%metinput(ipy)%pres(mprev) * wprev
-                  cgrid%met(ipy)%exner = cp * (p00i * cgrid%met(ipy)%prss)**rocp
                end do
 
             case('hgt')     !----- Air pressure. ------------------------------ [      m] -!
@@ -1693,21 +1690,37 @@ subroutine update_met_drivers(cgrid)
                end do
 
             case('tmp')
-               
-
                !---------------------------------------------------------------------------!
                !     The flag is given at the air temperature, but we use the flag for     !
                ! potential temperature                                           [      K] !
                !---------------------------------------------------------------------------!
                do ipy = 1,cgrid%npolygons
+                  !----- Find theta for next time step. -----------------------------------!
+                  exner_next               = pq2exner  (cgrid%metinput(ipy)%pres(mnext)    &
+                                                       ,cgrid%metinput(ipy)%sh  (mnext)    &
+                                                       ,.true.)
+                  theta_next               = extq2theta(exner_next                         &
+                                                       ,cgrid%metinput(ipy)%tmp (mnext)    &
+                                                       ,cgrid%metinput(ipy)%sh  (mnext)    &
+                                                       ,.true.)
+                  !------------------------------------------------------------------------!
 
-                  theta_next = cgrid%metinput(ipy)%tmp(mnext)                              &
-                             * (p00 / cgrid%metinput(ipy)%pres(mnext))** rocp
-                  theta_prev = cgrid%metinput(ipy)%tmp(mprev)                              &
-                             * (p00 / cgrid%metinput(ipy)%pres(mprev))** rocp
+
+
+                  !----- Find theta for previous time step. -------------------------------!
+                  exner_prev               = pq2exner  (cgrid%metinput(ipy)%pres(mprev)    &
+                                                       ,cgrid%metinput(ipy)%sh  (mprev)    &
+                                                       ,.true.)
+                  theta_prev               = extq2theta(exner_prev                         &
+                                                       ,cgrid%metinput(ipy)%tmp (mprev)    &
+                                                       ,cgrid%metinput(ipy)%sh  (mprev)    &
+                                                       ,.true.)
+                  !------------------------------------------------------------------------!
+
 
                   !----- Interpolate potential temperature. -------------------------------!
                   cgrid%met(ipy)%atm_theta = theta_next * wnext + theta_prev * wprev
+                  !------------------------------------------------------------------------!
                end do
 
             case('nbdsf')   !----- Near IR beam downward shortwave flux. ------ [   W/m²] -!
@@ -2213,25 +2226,40 @@ subroutine update_met_drivers(cgrid)
          end select
       end do varloop
    end do formloop
-   
-   
    !---------------------------------------------------------------------------------------!
-   !     Change from velocity squared to velocity, and compute qpcpg and dpcpg.            !
+
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Now that all variables from the met driver were read and updated, we update the   !
+   ! derived variables.                                                                    !
    !---------------------------------------------------------------------------------------!
    polyloop: do ipy = 1,cgrid%npolygons
-         
-      !----- CO2 --------------------------------------------------------------------------!
+      !----- CO2 (only if it hasn't been read). -------------------------------------------!
       if (.not. have_co2) cgrid%met(ipy)%atm_co2 = initial_co2
+      !------------------------------------------------------------------------------------!
 
-      !----- Adjust meteorological variables for simple climate scenarios. ----------------!
-      cgrid%met(ipy)%atm_tmp      = cpi * cgrid%met(ipy)%atm_theta * cgrid%met(ipy)%exner
-      temp0                       = cgrid%met(ipy)%atm_tmp
-      
+      !----- Set the default Exner function from pressure and specific humidity. ----------!
+      cgrid%met(ipy)%exner = pq2exner(cgrid%met(ipy)%prss,cgrid%met(ipy)%atm_shv,.true.)
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !     Set default temperature from Exner function, potential temperature, and        !
+      ! specific humidity.                                                                 !
+      !------------------------------------------------------------------------------------!
+      cgrid%met(ipy)%atm_tmp = exthq2temp(cgrid%met(ipy)%exner,cgrid%met(ipy)%atm_theta    &
+                                         ,cgrid%met(ipy)%atm_shv,.true.)
+      temp0                  = cgrid%met(ipy)%atm_tmp
+      !------------------------------------------------------------------------------------!
+
       if (atm_tmp_intercept /= 0.0 .or. atm_tmp_slope /= 1.0) then
          cgrid%met(ipy)%atm_tmp = atm_tmp_intercept                                        &
                                 + cgrid%met(ipy)%atm_tmp * atm_tmp_slope
          !----- We must update potential temperature too. ---------------------------------!
-         cgrid%met(ipy)%atm_theta = cp * cgrid%met(ipy)%atm_tmp / cgrid%met(ipy)%exner
+         cgrid%met(ipy)%atm_theta = extq2theta(cgrid%met(ipy)%exner,cgrid%met(ipy)%atm_tmp &
+                                              ,cgrid%met(ipy)%atm_shv,.true.)
       end if
       cgrid%met(ipy)%pcpg = max(0.0,prec_intercept + cgrid%met(ipy)%pcpg * prec_slope)
       !------------------------------------------------------------------------------------!
@@ -2287,7 +2315,9 @@ subroutine update_met_drivers(cgrid)
       !    We now find the equivalent potential temperature.                               !
       !------------------------------------------------------------------------------------!
       cgrid%met(ipy)%atm_theiv = thetaeiv(cgrid%met(ipy)%atm_theta,cgrid%met(ipy)%prss     &
-                                         ,cgrid%met(ipy)%atm_tmp,rvaux,rvaux,1)
+                                         ,cgrid%met(ipy)%atm_tmp,rvaux,rvaux)
+      !------------------------------------------------------------------------------------!
+
 
       !------ Apply met to sites, and adjust met variables for topography. ----------------!
       call calc_met_lapse(cgrid,ipy)
@@ -2314,8 +2344,13 @@ subroutine update_met_drivers(cgrid)
          ! temperature, so it will respect the ideal gas law and first law of thermo-      !
          ! dynamics.                                                                       !
          !---------------------------------------------------------------------------------!
-         cpoly%met(isi)%exner        = cp * (p00i * cpoly%met(isi)%prss) **rocp
-         cpoly%met(isi)%atm_theta    = cp * cpoly%met(isi)%atm_tmp / cpoly%met(isi)%exner
+         cpoly%met(isi)%exner     = pq2exner(cpoly%met(isi)%prss,cpoly%met(isi)%atm_shv    &
+                                            ,.true.)
+         cpoly%met(isi)%atm_theta = extq2theta(cpoly%met(isi)%exner,cpoly%met(isi)%atm_tmp &
+                                              ,cpoly%met(isi)%atm_shv,.true.)
+         !---------------------------------------------------------------------------------!
+
+
 
          !---------------------------------------------------------------------------------!
          !     Check the relative humidity associated with the current pressure, temper-   !
@@ -2341,7 +2376,7 @@ subroutine update_met_drivers(cgrid)
 
          !----- Find the atmospheric equivalent potential temperature. --------------------!
          cpoly%met(isi)%atm_theiv = thetaeiv(cpoly%met(isi)%atm_theta,cpoly%met(isi)%prss  &
-                                            ,cpoly%met(isi)%atm_tmp,rvaux,rvaux,2)
+                                            ,cpoly%met(isi)%atm_tmp,rvaux,rvaux)
 
          !----- Solar radiation -----------------------------------------------------------!
          cpoly%met(isi)%rshort_diffuse = cpoly%met(isi)%par_diffuse                        &
@@ -2407,15 +2442,14 @@ subroutine update_met_drivers(cgrid)
          ! point) multiplied by the ice fraction.                                          !
          !---------------------------------------------------------------------------------!
          cpoly%met(isi)%qpcpg = max(0.0, cpoly%met(isi)%pcpg)                              &
-                              * ( (1.0-fice) * cliq * ( max(t3ple,cpoly%met(isi)%atm_tmp)  &
-                                                      - tsupercool)                        &
-                                + fice * cice * min(cpoly%met(isi)%atm_tmp,t3ple))
+                              * ( (1.0-fice)                                               &
+                                * tl2uint(max(t3ple,cpoly%met(isi)%atm_tmp),1.0)           &
+                                + fice * tl2uint(min(t3ple,cpoly%met(isi)%atm_tmp),0.0) )
          !---------------------------------------------------------------------------------!
-
-
       end do siteloop
-           
+      !------------------------------------------------------------------------------------!
    end do polyloop
+   !---------------------------------------------------------------------------------------!
 
    return
 end subroutine update_met_drivers

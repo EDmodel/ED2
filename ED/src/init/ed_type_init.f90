@@ -469,7 +469,6 @@ subroutine init_ed_patch_vars(csite,ip1,ip2,lsl)
    csite%wbudget_residual          (ip1:ip2) = 0.0
    csite%ebudget_precipgain        (ip1:ip2) = 0.0
    csite%ebudget_netrad            (ip1:ip2) = 0.0
-   csite%ebudget_loss2et           (ip1:ip2) = 0.0
    csite%ebudget_loss2atm          (ip1:ip2) = 0.0
    csite%ebudget_loss2runoff       (ip1:ip2) = 0.0
    csite%ebudget_loss2drainage     (ip1:ip2) = 0.0
@@ -843,8 +842,8 @@ subroutine new_patch_sfc_props(csite,ipa,mzg,mzs,ntext_soil)
                             , slz                & ! intent(in)
                             , tiny_sfcwater_mass ! ! intent(in)
    use consts_coms   , only : wdns               ! ! intent(in)
-   use therm_lib     , only : qwtk               & ! subroutine
-                            , qtk                ! ! subroutine
+   use therm_lib     , only : uextcm2tl          & ! subroutine
+                            , uint2tl            ! ! subroutine
    use ed_therm_lib  , only : ed_grndvap         ! ! subroutine
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
@@ -863,8 +862,8 @@ subroutine new_patch_sfc_props(csite,ipa,mzg,mzs,ntext_soil)
    !----- Finding soil temperature and liquid water fraction. -----------------------------!
    do k = 1, mzg
       nsoil = ntext_soil(k)
-      call qwtk(csite%soil_energy(k,ipa), csite%soil_water(k,ipa)*wdns                     &
-                ,soil(nsoil)%slcpd, csite%soil_tempk(k,ipa), csite%soil_fracliq(k,ipa))
+      call uextcm2tl(csite%soil_energy(k,ipa), csite%soil_water(k,ipa)*wdns                &
+                    ,soil(nsoil)%slcpd, csite%soil_tempk(k,ipa), csite%soil_fracliq(k,ipa))
    end do
    !---------------------------------------------------------------------------------------! 
 
@@ -882,8 +881,8 @@ subroutine new_patch_sfc_props(csite,ipa,mzg,mzs,ntext_soil)
       csite%nlev_sfcwater(ipa) = k
       csite%sfcwater_energy(k,ipa) = csite%sfcwater_energy(k,ipa)                          &
                                    / csite%sfcwater_mass(k,ipa)
-      call qtk(csite%sfcwater_energy(k,ipa),csite%sfcwater_tempk(k,ipa)                    &
-              ,csite%sfcwater_fracliq(k,ipa))
+      call uint2tl(csite%sfcwater_energy(k,ipa),csite%sfcwater_tempk(k,ipa)                &
+                  ,csite%sfcwater_fracliq(k,ipa))
    end do snowloop
    !---------------------------------------------------------------------------------------!
    !     Now, just to be safe, we will assign zeroes to layers above.                      !
