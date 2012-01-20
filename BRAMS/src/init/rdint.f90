@@ -439,7 +439,8 @@ subroutine initlz (name_name)
                                    ,leaf_g(ifm)%can_theta,leaf_g(ifm)%can_prss             &
                                    ,grid_g(ifm)%glat,grid_g(ifm)%glon                      &
                                    ,leaf_g(ifm)%soil_water,leaf_g(ifm)%soil_energy         &
-                                   ,leaf_g(ifm)%soil_text)
+                                   ,leaf_g(ifm)%soil_text,leaf_g(ifm)%psibar_10d           &
+                                   ,leaf_g(ifm)%leaf_class)
          end do
       end select
       !------------------------------------------------------------------------------------!
@@ -488,7 +489,8 @@ subroutine initlz (name_name)
                                       ,leaf_g(ifm)%can_theta    ,leaf_g(ifm)%can_prss      &
                                       ,grid_g(ifm)%glat         ,grid_g(ifm)%glon          &
                                       ,leaf_g(ifm)%soil_water   ,leaf_g(ifm)%soil_energy   &
-                                      ,leaf_g(ifm)%soil_text    )
+                                      ,leaf_g(ifm)%soil_text    ,leaf_g(ifm)%psibar_10d    &
+                                      ,leaf_g(ifm)%leaf_class   )
             end select
             !------------------------------------------------------------------------------!
 
@@ -855,6 +857,7 @@ subroutine read_nl(filename)
                                  , istar                   & ! intent(out)
                                  , igrndvap                & ! intent(out)
                                  , nslcon                  & ! intent(out)
+                                 , isoilcol                & ! intent(out)
                                  , nvegpat                 & ! intent(out)
                                  , nvgcon                  & ! intent(out)
                                  , pctlcon                 & ! intent(out)
@@ -863,18 +866,15 @@ subroutine read_nl(filename)
                                  , slz                     & ! intent(out)
                                  , stgoff                  & ! intent(out)
                                  , zrough                  & ! intent(out)
-                                 , betapower               & ! intent(out)
                                  , isoilbc                 & ! intent(out)
                                  , ipercol                 & ! intent(out)
                                  , runoff_time             ! ! intent(out)
-   use leaf_coms          , only : ustmin                  & ! intent(out)
-                                 , ggfact                  & ! intent(out)
+   use leaf_coms          , only : ubmin                   & ! intent(out)
+                                 , ugbmin                  & ! intent(out)
+                                 , ustmin                  & ! intent(out)
                                  , gamm                    & ! intent(out)
                                  , gamh                    & ! intent(out)
                                  , tprandtl                & ! intent(out)
-                                 , vkopr                   & ! intent(out)
-                                 , vh2vr                   & ! intent(out)
-                                 , vh2dh                   & ! intent(out)
                                  , ribmax                  & ! intent(out)
                                  , leaf_maxwhc             & ! intent(out)
                                  , min_patch_area          ! ! intent(out)
@@ -1113,14 +1113,14 @@ subroutine read_nl(filename)
 
    namelist /MODEL_OPTIONS/       naddsc,icorflg,iexev,imassflx,ibnd,jbnd,cphas,lsflg,nfpt &
                                  ,distim,iswrtyp,ilwrtyp,icumfdbk,radfrq,lonrad,npatch     &
-                                 ,nvegpat,min_patch_area,isfcl,dtleaf,istar,igrndvap       &
-                                 ,ustmin,gamm,gamh,tprandtl,vh2vr,vh2dh,ribmax,leaf_maxwhc &
-                                 ,ico2,co2con,nvgcon,pctlcon,nslcon,drtcon,zrough,albedo   &
-                                 ,seatmp,dthcon,soil_moist,soil_moist_fail,usdata_in       &
-                                 ,usmodel_in,slz,slmstr,stgoff,betapower,ggfact,isoilbc    &
-                                 ,ipercol,runoff_time,if_urban_canopy,idiffk,ibruvais      &
-                                 ,ibotflx,ihorgrad,csx,csz,xkhkm,zkhkm,nna,nnb,nnc,akmin   &
-                                 ,akmax,hgtmin,hgtmax,level,icloud,irain,ipris,isnow,iaggr &
+                                 ,nvegpat,min_patch_area,isfcl,dtleaf,istar,igrndvap,ubmin &
+                                 ,ugbmin,ustmin,gamm,gamh,tprandtl,ribmax,leaf_maxwhc,ico2 &
+                                 ,co2con,nvgcon,pctlcon,nslcon,isoilcol,drtcon,zrough      &
+                                 ,albedo,seatmp,dthcon,soil_moist,soil_moist_fail          &
+                                 ,usdata_in,usmodel_in,slz,slmstr,stgoff,isoilbc,ipercol   &
+                                 ,runoff_time,if_urban_canopy,idiffk,ibruvais,ibotflx      &
+                                 ,ihorgrad,csx,csz,xkhkm,zkhkm,nna,nnb,nnc,akmin,akmax     &
+                                 ,hgtmin,hgtmax,level,icloud,irain,ipris,isnow,iaggr       &
                                  ,igraup,ihail,cparm,rparm,pparm,sparm,aparm,gparm,hparm   &
                                  ,gnu
 
@@ -1776,12 +1776,12 @@ subroutine read_nl(filename)
       write (unit=*,fmt=*) ' dtleaf          =',dtleaf
       write (unit=*,fmt=*) ' istar           =',istar
       write (unit=*,fmt=*) ' igrndvap        =',igrndvap
+      write (unit=*,fmt=*) ' ubmin           =',ubmin
+      write (unit=*,fmt=*) ' ugbmin          =',ugbmin
       write (unit=*,fmt=*) ' ustmin          =',ustmin
       write (unit=*,fmt=*) ' gamm            =',gamm
       write (unit=*,fmt=*) ' gamh            =',gamh
       write (unit=*,fmt=*) ' tprandtl        =',tprandtl
-      write (unit=*,fmt=*) ' vh2vr           =',vh2vr
-      write (unit=*,fmt=*) ' vh2dh           =',vh2dh
       write (unit=*,fmt=*) ' ribmax          =',ribmax
       write (unit=*,fmt=*) ' leaf_maxwhc     =',leaf_maxwhc
       write (unit=*,fmt=*) ' ico2            =',ico2
@@ -1789,6 +1789,7 @@ subroutine read_nl(filename)
       write (unit=*,fmt=*) ' nvgcon          =',nvgcon
       write (unit=*,fmt=*) ' pctlcon         =',pctlcon
       write (unit=*,fmt=*) ' nslcon          =',nslcon
+      write (unit=*,fmt=*) ' isoilcol        =',isoilcol
       write (unit=*,fmt=*) ' drtcon          =',drtcon
       write (unit=*,fmt=*) ' zrough          =',zrough
       write (unit=*,fmt=*) ' albedo          =',albedo
@@ -1801,8 +1802,6 @@ subroutine read_nl(filename)
       write (unit=*,fmt=*) ' slz             =',slz
       write (unit=*,fmt=*) ' slmstr          =',slmstr
       write (unit=*,fmt=*) ' stgoff          =',stgoff
-      write (unit=*,fmt=*) ' betapower       =',betapower
-      write (unit=*,fmt=*) ' ggfact          =',ggfact
       write (unit=*,fmt=*) ' isoilbc         =',isoilbc
       write (unit=*,fmt=*) ' ipercol         =',ipercol
       write (unit=*,fmt=*) ' runoff_time     =',runoff_time
@@ -2038,19 +2037,6 @@ subroutine read_nl(filename)
    !    Save the CO2 complexity level into a logical variable.                             !
    !---------------------------------------------------------------------------------------!
    co2_on    = ico2 > 0
-   !---------------------------------------------------------------------------------------!
-
-
-
-
-   !---------------------------------------------------------------------------------------!
-   !    Find the vonk/Tprandt constant based on the given tprandtl.                        !
-   !---------------------------------------------------------------------------------------!
-   if (tprandtl /= 0.0) then
-      vkopr = vonk / tprandtl
-   else
-      vkopr = 0.0
-   end if
    !---------------------------------------------------------------------------------------!
 
    return

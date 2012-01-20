@@ -206,7 +206,7 @@ names(hovdi) = nameshovdi
 
 #----- Retrieve the information about the regional run. -----------------------------------#
 regio    = locations(where=region,here=here,yearbeg=yearbeg,yearend=yearend,
-                     monthbeg=monthbeg,daybeg=daybeg,monthly=FALSE,fullonly=fullonly)
+                     monthbeg=monthbeg,daybeg=daybeg,filetype="D",fullonly=fullonly)
 inpref   = regio$pathin
 rstpref  = regio$pathrst
 yeara    = regio$yeara

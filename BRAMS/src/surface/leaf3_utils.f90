@@ -4,11 +4,16 @@
 !     This subroutine computes the characteristic scales, using one of the following surf- !
 ! ace layer parametrisation.                                                               !
 !                                                                                          !
+!                                                                                          !
 ! 1. Based on L79;                                                                         !
 ! 2. Based on: OD95, but with some terms computed as in L79 and B71 to avoid singular-     !
-!    ities.                                                                                !
+!    ities (now using the iterative method to find zeta).                                  !
 ! 3. Based on BH91, using an iterative method to find zeta, and using the modified         !
 !    equation for stable layers.                                                           !
+! 4. Based on CLM04, with special functions for very stable and very stable case, even     !
+!    though we use a different functional form for very unstable case for momentum.        !
+!    This is ensure that phi_m decreases monotonically as zeta becomes more negative.      !
+!    We use a power law of order of -1/6 instead.                                          !
 !                                                                                          !
 ! References:                                                                              !
 ! B71.  BUSINGER, J.A, et. al; Flux-Profile relationships in the atmospheric surface       !
@@ -19,18 +24,20 @@
 !           atmospheric models. J. Appl. Meteor., 30, 327-341, 1991.                       !
 ! OD95. ONCLEY, S.P.; DUDHIA, J.; Evaluation of surface fluxes from MM5 using observa-     !
 !           tions.  Mon. Wea. Rev., 123, 3344-3357, 1995.                                  !
+! CLM04. OLESON, K. W., et al.; Technical description of the community land model (CLM)    !
+!           NCAR Technical Note NCAR/TN-461+STR, Boulder, CO, May 2004.                    !
+!                                                                                          !
 !------------------------------------------------------------------------------------------!
-subroutine leaf_stars(theta_atm,theiv_atm,shv_atm,rvap_atm,co2_atm                         &
-                     ,theta_can,theiv_can,shv_can,rvap_can,co2_can                         &
-                     ,zref,dheight,uref,dtll,rough,ustar,tstar,estar,qstar,rstar,cstar     &
-                     ,zeta,rib,r_aer)
+subroutine leaf3_stars(theta_atm,theiv_atm,shv_atm,rvap_atm,co2_atm                        &
+                      ,theta_can,theiv_can,shv_can,rvap_can,co2_can                        &
+                      ,zref,dheight,uref,dtll,rough,ustar,tstar,estar,qstar,rstar,cstar    &
+                      ,zeta,rib,r_aer)
    use mem_leaf  , only : istar      ! ! intent(in)
    use rconstants, only : grav       & ! intent(in)
                         , vonk       & ! intent(in)
                         , epim1      & ! intent(in)
                         , halfpi     ! ! intent(in)
    use leaf_coms , only : ustmin     & ! intent(in)
-                        , ggfact     & ! intent(in)
                         , bl79       & ! intent(in)
                         , csm        & ! intent(in)
                         , csh        & ! intent(in)
@@ -93,11 +100,17 @@ subroutine leaf_stars(theta_atm,theiv_atm,shv_atm,rvap_atm,co2_atm              
    !----- Local variables, used by OD95 and/or BH91. --------------------------------------!
    real              :: zeta0m       ! roughness(momentum)/(Obukhov length).
    real              :: zeta0h       ! roughness(heat)/(Obukhov length).
+   real              :: utotal       ! Total wind (actual + convective)
+   real              :: uconv        ! Convective velocity
+   real              :: uconv_prev   ! Previous convective velocity
+   real              :: change       ! Difference in convective velocity
+   integer           :: icnt         ! Iteration counter
    !----- Aux. environment conditions. ----------------------------------------------------!
    real              :: thetav_atm   ! Atmos. virtual potential temperature     [        K]
    real              :: thetav_can   ! Canopy air virtual pot. temperature      [        K]
    !----- External functions. -------------------------------------------------------------!
-   real, external    :: cbrt         ! Cubic root
+   real, external    :: cbrt          ! Cubic root
+   real, external    :: leaf3_sflux_w ! Surface flux in the w direction
    !---------------------------------------------------------------------------------------!
 
 
@@ -108,6 +121,15 @@ subroutine leaf_stars(theta_atm,theiv_atm,shv_atm,rvap_atm,co2_atm              
    lnzoz0m    = log(zoz0m)
    zoz0h      = z0moz0h * zoz0m
    lnzoz0h    = log(zoz0h)
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Find the Bulk Richardson number.  For stable cases, and for L79 in both cases,    !
+   ! this will be the definitive RiB, whilst this is the first guess, which will be        !
+   ! corrected by the convective velocity in the other unstable cases.                     !
+   !---------------------------------------------------------------------------------------!
    rib        = 2.0 * grav * (zref-dheight-rough) * (thetav_atm-thetav_can)                &
               / ( (thetav_atm+thetav_can) * uref * uref)
    stable     = thetav_atm >= thetav_can
@@ -117,11 +139,11 @@ subroutine leaf_stars(theta_atm,theiv_atm,shv_atm,rvap_atm,co2_atm              
 
 
    !---------------------------------------------------------------------------------------!
-   !    Correct the bulk Richardson number in case it's too stable and we are not running  !
-   ! the L79 model.  We also define a stable case correction to bring down the stars other !
-   ! than ustar, so the flux doesn't increase for stabler cases (it remains constant).     !
+   !    Correct the bulk Richardson number in case it's too stable.  We also define a      !
+   ! stable case correction to bring down the stars other than ustar, so the flux doesn't  !
+   ! increase for stabler cases (it remains constant).                                     !
    !---------------------------------------------------------------------------------------!
-   if (rib > ribmax .and. istar /= 1) then
+   if (rib > ribmax) then
       uuse = sqrt(rib/ribmax) * uref
       rib  = ribmax
    else
@@ -177,72 +199,111 @@ subroutine leaf_stars(theta_atm,theiv_atm,shv_atm,rvap_atm,co2_atm              
 
       !----- Compute zeta from u* and T* --------------------------------------------------!
       zeta = grav * vonk * c3 * (theta_atm - theta_can) / (theta_atm * ustar * ustar)
+      !------------------------------------------------------------------------------------!
 
 
-   case (2,4)
+   case default
       !------------------------------------------------------------------------------------!
       ! 2. Here we use the model proposed by OD95, the standard for MM5, but with some     !
-      !    terms that were computed in B71 (namely, the "0" terms). which prevent sin-     !
-      !    gularities.  Since we use OD95 to estimate zeta, which avoids the computation   !
-      !    of the Obukhov length L , we can't compute zeta0 by its definition(z0/L). How-  !
-      !    ever we know zeta, so zeta0 can be written as z0/z * zeta.                      !
-      ! 4. We use the model proposed by BH91, but we find zeta using the approximation     !
-      !    given by OD95.                                                                  !
-      !------------------------------------------------------------------------------------!
-      !----- We now compute the stability correction functions. ---------------------------!
-      if (stable) then
-         !----- Stable case. --------------------------------------------------------------!
-         zeta  = rib * lnzoz0m / (1.1 - 5.0 * rib)
-      else
-         !----- Unstable case. ------------------------------------------------------------!
-         zeta = rib * lnzoz0m
-      end if
-      zeta0m = rough * zeta / (zref - dheight)
-
-      !----- Find the aerodynamic resistance similarly to L79. ----------------------------!
-      r_aer = tprandtl * (lnzoz0m - psih(zeta,stable) + psih(zeta0m,stable))               &
-                       * (lnzoz0m - psim(zeta,stable) + psim(zeta0m,stable))               &
-                       / (vonk * vonk * uuse)
-
-      !----- Finding ustar, making sure it is not too small. ------------------------------!
-      ustar = max (ustmin, vonk * uuse                                                     &
-                         / (lnzoz0m - psim(zeta,stable) + psim(zeta0m,stable)))
-
-      !----- Finding the coefficient to scale the other stars. ----------------------------!
-      c3    = vonk / (tprandtl * (lnzoz0m - psih(zeta,stable) + psih(zeta0m,stable)))
-
-      !------------------------------------------------------------------------------------!
-
-   case (3,5)
-      !------------------------------------------------------------------------------------!
+      !    terms that were computed in B71 (namely, the "0" terms), which prevent sin-     !
+      !    gularities.                                                                     !
+      !    However we know zeta, so zeta0 can be written as z0/z * zeta.                   !
       ! 3. Here we use the model proposed by BH91, which is almost the same as the OD95    !
-      !    method, with the two following (important) differences.                         !
-      !    a. Zeta (z/L) is actually found using the iterative method.                     !
-      !    b. Stable functions are computed in a more generic way.  BH91 claim that the    !
-      !       oft-used approximation (-beta*zeta) can cause poor ventilation of the stable !
-      !       layer, leading to decoupling between the atmosphere and the canopy air space !
-      !       and excessive cooling.                                                       !
-      ! 5. Similar as 3, but we compute the stable functions the same way as OD95.         !
+      !    method, except that the stable functions are computed in a more generic way.    !
+      !    BH91 claim that the oft-used approximation (-beta*zeta) can cause poor          !
+      !    ventilation of the stable layer, leading to decoupling between the atmo-        !
+      !    sphere and the canopy air space and excessive cooling                           !
+      ! 4. Here we use a similar approach as in CLM04, excepth that the momentum flux      !
+      !    gradient function for the unstable case for momentum is switched by a power     !
+      !    of -1/6 (kind of the square of the heat one).  This is to guarantee that        !
+      !    the psi function doesn't have local maxima/minima.                              !
       !------------------------------------------------------------------------------------!
-      !----- We now compute the stability correction functions. ---------------------------!
-      zeta   = zoobukhov(rib,zref-dheight,rough,zoz0m,lnzoz0m,zoz0h,lnzoz0h,stable)
-      zeta0m = rough * zeta / (zref-dheight)
-      zeta0h = z0hoz0m * zeta0m
+      !----- Initialise uconv. ------------------------------------------------------------!
+      uconv      = 0.0
+      !----- Check if we need to go through the iterative process. ------------------------!
+      if (stable) then
+         !----- We now compute the stability correction functions. ------------------------!
+         zeta   = zoobukhov(rib,zref-dheight,rough,zoz0m,lnzoz0m,zoz0h,lnzoz0h,stable)
+         zeta0m = rough * zeta / (zref-dheight)
+         zeta0h = z0hoz0m * zeta0m
 
-      !----- Finding the aerodynamic resistance similarly to L79. -------------------------!
-      r_aer = tprandtl * (lnzoz0h - psih(zeta,stable) + psih(zeta0h,stable))               &
-                       * (lnzoz0m - psim(zeta,stable) + psim(zeta0m,stable))               &
-                       / (vonk * vonk * uuse)
+         !----- Find the aerodynamic resistance similarly to L79. -------------------------!
+         r_aer = tprandtl * (lnzoz0h - psih(zeta,stable) + psih(zeta0h,stable))            &
+                          * (lnzoz0m - psim(zeta,stable) + psim(zeta0m,stable))            &
+                          / (vonk * vonk * uuse)
 
-      !----- Finding ustar, making sure it is not too small. ------------------------------!
-      ustar = max (ustmin, vonk * uuse                                                     &
-                         / (lnzoz0m - psim(zeta,stable) + psim(zeta0m,stable)))
+         !----- Find ustar, making sure it is not too small. ------------------------------!
+         ustar = max (ustmin, vonk * uuse                                                  &
+                            / (lnzoz0m - psim(zeta,stable) + psim(zeta0m,stable)))
 
 
-      !----- Finding the coefficient to scale the other stars. ----------------------------!
-      c3    = vonk / (tprandtl * (lnzoz0h - psih(zeta,stable) + psih(zeta0h,stable)))
-      !------------------------------------------------------------------------------------!
+         !----- Find the coefficient to scale the other stars. ----------------------------!
+         c3    = vonk / (tprandtl * (lnzoz0h - psih(zeta,stable) + psih(zeta0h,stable)))
+         !---------------------------------------------------------------------------------!
+      else
+         !---------------------------------------------------------------------------------!
+         !    Unstable case.  Here we run a few iterations to make sure we correct the     !
+         ! bulk Richardson number.  This is really a simple correction, so we don't need   !
+         ! uconv to be totally in equilibrium.                                             !
+         !---------------------------------------------------------------------------------!
+         unstable: do icnt=1,6
+            !----- Update total winds. ----------------------------------------------------!
+            uconv_prev = uconv
+            utotal     = sqrt(uuse*uuse + uconv_prev * uconv_prev)
+            !------------------------------------------------------------------------------!
 
+
+            !----- Update the Bulk Richardson number. -------------------------------------!
+            rib        = 2.0 * grav * (zref-dheight-rough) * (thetav_atm-thetav_can)       &
+                       / ( (thetav_atm+thetav_can) * utotal)
+            !------------------------------------------------------------------------------!
+
+
+            !----- We now compute the stability correction functions. ---------------------!
+            zeta   = zoobukhov(rib,zref-dheight,rough,zoz0m,lnzoz0m,zoz0h,lnzoz0h,stable)
+            !------------------------------------------------------------------------------!
+
+
+            !----- Find the coefficient to scale the other stars. -------------------------!
+            zeta0m = rough * zeta / (zref-dheight)
+            zeta0h = z0hoz0m * zeta0m
+            !------------------------------------------------------------------------------!
+
+
+            !----- Find ustar, making sure it is not too small. ---------------------------!
+            ustar = max (ustmin, vonk * uuse                                               &
+                               / (lnzoz0m - psim(zeta,stable) + psim(zeta0m,stable)))
+            !------------------------------------------------------------------------------!
+
+
+            !----- Find the coefficient to scale the other stars. -------------------------!
+            c3    = vonk                                                                   &
+                  / (tprandtl * (lnzoz0h - psih(zeta,stable) + psih(zeta0h,stable)))
+            !------------------------------------------------------------------------------!
+
+
+            !------------------------------------------------------------------------------!
+            !     Use potential virtual temperature here because convection is related to  !
+            ! buoyancy.                                                                    !
+            !------------------------------------------------------------------------------!
+            tstar  = c3 * (thetav_atm - thetav_can )
+            !------------------------------------------------------------------------------!
+
+
+            !----- Estimate the convective velocity. --------------------------------------!
+            uconv = leaf3_sflux_w(zeta,tstar,ustar) / ustar
+            !------------------------------------------------------------------------------!
+
+
+            !------------------------------------------------------------------------------!
+            !     We are only after a rough estimate of this velocity, so if the differ-   !
+            ! ence is less than the RK4 tolerance, then it's enough.                       !
+            !------------------------------------------------------------------------------!
+            change = 2.0 * abs(uconv-uconv_prev) / (abs(uconv) + abs(uconv_prev))
+            if (change < 0.01) exit unstable
+            !------------------------------------------------------------------------------!
+         end do unstable
+      end if
    end select
 
    !----- Finding all stars. --------------------------------------------------------------!
@@ -268,7 +329,7 @@ subroutine leaf_stars(theta_atm,theiv_atm,shv_atm,rvap_atm,co2_atm              
 
 
    return
-end subroutine leaf_stars
+end subroutine leaf3_stars
 !==========================================================================================!
 !==========================================================================================!
 
@@ -282,20 +343,36 @@ end subroutine leaf_stars
 !    This routine computes the turbulent fluxes of momentum, heat and moisture from the    !
 ! surface layer using the  Manton-Cotton algebraic surface layer equations.                !
 !------------------------------------------------------------------------------------------!
-subroutine sfclmcv(ustar,tstar,rstar,cstar,zeta,vels_pat,ups,vps,patch_area                &
-                  ,sflux_u,sflux_v,sflux_w,sflux_t,sflux_r,sflux_c)
+subroutine leaf3_sfclmcv(ustar,tstar,rstar,cstar,zeta,vels_pat,ups,vps,patch_area          &
+                        ,sflux_u,sflux_v,sflux_w,sflux_t,sflux_r,sflux_c)
    use rconstants
    use leaf_coms     , only : g_urban ! ! intent(in)
    use teb_spm_start , only : teb_spm ! ! intent(in)
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
-   real , intent(in)    :: ustar,tstar,rstar,cstar,zeta
-   real , intent(in)    :: vels_pat,ups,vps,patch_area
-   real , intent(inout) :: sflux_u,sflux_v,sflux_w,sflux_t,sflux_r,sflux_c
+   real , intent(in)    :: ustar
+   real , intent(in)    :: tstar
+   real , intent(in)    :: rstar
+   real , intent(in)    :: cstar
+   real , intent(in)    :: zeta
+   real , intent(in)    :: vels_pat
+   real , intent(in)    :: ups
+   real , intent(in)    :: vps
+   real , intent(in)    :: patch_area
+   real , intent(inout) :: sflux_u
+   real , intent(inout) :: sflux_v
+   real , intent(inout) :: sflux_w
+   real , intent(inout) :: sflux_t
+   real , intent(inout) :: sflux_r
+   real , intent(inout) :: sflux_c
    !----- Local variables. ----------------------------------------------------------------!
-   real                 :: cosine1,sine1,vtscr,cx,psin
+   real                 :: cosine1
+   real                 :: sine1
+   real                 :: vtscr
    !----- Local constants. ----------------------------------------------------------------!
    real , parameter     :: wtol = 1.e-20
+   !----- External functions. -------------------------------------------------------------!
+   real , external      :: leaf3_sflux_w
    !---------------------------------------------------------------------------------------!
 
    cosine1 = ups / vels_pat
@@ -314,19 +391,53 @@ subroutine sfclmcv(ustar,tstar,rstar,cstar,zeta,vels_pat,ups,vps,patch_area     
    !----- TEB currently doesn't save CO2, so compute sflux_c outside the if statement. ----!
    sflux_c = sflux_c - cstar * vtscr
 
-   !----- Define cx based on the layer stability. -----------------------------------------!
-   if (zeta < 0.)then
-      cx = zeta * sqrt(sqrt(1. - 15. * zeta))
-   else
-      cx = zeta / (1.0 + 4.7 * zeta)
-   end if
-
-   psin    = sqrt((1.-2.86 * cx) / (1. + cx * (-5.39 + cx * 6.998 )))
-   sflux_w = sflux_w + (0.27 * max(6.25 * (1. - cx) * psin,wtol) - 1.18 * cx * psin)       &
-                     * ustar * vtscr
+   !----- Define vertical flux. -----------------------------------------------------------!
+   sflux_w = sflux_w + leaf3_sflux_w(zeta,tstar,ustar) * patch_area
 
    return
-end subroutine sfclmcv
+end subroutine leaf3_sfclmcv
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!    Vertical flux, as in:                                                                 !
+!                                                                                          !
+!   Manton, M. J., Cotton, W. R., 1977: Parameterization of the atmospheric surface        !
+!      layer.  J. Atm. Sci., 34, 331-334.                                                  !
+!------------------------------------------------------------------------------------------!
+real function leaf3_sflux_w(zeta,tstar,ustar)
+   use consts_coms , only : vonk ! intent(in)
+  
+   implicit none
+   !----- Arguments -----------------------------------------------------------------------!
+   real, intent(in)    :: zeta
+   real, intent(in)    :: ustar
+   real, intent(in)    :: tstar
+   !----- Local variables -----------------------------------------------------------------!
+   real                :: cx
+   real                :: psin
+   !----- Constants -----------------------------------------------------------------------!
+   real, parameter     :: wtol = 1.e-20
+   !---------------------------------------------------------------------------------------!
+
+   if (zeta < 0.0)then
+      cx = zeta * sqrt(sqrt(1.0 - 15.0 * zeta))
+   else
+      cx = zeta / (1.0 + 4.7 * zeta)
+   endif
+  
+   psin = sqrt((1.0-2.86 * cx) / (1.0 + cx * (-5.390 + cx * 6.9980 )))
+   leaf3_sflux_w = ( 0.27 * max(6.25 * (1.0 - cx) * psin,wtol)                             &
+                       - 1.180 * cx * psin) * ustar * ustar
+  
+   return
+end function leaf3_sflux_w
 !==========================================================================================!
 !==========================================================================================!
 
@@ -359,9 +470,9 @@ end subroutine sfclmcv
 !                                                                                          !
 ! Lee, T. J., R. A. Pielke, 1993: Corrigendum. J. Appl. Meteorol., 32, 580-580. (LP93)     !
 !------------------------------------------------------------------------------------------!
-subroutine leaf_grndvap(topsoil_energy,topsoil_water,topsoil_text,sfcwater_energy_int      &
-                       ,sfcwater_nlev,can_rvap,can_prss,ground_rsat,ground_rvap            &
-                       ,ground_temp,ground_fliq)
+subroutine leaf3_grndvap(topsoil_energy,topsoil_water,topsoil_text,sfcwater_energy_int     &
+                        ,sfcwater_nlev,can_rvap,can_prss,ground_rsat,ground_rvap           &
+                        ,ground_temp,ground_fliq)
 
    use leaf_coms  , only : slcpd       & ! intent(in)
                          , slpots      & ! intent(in)
@@ -380,8 +491,7 @@ subroutine leaf_grndvap(topsoil_energy,topsoil_water,topsoil_text,sfcwater_energ
    use therm_lib  , only : rslif       & ! function
                          , qwtk        & ! function
                          , qtk         ! ! function
-   use mem_leaf   , only : igrndvap    & ! intent(in)
-                         , betapower   ! ! intent(in)
+   use mem_leaf   , only : igrndvap    ! ! intent(in)
 
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
@@ -450,11 +560,10 @@ subroutine leaf_grndvap(topsoil_energy,topsoil_water,topsoil_text,sfcwater_energ
       ! shut down when the soil approaches the dry air soil moisture, we offset both the   !
       ! soil moisture and field capacity to the soil moisture above dry air soil.  This is !
       ! necessary to avoid evaporation to be large just slightly above the dry air soil,   !
-      ! which was happening especially for those clay-rich soil types.  To switch the      !
-      ! power to the same as LP92/LP93, set betapower to 2.                                !
+      ! which was happening especially for those clay-rich soil types.                     !
       !------------------------------------------------------------------------------------!
       smterm     = (topsoil_water - soilcp(nsoil)) / (sfldcap(nsoil) - soilcp(nsoil))
-      beta       = (.5 * (1. - cos (min(1.,smterm) * pi1))) ** betapower
+      beta       = .5 * (1. - cos (min(1.,smterm) * pi1))
       !------------------------------------------------------------------------------------!
 
 
@@ -495,6 +604,14 @@ subroutine leaf_grndvap(topsoil_energy,topsoil_water,topsoil_text,sfcwater_energ
          ggsoil      = ggsoil0 * exp(kksoil * smterm)
          !---------------------------------------------------------------------------------!
 
+      case (5)
+         !---------------------------------------------------------------------------------!
+         !     Combination of NP89 and P86.                                                !
+         !---------------------------------------------------------------------------------!
+         ground_rvap = max(can_rvap, ground_rsat * beta)
+         ggsoil      = ggsoil0 * exp(kksoil * smterm)
+         !---------------------------------------------------------------------------------!
+
       end select
 
    case default
@@ -514,7 +631,7 @@ subroutine leaf_grndvap(topsoil_energy,topsoil_water,topsoil_text,sfcwater_energ
    end select
 
    return
-end subroutine leaf_grndvap
+end subroutine leaf3_grndvap
 !==========================================================================================!
 !==========================================================================================!
 
@@ -906,7 +1023,8 @@ end subroutine sfc_pcp
 ! and albedo.                                                                              !
 !------------------------------------------------------------------------------------------!
 subroutine vegndvi(ifm,patch_area,leaf_class,veg_fracarea,veg_lai,veg_tai,veg_rough        &
-                  ,veg_height,veg_displace,veg_albedo,veg_ndvip,veg_ndvic,veg_ndvif)
+                  ,veg_height,veg_displace,veg_albedo,veg_ndvip,veg_ndvic,veg_ndvif        &
+                  ,psibar_10d)
 
    use leaf_coms
    use rconstants
@@ -929,24 +1047,25 @@ subroutine vegndvi(ifm,patch_area,leaf_class,veg_fracarea,veg_lai,veg_tai,veg_ro
    real                            , intent(out)   :: veg_rough
    real                            , intent(out)   :: veg_albedo
    real                            , intent(inout) :: veg_ndvic
+   real                            , intent(in)    :: psibar_10d
    !----- Local variables. ----------------------------------------------------------------!
-   integer                                       :: nveg
-   real                                          :: sr
-   real                                          :: fpar
-   real                                          :: dead_lai
-   real                                          :: green_frac
+   integer                                         :: nveg
+   real                                            :: sr
+   real                                            :: fpar
+   real                                            :: dead_lai
+   real                                            :: green_frac
    !----- Local constants. ----------------------------------------------------------------!
-   real                            , parameter   :: sr_min=1.081
-   real                            , parameter   :: fpar_min=.001
-   real                            , parameter   :: fpar_max=.950
-   real                            , parameter   :: fpcon=-.3338082
-   real                            , parameter   :: ccc=-2.9657
-   real                            , parameter   :: bz=.91
-   real                            , parameter   :: hz=.0075
-   real                            , parameter   :: extinc_veg=0.75
+   real                            , parameter     :: sr_min     =  1.081
+   real                            , parameter     :: fpar_min   =  0.001
+   real                            , parameter     :: fpar_max   =  0.950
+   real                            , parameter     :: fpcon      = -0.3338082
+   real                            , parameter     :: ccc        = -2.9657
+   real                            , parameter     :: bz         =  0.91
+   real                            , parameter     :: hz         =  0.0075
+   real                            , parameter     :: extinc_veg = 0.75
    !----- Locally saved variables. --------------------------------------------------------!
-   logical                         , save        :: nvcall = .true.
-   real, dimension(nvtyp+nvtyp_teb), save        :: dfpardsr
+   logical                         , save          :: nvcall     = .true.
+   real, dimension(nvtyp+nvtyp_teb), save          :: dfpardsr
    !---------------------------------------------------------------------------------------!
 
 
@@ -985,11 +1104,11 @@ subroutine vegndvi(ifm,patch_area,leaf_class,veg_fracarea,veg_lai,veg_tai,veg_ro
       veg_fracarea = 0.
 
    else
-
-      !  Time-interpolate ndvi to get current value veg_ndvic(i,j) for this patch
-      !  Limit ndvi to prevent values > .99 to prevent division by zero.
-
       
+      !------------------------------------------------------------------------------------!
+      !  Time-interpolate NDVI to get current value veg_ndvic(i,j) for this patch.  Limit  !
+      ! NDVI to prevent values > .99 to prevent division by zero.                          !
+      !------------------------------------------------------------------------------------!
 
       if (iuselai == 1) then
          veg_ndvic = max(0.0,veg_ndvip + (veg_ndvif - veg_ndvip) * timefac_ndvi)
@@ -1010,31 +1129,53 @@ subroutine vegndvi(ifm,patch_area,leaf_class,veg_fracarea,veg_lai,veg_tai,veg_ro
          if (nveg == 7) veg_ndvic = max(0.7,veg_ndvic)
          
       end if
+      !------------------------------------------------------------------------------------!
 
 
-      if (iuselai == 1) then
+      !------------------------------------------------------------------------------------!
+      !     Here we decide which way we are going to compute LAI.  If NDVIFLG is 0 or 2,   !
+      ! we use LEAF-3 phenology, otherwise we use NDVI to prescribe LAI.                   !
+      !------------------------------------------------------------------------------------!
+      select case (ndviflg(ifm))
+      case (1)
+         !------ We've read information from files, use it. -------------------------------!
 
-         veg_lai = veg_ndvic
+         if (iuselai == 1) then
+            !----- Input data were LAI, copy it. ------------------------------------------!
+            veg_lai = veg_ndvic
 
-      else
+         else
 
-         !----- Compute "simple ratio" and limit between sr_min and sr_max(nveg). ---------!
-         sr = min(sr_max(nveg), max(sr_min, (1. + veg_ndvic) / (1. - veg_ndvic) ) )
+            !----- Compute "simple ratio" and limit between sr_min and sr_max(nveg). ------!
+            sr = min(sr_max(nveg), max(sr_min, (1. + veg_ndvic) / (1. - veg_ndvic) ) )
 
 
-         !----- Compute fpar. -------------------------------------------------------------!
-         fpar = fpar_min + (sr - sr_min) * dfpardsr(nveg)
+            !----- Compute fpar. ----------------------------------------------------------!
+            fpar = fpar_min + (sr - sr_min) * dfpardsr(nveg)
 
+            !------------------------------------------------------------------------------!
+            !      Compute green leaf area index (veg_lai), dead leaf area index           !
+            ! (dead_lai), total area index (tai), and green fraction.                      !
+            !------------------------------------------------------------------------------!
+            veg_lai    = glai_max(nveg) * (       veg_clump(nveg)  * fpar / fpar_max       &
+                                          + (1. - veg_clump(nveg)) * alog(1. - fpar)       &
+                                          * fpcon )
+         end if
+
+      case default
          !---------------------------------------------------------------------------------!
-         !      Compute green leaf area index (veg_lai), dead leaf area index (dead_lai),  !
-         ! total area index (tai), and green fraction.                                     !
+         !    We haven't read anything, use the table value, scaled by phenology if needed !
+         ! by this PFT.                                                                    !
          !---------------------------------------------------------------------------------!
-         veg_lai    = glai_max(nveg) * (       veg_clump(nveg)  * fpar / fpar_max          &
-                                       + (1. - veg_clump(nveg)) * alog(1. - fpar) * fpcon )
-
-      end if
-         
-         
+         select case (phenology(nveg))
+         case (4)
+            !----- Use drought/cold phenology. --------------------------------------------!
+            veg_lai = glai_max(nveg) * max(0.02,min(1.0,psibar_10d))
+         case default
+            !----- Evergreen. -------------------------------------------------------------!
+            veg_lai = glai_max(nveg)
+         end select
+      end select
       dead_lai   = (glai_max(nveg) - veg_lai) * dead_frac(nveg)
       veg_tai    = veg_lai + sai(nveg) + dead_lai
       green_frac = veg_lai / veg_tai
@@ -1072,8 +1213,9 @@ end subroutine vegndvi
 ! through each layer based on mass per square meter.  algs is the resultant albedo from    !
 ! snow plus ground.                                                                        !
 !------------------------------------------------------------------------------------------!
-subroutine sfcrad(mzg,mzs,ip,soil_water,soil_text,sfcwater_depth,patch_area,veg_fracarea   &
-                 ,leaf_class,veg_albedo,sfcwater_nlev,rshort,rlong,albedt,rlongup,cosz     )
+subroutine leaf3_sfcrad(mzg,mzs,ip,soil_water,soil_color,soil_text,sfcwater_depth          &
+                       ,patch_area,veg_fracarea,leaf_class,veg_albedo,sfcwater_nlev,rshort &
+                       ,rlong,cosz,albedt,rlongup,rshort_gnd,rlong_gnd)
    use mem_leaf
    use leaf_coms
    use rconstants
@@ -1090,6 +1232,7 @@ subroutine sfcrad(mzg,mzs,ip,soil_water,soil_text,sfcwater_depth,patch_area,veg_
    integer                , intent(in)    :: mzs
    integer                , intent(in)    :: ip
    real   , dimension(mzg), intent(in)    :: soil_water
+   real                   , intent(in)    :: soil_color
    real   , dimension(mzg), intent(in)    :: soil_text
    real   , dimension(mzs), intent(in)    :: sfcwater_depth 
    real                   , intent(in)    :: patch_area
@@ -1102,10 +1245,13 @@ subroutine sfcrad(mzg,mzs,ip,soil_water,soil_text,sfcwater_depth,patch_area,veg_
    real                   , intent(in)    :: cosz
    real                   , intent(inout) :: albedt
    real                   , intent(inout) :: rlongup
+   real                   , intent(inout) :: rshort_gnd
+   real                   , intent(inout) :: rlong_gnd
    !----- Local variables. ----------------------------------------------------------------!
    integer                                :: k
    integer                                :: m
    integer                                :: nsoil
+   integer                                :: colour
    integer                                :: nveg
    integer                                :: ksn
    real                                   :: alb
@@ -1137,15 +1283,23 @@ subroutine sfcrad(mzg,mzs,ip,soil_water,soil_text,sfcwater_depth,patch_area,veg_
    if (ip == 1) then
       !----- Compute the albedo and upward longwave for water patches. --------------------!
       if (cosz > .03) then
-         alb = min(max(-.0139 + .0467 * tan(acos(cosz)),.03),.999)
-         albedt = albedt + patch_area * alb
+         alb     = min(max(-.0139 + .0467 * tan(acos(cosz)),.03),.999)
+         albedt  = albedt + patch_area * alb
+      else
+         alb     = 0.0
       end if
-      rlongup = rlongup + patch_area * stefan * soil_tempk(mzg) ** 4
+      rlongup    = rlongup + patch_area * stefan * soil_tempk(mzg) ** 4
+
+      rshort_gnd = alb * rshort
+      rlong_gnd  = 0.0
 
    elseif (isfcl == 0) then
       !------ Not running a land surface model, use prescribed value of can_temp. ---------!
-      albedt  = albedt  + patch_area * albedo
-      rlongup = rlongup + patch_area * stefan * can_temp ** 4
+      albedt     = albedt  + patch_area * albedo
+      rlongup    = rlongup + patch_area * stefan * can_temp ** 4
+
+      rshort_gnd = albedt * rshort
+      rlong_gnd  = 0.0
    else
       !------ Running an actual land surface model... -------------------------------------!
 
@@ -1163,34 +1317,27 @@ subroutine sfcrad(mzg,mzs,ip,soil_water,soil_text,sfcwater_depth,patch_area,veg_
       ! using some soil texture dependence, even though soil colour depends on a lot more  !
       ! things.                                                                            !
       !------------------------------------------------------------------------------------!
-      ! nsoil=nint(soil_text(mzg))
-      ! select case (nsoil)
-      ! case (13)
-      !    !----- Bedrock, no soil moisture, use dry soil albedo. -------------------------!
-      !    alg = albdry(nsoil)
-      ! case default
-      !    !-------------------------------------------------------------------------------!
-      !    !     Find relative soil moisture.  Not sure about this one, but I am assuming  !
-      !    ! that albedo won't change below the dry air soil moisture, and that should be  !
-      !    ! the dry value.                                                                !
-      !    !-------------------------------------------------------------------------------!
-      !    fcpct = max(0., min(1., (soil_water(mzg) - soilcp(nsoil))                       &
-      !                          / (slmsts(nsoil)   - soilcp(nsoil)) ) )
-      !    alg   = albdry(nsoil) + fcpct * (albwet(nsoil) - albdry(nsoil))
-      ! end select
       nsoil = nint(soil_text(mzg))
       select case (nsoil)
       case (13)
          !----- Bedrock, use constants soil value for granite. ----------------------------!
-         alg = albdry(nsoil)
+         alg = 0.32
       case (12)
          !----- Peat, follow McCumber and Pielke (1981). ----------------------------------!
          fcpct = soil_water(mzg) / slmsts(nsoil)
          alg   = max (0.07, 0.14 * (1.0 - fcpct))
       case default
-         !----- Other soils, follow McCumber and Pielke (1981). ---------------------------!
-         fcpct = soil_water(mzg) / slmsts(nsoil)
-         alg   = max (0.14, 0.31 - 0.34 * fcpct)
+         !----- Other soils. --------------------------------------------------------------!
+         colour = nint(soil_color)
+         select case (colour)
+         case (21)
+            fcpct = soil_water(mzg) / slmsts(nsoil)
+            alg   = max(0.14, 0.31 - 0.34 * fcpct)
+         case default
+            fcpct  = max (0.00, 0.11 - 0.40 * soil_water(mzg))
+            alg    = min (0.5 * (alb_nir_dry(nscol) + alb_vis_dry(nscol))                  &
+                         ,0.5 * (alb_nir_wet(nscol) + alb_vis_wet(nscol)) + fcpct )
+         end select
       end select
       !------------------------------------------------------------------------------------!
 
@@ -1227,6 +1374,7 @@ subroutine sfcrad(mzg,mzs,ip,soil_water,soil_text,sfcwater_depth,patch_area,veg_
       rshort_v = rshort * vf * (1. - alv + vfc * algs)
       alb      = vf * alv + vfc * vfc * algs
       !------------------------------------------------------------------------------------!
+
 
 
       !----- Adding urban contribution if running TEB. ------------------------------------!
@@ -1292,10 +1440,23 @@ subroutine sfcrad(mzg,mzs,ip,soil_water,soil_text,sfcwater_depth,patch_area,veg_
          rlonga_a  = 0.
       end if
       !------------------------------------------------------------------------------------!
+
+
+
+      !----- Integrate the total absorbed light by ground (top soil plus TSW layers). -----!
+      rshort_gnd = rshort_g
+      do k=1,ksn
+         rshort_gnd = rshort_gnd + rshort_s(k)
+      end do
+      rlong_gnd  = rlonga_gs + rlongv_gs - rlonggs_a - rlonggs_v
+      !------------------------------------------------------------------------------------!
+
+
+
    end if
 
    return
-end subroutine sfcrad
+end subroutine leaf3_sfcrad
 !==========================================================================================!
 !==========================================================================================!
 
@@ -1309,7 +1470,7 @@ end subroutine sfcrad
 !    This function determines the wind at a given height, given that the stars are al-     !
 ! ready known, as well as the Richardson number and the zetas.                             !
 !------------------------------------------------------------------------------------------!
-real(kind=4) function leaf_reduced_wind(ustar,zeta,rib,zref,dheight,height,rough)
+real(kind=4) function leaf3_reduced_wind(ustar,zeta,rib,zref,dheight,height,rough)
    use rconstants     , only : vonk     ! ! intent(in)
    use leaf_coms      , only : bl79     & ! intent(in)
                              , csm      & ! intent(in)
@@ -1383,7 +1544,7 @@ real(kind=4) function leaf_reduced_wind(ustar,zeta,rib,zref,dheight,height,rough
       end if
       
       !----- Find the wind. ---------------------------------------------------------------!
-      leaf_reduced_wind = (ustar/vonk) * (lnhoz0/sqrt(fm))
+      leaf3_reduced_wind = (ustar/vonk) * (lnhoz0/sqrt(fm))
 
    case default  !----- Other methods. ----------------------------------------------------!
 
@@ -1392,7 +1553,8 @@ real(kind=4) function leaf_reduced_wind(ustar,zeta,rib,zref,dheight,height,rough
       zeta0 = zeta * rough            / (zref-dheight)
       !------------------------------------------------------------------------------------!
 
-      leaf_reduced_wind = (ustar/vonk) * (lnhoz0 - psim(zetah,stable) + psim(zeta0,stable))
+      leaf3_reduced_wind = (ustar/vonk)                                                    &
+                         * (lnhoz0 - psim(zetah,stable) + psim(zeta0,stable))
 
    end select
    !---------------------------------------------------------------------------------------!
@@ -1400,12 +1562,12 @@ real(kind=4) function leaf_reduced_wind(ustar,zeta,rib,zref,dheight,height,rough
 
 
    !----- Impose the wind to be more than the minimum. ------------------------------------!
-   leaf_reduced_wind = max(leaf_reduced_wind, ugbmin)
+   leaf3_reduced_wind = max(leaf3_reduced_wind, ugbmin)
    !---------------------------------------------------------------------------------------!
 
 
    return
-end function leaf_reduced_wind
+end function leaf3_reduced_wind
 !==========================================================================================!
 !==========================================================================================!
 
@@ -1429,7 +1591,7 @@ end function leaf_reduced_wind
 ! - gbh is in J/(K m2 s), and                                                              !
 ! - gbw is in kg_H2O/m2/s.                                                                 !
 !------------------------------------------------------------------------------------------!
-subroutine leaf_aerodynamic_conductances(iveg,veg_wind,veg_temp,can_temp,can_shv,can_rhos)
+subroutine leaf3_aerodynamic_conductances(iveg,veg_wind,veg_temp,can_temp,can_shv,can_rhos)
    use leaf_coms , only : leaf_width & ! intent(in)
                         , aflat_turb & ! intent(in)
                         , aflat_lami & ! intent(in)
@@ -1518,7 +1680,7 @@ subroutine leaf_aerodynamic_conductances(iveg,veg_wind,veg_temp,can_temp,can_shv
    !---------------------------------------------------------------------------------------!
 
    return
-end subroutine leaf_aerodynamic_conductances
+end subroutine leaf3_aerodynamic_conductances
 !==========================================================================================!
 !==========================================================================================!
 
@@ -1532,7 +1694,7 @@ end subroutine leaf_aerodynamic_conductances
 !      This sub-routine copies some atmospheric fields from the 2-D arrays to the common   !
 ! module variable.                                                                         !
 !------------------------------------------------------------------------------------------!
-subroutine leaf_atmo1d(m2,m3,i,j,thp,theta,rv,rtp,co2p,up,vp,pitot,dens,height,pcpg,qpcpg  &
+subroutine leaf3_atmo1d(m2,m3,i,j,thp,theta,rv,rtp,co2p,up,vp,pitot,dens,height,pcpg,qpcpg &
                       ,dpcpg)
    use leaf_coms , only : ubmin     & ! intent(in)
                         , atm_up    & ! intent(out)
@@ -1617,7 +1779,7 @@ subroutine leaf_atmo1d(m2,m3,i,j,thp,theta,rv,rtp,co2p,up,vp,pitot,dens,height,p
    !---------------------------------------------------------------------------------------!
 
    return
-end subroutine leaf_atmo1d
+end subroutine leaf3_atmo1d
 !==========================================================================================!
 !==========================================================================================!
 
@@ -1862,8 +2024,8 @@ end subroutine normal_accfluxes
 !==========================================================================================!
 !     This sub-routine decides whether this patch should be solved or not.                 !
 !------------------------------------------------------------------------------------------!
-subroutine leaf_solve_veg(ip,mzs,leaf_class,veg_height,patch_area,veg_fracarea,veg_tai     &
-                         ,sfcwater_nlev,sfcwater_depth,initial)
+subroutine leaf3_solve_veg(ip,mzs,leaf_class,veg_height,patch_area,veg_fracarea,veg_tai    &
+                          ,sfcwater_nlev,sfcwater_depth,initial)
    use leaf_coms, only : min_patch_area  & ! intent(in)
                        , tai_max         & ! intent(in)
                        , tai_min         & ! intent(in)
@@ -1928,6 +2090,115 @@ subroutine leaf_solve_veg(ip,mzs,leaf_class,veg_height,patch_area,veg_fracarea,v
    !---------------------------------------------------------------------------------------!
 
    return
-end subroutine leaf_solve_veg
+end subroutine leaf3_solve_veg
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!     This sub-routine updates the 10-day running average of the relative soil potential   !
+! for phenology in the next time step.                                                     !
+!------------------------------------------------------------------------------------------!
+subroutine update_psibar(m2,m3,mzg,npat,ia,iz,ja,jz,dtime,soil_energy,soil_water,soil_text &
+                        ,leaf_class,psibar_10d)
+   use therm_lib , only : qwtk    ! ! subroutine
+   use mem_leaf  , only : slz     & ! intent(in)
+                        , dtleaf  ! ! intent(in)
+   use leaf_coms , only : slpots  & ! intent(in)
+                        , slbs    & ! intent(in)
+                        , slcpd   & ! intent(in)
+                        , kroot   & ! intent(in)
+                        , psild   & ! intent(in)
+                        , psiwp   ! ! intent(in)
+   use rconstants, only : wdns    & ! intent(in)
+                        , day_sec ! ! intent(in)
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   integer                           , intent(in)    :: m2
+   integer                           , intent(in)    :: m3
+   integer                           , intent(in)    :: mzg
+   integer                           , intent(in)    :: npat
+   integer                           , intent(in)    :: ia
+   integer                           , intent(in)    :: iz
+   integer                           , intent(in)    :: ja
+   integer                           , intent(in)    :: jz
+   real                              , intent(in)    :: dtime
+   real   , dimension(mzg,m2,m3,npat), intent(in)    :: soil_energy
+   real   , dimension(mzg,m2,m3,npat), intent(in)    :: soil_water
+   real   , dimension(mzg,m2,m3,npat), intent(in)    :: soil_text
+   real   , dimension    (m2,m3,npat), intent(in)    :: leaf_class
+   real   , dimension    (m2,m3,npat), intent(inout) :: psibar_10d
+   !----- Local variables. ----------------------------------------------------------------!
+   integer                                           :: i
+   integer                                           :: j
+   integer                                           :: k
+   integer                                           :: ip
+   integer                                           :: nsoil
+   integer                                           :: nveg
+   real                                              :: available_water
+   real                                              :: psi_layer
+   real                                              :: soil_temp
+   real                                              :: soil_fliq
+   real                                              :: weight
+   !---------------------------------------------------------------------------------------!
+
+
+   !----- Find the weight. ----------------------------------------------------------------!
+   weight = min(dtime,dtleaf) / (10. * day_sec)
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !    Loop over all points, but skip water patches.                                      !
+   !---------------------------------------------------------------------------------------!
+   yloop: do j=ja,jz
+      xloop: do i=ia,iz
+         patchloop: do ip=2,npat
+            nveg = nint(leaf_class(i,j,ip))
+            available_water = 0.0
+            do k = kroot(nveg),mzg
+               nsoil = nint(soil_text(k,i,j,ip))
+
+               if (nsoil /= 13) then
+                  !----- Find the liquid fraction, which will scale available water. ------!
+                  call qwtk(soil_energy(k,i,j,ip),soil_water(k,i,j,ip)*wdns,slcpd(nsoil)   &
+                           ,soil_temp,soil_fliq)
+                  !------------------------------------------------------------------------!
+
+
+                  !----- Add the contribution of this layer, based on the potential. ------!
+                  available_water = available_water                                        &
+                                  + max(0., (psi_layer    - psiwp(nsoil))                  &
+                                          / (psild(nsoil) - psiwp(nsoil)) )                &
+                                  * soil_fliq * (slz(k+1)-slz(k))
+                  !------------------------------------------------------------------------!
+               end if
+            end do
+            !------------------------------------------------------------------------------!
+
+
+
+            !----- Normalise the available water. -----------------------------------------!
+            available_water      = available_water / abs(slz(kroot(nveg)))
+            !------------------------------------------------------------------------------!
+
+
+
+            !----- Move the moving average. -----------------------------------------------!
+            psibar_10d(i,j,ip) = available_water    * weight                               &
+                               + psibar_10d(i,j,ip) * (1.0 - weight)
+            !------------------------------------------------------------------------------!
+
+         end do patchloop
+      end do xloop
+   end do yloop
+   !---------------------------------------------------------------------------------------!
+
+   return
+end subroutine update_psibar
 !==========================================================================================!
 !==========================================================================================!

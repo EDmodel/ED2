@@ -80,6 +80,8 @@ subroutine read_site_file(cgrid,igr)
             cpoly%ntext_soil(k,1) = cgrid%ntext_soil(k,ipy)
          enddo
 
+         cpoly%ncol_soil(1) = cgrid%ncol_soil(ipy)
+
          ! Set soil moisture decay function, based on second layer's K value
          ! use the second layer instead of the top in case top is organic/peat
          sc = cpoly%ntext_soil(nzg-1,1)
@@ -203,6 +205,8 @@ subroutine read_site_file(cgrid,igr)
                   do k=1,nzg
                      cpoly%ntext_soil(k,isi) = cgrid%ntext_soil(k,ipy)
                   enddo
+                  
+                  cpoly%ncol_soil(isi) = cgrid%ncol_soil(ipy)
 
                   area_sum = area_sum + dble(area)
                   cpoly%sitenum(isi)      = sitenum
@@ -230,6 +234,7 @@ subroutine read_site_file(cgrid,igr)
                         cpoly%ntext_soil(i,isi) = soilclass(1)
                      end do
                   end if
+                  
                   !//Currently do nothing with setting site-level soils
 
                   sc = cpoly%ntext_soil(nzg-1,1)

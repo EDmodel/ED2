@@ -146,6 +146,10 @@ subroutine patch_interp_driver(icm,ifm)
                     ,leaf_g(icm)%ribulk,leaf_g(ifm)%ribulk,leaf_g(icm)%patch_area          &
                     ,leaf_g(icm)%patch_area,scratch%vt3da,scratch%vt3db,scratch%vt2da      &
                     ,scratch%vt2db )
+   call patch_interp(icm,ifm,1,nnxp(icm),nnyp(icm),npatch,1,nnxp(ifm),nnyp(ifm),npatch     &
+                    ,leaf_g(icm)%psibar_10d,leaf_g(ifm)%psibar_10d,leaf_g(icm)%patch_area  &
+                    ,leaf_g(icm)%patch_area,scratch%vt3da,scratch%vt3db,scratch%vt2da      &
+                    ,scratch%vt2db )
 
    return
 end subroutine patch_interp_driver
@@ -211,6 +215,7 @@ subroutine coarse2fine_driver(icm,ifm)
                                  ,leaf_g(ifm)%evap_gc        , leaf_g(icm)%evap_gc         &
                                  ,leaf_g(ifm)%evap_vc        , leaf_g(icm)%evap_vc         &
                                  ,leaf_g(ifm)%transp         , leaf_g(icm)%transp          &
+                                 ,leaf_g(ifm)%psibar_10d     , leaf_g(icm)%psibar_10d      &
                                  ,leaf_g(ifm)%gpp            , leaf_g(icm)%gpp             &
                                  ,leaf_g(ifm)%plresp         , leaf_g(icm)%plresp          &
                                  ,leaf_g(ifm)%resphet        , leaf_g(icm)%resphet         )
@@ -245,8 +250,8 @@ subroutine coarse2fine(ifm,mxpf,mypf,icm,mxpc,mypc,mzg,mzs,mpat                 
                 ,f_veg_ndvic      , c_veg_ndvic      ,f_sensible_gc    , c_sensible_gc     &
                 ,f_sensible_vc    , c_sensible_vc    ,f_evap_gc        , c_evap_gc         &
                 ,f_evap_vc        , c_evap_vc        ,f_transp         , c_transp          &
-                ,f_gpp            , c_gpp            ,f_plresp         , c_plresp          &
-                ,f_resphet        , c_resphet        )
+                ,f_psibar_10d     , c_psibar_10d     ,f_gpp            , c_gpp             &
+                ,f_plresp         , c_plresp         ,f_resphet        , c_resphet         )
    use mem_grid, only : ipm & ! intent(in)
                       , jpm ! ! intent(in)
    implicit none
@@ -296,6 +301,7 @@ subroutine coarse2fine(ifm,mxpf,mypf,icm,mxpc,mypc,mzg,mzs,mpat                 
    real, dimension(    mxpc,mypc,mpat), intent(in)  :: c_evap_gc
    real, dimension(    mxpc,mypc,mpat), intent(in)  :: c_evap_vc
    real, dimension(    mxpc,mypc,mpat), intent(in)  :: c_transp
+   real, dimension(    mxpc,mypc,mpat), intent(in)  :: c_psibar_10d
    real, dimension(    mxpc,mypc,mpat), intent(in)  :: c_gpp
    real, dimension(    mxpc,mypc,mpat), intent(in)  :: c_plresp
    real, dimension(    mxpc,mypc,mpat), intent(in)  :: c_resphet
@@ -335,6 +341,7 @@ subroutine coarse2fine(ifm,mxpf,mypf,icm,mxpc,mypc,mzg,mzs,mpat                 
    real, dimension(    mxpf,mypf,mpat), intent(out) :: f_evap_gc
    real, dimension(    mxpf,mypf,mpat), intent(out) :: f_evap_vc
    real, dimension(    mxpf,mypf,mpat), intent(out) :: f_transp
+   real, dimension(    mxpf,mypf,mpat), intent(out) :: f_psibar_10d
    real, dimension(    mxpf,mypf,mpat), intent(out) :: f_gpp
    real, dimension(    mxpf,mypf,mpat), intent(out) :: f_plresp
    real, dimension(    mxpf,mypf,mpat), intent(out) :: f_resphet
@@ -396,6 +403,7 @@ subroutine coarse2fine(ifm,mxpf,mypf,icm,mxpc,mypc,mzg,mzs,mpat                 
             f_evap_gc              (i,j,ipat) = c_evap_gc         (ic,jc,ipat)
             f_evap_vc              (i,j,ipat) = c_evap_vc         (ic,jc,ipat)
             f_transp               (i,j,ipat) = c_transp          (ic,jc,ipat)
+            f_psibar_10d           (i,j,ipat) = c_psibar_10d      (ic,jc,ipat)
             f_gpp                  (i,j,ipat) = c_gpp             (ic,jc,ipat)
             f_plresp               (i,j,ipat) = c_plresp          (ic,jc,ipat)
             f_resphet              (i,j,ipat) = c_resphet         (ic,jc,ipat)

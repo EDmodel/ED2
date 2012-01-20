@@ -68,6 +68,14 @@ module canopy_struct_dynamics
    !        above plant canopies of arbitrary structure.  Boundary Layer Meteorology, 91,  !
    !        81-107.                                                                        !
    !                                                                                       !
+   ! 4.  This option is almost the same as option 1, except that the ground conductance    !
+   !     beneath a vegetated canopy is found in a similar way as the CLM technical note,   !
+   !     equations (5.98-5.100).  The conductance for bare ground is still found the same  !
+   !     way as in the similarity theory.                                                  !
+   !                                                                                       !
+   !     Oleson, K. W., et al.; Technical description of version 4.0 of the community land !
+   !        model (CLM) NCAR Technical Note NCAR/TN-478+STR, Boulder, CO, April 2010.      !
+   !                                                                                       !
    !     Ultimately, this routine solves for the resistance of water vapor and sensible    !
    ! heat from the soil surface to canopy air space and from the leaf surfaces to canopy   !
    ! air space.                                                                            !
@@ -77,6 +85,7 @@ module canopy_struct_dynamics
                                   , sitetype             & ! structure
                                   , patchtype            ! ! structure
       use met_driver_coms  , only : met_driv_state       ! ! structure
+      use grid_coms        , only : nzg                  ! ! intent(in)
       use rk4_coms         , only : ibranch_thermo       ! ! intent(in)
       use canopy_air_coms  , only : icanturb             & ! intent(in), can. turb. scheme
                                   , ustmin               & ! intent(in)
@@ -95,13 +104,13 @@ module canopy_struct_dynamics
                                   , infunc               & ! intent(in)
                                   , gamma_mw99           & ! intent(in)
                                   , nu_mw99              & ! intent(in)
+                                  , cs_dense0            & ! intent(in)
+                                  , gamma_clm4           & ! intent(in)
                                   , rb_inter             & ! intent(in)
                                   , rb_slope             & ! intent(in)
-                                  , ggfact               & ! intent(in)
                                   , tprandtl             & ! intent(in)
                                   , zoobukhov            ! ! function
-      use canopy_layer_coms, only : crown_mod            & ! intent(in)
-                                  , ncanlyr              & ! intent(in)
+      use canopy_layer_coms, only : ncanlyr              & ! intent(in)
                                   , dzcan                & ! intent(in)
                                   , zztop0i              & ! intent(in)
                                   , ehgti                & ! intent(in)
@@ -144,6 +153,7 @@ module canopy_struct_dynamics
       integer        :: ico          ! Cohort loop
       integer        :: ipft         ! PFT alias
       integer        :: k            ! Elevation index
+      integer        :: ksn          ! Number of temporary sfc. water layers    [      ---]
       integer        :: kk           ! Counter                                  [      ---]
       integer        :: zcan         ! Index of canopy top elevation
       integer        :: zels         ! Index of roughness height
@@ -205,6 +215,8 @@ module canopy_struct_dynamics
       real           :: sigma_wou2   ! Square of (sigma w / u)                  [      ---]
       real           :: turbi        ! Mean turbulent intensity                 [      m/s]
       real           :: can_reynolds ! Reynolds number of the Sfc. mixing layer [      ---]
+      real           :: ground_temp  ! Ground temperature                       [      ---]
+      real           :: stab_clm4    ! Stability parameter (CLM4, eq. 5.104)    [      ---]
       !----- External functions. ----------------------------------------------------------!
       real(kind=4), external :: cbrt ! Cubic root that works for negative numbers
       !------------------------------------------------------------------------------------!
@@ -256,7 +268,7 @@ module canopy_struct_dynamics
          ! zero to the conductance, but it shouldn't be used at all.                       !
          !---------------------------------------------------------------------------------!
          csite%ggveg(ipa) = 0.0
-         csite%ggnet(ipa) = ggfact * csite%ggbare(ipa)
+         csite%ggnet(ipa) = csite%ggbare(ipa)
          !---------------------------------------------------------------------------------!
 
 
@@ -299,12 +311,14 @@ module canopy_struct_dynamics
       select case (icanturb)
 
       !------------------------------------------------------------------------------------!
-      ! LEAF-3 Case: This approach is very similar to older implementations of ED-2, and   !
-      !              it is very similar to LEAF-3, and to option 1, except that option 1   !
-      !              computes the vegetated ground conductance and wind profile different- !
-      !              ly.                                                                   !
+      ! 0.  LEAF-3 Case: This approach is very similar to older implementations of ED-2,   !
+      !     and it is very similar to LEAF-3, and to option 1, except that option 1        !
+      !     computes the vegetated ground conductance and wind profile differently.        !
+      ! 4.  CLM-4 Case: This is the same as option 0., except that the ground conductance  !
+      !     is found using equations (5.99-5.104) from CLM technical note (except the bare !
+      !     ground, which is still found using the similarity theory).                     !
       !------------------------------------------------------------------------------------!
-      case (0)
+      case (0,4)
 
          !---------------------------------------------------------------------------------!
          !     Find the roughness as the average between the bare ground and vegetated     !
@@ -339,17 +353,52 @@ module canopy_struct_dynamics
                       ,csite%rough(ipa),csite%ustar(ipa),csite%tstar(ipa),estar            &
                       ,csite%qstar(ipa),csite%cstar(ipa),csite%zeta(ipa),csite%ribulk(ipa) &
                       ,csite%ggbare(ipa))
+         !---------------------------------------------------------------------------------!
 
+
+
+         !---------------------------------------------------------------------------------!
+         !     Find the aerodynamic resistance due to vegetated ground.                    !
+         !---------------------------------------------------------------------------------!
          if (csite%snowfac(ipa) < 0.9) then
-            factv  = log((cmet%geoht - csite%veg_displace(ipa)) / csite%rough(ipa))        &
-                   / (vonk * vonk * cmet%vels)
-            aux    = exp(exar * (1. - (csite%veg_displace(ipa) + csite%rough(ipa))         &
-                                    / csite%veg_height(ipa)) )
-            csite%ggveg(ipa) = (exar * (csite%veg_height(ipa) - csite%veg_displace(ipa) )) &
-                             / (factv * csite%veg_height(ipa) * (exp(exar) - aux))
-         else 
+            select case (icanturb)
+            case (0)
+               !----- LEAF-3 method. ------------------------------------------------------!
+               factv  = log((cmet%geoht - csite%veg_displace(ipa)) / csite%rough(ipa))     &
+                      / (vonk * vonk * cmet%vels)
+               aux    = exp(exar * (1. - (csite%veg_displace(ipa) + csite%rough(ipa))      &
+                                       / csite%veg_height(ipa)) )
+               csite%ggveg(ipa) = (exar * (csite%veg_height(ipa)-csite%veg_displace(ipa))) &
+                                / (factv * csite%veg_height(ipa) * (exp(exar) - aux))
+            case (4)
+               !---------------------------------------------------------------------------!
+               !     Similar to CLM-4, although we use the ground conductance for bare     !
+               ! ground from the similarity theory and the fraction of open canopy to      !
+               ! determine the weights.  The conductance for dense canopy is simply        !
+               ! Cs_dense * u*, but Cs_dense depends on the stability.                     !
+               !---------------------------------------------------------------------------!
+               !----- Find which ground temperature to use. -------------------------------!
+               ksn = csite%nlev_sfcwater(ipa)
+               if (ksn == 0) then
+                  ground_temp = csite%soil_tempk(nzg,ipa)
+               else
+                  ground_temp = csite%sfcwater_tempk(ksn,ipa)
+               end if
+               !----- Stability factor (0 when it is unstable). ---------------------------!
+               stab_clm4        = max( 0.0                                                 &
+                                     , min(10., 2.0 * grav * csite%veg_height(ipa)         &
+                                              * ( csite%can_temp(ipa) - ground_temp )      &
+                                              / ( ( csite%can_temp(ipa) + ground_temp)     &
+                                              * csite%ustar(ipa) * csite%ustar(ipa) ) ) )
+               !----- The "veg" conductance is equivalent to CLM4 dense canopy. -----------!
+               csite%ggveg(ipa) = cs_dense0 * csite%ustar(ipa)                             &
+                                / (1.0 + gamma_clm4 * stab_clm4)
+            end select
+         else
             csite%ggveg(ipa) = 0.
          end if
+         !---------------------------------------------------------------------------------!
+
 
 
          !---------------------------------------------------------------------------------!
@@ -360,210 +409,27 @@ module canopy_struct_dynamics
          !----- Find the wind at the top of the canopy. -----------------------------------!
          uh = reduced_wind(csite%ustar(ipa),csite%zeta(ipa),csite%ribulk(ipa),cmet%geoht   &
                           ,csite%veg_displace(ipa),cpatch%hite(1),csite%rough(ipa))
-         select case (crown_mod)
-         case (0)
-            !------------------------------------------------------------------------------!
-            !     This is the Leuning et al. (1995) with no modification, except that we   !
-            ! assume each cohort to be on top of each other (no ties), with very thin      !
-            ! depth and full patch coverage.                                               !
-            !------------------------------------------------------------------------------!
-            do ico=1,cpatch%ncohorts
-               !----- Find the extinction coefficients. -----------------------------------!
-               extinct_half = exp(- 0.25 * cpatch%lai(ico) / cpatch%crown_area(ico))
-               extinct_full = exp(- 0.50 * cpatch%lai(ico) / cpatch%crown_area(ico))
-
-               !----- Assume that wind is at the middle of the thin crown. ----------------!
-               cpatch%veg_wind(ico) = max(ugbmin, uh * extinct_half)
-               uh                   = uh * extinct_full
-            end do
+         !---------------------------------------------------------------------------------!
+         !     In this version we still base ourselves on the Leuning et al. (1995) model, !
+         ! assuming each cohort to be on top of each other (i.e. no ties).  We also assume !
+         ! extinction to be limited to the finite crown area, so the bottom can get a bit  !
+         ! windier.                                                                        !
+         !---------------------------------------------------------------------------------!
+         do ico=1,cpatch%ncohorts
+            !----- Find the extinction coefficients. --------------------------------------!
+            extinct_half = cpatch%crown_area(ico)                                          &
+                         * exp(- 0.25 * cpatch%lai(ico) / cpatch%crown_area(ico))          &
+                         + (1. - cpatch%crown_area(ico))
+            extinct_full = cpatch%crown_area(ico)                                          &
+                         * exp(- 0.50 * cpatch%lai(ico) / cpatch%crown_area(ico))          &
+                         + (1. - cpatch%crown_area(ico))
             !------------------------------------------------------------------------------!
 
-         case (1)
+            !----- Assume that wind is at the middle of the thin crown. -------------------!
+            cpatch%veg_wind(ico) = max(ugbmin, uh * extinct_half)
+            uh                   = uh * extinct_full
             !------------------------------------------------------------------------------!
-            !     In this version we still base ourselves on the Leuning et al. (1995)     !
-            ! model, but we assume extinction to be limited to the finite crown area.      !
-            ! Ties are not allowed in this case either.                                    !
-            !------------------------------------------------------------------------------!
-            do ico=1,cpatch%ncohorts
-               !----- Find the extinction coefficients. -----------------------------------!
-               extinct_half = cpatch%crown_area(ico)                                       &
-                            * exp(- 0.25 * cpatch%lai(ico) / cpatch%crown_area(ico))       &
-                            + (1. - cpatch%crown_area(ico))
-               extinct_full = cpatch%crown_area(ico)                                       &
-                            * exp(- 0.50 * cpatch%lai(ico) / cpatch%crown_area(ico))       &
-                            + (1. - cpatch%crown_area(ico))
-
-               !----- Assume that wind is at the middle of the thin crown. ----------------!
-               cpatch%veg_wind(ico) = max(ugbmin, uh * extinct_half)
-               uh                   = uh * extinct_full
-            end do
-            !------------------------------------------------------------------------------!
-
-         case (2)
-            !------------------------------------------------------------------------------!
-            !    In this version we use Leuning et al. (1995) as the starting point, but   !
-            ! now we assume that the cohorts may not be on top of each other (ties are     !
-            ! allowed and that the extinction is limited to the finite crown area.  Be-    !
-            ! cause cohorts may coexist at a given height, we must split the canopy into   !
-            ! several layers first, then we compute the average assuming that the leaf     !
-            ! area density is constant.                                                    !
-            !------------------------------------------------------------------------------!
-
-
-
-            !------------------------------------------------------------------------------!
-            !    Find the top layer and the top height.                                    !
-            !------------------------------------------------------------------------------!
-            zcan = max(1,min(ncanlyr,ceiling((cpatch%hite(1) * zztop0i)**ehgti)))
-            htop = zztop(zcan)
-            !------------------------------------------------------------------------------!
-
-
-
-            !----- Use the default wood area index. ---------------------------------------!
-            windext_half(:) = 0.0
-            windext_full(:) = 0.0
-            opencan     (:) = 0.0 !----- This will be closed canopy inside this loop. -----!
-            do ico=1,cpatch%ncohorts
-               ipft = cpatch%pft(ico)
-
-               !---------------------------------------------------------------------------!
-               !     Find the heights, and compute the LAD of this cohort.                 !
-               !---------------------------------------------------------------------------!
-               htopcrown = cpatch%hite(ico)
-               hbotcrown = h2crownbh(cpatch%hite(ico),ipft)
-               ladcohort = (cpatch%lai(ico) + cpatch%wai(ico)) / (htopcrown - hbotcrown)
-               kapartial = min(ncanlyr,floor  ((hbotcrown * zztop0i)**ehgti) + 1)
-               kafull    = min(ncanlyr,ceiling((hbotcrown * zztop0i)**ehgti) + 1)
-               kzpartial = min(ncanlyr,ceiling((htopcrown * zztop0i)**ehgti))
-               kzfull    = min(ncanlyr,floor  ((htopcrown * zztop0i)**ehgti))
-               !---------------------------------------------------------------------------!
-
-
-
-               !---------------------------------------------------------------------------!
-               !     Add the LAD for the full layers.                                      !
-               !---------------------------------------------------------------------------!
-               do k = kafull,kzfull
-                  this_lai        = ladcohort * dzcan(k)
-                  opencan(k)      = opencan(k)      + cpatch%crown_area(ico)
-                  windext_full(k) = windext_full(k) + cpatch%crown_area(ico)               &
-                                  * exp(- 0.50 * this_lai / cpatch%crown_area(ico))
-                  windext_half(k) = windext_half(k) + cpatch%crown_area(ico)               &
-                                  * exp(- 0.25 * this_lai / cpatch%crown_area(ico))
-               end do
-               !---------------------------------------------------------------------------!
-
-
-
-               !---------------------------------------------------------------------------!
-               !      Add the LAD for the partial layers.  The only special case is when   !
-               ! they are both the same layer, which must be done separately.              !
-               !---------------------------------------------------------------------------!
-               if (kapartial == kzpartial) then
-                  k               = kapartial
-                  this_lai        = ladcohort * (htopcrown - hbotcrown)
-                  opencan(k)      = opencan(k)      + cpatch%crown_area(ico)
-                  windext_full(k) = windext_full(k) + cpatch%crown_area(ico)               &
-                                  * exp(- 0.50 * this_lai / cpatch%crown_area(ico))
-                  windext_half(k) = windext_half(k) + cpatch%crown_area(ico)               &
-                                  * exp(- 0.25 * this_lai / cpatch%crown_area(ico))
-               else
-                  !------ Bottom partial layer. -------------------------------------------!
-                  k               = kapartial
-                  this_lai        = ladcohort * (zztop(kapartial) - hbotcrown)
-                  opencan(k)      = opencan(k)      + cpatch%crown_area(ico)
-                  windext_full(k) = windext_full(k) + cpatch%crown_area(ico)               &
-                                  * exp(- 0.50 * this_lai / cpatch%crown_area(ico))
-                  windext_half(k) = windext_half(k) + cpatch%crown_area(ico)               &
-                                  * exp(- 0.25 * this_lai / cpatch%crown_area(ico))
-                  !------ Top partial layer. ----------------------------------------------!
-                  k               = kzpartial
-                  this_lai        = ladcohort * (htopcrown - zzbot(kzpartial))
-                  opencan(k)      = opencan(k)      + cpatch%crown_area(ico)
-                  windext_full(k) = windext_full(k) + cpatch%crown_area(ico)               &
-                                  * exp(- 0.50 * this_lai / cpatch%crown_area(ico))
-                  windext_half(k) = windext_half(k) + cpatch%crown_area(ico)               &
-                                  * exp(- 0.25 * this_lai / cpatch%crown_area(ico))
-               end if
-               !---------------------------------------------------------------------------!
-            end do
-            !------------------------------------------------------------------------------!
-
-
-
-            !------------------------------------------------------------------------------!
-            !     At this point opencan is actually closed canopy fraction.  In case it    !
-            ! exceeds one, we have to scale down the wind extinction coefficients before   !
-            ! we convert to open canopy fraction (kind of clumping effect, or squeezing    !
-            ! effect).                                                                     !
-            !------------------------------------------------------------------------------!
-            where (opencan(:) > 1.0)
-               windext_full(:) = windext_full(:) / opencan(:)
-               windext_half(:) = windext_half(:) / opencan(:)
-               opencan(:)      = 0.0
-            elsewhere
-               opencan(:)      = 1.0 - opencan(:)
-            end where
-            !------------------------------------------------------------------------------!
-
-
-
-            !------------------------------------------------------------------------------!
-            !      Add the "open canopy effect" to the extinction.  This can be though as  !
-            ! the contribution of the remaining area as having LAI=0.                      !
-            !------------------------------------------------------------------------------!
-            windext_full(:) = windext_full(:) + opencan(:)
-            windext_half(:) = windext_half(:) + opencan(:)
-            !------------------------------------------------------------------------------!
-
-
-
-            !------------------------------------------------------------------------------!
-            !    Find the wind profile with the given wxtinctions.                         !
-            !------------------------------------------------------------------------------!
-            windlyr(:) = 0.0
-            do k=1,zcan
-               !----- Assume that wind is at the middle of the thin crown. ----------------!
-               windlyr(k) = max(ugbmin, uh * windext_half(k))
-               uh         = uh * windext_full(k)
-            end do
-            !------------------------------------------------------------------------------!
-
-
-
-            !------------------------------------------------------------------------------!
-            !     Find the wind as the average amongst all layers where the crown is       !
-            ! defined.                                                                     !
-            !------------------------------------------------------------------------------!
-            do ico=1,cpatch%ncohorts
-               ipft = cpatch%pft(ico)
-
-
-               !---------------------------------------------------------------------------!
-               !     Find the heights, and compute the bounds.                             !
-               !---------------------------------------------------------------------------!
-               htopcrown = cpatch%hite(ico)
-               hbotcrown = h2crownbh(cpatch%hite(ico),ipft)
-               kapartial = min(ncanlyr,floor  ((hbotcrown * zztop0i)**ehgti) + 1)
-               kzpartial = min(ncanlyr,ceiling((htopcrown * zztop0i)**ehgti))
-               !---------------------------------------------------------------------------!
-
-
-
-               !---------------------------------------------------------------------------!
-               !     We simplify things here and just average between the partial layers.  !
-               !---------------------------------------------------------------------------!
-               cpatch%veg_wind(ico) = 0.0
-               do k=kapartial,kzpartial
-                  cpatch%veg_wind(ico) = cpatch%veg_wind(ico) + windlyr(k) * dzcan(k)
-               end do
-               cpatch%veg_wind(ico) = cpatch%veg_wind(ico)                                 &
-                                    / (zztop(kzpartial) - zzbot(kapartial))
-            end do
-            !------------------------------------------------------------------------------!
-
-         end select
+         end do
          !---------------------------------------------------------------------------------!
 
 
@@ -634,9 +500,9 @@ module canopy_struct_dynamics
          ! bare and vegetated grounds.                                                     !
          !---------------------------------------------------------------------------------!
          if (csite%opencan_frac(ipa) > 0.999 .or. csite%snowfac(ipa) >= 0.9) then
-            csite%ggnet(ipa) = ggfact * csite%ggbare(ipa)
+            csite%ggnet(ipa) = csite%ggbare(ipa)
          else
-            csite%ggnet(ipa) = ggfact * csite%ggbare(ipa) * csite%ggveg(ipa)               &
+            csite%ggnet(ipa) = csite%ggbare(ipa) * csite%ggveg(ipa)                        &
                              / ( csite%ggveg(ipa) + (1. - csite%opencan_frac(ipa))         &
                                                   * csite%ggbare(ipa))
          end if
@@ -800,9 +666,9 @@ module canopy_struct_dynamics
          ! bare and vegetated grounds.                                                     !
          !---------------------------------------------------------------------------------!
          if (csite%opencan_frac(ipa) > 0.999 .or. csite%snowfac(ipa) >= 0.9) then
-            csite%ggnet(ipa) = ggfact * csite%ggbare(ipa)
+            csite%ggnet(ipa) = csite%ggbare(ipa)
          else
-            csite%ggnet(ipa) = ggfact * csite%ggbare(ipa) * csite%ggveg(ipa)               &
+            csite%ggnet(ipa) = csite%ggbare(ipa) * csite%ggveg(ipa)                        &
                              / ( csite%ggveg(ipa)  + (1. - csite%opencan_frac(ipa))        &
                                                    * csite%ggbare(ipa) )
          end if
@@ -1289,9 +1155,9 @@ module canopy_struct_dynamics
          ! bare and vegetated grounds.                                                     !
          !---------------------------------------------------------------------------------!
          if (csite%opencan_frac(ipa) > 0.999 .or. csite%snowfac(ipa) >= 0.9) then
-            csite%ggnet(ipa) = ggfact * csite%ggbare(ipa)
+            csite%ggnet(ipa) = csite%ggbare(ipa)
          else
-            csite%ggnet(ipa) = ggfact * csite%ggbare(ipa) * csite%ggveg(ipa)               &
+            csite%ggnet(ipa) = csite%ggbare(ipa) * csite%ggveg(ipa)                        &
                              / ( csite%ggveg(ipa) + (1. - csite%opencan_frac(ipa))         &
                                                   * csite%ggbare(ipa))
          end if
@@ -1376,6 +1242,12 @@ module canopy_struct_dynamics
    !        above plant canopies of arbitrary structure.  Boundary Layer Meteorology, 91,  !
    !        81-107.                                                                        !
    !                                                                                       !
+   ! 4.  This option is almost the same as option 1, except that the ground conductance is !
+   !     found following the CLM technical note, equations (5.98-5.100).                   !
+   !                                                                                       !
+   !     Oleson, K. W., et al.; Technical description of the community land model (CLM)    !
+   !        NCAR Technical Note NCAR/TN-461+STR, Boulder, CO, May 2004.                    !
+   !                                                                                       !
    !     Ultimately, this routine solves for the resistance of water vapor and sensible    !
    ! heat from the soil surface to canopy air space and from the leaf surfaces to canopy   !
    ! air space.                                                                            !
@@ -1392,6 +1264,7 @@ module canopy_struct_dynamics
                                   , wcapcani             & ! intent(out)
                                   , hcapcani             & ! intent(out)
                                   , ccapcani             ! ! intent(out)
+      use grid_coms        , only : nzg                  ! ! intent(in)
       use canopy_air_coms  , only : icanturb             & ! intent(in), can. turb. scheme
                                   , ustmin8              & ! intent(in)
                                   , ugbmin8              & ! intent(in)
@@ -1411,11 +1284,11 @@ module canopy_struct_dynamics
                                   , nu_mw99_8            & ! intent(in)
                                   , rb_inter             & ! intent(in)
                                   , rb_slope             & ! intent(in)
-                                  , ggfact8              & ! intent(in)
+                                  , cs_dense08           & ! intent(in)
+                                  , gamma_clm48          & ! intent(in)
                                   , tprandtl8            & ! intent(in)
                                   , zoobukhov8           ! ! intent(in)
-      use canopy_layer_coms, only : crown_mod            & ! intent(in)
-                                  , ncanlyr              & ! intent(in)
+      use canopy_layer_coms, only : ncanlyr              & ! intent(in)
                                   , dzcan8               & ! intent(in)
                                   , zztop0i8             & ! intent(in)
                                   , ehgti8               & ! intent(in)
@@ -1455,6 +1328,7 @@ module canopy_struct_dynamics
       integer        :: ico          ! Cohort loop
       integer        :: ipft         ! PFT alias
       integer        :: k            ! Elevation index
+      integer        :: ksn          ! Number of temporary sfc. water layers    [      ---]
       integer        :: zcan         ! Index of canopy top elevation
       integer        :: kafull       ! First layer fully occupied by crown
       integer        :: kzfull       ! Last layer fully occupied by crown
@@ -1511,6 +1385,8 @@ module canopy_struct_dynamics
       real(kind=8)   :: sigma_wou2   ! Square of (sigma w / u)                  [      ---]
       real(kind=8)   :: turbi        ! Mean turbulent intensity                 [      m/s]
       real(kind=8)   :: can_reynolds ! Reynolds number of the sfc. mixing layer [      ---]
+      real(kind=8)   :: ground_temp  ! Ground temperature                       [      ---]
+      real(kind=8)   :: stab_clm4    ! Stability parameter (CLM4, eq. 5.104)    [      ---]
       !------ External procedures ---------------------------------------------------------!
       real(kind=8), external :: cbrt8    ! Cubic root that works for negative numbers
       real(kind=4), external :: sngloff  ! Safe double -> simple precision.
@@ -1556,7 +1432,7 @@ module canopy_struct_dynamics
          ! ground.                                                                         !
          !---------------------------------------------------------------------------------!
          initp%ggveg = 0.d0
-         initp%ggnet = ggfact8 * initp%ggbare
+         initp%ggnet = initp%ggbare
          !---------------------------------------------------------------------------------!
 
 
@@ -1593,16 +1469,15 @@ module canopy_struct_dynamics
       ! resistance.                                                                        !
       !------------------------------------------------------------------------------------!
       select case (icanturb)
-
-
-
       !------------------------------------------------------------------------------------!
-      ! LEAF-3 Case: This approach is very similar to older implementations of ED-2, and   !
-      !              it is very similar to LEAF-3, and to option 1, except that option 1   !
-      !              computes the vegetated ground conductance and wind profile different- !
-      !              ly.                                                                   !
+      ! 0.  LEAF-3 Case: This approach is very similar to older implementations of ED-2,   !
+      !     and it is very similar to LEAF-3, and to option 1, except that option 1        !
+      !     computes the vegetated ground conductance and wind profile differently.        !
+      ! 4.  CLM-4 Case: This is the same as option 0., except that the ground conductance  !
+      !     is found using equations (5.99-5.104) from CLM technical note (except the bare !
+      !     ground, which is still found using the similarity theory).                     !
       !------------------------------------------------------------------------------------!
-      case (0) 
+      case (0,4)
 
          !---------------------------------------------------------------------------------!
          !     The roughness is found by combining two weighted averages.  The first one   !
@@ -1628,16 +1503,47 @@ module canopy_struct_dynamics
                        ,initp%cstar,initp%zeta,initp%ribulk,initp%ggbare)
          !---------------------------------------------------------------------------------!
 
+
+
+         !---------------------------------------------------------------------------------!
+         !     Find the aerodynamic resistance due to vegetated ground.                    !
+         !---------------------------------------------------------------------------------!
          if (initp%snowfac < 9.d-1) then
-            factv        = log((rk4site%geoht-initp%veg_displace) / initp%rough)           &
-                         / (vonk8 * vonk8 * rk4site%vels)
-            aux          = exp(exar8 * (1.d0 - (initp%veg_displace + initp%rough)          &
-                                             / initp%veg_height) )
-            initp%ggveg  = (exar8 * (initp%veg_height - initp%veg_displace))               &
-                         / (factv * initp%veg_displace * (exp(exar8) - aux))
+            select case (icanturb)
+            case (0)
+               !----- LEAF-3 method. ------------------------------------------------------!
+               factv        = log((rk4site%geoht-initp%veg_displace) / initp%rough)        &
+                            / (vonk8 * vonk8 * rk4site%vels)
+               aux          = exp(exar8 * (1.d0 - (initp%veg_displace + initp%rough)       &
+                                                / initp%veg_height) )
+               initp%ggveg  = (exar8 * (initp%veg_height - initp%veg_displace))            &
+                            / (factv * initp%veg_displace * (exp(exar8) - aux))
+            case (4)
+               !---------------------------------------------------------------------------!
+               !     Similar to CLM-4, although we use the ground conductance for bare     !
+               ! ground from the similarity theory and the fraction of open canopy to      !
+               ! determine the weights.  The conductance for dense canopy is simply        !
+               ! Cs_dense * u*, but Cs_dense depends on the stability.                     !
+               !---------------------------------------------------------------------------!
+               !----- Find which ground temperature to use. -------------------------------!
+               ksn = csite%nlev_sfcwater(ipa)
+               if (ksn == 0) then
+                  ground_temp = csite%soil_tempk(nzg,ipa)
+               else
+                  ground_temp = csite%sfcwater_tempk(ksn,ipa)
+               end if
+               !----- Stability factor (0 when it is unstable). ---------------------------!
+               stab_clm4 = max( 0.d0, min(1.d1, 2.d0 * grav8 * initp%veg_height            &
+                                              * ( initp%can_temp - ground_temp )           &
+                                              / ( ( initp%can_temp + ground_temp)          &
+                                              * initp%ustar * initp%ustar ) ) )
+               !----- The "veg" conductance is equivalent to CLM4 dense canopy. -----------!
+               initp%ggveg = cs_dense08 * initp%ustar / (1.d0 + gamma_clm48 * stab_clm4)
+            end select
          else 
             initp%ggveg = 0.d0
          end if
+         !---------------------------------------------------------------------------------!
 
 
          !---------------------------------------------------------------------------------!
@@ -1649,206 +1555,24 @@ module canopy_struct_dynamics
          uh = reduced_wind8(initp%ustar,initp%zeta,initp%ribulk,rk4site%geoht              &
                            ,initp%veg_displace,dble(cpatch%hite(1)),initp%rough)
 
-         select case (crown_mod)
-         case (0)
-            !------------------------------------------------------------------------------!
-            !     This is the Leuning et al. (1995) with no modification, except that we   !
-            ! assume each cohort to be on top of each other (no ties), with very thin      !
-            ! depth and full patch coverage.                                               !
-            !------------------------------------------------------------------------------!
-            do ico=1,cpatch%ncohorts
-               !----- Find the extinction coefficients. -----------------------------------!
-               extinct_half = exp(- 2.5d-1 * initp%lai(ico) / initp%crown_area(ico))
-               extinct_full = exp(- 5.0d-1 * initp%lai(ico) / initp%crown_area(ico))
-
-               !----- Assume that wind is at the middle of the thin crown. ----------------!
-               initp%veg_wind(ico) = max(ugbmin8, uh * extinct_half)
-               uh                  = uh * extinct_full
-            end do
-
-         case (1)
-            !------------------------------------------------------------------------------!
-            !     In this version we still base ourselves on the Leuning et al. (1995)     !
-            ! model, but we assume extinction to be limited to the finite crown area.      !
-            ! Ties are not allowed in this case either.                                    !
-            !------------------------------------------------------------------------------!
-            do ico=1,cpatch%ncohorts
-               !----- Find the extinction coefficients. -----------------------------------!
-               extinct_half = initp%crown_area(ico)                                        &
-                            * exp(- 2.5d-1 * initp%lai(ico) / initp%crown_area(ico))       &
-                            + (1.d0 - initp%crown_area(ico))
-               extinct_full = initp%crown_area(ico)                                        &
-                            * exp(- 5.d-1 * initp%lai(ico) / initp%crown_area(ico))        &
-                            + (1.d0 - initp%crown_area(ico))
-               !----- Assume that wind is at the middle of the thin crown. ----------------!
-               initp%veg_wind(ico) = max(ugbmin8, uh * extinct_half)
-               uh                  = uh * extinct_full
-            end do
-
-         case (2)
-            !------------------------------------------------------------------------------!
-            !    In this version we use Leuning et al. (1995) as the starting point, but   !
-            ! now we assume that the cohorts may not be on top of each other (ties are     !
-            ! allowed and that the extinction is limited to the finite crown area.  Be-    !
-            ! cause cohorts may coexist at a given height, we must split the canopy into   !
-            ! several layers first, then we compute the average assuming that the leaf     !
-            ! area density is constant.                                                    !
-            !------------------------------------------------------------------------------!
-
-
-
-            !------------------------------------------------------------------------------!
-            !    Find the top layer and the top height.                                    !
-            !------------------------------------------------------------------------------!
-            zcan = max(1,min(ncanlyr,ceiling((dble(cpatch%hite(1)) * zztop0i8)**ehgti8)))
-            htop = zztop8(zcan)
-            !------------------------------------------------------------------------------!
-
-
-
-            !----- Use the default wood area index. ---------------------------------------!
-            windext_half8(:) = 0.d0
-            windext_full8(:) = 0.d0
-            opencan8     (:) = 0.d0 !----- This will be closed canopy inside this loop. ---!
-            do ico=1,cpatch%ncohorts
-               ipft = cpatch%pft(ico)
-
-               !---------------------------------------------------------------------------!
-               !     Find the heights, and compute the LAD of this cohort.                 !
-               !---------------------------------------------------------------------------!
-               htopcrown = dble(cpatch%hite(ico))
-               hbotcrown = dble(h2crownbh(cpatch%hite(ico),ipft))
-               ladcohort = (initp%lai(ico) + initp%wai(ico)) / (htopcrown - hbotcrown)
-               kapartial = min(ncanlyr,floor  ((hbotcrown * zztop0i8)**ehgti8) + 1)
-               kafull    = min(ncanlyr,ceiling((hbotcrown * zztop0i8)**ehgti8) + 1)
-               kzpartial = min(ncanlyr,ceiling((htopcrown * zztop0i8)**ehgti8))
-               kzfull    = min(ncanlyr,floor  ((htopcrown * zztop0i8)**ehgti8))
-               !---------------------------------------------------------------------------!
-
-
-
-               !---------------------------------------------------------------------------!
-               !     Add the LAD for the full layers.                                      !
-               !---------------------------------------------------------------------------!
-               do k = kafull,kzfull
-                  this_lai         = ladcohort * dzcan8(k)
-                  opencan8(k)      = opencan8(k)      + initp%crown_area(ico)
-                  windext_full8(k) = windext_full8(k) + initp%crown_area(ico)              &
-                                   * exp(- 5.0d-1 * this_lai / initp%crown_area(ico))
-                  windext_half8(k) = windext_half8(k) + initp%crown_area(ico)              &
-                                   * exp(- 2.5d-1 * this_lai / initp%crown_area(ico))
-               end do
-               !---------------------------------------------------------------------------!
-
-
-
-               !---------------------------------------------------------------------------!
-               !      Add the LAD for the partial layers.  The only special case is when   !
-               ! they are both the same layer, which must be done separately.              !
-               !---------------------------------------------------------------------------!
-               if (kapartial == kzpartial) then
-                  k                = kapartial
-                  this_lai         = ladcohort * (htopcrown - hbotcrown)
-                  opencan8(k)      = opencan8(k)      + initp%crown_area(ico)
-                  windext_full8(k) = windext_full8(k) + initp%crown_area(ico)              &
-                                   * exp(- 5.0d-1 * this_lai / initp%crown_area(ico))
-                  windext_half8(k) = windext_half8(k) + initp%crown_area(ico)              &
-                                   * exp(- 2.5d-1 * this_lai / initp%crown_area(ico))
-               else
-                  !------ Bottom partial layer. -------------------------------------------!
-                  k                = kapartial
-                  this_lai         = ladcohort * (zztop8(kapartial) - hbotcrown)
-                  opencan8(k)      = opencan8(k)      + initp%crown_area(ico)
-                  windext_full8(k) = windext_full8(k) + initp%crown_area(ico)              &
-                                   * exp(- 5.0d-1 * this_lai / initp%crown_area(ico))
-                  windext_half8(k) = windext_half8(k) + initp%crown_area(ico)              &
-                                   * exp(- 2.5d-1 * this_lai / initp%crown_area(ico))
-                  !------ Top partial layer. ----------------------------------------------!
-                  k                = kzpartial
-                  this_lai         = ladcohort * (htopcrown - zzbot8(kzpartial))
-                  opencan8(k)      = opencan8(k)      + initp%crown_area(ico)
-                  windext_full8(k) = windext_full8(k) + initp%crown_area(ico)              &
-                                   * exp(- 5.0d-1 * this_lai / initp%crown_area(ico))
-                  windext_half8(k) = windext_half8(k) + initp%crown_area(ico)              &
-                                   * exp(- 2.5d-1 * this_lai / initp%crown_area(ico))
-               end if
-               !---------------------------------------------------------------------------!
-            end do
-            !------------------------------------------------------------------------------!
-
-
-
-            !------------------------------------------------------------------------------!
-            !     At this point opencan is actually closed canopy fraction.  In case it    !
-            ! exceeds one, we have to scale down the wind extinction coefficients before   !
-            ! we convert to open canopy fraction (kind of clumping effect, or squeezing    !
-            ! effect).                                                                     !
-            !------------------------------------------------------------------------------!
-            where (opencan8(:) > 1.d0)
-               windext_full8(:) = windext_full8(:) / opencan8(:)
-               windext_half8(:) = windext_half8(:) / opencan8(:)
-               opencan8(:)      = 0.d0
-            elsewhere
-               opencan8(:)      = 1.d0 - opencan8(:)
-            end where
-            !------------------------------------------------------------------------------!
-
-
-
-            !------------------------------------------------------------------------------!
-            !      Add the "open canopy effect" to the extinction.  This can be though as  !
-            ! the contribution of the remaining area as having LAI=0.                      !
-            !------------------------------------------------------------------------------!
-            windext_full8(:) = windext_full8(:) + opencan8(:)
-            windext_half8(:) = windext_half8(:) + opencan8(:)
-            !------------------------------------------------------------------------------!
-
-
-
-            !------------------------------------------------------------------------------!
-            !    Find the wind profile with the given wxtinctions.                         !
-            !------------------------------------------------------------------------------!
-            windlyr8(:) = 0.0
-            do k=1,zcan
-               !----- Assume that wind is at the middle of the thin crown. ----------------!
-               windlyr8(k) = max(ugbmin8, uh * windext_half8(k))
-               uh          = uh * windext_full8(k)
-            end do
-            !------------------------------------------------------------------------------!
-
-
-
-            !------------------------------------------------------------------------------!
-            !     Find the wind as the average amongst all layers where the crown is       !
-            ! defined.                                                                     !
-            !------------------------------------------------------------------------------!
-            do ico=1,cpatch%ncohorts
-               ipft = cpatch%pft(ico)
-
-
-               !---------------------------------------------------------------------------!
-               !     Find the heights, and compute the bounds.                             !
-               !---------------------------------------------------------------------------!
-               htopcrown = dble(cpatch%hite(ico))
-               hbotcrown = dble(h2crownbh(cpatch%hite(ico),ipft))
-               kapartial = min(ncanlyr,floor  ((hbotcrown * zztop0i8)**ehgti8) + 1)
-               kzpartial = min(ncanlyr,ceiling((htopcrown * zztop0i8)**ehgti8))
-               !---------------------------------------------------------------------------!
-
-
-
-               !---------------------------------------------------------------------------!
-               !     We simplify things here and just average between the partial layers.  !
-               !---------------------------------------------------------------------------!
-               initp%veg_wind(ico) = 0.d0
-               do k=kapartial,kzpartial
-                  initp%veg_wind(ico) = initp%veg_wind(ico) + windlyr8(k) * dzcan8(k)
-               end do
-               initp%veg_wind(ico) = initp%veg_wind(ico)                                   &
-                                    / (zztop8(kzpartial) - zzbot8(kapartial))
-            end do
-            !------------------------------------------------------------------------------!
-         end select
+         !---------------------------------------------------------------------------------!
+         !     In this version we still base ourselves on the Leuning et al. (1995) model, !
+         ! assuming each cohort to be on top of each other (i.e. no ties).  We also assume !
+         ! extinction to be limited to the finite crown area, so the bottom can get a bit  !
+         ! windier.                                                                        !
+         !---------------------------------------------------------------------------------!
+         do ico=1,cpatch%ncohorts
+            !----- Find the extinction coefficients. --------------------------------------!
+            extinct_half = initp%crown_area(ico)                                           &
+                         * exp(- 2.5d-1 * initp%lai(ico) / initp%crown_area(ico))          &
+                         + (1.d0 - initp%crown_area(ico))
+            extinct_full = initp%crown_area(ico)                                           &
+                         * exp(- 5.d-1 * initp%lai(ico) / initp%crown_area(ico))           &
+                         + (1.d0 - initp%crown_area(ico))
+            !----- Assume that wind is at the middle of the thin crown. -------------------!
+            initp%veg_wind(ico) = max(ugbmin8, uh * extinct_half)
+            uh                  = uh * extinct_full
+         end do
          !---------------------------------------------------------------------------------!
 
 
@@ -1935,9 +1659,9 @@ module canopy_struct_dynamics
          ! bare and vegetated grounds.                                                     !
          !---------------------------------------------------------------------------------!
          if (initp%opencan_frac > 9.99d-1 .or. initp%snowfac >= 9.d-1) then
-            initp%ggnet = ggfact8 * initp%ggbare
+            initp%ggnet = initp%ggbare
          else
-            initp%ggnet = ggfact8 * initp%ggbare * initp%ggveg                             &
+            initp%ggnet = initp%ggbare * initp%ggveg                                       &
                         / ( initp%ggveg + (1.d0 - initp%opencan_frac) * initp%ggbare )
          end if
          !---------------------------------------------------------------------------------!
@@ -2097,9 +1821,9 @@ module canopy_struct_dynamics
          ! bare and vegetated grounds.                                                     !
          !---------------------------------------------------------------------------------!
          if (initp%opencan_frac > 9.99d-1 .or. initp%snowfac >= 9.d-1) then
-            initp%ggnet = ggfact8 * initp%ggbare
+            initp%ggnet = initp%ggbare
          else
-            initp%ggnet = ggfact8 * initp%ggbare * initp%ggveg                             &
+            initp%ggnet = initp%ggbare * initp%ggveg                                       &
                         / (initp%ggveg + (1.d0 - initp%opencan_frac) * initp%ggbare )
          end if
          !---------------------------------------------------------------------------------!
@@ -2587,9 +2311,9 @@ module canopy_struct_dynamics
          ! bare and vegetated grounds.                                                     !
          !---------------------------------------------------------------------------------!
          if (initp%opencan_frac > 9.99d-1 .or. initp%snowfac >= 9.d-1) then
-            initp%ggnet = ggfact8 * initp%ggbare
+            initp%ggnet = initp%ggbare
          else
-            initp%ggnet = ggfact8 * initp%ggbare * initp%ggveg                             &
+            initp%ggnet = initp%ggbare * initp%ggveg                                       &
                         / (initp%ggveg + (1.d0 - initp%opencan_frac) * initp%ggbare )
          end if
          !---------------------------------------------------------------------------------!
@@ -2629,10 +2353,14 @@ module canopy_struct_dynamics
    ! variable ISFCLYRM in ED2IN (if running the coupled model, this is done in ISTAR).     ! 
    !                                                                                       !
    ! 1. Based on L79;                                                                      !
-   ! 2. Based on OD95, but not assuming that z>>z0, so the zeta0 terms shall be computed   !
-   !    as presented in L79 and B71 to avoid singularities.                                !
+   ! 2. Based on: OD95, but with some terms computed as in L79 and B71 to avoid singular-  !
+   !    ities (now using the iterative method to find zeta).                               !
    ! 3. Based on BH91, using an iterative method to find zeta, and using the modified      !
    !    equation for stable layers.                                                        !
+   ! 4. Based on CLM04, with special functions for very stable and very stable case, even  !
+   !    though we use a different functional form for very unstable case for momentum.     !
+   !    This is ensure that phi_m decreases monotonically as zeta becomes more negative.   !
+   !    We use a power law of order of -1/6 instead.                                       !
    !                                                                                       !
    ! References:                                                                           !
    ! B71.  BUSINGER, J.A, et. al; Flux-Profile relationships in the atmospheric surface    !
@@ -2643,6 +2371,9 @@ module canopy_struct_dynamics
    !           for atmospheric models. J. Appl. Meteor., 30, 327-341, 1991.                !
    ! OD95. ONCLEY, S.P.; DUDHIA, J.; Evaluation of surface fluxes from MM5 using observa-  !
    !           tions.  Mon. Wea. Rev., 123, 3344-3357, 1995.                               !
+   ! CLM04. OLESON, K. W., et al.; Technical description of the community land model (CLM) !
+   !           NCAR Technical Note NCAR/TN-461+STR, Boulder, CO, May 2004.                 !
+   !                                                                                       !
    !---------------------------------------------------------------------------------------!
    subroutine ed_stars(theta_atm,theiv_atm,shv_atm,co2_atm,theta_can,theiv_can             &
                       ,shv_can,co2_can,zref,dheight,uref,rough,ustar,tstar,estar,qstar     &
@@ -2664,6 +2395,7 @@ module canopy_struct_dynamics
                                  , psim          & ! function
                                  , psih          & ! function
                                  , zoobukhov     ! ! function
+      use rk4_coms        , only : rk4_tolerance ! ! intent(in)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       real, intent(in)  :: theta_atm    ! Above canopy air pot. temperature     [        K]
@@ -2703,23 +2435,39 @@ module canopy_struct_dynamics
       real              :: cm           ! c coefficient times |Rib|^1/2 for momentum.
       real              :: ch           ! c coefficient times |Rib|^1/2 for heat.
       real              :: ee           ! (z/z0)^1/3 -1. for eqn. 20 w/o assuming z/z0 >> 1.
-      !----- Local variables, used by OD95. -----------------------------------------------!
+      !----- Local variables, used by others. ---------------------------------------------!
       real              :: zeta0m       ! roughness(momentum)/(Obukhov length).
       real              :: zeta0h       ! roughness(heat)/(Obukhov length).
+      real              :: utotal       ! Total wind (actual + convective)
+      real              :: uconv        ! Convective velocity
+      real              :: uconv_prev   ! Previous convective velocity
+      real              :: change       ! Difference in convective velocity
+      integer           :: icnt         ! Iteration counter
       !----- Aux. environment conditions. -------------------------------------------------!
       real              :: thetav_atm   ! Atmos. virtual potential temperature  [        K]
       real              :: thetav_can   ! Canopy air virtual pot. temperature   [        K]
       !----- External functions. ----------------------------------------------------------!
-      real, external    :: cbrt         ! Cubic root
+      real, external    :: cbrt              ! Cubic root
       !------------------------------------------------------------------------------------!
 
-      !----- Finding the variables common to both methods. --------------------------------!
+
+
+      !----- Find the variables common to both methods. -----------------------------------!
       thetav_atm = theta_atm * (1. + epim1 * shv_atm)
       thetav_can = theta_can * (1. + epim1 * shv_can)
       zoz0m      = (zref-dheight)/rough
       lnzoz0m    = log(zoz0m)
       zoz0h      = z0moz0h * zoz0m
       lnzoz0h    = log(zoz0h)
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !     Find the Bulk Richardson number.  For stable cases, and for L79 in both cases, !
+      ! this will be the definitive RiB, whilst this is the first guess, which will be     !
+      ! corrected by the convective velocity in the other unstable cases.                  !
+      !------------------------------------------------------------------------------------!
       rib        = 2.0 * grav * (zref-dheight-rough) * (thetav_atm-thetav_can)             &
                  / ( (thetav_atm+thetav_can) * uref * uref)
       stable     = thetav_atm >= thetav_can
@@ -2729,11 +2477,10 @@ module canopy_struct_dynamics
 
 
       !------------------------------------------------------------------------------------!
-      !    Correct the bulk Richardson number in case it's too stable and we are not run-  !
-      ! ning the L79 model.  We also define a stable case correction to make u* consistent !
-      ! with the Richardson number.                                                        !
+      !    Correct the bulk Richardson number in case it's too stable.  We also define a   !
+      ! stable case correction to make u* consistent with the Richardson number.           !
       !------------------------------------------------------------------------------------!
-      if (rib > ribmax .and. isfclyrm /= 1) then
+      if (rib > ribmax) then
          uuse = sqrt(rib / ribmax) * uref
          rib  = ribmax
       else
@@ -2786,60 +2533,113 @@ module canopy_struct_dynamics
          zeta = grav * vonk * c3 * (thetav_atm - thetav_can) / (thetav_atm * ustar * ustar)
 
 
-      case (2,4)
+      case default
          !---------------------------------------------------------------------------------!
          ! 2. Here we use the model proposed by OD95, the standard for MM5, but with some  !
-         !    terms that were computed in B71 (namely, the "0" terms). which prevent sin-  !
-         !    gularities.  We use OD95 to estimate zeta, which avoids the computation      !
-         !    of the Obukhov length L , we can't compute zeta0 by its definition(z0/L).    !
+         !    terms that were computed in B71 (namely, the "0" terms), which prevent sin-  !
+         !    gularities.                                                                  !
          !    However we know zeta, so zeta0 can be written as z0/z * zeta.                !
-         ! 4. We use the model proposed by BH91, but we find zeta using the approximation  !
-         !    given by OD95.                                                               !
-         !---------------------------------------------------------------------------------!
-         !----- We now compute the stability correction functions. ------------------------!
-         if (stable) then
-            !----- Stable case. -----------------------------------------------------------!
-            zeta  = rib * lnzoz0m / (1.1 - 5.0 * rib)
-         else
-            !----- Unstable case. ---------------------------------------------------------!
-            zeta = rib * lnzoz0m
-         end if
-         zeta0m = rough * zeta / (zref - dheight)
-
-         !----- Finding ustar, making sure it is not too small. ---------------------------!
-         ustar = max (ustmin, vonk * uuse                                                  &
-                            / (lnzoz0m - psim(zeta,stable) + psim(zeta0m,stable)))
-
-         !----- Finding the coefficient to scale the other stars. -------------------------!
-         c3    = vonk / (tprandtl * (lnzoz0m - psih(zeta,stable) + psih(zeta0m,stable)))
-
-         !---------------------------------------------------------------------------------!
-
-
-      case (3,5)
-         !---------------------------------------------------------------------------------!
          ! 3. Here we use the model proposed by BH91, which is almost the same as the OD95 !
-         !    method, with the two following (important) differences.                      !
-         !    a. Zeta (z/L) is actually found using the iterative method.                  !
-         !    b. Stable functions are computed in a more generic way.  BH91 claim that the !
-         !       oft-used approximation (-beta*zeta) can cause poor ventilation of the     !
-         !       stable layer, leading to decoupling between the atmosphere and the canopy !
-         !       air space and excessive cooling.                                          !
-         ! 5. Similar as 3, but we compute the stable functions the same way as OD95.      !
+         !    method, except that the stable functions are computed in a more generic way. !
+         !    BH91 claim that the oft-used approximation (-beta*zeta) can cause poor       !
+         !    ventilation of the stable layer, leading to decoupling between the atmo-     !
+         !    sphere and the canopy air space and excessive cooling                        !
+         ! 4. Here we use a similar approach as in CLM04, excepth that the momentum flux   !
+         !    gradient function for the unstable case for momentum is switched by a power  !
+         !    of -1/6 (kind of the square of the heat one).  This is to guarantee that     !
+         !    the psi function doesn't have local maxima/minima.                           !
          !---------------------------------------------------------------------------------!
-         !----- We now compute the stability correction functions. ------------------------!
-         zeta   = zoobukhov(rib,zref-dheight,rough,zoz0m,lnzoz0m,zoz0h,lnzoz0h,stable)
-         zeta0m = rough * zeta / (zref-dheight)
-         zeta0h = z0hoz0m * zeta0m
+         !----- Initialise uconv. ---------------------------------------------------------!
+         uconv      = 0.0
+         !----- Check if we need to go through the iterative process. ---------------------!
+         if (stable) then
+            !------------------------------------------------------------------------------!
+            !     Stable case, we don't need to find convective velocity, so we don't need !
+            ! the iterative case.                                                          !
+            !------------------------------------------------------------------------------!
+            !----- We now compute the stability correction functions. ---------------------!
+            zeta   = zoobukhov(rib,zref-dheight,rough,zoz0m,lnzoz0m,zoz0h,lnzoz0h,stable)
+            zeta0m = rough * zeta / (zref-dheight)
+            zeta0h = z0hoz0m * zeta0m
 
-         !----- Finding ustar, making sure it is not too small. ---------------------------!
-         ustar = max (ustmin, vonk * uuse                                                  &
-                            / (lnzoz0m - psim(zeta,stable) + psim(zeta0m,stable)))
+            !----- Find the coefficient to scale the other stars. -------------------------!
+            zeta0m = rough * zeta / (zref-dheight)
+            zeta0h = z0hoz0m * zeta0m
 
-         !----- Finding the coefficient to scale the other stars. -------------------------!
-         c3    = vonk / (tprandtl * (lnzoz0h - psih(zeta,stable) + psih(zeta0h,stable)))
+            !----- Find ustar, making sure it is not too small. ---------------------------!
+            ustar = max (ustmin, vonk * uuse                                               &
+                                     / (lnzoz0m - psim(zeta,stable) + psim(zeta0m,stable)))
+            !------------------------------------------------------------------------------!
 
-         !---------------------------------------------------------------------------------!
+
+            !----- Find the coefficient to scale the other stars. -------------------------!
+            c3    = vonk / (tprandtl * (lnzoz0h - psih(zeta,stable) + psih(zeta0h,stable)))
+            !------------------------------------------------------------------------------!
+
+         else
+            !------------------------------------------------------------------------------!
+            !    Unstable case.  Here we run a few iterations to make sure we correct the  !
+            ! bulk Richardson number.  This is really a simple correction, so we don't     !
+            ! need uconv to be totally in equilibrium.                                     !
+            !------------------------------------------------------------------------------!
+            unstable: do icnt=1,6
+               !----- Update total winds. -------------------------------------------------!
+               uconv_prev = uconv
+               utotal     = sqrt(uuse*uuse + uconv_prev * uconv_prev)
+               !---------------------------------------------------------------------------!
+
+
+               !----- Update the Bulk Richardson number. ----------------------------------!
+               rib        = 2.0 * grav * (zref-dheight-rough) * (thetav_atm-thetav_can)    &
+                          / ( (thetav_atm+thetav_can) * utotal)
+               !---------------------------------------------------------------------------!
+
+
+               !----- We now compute the stability correction functions. ------------------!
+               zeta   = zoobukhov(rib,zref-dheight,rough,zoz0m,lnzoz0m,zoz0h,lnzoz0h,stable)
+               !---------------------------------------------------------------------------!
+
+
+               !----- Find the coefficient to scale the other stars. ----------------------!
+               zeta0m = rough * zeta / (zref-dheight)
+               zeta0h = z0hoz0m * zeta0m
+               !---------------------------------------------------------------------------!
+
+
+               !----- Find ustar, making sure it is not too small. ------------------------!
+               ustar = max (ustmin, vonk * uuse                                            &
+                                  / (lnzoz0m - psim(zeta,stable) + psim(zeta0m,stable)))
+               !---------------------------------------------------------------------------!
+
+
+               !----- Find the coefficient to scale the other stars. ----------------------!
+               c3    = vonk                                                                &
+                     / (tprandtl * (lnzoz0h - psih(zeta,stable) + psih(zeta0h,stable)))
+               !---------------------------------------------------------------------------!
+
+
+               !---------------------------------------------------------------------------!
+               !     Use potential virtual temperature here because convection is related  !
+               ! to buoyancy.                                                              !
+               !---------------------------------------------------------------------------!
+               tstar  = c3 * (thetav_atm - thetav_can )
+               !---------------------------------------------------------------------------!
+
+
+               !----- Estimate the convective velocity. -----------------------------------!
+               uconv = vertical_vel_flux(zeta,tstar,ustar) / ustar
+               !---------------------------------------------------------------------------!
+
+
+               !---------------------------------------------------------------------------!
+               !     We are only after a rough estimate of this velocity, so if the        !
+               ! difference is less than the RK4 tolerance, then it's enough.              !
+               !---------------------------------------------------------------------------!
+               change = 2.0 * abs(uconv-uconv_prev) / (abs(uconv) + abs(uconv_prev))
+               if (change < rk4_tolerance) exit unstable
+               !---------------------------------------------------------------------------!
+            end do unstable
+         end if
       end select
 
       !----- Compute the other scales. ----------------------------------------------------!
@@ -2883,9 +2683,13 @@ module canopy_struct_dynamics
    !                                                                                       !
    ! 1. Based on L79;                                                                      !
    ! 2. Based on: OD95, but with some terms computed as in L79 and B71 to avoid singular-  !
-   !    ities.                                                                             !
+   !    ities (now using the iterative method to find zeta).                               !
    ! 3. Based on BH91, using an iterative method to find zeta, and using the modified      !
    !    equation for stable layers.                                                        !
+   ! 4. Based on CLM04, with special functions for very stable and very stable case, even  !
+   !    though we use a different functional form for very unstable case for momentum.     !
+   !    This is ensure that phi_m decreases monotonically as zeta becomes more negative.   !
+   !    We use a power law of order of -1/6 instead.                                       !
    !                                                                                       !
    ! References:                                                                           !
    ! B71.  BUSINGER, J.A, et. al; Flux-Profile relationships in the atmospheric surface    !
@@ -2896,6 +2700,9 @@ module canopy_struct_dynamics
    !           for atmospheric models. J. Appl. Meteor., 30, 327-341, 1991.                !
    ! OD95. ONCLEY, S.P.; DUDHIA, J.; Evaluation of surface fluxes from MM5 using observa-  !
    !           tions.  Mon. Wea. Rev., 123, 3344-3357, 1995.                               !
+   ! CLM04. OLESON, K. W., et al.; Technical description of the community land model (CLM) !
+   !           NCAR Technical Note NCAR/TN-461+STR, Boulder, CO, May 2004.                 !
+   !                                                                                       !
    !---------------------------------------------------------------------------------------!
    subroutine ed_stars8(theta_atm,theiv_atm,shv_atm,co2_atm                                &
                        ,theta_can,theiv_can,shv_can,co2_can                                &
@@ -2918,6 +2725,7 @@ module canopy_struct_dynamics
                                  , psim8         & ! function
                                  , psih8         & ! function
                                  , zoobukhov8    ! ! function
+      use rk4_coms        , only : rk4eps        ! ! intent(in)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       real(kind=8), intent(in)  :: theta_atm    ! Above canopy air pot. temp.   [        K]
@@ -2957,23 +2765,38 @@ module canopy_struct_dynamics
       real(kind=8)              :: cm           ! c coeff. times |Rib|^1/2 for momentum.
       real(kind=8)              :: ch           ! c coefficient times |Rib|^1/2 for heat.
       real(kind=8)              :: ee           ! (z/z0)^1/3 -1. for eqn. 20
-      !----- Local variables, used by OD95. -----------------------------------------------!
+      !----- Local variables, used by others. ---------------------------------------------!
       real(kind=8)              :: zeta0m       ! roughness(momentum)/(Obukhov length).
       real(kind=8)              :: zeta0h       ! roughness(heat)/(Obukhov length).
+      real(kind=8)              :: utotal       ! Total wind (actual + convective)
+      real(kind=8)              :: uconv        ! Convective velocity
+      real(kind=8)              :: uconv_prev   ! Previous convective velocity
+      real(kind=8)              :: change       ! Difference in convective velocity
+      integer                   :: icnt         ! Iteration counter
       !----- Aux. environment conditions. -------------------------------------------------!
       real(kind=8)              :: thetav_atm   ! Atmos. virtual pot. temp.     [        K]
       real(kind=8)              :: thetav_can   ! Canopy air virtual pot. temp. [        K]
       !----- External functions. ----------------------------------------------------------!
-      real(kind=8), external    :: cbrt8        ! Cubic root
+      real(kind=8), external    :: cbrt8              ! Cubic root
       !------------------------------------------------------------------------------------!
 
-      !----- Finding the variables common to both methods. --------------------------------!
+
+      !----- Find the variables common to both methods. -----------------------------------!
       thetav_atm = theta_atm * (1.d0 + epim18 * shv_atm)
       thetav_can = theta_can * (1.d0 + epim18 * shv_can)
       zoz0m      = (zref-dheight)/rough
       lnzoz0m    = log(zoz0m)
       zoz0h      = z0moz0h8 * zoz0m
       lnzoz0h    = log(zoz0h)
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !     Find the Bulk Richardson number.  For stable cases, and for L79 in both cases, !
+      ! this will be the definitive RiB, whilst this is the first guess, which will be     !
+      ! corrected by the convective velocity in the other unstable cases.                  !
+      !------------------------------------------------------------------------------------!
       rib        = 2.d0 * grav8 * (zref-dheight-rough) * (thetav_atm-thetav_can)           &
                  / ( (thetav_atm+thetav_can) * uref * uref)
       stable     = thetav_atm >= thetav_can
@@ -2983,12 +2806,11 @@ module canopy_struct_dynamics
 
 
       !------------------------------------------------------------------------------------!
-      !    Correct the bulk Richardson number in case it's too stable and we are not run-  !
-      ! ning the L79 model.  We also define a stable case correction to bring down the     !
-      ! stars other than ustar, so the flux doesn't increase for stabler cases (it remains !
-      ! constant).                                                                         !
+      !    Correct the bulk Richardson number in case it's too stable.  We also define a   !
+      ! stable case correction to bring down the stars other than ustar, so the flux       !
+      ! doesn't increase for stabler cases (it remains constant).                          !
       !------------------------------------------------------------------------------------!
-      if (rib > ribmax8 .and. isfclyrm /= 1) then
+      if (rib > ribmax8) then
          uuse = sqrt(rib / ribmax8) * uref
          rib  = ribmax8
       else
@@ -3041,65 +2863,116 @@ module canopy_struct_dynamics
               / (thetav_atm * ustar * ustar)
 
 
-      case (2,4)
+      case default
          !---------------------------------------------------------------------------------!
          ! 2. Here we use the model proposed by OD95, the standard for MM5, but with some  !
-         !    terms that were computed in B71 (namely, the "0" terms). which prevent sin-  !
-         !    gularities.  We use OD95 to estimate zeta, which avoids the computation      !
-         !    of the Obukhov length L , we can't compute zeta0 by its definition(z0/L).    !
+         !    terms that were computed in B71 (namely, the "0" terms), which prevent sin-  !
+         !    gularities.                                                                  !
          !    However we know zeta, so zeta0 can be written as z0/z * zeta.                !
-         ! 4. We use the model proposed by BH91, but we find zeta using the approximation  !
-         !    given by OD95.                                                               !
-         !---------------------------------------------------------------------------------!
-         !----- We now compute the stability correction functions. ------------------------!
-         if (stable) then
-            !----- Stable case. -----------------------------------------------------------!
-            zeta  = rib * lnzoz0m / (1.1d0 - 5.0d0 * rib)
-         else
-            !----- Unstable case. ---------------------------------------------------------!
-            zeta  = rib * lnzoz0m
-         end if
-
-         zeta0m = rough * zeta / (zref - dheight)
-
-         !----- Finding ustar, making sure it is not too small. ---------------------------!
-         ustar = max (ustmin8, vonk8 * uuse                                                &
-                             / (lnzoz0m - psim8(zeta,stable) + psim8(zeta0m,stable)))
-
-         !----- Finding the coefficient to scale the other stars. -------------------------!
-         c3    = vonk8 / (tprandtl8 * (lnzoz0m - psih8(zeta,stable) + psih8(zeta0m,stable)))
-
-         !---------------------------------------------------------------------------------!
-
-
-      case (3,5)
-         !---------------------------------------------------------------------------------!
          ! 3. Here we use the model proposed by BH91, which is almost the same as the OD95 !
-         !    method, with the two following (important) differences.                      !
-         !    a. Zeta (z/L) is actually found using the iterative method.                  !
-         !    b. Stable functions are computed in a more generic way.  BH91 claim that the !
-         !       oft-used approximation (-beta*zeta) can cause poor ventilation of the     !
-         !       stable layer, leading to decoupling between the atmosphere and the canopy !
-         !       air space and excessive cooling.                                          !
-         ! 5. Similar as 3, but we compute the stable functions the same way as OD95.      !
+         !    method, except that the stable functions are computed in a more generic way. !
+         !    BH91 claim that the oft-used approximation (-beta*zeta) can cause poor       !
+         !    ventilation of the stable layer, leading to decoupling between the atmo-     !
+         !    sphere and the canopy air space and excessive cooling                        !
+         ! 4. Here we use a similar approach as in CLM04, excepth that the momentum flux   !
+         !    gradient function for the unstable case for momentum is switched by a power  !
+         !    of -1/6 (kind of the square of the heat one).  This is to guarantee that     !
+         !    the psi function doesn't have local maxima/minima.                           !
          !---------------------------------------------------------------------------------!
-         !----- We now compute the stability correction functions. ------------------------!
-         zeta   = zoobukhov8(rib,zref-dheight,rough,zoz0m,lnzoz0m,zoz0h,lnzoz0h,stable)
-         zeta0m = rough * zeta / (zref - dheight)
-         zeta0h = z0hoz0m8 * zeta0m
+         !----- Initialise uconv. ---------------------------------------------------------!
+         uconv      = 0.0
+         !----- Check if we need to go through the iterative process. ---------------------!
+         if (stable) then
+            !------------------------------------------------------------------------------!
+            !     Stable case, we don't need to find convective velocity, so we don't need !
+            ! the iterative case.                                                          !
+            !------------------------------------------------------------------------------!
+            !----- We now compute the stability correction functions. ---------------------!
+            zeta   = zoobukhov8(rib,zref-dheight,rough,zoz0m,lnzoz0m,zoz0h,lnzoz0h,stable)
+            zeta0m = rough * zeta / (zref - dheight)
+            zeta0h = z0hoz0m8 * zeta0m
 
-         !----- Finding ustar, making sure it is not too small. ---------------------------!
-         ustar = max (ustmin8, vonk8 * uuse                                                &
-                             / (lnzoz0m - psim8(zeta,stable) + psim8(zeta0m,stable)))
+            !----- Finding ustar, making sure it is not too small. ------------------------!
+            ustar = max (ustmin8, vonk8 * uuse                                             &
+                                / (lnzoz0m - psim8(zeta,stable) + psim8(zeta0m,stable)))
 
-         !----- Finding the coefficient to scale the other stars. -------------------------!
-         c3    = vonk8                                                                     &
-               / (tprandtl8 * (lnzoz0h - psih8(zeta,stable) + psih8(zeta0h,stable)))
+            !----- Finding the coefficient to scale the other stars. ----------------------!
+            c3    = vonk8                                                                  &
+                  / (tprandtl8 * (lnzoz0h - psih8(zeta,stable) + psih8(zeta0h,stable)))
+            !------------------------------------------------------------------------------!
+         else
+            !------------------------------------------------------------------------------!
+            !    Unstable case.  Here we run a few iterations to make sure we correct the  !
+            ! bulk Richardson number.  This is really a simple correction, so we don't     !
+            ! need uconv to be totally in equilibrium.                                     !
+            !------------------------------------------------------------------------------!
+            unstable: do icnt=1,6
+               !----- Update total winds. -------------------------------------------------!
+               uconv_prev = uconv
+               utotal     = sqrt(uuse*uuse + uconv_prev * uconv_prev)
+               !---------------------------------------------------------------------------!
 
+
+
+               !----- Update the Bulk Richardson number. ----------------------------------!
+               rib        = 2.d0 * grav8 * (zref-dheight-rough) * (thetav_atm-thetav_can)  &
+                          / ( (thetav_atm+thetav_can) * utotal * utotal)
+               !---------------------------------------------------------------------------!
+
+
+               !----- We now compute the stability correction functions. ------------------!
+               zeta   = zoobukhov8(rib,zref-dheight,rough,zoz0m,lnzoz0m,zoz0h,lnzoz0h      &
+                                  ,stable)
+               !---------------------------------------------------------------------------!
+
+
+               !----- Find the coefficient to scale the other stars. ----------------------!
+               zeta0m = rough * zeta / (zref - dheight)
+               zeta0h = z0hoz0m8 * zeta0m
+               !---------------------------------------------------------------------------!
+
+
+               !----- Find ustar, making sure it is not too small. ------------------------!
+               ustar = max (ustmin8, vonk8 * uuse                                          &
+                                   / (lnzoz0m - psim8(zeta,stable) + psim8(zeta0m,stable)))
+               !---------------------------------------------------------------------------!
+
+
+               !----- Find the coefficient to scale the other stars. ----------------------!
+               c3    = vonk8                                                               &
+                     / (tprandtl8 * (lnzoz0h - psih8(zeta,stable) + psih8(zeta0h,stable)))
+               !---------------------------------------------------------------------------!
+
+
+               !---------------------------------------------------------------------------!
+               !     Use potential virtual temperature here because convection is related  !
+               ! to buoyancy.                                                              !
+               !---------------------------------------------------------------------------!
+               tstar  = c3 * (thetav_atm - thetav_can )
+               !---------------------------------------------------------------------------!
+
+
+               !----- Estimate the convective velocity. -----------------------------------!
+               uconv = vertical_vel_flux8(zeta,tstar,ustar) / ustar
+               !---------------------------------------------------------------------------!
+
+
+               !---------------------------------------------------------------------------!
+               !     We are only after a rough estimate of this velocity, so if the        !
+               ! difference is less than the RK4 tolerance, then it's enough.              !
+               !---------------------------------------------------------------------------!
+               change = 2.d0 * abs(uconv-uconv_prev) / (abs(uconv) + abs(uconv_prev))
+               if (change < rk4eps) exit unstable
+               !---------------------------------------------------------------------------!
+            end do unstable
+         end if
          !---------------------------------------------------------------------------------!
       end select
+      !------------------------------------------------------------------------------------!
 
-      !----- Computing the other scales. --------------------------------------------------!
+
+
+      !----- Compute the other scales. ----------------------------------------------------!
       qstar = c3 *    (shv_atm   - shv_can   )
       tstar = c3 *    (theta_atm - theta_can )
       estar = c3 * log(theiv_atm / theiv_can )
@@ -3348,6 +3221,11 @@ module canopy_struct_dynamics
 
    !=======================================================================================!
    !=======================================================================================!
+   !    Vertical flux, as in:                                                              !
+   !                                                                                       !
+   !   Manton, M. J., Cotton, W. R., 1977: Parameterization of the atmospheric surface     !
+   !      layer.  J. Atm. Sci., 34, 331-334.                                               !
+   !---------------------------------------------------------------------------------------!
    real function vertical_vel_flux(zeta,tstar,ustar)
       use consts_coms , only : vonk ! intent(in)
      
@@ -3385,6 +3263,11 @@ module canopy_struct_dynamics
 
    !=======================================================================================!
    !=======================================================================================!
+   !    Vertical flux, as in:                                                              !
+   !                                                                                       !
+   !   Manton, M. J., Cotton, W. R., 1977: Parameterization of the atmospheric surface     !
+   !      layer.  J. Atm. Sci., 34, 331-334.                                               !
+   !---------------------------------------------------------------------------------------!
    real(kind=8) function vertical_vel_flux8(zeta,tstar,ustar)
       use consts_coms , only : vonk8 ! intent(in)
      
@@ -3521,13 +3404,7 @@ module canopy_struct_dynamics
                                 , bflat_lami & ! intent(in)
                                 , mflat_lami & ! intent(in)
                                 , bflat_turb & ! intent(in)
-                                , mflat_turb & ! intent(in)
-                                , beta_r1    & ! intent(in)
-                                , beta_r2    & ! intent(in)
-                                , beta_re0   & ! intent(in)
-                                , beta_g1    & ! intent(in)
-                                , beta_g2    & ! intent(in)
-                                , beta_gr0   ! ! intent(in)
+                                , mflat_turb ! ! intent(in)
       use consts_coms    , only : gr_coeff   & ! intent(in)
                                 , th_diffi   & ! intent(in)
                                 , th_diff    & ! intent(in)
@@ -3551,8 +3428,6 @@ module canopy_struct_dynamics
       real(kind=4)                 :: nusselt_lami    ! Nusselt number (laminar)[      ---]
       real(kind=4)                 :: nusselt_turb    ! Nusselt number (turb.)  [      ---]
       real(kind=4)                 :: nusselt         ! Nusselt number          [      ---]
-      real(kind=4)                 :: beta_forced     ! Correct.  term (forced) [      ---]
-      real(kind=4)                 :: beta_free       ! Correct.  term (free)   [      ---]
       real(kind=4)                 :: forced_gbh_mos  ! Forced convection cond. [      m/s]
       real(kind=4)                 :: free_gbh_mos    ! Free convection cond.   [      m/s]
       real(kind=4)                 :: gbh_mos         ! Total convection cond.  [      m/s]
@@ -3572,11 +3447,9 @@ module canopy_struct_dynamics
       !----- 2. Compute the Nusselt number for both the laminar and turbulent case. -------!
       nusselt_lami    = aflat_lami * reynolds ** nflat_lami
       nusselt_turb    = aflat_turb * reynolds ** nflat_turb
-      !----- 3. Compute the correction term for the theoretical Nusselt numbers. ----------!
-      beta_forced     = beta_r1 + beta_r2 * tanh(log(reynolds/beta_re0))
-      !----- 4. The right Nusselt number is the largest. ----------------------------------!
-      nusselt         = beta_forced * max(nusselt_lami,nusselt_turb)
-      !----- 5. The conductance is given by MU08 - equation 10.4 --------------------------!
+      !----- 3. The right Nusselt number is the largest. ----------------------------------!
+      nusselt         = max(nusselt_lami,nusselt_turb)
+      !----- 4. The conductance is given by MU08 - equation 10.4 --------------------------!
       forced_gbh_mos  = th_diff * nusselt / lwidth
       !------------------------------------------------------------------------------------!
 
@@ -3590,15 +3463,9 @@ module canopy_struct_dynamics
       !----- 2. Compute the Nusselt number for both the laminar and turbulent case. -------!
       nusselt_lami    = bflat_lami * grashof ** mflat_lami
       nusselt_turb    = bflat_turb * grashof ** mflat_turb
-      !----- 3. Compute the correction term for the theoretical Nusselt numbers. ----------!
-      if (grashof == 0.0) then
-         beta_free    = beta_g1 - beta_g2
-      else
-         beta_free    = beta_g1 + beta_g2 * tanh(log(grashof/beta_gr0))
-      end if
-      !----- 4. The right Nusselt number is the largest. ----------------------------------!
-      nusselt         = beta_free * max(nusselt_lami,nusselt_turb)
-      !----- 5. The conductance is given by MU08 - equation 10.4 --------------------------!
+      !----- 3. The right Nusselt number is the largest. ----------------------------------!
+      nusselt         = max(nusselt_lami,nusselt_turb)
+      !----- 4. The conductance is given by MU08 - equation 10.4 --------------------------!
       free_gbh_mos    = th_diff * nusselt / lwidth
       !------------------------------------------------------------------------------------!
 
@@ -3653,15 +3520,7 @@ module canopy_struct_dynamics
                                 , bflat_lami8 & ! intent(in)
                                 , mflat_lami8 & ! intent(in)
                                 , bflat_turb8 & ! intent(in)
-                                , mflat_turb8 & ! intent(in)
-                                , beta_lami8  & ! intent(in)
-                                , beta_turb8  & ! intent(in)
-                                , beta_r18    & ! intent(in)
-                                , beta_r28    & ! intent(in)
-                                , beta_re08   & ! intent(in)
-                                , beta_g18    & ! intent(in)
-                                , beta_g28    & ! intent(in)
-                                , beta_gr08   ! ! intent(in)
+                                , mflat_turb8 ! ! intent(in)
       use consts_coms    , only : gr_coeff8   & ! intent(in)
                                 , th_diffi8   & ! intent(in)
                                 , th_diff8    & ! intent(in)
@@ -3686,8 +3545,6 @@ module canopy_struct_dynamics
       real(kind=8)                 :: lwidth          ! Leaf width              [        m]
       real(kind=8)                 :: nusselt_lami    ! Nusselt number (laminar)[      ---]
       real(kind=8)                 :: nusselt_turb    ! Nusselt number (turb.)  [      ---]
-      real(kind=8)                 :: beta_forced     ! Correct.  term (forced) [      ---]
-      real(kind=8)                 :: beta_free       ! Correct.  term (free)   [      ---]
       real(kind=8)                 :: forced_gbh_mos  ! Forced convection cond. [      m/s]
       real(kind=8)                 :: free_gbh_mos    ! Free convection cond.   [      m/s]
       real(kind=8)                 :: gbh_mos         ! Total convection cond.  [      m/s]
@@ -3707,11 +3564,9 @@ module canopy_struct_dynamics
       !----- 2. Compute the Nusselt number for both the laminar and turbulent case. -------!
       nusselt_lami    = aflat_lami8 * reynolds ** nflat_lami8
       nusselt_turb    = aflat_turb8 * reynolds ** nflat_turb8
-      !----- 3. Compute the correction term for the theoretical Nusselt numbers. ----------!
-      beta_forced     = beta_r18 + beta_r28 * tanh(log(reynolds/beta_re08))
-      !----- 4. The right Nusselt number is the largest of the both. ----------------------!
-      nusselt_forced  = beta_forced * max(nusselt_lami,nusselt_turb)
-      !----- 5. The conductance is given by MU08 - equation 10.4 --------------------------!
+      !----- 3. The right Nusselt number is the largest of the both. ----------------------!
+      nusselt_forced  = max(nusselt_lami,nusselt_turb)
+      !----- 4. The conductance is given by MU08 - equation 10.4 --------------------------!
       forced_gbh_mos  = th_diff8 * nusselt_forced / lwidth
       !------------------------------------------------------------------------------------!
 
@@ -3725,15 +3580,9 @@ module canopy_struct_dynamics
       !----- 2. Compute the Nusselt number for both the laminar and turbulent case. -------!
       nusselt_lami    = bflat_lami8 * grashof ** mflat_lami8
       nusselt_turb    = bflat_turb8 * grashof ** mflat_turb8
-      !----- 3. Compute the correction term for the theoretical Nusselt numbers. ----------!
-      if (grashof == 0.d0) then
-         beta_free    = beta_g18 - beta_g28
-      else
-         beta_free    = beta_g18 + beta_g28 * tanh(log(grashof/beta_gr08))
-      end if
-      !----- 4. The right Nusselt number is the largest of the both. ----------------------!
-      nusselt_free    = beta_free * max(nusselt_lami,nusselt_turb)
-      !----- 5. The conductance is given by MU08 - equation 10.4 --------------------------!
+      !----- 3. The right Nusselt number is the largest of the both. ----------------------!
+      nusselt_free    = max(nusselt_lami,nusselt_turb)
+      !----- 4. The conductance is given by MU08 - equation 10.4 --------------------------!
       free_gbh_mos    = th_diff8 * nusselt_free / lwidth
       !------------------------------------------------------------------------------------!
 
@@ -3788,13 +3637,7 @@ module canopy_struct_dynamics
                                 , bcyli_lami & ! intent(in)
                                 , mcyli_lami & ! intent(in)
                                 , bcyli_turb & ! intent(in)
-                                , mcyli_turb & ! intent(in)
-                                , beta_r1    & ! intent(in)
-                                , beta_r2    & ! intent(in)
-                                , beta_re0   & ! intent(in)
-                                , beta_g1    & ! intent(in)
-                                , beta_g2    & ! intent(in)
-                                , beta_gr0   ! ! intent(in)
+                                , mcyli_turb ! ! intent(in)
       use consts_coms    , only : gr_coeff   & ! intent(in)
                                 , th_diffi   & ! intent(in)
                                 , th_diff    & ! intent(in)
@@ -3820,8 +3663,6 @@ module canopy_struct_dynamics
       real(kind=4)                 :: nusselt_lami    ! Nusselt number (laminar)[      ---]
       real(kind=4)                 :: nusselt_turb    ! Nusselt number (turb.)  [      ---]
       real(kind=4)                 :: nusselt         ! Nusselt number          [      ---]
-      real(kind=4)                 :: beta_forced     ! Correct.  term (forced) [      ---]
-      real(kind=4)                 :: beta_free       ! Correct.  term (free)   [      ---]
       real(kind=4)                 :: forced_gbh_mos  ! Forced convection cond. [      m/s]
       real(kind=4)                 :: free_gbh_mos    ! Free convection cond.   [      m/s]
       real(kind=4)                 :: gbh_mos         ! Total convection cond.  [      m/s]
@@ -3848,10 +3689,8 @@ module canopy_struct_dynamics
       !----- 2. Compute the Nusselt number for both the laminar and turbulent case. -------!
       nusselt_lami    = ocyli_lami + acyli_lami * reynolds ** ncyli_lami
       nusselt_turb    = ocyli_turb + acyli_turb * reynolds ** ncyli_turb
-      !----- 3. Compute the correction term for the theoretical Nusselt numbers. ----------!
-      beta_forced     = beta_r1 + beta_r2 * tanh(log(reynolds/beta_re0))
-      !----- 4. The right Nusselt number is the largest. ----------------------------------!
-      nusselt         = beta_forced * max(nusselt_lami,nusselt_turb)
+      !----- 3. The right Nusselt number is the largest. ----------------------------------!
+      nusselt         = max(nusselt_lami,nusselt_turb)
       !----- 5. The conductance is given by MU08 - equation 10.4 --------------------------!
       forced_gbh_mos  = th_diff * nusselt / w_diam
       !------------------------------------------------------------------------------------!
@@ -3866,14 +3705,8 @@ module canopy_struct_dynamics
       !----- 2. Compute the Nusselt number for both the laminar and turbulent case. -------!
       nusselt_lami    = bcyli_lami * grashof ** mcyli_lami
       nusselt_turb    = bcyli_turb * grashof ** mcyli_turb
-      !----- 3. Compute the correction term for the theoretical Nusselt numbers. ----------!
-      if (grashof == 0.0) then
-         beta_free    = beta_g1 - beta_g2
-      else
-         beta_free    = beta_g1 + beta_g2 * tanh(log(grashof/beta_gr0))
-      end if
-      !----- 4. The right Nusselt number is the largest. ----------------------------------!
-      nusselt         = beta_free * max(nusselt_lami,nusselt_turb)
+      !----- 3. The right Nusselt number is the largest. ----------------------------------!
+      nusselt         = max(nusselt_lami,nusselt_turb)
       !----- 5. The conductance is given by MU08 - equation 10.4 --------------------------!
       free_gbh_mos    = th_diff * nusselt / w_diam
       !------------------------------------------------------------------------------------!
@@ -3931,15 +3764,7 @@ module canopy_struct_dynamics
                                 , bcyli_lami8 & ! intent(in)
                                 , mcyli_lami8 & ! intent(in)
                                 , bcyli_turb8 & ! intent(in)
-                                , mcyli_turb8 & ! intent(in)
-                                , beta_lami8  & ! intent(in)
-                                , beta_turb8  & ! intent(in)
-                                , beta_r18    & ! intent(in)
-                                , beta_r28    & ! intent(in)
-                                , beta_re08   & ! intent(in)
-                                , beta_g18    & ! intent(in)
-                                , beta_g28    & ! intent(in)
-                                , beta_gr08   ! ! intent(in)
+                                , mcyli_turb8 ! ! intent(in)
       use consts_coms    , only : gr_coeff8   & ! intent(in)
                                 , th_diffi8   & ! intent(in)
                                 , th_diff8    & ! intent(in)
@@ -3966,8 +3791,6 @@ module canopy_struct_dynamics
       real(kind=8)                 :: w_diam          ! Wood "diameter"         [        m]
       real(kind=8)                 :: nusselt_lami    ! Nusselt number (laminar)[      ---]
       real(kind=8)                 :: nusselt_turb    ! Nusselt number (turb.)  [      ---]
-      real(kind=8)                 :: beta_forced     ! Correct.  term (forced) [      ---]
-      real(kind=8)                 :: beta_free       ! Correct.  term (free)   [      ---]
       real(kind=8)                 :: forced_gbh_mos  ! Forced convection cond. [      m/s]
       real(kind=8)                 :: free_gbh_mos    ! Free convection cond.   [      m/s]
       real(kind=8)                 :: gbh_mos         ! Total convection cond.  [      m/s]
@@ -3994,10 +3817,8 @@ module canopy_struct_dynamics
       !----- 2. Compute the Nusselt number for both the laminar and turbulent case. -------!
       nusselt_lami    = ocyli_lami8 + acyli_lami8 * reynolds ** ncyli_lami8
       nusselt_turb    = ocyli_turb8 + acyli_turb8 * reynolds ** ncyli_turb8
-      !----- 3. Compute the correction term for the theoretical Nusselt numbers. ----------!
-      beta_forced     = beta_r18 + beta_r28 * tanh(log(reynolds/beta_re08))
-      !----- 4. The right Nusselt number is the largest of the both. ----------------------!
-      nusselt_forced  = beta_forced * max(nusselt_lami,nusselt_turb)
+      !----- 3. The right Nusselt number is the largest of the both. ----------------------!
+      nusselt_forced  = max(nusselt_lami,nusselt_turb)
       !----- 5. The conductance is given by MU08 - equation 10.4 --------------------------!
       forced_gbh_mos  = th_diff8 * nusselt_forced / w_diam
       !------------------------------------------------------------------------------------!
@@ -4012,14 +3833,8 @@ module canopy_struct_dynamics
       !----- 2. Compute the Nusselt number for both the laminar and turbulent case. -------!
       nusselt_lami    = bcyli_lami8 * grashof ** mcyli_lami8
       nusselt_turb    = bcyli_turb8 * grashof ** mcyli_turb8
-      !----- 3. Compute the correction term for the theoretical Nusselt numbers. ----------!
-      if (grashof == 0.d0) then
-         beta_free    = beta_g18 - beta_g28
-      else
-         beta_free    = beta_g18 + beta_g28 * tanh(log(grashof/beta_gr08))
-      end if
-      !----- 4. The right Nusselt number is the largest of the both. ----------------------!
-      nusselt_free    = beta_free * max(nusselt_lami,nusselt_turb)
+      !----- 3. The right Nusselt number is the largest of the both. ----------------------!
+      nusselt_free    = max(nusselt_lami,nusselt_turb)
       !----- 5. The conductance is given by MU08 - equation 10.4 --------------------------!
       free_gbh_mos    = th_diff8 * nusselt_free / w_diam
       !------------------------------------------------------------------------------------!

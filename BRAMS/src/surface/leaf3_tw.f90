@@ -3,7 +3,7 @@
 !      This sub-routine is just an interface for the main solver.  Some compilers like     !
 ! ifort 10 give segmentation violation if we call the subroutine directly from leaf3.f90.  !
 !------------------------------------------------------------------------------------------!
-subroutine leaf_prognostic(ifm,i,j,ip)
+subroutine leaf3_prognostic(ifm,i,j,ip)
    use mem_leaf   , only : leaf_g     ! ! intent(inout)
    use mem_radiate, only : radiate_g  ! ! intent(inout)
    use mem_grid   , only : nzg        & ! intent(in)
@@ -16,7 +16,7 @@ subroutine leaf_prognostic(ifm,i,j,ip)
    integer                , intent(in)    :: ip
    !---------------------------------------------------------------------------------------!
 
-   call leaftw(nzg,nzs                                                                     &
+   call leaf3_tw(nzg,nzs                                                                   &
               ,leaf_g(ifm)%soil_water     (:,i,j,ip),leaf_g(ifm)%soil_energy    (:,i,j,ip) &
               ,leaf_g(ifm)%soil_text      (:,i,j,ip),leaf_g(ifm)%sfcwater_energy(:,i,j,ip) &
               ,leaf_g(ifm)%sfcwater_mass  (:,i,j,ip),leaf_g(ifm)%sfcwater_depth (:,i,j,ip) &
@@ -45,7 +45,7 @@ subroutine leaf_prognostic(ifm,i,j,ip)
               ,radiate_g(ifm)%cosz          (i,j)   )
 
    return
-end subroutine leaf_prognostic
+end subroutine leaf3_prognostic
 !==========================================================================================!
 !==========================================================================================!
 
@@ -56,14 +56,14 @@ end subroutine leaf_prognostic
 
 !==========================================================================================!
 !==========================================================================================!
-subroutine leaftw(mzg,mzs,soil_water, soil_energy,soil_text,sfcwater_energy_int            &
-                 ,sfcwater_mass,sfcwater_depth,ustar,tstar,rstar,cstar,zeta,ribulk         &
-                 ,veg_albedo,veg_fracarea,veg_lai,veg_tai,veg_rough,veg_height             &
-                 ,veg_displace,patch_area,patch_rough,patch_wetind,leaf_class,soil_rough   &
-                 ,sfcwater_nlev,stom_condct,ground_rsat,ground_rvap,ground_temp            &
-                 ,ground_fliq,veg_water,veg_hcap,veg_energy,can_prss,can_theiv,can_theta   &
-                 ,can_rvap,can_co2,sensible_gc,sensible_vc,evap_gc,evap_vc,transp,gpp      &
-                 ,plresp,resphet,veg_ndvip,veg_ndvic,veg_ndvif,rshort,cosz)
+subroutine leaf3_tw(mzg,mzs,soil_water, soil_energy,soil_text,sfcwater_energy_int          &
+                   ,sfcwater_mass,sfcwater_depth,ustar,tstar,rstar,cstar,zeta,ribulk       &
+                   ,veg_albedo,veg_fracarea,veg_lai,veg_tai,veg_rough,veg_height           &
+                   ,veg_displace,patch_area,patch_rough,patch_wetind,leaf_class,soil_rough &
+                   ,sfcwater_nlev,stom_condct,ground_rsat,ground_rvap,ground_temp          &
+                   ,ground_fliq,veg_water,veg_hcap,veg_energy,can_prss,can_theiv,can_theta &
+                   ,can_rvap,can_co2,sensible_gc,sensible_vc,evap_gc,evap_vc,transp,gpp    &
+                   ,plresp,resphet,veg_ndvip,veg_ndvic,veg_ndvif,rshort,cosz)
 
    use leaf_coms
    use mem_leaf
@@ -244,18 +244,18 @@ subroutine leaftw(mzg,mzs,soil_water, soil_energy,soil_text,sfcwater_energy_int 
       !    Bedrock.  Make the potential exactly the same as the bottom layer, and the flux !
       ! will be zero.                                                                      !
       !------------------------------------------------------------------------------------!
-      soil_water_0   = soil_water   (k)
-      soil_fracliq_0 = soil_fracliq (k)
-      hydcond_0      = hydcond      (k)
-      psiplusz_0     = psiplusz     (k)
+      soil_water_0   = soil_water   (1)
+      soil_fracliq_0 = soil_fracliq (1)
+      hydcond_0      = hydcond      (1)
+      psiplusz_0     = psiplusz     (1)
       !------------------------------------------------------------------------------------!
    case (1)
       !------------------------------------------------------------------------------------!
       !     Free drainage.   Make the water potential at the layer beneath to be at the    !
       ! same soil moisture as the bottom layer.                                            !
       !------------------------------------------------------------------------------------!
-      soil_water_0   = soil_water   (k)
-      soil_fracliq_0 = soil_fracliq (k)
+      soil_water_0   = soil_water   (1)
+      soil_fracliq_0 = soil_fracliq (1)
       wgpfrac        = min(soil_water_0/slmsts(nsoil), 1.0)
       hydcond_0      = slcons1_0(nsoil) * wgpfrac ** (2.0 * slbs(nsoil) + 3.0)
       psiplusz_0     = slzt_0 + slpots(nsoil) / wgpfrac ** slbs(nsoil)
@@ -266,7 +266,7 @@ subroutine leaftw(mzg,mzs,soil_water, soil_energy,soil_text,sfcwater_energy_int 
       ! air soil, and find the corresponding hydraulic conductivity.                       !
       !------------------------------------------------------------------------------------!
       soil_water_0   = soilcp(nsoil)
-      soil_fracliq_0 = soil_fracliq (k)
+      soil_fracliq_0 = soil_fracliq (1)
       wgpfrac        = min(soil_water_0/slmsts(nsoil), 1.0)
       hydcond_0      = slcons1_0(nsoil) * wgpfrac ** (2.0 * slbs(nsoil) + 3.0)
       psiplusz_0     = slzt_0 + slpots(nsoil) / wgpfrac ** slbs(nsoil)
@@ -276,7 +276,7 @@ subroutine leaftw(mzg,mzs,soil_water, soil_energy,soil_text,sfcwater_energy_int 
       !     Make the soil moisture in the layer beneath to be at field capacity.           !
       !------------------------------------------------------------------------------------!
       soil_water_0   = sfldcap(nsoil)
-      soil_fracliq_0 = soil_fracliq (k)
+      soil_fracliq_0 = soil_fracliq (1)
       wgpfrac        = min(soil_water_0/slmsts(nsoil), 1.0)
       hydcond_0      = slcons1_0(nsoil) * wgpfrac ** (2.0 * slbs(nsoil) + 3.0)
       psiplusz_0     = slzt_0 + slpots(nsoil) / wgpfrac ** slbs(nsoil)
@@ -286,7 +286,7 @@ subroutine leaftw(mzg,mzs,soil_water, soil_energy,soil_text,sfcwater_energy_int 
       !     Aquifer.   Make the soil moisture in the layer beneath to be always saturated. !
       !------------------------------------------------------------------------------------!
       soil_water_0   = slmsts(nsoil)
-      soil_fracliq_0 = soil_fracliq (k)
+      soil_fracliq_0 = soil_fracliq (1)
       wgpfrac        = min(soil_water_0/slmsts(nsoil), 1.0)
       hydcond_0      = slcons1_0(nsoil) * wgpfrac ** (2.0 * slbs(nsoil) + 3.0)
       psiplusz_0     = slzt_0 + slpots(nsoil) / wgpfrac ** slbs(nsoil)
@@ -302,12 +302,13 @@ subroutine leaftw(mzg,mzs,soil_water, soil_energy,soil_text,sfcwater_energy_int 
    ! ure and heat changes to vegetation, and evaluate the resistance parameter rgnd        !
    ! between canopy air and the top soil or snow surface.                                  !
    !---------------------------------------------------------------------------------------!
-   call leaf_canopy(mzg,mzs,ksn,soil_energy,soil_water,soil_text,sfcwater_mass,ustar       &
-                   ,tstar,rstar,cstar,zeta,ribulk,soil_rough,veg_rough,patch_rough         &
-                   ,veg_height,veg_displace,veg_lai,veg_tai,veg_water,veg_hcap,veg_energy  &
-                   ,leaf_class,veg_fracarea,stom_condct,can_prss,can_rvap,can_co2          &
-                   ,sensible_gc,sensible_vc,evap_gc,evap_vc,transp,gpp,plresp,resphet      &
-                   ,ground_rsat,ground_rvap,ground_temp,ground_fliq,available_water,rshort)
+   call leaf3_canopy(mzg,mzs,ksn,soil_energy,soil_water,soil_text,sfcwater_mass,ustar      &
+                    ,tstar,rstar,cstar,zeta,ribulk,soil_rough,veg_rough,patch_rough        &
+                    ,veg_height,veg_displace,veg_lai,veg_tai,veg_water,veg_hcap,veg_energy &
+                    ,leaf_class,veg_fracarea,stom_condct,can_prss,can_rvap,can_co2         &
+                    ,sensible_gc,sensible_vc,evap_gc,evap_vc,transp,gpp,plresp,resphet     &
+                    ,ground_rsat,ground_rvap,ground_temp,ground_fliq,available_water       &
+                    ,rshort)
    !---------------------------------------------------------------------------------------!
 
 
@@ -510,8 +511,8 @@ subroutine leaftw(mzg,mzs,soil_water, soil_energy,soil_text,sfcwater_energy_int 
    !---------------------------------------------------------------------------------------!
    !     Re-organise the snow layers, and shed the water from the virtual layer.           !
    !---------------------------------------------------------------------------------------!
-   call leaf_adjust_sfcw(mzg,mzs,soil_energy,soil_water,soil_text,sfcwater_nlev            &
-                        ,sfcwater_mass,sfcwater_depth)
+   call leaf3_adjust_sfcw(mzg,mzs,soil_energy,soil_water,soil_text,sfcwater_nlev           &
+                         ,sfcwater_mass,sfcwater_depth)
    !---------------------------------------------------------------------------------------!
 
 
@@ -540,7 +541,7 @@ subroutine leaftw(mzg,mzs,soil_water, soil_energy,soil_text,sfcwater_energy_int 
    !---------------------------------------------------------------------------------------!
 
    return
-end subroutine leaftw
+end subroutine leaf3_tw
 !==========================================================================================!
 !==========================================================================================!
 
@@ -554,8 +555,8 @@ end subroutine leaftw
 !     This sub-routine initialises the soil and temporary surface water variables for a    !
 ! given patch, before the time step iteration loop.                                        !
 !------------------------------------------------------------------------------------------!
-subroutine leaf_soilsfcw_diag(ip,mzg,mzs,soil_energy,soil_water,soil_text,sfcwater_nlev    &
-                             ,sfcwater_energy_int,sfcwater_mass,sfcwater_depth,initial)
+subroutine leaf3_soilsfcw_diag(ip,mzg,mzs,soil_energy,soil_water,soil_text,sfcwater_nlev   &
+                              ,sfcwater_energy_int,sfcwater_mass,sfcwater_depth,initial)
    use leaf_coms , only : slcpd               & ! intent(in)
                         , soil_tempk          & ! intent(out)
                         , soil_fracliq        & ! intent(out)
@@ -665,7 +666,7 @@ subroutine leaf_soilsfcw_diag(ip,mzg,mzs,soil_energy,soil_water,soil_text,sfcwat
    !---------------------------------------------------------------------------------------!
 
    return
-end subroutine leaf_soilsfcw_diag
+end subroutine leaf3_soilsfcw_diag
 !==========================================================================================!
 !==========================================================================================!
 
@@ -679,8 +680,8 @@ end subroutine leaf_soilsfcw_diag
 !     This sub-routine re-arranges the snow layers, and dump the water from the virtual    !
 ! layer to the place that can hold the water.                                              !
 !------------------------------------------------------------------------------------------!
-subroutine leaf_adjust_sfcw(mzg,mzs,soil_energy,soil_water,soil_text,sfcwater_nlev         &
-                           ,sfcwater_mass,sfcwater_depth)
+subroutine leaf3_adjust_sfcw(mzg,mzs,soil_energy,soil_water,soil_text,sfcwater_nlev        &
+                            ,sfcwater_mass,sfcwater_depth)
    use mem_leaf   , only : ipercol                  ! ! intent(in)
    use leaf_coms  , only : sfcwater_energy_ext      & ! intent(in)
                          , min_sfcwater_mass        & ! intent(in)
@@ -1170,6 +1171,6 @@ subroutine leaf_adjust_sfcw(mzg,mzs,soil_energy,soil_water,soil_text,sfcwater_nl
    !---------------------------------------------------------------------------------------!
 
    return
-end subroutine leaf_adjust_sfcw
+end subroutine leaf3_adjust_sfcw
 !==========================================================================================!
 !==========================================================================================!

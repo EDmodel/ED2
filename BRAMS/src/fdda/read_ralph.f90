@@ -58,6 +58,7 @@ subroutine rr_upa_obs (ifile,qcheck,ierr)
 !   need to detect if there is an additional header
 
 use obs_input
+use grid_dims, only : str_len
 
 implicit none
 
@@ -65,9 +66,9 @@ integer :: ifile,ierr
 character(len=*) :: qcheck
 
 integer :: ntok,iqfl(5)
-character(len=80) :: var_string
+character(len=str_len) :: var_string
 character(len=16) :: cflags,tokens(100)
-character(len=256) :: line
+character(len=str_len) :: line
 integer :: jd,n,i,j,iq,iqf,kl
 
 ierr=0
@@ -299,9 +300,9 @@ integer :: ifile,ierr
 character(len=*) :: qcheck
 
 integer :: ntok,iqfl(5)
-character(len=80) :: var_string
+character(len=str_len) :: var_string
 character(len=16) :: cflags,tokens(100)
-character(len=256) :: line
+character(len=str_len) :: line
 integer :: jd,nvar,nv,ic,k,iq,iqf,nh,nt
 
 ierr=0

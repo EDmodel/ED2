@@ -71,6 +71,25 @@ module pft_coms
 
    !=======================================================================================!
    !=======================================================================================!
+   !     The following parameters aren't PFT-dependent, but they are used to determine     !
+   ! PFT-dependent properties.                                                             !
+   !---------------------------------------------------------------------------------------!
+   !----- Carbon-to-biomass ratio of plant tissues. ---------------------------------------!
+   real :: C2B
+   !----- Parameters used by the model that predicts SLA based on leaf life span. ---------!
+   real :: sla_scale
+   real :: sla_inter
+   real :: sla_slope 
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
    !    The following variables are flags that control which PFTs mare used in general,    !
    ! for agriculture and grasses.                                                          !
    !---------------------------------------------------------------------------------------!
@@ -118,7 +137,8 @@ module pft_coms
    !   Stomata begin to rapidly close once the difference between intercellular and        !
    ! boundary layer H2O mixing ratios exceed this value. [mol_H2O/mol_air].                !
    !---------------------------------------------------------------------------------------!
-   real, dimension(n_pft) :: D0 
+   real, dimension(n_pft) :: D0
+   !---------------------------------------------------------------------------------------!
 
    !----- Temperature [°C] below which leaf metabolic activity begins to rapidly decline. -!
    real, dimension(n_pft) :: Vm_low_temp 
@@ -135,7 +155,7 @@ module pft_coms
    !----- Exponent for Vm in the Arrhenius equation [K]. ----------------------------------!
    real, dimension(n_pft) :: Vm_hor 
 
-   !----- Base (Q10 term) for Vm in Collatz equation [K]. ---------------------------------!
+   !----- Base (Q10 term) for Vm in Collatz equation. -------------------------------------!
    real, dimension(n_pft) :: Vm_q10
 
    !----- The a term for the Vm decline correction for high temperature, as in Collatz. ---!
@@ -159,7 +179,7 @@ module pft_coms
    !----- Exponent for Rd in the Arrhenius equation [K]. ----------------------------------!
    real, dimension(n_pft) :: Rd_hor 
 
-   !----- Base (Q10 term) for respiration in Collatz equation [K]. ------------------------!
+   !----- Base (Q10 term) for respiration in Collatz equation. ----------------------------!
    real, dimension(n_pft) :: Rd_q10
 
    !----- Slope of the Ball/Berry stomatal conductance-photosynthesis relationship. -------!
@@ -209,10 +229,25 @@ module pft_coms
    real, dimension(n_pft) :: storage_turnover_rate 
 
    !---------------------------------------------------------------------------------------!
-   !    This variable sets the contribution of roots to respiration.  Its units is         !
-   ! umol_CO2/kg_fine_roots/second.                                                        !
+   !    This variable sets the contribution of roots to respiration at the reference       !
+   ! temperature of 15C.  Its units is µmol_CO2/kg_fine_roots/s.                           !
    !---------------------------------------------------------------------------------------!
    real, dimension(n_pft) :: root_respiration_factor 
+
+   !----- Temperature [°C] below which root metabolic activity begins to rapidly decline. -!
+   real, dimension(n_pft) :: rrf_low_temp 
+
+   !----- Temperature [°C] above which root metabolic activity begins to rapidly decline. -!
+   real, dimension(n_pft) :: rrf_high_temp 
+
+   !----- Decay factor for the exponential correction. ------------------------------------!
+   real, dimension(n_pft) :: rrf_decay_e 
+
+   !----- Exponent for Rr in the Arrhenius equation [K]. ----------------------------------!
+   real, dimension(n_pft) :: rrf_hor 
+
+   !----- Base (Q10 term) for respiration in Collatz equation. ----------------------------!
+   real, dimension(n_pft) :: rrf_q10
    !=======================================================================================!
    !=======================================================================================!
 
@@ -293,11 +328,10 @@ module pft_coms
    real, dimension(n_pft) :: c2n_leaf
    !----- Recruit carbon to nitrogen ratio. -----------------------------------------------!
    real, dimension(n_pft) :: c2n_recruit 
-   !----- Carbon-to-biomass ratio of plant tissues. ---------------------------------------!
-   real :: C2B
    !----- Fraction of structural stem that is assumed to be above ground. -----------------!
-   real :: agf_bs
-   real :: agf_bsi
+   real, dimension(n_pft) :: agf_bs
+   !----- Fraction of above-ground wood biomass that is in the branches and twigs. --------!
+   real, dimension(n_pft) :: brf_wd
    !----- Supply coefficient for plant nitrogen uptake [m2/kgC_fine_root/day].  -----------!
    real :: plant_N_supply_scale
    !---------------------------------------------------------------------------------------!
@@ -325,7 +359,6 @@ module pft_coms
    !----- Mass ratio between sapwood and leaves [kg_sapwood]/[kg_leaves]. -----------------!
    real   , dimension(n_pft)    :: qsw
    real   , dimension(n_pft)    :: sapwood_ratio ! AREA ratio
-   real   , dimension(n_pft)    :: hgt_ref ! ref height for diam/ht allom (Temperate)
    !---------------------------------------------------------------------------------------!
    !     DBH-height allometry intercept (m).  Notice that this variable has different      !
    ! meaning between temperate and tropical PFTs.                                          !
@@ -336,27 +369,39 @@ module pft_coms
    ! meaning between temperate and tropical PFTs.                                          !!
    !---------------------------------------------------------------------------------------!
    real   , dimension(n_pft)    :: b2Ht
+   !---------------------------------------------------------------------------------------!
+   !     Reference height for DBH -> height allometry.  They may not be used for tropical  !
+   ! PFTs but when they are, they have a different meaning from the temperate allometry.   !
+   !---------------------------------------------------------------------------------------!
+   real   , dimension(n_pft)    :: hgt_ref
    !----- DBH-stem allometry intercept.  All PFTs. ----------------------------------------!
    real   , dimension(n_pft)    :: b1Bs_small
    !----- DBH-stem allometry slope (dimensionless).  All PFTs. ----------------------------!
    real   , dimension(n_pft)    :: b2Bs_small
    !----- DBH-stem allometry intercept for large DBH cohorts. -----------------------------!
-   real   , dimension(n_pft)    :: b1Bs_big
+   real   , dimension(n_pft)    :: b1Bs_large
    !----- DBH-stem allometry slope for large DBH cohorts. ---------------------------------!
-   real   , dimension(n_pft)    :: b2Bs_big
-   !----- Critical Bdead, point in which plants stop growing vertically. ------------------!
-   real   , dimension(n_pft)    :: bdead_crit
-   !----- DBH-leaf allometry intercept (kg leaf biomass / plant * cm^{-b2Bl}).  All PFTs --!
+   real   , dimension(n_pft)    :: b2Bs_large
+   !----- DBH-leaf allometry intercept for all cohorts. All PFTs --------------------------!
    real   , dimension(n_pft)    :: b1Bl
-   !----- DBH-leaf allometry slope (dimensionless).  All PFTs -----------------------------!
+   !----- DBH-leaf allometry slope for all cohorts. All PFTs ------------------------------!
    real   , dimension(n_pft)    :: b2Bl
    !----- DBH-crown allometry intercept.  All PFTs. ---------------------------------------!
    real   , dimension(n_pft)    :: b1Ca
    !----- DBH-crown allometry slope.  All PFTs. -------------------------------------------!
    real   , dimension(n_pft)    :: b2Ca
-   !----- Minimum DBH attainable by this PFT and minimum DBH at maximum height (cm). ------!
+   !----- DBH-WAI allometry intercept.  All PFTs. -----------------------------------------!
+   real   , dimension(n_pft)    :: b1WAI
+   !----- DBH-WAI allometry slope.  All PFTs. ---------------------------------------------!
+   real   , dimension(n_pft)    :: b2WAI
+   !----- Minimum DBH attainable by this PFT. ---------------------------------------------!
    real   , dimension(n_pft)    :: min_dbh
-   real   , dimension(n_pft)    :: max_dbh 
+   !----- Critical DBH for height/bdead, point in which plants stop growing vertically. ---!
+   real   , dimension(n_pft)    :: dbh_crit
+   !----- Minimum Bdead attainable by this PFT. -------------------------------------------!
+   real   , dimension(n_pft)    :: min_bdead
+   !----- Critical Bdead, point in which plants stop growing vertically. ------------------!
+   real   , dimension(n_pft)    :: bdead_crit
    !=======================================================================================!
    !=======================================================================================!
 
@@ -379,9 +424,6 @@ module pft_coms
    ! 4. Drought deciduous - based on 10day average.                                        !
    !---------------------------------------------------------------------------------------!
    integer, dimension(n_pft) :: phenology 
-
-   !----- A 0-1 factor indicating degree of clumpiness of leaves and shoots. --------------!
-   real(kind=8), dimension(n_pft) :: clumping_factor
 
    !----- Leaf width [m], which is used to compute the leaf boundary layer conductance. ---!
    real, dimension(n_pft) :: leaf_width
@@ -431,37 +473,6 @@ module pft_coms
    real, dimension(n_pft) :: wat_dry_ratio_ngrn
    !-----  Second term in the RHS of equation 5 of Gu et al. (2007), assuming T=t3ple. ----!
    real, dimension(n_pfT) :: delta_c
-   !=======================================================================================!
-   !=======================================================================================!
-
-
-
-
-
-
-   !=======================================================================================!
-   !=======================================================================================!
-   !    The following parameters are used in the branching parametrisation (Järvelä 2004). !
-   !---------------------------------------------------------------------------------------!
-   !----- Branching ratio. ----------------------------------------------------------------!
-   real   , dimension(n_pft)    :: rbranch
-   !----- Diameter ratio. -----------------------------------------------------------------!
-   real   , dimension(n_pft)    :: rdiamet
-   !----- Length ratio. -------------------------------------------------------------------!
-   real   , dimension(n_pft)    :: rlength
-   !----- Minimum diameter allowed. -------------------------------------------------------!
-   real   , dimension(n_pft)    :: diammin
-   !----- Number of trunks (usually one). -------------------------------------------------!
-   real   , dimension(n_pft)    :: ntrunk
-   !---------------------------------------------------------------------------------------!
-   !     The following parameters are used only for effective branch area index, fitting a !
-   !  smooth curve for Conijn (1995) numbers.  This should be switched by a more realistic !
-   !  calculation at some point soon.                                                      !
-   !---------------------------------------------------------------------------------------!
-   real   , dimension(n_pft)    :: conijn_a
-   real   , dimension(n_pft)    :: conijn_b
-   real   , dimension(n_pft)    :: conijn_c
-   real   , dimension(n_pft)    :: conijn_d
    !=======================================================================================!
    !=======================================================================================!
 

@@ -5,7 +5,7 @@ module mem_globaer
        ngroup,   &  !INTENT(IN)
        ngas,     &  !INTENT(IN)
        nsolute      !INTENT(IN)
-
+  use grid_dims, only : str_len
   implicit none
   !  @(#) globaer.h  McKie  Oct-1995
   !  This is the global include file for the Ames Aerosol model.
@@ -270,7 +270,7 @@ module mem_globaer
   !   gridname   Text description of horiz & vert grid coord system    {initatm}
   !   iaer1      Safety marker for common block aer1
   
-  character (LEN=80) :: gridname
+  character (LEN=str_len) :: gridname
   character (LEN=5) :: caer1s
   real :: dom_llx
   real :: dom_lly
@@ -427,7 +427,7 @@ module mem_globaer
   !!logical, allocatable :: if_nuc(:,:)
   logical :: do_netcdf
   logical :: do_parcel
-  character (LEN=80) :: simtitle
+  character (LEN=str_len) :: simtitle
 
   real,parameter,dimension(nelem)                ::  &
                      rhocore=(/1.85/)

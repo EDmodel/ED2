@@ -18,40 +18,24 @@ mpirun='mpirun'
 #------------------------------------------------------------------------------------------#
 
 
+#----- Find the number of cores. ----------------------------------------------------------#
+nmach=`wc -l < ${LSB_DJOB_HOSTFILE}`
 
-#----- Checking available spots -----------------------------------------------------------#
-host=/odyssey/home/mlongo/.lsbatch/hosts.${LSB_JOBID}
-
-
-/bin/cp ${LSB_DJOB_HOSTFILE} ${host}
-let NPROC=0
-let NNODE=0
-let NCORE=0
-for machine in `cat ${LSB_DJOB_HOSTFILE}`
-do
-   let NPROC=${NPROC}+1
-   let NCORE=${NCORE}+1
-   if [ ${NCORE} -eq 8 ]
-   then
-      let NCORE=0
-      let NNODE=${NNODE}+1
-   fi
-done
-
-#----- Changing the output filename to change for different processors --------------------#
-if [ ${NPROC} -lt 10 ]
+#----- Change the output filename to change for different processors ----------------------#
+if [ ${nmach} -lt 10 ]
 then
-  logfile=`dirname ${logfile}`'/00'${NPROC}'_'`basename ${logfile}` 
-  errfile=`dirname ${errfile}`'/00'${NPROC}'_'`basename ${errfile}` 
-elif [ ${NPROC} -lt 100 ]
+  logfile=`dirname ${logfile}`'/00'${nmach}'_'`basename ${logfile}` 
+  errfile=`dirname ${errfile}`'/00'${nmach}'_'`basename ${errfile}` 
+elif [ ${nmach} -lt 100 ]
 then
-  logfile=`dirname ${logfile}`'/0'${NPROC}'_'`basename ${logfile}` 
-  errfile=`dirname ${errfile}`'/0'${NPROC}'_'`basename ${errfile}` 
+  logfile=`dirname ${logfile}`'/0'${nmach}'_'`basename ${logfile}` 
+  errfile=`dirname ${errfile}`'/0'${nmach}'_'`basename ${errfile}` 
 else
-  logfile=`dirname ${logfile}`'/'${NPROC}'_'`basename ${logfile}` 
-  errfile=`dirname ${errfile}`'/'${NPROC}'_'`basename ${errfile}` 
+  logfile=`dirname ${logfile}`'/'${nmach}'_'`basename ${logfile}` 
+  errfile=`dirname ${errfile}`'/'${nmach}'_'`basename ${errfile}` 
 fi
-#----- Erasing old logfiles and joblogs ---------------------------------------------------#
+
+#----- Erase old logfiles and joblogs -----------------------------------------------------#
 if [ -s ${logfile} ]
 then
   rm -fv ${logfile}
@@ -61,10 +45,8 @@ then
   rm -fv ${errfile}
 fi
 
-#----- Submitting the jobs to the nodes ---------------------------------------------------#
-#${mpirun} -np ${NPROC} --nooversubscribe -machinefile ${host}  -mca btl_openib_ib_timeout 20 -mca btl openib,sm ${brams} 1> ${logfile} 2> ${errfile}
-${mpirun} -np ${NPROC} --nooversubscribe -machinefile ${host}   ${brams} 1> ${logfile} 2> ${errfile}
-#${mpirun} -np ${NPROC} --nooversubscribe -machinefile ${host}  -mca btl_openib_ib_timeout 20 -mca btl self,tcp ${brams} 1> ${logfile} 2> ${errfile}
+#----- Submit--- the jobs to the nodes ----------------------------------------------------#
+#${mpirun} -np ${nmach} --nooversubscribe -machinefile ${LSB_DJOB_HOSTFILE}  -mca btl_openib_ib_timeout 20 -mca btl openib,sm ${brams} 1> ${logfile} 2> ${errfile}
+${mpirun} -np ${nmach} --nooversubscribe -machinefile ${LSB_DJOB_HOSTFILE}   ${brams} 1> ${logfile} 2> ${errfile}
+#${mpirun} -np ${nmach} --nooversubscribe -machinefile ${LSB_DJOB_HOSTFILE}  -mca btl_openib_ib_timeout 20 -mca btl self,tcp ${brams} 1> ${logfile} 2> ${errfile}
 
-
-rm -f ${host}

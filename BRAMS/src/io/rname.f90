@@ -117,7 +117,7 @@ subroutine NAMEOUT
   print*, ' '
   write(6,201)NGRIDS,NESTZ1,NESTZ2,INITIAL,IOUTPUT,NUDLAT,if_adap
   write(6,202)INITFLD,IHTRAN,NACOUST,NTOPSMTH,KWRITE
-  write(6,203)IUPDSST,IZFLAT,IMPL,ICORFLG,NSLCON,IBND
+  write(6,203)IUPDSST,IZFLAT,IMPL,ICORFLG,NSLCON,ISOILCOL,IBND
   write(6,204)JBND,LSFLG,NFPT,IDELTAT,ISWRTYP,ILWRTYP,ICUMFDBK
 
 ![MLO - Adding ED2 and mass variables: 
@@ -140,7 +140,7 @@ subroutine NAMEOUT
 202 format(' INITFLD=',I4,'     IHTRAN=',I4  &
        ,'    NACOUST=',I4,'   NTOPSMTH=',I4,'     KWRITE=',I4)
 203 format(' IUPDSST=',I4,'     IZFLAT=',I4,'       IMPL=',I4  &
-       ,'    ICORFLG=',I4,'     NSLCON=',I4,'       IBND=',I4)
+       ,'    ICORFLG=',I4,'     NSLCON=',I4,'   ISOILCOL=',I4,'       IBND=',I4)
 204 format('    JBND=',I4,'      LSFLG=',I4,'       NFPT=',I4  &
        ,'    IDELTAT=',I4,'    ISWRTYP=',I4,'    ILWRTYP=',I4,'    ICUMFDBK=',I4)
 205 format('  LONRAD=',I4,'    IMONTHA=',I4,'     IDATEA=',I4  &

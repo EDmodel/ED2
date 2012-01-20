@@ -3,8 +3,8 @@
     FPREFIX = 'myoutpath/analy/mysimul-A-',
 
     NVP = 75,
-    VP ='lon',
-        'lat',
+    VP ='longitude',
+        'latitude',
         'press',
         'tempc',
         'theta',

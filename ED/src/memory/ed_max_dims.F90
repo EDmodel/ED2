@@ -53,7 +53,7 @@ module ed_max_dims
    integer, parameter :: nxpmax  = 666
    integer, parameter :: nypmax  = 666
    integer, parameter :: nzpmax  = 132
-   integer, parameter :: nzgmax  = 25
+   integer, parameter :: nzgmax  = 100
    integer, parameter :: maxdim  = 666
    integer, parameter :: maxdimp = maxdim + 2
    integer, parameter :: nxyzpm  = nzpmax * nxpmax * nypmax
