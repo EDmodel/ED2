@@ -1881,9 +1881,6 @@ subroutine adjust_sfcw_properties(nzg,nzs,initp,hdid,csite,ipa)
          !---------------------------------------------------------------------------------!
          !     Condense the remaining, and hope for the best.                              !
          !---------------------------------------------------------------------------------!
-         !----- Find the energy associated with the partial condensation. -----------------!
-         call uint2tl8(energy_needed/wmass_needed,tempk_needed,fracliq_needed)
-         energy_needed      = wmass_needed * tq2enthalpy8(tempk_needed,1.d0,.true.)
          !----- Update the canopy air space properties. -----------------------------------!
          initp%can_shv      = initp%can_shv       - wmass_needed   * wcapcani
          initp%can_enthalpy = initp%can_enthalpy                                           &
@@ -2353,8 +2350,8 @@ subroutine adjust_topsoil_properties(initp,hdid,csite,ipa)
          !    The layer beneath has enough water.  Find the energy associated with this    !
          ! water.                                                                          !
          !---------------------------------------------------------------------------------!
-         energy_needed = water_needed * tl2uint8( initp%soil_tempk(kb)                     &
-                                                , initp%soil_fracliq(kb) )
+         energy_needed = water_needed                                                      &
+                       * tl2uint8(initp%soil_tempk(kb),initp%soil_fracliq(kb))
          !---------------------------------------------------------------------------------!
 
 
@@ -2382,6 +2379,9 @@ subroutine adjust_topsoil_properties(initp,hdid,csite,ipa)
          ! to reduce the amount we still need.                                             ! 
          !---------------------------------------------------------------------------------!
          water_needed = water_needed - water_available
+         !---------------------------------------------------------------------------------!
+
+
 
          !---------------------------------------------------------------------------------!
          !    Find the energy associated with the water that will be transferred.          !
@@ -2395,7 +2395,10 @@ subroutine adjust_topsoil_properties(initp,hdid,csite,ipa)
          initp%soil_water(kb)  = initp%soil_water(kb)                                      &
                                - water_available  * dslzi8(kb) * wdnsi8
          initp%soil_energy(kb) = initp%soil_energy(kb) - energy_available * dslzi8(kb)
-         
+         !---------------------------------------------------------------------------------!
+
+
+
          !---------------------------------------------------------------------------------!
          !    We must also update the soil fluxes.                                         !
          !---------------------------------------------------------------------------------!
@@ -2609,27 +2612,35 @@ subroutine adjust_topsoil_properties(initp,hdid,csite,ipa)
          ! will go to the canopy air space.  Even if some supersaturation happens, the     !
          ! excess won't be too much to cause the run to crash.                             !
          !---------------------------------------------------------------------------------!
-         water_excess  = water_excess  - water_room
-         energy_room   = water_room * tl2uint8(initp%soil_tempk(kt),initp%soil_fracliq(kt))
+         water_excess = water_excess - water_room
+         energy_room  = water_room * tl2uint8(initp%soil_tempk(kt),initp%soil_fracliq(kt))
+         !---------------------------------------------------------------------------------!
+
+
 
          !---------------------------------------------------------------------------------!
          !    The layer beneath still has some room for this water excess, send the water  !
          ! down one level.                                                                 !
          !---------------------------------------------------------------------------------!
-         initp%soil_water(kt)  = initp%soil_water(kt)  - water_room  * dslzi8(kt)*wdnsi8
+         initp%soil_water (kt) = initp%soil_water (kt) - water_room  * dslzi8(kt) * wdnsi8
          initp%soil_energy(kt) = initp%soil_energy(kt) - energy_room * dslzi8(kt)
-         initp%soil_water(kb)  = initp%soil_water(kb)  + water_room  * dslzi8(kb)*wdnsi8
+         initp%soil_water (kb) = initp%soil_water (kb) + water_room  * dslzi8(kb) * wdnsi8
          initp%soil_energy(kb) = initp%soil_energy(kb) + energy_room * dslzi8(kb)
          !----- Update the fluxes too... --------------------------------------------------!
          initp%avg_smoist_gg(kt) = initp%avg_smoist_gg(kt) - water_room * hdidi
          initp%avg_smoist_gg(kb) = initp%avg_smoist_gg(kb) + water_room * hdidi
          !---------------------------------------------------------------------------------!
 
+
+
          !---------------------------------------------------------------------------------!
          !     The water that is about to leave will do it through "boiling".  Find the    !
          ! latent heat associated with this phase change.                                  !
          !---------------------------------------------------------------------------------!
          energy_excess = water_excess * tq2enthalpy8(initp%soil_tempk(kt),1.d0,.true.)
+         !---------------------------------------------------------------------------------!
+
+
 
          !----- Send the water and energy to the canopy. ----------------------------------!
          initp%soil_water(kt)  = initp%soil_water(kt)  - water_excess  * dslzi8(kt)*wdnsi8
@@ -2800,9 +2811,8 @@ subroutine adjust_veg_properties(initp,hdid,csite,ipa)
             !------------------------------------------------------------------------------!
             leaf_wshed  = initp%leaf_water(ico) - max_leaf_water
             leaf_qwshed = leaf_wshed * tl2uint8(initp%leaf_temp(ico),initp%leaf_fliq(ico))
-            leaf_dwshed = leaf_wshed                                                       &
-                        * ( initp%leaf_fliq(ico) * wdnsi8                                  &
-                          + (1.d0-initp%leaf_fliq(ico)) * fdnsi8)
+            leaf_dwshed = leaf_wshed * ( initp%leaf_fliq(ico) * wdnsi8                     &
+                                       + (1.d0-initp%leaf_fliq(ico)) * fdnsi8)
 
             !----- Add the contribution of this cohort to the total shedding. -------------!
             leaf_wshed_tot  = leaf_wshed_tot  + leaf_wshed
@@ -2899,17 +2909,18 @@ subroutine adjust_veg_properties(initp,hdid,csite,ipa)
             !    Too much water over the wood, we shall shed the excess to the ground.     !
             !------------------------------------------------------------------------------!
             wood_wshed  = initp%wood_water(ico) - max_wood_water
-
             wood_qwshed = wood_wshed * tl2uint8(initp%wood_temp(ico),initp%wood_fliq(ico))
+            wood_dwshed = wood_wshed * ( initp%wood_fliq(ico) * wdnsi8                     &
+                                       + (1.d0-initp%wood_fliq(ico)) * fdnsi8)
+            !------------------------------------------------------------------------------!
 
-            wood_dwshed = wood_wshed                                                         &
-                       * ( initp%wood_fliq(ico) * wdnsi8                                   &
-                         + (1.d0-initp%wood_fliq(ico)) * fdnsi8)
 
             !----- Add the contribution of this cohort to the total shedding. -------------!
             wood_wshed_tot  = wood_wshed_tot  + wood_wshed
             wood_qwshed_tot = wood_qwshed_tot + wood_qwshed
             wood_dwshed_tot = wood_dwshed_tot + wood_dwshed
+            !------------------------------------------------------------------------------!
+
 
             !----- Update water mass and energy. ------------------------------------------!
             initp%wood_water (ico) = initp%wood_water (ico) - wood_wshed
@@ -2995,6 +3006,9 @@ subroutine adjust_veg_properties(initp,hdid,csite,ipa)
       !------------------------------------------------------------------------------------!
 
    end select
+   !---------------------------------------------------------------------------------------!
+
+
 
    !----- Update the canopy air specific humidity and enthalpy. ---------------------------!
    initp%can_shv      = initp%can_shv                                                      &
@@ -3004,6 +3018,7 @@ subroutine adjust_veg_properties(initp,hdid,csite,ipa)
                       + (leaf_qboil_tot + wood_qboil_tot - leaf_qdew_tot - wood_qdew_tot)  &
                       * hcapcani
    !---------------------------------------------------------------------------------------!
+
 
 
    !----- Updating output fluxes ----------------------------------------------------------!
@@ -3542,8 +3557,6 @@ subroutine print_rk4patch(y,csite,ipa)
                                     , nzs                   ! ! intent(in)
    use ed_misc_coms          , only : current_time          ! ! intent(in)
    use consts_coms           , only : pio1808               ! ! intent(in)
-   use therm_lib8            , only : uint2tl8              & ! subroutine
-                                    , uextcm2tl8            ! ! subroutine
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    type(rk4patchtype) , target     :: y

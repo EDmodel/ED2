@@ -2127,7 +2127,7 @@ module therm_lib8
       rcan    = rdry8 * (1.d0 + epim18 * shvcan)
       !----- Specific heat. ---------------------------------------------------------------!
       cpref   = (1.d0 - shvref) * cpdry8 + shvref * cph2o8
-      cpcan   = (1.d0 - shvref) * cpdry8 + shvref * cph2o8
+      cpcan   = (1.d0 - shvcan) * cpdry8 + shvcan * cph2o8
       !----- Average values. --------------------------------------------------------------!
       rbar    = 5.d-1 * (rref  + rcan)
       cpbar   = 5.d-1 * (cpref + cpcan)
@@ -2452,8 +2452,8 @@ module therm_lib8
                             
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
-      real(kind=8), intent(in)  :: wmass   ! Mass                      [ kg/m²] or [ kg/m³]
       real(kind=8), intent(in)  :: dryhcap ! Heat cap. of "dry" part   [J/m²/K] or [J/m³/K]
+      real(kind=8), intent(in)  :: wmass   ! Mass                      [ kg/m²] or [ kg/m³]
       real(kind=8), intent(in)  :: temp    ! Temperature                           [     K]
       real(kind=8), intent(in)  :: fliq    ! Liquid fraction (0-1)                 [   ---]
       !------------------------------------------------------------------------------------!

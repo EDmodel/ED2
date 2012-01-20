@@ -4459,12 +4459,12 @@ subroutine init_rk4_params()
    !     Variables used to keep track on the error.                                        !
    !---------------------------------------------------------------------------------------!
    record_err     = .false.                  ! Compute and keep track of the errors.
-   print_detailed = .false.                  ! Print detailed information about the thermo-
+   print_detailed = .false.                   ! Print detailed information about the thermo-
                                              !    dynamic state.  This will create one file
                                              !    for each patch, so it is not recommended 
                                              !    for simulations that span over one month.
    print_thbnd    = .false.                  ! Make a file with thermodynamic boundaries.
-   print_budget   = .false.                  ! Make a file with budget terms.
+   print_budget   = .false.                   ! Make a file with budget terms.
    errmax_fout    = 'error_max_count.txt'    ! File with the maximum error count 
    sanity_fout    = 'sanity_check_count.txt' ! File with the sanity check count
    thbnds_fout    = 'thermo_bounds.txt'      ! File with the thermodynamic boundaries.

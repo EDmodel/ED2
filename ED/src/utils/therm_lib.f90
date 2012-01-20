@@ -2116,7 +2116,7 @@ module therm_lib
       rcan    = rdry * (1.0 + epim1 * shvcan)
       !----- Specific heat. ---------------------------------------------------------------!
       cpref   = (1.0 - shvref) * cpdry + shvref * cph2o
-      cpcan   = (1.0 - shvref) * cpdry + shvref * cph2o
+      cpcan   = (1.0 - shvcan) * cpdry + shvcan * cph2o
       !----- Average values. --------------------------------------------------------------!
       rbar    = 0.5 * (rref  + rcan)
       cpbar   = 0.5 * (cpref + cpcan)
@@ -2441,8 +2441,8 @@ module therm_lib
                             
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
-      real(kind=4), intent(in)  :: wmass   ! Water mass                [ kg/m²] or [ kg/m³]
       real(kind=4), intent(in)  :: dryhcap ! Heat cap. of "dry" part   [J/m²/K] or [J/m³/K]
+      real(kind=4), intent(in)  :: wmass   ! Water mass                [ kg/m²] or [ kg/m³]
       real(kind=4), intent(in)  :: temp    ! Temperature                           [     K]
       real(kind=4), intent(in)  :: fliq    ! Liquid fraction (0-1)                 [   ---]
       !------------------------------------------------------------------------------------!

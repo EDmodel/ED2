@@ -746,8 +746,7 @@ subroutine leaftw_derivs(mzg,mzs,initp,dinitp,csite,ipa)
                      wloss         = rk4aux%extracted_water(ico,k1) * ext_weight
                      qloss         = wloss * tl2uint8(initp%soil_tempk(k2),1.d0)
                      wvlmeloss     = wloss * wdnsi8 * dslzi8(k2)
-                     qvlmeloss     = wvlmeloss * wdns8                                     &
-                                   * tl2uint8(initp%soil_tempk(k2),1.d0)
+                     qvlmeloss     = qloss * dslzi8(k2)
                      !---------------------------------------------------------------------!
 
 
@@ -1324,8 +1323,7 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
 
          else
             !------------------------------------------------------------------------------!
-            !     Dew/frost formation. The deposition will conserve the liquid/ice         !
-            ! partition (or use the default if there is no water).                         !
+            !     Dew/frost formation.                                                     !
             !------------------------------------------------------------------------------!
             wflxlc                 = wflxlc_try
             qwflxlc                = wflxlc * tq2enthalpy8(initp%leaf_temp(ico),1.d0,.true.)
