@@ -205,7 +205,6 @@ subroutine init_nbg_cohorts(csite,lsl,ipa_a,ipa_z)
          cpatch%nplant(ico)           = init_density(ipft)
          cpatch%hite(ico)             = hgt_min(ipft)
          cpatch%phenology_status(ico) = 0
-         cpatch%bstorage(ico)         = 0.0
          cpatch%dbh(ico)              = h2dbh(cpatch%hite(ico),ipft)
          cpatch%bdead(ico)            = dbh2bd(cpatch%dbh(ico),ipft)
          cpatch%bleaf(ico)            = dbh2bl(cpatch%dbh(ico),ipft)
@@ -219,6 +218,8 @@ subroutine init_nbg_cohorts(csite,lsl,ipa_a,ipa_z)
          cpatch%broot(ico)            = q(ipft) * cpatch%balive(ico) * salloci
          cpatch%bsapwood(ico)         = qsw(ipft) * cpatch%hite(ico) * cpatch%balive(ico)  &
                                       * salloci
+         cpatch%bstorage(ico)         = 0.5 * ( cpatch%bleaf(ico) + cpatch%broot(ico)      &
+                                              + cpatch%bsapwood(ico))
 
          !----- Find the initial area indices (LAI, WPA, WAI). ----------------------------!
          call area_indices(cpatch%nplant(ico),cpatch%bleaf(ico),cpatch%bdead(ico)          &

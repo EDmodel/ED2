@@ -1,7 +1,8 @@
 # DO NOT DELETE THIS LINE - used by make depend
-rcio.o: leaf_coms.mod micro_coms.mod rconstants.mod rpost_coms.mod somevars.mod
-rcio.o: therm_lib.mod
-rpost_main.o: brams_data.mod misc_coms.mod rpost_coms.mod rpost_dims.mod
+rcio.o: leaf_coms.mod micro_coms.mod rconstants.mod rpost_coms.mod
+rcio.o: rpost_dims.mod somevars.mod therm_lib.mod
+rpost_main.o: brams_data.mod leaf_coms.mod misc_coms.mod rpost_coms.mod
+rpost_main.o: rpost_dims.mod
 rpost_misc.o: misc_coms.mod rpost_dims.mod
 variables.o: an_header.mod brams_data.mod leaf_coms.mod micro_coms.mod
 variables.o: misc_coms.mod rconstants.mod rpost_coms.mod rpost_dims.mod
@@ -21,15 +22,17 @@ rnamel.o: misc_coms.mod
 therm_lib.o: rconstants.mod
 tmpname.o: /n/Moorcroft_Lab/Users/mlongo/EDBRAMS/Ramspost/src/include/utils_sub_names.h
 tmpname.o:
-vformat_brams3.3.o: misc_coms.mod
+vformat_brams3.3.o: misc_coms.mod rpost_dims.mod
 brams_data.o: rpost_dims.mod
 micro_coms.o: rpost_dims.mod
 misc_coms.o: rpost_dims.mod
 rpost_coms.o: rpost_dims.mod
 soil_coms.o: rpost_dims.mod
+charutils.o: rpost_dims.mod
 dateutils.o: rconstants.mod
 numutils.o: rconstants.mod therm_lib.mod
 polarst.o: rconstants.mod
+rpost_filelist.o: rpost_dims.mod
 utils_c.o: /n/Moorcroft_Lab/Users/mlongo/EDBRAMS/Ramspost/src/include/utils_sub_names.h
 utils_c.o:
 an_header.mod: an_header.o

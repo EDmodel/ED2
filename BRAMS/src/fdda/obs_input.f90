@@ -8,6 +8,7 @@
 
 
 module obs_input
+use grid_dims, only : str_len
 
 ! Surface variables
 
@@ -43,7 +44,7 @@ type(ralph_upa_obs) :: rupa_obs
 integer, parameter :: max_head_vars=10
 
 type obs_header
-   character(len=80) :: head_string(max_head_vars),sfc_string(max_sfc_vars)  &
+   character(len=str_len) :: head_string(max_head_vars),sfc_string(max_sfc_vars)  &
                        ,therm_string(max_upa_vars),wind_string(max_upa_vars) &
                        ,sfc_units(max_sfc_vars) 
    integer :: iun,iver,nhead,nvsfc,nvtherm,nvwind

@@ -104,8 +104,9 @@ subroutine leaftw_derivs(mzg,mzs,initp,dinitp,csite,ipa)
                                    , zero_rk4_aux          ! ! intent(in)
    use ed_state_vars        , only : sitetype              & ! structure
                                    , patchtype             & ! structure
-                                   , polygontype
+                                   , polygontype           ! ! structure
    use therm_lib8           , only : qtk8                  ! ! subroutine
+   use physiology_coms      , only : h2o_plant_lim         ! ! intent(in)
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    type(rk4patchtype)  , target     :: initp            ! RK4 structure, intermediate step
@@ -137,7 +138,10 @@ subroutine leaftw_derivs(mzg,mzs,initp,dinitp,csite,ipa)
    real(kind=8)                     :: throughfall_tot  ! Water shedding flux
    real(kind=8)                     :: qthroughfall_tot ! Energy flux due to water shedding
    real(kind=8)                     :: dthroughfall_tot ! Depth flux due to water shedding
+   real(kind=8)                     :: wilting_factor   ! Wilting factor
+   real(kind=8)                     :: ext_weight       ! Layer weight for transpiration
    real(kind=8)                     :: wgpmid           ! Soil in between layers
+   real(kind=8)                     :: tloss            ! Transpired water loss 
    real(kind=8)                     :: wloss            ! Water loss due to transpiration
    real(kind=8)                     :: qwloss           ! Energy loss due to transpiration
    real(kind=8)                     :: dqwt             ! Energy adjustment aux. variable
@@ -217,50 +221,91 @@ subroutine leaftw_derivs(mzg,mzs,initp,dinitp,csite,ipa)
 
 
    !---------------------------------------------------------------------------------------!
-   !     Calculate water available to vegetation (in meters). SLZ is specified in RAMSIN.  !
-   ! Each element of the array sets the value of the bottom of a corresponding soil layer. !
-   ! Eg, SLZ = -2, -1, -0.5, -0.25.  There are four soil layers in this example; soil      !
-   ! layer 1 goes from 2 meters below the surface to 1 meter below the surface.            !
-   !---------------------------------------------------------------------------------------!
-   nsoil = rk4site%ntext_soil(mzg)
-   rk4aux%available_liquid_water(mzg) = dslz8(mzg)                                         &
-                                      * max( 0.0d0                                         &
-                                           , initp%soil_fracliq(mzg)                       &
-                                           * (initp%soil_water(mzg)-soil8(nsoil)%soilwp) )
-   do k = mzg - 1, klsl, -1
-      nsoil = rk4site%ntext_soil(k)
-      rk4aux%available_liquid_water(k) = rk4aux%available_liquid_water(k+1) + dslz8(k)     &
-                                       * max( 0.0d0                                        &
-                                            , initp%soil_fracliq(k)                        &
-                                            * (initp%soil_water(k) - soil8(nsoil)%soilwp) )
-   end do
-   !---------------------------------------------------------------------------------------!
-
-
-
-
-
-   !---------------------------------------------------------------------------------------!
    !     Compute the following variables:                                                  !
-   ! - psiplusz      - the total potential (water + gravitational)   [     m]              !
-   ! - hydcond       - hydraulic conductivity                        [   m/s]              !
-   ! - soil_liq_wilt - the liquid water content above wilting point  [ m³/m³]              !
-   ! - soil_liq_dry  - the liquid water content above dry air soil   [ m³/m³]              !
+   !                                                                                       !
+   ! HYDCOND                -- hydraulic conductivity                             [   m/s] !
+   ! PSIPLUSZ               -- the total potential (water + gravitational)        [     m] !
+   ! DRYSOIL                -- flag that tells whether this layer is totally dry  [   T|F] !
+   ! SATSOIL                -- flag that tells whether this layer is saturated    [   T|F] !
+   ! AVAIL_H2O_LYR          -- the available water factor for this layer          [ kg/m²] !
+   ! AVAIL_H2O_INT          -- the integral of AVAIL_H2O down to the layer        [ kg/m²] !
+   !                                                                                       !
+   ! Both AVAIL_H2O_LYR and AVAIL_H2O_INT depend on which water limitation we are using.   !
    !---------------------------------------------------------------------------------------!
-   do k = klsl, mzg
-      nsoil                   = rk4site%ntext_soil(k)
-      wgpfrac                 = min(initp%soil_water(k)/soil8(nsoil)%slmsts, 1.d0)
-      rk4aux%hydcond      (k) = slcons18(k,nsoil)                                          &
-                              * wgpfrac ** (2.d0 * soil8(nsoil)%slbs + 3.d0)
-      rk4aux%psiplusz     (k) = slzt8(k) + soil8(nsoil)%slpots                             &
-                                         / wgpfrac ** soil8(nsoil)%slbs
-      rk4aux%soil_liq_wilt(k) = max(0.d0, (initp%soil_water(k) - soil8(nsoil)%soilwp)      &
-                                        * initp%soil_fracliq(k)                       )
-      rk4aux%drysoil      (k) = (initp%soil_water(k) - soil8(nsoil)%soilcp)                &
-                              * initp%soil_fracliq(k)                        <= 0.d0
-      rk4aux%satsoil      (k) = initp%soil_water(k) >= soil8(nsoil)%slmsts
-   end do
+   select case (h2o_plant_lim)
+   case (0,1)
+      !------------------------------------------------------------------------------------!
+      !     The available water factor is the fraction of water mass above wilting point,  !
+      ! scaled by the liquid fraction.                                                     !
+      !------------------------------------------------------------------------------------!
+      do k = mzg, klsl, -1
+         nsoil   = rk4site%ntext_soil(k)
+
+         wgpfrac = min(initp%soil_water(k)/soil8(nsoil)%slmsts, 1.d0)
+
+         rk4aux%hydcond      (k) = slcons18(k,nsoil)                                       &
+                                 * wgpfrac ** (2.d0 * soil8(nsoil)%slbs + 3.d0)
+
+         rk4aux%psiplusz     (k) = slzt8(k) + soil8(nsoil)%slpots                          &
+                                            / wgpfrac ** soil8(nsoil)%slbs
+         rk4aux%drysoil      (k) = (initp%soil_water(k) - soil8(nsoil)%soilcp)             &
+                                 * initp%soil_fracliq(k)                        <= 0.d0
+         rk4aux%satsoil      (k) = initp%soil_water(k) >= soil8(nsoil)%slmsts
+
+         !----- Find the available water factor for this layer. ---------------------------!
+         rk4aux%avail_h2o_lyr(k) = max(0.d0, (initp%soil_water(k) - soil8(nsoil)%soilwp))  &
+                                 * initp%soil_fracliq(k) * wdns8 * dslz8(k)
+         !---------------------------------------------------------------------------------!
+
+
+
+         !----- Add the factor from this layer to the integral. ---------------------------!
+         rk4aux%avail_h2o_int(k) = rk4aux%avail_h2o_int(k+1) + rk4aux%avail_h2o_lyr(k)
+         !---------------------------------------------------------------------------------!
+      end do
+      !------------------------------------------------------------------------------------!
+
+   case (2)
+      !------------------------------------------------------------------------------------!
+      !     The available water factor is the soil moisture at field capacity minus wilt-  !
+      ! ing, scaled by the wilting factor, defined as a function of soil potential.        !
+      !------------------------------------------------------------------------------------!
+      do k = mzg, klsl, -1
+         nsoil   = rk4site%ntext_soil(k)
+
+         wgpfrac = min(initp%soil_water(k)/soil8(nsoil)%slmsts, 1.d0)
+
+         rk4aux%hydcond      (k) = slcons18(k,nsoil)                                       &
+                                 * wgpfrac ** (2.d0 * soil8(nsoil)%slbs + 3.d0)
+
+         rk4aux%psiplusz     (k) = slzt8(k) + soil8(nsoil)%slpots                          &
+                                            / wgpfrac ** soil8(nsoil)%slbs
+
+
+         rk4aux%drysoil      (k) = (initp%soil_water(k) - soil8(nsoil)%soilcp)             &
+                                 * initp%soil_fracliq(k)                        <= 0.d0
+         rk4aux%satsoil      (k) = initp%soil_water(k) >= soil8(nsoil)%slmsts
+
+         !----- Find the available water factor for this layer. ---------------------------!
+         wilting_factor          = (rk4aux%psiplusz(k) - soil8(nsoil)%slpotwp)             &
+                                 / (soil8(nsoil)%slpotfc - soil8(nsoil)%slpotwp)
+         rk4aux%avail_h2o_lyr(k) = min( 1.d0, max( 0.d0, wilting_factor ) )                &
+                                 * initp%soil_fracliq(k)                                   &
+                                 * ( soil8(nsoil)%sfldcap - soil8(nsoil)%soilwp )          &
+                                 * wdns8 * dslz8(k)
+         !---------------------------------------------------------------------------------!
+
+
+         !----- Add the factor from this layer to the integral. ---------------------------!
+         rk4aux%avail_h2o_int(k) = rk4aux%avail_h2o_int(k+1) + rk4aux%avail_h2o_lyr(k)
+         !---------------------------------------------------------------------------------!
+      end do
+      !------------------------------------------------------------------------------------!
+   end select
    !---------------------------------------------------------------------------------------!
+
+
+
 
 
 
@@ -348,9 +393,6 @@ subroutine leaftw_derivs(mzg,mzs,initp,dinitp,csite,ipa)
       rk4aux%satsoil     (kben) = .false.
    end select
    !---------------------------------------------------------------------------------------!
-
-
-
 
 
    !---------------------------------------------------------------------------------------!
@@ -656,20 +698,45 @@ subroutine leaftw_derivs(mzg,mzs,initp,dinitp,csite,ipa)
       do k1 = klsl, mzg    ! loop over extracted water
          do k2=k1,mzg
             if (rk4site%ntext_soil(k2) /= 13) then
-               if (rk4aux%available_liquid_water(k1) > 0.d0) then
-                  wloss = wdnsi8 * rk4aux%extracted_water(k1)                              &
-                        * rk4aux%soil_liq_wilt(k2) / rk4aux%available_liquid_water(k1)
-                  dinitp%soil_water(k2) = dinitp%soil_water(k2) - dble(wloss)
+               !---------------------------------------------------------------------------!
+               !     Transpiration happens only when there is some water left down to this !
+               ! layer.                                                                    !
+               !---------------------------------------------------------------------------!
+               if (rk4aux%avail_h2o_int(k1) > 0.d0) then
+                  !------------------------------------------------------------------------!
+                  !    Find the contribution of layer k2 for the transpiration from        !
+                  ! cohorts that reach layer k1.                                           !
+                  !------------------------------------------------------------------------!
+                  ext_weight = rk4aux%avail_h2o_lyr(k2) / rk4aux%avail_h2o_int(k1)
 
-                  !----- Energy: only liquid water is lost through transpiration. ---------!
+                  !------------------------------------------------------------------------!
+                  !    Find the loss of water from layer k2 due to cohorts that reach at   !
+                  ! least layer k1.  Here we convert extracted water which is in kg/m2/s   !
+                  ! (tloss) to m3/m3/s (wloss).  Also, find the internal energy loss       !
+                  ! (qwloss) associated with the water loss.  Since plants can extract     !
+                  ! liquid water only, the internal energy is assumed to be entirely in    !
+                  ! liquid phase.                                                          !
+                  !------------------------------------------------------------------------!
+                  tloss  = rk4aux%extracted_water(k1) * ext_weight
+                  wloss  = rk4aux%extracted_water(k1) * ext_weight * wdnsi8 * dslzi8(k2)
                   qwloss = wloss * cliqvlme8 * (initp%soil_tempk(k2) - tsupercool8)
-                  dinitp%soil_energy(k2)   = dinitp%soil_energy(k2)   - qwloss
-                  dinitp%avg_transloss(k2) = dinitp%avg_transloss(k2) - wdns8*dble(wloss)  &
-                             * dslz8(k2)
+                  !------------------------------------------------------------------------!
+
+
+
+                  !----- Update derivatives of water, energy, and transpiration. ----------!
+                  dinitp%soil_water   (k2) = dinitp%soil_water(k2)    - wloss
+                  dinitp%soil_energy  (k2) = dinitp%soil_energy(k2)   - qwloss
+                  dinitp%avg_transloss(k2) = dinitp%avg_transloss(k2) - tloss
+                  !------------------------------------------------------------------------!
                end if
+               !---------------------------------------------------------------------------!
             end if
+            !------------------------------------------------------------------------------!
          end do
+         !---------------------------------------------------------------------------------!
       end do
+      !------------------------------------------------------------------------------------!
    end if
    !---------------------------------------------------------------------------------------!
 
@@ -1033,7 +1100,7 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
       ! itself and the soil moisture.                                                      !
       !------------------------------------------------------------------------------------!
       wflxgc     = initp%ggnet * initp%can_rhos * (initp%ground_shv - initp%can_shv)       &
-                 * ( initp%ggsoil / (initp%ggnet + initp%ggsoil) )
+                 * ( 1.d0 / (1.d0 + initp%ggnet / initp%ggsoil) )
       !----- Adjusting the flux accordingly to the surface fraction (no phase bias). ------!
       qwflxgc    = wflxgc * ( alvi8 - initp%ground_fliq * alli8)
       !----- Set condensation fluxes to zero. ---------------------------------------------!
@@ -1169,7 +1236,7 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
                ! Compute the water demand from both open closed and open stomata, but      !
                ! first make sure that there is some water available for transpiration...   !
                !---------------------------------------------------------------------------!
-               if (rk4aux%available_liquid_water(kroot) > 0.d0 ) then
+               if (rk4aux%avail_h2o_int(kroot) > 0.d0 ) then
                   c3lai = effarea_transp(ipft) * initp%lai(ico)                            &
                         * (initp%lint_shv(ico) - initp%can_shv) * initp%leaf_gbw(ico)
 
@@ -1534,6 +1601,12 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
          dthroughfall_tot  = dthroughfall_tot + dintercepted_max * initp%wai(ico) * taii
       end if
       !------------------------------------------------------------------------------------!
+
+
+      !------ Find the combined leaf + wood derivative. -----------------------------------!
+      dinitp%veg_energy(ico) = dinitp%leaf_energy(ico) + dinitp%wood_energy(ico)
+      dinitp%veg_water (ico) = dinitp%leaf_water (ico) + dinitp%wood_water (ico)
+      !------------------------------------------------------------------------------------!
    end do cohortloop
    !---------------------------------------------------------------------------------------!
 
@@ -1564,20 +1637,20 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
    if (fast_diagnostics .or. print_detailed) then
 
 
-      dinitp%avg_carbon_ac    = cflxac                      ! Carbon flx,  Atmo->Canopy
-      dinitp%avg_sensible_ac  = hflxac                      ! Sens. heat,  Atmo->Canopy
-      dinitp%avg_vapor_ac     = wflxac                      ! Lat.  heat,  Atmo->Canopy
+      dinitp%avg_carbon_ac    = cflxac                       ! Carbon flx,  Atmo->Canopy
+      dinitp%avg_carbon_st    = cflxgc + cflxlc_tot + cflxac ! Carbon storage flux
+      dinitp%avg_sensible_ac  = hflxac                       ! Sens. heat,  Atmo->Canopy
+      dinitp%avg_vapor_ac     = wflxac                       ! Lat.  heat,  Atmo->Canopy
 
-      dinitp%avg_sensible_lc  = hflxlc_tot                  ! Sens. heat,  Leaf->Canopy
-      dinitp%avg_vapor_lc     = wflxlc_tot                  ! Lat.  heat,  Leaf->Canopy
+      dinitp%avg_sensible_lc  = hflxlc_tot                   ! Sens. heat,  Leaf->Canopy
+      dinitp%avg_vapor_lc     = wflxlc_tot                   ! Lat.  heat,  Leaf->Canopy
 
-      dinitp%avg_sensible_wc  = hflxwc_tot                  ! Sens. heat,  Wood->Canopy
-      dinitp%avg_vapor_wc     = wflxwc_tot                  ! Lat.  heat,  Wood->Canopy
+      dinitp%avg_sensible_wc  = hflxwc_tot                   ! Sens. heat,  Wood->Canopy
+      dinitp%avg_vapor_wc     = wflxwc_tot                   ! Lat.  heat,  Wood->Canopy
 
-      dinitp%avg_sensible_gc  = hflxgc                      ! Sens. heat,  Grnd->Canopy
-      dinitp%avg_transp       = transp_tot                  ! Transpiration
-      dinitp%avg_vapor_gc     = wflxgc                      ! Lat.  heat,  Grnd->Canopy
-      dinitp%avg_dew_cg       = dewgndflx                   ! Lat.  heat,  Canopy->Grnd
+      dinitp%avg_sensible_gc  = hflxgc                       ! Sens. heat,  Grnd->Canopy
+      dinitp%avg_transp       = transp_tot                   ! Transpiration
+      dinitp%avg_vapor_gc     = wflxgc - dewgndflx           ! Lat.  heat,  Canopy->Grnd
 
       !----- Total evaporation to the canopy air space. -----------------------------------!
       dinitp%avg_evap         = wflxgc - dewgndflx + wflxlc_tot + wflxwc_tot
@@ -1589,6 +1662,14 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
       dinitp%avg_qintercepted = qintercepted_tot            ! Intercepted,   Atmo->Lead
       dinitp%avg_throughfall  = throughfall_tot             ! Throughfall,   Atmo->Grnd
       dinitp%avg_qthroughfall = qthroughfall_tot            ! Throughfall,   Atmo->Grnd
+      !------------------------------------------------------------------------------------!
+
+      !------ These are used to compute the averages of the star terms. -------------------!
+      dinitp%avg_ustar = initp%ustar
+      dinitp%avg_tstar = initp%tstar
+      dinitp%avg_qstar = initp%qstar
+      dinitp%avg_cstar = initp%cstar
+      !------------------------------------------------------------------------------------!
 
    end if
    !---------------------------------------------------------------------------------------!

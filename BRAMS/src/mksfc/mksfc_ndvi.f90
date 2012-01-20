@@ -11,12 +11,13 @@ subroutine ndvi_read_dataheader(ifm)
 
 use mem_mksfc
 use io_params
+use grid_dims, only : str_len
 
 implicit none
 integer :: ifm
 
 integer :: itime,nc
-character(len=256) :: flnm,line,line2
+character(len=str_len) :: flnm,line,line2
 character(len=1) :: dummy
 logical :: there
 integer, external :: lastslash
@@ -127,6 +128,7 @@ elseif (ndviflg(ifm) == 1) then
       ,ivegtflg(ifm),ivegtfn(ifm),isoilflg(ifm),isoilfn(ifm) &
       ,ndviflg(ifm),ndvifn(ifm),vndvifil(ivtime,ifm)  &
       ,'ndvi',platn(ifm),plonn(ifm)        &
+      ,sfcfile_p(ifm)%soil_color  &
       ,sfcfile_p(ifm)%soil_text  &
       ,sfcfile_p(ifm)%patch_area   &
       ,sfcfile_p(ifm)%leaf_class   &
@@ -181,12 +183,12 @@ subroutine ndvi_write(ifm,ivt)
 use mem_mksfc
 use mem_grid
 use io_params
-
+use grid_dims, only : str_len
 implicit none
 integer :: ifm,ivt,ip
 
 real :: glatr,glonr
-character(len=256) :: flnm
+character(len=str_len) :: flnm
 character(len=2) :: cgrid
 real(kind=8) :: zero
 

@@ -692,21 +692,23 @@ subroutine copy_fluxes_future_2_past(ifm)
    !---------------------------------------------------------------------------------------!
 
    !----- Simple copy of fluxes over land. ------------------------------------------------!
-   ed_fluxp_g(ifm)%ustar   = ed_fluxf_g(ifm)%ustar
-   ed_fluxp_g(ifm)%tstar   = ed_fluxf_g(ifm)%tstar
-   ed_fluxp_g(ifm)%rstar   = ed_fluxf_g(ifm)%rstar
-   ed_fluxp_g(ifm)%cstar   = ed_fluxf_g(ifm)%cstar
-   ed_fluxp_g(ifm)%zeta    = ed_fluxf_g(ifm)%zeta
-   ed_fluxp_g(ifm)%ribulk  = ed_fluxf_g(ifm)%ribulk
-   ed_fluxp_g(ifm)%albedt  = ed_fluxf_g(ifm)%albedt
-   ed_fluxp_g(ifm)%rlongup = ed_fluxf_g(ifm)%rlongup
-   ed_fluxp_g(ifm)%sflux_u = ed_fluxf_g(ifm)%sflux_u
-   ed_fluxp_g(ifm)%sflux_v = ed_fluxf_g(ifm)%sflux_v
-   ed_fluxp_g(ifm)%sflux_w = ed_fluxf_g(ifm)%sflux_w
-   ed_fluxp_g(ifm)%sflux_t = ed_fluxf_g(ifm)%sflux_t
-   ed_fluxp_g(ifm)%sflux_r = ed_fluxf_g(ifm)%sflux_r
-   ed_fluxp_g(ifm)%sflux_c = ed_fluxf_g(ifm)%sflux_c
-   ed_fluxp_g(ifm)%rk4step = ed_fluxf_g(ifm)%rk4step
+   ed_fluxp_g(ifm)%ustar      = ed_fluxf_g(ifm)%ustar
+   ed_fluxp_g(ifm)%tstar      = ed_fluxf_g(ifm)%tstar
+   ed_fluxp_g(ifm)%rstar      = ed_fluxf_g(ifm)%rstar
+   ed_fluxp_g(ifm)%cstar      = ed_fluxf_g(ifm)%cstar
+   ed_fluxp_g(ifm)%zeta       = ed_fluxf_g(ifm)%zeta
+   ed_fluxp_g(ifm)%ribulk     = ed_fluxf_g(ifm)%ribulk
+   ed_fluxp_g(ifm)%rshort_gnd = ed_fluxf_g(ifm)%rshort_gnd
+   ed_fluxp_g(ifm)%rlong_gnd  = ed_fluxf_g(ifm)%rlong_gnd
+   ed_fluxp_g(ifm)%albedt     = ed_fluxf_g(ifm)%albedt
+   ed_fluxp_g(ifm)%rlongup    = ed_fluxf_g(ifm)%rlongup
+   ed_fluxp_g(ifm)%sflux_u    = ed_fluxf_g(ifm)%sflux_u
+   ed_fluxp_g(ifm)%sflux_v    = ed_fluxf_g(ifm)%sflux_v
+   ed_fluxp_g(ifm)%sflux_w    = ed_fluxf_g(ifm)%sflux_w
+   ed_fluxp_g(ifm)%sflux_t    = ed_fluxf_g(ifm)%sflux_t
+   ed_fluxp_g(ifm)%sflux_r    = ed_fluxf_g(ifm)%sflux_r
+   ed_fluxp_g(ifm)%sflux_c    = ed_fluxf_g(ifm)%sflux_c
+   ed_fluxp_g(ifm)%rk4step    = ed_fluxf_g(ifm)%rk4step
 
    return
 end subroutine copy_fluxes_future_2_past
@@ -730,6 +732,7 @@ subroutine copy_fluxes_lsm2atm(ifm)
                             , sitetype    ! ! structure
    use mem_edcp      , only : ed_fluxf_g  & ! structure
                             , ed_flux     ! ! structure
+   use soil_coms     , only : nzs         ! ! intent(in)
    use mem_grid      , only : zt          & ! intent(in)
                             , grid_g      & ! structure
                             , dzt         & ! intent(in)
@@ -753,6 +756,7 @@ subroutine copy_fluxes_lsm2atm(ifm)
    integer                            :: ix
    integer                            :: iy
    integer                            :: ilp
+   integer                            :: k
    integer                            :: k2u
    integer                            :: k3u
    integer                            :: k2u_1
@@ -900,6 +904,21 @@ subroutine copy_fluxes_lsm2atm(ifm)
          !    Total albedo is the average between albedo for direct (beam) and diffuse.    !
          !---------------------------------------------------------------------------------!
          fluxp%albedt(ix,iy,ilp)  = sum(csite%area * csite%albedo) * site_area_i
+         !---------------------------------------------------------------------------------!
+
+
+         !---------------------------------------------------------------------------------!
+         !    Total albedo is the average between albedo for direct (beam) and diffuse.    !
+         !---------------------------------------------------------------------------------!
+         fluxp%rshort_gnd    (ix,iy,ilp) = sum(csite%area * csite%rshort_g) * site_area_i
+         do k=1,nzs
+            fluxp%rshort_gnd (ix,iy,ilp) = fluxp%rshort_gnd(ix,iy,ilp)                     &
+                                         + sum(csite%area * csite%rshort_s(k,:))           &
+                                         * site_area_i
+         end do
+         fluxp%rlong_gnd     (ix,iy,ilp) = sum(csite%area * ( csite%rlong_g                &
+                                                            + csite%rlong_s ))             &
+                                         * site_area_i
          !---------------------------------------------------------------------------------!
       end do
    end do
@@ -1612,6 +1631,8 @@ subroutine copy_avgvars_to_leaf(ifm)
             leaf_g(ifm)%soil_energy(k,ix,iy,ilp) = cpoly%avg_soil_energy(k,isi)
             leaf_g(ifm)%soil_water (k,ix,iy,ilp) = cpoly%avg_soil_water (k,isi)
          end do
+         leaf_g(ifm)%psibar_10d (ix,iy,ilp) = 1.0
+         leaf_g(ifm)%soil_color(ix,iy,ilp)  = real(cpoly%ncol_soil(isi))
          !---------------------------------------------------------------------------------!
 
 
@@ -1680,8 +1701,7 @@ subroutine copy_avgvars_to_leaf(ifm)
          leaf_g(ifm)%sensible_gc(ix,iy,ilp) = cpoly%avg_sensible_gc(isi)
          leaf_g(ifm)%sensible_vc(ix,iy,ilp) = ( cpoly%avg_sensible_lc(isi)                 &
                                               + cpoly%avg_sensible_wc(isi) )
-         leaf_g(ifm)%evap_gc    (ix,iy,ilp) = ( cpoly%avg_vapor_gc(isi)                    &
-                                              - cpoly%avg_dew_cg(isi))    * alvl
+         leaf_g(ifm)%evap_gc    (ix,iy,ilp) = cpoly%avg_vapor_gc(isi) * alvl
          leaf_g(ifm)%evap_vc    (ix,iy,ilp) = ( cpoly%avg_vapor_lc(isi)                    &
                                               + cpoly%avg_vapor_wc(isi) ) * alvl
          leaf_g(ifm)%transp     (ix,iy,ilp) = cpoly%avg_transp(isi)       * alvl

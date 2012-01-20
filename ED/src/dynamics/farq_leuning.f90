@@ -110,12 +110,11 @@ module farq_leuning
                                 , dark_respiration_factor  & ! intent(in)
                                 , stomatal_slope           & ! intent(in)
                                 , quantum_efficiency       ! ! intent(in)
-      use phenology_coms , only : vm_tran                  & ! intent(in)
-                                , vm_slop                  & ! intent(in)
-                                , vm_amp                   & ! intent(in)
-                                , vm_min                   ! ! intent(in)
-      use physiology_coms, only : istoma_scheme            & ! intent(in)
-                                , c34smin_lint_co28        & ! intent(in)
+      use phenology_coms , only : vm0_tran                 & ! intent(in)
+                                , vm0_slope                & ! intent(in)
+                                , vm0_amp                  & ! intent(in)
+                                , vm0_min                  ! ! intent(in)
+      use physiology_coms, only : c34smin_lint_co28        & ! intent(in)
                                 , c34smax_lint_co28        & ! intent(in)
                                 , gbh_2_gbw8               & ! intent(in)
                                 , gbw_2_gbc8               & ! intent(in)
@@ -240,7 +239,7 @@ module farq_leuning
       select case(phenology(ipft))
       case (3)
          !------ Light-controlled phenology. ----------------------------------------------!
-         thispft%vm0 = dble(vm_amp / (1.0 + (llspan/vm_tran)**vm_slop) + vm_min)           &
+         thispft%vm0 = dble(vm0_amp / (1.0 + (llspan/vm0_tran)**vm0_slope) + vm0_min)      &
                      * umol_2_mol8
          thispft%rd0 = dble(vm_bar) * umol_2_mol8 * dble(dark_respiration_factor(ipft))
       case default
@@ -269,22 +268,9 @@ module farq_leuning
 
 
       !------------------------------------------------------------------------------------!
-      !     At this point we call the main solver.  If we choose the exact solver, we will !
-      ! always solve all fluxes interactively, otherwise we will use a first order         !
-      ! approximation for some of the steps, and update the exact solution less often.     !
+      !     Call the main solver.                                                          !
       !------------------------------------------------------------------------------------!
-      select case (istoma_scheme)
-      case (0)
-          call photosynthesis_exact_solver(ipft,limit_flag)
-
-      case (1)
-         write (unit=*,fmt='(a)') '------------------------------------------------------'
-         write (unit=*,fmt='(a)') '     Sorry, the small perturbation scheme for '
-         write (unit=*,fmt='(a)') ' photosynthesis is temporarily down. '
-         write (unit=*,fmt='(a)') '------------------------------------------------------'
-         call fatal_error('ISTOMA_SCHEME = 1 is temporarily unavailable','lphysiol_full'   &
-                         ,'farq_leuning.f90')
-      end select
+      call photosynthesis_exact_solver(ipft,limit_flag)
       !------------------------------------------------------------------------------------!
 
 
@@ -575,7 +561,7 @@ module farq_leuning
          thigh_fun = 1.d0 + exp(lnexphigh)
          !---------------------------------------------------------------------------------!
 
-         !------ Correct rd. --------------------------------------------------------------!
+         !------ Correct Rd. --------------------------------------------------------------!
          aparms%leaf_resp = rd_nocorr / (tlow_fun * thigh_fun)
          !---------------------------------------------------------------------------------!
 
@@ -759,6 +745,11 @@ module farq_leuning
          call copy_solution(stclosed,co2lim)
          co2lim%co2_demand = discard
          success           = .true.
+         !---------------------------------------------------------------------------------!
+         !    C3, use the expression from C91, that Ao should not exceed 0.5 * Vm.         !
+         !---------------------------------------------------------------------------------!
+         ! call solve_aofixed_case(co2lim,success)
+         !---------------------------------------------------------------------------------!
 
       case (4)
          !---------------------------------------------------------------------------------!
@@ -1374,9 +1365,9 @@ module farq_leuning
             !------------------------------------------------------------------------------!
 
             case ('CO2')
-               !----- CO2-limited for low CO2 concentration case (unused). ----------------!
+               !----- CO2-limited for low CO2 concentration case. -------------------------!
                aparms%rho   = 0.d0
-               aparms%sigma = huge(1.d0)
+               aparms%sigma = 5.d-1 * aparms%vm
                aparms%xi    = 0.d0
                aparms%tau   = 1.d0
                aparms%nu    = -aparms%leaf_resp

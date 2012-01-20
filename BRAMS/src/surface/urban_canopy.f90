@@ -120,7 +120,7 @@ end
 !************************************************************************
 
 subroutine getdrag(nzp,nxp,nyp,xm,ym,zm,cdrag)
-
+use grid_dims, only : str_len
 implicit none
 
 integer :: nxp,nyp,nzp
@@ -134,7 +134,7 @@ integer :: i,j,k,ic,jc,kc,ic1,ic2,jc1,jc2,kc1,kc2
 real :: rim1_cd,rim2_cd,rjm1_cd,rjm2_cd,rkm1_cd,rkm2_cd,ric,rjc,rkc
 logical :: there
 
-character(len=80) :: fname='./cdrag_data'
+character(len=str_len) :: fname='./cdrag_data'
 
 ! Read in the prepared drag coeff file
 

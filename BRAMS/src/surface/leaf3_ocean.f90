@@ -25,7 +25,6 @@ subroutine leaf3_ocean(mzg,ustar,tstar,rstar,cstar,patch_rough,can_prss,can_rvap
                         , veg_temp       & ! intent(out)
                         , veg_fliq       & ! intent(out)
                         , ggveg          & ! intent(out)
-                        , ggfact         & ! intent(out)
                         , ggnet          & ! intent(out)
                         , hflxgc         & ! intent(out)
                         , wflxgc         & ! intent(out)
@@ -37,8 +36,7 @@ subroutine leaf3_ocean(mzg,ustar,tstar,rstar,cstar,patch_rough,can_prss,can_rvap
                         , hflxac         & ! intent(out)
                         , wflxac         & ! intent(out)
                         , cflxac         & ! intent(out)
-                        , ustmin         & ! intent(in)
-                        , ggfact         ! ! intent(in)
+                        , ustmin         ! ! intent(in)
    use rconstants, only : mmdry          & ! intent(in)
                         , mmdryi         & ! intent(in)
                         , cp             & ! intent(in)
@@ -99,7 +97,7 @@ subroutine leaf3_ocean(mzg,ustar,tstar,rstar,cstar,patch_rough,can_prss,can_rvap
    !    For water patches, the net conductance is the same as the bare ground.             !
    !---------------------------------------------------------------------------------------!
    ggveg   = huge_num
-   ggnet   = ggbare * ggfact
+   ggnet   = ggbare
    !---------------------------------------------------------------------------------------!
 
    !----- Compute the fluxes from water body to canopy. -----------------------------------!
@@ -141,7 +139,7 @@ end subroutine leaf3_ocean
 !      This routine will find the internal energy of the ocean based on the previous and   !
 ! future sea surface temperature.                                                          !
 !------------------------------------------------------------------------------------------!
-subroutine leaf_ocean_diag(ifm,mzg,pastsst,futuresst,soil_energy)
+subroutine leaf3_ocean_diag(ifm,mzg,pastsst,futuresst,soil_energy)
    use rconstants, only : cliq         & ! intent(in)
                         , tsupercool   ! ! intent(in)
    use mem_grid  , only : time         ! ! intent(in)
@@ -189,6 +187,6 @@ subroutine leaf_ocean_diag(ifm,mzg,pastsst,futuresst,soil_energy)
    !---------------------------------------------------------------------------------------!
 
    return
-end subroutine leaf_ocean_diag
+end subroutine leaf3_ocean_diag
 !==========================================================================================!
 !==========================================================================================!

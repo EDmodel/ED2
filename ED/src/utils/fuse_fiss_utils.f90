@@ -12,19 +12,25 @@ module fuse_fiss_utils
    contains
    !=======================================================================================!
    !=======================================================================================!
-   !   This subroutine will sort the cohorts by size (1st = tallest, last = shortest.)     !
+   !      This subroutine will sort the cohorts by size (1st = tallest, last = shortest.)  !
+   ! In case there is a tie (for example, when 2 cohorts have reached the maximum possible !
+   ! height, then we use DBH for tie breaking, and if they have the exact same DBH, then   !
+   ! we simply pick the lowest index (as they are exactly the same).  This could cause     !
+   ! some problems when the new grass allometry is implemented, though.                    !
    !---------------------------------------------------------------------------------------!
    subroutine sort_cohorts(cpatch)
 
       use ed_state_vars,only :  patchtype   ! ! Structure
       implicit none
       !----- Arguments --------------------------------------------------------------------!
-      type(patchtype), target  :: cpatch     ! Current patch, to have cohorts sorted.
+      type(patchtype)              , target      :: cpatch    ! Current patch
       !----- Local variables --------------------------------------------------------------!
-      type(patchtype), pointer :: temppatch  ! Scratch patch structure
-      integer                  :: ico        ! Counters
-      integer                  :: tallco     ! Index of tallest cohort
-      logical                  :: sorted     ! Flag: this patch is already sorted
+      type(patchtype)              , pointer     :: temppatch ! Scratch patch structure
+      integer                                    :: ico       ! Counters
+      integer                                    :: tallco    ! Index of tallest cohort
+      real                                       :: tophgt    ! Maximum height considered
+      logical                                    :: sorted    ! Patch is already sorted
+      logical        , dimension(:), allocatable :: attop     ! Top cohorts, for tie-break
       !------------------------------------------------------------------------------------!
       
       !----- No need to sort an empty patch or a patch with a single cohort. --------------!
@@ -38,7 +44,8 @@ module fuse_fiss_utils
       !------------------------------------------------------------------------------------!
       sorted = .true.
       sortcheck: do ico=1,cpatch%ncohorts-1
-         sorted = cpatch%hite(ico) >= cpatch%hite(ico+1)
+         sorted = cpatch%hite(ico) >= cpatch%dbh(ico+1) .and.                              &
+                  cpatch%dbh(ico)  >= cpatch%dbh(ico+1)
          if (.not. sorted) exit sortcheck
       end do sortcheck
       if (sorted) return
@@ -50,20 +57,30 @@ module fuse_fiss_utils
       nullify(temppatch)
       allocate(temppatch)
       call allocate_patchtype(temppatch,cpatch%ncohorts)
-      
+
+      !----- Allocate the logical flag for tie-breaking. ----------------------------------!
+      allocate(attop(cpatch%ncohorts))
+
       ico = 0
       !---- Loop until all cohorts were sorted. -------------------------------------------!
       do while(ico < cpatch%ncohorts)
          ico = ico + 1
-      
-         !----- Find the tallest cohort. --------------------------------------------------!
-         tallco = maxloc(cpatch%hite,dim=1)
-         
+
+         !----- Find the maximum height. --------------------------------------------------!
+         tophgt = maxval(cpatch%hite)
+
+         !----- Find all cohorts that are at this height. ---------------------------------!
+         attop  = cpatch%hite == tophgt
+
+         !----- Find the fattest cohort at a given height. --------------------------------!
+         tallco = maxloc(cpatch%dbh,dim=1,mask=attop)
+
          !----- Copy to the scratch structure. --------------------------------------------!
          call copy_patchtype(cpatch,temppatch,tallco,tallco,ico,ico)
-         
-         !----- Put a non-sense height so this will never "win" again. --------------------!
+
+         !----- Put a non-sense DBH so this will never "win" again. -----------------------!
          cpatch%hite(tallco) = -huge(1.)
+         cpatch%dbh (tallco) = -huge(1.)
 
       end do
 
@@ -71,6 +88,9 @@ module fuse_fiss_utils
       call copy_patchtype(temppatch,cpatch,1,cpatch%ncohorts,1,cpatch%ncohorts)
       call deallocate_patchtype(temppatch)
       deallocate(temppatch)
+
+      !----- De-allocate the logical flag. ------------------------------------------------!
+      deallocate(attop)
 
       return
 
@@ -1296,9 +1316,6 @@ module fuse_fiss_utils
                                  
       cpatch%today_nppdaily(recc)= cpatch%today_nppdaily(recc)                             &
                                  + cpatch%today_nppdaily(donc)
-                                 
-      cpatch%today_nppleaf(recc) = cpatch%today_nppleaf(recc)                              &
-                                 + cpatch%today_nppleaf(donc)
                                  
       cpatch%today_gpp_pot(recc) = cpatch%today_gpp_pot(recc)                              &
                                  + cpatch%today_gpp_pot(donc)
@@ -2591,7 +2608,7 @@ module fuse_fiss_utils
                   recloopp: do recp=donp-1,1,-1
                      recp_found = csite%dist_type(donp) == csite%dist_type(recp) .and.     &
                                   fuse_table(recp) .and.                                   &
-                                  (csite%dist_type(recp) == 1 .or. csite%age(recp) > 2.)
+                                  (csite%dist_type(recp) == 1 .or. csite%age(recp) > 3.)
                      if (recp_found) then
                         recpatch => csite%patch(recp)
                         exit recloopp
@@ -2911,11 +2928,7 @@ module fuse_fiss_utils
             ! be a bug.                                                                    !
             !------------------------------------------------------------------------------!
             if (new_area       < 0.99 * old_area       .or.                                &
-                new_area       > 1.01 * old_area       .or.                                &
-                new_nplant_tot < 0.99 * (old_nplant_tot - elim_nplant_tot) .or.            &
-                new_nplant_tot > 1.01 * (old_nplant_tot - elim_nplant_tot) .or.            &
-                new_lai_tot    < 0.99 * (old_lai_tot    - elim_lai_tot   ) .or.            &
-                new_lai_tot    > 1.01 * (old_lai_tot    - elim_lai_tot   )     ) then
+                new_area       > 1.01 * old_area            ) then
                write (unit=*,fmt='(a,1x,es12.5)') 'OLD_AREA:       ',old_area
                write (unit=*,fmt='(a,1x,es12.5)') 'NEW_AREA:       ',new_area
                write (unit=*,fmt='(a,1x,es12.5)') 'NEW_LAI_TOT:    ',new_lai_tot
@@ -3178,6 +3191,26 @@ module fuse_fiss_utils
       end do
 
       !------------------------------------------------------------------------------------!
+      !     These variables shouldn't matter because they are reset every day/every month, !
+      ! but just in case...                                                                !
+      !------------------------------------------------------------------------------------!
+      csite%avg_daily_temp       (recp) = newareai                                         &
+                                        * ( csite%avg_daily_temp       (donp)              &
+                                          * csite%area                 (donp)              &
+                                          + csite%avg_daily_temp       (recp)              &
+                                          * csite%area                 (recp) )
+
+      csite%avg_monthly_gndwater (recp) = newareai                                         &
+                                        * ( csite%avg_monthly_gndwater (donp)              &
+                                          * csite%area                 (donp)              &
+                                          + csite%avg_monthly_gndwater (recp)              &
+                                          * csite%area                 (recp) )
+      !------------------------------------------------------------------------------------!
+
+
+
+
+      !------------------------------------------------------------------------------------!
       !    This subroutine takes care of filling:                                          !
       !                                                                                    !
       ! + csite%ground_shv(recp)                                                           !
@@ -3217,6 +3250,22 @@ module fuse_fiss_utils
       ! output will have the values.  Other variables will probably be scaled here as      !
       ! well.                                                                              !
       !------------------------------------------------------------------------------------!
+      csite%avg_ustar     (recp)      = newareai *                                         &
+                                      ( csite%avg_ustar     (donp)    * csite%area(donp)   &
+                                      + csite%avg_ustar     (recp)    * csite%area(recp) )
+
+      csite%avg_tstar     (recp)      = newareai *                                         &
+                                      ( csite%avg_tstar     (donp)    * csite%area(donp)   &
+                                      + csite%avg_tstar     (recp)    * csite%area(recp) )
+
+      csite%avg_qstar     (recp)      = newareai *                                         &
+                                      ( csite%avg_qstar     (donp)    * csite%area(donp)   &
+                                      + csite%avg_qstar     (recp)    * csite%area(recp) )
+
+      csite%avg_cstar     (recp)      = newareai *                                         &
+                                      ( csite%avg_cstar     (donp)    * csite%area(donp)   &
+                                      + csite%avg_cstar     (recp)    * csite%area(recp) )
+
       csite%avg_rshort_gnd(recp)      = newareai *                                         &
                                       ( csite%avg_rshort_gnd(donp)    * csite%area(donp)   &
                                       + csite%avg_rshort_gnd(recp)    * csite%area(recp) )
@@ -3229,6 +3278,10 @@ module fuse_fiss_utils
                                       ( csite%avg_carbon_ac(donp)     * csite%area(donp)   &
                                       + csite%avg_carbon_ac(recp)     * csite%area(recp) )
 
+      csite%avg_carbon_st(recp)       = newareai *                                         &
+                                      ( csite%avg_carbon_st(donp)     * csite%area(donp)   &
+                                      + csite%avg_carbon_st(recp)     * csite%area(recp) )
+
       csite%avg_vapor_lc(recp)        = newareai *                                         &
                                       ( csite%avg_vapor_lc(donp)      * csite%area(donp)   &
                                       + csite%avg_vapor_lc(recp)      * csite%area(recp) )  
@@ -3236,10 +3289,6 @@ module fuse_fiss_utils
       csite%avg_vapor_wc(recp)        = newareai *                                         &
                                       ( csite%avg_vapor_wc(donp)      * csite%area(donp)   &
                                       + csite%avg_vapor_wc(recp)      * csite%area(recp) )  
-
-      csite%avg_dew_cg(recp)          = newareai *                                         &
-                                      ( csite%avg_dew_cg(donp)        * csite%area(donp)   &
-                                      + csite%avg_dew_cg(recp)        * csite%area(recp) )  
 
       csite%avg_vapor_gc(recp)        = newareai *                                         &
                                       ( csite%avg_vapor_gc(donp)      * csite%area(donp)   &

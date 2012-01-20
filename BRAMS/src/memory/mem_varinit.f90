@@ -31,10 +31,10 @@ module mem_varinit
 
   integer :: nud_type, nnudfiles, nnudfl, nudlat
 
-  character(len=128), dimension(maxnudfiles) :: fnames_nud
+  character(len=str_len), dimension(maxnudfiles) :: fnames_nud
   character(len=14) , dimension(maxnudfiles) :: itotdate_nud
   real(kind=8), dimension(maxnudfiles) :: nud_times
-  character(len=128) :: nud_hfile
+  character(len=str_len) :: nud_hfile
   real :: tnudlat,tnudcent,tnudtop,znudtop
   real :: wt_nudge_uv,wt_nudge_th,wt_nudge_pi,wt_nudge_rt,wt_nudge_co2
   real :: wt_nudge_grid(maxgrds)
@@ -44,20 +44,20 @@ module mem_varinit
 
   !----------------------------------------------------------------------------
   integer :: nud_cond, ncondfiles, ncondfl
-  character(len=128), dimension(maxnudfiles) :: fnames_cond
+  character(len=str_len), dimension(maxnudfiles) :: fnames_cond
   character(len=14) , dimension(maxnudfiles) :: itotdate_cond
   real(kind=8), dimension(maxnudfiles) :: cond_times
-  character(len=128) :: cond_hfile 
+  character(len=str_len) :: cond_hfile 
   real :: tcond_beg, tcond_end, wt_nudgec_grid(maxgrds),t_nudge_rc
   real(kind=8) :: condtime1, condtime2
 
   !----------------------------------------------------------------------------
-  character(len=128), dimension(maxnudfiles) :: fnames_varf
+  character(len=str_len), dimension(maxnudfiles) :: fnames_varf
   character(len=14) , dimension(maxnudfiles) :: itotdate_varf
 
   real(kind=8), dimension(maxnudfiles) :: varf_times
 
-  character(len=256)       :: varfpfx
+  character(len=str_len)       :: varfpfx
   ! Modif. by ALF
 
   real(kind=8)            :: vtime1,vtime2

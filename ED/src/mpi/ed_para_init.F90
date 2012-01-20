@@ -185,7 +185,8 @@ subroutine get_work(ifm,nxp,nyp)
    use soil_coms   , only : veg_database   & ! intent(in)
                           , soil_database  & ! intent(in)
                           , isoilflg       & ! intent(in)
-                          , nslcon         ! ! intent(in)
+                          , nslcon         & ! intent(in)
+                          , isoilcol       ! ! intent(in)
    use mem_polygons, only : n_poi          & ! intent(in)
                           , poi_res        & ! intent(in)
                           , grid_res       & ! intent(in)
@@ -203,6 +204,7 @@ subroutine get_work(ifm,nxp,nyp)
    real   , dimension(:,:), allocatable :: lon_list
    integer, dimension(:,:), allocatable :: leaf_class_list
    integer, dimension(:,:), allocatable :: ntext_soil_list
+   integer, dimension(:,:), allocatable :: ncol_soil_list
    real   , dimension(:,:), allocatable :: ipcent_land
    real   , dimension(:,:), allocatable :: ipcent_soil
    integer                              :: datsoil
@@ -224,6 +226,7 @@ subroutine get_work(ifm,nxp,nyp)
    allocate(lon_list       (      3,npoly))
    allocate(leaf_class_list(maxsite,npoly))
    allocate(ntext_soil_list(maxsite,npoly))
+   allocate(ncol_soil_list (maxsite,npoly))
    allocate(ipcent_land    (maxsite,npoly))
    allocate(ipcent_soil    (maxsite,npoly))
    !---------------------------------------------------------------------------------------!
@@ -366,6 +369,14 @@ subroutine get_work(ifm,nxp,nyp)
    !---------------------------------------------------------------------------------------!
 
 
+   !---------------------------------------------------------------------------------------!
+   !      For the time being, soil colour is constant.  Only if results look promising we  !
+   ! will attempt to read a map.                                                           !
+   !---------------------------------------------------------------------------------------!
+   ncol_soil_list (:,:) = isoilcol
+   !---------------------------------------------------------------------------------------!
+
+
 
    !----- Re-map the land cover classes. --------------------------------------------------!
    ipy     = 0
@@ -386,12 +397,15 @@ subroutine get_work(ifm,nxp,nyp)
                work_e(ifm)%soilfrac(itext,i,j) = ipcent_soil(itext,ipy)
                work_e(ifm)%ntext   (itext,i,j) = ntext_soil_list (itext,ipy)
             end do
+            work_e(ifm)%nscol            (i,j) = ncol_soil_list(1,ipy)
+
             maxwork = max(maxwork,work_e(ifm)%work(i,j))
 
          else
             !----- Making this grid point 100% water --------------------------------------!
             work_e(ifm)%landfrac  (i,j) = 0.
             work_e(ifm)%work      (i,j) = epsilon(0.0)
+            work_e(ifm)%nscol     (i,j) = 0
             work_e(ifm)%ntext   (:,i,j) = 0
             work_e(ifm)%soilfrac(:,i,j) = 0.
          end if
@@ -415,6 +429,7 @@ subroutine get_work(ifm,nxp,nyp)
    deallocate(lon_list       )
    deallocate(leaf_class_list)
    deallocate(ntext_soil_list)
+   deallocate(ncol_soil_list )
    deallocate(ipcent_land    )
    deallocate(ipcent_soil    )
    !---------------------------------------------------------------------------------------!
@@ -491,6 +506,7 @@ subroutine ed_parvec_work(ifm,nxp,nyp)
             work_v(ifm)%work    (poly) = work_e(ifm)%work(i,j)
             work_v(ifm)%xid     (poly) = i
             work_v(ifm)%yid     (poly) = j
+            work_v(ifm)%nscol   (poly) = work_e(ifm)%nscol(i,j)
 
             do itext=1,maxsite
                work_v(ifm)%ntext   (itext,poly) = work_e(ifm)%ntext   (itext,i,j)

@@ -24,6 +24,7 @@ rm -fv rnamel.o             rnamel.mod
 rm -fv rnumr.o              rnumr.mod
 rm -fv rpost_coms.o         rpost_coms.mod
 rm -fv rpost_dims.o         rpost_dims.mod
+rm -fv rpost_filelist.o     rpost_filelist.mod
 rm -fv rpost_misc.o         rpost_misc.mod
 rm -fv rsys.o               rsys.mod
 rm -fv rutil.o              rutil.mod

@@ -16,10 +16,11 @@ subroutine read_ed21_history_file
                              , q                       & ! intent(in)
                              , qsw                     & ! intent(in)
                              , hgt_min                 & ! intent(in)
+                             , min_dbh                 & ! intent(in)
+                             , min_bdead               & ! intent(in)
                              , is_grass                & ! intent(in)
                              , include_pft             & ! intent(in)
                              , include_pft_ag          & ! intent(in)
-                             , phenology               & ! intent(in)
                              , pft_1st_check           & ! intent(in)
                              , include_these_pft       ! ! intent(in)
    use ed_misc_coms   , only : sfilin                  & ! intent(in)
@@ -323,6 +324,7 @@ subroutine read_ed21_history_file
          !---- The ipy:ipy notation is needed for ifort when checking interfaces. ---------!
          call hdf_getslab_i(cgrid%load_adjacency(ipy:ipy),'LOAD_ADJACENCY '                &
                            ,dsetrank,iparallel,.true.)
+         call hdf_getslab_i(cgrid%ncol_soil(ipy:ipy),'NCOL_SOIL ',dsetrank,iparallel,.true.)
          call hdf_getslab_r(cgrid%wbar(ipy:ipy),'WBAR ',dsetrank,iparallel,.true.)
          
          !----- Load the workload (2D). ---------------------------------------------------!
@@ -333,11 +335,11 @@ subroutine read_ed21_history_file
          memsize(1)  = int(13,8)
          chnkoffs(1) = 0_8
          memoffs(1)  = 0_8
-         globdims(2) = int(pysi_n(py_index),8)
-         chnkdims(2) = int(pysi_n(py_index),8)
-         memdims(2)  = int(pysi_n(py_index),8)
-         memsize(2)  = int(pysi_n(py_index),8)
-         chnkoffs(2) = 0_8
+         globdims(2) = int(dset_npolygons_global,8)
+         chnkdims(2) = 1_8
+         chnkoffs(2) = int(py_index - 1,8)
+         memdims(2)  = 1_8
+         memsize(2)  = 1_8
          memoffs(2)  = 0_8
          call hdf_getslab_r(cgrid%workload(:,ipy),'WORKLOAD ',dsetrank,iparallel,.false.)
          !---------------------------------------------------------------------------------!
@@ -352,12 +354,12 @@ subroutine read_ed21_history_file
          memsize(1)   = int(1,8)            ! On both sides
          chnkoffs(1)  = int(dset_nzg - 1,8) ! Take the top layer, not the bottom
          memoffs(1)   = 0_8
-         globdims(2) = int(pysi_n(py_index),8)
-         chnkdims(2) = int(pysi_n(py_index),8)
-         memdims(2)  = int(pysi_n(py_index),8)
-         memsize(2)  = int(pysi_n(py_index),8)
-         chnkoffs(2) = 0_8
-         memoffs(2)  = 0_8
+         globdims(2)  = int(dset_npolygons_global,8)
+         chnkdims(2)  = 1_8
+         memdims(2)   = 1_8
+         memsize(2)   = 1_8
+         chnkoffs(2)  = int(py_index - 1,8)
+         memoffs(2)   = 0_8
          call hdf_getslab_i(cgrid%ntext_soil(nzg:nzg,ipy),'NTEXT_SOIL ',dsetrank           &
                            ,iparallel,.true.)
          !----- Now fill the soil column based on the top layer data. ---------------------!
@@ -396,15 +398,16 @@ subroutine read_ed21_history_file
          memdims(1)  = int(cpoly%nsites,8)
          memsize(1)  = int(cpoly%nsites,8)
          memoffs(1)  = 0_8
-         
-         call hdf_getslab_r(cpoly%area       ,'AREA_SI '    ,dsetrank,iparallel,.true.)
-         call hdf_getslab_r(cpoly%moist_f    ,'MOIST_F '    ,dsetrank,iparallel,.true.)
-         call hdf_getslab_r(cpoly%moist_W    ,'MOIST_W '    ,dsetrank,iparallel,.true.)
-         call hdf_getslab_r(cpoly%elevation  ,'ELEVATION '  ,dsetrank,iparallel,.true.)
-         call hdf_getslab_r(cpoly%slope      ,'SLOPE '      ,dsetrank,iparallel,.true.)
-         call hdf_getslab_r(cpoly%aspect     ,'ASPECT '     ,dsetrank,iparallel,.true.)
-         call hdf_getslab_r(cpoly%TCI        ,'TCI '        ,dsetrank,iparallel,.true.)
-         call hdf_getslab_i(cpoly%patch_count,'PATCH_COUNT ',dsetrank,iparallel,.true.)
+
+         call hdf_getslab_r(cpoly%area       ,'AREA_SI '     ,dsetrank,iparallel,.true.)
+         call hdf_getslab_r(cpoly%moist_f    ,'MOIST_F '     ,dsetrank,iparallel,.true.)
+         call hdf_getslab_r(cpoly%moist_W    ,'MOIST_W '     ,dsetrank,iparallel,.true.)
+         call hdf_getslab_r(cpoly%elevation  ,'ELEVATION '   ,dsetrank,iparallel,.true.)
+         call hdf_getslab_r(cpoly%slope      ,'SLOPE '       ,dsetrank,iparallel,.true.)
+         call hdf_getslab_r(cpoly%aspect     ,'ASPECT '      ,dsetrank,iparallel,.true.)
+         call hdf_getslab_r(cpoly%TCI        ,'TCI '         ,dsetrank,iparallel,.true.)
+         call hdf_getslab_i(cpoly%patch_count,'PATCH_COUNT ' ,dsetrank,iparallel,.true.)
+         call hdf_getslab_i(cpoly%ncol_soil  ,'NCOL_SOIL_SI ',dsetrank,iparallel,.true.)
 
          !----- Load 2D dataset. ----------------------------------------------------------!
          dsetrank     = 2_8
@@ -549,9 +552,11 @@ subroutine read_ed21_history_file
                         ipft = cpatch%pft(ico)
 
                         if (cpatch%bdead(ico) > 0.0) then
+                           cpatch%bdead(ico) = max(cpatch%bdead(ico),min_bdead(ipft))
                            cpatch%dbh(ico)   = bd2dbh(cpatch%pft(ico),cpatch%bdead(ico))
                            cpatch%hite(ico)  = dbh2h (cpatch%pft(ico),cpatch%dbh  (ico))
                         else
+                           cpatch%dbh(ico)   = max(cpatch%dbh(ico),min_dbh(ipft))
                            cpatch%hite(ico)  = dbh2h (cpatch%pft(ico),cpatch%dbh  (ico))
                            cpatch%bdead(ico) = dbh2bd(cpatch%dbh(ico),cpatch%pft  (ico))
                         end if
@@ -799,10 +804,11 @@ subroutine read_ed21_history_unstruct
                              , q                       & ! intent(in)
                              , qsw                     & ! intent(in)
                              , hgt_min                 & ! intent(in)
+                             , min_dbh                 & ! intent(in)
+                             , min_bdead               & ! intent(in)
                              , is_grass                & ! intent(in)
                              , include_pft             & ! intent(in)
                              , include_pft_ag          & ! intent(in)
-                             , phenology               & ! intent(in)
                              , pft_1st_check           & ! intent(in)
                              , include_these_pft       & ! intent(in)
                              , min_cohort_size         ! ! intent(in)
@@ -1315,11 +1321,11 @@ subroutine read_ed21_history_unstruct
             memsize(1)  = int(13,8)
             chnkoffs(1) = 0_8
             memoffs(1)  = 0_8
-            globdims(2) = int(pysi_n(py_index),8)
-            chnkdims(2) = int(pysi_n(py_index),8)
-            memdims(2)  = int(pysi_n(py_index),8)
-            memsize(2)  = int(pysi_n(py_index),8)
-            chnkoffs(2) = 0_8
+            globdims(2) = int(dset_npolygons_global,8)
+            chnkdims(2) = 1_8
+            chnkoffs(2) = int(py_index - 1,8)
+            memdims(2)  = 1_8
+            memsize(2)  = 1_8
             memoffs(2)  = 0_8
             call hdf_getslab_r(cgrid%workload(:,ipy),'WORKLOAD ',dsetrank                  &
                               ,iparallel,.false.)
@@ -1611,14 +1617,16 @@ subroutine read_ed21_history_unstruct
                            ipft = cpatch%pft(ico)
 
                            if (cpatch%bdead(ico) > 0.0) then
-                              cpatch%dbh(ico)   = bd2dbh(cpatch%pft(ico),cpatch%bdead(ico))
-                              cpatch%hite(ico)  = dbh2h (cpatch%pft(ico),cpatch%dbh  (ico))
+                              cpatch%bdead(ico) = max(cpatch%bdead(ico),min_bdead(ipft))
+                              cpatch%dbh(ico)   = bd2dbh(ipft,cpatch%bdead(ico))
+                              cpatch%hite(ico)  = dbh2h (ipft,cpatch%dbh  (ico))
                            else
-                              cpatch%hite(ico)  = dbh2h (cpatch%pft(ico),cpatch%dbh  (ico))
-                              cpatch%bdead(ico) = dbh2bd(cpatch%dbh(ico),cpatch%pft  (ico))
+                              cpatch%dbh(ico)   = max(cpatch%dbh(ico),min_dbh(ipft))
+                              cpatch%hite(ico)  = dbh2h (ipft,cpatch%dbh  (ico))
+                              cpatch%bdead(ico) = dbh2bd(cpatch%dbh  (ico),ipft)
                            end if
 
-                           cpatch%bleaf(ico)  = dbh2bl(cpatch%dbh(ico),cpatch%pft(ico))
+                           cpatch%bleaf(ico)  = dbh2bl(cpatch%dbh(ico),ipft)
 
                            !----- Find the other pools. -----------------------------------!
                            salloc  = (1.0 + q(ipft) + qsw(ipft) * cpatch%hite(ico))

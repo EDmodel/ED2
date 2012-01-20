@@ -6,7 +6,7 @@
 !  Regional Atmospheric Modeling System - RAMS                                             !
 !==========================================================================================!
 subroutine vtables2(var,varm,ng,npts,imean,tabstr)
-
+   use grid_dims, only : str_len
    use var_tables
       
    implicit none
@@ -14,7 +14,7 @@ subroutine vtables2(var,varm,ng,npts,imean,tabstr)
    real, dimension (npts), target :: var,varm
    character (len=*), intent(in) :: tabstr
 
-   character (len=80) ::line
+   character (len=str_len) ::line
    character (len=1) ::toksep=':', cdimen,ctype
    character (len=32) ::tokens(10)
    character (len=8) :: cname,ctab
@@ -141,7 +141,7 @@ end subroutine lite_varset
 !-------------------------------------------------------------------------
    
    subroutine vtables_scalar(npts,varp,vart,ng,tabstr)
-
+   use grid_dims, only : str_len
    use var_tables
       
    implicit none
@@ -150,7 +150,7 @@ end subroutine lite_varset
    integer, intent(in) :: ng
    character (len=*), intent(in) :: tabstr
 
-   character (len=80) ::line
+   character (len=str_len) ::line
    character (len=1) ::toksep=':'
    character (len=32) ::tokens(10)
    character (len=16) :: cname,ctab
@@ -202,14 +202,14 @@ end subroutine lite_varset
    subroutine vtables_scalar_new(varp,vart,ng,tabstr,elements)
 
      use var_tables
-      
+     use grid_dims, only : str_len      
      implicit none
      integer :: elements !ALF
      real, target :: varp(elements), vart(elements)
      integer, intent(in) :: ng
      character (len=*), intent(in) :: tabstr
      
-     character (len=80) ::line
+     character (len=str_len) ::line
      character (len=1) ::toksep=':'
      character (len=32) ::tokens(10)
      character (len=16) :: cname,ctab
