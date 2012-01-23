@@ -34,7 +34,7 @@ subroutine ed_init_atm()
                                     , ed_grndvap        ! ! subroutine
    use therm_lib             , only : thetaeiv          & ! function
                                     , idealdenssh       & ! function
-                                    , rslif             & ! function
+                                    , qslif             & ! function
                                     , reducedpress      & ! function
                                     , pq2exner          & ! function
                                     , exthq2temp        & ! function
@@ -192,8 +192,7 @@ subroutine ed_init_atm()
                   !      The intercellular specific humidity is assumed to be at           !
                   ! saturation.                                                            !
                   !------------------------------------------------------------------------!
-                  cpatch%lint_shv(ico) = rslif(csite%can_prss(ipa),cpatch%leaf_temp(ico))
-                  cpatch%lint_shv(ico) = cpatch%lint_shv(ico) / (1. + cpatch%lint_shv(ico))
+                  cpatch%lint_shv(ico) = qslif(csite%can_prss(ipa),cpatch%leaf_temp(ico))
                   !------------------------------------------------------------------------!
                end do cohortloop1
             end do patchloop1

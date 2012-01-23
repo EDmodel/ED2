@@ -529,8 +529,6 @@ module rk4_stepper
                                        , rk4max_can_rhv        & ! intent(in)
                                        , rk4min_can_temp       & ! intent(in)
                                        , rk4max_can_temp       & ! intent(in)
-                                       , rk4min_can_theiv      & ! intent(in)
-                                       , rk4max_can_theiv      & ! intent(in)
                                        , rk4min_can_prss       & ! intent(in)
                                        , rk4max_can_prss       & ! intent(in)
                                        , rk4min_can_co2        & ! intent(in)
@@ -598,7 +596,6 @@ module rk4_stepper
             write(unit=*,fmt='(a)')           ' + Canopy air enthalpy is off-track...'
             write(unit=*,fmt='(a)')           '-------------------------------------------'
             write(unit=*,fmt='(a,1x,es12.4)') ' CAN_ENTHALPY:      ',y%can_enthalpy
-            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_THEIV:         ',y%can_theiv
             write(unit=*,fmt='(a,1x,es12.4)') ' CAN_THETA:         ',y%can_theta
             write(unit=*,fmt='(a,1x,es12.4)') ' CAN_SHV:           ',y%can_shv
             write(unit=*,fmt='(a,1x,es12.4)') ' CAN_RHV:           ',y%can_rhv
@@ -631,7 +628,6 @@ module rk4_stepper
             write(unit=*,fmt='(a)')           ' + Canopy air pot. temp. is off-track...'
             write(unit=*,fmt='(a)')           '-------------------------------------------'
             write(unit=*,fmt='(a,1x,es12.4)') ' CAN_ENTHALPY:      ',y%can_enthalpy
-            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_THEIV:         ',y%can_theiv
             write(unit=*,fmt='(a,1x,es12.4)') ' CAN_THETA:         ',y%can_theta
             write(unit=*,fmt='(a,1x,es12.4)') ' CAN_SHV:           ',y%can_shv
             write(unit=*,fmt='(a,1x,es12.4)') ' CAN_RHV:           ',y%can_rhv
@@ -664,7 +660,6 @@ module rk4_stepper
             write(unit=*,fmt='(a)')           ' + Canopy air sp. humidity is off-track...'
             write(unit=*,fmt='(a)')           '-------------------------------------------'
             write(unit=*,fmt='(a,1x,es12.4)') ' CAN_ENTHALPY:      ',y%can_enthalpy
-            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_THEIV:         ',y%can_theiv
             write(unit=*,fmt='(a,1x,es12.4)') ' CAN_THETA:         ',y%can_theta
             write(unit=*,fmt='(a,1x,es12.4)') ' CAN_SHV:           ',y%can_shv
             write(unit=*,fmt='(a,1x,es12.4)') ' CAN_RHV:           ',y%can_rhv
@@ -697,7 +692,6 @@ module rk4_stepper
             write(unit=*,fmt='(a)')           ' + Canopy air temperature is off-track...'
             write(unit=*,fmt='(a)')           '-------------------------------------------'
             write(unit=*,fmt='(a,1x,es12.4)') ' CAN_ENTHALPY:      ',y%can_enthalpy
-            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_THEIV:         ',y%can_theiv
             write(unit=*,fmt='(a,1x,es12.4)') ' CAN_THETA:         ',y%can_theta
             write(unit=*,fmt='(a,1x,es12.4)') ' CAN_SHV:           ',y%can_shv
             write(unit=*,fmt='(a,1x,es12.4)') ' CAN_RHV:           ',y%can_rhv
@@ -730,7 +724,6 @@ module rk4_stepper
             write(unit=*,fmt='(a)')           ' + Canopy air pressure is off-track...'
             write(unit=*,fmt='(a)')           '-------------------------------------------'
             write(unit=*,fmt='(a,1x,es12.4)') ' CAN_ENTHALPY:      ',y%can_enthalpy
-            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_THEIV:         ',y%can_theiv
             write(unit=*,fmt='(a,1x,es12.4)') ' CAN_THETA:         ',y%can_theta
             write(unit=*,fmt='(a,1x,es12.4)') ' CAN_SHV:           ',y%can_shv
             write(unit=*,fmt='(a,1x,es12.4)') ' CAN_RHV:           ',y%can_rhv
@@ -764,7 +757,6 @@ module rk4_stepper
             write(unit=*,fmt='(a)')           ' + Canopy air CO2 is off-track...'
             write(unit=*,fmt='(a)')           '-------------------------------------------'
             write(unit=*,fmt='(a,1x,es12.4)') ' CAN_ENTHALPY:      ',y%can_enthalpy
-            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_THEIV:         ',y%can_theiv
             write(unit=*,fmt='(a,1x,es12.4)') ' CAN_THETA:         ',y%can_theta
             write(unit=*,fmt='(a,1x,es12.4)') ' CAN_SHV:           ',y%can_shv
             write(unit=*,fmt='(a,1x,es12.4)') ' CAN_RHV:           ',y%can_rhv
@@ -1162,10 +1154,9 @@ module rk4_stepper
          write(unit=*,fmt='(a)')           ' '
          write(unit=*,fmt='(a)')           ' 1. CANOPY AIR SPACE: '
          write(unit=*,fmt='(a)')           ' '
-         write(unit=*,fmt='(6(a,1x))')     '   MIN_THEIV','   MAX_THEIV','     MIN_SHV'    &
-                                          ,'     MAX_SHV','     MIN_RHV','     MAX_RHV'
-         write(unit=*,fmt='(6(es12.5,1x))')  rk4min_can_theiv,rk4max_can_theiv             &
-                                            ,rk4min_can_shv  ,rk4max_can_shv               &
+         write(unit=*,fmt='(4(a,1x))')     '     MIN_SHV','     MAX_SHV','     MIN_RHV'    &
+                                          ,'     MAX_RHV'
+         write(unit=*,fmt='(4(es12.5,1x))')  rk4min_can_shv  ,rk4max_can_shv               &
                                             ,rk4min_can_rhv  ,rk4max_can_rhv
          write(unit=*,fmt='(a)') ' '
          write(unit=*,fmt='(6(a,1x))')     '    MIN_TEMP','    MAX_TEMP','   MIN_THETA'    &

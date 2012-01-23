@@ -850,7 +850,7 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
    use soil_coms             , only : soil8                & ! intent(in)
                                     , dslzi8               & ! intent(in)
                                     , dewmax               ! ! intent(in)
-   use therm_lib8            , only : rslif8               & ! function
+   use therm_lib8            , only : qslif8               & ! function
                                     , tq2enthalpy8         ! ! function
    use ed_misc_coms          , only : dtlsm                & ! intent(in)
                                     , fast_diagnostics     ! ! intent(in)
@@ -1498,8 +1498,7 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
          ! frost formation must account the branches and stems as well.                    !
          !---------------------------------------------------------------------------------!
          !----- Find the wood specific humidity. ------------------------------------------!
-         wood_shv   = rslif8(initp%can_prss,initp%wood_temp(ico))
-         wood_shv   = wood_shv / (1.d0 + wood_shv)
+         wood_shv   = qslif8(initp%can_prss,initp%wood_temp(ico))
          !----- Evaporation/condensation "flux" -------------------------------------------!
          wflxwc_try = initp%wai(ico) * initp%wood_gbw(ico) * (wood_shv - initp%can_shv)
          !---------------------------------------------------------------------------------!

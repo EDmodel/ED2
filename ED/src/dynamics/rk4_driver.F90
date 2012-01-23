@@ -354,9 +354,10 @@ module rk4_driver
                                       , slzt8                ! ! intent(in)
       use grid_coms            , only : nzg                  & ! intent(in)
                                       , nzs                  ! ! intent(in)
-      use therm_lib            , only : uextcm2tl            & ! subroutine
+      use therm_lib            , only : thetaeiv             & ! subroutine
+                                      , uextcm2tl            & ! subroutine
                                       , cmtl2uext            & ! subroutine
-                                      , rslif                ! ! function
+                                      , qslif                ! ! function
       use phenology_coms       , only : spot_phen            ! ! intent(in)
       use allometry            , only : h2crownbh            ! ! function
       use disturb_coms         , only : include_fire         & ! intent(in)
@@ -392,6 +393,7 @@ module rk4_driver
       real(kind=8)                    :: gnd_water
       real(kind=8)                    :: psiplusz
       real(kind=8)                    :: mcheight
+      real(kind=4)                    :: can_rvap
       !----- Local contants ---------------------------------------------------------------!
       real        , parameter         :: tendays_sec=10.*day_sec
       !----- External function ------------------------------------------------------------!
@@ -404,7 +406,6 @@ module rk4_driver
       ! those in which this is not true.  All floating point variables are converted back  !
       ! to single precision.                                                               !
       !------------------------------------------------------------------------------------!
-      csite%can_theiv(ipa)        = sngloff(initp%can_theiv       ,tiny_offset)
       csite%can_theta(ipa)        = sngloff(initp%can_theta       ,tiny_offset)
       csite%can_prss(ipa)         = sngloff(initp%can_prss        ,tiny_offset)
       csite%can_temp(ipa)         = sngloff(initp%can_temp        ,tiny_offset)
@@ -416,6 +417,21 @@ module rk4_driver
       csite%rough(ipa)            = sngloff(initp%rough           ,tiny_offset)
       csite%snowfac(ipa)          = sngloff(initp%snowfac         ,tiny_offset)
       csite%total_sfcw_depth(ipa) = sngloff(initp%total_sfcw_depth,tiny_offset)
+
+
+
+
+
+      !------------------------------------------------------------------------------------!
+      !    Find the ice-vapour equivalent potential temperature.  This is done outside the !
+      ! integrator because it is an iterative method and currently we are not using it as  !
+      ! a prognostic variable.                                                             !
+      !------------------------------------------------------------------------------------!
+      can_rvap                    = csite%can_shv(ipa) / ( 1.0 - csite%can_shv(ipa))
+      csite%can_theiv(ipa)        = thetaeiv(csite%can_theta (ipa), csite%can_prss(ipa)    &
+                                            ,csite%can_temp  (ipa), can_rvap               &
+                                            ,can_rvap             )
+      !------------------------------------------------------------------------------------!
 
       csite%ggbare(ipa)           = sngloff(initp%ggbare          ,tiny_offset)
       csite%ggveg (ipa)           = sngloff(initp%ggveg           ,tiny_offset)
@@ -683,8 +699,7 @@ module rk4_driver
                   ! saturation for a given temperature.  Find the saturation mixing ratio, !
                   ! then convert it to specific humidity.                                  !
                   !------------------------------------------------------------------------!
-                  cpatch%lint_shv(ico) = rslif(csite%can_prss(ipa),cpatch%leaf_temp(ico))
-                  cpatch%lint_shv(ico) = cpatch%lint_shv(ico) / (1. + cpatch%lint_shv(ico))
+                  cpatch%lint_shv(ico) = qslif(csite%can_prss(ipa),cpatch%leaf_temp(ico))
                   !------------------------------------------------------------------------!
 
 
@@ -723,8 +738,7 @@ module rk4_driver
                   ! saturation for a given temperature.  Find the saturation mixing ratio, !
                   ! then convert it to specific humidity.                                  !
                   !------------------------------------------------------------------------!
-                  cpatch%lint_shv(ico) = rslif(csite%can_prss(ipa),cpatch%leaf_temp(ico))
-                  cpatch%lint_shv(ico) = cpatch%lint_shv(ico) / (1. + cpatch%lint_shv(ico))
+                  cpatch%lint_shv(ico) = qslif(csite%can_prss(ipa),cpatch%leaf_temp(ico))
                   !------------------------------------------------------------------------!
 
                   !----- Set water demand and conductances to zero. -----------------------!
@@ -828,8 +842,7 @@ module rk4_driver
                ! saturation for a given temperature.  Find the saturation mixing ratio,    !
                ! then convert it to specific humidity.                                     !
                !---------------------------------------------------------------------------!
-               cpatch%lint_shv(ico) = rslif(csite%can_prss(ipa),cpatch%leaf_temp(ico))
-               cpatch%lint_shv(ico) = cpatch%lint_shv(ico) / (1. + cpatch%lint_shv(ico))
+               cpatch%lint_shv(ico) = qslif(csite%can_prss(ipa),cpatch%leaf_temp(ico))
                !----- Copy the meteorological wind to here. -------------------------------!
                cpatch%veg_wind(ico) = sngloff(rk4site%vels, tiny_offset)
                !----- Set water demand and conductances to zero. --------------------------!
@@ -884,8 +897,7 @@ module rk4_driver
                ! saturation for a given temperature.  Find the saturation mixing ratio,    !
                ! then convert it to specific humidity.                                     !
                !---------------------------------------------------------------------------!
-               cpatch%lint_shv(ico) = rslif(csite%can_prss(ipa),cpatch%leaf_temp(ico))
-               cpatch%lint_shv(ico) = cpatch%lint_shv(ico) / (1. + cpatch%lint_shv(ico))
+               cpatch%lint_shv(ico) = qslif(csite%can_prss(ipa),cpatch%leaf_temp(ico))
                !----- Copy the meteorological wind to here. -------------------------------!
                cpatch%veg_wind(ico) = sngloff(rk4site%vels, tiny_offset)
                !----- Set water demand and conductances to zero. --------------------------!
@@ -927,8 +939,7 @@ module rk4_driver
                ! saturation for a given temperature.  Find the saturation mixing ratio,    !
                ! then convert it to specific humidity.                                     !
                !---------------------------------------------------------------------------!
-               cpatch%lint_shv(ico) = rslif(csite%can_prss(ipa),cpatch%leaf_temp(ico))
-               cpatch%lint_shv(ico) = cpatch%lint_shv(ico) / (1. + cpatch%lint_shv(ico))
+               cpatch%lint_shv(ico) = qslif(csite%can_prss(ipa),cpatch%leaf_temp(ico))
                !----- Convert the wind. ---------------------------------------------------!
                cpatch%veg_wind(ico) = sngloff(initp%veg_wind(ico),tiny_offset)
                !---------------------------------------------------------------------------!
@@ -980,8 +991,7 @@ module rk4_driver
                ! saturation for a given temperature.  Find the saturation mixing ratio,    !
                ! then convert it to specific humidity.                                     !
                !---------------------------------------------------------------------------!
-               cpatch%lint_shv(ico) = rslif(csite%can_prss(ipa),cpatch%leaf_temp(ico))
-               cpatch%lint_shv(ico) = cpatch%lint_shv(ico) / (1. + cpatch%lint_shv(ico))
+               cpatch%lint_shv(ico) = qslif(csite%can_prss(ipa),cpatch%leaf_temp(ico))
                !----- Copy the meteorological wind to here. -------------------------------!
                cpatch%veg_wind(ico) = sngloff(rk4site%vels, tiny_offset)
                !----- Set water demand and conductances to zero. --------------------------!
@@ -1014,8 +1024,7 @@ module rk4_driver
                ! saturation for a given temperature.  Find the saturation mixing ratio,    !
                ! then convert it to specific humidity.                                     !
                !---------------------------------------------------------------------------!
-               cpatch%lint_shv  (ico) = rslif(csite%can_prss(ipa),cpatch%leaf_temp(ico))
-               cpatch%lint_shv  (ico) = cpatch%lint_shv(ico) / (1. + cpatch%lint_shv(ico))
+               cpatch%lint_shv  (ico) = qslif(csite%can_prss(ipa),cpatch%leaf_temp(ico))
                !----- Copy the meteorological wind to here. -------------------------------!
                cpatch%veg_wind  (ico) = sngloff(rk4site%vels, tiny_offset)
                !----- Set water demand and conductances to zero. --------------------------!

@@ -24,12 +24,10 @@ module rk4_coms
 
       !----- Canopy air variables. --------------------------------------------------------!
       real(kind=8)                        :: can_enthalpy ! Canopy enthalpy      [    J/m2]
-      real(kind=8)                        :: can_theiv    ! Eq. pot. temperature [       K]
       real(kind=8)                        :: can_theta    ! Pot. Temperature     [       K]
       real(kind=8)                        :: can_temp     ! Temperature          [       K]
       real(kind=8)                        :: can_shv      ! Specific humidity    [   kg/kg]
       real(kind=8)                        :: can_ssh      ! Sat. spec. humidity  [   kg/kg]
-      real(kind=8)                        :: can_rvap     ! Vapour mixing ratio  [   kg/kg]
       real(kind=8)                        :: can_rhv      ! Relative humidity    [     ---]
       real(kind=8)                        :: can_co2      ! CO_2                 [µmol/mol]
       real(kind=8)                        :: can_depth    ! Canopy depth         [       m]
@@ -342,7 +340,6 @@ module rk4_coms
       real(kind=8)                    :: atm_theta
       real(kind=8)                    :: atm_theiv
       real(kind=8)                    :: atm_shv
-      real(kind=8)                    :: atm_rvap
       real(kind=8)                    :: atm_rhv
       real(kind=8)                    :: atm_co2
       real(kind=8)                    :: zoff
@@ -622,8 +619,6 @@ module rk4_coms
    real(kind=8) :: rk4max_can_temp      ! Maximum canopy    temperature         [        K]
    real(kind=8) :: rk4min_can_shv       ! Minimum canopy    specific humidity   [kg/kg_air]
    real(kind=8) :: rk4max_can_shv       ! Maximum canopy    specific humidity   [kg/kg_air]
-   real(kind=8) :: rk4min_can_rvap      ! Minimum canopy    mixing ratio        [kg/kg_air]
-   real(kind=8) :: rk4max_can_rvap      ! Maximum canopy    mixing ratio        [kg/kg_air]
    real(kind=8) :: rk4min_can_rhv       ! Minimum canopy    relative humidity   [      ---]
    real(kind=8) :: rk4max_can_rhv       ! Maximum canopy    relative humidity   [      ---]
    real(kind=8) :: rk4min_can_co2       ! Minimum canopy    CO2 mixing ratio    [ µmol/mol]
@@ -644,8 +639,6 @@ module rk4_coms
    !----- The following variables will be defined every time step. ------------------------!
    real(kind=8) :: rk4min_can_theta     ! Minimum canopy    potential temp.     [        K]
    real(kind=8) :: rk4max_can_theta     ! Maximum canopy    potential temp.     [        K]
-   real(kind=8) :: rk4min_can_theiv     ! Minimum canopy    eq. pot. temp.      [        K]
-   real(kind=8) :: rk4max_can_theiv     ! Maximum canopy    eq. pot. temp.      [        K]
    real(kind=8) :: rk4min_can_enthalpy  ! Minimum canopy    enthalpy            [     J/m2]
    real(kind=8) :: rk4max_can_enthalpy  ! Maximum canopy    enthalpy            [     J/m2]
    real(kind=8) :: rk4min_can_prss      ! Minimum canopy    pressure            [       Pa]
@@ -902,14 +895,12 @@ module rk4_coms
       y%wbudget_loss2runoff            = 0.d0
      
       y%can_temp                       = 0.d0
-      y%can_rvap                       = 0.d0
       y%can_shv                        = 0.d0
       y%can_ssh                        = 0.d0
       y%can_rhv                        = 0.d0
       y%can_co2                        = 0.d0
       y%can_theta                      = 0.d0
       y%can_enthalpy                   = 0.d0
-      y%can_theiv                      = 0.d0
       y%can_depth                      = 0.d0
       y%can_rhos                       = 0.d0
       y%can_prss                       = 0.d0
@@ -1796,8 +1787,7 @@ module rk4_coms
 
    !=======================================================================================!
    !=======================================================================================!
-   subroutine find_derived_thbounds(can_rhos,can_theta,can_temp,can_shv,can_rvap,can_prss  &
-                                   ,can_depth)
+   subroutine find_derived_thbounds(can_rhos,can_theta,can_temp,can_shv,can_prss,can_depth)
       use grid_coms   , only : nzg           ! ! intent(in)
       use consts_coms , only : rdry8         & ! intent(in)
                              , epim18        & ! intent(in)
@@ -1811,9 +1801,7 @@ module rk4_coms
                              , thetaeiv8     & ! function
                              , thetaeivs8    & ! function
                              , idealdenssh8  & ! function
-                             , reducedpress8 & ! function
-                             , eslif8        & ! function
-                             , rslif8        ! ! function
+                             , reducedpress8 ! ! function
       use soil_coms   , only : soil8         ! ! intent(in)
       use ed_misc_coms, only : current_time  ! ! intent(in)
       implicit none
@@ -1822,14 +1810,12 @@ module rk4_coms
       real(kind=8)                , intent(in) :: can_theta
       real(kind=8)                , intent(in) :: can_temp
       real(kind=8)                , intent(in) :: can_shv
-      real(kind=8)                , intent(in) :: can_rvap
       real(kind=8)                , intent(in) :: can_prss
       real(kind=8)                , intent(in) :: can_depth
       !----- Local variables. -------------------------------------------------------------!
       real(kind=8)                             :: can_prss_try
       real(kind=8)                             :: can_exner_try
       real(kind=8)                             :: can_theta_try
-      real(kind=8)                             :: can_theiv_try
       real(kind=8)                             :: can_enthalpy_try
       integer                                  :: k
       integer                                  :: hour
@@ -1853,12 +1839,12 @@ module rk4_coms
 
          if (print_thbnd) then
             open (unit=39,file=trim(thbnds_fout),status='replace',action='write')
-            write(unit=39,fmt='(18(a,1x))')  '        YEAR','       MONTH','         DAY'  &
+            write(unit=39,fmt='(16(a,1x))')  '        YEAR','       MONTH','         DAY'  &
                                             ,'        HOUR','        MINU','        SECO'  &
                                             ,'    MIN_TEMP','    MAX_TEMP','     MIN_SHV'  &
                                             ,'     MAX_SHV','   MIN_THETA','   MAX_THETA'  &
-                                            ,'   MIN_THEIV','   MAX_THEIV','    MIN_PRSS'  &
-                                            ,'    MAX_PRSS','MIN_ENTHALPY','MAX_ENTHALPY'
+                                            ,'    MIN_PRSS','    MAX_PRSS','MIN_ENTHALPY'  &
+                                            ,'MAX_ENTHALPY'
             close(unit=39,status='keep')
          end if
          firsttime = .false.
@@ -1924,31 +1910,6 @@ module rk4_coms
 
 
       !------------------------------------------------------------------------------------!
-      !      Minimum and maximum ice-vapour equivalent potential temperature.              !
-      !------------------------------------------------------------------------------------!
-      !----- 1. Initial value, the most extreme one. --------------------------------------!
-      rk4min_can_theiv = rk4min_can_theta
-      rk4max_can_theiv = -huge(1.d0)
-      !----- 2. Maximum temperature. ------------------------------------------------------!
-      can_exner_try    = pq2exner8(can_prss,can_shv,.true.)
-      can_theta_try    = extq2theta8(can_exner_try,rk4max_can_temp,can_shv,.true.)
-      can_theiv_try    = thetaeivs8(can_theta_try,rk4max_can_temp,can_rvap,0.d0,0.d0)
-      rk4max_can_theiv = max(rk4max_can_theiv,can_theiv_try)
-      !----- 3. Minimum pressure. ---------------------------------------------------------!
-      can_exner_try    = pq2exner8(rk4min_can_prss,can_shv,.true.)
-      can_theta_try    = extq2theta8(can_exner_try,can_temp,can_shv,.true.)
-      can_theiv_try    = thetaeivs8(can_theta_try,can_temp,can_rvap,0.d0,0.d0)
-      rk4max_can_theiv = max(rk4max_can_theiv,can_theiv_try)
-      !----- 4. Maximum vapour mixing ratio. ----------------------------------------------!
-      can_exner_try    = pq2exner8(can_prss,rk4max_can_shv,.true.)
-      can_theta_try    = extq2theta8(can_exner_try,can_temp,rk4max_can_shv,.true.)
-      can_theiv_try    = thetaeivs8(can_theta_try,can_temp,rk4max_can_rvap,0.d0,0.d0)
-      rk4max_can_theiv = max(rk4max_can_theiv,can_theiv_try)
-      !------------------------------------------------------------------------------------!
-
-
-
-      !------------------------------------------------------------------------------------!
       !      Minimum and maximum enthalpy.                                                 !
       !------------------------------------------------------------------------------------!
       !----- 1. Initial value, the most extreme one. --------------------------------------!
@@ -1979,13 +1940,13 @@ module rk4_coms
 
          open (unit=39,file=trim(thbnds_fout),status='old',action='write'                  &
                       ,position='append')
-         write (unit=39,fmt='(6(i12,1x),12(es12.5,1x))')                                   &
+         write (unit=39,fmt='(6(i12,1x),10(es12.5,1x))')                                   &
                                  current_time%year, current_time%month,  current_time%date &
                               ,               hour,             minute,             second &
                               ,    rk4min_can_temp,    rk4max_can_temp,     rk4min_can_shv &
                               ,     rk4max_can_shv,   rk4min_can_theta,   rk4max_can_theta &
-                              ,   rk4min_can_theiv,   rk4max_can_theiv,    rk4min_can_prss &
-                              ,    rk4max_can_prss,rk4min_can_enthalpy,rk4max_can_enthalpy
+                              ,    rk4min_can_prss,    rk4max_can_prss,rk4min_can_enthalpy &
+                              ,rk4max_can_enthalpy
          close (unit=39,status='keep')
       end if
 

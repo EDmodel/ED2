@@ -324,7 +324,7 @@ module ed_therm_lib
                                 , gorh2o      & ! intent(in)
                                 , lnexp_min   & ! intent(in)
                                 , huge_num    ! ! intent(in)
-      use therm_lib      , only : rslif       ! ! function
+      use therm_lib      , only : qslif       ! ! function
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       integer     , intent(in)  :: ksn           ! # of surface water layers    [     ----]
@@ -367,8 +367,7 @@ module ed_therm_lib
          ground_temp = topsoil_temp
          ground_fliq = topsoil_fliq
          !----- Compute the saturation specific humidity at ground temperature. -----------!
-         ground_ssh  = rslif(can_prss,ground_temp)
-         ground_ssh  = ground_ssh / (1.0 + ground_ssh)
+         ground_ssh  = qslif(can_prss,ground_temp)
          !----- Determine alpha. ----------------------------------------------------------!
          slpotvn      = soil(nsoil)%slpots                                                 &
                       / (topsoil_water / soil(nsoil)%slmsts) ** soil(nsoil)%slbs
@@ -454,8 +453,7 @@ module ed_therm_lib
          ground_temp = sfcwater_temp
          ground_fliq = sfcwater_fliq
          !----- Compute the saturation specific humidity at ground temperature. -----------!
-         ground_ssh = rslif(can_prss,ground_temp)
-         ground_ssh = ground_ssh / (1.0 + ground_ssh)
+         ground_ssh = qslif(can_prss,ground_temp)
          !----- The ground specific humidity in this case is just the saturation value. ---!
          ground_shv = ground_ssh
          !----- The conductance should be large so it won't contribute to the net value. --!
@@ -510,7 +508,7 @@ module ed_therm_lib
                                 , gorh2o8      & ! intent(in)
                                 , lnexp_min8   & ! intent(in)
                                 , huge_num8    ! ! intent(in)
-      use therm_lib8     , only : rslif8       ! ! function
+      use therm_lib8     , only : qslif8       ! ! function
       use rk4_coms       , only : rk4site      ! ! intent(in)
       use grid_coms      , only : nzg          ! ! intent(in)
       use ed_max_dims    , only : n_pft        ! ! intent(in)
@@ -602,8 +600,7 @@ module ed_therm_lib
          ground_temp = topsoil_temp
          ground_fliq = topsoil_fliq
          !----- Compute the saturation specific humidity at ground temperature. -----------!
-         ground_ssh  = rslif8(can_prss,ground_temp)
-         ground_ssh  = ground_ssh / (1.d0 + ground_ssh)
+         ground_ssh  = qslif8(can_prss,ground_temp)
          !----- Determine alpha. ----------------------------------------------------------!
          slpotvn      = soil8(nsoil)%slpots                                                &
                       / (use_soil_h2o / soil8(nsoil)%slmsts) ** soil8(nsoil)%slbs
@@ -690,8 +687,7 @@ module ed_therm_lib
          ground_temp = sfcwater_temp
          ground_fliq = sfcwater_fliq
          !----- Compute the saturation specific humidity at ground temperature. -----------!
-         ground_ssh = rslif8(can_prss,ground_temp)
-         ground_ssh = ground_ssh / (1.d0 + ground_ssh)
+         ground_ssh = qslif8(can_prss,ground_temp)
          !----- The ground specific humidity in this case is just the saturation value. ---!
          ground_shv  = ground_ssh
          !----- The conductance should be large so it won't contribute to the net value. --!

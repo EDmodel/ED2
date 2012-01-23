@@ -326,8 +326,7 @@ subroutine copy_met_2_rk4site(mzg,can_theta,can_shv,can_depth,vels,atm_theiv,atm
 
    !----- Find the other variables that require a little math. ----------------------------!
    rk4site%vels     = max(ubmin8,dble(vels))
-   rk4site%atm_rvap = rk4site%atm_shv / (1.d0 - rk4site%atm_shv)
-   rk4site%atm_rhv  = rehuil8(rk4site%atm_prss,rk4site%atm_tmp,rk4site%atm_rvap)
+   rk4site%atm_rhv  = rehuil8(rk4site%atm_prss,rk4site%atm_tmp,rk4site%atm_shv,.true.)
    rk4site%atm_rhos = idealdenssh8(rk4site%atm_prss,rk4site%atm_tmp,rk4site%atm_shv)
    !---------------------------------------------------------------------------------------!
 
@@ -1193,7 +1192,6 @@ subroutine copy_rk4_patch(sourcep, targetp, cpatch)
    !---------------------------------------------------------------------------------------!
 
    targetp%can_enthalpy     = sourcep%can_enthalpy
-   targetp%can_theiv        = sourcep%can_theiv
    targetp%can_theta        = sourcep%can_theta
    targetp%can_temp         = sourcep%can_temp
    targetp%can_shv          = sourcep%can_shv
@@ -1203,7 +1201,6 @@ subroutine copy_rk4_patch(sourcep, targetp, cpatch)
    targetp%can_exner        = sourcep%can_exner
    targetp%can_cp           = sourcep%can_cp
    targetp%can_depth        = sourcep%can_depth
-   targetp%can_rvap         = sourcep%can_rvap
    targetp%can_rhv          = sourcep%can_rhv
    targetp%can_ssh          = sourcep%can_ssh
    targetp%veg_height       = sourcep%veg_height

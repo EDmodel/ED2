@@ -427,6 +427,150 @@ module therm_lib
 
 
 
+   !=======================================================================================!
+   !=======================================================================================!
+   !     This function calculates the liquid saturation specific humidity as a function of !
+   ! pressure and Kelvin temperature.                                                      !
+   !---------------------------------------------------------------------------------------!
+   real(kind=4) function qslf(pres,temp)
+      use consts_coms, only : ep     & ! intent(in)
+                            , toodry ! ! intent(in)
+      implicit none
+      !----- Arguments. -------------------------------------------------------------------!
+      real(kind=4), intent(in) :: pres ! Pressure                                   [   Pa]
+      real(kind=4), intent(in) :: temp ! Temperature                                [    K]
+      !----- Local variables. -------------------------------------------------------------!
+      real(kind=4)             :: esl  ! Saturation vapour pressure                 [   Pa]
+      !------------------------------------------------------------------------------------!
+
+
+      !----- First we find the saturation vapour pressure. --------------------------------!
+      esl  = eslf(temp)
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !     Use the usual relation between pressure and vapour pressure to find the        !
+      ! specific humidity.                                                                 !
+      !------------------------------------------------------------------------------------!
+      qslf = max(toodry,ep * esl/( pres - (1.0 - ep) * esl) )
+      !------------------------------------------------------------------------------------!
+
+      return
+   end function qslf
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !     This function calculates the ice saturation specific humidity as a function of    !
+   ! pressure and Kelvin temperature.                                                      !
+   !---------------------------------------------------------------------------------------!
+   real(kind=4) function qsif(pres,temp)
+      use consts_coms, only : ep     & ! intent(in)
+                            , toodry ! ! intent(in)
+      implicit none
+      !----- Arguments. -------------------------------------------------------------------!
+      real(kind=4), intent(in) :: pres ! Pressure                                   [   Pa]
+      real(kind=4), intent(in) :: temp ! Temperature                                [    K]
+      !----- Local variables. -------------------------------------------------------------!
+      real(kind=4)             :: esi  ! Saturation vapour pressure                 [   Pa]
+      !------------------------------------------------------------------------------------!
+
+
+      !----- First we find the saturation vapour pressure. --------------------------------!
+      esi  = esif(temp)
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !     Use the usual relation between pressure and vapour pressure to find the        !
+      ! specific humidity.                                                                 !
+      !------------------------------------------------------------------------------------!
+      qsif = max(toodry,ep * esi/( pres - (1.0 - ep) * esi) )
+      !------------------------------------------------------------------------------------!
+
+      return
+   end function qsif
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !     This function calculates the saturation specific humidity, over liquid or ice     !
+   ! depending on temperature, as a function of pressure and Kelvin temperature.           !
+   !---------------------------------------------------------------------------------------!
+   real(kind=4) function qslif(pres,temp,useice)
+      use consts_coms, only : t3ple  & ! intent(in)
+                            , ep     & ! intent(in)
+                            , toodry ! ! intent(in)
+      implicit none
+      !----- Required arguments. ----------------------------------------------------------!
+      real(kind=4), intent(in)           :: pres
+      real(kind=4), intent(in)           :: temp
+      !----- Optional arguments. ----------------------------------------------------------!
+      logical     , intent(in), optional :: useice
+      !----- Local variables. -------------------------------------------------------------!
+      real(kind=4)                       :: esz
+      logical                            :: frozen
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !     Decide which function to use (saturation for liquid water or ice).             !
+      !------------------------------------------------------------------------------------!
+      if (present(useice)) then
+         frozen = useice  .and. temp < t3ple
+      else 
+         frozen = bulk_on .and. temp < t3ple
+      end if
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !      Call the appropriate function depending on the temperature and whether ice    !
+      ! thermodynamics is to be used.                                                      !
+      !------------------------------------------------------------------------------------!
+      if (frozen) then
+         !----- Saturation vapour pressure for ice. ---------------------------------------!
+         esz = esif(temp)
+         !---------------------------------------------------------------------------------!
+      else
+         !----- Saturation vapour pressure for liquid. ------------------------------------!
+         esz = eslf(temp)
+         !---------------------------------------------------------------------------------!
+      end if
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !     Use the usual relation between pressure and vapour pressure to find the        !
+      ! specific humidity.                                                                 !
+      !------------------------------------------------------------------------------------!
+      qslif = max(toodry, ep * esz/( pres - (1.0 - ep) * esz) )
+      !------------------------------------------------------------------------------------!
+
+      return
+   end function qslif
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
 
    !=======================================================================================!
    !=======================================================================================!
@@ -499,7 +643,6 @@ module therm_lib
    end function rhovsi
    !=======================================================================================!
    !=======================================================================================!
-
 
 
 
@@ -1546,45 +1689,49 @@ module therm_lib
 
    !=======================================================================================!
    !=======================================================================================!
-   !     This function computes the vapour mixing ratio based on the pressure [Pa], tem-   !
-   ! perature [K] and relative humidity [fraction]. IT ALWAYS ASSUME THAT RELATIVE HUMI-   !
-   ! DITY IS WITH RESPECT TO THE LIQUID PHASE.  Ptrh2rvapil checks which one to use        !
-   ! depending on whether temperature is more or less than the triple point.               !
+   !     This function computes the vapour mixing ratio (or specific humidity) based on    !
+   ! the pressure [Pa], temperature [K] and relative humidity [fraction]. IT ALWAYS        !
+   ! ASSUMES THAT RELATIVE HUMIDITY IS WITH RESPECT TO THE LIQUID PHASE.  Ptrh2rvapil      !
+   ! checks which one to use depending on whether temperature is more or less than the     !
+   ! triple point.                                                                         !
    !---------------------------------------------------------------------------------------!
-   real(kind=4) function ptrh2rvapl(relh,pres,temp)
+   real(kind=4) function ptrh2rvapl(relh,pres,temp,out_shv)
       use consts_coms, only : ep     & ! intent(in)
                             , toodry ! ! intent(in)
       implicit none
 
       !----- Arguments. -------------------------------------------------------------------!
-      real(kind=4), intent(in) :: relh   ! Relative humidity                       [    --]
-      real(kind=4), intent(in) :: pres   ! Pressure                                [    Pa]
-      real(kind=4), intent(in) :: temp   ! Temperature                             [     K]
+      real(kind=4), intent(in) :: relh    ! Relative humidity                      [    --]
+      real(kind=4), intent(in) :: pres    ! Pressure                               [    Pa]
+      real(kind=4), intent(in) :: temp    ! Temperature                            [     K]
+      logical     , intent(in) :: out_shv ! Output is specific humidity            [   T|F]
       !----- Local variables. -------------------------------------------------------------!
-      real(kind=4)             :: rsath  ! Non-singular saturation mixing ratio    [ kg/kg]
-      real(kind=4)             :: relhh  ! Bounded relative humidity               [    --]
+      real(kind=4)             :: pvap    ! Vapour pressure                        [    Pa]
+      real(kind=4)             :: relhh   ! Bounded relative humidity              [    --]
       !------------------------------------------------------------------------------------!
 
 
-      !---- Find the saturation mixing ratio for the given temperature. -------------------!
-      rsath = max(toodry,rslf(pres,temp))
-      !------------------------------------------------------------------------------------!
 
       !---- Make sure relative humidity is bounded. ---------------------------------------!
       relhh = min(1.,max(0.,relh))
       !------------------------------------------------------------------------------------!
 
 
+      !---- Find the vapour pressure. -----------------------------------------------------!
+      pvap  = relhh * eslf(temp)
       !------------------------------------------------------------------------------------!
-      !     Choose the right thermodynamics.                                               !
+
+
       !------------------------------------------------------------------------------------!
-      if (newthermo) then
-         !----- Consider that Rel.Hum. is based on vapour pressure. -----------------------!
-         ptrh2rvapl = max(toodry,ep * relhh * rsath / (ep + (1.-relhh)*rsath))
+      !     Convert the output to the sought humidity variable.                            !
+      !------------------------------------------------------------------------------------!
+      if (out_shv) then
+         !----- Specific humidity. --------------------------------------------------------!
+         ptrh2rvapl = max(toodry, ep * pvap / (pres - (1.0 - ep) * pvap))
          !---------------------------------------------------------------------------------!
       else
-         !----- Original RAMS way to compute mixing ratio. --------------------------------!
-         ptrh2rvapl = max(toodry,relhh*rsath)
+         !----- Mixing ratio. -------------------------------------------------------------!
+         ptrh2rvapl = max(toodry, ep * pvap / (pres - pvap))
          !---------------------------------------------------------------------------------!
       end if
       !------------------------------------------------------------------------------------!
@@ -1601,44 +1748,49 @@ module therm_lib
 
    !=======================================================================================!
    !=======================================================================================!
-   !     This function computes the vapour mixing ratio based on the pressure [Pa], tem-   !
-   ! perature [K] and relative humidity [fraction]. IT ALWAYS ASSUME THAT RELATIVE HUMI-   !
-   ! DITY IS WITH RESPECT TO THE ICE PHASE. ptrh2rvapil checks which one to use depending  !
-   ! on whether temperature is more or less than the triple point.                         !
+   !     This function computes the vapour mixing ratio (or specific humidity) based on    !
+   ! the pressure [Pa], temperature [K] and relative humidity [fraction]. IT ALWAYS        !
+   ! ASSUMES THAT RELATIVE HUMIDITY IS WITH RESPECT TO THE ICE PHASE.  Ptrh2rvapil         !
+   ! checks which one to use depending on whether temperature is more or less than the     !
+   ! triple point.                                                                         !
    !---------------------------------------------------------------------------------------!
-   real(kind=4) function ptrh2rvapi(relh,pres,temp)
+   real(kind=4) function ptrh2rvapi(relh,pres,temp,out_shv)
       use consts_coms, only : ep     & ! intent(in)
                             , toodry ! ! intent(in)
       implicit none
+
       !----- Arguments. -------------------------------------------------------------------!
-      real(kind=4), intent(in) :: relh   ! Relative humidity                       [    --]
-      real(kind=4), intent(in) :: pres   ! Pressure                                [    Pa]
-      real(kind=4), intent(in) :: temp   ! Temperature                             [     K]
+      real(kind=4), intent(in) :: relh    ! Relative humidity                      [    --]
+      real(kind=4), intent(in) :: pres    ! Pressure                               [    Pa]
+      real(kind=4), intent(in) :: temp    ! Temperature                            [     K]
+      logical     , intent(in) :: out_shv ! Output is specific humidity            [   T|F]
       !----- Local variables. -------------------------------------------------------------!
-      real(kind=4)             :: rsath  ! Non-singular saturation mixing ratio    [ kg/kg]
-      real(kind=4)             :: relhh  ! Bounded relative humidity               [    --]
+      real(kind=4)             :: pvap    ! Vapour pressure                        [    Pa]
+      real(kind=4)             :: relhh   ! Bounded relative humidity              [    --]
       !------------------------------------------------------------------------------------!
 
 
-      !---- Find the saturation mixing ratio for the given temperature. -------------------!
-      rsath = max(toodry,rsif(pres,temp))
-      !------------------------------------------------------------------------------------!
 
       !---- Make sure relative humidity is bounded. ---------------------------------------!
       relhh = min(1.,max(0.,relh))
       !------------------------------------------------------------------------------------!
 
 
+      !---- Find the vapour pressure. -----------------------------------------------------!
+      pvap  = relhh * esif(temp)
       !------------------------------------------------------------------------------------!
-      !     Choose the right thermodynamics.                                               !
+
+
       !------------------------------------------------------------------------------------!
-      if (newthermo) then
-         !----- Consider that Rel.Hum. is based on vapour pressure. -----------------------!
-         ptrh2rvapi = max(toodry,ep * relhh * rsath / (ep + (1.-relhh)*rsath))
+      !     Convert the output to the sought humidity variable.                            !
+      !------------------------------------------------------------------------------------!
+      if (out_shv) then
+         !----- Specific humidity. --------------------------------------------------------!
+         ptrh2rvapi = max(toodry, ep * pvap / (pres - (1.0 - ep) * pvap))
          !---------------------------------------------------------------------------------!
       else
-         !----- Original RAMS way to compute mixing ratio. --------------------------------!
-         ptrh2rvapi = max(toodry,relhh*rsath)
+         !----- Mixing ratio. -------------------------------------------------------------!
+         ptrh2rvapi = max(toodry, ep * pvap / (pres - pvap))
          !---------------------------------------------------------------------------------!
       end if
       !------------------------------------------------------------------------------------!
@@ -1655,47 +1807,38 @@ module therm_lib
 
    !=======================================================================================!
    !=======================================================================================!
-   !     This function computes the vapour mixing ratio based on the pressure [Pa], tem-   !
-   ! perature [K] and relative humidity [fraction]. It will check the temperature to       !
-   ! decide between ice or liquid saturation and whether ice should be considered.         !
+   !     This function computes the vapour mixing ratio based (or specific humidity) based !
+   ! on the pressure [Pa], temperature [K] and relative humidity [fraction].  It checks    !
+   ! the temperature to decide between ice or liquid saturation.                           !
    !---------------------------------------------------------------------------------------!
-   real(kind=4) function ptrh2rvapil(relh,pres,temp,useice)
+   real(kind=4) function ptrh2rvapil(relh,pres,temp,out_shv,useice)
       use consts_coms, only : ep      & ! intent(in)
                             , toodry  & ! intent(in)
                             , t3ple   ! ! intent(in)
 
       implicit none
       !----- Required arguments. ----------------------------------------------------------!
-      real(kind=4), intent(in)           :: relh   ! Relative humidity             [    --]
-      real(kind=4), intent(in)           :: pres   ! Pressure                      [    Pa]
-      real(kind=4), intent(in)           :: temp   ! Temperature                   [     K]
+      real(kind=4), intent(in)           :: relh    ! Relative humidity            [    --]
+      real(kind=4), intent(in)           :: pres    ! Pressure                     [    Pa]
+      real(kind=4), intent(in)           :: temp    ! Temperature                  [     K]
+      logical     , intent(in)           :: out_shv ! Output is specific humidity  [   T|F]
       !----- Optional arguments. ----------------------------------------------------------!
-      logical     , intent(in), optional :: useice ! May use ice thermodynamics    [   T|F]
+      logical     , intent(in), optional :: useice  ! May use ice thermodynamics   [   T|F]
       !----- Local variables. -------------------------------------------------------------!
-      real(kind=4)                       :: rsath  ! Non-singular sat. mix. ratio  [ kg/kg]
-      real(kind=4)                       :: relhh  ! Bounded relative humidity     [    --]
-      logical                            :: frozen ! Will use ice thermodynamics   [   T|F]
+      real(kind=4)                       :: pvap    ! Vapour pressure              [    Pa]
+      real(kind=4)                       :: relhh   ! Bounded relative humidity    [    --]
+      logical                            :: frozen  ! Will use ice thermodynamics  [   T|F]
       !------------------------------------------------------------------------------------!
 
 
       !----- Check whether to use the user's or the default flag for ice saturation. ------!
       if (present(useice)) then
-         frozen = useice .and. temp < t3ple
+         frozen = useice  .and. temp < t3ple
       else
          frozen = bulk_on .and. temp < t3ple
       end if
       !------------------------------------------------------------------------------------!
 
-
-      !------------------------------------------------------------------------------------!
-      !     Find the saturation mixing ratio (ice or liquid, depending on frozen.          !
-      !------------------------------------------------------------------------------------!
-      if (frozen) then
-         rsath = max(toodry,rsif(pres,temp))
-      else
-         rsath = max(toodry,rslf(pres,temp))
-      end if
-      !------------------------------------------------------------------------------------!
 
 
       !---- Make sure relative humidity is bounded. ---------------------------------------!
@@ -1703,20 +1846,28 @@ module therm_lib
       !------------------------------------------------------------------------------------!
 
 
-      !------------------------------------------------------------------------------------!
-      !     Choose the right thermodynamics.                                               !
-      !------------------------------------------------------------------------------------!
-      if (newthermo) then
-         !----- Consider that Rel.Hum. is based on vapour pressure. -----------------------!
-         ptrh2rvapil = max(toodry,ep * relhh * rsath / (ep + (1.-relhh)*rsath))
-         !---------------------------------------------------------------------------------!
+      !---- Find the vapour pressure (ice or liquid, depending on the value of frozen). ---!
+      if (frozen) then
+         pvap  = relhh * esif(temp)
       else
-         !----- Original RAMS way to compute mixing ratio. --------------------------------!
-         ptrh2rvapil = max(toodry,relhh*rsath)
-         !---------------------------------------------------------------------------------!
+         pvap  = relhh * eslf(temp)
       end if
       !------------------------------------------------------------------------------------!
 
+
+      !------------------------------------------------------------------------------------!
+      !     Convert the output to the sought humidity variable.                            !
+      !------------------------------------------------------------------------------------!
+      if (out_shv) then
+         !----- Specific humidity. --------------------------------------------------------!
+         ptrh2rvapil = max(toodry, ep * pvap / (pres - (1.0 - ep) * pvap))
+         !---------------------------------------------------------------------------------!
+      else
+         !----- Mixing ratio. -------------------------------------------------------------!
+         ptrh2rvapil = max(toodry, ep * pvap / (pres - pvap))
+         !---------------------------------------------------------------------------------!
+      end if
+      !------------------------------------------------------------------------------------!
       return
    end function ptrh2rvapil
    !=======================================================================================!
@@ -1730,43 +1881,49 @@ module therm_lib
    !=======================================================================================!
    !=======================================================================================!
    !     This function computes the relative humidity [fraction] based on pressure, tem-   !
-   ! perature, and vapour mixing ratio. Two important points:                              !
+   ! perature, and vapour mixing ratio (or specific humidity). Two important points:       !
    ! 1. IT ALWAYS ASSUME THAT RELATIVE HUMIDITY IS WITH RESPECT TO THE LIQUID PHASE.       !
    !    If you want to switch between ice and liquid, use rehuil instead.                  !
    ! 2. IT DOESN'T PREVENT SUPERSATURATION TO OCCUR. This is because this subroutine is    !
    !    also used in the microphysics, where supersaturation does happen and needs to be   !
    !    accounted.                                                                         !
    !---------------------------------------------------------------------------------------!
-   real(kind=4) function rehul(pres,temp,rvap)
+   real(kind=4) function rehul(pres,temp,humi,is_shv)
       use consts_coms, only : ep     & ! intent(in)
                             , toodry ! ! intent(in)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       real(kind=4), intent(in) :: pres    ! Air pressure                           [    Pa]
       real(kind=4), intent(in) :: temp    ! Temperature                            [     K]
-      real(kind=4), intent(in) :: rvap    ! Vapour mixing ratio                    [ kg/kg]
+      real(kind=4), intent(in) :: humi    ! Humidity                               [ kg/kg]
+      logical     , intent(in) :: is_shv  ! Input humidity is specific humidity    [   T|F]
       !----- Local variables --------------------------------------------------------------!
-      real(kind=4)             :: rvapsat ! Non-singular saturation mixing ratio   [ kg/kg]
+      real(kind=4)             :: shv     ! Specific humidity                      [ kg/kg]
+      real(kind=4)             :: pvap    ! Vapour pressure                        [    Pa]
+      real(kind=4)             :: psat    ! Saturation vapour pressure             [    Pa]
       !------------------------------------------------------------------------------------!
 
 
-      !---- Find the saturation mixing ratio for the given temperature. -------------------!
-      rvapsat = max(toodry,rslf(pres,temp))
-      !------------------------------------------------------------------------------------!
-
-
-      !------------------------------------------------------------------------------------!
-      !     Choose the right thermodynamics.                                               !
-      !------------------------------------------------------------------------------------!
-      if (newthermo) then
-         !----- This is based on relative humidity being defined with vapour pressure. ----!
-         rehul = max(0.,rvap*(ep+rvapsat)/(rvapsat*(ep+rvap)))
-         !---------------------------------------------------------------------------------!
+      !---- Make sure that we have specific humidity. -------------------------------------!
+      if (is_shv) then
+         shv = max(toodry,humi)
       else
-         !----- Original formula used by RAMS ---------------------------------------------!
-         rehul = max(0.,rvap/rvapsat)
-         !---------------------------------------------------------------------------------!
+         shv = max(toodry,humi) / ( 1.0 + max(toodry,humi) )
       end if
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !     Find the vapour pressure and the saturation vapour pressure.                   !
+      !------------------------------------------------------------------------------------!
+      pvap = ( pres * shv ) / ( ep + (1.0 - ep) * shv )
+      psat = eslf (temp)
+      !------------------------------------------------------------------------------------!
+
+      !------------------------------------------------------------------------------------!
+      !     Find the relative humidity.                                                    !
+      !------------------------------------------------------------------------------------!
+      rehul = max(0. ,pvap / psat)
       !------------------------------------------------------------------------------------!
 
       return
@@ -1782,43 +1939,49 @@ module therm_lib
    !=======================================================================================!
    !=======================================================================================!
    !     This function computes the relative humidity [fraction] based on pressure, tem-   !
-   ! perature, and vapour mixing ratio. Two important points:                              !
+   ! perature, and vapour mixing ratio (or specific humidity). Two important points:       !
    ! 1. IT ALWAYS ASSUME THAT RELATIVE HUMIDITY IS WITH RESPECT TO THE ICE PHASE.          !
    !    If you want to switch between ice and liquid, use rehuil instead.                  !
    ! 2. IT DOESN'T PREVENT SUPERSATURATION TO OCCUR. This is because this subroutine is    !
    !    also used in the microphysics, where supersaturation does happen and needs to be   !
    !    accounted.                                                                         !
    !---------------------------------------------------------------------------------------!
-   real(kind=4) function rehui(pres,temp,rvap)
+   real(kind=4) function rehui(pres,temp,humi,is_shv)
       use consts_coms, only : ep     & ! intent(in)
                             , toodry ! ! intent(in)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       real(kind=4), intent(in) :: pres    ! Air pressure                           [    Pa]
       real(kind=4), intent(in) :: temp    ! Temperature                            [     K]
-      real(kind=4), intent(in) :: rvap    ! Vapour mixing ratio                    [ kg/kg]
+      real(kind=4), intent(in) :: humi    ! Humidity                               [ kg/kg]
+      logical     , intent(in) :: is_shv  ! Input humidity is specific humidity    [   T|F]
       !----- Local variables --------------------------------------------------------------!
-      real(kind=4)             :: rvapsat ! Saturation mixing ratio                [ kg/kg]
+      real(kind=4)             :: shv     ! Specific humidity                      [ kg/kg]
+      real(kind=4)             :: pvap    ! Vapour pressure                        [    Pa]
+      real(kind=4)             :: psat    ! Saturation vapour pressure             [    Pa]
       !------------------------------------------------------------------------------------!
 
 
-      !---- Find the saturation mixing ratio for the given temperature. -------------------!
-      rvapsat = max(toodry,rsif(pres,temp))
-      !------------------------------------------------------------------------------------!
-
-
-      !------------------------------------------------------------------------------------!
-      !     Choose the right thermodynamics.                                               !
-      !------------------------------------------------------------------------------------!
-      if (newthermo) then
-         !----- This is based on relative humidity being defined with vapour pressure. ----!
-         rehui = max(0.,rvap*(ep+rvapsat)/(rvapsat*(ep+rvap)))
-         !---------------------------------------------------------------------------------!
+      !---- Make sure that we have specific humidity. -------------------------------------!
+      if (is_shv) then
+         shv = max(toodry,humi)
       else
-         !----- Original formula used by RAMS ---------------------------------------------!
-         rehui = max(0.,rvap/rvapsat)
-         !---------------------------------------------------------------------------------!
+         shv = max(toodry,humi) / ( 1.0 + max(toodry,humi) )
       end if
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !     Find the vapour pressure and the saturation vapour pressure.                   !
+      !------------------------------------------------------------------------------------!
+      pvap = ( pres * shv ) / ( ep + (1.0 - ep) * shv )
+      psat = esif (temp)
+      !------------------------------------------------------------------------------------!
+
+      !------------------------------------------------------------------------------------!
+      !     Find the relative humidity.                                                    !
+      !------------------------------------------------------------------------------------!
+      rehui = max(0. ,pvap / psat)
       !------------------------------------------------------------------------------------!
 
       return
@@ -1834,7 +1997,7 @@ module therm_lib
    !=======================================================================================!
    !=======================================================================================!
    !     This function computes the relative humidity [fraction] based on pressure, tem-   !
-   ! perature, and vapour mixing ratio. Two important points:                              !
+   ! perature, and vapour mixing ratio (or specific humidity). Two important points:       !
    ! 1. It may consider whether the temperature is above or below the freezing point       !
    !    to choose which saturation to use. It is possible to explicitly force not to use   !
    !    ice in case level is 2 or if you have reasons not to use ice (e.g. reading data    !
@@ -1843,17 +2006,23 @@ module therm_lib
    !    also used in the microphysics, where supersaturation does happen and needs to be   !
    !    accounted.                                                                         !
    !---------------------------------------------------------------------------------------!
-   real(kind=4) function rehuil(pres,temp,rvap,useice)
-      use consts_coms, only : t3ple ! ! intent(in)
+   real(kind=4) function rehuil(pres,temp,humi,is_shv,useice)
+      use consts_coms, only : t3ple  & ! intent(in)
+                            , ep     & ! intent(in)
+                            , toodry ! ! intent(in)
+
       implicit none
       !----- Required arguments. ----------------------------------------------------------!
       real(kind=4), intent(in)           :: pres    ! Air pressure                 [    Pa]
       real(kind=4), intent(in)           :: temp    ! Temperature                  [     K]
-      real(kind=4), intent(in)           :: rvap    ! Vapour mixing ratio          [ kg/kg]
-      !----- Optional arguments. ----------------------------------------------------------!
+      real(kind=4), intent(in)           :: humi    ! Humidity                     [ kg/kg]
+      logical     , intent(in)           :: is_shv  ! Input is specific humidity   [   T|F]
+       !----- Optional arguments. ----------------------------------------------------------!
       logical     , intent(in), optional :: useice  ! May use ice thermodynamics   [   T|F]
       !----- Local variables --------------------------------------------------------------!
-      real(kind=4)                       :: rvapsat ! Saturation mixing ratio      [ kg/kg]
+      real(kind=4)                       :: shv     ! Specific humidity            [ kg/kg]
+      real(kind=4)                       :: pvap    ! Vapour pressure              [    Pa]
+      real(kind=4)                       :: psat    ! Saturation vapour pressure   [    Pa]
       logical                            :: frozen  ! Will use ice saturation now  [   T|F]
       !------------------------------------------------------------------------------------!
       
@@ -1868,14 +2037,30 @@ module therm_lib
       !------------------------------------------------------------------------------------!
 
 
-      !------------------------------------------------------------------------------------!
-      !     Call the routine that matches "frozen" better.                                 !
-      !------------------------------------------------------------------------------------!
-      if (frozen) then
-         rehuil = rehui(pres,temp,rvap)
+      !---- Make sure that we have specific humidity. -------------------------------------!
+      if (is_shv) then
+         shv = max(toodry,humi)
       else
-         rehuil = rehul(pres,temp,rvap)
+         shv = max(toodry,humi) / ( 1.0 + max(toodry,humi) )
       end if
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !     Find the vapour pressure and the saturation vapour pressure.                   !
+      !------------------------------------------------------------------------------------!
+      pvap = ( pres * shv ) / ( ep + (1.0 - ep) * shv )
+      if (frozen) then
+         psat = esif (temp)
+      else
+         psat = esif (temp)
+      end if
+      !------------------------------------------------------------------------------------!
+
+      !------------------------------------------------------------------------------------!
+      !     Find the relative humidity.                                                    !
+      !------------------------------------------------------------------------------------!
+      rehuil = max(0. ,pvap / psat)
       !------------------------------------------------------------------------------------!
 
       return

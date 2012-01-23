@@ -4406,8 +4406,6 @@ subroutine init_rk4_params()
                              , rk4max_can_temp        & ! intent(out)
                              , rk4min_can_shv         & ! intent(out)
                              , rk4max_can_shv         & ! intent(out)
-                             , rk4min_can_rvap        & ! intent(out)
-                             , rk4max_can_rvap        & ! intent(out)
                              , rk4min_can_rhv         & ! intent(out)
                              , rk4max_can_rhv         & ! intent(out)
                              , rk4min_can_co2         & ! intent(out)
@@ -4458,7 +4456,7 @@ subroutine init_rk4_params()
    rk4eps2     = rk4eps**2           ! square of the accuracy
    hmin        = 1.d-7               ! The minimum step size.
    print_diags = .false.             ! Flag to print the diagnostic check.
-   checkbudget = .true.              ! Flag to check CO2, water, and energy budgets every 
+   checkbudget = .false.              ! Flag to check CO2, water, and energy budgets every 
                                      !     time step and stop the run in case any of these 
                                      !     budgets don't close.
    !---------------------------------------------------------------------------------------!
@@ -4517,14 +4515,6 @@ subroutine init_rk4_params()
    ! (**) Please, don't be too strict here.  The model currently doesn't have radiation    !
    !      fog, so supersaturation may happen.  This is a problem we may want to address in !
    !      the future, though...                                                            !
-   !---------------------------------------------------------------------------------------!
-
-
-   !---------------------------------------------------------------------------------------!
-   !     Compute the minimum and maximum mixing ratio based on the specific humidity.      !
-   !---------------------------------------------------------------------------------------!
-   rk4min_can_rvap = rk4min_can_shv / (1.d0 - rk4min_can_shv)
-   rk4max_can_rvap = rk4max_can_shv / (1.d0 - rk4max_can_shv)
    !---------------------------------------------------------------------------------------!
 
 

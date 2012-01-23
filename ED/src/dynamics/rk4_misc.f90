@@ -36,7 +36,7 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
                                     , thetaeiv8              & ! function
                                     , idealdenssh8           & ! function
                                     , rehuil8                & ! function
-                                    , rslif8                 & ! function
+                                    , qslif8                 & ! function
                                     , reducedpress8          & ! function
                                     , pq2exner8              & ! function
                                     , exthq2temp8            & ! function
@@ -69,11 +69,9 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
    !---------------------------------------------------------------------------------------!
    !----- Update thermo variables that are conserved between steps. -----------------------!
    targetp%can_theta    = dble(sourcesite%can_theta(ipa))
-   targetp%can_theiv    = dble(sourcesite%can_theiv(ipa))
    targetp%can_shv      = dble(sourcesite%can_shv(ipa))
    targetp%can_co2      = dble(sourcesite%can_co2(ipa))
    targetp%can_depth    = dble(sourcesite%can_depth(ipa))
-   targetp%can_rvap     = targetp%can_shv / (1.d0 - targetp%can_shv)
    !---------------------------------------------------------------------------------------!
 
 
@@ -117,17 +115,15 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
    ! saturation specific humidity.                                                         !
    !---------------------------------------------------------------------------------------!
    targetp%can_rhos     = idealdenssh8(targetp%can_prss,targetp%can_temp,targetp%can_shv)
-   targetp%can_rhv      = rehuil8(targetp%can_prss,targetp%can_temp,targetp%can_rvap)
-   rsat                 = rslif8(targetp%can_prss,targetp%can_temp)
-   targetp%can_ssh      = rsat / (1.d0 + rsat)
+   targetp%can_rhv      = rehuil8(targetp%can_prss,targetp%can_temp,targetp%can_shv,.true.)
+   targetp%can_ssh      = qslif8(targetp%can_prss,targetp%can_temp)
    !---------------------------------------------------------------------------------------!
 
 
 
    !----- Find the lower and upper bounds for the derived properties. ---------------------!
    call find_derived_thbounds(targetp%can_rhos,targetp%can_theta,targetp%can_temp          &
-                             ,targetp%can_shv,targetp%can_rvap,targetp%can_prss            &
-                             ,targetp%can_depth)
+                             ,targetp%can_shv ,targetp%can_prss ,targetp%can_depth)
    !---------------------------------------------------------------------------------------!
 
 
@@ -345,8 +341,7 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
       !------------------------------------------------------------------------------------!
       !     Compute the leaf intercellular specific humidity, assumed to be at saturation. !
       !------------------------------------------------------------------------------------!
-      targetp%lint_shv(ico) = rslif8(targetp%can_prss,targetp%leaf_temp(ico))
-      targetp%lint_shv(ico) = targetp%lint_shv(ico) / (1.d0 + targetp%lint_shv(ico))
+      targetp%lint_shv(ico) = qslif8(targetp%can_prss,targetp%leaf_temp(ico))
       !------------------------------------------------------------------------------------!
 
 
@@ -579,7 +574,7 @@ subroutine update_diagnostic_vars(initp, csite,ipa)
                                     , cmtl2uext8            & ! function
                                     , thetaeiv8             & ! function
                                     , rehuil8               & ! function
-                                    , rslif8                & ! function
+                                    , qslif8                & ! function
                                     , hq2temp8              & ! function
                                     , pq2exner8             & ! function
                                     , extq2theta8           & ! function
@@ -674,26 +669,12 @@ subroutine update_diagnostic_vars(initp, csite,ipa)
       !------------------------------------------------------------------------------------!
       if (ok_theta) then
 
-         !----- Find the (total) mixing ratio. --------------------------------------------!
-         initp%can_rvap  = initp%can_shv / (1.d0 - initp%can_shv)
-         !---------------------------------------------------------------------------------!
-
-
-
-         !---------------------------------------------------------------------------------!
-         !    Find the ice-vapour equivalent potential temperature.                        !
-         !---------------------------------------------------------------------------------!
-         initp%can_theiv = thetaeiv8(initp%can_theta,initp%can_prss,initp%can_temp         &
-                                    ,initp%can_rvap,initp%can_rvap)
-         !---------------------------------------------------------------------------------!
-
 
          !---------------------------------------------------------------------------------!
          !     Find the derived humidity variables.                                        !
          !---------------------------------------------------------------------------------!
-         initp%can_rhv   = rehuil8(initp%can_prss,initp%can_temp,initp%can_rvap)
-         initp%can_ssh   = rslif8(initp%can_prss,initp%can_temp)
-         initp%can_ssh   = initp%can_ssh / (initp%can_ssh + 1.d0)
+         initp%can_rhv   = rehuil8(initp%can_prss,initp%can_temp,initp%can_shv,.true.)
+         initp%can_ssh   = qslif8(initp%can_prss,initp%can_temp)
          !---------------------------------------------------------------------------------!
       end if
    else
@@ -1009,8 +990,7 @@ subroutine update_diagnostic_vars(initp, csite,ipa)
                   !     Compute the leaf intercellular specific humidity, assumed to be at !
                   ! saturation.                                                            !
                   !------------------------------------------------------------------------!
-                  initp%lint_shv(ico) = rslif8(initp%can_prss,initp%leaf_temp(ico))
-                  initp%lint_shv(ico) = initp%lint_shv(ico) / (1.d0 + initp%lint_shv(ico))
+                  initp%lint_shv(ico) = qslif8(initp%can_prss,initp%leaf_temp(ico))
                   !------------------------------------------------------------------------!
                end if
             end if
@@ -1056,8 +1036,7 @@ subroutine update_diagnostic_vars(initp, csite,ipa)
             !     Compute the leaf intercellular specific humidity, assumed to be at       !
             ! saturation.                                                                  !
             !------------------------------------------------------------------------------!
-            initp%lint_shv(ico) = rslif8(initp%can_prss,initp%leaf_temp(ico))
-            initp%lint_shv(ico) = initp%lint_shv(ico) / (1.d0 + initp%lint_shv(ico))
+            initp%lint_shv(ico) = qslif8(initp%can_prss,initp%leaf_temp(ico))
             !------------------------------------------------------------------------------!
          end if
       end do vegloop
@@ -1094,8 +1073,7 @@ subroutine update_diagnostic_vars(initp, csite,ipa)
                   !     Compute the leaf intercellular specific humidity, assumed to be at !
                   ! saturation.                                                            !
                   !------------------------------------------------------------------------!
-                  initp%lint_shv(ico) = rslif8(initp%can_prss,initp%leaf_temp(ico))
-                  initp%lint_shv(ico) = initp%lint_shv(ico) / (1.d0 + initp%lint_shv(ico))
+                  initp%lint_shv(ico) = qslif8(initp%can_prss,initp%leaf_temp(ico))
                   !------------------------------------------------------------------------!
                end if
             end if
@@ -1129,8 +1107,7 @@ subroutine update_diagnostic_vars(initp, csite,ipa)
             !     Compute the leaf intercellular specific humidity, assumed to be at       !
             ! saturation.                                                                  !
             !------------------------------------------------------------------------------!
-            initp%lint_shv(ico) = rslif8(initp%can_prss,initp%leaf_temp(ico))
-            initp%lint_shv(ico) = initp%lint_shv(ico) / (1.d0 + initp%lint_shv(ico))
+            initp%lint_shv(ico) = qslif8(initp%can_prss,initp%leaf_temp(ico))
             !------------------------------------------------------------------------------!
          end if
       end do leafloop
@@ -3573,6 +3550,7 @@ subroutine print_rk4patch(y,csite,ipa)
                                     , nzs                   ! ! intent(in)
    use ed_misc_coms          , only : current_time          ! ! intent(in)
    use consts_coms           , only : pio1808               ! ! intent(in)
+   use therm_lib8            , only : thetaeiv8             ! ! function
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    type(rk4patchtype) , target     :: y
@@ -3582,6 +3560,13 @@ subroutine print_rk4patch(y,csite,ipa)
    type(patchtype)    , pointer    :: cpatch
    integer                         :: k
    integer                         :: ico
+   real(kind=8)                    :: y_can_rvap
+   real(kind=8)                    :: y_can_theiv
+   !---------------------------------------------------------------------------------------!
+
+   !----- Find the ice-vapour equivalent potential temperature (output only). -------------!
+   y_can_rvap  = y%can_shv / (1.d0 - y%can_shv)
+   y_can_theiv = thetaeiv8(y%can_theta,y%can_prss,y%can_temp,y_can_rvap,y_can_rvap)
    !---------------------------------------------------------------------------------------!
 
    cpatch => csite%patch(ipa)
@@ -3762,9 +3747,9 @@ subroutine print_rk4patch(y,csite,ipa)
                                     ,'    CAN_RVAP','     CAN_RHV','CAN_ENTHALPY'
                                      
                                      
-   write (unit=*,fmt='(9(es12.4,1x))')   y%can_rhos , y%can_theiv, y%can_theta             &
-                                       , y%can_temp , y%can_shv  , y%can_ssh               &
-                                       , y%can_rvap , y%can_rhv  , y%can_enthalpy
+   write (unit=*,fmt='(9(es12.4,1x))')   y%can_rhos     , y_can_theiv    , y%can_theta     &
+                                       , y%can_temp     , y%can_shv      , y%can_ssh       &
+                                       , y_can_rvap     , y%can_rhv      , y%can_enthalpy
                                        
 
    write (unit=*,fmt='(80a)') ('-',k=1,80)
@@ -3851,7 +3836,8 @@ subroutine print_rk4_state(initp,fluxp,csite,ipa,elapsed,hdid)
    use rk4_coms     , only : rk4patchtype  & ! structure
                            , rk4site       & ! intent(in)
                            , detail_pref   ! ! intent(in)
-   use therm_lib8   , only : uextcm2tl8    ! ! sub-routine
+   use therm_lib8   , only : uextcm2tl8    & ! sub-routine
+                           , thetaeiv8     ! ! function
    use soil_coms    , only : soil8         ! ! intent(in)
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
@@ -3895,6 +3881,8 @@ subroutine print_rk4_state(initp,fluxp,csite,ipa,elapsed,hdid)
    real(kind=8)                       :: nir_b_beam
    real(kind=8)                       :: nir_b_diff
    real(kind=8)                       :: elapsec
+   real(kind=8)                       :: can_rvap
+   real(kind=8)                       :: can_theiv
    !----- Local constants. ----------------------------------------------------------------!
    character(len=10), parameter :: phfmt='(83(a,1x))'
    character(len=48), parameter :: pbfmt='(3(i13,1x),4(es13.6,1x),3(i13,1x),73(es13.6,1x))'
@@ -3984,6 +3972,15 @@ subroutine print_rk4_state(initp,fluxp,csite,ipa,elapsed,hdid)
       sum_lai = sum_lai + initp%lai(ico)
       sum_wai = sum_wai + initp%wai(ico)
    end do
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Find the ice-vapour equivalent potential temperature of the canopy air space.     !
+   !---------------------------------------------------------------------------------------!
+   can_rvap   = initp%can_shv / (1.d0 - initp%can_shv)
+   can_theiv  = thetaeiv8( initp%can_theta , initp%can_prss  , initp%can_temp              &
+                         , can_rvap        , can_rvap        )
    !---------------------------------------------------------------------------------------!
 
    par_b_beam = dble(csite%par_b_beam   (ipa))
@@ -4111,7 +4108,7 @@ subroutine print_rk4_state(initp,fluxp,csite,ipa,elapsed,hdid)
                    , rk4site%rshort        , rk4site%rlong         , initp%can_prss        &
                    , initp%can_temp        , initp%can_shv         , initp%can_co2         &
                    , initp%can_depth       , initp%can_rhos        , initp%can_rhv         &
-                   , initp%can_theta       , initp%can_theiv       , initp%can_enthalpy    &
+                   , initp%can_theta       , can_theiv             , initp%can_enthalpy    &
                    , initp%ground_temp     , initp%ground_shv      , avg_leaf_temp         &
                    , sum_leaf_water        , avg_wood_temp         , sum_wood_water        &
                    , initp%ggbare          , initp%ggveg           , initp%ggnet           &

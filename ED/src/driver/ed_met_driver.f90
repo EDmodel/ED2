@@ -814,8 +814,7 @@ subroutine update_met_drivers(cgrid)
    use pft_coms             , only : include_pft       & ! intent(in)
                                    , hgt_max           ! ! intent(in)
    use ed_max_dims          , only : n_pft             ! ! intent(in)
-   use therm_lib            , only : rslif             & ! function
-                                   , tl2uint           & ! function
+   use therm_lib            , only : tl2uint           & ! function
                                    , ptrh2rvapil       & ! function
                                    , pq2exner          & ! function
                                    , extq2theta        & ! function
@@ -2236,14 +2235,16 @@ subroutine update_met_drivers(cgrid)
          !     Update atm_shv so the relative humidity remains the same.  We use the       !
          ! functions from therm_lib.f90 so it is consistent with the rest of the code.     !
          !---------------------------------------------------------------------------------!
-         !----- 1. Temporarily convert specific humidity to mixing ratio. -----------------!
-         rvaux  = cgrid%met(ipy)%atm_shv / (1. - cgrid%met(ipy)%atm_shv)
-         !----- 2. Find relative humidity. ------------------------------------------------!
-         relhum = rehuil(cgrid%met(ipy)%prss,temp0,rvaux)
-         !----- 3. Find the equivalent relative humidity with the new temperature. --------!
-         rvaux  = ptrh2rvapil(relhum,cgrid%met(ipy)%prss,cgrid%met(ipy)%atm_tmp)
-         !----- 4. Convert the mixing ratio back to specific humidity. --------------------!
-         cgrid%met(ipy)%atm_shv = rvaux / (1. + rvaux)
+         !----- 1. Find relative humidity. ------------------------------------------------!
+         relhum                 = rehuil( cgrid%met(ipy)%prss                              &
+                                        , temp0                                            &
+                                        , cgrid%met(ipy)%atm_shv                           &
+                                        , .true.                                           )
+         !----- 2. Find the equivalent relative humidity with the new temperature. --------!
+         cgrid%met(ipy)%atm_shv = ptrh2rvapil( relhum                                      &
+                                             , cgrid%met(ipy)%prss                         &
+                                             , cgrid%met(ipy)%atm_tmp                      &
+                                             , .true.                                      )
          !---------------------------------------------------------------------------------!
       end if
 
@@ -2254,25 +2255,30 @@ subroutine update_met_drivers(cgrid)
       ! ables atm_rhv_min and atm_rhv_max (from met_driver_coms.f90, and defined at the    !
       ! init_met_params subroutine in ed_params.f90).                                      !
       !------------------------------------------------------------------------------------!
-      rvaux  = cgrid%met(ipy)%atm_shv / (1. - cgrid%met(ipy)%atm_shv)
-      relhum = rehuil(cgrid%met(ipy)%prss,cgrid%met(ipy)%atm_tmp,rvaux)
+      relhum = rehuil(cgrid%met(ipy)%prss,cgrid%met(ipy)%atm_tmp,cgrid%met(ipy)%atm_shv    &
+                     ,.true.)
       !------------------------------------------------------------------------------------!
       !      Check whether the relative humidity is off-bounds.  If it is, then we re-     !
       ! calculate the mixing ratio and convert to specific humidity.                       !
       !------------------------------------------------------------------------------------!
       if (relhum < atm_rhv_min) then
-         relhum = atm_rhv_min
-         rvaux  = ptrh2rvapil(relhum,cgrid%met(ipy)%prss,cgrid%met(ipy)%atm_tmp)
-         cgrid%met(ipy)%atm_shv = rvaux / (1. + rvaux)
+         relhum                 = atm_rhv_min
+         cgrid%met(ipy)%atm_shv = ptrh2rvapil( relhum                                      &
+                                             , cgrid%met(ipy)%prss                         &
+                                             , cgrid%met(ipy)%atm_tmp                      &
+                                             , .true.                                      )
       elseif (relhum > atm_rhv_max) then
-         relhum = atm_rhv_max
-         rvaux  = ptrh2rvapil(relhum,cgrid%met(ipy)%prss,cgrid%met(ipy)%atm_tmp)
-         cgrid%met(ipy)%atm_shv = rvaux / (1. + rvaux)
+         relhum                 = atm_rhv_max
+         cgrid%met(ipy)%atm_shv = ptrh2rvapil( relhum                                      &
+                                             , cgrid%met(ipy)%prss                         &
+                                             , cgrid%met(ipy)%atm_tmp                      &
+                                             , .true.                                      )
       end if
 
       !------------------------------------------------------------------------------------!
       !    We now find the equivalent potential temperature.                               !
       !------------------------------------------------------------------------------------!
+      rvaux                    = cgrid%met(ipy)%atm_shv / (1.0 - cgrid%met(ipy)%atm_shv)
       cgrid%met(ipy)%atm_theiv = thetaeiv(cgrid%met(ipy)%atm_theta,cgrid%met(ipy)%prss     &
                                          ,cgrid%met(ipy)%atm_tmp,rvaux,rvaux)
       !------------------------------------------------------------------------------------!
@@ -2317,23 +2323,28 @@ subroutine update_met_drivers(cgrid)
          ! the variables atm_rhv_min and atm_rhv_max (from met_driver_coms.f90, and        !
          ! defined at the init_met_params subroutine in ed_params.f90).                    !
          !---------------------------------------------------------------------------------!
-         rvaux  = cpoly%met(isi)%atm_shv / (1. - cpoly%met(isi)%atm_shv)
-         relhum = rehuil(cpoly%met(isi)%prss,cpoly%met(isi)%atm_tmp,rvaux)
+         relhum = rehuil(cpoly%met(isi)%prss,cpoly%met(isi)%atm_tmp,cpoly%met(isi)%atm_shv &
+                        ,.true.)
          !---------------------------------------------------------------------------------!
          !      Check whether the relative humidity is off-bounds.  If it is, then we re-  !
          ! calculate the mixing ratio and convert to specific humidity.                    !
          !---------------------------------------------------------------------------------!
          if (relhum < atm_rhv_min) then
             relhum = atm_rhv_min
-            rvaux  = ptrh2rvapil(relhum,cpoly%met(isi)%prss,cpoly%met(isi)%atm_tmp)
-            cpoly%met(isi)%atm_shv = rvaux / (1. + rvaux)
+            cpoly%met(isi)%atm_shv = ptrh2rvapil( relhum                                      &
+                                                , cgrid%met(ipy)%prss                      &
+                                                , cgrid%met(ipy)%atm_tmp                   &
+                                                , .true.                                   )
          elseif (relhum > atm_rhv_max) then
-            relhum = atm_rhv_max
-            rvaux  = ptrh2rvapil(relhum,cpoly%met(isi)%prss,cpoly%met(isi)%atm_tmp)
-            cpoly%met(isi)%atm_shv = rvaux / (1. + rvaux)
+            relhum                 = atm_rhv_max
+            cpoly%met(isi)%atm_shv = ptrh2rvapil( relhum                                      &
+                                                , cgrid%met(ipy)%prss                      &
+                                                , cgrid%met(ipy)%atm_tmp                   &
+                                                , .true.                                   )
          end if
 
          !----- Find the atmospheric equivalent potential temperature. --------------------!
+         rvaux                    = cgrid%met(ipy)%atm_shv / (1.0 - cgrid%met(ipy)%atm_shv)
          cpoly%met(isi)%atm_theiv = thetaeiv(cpoly%met(isi)%atm_theta,cpoly%met(isi)%prss  &
                                             ,cpoly%met(isi)%atm_tmp,rvaux,rvaux)
 

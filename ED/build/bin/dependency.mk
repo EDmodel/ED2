@@ -27,7 +27,7 @@ events.o: allometry.mod consts_coms.mod decomp_coms.mod disturbance_utils.mod
 events.o: ed_misc_coms.mod ed_state_vars.mod ed_therm_lib.mod
 events.o: fuse_fiss_utils.mod grid_coms.mod pft_coms.mod therm_lib.mod
 farq_leuning.o: c34constants.mod consts_coms.mod pft_coms.mod phenology_coms.mod
-farq_leuning.o: physiology_coms.mod rk4_coms.mod therm_lib8.mod
+farq_leuning.o: physiology_coms.mod rk4_coms.mod
 fire.o: allometry.mod consts_coms.mod disturb_coms.mod ed_misc_coms.mod
 fire.o: ed_state_vars.mod grid_coms.mod soil_coms.mod
 forestry.o: allometry.mod disturb_coms.mod disturbance_utils.mod ed_max_dims.mod
@@ -101,7 +101,7 @@ ed_nbg_init.o: ed_state_vars.mod fuse_fiss_utils.mod grid_coms.mod pft_coms.mod
 ed_nbg_init.o: physiology_coms.mod
 ed_params.o: allometry.mod canopy_air_coms.mod canopy_layer_coms.mod
 ed_params.o: canopy_radiation_coms.mod consts_coms.mod decomp_coms.mod
-ed_params.o: disturb_coms.mod ed_max_dims.mod ed_misc_coms.mod
+ed_params.o: disturb_coms.mod ed_max_dims.mod ed_misc_coms.mod ed_therm_lib.mod
 ed_params.o: fusion_fission_coms.mod grid_coms.mod hydrology_coms.mod
 ed_params.o: met_driver_coms.mod pft_coms.mod phenology_coms.mod
 ed_params.o: physiology_coms.mod rk4_coms.mod soil_coms.mod

@@ -1111,7 +1111,7 @@ module fuse_fiss_utils
       use pft_coms      , only : q                      & ! intent(in), lookup table
                                , qsw                    ! ! intent(in), lookup table
       use therm_lib     , only : uextcm2tl              & ! subroutine
-                               , rslif                  ! ! function
+                               , qslif                  ! ! function
       use allometry     , only : dbh2krdepth            & ! function
                                , bd2dbh                 & ! function
                                , dbh2h                  ! ! function
@@ -1246,8 +1246,7 @@ module fuse_fiss_utils
       !------------------------------------------------------------------------------------!
 
       !------ Find the intercellular value assuming saturation. ---------------------------!
-      cpatch%lint_shv(recc) = rslif(can_prss,cpatch%leaf_temp(recc))
-      cpatch%lint_shv(recc) = cpatch%lint_shv(recc) / (1. + cpatch%lint_shv(recc))
+      cpatch%lint_shv(recc) = qslif(can_prss,cpatch%leaf_temp(recc))
 
       cb_act = 0.
       cb_max = 0.
