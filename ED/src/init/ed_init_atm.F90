@@ -146,22 +146,35 @@ subroutine ed_init_atm()
                   ! thermal equilibrium with the canopy air space and no intercepted       !
                   ! water sitting on top of leaves and branches.                           !
                   !------------------------------------------------------------------------!
-                  cpatch%leaf_temp   (ico) = csite%can_temp(ipa)
-                  cpatch%leaf_fliq   (ico) = 0.0
                   cpatch%leaf_water  (ico) = 0.0
-                  cpatch%wood_temp   (ico) = csite%can_temp(ipa)
-                  cpatch%wood_fliq   (ico) = 0.0
                   cpatch%wood_water  (ico) = 0.0
+                  cpatch%leaf_temp   (ico) = csite%can_temp(ipa)
+                  cpatch%wood_temp   (ico) = csite%can_temp(ipa)
+                  if (csite%can_temp(ipa) == t3ple) then
+                     cpatch%leaf_fliq   (ico) = 0.5
+                     cpatch%wood_fliq   (ico) = 0.5
+                  elseif (csite%can_temp(ipa) > t3ple) then
+                     cpatch%leaf_fliq   (ico) = 1.0
+                     cpatch%wood_fliq   (ico) = 1.0
+                  else
+                     cpatch%leaf_fliq   (ico) = 0.0
+                     cpatch%wood_fliq   (ico) = 0.0
+                  end if
                   
                   
-                  call calc_veg_hcap(cpatch%bleaf(ico),cpatch%bdead(ico)                   &
-                                    ,cpatch%bsapwood(ico),cpatch%nplant(ico)               &
-                                    ,cpatch%pft(ico)                                       &
-                                    ,cpatch%leaf_hcap(ico),cpatch%wood_hcap(ico) )
+                  call calc_veg_hcap( cpatch%bleaf     (ico) , cpatch%bdead    (ico)       &
+                                    , cpatch%bsapwood  (ico) , cpatch%nplant   (ico)       &
+                                    , cpatch%pft       (ico) , cpatch%leaf_hcap(ico)       &
+                                    , cpatch%wood_hcap (ico) )
 
-                  cpatch%leaf_energy (ico) = cpatch%leaf_hcap(ico) * cpatch%leaf_temp(ico)
-                  cpatch%wood_energy (ico) = cpatch%wood_hcap(ico) * cpatch%wood_temp(ico)
-
+                  cpatch%leaf_energy (ico) = cmtl2uext( cpatch%leaf_hcap   (ico)           &
+                                                      , cpatch%leaf_water  (ico)           &
+                                                      , cpatch%leaf_temp   (ico)           &
+                                                      , cpatch%leaf_fliq   (ico) )
+                  cpatch%wood_energy (ico) = cmtl2uext( cpatch%wood_hcap   (ico)           &
+                                                      , cpatch%wood_water  (ico)           &
+                                                      , cpatch%wood_temp   (ico)           &
+                                                      , cpatch%wood_fliq   (ico) )
 
                   call is_resolvable(csite,ipa,ico,cpoly%green_leaf_factor(:,isi))
 
@@ -173,11 +186,15 @@ subroutine ed_init_atm()
                   cpatch%lint_co2_open(ico)   = cmet%atm_co2
                   cpatch%lint_co2_closed(ico) = cmet%atm_co2
                   !------------------------------------------------------------------------!
+
+
+                  !------------------------------------------------------------------------!
                   !      The intercellular specific humidity is assumed to be at           !
                   ! saturation.                                                            !
                   !------------------------------------------------------------------------!
                   cpatch%lint_shv(ico) = rslif(csite%can_prss(ipa),cpatch%leaf_temp(ico))
                   cpatch%lint_shv(ico) = cpatch%lint_shv(ico) / (1. + cpatch%lint_shv(ico))
+                  !------------------------------------------------------------------------!
                end do cohortloop1
             end do patchloop1
          end do siteloop1

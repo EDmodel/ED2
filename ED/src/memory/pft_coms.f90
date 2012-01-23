@@ -540,12 +540,15 @@ module pft_coms
 
    !=======================================================================================!
    !=======================================================================================!
-   !     The following varible is used to "turn off" the lights for extremely sparse       !
-   ! cohorts, that otherwise can have strange light values due to numeric precision.  This !
-   ! will cause the cohort to starve to death, and it will be quickly eliminated.          !
+   !     The following varible will be used to "turn off" the biophysics for extremely low !
+   ! biomass cohorts, that otherwise could shrink the time step in case they were solved.  !
+   ! We use heat capacity rather than leaf/wood area index as the threshold because the    !
+   ! heat capacity what will control the time step.  Also, in case of leaves, the bio-     !
+   ! physics "turn off" will kill the cohorts, because they won't be able to do photo-     !
+   ! synthesis.                                                                            !
    !=======================================================================================!
    !=======================================================================================!
-   real, dimension(n_pft) :: lai_min
+   real, dimension(n_pft) :: veg_hcap_min
    !=======================================================================================!
    !=======================================================================================!
 

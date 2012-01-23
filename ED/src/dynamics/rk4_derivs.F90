@@ -1347,7 +1347,7 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
          !   Calculate leaf-to-canopy sensible heat flux.  Always consider both sides of   !
          ! leaves.                                                                         !
          !---------------------------------------------------------------------------------!
-         flux_area = effarea_heat * initp%lai(ico) ! + pi18 * initp%wai(ico)
+         flux_area = effarea_heat * initp%lai(ico)
          hflxlc    = flux_area    * initp%leaf_gbh(ico)                                    &
                    * (initp%leaf_temp(ico) - initp%can_temp)
          !---------------------------------------------------------------------------------!
@@ -1452,6 +1452,7 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
          throughfall_tot   = throughfall_tot  + intercepted_max  * initp%lai(ico) * taii
          qthroughfall_tot  = qthroughfall_tot + qintercepted_max * initp%lai(ico) * taii
          dthroughfall_tot  = dthroughfall_tot + dintercepted_max * initp%lai(ico) * taii
+         !---------------------------------------------------------------------------------!
       end if
       !------------------------------------------------------------------------------------!
 
@@ -1481,6 +1482,7 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
          !---------------------------------------------------------------------------------!
          min_wood_water = rk4leaf_drywhc * initp%wai(ico)
          max_wood_water = rk4leaf_maxwhc * initp%wai(ico)
+         !---------------------------------------------------------------------------------!
 
          !------ Calculate fraction of wood covered with water. ---------------------------!
          if (initp%wood_water(ico) > min_wood_water) then
@@ -1604,6 +1606,7 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
          wflxwc_tot   = wflxwc_tot   + wflxwc
          qwflxwc_tot  = qwflxwc_tot  + qwflxwc
          hflxwc_tot   = hflxwc_tot   + hflxwc
+         !---------------------------------------------------------------------------------!
 
          !---------------------------------------------------------------------------------!
          !     Here we update the liquid/frozen water fluxes and their associated vari-    !
@@ -1621,6 +1624,7 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
          throughfall_tot  = throughfall_tot  + throughfall
          qthroughfall_tot = qthroughfall_tot + qthroughfall
          dthroughfall_tot = dthroughfall_tot + dthroughfall
+         !---------------------------------------------------------------------------------!
       else
          !---------------------------------------------------------------------------------! 
          !     If there is not enough leaf biomass to safely solve the leaf energy and     !
@@ -1648,6 +1652,7 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
          throughfall_tot   = throughfall_tot  + intercepted_max  * initp%wai(ico) * taii
          qthroughfall_tot  = qthroughfall_tot + qintercepted_max * initp%wai(ico) * taii
          dthroughfall_tot  = dthroughfall_tot + dintercepted_max * initp%wai(ico) * taii
+         !---------------------------------------------------------------------------------!
       end if
       !------------------------------------------------------------------------------------!
 

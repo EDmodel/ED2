@@ -338,11 +338,13 @@ module rk4_driver
                                       , rk4min_veg_temp      & ! intent(in)
                                       , rk4max_veg_temp      & ! intent(in)
                                       , tiny_offset          & ! intent(in) 
-                                      , checkbudget          ! ! intent(in)
+                                      , checkbudget          & ! intent(in)
+                                      , ibranch_thermo       ! ! intent(in)
       use ed_state_vars        , only : sitetype             & ! structure
                                       , patchtype            & ! structure
                                       , edgrid_g             ! ! structure
       use consts_coms          , only : day_sec              & ! intent(in)
+                                      , t3ple                & ! intent(in)
                                       , t3ple8               & ! intent(in)
                                       , wdns8                ! ! intent(in)
       use ed_misc_coms         , only : fast_diagnostics     ! ! intent(in)
@@ -353,6 +355,7 @@ module rk4_driver
       use grid_coms            , only : nzg                  & ! intent(in)
                                       , nzs                  ! ! intent(in)
       use therm_lib            , only : uextcm2tl            & ! subroutine
+                                      , cmtl2uext            & ! subroutine
                                       , rslif                ! ! function
       use phenology_coms       , only : spot_phen            ! ! intent(in)
       use allometry            , only : h2crownbh            ! ! function
@@ -635,168 +638,497 @@ module rk4_driver
 
       !------------------------------------------------------------------------------------!
       !     Cohort variables.  Here we must check whether the cohort was really solved or  !
-      ! it was skipped after being flagged as "unsafe".  Here the reason why it was flag-  !
-      ! ged as such matters.                                                               !
+      ! it was skipped after being flagged as "unsafe".  In case the cohort was skipped,   !
+      ! we must check whether it was because it was too small or because it was buried in  !
+      ! snow.                                                                              !
       !------------------------------------------------------------------------------------!
       do ico = 1,cpatch%ncohorts
-         !---------------------------------------------------------------------------------!
-         !  LEAVES                                                                         !
-         !---------------------------------------------------------------------------------!
-         if (initp%leaf_resolvable(ico)) then
+         select case (ibranch_thermo)
+         case (1)
             !------------------------------------------------------------------------------!
-            !     Leaves were solved, update water and internal energy, and recalculate    !
-            ! the temperature and leaf intercellular specific humidity.  The vegetation    !
-            ! dry heat capacity is constant within one time step, so it doesn't need to be !
-            ! updated.                                                                     !
+            !  VEGETATION -- Leaf and branchwood were solved together, so they must remain !
+            !                in thermal equilibrium.                                       !
             !------------------------------------------------------------------------------!
-            cpatch%leaf_water(ico)  = sngloff(initp%leaf_water(ico) , tiny_offset)
-            cpatch%leaf_energy(ico) = sngloff(initp%leaf_energy(ico), tiny_offset)
-            call uextcm2tl(cpatch%leaf_energy(ico),cpatch%leaf_water(ico)                  &
-                          ,cpatch%leaf_hcap(ico),cpatch%leaf_temp(ico)                     &
-                          ,cpatch%leaf_fliq(ico))
+            if (initp%veg_resolvable(ico)) then
 
-            !------------------------------------------------------------------------------!
-            !     The intercellular specific humidity is always assumed to be at           !
-            ! saturation for a given temperature.  Find the saturation mixing ratio, then  !
-            ! convert it to specific humidity.                                             !
-            !------------------------------------------------------------------------------!
-            cpatch%lint_shv(ico) = rslif(csite%can_prss(ipa),cpatch%leaf_temp(ico))
-            cpatch%lint_shv(ico) = cpatch%lint_shv(ico) / (1. + cpatch%lint_shv(ico))
-            !----- Convert the wind. ------------------------------------------------------!
-            cpatch%veg_wind(ico) = sngloff(initp%veg_wind(ico),tiny_offset)
-            !------------------------------------------------------------------------------!
+               !---------------------------------------------------------------------------!
+               !     Copy vegetation wind.                                                 !
+               !---------------------------------------------------------------------------!
+               cpatch%veg_wind(ico) = sngloff(initp%veg_wind(ico),tiny_offset)
+               !---------------------------------------------------------------------------!
 
 
-            !------------------------------------------------------------------------------!
-            !     Copy the conductances.                                                   !
-            !------------------------------------------------------------------------------!
-            cpatch%leaf_gbh       (ico) = sngloff(initp%leaf_gbh       (ico), tiny_offset)
-            cpatch%leaf_gbw       (ico) = sngloff(initp%leaf_gbw       (ico), tiny_offset)
-            !------------------------------------------------------------------------------!
+               !---------------------------------------------------------------------------!
+               !    LEAVES.  It is always safe to copy internal energy and standing water, !
+               !             but we must check whether leaves were truly resolved or not   !
+               !             before copying the other variables.                           !
+               !---------------------------------------------------------------------------!
+               cpatch%leaf_water (ico) = sngloff(initp%leaf_water (ico) , tiny_offset)
+               cpatch%leaf_energy(ico) = sngloff(initp%leaf_energy(ico) , tiny_offset)
 
 
+               if (initp%leaf_resolvable(ico)) then
+                  !------------------------------------------------------------------------!
+                  !    Leaves were solved, find the temperature and liquid fraction from   !
+                  ! internal energy.                                                       !
+                  !------------------------------------------------------------------------!
+                  call uextcm2tl(cpatch%leaf_energy(ico),cpatch%leaf_water(ico)            &
+                                ,cpatch%leaf_hcap(ico),cpatch%leaf_temp(ico)               &
+                                ,cpatch%leaf_fliq(ico))
+                  !------------------------------------------------------------------------!
 
-            !------------------------------------------------------------------------------!
-            !     Divide the values of water demand by the time step to obtain the average !
-            ! value over the past hdid period.                                             !
-            !------------------------------------------------------------------------------!
-            cpatch%psi_open  (ico) = sngloff(initp%psi_open  (ico),tiny_offset) / sngl(hdid)
-            cpatch%psi_closed(ico) = sngloff(initp%psi_closed(ico),tiny_offset) / sngl(hdid)
 
-         elseif (cpatch%hite(ico) <=  csite%total_sfcw_depth(ipa)) then
-            !------------------------------------------------------------------------------!
-            !    For plants buried in snow, fix the leaf temperature to the snow temper-   !
-            ! ature of the layer that is the closest to the leaves.                        !
-            !------------------------------------------------------------------------------!
-            kclosest = 1
-            do k = csite%nlev_sfcwater(ipa), 1, -1
-               if (sum(csite%sfcwater_depth(1:k,ipa)) > cpatch%hite(ico)) kclosest = k
-            end do
-            cpatch%leaf_temp(ico)   = csite%sfcwater_tempk(kclosest,ipa)
-            cpatch%leaf_fliq(ico)   = 0.
-            cpatch%leaf_water(ico)  = 0.
-            cpatch%leaf_energy(ico) = cpatch%leaf_hcap(ico) * cpatch%leaf_temp(ico)
-            !------------------------------------------------------------------------------!
-            !     The intercellular specific humidity is always assumed to be at           !
-            ! saturation for a given temperature.  Find the saturation mixing ratio, then  !
-            ! convert it to specific humidity.                                             !
-            !------------------------------------------------------------------------------!
-            cpatch%lint_shv(ico) = rslif(csite%can_prss(ipa),cpatch%leaf_temp(ico))
-            cpatch%lint_shv(ico) = cpatch%lint_shv(ico) / (1. + cpatch%lint_shv(ico))
-            !----- Copy the meteorological wind to here. ----------------------------------!
-            cpatch%veg_wind(ico) = sngloff(rk4site%vels, tiny_offset)
-            !----- Make water demand 0. ---------------------------------------------------!
-            cpatch%psi_open  (ico) = 0.0
-            cpatch%psi_closed(ico) = 0.0
+                  !------------------------------------------------------------------------!
+                  !     The intercellular specific humidity is always assumed to be at     !
+                  ! saturation for a given temperature.  Find the saturation mixing ratio, !
+                  ! then convert it to specific humidity.                                  !
+                  !------------------------------------------------------------------------!
+                  cpatch%lint_shv(ico) = rslif(csite%can_prss(ipa),cpatch%leaf_temp(ico))
+                  cpatch%lint_shv(ico) = cpatch%lint_shv(ico) / (1. + cpatch%lint_shv(ico))
+                  !------------------------------------------------------------------------!
 
-         else
-            !------------------------------------------------------------------------------!
-            !     For plants with minimal foliage or very sparse patches, fix the leaf     !
-            ! temperature to the canopy air space and force leaf_water to be zero.         !
-            !------------------------------------------------------------------------------!
-            cpatch%leaf_temp(ico)   = csite%can_temp(ipa)
-            cpatch%leaf_fliq(ico)   = 0.
-            cpatch%leaf_water(ico)  = 0. 
-            cpatch%leaf_energy(ico) = cpatch%leaf_hcap(ico) * cpatch%leaf_temp(ico)
-            !------------------------------------------------------------------------------!
-            !     The intercellular specific humidity is always assumed to be at           !
-            ! saturation for a given temperature.  Find the saturation mixing ratio, then  !
-            ! convert it to specific humidity.                                             !
-            !------------------------------------------------------------------------------!
-            cpatch%lint_shv(ico) = rslif(csite%can_prss(ipa),cpatch%leaf_temp(ico))
-            cpatch%lint_shv(ico) = cpatch%lint_shv(ico) / (1. + cpatch%lint_shv(ico))
-            !----- Copy the meteorological wind to here. ----------------------------------!
-            cpatch%veg_wind(ico) = sngloff(rk4site%vels, tiny_offset)
-            !----- Make water demand 0. ---------------------------------------------------!
-            cpatch%psi_open  (ico) = 0.0
-            cpatch%psi_closed(ico) = 0.0
-         end if
-         !---------------------------------------------------------------------------------!
+
+                  !------------------------------------------------------------------------!
+                  !     Copy the conductances.                                             !
+                  !------------------------------------------------------------------------!
+                  cpatch%leaf_gbh(ico) = sngloff(initp%leaf_gbh(ico), tiny_offset)
+                  cpatch%leaf_gbw(ico) = sngloff(initp%leaf_gbw(ico), tiny_offset)
+                  !------------------------------------------------------------------------!
 
 
 
+                  !------------------------------------------------------------------------!
+                  !     Divide the values of water demand by the time step to obtain the   !
+                  ! average value over the past hdid period.                               !
+                  !------------------------------------------------------------------------!
+                  cpatch%psi_open  (ico) = sngloff(initp%psi_open  (ico),tiny_offset)      &
+                                         / sngl(hdid)
+                  cpatch%psi_closed(ico) = sngloff(initp%psi_closed(ico),tiny_offset)      &
+                                         / sngl(hdid)
+                  !------------------------------------------------------------------------!
+               else
+                  !------------------------------------------------------------------------!
+                  !    We solved leaf and branchwood together, the combined pool was re-   !
+                  ! solvable but leaves weren't.  We copy the leaf temperature and liquid  !
+                  ! fraction from the integrator, so they remain in thermal equilibrium    !
+                  ! with branchwood.                                                       !
+                  !------------------------------------------------------------------------!
+                  cpatch%leaf_temp(ico) = sngloff(initp%leaf_temp(ico) , tiny_offset)
+                  cpatch%leaf_fliq(ico) = sngloff(initp%leaf_fliq(ico) , tiny_offset)
+                  !------------------------------------------------------------------------!
 
 
-         !---------------------------------------------------------------------------------!
-         !  WOOD                                                                           !
-         !---------------------------------------------------------------------------------!
-         if (initp%wood_resolvable(ico)) then
-            !------------------------------------------------------------------------------!
-            !     Wood was solved, update water and internal energy, and recalculate       !
-            ! the temperature.  The wood dry heat capacity is constant within one time     !
-            ! step, so it doesn't need to be updated.                                      !
-            !------------------------------------------------------------------------------!
-            cpatch%wood_water(ico)  = sngloff(initp%wood_water(ico) , tiny_offset)
-            cpatch%wood_energy(ico) = sngloff(initp%wood_energy(ico), tiny_offset)
-            call uextcm2tl(cpatch%wood_energy(ico),cpatch%wood_water(ico)                  &
-                          ,cpatch%wood_hcap(ico),cpatch%wood_temp(ico)                     &
-                          ,cpatch%wood_fliq(ico))
+                  !------------------------------------------------------------------------!
+                  !     The intercellular specific humidity is always assumed to be at     !
+                  ! saturation for a given temperature.  Find the saturation mixing ratio, !
+                  ! then convert it to specific humidity.                                  !
+                  !------------------------------------------------------------------------!
+                  cpatch%lint_shv(ico) = rslif(csite%can_prss(ipa),cpatch%leaf_temp(ico))
+                  cpatch%lint_shv(ico) = cpatch%lint_shv(ico) / (1. + cpatch%lint_shv(ico))
+                  !------------------------------------------------------------------------!
 
-            !----- Convert the wind. ------------------------------------------------------!
-            cpatch%veg_wind(ico) = sngloff(initp%veg_wind(ico),tiny_offset)
-            !------------------------------------------------------------------------------!
-
-
-            !------------------------------------------------------------------------------!
-            !     Copy the conductances.                                                   !
-            !------------------------------------------------------------------------------!
-            cpatch%wood_gbh       (ico) = sngloff(initp%wood_gbh       (ico), tiny_offset)
-            cpatch%wood_gbw       (ico) = sngloff(initp%wood_gbw       (ico), tiny_offset)
-            !------------------------------------------------------------------------------!
-
-         elseif (cpatch%hite(ico) <=  csite%total_sfcw_depth(ipa)) then
-            !------------------------------------------------------------------------------!
-            !    For plants buried in snow, fix the wood temperature to the snow temper-   !
-            ! ature of the layer that is the closest to the branches.                      !
-            !------------------------------------------------------------------------------!
-            kclosest = 1
-            do k = csite%nlev_sfcwater(ipa), 1, -1
-               if (sum(csite%sfcwater_depth(1:k,ipa)) > cpatch%hite(ico)) kclosest = k
-            end do
-            cpatch%wood_temp(ico)   = csite%sfcwater_tempk(kclosest,ipa)
-            cpatch%wood_fliq(ico)   = 0.
-            cpatch%wood_water(ico)  = 0.
-            cpatch%wood_energy(ico) = cpatch%wood_hcap(ico) * cpatch%wood_temp(ico)
-
-            !----- Copy the meteorological wind to here. ----------------------------------!
-            cpatch%veg_wind(ico) = sngloff(rk4site%vels, tiny_offset)
-
-         else
-            !------------------------------------------------------------------------------!
-            !     For very sparse patches of for when wood thermodynamics is off, fix the  !
-            ! wood temperature to the canopy air space and force wood_water to be zero.    !
-            !------------------------------------------------------------------------------!
-            cpatch%wood_temp(ico)   = csite%can_temp(ipa)
-            cpatch%wood_fliq(ico)   = 0.
-            cpatch%wood_water(ico)  = 0. 
-            cpatch%wood_energy(ico) = cpatch%wood_hcap(ico) * cpatch%wood_temp(ico)
+                  !----- Set water demand and conductances to zero. -----------------------!
+                  cpatch%psi_open  (ico) = 0.0
+                  cpatch%psi_closed(ico) = 0.0
+                  cpatch%leaf_gbh  (ico) = 0.0
+                  cpatch%leaf_gbw  (ico) = 0.0
+                  !------------------------------------------------------------------------!
+               end if
+               !---------------------------------------------------------------------------!
 
 
-            !----- Copy the meteorological wind to here. ----------------------------------!
-            if (.not. cpatch%leaf_resolvable(ico)) then
+
+               !---------------------------------------------------------------------------!
+               !    BRANCHES.  It is always safe to copy internal energy and standing      !
+               !               water,  but we must check whether branches were truly       !
+               !               resolved or not before copying the other variables.         !
+               !---------------------------------------------------------------------------!
+               cpatch%wood_water (ico) = sngloff(initp%wood_water (ico) , tiny_offset)
+               cpatch%wood_energy(ico) = sngloff(initp%wood_energy(ico) , tiny_offset)
+               if (initp%wood_resolvable(ico)) then
+                  !------------------------------------------------------------------------!
+                  !    Branches were solved, find the temperature and liquid fraction from !
+                  ! internal energy.                                                       !
+                  !------------------------------------------------------------------------!
+                  call uextcm2tl(cpatch%wood_energy(ico),cpatch%wood_water(ico)            &
+                                ,cpatch%wood_hcap(ico),cpatch%wood_temp(ico)               &
+                                ,cpatch%wood_fliq(ico))
+                  !------------------------------------------------------------------------!
+
+
+                  !------------------------------------------------------------------------!
+                  !     Copy the conductances.                                             !
+                  !------------------------------------------------------------------------!
+                  cpatch%wood_gbh(ico) = sngloff(initp%wood_gbh(ico), tiny_offset)
+                  cpatch%wood_gbw(ico) = sngloff(initp%wood_gbw(ico), tiny_offset)
+                  !------------------------------------------------------------------------!
+               else
+                  !------------------------------------------------------------------------!
+                  !    We solved leaf and branchwood together, the combined pool was re-   !
+                  ! solvable but leaves weren't.  We copy the leaf temperature and liquid  !
+                  ! fraction from the integrator, so they remain in thermal equilibrium    !
+                  ! with branchwood.                                                       !
+                  !------------------------------------------------------------------------!
+                  cpatch%wood_temp(ico) = sngloff(initp%wood_temp(ico) , tiny_offset)
+                  cpatch%wood_fliq(ico) = sngloff(initp%wood_fliq(ico) , tiny_offset)
+                  !------------------------------------------------------------------------!
+
+
+                  !----- Set the conductances to zero. ------------------------------------!
+                  cpatch%wood_gbh(ico) = 0.0
+                  cpatch%wood_gbw(ico) = 0.0
+                  !------------------------------------------------------------------------!
+               end if
+               !---------------------------------------------------------------------------!
+            elseif (cpatch%hite(ico) <=  csite%total_sfcw_depth(ipa)) then
+               !---------------------------------------------------------------------------!
+               !    For plants buried in snow, fix the leaf and branch temperatures to the !
+               ! snow temperature of the layer that is the closest to the cohort top.      !
+               !---------------------------------------------------------------------------!
+               kclosest = 1
+               do k = csite%nlev_sfcwater(ipa), 1, -1
+                  if (sum(csite%sfcwater_depth(1:k,ipa)) > cpatch%hite(ico)) kclosest = k
+               end do
+               !---------------------------------------------------------------------------!
+
+
+               cpatch%leaf_temp(ico)   = csite%sfcwater_tempk(kclosest,ipa)
+               cpatch%wood_temp(ico)   = cpatch%leaf_temp(ico)
+
+               if (cpatch%leaf_temp(ico) == t3ple) then
+                  cpatch%leaf_fliq(ico)   = 0.5
+                  cpatch%wood_fliq(ico)   = 0.5
+               elseif (cpatch%leaf_temp(ico) > t3ple) then
+                  cpatch%leaf_fliq(ico)   = 1.0
+                  cpatch%wood_fliq(ico)   = 1.0
+               else
+                  cpatch%leaf_fliq(ico)   = 0.0
+                  cpatch%wood_fliq(ico)   = 0.0
+               end if
+               cpatch%leaf_water(ico)  = 0.
+               cpatch%wood_water(ico)  = 0.
+
+               !---------------------------------------------------------------------------!
+               !     Find the internal energy diagnostically...                            !
+               !---------------------------------------------------------------------------!
+               cpatch%leaf_energy(ico) = cmtl2uext( cpatch%leaf_hcap (ico)                 &
+                                                  , cpatch%leaf_water(ico)                 &
+                                                  , cpatch%leaf_temp (ico)                 &
+                                                  , cpatch%leaf_fliq (ico)                 )
+               cpatch%wood_energy(ico) = cmtl2uext( cpatch%wood_hcap (ico)                 &
+                                                  , cpatch%wood_water(ico)                 &
+                                                  , cpatch%wood_temp (ico)                 &
+                                                  , cpatch%wood_fliq (ico)                 )
+               !---------------------------------------------------------------------------!
+
+
+
+               !---------------------------------------------------------------------------!
+               !     The intercellular specific humidity is always assumed to be at        !
+               ! saturation for a given temperature.  Find the saturation mixing ratio,    !
+               ! then convert it to specific humidity.                                     !
+               !---------------------------------------------------------------------------!
+               cpatch%lint_shv(ico) = rslif(csite%can_prss(ipa),cpatch%leaf_temp(ico))
+               cpatch%lint_shv(ico) = cpatch%lint_shv(ico) / (1. + cpatch%lint_shv(ico))
+               !----- Copy the meteorological wind to here. -------------------------------!
                cpatch%veg_wind(ico) = sngloff(rk4site%vels, tiny_offset)
+               !----- Set water demand and conductances to zero. --------------------------!
+               cpatch%psi_open  (ico) = 0.0
+               cpatch%psi_closed(ico) = 0.0
+               cpatch%leaf_gbh  (ico) = 0.0
+               cpatch%leaf_gbw  (ico) = 0.0
+               cpatch%wood_gbh  (ico) = 0.0
+               cpatch%wood_gbw  (ico) = 0.0
+               !---------------------------------------------------------------------------!
+            else
+               !---------------------------------------------------------------------------!
+               !     For plants with minimal foliage or very sparse patches, fix the leaf  !
+               ! and branch temperatures to the canopy air space and force leaf and branch !
+               ! intercepted water to be zero.                                             !
+               !---------------------------------------------------------------------------!
+               cpatch%leaf_temp(ico) = csite%can_temp(ipa)
+               cpatch%wood_temp(ico) = cpatch%leaf_temp(ico)
+
+               if (cpatch%leaf_temp(ico) == t3ple) then
+                  cpatch%leaf_fliq(ico) = 0.5
+                  cpatch%wood_fliq(ico) = 0.5
+               elseif (cpatch%leaf_temp(ico) > t3ple) then
+                  cpatch%leaf_fliq(ico) = 1.0
+                  cpatch%wood_fliq(ico) = 1.0
+               else
+                  cpatch%leaf_fliq(ico) = 0.0
+                  cpatch%wood_fliq(ico) = 0.0
+               end if
+               cpatch%leaf_water(ico)   = 0.
+               cpatch%wood_water(ico)   = 0.
+               !---------------------------------------------------------------------------!
+
+
+               !---------------------------------------------------------------------------!
+               !     Find the internal energy diagnostically...                            !
+               !---------------------------------------------------------------------------!
+               cpatch%leaf_energy(ico) = cmtl2uext( cpatch%leaf_hcap (ico)                 &
+                                                  , cpatch%leaf_water(ico)                 &
+                                                  , cpatch%leaf_temp (ico)                 &
+                                                  , cpatch%leaf_fliq (ico)                 )
+               cpatch%wood_energy(ico) = cmtl2uext( cpatch%wood_hcap (ico)                 &
+                                                  , cpatch%wood_water(ico)                 &
+                                                  , cpatch%wood_temp (ico)                 &
+                                                  , cpatch%wood_fliq (ico)                 )
+               !---------------------------------------------------------------------------!
+
+
+
+               !---------------------------------------------------------------------------!
+               !     The intercellular specific humidity is always assumed to be at        !
+               ! saturation for a given temperature.  Find the saturation mixing ratio,    !
+               ! then convert it to specific humidity.                                     !
+               !---------------------------------------------------------------------------!
+               cpatch%lint_shv(ico) = rslif(csite%can_prss(ipa),cpatch%leaf_temp(ico))
+               cpatch%lint_shv(ico) = cpatch%lint_shv(ico) / (1. + cpatch%lint_shv(ico))
+               !----- Copy the meteorological wind to here. -------------------------------!
+               cpatch%veg_wind(ico) = sngloff(rk4site%vels, tiny_offset)
+               !----- Set water demand and conductances to zero. --------------------------!
+               cpatch%psi_open  (ico) = 0.0
+               cpatch%psi_closed(ico) = 0.0
+               cpatch%leaf_gbh  (ico) = 0.0
+               cpatch%leaf_gbw  (ico) = 0.0
+               cpatch%wood_gbh  (ico) = 0.0
+               cpatch%wood_gbw  (ico) = 0.0
+               !---------------------------------------------------------------------------!
             end if
-         end if
+            !------------------------------------------------------------------------------!
+         case (0,2)
+            !------------------------------------------------------------------------------!
+            !  VEGETATION -- Leaf and branchwood were solved separately, so they are       !
+            !                analysed independently.                                       !
+            !------------------------------------------------------------------------------!
+
+
+
+            !------------------------------------------------------------------------------!
+            !  LEAVES                                                                      !
+            !------------------------------------------------------------------------------!
+            if (initp%leaf_resolvable(ico)) then
+               !---------------------------------------------------------------------------!
+               !     Leaves were solved, update water and internal energy, and re-         !
+               ! calculate the temperature and leaf intercellular specific humidity.  The  !
+               ! vegetation dry heat capacity is constant within one time step, so it      !
+               ! doesn't need to be updated.                                               !
+               !---------------------------------------------------------------------------!
+               cpatch%leaf_water(ico)  = sngloff(initp%leaf_water(ico) , tiny_offset)
+               cpatch%leaf_energy(ico) = sngloff(initp%leaf_energy(ico), tiny_offset)
+               call uextcm2tl(cpatch%leaf_energy(ico),cpatch%leaf_water(ico)               &
+                             ,cpatch%leaf_hcap(ico),cpatch%leaf_temp(ico)                  &
+                             ,cpatch%leaf_fliq(ico))
+
+               !---------------------------------------------------------------------------!
+               !     The intercellular specific humidity is always assumed to be at        !
+               ! saturation for a given temperature.  Find the saturation mixing ratio,    !
+               ! then convert it to specific humidity.                                     !
+               !---------------------------------------------------------------------------!
+               cpatch%lint_shv(ico) = rslif(csite%can_prss(ipa),cpatch%leaf_temp(ico))
+               cpatch%lint_shv(ico) = cpatch%lint_shv(ico) / (1. + cpatch%lint_shv(ico))
+               !----- Convert the wind. ---------------------------------------------------!
+               cpatch%veg_wind(ico) = sngloff(initp%veg_wind(ico),tiny_offset)
+               !---------------------------------------------------------------------------!
+
+
+               !---------------------------------------------------------------------------!
+               !     Copy the conductances.                                                !
+               !---------------------------------------------------------------------------!
+               cpatch%leaf_gbh(ico) = sngloff(initp%leaf_gbh(ico), tiny_offset)
+               cpatch%leaf_gbw(ico) = sngloff(initp%leaf_gbw(ico), tiny_offset)
+               !---------------------------------------------------------------------------!
+
+
+
+               !---------------------------------------------------------------------------!
+               !     Divide the values of water demand by the time step to obtain the      !
+               ! average value over the past hdid period.                                  !
+               !---------------------------------------------------------------------------!
+               cpatch%psi_open  (ico) = sngloff(initp%psi_open  (ico),tiny_offset)         &
+                                      / sngl(hdid)
+               cpatch%psi_closed(ico) = sngloff(initp%psi_closed(ico),tiny_offset)         &
+                                      / sngl(hdid)
+               !---------------------------------------------------------------------------!
+
+            elseif (cpatch%hite(ico) <=  csite%total_sfcw_depth(ipa)) then
+               !---------------------------------------------------------------------------!
+               !    For plants buried in snow, fix the leaf temperature to the snow        !
+               ! temperature of the layer that is the closest to the leaves.               !
+               !---------------------------------------------------------------------------!
+               kclosest = 1
+               do k = csite%nlev_sfcwater(ipa), 1, -1
+                  if (sum(csite%sfcwater_depth(1:k,ipa)) > cpatch%hite(ico)) kclosest = k
+               end do
+               cpatch%leaf_temp(ico)   = csite%sfcwater_tempk(kclosest,ipa)
+               if (cpatch%leaf_temp(ico) == t3ple) then
+                  cpatch%leaf_fliq(ico)   = 0.5
+               elseif (cpatch%leaf_temp(ico) > t3ple) then
+                  cpatch%leaf_fliq(ico)   = 1.0
+               else
+                  cpatch%leaf_fliq(ico)   = 0.0
+               end if
+               cpatch%leaf_water(ico)  = 0.
+               cpatch%leaf_energy(ico) = cmtl2uext( cpatch%leaf_hcap (ico)                 &
+                                                  , cpatch%leaf_water(ico)                 &
+                                                  , cpatch%leaf_temp (ico)                 &
+                                                  , cpatch%leaf_fliq (ico)                 )
+               !---------------------------------------------------------------------------!
+               !     The intercellular specific humidity is always assumed to be at        !
+               ! saturation for a given temperature.  Find the saturation mixing ratio,    !
+               ! then convert it to specific humidity.                                     !
+               !---------------------------------------------------------------------------!
+               cpatch%lint_shv(ico) = rslif(csite%can_prss(ipa),cpatch%leaf_temp(ico))
+               cpatch%lint_shv(ico) = cpatch%lint_shv(ico) / (1. + cpatch%lint_shv(ico))
+               !----- Copy the meteorological wind to here. -------------------------------!
+               cpatch%veg_wind(ico) = sngloff(rk4site%vels, tiny_offset)
+               !----- Set water demand and conductances to zero. --------------------------!
+               cpatch%psi_open  (ico) = 0.0
+               cpatch%psi_closed(ico) = 0.0
+               cpatch%leaf_gbh  (ico) = 0.0
+               cpatch%leaf_gbw  (ico) = 0.0
+               !---------------------------------------------------------------------------!
+
+            else
+               !---------------------------------------------------------------------------!
+               !     For plants with minimal foliage or very sparse patches, fix the leaf  !
+               ! temperature to the canopy air space and force leaf_water to be zero.      !
+               !---------------------------------------------------------------------------!
+               cpatch%leaf_temp(ico)   = csite%can_temp(ipa)
+               if (cpatch%leaf_temp(ico) == t3ple) then
+                  cpatch%leaf_fliq(ico)   = 0.5
+               elseif (cpatch%leaf_temp(ico) > t3ple) then
+                  cpatch%leaf_fliq(ico)   = 1.0
+               else
+                  cpatch%leaf_fliq(ico)   = 0.0
+               end if
+               cpatch%leaf_water(ico)  = 0. 
+               cpatch%leaf_energy(ico) = cmtl2uext( cpatch%leaf_hcap (ico)                 &
+                                                  , cpatch%leaf_water(ico)                 &
+                                                  , cpatch%leaf_temp (ico)                 &
+                                                  , cpatch%leaf_fliq (ico)                 )
+               !---------------------------------------------------------------------------!
+               !     The intercellular specific humidity is always assumed to be at        !
+               ! saturation for a given temperature.  Find the saturation mixing ratio,    !
+               ! then convert it to specific humidity.                                     !
+               !---------------------------------------------------------------------------!
+               cpatch%lint_shv  (ico) = rslif(csite%can_prss(ipa),cpatch%leaf_temp(ico))
+               cpatch%lint_shv  (ico) = cpatch%lint_shv(ico) / (1. + cpatch%lint_shv(ico))
+               !----- Copy the meteorological wind to here. -------------------------------!
+               cpatch%veg_wind  (ico) = sngloff(rk4site%vels, tiny_offset)
+               !----- Set water demand and conductances to zero. --------------------------!
+               cpatch%psi_open  (ico) = 0.0
+               cpatch%psi_closed(ico) = 0.0
+               cpatch%leaf_gbh  (ico) = 0.0
+               cpatch%leaf_gbw  (ico) = 0.0
+               !---------------------------------------------------------------------------!
+            end if
+            !------------------------------------------------------------------------------!
+
+
+
+
+
+            !------------------------------------------------------------------------------!
+            !  WOOD                                                                        !
+            !------------------------------------------------------------------------------!
+            if (initp%wood_resolvable(ico)) then
+               !---------------------------------------------------------------------------!
+               !     Wood was solved, update water and internal energy, and recalculate    !
+               ! the temperature.  The wood dry heat capacity is constant within one time  !
+               ! step, so it doesn't need to be updated.                                   !
+               !---------------------------------------------------------------------------!
+               cpatch%wood_water(ico)  = sngloff(initp%wood_water(ico) , tiny_offset)
+               cpatch%wood_energy(ico) = sngloff(initp%wood_energy(ico), tiny_offset)
+               call uextcm2tl(cpatch%wood_energy(ico),cpatch%wood_water(ico)               &
+                             ,cpatch%wood_hcap(ico),cpatch%wood_temp(ico)                  &
+                             ,cpatch%wood_fliq(ico))
+
+               !----- Convert the wind. ---------------------------------------------------!
+               cpatch%veg_wind(ico) = sngloff(initp%veg_wind(ico),tiny_offset)
+               !---------------------------------------------------------------------------!
+
+
+               !---------------------------------------------------------------------------!
+               !     Copy the conductances.                                                !
+               !---------------------------------------------------------------------------!
+               cpatch%wood_gbh(ico) = sngloff(initp%wood_gbh(ico), tiny_offset)
+               cpatch%wood_gbw(ico) = sngloff(initp%wood_gbw(ico), tiny_offset)
+               !---------------------------------------------------------------------------!
+
+            elseif (cpatch%hite(ico) <=  csite%total_sfcw_depth(ipa)) then
+               !---------------------------------------------------------------------------!
+               !    For plants buried in snow, fix the wood temperature to the snow        !
+               ! temperature of the layer that is the closest to the branches.             !
+               !---------------------------------------------------------------------------!
+               kclosest = 1
+               do k = csite%nlev_sfcwater(ipa), 1, -1
+                  if (sum(csite%sfcwater_depth(1:k,ipa)) > cpatch%hite(ico)) kclosest = k
+               end do
+               cpatch%wood_temp(ico)   = csite%sfcwater_tempk(kclosest,ipa)
+               if (cpatch%wood_temp(ico) == t3ple) then
+                  cpatch%wood_fliq(ico)   = 0.5
+               elseif (cpatch%wood_temp(ico) > t3ple) then
+                  cpatch%wood_fliq(ico)   = 1.0
+               else
+                  cpatch%wood_fliq(ico)   = 0.0
+               end if
+               cpatch%wood_water(ico)  = 0.
+               cpatch%wood_energy(ico) = cmtl2uext( cpatch%wood_hcap (ico)                 &
+                                                  , cpatch%wood_water(ico)                 &
+                                                  , cpatch%wood_temp (ico)                 &
+                                                  , cpatch%wood_fliq (ico)                 )
+               !---------------------------------------------------------------------------!
+
+               !----- Copy the meteorological wind to here. -------------------------------!
+               cpatch%veg_wind(ico) = sngloff(rk4site%vels, tiny_offset)
+               !---------------------------------------------------------------------------!
+
+
+               !----- Set the conductances to zero. ---------------------------------------!
+               cpatch%wood_gbh(ico) = 0.0
+               cpatch%wood_gbw(ico) = 0.0
+               !---------------------------------------------------------------------------!
+
+            else
+               !---------------------------------------------------------------------------!
+               !     For very sparse patches of for when wood thermodynamics is off, fix   !
+               ! the wood temperature to the canopy air space and force wood_water to be   !
+               ! zero.                                                                     !
+               !---------------------------------------------------------------------------!
+               cpatch%wood_temp(ico)   = csite%can_temp(ipa)
+               if (cpatch%wood_temp(ico) == t3ple) then
+                  cpatch%wood_fliq(ico)   = 0.5
+               elseif (cpatch%wood_temp(ico) > t3ple) then
+                  cpatch%wood_fliq(ico)   = 1.0
+               else
+                  cpatch%wood_fliq(ico)   = 0.0
+               end if
+               cpatch%wood_water(ico)  = 0.
+               cpatch%wood_energy(ico) = cmtl2uext( cpatch%wood_hcap (ico)                 &
+                                                  , cpatch%wood_water(ico)                 &
+                                                  , cpatch%wood_temp (ico)                 &
+                                                  , cpatch%wood_fliq (ico)                 )
+
+
+               !----- Set the conductances to zero. ---------------------------------------!
+               cpatch%wood_gbh(ico) = 0.0
+               cpatch%wood_gbw(ico) = 0.0
+               !---------------------------------------------------------------------------!
+
+
+               !----- Copy the meteorological wind to here. -------------------------------!
+               if (.not. cpatch%leaf_resolvable(ico)) then
+                  cpatch%veg_wind(ico) = sngloff(rk4site%vels, tiny_offset)
+               end if
+               !---------------------------------------------------------------------------!
+            end if
+            !------------------------------------------------------------------------------!
+         end select
+         !---------------------------------------------------------------------------------!
+
 
          !---------------------------------------------------------------------------------!
          !     Final sanity check.  This should be removed soon, since it should never     !

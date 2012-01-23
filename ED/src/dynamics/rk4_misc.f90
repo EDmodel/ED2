@@ -584,7 +584,8 @@ subroutine update_diagnostic_vars(initp, csite,ipa)
                                     , pq2exner8             & ! function
                                     , extq2theta8           & ! function
                                     , thil2tqall8           ! ! function
-   use consts_coms           , only : cpdry8                & ! intent(in)
+   use consts_coms           , only : t3ple8                & ! intent(in)
+                                    , cpdry8                & ! intent(in)
                                     , cph2o8                & ! intent(in)
                                     , wdns8                 & ! intent(in)
                                     , rdryi8                & ! intent(in)
@@ -1025,9 +1026,6 @@ subroutine update_diagnostic_vars(initp, csite,ipa)
             initp%leaf_water(ico)  = 0.d0
             initp%wood_water(ico)  = 0.d0
             initp%veg_water(ico)   = 0.d0
-            initp%leaf_energy(ico) = initp%leaf_hcap(ico)   * initp%leaf_temp(ico)
-            initp%wood_energy(ico) = initp%wood_hcap(ico)   * initp%wood_temp(ico)
-            initp%veg_energy(ico)  = initp%leaf_energy(ico) + initp%wood_energy(ico)
             if (initp%can_temp == t3ple8) then
                initp%leaf_fliq(ico) = 5.d-1
                initp%wood_fliq(ico) = 5.d-1
@@ -1038,6 +1036,16 @@ subroutine update_diagnostic_vars(initp, csite,ipa)
                initp%leaf_fliq(ico) = 0.d0
                initp%wood_fliq(ico) = 0.d0
             end if
+            initp%leaf_energy(ico) = cmtl2uext8( initp%leaf_hcap (ico)                     &
+                                               , initp%leaf_water(ico)                     &
+                                               , initp%leaf_temp (ico)                     &
+                                               , initp%leaf_fliq (ico) )
+
+            initp%wood_energy(ico) = cmtl2uext8( initp%wood_hcap (ico)                     &
+                                               , initp%wood_water(ico)                     &
+                                               , initp%wood_temp (ico)                     &
+                                               , initp%wood_fliq (ico) )
+            initp%veg_energy(ico)  = initp%leaf_energy(ico) + initp%wood_energy(ico)
             !------------------------------------------------------------------------------!
 
 
@@ -1099,7 +1107,11 @@ subroutine update_diagnostic_vars(initp, csite,ipa)
             !------------------------------------------------------------------------------!
             initp%leaf_temp(ico)   = initp%can_temp
             initp%leaf_water(ico)  = 0.d0
-            initp%leaf_energy(ico) = initp%leaf_hcap(ico) * initp%leaf_temp(ico)
+            initp%leaf_energy(ico) = cmtl2uext8( initp%leaf_hcap (ico)                     &
+                                               , initp%leaf_water(ico)                     &
+                                               , initp%leaf_temp (ico)                     &
+                                               , initp%leaf_fliq (ico) )
+
             if (initp%leaf_temp(ico) == t3ple8) then
                initp%leaf_fliq(ico) = 5.d-1
             elseif (initp%leaf_temp(ico) > t3ple8) then
@@ -1153,7 +1165,7 @@ subroutine update_diagnostic_vars(initp, csite,ipa)
                               ,initp%wood_fliq(ico))
                if (initp%wood_temp(ico) < rk4min_veg_temp .or.                             &
                    initp%wood_temp(ico) > rk4max_veg_temp) then
-                  ok_leaf = .false.
+                  ok_wood = .false.
                   cycle woodloop
                end if
             end if
@@ -1166,7 +1178,11 @@ subroutine update_diagnostic_vars(initp, csite,ipa)
             !------------------------------------------------------------------------------!
             initp%wood_temp(ico)   = initp%can_temp
             initp%wood_water(ico)  = 0.d0
-            initp%wood_energy(ico) = initp%wood_hcap(ico) * initp%wood_temp(ico)
+            initp%wood_energy(ico) = cmtl2uext8( initp%wood_hcap (ico)                     &
+                                               , initp%wood_water(ico)                     &
+                                               , initp%wood_temp (ico)                     &
+                                               , initp%wood_fliq (ico) )
+
             if (initp%wood_temp(ico) == t3ple8) then
                initp%wood_fliq(ico) = 5.d-1
             elseif (initp%wood_temp(ico) > t3ple8) then

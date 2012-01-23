@@ -407,10 +407,10 @@ subroutine inc_rk4_patch(rkp, inc, fac, cpatch)
       rkp%psi_closed(ico) = rkp%psi_closed(ico) + fac * inc%psi_closed(ico)
    end do
 
-   if(checkbudget) then
+   if (checkbudget) then
 
-     rkp%co2budget_storage      = rkp%co2budget_storage     + fac * inc%co2budget_storage
-     rkp%co2budget_loss2atm     = rkp%co2budget_loss2atm    + fac * inc%co2budget_loss2atm
+      rkp%co2budget_storage      = rkp%co2budget_storage     + fac * inc%co2budget_storage
+      rkp%co2budget_loss2atm     = rkp%co2budget_loss2atm    + fac * inc%co2budget_loss2atm
 
       rkp%wbudget_storage       = rkp%wbudget_storage       + fac * inc%wbudget_storage
       rkp%wbudget_loss2atm      = rkp%wbudget_loss2atm      + fac * inc%wbudget_loss2atm
@@ -627,7 +627,7 @@ subroutine get_yscal(y,dy,htry,yscal,cpatch)
       yscal%sfcwater_mass  (1) = abs(y%sfcwater_mass   (1)       )                         &
                                + abs(dy%sfcwater_mass  (1) * htry)
       yscal%sfcwater_depth (1) = abs(y%sfcwater_depth  (1)       )                         &
-                               + abs(dy%sfcwater_energy(1) * htry)
+                               + abs(dy%sfcwater_depth (1) * htry)
       yscal%sfcwater_energy(1) = huge_offset
       do k=2,nzs
          yscal%sfcwater_mass  (k) = huge_offset
@@ -661,7 +661,7 @@ subroutine get_yscal(y,dy,htry,yscal,cpatch)
          yscal%sfcwater_energy(k) = abs(y%sfcwater_energy (k)       )                      &
                                   + abs(dy%sfcwater_energy(k) * htry)
          yscal%sfcwater_depth (k) = abs(y%sfcwater_depth  (k)       )                      &
-                                  + abs(dy%sfcwater_energy(k) * htry)
+                                  + abs(dy%sfcwater_depth (k) * htry)
       end do
       do k=y%nlev_sfcwater+1,nzs
          yscal%sfcwater_mass  (k) = huge_offset
@@ -748,7 +748,7 @@ subroutine get_yscal(y,dy,htry,yscal,cpatch)
          !----- Copy the logical tests. ---------------------------------------------------!
          yscal%leaf_resolvable(ico) = y%leaf_resolvable(ico)
          yscal%wood_resolvable(ico) = y%wood_resolvable(ico)
-         yscal%veg_resolvable(ico)  = y%veg_resolvable(ico)
+         yscal%veg_resolvable (ico) = y%veg_resolvable(ico)
          !---------------------------------------------------------------------------------!
 
 
@@ -759,7 +759,7 @@ subroutine get_yscal(y,dy,htry,yscal,cpatch)
             yscal%leaf_temp(ico)   = abs( y%leaf_temp(ico))
             yscal%leaf_water(ico)  = max( abs(y%leaf_water(ico))                           &
                                         + abs(dy%leaf_water(ico)  * htry)                  &
-                                       , rk4leaf_drywhc * y%lai(ico))
+                                        , rk4leaf_drywhc * y%lai(ico))
          else
             yscal%leaf_water(ico)  = huge_offset
             yscal%leaf_energy(ico) = huge_offset
@@ -775,7 +775,7 @@ subroutine get_yscal(y,dy,htry,yscal,cpatch)
             yscal%wood_temp(ico)   = abs( y%wood_temp(ico))
             yscal%wood_water(ico)  = max( abs(y%wood_water(ico))                           &
                                         + abs(dy%wood_water(ico)  * htry)                  &
-                                       , rk4leaf_drywhc * y%wai(ico))
+                                        , rk4leaf_drywhc * y%wai(ico))
          else
             yscal%wood_water(ico)  = huge_offset
             yscal%wood_energy(ico) = huge_offset
@@ -794,16 +794,6 @@ subroutine get_yscal(y,dy,htry,yscal,cpatch)
    !---------------------------------------------------------------------------------------!
 
 
-
-   !---------------------------------------------------------------------------------------!
-   !    Scale for wood water and energy. In case the user doesn't want to solve branch     !
-   ! thermodynamics, the wood area index is too small, or the plant is buried in snow, we  !
-   ! assign huge values for typical scale, thus preventing unecessary small steps.         !
-   !    Also, if the cohort has almost no water, make the scale less strict.               !
-   !---------------------------------------------------------------------------------------!
-   do ico = 1,cpatch%ncohorts
-   end do
-   !---------------------------------------------------------------------------------------!
 
    !---------------------------------------------------------------------------------------!
    !     Here we just need to make sure the user is checking mass, otherwise  these vari-  !

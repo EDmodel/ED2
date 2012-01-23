@@ -2711,20 +2711,20 @@ subroutine init_pft_alloc_params()
    !        didn't develop the allometry, but the original reference is in German...)      !
    !---------------------------------------------------------------------------------------!
    !----- Intercept. ----------------------------------------------------------------------!
-   b1WAI(1)     = 0.0          ! No WAI for grasses
+   b1WAI(1)     = 0.0          ! Tiny WAI for grasses
    b1WAI(2:4)   = 0.0192 * 0.5 ! Broadleaf
-   b1WAI(5)     = 0.0          ! No WAI for grasses
+   b1WAI(5)     = 0.0          ! Tiny WAI for grasses
    b1WAI(6:8)   = 0.0553 * 0.5 ! Needleleaf
    b1WAI(9:11)  = 0.0192 * 0.5 ! Broadleaf
-   b1WAI(12:16) = 0.0          ! No WAI for grasses
+   b1WAI(12:16) = 0.0          ! Tiny WAI for grasses
    b1WAI(17)    = 0.0553 * 0.5 ! Needleleaf
    !----- Slope. --------------------------------------------------------------------------!
-   b2WAI(1)     = 1.0          ! No WAI for grasses
+   b2WAI(1)     = 1.0          ! Tiny WAI for grasses
    b2WAI(2:4)   = 2.0947       ! Broadleaf
-   b2WAI(5)     = 1.0          ! No WAI for grasses
+   b2WAI(5)     = 1.0          ! Tiny WAI for grasses
    b2WAI(6:8)   = 1.9769       ! Needleleaf
    b2WAI(9:11)  = 2.0947       ! Broadleaf
-   b2WAI(12:16) = 1.0          ! No WAI for grasses
+   b2WAI(12:16) = 1.0          ! Tiny WAI for grasses
    b2WAI(17)    = 1.9769       ! Needleleaf
    !---------------------------------------------------------------------------------------!
 
@@ -3059,24 +3059,32 @@ subroutine init_pft_derived_params()
                                    , min_cohort_size      & ! intent(out)
                                    , negligible_nplant    & ! intent(out)
                                    , c2n_recruit          & ! intent(out)
-                                   , lai_min              ! ! intent(out)
+                                   , veg_hcap_min         ! ! intent(out)
    use phenology_coms       , only : elongf_min           ! ! intent(in)
    use allometry            , only : h2dbh                & ! function
                                    , dbh2h                & ! function
                                    , dbh2bl               & ! function
                                    , dbh2bd               ! ! function
+   use ed_therm_lib         , only : calc_veg_hcap        ! ! function
    implicit none
    !----- Local variables. ----------------------------------------------------------------!
    integer                           :: ipft
    real                              :: dbh
    real                              :: huge_dbh
    real                              :: huge_height
-   real                              :: balive_min
    real                              :: bleaf_min
+   real                              :: broot_min
+   real                              :: bsapwood_min
+   real                              :: balive_min
    real                              :: bdead_min
-   real                              :: balive_max
    real                              :: bleaf_max
+   real                              :: broot_max
+   real                              :: bsapwood_max
+   real                              :: balive_max
    real                              :: bdead_max
+   real                              :: leaf_hcap_min
+   real                              :: wood_hcap_min
+   real                              :: lai_min
    real                              :: min_plant_dens
    logical               , parameter :: print_zero_table = .false.
    character(len=str_len), parameter :: zero_table_fn    = 'minimum.size.txt'
@@ -3090,35 +3098,43 @@ subroutine init_pft_derived_params()
    !---------------------------------------------------------------------------------------!
    if (print_zero_table) then
       open  (unit=61,file=trim(zero_table_fn),status='replace',action='write')
-      write (unit=61,fmt='(18(a,1x))')                '  PFT',        'NAME            '   &
+      write (unit=61,fmt='(23(a,1x))')                '  PFT',        'NAME            '   &
                                               ,'     HGT_MIN','         DBH'               &
-                                              ,'   BLEAF_MIN','   BDEAD_MIN'               &
-                                              ,'  BALIVE_MIN','   BLEAF_MAX'               &
-                                              ,'   BDEAD_MAX','  BALIVE_MAX'               &
+                                              ,'   BLEAF_MIN','   BROOT_MIN'               &
+                                              ,'BSAPWOOD_MIN','  BALIVE_MIN'               &
+                                              ,'   BDEAD_MIN','   BLEAF_MAX'               &
+                                              ,'   BROOT_MAX','BSAPWOOD_MAX'               &
+                                              ,'  BALIVE_MAX','   BDEAD_MAX'               &
                                               ,'   INIT_DENS','MIN_REC_SIZE'               &
                                               ,'MIN_COH_SIZE',' NEGL_NPLANT'               &
-                                              ,'         SLA','     LAI_MIN'               &
-                                              ,'     HGT_MAX','    DBH_CRIT'
+                                              ,'         SLA','VEG_HCAP_MIN'               &
+                                              ,'     LAI_MIN','     HGT_MAX'               &
+                                              ,'    DBH_CRIT'
    end if
    min_plant_dens = onesixth * minval(init_density)
    do ipft = 1,n_pft
 
       !----- Find the DBH and carbon pools associated with a newly formed recruit. --------!
-      dbh        = h2dbh(hgt_min(ipft),ipft)
-      bleaf_min  = dbh2bl(dbh,ipft)
-      bdead_min  = dbh2bd(dbh,ipft)
-      balive_min = bleaf_min * (1.0 + q(ipft) + qsw(ipft) * hgt_min(ipft))
+      dbh          = h2dbh(hgt_min(ipft),ipft)
+      bleaf_min    = dbh2bl(dbh,ipft)
+      broot_min    = bleaf_min * q(ipft)
+      bsapwood_min = bleaf_min * qsw(ipft) * hgt_min(ipft)
+      balive_min   = bleaf_min + broot_min + bsapwood_min
+      bdead_min    = dbh2bd(dbh,ipft)
+      !------------------------------------------------------------------------------------!
 
       !------------------------------------------------------------------------------------!
       !   Find the maximum bleaf and bdead supported.  This is to find the negligible      !
       ! nplant so we ensure that the cohort is always terminated if its mortality rate is  !
       ! very high.                                                                         !
       !------------------------------------------------------------------------------------!
-      huge_dbh    = 3. * dbh_crit(ipft)
-      huge_height = dbh2h(ipft, dbh_crit(ipft))
-      bleaf_max   = dbh2bl(huge_dbh,ipft)
-      bdead_max   = dbh2bd(huge_dbh,ipft)
-      balive_max  = bleaf_max * (1.0 + q(ipft) + qsw(ipft) * huge_height)
+      huge_dbh     = 3. * dbh_crit(ipft)
+      huge_height  = dbh2h(ipft, dbh_crit(ipft))
+      bleaf_max    = dbh2bl(huge_dbh,ipft)
+      broot_max    = bleaf_max * q(ipft)
+      bsapwood_max = bleaf_max * qsw(ipft) * huge_height
+      balive_max   = bleaf_max + broot_max + bsapwood_max
+      bdead_max    = dbh2bd(huge_dbh,ipft)
       !------------------------------------------------------------------------------------!
 
 
@@ -3163,25 +3179,31 @@ subroutine init_pft_derived_params()
 
 
       !------------------------------------------------------------------------------------!
-      !     The minimum LAI is the LAI of a plant at the minimum cohort size that is at    !
-      ! approaching the minimum elongation factor that supports leaves.                                !
+      !     The following variable is the minimum heat capacity of either the leaf, or the !
+      ! branches, or the combined pool that is solved by the biophysics.  Value is in      !
+      ! J/m2/K.  Because leaves are the pools that can determine the fate of the tree, and !
+      ! all PFTs have leaves (but not branches), we only consider the leaf heat capacity   !
+      ! only for the minimum value.                                                        !
       !------------------------------------------------------------------------------------!
-      lai_min(ipft) = 1.e-3
-      !lai_min(ipft) = min(1.e-4,min_plant_dens * sla(ipft) * bleaf_min * (5. * elongf_min))
+      call calc_veg_hcap(bleaf_min,bdead_min,bsapwood_min,init_density(ipft),ipft          &
+                        ,leaf_hcap_min,wood_hcap_min)
+      veg_hcap_min(ipft) = onesixth * leaf_hcap_min
+      lai_min            = onesixth * init_density(ipft) * bleaf_min * sla(ipft)
       !------------------------------------------------------------------------------------!
 
 
       if (print_zero_table) then
-         write (unit=61,fmt='(i5,1x,a16,1x,16(es12.5,1x))')                                &
+         write (unit=61,fmt='(i5,1x,a16,1x,21(es12.5,1x))')                                &
                                                      ipft,pft_name16(ipft),hgt_min(ipft)   &
-                                                    ,dbh,bleaf_min,bdead_min,balive_min    &
-                                                    ,bleaf_max,bdead_max,balive_max        &
-                                                    ,init_density(ipft)                    &
+                                                    ,dbh,bleaf_min,broot_min,bsapwood_min  &
+                                                    ,balive_min,bdead_min,bleaf_max        &
+                                                    ,broot_max,bsapwood_max,balive_max     &
+                                                    ,bdead_max,init_density(ipft)          &
                                                     ,min_recruit_size(ipft)                &
                                                     ,min_cohort_size(ipft)                 &
                                                     ,negligible_nplant(ipft)               &
-                                                    ,sla(ipft),lai_min(ipft)               &
-                                                    ,hgt_max(ipft),dbh_crit(ipft)
+                                                    ,sla(ipft),veg_hcap_min(ipft)          &
+                                                    ,lai_min,hgt_max(ipft),dbh_crit(ipft)
       end if
       !------------------------------------------------------------------------------------!
    end do
@@ -4459,12 +4481,12 @@ subroutine init_rk4_params()
    !     Variables used to keep track on the error.                                        !
    !---------------------------------------------------------------------------------------!
    record_err     = .false.                  ! Compute and keep track of the errors.
-   print_detailed = .false.                   ! Print detailed information about the thermo-
+   print_detailed = .false.                  ! Print detailed information about the thermo-
                                              !    dynamic state.  This will create one file
                                              !    for each patch, so it is not recommended 
                                              !    for simulations that span over one month.
    print_thbnd    = .false.                  ! Make a file with thermodynamic boundaries.
-   print_budget   = .false.                   ! Make a file with budget terms.
+   print_budget   = .false.                  ! Make a file with budget terms.
    errmax_fout    = 'error_max_count.txt'    ! File with the maximum error count 
    sanity_fout    = 'sanity_check_count.txt' ! File with the sanity check count
    thbnds_fout    = 'thermo_bounds.txt'      ! File with the thermodynamic boundaries.

@@ -850,10 +850,6 @@ subroutine update_met_drivers(cgrid)
    real(kind=4)               :: rvsat
    real(kind=4)               :: min_shv 
    real(kind=4)               :: temp0
-   real(kind=4)               :: theta_prev
-   real(kind=4)               :: theta_next
-   real(kind=4)               :: exner_prev
-   real(kind=4)               :: exner_next
    real(kind=4)               :: relhum
    real(kind=4)               :: snden            ! snow density (kg/m3)
    real(kind=4)               :: fice             ! Ice fraction precipication
@@ -1481,19 +1477,9 @@ subroutine update_met_drivers(cgrid)
                   cgrid%met(ipy)%atm_shv = cgrid%metinput(ipy)%sh(mprev)
                end do
 
-            case('tmp')    
-               !---------------------------------------------------------------------------!
-               !     The flag is given at the air temperature, but we use the flag for     !
-               ! potential temperature                                           [      K] !
-               !---------------------------------------------------------------------------!
+            case('tmp')    !------ Air temperature. --------------------------- [      K] -!
                do ipy = 1,cgrid%npolygons
-                  exner_prev               = pq2exner  (cgrid%metinput(ipy)%pres(mprev)    &
-                                                       ,cgrid%metinput(ipy)%sh  (mprev)    &
-                                                       ,.true.)
-                  cgrid%met(ipy)%atm_theta = extq2theta(exner_prev                         &
-                                                       ,cgrid%metinput(ipy)%tmp (mprev)    &
-                                                       ,cgrid%metinput(ipy)%sh  (mprev)    &
-                                                       ,.true.)
+                  cgrid%met(ipy)%atm_tmp = cgrid%metinput(ipy)%tmp (mprev)
                end do
 
             case('co2')     !----- CO2 mixing ratio. -------------------------- [    ppm] -!
@@ -1689,37 +1675,10 @@ subroutine update_met_drivers(cgrid)
                                          + cgrid%metinput(ipy)%sh(mprev) * wprev
                end do
 
-            case('tmp')
-               !---------------------------------------------------------------------------!
-               !     The flag is given at the air temperature, but we use the flag for     !
-               ! potential temperature                                           [      K] !
-               !---------------------------------------------------------------------------!
+            case('tmp')     !----- Air temperature ---------------------------- [      K] -!
                do ipy = 1,cgrid%npolygons
-                  !----- Find theta for next time step. -----------------------------------!
-                  exner_next               = pq2exner  (cgrid%metinput(ipy)%pres(mnext)    &
-                                                       ,cgrid%metinput(ipy)%sh  (mnext)    &
-                                                       ,.true.)
-                  theta_next               = extq2theta(exner_next                         &
-                                                       ,cgrid%metinput(ipy)%tmp (mnext)    &
-                                                       ,cgrid%metinput(ipy)%sh  (mnext)    &
-                                                       ,.true.)
-                  !------------------------------------------------------------------------!
-
-
-
-                  !----- Find theta for previous time step. -------------------------------!
-                  exner_prev               = pq2exner  (cgrid%metinput(ipy)%pres(mprev)    &
-                                                       ,cgrid%metinput(ipy)%sh  (mprev)    &
-                                                       ,.true.)
-                  theta_prev               = extq2theta(exner_prev                         &
-                                                       ,cgrid%metinput(ipy)%tmp (mprev)    &
-                                                       ,cgrid%metinput(ipy)%sh  (mprev)    &
-                                                       ,.true.)
-                  !------------------------------------------------------------------------!
-
-
-                  !----- Interpolate potential temperature. -------------------------------!
-                  cgrid%met(ipy)%atm_theta = theta_next * wnext + theta_prev * wprev
+                  cgrid%met(ipy)%atm_tmp = cgrid%metinput(ipy)%tmp(mnext) * wnext          &
+                                         + cgrid%metinput(ipy)%tmp(mprev) * wprev
                   !------------------------------------------------------------------------!
                end do
 
@@ -2246,12 +2205,12 @@ subroutine update_met_drivers(cgrid)
 
 
       !------------------------------------------------------------------------------------!
-      !     Set default temperature from Exner function, potential temperature, and        !
+      !     Set default potential temperature from Exner function, air temperature, and    !
       ! specific humidity.                                                                 !
       !------------------------------------------------------------------------------------!
-      cgrid%met(ipy)%atm_tmp = exthq2temp(cgrid%met(ipy)%exner,cgrid%met(ipy)%atm_theta    &
-                                         ,cgrid%met(ipy)%atm_shv,.true.)
-      temp0                  = cgrid%met(ipy)%atm_tmp
+      cgrid%met(ipy)%atm_theta = extq2theta(cgrid%met(ipy)%exner,cgrid%met(ipy)%atm_tmp    &
+                                           ,cgrid%met(ipy)%atm_shv,.true.)
+      temp0                    = cgrid%met(ipy)%atm_tmp
       !------------------------------------------------------------------------------------!
 
       if (atm_tmp_intercept /= 0.0 .or. atm_tmp_slope /= 1.0) then

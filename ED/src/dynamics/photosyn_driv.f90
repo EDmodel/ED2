@@ -661,6 +661,8 @@ subroutine print_photo_details(cmet,csite,ipa,ico,limit_flag,vm,compp)
    else
       par_area  = 0.0
       parv      = 0.0
+      nir_area  = 0.0
+      nirv      = 0.0
       util_parv = 0.0
    end if
 
