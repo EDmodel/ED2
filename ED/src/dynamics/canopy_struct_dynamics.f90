@@ -138,8 +138,8 @@ module canopy_struct_dynamics
                                   , cph2o                ! ! intent(in)
       use soil_coms        , only : snow_rough           & ! intent(in)
                                   , soil_rough           ! ! intent(in)
-      use therm_lib        , only : pq2exner             & ! function
-                                  , exthq2temp           & ! function
+      use therm_lib        , only : press2exner          & ! function
+                                  , extheta2temp         & ! function
                                   , tq2enthalpy          ! ! function
       use allometry        , only : h2crownbh            & ! function
                                   , dbh2bl               ! ! function
@@ -251,9 +251,9 @@ module canopy_struct_dynamics
       !------------------------------------------------------------------------------------!
       !     Find the free atmosphere enthalpy at the canopy air space height.              !
       !------------------------------------------------------------------------------------!
-      atm_exn_zcan  = pq2exner(csite%can_prss(ipa),cmet%atm_shv,.true.)
-      atm_tmp_zcan  = exthq2temp(atm_exn_zcan,cmet%atm_theta,cmet%atm_shv,.true.)
-      atm_enthalpy  = tq2enthalpy(atm_tmp_zcan,cmet%atm_shv,.true.)
+      atm_exn_zcan  = press2exner (csite%can_prss(ipa))
+      atm_tmp_zcan  = extheta2temp(atm_exn_zcan,cmet%atm_theta)
+      atm_enthalpy  = tq2enthalpy (atm_tmp_zcan,cmet%atm_shv,.true.)
       !------------------------------------------------------------------------------------!
 
 

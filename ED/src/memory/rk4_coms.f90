@@ -208,8 +208,8 @@ module rk4_coms
       real(kind=8), pointer, dimension(:) :: tai          ! Tree area index     [    m²/m²]
       real(kind=8), pointer, dimension(:) :: crown_area   ! Crown area          [    m²/m²]
       real(kind=8), pointer, dimension(:) :: elongf       ! Elongation factor   [     ----]
-      real(kind=8), pointer, dimension(:) :: psi_open     ! Water demand (op.)  [  kg/m²/s]
-      real(kind=8), pointer, dimension(:) :: psi_closed   ! Water demand (clos.)[  kg/m²/s]
+      real(kind=8), pointer, dimension(:) :: psi_open     ! Water demand (op.)  [kg/m²lf/s]
+      real(kind=8), pointer, dimension(:) :: psi_closed   ! Water demand (clos.)[kg/m²lf/s]
       real(kind=8), pointer, dimension(:) :: fs_open      ! Frac. of op. stom.  [      ---]
       real(kind=8), pointer, dimension(:) :: gpp          ! Gross primary prod. [µmol/m²/s]
       real(kind=8), pointer, dimension(:) :: leaf_resp    ! Leaf respiration    [µmol/m²/s]
@@ -1795,8 +1795,8 @@ module rk4_coms
                              , mmdryi8       & ! intent(in)
                              , hr_sec        & ! intent(in)
                              , min_sec       ! ! intent(in)
-      use therm_lib8  , only : pq2exner8     & ! function
-                             , extq2theta8   & ! function
+      use therm_lib8  , only : press2exner8  & ! function
+                             , extemp2theta8 & ! function
                              , tq2enthalpy8  & ! function
                              , thetaeiv8     & ! function
                              , thetaeivs8    & ! function
@@ -1876,33 +1876,33 @@ module rk4_coms
       rk4min_can_theta   =  huge(1.d0)
       rk4max_can_theta   = -huge(1.d0)
       !----- 2. Minimum temperature. ------------------------------------------------------!
-      can_exner_try      = pq2exner8(can_prss,can_shv,.true.)
-      can_theta_try      = extq2theta8(can_exner_try,rk4min_can_temp,can_shv,.true.)
+      can_exner_try      = press2exner8(can_prss)
+      can_theta_try      = extemp2theta8(can_exner_try,rk4min_can_temp)
       rk4min_can_theta   = min(rk4min_can_theta,can_theta_try)
       rk4max_can_theta   = max(rk4max_can_theta,can_theta_try)
       !----- 3. Maximum temperature. ------------------------------------------------------!
-      can_exner_try      = pq2exner8(can_prss,can_shv,.true.)
-      can_theta_try      = extq2theta8(can_exner_try,rk4max_can_temp,can_shv,.true.)
+      can_exner_try      = press2exner8(can_prss)
+      can_theta_try      = extemp2theta8(can_exner_try,rk4max_can_temp)
       rk4min_can_theta   = min(rk4min_can_theta,can_theta_try)
       rk4max_can_theta   = max(rk4max_can_theta,can_theta_try)
       !----- 4. Minimum pressure. ---------------------------------------------------------!
-      can_exner_try      = pq2exner8(rk4min_can_prss,can_shv,.true.)
-      can_theta_try      = extq2theta8(can_exner_try,can_temp,can_shv,.true.)
+      can_exner_try      = press2exner8(rk4min_can_prss)
+      can_theta_try      = extemp2theta8(can_exner_try,can_temp)
       rk4min_can_theta   = min(rk4min_can_theta,can_theta_try)
       rk4max_can_theta   = max(rk4max_can_theta,can_theta_try)
       !----- 5. Maximum pressure. ---------------------------------------------------------!
-      can_exner_try      = pq2exner8(rk4max_can_prss,can_shv,.true.)
-      can_theta_try      = extq2theta8(can_exner_try,can_temp,can_shv,.true.)
+      can_exner_try      = press2exner8(rk4max_can_prss)
+      can_theta_try      = extemp2theta8(can_exner_try,can_temp)
       rk4min_can_theta   = min(rk4min_can_theta,can_theta_try)
       rk4max_can_theta   = max(rk4max_can_theta,can_theta_try)
       !----- 6. Minimum specific humidity. ------------------------------------------------!
-      can_exner_try      = pq2exner8(can_prss,rk4min_can_shv,.true.)
-      can_theta_try      = extq2theta8(can_exner_try,can_temp,rk4min_can_shv,.true.)
+      can_exner_try      = press2exner8(can_prss)
+      can_theta_try      = extemp2theta8(can_exner_try,can_temp)
       rk4min_can_theta   = min(rk4min_can_theta,can_theta_try)
       rk4max_can_theta   = max(rk4max_can_theta,can_theta_try)
       !----- 7. Maximum specific humidity. ------------------------------------------------!
-      can_exner_try      = pq2exner8(can_prss,rk4max_can_shv,.true.)
-      can_theta_try      = extq2theta8(can_exner_try,can_temp,rk4max_can_shv,.true.)
+      can_exner_try      = press2exner8(can_prss)
+      can_theta_try      = extemp2theta8(can_exner_try,can_temp)
       rk4min_can_theta   = min(rk4min_can_theta,can_theta_try)
       rk4max_can_theta   = max(rk4max_can_theta,can_theta_try)
       !------------------------------------------------------------------------------------!

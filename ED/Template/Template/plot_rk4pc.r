@@ -573,18 +573,19 @@ options(locatorBell=FALSE)
 
 
 #----- Loading some files with functions. -------------------------------------------------#
-source(paste(srcdir,"atlas.r",sep="/"))
-source(paste(srcdir,"globdims.r",sep="/"))
-source(paste(srcdir,"locations.r",sep="/"))
-source(paste(srcdir,"muitas.r",sep="/"))
-source(paste(srcdir,"pretty.log.r",sep="/"))
+source(paste(srcdir,"atlas.r"      ,sep="/"))
+source(paste(srcdir,"globdims.r"   ,sep="/"))
+source(paste(srcdir,"locations.r"  ,sep="/"))
+source(paste(srcdir,"muitas.r"     ,sep="/"))
+source(paste(srcdir,"pretty.log.r" ,sep="/"))
 source(paste(srcdir,"pretty.time.r",sep="/"))
-source(paste(srcdir,"plotsize.r",sep="/"))
-source(paste(srcdir,"qapply.r",sep="/"))
-source(paste(srcdir,"rconstants.r",sep="/"))
-source(paste(srcdir,"sombreado.r",sep="/"))
-source(paste(srcdir,"southammap.r",sep="/"))
-source(paste(srcdir,"timeutils.r",sep="/"))
+source(paste(srcdir,"plotsize.r"   ,sep="/"))
+source(paste(srcdir,"qapply.r"     ,sep="/"))
+source(paste(srcdir,"rconstants.r" ,sep="/"))
+source(paste(srcdir,"sombreado.r"  ,sep="/"))
+source(paste(srcdir,"southammap.r" ,sep="/"))
+source(paste(srcdir,"thermlib.r"   ,sep="/"))
+source(paste(srcdir,"timeutils.r"  ,sep="/"))
 #------------------------------------------------------------------------------------------#
 
 
@@ -735,7 +736,7 @@ for (place in myplaces){
       cpatch$transp          =   cpatch$transp       * day.sec
 
       #----- Canopy -> Atmosphere fluxes in W/m2. -----------------------------------------#
-      cpatch$qwflxca         = -cpatch$wflxac      * alvl / day.sec
+      cpatch$qwflxca         = -cpatch$wflxac      * alvli(cpatch$can.temp) / day.sec
       cpatch$hflxca          = -cpatch$hflxac
       cpatch$cflxca          = -cpatch$cflxac
 
@@ -792,10 +793,6 @@ for (place in myplaces){
       cpatch$rgveg  = 1. / cpatch$ggveg
       cpatch$rgnet  = 1. / cpatch$ggnet
       cpatch$rgold  = 1. / cpatch$ggold
-      cpatch$rgbare[cpatch$ggbare == 0.] = NA
-      cpatch$rgveg [cpatch$ggveg  == 0.] = NA
-      cpatch$rgnet [cpatch$ggnet  == 0.] = NA
-      cpatch$rgold [cpatch$ggold  == 0.] = NA
       #------------------------------------------------------------------------------------#
 
 
@@ -923,251 +920,240 @@ for (place in myplaces){
       #------------------------------------------------------------------------------------#
       #    Cohort loop.                                                                    #
       #------------------------------------------------------------------------------------#
-      if (mycohorts > 0){
-         for (ico in 1:mycohorts){
-            #----- Find the character version of the cohort number. -----------------------#
-            cico = substring(10000+ico,2,5)
+      for (ico in 1:mycohorts){
+         #----- Find the character version of the cohort number. --------------------------#
+         cico = substring(10000+ico,2,5)
 
-            print (paste("        > Cohort # ",ico,"...",sep=""))
-            #----- Define the output directory. -------------------------------------------#
-            cohortdir  = paste(patchdir,paste("cohort_",cico,sep=""),sep="/")
-            if (! file.exists(cohortdir)) dir.create(cohortdir)
+         print (paste("        > Cohort # ",ico,"...",sep=""))
+         #----- Define the output directory. ----------------------------------------------#
+         cohortdir  = paste(patchdir,paste("cohort_",cico,sep=""),sep="/")
+         if (! file.exists(cohortdir)) dir.create(cohortdir)
 
-            #----- Define the input file name. --------------------------------------------#
-            inputfile = paste(inpref,paste("thermo_state_crk4_patch_",cipa,"_cohort_",cico
-                                          ,".txt",sep="")
-                             ,sep="/")
-            print(paste("        * Open file:",inputfile))
+         #----- Define the input file name. -----------------------------------------------#
+         inputfile = paste(inpref,paste("thermo_state_crk4_patch_",cipa,"_cohort_",cico
+                                       ,".txt",sep="")
+                          ,sep="/")
+         print(paste("        * Open file:",inputfile))
 
-            #----- Read the file, just to grab the header. --------------------------------#
-            vnames   = scan(file=inputfile,what="raw",nlines=1,quiet=TRUE)
-            nvars    = length(vnames)
-            for (v in 1:nvars){
-               aux          = tolower(vnames[v])
-               saux         = strsplit(aux,split="")[[1]]
-               uscore       = which(saux == "_")
-               saux[uscore] = "."
-               vnames[v]    = paste(saux,collapse="")
-            }#end for
-            #------------------------------------------------------------------------------#
-
-
-            #------------------------------------------------------------------------------#
-            #     Read the input file, this time reading all the data and skipping the     #
-            # first line.                                                                  #
-            #------------------------------------------------------------------------------#
-            aux                 = as.numeric(scan(file=inputfile,what="numeric",skip=1
-                                                 ,quiet=TRUE))
-            ccohort              = matrix(aux,ncol=nvars,byrow=TRUE)
-            dimnames(ccohort)    = list(NULL,vnames)
-            ccohort              = data.frame(ccohort)
-
-            #----- Fill in the table. -----------------------------------------------------#
-            cohtable[ico,] = c(ico,ccohort$leaf.resolve[1],ccohort$wood.resolve[1]
-                              ,ccohort$pft[1],ccohort$nplant[1],ccohort$height[1]
-                              ,ccohort$lai[1],ccohort$wai[1],ccohort$crown.area[1])
-
-            #----- Reduce the size of the file to be the period of interest only. ---------#
-            print(paste("          * Reduce data to the period of interest..."))
-            when    = chron( chron(dates=paste(ccohort$month,ccohort$day
-                                              ,ccohort$year,sep="/"))
-                           + ccohort$time/day.sec, out.format=c(dates="m/d/y"
-                                                               ,times="h:m:s"))
-            sel     = when >= whena & when <= whenz
-            ccohort = ccohort[sel,]
-            when    = when[sel]
-
-            #----- Save some variables that don't change over time. -----------------------#
-            pft    = ccohort$pft[1]
-            height = signif(x=ccohort$height[1],digits=3)
-
-
-            #----- Skip this cohort if its nplant and LAI are tiny. -----------------------#
-            if (all(ccohort$leaf.resolve == 1 | ccohort$wood.resolve == 1)){
-
-
-               #----- Net water conductance. ----------------------------------------------#
-               ccohort$gsw             = ( ccohort$gsw.open * ccohort$fs.open 
-                                         + ccohort$gsw.clos * (1. - ccohort$fs.open) )
-
-               #----- Convert conductance to resistance [s/m] for plotting. ---------------#
-               ccohort$leaf.rbw        = ( cpatch$can.rhos * 0.001 * cpatch$can.shv 
-                                         / ccohort$leaf.gbw )
-               ccohort$wood.rbw        = ( cpatch$can.rhos * 0.001 * cpatch$can.shv 
-                                         / ccohort$wood.gbw )
-               ccohort$rsw             = ( cpatch$can.rhos * 0.001 * cpatch$can.shv 
-                                         / ccohort$gsw )
-               ccohort$rsw.open        = ( cpatch$can.rhos * 0.001 * cpatch$can.shv 
-                                         / ccohort$gsw.open )
-               ccohort$rsw.clos        = ( cpatch$can.rhos * 0.001 * cpatch$can.shv 
-                                         / ccohort$gsw.clos )
-               ccohort$leaf.rbw[!is.finite(ccohort$leaf.rbw)] = 0.
-               ccohort$wood.rbw[!is.finite(ccohort$wood.rbw)] = 0.
-               ccohort$rsw[!is.finite(ccohort$rsw)] = 0.
-               ccohort$rsw.open[!is.finite(ccohort$rsw.open)] = 0.
-               ccohort$rsw.clos[!is.finite(ccohort$rsw.clos)] = 0.
-
-               #----- Convert the conductances from kg_H2O/m2/s to mm/s. ------------------#
-               ccohort$leaf.gbw.mmos      = ( ccohort$leaf.gbw * 1000.
-                                            / (cpatch$can.rhos * 0.001 * cpatch$can.shv) )
-               ccohort$wood.gbw.mmos      = ( ccohort$wood.gbw * 1000.
-                                            / (cpatch$can.rhos * 0.001 * cpatch$can.shv) )
-               ccohort$gsw.mmos           = ( ccohort$gsw      * 1000.
-                                            / (cpatch$can.rhos * 0.001 *  cpatch$can.shv) )
-               ccohort$gsw.open.mmos      = ( ccohort$gsw.open * 1000.
-                                            / (cpatch$can.rhos * 0.001 *  cpatch$can.shv) )
-               ccohort$gsw.clos.mmos      = ( ccohort$gsw.clos * 1000.
-                                            / (cpatch$can.rhos * 0.001 *  cpatch$can.shv) )
-
-               #----- Convert the conductances from kg_H2O/m2/s to mol/m2/s. --------------#
-               ccohort$leaf.gbw        = ccohort$leaf.gbw * mmh2oi
-               ccohort$wood.gbw        = ccohort$wood.gbw * mmh2oi
-               ccohort$gsw             = ccohort$gsw      * mmh2oi
-               ccohort$gsw.open        = ccohort$gsw.open * mmh2oi
-               ccohort$gsw.clos        = ccohort$gsw.clos * mmh2oi
-
-               #----- Temperatures in Celsius. --------------------------------------------#
-               ccohort$leaf.temp       = ccohort$leaf.temp     - t00
-               ccohort$wood.temp       = ccohort$wood.temp     - t00
-
-               #----- Specific humidity in g/kg. ------------------------------------------#
-               ccohort$lint.shv        = ccohort$lint.shv      * 1000.
-
-               #----- Water sitting on leaf surface. --------------------------------------#
-               ccohort$leaf.liquid      = ccohort$leaf.water * ccohort$leaf.fliq
-               ccohort$leaf.frozen      = ccohort$leaf.water * (1. - ccohort$leaf.fliq)
-               ccohort$wood.liquid      = ccohort$wood.water * ccohort$wood.fliq
-               ccohort$wood.frozen      = ccohort$wood.water * (1. - ccohort$wood.fliq)
-
-               #----- Water heat capacity. ------------------------------------------------#
-               ccohort$leaf.h2o.hcap    = ( ccohort$leaf.liquid * cliq
-                                          + ccohort$leaf.frozen * cice )
-               ccohort$wood.h2o.hcap    = ( ccohort$wood.liquid * cliq
-                                          + ccohort$wood.frozen * cice )
-
-
-               #---------------------------------------------------------------------------#
-               #      Define a nice grid for time.                                         #
-               #---------------------------------------------------------------------------#
-               whenout = pretty.time(when,n=8)
-               #---------------------------------------------------------------------------#
-
-               #---------------------------------------------------------------------------#
-               #   Plot the time series diagrams showing months and years.                 #
-               #---------------------------------------------------------------------------#
-               print(paste("          * Plot some figures..."))
-               for (hh in 1:nchov){
-
-                  #----- Retrieve variable information from the list. ---------------------#
-                  chovdinow   = chovdi[[hh]]
-                  vnames      = chovdinow$vnam  
-                  description = chovdinow$desc  
-                  lcolours    = chovdinow$colour
-                  lcohlev     = chovdinow$cohlev
-                  llwd        = chovdinow$lwd
-                  ltype       = chovdinow$type
-                  prefix      = chovdinow$prefix
-                  theme       = chovdinow$theme 
-                  unit        = chovdinow$unit  
-                  legpos      = chovdinow$legpos
-                  plotit      = chovdinow$plt   
-          
-                  if (plotit){
-
-
-                     #----- Define the number of layers. ----------------------------------#
-                     nlayers   = length(vnames)
-                     tmp       = NULL
-                     for (ll in 1: nlayers){
-                        if (lcohlev[ll]){
-                           tmp = c(tmp,ccohort[vnames[ll]])
-                        }else{
-                           tmp = c(tmp,cpatch[vnames[ll]])
-                        }#end if
-                     }#end if
-                     ylimit    = range(tmp,na.rm=TRUE)
-                     if (ylimit[1] == ylimit[2]  & ylimit[1] == 0){
-                        ylimit[1] = -1
-                        ylimit[2] =  1
-                     }else if (ylimit[1] == ylimit[2] & ylimit[1] > 0){
-                        ylimit[2] = (1.0+scalleg) * ylimit[1]
-                     }else if (ylimit[1] == ylimit[2] & ylimit[1] < 0){
-                        ylimit[2] = (1.0-scalleg) * ylimit[1]
-                     }else{
-                        ylimit[2] = ylimit[2] + scalleg * (ylimit[2] - ylimit[1])
-                     }#end if
-
-                     #---------------------------------------------------------------------#
-                     #     Check if the directory exists.  If not, create it.              #
-                     #---------------------------------------------------------------------#
-                     print (paste("            # ",theme," time series ...",sep=""))
-
-                     #----- Loop over formats. --------------------------------------------#
-                     for (o in 1:nout){
-                        fichier = paste(cohortdir,"/",prefix,"-cohort-",cico,"-",suffix
-                                       ,".",outform[o],sep="")
-                        if(outform[o] == "x11"){
-                           X11(width=size$width,height=size$height,pointsize=ptsz)
-                        }else if(outform[o] == "png"){
-                           png(filename=fichier,width=size$width*depth
-                              ,height=size$height*depth,pointsize=ptsz,res=depth)
-                        }else if(outform[o] == "eps"){
-                           postscript(file=fichier,width=size$width,height=size$height
-                                     ,pointsize=ptsz,paper=paper)
-                        }#end if
-
-                        letitre = paste(theme," - ",thispoi$lieu, 
-                                       " \n"," Time series: ",theme,
-                                       " \n"," Patch - ",ipa,"     Cohort - ",ico,
-                                       " \n"," PFT: ",pftnames[pft]
-                                            , " - Height: ",height,"m",
-                                       sep="")
-
-                        if (lcohlev[1]){
-                           thisvar = ccohort[[vnames[1]]]
-                        }else{
-                           thisvar = cpatch[[vnames[1]]]
-                        }#end if
-
-                        plot(x=when,y=thisvar,type="n",main=letitre,xlab="Time"
-                            ,ylim=ylimit,ylab=paste("[",unit,"]",sep=""),xaxt="n"
-                            ,cex.main=0.8)
-                        axis(side=1,at=whenout$levels,labels=whenout$labels
-                            ,padj=whenout$padj)
-                        if (hovgrid){
-                            abline(h=axTicks(side=2),v=whenout$levels,col="gray66"
-                                  ,lty="dotted")
-                        }#end if
-                        for (l in 1:nlayers){
-
-                           if (lcohlev[l]){
-                              thisvar = ccohort[[vnames[l]]]
-                           }else{
-                              thisvar = cpatch[[vnames[l]]]
-                           }#end if
-                           points(x=when,y=thisvar,col=lcolours[l]
-                                 ,lwd=llwd[l],type=ltype,pch=16,cex=0.9)
-                        }#end for
-                        legend(x=legpos,inset=0.05,legend=description,col=lcolours
-                              ,lwd=llwd)
-                        if (outform[o] == "x11"){
-                           locator(n=1)
-                           dev.off()
-                        }else{
-                           dev.off()
-                        }#end if
-                     } #end for outform
-                  }#end if plotit
-               }#end for nhov
-               #---------------------------------------------------------------------------#
-            }else{
-               #----- Re-scale or re-define some variables. -------------------------------#
-               print(paste("        * Skipping sparse cohort..."))
-            }#end if (any(resolvable == 0))
-            #------------------------------------------------------------------------------#
-         }#end for (ico in cohorts)
+         #----- Read the file, just to grab the header. -----------------------------------#
+         vnames   = scan(file=inputfile,what="raw",nlines=1,quiet=TRUE)
+         nvars    = length(vnames)
+         for (v in 1:nvars){
+            aux          = tolower(vnames[v])
+            saux         = strsplit(aux,split="")[[1]]
+            uscore       = which(saux == "_")
+            saux[uscore] = "."
+            vnames[v]    = paste(saux,collapse="")
+         }#end for
          #---------------------------------------------------------------------------------#
-      }#end if (mycohorts > 0)
+
+
+         #---------------------------------------------------------------------------------#
+         #     Read the input file, this time reading all the data and skipping the first  #
+         # line.                                                                           #
+         #---------------------------------------------------------------------------------#
+         aux                 = as.numeric(scan(file=inputfile,what="numeric",skip=1
+                                              ,quiet=TRUE))
+         ccohort              = matrix(aux,ncol=nvars,byrow=TRUE)
+         dimnames(ccohort)    = list(NULL,vnames)
+         ccohort              = data.frame(ccohort)
+
+         #----- Fill in the table. --------------------------------------------------------#
+         cohtable[ico,] = c(ico,ccohort$leaf.resolve[1],ccohort$wood.resolve[1]
+                           ,ccohort$pft[1],ccohort$nplant[1],ccohort$height[1]
+                           ,ccohort$lai[1],ccohort$wai[1],ccohort$crown.area[1])
+
+         #----- Reduce the size of the file to be the period of interest only. ------------#
+         print(paste("          * Reduce data to the period of interest..."))
+         when    = chron( chron(dates=paste(ccohort$month,ccohort$day,ccohort$year,sep="/"))
+                        + ccohort$time/day.sec, out.format=c(dates="m/d/y",times="h:m:s"))
+         sel     = when >= whena & when <= whenz
+         ccohort = ccohort[sel,]
+         when    = when[sel]
+
+         #----- Save some variables that don't change over time. --------------------------#
+         pft    = ccohort$pft[1]
+         height = signif(x=ccohort$height[1],digits=3)
+
+
+         #----- Skip this cohort if its nplant and LAI are tiny. --------------------------#
+         if (all(ccohort$leaf.resolve == 1 | ccohort$wood.resolve == 1)){
+
+
+            #----- Net water conductance. -------------------------------------------------#
+            ccohort$gsw             = ( ccohort$gsw.open * ccohort$fs.open 
+                                      + ccohort$gsw.clos * (1. - ccohort$fs.open) )
+
+            #----- Convert conductance to resistance [s/m] for plotting. ------------------#
+            ccohort$leaf.rbw        = ( cpatch$can.rhos * 0.001 * cpatch$can.shv 
+                                      / ccohort$leaf.gbw )
+            ccohort$wood.rbw        = ( cpatch$can.rhos * 0.001 * cpatch$can.shv 
+                                      / ccohort$wood.gbw )
+            ccohort$rsw             = cpatch$can.rhos * 0.001 * cpatch$can.shv / ccohort$gsw
+            ccohort$rsw.open        = cpatch$can.rhos * 0.001 * cpatch$can.shv / ccohort$gsw.open
+            ccohort$rsw.clos        = cpatch$can.rhos * 0.001 * cpatch$can.shv / ccohort$gsw.clos
+            ccohort$leaf.rbw[!is.finite(ccohort$leaf.rbw)] = 0.
+            ccohort$wood.rbw[!is.finite(ccohort$wood.rbw)] = 0.
+            ccohort$rsw[!is.finite(ccohort$rsw)] = 0.
+            ccohort$rsw.open[!is.finite(ccohort$rsw.open)] = 0.
+            ccohort$rsw.clos[!is.finite(ccohort$rsw.clos)] = 0.
+
+            #----- Convert the conductances from kg_H2O/m2/s to mm/s. ---------------------#
+            ccohort$leaf.gbw.mmos      = ( ccohort$leaf.gbw * 1000.
+                                         / (cpatch$can.rhos * 0.001 * cpatch$can.shv) )
+            ccohort$wood.gbw.mmos      = ( ccohort$wood.gbw * 1000.
+                                         / (cpatch$can.rhos * 0.001 * cpatch$can.shv) )
+            ccohort$gsw.mmos           = ( ccohort$gsw      * 1000.
+                                         / (cpatch$can.rhos * 0.001 *  cpatch$can.shv) )
+            ccohort$gsw.open.mmos      = ( ccohort$gsw.open * 1000.
+                                         / (cpatch$can.rhos * 0.001 *  cpatch$can.shv) )
+            ccohort$gsw.clos.mmos      = ( ccohort$gsw.clos * 1000.
+                                         / (cpatch$can.rhos * 0.001 *  cpatch$can.shv) )
+
+            #----- Convert the conductances from kg_H2O/m2/s to mol/m2/s. -----------------#
+            ccohort$leaf.gbw        = ccohort$leaf.gbw * mmh2oi
+            ccohort$wood.gbw        = ccohort$wood.gbw * mmh2oi
+            ccohort$gsw             = ccohort$gsw      * mmh2oi
+            ccohort$gsw.open        = ccohort$gsw.open * mmh2oi
+            ccohort$gsw.clos        = ccohort$gsw.clos * mmh2oi
+
+            #----- Temperatures in Celsius. -----------------------------------------------#
+            ccohort$leaf.temp       = ccohort$leaf.temp     - t00
+            ccohort$wood.temp       = ccohort$wood.temp     - t00
+
+            #----- Specific humidity in g/kg. ---------------------------------------------#
+            ccohort$lint.shv        = ccohort$lint.shv      * 1000.
+
+            #----- Water sitting on leaf surface. -----------------------------------------#
+            ccohort$leaf.liquid      = ccohort$leaf.water * ccohort$leaf.fliq
+            ccohort$leaf.frozen      = ccohort$leaf.water * (1. - ccohort$leaf.fliq)
+            ccohort$wood.liquid      = ccohort$wood.water * ccohort$wood.fliq
+            ccohort$wood.frozen      = ccohort$wood.water * (1. - ccohort$wood.fliq)
+
+            #----- Water heat capacity. ---------------------------------------------------#
+            ccohort$leaf.h2o.hcap    = ( ccohort$leaf.liquid * cliq
+                                       + ccohort$leaf.frozen * cice )
+            ccohort$wood.h2o.hcap    = ( ccohort$wood.liquid * cliq
+                                       + ccohort$wood.frozen * cice )
+
+
+            #------------------------------------------------------------------------------#
+            #      Define a nice grid for time.                                            #
+            #------------------------------------------------------------------------------#
+            whenout = pretty.time(when,n=8)
+            #------------------------------------------------------------------------------#
+
+            #------------------------------------------------------------------------------#
+            #   Plot the time series diagrams showing months and years.                    #
+            #------------------------------------------------------------------------------#
+            print(paste("          * Plot some figures..."))
+            for (hh in 1:nchov){
+
+               #----- Retrieve variable information from the list. ------------------------#
+               chovdinow   = chovdi[[hh]]
+               vnames      = chovdinow$vnam  
+               description = chovdinow$desc  
+               lcolours    = chovdinow$colour
+               lcohlev     = chovdinow$cohlev
+               llwd        = chovdinow$lwd
+               ltype       = chovdinow$type
+               prefix      = chovdinow$prefix
+               theme       = chovdinow$theme 
+               unit        = chovdinow$unit  
+               legpos      = chovdinow$legpos
+               plotit      = chovdinow$plt   
+       
+               if (plotit){
+
+
+                  #----- Define the number of layers. -------------------------------------#
+                  nlayers   = length(vnames)
+                  tmp       = NULL
+                  for (ll in 1: nlayers){
+                     if (lcohlev[ll]){
+                        tmp = c(tmp,ccohort[vnames[ll]])
+                     }else{
+                        tmp = c(tmp,cpatch[vnames[ll]])
+                     }#end if
+                  }#end if
+                  ylimit    = range(tmp,na.rm=TRUE)
+                  if (ylimit[1] == ylimit[2]  & ylimit[1] == 0){
+                     ylimit[1] = -1
+                     ylimit[2] =  1
+                  }else if (ylimit[1] == ylimit[2] & ylimit[1] > 0){
+                     ylimit[2] = (1.0+scalleg) * ylimit[1]
+                  }else if (ylimit[1] == ylimit[2] & ylimit[1] < 0){
+                     ylimit[2] = (1.0-scalleg) * ylimit[1]
+                  }else{
+                     ylimit[2] = ylimit[2] + scalleg * (ylimit[2] - ylimit[1])
+                  }#end if
+
+                  #------------------------------------------------------------------------#
+                  #     Check if the directory exists.  If not, create it.                 #
+                  #------------------------------------------------------------------------#
+                  print (paste("            # ",theme," time series ...",sep=""))
+
+                  #----- Loop over formats. -----------------------------------------------#
+                  for (o in 1:nout){
+                     fichier = paste(cohortdir,"/",prefix,"-cohort-",cico,"-",suffix
+                                    ,".",outform[o],sep="")
+                     if(outform[o] == "x11"){
+                        X11(width=size$width,height=size$height,pointsize=ptsz)
+                     }else if(outform[o] == "png"){
+                        png(filename=fichier,width=size$width*depth
+                           ,height=size$height*depth,pointsize=ptsz,res=depth)
+                     }else if(outform[o] == "eps"){
+                        postscript(file=fichier,width=size$width,height=size$height
+                                  ,pointsize=ptsz,paper=paper)
+                     }#end if
+
+                     letitre = paste(theme," - ",thispoi$lieu, 
+                                    " \n"," Time series: ",theme,
+                                    " \n"," Patch - ",ipa,"     Cohort - ",ico,
+                                    " \n"," PFT: ",pftnames[pft], " - Height: ",height,"m",
+                                    sep="")
+
+                     if (lcohlev[1]){
+                        thisvar = ccohort[[vnames[1]]]
+                     }else{
+                        thisvar = cpatch[[vnames[1]]]
+                     }#end if
+
+                     plot(x=when,y=thisvar,type="n",main=letitre,xlab="Time",
+                          ylim=ylimit,ylab=paste("[",unit,"]",sep=""),xaxt="n",cex.main=0.8)
+                     axis(side=1,at=whenout$levels,labels=whenout$labels,padj=whenout$padj)
+                     if (hovgrid){
+                         abline(h=axTicks(side=2),v=whenout$levels,col="gray66"
+                               ,lty="dotted")
+                     }#end if
+                     for (l in 1:nlayers){
+
+                        if (lcohlev[l]){
+                           thisvar = ccohort[[vnames[l]]]
+                        }else{
+                           thisvar = cpatch[[vnames[l]]]
+                        }#end if
+                        points(x=when,y=thisvar,col=lcolours[l]
+                              ,lwd=llwd[l],type=ltype,pch=16,cex=0.9)
+                     }#end for
+                     legend(x=legpos,inset=0.05,legend=description,col=lcolours,lwd=llwd)
+                     if (outform[o] == "x11"){
+                        locator(n=1)
+                        dev.off()
+                     }else{
+                        dev.off()
+                     }#end if
+                  } #end for outform
+               }#end if plotit
+            }#end for nhov
+            #------------------------------------------------------------------------------#
+         }else{
+            #----- Re-scale or re-define some variables. ----------------------------------#
+            print(paste("        * Skipping sparse cohort..."))
+         }#end if (any(resolvable == 0))
+
+
+      }#end for (ico in cohorts)
       #------------------------------------------------------------------------------------#
 
 

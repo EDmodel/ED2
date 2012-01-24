@@ -225,8 +225,8 @@ subroutine copy_met_2_rk4site(mzg,can_theta,can_shv,can_depth,vels,atm_theiv,atm
    use therm_lib8     , only : rehuil8       & ! function
                              , reducedpress8 & ! function
                              , tq2enthalpy8  & ! function
-                             , pq2exner8     & ! function
-                             , exthq2temp8   & ! function
+                             , press2exner8  & ! function
+                             , extheta2temp8 & ! function
                              , idealdenssh8  ! ! function
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
@@ -317,9 +317,9 @@ subroutine copy_met_2_rk4site(mzg,can_theta,can_shv,can_depth,vels,atm_theiv,atm
    !---------------------------------------------------------------------------------------!
    can_prss8            = reducedpress8(rk4site%atm_prss,rk4site%atm_theta,rk4site%atm_shv &
                                        ,rk4site%geoht,can_theta8,can_shv8,can_depth8)
-   can_exner8           = pq2exner8(can_prss8,rk4site%atm_shv,.true.)
-   rk4site%atm_tmp_zcan = exthq2temp8(can_exner8,rk4site%atm_theta,rk4site%atm_shv,.true.)
-   rk4site%atm_enthalpy = tq2enthalpy8(rk4site%atm_tmp_zcan,rk4site%atm_shv,.true.)
+   can_exner8           = press2exner8 (can_prss8)
+   rk4site%atm_tmp_zcan = extheta2temp8(can_exner8,rk4site%atm_theta)
+   rk4site%atm_enthalpy = tq2enthalpy8 (rk4site%atm_tmp_zcan,rk4site%atm_shv,.true.)
    !---------------------------------------------------------------------------------------!
 
 

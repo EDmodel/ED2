@@ -318,8 +318,8 @@ subroutine spatial_averages
    use therm_lib             , only : uextcm2tl          & ! subroutine
                                     , uint2tl            & ! subroutine
                                     , idealdenssh        & ! function
-                                    , pq2exner           & ! function
-                                    , exthq2temp         ! ! function
+                                    , press2exner        & ! function
+                                    , extheta2temp       ! ! function
    use soil_coms             , only : tiny_sfcwater_mass & ! intent(in)
                                     , isoilbc            & ! intent(in)
                                     , soil               & ! intent(in)
@@ -1026,13 +1026,8 @@ subroutine spatial_averages
             cpoly%avg_can_shv     (isi) = sum(csite%can_shv    * csite%area) * site_area_i
             cpoly%avg_can_co2     (isi) = sum(csite%can_co2    * csite%area) * site_area_i
             cpoly%avg_can_prss    (isi) = sum(csite%can_prss   * csite%area) * site_area_i
-            can_exner                   = pq2exner   ( cpoly%avg_can_prss  (isi)           &
-                                                     , cpoly%avg_can_shv   (isi)           &
-                                                     , .true.                              )
-            cpoly%avg_can_temp    (isi) = exthq2temp ( can_exner                           &
-                                                     , cpoly%avg_can_theta (isi)           &
-                                                     , cpoly%avg_can_shv   (isi)           &
-                                                     , .true.                              )
+            can_exner                   = press2exner (cpoly%avg_can_prss(isi))
+            cpoly%avg_can_temp    (isi) = extheta2temp(can_exner,cpoly%avg_can_theta (isi))
             cpoly%avg_can_rhos    (isi) = idealdenssh( cpoly%avg_can_prss  (isi)           &
                                                      , cpoly%avg_can_temp  (isi)           &
                                                      , cpoly%avg_can_shv   (isi)           )
@@ -1227,16 +1222,11 @@ subroutine spatial_averages
          cgrid%avg_can_shv     (ipy) = sum(cpoly%avg_can_shv   * cpoly%area) * poly_area_i
          cgrid%avg_can_co2     (ipy) = sum(cpoly%avg_can_co2   * cpoly%area) * poly_area_i
          cgrid%avg_can_prss    (ipy) = sum(cpoly%avg_can_prss  * cpoly%area) * poly_area_i
-         can_exner                   = pq2exner   ( cgrid%avg_can_prss  (ipy)              &
-                                                  , cgrid%avg_can_shv   (ipy)              &
-                                                  , .true.                                 )
-         cgrid%avg_can_temp    (ipy) = exthq2temp ( can_exner                              &
-                                                  , cgrid%avg_can_theta (ipy)              &
-                                                  , cgrid%avg_can_shv   (ipy)              &
-                                                  , .true.                                 )
-         cgrid%avg_can_rhos    (ipy) = idealdenssh( cgrid%avg_can_prss  (ipy)              &
-                                                  , cgrid%avg_can_temp  (ipy)              &
-                                                  , cgrid%avg_can_shv   (ipy)              )
+         can_exner                   = press2exner (cgrid%avg_can_prss(ipy))
+         cgrid%avg_can_temp    (ipy) = extheta2temp(can_exner,cgrid%avg_can_theta(ipy))
+         cgrid%avg_can_rhos    (ipy) = idealdenssh ( cgrid%avg_can_prss  (ipy)             &
+                                                   , cgrid%avg_can_temp  (ipy)             &
+                                                   , cgrid%avg_can_shv   (ipy)             )
          !---------------------------------------------------------------------------------!
          !    Similar to the site level, average mass, heat capacity and energy then find  !
          ! the average temperature and liquid water fraction.                              !

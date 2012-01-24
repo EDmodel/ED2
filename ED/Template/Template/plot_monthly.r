@@ -98,6 +98,7 @@ source(paste(srcdir,"rconstants.r"      ,sep="/"))
 source(paste(srcdir,"soilutils.r"       ,sep="/"))
 source(paste(srcdir,"sombreado.r"       ,sep="/"))
 source(paste(srcdir,"southammap.r"      ,sep="/"))
+source(paste(srcdir,"thermlib.r"        ,sep="/"))
 source(paste(srcdir,"timeutils.r"       ,sep="/"))
 #----- These should be called after the others. --------------------------------------------#
 source(paste(srcdir,"physiology.coms.r",sep="/"))
@@ -533,7 +534,8 @@ for (place in myplaces){
           hflxlc          = c(hflxlc           ,   mymont$MMEAN.SENSIBLE.LC              )
           hflxwc          = c(hflxwc           ,   mymont$MMEAN.SENSIBLE.WC              )
           hflxgc          = c(hflxgc           ,   mymont$MMEAN.SENSIBLE.GC              )
-          qwflxca         = c(qwflxca          , - mymont$MMEAN.VAPOR.AC    * alvl       )
+          qwflxca         = c(qwflxca          , - mymont$MMEAN.VAPOR.AC    
+                                                 * alvli(mymont$MMEAN.CAN.TEMP)          )
           wflxca          = c(wflxca           , - mymont$MMEAN.VAPOR.AC    * day.sec    )
           wflxlc          = c(wflxlc           ,   mymont$MMEAN.VAPOR.LC    * day.sec    )
           wflxwc          = c(wflxwc           ,   mymont$MMEAN.VAPOR.WC    * day.sec    )
@@ -541,24 +543,32 @@ for (place in myplaces){
           evap            = c(evap             ,   mymont$MMEAN.EVAP        * day.sec    )
           transp          = c(transp           ,   mymont$MMEAN.TRANSP      * day.sec    )
 
-          mmsqu.gpp       = c(mmsqu.gpp    ,mymont$MMSQU.GPP                             )
-          mmsqu.plresp    = c(mmsqu.plresp ,mymont$MMSQU.PLRESP                          )
-          mmsqu.leaf.resp = c(mmsqu.leaf.resp ,mymont$MMSQU.PLRESP                       )
-          mmsqu.root.resp = c(mmsqu.root.resp ,mymont$MMSQU.PLRESP                       )
-          mmsqu.hetresp   = c(mmsqu.hetresp,mymont$MMSQU.RH                              )
-          mmsqu.cflxca    = c(mmsqu.cflxca ,mymont$MMSQU.CARBON.AC                       )
-          mmsqu.cflxst    = c(mmsqu.cflxst ,mymont$MMSQU.CARBON.ST                       )
-          mmsqu.hflxca    = c(mmsqu.hflxca ,mymont$MMSQU.SENSIBLE.AC                     )
-          mmsqu.hflxlc    = c(mmsqu.hflxlc ,mymont$MMSQU.SENSIBLE.LC                     )
-          mmsqu.hflxwc    = c(mmsqu.hflxwc ,mymont$MMSQU.SENSIBLE.WC                     )
-          mmsqu.hflxgc    = c(mmsqu.hflxgc ,mymont$MMSQU.SENSIBLE.GC                     )
-          mmsqu.wflxca    = c(mmsqu.wflxca ,mymont$MMSQU.VAPOR.AC  * day.sec * day.sec   )
-          mmsqu.qwflxca   = c(mmsqu.qwflxca,mymont$MMSQU.VAPOR.AC  * alvl    * alvl      )
-          mmsqu.wflxlc    = c(mmsqu.wflxlc ,mymont$MMSQU.VAPOR.LC  * day.sec * day.sec   )
-          mmsqu.wflxwc    = c(mmsqu.wflxwc ,mymont$MMSQU.VAPOR.WC  * day.sec * day.sec   )
-          mmsqu.wflxgc    = c(mmsqu.wflxgc ,mymont$MMSQU.VAPOR.GC  * day.sec * day.sec   )
-          mmsqu.evap      = c(mmsqu.evap   ,mymont$MMSQU.EVAP      * day.sec * day.sec   )
-          mmsqu.transp    = c(mmsqu.transp ,mymont$MMSQU.TRANSP    * day.sec * day.sec   )
+          mmsqu.gpp       = c(mmsqu.gpp       , mymont$MMSQU.GPP                         )
+          mmsqu.plresp    = c(mmsqu.plresp    , mymont$MMSQU.PLRESP                      )
+          mmsqu.leaf.resp = c(mmsqu.leaf.resp , mymont$MMSQU.PLRESP                      )
+          mmsqu.root.resp = c(mmsqu.root.resp , mymont$MMSQU.PLRESP                      )
+          mmsqu.hetresp   = c(mmsqu.hetresp   , mymont$MMSQU.RH                          )
+          mmsqu.cflxca    = c(mmsqu.cflxca    , mymont$MMSQU.CARBON.AC                   )
+          mmsqu.cflxst    = c(mmsqu.cflxst    , mymont$MMSQU.CARBON.ST                   )
+          mmsqu.hflxca    = c(mmsqu.hflxca    , mymont$MMSQU.SENSIBLE.AC                 )
+          mmsqu.hflxlc    = c(mmsqu.hflxlc    , mymont$MMSQU.SENSIBLE.LC                 )
+          mmsqu.hflxwc    = c(mmsqu.hflxwc    , mymont$MMSQU.SENSIBLE.WC                 )
+          mmsqu.hflxgc    = c(mmsqu.hflxgc    , mymont$MMSQU.SENSIBLE.GC                 )
+          mmsqu.wflxca    = c(mmsqu.wflxca    , mymont$MMSQU.VAPOR.AC  
+                                              * day.sec * day.sec                        )
+          mmsqu.qwflxca   = c(mmsqu.qwflxca   , mymont$MMSQU.VAPOR.AC  
+                                              * alvli(mymont$MMEAN.CAN.TEMP)
+                                              * alvli(mymont$MMEAN.CAN.TEMP)              )
+          mmsqu.wflxlc    = c(mmsqu.wflxlc    , mymont$MMSQU.VAPOR.LC  
+                                              * day.sec * day.sec                        )
+          mmsqu.wflxwc    = c(mmsqu.wflxwc    , mymont$MMSQU.VAPOR.WC
+                                              * day.sec * day.sec                        )
+          mmsqu.wflxgc    = c(mmsqu.wflxgc    , mymont$MMSQU.VAPOR.GC
+                                              * day.sec * day.sec                        )
+          mmsqu.evap      = c(mmsqu.evap      , mymont$MMSQU.EVAP
+                                              * day.sec * day.sec                        )
+          mmsqu.transp    = c(mmsqu.transp    , mymont$MMSQU.TRANSP
+                                              * day.sec * day.sec                        )
 
           ustar         = c(ustar        ,mymont$MMEAN.USTAR                             )
 
@@ -634,7 +644,8 @@ for (place in myplaces){
           dcycmean$hflxwc      [m,] = mymont$QMEAN.SENSIBLE.WC
           dcycmean$hflxgc      [m,] = mymont$QMEAN.SENSIBLE.GC
           dcycmean$wflxca      [m,] = - mymont$QMEAN.VAPOR.AC         * day.sec
-          dcycmean$qwflxca     [m,] = - mymont$QMEAN.VAPOR.AC         * alvl
+          dcycmean$qwflxca     [m,] = ( - mymont$QMEAN.VAPOR.AC
+                                        * alvli(mymont$QMEAN.CAN.TEMP) )
           dcycmean$wflxlc      [m,] = mymont$QMEAN.VAPOR.LC           * day.sec
           dcycmean$wflxwc      [m,] = mymont$QMEAN.VAPOR.WC           * day.sec
           dcycmean$wflxgc      [m,] = mymont$QMEAN.VAPOR.GC           * day.sec
@@ -683,7 +694,9 @@ for (place in myplaces){
           dcycmsqu$hflxwc      [m,] = mymont$QMSQU.SENSIBLE.WC
           dcycmsqu$hflxgc      [m,] = mymont$QMSQU.SENSIBLE.GC
           dcycmsqu$wflxca      [m,] = mymont$QMSQU.VAPOR.AC    * day.sec * day.sec
-          dcycmsqu$qwflxca     [m,] = mymont$QMSQU.VAPOR.AC    * alvl    * alvl
+          dcycmsqu$qwflxca     [m,] = ( mymont$QMSQU.VAPOR.AC    
+                                      * alvli(mymont$QMEAN.CAN.TEMP)
+                                      * alvli(mymont$QMEAN.CAN.TEMP) )
           dcycmsqu$wflxlc      [m,] = mymont$QMSQU.VAPOR.WC    * day.sec * day.sec
           dcycmsqu$wflxwc      [m,] = mymont$QMSQU.VAPOR.LC    * day.sec * day.sec
           dcycmsqu$wflxgc      [m,] = mymont$QMSQU.VAPOR.GC    * day.sec * day.sec

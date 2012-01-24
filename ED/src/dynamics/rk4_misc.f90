@@ -38,8 +38,8 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
                                     , rehuil8                & ! function
                                     , qslif8                 & ! function
                                     , reducedpress8          & ! function
-                                    , pq2exner8              & ! function
-                                    , exthq2temp8            & ! function
+                                    , press2exner8           & ! function
+                                    , extheta2temp8          & ! function
                                     , tq2enthalpy8           ! ! function
    use soil_coms             , only : soil8                  ! ! intent(in)
    use ed_therm_lib          , only : ed_grndvap8            ! ! subroutine
@@ -90,15 +90,14 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
    targetp%can_prss  = reducedpress8(rk4site%atm_prss,rk4site%atm_theta,rk4site%atm_shv    &
                                     ,rk4site%geoht,targetp%can_theta,targetp%can_shv       &
                                     ,targetp%can_depth)
-   targetp%can_exner = pq2exner8(targetp%can_prss,targetp%can_shv,.true.)
+   targetp%can_exner = press2exner8 (targetp%can_prss)
    !---------------------------------------------------------------------------------------!
 
 
    !---------------------------------------------------------------------------------------!
    !      Initialise canopy air temperature and enthalpy.                                  !
    !---------------------------------------------------------------------------------------!
-   targetp%can_temp     = exthq2temp8(targetp%can_exner,targetp%can_theta,targetp%can_shv  &
-                                     ,.true.)
+   targetp%can_temp     = extheta2temp8(targetp%can_exner,targetp%can_theta)
    targetp%can_enthalpy = tq2enthalpy8(targetp%can_temp,targetp%can_shv,.true.)
    !---------------------------------------------------------------------------------------!
 
@@ -576,8 +575,8 @@ subroutine update_diagnostic_vars(initp, csite,ipa)
                                     , rehuil8               & ! function
                                     , qslif8                & ! function
                                     , hq2temp8              & ! function
-                                    , pq2exner8             & ! function
-                                    , extq2theta8           & ! function
+                                    , press2exner8          & ! function
+                                    , extemp2theta8         & ! function
                                     , thil2tqall8           ! ! function
    use consts_coms           , only : t3ple8                & ! intent(in)
                                     , cpdry8                & ! intent(in)
@@ -638,7 +637,7 @@ subroutine update_diagnostic_vars(initp, csite,ipa)
    if (ok_shv .and. ok_enthalpy) then
 
       !----- Update the Exner function which is a mild function of humidity. --------------!
-      initp%can_exner = pq2exner8(initp%can_prss,initp%can_shv,.true.)
+      initp%can_exner = press2exner8(initp%can_prss)
       !------------------------------------------------------------------------------------!
 
 
@@ -651,7 +650,7 @@ subroutine update_diagnostic_vars(initp, csite,ipa)
       !------------------------------------------------------------------------------------!
 
       !----- Find the new potential temperature. ------------------------------------------!
-      initp%can_theta = extq2theta8(initp%can_exner,initp%can_temp,initp%can_shv,.true.)
+      initp%can_theta = extemp2theta8(initp%can_exner,initp%can_temp)
       !------------------------------------------------------------------------------------!
 
 

@@ -411,18 +411,19 @@ options(locatorBell=FALSE)
 
 
 #----- Loading some files with functions. -------------------------------------------------#
-source(paste(srcdir,"atlas.r",sep="/"))
-source(paste(srcdir,"globdims.r",sep="/"))
-source(paste(srcdir,"locations.r",sep="/"))
-source(paste(srcdir,"muitas.r",sep="/"))
-source(paste(srcdir,"pretty.log.r",sep="/"))
+source(paste(srcdir,"atlas.r"      ,sep="/"))
+source(paste(srcdir,"globdims.r"   ,sep="/"))
+source(paste(srcdir,"locations.r"  ,sep="/"))
+source(paste(srcdir,"muitas.r"     ,sep="/"))
+source(paste(srcdir,"pretty.log.r" ,sep="/"))
 source(paste(srcdir,"pretty.time.r",sep="/"))
-source(paste(srcdir,"plotsize.r",sep="/"))
-source(paste(srcdir,"qapply.r",sep="/"))
-source(paste(srcdir,"rconstants.r",sep="/"))
-source(paste(srcdir,"sombreado.r",sep="/"))
-source(paste(srcdir,"southammap.r",sep="/"))
-source(paste(srcdir,"timeutils.r",sep="/"))
+source(paste(srcdir,"plotsize.r"   ,sep="/"))
+source(paste(srcdir,"qapply.r"     ,sep="/"))
+source(paste(srcdir,"rconstants.r" ,sep="/"))
+source(paste(srcdir,"sombreado.r"  ,sep="/"))
+source(paste(srcdir,"southammap.r" ,sep="/"))
+source(paste(srcdir,"thermlib.r"   ,sep="/"))
+source(paste(srcdir,"timeutils.r"  ,sep="/"))
 #------------------------------------------------------------------------------------------#
 
 
@@ -560,7 +561,7 @@ for (place in myplaces){
       cpatch$transp         =   cpatch$transp       * day.sec
 
       #----- Canopy -> Atmosphere fluxes in W/m2. -----------------------------------------#
-      cpatch$qwflxca         = - cpatch$wflxac      * alvl / day.sec
+      cpatch$qwflxca         = - cpatch$wflxac      * alvli(cpatch$can.temp) / day.sec
       cpatch$hflxca          = - cpatch$hflxac
       cpatch$cflxca          = - cpatch$cflxac
 

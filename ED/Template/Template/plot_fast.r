@@ -192,6 +192,7 @@ source(paste(srcdir,"rconstants.r" ,sep="/"))
 source(paste(srcdir,"soil_coms.r"  ,sep="/"))
 source(paste(srcdir,"sombreado.r"  ,sep="/"))
 source(paste(srcdir,"southammap.r" ,sep="/"))
+source(paste(srcdir,"thermlib.r"   ,sep="/"))
 source(paste(srcdir,"timeutils.r"  ,sep="/"))
 
 
@@ -412,39 +413,46 @@ for (n in 1:ntimes){
 
       print (paste("      # Retrieving data from ",p$lieu,"...",sep=""))
 
-      p$gpp         = c(p$gpp        , myfast$AVG.GPP         [ipy    ]           )
-      p$plresp      = c(p$plresp     , myfast$AVG.PLANT.RESP  [ipy    ]           )
-      p$hetresp     = c(p$hetresp    , myfast$AVG.HTROPH.RESP [ipy    ]           )
-      p$rsnet       = c(p$rsnet      , myfast$AVG.RSHORT      [ipy    ]
-                                     * (1. - myfast$AVG.ALBEDT[ipy    ])          )
-      p$rlong       = c(p$rlong      , myfast$AVG.RLONG       [ipy    ]           )
-      p$rlongup     = c(p$rlongup    , myfast$AVG.RLONGUP     [ipy    ]           )
-      p$qwflxca     = c(p$qwflxca    ,-myfast$AVG.VAPOR.AC    [ipy    ] * alvl    )
-      p$hflxca      = c(p$hflxca     ,-myfast$AVG.SENSIBLE.AC [ipy    ]           )
-      p$qwflxgc     = c(p$qwflxgc    , myfast$AVG.VAPOR.GC    [ipy    ] * alvl    )
-      p$qwflxac     = c(p$qwflxac    , myfast$AVG.VAPOR.AC    [ipy    ] * alvl    )
-      p$qwflxlc     = c(p$qwflxlc    , myfast$AVG.VAPOR.LC    [ipy    ] * alvl    )
-      p$qwflxwc     = c(p$qwflxwc    , myfast$AVG.VAPOR.WC    [ipy    ] * alvl    )
-      p$qtransp     = c(p$qtransp    , myfast$AVG.TRANSP      [ipy    ] * alvl    )
-      p$qdewgnd     = c(p$qdewgnd    ,-myfast$AVG.DEW.CG      [ipy    ] * alvl    )
-      p$hflxgc      = c(p$hflxgc     , myfast$AVG.SENSIBLE.GC [ipy    ]           )
-      p$hflxac      = c(p$hflxac     , myfast$AVG.SENSIBLE.AC [ipy    ]           )
-      p$hflxlc      = c(p$hflxlc     , myfast$AVG.SENSIBLE.LC [ipy    ]           )
-      p$hflxwc      = c(p$hflxwc     , myfast$AVG.SENSIBLE.WC [ipy    ]           )
-      p$atm.temp    = c(p$atm.temp   , myfast$AVG.ATM.TMP     [ipy    ] - t00     )
-      p$can.temp    = c(p$can.temp   , myfast$AVG.CAN.TEMP    [ipy    ] - t00     )
-      p$leaf.temp   = c(p$leaf.temp  , myfast$AVG.LEAF.TEMP   [ipy    ] - t00     )
-      p$wood.temp   = c(p$wood.temp  , myfast$AVG.WOOD.TEMP   [ipy    ] - t00     )
-      p$soil.temp   = c(p$soil.temp  , myfast$AVG.SOIL.TEMP   [ipy,nzg] - t00     )
-      p$atm.shv     = c(p$atm.shv    , myfast$AVG.ATM.SHV     [ipy    ] * 1000.   )
-      p$can.shv     = c(p$can.shv    , myfast$AVG.CAN.SHV     [ipy    ] * 1000.   )
-      p$soil.water  = c(p$soil.water , myfast$AVG.SOIL.WATER  [ipy,nzg]           )
-      p$atm.co2     = c(p$atm.co2    , myfast$AVG.ATM.CO2     [ipy    ]           )
-      p$can.co2     = c(p$can.co2    , myfast$AVG.CAN.CO2     [ipy    ]           )
-      p$prec        = c(p$prec       , myfast$AVG.PCPG        [ipy    ] * 3600.   )
-      p$intercept   = c(p$intercept  , myfast$AVG.INTERCEPTED [ipy    ] * 3600.   )
-      p$throughfall = c(p$throughfall, myfast$AVG.INTERCEPTED [ipy    ] * 3600.   )
-      p$wshed       = c(p$wshed      , myfast$AVG.WSHED.VG    [ipy    ] * 3600.   )
+      p$gpp         = c(p$gpp        , myfast$AVG.GPP            [ipy    ]           )
+      p$plresp      = c(p$plresp     , myfast$AVG.PLANT.RESP     [ipy    ]           )
+      p$hetresp     = c(p$hetresp    , myfast$AVG.HTROPH.RESP    [ipy    ]           )
+      p$rsnet       = c(p$rsnet      , myfast$AVG.RSHORT         [ipy    ]
+                                     * (1. - myfast$AVG.ALBEDT   [ipy    ])          )
+      p$rlong       = c(p$rlong      , myfast$AVG.RLONG          [ipy    ]           )
+      p$rlongup     = c(p$rlongup    , myfast$AVG.RLONGUP        [ipy    ]           )
+      p$qwflxca     = c(p$qwflxca    ,-myfast$AVG.VAPOR.AC       [ipy    ]
+                                     * alvli(myfast$AVG.CAN.TEMP [ipy    ])          )
+      p$hflxca      = c(p$hflxca     ,-myfast$AVG.SENSIBLE.AC    [ipy    ]           )
+      p$qwflxgc     = c(p$qwflxgc    , myfast$AVG.VAPOR.GC       [ipy    ]
+                                     * alvli(myfast$AVG.CAN.TEMP [ipy    ])          )
+      p$qwflxac     = c(p$qwflxac    , myfast$AVG.VAPOR.AC       [ipy    ]
+                                     * alvli(myfast$AVG.CAN.TEMP [ipy    ])          )
+      p$qwflxlc     = c(p$qwflxlc    , myfast$AVG.VAPOR.LC       [ipy    ]
+                                     * alvli(myfast$AVG.CAN.TEMP [ipy    ])          )
+      p$qwflxwc     = c(p$qwflxwc    , myfast$AVG.VAPOR.WC       [ipy    ]
+                                     * alvli(myfast$AVG.CAN.TEMP [ipy    ])          )
+      p$qtransp     = c(p$qtransp    , myfast$AVG.TRANSP         [ipy    ]
+                                     * alvli(myfast$AVG.CAN.TEMP [ipy    ])          )
+      p$qdewgnd     = c(p$qdewgnd    ,-myfast$AVG.DEW.CG         [ipy    ]
+                                     * alvli(myfast$AVG.CAN.TEMP [ipy    ])          )
+      p$hflxgc      = c(p$hflxgc     , myfast$AVG.SENSIBLE.GC    [ipy    ]           )
+      p$hflxac      = c(p$hflxac     , myfast$AVG.SENSIBLE.AC    [ipy    ]           )
+      p$hflxlc      = c(p$hflxlc     , myfast$AVG.SENSIBLE.LC    [ipy    ]           )
+      p$hflxwc      = c(p$hflxwc     , myfast$AVG.SENSIBLE.WC    [ipy    ]           )
+      p$atm.temp    = c(p$atm.temp   , myfast$AVG.ATM.TMP        [ipy    ] - t00     )
+      p$can.temp    = c(p$can.temp   , myfast$AVG.CAN.TEMP       [ipy    ] - t00     )
+      p$leaf.temp   = c(p$leaf.temp  , myfast$AVG.LEAF.TEMP      [ipy    ] - t00     )
+      p$wood.temp   = c(p$wood.temp  , myfast$AVG.WOOD.TEMP      [ipy    ] - t00     )
+      p$soil.temp   = c(p$soil.temp  , myfast$AVG.SOIL.TEMP      [ipy,nzg] - t00     )
+      p$atm.shv     = c(p$atm.shv    , myfast$AVG.ATM.SHV        [ipy    ] * 1000.   )
+      p$can.shv     = c(p$can.shv    , myfast$AVG.CAN.SHV        [ipy    ] * 1000.   )
+      p$soil.water  = c(p$soil.water , myfast$AVG.SOIL.WATER     [ipy,nzg]           )
+      p$atm.co2     = c(p$atm.co2    , myfast$AVG.ATM.CO2        [ipy    ]           )
+      p$can.co2     = c(p$can.co2    , myfast$AVG.CAN.CO2        [ipy    ]           )
+      p$prec        = c(p$prec       , myfast$AVG.PCPG           [ipy    ] * 3600.   )
+      p$intercept   = c(p$intercept  , myfast$AVG.INTERCEPTED    [ipy    ] * 3600.   )
+      p$throughfall = c(p$throughfall, myfast$AVG.INTERCEPTED    [ipy    ] * 3600.   )
+      p$wshed       = c(p$wshed      , myfast$AVG.WSHED.VG       [ipy    ] * 3600.   )
 
       #------ Collecting the properties of this soil type. --------------------------------#
       nsoil = myfast$NTEXT.SOIL[ipy]

@@ -974,7 +974,6 @@ module disturbance_utils
             tpatch%today_gpp_max      (nco) = tpatch%today_gpp_max    (nco) * survival_fac
             tpatch%today_leaf_resp    (nco) = tpatch%today_leaf_resp  (nco) * survival_fac
             tpatch%today_root_resp    (nco) = tpatch%today_root_resp  (nco) * survival_fac
-            tpatch%Psi_open           (nco) = tpatch%Psi_open         (nco) * survival_fac
             tpatch%gpp                (nco) = tpatch%gpp              (nco) * survival_fac
             tpatch%leaf_respiration   (nco) = tpatch%leaf_respiration (nco) * survival_fac
             tpatch%root_respiration   (nco) = tpatch%root_respiration (nco) * survival_fac

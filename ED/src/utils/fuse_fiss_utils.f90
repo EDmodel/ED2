@@ -274,8 +274,8 @@ module fuse_fiss_utils
       !    Renormalize the total area.  We must also rescale all extensive properties from !
       ! cohorts, since they are per unit area and we are effectively changing the area.    !
       ! IMPORTANT: Only cohort-level variables that have units per area (m2) should be     !
-      !            rescaled.  Variables whose units are per plant should _NOT_ be included !
-      !            here.                                                                   !
+      !            rescaled.  Variables whose units are per plant or per leaf area         !
+      !            (m2_leaf) should _NOT_ be included here.                                !
       !------------------------------------------------------------------------------------!
       new_area=0.
       area_scale = 1./(1. - elim_area)
@@ -295,7 +295,6 @@ module fuse_fiss_utils
             cpatch%mean_growth_resp     (ico) = cpatch%mean_growth_resp  (ico) * area_scale
             cpatch%mean_storage_resp    (ico) = cpatch%mean_storage_resp (ico) * area_scale
             cpatch%mean_vleaf_resp      (ico) = cpatch%mean_vleaf_resp   (ico) * area_scale
-            cpatch%Psi_open             (ico) = cpatch%Psi_open          (ico) * area_scale
             cpatch%gpp                  (ico) = cpatch%gpp               (ico) * area_scale
             cpatch%leaf_respiration     (ico) = cpatch%leaf_respiration  (ico) * area_scale
             cpatch%root_respiration     (ico) = cpatch%root_respiration  (ico) * area_scale
@@ -732,9 +731,10 @@ module fuse_fiss_utils
                !---------------------------------------------------------------------------!
                !   Half the densities of the original cohort.  All "extensive" variables   !
                ! need to be rescaled.                                                      !
-               ! IMPORTANT: Only cohort-level variables that have units per area (m2)      !
-               !            should be rescaled.  Variables whose units are per plant       !
-               !            should _NOT_ be included here.                                 !
+               ! IMPORTANT: Only cohort-level variables that have units per area           !
+               !            (m2_ground) should be rescaled.  Variables whose units are per !
+               !            plant or per leaf area (m2_leaf) should _NOT_ be included      !
+               !            here.                                                          !
                !---------------------------------------------------------------------------!
                cpatch%lai                  (ico) = cpatch%lai               (ico) * 0.5
                cpatch%wpa                  (ico) = cpatch%wpa               (ico) * 0.5
@@ -758,7 +758,6 @@ module fuse_fiss_utils
                cpatch%today_gpp_max        (ico) = cpatch%today_gpp_max     (ico) * 0.5
                cpatch%today_leaf_resp      (ico) = cpatch%today_leaf_resp   (ico) * 0.5
                cpatch%today_root_resp      (ico) = cpatch%today_root_resp   (ico) * 0.5
-               cpatch%Psi_open             (ico) = cpatch%Psi_open          (ico) * 0.5
                cpatch%gpp                  (ico) = cpatch%gpp               (ico) * 0.5
                cpatch%leaf_respiration     (ico) = cpatch%leaf_respiration  (ico) * 0.5
                cpatch%root_respiration     (ico) = cpatch%root_respiration  (ico) * 0.5
@@ -1416,15 +1415,19 @@ module fuse_fiss_utils
       cpatch%vleaf_respiration(recc)   = newni *                                           &
                                 ( cpatch%vleaf_respiration(recc)   * cpatch%nplant(recc)   &
                                 + cpatch%vleaf_respiration(donc)   * cpatch%nplant(donc) )
+      !------------------------------------------------------------------------------------!
 
 
 
 
       !------------------------------------------------------------------------------------!
-      !    Water demand and supply are in kg/m2_gnd/s, so we add them.                     !
+      !    Water demand is in kg/m2_leaf/s, so we scale them by LAI.  Water supply is in   !
+      ! kg/m2_ground/s, so we just add them.                                               !
       !------------------------------------------------------------------------------------!
-      cpatch%psi_open(recc)     = cpatch%psi_open(recc)     + cpatch%psi_open(donc)
-      cpatch%psi_closed(recc)   = cpatch%psi_closed(recc)   + cpatch%psi_closed(donc)
+      cpatch%psi_open    (recc) = ( cpatch%psi_open  (recc) * cpatch%lai(recc)             &
+                                  + cpatch%psi_open  (donc) * cpatch%lai(donc) ) * newlaii
+      cpatch%psi_closed  (recc) = ( cpatch%psi_closed(recc) * cpatch%lai(recc)             & 
+                                  + cpatch%psi_closed(donc) * cpatch%lai(donc) ) * newlaii
       cpatch%water_supply(recc) = cpatch%water_supply(recc) + cpatch%water_supply(donc)
       !------------------------------------------------------------------------------------!
 
@@ -1433,15 +1436,15 @@ module fuse_fiss_utils
       !    Carbon demand is in kg_C/m2_leaf/s, so we scale them by LAI.  FSW and FSN are   !
       ! really related to leaves, so we scale them by LAI.                                 !
       !------------------------------------------------------------------------------------!
-      cpatch%A_open(recc)       = ( cpatch%A_open(recc)   * cpatch%lai(recc)               &
-                                  + cpatch%A_open(donc)   * cpatch%lai(donc) ) * newlaii
+      cpatch%A_open  (recc)     = ( cpatch%A_open  (recc) * cpatch%lai(recc)               &
+                                  + cpatch%A_open  (donc) * cpatch%lai(donc) ) * newlaii
       cpatch%A_closed(recc)     = ( cpatch%A_closed(recc) * cpatch%lai(recc)               &
                                   + cpatch%A_closed(donc) * cpatch%lai(donc) ) * newlaii
-      cpatch%fsw(recc)          = ( cpatch%fsw(recc)      * cpatch%lai(recc)               &
-                                  + cpatch%fsw(donc)      * cpatch%lai(donc) ) * newlaii
-      cpatch%fsn(recc)          = ( cpatch%fsn(recc)      * cpatch%lai(recc)               &
-                                  + cpatch%fsn(donc)      * cpatch%lai(donc) ) * newlaii
-      cpatch%fs_open(recc)      = cpatch%fsw(recc) * cpatch%fsn(recc)
+      cpatch%fsw     (recc)     = ( cpatch%fsw     (recc) * cpatch%lai(recc)               &
+                                  + cpatch%fsw     (donc) * cpatch%lai(donc) ) * newlaii
+      cpatch%fsn     (recc)     = ( cpatch%fsn     (recc) * cpatch%lai(recc)               &
+                                  + cpatch%fsn     (donc) * cpatch%lai(donc) ) * newlaii
+      cpatch%fs_open (recc)     = cpatch%fsw(recc) * cpatch%fsn(recc)
       !------------------------------------------------------------------------------------!
 
 

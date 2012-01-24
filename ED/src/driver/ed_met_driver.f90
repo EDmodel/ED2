@@ -816,9 +816,8 @@ subroutine update_met_drivers(cgrid)
    use ed_max_dims          , only : n_pft             ! ! intent(in)
    use therm_lib            , only : tl2uint           & ! function
                                    , ptrh2rvapil       & ! function
-                                   , pq2exner          & ! function
-                                   , extq2theta        & ! function
-                                   , exthq2temp        & ! function
+                                   , press2exner       & ! function
+                                   , extemp2theta      & ! function
                                    , thetaeiv          & ! function
                                    , rehuil            ! ! function
 
@@ -2198,17 +2197,15 @@ subroutine update_met_drivers(cgrid)
       if (.not. have_co2) cgrid%met(ipy)%atm_co2 = initial_co2
       !------------------------------------------------------------------------------------!
 
-      !----- Set the default Exner function from pressure and specific humidity. ----------!
-      cgrid%met(ipy)%exner = pq2exner(cgrid%met(ipy)%prss,cgrid%met(ipy)%atm_shv,.true.)
+      !----- Set the default Exner function from pressure. --------------------------------!
+      cgrid%met(ipy)%exner = press2exner(cgrid%met(ipy)%prss)
       !------------------------------------------------------------------------------------!
 
 
       !------------------------------------------------------------------------------------!
-      !     Set default potential temperature from Exner function, air temperature, and    !
-      ! specific humidity.                                                                 !
+      !     Set default potential temperature from Exner function and air temperature.     !
       !------------------------------------------------------------------------------------!
-      cgrid%met(ipy)%atm_theta = extq2theta(cgrid%met(ipy)%exner,cgrid%met(ipy)%atm_tmp    &
-                                           ,cgrid%met(ipy)%atm_shv,.true.)
+      cgrid%met(ipy)%atm_theta = extemp2theta(cgrid%met(ipy)%exner,cgrid%met(ipy)%atm_tmp)
       temp0                    = cgrid%met(ipy)%atm_tmp
       !------------------------------------------------------------------------------------!
 
@@ -2216,8 +2213,9 @@ subroutine update_met_drivers(cgrid)
          cgrid%met(ipy)%atm_tmp = atm_tmp_intercept                                        &
                                 + cgrid%met(ipy)%atm_tmp * atm_tmp_slope
          !----- We must update potential temperature too. ---------------------------------!
-         cgrid%met(ipy)%atm_theta = extq2theta(cgrid%met(ipy)%exner,cgrid%met(ipy)%atm_tmp &
-                                              ,cgrid%met(ipy)%atm_shv,.true.)
+         cgrid%met(ipy)%atm_theta = extemp2theta( cgrid%met(ipy)%exner                     &
+                                                , cgrid%met(ipy)%atm_tmp )
+         !---------------------------------------------------------------------------------!
       end if
       cgrid%met(ipy)%pcpg = max(0.0,prec_intercept + cgrid%met(ipy)%pcpg * prec_slope)
       !------------------------------------------------------------------------------------!
@@ -2309,10 +2307,9 @@ subroutine update_met_drivers(cgrid)
          ! temperature, so it will respect the ideal gas law and first law of thermo-      !
          ! dynamics.                                                                       !
          !---------------------------------------------------------------------------------!
-         cpoly%met(isi)%exner     = pq2exner(cpoly%met(isi)%prss,cpoly%met(isi)%atm_shv    &
-                                            ,.true.)
-         cpoly%met(isi)%atm_theta = extq2theta(cpoly%met(isi)%exner,cpoly%met(isi)%atm_tmp &
-                                              ,cpoly%met(isi)%atm_shv,.true.)
+         cpoly%met(isi)%exner     = press2exner(cpoly%met(isi)%prss)
+         cpoly%met(isi)%atm_theta = extemp2theta( cpoly%met(isi)%exner                     &
+                                                , cpoly%met(isi)%atm_tmp )
          !---------------------------------------------------------------------------------!
 
 

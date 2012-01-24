@@ -226,9 +226,6 @@ Module rconstants
    real, parameter :: alli      = 3.34e5         ! Lat. heat - fusion       (Lf)[     J/kg]
    real, parameter :: alvl3     = 2.50e6         ! Lat. heat - vaporisation (Lv)[     J/kg]
    real, parameter :: alvi3     = alli + alvl3   ! Lat. heat - sublimation  (Ls)[     J/kg]
-   real, parameter :: alli3vlme = wdns * alli    ! Lat. heat × water density    [     J/m³]
-   real, parameter :: alvl3sq   = alvl3 * alvl3  ! Lv²                          [   J²/kg²]
-   real, parameter :: alvi3sq   = alvi3 * alvi3  ! Ls²                          [   J²/kg²]
    real, parameter :: allii     = 1.   / alli    ! 1./Lf                        [     kg/J]
    real, parameter :: aklv      = alvl3 / cpdry  ! Lv/Cp                        [        K]
    real, parameter :: akiv      = alvi3 / cpdry  ! Ls/Cp                        [        K]
@@ -243,6 +240,14 @@ Module rconstants
    real, parameter :: dcpvi     = cph2o - cice   ! difference of sp. heat       [   J/kg/K]
    !---------------------------------------------------------------------------------------!
 
+
+   !---------------------------------------------------------------------------------------!
+   !     The following variables are useful when defining the derivatives of theta_il.     !
+   !   They correspond to L?(T) - L?' T.                                                   !
+   !---------------------------------------------------------------------------------------!
+   real, parameter :: del_alvl3 = alvl3 - dcpvl * t3ple
+   real, parameter :: del_alvi3 = alvi3 - dcpvi * t3ple
+   !---------------------------------------------------------------------------------------!
 
 
    !---------------------------------------------------------------------------------------!
@@ -425,6 +430,8 @@ Module rconstants
    real(kind=8), parameter :: uiliqt38        = dble(uiliqt3       )
    real(kind=8), parameter :: dcpvl8          = dble(dcpvl         )
    real(kind=8), parameter :: dcpvi8          = dble(dcpvi         )
+   real(kind=8), parameter :: del_alvl38      = dble(del_alvl3     )
+   real(kind=8), parameter :: del_alvi38      = dble(del_alvi3     )
    real(kind=8), parameter :: tsupercool_liq8 = dble(tsupercool_liq)
    real(kind=8), parameter :: tsupercool_vap8 = dble(tsupercool_vap)
    real(kind=8), parameter :: eta3ple8        = dble(eta3ple       )

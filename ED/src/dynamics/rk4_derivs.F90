@@ -890,7 +890,9 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
    real(kind=8)                     :: eflxac            ! Atm->canopy Eq. Pot. temp flux
    real(kind=8)                     :: wflxlc_try        ! Intended flux leaf sfc -> canopy
    real(kind=8)                     :: wflxwc_try        ! Intended flux wood sfc -> canopy
-   real(kind=8)                     :: c3lai             ! Term for psi_open/psi_closed
+   real(kind=8)                     :: shv_gradient      ! Term for psi_open/psi_closed
+   real(kind=8)                     :: gleaf_open        ! Net leaf conductance (open)
+   real(kind=8)                     :: gleaf_closed      ! Net leaf conductance (closed)
    real(kind=8)                     :: hflxlc            ! Leaf->canopy heat flux
    real(kind=8)                     :: hflxwc            ! Wood->canopy heat flux
    real(kind=8)                     :: rgnd              !
@@ -936,8 +938,6 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
    real(kind=8)                     :: qwflxlc           ! Leaf -> CAS evaporation (energy)
    real(kind=8)                     :: qwflxwc           ! Wood -> CAS evaporation (energy)
    real(kind=8)                     :: qtransp           ! Transpiration (energy)
-   real(kind=8)                     :: water_demand      !
-   real(kind=8)                     :: water_supply      !
    real(kind=8)                     :: flux_area         ! Area between canopy and plant
    !----- Functions -----------------------------------------------------------------------!
    real(kind=4), external           :: sngloff           ! Safe dble 2 single precision
@@ -1287,16 +1287,20 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
                ! first make sure that there is some water available for transpiration...   !
                !---------------------------------------------------------------------------!
                if (rk4aux%avail_h2o_int(kroot) > 0.d0 ) then
-                  c3lai = effarea_transp(ipft) * initp%lai(ico)                            &
-                        * (initp%lint_shv(ico) - initp%can_shv) * initp%leaf_gbw(ico)
+                  gleaf_open   = effarea_transp(ipft)                                      &
+                               * initp%leaf_gbw(ico) * initp%gsw_open(ico)                 &
+                               / (initp%leaf_gbw(ico) + initp%gsw_open(ico) )
+                  gleaf_closed = effarea_transp(ipft)                                      &
+                               * initp%leaf_gbw(ico) * initp%gsw_closed(ico)               &
+                               / ( initp%leaf_gbw(ico) + initp%gsw_closed(ico) )
+                  shv_gradient = initp%lint_shv(ico) - initp%can_shv
 
-                  dinitp%psi_open(ico)   = c3lai * initp%gsw_open(ico)                     &
-                                         / (initp%leaf_gbw(ico) + initp%gsw_open(ico))
-                  dinitp%psi_closed(ico) = c3lai * initp%gsw_closed(ico)                   &
-                                         / (initp%leaf_gbw(ico) + initp%gsw_closed(ico))
+                  dinitp%psi_open  (ico) = gleaf_open   * shv_gradient
+                  dinitp%psi_closed(ico) = gleaf_closed * shv_gradient
 
-                  transp = initp%fs_open(ico) * dinitp%psi_open(ico)                       &
-                         + (1.0d0 - initp%fs_open(ico)) * dinitp%psi_closed(ico)
+                  transp = initp%lai(ico) * ( initp%fs_open(ico) * dinitp%psi_open(ico)    &
+                                            + (1.0d0 - initp%fs_open(ico))                 & 
+                                            * dinitp%psi_closed(ico) )
                else
                   dinitp%psi_open(ico)   = 0.d0
                   dinitp%psi_closed(ico) = 0.d0

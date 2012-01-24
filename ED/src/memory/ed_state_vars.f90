@@ -301,7 +301,7 @@ module ed_state_vars
      ! of the HDF5 file
      real ,pointer,dimension(:,:)           :: old_stoma_vector
 
-     ! Transpiration rate, open stomata (mm/s)
+     ! Transpiration rate, open stomata (kg/m2_leaf/s)
      real ,pointer,dimension(:) :: Psi_open
 
      ! This specifies the index of the deepest soil layer of which the 
@@ -421,8 +421,8 @@ module ed_state_vars
      ! Photosynthesis rate, closed stomata (umol/m2 leaf/s)
      real ,pointer,dimension(:) :: A_closed
 
-     ! Transpiration rate, closed stomata (mm/s)
-     real ,pointer,dimension(:) :: Psi_closed
+     ! Transpiration rate, closed stomata (kg/m2_leaf/s)
+     real ,pointer,dimension(:) :: psi_closed
 
      ! Stomatal conductance for water, open stomata (kg_H2O/m2/s)
      real ,pointer,dimension(:) :: gsw_open

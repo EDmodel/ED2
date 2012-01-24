@@ -2269,15 +2269,15 @@ module therm_lib8
    !=======================================================================================!
    !=======================================================================================!
    !     This function computes reduces the pressure from the reference height to the      !
-   ! canopy height by assuming hydrostatic equilibrium.                                    !
+   ! canopy height by assuming hydrostatic equilibrium.  For simplicity, we assume that    !
+   ! R and cp are constants (in reality they are dependent on humidity).                   !
    !---------------------------------------------------------------------------------------!
    real(kind=8) function reducedpress8(pres,thetaref,shvref,zref,thetacan,shvcan,zcan)
       use consts_coms, only : epim18    & ! intent(in)
+                            , p00k8     & ! intent(in)
+                            , rocp8     & ! intent(in)
+                            , cpor8     & ! intent(in)
                             , cpdry8    & ! intent(in)
-                            , cph2o8    & ! intent(in)
-                            , rdry8     & ! intent(in)
-                            , rh2o8     & ! intent(in)
-                            , p008      & ! intent(in)
                             , grav8     ! ! intent(in)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
@@ -2289,52 +2289,27 @@ module therm_lib8
       real(kind=8), intent(in) :: shvcan   ! Vapour specific mass                [   kg/kg]
       real(kind=8), intent(in) :: zcan     ! Height at canopy level              [       m]
       !------Local variables. -------------------------------------------------------------!
-      real(kind=8)             :: rref     ! Gas constant at ref. height         [  J/kg/K]
-      real(kind=8)             :: rcan     ! Gas constant at canopy air space    [  J/kg/K]
-      real(kind=8)             :: rbar     ! Mean gas constant                   [  J/kg/K]
-      real(kind=8)             :: cpref    ! Specific heat at ref. height        [  J/kg/K]
-      real(kind=8)             :: cpcan    ! Specific heat at canopy air space   [  J/kg/K]
-      real(kind=8)             :: cpbar    ! Mean specific heat                  [  J/kg/K]
-      real(kind=8)             :: rocpbar  ! Mean (R/Cp)                         [  J/kg/K]
-      real(kind=8)             :: cporbar  ! Mean (Cp/R)                         [  J/kg/K]
       real(kind=8)             :: pinc     ! Pressure increment                  [ Pa^R/cp]
-      real(kind=8)             :: thetabar ! Average potential temperature       [       K]
+      real(kind=8)             :: thvbar   ! Average virtual pot. temperature    [       K]
       !------------------------------------------------------------------------------------!
 
-
       !------------------------------------------------------------------------------------!
-      !      First we find the gas constants and specific heats at reference height and at !
-      ! the canopy air space interface.                                                    !
+      !      First we compute the average virtual potential temperature between the canopy !
+      ! top and the reference level.                                                       !
       !------------------------------------------------------------------------------------!
-      !----- Gas constant. ----------------------------------------------------------------!
-      rref    = rdry8 * (1.d0 + epim18 * shvref)
-      rcan    = rdry8 * (1.d0 + epim18 * shvcan)
-      !----- Specific heat. ---------------------------------------------------------------!
-      cpref   = (1.d0 - shvref) * cpdry8 + shvref * cph2o8
-      cpcan   = (1.d0 - shvcan) * cpdry8 + shvcan * cph2o8
-      !----- Average values. --------------------------------------------------------------!
-      rbar    = 5.d-1 * (rref  + rcan)
-      cpbar   = 5.d-1 * (cpref + cpcan)
-      rocpbar = rbar / cpbar
-      cporbar = 1.d0 / rocpbar
+      thvbar = 5.d-1 * ( thetaref * (1.d0 + epim18 * shvref)                               &
+                       + thetacan * (1.d0 + epim18 * shvcan) )
       !------------------------------------------------------------------------------------!
 
-
-      !------------------------------------------------------------------------------------!
-      !      Compute the average potential temperature between the canopy top and the      !
-      ! reference level.                                                                   !
-      !------------------------------------------------------------------------------------!
-      thetabar = 5.d-1 * (thetaref + thetacan)
-      !------------------------------------------------------------------------------------!
 
 
       !----- Then, we find the pressure gradient scale. -----------------------------------!
-      pinc   = grav8 * p008**rocpbar * (zref - zcan) / (cpbar * thetabar)
+      pinc   = grav8 * p00k8 * (zref - zcan) / (cpdry8 * thvbar)
       !------------------------------------------------------------------------------------!
 
 
       !----- And we can find the reduced pressure. ----------------------------------------!
-      reducedpress8 = ( pres**rocpbar + pinc ) ** cporbar
+      reducedpress8 = (pres**rocp8 + pinc ) ** cpor8
       !------------------------------------------------------------------------------------!
 
       return
@@ -2350,56 +2325,28 @@ module therm_lib8
 
    !=======================================================================================!
    !=======================================================================================!
-   !     This function computes the Exner function [J/kg/K], given the pressure and        !
-   ! humidity (either specific humidity or mixing ratio).                                  !
+   !     This function computes the Exner function [J/kg/K], given the pressure.  It       !
+   ! assumes for simplicity that R and Cp are constants and equal to the dry air values.   !
    !---------------------------------------------------------------------------------------!
-   real(kind=8) function pq2exner8(pres,humi,is_shv)
+   real(kind=8) function press2exner8(pres)
       use consts_coms, only : p00i8           & ! intent(in)
                             , cpdry8          & ! intent(in)
-                            , cph2o8          & ! intent(in)
-                            , rdry8           & ! intent(in)
-                            , epim18          ! ! intent(in)
+                            , rocp8           ! ! intent(in)
 
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
       real(kind=8), intent(in) :: pres   ! Pressure                               [     Pa]
-      real(kind=8), intent(in) :: humi   ! Humidity (spec. hum. or mixing ratio)  [  kg/kg]
-      logical     , intent(in) :: is_shv ! Input humidity is specific humidity    [    T|F]
-      !----- Local variables. -------------------------------------------------------------!
-      real(kind=8)             :: shv    ! Specific humidity                      [  kg/kg]
-      real(kind=8)             :: cpair  ! Specific heat at constant pressure     [ J/kg/K]
-      real(kind=8)             :: rair   ! Gas constant for this air              [ J/kg/K]
-      !------------------------------------------------------------------------------------!
-
-
-
-      !------------------------------------------------------------------------------------!
-      !     Convert input humidity to specific humidity.                                   !
-      !------------------------------------------------------------------------------------!
-      if (is_shv) then
-         shv = humi
-      else
-         shv = humi / (humi + 1.d0)
-      end if
-      !------------------------------------------------------------------------------------!
-
-
-      !------------------------------------------------------------------------------------!
-      !     Find the humid air specific heat and gas constant.                             !
-      !------------------------------------------------------------------------------------!
-      cpair = (1.d0 - shv) * cpdry8 + shv * cph2o8
-      rair  = (1.d0 + epim18 * shv) * rdry8
       !------------------------------------------------------------------------------------!
 
 
       !------------------------------------------------------------------------------------!
       !     Find potential temperature.                                                    !
       !------------------------------------------------------------------------------------!
-      pq2exner8 = cpair * ( pres * p00i8 ) ** (rair/cpair)
+      press2exner8 = cpdry8 * ( pres * p00i8 ) ** rocp8
       !------------------------------------------------------------------------------------!
 
       return
-   end function pq2exner8
+   end function press2exner8
    !=======================================================================================!
    !=======================================================================================!
 
@@ -2411,56 +2358,29 @@ module therm_lib8
 
    !=======================================================================================!
    !=======================================================================================!
-   !     This function computes the pressure [Pa], given the Exner function and humidity   !
-   ! (either specific humidity or mixing ratio).                                           !
+   !     This function computes the pressure [Pa], given the Exner function.  Like in the  !
+   ! function above, we also assume R and Cp to be constants and equal to the dry air      !
+   ! values.                                                                               !
    !---------------------------------------------------------------------------------------!
-   real(kind=8) function qex2press8(exner,humi,is_shv)
+   real(kind=8) function exner2press8(exner)
       use consts_coms, only : p008            & ! intent(in)
-                            , cpdry8          & ! intent(in)
-                            , cph2o8          & ! intent(in)
-                            , rdry8           & ! intent(in)
-                            , epim18          ! ! intent(in)
+                            , cpdryi8         & ! intent(in)
+                            , cpor8           ! ! intent(in)
 
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
       real(kind=8), intent(in) :: exner  ! Exner function                         [ J/kg/K]
-      real(kind=8), intent(in) :: humi   ! Humidity (spec. hum. or mixing ratio)  [  kg/kg]
-      logical     , intent(in) :: is_shv ! Input humidity is specific humidity    [    T|F]
-      !----- Local variables. -------------------------------------------------------------!
-      real(kind=8)             :: shv    ! Specific humidity                      [  kg/kg]
-      real(kind=8)             :: cpair  ! Specific heat at constant pressure     [ J/kg/K]
-      real(kind=8)             :: rair   ! Gas constant for this air              [ J/kg/K]
-      !------------------------------------------------------------------------------------!
-
-
-
-      !------------------------------------------------------------------------------------!
-      !     Convert input humidity to specific humidity.                                   !
-      !------------------------------------------------------------------------------------!
-      if (is_shv) then
-         shv = humi
-      else
-         shv = humi / (humi + 1.d0)
-      end if
-      !------------------------------------------------------------------------------------!
-
-
-      !------------------------------------------------------------------------------------!
-      !     Find the humid air specific heat and gas constant.                             !
-      !------------------------------------------------------------------------------------!
-      cpair = (1.d0 - shv) * cpdry8 + shv * cph2o8
-      rair  = (1.d0 + epim18 * shv) * rdry8
       !------------------------------------------------------------------------------------!
 
 
       !------------------------------------------------------------------------------------!
       !     Find potential temperature.                                                    !
       !------------------------------------------------------------------------------------!
-      qex2press8 = p008 * ( exner / cpair ) ** (cpair/rair)
+      exner2press8 = p008 * ( exner * cpdryi8 ) ** cpor8
       !------------------------------------------------------------------------------------!
 
       return
-   end function qex2press8
+   end function exner2press8
    !=======================================================================================!
    !=======================================================================================!
 
@@ -2472,52 +2392,28 @@ module therm_lib8
 
    !=======================================================================================!
    !=======================================================================================!
-   !     This function computes the potential temperature [K], given the Exner function,   !
-   ! temperature and humidity (either specific humidity or mixing ratio).                  !
+   !     This function computes the potential temperature [K], given the Exner function    !
+   ! and temperature.  For simplicity we ignore the effects of humidity in R and cp and    !
+   ! use the dry air values instead.                                                       !
    !---------------------------------------------------------------------------------------!
-   real(kind=8) function extq2theta8(exner,temp,humi,is_shv)
-      use consts_coms, only : cpdry8          & ! intent(in)
-                            , cph2o8          ! ! intent(in)
+   real(kind=8) function extemp2theta8(exner,temp)
+      use consts_coms, only : cpdry8          ! ! intent(in)
 
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
       real(kind=8), intent(in) :: exner  ! Exner function                         [ J/kg/K]
       real(kind=8), intent(in) :: temp   ! Temperature                            [      K]
-      real(kind=8), intent(in) :: humi   ! Humidity (spec. hum. or mixing ratio)  [  kg/kg]
-      logical     , intent(in) :: is_shv ! Input humidity is specific humidity    [    T|F]
-      !----- Local variables. -------------------------------------------------------------!
-      real(kind=8)             :: shv    ! Specific humidity                      [  kg/kg]
-      real(kind=8)             :: cpair  ! Specific heat at constant pressure     [ J/kg/K]
-      !------------------------------------------------------------------------------------!
-
-
-
-      !------------------------------------------------------------------------------------!
-      !     Convert input humidity to specific humidity.                                   !
-      !------------------------------------------------------------------------------------!
-      if (is_shv) then
-         shv = humi
-      else
-         shv = humi / (humi + 1.d0)
-      end if
-      !------------------------------------------------------------------------------------!
-
-
-      !------------------------------------------------------------------------------------!
-      !     Find the humid air specific heat and gas constant.                             !
-      !------------------------------------------------------------------------------------!
-      cpair = (1.d0 - shv) * cpdry8 + shv * cph2o8
       !------------------------------------------------------------------------------------!
 
 
       !------------------------------------------------------------------------------------!
       !     Find potential temperature.                                                    !
       !------------------------------------------------------------------------------------!
-      extq2theta8 = cpair * temp / exner
+      extemp2theta8 = cpdry8 * temp / exner
       !------------------------------------------------------------------------------------!
 
       return
-   end function extq2theta8
+   end function extemp2theta8
    !=======================================================================================!
    !=======================================================================================!
 
@@ -2529,55 +2425,29 @@ module therm_lib8
 
    !=======================================================================================!
    !=======================================================================================!
-   !     This function computes the temperature [K], given the Exner function, potential   !
-   ! temperature and humidity (either specific humidity or mixing ratio).                  !
+   !     This function computes the temperature [K], given the Exner function and          !
+   ! potential temperature.  We simplify the equations by assuming that R and Cp are       !
+   ! constants.                                                                            !
    !---------------------------------------------------------------------------------------!
-   real(kind=8) function exthq2temp8(exner,theta,humi,is_shv)
+   real(kind=8) function extheta2temp8(exner,theta)
       use consts_coms, only : p00i8           & ! intent(in)
-                            , cpdry8          & ! intent(in)
-                            , cph2o8          & ! intent(in)
-                            , rdry8           & ! intent(in)
-                            , epim18          ! ! intent(in)
+                            , cpdryi8         ! ! intent(in)
 
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
       real(kind=8), intent(in) :: exner  ! Exner function                         [ J/kg/K]
       real(kind=8), intent(in) :: theta  ! Potential temperature                  [      K]
-      real(kind=8), intent(in) :: humi   ! Humidity (spec. hum. or mixing ratio)  [  kg/kg]
-      logical     , intent(in) :: is_shv ! Input humidity is specific humidity    [    T|F]
-      !----- Local variables. -------------------------------------------------------------!
-      real(kind=8)             :: shv    ! Specific humidity                      [  kg/kg]
-      real(kind=8)             :: cpair  ! Specific heat at constant pressure     [ J/kg/K]
-      !------------------------------------------------------------------------------------!
-
-
-
-      !------------------------------------------------------------------------------------!
-      !     Convert input humidity to specific humidity.                                   !
-      !------------------------------------------------------------------------------------!
-      if (is_shv) then
-         shv = humi
-      else
-         shv = humi / (humi + 1.d0)
-      end if
-      !------------------------------------------------------------------------------------!
-
-
-      !------------------------------------------------------------------------------------!
-      !     Find the humid air specific heat and gas constant.                             !
-      !------------------------------------------------------------------------------------!
-      cpair = (1.d0 - shv) * cpdry8 + shv * cph2o8
       !------------------------------------------------------------------------------------!
 
 
       !------------------------------------------------------------------------------------!
       !     Find potential temperature.                                                    !
       !------------------------------------------------------------------------------------!
-      exthq2temp8 = exner * theta / cpair
+      extheta2temp8 = cpdryi8 * exner * theta
       !------------------------------------------------------------------------------------!
 
       return
-   end function exthq2temp8
+   end function extheta2temp8
    !=======================================================================================!
    !=======================================================================================!
 

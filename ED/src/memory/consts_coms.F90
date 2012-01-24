@@ -132,9 +132,6 @@ Module consts_coms
                         , b_alli           => alli           & ! intent(in)
                         , b_alvl3          => alvl3          & ! intent(in)
                         , b_alvi3          => alvi3          & ! intent(in)
-                        , b_alli3vlme      => alli3vlme      & ! intent(in)
-                        , b_alvl3sq        => alvl3sq        & ! intent(in)
-                        , b_alvi3sq        => alvi3sq        & ! intent(in)
                         , b_allii          => allii          & ! intent(in)
                         , b_aklv           => aklv           & ! intent(in)
                         , b_akiv           => akiv           & ! intent(in)
@@ -147,6 +144,8 @@ Module consts_coms
                         , b_uiliqt3        => uiliqt3        & ! intent(in)
                         , b_dcpvl          => dcpvl          & ! intent(in)
                         , b_dcpvi          => dcpvi          & ! intent(in)
+                        , b_del_alvl3      => del_alvl3      & ! intent(in)
+                        , b_del_alvi3      => del_alvi3      & ! intent(in)
                         , b_tsupercool_liq => tsupercool_liq & ! intent(in)
                         , b_tsupercool_vap => tsupercool_vap & ! intent(in)
                         , b_eta3ple        => eta3ple        & ! intent(in)
@@ -291,9 +290,6 @@ Module consts_coms
    real, parameter :: alli           = b_alli
    real, parameter :: alvl3          = b_alvl3
    real, parameter :: alvi3          = b_alvi3
-   real, parameter :: alli3vlme      = b_alli3vlme
-   real, parameter :: alvl3sq        = b_alvl3sq
-   real, parameter :: alvi3sq        = b_alvi3sq
    real, parameter :: allii          = b_allii
    real, parameter :: aklv           = b_aklv
    real, parameter :: akiv           = b_akiv
@@ -306,6 +302,8 @@ Module consts_coms
    real, parameter :: uiliqt3        = b_uiliqt3
    real, parameter :: dcpvl          = b_dcpvl
    real, parameter :: dcpvi          = b_dcpvi
+   real, parameter :: del_alvl3      = b_del_alvl3
+   real, parameter :: del_alvi3      = b_del_alvi3
    real, parameter :: tsupercool_liq = b_tsupercool_liq
    real, parameter :: tsupercool_vap = b_tsupercool_vap
    real, parameter :: eta3ple        = b_eta3ple
@@ -522,9 +520,6 @@ Module consts_coms
    real, parameter :: alli      = 3.34e5         ! Lat. heat - fusion       (Lf)[     J/kg]
    real, parameter :: alvl3     = 2.50e6         ! Lat. heat - vaporisation (Lv)[     J/kg]
    real, parameter :: alvi3     = alli + alvl3   ! Lat. heat - sublimation  (Ls)[     J/kg]
-   real, parameter :: alli3vlme = wdns * alli    ! Lat. heat × water density    [     J/m³]
-   real, parameter :: alvl3sq   = alvl3 * alvl3  ! Lv²                          [   J²/kg²]
-   real, parameter :: alvi3sq   = alvi3 * alvi3  ! Ls²                          [   J²/kg²]
    real, parameter :: allii     = 1.   / alli    ! 1./Lf                        [     kg/J]
    real, parameter :: aklv      = alvl3 / cpdry  ! Lv/Cp                        [        K]
    real, parameter :: akiv      = alvi3 / cpdry  ! Ls/Cp                        [        K]
@@ -537,6 +532,15 @@ Module consts_coms
    real, parameter :: uiliqt3   = uiicet3 + alli ! u at triple point, only liq. [     J/kg]
    real, parameter :: dcpvl     = cph2o - cliq   ! difference of sp. heat       [   J/kg/K]
    real, parameter :: dcpvi     = cph2o - cice   ! difference of sp. heat       [   J/kg/K]
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !     The following variables are useful when defining the derivatives of theta_il.     !
+   !   They correspond to L?(T) - L?' T.                                                   !
+   !---------------------------------------------------------------------------------------!
+   real, parameter :: del_alvl3 = alvl3 - dcpvl * t3ple
+   real, parameter :: del_alvi3 = alvi3 - dcpvi * t3ple
    !---------------------------------------------------------------------------------------!
 
 
@@ -723,6 +727,8 @@ Module consts_coms
    real(kind=8), parameter :: uiliqt38        = dble(uiliqt3       )
    real(kind=8), parameter :: dcpvl8          = dble(dcpvl         )
    real(kind=8), parameter :: dcpvi8          = dble(dcpvi         )
+   real(kind=8), parameter :: del_alvl38      = dble(del_alvl3     )
+   real(kind=8), parameter :: del_alvi38      = dble(del_alvi3     )
    real(kind=8), parameter :: tsupercool_liq8 = dble(tsupercool_liq)
    real(kind=8), parameter :: tsupercool_vap8 = dble(tsupercool_vap)
    real(kind=8), parameter :: eta3ple8        = dble(eta3ple       )

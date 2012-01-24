@@ -36,8 +36,8 @@ subroutine ed_init_atm()
                                     , idealdenssh       & ! function
                                     , qslif             & ! function
                                     , reducedpress      & ! function
-                                    , pq2exner          & ! function
-                                    , exthq2temp        & ! function
+                                    , press2exner       & ! function
+                                    , extheta2temp      & ! function
                                     , cmtl2uext         ! ! function
    use met_driver_coms       , only : met_driv_state    ! ! structure
    use canopy_struct_dynamics, only : canopy_turbulence ! ! subroutine
@@ -118,10 +118,8 @@ subroutine ed_init_atm()
                csite%can_prss (ipa) = reducedpress(cmet%prss,cmet%atm_theta,cmet%atm_shv   &
                                                   ,cmet%geoht,csite%can_theta(ipa)         &
                                                   ,csite%can_shv(ipa),csite%can_depth(ipa))
-               can_exner            = pq2exner(csite%can_prss(ipa),csite%can_shv(ipa)      &
-                                              ,.true.)
-               csite%can_temp (ipa) = exthq2temp(can_exner,csite%can_theta(ipa)            &
-                                                ,csite%can_shv(ipa),.true.)
+               can_exner            = press2exner(csite%can_prss(ipa))
+               csite%can_temp (ipa) = extheta2temp(can_exner,csite%can_theta(ipa))
                rvaux                = csite%can_shv(ipa) / (1. - csite%can_shv(ipa))
                csite%can_theiv(ipa) = thetaeiv(csite%can_theta(ipa),csite%can_prss(ipa)    &
                                               ,csite%can_temp(ipa),rvaux,rvaux)
