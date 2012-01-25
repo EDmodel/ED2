@@ -2694,6 +2694,7 @@ module therm_lib
 
 
 
+
    !=======================================================================================!
    !=======================================================================================!
    !     This fucntion computes the ice liquid potential temperature given the Exner       !
@@ -2719,23 +2720,31 @@ module therm_lib
       !------------------------------------------------------------------------------------!
 
 
-      !----- Find the enthalpies. ---------------------------------------------------------!
+      !----- Find the sensible heat enthalpy (assuming dry air). --------------------------!
       hh = cpdry * temp
-      qq = alvl3 * rliq + alvi3 * rice
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !      Find the latent heat enthalpy.  If using the old thermodynamics, we use the   !
+      ! latent heat at T = T3ple, otherwise we use the temperature-dependent one.          !
+      !------------------------------------------------------------------------------------!
+      if (newthermo) then
+         qq = alvl(temp) * rliq + alvi(temp) * rice
+      else
+         qq = alvl3 * rliq + alvi3 * rice
+      end if
       !------------------------------------------------------------------------------------!
 
 
       !------------------------------------------------------------------------------------!
       !      Solve the thermodynamics.  For the new thermodynamics we don't approximate    !
-      ! the exponential to a linear function.                                              !
+      ! the exponential to a linear function, nor do we impose temperature above the thre- !
+      ! shold from Tripoli and Cotton (1981).                                              !
       !------------------------------------------------------------------------------------!
       if (newthermo) then
          !----- Decide how to compute, based on temperature. ------------------------------!
-         if (temp > ttripoli) then
-            theta_iceliq = hh * exp(-qq / hh) / exner
-         else
-            theta_iceliq = hh * exp(-qq * htripolii) / exner
-         end if
+         theta_iceliq = hh * exp(-qq / hh) / exner
          !---------------------------------------------------------------------------------!
       else
          !----- Decide how to compute, based on temperature. ------------------------------!
@@ -2766,6 +2775,8 @@ module therm_lib
    real(kind=4) function dthetail_dt(condconst,thil,exner,pres,temp,rliq,ricein)
       use consts_coms, only : alvl3      & ! intent(in)
                             , alvi3      & ! intent(in)
+                            , dcpvi      & ! intent(in)
+                            , dcpvl      & ! intent(in)
                             , cpdry      & ! intent(in)
                             , ttripoli   & ! intent(in)
                             , htripoli   & ! intent(in)
@@ -2784,6 +2795,7 @@ module therm_lib
       !----- Local variables --------------------------------------------------------------!
       real(kind=4)                       :: rice       ! Ice mixing ratio or 0.    [ kg/kg]
       real(kind=4)                       :: ldrst      ! L × d(rs)/dT × T          [  J/kg]
+      real(kind=4)                       :: rdlt       ! r × d(L)/dT × T           [  J/kg]
       real(kind=4)                       :: hh         ! Sensible heat enthalpy    [  J/kg]
       real(kind=4)                       :: qq         ! Latent heat enthalpy      [  J/kg]
       logical                            :: thereisice ! Is ice present            [   ---]
@@ -2795,9 +2807,9 @@ module therm_lib
       !------------------------------------------------------------------------------------!
       thereisice = present(ricein)
       if (thereisice) then
-         rice=ricein
+         rice = ricein
       else
-         rice=0.
+         rice = 0.
       end if
       !------------------------------------------------------------------------------------!
 
@@ -2821,23 +2833,43 @@ module therm_lib
          !---------------------------------------------------------------------------------!
 
 
-         !----- Latent heat enthalpy. -----------------------------------------------------!
-         qq = alvl3 * rliq + alvi3 * rice
          !---------------------------------------------------------------------------------!
+         !      Find the latent heat enthalpy.  If using the old thermodynamics, we use    !
+         ! the latent heat at T = T3ple, otherwise we use the temperature-dependent one.   !
+         ! The term r × d(L)/dT × T is computed only when we use the new thermodynamics.   !
+         !---------------------------------------------------------------------------------!
+         if (newthermo) then
+            qq   = alvl(temp) * rliq + alvi(temp) * rice
+            rdlt = (dcpvl * rliq + dcpvi * rice ) * temp
+         else
+            qq   = alvl3 * rliq + alvi3 * rice
+            rdlt = 0.0
+         end if
+         !---------------------------------------------------------------------------------!
+
 
 
          !---------------------------------------------------------------------------------!
          !    This is the term L×[d(rs)/dt]×T. L may be either the vapourisation or        !
          ! sublimation latent heat, depending on the temperature and whether we are consi- !
-         ! dering ice or not. Also, if condensation mixing ratio is constant, then this    !
+         ! dering ice or not.  We still need to check whether latent heat is a function of !
+         ! temperature or not.  Also, if condensation mixing ratio is constant, then this  !
          ! term will be always zero.                                                       !
          !---------------------------------------------------------------------------------!
          if (condconst) then
             ldrst = 0.
          elseif (thereisice .and. temp < t3ple) then
-            ldrst = alvi3 * rsifp(pres,temp) * temp
+            if (newthermo) then
+               ldrst = alvi3 * rsifp(pres,temp) * temp
+            else
+               ldrst = alvi(temp) * rsifp(pres,temp) * temp
+            end if
          else
-            ldrst = alvl3 * rslfp(pres,temp) * temp
+            if (newthermo) then
+               ldrst = alvl3 * rslfp(pres,temp) * temp
+            else
+               ldrst = alvl(temp) * rslfp(pres,temp) * temp
+            end if
          end if
          !---------------------------------------------------------------------------------!
       end if
@@ -2849,15 +2881,9 @@ module therm_lib
       !     Find the condensed phase consistent with the thermodynamics used.              !
       !------------------------------------------------------------------------------------!
       if (newthermo) then
-         !----- Decide how to compute, based on temperature -------------------------------!
-         if (temp > ttripoli) then
-            dthetail_dt = thil * ( 1. + (ldrst + qq) / hh ) / temp
-         else
-            dthetail_dt = thil * ( 1. + ldrst * htripolii ) / temp
-         end if
-         !---------------------------------------------------------------------------------!
+         dthetail_dt = thil * ( 1. + (ldrst + qq - rdlt ) / hh ) / temp
       else
-         !----- Deciding how to compute, based on temperature -----------------------------!
+         !----- Decide how to compute, based on temperature. ------------------------------!
          if (temp > ttripoli) then
             dthetail_dt = thil * ( 1. + (ldrst + qq) / (hh+qq) ) / temp
          else
@@ -3147,6 +3173,8 @@ module therm_lib
    real(kind=4) function dtempdrs(exner,thil,temp,rliq,rice,rconmin)
       use consts_coms, only : alvl3      & ! intent(in)
                             , alvi3      & ! intent(in)
+                            , dcpvl      & ! intent(in)
+                            , dcpvi      & ! intent(in)
                             , cpdry      & ! intent(in)
                             , cpdryi     & ! intent(in)
                             , ttripoli   & ! intent(in)
@@ -3165,35 +3193,60 @@ module therm_lib
       !     other ways to compute theta_il, so don't remove this argument.                 !
       !------------------------------------------------------------------------------------!
       !----- Local variables --------------------------------------------------------------!
-      real(kind=4)             :: qhydm     ! Enth. associated w/ latent heat     [   J/kg]
-      real(kind=4)             :: hh        ! Enth. associated w/ sensible heat   [   J/kg]
-      real(kind=4)             :: rcon      ! Condensate mixing ratio             [  kg/kg]
-      real(kind=4)             :: til       ! Ice-liquid temperature              [      K]
+      real(kind=4)             :: qq      ! Enthalpy -- latent heat               [   J/kg]
+      real(kind=4)             :: qpt     ! d(qq)/dT * T                          [   J/kg]
+      real(kind=4)             :: hh      ! Enthalpy -- sensible heat             [   J/kg]
+      real(kind=4)             :: rcon    ! Condensate mixing ratio               [  kg/kg]
+      real(kind=4)             :: til     ! Ice-liquid temperature                [      K]
       !------------------------------------------------------------------------------------!
 
 
-      !----- Find the temperature and hydrometeor terms. ----------------------------------!
-      qhydm = alvl3 * rliq + alvi3 * rice
+      !----- Find the total hydrometeor mixing ratio. -------------------------------------!
       rcon  = rliq+rice
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !      If the amount of condensate is negligible, temperature does not depend on     !
+      ! saturation mixing ratio.                                                           !
+      !------------------------------------------------------------------------------------!
       if (rcon < rconmin) then
          dtempdrs = 0.
-      elseif (newthermo) then
-         hh    = cpdry * temp
-         !---------------------------------------------------------------------------------!
-         !    Decide how to compute, based on temperature and whether condensates exist.   !
-         !---------------------------------------------------------------------------------!
-         if (temp > ttripoli) then
-            dtempdrs = - temp * qhydm / ( rcon * (hh+qhydm) )
-         else
-            dtempdrs = - temp * qhydm * htripolii / rcon
-         end if
       else
-         til   = cpdryi * thil * exner
-         !----- Decide how to compute, based on temperature. ------------------------------!
-         if (temp > ttripoli) then
-            dtempdrs = - til * qhydm / ( rcon * cpdry * (2.*temp-til))
+
+         !---------------------------------------------------------------------------------!
+         !     Find the enthalpy associated with latent heat and its derivative            !
+         ! correction.  This is dependent on the thermodynamics used.                      !
+         !---------------------------------------------------------------------------------!
+         if (newthermo) then
+            qq  = alvl(temp) * rliq + alvi(temp) * rice
+            qpt = dcpvl * rliq + dcpvi * rice
          else
-            dtempdrs = - til * qhydm * htripolii / rcon
+            qq  = alvl3 * rliq + alvi3 * rice
+            qpt = 0.0
+         end if
+         !---------------------------------------------------------------------------------!
+
+
+         !----- Find the enthalpy associated with sensible heat. --------------------------!
+         hh = cpdry * temp
+         !---------------------------------------------------------------------------------!
+
+
+         !---------------------------------------------------------------------------------!
+         !    Decide how to compute, based on the thermodynamics method.                   !
+         !---------------------------------------------------------------------------------!
+         if (newthermo) then
+            dtempdrs = - temp * qq / ( rcon * (hh + qq - qpt) )
+         else
+            til   = cpdryi * thil * exner
+            !----- Decide how to compute, based on temperature. ---------------------------!
+            if (temp > ttripoli) then
+               dtempdrs = - til * qq / ( rcon * cpdry * (2.*temp-til))
+            else
+               dtempdrs = - til * qq * htripolii / rcon
+            end if
+            !------------------------------------------------------------------------------!
          end if
          !---------------------------------------------------------------------------------!
       end if

@@ -58,16 +58,16 @@ budget[[ 1]] = list( vnam   = c("co2.dstorage","co2.nep","co2.dens.eff"
                    , legpos = "topleft"
                    , plt    = TRUE)
 budget[[ 2]] = list( vnam   = c("ene.dstorage","ene.precip","ene.netrad"
-                               ,"ene.dens.eff","ene.loss2atm","ene.drainage"
-                               ,"ene.runoff","ene.residual")
+                               ,"ene.dens.eff","ene.prss.eff","ene.loss2atm"
+                               ,"ene.drainage","ene.runoff","ene.residual")
                    , desc   = c("Delta (Storage)","Rainfall","Net Radiation"
-                               ,"Density effect","Eddy flux loss","Drainage"
-                               ,"Runoff","Residual")
+                               ,"Density effect","Pressure effect","Eddy flux loss"
+                               ,"Drainage","Runoff","Residual")
                    , colour = c("red3","royalblue","darkorange"
-                               ,"purple4","deepskyblue","sienna"
-                               ,"limegreen","black")
-                   , lwd    = c(2.0,2.0,2.0,2.0,2.0,2.0,2.0,2.0)
-                   , range  = c(FALSE,FALSE,TRUE,TRUE,TRUE,FALSE,FALSE,TRUE)
+                               ,"purple4","chartreuse","deepskyblue","sienna"
+                               ,"forestgreen","black")
+                   , lwd    = c(2.0,2.0,2.0,2.0,2.0,2.0,2.0,2.0,2.0)
+                   , range  = c(FALSE,FALSE,TRUE,TRUE,TRUE,TRUE,FALSE,FALSE,TRUE)
                    , type   = ptype
                    , plog   = ""
                    , prefix = "eneflux"
@@ -80,7 +80,7 @@ budget[[ 3]] = list( vnam   = c("h2o.dstorage","h2o.precip","h2o.dens.eff"
                    , desc   = c("Delta (Storage)","Rainfall","Density effect"
                                ,"Eddy flux loss","Drainage","Runoff","Residual")
                    , colour = c("red3","royalblue","purple4"
-                               ,"deepskyblue","sienna","limegreen","black")
+                               ,"deepskyblue","sienna","forestgreen","black")
                    , lwd    = c(2.0,2.0,2.0,2.0,2.0,2.0,2.0)
                    , range  = c(FALSE,FALSE,TRUE,TRUE,FALSE,FALSE,TRUE)
                    , type   = ptype
@@ -88,6 +88,78 @@ budget[[ 3]] = list( vnam   = c("h2o.dstorage","h2o.precip","h2o.dens.eff"
                    , prefix = "h2oflux"
                    , theme  = "Water budget"
                    , unit   = "kg/m2/day"
+                   , legpos = "topleft"
+                   , plt    = TRUE)
+budget[[ 4]] = list( vnam   = c("co2.cumres")
+                   , desc   = c("Residual")
+                   , colour = c("limegreen")
+                   , lwd    = c(2.0)
+                   , range  = c(TRUE)
+                   , type   = ptype
+                   , plog   = ""
+                   , prefix = "cumco2"
+                   , theme  = "CO2: cumulative residual (absolute)"
+                   , unit   = "umol/m2"
+                   , legpos = "topleft"
+                   , plt    = TRUE)
+budget[[ 5]] = list( vnam   = c("ene.cumres")
+                   , desc   = c("Residual")
+                   , colour = c("red3")
+                   , lwd    = c(2.0)
+                   , range  = c(TRUE)
+                   , type   = ptype
+                   , plog   = ""
+                   , prefix = "cumene"
+                   , theme  = "Enthalpy: cumulative residual (absolute)"
+                   , unit   = "J/m2"
+                   , legpos = "topleft"
+                   , plt    = TRUE)
+budget[[ 6]] = list( vnam   = c("h2o.cumres")
+                   , desc   = c("Residual")
+                   , colour = c("steelblue")
+                   , lwd    = c(2.0)
+                   , range  = c(TRUE)
+                   , type   = ptype
+                   , plog   = ""
+                   , prefix = "cumh2o"
+                   , theme  = "Water: cumulative residual (absolute)"
+                   , unit   = "kg/m2"
+                   , legpos = "topleft"
+                   , plt    = TRUE)
+budget[[ 7]] = list( vnam   = c("co2.relres")
+                   , desc   = c("Residual")
+                   , colour = c("limegreen")
+                   , lwd    = c(2.0)
+                   , range  = c(TRUE)
+                   , type   = ptype
+                   , plog   = ""
+                   , prefix = "relco2"
+                   , theme  = "CO2: cumulative residual (relative)"
+                   , unit   = "---"
+                   , legpos = "topleft"
+                   , plt    = TRUE)
+budget[[ 8]] = list( vnam   = c("ene.relres")
+                   , desc   = c("Residual")
+                   , colour = c("red3")
+                   , lwd    = c(2.0)
+                   , range  = c(TRUE)
+                   , type   = ptype
+                   , plog   = ""
+                   , prefix = "relene"
+                   , theme  = "Enthalpy: cumulative residual (relative)"
+                   , unit   = "---"
+                   , legpos = "topleft"
+                   , plt    = TRUE)
+budget[[ 9]] = list( vnam   = c("h2o.relres")
+                   , desc   = c("Residual")
+                   , colour = c("steelblue")
+                   , lwd    = c(2.0)
+                   , range  = c(TRUE)
+                   , type   = ptype
+                   , plog   = ""
+                   , prefix = "relh2o"
+                   , theme  = "Water: cumulative residual (relative)"
+                   , unit   = "---"
                    , legpos = "topleft"
                    , plt    = TRUE)
 #------------------------------------------------------------------------------------------#
@@ -244,8 +316,13 @@ for (place in myplaces){
       when   = when[sel]
 
       #----- Re-scale or re-define some variables. ----------------------------------------#
-      print(paste("      * Re-scale/re-define some variables..."))
-
+      print(paste("      * Define the cumulative sum of residuals..."))
+      cpatch$co2.cumres=cumsum(cpatch$co2.residual)
+      cpatch$ene.cumres=cumsum(cpatch$ene.residual)
+      cpatch$h2o.cumres=cumsum(cpatch$h2o.residual / day.sec)
+      cpatch$co2.relres=cumsum(cpatch$co2.residual) / cpatch$co2.storage
+      cpatch$ene.relres=cumsum(cpatch$ene.residual) / cpatch$ene.storage
+      cpatch$h2o.relres=cumsum(cpatch$h2o.residual / day.sec) / cpatch$h2o.storage
 
       #------------------------------------------------------------------------------------#
       #      Define a nice grid for time.                                                  #

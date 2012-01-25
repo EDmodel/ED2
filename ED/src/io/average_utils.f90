@@ -272,6 +272,7 @@ subroutine normalize_averaged_vars(cgrid,frqsum,dtlsm)
             csite%ebudget_precipgain(ipa)    = csite%ebudget_precipgain(ipa)    * frqsumi
             csite%ebudget_netrad(ipa)        = csite%ebudget_netrad(ipa)        * frqsumi
             csite%ebudget_denseffect(ipa)    = csite%ebudget_denseffect(ipa)    * frqsumi
+            csite%ebudget_prsseffect(ipa)    = csite%ebudget_prsseffect(ipa)    * frqsumi
             csite%ebudget_loss2atm(ipa)      = csite%ebudget_loss2atm(ipa)      * frqsumi
             csite%ebudget_loss2drainage(ipa) = csite%ebudget_loss2drainage(ipa) * frqsumi
             csite%ebudget_loss2runoff(ipa)   = csite%ebudget_loss2runoff(ipa)   * frqsumi
@@ -508,6 +509,7 @@ subroutine reset_averaged_vars(cgrid)
             csite%ebudget_loss2runoff(ipa)      = 0.0
             csite%ebudget_loss2drainage(ipa)    = 0.0
             csite%ebudget_denseffect(ipa)       = 0.0
+            csite%ebudget_prsseffect(ipa)       = 0.0
             csite%ebudget_residual(ipa)         = 0.0
             !----------------------------------------------------------------!
 
@@ -2022,15 +2024,15 @@ subroutine normalize_ed_daily_output_vars(cgrid)
                                    , n_dist_types  ! ! intent(in)
    use consts_coms          , only : day_sec       & ! intent(in)
                                    , umols_2_kgCyr & ! intent(in)
-                                   , yr_day        & ! intent(in)
-                                   , p00i          & ! intent(in)
-                                   , rocp          ! ! intent(in)
+                                   , yr_day        ! ! intent(in)
    use ed_misc_coms         , only : dtlsm         & ! intent(in)
                                    , frqsum        & ! intent(in)
                                    , ddbhi         & ! intent(in)
                                    , dagei         ! ! intent(in)
    use pft_coms             , only : init_density  ! ! intent(in)
-   use therm_lib            , only : uextcm2tl     & ! subroutine
+   use therm_lib            , only : press2exner   & ! function
+                                   , extheta2temp  & ! function
+                                   , uextcm2tl     & ! subroutine
                                    , idealdenssh   ! ! function
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
@@ -2065,6 +2067,7 @@ subroutine normalize_ed_daily_output_vars(cgrid)
    real                                            :: sss_albedo_beam
    real                                            :: sss_albedo_diffuse
    real                                            :: veg_fliq
+   real                                            :: dmean_can_exner
    real                                            :: dtlsm_o_daylight
    real                                            :: frqsum_o_daylight
    !----- Locally saved variables. --------------------------------------------------------!
@@ -2128,8 +2131,9 @@ subroutine normalize_ed_daily_output_vars(cgrid)
       !------------------------------------------------------------------------------------!
       !     Find the canopy variables that are not conserved when pressure changes.        !
       !------------------------------------------------------------------------------------!
-      cgrid%dmean_can_temp(ipy)     = cgrid%dmean_can_theta(ipy)                           &
-                                    * (p00i * cgrid%dmean_can_prss(ipy)) ** rocp
+      dmean_can_exner               = press2exner(cgrid%dmean_can_prss(ipy))
+      cgrid%dmean_can_temp(ipy)     = extheta2temp( dmean_can_exner                        &
+                                                  , cgrid%dmean_can_theta(ipy) )
       cgrid%dmean_can_rhos(ipy)     = idealdenssh (cgrid%dmean_can_prss(ipy)               &
                                                   ,cgrid%dmean_can_temp(ipy)               &
                                                   ,cgrid%dmean_can_shv (ipy) )
@@ -3113,15 +3117,15 @@ subroutine normalize_ed_monthly_output_vars(cgrid)
                                    , n_age         & ! intent(in)
                                    , n_dist_types  & ! intent(in)
                                    , n_mort        ! ! intent(in)
-   use consts_coms          , only : p00i          & ! intent(in)
-                                   , rocp          & ! intent(in)
-                                   , pio4          & ! intent(in)
+   use consts_coms          , only : pio4          & ! intent(in)
                                    , umol_2_kgC    & ! intent(in)
                                    , umols_2_kgCyr & ! intent(in)
                                    , day_sec       & ! intent(in)
                                    , yr_day        ! ! intent(in)
    use pft_coms             , only : init_density  ! ! intent(in)
-   use therm_lib            , only : idealdenssh   & ! function
+   use therm_lib            , only : press2exner   & ! function
+                                   , extheta2temp  & ! function
+                                   , idealdenssh   & ! function
                                    , uextcm2tl     ! ! function
    use allometry            , only : ed_biomass    ! ! function
 
@@ -3165,6 +3169,8 @@ subroutine normalize_ed_monthly_output_vars(cgrid)
    logical                                         :: forest
    real                                            :: veg_fliq
    real                                            :: cohort_seeds
+   real                                            :: mmean_can_exner
+   real                                            :: qmean_can_exner
    !----- Locally saved variables. --------------------------------------------------------!
    logical                            , save       :: find_factors    = .true.
    real                               , save       :: dtlsm_o_frqfast = 1.e34
@@ -3309,8 +3315,9 @@ subroutine normalize_ed_monthly_output_vars(cgrid)
       !------------------------------------------------------------------------------------!
       !       Mean canopy air properties.                                                  !
       !------------------------------------------------------------------------------------!
-      cgrid%mmean_can_temp    (ipy) = cgrid%mmean_can_theta(ipy)                           &
-                                    * (p00i * cgrid%mmean_can_prss(ipy)) ** rocp
+      mmean_can_exner               = press2exner(cgrid%mmean_can_prss(ipy))
+      cgrid%mmean_can_temp    (ipy) = extheta2temp( mmean_can_exner                        &
+                                                  , cgrid%mmean_can_theta(ipy) )
       cgrid%mmean_can_rhos    (ipy) = idealdenssh (cgrid%mmean_can_prss(ipy)               &
                                                   ,cgrid%mmean_can_temp(ipy)               &
                                                   ,cgrid%mmean_can_shv (ipy) )
@@ -3756,8 +3763,9 @@ subroutine normalize_ed_monthly_output_vars(cgrid)
             !------------------------------------------------------------------------------!
             !     Find the derived average propertiesof the canopy air space.              !
             !------------------------------------------------------------------------------!
-            cgrid%qmean_can_temp (t,ipy) = cgrid%qmean_can_theta(t,ipy)                    &
-                                         *  (p00i * cgrid%qmean_can_prss(t,ipy)) ** rocp
+            qmean_can_exner              = press2exner (cgrid%qmean_can_prss(t,ipy))
+            cgrid%qmean_can_temp (t,ipy) = extheta2temp( qmean_can_exner                   &
+                                                       , cgrid%qmean_can_theta(t,ipy) )
             cgrid%qmean_can_rhos (t,ipy) = idealdenssh (cgrid%qmean_can_prss(t,ipy)        &
                                                        ,cgrid%qmean_can_temp(t,ipy)        &
                                                        ,cgrid%qmean_can_shv (t,ipy))

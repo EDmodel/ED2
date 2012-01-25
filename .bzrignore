@@ -4366,3 +4366,5 @@ ED/dbgbuild/bin/utils_c.c
 BRAMS/newbuild
 ED/i10dbgbuild
 new_regional
+BRAMS/src/advc_mnt
+BRAMS/build/bin/mem_mnt_advec.mod

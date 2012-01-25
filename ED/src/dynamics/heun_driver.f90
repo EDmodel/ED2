@@ -53,6 +53,7 @@ subroutine heun_timestep(cgrid)
    real                                   :: old_can_co2
    real                                   :: old_can_rhos
    real                                   :: old_can_temp
+   real                                   :: old_can_prss
    real                                   :: fm
    !----- External functions. -------------------------------------------------------------!
    real, external                         :: compute_netrad
@@ -102,10 +103,11 @@ subroutine heun_timestep(cgrid)
 
 
             !----- Save the previous thermodynamic state. ---------------------------------!
-            old_can_shv      = csite%can_shv(ipa)
-            old_can_co2      = csite%can_co2(ipa)
-            old_can_rhos     = csite%can_rhos(ipa)
-            old_can_temp     = csite%can_temp(ipa)
+            old_can_shv      = csite%can_shv  (ipa)
+            old_can_co2      = csite%can_co2  (ipa)
+            old_can_rhos     = csite%can_rhos (ipa)
+            old_can_temp     = csite%can_temp (ipa)
+            old_can_prss     = csite%can_prss (ipa)
             old_can_enthalpy = tq2enthalpy(csite%can_temp(ipa),csite%can_shv(ipa),.true.)
             !------------------------------------------------------------------------------!
 
@@ -160,6 +162,7 @@ subroutine heun_timestep(cgrid)
             !     Set up the remaining, carbon-dependent variables to the buffer.          !
             !------------------------------------------------------------------------------!
             call copy_patch_init_carbon(csite,ipa,integration_buff%initp)
+            !------------------------------------------------------------------------------!
 
 
             !------------------------------------------------------------------------------!
@@ -189,6 +192,8 @@ subroutine heun_timestep(cgrid)
             !------------------------------------------------------------------------------!
 
 
+
+
             !------------------------------------------------------------------------------!
             !     Compute the residuals.                                                   !
             !------------------------------------------------------------------------------!
@@ -197,7 +202,7 @@ subroutine heun_timestep(cgrid)
                                ,co2curr_loss2atm,wcurr_loss2drainage,ecurr_loss2drainage   &
                                ,wcurr_loss2runoff,ecurr_loss2runoff,cpoly%area(isi)        &
                                ,cgrid%cbudget_nep(ipy),old_can_enthalpy,old_can_shv        &
-                               ,old_can_co2,old_can_rhos,old_can_temp)
+                               ,old_can_co2,old_can_rhos,old_can_temp,old_can_prss)
             !------------------------------------------------------------------------------!
          end do patchloop
       end do siteloop

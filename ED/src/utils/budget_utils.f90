@@ -46,7 +46,7 @@ subroutine compute_budget(csite,lsl,pcpg,qpcpg,ipa,wcurr_loss2atm,ecurr_netrad  
                          ,ecurr_loss2atm,co2curr_loss2atm,wcurr_loss2drainage              &
                          ,ecurr_loss2drainage,wcurr_loss2runoff,ecurr_loss2runoff          &
                          ,site_area,cbudget_nep,old_can_enthalpy,old_can_shv,old_can_co2   &
-                         ,old_can_rhos,old_can_temp)
+                         ,old_can_rhos,old_can_temp,old_can_prss)
    use ed_state_vars, only : sitetype           ! ! structure
    use ed_max_dims  , only : str_len            ! ! intent(in)
    use ed_misc_coms , only : dtlsm              & ! intent(in)
@@ -85,6 +85,7 @@ subroutine compute_budget(csite,lsl,pcpg,qpcpg,ipa,wcurr_loss2atm,ecurr_netrad  
    real                                    , intent(in)    :: old_can_co2
    real                                    , intent(in)    :: old_can_rhos
    real                                    , intent(in)    :: old_can_temp
+   real                                    , intent(in)    :: old_can_prss
    !----- Local variables -----------------------------------------------------------------!
    character(len=str_len)                                  :: budget_fout
    real, dimension(n_dbh)                                  :: gpp_dbh
@@ -104,6 +105,7 @@ subroutine compute_budget(csite,lsl,pcpg,qpcpg,ipa,wcurr_loss2atm,ecurr_netrad  
    real                                                    :: ebudget_deltastorage
    real                                                    :: ecurr_precipgain
    real                                                    :: ecurr_denseffect
+   real                                                    :: ecurr_prsseffect
    real                                                    :: ecurr_residual
    real                                                    :: wbudget_finalstorage
    real                                                    :: wbudget_deltastorage
@@ -127,8 +129,8 @@ subroutine compute_budget(csite,lsl,pcpg,qpcpg,ipa,wcurr_loss2atm,ecurr_netrad  
    logical                                                 :: water_ok
    !----- Local constants. ----------------------------------------------------------------!
    character(len=13)     , parameter     :: fmtf='(a,1x,es14.7)'
-   character(len=10)     , parameter     :: bhfmt='(30(a,1x))'
-   character(len=48)     , parameter     :: bbfmt='(3(i13,1x),27(es13.6,1x))'
+   character(len=10)     , parameter     :: bhfmt='(31(a,1x))'
+   character(len=48)     , parameter     :: bbfmt='(3(i13,1x),28(es13.6,1x))'
    !----- External functions. -------------------------------------------------------------!
    real                  , external      :: compute_netrad
    real                  , external      :: compute_water_storage
@@ -164,10 +166,11 @@ subroutine compute_budget(csite,lsl,pcpg,qpcpg,ipa,wcurr_loss2atm,ecurr_netrad  
                                      , ' CO2.DSTORAGE' , '      CO2.NEP' , ' CO2.DENS.EFF' &
                                      , ' CO2.LOSS2ATM' , '  ENE.STORAGE' , ' ENE.RESIDUAL' &
                                      , ' ENE.DSTORAGE' , '   ENE.PRECIP' , '   ENE.NETRAD' &
-                                     , ' ENE.DENS.EFF' , ' ENE.LOSS2ATM' , ' ENE.DRAINAGE' &
-                                     , '   ENE.RUNOFF' , '  H2O.STORAGE' , ' H2O.RESIDUAL' &
-                                     , ' H2O.DSTORAGE' , '   H2O.PRECIP' , ' H2O.DENS.EFF' &
-                                     , ' H2O.LOSS2ATM' , ' H2O.DRAINAGE' , '   H2O.RUNOFF'
+                                     , ' ENE.DENS.EFF' , ' ENE.PRSS.EFF' , ' ENE.LOSS2ATM' &
+                                     , ' ENE.DRAINAGE' , '   ENE.RUNOFF' , '  H2O.STORAGE' &
+                                     , ' H2O.RESIDUAL' , ' H2O.DSTORAGE' , '   H2O.PRECIP' &
+                                     , ' H2O.DENS.EFF' , ' H2O.LOSS2ATM' , ' H2O.DRAINAGE' &
+                                     , '   H2O.RUNOFF'
                                      
             close(unit=86,status='keep')
          end if
@@ -183,26 +186,50 @@ subroutine compute_budget(csite,lsl,pcpg,qpcpg,ipa,wcurr_loss2atm,ecurr_netrad  
    !---------------------------------------------------------------------------------------!
    wcurr_precipgain = pcpg  * dtlsm
    ecurr_precipgain = qpcpg * dtlsm
+   !---------------------------------------------------------------------------------------!
+
 
    !---------------------------------------------------------------------------------------!
-   !     Compute the effect that change density had in the total canopy storage.           !
+   !     Compute the density and pressure effects.  We seek the conservation of the        !
+   ! extensive properties [X/m2], but the canopy air space solves the intensive quantities !
+   ! instead [X/mol or X/kg].  Because density is not constant within the time step, and   !
+   ! during the integration we solve the intensive form for the canopy air space, we must  !
+   ! subtract the density effect from the residual.  The derivation is shown below.  The   !
+   ! storage term is what we aim at, but in reality we solve the equations after the >>>.  !
+   !                                                                                       !
+   !    dM               d(rho*z*m)                         dm                     d(rho)  !
+   !   ----  = I - L -> ------------ = I - L >>> rho * z * ---- = I - L - m * z * -------- !
+   !    dt                   dt                             dt                       dt    !
+   !                                                                                       !
+   ! where M is the extensive propery, I is the input flux, L is the loss flux, z is the   !
+   ! canopy air space depth, and rho is the canopy air space density.                      !
+   !    For the specific case of enthalpy, we also compute the pressure effect between     !
+   ! time steps.  We cannot guarantee conservation of enthalpy when we update pressure,    !
+   ! because of the first law of thermodynamics (the way to address this would be to use   !
+   ! equivalent potential temperature, which is enthalpy plus pressure effect).  Enthalpy  !
+   ! is preserved within one time step, once pressure is updated and remains constant.     !
+   !                                                                                       !
+   !   dH         dp                     dh             dp             d(rho)              !
+   !  ---- - V * ---- = Q >>> rho * z * ---- = Q + z * ---- - m * z * --------             !
+   !   dt         dt                     dt             dt               dt                !
+   !                                                                                       !
+   ! where p is the canopy air space pressure, Q is the net heat exchange, V is the volume !
+   ! of the canopy air space.                                                              !
    !---------------------------------------------------------------------------------------!
+   !------ CO2.  Density effect only. -----------------------------------------------------!
    co2curr_denseffect  = ddens_dt_effect(old_can_rhos,csite%can_rhos(ipa)                  &
                                         ,old_can_co2,csite%can_co2(ipa)                    &
                                         ,csite%can_depth(ipa),mmdryi)
+   !------ Water. Density effect only. ----------------------------------------------------!
    wcurr_denseffect    = ddens_dt_effect(old_can_rhos,csite%can_rhos(ipa)                  &
                                         ,old_can_shv,csite%can_shv(ipa)                    &
                                         ,csite%can_depth(ipa),1.)
-   !---------------------------------------------------------------------------------------!
-
-
-   !---------------------------------------------------------------------------------------!
-   !     For enthalpy, we must find the current enthalpy first.                            !
-   !---------------------------------------------------------------------------------------!
+   !------ Enthalpy.  Density and pressure effects. ---------------------------------------!
    curr_can_enthalpy   = tq2enthalpy(csite%can_temp(ipa),csite%can_shv(ipa),.true.)
    ecurr_denseffect    = ddens_dt_effect(old_can_rhos,csite%can_rhos(ipa)                  &
                                         ,old_can_enthalpy, curr_can_enthalpy               &
                                         ,csite%can_depth(ipa),1.0)
+   ecurr_prsseffect    = csite%can_depth(ipa) * (csite%can_prss(ipa) - old_can_prss)
    !---------------------------------------------------------------------------------------!
 
 
@@ -238,17 +265,17 @@ subroutine compute_budget(csite,lsl,pcpg,qpcpg,ipa,wcurr_loss2atm,ecurr_netrad  
    !     Compute residuals.                                                                !
    !---------------------------------------------------------------------------------------!
    !----- 1. Canopy CO2. ------------------------------------------------------------------!
-   co2curr_residual = co2budget_deltastorage                                               &
-                    - ( - co2curr_nep - co2curr_loss2atm)                                  &
+   co2curr_residual = co2budget_deltastorage - ( - co2curr_nep       - co2curr_loss2atm  ) &
                     - co2curr_denseffect
    !----- 2. Energy. ----------------------------------------------------------------------!
-   ecurr_residual   = ebudget_deltastorage - ( ecurr_precipgain    + ecurr_netrad          &
-                                             - ecurr_loss2atm      - ecurr_loss2drainage   &
-                                             - ecurr_loss2runoff   ) - ecurr_denseffect
+   ecurr_residual   = ebudget_deltastorage   - ( ecurr_precipgain    - ecurr_loss2atm      &
+                                               - ecurr_loss2drainage - ecurr_loss2runoff   &
+                                               + ecurr_netrad        + ecurr_prsseffect  ) &
+                    - ecurr_denseffect
    !----- 3. Water. -----------------------------------------------------------------------!
-   wcurr_residual   = wbudget_deltastorage - ( wcurr_precipgain    - wcurr_loss2atm        &
-                                             - wcurr_loss2drainage - wcurr_loss2runoff)    &
-                                           - wcurr_denseffect
+   wcurr_residual   = wbudget_deltastorage   - ( wcurr_precipgain    - wcurr_loss2atm      &
+                                               - wcurr_loss2drainage - wcurr_loss2runoff ) &
+                    - wcurr_denseffect
    !---------------------------------------------------------------------------------------!
 
 
@@ -278,6 +305,7 @@ subroutine compute_budget(csite,lsl,pcpg,qpcpg,ipa,wcurr_loss2atm,ecurr_netrad  
    !----- 2. Energy. ----------------------------------------------------------------------!
    csite%ebudget_precipgain(ipa)    = csite%ebudget_precipgain(ipa)    + ecurr_precipgain
    csite%ebudget_netrad(ipa)        = csite%ebudget_netrad(ipa)        + ecurr_netrad
+   csite%ebudget_prsseffect(ipa)    = csite%ebudget_prsseffect(ipa)    + ecurr_prsseffect
    csite%ebudget_denseffect(ipa)    = csite%ebudget_denseffect(ipa)    + ecurr_denseffect
    csite%ebudget_loss2atm(ipa)      = csite%ebudget_loss2atm(ipa)      + ecurr_loss2atm
    csite%ebudget_loss2drainage(ipa) = csite%ebudget_loss2drainage(ipa)                     &
@@ -362,6 +390,7 @@ subroutine compute_budget(csite,lsl,pcpg,qpcpg,ipa,wcurr_loss2atm,ecurr_netrad  
          write (unit=*,fmt=fmtf ) ' PRECIPGAIN     : ',ecurr_precipgain
          write (unit=*,fmt=fmtf ) ' NETRAD         : ',ecurr_netrad
          write (unit=*,fmt=fmtf ) ' DENSITY_EFFECT : ',ecurr_denseffect
+         write (unit=*,fmt=fmtf ) ' PRESSURE_EFFECT: ',ecurr_prsseffect
          write (unit=*,fmt=fmtf ) ' LOSS2ATM       : ',ecurr_loss2atm
          write (unit=*,fmt=fmtf ) ' LOSS2DRAINAGE  : ',ecurr_loss2drainage
          write (unit=*,fmt=fmtf ) ' LOSS2RUNOFF    : ',ecurr_loss2runoff
@@ -413,6 +442,7 @@ subroutine compute_budget(csite,lsl,pcpg,qpcpg,ipa,wcurr_loss2atm,ecurr_netrad  
          ecurr_precipgain       = ecurr_precipgain       * ene_factor
          ecurr_netrad           = ecurr_netrad           * ene_factor
          ecurr_denseffect       = ecurr_denseffect       * ene_factor
+         ecurr_prsseffect       = ecurr_prsseffect       * ene_factor
          ecurr_loss2atm         = ecurr_loss2atm         * ene_factor
          ecurr_loss2drainage    = ecurr_loss2drainage    * ene_factor
          ecurr_loss2runoff      = ecurr_loss2runoff      * ene_factor
@@ -439,10 +469,11 @@ subroutine compute_budget(csite,lsl,pcpg,qpcpg,ipa,wcurr_loss2atm,ecurr_netrad  
                , co2budget_deltastorage , co2curr_nep            , co2curr_denseffect      &
                , co2curr_loss2atm       , ebudget_finalstorage   , ecurr_residual          &
                , ebudget_deltastorage   , ecurr_precipgain       , ecurr_netrad            &
-               , ecurr_denseffect       , ecurr_loss2atm         , ecurr_loss2drainage     &
-               , ecurr_loss2runoff      , wbudget_finalstorage   , wcurr_residual          &
-               , wbudget_deltastorage   , wcurr_precipgain       , wcurr_denseffect        &
-               , wcurr_loss2atm         , wcurr_loss2drainage    , wcurr_loss2runoff       
+               , ecurr_denseffect       , ecurr_prsseffect       , ecurr_loss2atm          &
+               , ecurr_loss2drainage    , ecurr_loss2runoff      , wbudget_finalstorage    &
+               , wcurr_residual         , wbudget_deltastorage   , wcurr_precipgain        &
+               , wcurr_denseffect       , wcurr_loss2atm         , wcurr_loss2drainage     &
+               , wcurr_loss2runoff
          close(unit=86,status='keep')
          !---------------------------------------------------------------------------------!
       end if

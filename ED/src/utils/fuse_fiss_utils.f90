@@ -3434,6 +3434,10 @@ module fuse_fiss_utils
                                       ( csite%ebudget_denseffect(donp) * csite%area(donp)  &
                                       + csite%ebudget_denseffect(recp) * csite%area(recp) )
 
+      csite%ebudget_prsseffect(recp)  = newareai *                                         &
+                                      ( csite%ebudget_prsseffect(donp) * csite%area(donp)  &
+                                      + csite%ebudget_prsseffect(recp) * csite%area(recp) )
+
       csite%ebudget_loss2runoff(recp) = newareai *                                         &
                                      ( csite%ebudget_loss2runoff(donp) * csite%area(donp)  &
                                      + csite%ebudget_loss2runoff(recp) * csite%area(recp) )

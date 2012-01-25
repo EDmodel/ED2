@@ -762,6 +762,10 @@ module ed_state_vars
      ! (J/m2/s)
      real , pointer,dimension(:) :: ebudget_denseffect
 
+     ! Mean change in storage due to pressure change
+     ! (J/m2/s)
+     real , pointer,dimension(:) :: ebudget_prsseffect
+
      ! Energy associated with runoff (J/m2/s)
      real , pointer,dimension(:) :: ebudget_loss2runoff
 
@@ -3102,6 +3106,7 @@ contains
     allocate(csite%wbudget_residual(npatches))
     allocate(csite%ebudget_loss2atm(npatches))
     allocate(csite%ebudget_denseffect(npatches))
+    allocate(csite%ebudget_prsseffect(npatches))
     allocate(csite%ebudget_loss2runoff(npatches))
     allocate(csite%ebudget_loss2drainage(npatches))
     allocate(csite%ebudget_netrad(npatches))
@@ -4325,6 +4330,7 @@ contains
     nullify(csite%wbudget_residual)
     nullify(csite%ebudget_loss2atm)
     nullify(csite%ebudget_denseffect)
+    nullify(csite%ebudget_prsseffect)
     nullify(csite%ebudget_loss2runoff)
     nullify(csite%ebudget_loss2drainage)
     nullify(csite%ebudget_netrad)
@@ -5527,6 +5533,7 @@ contains
     if(associated(csite%wbudget_residual             )) deallocate(csite%wbudget_residual             )
     if(associated(csite%ebudget_loss2atm             )) deallocate(csite%ebudget_loss2atm             )
     if(associated(csite%ebudget_denseffect           )) deallocate(csite%ebudget_denseffect           )
+    if(associated(csite%ebudget_prsseffect           )) deallocate(csite%ebudget_prsseffect           )
     if(associated(csite%ebudget_loss2runoff          )) deallocate(csite%ebudget_loss2runoff          )
     if(associated(csite%ebudget_loss2drainage        )) deallocate(csite%ebudget_loss2drainage        )
     if(associated(csite%ebudget_netrad               )) deallocate(csite%ebudget_netrad               )
@@ -6007,6 +6014,7 @@ contains
          osite%wbudget_residual(opa)            = isite%wbudget_residual(ipa)
          osite%ebudget_loss2atm(opa)            = isite%ebudget_loss2atm(ipa)
          osite%ebudget_denseffect(opa)          = isite%ebudget_denseffect(ipa)
+         osite%ebudget_prsseffect(opa)          = isite%ebudget_prsseffect(ipa)
          osite%ebudget_loss2runoff(opa)         = isite%ebudget_loss2runoff(ipa)
          osite%ebudget_loss2drainage(opa)       = isite%ebudget_loss2drainage(ipa)
          osite%ebudget_netrad(opa)              = isite%ebudget_netrad(ipa)
@@ -6338,6 +6346,7 @@ contains
     siteout%wbudget_residual(1:inc)          = pack(sitein%wbudget_residual,logmask)
     siteout%ebudget_loss2atm(1:inc)          = pack(sitein%ebudget_loss2atm,logmask)
     siteout%ebudget_denseffect(1:inc)        = pack(sitein%ebudget_denseffect,logmask)
+    siteout%ebudget_prsseffect(1:inc)        = pack(sitein%ebudget_prsseffect,logmask)
     siteout%ebudget_loss2runoff(1:inc)       = pack(sitein%ebudget_loss2runoff,logmask)
     siteout%ebudget_loss2drainage(1:inc)     = pack(sitein%ebudget_loss2drainage,logmask)
     siteout%ebudget_netrad(1:inc)            = pack(sitein%ebudget_netrad,logmask)
@@ -12543,6 +12552,13 @@ contains
          nvar=nvar+1
            call vtable_edio_r(npts,csite%ebudget_denseffect,nvar,igr,init,csite%paglob_id, &
            var_len,var_len_global,max_ptrs,'EBUDGET_DENSEFFECT :31:hist') 
+         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+      end if
+
+      if (associated(csite%ebudget_prsseffect)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,csite%ebudget_prsseffect,nvar,igr,init,csite%paglob_id, &
+           var_len,var_len_global,max_ptrs,'EBUDGET_PRSSEFFECT :31:hist') 
          call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
       end if
 

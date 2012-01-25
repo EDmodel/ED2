@@ -473,6 +473,7 @@ subroutine init_ed_patch_vars(csite,ip1,ip2,lsl)
    csite%ebudget_loss2runoff       (ip1:ip2) = 0.0
    csite%ebudget_loss2drainage     (ip1:ip2) = 0.0
    csite%ebudget_denseffect        (ip1:ip2) = 0.0
+   csite%ebudget_prsseffect        (ip1:ip2) = 0.0
    csite%ebudget_initialstorage    (ip1:ip2) = 0.0
    csite%ebudget_residual          (ip1:ip2) = 0.0
 

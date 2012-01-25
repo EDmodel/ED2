@@ -2703,6 +2703,7 @@ module therm_lib8
 
 
 
+
    !=======================================================================================!
    !=======================================================================================!
    !     This fucntion computes the ice liquid potential temperature given the Exner       !
@@ -2728,23 +2729,31 @@ module therm_lib8
       !------------------------------------------------------------------------------------!
 
 
-      !----- Find the enthalpies. ---------------------------------------------------------!
+      !----- Find the sensible heat enthalpy (assuming dry air). --------------------------!
       hh = cpdry8 * temp
-      qq = alvl38 * rliq + alvi38 * rice
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !      Find the latent heat enthalpy.  If using the old thermodynamics, we use the   !
+      ! latent heat at T = T3ple, otherwise we use the temperature-dependent one.          !
+      !------------------------------------------------------------------------------------!
+      if (newthermo) then
+         qq = alvl8(temp) * rliq + alvi8(temp) * rice
+      else
+         qq = alvl38 * rliq + alvi38 * rice
+      end if
       !------------------------------------------------------------------------------------!
 
 
       !------------------------------------------------------------------------------------!
       !      Solve the thermodynamics.  For the new thermodynamics we don't approximate    !
-      ! the exponential to a linear function.                                              !
+      ! the exponential to a linear function, nor do we impose temperature above the thre- !
+      ! shold from Tripoli and Cotton (1981).                                              !
       !------------------------------------------------------------------------------------!
       if (newthermo) then
          !----- Decide how to compute, based on temperature. ------------------------------!
-         if (temp > ttripoli8) then
-            theta_iceliq8 = hh * exp(-qq / hh) / exner
-         else
-            theta_iceliq8 = hh * exp(-qq * htripolii8) / exner
-         end if
+         theta_iceliq8 = hh * exp(-qq / hh) / exner
          !---------------------------------------------------------------------------------!
       else
          !----- Decide how to compute, based on temperature. ------------------------------!
@@ -2775,6 +2784,8 @@ module therm_lib8
    real(kind=8) function dthetail_dt8(condconst,thil,exner,pres,temp,rliq,ricein)
       use consts_coms, only : alvl38      & ! intent(in)
                             , alvi38      & ! intent(in)
+                            , dcpvi8      & ! intent(in)
+                            , dcpvl8      & ! intent(in)
                             , cpdry8      & ! intent(in)
                             , ttripoli8   & ! intent(in)
                             , htripoli8   & ! intent(in)
@@ -2793,6 +2804,7 @@ module therm_lib8
       !----- Local variables --------------------------------------------------------------!
       real(kind=8)                       :: rice       ! Ice mixing ratio or 0.    [ kg/kg]
       real(kind=8)                       :: ldrst      ! L × d(rs)/dT × T          [  J/kg]
+      real(kind=8)                       :: rdlt       ! r × d(L)/dT × T           [  J/kg]
       real(kind=8)                       :: hh         ! Sensible heat enthalpy    [  J/kg]
       real(kind=8)                       :: qq         ! Latent heat enthalpy      [  J/kg]
       logical                            :: thereisice ! Is ice present            [   ---]
@@ -2804,9 +2816,9 @@ module therm_lib8
       !------------------------------------------------------------------------------------!
       thereisice = present(ricein)
       if (thereisice) then
-         rice=ricein
+         rice = ricein
       else
-         rice=0.d0
+         rice = 0.d0
       end if
       !------------------------------------------------------------------------------------!
 
@@ -2830,23 +2842,42 @@ module therm_lib8
          !---------------------------------------------------------------------------------!
 
 
-         !----- Latent heat enthalpy. -----------------------------------------------------!
-         qq = alvl38 * rliq + alvi38 * rice
+         !---------------------------------------------------------------------------------!
+         !      Find the latent heat enthalpy.  If using the old thermodynamics, we use    !
+         ! the latent heat at T = T3ple, otherwise we use the temperature-dependent one.   !
+         ! The term r × d(L)/dT × T is computed only when we use the new thermodynamics.   !
+         !---------------------------------------------------------------------------------!
+         if (newthermo) then
+            qq   = alvl8(temp) * rliq + alvi8(temp) * rice
+            rdlt = (dcpvl8 * rliq + dcpvi8 * rice ) * temp
+         else
+            qq   = alvl38 * rliq + alvi38 * rice
+            rdlt = 0.d0
+         end if
          !---------------------------------------------------------------------------------!
 
 
          !---------------------------------------------------------------------------------!
          !    This is the term L×[d(rs)/dt]×T. L may be either the vapourisation or        !
          ! sublimation latent heat, depending on the temperature and whether we are consi- !
-         ! dering ice or not. Also, if condensation mixing ratio is constant, then this    !
+         ! dering ice or not.  We still need to check whether latent heat is a function of !
+         ! temperature or not.  Also, if condensation mixing ratio is constant, then this  !
          ! term will be always zero.                                                       !
          !---------------------------------------------------------------------------------!
          if (condconst) then
             ldrst = 0.d0
          elseif (thereisice .and. temp < t3ple8) then
-            ldrst = alvi38 * rsifp8(pres,temp) * temp
+            if (newthermo) then
+               ldrst = alvi38 * rsifp8(pres,temp) * temp
+            else
+               ldrst = alvi8(temp) * rsifp8(pres,temp) * temp
+            end if
          else
-            ldrst = alvl38 * rslfp8(pres,temp) * temp  
+            if (newthermo) then
+               ldrst = alvl38 * rslfp8(pres,temp) * temp
+            else
+               ldrst = alvl8(temp) * rslfp8(pres,temp) * temp
+            end if
          end if
          !---------------------------------------------------------------------------------!
       end if
@@ -2858,19 +2889,13 @@ module therm_lib8
       !     Find the condensed phase consistent with the thermodynamics used.              !
       !------------------------------------------------------------------------------------!
       if (newthermo) then
-         !----- Decide how to compute, based on temperature -------------------------------!
-         if (temp > ttripoli8) then
-            dthetail_dt8 = thil * ( 1.d0 + (ldrst + qq) / hh  ) / temp
-         else
-            dthetail_dt8 = thil * ( 1.d0 + ldrst * htripolii8 ) / temp
-         end if
-         !---------------------------------------------------------------------------------!
+         dthetail_dt8 = thil * ( 1.d0 + (ldrst + qq - rdlt ) / hh ) / temp
       else
-         !----- Deciding how to compute, based on temperature -----------------------------!
+         !----- Decide how to compute, based on temperature. ------------------------------!
          if (temp > ttripoli8) then
             dthetail_dt8 = thil * ( 1.d0 + (ldrst + qq) / (hh+qq) ) / temp
          else
-            dthetail_dt8 = thil * ( 1.d0 + ldrst / (htripoli8 + alvl38 *rliq ) ) / temp
+            dthetail_dt8 = thil * ( 1.d0 + ldrst / (htripoli8 + alvl38 * rliq) ) / temp
          end if
          !---------------------------------------------------------------------------------!
       end if
@@ -3157,6 +3182,8 @@ module therm_lib8
    real(kind=8) function dtempdrs8(exner,thil,temp,rliq,rice,rconmin)
       use consts_coms, only : alvl38      & ! intent(in)
                             , alvi38      & ! intent(in)
+                            , dcpvl8      & ! intent(in)
+                            , dcpvi8      & ! intent(in)
                             , cpdry8      & ! intent(in)
                             , cpdryi8     & ! intent(in)
                             , ttripoli8   & ! intent(in)
@@ -3175,35 +3202,60 @@ module therm_lib8
       !     other ways to compute theta_il, so don't remove this argument.                 !
       !------------------------------------------------------------------------------------!
       !----- Local variables --------------------------------------------------------------!
-      real(kind=8)             :: qhydm     ! Enth. associated w/ latent heat     [   J/kg]
-      real(kind=8)             :: hh        ! Enth. associated w/ sensible heat   [   J/kg]
-      real(kind=8)             :: rcon      ! Condensate mixing ratio             [  kg/kg]
-      real(kind=8)             :: til       ! Ice-liquid temperature              [      K]
+      real(kind=8)             :: qq      ! Enthalpy -- latent heat               [   J/kg]
+      real(kind=8)             :: qpt     ! d(qq)/dT * T                          [   J/kg]
+      real(kind=8)             :: hh      ! Enthalpy -- sensible heat             [   J/kg]
+      real(kind=8)             :: rcon    ! Condensate mixing ratio               [  kg/kg]
+      real(kind=8)             :: til     ! Ice-liquid temperature                [      K]
       !------------------------------------------------------------------------------------!
 
 
-      !----- Find the temperature and hydrometeor terms. ----------------------------------!
-      qhydm = alvl38 * rliq + alvi38 * rice
-      rcon  = rliq + rice
+      !----- Find the total hydrometeor mixing ratio. -------------------------------------!
+      rcon  = rliq+rice
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !      If the amount of condensate is negligible, temperature does not depend on     !
+      ! saturation mixing ratio.                                                           !
+      !------------------------------------------------------------------------------------!
       if (rcon < rconmin) then
          dtempdrs8 = 0.d0
-      elseif (newthermo) then
-         hh    = cpdry8 * temp
-         !---------------------------------------------------------------------------------!
-         !    Decide how to compute, based on temperature and whether condensates exist.   !
-         !---------------------------------------------------------------------------------!
-         if (temp > ttripoli8) then
-            dtempdrs8 = - temp * qhydm / ( rcon * (hh+qhydm) )
-         else
-            dtempdrs8 = - temp * qhydm * htripolii8 / rcon
-         end if
       else
-         til   = cpdryi8 * thil * exner
-         !----- Decide how to compute, based on temperature. ------------------------------!
-         if (temp > ttripoli8) then
-            dtempdrs8 = - til * qhydm / ( rcon * cpdry8 * (2.*temp-til))
+
+         !---------------------------------------------------------------------------------!
+         !     Find the enthalpy associated with latent heat and its derivative            !
+         ! correction.  This is dependent on the thermodynamics used.                      !
+         !---------------------------------------------------------------------------------!
+         if (newthermo) then
+            qq  = alvl8(temp) * rliq + alvi8(temp) * rice
+            qpt = dcpvl8 * rliq + dcpvi8 * rice
          else
-            dtempdrs8 = - til * qhydm * htripolii8 / rcon
+            qq  = alvl38 * rliq + alvi38 * rice
+            qpt = 0.d0
+         end if
+         !---------------------------------------------------------------------------------!
+
+
+         !----- Find the enthalpy associated with sensible heat. --------------------------!
+         hh = cpdry8 * temp
+         !---------------------------------------------------------------------------------!
+
+
+         !---------------------------------------------------------------------------------!
+         !    Decide how to compute, based on the thermodynamics method.                   !
+         !---------------------------------------------------------------------------------!
+         if (newthermo) then
+            dtempdrs8 = - temp * qq / ( rcon * (hh + qq - qpt) )
+         else
+            til   = cpdryi8 * thil * exner
+            !----- Decide how to compute, based on temperature. ---------------------------!
+            if (temp > ttripoli8) then
+               dtempdrs8 = - til * qq / ( rcon * cpdry8 * (2.*temp-til))
+            else
+               dtempdrs8 = - til * qq * htripolii8 / rcon
+            end if
+            !------------------------------------------------------------------------------!
          end if
          !---------------------------------------------------------------------------------!
       end if
