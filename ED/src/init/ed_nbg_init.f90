@@ -124,8 +124,7 @@ subroutine init_nbg_cohorts(csite,lsl,ipa_a,ipa_z)
                                  , tonoha_2_kgom2     ! ! intent(in)
    use allometry          , only : h2dbh              & ! function
                                  , dbh2bd             & ! function
-                                 , dbh2bl             & ! function
-                                 , h2bl               & ! function
+                                 , size2bl            & ! function
                                  , ed_biomass         & ! function
                                  , area_indices       ! ! subroutine
    use fuse_fiss_utils    , only : sort_cohorts    ! ! subroutine
@@ -209,15 +208,8 @@ subroutine init_nbg_cohorts(csite,lsl,ipa_a,ipa_z)
          cpatch%hite(ico)             = hgt_min(ipft)
          cpatch%phenology_status(ico) = 0
          cpatch%dbh(ico)              = h2dbh(cpatch%hite(ico),ipft)
-         if (is_grass(ipft)) then
-             ! - grasses have no bdead and bleaf is calculated from height
-             cpatch%bdead(ico)        = 0.0
-             cpatch%bleaf(ico)        = h2bl(cpatch%hite(ico),ipft) 
-         else
-             ! - tree
-             cpatch%bdead(ico)        = dbh2bd(cpatch%dbh(ico),ipft)
-             cpatch%bleaf(ico)        = dbh2bl(cpatch%dbh(ico),ipft) 
-         end if
+         cpatch%bdead(ico)            = dbh2bd(cpatch%dbh(ico),ipft)
+         cpatch%bleaf(ico)            = size2bl(cpatch%dbh(ico),cpatch%hite(ico),ipft) 
          cpatch%sla(ico)              = sla(ipft)
 
 
@@ -296,7 +288,7 @@ subroutine init_cohorts_by_layers(csite,lsl,ipa_a,ipa_z)
                                  , tonoha_2_kgom2     ! ! intent(in)
    use allometry          , only : h2dbh              & ! function
                                  , dbh2bd             & ! function
-                                 , dbh2bl             & ! function
+                                 , size2bl            & ! function
                                  , ed_biomass         & ! function
                                  , area_indices       ! ! subroutine
    use fuse_fiss_utils    , only : sort_cohorts       ! ! subroutine
@@ -357,7 +349,7 @@ subroutine init_cohorts_by_layers(csite,lsl,ipa_a,ipa_z)
          cpatch%bstorage(ico)         = 0.0
          cpatch%dbh(ico)              = h2dbh(cpatch%hite(ico),ipft)
          cpatch%bdead(ico)            = dbh2bd(cpatch%dbh(ico),ipft)
-         cpatch%bleaf(ico)            = dbh2bl(cpatch%dbh(ico),ipft) !Ok for grasses, comes from height
+         cpatch%bleaf(ico)            = size2bl(cpatch%dbh(ico),cpatch%hite(ico),ipft)
          cpatch%sla(ico)              = sla(ipft)
 
 

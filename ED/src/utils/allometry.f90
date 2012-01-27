@@ -94,6 +94,7 @@ module allometry
                              , b2Bs_small  & ! intent(in), lookup table
                              , b1Bs_large  & ! intent(in), lookup table
                              , b2Bs_large  & ! intent(in), lookup table
+                             , is_grass    & ! intent(in)
                              , dbh_crit    ! ! intent(in), lookup table
       implicit none
       !----- Arguments --------------------------------------------------------------------!
@@ -101,7 +102,9 @@ module allometry
       integer, intent(in) :: ipft
       !------------------------------------------------------------------------------------!
 
-      if (dbh <= dbh_crit(ipft)) then
+      if (is_grass(ipft)) then
+         dbh2bd = 0.0
+      else if (dbh <= dbh_crit(ipft)) then
          dbh2bd = b1Bs_small(ipft) / C2B * dbh ** b2Bs_small(ipft)
       else
          dbh2bd = b1Bs_large(ipft) / C2B * dbh ** b2Bs_large(ipft)

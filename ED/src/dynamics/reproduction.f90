@@ -42,7 +42,7 @@ subroutine reproduction(cgrid, month)
    use allometry          , only : dbh2bd                & ! function
                                  , dbh2bl                & ! function
                                  , h2dbh                 & ! function
-                                 , h2bl                  & ! function
+                                 , size2bl               & ! function
                                  , dbh2h                 & ! function
                                  , ed_biomass            & ! function
                                  , area_indices          ! ! subroutine
@@ -155,15 +155,8 @@ subroutine reproduction(cgrid, month)
                      !- recruits start at minimum height and dbh and bleaf are calculated from that
                      rectest%hite      = hgt_min(ipft)
                      rectest%dbh       = h2dbh(rectest%hite, ipft)
-                     
-                     if (is_grass(ipft)) then
-                         !-- set bdead to zero for grasses
-                         rectest%bdead     = 0.0
-                         rectest%bleaf     = h2bl(rectest%hite, ipft)
-                      else
-                         rectest%bdead     = dbh2bd(rectest%dbh, ipft)
-                         rectest%bleaf     = dbh2bl(rectest%dbh, ipft)
-                     end if
+                     rectest%bdead     = dbh2bd(rectest%dbh, ipft)
+                     rectest%bleaf     = size2bl(rectest%dbh,rectest%hite, ipft)
                      
                      rectest%balive    = rectest%bleaf                                     &
                                        * (1.0 + q(ipft) + qsw(ipft) * rectest%hite)
