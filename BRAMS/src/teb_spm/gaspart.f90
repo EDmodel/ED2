@@ -707,7 +707,7 @@ subroutine init_conc_prev(name_name)
        ,nnxp1(maxgrds),nnyp1(maxgrds),nnzp1(maxgrds),nzg1,nzs1,npatch1
 
   integer :: iyr,imn,idy,itm,ie,maxarr,ngr,nc
-  character (len=80) :: hnameinh,prefix
+  character (len=str_len) :: hnameinh,prefix
   character (len=2) :: cng
   integer, external :: cio_i,cio_f,cio_i_sca
   integer,save :: iunhd=11

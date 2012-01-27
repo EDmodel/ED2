@@ -50,6 +50,7 @@ subroutine copy_nl(copy_type)
    use soil_coms            , only : find_soil_class           & ! function
                                    , isoilflg                  & ! intent(out)
                                    , nslcon                    & ! intent(out)
+                                   , isoilcol                  & ! intent(out)
                                    , slxclay                   & ! intent(out)
                                    , slxsand                   & ! intent(out)
                                    , slmstr                    & ! intent(out)
@@ -62,7 +63,6 @@ subroutine copy_nl(copy_type)
                                    , soilstate_db              & ! intent(out)
                                    , soildepth_db              & ! intent(out)
                                    , runoff_time               & ! intent(out)
-                                   , betapower                 & ! intent(out)
                                    , slz                       & ! intent(out)
                                    , veg_database              ! ! intent(out)
    use met_driver_coms      , only : ed_met_driver_db          & ! intent(out)
@@ -90,17 +90,32 @@ subroutine copy_nl(copy_type)
                                    , maxpatch                  & ! intent(out)
                                    , maxcohort                 ! ! intent(out)
    use physiology_coms      , only : iphysiol                  & ! intent(out)
-                                   , istoma_scheme             & ! intent(out)
                                    , h2o_plant_lim             & ! intent(out)
                                    , n_plant_lim               & ! intent(out)
-                                   , vmfact                    & ! intent(out)
-                                   , mfact                     & ! intent(out)
-                                   , kfact                     & ! intent(out)
-                                   , gamfact                   & ! intent(out)
-                                   , d0fact                    & ! intent(out)
-                                   , alphafact                 & ! intent(out)
-                                   , lwfact                    & ! intent(out)
-                                   , thioff                    & ! intent(out)
+                                   , vmfact_c3                 & ! intent(out)
+                                   , vmfact_c4                 & ! intent(out)
+                                   , mphoto_trc3               & ! intent(out)
+                                   , mphoto_tec3               & ! intent(out)
+                                   , mphoto_c4                 & ! intent(out)
+                                   , bphoto_blc3               & ! intent(out)
+                                   , bphoto_nlc3               & ! intent(out)
+                                   , bphoto_c4                 & ! intent(out)
+                                   , kw_grass                  & ! intent(out)
+                                   , kw_tree                   & ! intent(out)
+                                   , gamma_c3                  & ! intent(out)
+                                   , gamma_c4                  & ! intent(out)
+                                   , d0_grass                  & ! intent(out)
+                                   , d0_tree                   & ! intent(out)
+                                   , alpha_c3                  & ! intent(out)
+                                   , alpha_c4                  & ! intent(out)
+                                   , klowco2in                 & ! intent(out)
+                                   , rrffact                   & ! intent(out)
+                                   , growthresp                & ! intent(out)
+                                   , lwidth_grass              & ! intent(out)
+                                   , lwidth_bltree             & ! intent(out)
+                                   , lwidth_nltree             & ! intent(out)
+                                   , q10_c3                    & ! intent(out)
+                                   , q10_c4                    & ! intent(out)
                                    , quantum_efficiency_T      ! ! intent(out)
    use phenology_coms       , only : iphen_scheme              & ! intent(out)
                                    , iphenys1                  & ! intent(out)
@@ -150,6 +165,7 @@ subroutine copy_nl(copy_type)
                                    , thsums_database           & ! intent(out)
                                    , end_time                  & ! intent(out)
                                    , radfrq                    & ! intent(out)
+                                   , ivegt_dynamics            & ! intent(out)
                                    , integration_scheme        & ! intent(out)
                                    , ffilout                   & ! intent(out)
                                    , idoutput                  & ! intent(out)
@@ -195,20 +211,25 @@ subroutine copy_nl(copy_type)
    use canopy_air_coms      , only : icanturb                  & ! intent(out)
                                    , isfclyrm                  & ! intent(out)
                                    , ied_grndvap               & ! intent(out)
-                                   , i_blyr_condct             & ! intent(out)
+                                   , ubmin                     & ! intent(out)
+                                   , ugbmin                    & ! intent(out)
                                    , ustmin                    & ! intent(out)
-                                   , ggfact                    & ! intent(out)
                                    , gamm                      & ! intent(out)
                                    , gamh                      & ! intent(out)
                                    , tprandtl                  & ! intent(out)
-                                   , vkopr                     & ! intent(out)
-                                   , vh2vr                     & ! intent(out)
-                                   , vh2dh                     & ! intent(out)
                                    , ribmax                    & ! intent(out)
                                    , leaf_maxwhc               ! ! intent(out)
    use optimiz_coms         , only : ioptinpt                  ! ! intent(out)
    use canopy_layer_coms    , only : crown_mod                 ! ! intent(out)
-   use canopy_radiation_coms, only : ican_swrad                ! ! intent(out)
+   use canopy_radiation_coms, only : icanrad                   & ! intent(out)
+                                   , ltrans_vis                & ! intent(out)
+                                   , ltrans_nir                & ! intent(out)
+                                   , lreflect_vis              & ! intent(out)
+                                   , lreflect_nir              & ! intent(out)
+                                   , orient_tree               & ! intent(out)
+                                   , orient_grass              & ! intent(out)
+                                   , clump_tree                & ! intent(out)
+                                   , clump_grass               ! ! intent(out)
    use rk4_coms             , only : ibranch_thermo            & ! intent(out)
                                    , ipercol                   & ! intent(out)
                                    , rk4_tolerance             ! ! intent(out)
@@ -277,6 +298,7 @@ subroutine copy_nl(copy_type)
 
       isoilflg                  = nl%isoilflg
       nslcon                    = nl%nslcon
+      isoilcol                  = nl%isoilcol
       slxclay                   = nl%slxclay
       slxsand                   = nl%slxsand
       slmstr(1:nzgmax)          = nl%slmstr(1:nzgmax)
@@ -308,27 +330,51 @@ subroutine copy_nl(copy_type)
       ed_reg_lonmin             = nl%ed_reg_lonmin
       ed_reg_lonmax             = nl%ed_reg_lonmax
 
+      ivegt_dynamics            = nl%ivegt_dynamics
       integration_scheme        = nl%integration_scheme
       rk4_tolerance             = nl%rk4_tolerance
       ibranch_thermo            = nl%ibranch_thermo
       iphysiol                  = nl%iphysiol
-      istoma_scheme             = nl%istoma_scheme
       iallom                    = nl%iallom
       iphen_scheme              = nl%iphen_scheme
       repro_scheme              = nl%repro_scheme
       lapse_scheme              = nl%lapse_scheme
       crown_mod                 = nl%crown_mod
-      ican_swrad                = nl%ican_swrad
+      icanrad                   = nl%icanrad
+      ltrans_vis                = nl%ltrans_vis
+      ltrans_nir                = nl%ltrans_nir
+      lreflect_vis              = nl%lreflect_vis
+      lreflect_nir              = nl%lreflect_nir
+      orient_tree               = nl%orient_tree
+      orient_grass              = nl%orient_grass
+      clump_tree                = nl%clump_tree
+      clump_grass               = nl%clump_grass
       h2o_plant_lim             = nl%h2o_plant_lim
-      vmfact                    = nl%vmfact
-      mfact                     = nl%mfact
-      kfact                     = nl%kfact
-      gamfact                   = nl%gamfact
-      d0fact                    = nl%d0fact
-      alphafact                 = nl%alphafact
+      vmfact_c3                 = nl%vmfact_c3
+      vmfact_c4                 = nl%vmfact_c4
+      mphoto_trc3               = nl%mphoto_trc3
+      mphoto_tec3               = nl%mphoto_tec3
+      mphoto_c4                 = nl%mphoto_c4
+      bphoto_blc3               = nl%bphoto_blc3
+      bphoto_nlc3               = nl%bphoto_nlc3
+      bphoto_c4                 = nl%bphoto_c4
+      kw_grass                  = nl%kw_grass
+      kw_tree                   = nl%kw_tree
+      gamma_c3                  = nl%gamma_c3
+      gamma_c4                  = nl%gamma_c4
+      d0_grass                  = nl%d0_grass
+      d0_tree                   = nl%d0_tree
+      alpha_c3                  = nl%alpha_c3
+      alpha_c4                  = nl%alpha_c4
+      klowco2in                 = nl%klowco2in
+      rrffact                   = nl%rrffact
+      growthresp                = nl%growthresp
+      lwidth_grass              = nl%lwidth_grass
+      lwidth_bltree             = nl%lwidth_bltree
+      lwidth_nltree             = nl%lwidth_nltree
+      q10_c3                    = nl%q10_c3
+      q10_c4                    = nl%q10_c4
       thetacrit                 = nl%thetacrit
-      lwfact                    = nl%lwfact
-      thioff                    = nl%thioff
       quantum_efficiency_T      = nl%quantum_efficiency_T
       radint                    = nl%radint
       radslp                    = nl%radslp
@@ -342,14 +388,11 @@ subroutine copy_nl(copy_type)
       LloydTaylor               = nl%decomp_scheme == 1
       
       icanturb                  = nl%icanturb
-      i_blyr_condct             = nl%i_blyr_condct
       isfclyrm                  = nl%isfclyrm
       ied_grndvap               = nl%ied_grndvap
       gamm                      = nl%gamm
       gamh                      = nl%gamh
       tprandtl                  = nl%tprandtl
-      vh2vr                     = nl%vh2vr
-      vh2dh                     = nl%vh2dh
       ribmax                    = nl%ribmax
       leaf_maxwhc               = nl%leaf_maxwhc
       ipercol                   = nl%ipercol
@@ -362,9 +405,9 @@ subroutine copy_nl(copy_type)
       treefall_disturbance_rate = nl%treefall_disturbance_rate
       time2canopy               = nl%time2canopy
       runoff_time               = nl%runoff_time
-      betapower                 = nl%betapower
+      ubmin                     = nl%ubmin
+      ugbmin                    = nl%ugbmin
       ustmin                    = nl%ustmin
-      ggfact                    = nl%ggfact
 
       !----- Print control parameters. ----------------------------------------------------!
       iprintpolys               = nl%iprintpolys
@@ -547,20 +590,6 @@ subroutine copy_nl(copy_type)
    call copy_path_from_grid_1(ngrids,'lu_rescale_file',lu_rescale_file)
 
    call copy_path_from_grid_1(ngrids,'sfilin'         ,sfilin         )
-   !---------------------------------------------------------------------------------------!
-
-
-
-   !----- Find von-Karman/Prandtl number ratio. -------------------------------------------!
-   if (tprandtl /= 0.0) then
-      vkopr = vonk / tprandtl
-   else
-      !------------------------------------------------------------------------------------!
-      !     It doesn't make sense, but tprandtl is wrong and the run will crash at         !
-      ! ed_opspec.                                                                         !
-      !------------------------------------------------------------------------------------!
-      vkopr = 0.0
-   end if 
    !---------------------------------------------------------------------------------------!
 
 

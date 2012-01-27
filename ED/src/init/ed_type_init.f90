@@ -7,16 +7,18 @@
 subroutine init_ed_cohort_vars(cpatch,ico, lsl)
    use ed_state_vars , only : patchtype           ! ! structure
    use allometry     , only : dbh2krdepth         ! ! function
-   use pft_coms      , only : leaf_turnover_rate  & ! intent(in)
+   use pft_coms      , only : phenology           & ! intent(in)
+                            , leaf_turnover_rate  & ! intent(in)
                             , Vm0                 & ! intent(in)
                             , sla                 ! ! intent(in)
    use ed_misc_coms  , only : imoutput            & ! intent(in)
                             , idoutput            & ! intent(in)
                             , iqoutput            ! ! intent(in)
-   use phenology_coms, only : vm_tran             & ! intent(in)
-                            , vm_slop             & ! intent(in)
-                            , vm_amp              & ! intent(in)
-                            , vm_min              ! ! intent(in)
+   use phenology_coms, only : vm0_tran            & ! intent(in)
+                            , vm0_slope           & ! intent(in)
+                            , vm0_amp             & ! intent(in)
+                            , vm0_min             & ! intent(in)
+                            , llspan_inf          ! ! intent(in)
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
    type(patchtype), target     :: cpatch     ! Current patch
@@ -321,9 +323,9 @@ subroutine init_ed_cohort_vars(cpatch,ico, lsl)
    ! we assign a meaningless number just to make sure the variable is initialised.         !
    !---------------------------------------------------------------------------------------!
    if (leaf_turnover_rate(cpatch%pft(ico)) > 0.0) then
-      cpatch%llspan(ico) = 12.0/leaf_turnover_rate(cpatch%pft(ico))
+      cpatch%llspan(ico) = 12.0 / leaf_turnover_rate(cpatch%pft(ico))
    else
-      cpatch%llspan(ico) = 9999.
+      cpatch%llspan(ico) = llspan_inf
    end if
    !---------------------------------------------------------------------------------------!
 
@@ -333,8 +335,13 @@ subroutine init_ed_cohort_vars(cpatch,ico, lsl)
    ! specific leaf area (SLA) must be assigned with the default values.  These numbers     !
    ! will change only if the PFT uses a light-controlled phenology.                        !
    !---------------------------------------------------------------------------------------!
-   !cpatch%vm_bar(ico) = Vm0(cpatch%pft(ico))
-   cpatch%vm_bar(ico)= vm_amp / (1.0 + (cpatch%llspan(ico)/vm_tran)**vm_slop) + vm_min
+   select case(phenology(cpatch%pft(ico)))
+   case (3)
+      cpatch%vm_bar(ico) = vm0_amp / (1.0 + (cpatch%llspan(ico)/vm0_tran)**vm0_slope)      &
+                         + vm0_min
+   case default
+      cpatch%vm_bar(ico) = Vm0(cpatch%pft(ico))
+   end select
    cpatch%sla(ico) = sla(cpatch%pft(ico))
    !---------------------------------------------------------------------------------------!
 
@@ -412,7 +419,8 @@ subroutine init_ed_patch_vars(csite,ip1,ip2,lsl)
    
    csite%rlong_s(ip1:ip2) = 0.0
    
-   csite%avg_daily_temp(ip1:ip2) = 0.0
+   csite%avg_daily_temp      (ip1:ip2) = 0.0
+   csite%avg_monthly_gndwater(ip1:ip2) = 0.0
 
    csite%mean_rh(ip1:ip2) = 0.0
    csite%mean_nep(ip1:ip2) = 0.0
@@ -505,15 +513,19 @@ subroutine init_ed_patch_vars(csite,ip1,ip2,lsl)
       csite%qmean_albedo_diffuse  (:,ip1:ip2) = 0.0
    end if
 
-   !----------------------------------------------------------------------------------------!
-   !    These variables need to be initialized here otherwise it will fail when new patches !
-   ! are created.                                                                           !
-   !----------------------------------------------------------------------------------------!
+   !---------------------------------------------------------------------------------------!
+   !    These variables need to be initialized here otherwise it will fail when new        !
+   ! patches are created.                                                                  !
+   !---------------------------------------------------------------------------------------!
    csite%avg_rk4step          (ip1:ip2) = 0.0
+   csite%avg_ustar            (ip1:ip2) = 0.0
+   csite%avg_tstar            (ip1:ip2) = 0.0
+   csite%avg_qstar            (ip1:ip2) = 0.0
+   csite%avg_cstar            (ip1:ip2) = 0.0
    csite%avg_carbon_ac        (ip1:ip2) = 0.0
+   csite%avg_carbon_st        (ip1:ip2) = 0.0
    csite%avg_vapor_lc         (ip1:ip2) = 0.0
    csite%avg_vapor_wc         (ip1:ip2) = 0.0
-   csite%avg_dew_cg           (ip1:ip2) = 0.0
    csite%avg_vapor_gc         (ip1:ip2) = 0.0
    csite%avg_wshed_vg         (ip1:ip2) = 0.0
    csite%avg_intercepted      (ip1:ip2) = 0.0
@@ -523,6 +535,11 @@ subroutine init_ed_patch_vars(csite,ip1,ip2,lsl)
    csite%avg_evap             (ip1:ip2) = 0.0
    csite%avg_rshort_gnd       (ip1:ip2) = 0.0
    csite%avg_rlong_gnd        (ip1:ip2) = 0.0
+   csite%avg_rlongup          (ip1:ip2) = 0.0
+   csite%avg_albedo           (ip1:ip2) = 0.0
+   csite%avg_albedo_beam      (ip1:ip2) = 0.0
+   csite%avg_albedo_diffuse   (ip1:ip2) = 0.0
+   csite%avg_rlong_albedo     (ip1:ip2) = 0.0
    csite%avg_runoff           (ip1:ip2) = 0.0
    csite%avg_drainage         (ip1:ip2) = 0.0
    csite%avg_drainage_heat    (ip1:ip2) = 0.0
@@ -554,6 +571,12 @@ subroutine init_ed_patch_vars(csite,ip1,ip2,lsl)
    csite%rshort_g             (ip1:ip2) = 0.0
    csite%rshort_g_beam        (ip1:ip2) = 0.0
    csite%rshort_g_diffuse     (ip1:ip2) = 0.0
+   csite%par_b                (ip1:ip2) = 0.0
+   csite%par_b_beam           (ip1:ip2) = 0.0
+   csite%par_b_diffuse        (ip1:ip2) = 0.0
+   csite%nir_b                (ip1:ip2) = 0.0
+   csite%nir_b_beam           (ip1:ip2) = 0.0
+   csite%nir_b_diffuse        (ip1:ip2) = 0.0
    csite%rlong_g              (ip1:ip2) = 0.0
    csite%rlong_g_surf         (ip1:ip2) = 0.0
    csite%rlong_g_incid        (ip1:ip2) = 0.0

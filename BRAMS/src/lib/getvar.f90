@@ -7,7 +7,7 @@
 !###########################################################################
 
 integer function RAMS_getvar (string,ngrd,a,b,flnm)
-
+   use grid_dims, only : str_len
    use an_header
 
    implicit none
@@ -18,7 +18,7 @@ integer function RAMS_getvar (string,ngrd,a,b,flnm)
    integer :: itype,ngrd,rams_c_pos
    character(len=*) :: flnm,string
    character(len=1) :: cgrid
-   character(len=128) :: flng
+   character(len=str_len) :: flng
    logical :: there
    integer :: ni,npts,iword
 

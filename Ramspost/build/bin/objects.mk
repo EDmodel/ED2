@@ -34,6 +34,7 @@ OBJECTS =                           \
             rnumr.o                 \
             rpost_coms.o            \
             rpost_dims.o            \
+            rpost_filelist.o        \
             rpost_misc.o            \
             rsys.o                  \
             rutil.o                 \

@@ -1,89 +1,163 @@
+!==========================================================================================!
+!==========================================================================================!
+!      Function that determines the inverse of the number of days of the previous month.   !
 !------------------------------------------------------------------------------------------!
-! Function that determines the inverse of the number of days of the previous month.        !
-!------------------------------------------------------------------------------------------!
+subroutine lastmonthdate(thismonth,lastmonth,maxdaysi)
+   use ed_misc_coms, only: simtime
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   type(simtime)               , intent(in)  :: thismonth
+   type(simtime)               , intent(out) :: lastmonth
+   real                        , intent(out) :: maxdaysi
+   !----- Local variables. ----------------------------------------------------------------!
+   integer      , dimension(12)              :: maxdays
+   !----- External functions. -------------------------------------------------------------!
+   logical                     , external    :: isleap
+   !---------------------------------------------------------------------------------------!
 
-subroutine lastmonthdate(time,lastmonth,ndaysi)
-  use ed_misc_coms, only: simtime
-  implicit none
-  type(simtime), intent(in)  :: time
-  type(simtime), intent(out) :: lastmonth
-  real,          intent(out) :: ndaysi
-  integer, dimension(12) :: ndays
-  logical, external :: isleap
 
-  ndays=(/31,28,31,30,31,30,31,31,30,31,30,31/)
+   !----- Initialise the array assuming it is a regular year. -----------------------------!
+   maxdays  = (/ 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 /)
+   !---------------------------------------------------------------------------------------!
 
-  lastmonth=time
-  lastmonth%date = 1
-  lastmonth%time = 0.
 
-  lastmonth%month = lastmonth%month -1
-  if(lastmonth%month == 0)then
-     lastmonth%month = 12
-     lastmonth%year  = lastmonth%year - 1
-  endif
-!----- Changing the number of days in February for leap years -----------------------------!
-  if(isleap(lastmonth%year)) ndays(2)=29
+   !----- Copy the time structure to the previous month, and assign dummy date and time. --!
+   lastmonth      = thismonth
+   lastmonth%date = 1
+   lastmonth%time = 0.
+   !---------------------------------------------------------------------------------------!
 
-  ndaysi=1.0/real(ndays(lastmonth%month))
-  return
+
+
+   !---------------------------------------------------------------------------------------!
+   !    Shift one month back in time, and check if this would actually be December of the  !
+   ! previous year.  If so, make it December of the previous year.                         !
+   !---------------------------------------------------------------------------------------!
+   lastmonth%month = lastmonth%month -1
+   if (lastmonth%month == 0) then
+      lastmonth%month = 12
+      lastmonth%year  = lastmonth%year - 1
+   end if
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !      Change the number of days in February if the previous month falls in a           !
+   ! leap year.                                                                            !
+   !---------------------------------------------------------------------------------------!
+   if (isleap(lastmonth%year)) maxdays(2)=29
+   !---------------------------------------------------------------------------------------!
+
+   maxdaysi=1.0/real(maxdays(lastmonth%month))
+   return
 end subroutine lastmonthdate
-!------------------------------------------------------------------------------------------!
+!==========================================================================================!
+!==========================================================================================!
 
 
 
-!------------------------------------------------------------------------------------------!
-! Function that determines the which day was yesterday.                                    !
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!      Function that determines the which day was the day before.                          !
 !------------------------------------------------------------------------------------------!
 subroutine yesterday(inyear,inmonth,inday,outyear,outmonth,outday)
-  implicit none
-  integer, intent(in)  :: inyear,inmonth,inday
-  integer, intent(out) :: outyear,outmonth,outday
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   integer               , intent(in)  :: inyear
+   integer               , intent(in)  :: inmonth
+   integer               , intent(in)  :: inday
+   integer               , intent(out) :: outyear
+   integer               , intent(out) :: outmonth
+   integer               , intent(out) :: outday
+   !----- Local variables. ----------------------------------------------------------------!
+   integer, dimension(12)              :: maxdays
+   !----- External functions. -------------------------------------------------------------!
+   logical               , external    :: isleap
+   !---------------------------------------------------------------------------------------!
 
-  integer, dimension(12) :: ndays
-  logical, external :: isleap
 
-  ndays=(/31,28,31,30,31,30,31,31,30,31,30,31/)
-  
-  outday=inday - 1
-  
-  if(outday == 0)then
-     outmonth    = inmonth - 1
-     
-     if(outmonth == 0)then
-        outyear  = inyear - 1
-        outmonth = 12
-     else
-        outyear  = inyear
-     end if
-     
-     if(isleap(outyear)) ndays(2)=29
-     outday =ndays(outmonth)
-  else
-     outmonth = inmonth
-     outyear  = inyear
-  end if
-  
-  return
+   !----- Initialise the array assuming it is a regular year. -----------------------------!
+   maxdays  = (/ 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 /)
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Shift day by one day.  In case it becomes zero, it means that it should be the    !
+   ! last day of the previous month.                                                       !
+   !---------------------------------------------------------------------------------------!
+   outday = inday - 1
+   if (outday == 0) then
+      !------------------------------------------------------------------------------------!
+      !     Shift month by one month.  In case it becomes zero, it means that it should be !
+      ! December of the previous year.                                                     !
+      !------------------------------------------------------------------------------------!
+      outmonth    = inmonth - 1
+      if (outmonth == 0) then
+         outyear  = inyear - 1
+         outmonth = 12
+      else
+         outyear  = inyear
+      end if
+
+      !----- Fix the number of days in case the previous day falls in a leap year. --------!
+      if (isleap(outyear)) maxdays(2)=29
+      outday = maxdays(outmonth)
+      !------------------------------------------------------------------------------------!
+   else
+      !------------------------------------------------------------------------------------!
+      !    Middle of the month, copy the month and year for current time.                  !
+      !------------------------------------------------------------------------------------!
+      outmonth = inmonth
+      outyear  = inyear
+      !------------------------------------------------------------------------------------!
+   end if
+
+   return
 end subroutine yesterday
-!------------------------------------------------------------------------------------------!
+!==========================================================================================!
+!==========================================================================================!
 
 
 
-!------------------------------------------------------------------------------------------!
-! Function the number of days of a certain month                                           !
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!    This function founds the number of days of a certain month and year.                  !
 !------------------------------------------------------------------------------------------!
 integer function num_days(month,year)
    implicit none
-   integer, intent(in) :: month, year
-   logical, external :: isleap
-   integer, dimension(12) :: maxdays
-   
-   !----- Temporary array with # of days --------------------------------------------------!
-   maxdays=(/31,28,31,30,31,30,31,31,30,31,30,31/)
+   !----- Arguments. ----------------------------------------------------------------------!
+   integer               , intent(in) :: month
+   integer               , intent(in) :: year
+   !----- Local variables. ----------------------------------------------------------------!
+   integer, dimension(12)             :: maxdays
+   !----- External functions. -------------------------------------------------------------!
+   logical               , external   :: isleap
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !----- Initialise the array assuming it is a regular year. -----------------------------!
+   maxdays  = (/ 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 /)
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !----- Correct the number of days in February in case this is a leap year. -------------!
    if (isleap(year)) maxdays(2) = 29
-   
+   !---------------------------------------------------------------------------------------!
+
+   !------ Find the number of days of this month. -----------------------------------------!
    num_days = maxdays(month)
+   !---------------------------------------------------------------------------------------!
+
    return
 end function num_days
-!------------------------------------------------------------------------------------------!
+!==========================================================================================!
+!==========================================================================================!

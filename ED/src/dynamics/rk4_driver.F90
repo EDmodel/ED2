@@ -132,8 +132,9 @@ module rk4_driver
                call copy_met_2_rk4site(nzg,cmet%vels,cmet%atm_theiv,cmet%atm_theta         &
                                       ,cmet%atm_tmp,cmet%atm_shv,cmet%atm_co2,cmet%geoht   &
                                       ,cmet%exner,cmet%pcpg,cmet%qpcpg,cmet%dpcpg          &
-                                      ,cmet%prss,cmet%rshort,cmet%rlong,cmet%geoht         &
-                                      ,cpoly%lsl(isi),cpoly%ntext_soil(:,isi)              &
+                                      ,cmet%prss,cmet%rshort,cmet%rlong,cmet%par_beam      &
+                                      ,cmet%par_diffuse,cmet%nir_beam,cmet%nir_diffuse     &
+                                      ,cmet%geoht,cpoly%lsl(isi),cpoly%ntext_soil(:,isi)   &
                                       ,cpoly%green_leaf_factor(:,isi)                      &
                                       ,cgrid%lon(ipy),cgrid%lat(ipy),cgrid%cosz(ipy))
 
@@ -324,16 +325,21 @@ module rk4_driver
                                       , patchtype            & ! structure
                                       , edgrid_g             ! ! structure
       use consts_coms          , only : day_sec              & ! intent(in)
-                                      , t3ple8               ! ! intent(in)
-      use ed_misc_coms         , only : fast_diagnostics     & ! intent(in)
-                                      , dtlsm                ! ! intent(in)
+                                      , t3ple8               & ! intent(in)
+                                      , wdns8                ! ! intent(in)
+      use ed_misc_coms         , only : fast_diagnostics     ! ! intent(in)
       use soil_coms            , only : soil8                & ! intent(in)
-                                      , slz8                 ! ! intent(in)
+                                      , dslz8                & ! intent(in)
+                                      , slz8                 & ! intent(in)
+                                      , slzt8                ! ! intent(in)
       use grid_coms            , only : nzg                  & ! intent(in)
                                       , nzs                  ! ! intent(in)
       use therm_lib            , only : qwtk                 & ! subroutine
                                       , rslif                ! ! function
-      use canopy_air_coms      , only : i_blyr_condct        ! ! intent(in)
+      use phenology_coms       , only : spot_phen            ! ! intent(in)
+      use allometry            , only : h2crownbh            ! ! function
+      use disturb_coms         , only : include_fire         & ! intent(in)
+                                      , k_fire_first         ! ! intent(in)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       type(rk4patchtype), target      :: initp
@@ -351,13 +357,19 @@ module rk4_driver
       type(patchtype)   , pointer     :: cpatch
       integer                         :: mould
       integer                         :: ico
+      integer                         :: ipft
       integer                         :: k
+      integer                         :: ka
+      integer                         :: kroot
       integer                         :: kclosest
       integer                         :: ksn
       integer                         :: nsoil
       integer                         :: nlsw1
       real(kind=8)                    :: tmp_energy
       real(kind=8)                    :: available_water
+      real(kind=8)                    :: gnd_water
+      real(kind=8)                    :: psiplusz
+      real(kind=8)                    :: mcheight
       !----- Local contants ---------------------------------------------------------------!
       real        , parameter         :: tendays_sec=10.*day_sec
       !----- External function ------------------------------------------------------------!
@@ -408,7 +420,6 @@ module rk4_driver
       if (fast_diagnostics) then
          csite%avg_vapor_lc        (ipa) = sngloff(initp%avg_vapor_lc       ,tiny_offset)
          csite%avg_vapor_wc        (ipa) = sngloff(initp%avg_vapor_wc       ,tiny_offset)
-         csite%avg_dew_cg          (ipa) = sngloff(initp%avg_dew_cg         ,tiny_offset)
          csite%avg_vapor_gc        (ipa) = sngloff(initp%avg_vapor_gc       ,tiny_offset)
          csite%avg_wshed_vg        (ipa) = sngloff(initp%avg_wshed_vg       ,tiny_offset)
          csite%avg_intercepted     (ipa) = sngloff(initp%avg_intercepted    ,tiny_offset)
@@ -428,6 +439,11 @@ module rk4_driver
          csite%avg_sensible_gc     (ipa) = sngloff(initp%avg_sensible_gc    ,tiny_offset)
          csite%avg_sensible_ac     (ipa) = sngloff(initp%avg_sensible_ac    ,tiny_offset)
          csite%avg_carbon_ac       (ipa) = sngloff(initp%avg_carbon_ac      ,tiny_offset)
+         csite%avg_carbon_st       (ipa) = sngloff(initp%avg_carbon_st      ,tiny_offset)
+         csite%avg_ustar           (ipa) = sngloff(initp%avg_ustar          ,tiny_offset)
+         csite%avg_tstar           (ipa) = sngloff(initp%avg_tstar          ,tiny_offset)
+         csite%avg_qstar           (ipa) = sngloff(initp%avg_qstar          ,tiny_offset)
+         csite%avg_cstar           (ipa) = sngloff(initp%avg_cstar          ,tiny_offset)
          do k = rk4site%lsl, nzg
             csite%avg_sensible_gg(k,ipa) = sngloff(initp%avg_sensible_gg(k) ,tiny_offset)
             csite%avg_smoist_gg  (k,ipa) = sngloff(initp%avg_smoist_gg  (k) ,tiny_offset)
@@ -438,15 +454,15 @@ module rk4_driver
          !     These variables are integrated here, since they don't change with time.     !
          !---------------------------------------------------------------------------------!
          csite%avg_rlongup        (ipa) = csite%avg_rlongup        (ipa)                   &
-                                        + csite%rlongup            (ipa) * dtlsm
+                                        + csite%rlongup            (ipa) * sngl(hdid)
          csite%avg_albedo         (ipa) = csite%avg_albedo         (ipa)                   &
-                                        + csite%albedo             (ipa) * dtlsm
+                                        + csite%albedo             (ipa) * sngl(hdid)
          csite%avg_albedo_beam    (ipa) = csite%avg_albedo_beam    (ipa)                   &
-                                        + csite%albedo_beam        (ipa) * dtlsm
+                                        + csite%albedo_beam        (ipa) * sngl(hdid)
          csite%avg_albedo_diffuse (ipa) = csite%avg_albedo_diffuse (ipa)                   &
-                                        + csite%albedo_diffuse     (ipa) * dtlsm
+                                        + csite%albedo_diffuse     (ipa) * sngl(hdid)
          csite%avg_rlong_albedo   (ipa) = csite%avg_rlong_albedo   (ipa)                   &
-                                        + csite%rlong_albedo       (ipa) * dtlsm
+                                        + csite%rlong_albedo       (ipa) * sngl(hdid)
          !---------------------------------------------------------------------------------!
       end if
       !------------------------------------------------------------------------------------!
@@ -482,30 +498,75 @@ module rk4_driver
 
 
       !------------------------------------------------------------------------------------!
-      ! paw_avg - 10-day average of plant available water.                                 !
+      !     This variable is the monthly mean ground water that will be used to control    !
+      ! fire disturbance.                                                                  !
       !------------------------------------------------------------------------------------!
-      cpatch => csite%patch(ipa)
-      do ico = 1,cpatch%ncohorts
-         available_water = 0.d0
-         do k = cpatch%krdepth(ico), nzg - 1
-            nsoil = rk4site%ntext_soil(k)
-            available_water = available_water                                              &
-                            + max(0.d0,(initp%soil_water(k) - soil8(nsoil)%soilwp))        &
-                            * (slz8(k+1)-slz8(k))                                          &
-                            / (soil8(nsoil)%slmsts - soil8(nsoil)%soilwp)
-         end do
-         nsoil = rk4site%ntext_soil(nzg)
-         available_water = available_water                                                 &
-                         + max(0.d0,(initp%soil_water(nzg) - soil8(nsoil)%soilwp))         &
-                         * (-1.d0*slz8(nzg))                                               &
-                         / (soil8(nsoil)%slmsts -soil8(nsoil)%soilwp) 
-         available_water = available_water / (-1.d0*slz8(cpatch%krdepth(ico)))
-
-
-         cpatch%paw_avg(ico) = cpatch%paw_avg(ico)*(1.0-sngl(hdid)/tendays_sec)            &
-                             + sngl(available_water)*sngl(hdid)/tendays_sec
+      gnd_water = 0.d0
+      !----- Add temporary surface water. -------------------------------------------------!
+      do k=1,initp%nlev_sfcwater
+         gnd_water = gnd_water + initp%sfcwater_mass(k)
       end do
+      !----- Find the bottommost layer to consider. ---------------------------------------!
+      select case(include_fire)
+      case (0,2)
+         ka = k_fire_first
+      case (1)
+         ka = rk4site%lsl
+      end select
+      !----- Add soil moisture. -----------------------------------------------------------!
+      do k=ka,nzg
+         gnd_water = gnd_water + initp%soil_water(k) * dslz8(k) * wdns8
+      end do
+      !----- Add to the monthly mean. -----------------------------------------------------!
+      csite%avg_monthly_gndwater(ipa) = csite%avg_monthly_gndwater(ipa)                    &
+                                      + sngloff(gnd_water,tiny_offset)
+      !------------------------------------------------------------------------------------!
 
+
+
+      !------------------------------------------------------------------------------------!
+      ! paw_avg - 10-day average of relative plant available water.  The relative value    !
+      !           depends on whether the user wants to define phenology based on soil      !
+      !           moisture or soil potential.                                              !
+      !------------------------------------------------------------------------------------!
+      if (spot_phen) then
+         cpatch => csite%patch(ipa)
+         do ico = 1,cpatch%ncohorts
+            ipft  = cpatch%pft(ico)
+            kroot = cpatch%krdepth(ico)
+
+            available_water = 0.d0
+            do k = kroot, nzg
+               nsoil            = rk4site%ntext_soil(k)
+               mcheight         = 5.d-1 * ( dble(cpatch%hite(ico))                         &
+                                          + dble(h2crownbh(cpatch%hite(ico),ipft)) )
+               psiplusz         = slzt8(k) - mcheight                                      &
+                                + soil8(nsoil)%slpots                                      &
+                                / (initp%soil_water(k) / soil8(nsoil)%slmsts)              &
+                                ** soil8(nsoil)%slbs
+               available_water  = available_water                                          &
+                                + max(0.d0,(psiplusz - soil8(nsoil)%slpotwp)) * dslz8(k)   &
+                                / (soil8(nsoil)%slpotld - soil8(nsoil)%slpotwp)
+            end do
+            available_water     = available_water / abs(slz8(kroot))
+            cpatch%paw_avg(ico) = cpatch%paw_avg(ico)*(1.0-sngl(hdid)/tendays_sec)         &
+                                + sngl(available_water)*sngl(hdid)/tendays_sec
+         end do
+      else
+         cpatch => csite%patch(ipa)
+         do ico = 1,cpatch%ncohorts
+            available_water = 0.d0
+            do k = kroot, nzg
+               nsoil            = rk4site%ntext_soil(k)
+               available_water  = available_water                                          &
+                                + max(0.d0,(initp%soil_water(k)   - soil8(nsoil)%soilwp))  &
+                                * dslz8(k) / (soil8(nsoil)%soilld - soil8(nsoil)%soilwp)
+            end do
+            available_water     = available_water / abs(slz8(kroot))
+            cpatch%paw_avg(ico) = cpatch%paw_avg(ico)*(1.0-sngl(hdid)/tendays_sec)         &
+                                + sngl(available_water)*sngl(hdid)/tendays_sec
+         end do
+      end if
       
       do k = rk4site%lsl, nzg
          csite%soil_water(k,ipa)   = sngloff(initp%soil_water(k)  ,tiny_offset)
@@ -595,10 +656,10 @@ module rk4_driver
 
             !------------------------------------------------------------------------------!
             !     Divide the values of water demand by the time step to obtain the average !
-            ! value over the past DTLSM period.                                            !
+            ! value over the past hdid period.                                             !
             !------------------------------------------------------------------------------!
-            cpatch%psi_open  (ico) = sngloff(initp%psi_open  (ico),tiny_offset) / hdid
-            cpatch%psi_closed(ico) = sngloff(initp%psi_closed(ico),tiny_offset) / hdid
+            cpatch%psi_open  (ico) = sngloff(initp%psi_open  (ico),tiny_offset) / sngl(hdid)
+            cpatch%psi_closed(ico) = sngloff(initp%psi_closed(ico),tiny_offset) / sngl(hdid)
 
          elseif (cpatch%hite(ico) <=  csite%total_sfcw_depth(ipa)) then
             !------------------------------------------------------------------------------!
@@ -728,7 +789,7 @@ module rk4_driver
             write (unit=*,fmt='(a,1x,f9.4)')   ' + LATITUDE:     ',rk4site%lat
             write (unit=*,fmt='(a,1x,i6)')     ' + PATCH:        ',ipa
             write (unit=*,fmt='(a,1x,i6)')     ' + COHORT:       ',ico
-            write (unit=*,fmt='(a)')           ' + PATCH AGE:    ',csite%age(ipa)
+            write (unit=*,fmt='(a)')           ' + PATCH AGE:    '
             write (unit=*,fmt='(a,1x,es12.4)') '   - AGE:        ',csite%age(ipa)
             write (unit=*,fmt='(a,1x,i6)')     '   - DIST_TYPE:  ',csite%dist_type(ipa)
             write (unit=*,fmt='(a)')           ' + BUFFER_COHORT (initp):'
@@ -757,7 +818,7 @@ module rk4_driver
             write (unit=*,fmt='(a,1x,f9.4)')   ' + LATITUDE:     ',rk4site%lat
             write (unit=*,fmt='(a,1x,i6)')     ' + PATCH:        ',ipa
             write (unit=*,fmt='(a,1x,i6)')     ' + COHORT:       ',ico
-            write (unit=*,fmt='(a)')           ' + PATCH AGE:    ',csite%age(ipa)
+            write (unit=*,fmt='(a)')           ' + PATCH AGE:    '
             write (unit=*,fmt='(a,1x,es12.4)') '   - AGE:        ',csite%age(ipa)
             write (unit=*,fmt='(a,1x,i6)')     '   - DIST_TYPE:  ',csite%dist_type(ipa)
             write (unit=*,fmt='(a)')           ' + BUFFER_COHORT (initp):'

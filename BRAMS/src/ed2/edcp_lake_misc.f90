@@ -20,8 +20,7 @@ subroutine copy_lake_init(i,j,ifm,initp)
    use leaf_coms             , only : min_waterrough8  & ! intent(in)
                                     , z0fac_water8     & ! intent(in)
                                     , can_depth_min    ! ! intent(in)
-   use canopy_air_coms       , only : ustmin8          & ! intent(in)
-                                    , ggfact8          ! ! intent(in)
+   use canopy_air_coms       , only : ustmin8          ! ! intent(in)
    use canopy_struct_dynamics, only : ed_stars8        & ! intent(in)
                                     , can_whcap8       ! ! intent(in)
    implicit none
@@ -92,7 +91,6 @@ subroutine copy_lake_init(i,j,ifm,initp)
    !      Apply the conductance factor (should be removed soon).  Also, update the rough-  !
    ! ness so next time we use we have the most up to date value.                           !
    !---------------------------------------------------------------------------------------!
-   initp%gglake     = ggfact8 * initp%gglake
    initp%lake_rough = max(z0fac_water8 * initp%ustar * initp%ustar, min_waterrough8)
    !---------------------------------------------------------------------------------------!
 
@@ -156,8 +154,7 @@ subroutine lake_diagnostics(initp)
    use leaf_coms             , only : min_waterrough8       & ! intent(in)
                                     , z0fac_water8          & ! intent(in)
                                     , can_depth_min         ! ! intent(in)
-   use canopy_air_coms       , only : ustmin8               & ! intent(in)
-                                    , ggfact8               ! ! intent(in)
+   use canopy_air_coms       , only : ustmin8               ! ! intent(in)
    use canopy_struct_dynamics, only : ed_stars8             & ! intent(in)
                                     , can_whcap8            ! ! intent(in)
    implicit none
@@ -244,6 +241,7 @@ subroutine lake_diagnostics(initp)
       write(unit=*,fmt='(a,1x,es12.5)') '    * Sensible_ac :',initp%avg_sensible_ac
       write(unit=*,fmt='(a,1x,es12.5)') '    * Carbon_gc   :',initp%avg_carbon_gc
       write(unit=*,fmt='(a,1x,es12.5)') '    * Carbon_ac   :',initp%avg_carbon_ac
+      write(unit=*,fmt='(a,1x,es12.5)') '    * Carbon_st   :',initp%avg_carbon_st
       write(unit=*,fmt='(a,1x,es12.5)') '    * Sflux_u     :',initp%avg_sflux_u
       write(unit=*,fmt='(a,1x,es12.5)') '    * Sflux_v     :',initp%avg_sflux_u
       write(unit=*,fmt='(a,1x,es12.5)') '    * Sflux_w     :',initp%avg_sflux_w
@@ -252,6 +250,11 @@ subroutine lake_diagnostics(initp)
       write(unit=*,fmt='(a,1x,es12.5)') '    * Sflux_c     :',initp%avg_sflux_c
       write(unit=*,fmt='(a,1x,es12.5)') '    * Albedt      :',initp%avg_albedt
       write(unit=*,fmt='(a,1x,es12.5)') '    * Rlongup     :',initp%avg_rlongup
+      write(unit=*,fmt='(a,1x,es12.5)') '    * Rshort_gnd  :',initp%avg_rshort_gnd
+      write(unit=*,fmt='(a,1x,es12.5)') '    * Ustar       :',initp%avg_ustar
+      write(unit=*,fmt='(a,1x,es12.5)') '    * Tstar       :',initp%avg_tstar
+      write(unit=*,fmt='(a,1x,es12.5)') '    * Qstar       :',initp%avg_qstar
+      write(unit=*,fmt='(a,1x,es12.5)') '    * Cstar       :',initp%avg_cstar
       write(unit=*,fmt='(a)'          ) ' '
       write(unit=*,fmt='(a)'          ) '-------------------------------------------------'
       call abort_run('Non-resolvable values','lake_diagnostics','edcp_lake_misc.f90')
@@ -329,7 +332,6 @@ subroutine lake_diagnostics(initp)
       !      Apply the conductance factor (should be removed soon).  Also, update the      !
       ! roughness so next time we use we have the most up to date value.                   !
       !------------------------------------------------------------------------------------!
-      initp%gglake     = ggfact8 * initp%gglake
       initp%lake_rough = max(z0fac_water8 * initp%ustar * initp%ustar,min_waterrough8)
       !------------------------------------------------------------------------------------!
 
@@ -448,6 +450,7 @@ subroutine lake_derivs(initp,dinitp)
    dinitp%avg_sensible_ac  = hflxac
    dinitp%avg_carbon_gc    = cflxgc
    dinitp%avg_carbon_ac    = cflxac
+   dinitp%avg_carbon_st    = cflxgc + cflxac
    !---------------------------------------------------------------------------------------!
 
 
@@ -467,8 +470,19 @@ subroutine lake_derivs(initp,dinitp)
    !---------------------------------------------------------------------------------------!
    !     Find the contribution of this time step to the longwave fluxes.                   !
    !---------------------------------------------------------------------------------------!
-   dinitp%avg_albedt   = min(max(albt_inter + albt_slope * lakemet%tanz,albt_min),albt_max)
-   dinitp%avg_rlongup  = emiss_h2o * stefan8 * initp%lake_temp ** 4
+   dinitp%avg_albedt     = min(max(albt_inter + albt_slope*lakemet%tanz,albt_min),albt_max)
+   dinitp%avg_rlongup    = emiss_h2o * stefan8 * initp%lake_temp ** 4
+   dinitp%avg_rshort_gnd = dinitp%avg_albedt * lakemet%rshort
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Find the contribution of this time step to the stars.                             !
+   !---------------------------------------------------------------------------------------!
+   dinitp%avg_ustar     = initp%ustar
+   dinitp%avg_tstar     = initp%tstar
+   dinitp%avg_qstar     = initp%qstar
+   dinitp%avg_cstar     = initp%cstar
    !---------------------------------------------------------------------------------------!
 
    return

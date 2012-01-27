@@ -28,7 +28,7 @@
 !   VAN DOP, H. Atmospheric turbulence and air pollution modelling. Dordrecht: D.          !
 !   Reidel Publishing Company, 1982, chap. 7, p. 275-310.                                  !
 !                                                                                          !
-! VOGEZELANG, D. H. P.; HOLTSLAG, A. M. Evaluation and model impacts of alternati-         !
+! VOGELEZANG, D. H. P.; HOLTSLAG, A. M. Evaluation and model impacts of alternati-         !
 !   ve boundary-layer height formulations. Boundary-Layer Meteor., v. 81, p. 245-          !
 !   269, 1996.                                                                             !
 !==========================================================================================!

@@ -1659,6 +1659,11 @@ mortality.o : $(ED_DYNAMICS)/mortality.f90
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)
 
+multiple_scatter.o : $(ED_DYNAMICS)/multiple_scatter.f90
+	cp -f $< $(<F:.f90=.f90)
+	$(F90_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90)
+
 optimiz_coms.o : $(ED_MEMORY)/optimiz_coms.f90
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)

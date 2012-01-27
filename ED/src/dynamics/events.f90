@@ -349,9 +349,9 @@ subroutine event_harvest(agb_frac8,bgb_frac8,fol_frac8,stor_frac8)
                  !! calc new pool sizes
                  ialloc =  1.0 / (1.0 + q(pft) + qsw(pft) * cpatch%hite(ico))
                  bdead_new = cpatch%bdead(ico)*&
-                      & (1.0-agb_frac*agf_bs - bgb_frac*(1.0-agf_bs))
+                      & (1.0-agb_frac*agf_bs(pft) - bgb_frac*(1.0-agf_bs(pft)))
                  bsw_new   = cpatch%balive(ico) * qsw(pft) * cpatch%hite(ico) *&
-                      & ialloc * (1.0-agb_frac*agf_bs - bgb_frac*(1.0-agf_bs))
+                      & ialloc * (1.0-agb_frac*agf_bs(pft) - bgb_frac*(1.0-agf_bs(pft)))
                  bstore_new = cpatch%bstorage(ico)*(1.0-stor_frac)
                  bleaf_new = cpatch%balive(ico) * ialloc *(1.0-fol_frac)
                  bfr_new   = cpatch%balive(ico) * q(pft) * ialloc * (1.0-bgb_frac)

@@ -20,7 +20,6 @@ subroutine ed_coup_driver()
                             , imoutput            & ! intent(in)
                             , iqoutput            & ! intent(in)
                             , iyoutput            & ! intent(in)
-                            , integration_scheme  & ! intent(in)
                             , runtype             ! ! intent(in)
    use ed_work_vars  , only : ed_dealloc_work     & ! subroutine
                             , work_e              ! ! intent(inout)
@@ -435,9 +434,20 @@ subroutine set_polygon_coordinates_edcp()
          !----- The polygon co-ordinates. -------------------------------------------------!
          cgrid%lon(ipy)              = work_v(ifm)%glon(ipy)
          cgrid%lat(ipy)              = work_v(ifm)%glat(ipy)
+         !---------------------------------------------------------------------------------!
+
+
 
          !----- Soil texture class. -------------------------------------------------------!
          cgrid%ntext_soil(1:nzg,ipy) = work_v(ifm)%ntext(1,ipy)
+         !---------------------------------------------------------------------------------!
+
+
+
+         !----- Soil colour class. --------------------------------------------------------!
+         cgrid%ncol_soil(ipy)  = work_v(ifm)%nscol(ipy)
+         !---------------------------------------------------------------------------------!
+
 
 
          !---------------------------------------------------------------------------------!
@@ -449,6 +459,8 @@ subroutine set_polygon_coordinates_edcp()
          cgrid%ilon(ipy) = work_v(ifm)%xid(ipy)
          cgrid%ilat(ipy) = work_v(ifm)%yid(ipy)
          !---------------------------------------------------------------------------------!
+
+
 
          !---------------------------------------------------------------------------------!
          !      xatm and yatm have the global indexing for diagnostics purposes.           !

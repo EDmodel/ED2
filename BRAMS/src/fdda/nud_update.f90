@@ -13,71 +13,73 @@ subroutine nud_update(iswap,nnud)
    use mem_varinit
    use grid_struct
    use rconstants
-   use mem_aerad  ,   only: nwave ! ! intent(in)
+   use mem_aerad  ,   only : nwave ! ! intent(in)
+   use grid_dims  ,   only : str_len
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
-   integer                                      , intent(in) :: iswap
-   integer                                      , intent(in) :: nnud
+   integer                                , intent(in)             :: iswap
+   integer                                , intent(in)             :: nnud
    !----- Local variables. ----------------------------------------------------------------!
-   character (len=256) :: hnameinh,prefix
-   character (len=2) :: cng
-   integer         , dimension(:)  , allocatable             :: nnxp1
-   integer         , dimension(:)  , allocatable             :: nnyp1
-   integer         , dimension(:)  , allocatable             :: nnzp1
-   integer                                                   :: ngrids1
-   integer                                                   :: ioutput1
-   integer                                                   :: nzg1
-   integer                                                   :: nzs1
-   integer                                                   :: npatch1
-   integer                                                   :: nclouds1
-   integer                                                   :: iyr
-   integer                                                   :: imn
-   integer                                                   :: idy
-   integer                                                   :: itm
-   integer                                                   :: ie
-   integer                                                   :: maxarr
-   integer                                                   :: maxarr2
-   integer                                                   :: ngr
-   integer                                                   :: maxx1
-   integer                                                   :: maxy1
-   integer                                                   :: maxz1
-   integer                                                   :: npts
-   integer                                                   :: nptsh
-   integer                                                   :: nv
-   integer                                                   :: nvh
-   integer                                                   :: i
-   integer                                                   :: k
-   integer                                                   :: nzpg1
-   integer                                                   :: nc
-   integer                                                   :: ierr
-   integer                                                   :: ng
-   integer                                                   :: ng_start
-   real            , dimension(:)  , allocatable             :: platn1
-   real            , dimension(:)  , allocatable             :: plonn1
-   real            , dimension(:)  , allocatable             :: deltaxn1
-   real            , dimension(:)  , allocatable             :: deltayn1
-   real            , dimension(:)  , allocatable             :: scr
-   real            , dimension(:,:), allocatable             :: xmn1
-   real            , dimension(:,:), allocatable             :: xtn1
-   real            , dimension(:,:), allocatable             :: ymn1
-   real            , dimension(:,:), allocatable             :: ytn1
-   real            , dimension(:,:), allocatable             :: zmn1
-   real            , dimension(:,:), allocatable             :: ztn1
-   real            , dimension(:,:), allocatable             :: topt1
-   real(kind=8)                                              :: time1
-   type(grid_def)  , dimension(:)  , allocatable             :: grdefh
-   type(grid_def)  , dimension(:)  , allocatable             :: grdefn
-   real                                                      :: ztop1
+   character (len=str_len)                                         :: hnameinh
+   character (len=str_len)                                         :: prefix
+   character (len=2)                                               :: cng
+   integer                , dimension(:)  , allocatable            :: nnxp1
+   integer                , dimension(:)  , allocatable            :: nnyp1
+   integer                , dimension(:)  , allocatable            :: nnzp1
+   integer                                                         :: ngrids1
+   integer                                                         :: ioutput1
+   integer                                                         :: nzg1
+   integer                                                         :: nzs1
+   integer                                                         :: npatch1
+   integer                                                         :: nclouds1
+   integer                                                         :: iyr
+   integer                                                         :: imn
+   integer                                                         :: idy
+   integer                                                         :: itm
+   integer                                                         :: ie
+   integer                                                         :: maxarr
+   integer                                                         :: maxarr2
+   integer                                                         :: ngr
+   integer                                                         :: maxx1
+   integer                                                         :: maxy1
+   integer                                                         :: maxz1
+   integer                                                         :: npts
+   integer                                                         :: nptsh
+   integer                                                         :: nv
+   integer                                                         :: nvh
+   integer                                                         :: i
+   integer                                                         :: k
+   integer                                                         :: nzpg1
+   integer                                                         :: nc
+   integer                                                         :: ierr
+   integer                                                         :: ng
+   integer                                                         :: ng_start
+   real                   , dimension(:)  , allocatable            :: platn1
+   real                   , dimension(:)  , allocatable            :: plonn1
+   real                   , dimension(:)  , allocatable            :: deltaxn1
+   real                   , dimension(:)  , allocatable            :: deltayn1
+   real                   , dimension(:)  , allocatable            :: scr
+   real                   , dimension(:,:), allocatable            :: xmn1
+   real                   , dimension(:,:), allocatable            :: xtn1
+   real                   , dimension(:,:), allocatable            :: ymn1
+   real                   , dimension(:,:), allocatable            :: ytn1
+   real                   , dimension(:,:), allocatable            :: zmn1
+   real                   , dimension(:,:), allocatable            :: ztn1
+   real                   , dimension(:,:), allocatable            :: topt1
+   real(kind=8)                                                    :: time1
+   type(grid_def)         , dimension(:)  , allocatable            :: grdefh
+   type(grid_def)         , dimension(:)  , allocatable            :: grdefn
+   real                                                            :: ztop1
    !----- Locally saved variables. --------------------------------------------------------!
-   type(head_table), dimension(:)  , allocatable, save       :: hr_table
-   integer                                      , save       :: iunhd  = 11
-   integer                                      , save       :: inhunt = 10
+   type(head_table)       , dimension(:)  , allocatable , save     :: hr_table
+   integer                                              , save     :: iunhd  = 11
+   integer                                              , save     :: inhunt = 10
    !----- External functions. -------------------------------------------------------------!
-   integer                                      , external   :: cio_i
-   integer                                      , external   :: cio_f
-   integer                                      , external   :: cio_i_sca
-   integer                                      , external   :: cio_f_sca
-   integer                                      , external   :: cio_f8_sca
+   integer                                              , external :: cio_i
+   integer                                              , external :: cio_f
+   integer                                              , external :: cio_i_sca
+   integer                                              , external :: cio_f_sca
+   integer                                              , external :: cio_f8_sca
    !---------------------------------------------------------------------------------------!
 
 

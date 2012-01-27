@@ -44,6 +44,8 @@ module mem_edcp
       real(kind=4), dimension (:,:,:), pointer :: sflux_r
       real(kind=4), dimension (:,:,:), pointer :: sflux_c
       real(kind=4), dimension (:,:,:), pointer :: sflux_w
+      real(kind=4), dimension (:,:,:), pointer :: rshort_gnd
+      real(kind=4), dimension (:,:,:), pointer :: rlong_gnd
       real(kind=4), dimension (:,:,:), pointer :: albedt
       real(kind=4), dimension (:,:,:), pointer :: rlongup
       real(kind=4), dimension (:,:,:), pointer :: rk4step
@@ -116,6 +118,8 @@ module mem_edcp
       allocate(edflux%sflux_c   (nxm,nym,nsite)   )
       allocate(edflux%sflux_t   (nxm,nym,nsite)   )
       allocate(edflux%sflux_w   (nxm,nym,nsite)   )
+      allocate(edflux%rshort_gnd(nxm,nym,nsite)   )
+      allocate(edflux%rlong_gnd (nxm,nym,nsite)   )
       allocate(edflux%albedt    (nxm,nym,nsite)   )
       allocate(edflux%rlongup   (nxm,nym,nsite)   )
       allocate(edflux%rk4step   (nxm,nym,nsite)   )
@@ -141,21 +145,23 @@ module mem_edcp
       type(ed_flux), intent(inout) :: edflux
       !------------------------------------------------------------------------------------!
      
-      if (associated(edflux%ustar     ))  nullify(edflux%ustar     )
-      if (associated(edflux%tstar     ))  nullify(edflux%tstar     )
-      if (associated(edflux%rstar     ))  nullify(edflux%rstar     )
-      if (associated(edflux%cstar     ))  nullify(edflux%cstar     )
-      if (associated(edflux%zeta      ))  nullify(edflux%zeta      )
-      if (associated(edflux%ribulk    ))  nullify(edflux%ribulk    )
-      if (associated(edflux%sflux_u   ))  nullify(edflux%sflux_u   )
-      if (associated(edflux%sflux_v   ))  nullify(edflux%sflux_v   )
-      if (associated(edflux%sflux_r   ))  nullify(edflux%sflux_r   )
-      if (associated(edflux%sflux_t   ))  nullify(edflux%sflux_t   )
-      if (associated(edflux%sflux_c   ))  nullify(edflux%sflux_c   )
-      if (associated(edflux%sflux_w   ))  nullify(edflux%sflux_w   )
-      if (associated(edflux%albedt    ))  nullify(edflux%albedt    )
-      if (associated(edflux%rlongup   ))  nullify(edflux%rlongup   )
-      if (associated(edflux%rk4step   ))  nullify(edflux%rk4step   )
+      if (associated(edflux%ustar      ))  nullify(edflux%ustar      )
+      if (associated(edflux%tstar      ))  nullify(edflux%tstar      )
+      if (associated(edflux%rstar      ))  nullify(edflux%rstar      )
+      if (associated(edflux%cstar      ))  nullify(edflux%cstar      )
+      if (associated(edflux%zeta       ))  nullify(edflux%zeta       )
+      if (associated(edflux%ribulk     ))  nullify(edflux%ribulk     )
+      if (associated(edflux%sflux_u    ))  nullify(edflux%sflux_u    )
+      if (associated(edflux%sflux_v    ))  nullify(edflux%sflux_v    )
+      if (associated(edflux%sflux_r    ))  nullify(edflux%sflux_r    )
+      if (associated(edflux%sflux_t    ))  nullify(edflux%sflux_t    )
+      if (associated(edflux%sflux_c    ))  nullify(edflux%sflux_c    )
+      if (associated(edflux%sflux_w    ))  nullify(edflux%sflux_w    )
+      if (associated(edflux%rshort_gnd ))  nullify(edflux%rshort_gnd )
+      if (associated(edflux%rlong_gnd  ))  nullify(edflux%rlong_gnd  )
+      if (associated(edflux%albedt     ))  nullify(edflux%albedt     )
+      if (associated(edflux%rlongup    ))  nullify(edflux%rlongup    )
+      if (associated(edflux%rk4step    ))  nullify(edflux%rk4step    )
 
       return
    end subroutine nullify_edflux
@@ -180,21 +186,23 @@ module mem_edcp
       real         , intent(in)    :: dtref
       !------------------------------------------------------------------------------------!
 
-      if (associated(edflux%ustar     ))  edflux%ustar   = ust0
-      if (associated(edflux%tstar     ))  edflux%tstar   = 0.0
-      if (associated(edflux%rstar     ))  edflux%rstar   = 0.0
-      if (associated(edflux%cstar     ))  edflux%cstar   = 0.0
-      if (associated(edflux%zeta      ))  edflux%zeta    = 0.0
-      if (associated(edflux%ribulk    ))  edflux%ribulk  = 0.0
-      if (associated(edflux%sflux_u   ))  edflux%sflux_u = 0.0
-      if (associated(edflux%sflux_v   ))  edflux%sflux_v = 0.0
-      if (associated(edflux%sflux_r   ))  edflux%sflux_r = 0.0
-      if (associated(edflux%sflux_t   ))  edflux%sflux_t = 0.0
-      if (associated(edflux%sflux_c   ))  edflux%sflux_c = 0.0
-      if (associated(edflux%sflux_w   ))  edflux%sflux_w = 0.0
-      if (associated(edflux%albedt    ))  edflux%albedt  = 0.0
-      if (associated(edflux%rlongup   ))  edflux%rlongup = 0.0
-      if (associated(edflux%rk4step   ))  edflux%rk4step = dtref
+      if (associated(edflux%ustar      ))  edflux%ustar       = ust0
+      if (associated(edflux%tstar      ))  edflux%tstar       = 0.0
+      if (associated(edflux%rstar      ))  edflux%rstar       = 0.0
+      if (associated(edflux%cstar      ))  edflux%cstar       = 0.0
+      if (associated(edflux%zeta       ))  edflux%zeta        = 0.0
+      if (associated(edflux%ribulk     ))  edflux%ribulk      = 0.0
+      if (associated(edflux%sflux_u    ))  edflux%sflux_u     = 0.0
+      if (associated(edflux%sflux_v    ))  edflux%sflux_v     = 0.0
+      if (associated(edflux%sflux_r    ))  edflux%sflux_r     = 0.0
+      if (associated(edflux%sflux_t    ))  edflux%sflux_t     = 0.0
+      if (associated(edflux%sflux_c    ))  edflux%sflux_c     = 0.0
+      if (associated(edflux%sflux_w    ))  edflux%sflux_w     = 0.0
+      if (associated(edflux%rshort_gnd ))  edflux%rshort_gnd  = 0.0
+      if (associated(edflux%rlong_gnd  ))  edflux%rlong_gnd   = 0.0
+      if (associated(edflux%albedt     ))  edflux%albedt      = 0.0
+      if (associated(edflux%rlongup    ))  edflux%rlongup     = 0.0
+      if (associated(edflux%rk4step    ))  edflux%rk4step     = dtref
 
       return
    end subroutine zero_edflux
@@ -218,21 +226,23 @@ module mem_edcp
       type(ed_flux), intent(inout) :: edflux
       !------------------------------------------------------------------------------------!
      
-      if (associated(edflux%ustar     ))  deallocate(edflux%ustar     )
-      if (associated(edflux%tstar     ))  deallocate(edflux%tstar     )
-      if (associated(edflux%rstar     ))  deallocate(edflux%rstar     )
-      if (associated(edflux%cstar     ))  deallocate(edflux%cstar     )
-      if (associated(edflux%zeta      ))  deallocate(edflux%zeta      )
-      if (associated(edflux%ribulk    ))  deallocate(edflux%ribulk    )
-      if (associated(edflux%sflux_u   ))  deallocate(edflux%sflux_u   )
-      if (associated(edflux%sflux_v   ))  deallocate(edflux%sflux_v   )
-      if (associated(edflux%sflux_r   ))  deallocate(edflux%sflux_r   )
-      if (associated(edflux%sflux_c   ))  deallocate(edflux%sflux_c   )
-      if (associated(edflux%sflux_t   ))  deallocate(edflux%sflux_t   )
-      if (associated(edflux%sflux_w   ))  deallocate(edflux%sflux_w   )
-      if (associated(edflux%albedt    ))  deallocate(edflux%albedt    )
-      if (associated(edflux%rlongup   ))  deallocate(edflux%rlongup   )
-      if (associated(edflux%rk4step   ))  deallocate(edflux%rk4step   )
+      if (associated(edflux%ustar      ))  deallocate(edflux%ustar      )
+      if (associated(edflux%tstar      ))  deallocate(edflux%tstar      )
+      if (associated(edflux%rstar      ))  deallocate(edflux%rstar      )
+      if (associated(edflux%cstar      ))  deallocate(edflux%cstar      )
+      if (associated(edflux%zeta       ))  deallocate(edflux%zeta       )
+      if (associated(edflux%ribulk     ))  deallocate(edflux%ribulk     )
+      if (associated(edflux%sflux_u    ))  deallocate(edflux%sflux_u    )
+      if (associated(edflux%sflux_v    ))  deallocate(edflux%sflux_v    )
+      if (associated(edflux%sflux_r    ))  deallocate(edflux%sflux_r    )
+      if (associated(edflux%sflux_c    ))  deallocate(edflux%sflux_c    )
+      if (associated(edflux%sflux_t    ))  deallocate(edflux%sflux_t    )
+      if (associated(edflux%sflux_w    ))  deallocate(edflux%sflux_w    )
+      if (associated(edflux%rshort_gnd ))  deallocate(edflux%rshort_gnd )
+      if (associated(edflux%rlong_gnd  ))  deallocate(edflux%rlong_gnd  )
+      if (associated(edflux%albedt     ))  deallocate(edflux%albedt     )
+      if (associated(edflux%rlongup    ))  deallocate(edflux%rlongup    )
+      if (associated(edflux%rk4step    ))  deallocate(edflux%rk4step    )
 
       return
    end subroutine dealloc_edflux

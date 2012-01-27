@@ -6,11 +6,12 @@
 !------------------------------------------------------------------------------------------!
 module mem_soil_moisture
    use leaf_coms, only : nstyp
+   use grid_dims, only : str_len
    implicit none
-   character (len=1)   :: soil_moist
-   character (len=1)   :: soil_moist_fail
-   character (len=256) :: usdata_in
-   character (len=256) :: usmodel_in
+   character (len=1)       :: soil_moist
+   character (len=1)       :: soil_moist_fail
+   character (len=str_len) :: usdata_in
+   character (len=str_len) :: usmodel_in
 
    real, dimension(nstyp), parameter :: oxsand  = (/ .970, .920, .800, .570, .600, .650    &
                                                    , .350, .480, .500, .300, .250, .200    &

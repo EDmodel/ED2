@@ -46,16 +46,6 @@ module canopy_air_coms
                             !  3. Test # 3 of Mahfouf and Noilhan (1991)
                             !  4. Test # 4 of Mahfouf and Noilhan (1991)
 
-   integer :: i_blyr_condct ! Methods to estimate the leaf boundary layer conductance:
-                            !  0. The Nusselt number for forced convection is estimated
-                            !     using the average winds, with no corrections
-                            !  1. The actual Nusselt number for forced convection is 
-                            !     multiplied by 2.5 as the Reynolds number gets close or
-                            !     greater than 10,000.
-                            !  2. The actual Nusselt number for forced convection is 
-                            !     multiplied by 10. as the Reynolds number gets close or
-                            !     greater than 10,000.
-
    real :: leaf_maxwhc      !   Maximum amount of water that can stay on top of the leaf
                             ! surface.  If this amount is reached, the leaf stops collect-
                             ! ing water, thus increasing the through fall fraction.  This 
@@ -63,16 +53,16 @@ module canopy_air_coms
                             ! by LAI.
    !---------------------------------------------------------------------------------------!
 
+   !----- Minimum speed for stars [m/s]. --------------------------------------------------!
+   real         :: ubmin
+   !----- Minimum speed for conductances [m/s]. -------------------------------------------!
+   real         :: ugbmin
    !----- Minimum Ustar [m/s]. ------------------------------------------------------------!
    real         :: ustmin
-   !----- Factor to be applied to the ground->canopy conductance. -------------------------!
-   real         :: ggfact
    !----- Used by OD95 and BH91. ----------------------------------------------------------!
    real   :: gamm        ! Gamma for momentum.
    real   :: gamh        ! Gamma for heat.
    real   :: tprandtl    ! Turbulent Prandtl number.
-   real   :: vkopr       ! Von Karman / Prandtl number (not read by namelist, but defined
-                         !     based on the namelist TPRANDTL
    real   :: vh2vr       ! vegetation roughness:vegetation height ratio
    real   :: vh2dh       ! displacement height:vegetation height ratio
    real   :: ribmax      ! Maximum bulk Richardson number (ignored when ISFCLYRM = 1)
@@ -86,10 +76,6 @@ module canopy_air_coms
    real         :: exar
    !----- Scaling factor of Tree Area Index, for computing wtveg [dimensionless]. ---------!
    real         :: covr
-   !----- Minimum speed for conductances [m/s]. -------------------------------------------!
-   real         :: ugbmin
-   !----- Minimum speed for stars [m/s]. --------------------------------------------------!
-   real         :: ubmin
    !----- Some parameters that were used in ED-2.0, added here for some tests. ------------!
    real         :: ez
 
@@ -101,7 +87,6 @@ module canopy_air_coms
    real(kind=8) :: ubmin8
    real(kind=8) :: ez8
    real(kind=8) :: vh2dh8
-   real(kind=8) :: ggfact8
    real(kind=8) :: rasveg_min8
    real(kind=8) :: taumin8
    !=======================================================================================!
@@ -155,6 +140,19 @@ module canopy_air_coms
    real(kind=4)               :: infunc
    !---------------------------------------------------------------------------------------!
 
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Parameters for CLM, at equation 5.103 of CLM-4 techical note.                     !
+   !     Oleson, K. W., et al.; Technical description of version 4.0 of the community land !
+   !        model (CLM) NCAR Technical Note NCAR/TN-478+STR, Boulder, CO, April 2010.      !
+   !---------------------------------------------------------------------------------------!
+   real(kind=4)               :: cs_dense0
+   real(kind=4)               :: gamma_clm4
+   !---------------------------------------------------------------------------------------!
+
+
+
    !----- Double precision version of all variables above. --------------------------------!
    real(kind=8)                            :: dz_m978
    real(kind=8)                            :: cdrag08
@@ -168,6 +166,8 @@ module canopy_air_coms
    real(kind=8), dimension(3)              :: gamma_mw99_8
    real(kind=8), dimension(3)              :: nu_mw99_8
    real(kind=8)                            :: infunc_8
+   real(kind=8)                            :: cs_dense08
+   real(kind=8)                            :: gamma_clm48
    !=======================================================================================!
    !=======================================================================================!
 
@@ -232,26 +232,6 @@ module canopy_air_coms
 
    real(kind=8)            :: beta_lami8  ! Correction term for Nusselt #, laminar flow
    real(kind=8)            :: beta_turb8  ! Correction term for Nusselt #, turbulent flow
-
-   !---------------------------------------------------------------------------------------!
-   !     Both free and forced convection tend to underestimate the Nusselt number under    !
-   ! different conditions.  Based on M08 review on the subject, I wrote the following      !
-   ! functional form to expand the Nusselt number by a factor beta:                        !
-   ! - beta_forced = R1 + R2 * tanh[log(Re/Re0)]                                           !
-   ! - beta_free   = G1 + G2 * tanh[log(Gr/Gr0)]                                           !
-   !---------------------------------------------------------------------------------------!
-   real                    :: beta_r1
-   real                    :: beta_r2
-   real                    :: beta_re0
-   real                    :: beta_g1
-   real                    :: beta_g2
-   real                    :: beta_gr0
-   real(kind=8)            :: beta_r18
-   real(kind=8)            :: beta_r28
-   real(kind=8)            :: beta_re08
-   real(kind=8)            :: beta_g18
-   real(kind=8)            :: beta_g28
-   real(kind=8)            :: beta_gr08
    !=======================================================================================!
    !=======================================================================================!
 
@@ -270,7 +250,7 @@ module canopy_air_coms
    real   :: csh         ! C* for heat (eqn.20, not co2 char. scale)
    real   :: dl79        ! ???
    !----- Oncley and Dudhia (1995) model. -------------------------------------------------!
-   real   :: bbeta       ! Beta 
+   real   :: beta_s      ! Beta for the stable case
    !----- Beljaars and Holtslag (1991) model. ---------------------------------------------!
    real   :: abh91       ! -a from equation  (28) and (32)
    real   :: bbh91       ! -b from equation  (28) and (32)
@@ -285,6 +265,22 @@ module canopy_air_coms
    real   :: atetf       ! a * e * f
    real   :: z0moz0h     ! z0(M)/z0(h)
    real   :: z0hoz0m     ! z0(M)/z0(h)
+   !----- Modified CLM (2004) model. ------------------------------------------------------!
+   real   :: beta_vs     ! Beta for the very stable case (CLM eq. 5.30)
+   real   :: chim        ! CLM coefficient for very unstable case (momentum)
+   real   :: chih        ! CLM coefficient for very unstable case (heat)
+   real   :: zetac_um    ! critical zeta below which it becomes very unstable (momentum)
+   real   :: zetac_uh    ! critical zeta below which it becomes very unstable (heat)
+   real   :: zetac_sm    ! critical zeta above which it becomes very stable   (momentum)
+   real   :: zetac_sh    ! critical zeta above which it becomes very stable   (heat)
+   real   :: zetac_umi   ! 1. / zetac_umi
+   real   :: zetac_uhi   ! 1. / zetac_uhi
+   real   :: zetac_smi   ! 1. / zetac_smi
+   real   :: zetac_shi   ! 1. / zetac_shi
+   real   :: zetac_umi16 ! 1/(-zetac_umi)^(1/6)
+   real   :: zetac_uhi13 ! 1/(-zetac_umi)^(1/6)
+   real   :: psimc_um    ! psim evaluation at zetac_um
+   real   :: psihc_uh    ! psih evaluation at zetac_uh
    !---------------------------------------------------------------------------------------!
 
    !----- Double precision of all these variables. ----------------------------------------!
@@ -292,12 +288,11 @@ module canopy_air_coms
    real(kind=8)   :: csm8
    real(kind=8)   :: csh8
    real(kind=8)   :: dl798
-   real(kind=8)   :: bbeta8
+   real(kind=8)   :: beta_s8
    real(kind=8)   :: gamm8
    real(kind=8)   :: gamh8
    real(kind=8)   :: ribmax8
    real(kind=8)   :: tprandtl8
-   real(kind=8)   :: vkopr8
    real(kind=8)   :: abh918
    real(kind=8)   :: bbh918
    real(kind=8)   :: cbh918
@@ -311,6 +306,21 @@ module canopy_air_coms
    real(kind=8)   :: atetf8
    real(kind=8)   :: z0moz0h8
    real(kind=8)   :: z0hoz0m8
+   real(kind=8)   :: beta_vs8
+   real(kind=8)   :: chim8
+   real(kind=8)   :: chih8
+   real(kind=8)   :: zetac_um8
+   real(kind=8)   :: zetac_uh8
+   real(kind=8)   :: zetac_sm8
+   real(kind=8)   :: zetac_sh8
+   real(kind=8)   :: zetac_umi8
+   real(kind=8)   :: zetac_uhi8
+   real(kind=8)   :: zetac_smi8
+   real(kind=8)   :: zetac_shi8
+   real(kind=8)   :: zetac_umi168
+   real(kind=8)   :: zetac_uhi138
+   real(kind=8)   :: psimc_um8
+   real(kind=8)   :: psihc_uh8
    !=======================================================================================!
    !=======================================================================================!
 
@@ -393,7 +403,8 @@ module canopy_air_coms
    !    This function computes the stability  correction function for momentum.            !
    !---------------------------------------------------------------------------------------!
    real function psim(zeta,stable)
-      use consts_coms, only : halfpi
+      use consts_coms, only : halfpi   & ! intent(in)
+                            , onesixth ! ! intent(in)
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
       real   , intent(in) :: zeta   ! z/L, z is the height, and L the Obukhov length [ ---]
@@ -403,17 +414,40 @@ module canopy_air_coms
       !------------------------------------------------------------------------------------!
       if (stable) then
          select case (isfclyrm)
-         case (2,5) !----- Oncley and Dudhia (1995). --------------------------------------!
-            psim = - bbeta * zeta 
-         case (3,4) !----- Beljaars and Holtslag (1991). ----------------------------------!
+         case (2) !----- Oncley and Dudhia (1995). ----------------------------------------!
+            psim = - beta_s * zeta 
+         case (3) !----- Beljaars and Holtslag (1991). ------------------------------------!
             psim = abh91 * zeta                                                            &
                  + bbh91 * (zeta - cod) * exp(max(-38.,-dbh91 * zeta))                     &
                  + bcod
+         case (4) !----- CLM (2004) (including neglected terms). --------------------------!
+            if (zeta > zetac_sm) then
+               !----- Very stable case. ---------------------------------------------------!
+               psim = (1.0 - beta_vs) * log(zeta * zetac_smi)                              &
+                    + (1.0 - beta_s ) * zetac_sm - zeta
+            else
+               !----- Normal stable case. -------------------------------------------------!
+               psim = - beta_s * zeta
+            end if
          end select
       else
-         !----- Unstable case, both papers use the same expression. -----------------------!
-         xx   = sqrt(sqrt(1.0 - gamm * zeta))
-         psim = log(0.125 * (1.0+xx) * (1.0+xx) * (1.0 + xx*xx)) - 2.0*atan(xx) + halfpi
+         select case (isfclyrm)
+         case (2,3) !----- Oncley and Dudhia (1995) and Beljaars and Holtslag (1991). -----!
+            xx   = sqrt(sqrt(1.0 - gamm * zeta))
+            psim = log(0.125 * (1.0+xx) * (1.0+xx) * (1.0 + xx*xx)) - 2.0*atan(xx) + halfpi
+         case (4)   !----- CLM (2004) (including neglected terms). ------------------------!
+            if (zeta < zetac_um) then
+               !----- Very unstable case. -------------------------------------------------!
+               psim = log(zeta * zetac_umi)                                                &
+                    + 6.0 * chim * ((- zeta) ** (-onesixth) - zetac_umi16)                 &
+                    + psimc_um
+            else
+               !----- Normal unstable case. -----------------------------------------------!
+               xx   = sqrt(sqrt(1.0 - gamm * zeta))
+               psim = log(0.125 * (1.0+xx) * (1.0+xx) * (1.0 + xx*xx))                     &
+                    - 2.0*atan(xx) + halfpi
+            end if
+         end select
       end if
       return
    end function psim
@@ -437,19 +471,43 @@ module canopy_air_coms
       logical, intent(in) :: stable ! Flag... This surface layer is stable           [ T|F]
       !----- Local variables. -------------------------------------------------------------!
       real                :: yy
+      !----- External functions. ----------------------------------------------------------!
+      real   , external   :: cbrt
       !------------------------------------------------------------------------------------!
       if (stable) then
          select case (isfclyrm)
-         case (2,5) !----- Oncley and Dudhia (1995). --------------------------------------!
-            psih = - bbeta * zeta 
-         case (3,4) !----- Beljaars and Holtslag (1991). ----------------------------------!
+         case (2) !----- Oncley and Dudhia (1995). ----------------------------------------!
+            psih = - beta_s * zeta 
+         case (3) !----- Beljaars and Holtslag (1991). ------------------------------------!
             psih = 1.0 - (1.0 + ate * zeta)**fbh91                                         &
                  + bbh91 * (zeta - cod) * exp(max(-38.,-dbh91 * zeta)) + bcod
+         case (4) !----- CLM (2004). ------------------------------------------------------!
+            if (zeta > zetac_sh) then
+               !----- Very stable case. ---------------------------------------------------!
+               psih = (1.0 - beta_vs) * log(zeta * zetac_shi)                              &
+                    + (1.0 - beta_s ) * zetac_sh - zeta
+            else
+               !----- Normal stable case. -------------------------------------------------!
+               psih = - beta_s * zeta 
+            end if
          end select
       else
-         !----- Unstable case, both papers use the same expression. -----------------------!
-         yy   = sqrt(1.0 - gamh * zeta)
-         psih = log(0.25 * (1.0+yy) * (1.0+yy))
+         select case (isfclyrm)
+         case (2,3) !----- Oncley and Dudhia (1995) and Beljaars and Holtslag (1991). -----!
+            yy   = sqrt(1.0 - gamh * zeta)
+            psih = log(0.25 * (1.0+yy) * (1.0+yy))
+         case (4)   !----- CLM (2004) (including neglected terms). ------------------------!
+            if (zeta < zetac_um) then
+               !----- Very unstable case. -------------------------------------------------!
+               psih = log(zeta * zetac_uhi)                                                &
+                    + 3.0 * chih * (1./cbrt(-zeta) - zetac_uhi13)                          &
+                    + psihc_uh
+            else
+               !----- Normal unstable case. -----------------------------------------------!
+               yy   = sqrt(1.0 - gamh * zeta)
+               psih = log(0.25 * (1.0+yy) * (1.0+yy))
+            end if
+         end select
       end if
       return
    end function psih
@@ -466,7 +524,8 @@ module canopy_air_coms
    !    This function computes the stability  correction function for momentum.            !
    !---------------------------------------------------------------------------------------!
    real(kind=8) function psim8(zeta,stable)
-      use consts_coms, only : halfpi8
+      use consts_coms, only : halfpi8   & ! intent(in)
+                            , onesixth8 ! ! intent(in)
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
       real(kind=8), intent(in) :: zeta   ! z/L, z = height, and L = Obukhov length   [ ---]
@@ -476,18 +535,41 @@ module canopy_air_coms
       !------------------------------------------------------------------------------------!
       if (stable) then
          select case (isfclyrm)
-         case (2,5) !----- Oncley and Dudhia (1995). --------------------------------------!
-            psim8 = - bbeta8 * zeta 
-         case (3,4) !----- Beljaars and Holtslag (1991). ----------------------------------!
+         case (2) !----- Oncley and Dudhia (1995). ----------------------------------------!
+            psim8 = - beta_s8 * zeta 
+         case (3) !----- Beljaars and Holtslag (1991). ------------------------------------!
             psim8 = abh918 * zeta                                                          &
                   + bbh918 * (zeta - cod8) * exp(max(-3.8d1,-dbh918 * zeta))               &
                   + bcod8
+         case (4) !----- CLM (2004) (including neglected terms). --------------------------!
+            if (zeta > zetac_sm8) then
+               !----- Very stable case. ---------------------------------------------------!
+               psim8 = (1.d0 - beta_vs8) * log(zeta * zetac_smi8)                          &
+                     + (1.d0 - beta_s8 ) * zetac_sm8 - zeta
+            else
+               !----- Normal stable case. -------------------------------------------------!
+               psim8 = - beta_s8 * zeta
+            end if
          end select
       else
-         !----- Unstable case, both papers use the same expression. -----------------------!
-         xx   = sqrt(sqrt(1.d0 - gamm8 * zeta))
-         psim8 = log(1.25d-1 * (1.d0+xx) * (1.d0+xx) * (1.d0 + xx*xx))                     &
-               - 2.d0*atan(xx) + halfpi8
+         select case (isfclyrm)
+         case (2,3) !----- Oncley and Dudhia (1995) and Beljaars and Holtslag (1991). -----!
+            xx   = sqrt(sqrt(1.d0 - gamm8 * zeta))
+            psim8 = log(1.25d-1 * (1.d0+xx) * (1.d0+xx) * (1.d0 + xx*xx))                  &
+                  - 2.d0*atan(xx) + halfpi8
+         case (4)   !----- CLM (2004) (including neglected terms). ------------------------!
+            if (zeta < zetac_um8) then
+               !----- Very unstable case. -------------------------------------------------!
+               psim8 = log(zeta * zetac_umi8)                                              &
+                     + 6.d0 * chim8 * ((-zeta) ** (-onesixth8) - zetac_umi168)             &
+                     + psimc_um
+            else
+               !----- Normal unstable case. -----------------------------------------------!
+               xx   = sqrt(sqrt(1.d0 - gamm8 * zeta))
+               psim8 = log(1.25d-1 * (1.d0+xx) * (1.d0+xx) * (1.d0 + xx*xx))               &
+                     - 2.d0*atan(xx) + halfpi8
+            end if
+         end select
       end if
       return
    end function psim8
@@ -511,19 +593,43 @@ module canopy_air_coms
       logical     , intent(in) :: stable ! Flag... This surface layer is stable      [ T|F]
       !----- Local variables. -------------------------------------------------------------!
       real(kind=8)             :: yy
+      !----- External functions. ----------------------------------------------------------!
+      real(kind=8), external   :: cbrt8
       !------------------------------------------------------------------------------------!
       if (stable) then
          select case (isfclyrm)
-         case (2,5) !----- Oncley and Dudhia (1995). --------------------------------------!
-            psih8 = - bbeta8 * zeta 
-         case (3,4) !----- Beljaars and Holtslag (1991). ----------------------------------!
+         case (2) !----- Oncley and Dudhia (1995). ----------------------------------------!
+            psih8 = - beta_s8 * zeta 
+         case (3) !----- Beljaars and Holtslag (1991). ------------------------------------!
             psih8 = 1.d0 - (1.d0 + ate8 * zeta)**fbh918                                    &
                   + bbh918 * (zeta - cod8) * exp(max(-3.8d1,-dbh918 * zeta)) + bcod8
+         case (4) !----- CLM (2004). ------------------------------------------------------!
+            if (zeta > zetac_sh8) then
+               !----- Very stable case. ---------------------------------------------------!
+               psih8 = (1.d0 - beta_vs8) * log(zeta * zetac_shi8)                          &
+                     + (1.d0 - beta_s8 ) * zetac_sh8 - zeta
+            else
+               !----- Normal stable case. -------------------------------------------------!
+               psih8 = - beta_s8 * zeta 
+            end if
          end select
       else
-         !----- Unstable case, both papers use the same expression. -----------------------!
-         yy    = sqrt(1.d0 - gamh8 * zeta)
-         psih8 = log(2.5d-1 * (1.d0+yy) * (1.d0+yy))
+         select case (isfclyrm)
+         case (2,3) !----- Oncley and Dudhia (1995) and Beljaars and Holtslag (1991). -----!
+            yy    = sqrt(1.d0 - gamh8 * zeta)
+            psih8 = log(2.5d-1 * (1.d0+yy) * (1.d0+yy))
+         case (4)   !----- CLM (2004) (including neglected terms). ------------------------!
+            if (zeta < zetac_um) then
+               !----- Very unstable case. -------------------------------------------------!
+               psih8 = log(zeta * zetac_uhi8)                                              &
+                     + 3.d0 * chih8 * (1.d0/cbrt8(-zeta) - zetac_uhi138)                   &
+                     + psihc_uh8
+            else
+               !----- Normal unstable case. -----------------------------------------------!
+               yy    = sqrt(1.d0 - gamh8 * zeta)
+               psih8 = log(2.5d-1 * (1.d0+yy) * (1.d0+yy))
+            end if
+         end select
       end if
       return
    end function psih8
@@ -541,25 +647,47 @@ module canopy_air_coms
    ! momentum with respect to zeta.                                                        !
    !---------------------------------------------------------------------------------------!
    real function dpsimdzeta(zeta,stable)
+      use consts_coms, only : onesixth ! ! intent(in)
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
       real   , intent(in) :: zeta   ! z/L, z is the height, and L the Obukhov length [ ---]
       logical, intent(in) :: stable ! Flag... This surface layer is stable           [ T|F]
       !----- Local variables. -------------------------------------------------------------!
       real                :: xx
+      !----- External functions. ----------------------------------------------------------!
+      real   , external   :: cbrt
       !------------------------------------------------------------------------------------!
       if (stable) then
          select case (isfclyrm)
-         case (2,5) !----- Oncley and Dudhia (1995). --------------------------------------!
-            dpsimdzeta = - bbeta 
-         case (3,4) !----- Beljaars and Holtslag (1991). ----------------------------------!
+         case (2) !----- Oncley and Dudhia (1995). ----------------------------------------!
+            dpsimdzeta = - beta_s 
+         case (3) !----- Beljaars and Holtslag (1991). ------------------------------------!
             dpsimdzeta = abh91 + bbh91 * (1.0 - dbh91 * zeta + cbh91)                      &
                                * exp(max(-38.,-dbh91 * zeta))
+         case (4) !----- CLM (2004). ------------------------------------------------------!
+            if (zeta > zetac_sm) then
+               !----- Very stable case. ---------------------------------------------------!
+               dpsimdzeta = (1.0 - beta_vs) / zeta - 1.0
+            else
+               !----- Normal stable case. -------------------------------------------------!
+               dpsimdzeta = - beta_s 
+            end if
          end select
       else
-         !----- Unstable case, both papers use the same expression. -----------------------!
-         xx         = sqrt(sqrt(1.0 - gamm * zeta))
-         dpsimdzeta = - gamm / (xx * (1.0+xx) * (1.0 + xx*xx)) 
+         select case (isfclyrm)
+         case (2,3) !----- Oncley and Dudhia (1995) and Beljaars and Holtslag (1991). -----!
+            xx         = sqrt(sqrt(1.0 - gamm * zeta))
+            dpsimdzeta = - gamm / (xx * (1.0+xx) * (1.0 + xx*xx)) 
+         case (4)   !----- CLM (2004) (including neglected terms). ------------------------!
+            if (zeta < zetac_um) then
+               !----- Very unstable case. -------------------------------------------------!
+               dpsimdzeta = (1.0 - chim * (-zeta)**onesixth) / zeta
+            else
+               !----- Normal unstable case. -----------------------------------------------!
+               xx         = sqrt(sqrt(1.0 - gamm * zeta))
+               dpsimdzeta = - gamm / (xx * (1.0+xx) * (1.0 + xx*xx))
+            end if
+         end select
       end if
       return
    end function dpsimdzeta
@@ -583,20 +711,41 @@ module canopy_air_coms
       logical, intent(in) :: stable ! Flag... This surface layer is stable           [ T|F]
       !----- Local variables. -------------------------------------------------------------!
       real                :: yy
+      !----- External functions. ----------------------------------------------------------!
+      real   , external   :: cbrt
       !------------------------------------------------------------------------------------!
       if (stable) then
          select case (isfclyrm)
-         case (2,5) !----- Oncley and Dudhia (1995). --------------------------------------!
-            dpsihdzeta = - bbeta
-         case (3,4) !----- Beljaars and Holtslag (1991). ----------------------------------!
+         case (2) !----- Oncley and Dudhia (1995). ----------------------------------------!
+            dpsihdzeta = - beta_s
+         case (3) !----- Beljaars and Holtslag (1991). ------------------------------------!
             dpsihdzeta = - atetf * (1.0 + ate * zeta)**fm1                                 &
                          + bbh91 * (1.0 - dbh91 * zeta + cbh91)                            &
                          * exp(max(-38.,-dbh91 * zeta))
+         case (4) !----- CLM (2004). ------------------------------------------------------!
+            if (zeta > zetac_sh) then
+               !----- Very stable case. ---------------------------------------------------!
+               dpsihdzeta = (1.0 - beta_vs) / zeta - 1.0
+            else
+               !----- Normal stable case. -------------------------------------------------!
+               dpsihdzeta = - beta_s
+            end if
          end select
       else
-         !----- Unstable case, both papers use the same expression. -----------------------!
-         yy   = sqrt(1.0 - gamh * zeta)
-         dpsihdzeta = -gamh / (yy * (1.0 + yy))
+         select case (isfclyrm)
+         case (2,3) !----- Oncley and Dudhia (1995) and Beljaars and Holtslag (1991). -----!
+            yy   = sqrt(1.0 - gamh * zeta)
+            dpsihdzeta = -gamh / (yy * (1.0 + yy))
+         case (4)   !----- CLM (2004) (including neglected terms). ------------------------!
+            if (zeta < zetac_um) then
+               !----- Very unstable case. -------------------------------------------------!
+               dpsihdzeta = (1.0 + chih / cbrt(zeta)) / zeta
+            else
+               !----- Normal unstable case. -----------------------------------------------!
+               yy   = sqrt(1.0 - gamh * zeta)
+               dpsihdzeta = -gamh / (yy * (1.0 + yy))
+            end if
+         end select
       end if
       return
    end function dpsihdzeta
@@ -614,27 +763,49 @@ module canopy_air_coms
    ! momentum with respect to zeta.                                                        !
    !---------------------------------------------------------------------------------------!
    real(kind=8) function dpsimdzeta8(zeta,stable)
-      use consts_coms, only : halfpi8
+      use consts_coms, only : halfpi8   & ! intent(in)
+                            , onesixth8 ! ! intent(in)
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
       real(kind=8), intent(in) :: zeta   ! z/L, z = height, and L = Obukhov length   [ ---]
       logical     , intent(in) :: stable ! Flag... This surface layer is stable      [ T|F]
       !----- Local variables. -------------------------------------------------------------!
       real(kind=8)             :: xx
+      !----- External functions. ----------------------------------------------------------!
+      real(kind=8), external   :: cbrt8
       !------------------------------------------------------------------------------------!
       if (stable) then
          select case (isfclyrm)
-         case (2,5) !----- Oncley and Dudhia (1995). --------------------------------------!
-            dpsimdzeta8 = - bbeta8
-         case (3,4) !----- Beljaars and Holtslag (1991). ----------------------------------!
+         case (2) !----- Oncley and Dudhia (1995). ----------------------------------------!
+            dpsimdzeta8 = - beta_s8
+         case (3) !----- Beljaars and Holtslag (1991). ------------------------------------!
             dpsimdzeta8 = abh918                                                           &
                         + bbh918 * (1.d0 - dbh918 * zeta + cbh918)                         &
                         * exp(max(-3.8d1,-dbh918 * zeta))
+         case (4) !----- CLM (2004). ------------------------------------------------------!
+            if (zeta > zetac_sm8) then
+               !----- Very stable case. ---------------------------------------------------!
+               dpsimdzeta8 = (1.d0 - beta_vs8) / zeta - 1.d0
+            else
+               !----- Normal stable case. -------------------------------------------------!
+               dpsimdzeta8 = - beta_s8
+            end if
          end select
       else
-         !----- Unstable case, both papers use the same expression. -----------------------!
-         xx          = sqrt(sqrt(1.d0 - gamm8 * zeta))
-         dpsimdzeta8 = - gamm8 / (xx * (1.d0+xx) * (1.d0 + xx*xx)) 
+         select case (isfclyrm)
+         case (2,3) !----- Oncley and Dudhia (1995) and Beljaars and Holtslag (1991). -----!
+            xx          = sqrt(sqrt(1.d0 - gamm8 * zeta))
+            dpsimdzeta8 = - gamm8 / (xx * (1.d0+xx) * (1.d0 + xx*xx)) 
+         case (4)   !----- Modified CLM (2004). -------------------------------------------!
+            if (zeta < zetac_um8) then
+               !----- Very unstable case. -------------------------------------------------!
+               dpsimdzeta8 = (1.d0 - chim8 * (-zeta)**onesixth8) / zeta
+            else
+               !----- Normal unstable case. -----------------------------------------------!
+               xx          = sqrt(sqrt(1.d0 - gamm8 * zeta))
+               dpsimdzeta8 = - gamm8 / (xx * (1.d0+xx) * (1.d0 + xx*xx)) 
+            end if
+         end select
       end if
       return
    end function dpsimdzeta8
@@ -658,20 +829,41 @@ module canopy_air_coms
       logical     , intent(in) :: stable ! Flag... This surface layer is stable      [ T|F]
       !----- Local variables. -------------------------------------------------------------!
       real(kind=8)             :: yy
+      !----- External functions. ----------------------------------------------------------!
+      real(kind=8), external   :: cbrt8
       !------------------------------------------------------------------------------------!
       if (stable) then
          select case (isfclyrm)
-         case (2,5) !----- Oncley and Dudhia (1995). --------------------------------------!
-            dpsihdzeta8 = - bbeta8
-         case (3,4) !----- Beljaars and Holtslag (1991). ----------------------------------!
+         case (2) !----- Oncley and Dudhia (1995). ----------------------------------------!
+            dpsihdzeta8 = - beta_s8
+         case (3) !----- Beljaars and Holtslag (1991). ------------------------------------!
             dpsihdzeta8 = - atetf8 * (1.d0 + ate8 * zeta)**fm18                            &
                           + bbh918 * (1.d0 - dbh918 * zeta + cbh918)                       &
                           * exp(max(-3.8d1,-dbh918 * zeta))
+         case (4) !----- CLM (2004). ------------------------------------------------------!
+            if (zeta > zetac_sh8) then
+               !----- Very stable case. ---------------------------------------------------!
+               dpsihdzeta8 = (1.d0 - beta_vs8) / zeta - 1.d0
+            else
+               !----- Normal stable case. -------------------------------------------------!
+               dpsihdzeta8 = - beta_s8
+            end if
          end select
       else
-         !----- Unstable case, both papers use the same expression. -----------------------!
-         yy          = sqrt(1.d0 - gamh8 * zeta)
-         dpsihdzeta8 = -gamh8 / (yy * (1.d0 + yy))
+         select case (isfclyrm)
+         case (2,3) !----- Oncley and Dudhia (1995) and Beljaars and Holtslag (1991). -----!
+            yy          = sqrt(1.d0 - gamh8 * zeta)
+            dpsihdzeta8 = -gamh8 / (yy * (1.d0 + yy))
+         case (4)   !----- CLM (2004) (including neglected terms). ------------------------!
+            if (zeta < zetac_um8) then
+               !----- Very unstable case. -------------------------------------------------!
+               dpsihdzeta8 = (1.d0 + chih8 / cbrt8(zeta)) / zeta
+            else
+               !----- Normal unstable case. -----------------------------------------------!
+               yy   = sqrt(1.d0 - gamh8 * zeta)
+               dpsihdzeta8 = -gamh8 / (yy * (1.d0 + yy))
+            end if
+         end select
       end if
       return
    end function dpsihdzeta8
@@ -708,6 +900,7 @@ module canopy_air_coms
       real   , intent(in) :: lnzoz0h   ! ln[zref/roughness(heat)]                  [   ---]
       logical, intent(in) :: stable    ! Flag... This surface layer is stable      [   T|F]
       !----- Local variables. -------------------------------------------------------------!
+      real                :: ribuse    ! Richardson number to use                  [   ---]
       real                :: fm        ! lnzoz0 - psim(zeta) + psim(zeta0)         [   ---]
       real                :: fh        ! lnzoz0 - psih(zeta) + psih(zeta0)         [   ---]
       real                :: dfmdzeta  ! d(fm)/d(zeta)                             [   ---]
@@ -722,6 +915,7 @@ module canopy_air_coms
       real                :: fun       ! Function for which we seek a root.        [   ---]
       real                :: funa      ! Smallest guess function.                  [   ---]
       real                :: funz      ! Largest guess function.                   [   ---]
+      real                :: delta0    ! Aux. var --- 2nd guess for bisection      [   ---]
       real                :: delta     ! Aux. var --- 2nd guess for bisection      [   ---]
       real                :: zetamin   ! Minimum zeta for stable case.             [   ---]
       real                :: zetamax   ! Maximum zeta for unstable case.           [   ---]
@@ -733,22 +927,56 @@ module canopy_air_coms
       logical             :: zside     ! Flag... I'm on the z-side.                [   T|F]
       !------------------------------------------------------------------------------------!
 
+
+
+      !----- Define some values that won't change during the iterative method. ------------!
+      z0moz = 1. / zoz0m
+      z0hoz = 1. / zoz0h
       !------------------------------------------------------------------------------------!
-      !     First thing: if the bulk Richardson number is zero or almost zero, then we     !
-      ! rather just assign z/L to be the one given by Oncley and Dudhia (1995).  This      !
-      ! saves time and also avoids the risk of having zeta with the opposite sign.         !
+
+
+
       !------------------------------------------------------------------------------------!
-      zetasmall = vkopr * rib * min(lnzoz0m,lnzoz0h)
-      if (rib <= 0. .and. zetasmall > - z0moz0h * toler) then
-         zoobukhov = zetasmall
+      !     First thing, check whether this is a stable case and we are running methods 2  !
+      ! or 4.  In these methods, there is a singularity that must be avoided.              !
+      !------------------------------------------------------------------------------------!
+      select case (isfclyrm)
+      case (2,4)
+         ribuse = min(rib, (1.0 - toler) * tprandtl / (beta_s * (1.0 - min(z0moz,z0hoz))))
+
+         !---------------------------------------------------------------------------------!
+         !    Stable case, using Oncley and Dudhia, we can solve it analytically.          !
+         !---------------------------------------------------------------------------------!
+         if (stable .and. isfclyrm == 2) then
+            zoobukhov = ribuse * min(lnzoz0m,lnzoz0h)                                      &
+                      / (tprandtl - beta_s * (1.0 - min(z0moz,z0hoz)) *ribuse)
+            return
+         end if
+         !---------------------------------------------------------------------------------!
+      case default
+         ribuse = rib
+      end select
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !     If the bulk Richardson number is zero or almost zero, then we rather just      !
+      ! assign z/L to be the one similar to Oncley and Dudhia (1995).  This saves time and !
+      ! also avoids the risk of having zeta with the opposite sign.                        !
+      !------------------------------------------------------------------------------------!
+      zetasmall = ribuse * min(lnzoz0m,lnzoz0h)
+      if (ribuse <= 0. .and. zetasmall > - z0moz0h * toler) then
+         zoobukhov = zetasmall / tprandtl
          return
-      elseif (rib > 0. .and. zetasmall < z0moz0h * toler) then
-         zoobukhov = zetasmall / (1.1 - 5.0 * rib)
+      elseif (ribuse > 0. .and. zetasmall < z0moz0h * toler) then
+         zoobukhov = zetasmall / (tprandtl - beta_s * (1.0 - min(z0moz,z0hoz)) * ribuse)
          return
       else
          zetamin    =  toler
          zetamax    = -toler
       end if
+      !------------------------------------------------------------------------------------!
 
       !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
       !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
@@ -760,16 +988,15 @@ module canopy_air_coms
       !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
 
 
-      !----- Defining some values that won't change during the iterative method. ----------!
-      z0moz = 1. / zoz0m
-      z0hoz = 1. / zoz0h
-
       !------------------------------------------------------------------------------------!
       !     First guess, using Oncley and Dudhia (1995) approximation for unstable case.   !
       ! We won't use the stable case to avoid FPE or zeta with opposite sign when          !
-      ! Ri > 0.20.                                                                         !
+      ! Ri is too positive.                                                                !
       !------------------------------------------------------------------------------------!
-      zetaa = vkopr * rib * lnzoz0m
+      zetaa = rib * lnzoz0m / tprandtl
+      !------------------------------------------------------------------------------------!
+
+
 
       !----- Finding the function and its derivative. -------------------------------------!
       zeta0m   = zetaa * z0moz
@@ -778,9 +1005,9 @@ module canopy_air_coms
       fh       = lnzoz0h - psih(zetaa,stable) + psih(zeta0h,stable)
       dfmdzeta = z0moz * dpsimdzeta(zeta0m,stable) - dpsimdzeta(zetaa,stable)
       dfhdzeta = z0hoz * dpsihdzeta(zeta0h,stable) - dpsihdzeta(zetaa,stable)
-      funa     = vkopr * rib * fm * fm / fh - zetaa
-      deriv    = vkopr * rib * (2. * fm * dfmdzeta * fh - fm * fm * dfhdzeta)              &
-               / (fh * fh) - 1.
+      funa     = ribuse * fm * fm / (tprandtl * fh) - zetaa
+      deriv    = ribuse * (2. * fm * dfmdzeta * fh - fm * fm * dfhdzeta)                   &
+               / (tprandtl * fh * fh) - 1.
 
       !----- Copying just in case it fails at the first iteration. ------------------------!
       zetaz = zetaa
@@ -828,9 +1055,9 @@ module canopy_air_coms
          fh       = lnzoz0h - psih(zetaz,stable) + psih(zeta0h,stable)
          dfmdzeta = z0moz * dpsimdzeta(zeta0m,stable) - dpsimdzeta(zetaz,stable)
          dfhdzeta = z0hoz * dpsihdzeta(zeta0h,stable) - dpsihdzeta(zetaz,stable)
-         fun      = vkopr * rib * fm * fm / fh - zetaz
-         deriv    = vkopr * rib * (2. * fm * dfmdzeta * fh - fm * fm * dfhdzeta)           &
-                  / (fh * fh) - 1.
+         fun      = ribuse * fm * fm / (tprandtl * fh) - zetaz
+         deriv    = ribuse * (2. * fm * dfmdzeta * fh - fm * fm * dfhdzeta)                &
+                  / (tprandtl * fh * fh) - 1.
 
          !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
          !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
@@ -893,7 +1120,7 @@ module canopy_air_coms
             zeta0h   = zetaz * z0hoz
             fm       = lnzoz0m - psim(zetaz,stable) + psim(zeta0m,stable)
             fh       = lnzoz0h - psih(zetaz,stable) + psih(zeta0h,stable)
-            funz     = vkopr * rib * fm * fm / fh - zetaz
+            funz     = ribuse * fm * fm / (tprandtl * fh) - zetaz
             zside    = funa * funz < 0.0
             !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
             !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
@@ -910,7 +1137,7 @@ module canopy_air_coms
             write (unit=*,fmt='(a)') '=================================================='
             write (unit=*,fmt='(2(a,1x,es14.7,1x))') 'zref   =',zref   ,'rough  =',rough
             write (unit=*,fmt='(2(a,1x,es14.7,1x))') 'lnzoz0m=',lnzoz0m,'lnzoz0h=',lnzoz0h
-            write (unit=*,fmt='(1(a,1x,es14.7,1x))') 'rib    =',rib
+            write (unit=*,fmt='(2(a,1x,es14.7,1x))') 'rib    =',rib    ,'ribuse =',ribuse
             write (unit=*,fmt='(1(a,1x,l1,1x))')     'stable =',stable
             write (unit=*,fmt='(2(a,1x,es14.7,1x))') 'fun    =',fun    ,'delta  =',delta
             write (unit=*,fmt='(2(a,1x,es14.7,1x))') 'zetaa  =',zetaa  ,'funa   =',funa
@@ -936,7 +1163,7 @@ module canopy_air_coms
          zeta0h   = zoobukhov * z0hoz
          fm       = lnzoz0m - psim(zoobukhov,stable) + psim(zeta0m,stable)
          fh       = lnzoz0h - psih(zoobukhov,stable) + psih(zeta0h,stable)
-         fun      = vkopr * rib * fm * fm / fh - zoobukhov
+         fun      = ribuse * fm * fm / (tprandtl * fh) - zoobukhov
 
          !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
          !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
@@ -964,7 +1191,8 @@ module canopy_air_coms
          end if
       end do bisloop
 
-      if (.not.converged) then
+      if (.not.converged .or.                                                              &
+          (stable .and. zoobukhov < 0.0) .or. (.not. stable .and. zoobukhov > 0.0)) then
          write (unit=*,fmt='(a)') '-------------------------------------------------------'
          write (unit=*,fmt='(a)') ' Zeta finding didn''t converge!!!'
          write (unit=*,fmt='(a,1x,i5,1x,a)') ' I gave up, after',maxfpo,'iterations...'
@@ -972,6 +1200,7 @@ module canopy_air_coms
          write (unit=*,fmt='(a)') ' Input values.'
          write (unit=*,fmt='(a)') ' '
          write (unit=*,fmt='(a,1x,f12.4)' ) 'rib             [   ---] =',rib
+         write (unit=*,fmt='(a,1x,f12.4)' ) 'ribuse          [   ---] =',ribuse
          write (unit=*,fmt='(a,1x,f12.4)' ) 'zref            [     m] =',zref
          write (unit=*,fmt='(a,1x,f12.4)' ) 'rough           [     m] =',rough
          write (unit=*,fmt='(a,1x,f12.4)' ) 'zoz0m           [   ---] =',zoz0m
@@ -1034,6 +1263,7 @@ module canopy_air_coms
       real(kind=8), intent(in) :: lnzoz0h   ! ln[zref/roughness(heat)]             [   ---]
       logical     , intent(in) :: stable    ! Flag... This surface layer is stable [   T|F]
       !----- Local variables. -------------------------------------------------------------!
+      real(kind=8)             :: ribuse    ! Richardson number to use             [   ---]
       real(kind=8)             :: fm        ! lnzoz0 - psim(zeta) + psim(zeta0)    [   ---]
       real(kind=8)             :: fh        ! lnzoz0 - psih(zeta) + psih(zeta0)    [   ---]
       real(kind=8)             :: dfmdzeta  ! d(fm)/d(zeta)                        [   ---]
@@ -1048,6 +1278,7 @@ module canopy_air_coms
       real(kind=8)             :: fun       ! Function for which we seek a root.   [   ---]
       real(kind=8)             :: funa      ! Smallest guess function.             [   ---]
       real(kind=8)             :: funz      ! Largest guess function.              [   ---]
+      real(kind=8)             :: delta0    ! Aux. var --- 2nd guess for bisection [   ---]
       real(kind=8)             :: delta     ! Aux. var --- 2nd guess for bisection [   ---]
       real(kind=8)             :: zetamin   ! Minimum zeta for stable case.        [   ---]
       real(kind=8)             :: zetamax   ! Maximum zeta for unstable case.      [   ---]
@@ -1060,17 +1291,49 @@ module canopy_air_coms
       !------------------------------------------------------------------------------------!
 
 
+
+      !----- Define some values that won't change during the iterative method. ------------!
+      z0moz = 1.d0 / zoz0m
+      z0hoz = 1.d0 / zoz0h
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !     First thing, check whether this is a stable case and we are running methods 2  !
+      ! or 4.  In these methods, there is a singularity that must be avoided.              !
+      !------------------------------------------------------------------------------------!
+      select case (isfclyrm)
+      case (2,4)
+         ribuse = min(rib                                                                  &
+                     , (1.d0 - toler8) * tprandtl8 / (beta_s8 * (1.d0 - min(z0moz,z0hoz))))
+
+         !---------------------------------------------------------------------------------!
+         !    Stable case, using Oncley and Dudhia, we can solve it analytically.          !
+         !---------------------------------------------------------------------------------!
+         if (stable .and. isfclyrm == 2) then
+            zoobukhov8 = ribuse * min(lnzoz0m,lnzoz0h)                                     &
+                      / (tprandtl8 - beta_s8 * (1.d0 - min(z0moz,z0hoz)) *ribuse)
+            return
+         end if
+         !---------------------------------------------------------------------------------!
+      case default
+         ribuse = rib
+      end select
+      !------------------------------------------------------------------------------------!
+
+
       !------------------------------------------------------------------------------------!
       !     First thing: if the bulk Richardson number is zero or almost zero, then we     !
       ! rather just assign z/L to be the one given by Oncley and Dudhia (1995).  This      !
       ! saves time and also avoids the risk of having zeta with the opposite sign.         !
       !------------------------------------------------------------------------------------!
-      zetasmall = vkopr8 * rib * min(lnzoz0m,lnzoz0h)
-      if (rib <= 0.d0 .and. zetasmall > - z0moz0h8 * toler8) then
-         zoobukhov8 = zetasmall
+      zetasmall = ribuse * min(lnzoz0m,lnzoz0h)
+      if (ribuse <= 0.d0 .and. zetasmall > - z0moz0h8 * toler8) then
+         zoobukhov8 = zetasmall / tprandtl8
          return
-      elseif (rib > 0.d0 .and. zetasmall < z0moz0h8 * toler8) then
-         zoobukhov8 = zetasmall / (1.1d0 - 5.0d0 * rib)
+      elseif (ribuse > 0.d0 .and. zetasmall < z0moz0h8 * toler8) then
+         zoobukhov8 = zetasmall / (tprandtl8 - beta_s8 * (1.d0 - min(z0moz,z0hoz))*ribuse)
          return
       else
          zetamin    =  toler8
@@ -1087,16 +1350,12 @@ module canopy_air_coms
       !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
 
 
-      !----- Defining some values that won't change during the iterative method. ----------!
-      z0moz = 1.d0 / zoz0m
-      z0hoz = 1.d0 / zoz0h
-
       !------------------------------------------------------------------------------------!
       !     First guess, using Oncley and Dudhia (1995) approximation for unstable case.   !
       ! We won't use the stable case to avoid FPE or zeta with opposite sign when          !
-      ! Ri > 0.20.                                                                         !
+      ! Ri is too positive.                                                                !
       !------------------------------------------------------------------------------------!
-      zetaa = vkopr8 * rib * lnzoz0m
+      zetaa = ribuse * lnzoz0m / tprandtl8
 
       !----- Finding the function and its derivative. -------------------------------------!
       zeta0m   = zetaa * z0moz
@@ -1105,9 +1364,9 @@ module canopy_air_coms
       fh       = lnzoz0h - psih8(zetaa,stable) + psih8(zeta0h,stable)
       dfmdzeta = z0moz * dpsimdzeta8(zeta0m,stable) - dpsimdzeta8(zetaa,stable)
       dfhdzeta = z0hoz * dpsihdzeta8(zeta0h,stable) - dpsihdzeta8(zetaa,stable)
-      funa     = vkopr8 * rib * fm * fm / fh - zetaa
-      deriv    = vkopr8 * rib * (2.d0 * fm * dfmdzeta * fh - fm * fm * dfhdzeta)           &
-               / (fh * fh) - 1.d0
+      funa     = ribuse * fm * fm / (tprandtl8 * fh) - zetaa
+      deriv    = ribuse * (2.d0 * fm * dfmdzeta * fh - fm * fm * dfhdzeta)                 &
+               / (tprandtl8 * fh * fh) - 1.d0
 
       !----- Copying just in case it fails at the first iteration. ------------------------!
       zetaz = zetaa
@@ -1155,9 +1414,9 @@ module canopy_air_coms
          fh       = lnzoz0h - psih8(zetaz,stable) + psih8(zeta0h,stable)
          dfmdzeta = z0moz * dpsimdzeta8(zeta0m,stable) - dpsimdzeta8(zetaz,stable)
          dfhdzeta = z0hoz * dpsihdzeta8(zeta0h,stable) - dpsihdzeta8(zetaz,stable)
-         fun      = vkopr8 * rib * fm * fm / fh - zetaz
-         deriv    = vkopr8 * rib * (2.d0 * fm * dfmdzeta * fh - fm * fm * dfhdzeta)        &
-                  / (fh * fh) - 1.d0
+         fun      = ribuse * fm * fm / (tprandtl8 * fh) - zetaz
+         deriv    = ribuse * (2.d0 * fm * dfmdzeta * fh - fm * fm * dfhdzeta)              &
+                  / (tprandtl8 * fh * fh) - 1.d0
 
          !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
          !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
@@ -1220,7 +1479,7 @@ module canopy_air_coms
             zeta0h   = zetaz * z0hoz
             fm       = lnzoz0m - psim8(zetaz,stable) + psim8(zeta0m,stable)
             fh       = lnzoz0h - psih8(zetaz,stable) + psih8(zeta0h,stable)
-            funz     = vkopr8 * rib * fm * fm / fh - zetaz
+            funz     = ribuse * fm * fm / (tprandtl8 * fh) - zetaz
             zside    = funa * funz < 0.d0
             !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
             !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
@@ -1237,7 +1496,7 @@ module canopy_air_coms
             write (unit=*,fmt='(a)') '=================================================='
             write (unit=*,fmt='(2(a,1x,es14.7,1x))') 'zref   =',zref  ,'rough  =',rough
             write (unit=*,fmt='(2(a,1x,es14.7,1x))') 'lnzoz0m=',lnzoz0m,'lnzoz0h=',lnzoz0h
-            write (unit=*,fmt='(1(a,1x,es14.7,1x))') 'rib    =',rib
+            write (unit=*,fmt='(2(a,1x,es14.7,1x))') 'rib    =',rib    ,'ribuse=',ribuse
             write (unit=*,fmt='(1(a,1x,l1,1x))')     'stable =',stable
             write (unit=*,fmt='(2(a,1x,es14.7,1x))') 'fun    =',fun   ,'delta  =',delta
             write (unit=*,fmt='(2(a,1x,es14.7,1x))') 'zetaa  =',zetaa ,'funa   =',funa
@@ -1263,7 +1522,7 @@ module canopy_air_coms
          zeta0h   = zoobukhov8 * z0hoz
          fm       = lnzoz0m - psim8(zoobukhov8,stable) + psim8(zeta0m,stable)
          fh       = lnzoz0h - psih8(zoobukhov8,stable) + psih8(zeta0h,stable)
-         fun      = vkopr8 * rib * fm * fm / fh - zoobukhov8
+         fun      = ribuse * fm * fm / (tprandtl8 * fh) - zoobukhov8
 
          !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
          !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
@@ -1291,7 +1550,8 @@ module canopy_air_coms
          end if
       end do bisloop
 
-      if (.not.converged) then
+      if (.not.converged .or.                                                              &
+          (stable .and. zoobukhov8 < 0.d0) .or. (.not. stable .and. zoobukhov8 > 0.d0)) then
          write (unit=*,fmt='(a)') '-------------------------------------------------------'
          write (unit=*,fmt='(a)') ' Zeta finding didn''t converge!!!'
          write (unit=*,fmt='(a,1x,i5,1x,a)') ' I gave up, after',maxfpo,'iterations...'
@@ -1299,6 +1559,7 @@ module canopy_air_coms
          write (unit=*,fmt='(a)') ' Input values.'
          write (unit=*,fmt='(a)') ' '
          write (unit=*,fmt='(a,1x,f12.4)' ) 'rib             [   ---] =',rib
+         write (unit=*,fmt='(a,1x,f12.4)' ) 'ribuse          [   ---] =',ribuse
          write (unit=*,fmt='(a,1x,f12.4)' ) 'zref            [     m] =',zref
          write (unit=*,fmt='(a,1x,f12.4)' ) 'rough           [     m] =',rough
          write (unit=*,fmt='(a,1x,f12.4)' ) 'zoz0m           [   ---] =',zoz0m
@@ -1307,7 +1568,7 @@ module canopy_air_coms
          write (unit=*,fmt='(a,1x,f12.4)' ) 'lnzoz0h         [   ---] =',lnzoz0h
          write (unit=*,fmt='(a,1x,l1)'    ) 'stable          [   T|F] =',stable
          write (unit=*,fmt='(a)') ' '
-         write (unit=*,fmt='(a)') ' Last iteration outcome (downdraft values).'
+         write (unit=*,fmt='(a)') ' Last iteration outcome (zoobukhov8 values).'
          write (unit=*,fmt='(a,1x,f12.4)' ) 'zetaa           [   ---] =',zetaa
          write (unit=*,fmt='(a,1x,f12.4)' ) 'zetaz           [   ---] =',zetaz
          write (unit=*,fmt='(a,1x,f12.4)' ) 'fun             [   ---] =',fun

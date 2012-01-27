@@ -19,7 +19,6 @@ subroutine landuse_init
    use ed_misc_coms  , only : iyeara          & ! intent(in)
                             , iyearz          ! ! intent(in)
    use grid_coms     , only : ngrids          ! ! intent(in)
-   use pft_coms      , only : is_grass        ! ! intent(in)
    use ed_max_dims   , only : str_len         & ! intent(in)
                             , huge_lu         & ! intent(in)
                             , n_pft           & ! intent(in)

@@ -39,11 +39,11 @@ hovgrid        = TRUE           # Should I include a grid on the Hovmoller plots
 #     List of possible plots. In case you don't want some of them, simply switch plt to F. #
 #------------------------------------------------------------------------------------------#
 #----- Time series plots. -----------------------------------------------------------------#
-nphov = 25
+nphov = 28
 phovdi01 = list(vnam   = c("gpp","plresp","hetresp","cflxac")
                ,desc   = c("GPP","Plant resp.","Het. resp.","Atm->Canopy")
                ,colour = c("forestgreen","chartreuse","sienna","deepskyblue")
-               ,lwd    = c(1.5,1.5,1.5,1.5)
+               ,lwd    = c(2.0,2.0,2.0,2.0)
                ,type   = ptype
                ,plog   = ""
                ,prefix = "carbflux"
@@ -56,7 +56,7 @@ phovdi02 = list(vnam   = c("met.rshort","met.rlong","gnd.rshort"
                ,desc   = c("Met SW","Met LW","Ground SW","Ground LW","Latent","Sensible")
                ,colour = c("goldenrod","limegreen","deepskyblue","chartreuse"
                           ,"midnightblue","firebrick")
-               ,lwd    = c(1.5,1.5,1.5,1.5,1.5,1.5)
+               ,lwd    = c(2.0,2.0,2.0,2.0,2.0,2.0)
                ,type   = ptype
                ,plog   = ""
                ,prefix = "eneflux"
@@ -64,12 +64,12 @@ phovdi02 = list(vnam   = c("met.rshort","met.rlong","gnd.rshort"
                ,unit   = "W/m2"
                ,legpos = "topleft"
                ,plt    = TRUE)
-phovdi03 = list(vnam   = c("qwflxgc","qwflxac","qwflxlc","qwflxwc","qtransp","qdewgnd")
-               ,desc   = c("Ground->Canopy","Air->Canopy","Leaf->Canopy","Wood->Canopy"
-                          ,"Transpiration","Dew")
+phovdi03 = list(vnam   = c("wflxgc","wflxca","wflxlc","wflxwc","transp")
+               ,desc   = c("Ground->Canopy","Canopy->Air","Leaf->Canopy","Wood->Canopy"
+                          ,"Transpiration")
                ,colour = c("firebrick","midnightblue","chartreuse","goldenrod"
-                          ,"darkolivegreen","deepskyblue")
-               ,lwd    = c(1.5,1.5,1.5,1.5,1.5,1.5)
+                          ,"darkolivegreen")
+               ,lwd    = c(2.0,2.0,2.0,2.0,2.0)
                ,type   = ptype
                ,plog   = ""
                ,prefix = "h2oflux"
@@ -77,10 +77,10 @@ phovdi03 = list(vnam   = c("qwflxgc","qwflxac","qwflxlc","qwflxwc","qtransp","qd
                ,unit   = "kg/m2/day"
                ,legpos = "topleft"
                ,plt    = TRUE)
-phovdi04 = list(vnam   = c("hflxgc","hflxac","hflxlc","hflxwc")
-               ,desc   = c("Ground->Canopy","Air->Canopy","Leaf->Canopy","Wood->Canopy")
+phovdi04 = list(vnam   = c("hflxgc","hflxca","hflxlc","hflxwc")
+               ,desc   = c("Ground->Canopy","Canopy->Air","Leaf->Canopy","Wood->Canopy")
                ,colour = c("firebrick","midnightblue","chartreuse","goldenrod")
-               ,lwd    = c(1.5,1.5,1.5,1.5)
+               ,lwd    = c(2.0,2.0,2.0,2.0)
                ,type   = ptype
                ,plog   = ""
                ,prefix = "sensflux"
@@ -91,7 +91,7 @@ phovdi04 = list(vnam   = c("hflxgc","hflxac","hflxlc","hflxwc")
 phovdi05 = list(vnam   = c("atm.temp","can.temp","leaf.temp","wood.temp","sfc.temp")
                ,desc   = c("Atmosphere","Canopy air","Leaf","Wood","Surface")
                ,colour = c("deepskyblue","gray21","chartreuse","goldenrod","sienna")
-               ,lwd    = c(1.5,1.5,1.5,1.5,1.5)
+               ,lwd    = c(2.0,2.0,2.0,2.0,2.0)
                ,type   = ptype
                ,plog   = ""
                ,prefix = "temperature"
@@ -102,7 +102,7 @@ phovdi05 = list(vnam   = c("atm.temp","can.temp","leaf.temp","wood.temp","sfc.te
 phovdi06 = list(vnam   = c("atm.shv","can.shv","sfc.shv")
                ,desc   = c("Atmosphere","Canopy air","Surface")
                ,colour = c("deepskyblue","gray21","sienna")
-               ,lwd    = c(1.5,1.5,1.5)
+               ,lwd    = c(2.0,2.0,2.0)
                ,type   = ptype
                ,plog   = ""
                ,prefix = "h2ovapour"
@@ -113,7 +113,7 @@ phovdi06 = list(vnam   = c("atm.shv","can.shv","sfc.shv")
 phovdi07 = list(vnam   = c("atm.relhum","can.relhum")
                ,desc   = c("Atmosphere","Canopy air")
                ,colour = c("aquamarine","navy")
-               ,lwd    = c(1.5,1.5)
+               ,lwd    = c(2.0,2.0)
                ,type   = ptype
                ,plog   = ""
                ,prefix = "relhum"
@@ -124,7 +124,7 @@ phovdi07 = list(vnam   = c("atm.relhum","can.relhum")
 phovdi08 = list(vnam   = c("atm.supsat","can.supsat")
                ,desc   = c("Atmosphere","Canopy air")
                ,colour = c("steelblue","navy")
-               ,lwd    = c(1.5,1.5)
+               ,lwd    = c(2.0,2.0)
                ,type   = ptype
                ,plog   = ""
                ,prefix = "supsat"
@@ -135,7 +135,7 @@ phovdi08 = list(vnam   = c("atm.supsat","can.supsat")
 phovdi09 = list(vnam   = c("atm.co2","can.co2")
                ,desc   = c("Atmosphere","Canopy air")
                ,colour = c("chartreuse","darkolivegreen")
-               ,lwd    = c(1.5,1.5)
+               ,lwd    = c(2.0,2.0)
                ,type   = ptype
                ,plog   = ""
                ,prefix = "co2con"
@@ -146,7 +146,7 @@ phovdi09 = list(vnam   = c("atm.co2","can.co2")
 phovdi10 = list(vnam   = c("atm.prss","can.prss")
                ,desc   = c("Atmosphere","Canopy air")
                ,colour = c("violetred3","purple3")
-               ,lwd    = c(1.5,1.5)
+               ,lwd    = c(2.0,2.0)
                ,type   = ptype
                ,plog   = ""
                ,prefix = "press"
@@ -157,7 +157,7 @@ phovdi10 = list(vnam   = c("atm.prss","can.prss")
 phovdi11 = list(vnam   = c("atm.theiv","can.theiv")
                ,desc   = c("Atmosphere","Canopy air")
                ,colour = c("orange","firebrick")
-               ,lwd    = c(1.5,1.5)
+               ,lwd    = c(2.0,2.0)
                ,type   = ptype
                ,plog   = ""
                ,prefix = "theiv"
@@ -168,7 +168,7 @@ phovdi11 = list(vnam   = c("atm.theiv","can.theiv")
 phovdi12 = list(vnam   = c("atm.thetav","can.thetav")
                ,desc   = c("Atmosphere","Canopy air")
                ,colour = c("lawngreen","forestgreen")
-               ,lwd    = c(1.5,1.5)
+               ,lwd    = c(2.0,2.0)
                ,type   = ptype
                ,plog   = ""
                ,prefix = "thetav"
@@ -179,7 +179,7 @@ phovdi12 = list(vnam   = c("atm.thetav","can.thetav")
 phovdi13 = list(vnam   = c("prec","intercept","throughfall","wshed")
                ,desc   = c("Precipitation","Interception","Throughfall","Shedding")
                ,colour = c("midnightblue","forestgreen","dodgerblue","aquamarine")
-               ,lwd    = c(2.5,1.5,1.5,1.5)
+               ,lwd    = c(2.5,2.0,2.0,2.0)
                ,type   = ptype
                ,plog   = ""
                ,prefix = "prec"
@@ -190,7 +190,7 @@ phovdi13 = list(vnam   = c("prec","intercept","throughfall","wshed")
 phovdi14 = list(vnam   = c("atm.vels","ustar")
                ,desc   = c("Wind speed","Friction vel.")
                ,colour = c("midnightblue","goldenrod")
-               ,lwd    = c(1.5,1.5)
+               ,lwd    = c(2.0,2.0)
                ,type   = ptype
                ,plog   = ""
                ,prefix = "wind"
@@ -202,7 +202,7 @@ phovdi15 = list(vnam   = c("soilcp","soilwp","soilfc","slmsts","soil.water")
                ,desc   = c("Dry soil","Wilting Point","Field capacity","Saturation"
                           ,"Soil moisture")
                ,colour = c("firebrick","goldenrod","steelblue","midnightblue","olivedrab")
-               ,lwd    = c(1.5,1.5,1.5,1.5,1.5)
+               ,lwd    = c(2.0,2.0,2.0,2.0,2.0)
                ,type   = ptype
                ,plog   = ""
                ,prefix = "smoist"
@@ -213,7 +213,7 @@ phovdi15 = list(vnam   = c("soilcp","soilwp","soilfc","slmsts","soil.water")
 phovdi16 = list(vnam   = c("zeta","ri.bulk")
                ,desc   = c("Height scale","Richardson")
                ,colour = c("goldenrod","steelblue")
-               ,lwd    = c(1.5,1.5)
+               ,lwd    = c(2.0,2.0)
                ,type   = ptype
                ,plog   = ""
                ,prefix = "turb"
@@ -224,7 +224,7 @@ phovdi16 = list(vnam   = c("zeta","ri.bulk")
 phovdi17 = list(vnam   = c("ksn")
                ,desc   = c("Ponding layers")
                ,colour = c("steelblue")
-               ,lwd    = c(1.5)
+               ,lwd    = c(2.0)
                ,type   = ptype
                ,plog   = ""
                ,prefix = "pond"
@@ -235,7 +235,7 @@ phovdi17 = list(vnam   = c("ksn")
 phovdi18 = list(vnam   = c("hdid")
                ,desc   = c("Time step")
                ,colour = c("midnightblue")
-               ,lwd    = c(1.5)
+               ,lwd    = c(2.0)
                ,type   = ptypeb
                ,plog   = "y"
                ,prefix = "tstep"
@@ -246,7 +246,7 @@ phovdi18 = list(vnam   = c("hdid")
 phovdi19 = list(vnam   = c("flag.wflxgc")
                ,desc   = c("Flag")
                ,colour = c("purple")
-               ,lwd    = c(1.5)
+               ,lwd    = c(2.0)
                ,type   = ptyped
                ,plog   = ""
                ,prefix = "flagwflx"
@@ -257,7 +257,7 @@ phovdi19 = list(vnam   = c("flag.wflxgc")
 phovdi20 = list(vnam   = c("atm.rhos","can.rhos")
                ,desc   = c("Atmosphere","Canopy air")
                ,colour = c("sienna","goldenrod")
-               ,lwd    = c(1.5,1.5)
+               ,lwd    = c(2.0,2.0)
                ,type   = ptype
                ,plog   = ""
                ,prefix = "dens"
@@ -268,7 +268,7 @@ phovdi20 = list(vnam   = c("atm.rhos","can.rhos")
 phovdi21 = list(vnam   = c("atm.idgas","can.idgas")
                ,desc   = c("Atmosphere","Canopy air")
                ,colour = c("midnightblue","deepskyblue")
-               ,lwd    = c(1.5,1.5)
+               ,lwd    = c(2.0,2.0)
                ,type   = ptype
                ,plog   = ""
                ,prefix = "idgas"
@@ -279,7 +279,7 @@ phovdi21 = list(vnam   = c("atm.idgas","can.idgas")
 phovdi22 = list(vnam   = c("flag.sfcwater")
                ,desc   = c("Flag")
                ,colour = c("steelblue")
-               ,lwd    = c(1.5)
+               ,lwd    = c(2.0)
                ,type   = ptyped
                ,plog   = ""
                ,prefix = "flagsfcw"
@@ -290,7 +290,7 @@ phovdi22 = list(vnam   = c("flag.sfcwater")
 phovdi23 = list(vnam   = c("cum.step")
                ,desc   = c("Time step")
                ,colour = c("darkolivegreen")
-               ,lwd    = c(1.5)
+               ,lwd    = c(2.0)
                ,type   = ptype
                ,plog   = ""
                ,prefix = "cum.step"
@@ -301,7 +301,7 @@ phovdi23 = list(vnam   = c("cum.step")
 phovdi24 = list(vnam   = c("ggbare","ggveg","ggnet","ggold")
                ,desc   = c("Bare","Vegetation","Net","0.2*u*")
                ,colour = c("darkorange3","lawngreen","goldenrod","steelblue")
-               ,lwd    = c(1.5,1.5,1.5)
+               ,lwd    = c(2.0,2.0,2.0)
                ,type   = ptype
                ,plog   = ""
                ,prefix = "ggnd"
@@ -312,12 +312,54 @@ phovdi24 = list(vnam   = c("ggbare","ggveg","ggnet","ggold")
 phovdi25 = list(vnam   = c("rgbare","rgveg","rgnet","rgold")
                ,desc   = c("Bare","Vegetation","Net","0.2*u*")
                ,colour = c("darkorange3","lawngreen","goldenrod","steelblue")
-               ,lwd    = c(1.5,1.5,1.5,1.5)
+               ,lwd    = c(2.0,2.0,2.0,2.0)
                ,type   = ptype
                ,plog   = ""
                ,prefix = "rgnd"
                ,theme  = "Ground to canopy resistance"
                ,unit   = "s/m"
+               ,legpos = "topleft"
+               ,plt    = TRUE)
+phovdi26 = list(vnam   = c("par.top","par.beam.top","par.diff.top"
+                          ,"par.bot","par.beam.bot","par.diff.bot")
+               ,desc   = c("Top","Beam Top","Diffuse Top"
+                          ,"Bottom","Beam Bottom","Diffuse Bottom")
+               ,colour = c("firebrick","sienna","gold"
+                          ,"midnightblue","steelblue","deepskyblue")
+               ,lwd    = c(2.0,2.0,2.0,2.0,2.0,2.0)
+               ,type   = ptype
+               ,plog   = ""
+               ,prefix = "parrad"
+               ,theme  = "PAR radiation"
+               ,unit   = "W/m2"
+               ,legpos = "topleft"
+               ,plt    = TRUE)
+phovdi27 = list(vnam   = c("nir.top","nir.beam.top","nir.diff.top"
+                          ,"nir.bot","nir.beam.bot","nir.diff.bot")
+               ,desc   = c("Top","Beam Top","Diffuse Top"
+                          ,"Bottom","Beam Bottom","Diffuse Bottom")
+               ,colour = c("firebrick","sienna","gold"
+                          ,"midnightblue","steelblue","deepskyblue")
+               ,lwd    = c(2.0,2.0,2.0,2.0,2.0,2.0)
+               ,type   = ptype
+               ,plog   = ""
+               ,prefix = "nirrad"
+               ,theme  = "NIR radiation"
+               ,unit   = "W/m2"
+               ,legpos = "topleft"
+               ,plt    = TRUE)
+phovdi28 = list(vnam   = c("swv.top","swv.beam.top","swv.diff.top"
+                          ,"swv.bot","swv.beam.bot","swv.diff.bot")
+               ,desc   = c("Top","Beam Top","Diffuse Top"
+                          ,"Bottom","Beam Bottom","Diffuse Bottom")
+               ,colour = c("firebrick","sienna","gold"
+                          ,"midnightblue","steelblue","deepskyblue")
+               ,lwd    = c(2.0,2.0,2.0,2.0,2.0,2.0)
+               ,type   = ptype
+               ,plog   = ""
+               ,prefix = "swvrad"
+               ,theme  = "SWV radiation"
+               ,unit   = "W/m2"
                ,legpos = "topleft"
                ,plt    = TRUE)
 #------------------------------------------------------------------------------------------#
@@ -337,7 +379,7 @@ chovdi01 = list(vnam   = c("gpp","leaf.resp","root.resp","growth.resp","storage.
                ,colour = c("forestgreen","chartreuse","sienna","steelblue","goldenrod"
                           ,"purple3")
                ,cohlev = c(TRUE,TRUE,TRUE,TRUE,TRUE,TRUE)
-               ,lwd    = c(1.5,1.5,1.5,1.5,1.5,1.5)
+               ,lwd    = c(2.0,2.0,2.0,2.0,2.0,2.0)
                ,type   = ptype
                ,prefix = "carbflux"
                ,theme  = "Carbon fluxes"
@@ -348,7 +390,7 @@ chovdi02 = list(vnam   = c("atm.temp","can.temp","leaf.temp","wood.temp","sfc.te
                ,desc   = c("Atmosphere","Canopy air","Leaf","Wood","Surface")
                ,colour = c("deepskyblue","gray21","chartreuse","goldenrod","sienna")
                ,cohlev = c(FALSE,FALSE,TRUE,TRUE,FALSE)
-               ,lwd    = c(1.5,1.5,1.5,1.5,1.5)
+               ,lwd    = c(2.0,2.0,2.0,2.0,2.0)
                ,type   = ptype
                ,prefix = "temperature"
                ,theme  = "Temperature"
@@ -359,7 +401,7 @@ chovdi03 = list(vnam   = c("atm.shv","can.shv","sfc.shv","lint.shv")
                ,desc   = c("Atmosphere","Canopy air","Ground","Intercellular")
                ,colour = c("deepskyblue","gray21","sienna","chartreuse","forestgreen")
                ,cohlev = c(FALSE,FALSE,FALSE,TRUE)
-               ,lwd    = c(1.5,1.5,1.5,1.5)
+               ,lwd    = c(2.0,2.0,2.0,2.0)
                ,type   = ptype
                ,prefix = "h2ovap"
                ,theme  = "Water vapour mixing ratio"
@@ -371,7 +413,7 @@ chovdi04 = list(vnam   = c("wood.rbw","leaf.rbw","rsw","rsw.open","rsw.clos")
                           ,"Stomatal (open)","Stomatal (closed)")
                ,colour = c("goldenrod","limegreen","midnightblue","steelblue","sienna")
                ,cohlev = c(TRUE,TRUE,TRUE,TRUE,TRUE)
-               ,lwd    = c(1.5,1.5,1.5,1.5,1.5)
+               ,lwd    = c(2.0,2.0,2.0,2.0,2.0)
                ,type   = ptype
                ,prefix = "resist"
                ,theme  = "Resistance"
@@ -382,7 +424,7 @@ chovdi05 = list(vnam   = c("fs.open")
                ,desc   = c("Net")
                ,colour = c("midnightblue")
                ,cohlev = c(TRUE)
-               ,lwd    = c(1.5)
+               ,lwd    = c(2.0)
                ,type   = ptype
                ,prefix = "fsopen"
                ,theme  = "Fraction of stomata that are open"
@@ -393,7 +435,7 @@ chovdi06 = list(vnam   = c("atm.vels","veg.wind","ustar")
                ,desc   = c("Free atmosphere","Vegetation","Friction vel.")
                ,colour = c("deepskyblue","forestgreen","sienna")
                ,cohlev = c(FALSE,TRUE,FALSE)
-               ,lwd    = c(1.5,1.5,1.5)
+               ,lwd    = c(2.0,2.0,2.0)
                ,type   = ptype
                ,prefix = "wind"
                ,theme  = "Wind speed"
@@ -405,7 +447,7 @@ chovdi07 = list(vnam   = c("wood.gbw","leaf.gbw","gsw","gsw.open","gsw.clos")
                           ,"Stomatal (open)","Stomatal (closed)")
                ,colour = c("goldenrod","limegreen","midnightblue","steelblue","sienna")
                ,cohlev = c(TRUE,TRUE,TRUE,TRUE,TRUE)
-               ,lwd    = c(1.5,1.5,1.5,1.5,1.5)
+               ,lwd    = c(2.0,2.0,2.0,2.0,2.0)
                ,type   = ptype
                ,prefix = "condct"
                ,theme  = "Conductance"
@@ -416,7 +458,7 @@ chovdi08 = list(vnam   = c("wood.gbw.mmos","leaf.gbw.mmos","gsw.clos.mmos")
                ,desc   = c("Wood Bnd. layer","Leaf Bnd. layer","Stomatal (closed)")
                ,colour = c("goldenrod","limegreen","sienna")
                ,cohlev = c(TRUE,TRUE,TRUE)
-               ,lwd    = c(1.5,1.5,1.5)
+               ,lwd    = c(2.0,2.0,2.0)
                ,type   = ptype
                ,prefix = "condctmmos"
                ,theme  = "Conductance"
@@ -427,7 +469,7 @@ chovdi09 = list(vnam   = c("leaf.liquid","leaf.frozen","wood.liquid","wood.froze
                ,desc   = c("Liquid (Leaf)","Ice (Leaf)","Liquid (Wood)","Ice (Wood)")
                ,colour = c("midnightblue","deepskyblue","sienna","goldenrod")
                ,cohlev = c(TRUE,TRUE,TRUE,TRUE)
-               ,lwd    = c(1.5,1.5,1.5,1.5)
+               ,lwd    = c(2.0,2.0,2.0,2.0)
                ,type   = ptype
                ,prefix = "water"
                ,theme  = "Water on vegetation surface"
@@ -438,7 +480,7 @@ chovdi10 = list(vnam   = c("leaf.energy","wood.energy")
                ,desc   = c("Leaf","Wood")
                ,colour = c("forestgreen","goldenrod")
                ,cohlev = c(TRUE,TRUE)
-               ,lwd    = c(1.5,1.5)
+               ,lwd    = c(2.0,2.0)
                ,type   = ptype
                ,prefix = "energy"
                ,theme  = "Internal energy"
@@ -449,7 +491,7 @@ chovdi11 = list(vnam   = c("leaf.hcap","leaf.h2o.hcap","wood.hcap","wood.h2o.hca
                ,desc   = c("Leaf","Leaf Water","Wood","Wood Water")
                ,colour = c("lawngreen","deepskyblue","sienna","goldenrod")
                ,cohlev = c(TRUE,TRUE,TRUE,TRUE)
-               ,lwd    = c(1.5,1.5,1.5,1.5)
+               ,lwd    = c(2.0,2.0,2.0,2.0)
                ,type   = ptype
                ,prefix = "hcap"
                ,theme  = "Heat capacity"
@@ -463,7 +505,7 @@ chovdi12 = list(vnam   = c("rshort.l","rlong.l","hflxlc","qwflxlc","qwshed","qtr
                ,colour = c("yellow3","goldenrod","firebrick","midnightblue","royalblue"
                           ,"lawngreen","deepskyblue")
                ,cohlev = c(TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE)
-               ,lwd    = c(1.5,1.5,1.5,1.5,1.5,1.5,1.5)
+               ,lwd    = c(2.0,2.0,2.0,2.0,2.0,2.0,2.0)
                ,type   = ptype
                ,prefix = "leafenergy"
                ,theme  = "Energy fluxes"
@@ -477,7 +519,7 @@ chovdi13 = list(vnam   = c("rshort.w","rlong.w","hflxwc","qwflxwc","qwshed","qtr
                ,colour = c("yellow3","goldenrod","firebrick","midnightblue","royalblue"
                           ,"lawngreen","deepskyblue")
                ,cohlev = c(TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE)
-               ,lwd    = c(1.5,1.5,1.5,1.5,1.5,1.5,1.5)
+               ,lwd    = c(2.0,2.0,2.0,2.0,2.0,2.0,2.0)
                ,type   = ptype
                ,prefix = "woodenergy"
                ,theme  = "Energy fluxes"
@@ -685,16 +727,17 @@ for (place in myplaces){
       cpatch$hetresp         = cpatch$cwdrh        + cpatch$soilrh
 
       #----- Water flux in kg/m2/day. -----------------------------------------------------#
-      cpatch$qwflxlc         = cpatch$wflxlc       * day.sec
-      cpatch$qwflxwc         = cpatch$wflxwc       * day.sec
-      cpatch$qwflxgc         = cpatch$wflxgc       * day.sec
-      cpatch$qwflxac         = cpatch$wflxac       * day.sec
-      cpatch$qtransp         = cpatch$transp       * day.sec
-      cpatch$qdewgnd         = cpatch$dewgnd       * day.sec
+      cpatch$wflxlc          =   cpatch$wflxlc       * day.sec
+      cpatch$wflxwc          =   cpatch$wflxwc       * day.sec
+      cpatch$wflxgc          =   cpatch$wflxgc       * day.sec
+      cpatch$wflxac          =   cpatch$wflxac       * day.sec
+      cpatch$wflxca          = - cpatch$wflxac
+      cpatch$transp          =   cpatch$transp       * day.sec
 
       #----- Canopy -> Atmosphere fluxes in W/m2. -----------------------------------------#
-      cpatch$qwflxca         = -cpatch$wflxac      * alvl
+      cpatch$qwflxca         = -cpatch$wflxac      * alvl / day.sec
       cpatch$hflxca          = -cpatch$hflxac
+      cpatch$cflxca          = -cpatch$cflxac
 
       #----- Virtual potential temperature. -----------------------------------------------#
       cpatch$atm.thetav      = cpatch$atm.theta    * (1. + epim1 * cpatch$atm.shv)
@@ -749,6 +792,24 @@ for (place in myplaces){
       cpatch$rgveg  = 1. / cpatch$ggveg
       cpatch$rgnet  = 1. / cpatch$ggnet
       cpatch$rgold  = 1. / cpatch$ggold
+      #------------------------------------------------------------------------------------#
+
+
+      #------------------------------------------------------------------------------------#
+      #     Total shortwave radiation.                                                     #
+      #------------------------------------------------------------------------------------#
+      cpatch$par.top      = cpatch$par.beam.top + cpatch$par.diff.top
+      cpatch$par.bot      = cpatch$par.beam.bot + cpatch$par.diff.bot
+
+      cpatch$nir.top      = cpatch$nir.beam.top + cpatch$nir.diff.top
+      cpatch$nir.bot      = cpatch$nir.beam.bot + cpatch$nir.diff.bot
+
+      cpatch$swv.top      = cpatch$par.top      + cpatch$nir.top
+      cpatch$swv.beam.top = cpatch$par.beam.top + cpatch$nir.beam.top
+      cpatch$swv.diff.top = cpatch$par.diff.top + cpatch$nir.diff.top
+      cpatch$swv.bot      = cpatch$par.bot      + cpatch$nir.bot
+      cpatch$swv.beam.bot = cpatch$par.beam.bot + cpatch$nir.beam.bot
+      cpatch$swv.diff.bot = cpatch$par.diff.bot + cpatch$nir.diff.bot
       #------------------------------------------------------------------------------------#
 
 

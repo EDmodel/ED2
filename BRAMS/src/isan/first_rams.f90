@@ -11,6 +11,7 @@ subroutine first_RAMS(np1,np2,np3,ui2,vi2,pi2,ti2,ri2)
 use an_header
 use isan_coms
 use mem_grid
+use grid_dims, only : str_len
 
 implicit none
 
@@ -22,7 +23,7 @@ integer, dimension(maxgrds) :: nnxpx,nnypx,nnzpx,nstratxx,nstratyx  &
                               ,ninestx,njnestx,nknestx
 integer :: lenf,nv,irw,iun,ierr,ng,ngridsx,icm,ifm,k
 
-character(len=80) :: flnma
+character(len=str_len) :: flnma
 character(len=1) :: cgrid
 character(len=2) :: cng
 

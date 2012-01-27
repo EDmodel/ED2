@@ -13,36 +13,37 @@ subroutine varf_update(iswap,initflag,ifileok)
    use mem_scratch
    use therm_lib  , only : level
    use rconstants , only : toodry
+   use grid_dims  , only : str_len
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
-   integer           , intent(in)  :: initflag
-   integer           , intent(in)  :: iswap
-   logical           , intent(out) :: ifileok
+   integer               , intent(in)  :: initflag
+   integer               , intent(in)  :: iswap
+   logical               , intent(out) :: ifileok
    !----- Local variables. ----------------------------------------------------------------!
-   character(len=128)              :: flnm
-   character(len=7)                :: cgrid
-   integer                         :: iver_var
-   integer                         :: nc
-   integer                         :: iyearx
-   integer                         :: imonthx
-   integer                         :: idatex
-   integer                         :: ihourx
-   integer                         :: nxpx
-   integer                         :: nypx
-   integer                         :: nzpx
-   integer                         :: imarker
-   integer                         :: i
-   integer                         :: j
-   integer                         :: k
-   real                            :: rlatx
-   real                            :: wlon1x
-   real                            :: deltaxx
-   real                            :: deltayx
-   real                            :: deltazx
-   real                            :: dzratx
-   real                            :: dzmaxx
+   character(len=str_len)              :: flnm
+   character(len=7)                    :: cgrid
+   integer                             :: iver_var
+   integer                             :: nc
+   integer                             :: iyearx
+   integer                             :: imonthx
+   integer                             :: idatex
+   integer                             :: ihourx
+   integer                             :: nxpx
+   integer                             :: nypx
+   integer                             :: nzpx
+   integer                             :: imarker
+   integer                             :: i
+   integer                             :: j
+   integer                             :: k
+   real                                :: rlatx
+   real                                :: wlon1x
+   real                                :: deltaxx
+   real                                :: deltayx
+   real                                :: deltazx
+   real                                :: dzratx
+   real                                :: dzmaxx
    !----- Local constants. ----------------------------------------------------------------!
-   integer           , parameter   :: iun = 22
+   integer               , parameter   :: iun = 22
    !---------------------------------------------------------------------------------------!
 
 

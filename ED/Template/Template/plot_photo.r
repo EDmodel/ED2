@@ -46,31 +46,31 @@ nplant.min     = 4.e-8          # Minimum nplant.
 #     List of possible plots. In case you don't want some of them, simply switch plt to F. #
 #------------------------------------------------------------------------------------------#
 #----- Time series plots. -----------------------------------------------------------------#
-nhov = 17
+nhov = 18
 hovdi01 = list(vnam   = c("gpp","leaf.resp","a.open","a.clos")
               ,desc   = c("GPP","Leaf resp.","A (open)","A (closed)")
               ,colour = c("forestgreen","sienna","chartreuse","goldenrod")
-              ,lwd    = c(1.5,1.5,1.5,1.5)
+              ,lwd    = c(2.0,2.0,2.0,2.0)
               ,type   = ptype
               ,prefix = "carbflux"
               ,theme  = "Carbon fluxes"
               ,unit   = "umol/m2_leaf/s"
               ,legpos = "topleft"
               ,plt    = TRUE)
-hovdi02 = list(vnam   = c("parv","util.parv","parv.min")
-              ,desc   = c("Cohort PAR","Used PAR","Daytime PAR")
-              ,colour = c("darkorange","goldenrod","firebrick")
-              ,lwd    = c(1.5,1.5)
+hovdi02 = list(vnam   = c("parv","util.parv","parv.min","nirv")
+              ,desc   = c("Cohort PAR","Used PAR","Daytime PAR","Cohort NIR")
+              ,colour = c("darkorange","goldenrod","firebrick","deepskyblue")
+              ,lwd    = c(2.0,2.0,2.0,2.0)
               ,type   = ptype
               ,prefix = "parflux"
-              ,theme  = "PAR fluxes"
-              ,unit   = "umol/m2/s"
+              ,theme  = "Radiation fluxes"
+              ,unit   = "umol/m2_leaf/s"
               ,legpos = "topleft"
               ,plt    = TRUE)
 hovdi03 = list(vnam   = c("atm.temp","can.temp","leaf.temp","wood.temp","ground.temp")
               ,desc   = c("Atmosphere","Canopy air","Leaf","Wood","Surface")
               ,colour = c("deepskyblue","gray21","chartreuse","goldenrod","sienna")
-              ,lwd    = c(1.5,1.5,1.5,1.5,1.5)
+              ,lwd    = c(2.0,2.0,2.0,2.0,2.0)
               ,type   = ptype
               ,prefix = "temperature"
               ,theme  = "Temperature"
@@ -80,7 +80,7 @@ hovdi03 = list(vnam   = c("atm.temp","can.temp","leaf.temp","wood.temp","ground.
 hovdi04 = list(vnam   = c("atm.shv","can.shv","ground.shv","lsfc.shv.clos","lint.shv")
               ,desc   = c("Atmosphere","Canopy air","Ground","Leaf Surface","Intercellular")
               ,colour = c("deepskyblue","gray21","sienna","chartreuse","forestgreen")
-              ,lwd    = c(1.5,1.5,1.5,1.5,1.5)
+              ,lwd    = c(2.0,2.0,2.0,2.0,2.0)
               ,type   = ptype
               ,prefix = "h2oclosed"
               ,theme  = "Water vapour mixing ratio (Closed stomata)"
@@ -90,7 +90,7 @@ hovdi04 = list(vnam   = c("atm.shv","can.shv","ground.shv","lsfc.shv.clos","lint
 hovdi05 = list(vnam   = c("atm.shv","can.shv","ground.shv","lsfc.shv.open","lint.shv")
               ,desc   = c("Atmosphere","Canopy air","Ground","Leaf Surface","Intercellular")
               ,colour = c("deepskyblue","gray21","sienna","chartreuse","forestgreen")
-              ,lwd    = c(1.5,1.5,1.5,1.5,1.5)
+              ,lwd    = c(2.0,2.0,2.0,2.0,2.0)
               ,type   = ptype
               ,prefix = "h2oopen"
               ,theme  = "Water vapour mixing ratio (Open stomata)"
@@ -101,7 +101,7 @@ hovdi06 = list(vnam   = c("atm.co2","can.co2","lsfc.co2.clos","lint.co2.clos","c
               ,desc   = c("Atmosphere","Canopy air","Leaf surface","Intercellular"
                          ,"GPP comp. point")
               ,colour = c("deepskyblue","gray21","chartreuse","forestgreen","yellowgreen")
-              ,lwd    = c(1.5,1.5,1.5,1.5,1.5)
+              ,lwd    = c(2.0,2.0,2.0,2.0,2.0)
               ,type   = ptype
               ,prefix = "co2closed"
               ,theme  = "CO2 mixing ratio (Closed stomata)"
@@ -112,7 +112,7 @@ hovdi07 = list(vnam   = c("atm.co2","can.co2","lsfc.co2.open","lint.co2.open","c
               ,desc   = c("Atmosphere","Canopy air","Leaf surface","Intercellular"
                          ,"GPP comp. point")
               ,colour = c("deepskyblue","gray21","chartreuse","forestgreen","yellowgreen")
-              ,lwd    = c(1.5,1.5,1.5,1.5)
+              ,lwd    = c(2.0,2.0,2.0,2.0)
               ,type   = ptype
               ,prefix = "co2open"
               ,theme  = "CO2 mixing ratio (open stomata)"
@@ -133,7 +133,7 @@ hovdi09 = list(vnam   = c("wood.rbw","leaf.rbw","rsw","rsw.open","rsw.clos")
               ,desc   = c("Wood Bnd. layer","Leaf Bnd. layer","Stomatal"
                          ,"Stomatal (open)","Stomatal (closed)")
               ,colour = c("goldenrod","limegreen","midnightblue","steelblue","sienna")
-              ,lwd    = c(1.5,1.5,1.5,1.5,1.5)
+              ,lwd    = c(2.0,2.0,2.0,2.0,2.0)
               ,type   = ptype
               ,prefix = "resist"
               ,theme  = "Resistance"
@@ -143,7 +143,7 @@ hovdi09 = list(vnam   = c("wood.rbw","leaf.rbw","rsw","rsw.open","rsw.clos")
 hovdi10 = list(vnam   = c("fsw","fsn","fs.open")
               ,desc   = c("Water","Nitrogen","Net")
               ,colour = c("deepskyblue","goldenrod","midnightblue")
-              ,lwd    = c(1.5,1.5,1.5)
+              ,lwd    = c(2.0,2.0,2.0)
               ,type   = ptype
               ,prefix = "fsopen"
               ,theme  = "Fraction of stomata that are open"
@@ -153,7 +153,7 @@ hovdi10 = list(vnam   = c("fsw","fsn","fs.open")
 hovdi11 = list(vnam   = c("psi.open","psi.clos","h2o.supply")
               ,desc   = c("Psi (open)","Psi (closed)","Supply")
               ,colour = c("midnightblue","steelblue","olivedrab")
-              ,lwd    = c(1.5,1.5,1.5)
+              ,lwd    = c(2.0,2.0,2.0)
               ,type   = ptype
               ,prefix = "psi"
               ,theme  = "Water flux"
@@ -163,7 +163,7 @@ hovdi11 = list(vnam   = c("psi.open","psi.clos","h2o.supply")
 hovdi12 = list(vnam   = c("atm.wind","veg.wind","ustar")
               ,desc   = c("Free atmosphere","Vegetation","Friction vel.")
               ,colour = c("deepskyblue","forestgreen","sienna")
-              ,lwd    = c(1.5,1.5,1.5)
+              ,lwd    = c(2.0,2.0,2.0)
               ,type   = ptype
               ,prefix = "wind"
               ,theme  = "Wind speed"
@@ -173,7 +173,7 @@ hovdi12 = list(vnam   = c("atm.wind","veg.wind","ustar")
 hovdi13 = list(vnam   = c("limit.flag")
               ,desc   = c("Photo limitation")
               ,colour = c("olivedrab")
-              ,lwd    = c(1.5,1.5,1.5)
+              ,lwd    = c(2.0,2.0,2.0)
               ,type   = ptyped
               ,prefix = "flglim"
               ,theme  = "Limitation flag"
@@ -183,7 +183,7 @@ hovdi13 = list(vnam   = c("limit.flag")
 hovdi14 = list(vnam   = c("light.lim","rubisco.lim","low.co2.lim")
               ,desc   = c("Light","Rubisco","Low CO2")
               ,colour = c("lawngreen","goldenrod","steelblue")
-              ,lwd    = c(1.5,1.5,1.5)
+              ,lwd    = c(2.0,2.0,2.0)
               ,type   = ptype
               ,prefix = "limitation"
               ,theme  = "Photosynthesis limitations"
@@ -193,7 +193,7 @@ hovdi14 = list(vnam   = c("light.lim","rubisco.lim","low.co2.lim")
 hovdi15 = list(vnam   = c("vm")
               ,desc   = c("Maximum capacity")
               ,colour = c("olivedrab")
-              ,lwd    = c(1.5)
+              ,lwd    = c(2.0)
               ,type   = ptype
               ,prefix = "vm"
               ,theme  = "Maximum Rubisco capacity"
@@ -204,7 +204,7 @@ hovdi16 = list(vnam   = c("wood.gbw","leaf.gbw","gsw","gsw.open","gsw.clos")
               ,desc   = c("Wood Bnd. layer","Leaf Bnd. layer","Stomatal"
                          ,"Stomatal (open)","Stomatal (closed)")
               ,colour = c("goldenrod","limegreen","midnightblue","steelblue","sienna")
-              ,lwd    = c(1.5,1.5,1.5,1.5,1.5)
+              ,lwd    = c(2.0,2.0,2.0,2.0,2.0)
               ,type   = ptype
               ,prefix = "condct"
               ,theme  = "Conductance"
@@ -214,11 +214,21 @@ hovdi16 = list(vnam   = c("wood.gbw","leaf.gbw","gsw","gsw.open","gsw.clos")
 hovdi17 = list(vnam   = c("wood.gbw.mmos","leaf.gbw.mmos","gsw.clos.mmos")
               ,desc   = c("Wood Bnd. layer","Leaf Bnd. layer","Stomatal (closed)")
               ,colour = c("goldenrod","limegreen","sienna")
-              ,lwd    = c(1.5,1.5,1.5)
+              ,lwd    = c(2.0,2.0,2.0)
               ,type   = ptype
               ,prefix = "condctmmos"
               ,theme  = "Conductance"
               ,unit   = "mm/s"
+              ,legpos = "topleft"
+              ,plt    = TRUE)
+hovdi18 = list(vnam   = c("par.area","nir.area")
+              ,desc   = c("Cohort PAR","Cohort NIR")
+              ,colour = c("darkorange","deepskyblue")
+              ,lwd    = c(2.0,2.0)
+              ,type   = ptype
+              ,prefix = "areaparflux"
+              ,theme  = "Radiation fluxes"
+              ,unit   = "umol/m2_gnd/s"
               ,legpos = "topleft"
               ,plt    = TRUE)
 

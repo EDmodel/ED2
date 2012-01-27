@@ -8,7 +8,7 @@
 
 
 Module mem_mksfc
-
+  use grid_dims, only : str_len
 
   Type sfcfile_vars
 
@@ -16,7 +16,7 @@ Module mem_mksfc
      real, pointer, dimension(:,:,:,:) :: soil_text
 
      !(nxp,nyp,npatch)
-     real, pointer, dimension(:,:,:) :: patch_area,leaf_class,veg_ndvif
+     real, pointer, dimension(:,:,:) :: patch_area,leaf_class,veg_ndvif,soil_color
      
      !(nxp,nyp)
      real, pointer, dimension(:,:) :: topt, seatf, topzo
@@ -64,13 +64,13 @@ Module mem_mksfc
   integer, parameter :: maxsstdata=6666
   integer, dimension(maxsstdata,maxsfcgrids):: iyearvs,imonthvs,idatevs,ihourvs
   integer,dimension(maxsfcgrids)         :: nvsstf
-  character(len=128), dimension(maxsstdata,maxsfcgrids)     :: vsstfil
+  character(len=str_len), dimension(maxsstdata,maxsfcgrids)     :: vsstfil
   
   ! NDVI file creation variables
   integer, parameter :: maxndvidata=6666
   integer, dimension(maxndvidata,maxsfcgrids):: iyearvn,imonthvn,idatevn,ihourvn
   integer,dimension(maxsfcgrids)         :: nvndvif
-  character(len=128), dimension(maxndvidata,maxsfcgrids)     :: vndvifil
+  character(len=str_len), dimension(maxndvidata,maxsfcgrids)     :: vndvifil
   
 Contains
 
@@ -85,8 +85,9 @@ Contains
      
     allocate (sfcfile%soil_text    (nzg,nx,ny,npat))
     
+    allocate (sfcfile%soil_color   (nx,ny,npat))
     allocate (sfcfile%patch_area   (nx,ny,npat))
-    allocate (sfcfile%leaf_class  (nx,ny,npat))
+    allocate (sfcfile%leaf_class   (nx,ny,npat))
     allocate (sfcfile%veg_ndvif    (nx,ny,npat))
     
     allocate (sfcfile%topt         (nx,ny))
@@ -110,6 +111,7 @@ Contains
     type (sfcfile_vars) :: sfcfile
     
     deallocate (sfcfile%soil_text)
+    deallocate (sfcfile%soil_color)
     
     deallocate (sfcfile%patch_area)
     deallocate (sfcfile%leaf_class)
