@@ -3064,6 +3064,7 @@ subroutine init_pft_derived_params()
    use allometry            , only : h2dbh                & ! function
                                    , dbh2h                & ! function
                                    , dbh2bl               & ! function
+                                   , size2bl              & ! function
                                    , dbh2bd               ! ! function
    implicit none
    !----- Local variables. ----------------------------------------------------------------!
@@ -3105,7 +3106,7 @@ subroutine init_pft_derived_params()
 
       !----- Find the DBH and carbon pools associated with a newly formed recruit. --------!
       dbh        = h2dbh(hgt_min(ipft),ipft)
-      bleaf_min  = dbh2bl(dbh,ipft) !-ok for grasses, comes from height
+      bleaf_min  = size2bl(dbh,hgt_min(ipft),ipft) 
       bdead_min  = dbh2bd(dbh,ipft)
       balive_min = bleaf_min * (1.0 + q(ipft) + qsw(ipft) * hgt_min(ipft))
 
@@ -3132,6 +3133,12 @@ subroutine init_pft_derived_params()
       min_recruit_size(ipft) = min_plant_dens * (bdead_min + balive_min)
       !------------------------------------------------------------------------------------!
 
+      write (unit=*,fmt='(a,1x,es12.4)') ' - min_recruit_size:    ',min_recruit_size(ipft)
+      write (unit=*,fmt='(a,1x,es12.4)') ' - min_plant_den:       ',min_plant_dens
+      write (unit=*,fmt='(a,1x,es12.4)') ' - balive_min:          ',balive_min
+      write (unit=*,fmt='(a,1x,es12.4)') ' - bdead_min:           ',bdead_min
+      write (unit=*,fmt='(a,1x,es12.4)') ' - dbh:                 ',dbh
+      write (unit=*,fmt='(a,1x,es12.4)') ' - bleaf_min:           ',bleaf_min
 
 
       !------------------------------------------------------------------------------------!

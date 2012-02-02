@@ -157,15 +157,24 @@ subroutine reproduction(cgrid, month)
                      rectest%dbh       = h2dbh(rectest%hite, ipft)
                      rectest%bdead     = dbh2bd(rectest%dbh, ipft)
                      rectest%bleaf     = size2bl(rectest%dbh,rectest%hite, ipft)
-                     
                      rectest%balive    = rectest%bleaf                                     &
                                        * (1.0 + q(ipft) + qsw(ipft) * rectest%hite)
-                     rectest%nplant    = csite%repro(ipft,ipa)                             &
+                     !- the number of plants we can make depends on how much carbon is available
+                     rectest%nplant    = csite%repro(ipft,ipa)                             &  
                                        / (rectest%balive + rectest%bdead)
 
                      if(include_pft(ipft)) then
                         rectest%nplant = rectest%nplant + seed_rain(ipft)
                      end if
+
+                     write (unit=*,fmt='(a,1x,es12.4)') ' - min_recruit_size:    ',min_recruit_size(ipft)
+                     write (unit=*,fmt='(a,1x,es12.4)') ' - available carbon:    ',rectest%nplant * (rectest%balive + rectest%bdead)
+                     write (unit=*,fmt='(a,1x,es12.4)') ' - nplant:              ',rectest%nplant
+                     write (unit=*,fmt='(a,1x,es12.4)') ' - bdead:               ',rectest%bdead
+                     write (unit=*,fmt='(a,1x,es12.4)') ' - hite:                ',rectest%hite
+                     write (unit=*,fmt='(a,1x,es12.4)') ' - bleaf:               ',rectest%bleaf
+                     write (unit=*,fmt='(a,1x,es12.4)') ' - balive:              ',rectest%balive
+                     write (unit=*,fmt='(a,1x,es12.4)') ' - repro carbon avail:  ',csite%repro(ipft,ipa)
 
                      ! If there is enough carbon, form the recruits.
                      if ( rectest%nplant * (rectest%balive + rectest%bdead) >              &
@@ -173,6 +182,9 @@ subroutine reproduction(cgrid, month)
                         inew = inew + 1
                         call copy_recruit(rectest,recruit(inew))
 
+                      !  write (unit=*,fmt='(a,1x,es12.4)') ' - min_recruit_size:    ',min_recruit_size(ipft)
+                      !  write (unit=*,fmt='(a,1x,es12.4)') ' - available carbon:    ',rectest%nplant * (rectest%balive + rectest%bdead)
+                        
                         !----- Reset the carbon available for reproduction. ---------------!
                         csite%repro(ipft,ipa) = 0.0
 
@@ -182,7 +194,7 @@ subroutine reproduction(cgrid, month)
                      !     If we have reached this branch, we are in an agricultural       !
                      ! patch.  Send the seed litter to the soil pools for decomposition.   !
                      !---------------------------------------------------------------------!
-                     !---ALS=== dont send seet to litter!  Keep it for harvesting - need to change when I sort out what to do with the seed biomass for ag
+                     !---ALS=== dont send all seeds to litter!  Keep it for harvesting - need to change when I sort out what to do with the seed biomass for ag
                      ! - maybe tree crops want to do this but I won't worry about that for now.
                      
                      csite%fast_soil_N(ipa) = csite%fast_soil_N(ipa)                       &
@@ -612,7 +624,12 @@ subroutine seed_dispersal(cpoly,late_spring)
                   nseed_maygo = 0.
                end if
                !---------------------------------------------------------------------------!
-
+               
+               write (unit=*,fmt='(a,1x,es12.4)') ' - nseed_stays:    ',nseed_stays
+               write (unit=*,fmt='(a,1x,es12.4)') ' - bseeds:         ',donpatch%bseeds(donco)
+               write (unit=*,fmt='(a,1x,es12.4)') ' - seedling mort:  ',seedling_mortality(donpft)
+               write (unit=*,fmt='(a,1x,es12.4)') ' - nplant:         ',donpatch%nplant(donco)
+               
                !---------------------------------------------------------------------------!
                !   Spread the seedlings across all patches in this polygon.                !
                !---------------------------------------------------------------------------!
@@ -630,7 +647,7 @@ subroutine seed_dispersal(cpoly,late_spring)
                                                  + nseed_maygo * recsite%area(recpa)       &
                                                  * cpoly%area(recsi)
                      !---------------------------------------------------------------------!
-
+                     write (unit=*,fmt='(a,1x,es12.4)') ' - repro (non-local disp):  ',recsite%repro(donpft,recpa)
 
 
                      !---------------------------------------------------------------------!
@@ -641,6 +658,8 @@ subroutine seed_dispersal(cpoly,late_spring)
                                                      + nseed_stays
                      end if
                      !---------------------------------------------------------------------!
+                     
+                     write (unit=*,fmt='(a,1x,es12.4)') ' - repro (local disp):     ',recsite%repro(donpft,recpa)
 
                   end do recpaloop2
                   !------------------------------------------------------------------------!

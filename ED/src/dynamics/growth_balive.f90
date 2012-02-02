@@ -1173,7 +1173,7 @@ subroutine alloc_plant_c_balance_grass(csite,ipa,ico,salloc,salloci,carbon_balan
                    (cpatch%phenology_status(ico) == 1) 
 
    if (carbon_balance > 0.0 .or. time_to_flush) then 
-      if ((cpatch%hite(ico) + epsilon(1.)) < hgt_max(ipft)) then ! - could use repro_min_h here instead
+      if ((cpatch%hite(ico)*(1 + 1e-4)) < hgt_max(ipft)) then ! - could use repro_min_h here instead
          !------------------------------------------------------------------------------!
          ! The grass is in a vegetative growth phase, put carbon into growth.           !
          ! if plant is drought stressed (elongf<1) then allow partial growth            !
@@ -1215,16 +1215,17 @@ subroutine alloc_plant_c_balance_grass(csite,ipa,ico,salloc,salloci,carbon_balan
              
          !---ALS===
          ! testing h2dbh against dbh2h to make sure that they get the same value -------!
-         dbh_to_height = dbh2h(ipft, cpatch%dbh(ico))
-         if (abs(cpatch%hite(ico) - dbh_to_height) > epsilon(1.)) then
-             write (unit=*,fmt='(a,1x,es12.4)') '   - dbh_to_height:      ',dbh_to_height
-             write (unit=*,fmt='(a,1x,es12.4)') '   - height:             ',cpatch%hite(ico)
-         end if
+   !      dbh_to_height = dbh2h(ipft, cpatch%dbh(ico))
+   !      if (abs(cpatch%hite(ico) - dbh_to_height) > epsilon(1.)) then
+   !          write (unit=*,fmt='(a,1x,es12.4)') '   - dbh_to_height:      ',dbh_to_height
+   !          write (unit=*,fmt='(a,1x,es12.4)') '   - height:             ',cpatch%hite(ico)
+   !      end if
          !---ALS===
          
          !----- put remaining carbon in the storage pool -------------------------------!
          cpatch%bstorage(ico) = max(0.0, cpatch%bstorage(ico) + increment)
          !------------------------------------------------------------------------------!
+
 
          if (increment <= 0.0)  then
             !---------------------------------------------------------------------------!
@@ -1265,6 +1266,8 @@ subroutine alloc_plant_c_balance_grass(csite,ipa,ico,salloc,salloci,carbon_balan
          !--test here if pft is agriculture, if so put most carbon into grain and ------!
          !- maybe a little into storage -- STILL TO BE WRITTEN! ------------------------!
          increment = carbon_balance ! subtract the part that goes into grain for ag here
+
+         write (unit=*,fmt='(a,1x,es12.4)') '   - increment(cb>0,h=max):          ',increment
 
          cpatch%bstorage(ico) = cpatch%bstorage(ico) + increment
          nitrogen_uptake      = nitrogen_uptake      + increment / c2n_storage
@@ -1336,6 +1339,8 @@ subroutine alloc_plant_c_balance_grass(csite,ipa,ico,salloc,salloci,carbon_balan
    write (unit=*,fmt='(a,1x,es12.4)') '   - BDEAD:           ',cpatch%bdead(ico)
    write (unit=*,fmt='(a,1x,i12)') '   - PHENOLOGY_STATUS:',cpatch%phenology_status(ico)
    write (unit=*,fmt='(a,1x,es12.4)') '   - ELONGF:          ',cpatch%elongf(ico)
+   write (unit=*,fmt='(a,1x,es12.4)') '   - BSTORAGE:        ',cpatch%bstorage(ico)
+   write (unit=*,fmt='(a,1x,es12.4)') '   - INCREMENT:       ',increment
          
    return
 end subroutine alloc_plant_c_balance_grass

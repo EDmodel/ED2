@@ -178,7 +178,7 @@ subroutine update_phenology(doy, cpoly, isi, lat)
    use ed_misc_coms   , only : current_time             ! ! intent(in)
    use allometry      , only : area_indices             & ! subroutine
                              , ed_biomass               & ! function
-                             , h2bl                     & ! function
+                             , size2bl                  & ! function
                              , dbh2bl                   ! ! function
 
    implicit none
@@ -429,14 +429,7 @@ subroutine update_phenology(doy, cpoly, isi, lat)
             !------------------------------------------------------------------------------!
 
             cpatch%elongf(ico) = max(0.0, min (1.0, cpatch%paw_avg(ico)))
-            if (is_grass(ipft)) then
-                !--use height for grass
-                bl_max         = cpatch%elongf(ico) * cpatch%bleaf(ico)
-            else
-                !--use dbh for trees
-                bl_max         = cpatch%elongf(ico) * dbh2bl(cpatch%dbh(ico) ,ipft)
-            end if
-
+            bl_max    = cpatch%elongf(ico) * size2bl(cpatch%dbh(ico),cpatch%hite(ico),ipft)
 
             !----- In case it is too dry, drop all the leaves... --------------------------!
             if (cpatch%elongf(ico) < elongf_min) then

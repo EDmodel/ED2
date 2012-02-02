@@ -47,7 +47,7 @@ subroutine read_ed10_ed20_history_file
                              , h2dbh               & ! function
                              , dbh2bd              & ! function
                              , dbh2bl              & ! function
-                             , h2bl                & ! function
+                             , size2bl             & ! function
                              , ed_biomass          & ! function
                              , area_indices        ! ! subroutine
    use fuse_fiss_utils, only : sort_cohorts        & ! subroutine
@@ -696,13 +696,7 @@ subroutine read_ed10_ed20_history_file
                         !     Use allometry to define leaf and the other live biomass      !
                         ! pools.                                                           !
                         !------------------------------------------------------------------!
-                        if (is_grass(ipft(ic))) then
-                            !--use height for grasses
-                            cpatch%bleaf(ic2) = h2bl(hite(ic), ipft(ic))
-                        else
-                            !--use dbh for trees
-                            cpatch%bleaf(ic2) = dbh2bl(dbh(ic),ipft(ic))
-                        end if
+                        cpatch%bleaf(ic2)     = size2bl(dbh(ic), hite(ic),ipft(ic))
                         cpatch%balive(ic2)    = cpatch%bleaf(ic2) * (1.0 + q(ipft(ic))     &
                                               + qsw(ipft(ic)) * cpatch%hite(ic2))
                         cpatch%broot(ic2)     = cpatch%balive(ic2) * q(ipft(ic))           &

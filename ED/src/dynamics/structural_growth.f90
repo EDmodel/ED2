@@ -19,6 +19,7 @@ subroutine structural_growth(cgrid, month)
                             , c2n_stem               & ! intent(in)
                             , l2n_stem               & ! intent(in)
                             , negligible_nplant      & ! intent(in)
+                            , is_grass               & ! intent(in)
                             , agf_bs                 ! ! intent(in)
    use decomp_coms   , only : f_labile               ! ! intent(in)
    use ed_max_dims   , only : n_pft                  & ! intent(in)
@@ -157,6 +158,11 @@ subroutine structural_growth(cgrid, month)
                !---------------------------------------------------------------------------!
                seed_litter        = cpatch%bseeds(ico) * cpatch%nplant(ico)                &
                                   * seedling_mortality(ipft)
+                                  
+               write (unit=*,fmt='(a)') '------------seed terms----------'
+               write (unit=*,fmt='(a,1x,es12.4)') ' - bseeds:       ',cpatch%bseeds(ico)
+               write (unit=*,fmt='(a,1x,es12.4)') ' - seed litter:  ',seed_litter
+               write (unit=*,fmt='(a,1x,es12.4)') ' - bstorage:     ',cpatch%bstorage(ico)
                
                !---------------------------------------------------------------------------!
                !      Rebalance the plant nitrogen uptake considering the actual alloc-    !
@@ -225,15 +231,23 @@ subroutine structural_growth(cgrid, month)
                !----- Compute the relative carbon balance. --------------------------------!
                cb_act = 0.0
                cb_max = 0.0
-               do imonth = 1,12
-                  cb_act = cb_act + cpatch%cb(imonth,ico)
-                  cb_max = cb_max + cpatch%cb_max(imonth,ico)
-               end do
+               
+               if (is_grass(ipft)) then  !!Grass loop, use past month's carbon balance only
+                  cb_act =  cpatch%cb(update_month,ico)
+                  cb_max =  cpatch%cb_max(update_month,ico)
+               else  !!Tree loop, use annual average carbon balance
+                  do imonth = 1,12
+                     cb_act = cb_act + cpatch%cb(imonth,ico)
+                     cb_max = cb_max + cpatch%cb_max(imonth,ico)
+                  end do
+               end if
+               
                if(cb_max > 0.0)then
                   cpatch%cbr_bar(ico) = cb_act / cb_max
                else
                   cpatch%cbr_bar(ico) = 0.0
                end if
+               
                !---------------------------------------------------------------------------!
 
 
@@ -522,6 +536,7 @@ subroutine plant_structural_allocation(ipft,hite,dbh,lat,phen_status,f_bseeds,f_
    logical                        :: late_spring
    logical          , parameter   :: printout  = .false.
    character(len=13), parameter   :: fracfile  = 'storalloc.txt'
+   real                           :: hgtfudge
    !----- Locally saved variables. --------------------------------------------------------!
    logical          , save        :: first_time = .true.
    !---------------------------------------------------------------------------------------!
@@ -567,16 +582,16 @@ subroutine plant_structural_allocation(ipft,hite,dbh,lat,phen_status,f_bseeds,f_
          ! to constrain this throughout the season - also consider moving this to 
          ! growth_balive since it isn't actually structural growth
          !---------------------------------------------------------------------------------!
-         
+         hgtfudge= (hite * (1 + 1.0e-4))
       if (is_grass(ipft)) then !!Grass loop
-          if ((hite + epsilon(1.)) >= hgt_max(ipft)) then 
+          if ((hite * (1 + 1.0e-4)) >= hgt_max(ipft)) then 
              !-----------------------------------------------------------------------------!
              !    Grasses have reached the maximum height, stop growing in size and send   !
              ! everything to reproduction.                                                 !
              !-----------------------------------------------------------------------------!
              f_bseeds = 1.0 - st_fract(ipft)
              f_bdead = 0.0
-          elseif ((hite + epsilon(1.)) <= repro_min_h(ipft)) then
+          elseif ((hite * (1 + epsilon(1.))) <= repro_min_h(ipft)) then
              !----- The plant is too short, invest as much as it can in growth. -----------!
              f_bseeds = 0.0
              f_bdead = 0.0
@@ -593,7 +608,7 @@ subroutine plant_structural_allocation(ipft,hite,dbh,lat,phen_status,f_bseeds,f_
          !----- Plant is with a certain height, use prescribed reproduction rate. ---------!
          f_bseeds = r_fract(ipft)
          f_bdead  = 1.0 - st_fract(ipft) - f_bseeds 
-      end if !!end Grass loop
+      end if !!end tree loop
    else
       f_bdead  = 0.0
       f_bseeds = 0.0
@@ -609,8 +624,12 @@ subroutine plant_structural_allocation(ipft,hite,dbh,lat,phen_status,f_bseeds,f_
    end if
    !---------------------------------------------------------------------------------------!
       write (unit=*,fmt='(a)') '------------allocation to repro----------'
-      write (unit=*,fmt='(a,1x,es12.4)') ' - f_bseeds:  ',f_bseeds
-      write (unit=*,fmt='(a,1x,es12.4)') ' - f_bdead:   ',f_bdead
+      write (unit=*,fmt='(a,1x,es12.4)') ' - f_bseeds:      ',f_bseeds
+      write (unit=*,fmt='(a,1x,es12.4)') ' - f_bdead:       ',f_bdead
+      write (unit=*,fmt='(a,1x,es12.4)') ' - hgt_max:       ',hgt_max(ipft)
+      write (unit=*,fmt='(a,1x,es12.4)') ' - repro_min_h:   ',repro_min_h(ipft)
+      write (unit=*,fmt='(a,1x,es12.4)') ' - hite:          ',hite      
+      write (unit=*,fmt='(a,1x,es12.4)') ' - hite + epsilon:',hgtfudge     
    return
 end subroutine plant_structural_allocation
 !==========================================================================================!

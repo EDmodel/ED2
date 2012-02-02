@@ -432,12 +432,11 @@ subroutine pheninit_balive_bstorage(mzg,csite,ipa,ico,ntext_soil,green_leaf_fact
                             , elongf_min          ! ! intent(in)
    use pft_coms      , only : phenology           & ! intent(in)
                             , agf_bs              & ! intent(in)
-                            , is_grass            & ! intent(in)
                             , q                   & ! intent(in)
                             , qsw                 ! ! intent(in)
    use ed_max_dims   , only : n_pft               ! ! intent(in)
    use allometry     , only : dbh2bl              & ! function
-                            , h2bl                ! ! function
+                            , size2bl                ! ! function
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    type(sitetype)                  , target     :: csite             ! Current site
@@ -534,21 +533,10 @@ subroutine pheninit_balive_bstorage(mzg,csite,ipa,ico,ntext_soil,green_leaf_fact
    end if
    !---------------------------------------------------------------------------------------!
 
-!--ALS - for the time being, lets set grass phenology_status to 0 always (evergreen)
-   if (is_grass(ipft)) then
-       cpatch%phenology_status(ico) = 0
-   end if
-
    !----- Compute the biomass of living tissues. ------------------------------------------!
    salloc               = 1.0 + q(ipft) + qsw(ipft) * cpatch%hite(ico)
    salloci              = 1.0 / salloc
-   if (is_grass(ipft)) then
-       !--use height for grass
-       bleaf_max        = h2bl(  cpatch%hite(ico),cpatch%pft(ico))
-   else
-       !--use dbh for trees
-       bleaf_max        = dbh2bl(cpatch%dbh(ico) ,cpatch%pft(ico))
-   end if
+   bleaf_max            = size2bl(cpatch%dbh(ico),cpatch%hite(ico),cpatch%pft(ico))
    balive_max           = bleaf_max * salloc
    select case (cpatch%phenology_status(ico))
    case (2)

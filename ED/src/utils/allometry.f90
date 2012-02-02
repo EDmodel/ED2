@@ -220,7 +220,7 @@ module allometry
       !------------------------------------------------------------------------------------!
       
       if (is_grass(ipft)) then 
-      !--- The grasses really shouldent use this function at all!
+      !--- The grasses really shouldent use this function at all - use size2bl
           ! test grasses against maximum height rather than maximum dbh
           mdbh = min(dbh, h2dbh(hgt_max(ipft),ipft))
       else
