@@ -208,7 +208,7 @@ recursive subroutine grell_find_cloud_lfc(mkx,mgmzp,kbmax,cap_max,wnorm_max,wwin
    ! really lucky...).                                                                     !
    !---------------------------------------------------------------------------------------!
    call lcl_il(thil_cup(klou),p_cup(klou),t_cup(klou),qtot_cup(klou),qvap_cup(klou)        &
-              ,tlcl,plcl,dzlcl,19)
+              ,tlcl,plcl,dzlcl)
    klcl = klou
    klclloop: do
       if (klcl == mkx .or. plcl >= p_cup(klcl)) exit klclloop

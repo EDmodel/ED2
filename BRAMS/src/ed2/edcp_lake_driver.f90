@@ -12,17 +12,10 @@ subroutine simple_lake_model()
                                      , iz                & ! intent(in)
                                      , mynum             ! ! intent(in)
    use consts_coms            , only : stefan            & ! intent(in)
-                                     , cpi               & ! intent(in)
                                      , vonk              & ! intent(in)
-                                     , cp                & ! intent(in)
                                      , grav              & ! intent(in)
                                      , rdry              & ! intent(in)
                                      , t00               & ! intent(in)
-                                     , p00               & ! intent(in)
-                                     , p00i              & ! intent(in)
-                                     , rocp              & ! intent(in)
-                                     , cpor              & ! intent(in)
-                                     , alvl              & ! intent(in)
                                      , epim1             & ! intent(in)
                                      , mmdryi            & ! intent(in)
                                      , mmdry             ! ! intent(in)
@@ -182,6 +175,7 @@ subroutine copy_met_2_lake(i,j,ifm,dsst_dt)
    use mem_basic              , only : co2_on            & ! intent(in)
                                      , co2con            & ! intent(in)
                                      , basic_g           ! ! structure
+   use mem_leaf               , only : leaf_g            ! ! intent(in)
    use mem_radiate            , only : radiate_g         ! ! structure
    use mem_grid               , only : zt                & ! intent(in)
                                      , grid_g            & ! structure
@@ -190,15 +184,16 @@ subroutine copy_met_2_lake(i,j,ifm,dsst_dt)
                                      , if_adap           & ! intent(in)
                                      , jdim              & ! intent(in)
                                      , ngrid             ! ! intent(in)
-   use therm_lib8             , only : thetaeiv8         & ! function
-                                     , idealdenssh8      & ! function
-                                     , rehuil8           ! ! function
+   use therm_lib8             , only : idealdenssh8      & ! function
+                                     , rehuil8           & ! function
+                                     , reducedpress8     & ! function
+                                     , press2exner8      & ! function
+                                     , exner2press8      & ! function
+                                     , extheta2temp8     & ! function
+                                     , tq2enthalpy8      ! ! function
    use lake_coms              , only : lakemet           ! ! intent(out)
-   use consts_coms            , only : cpi8              & ! intent(in)
-                                     , p00i8             & ! intent(in)
-                                     , p008              & ! intent(in)
-                                     , cpor8             ! ! intent(in)
    use canopy_air_coms        , only : ubmin8            ! ! intent(in)
+   use leaf_coms              , only : can_depth_min     ! ! intent(in)
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
    integer     , intent(in)     :: i
@@ -218,20 +213,25 @@ subroutine copy_met_2_lake(i,j,ifm,dsst_dt)
    integer                      :: k2v_1
    integer                      :: k3v_1
    logical                      :: ok_flpoint
-   real                         :: topma_t
-   real                         :: wtw
-   real                         :: wtu1
-   real                         :: wtu2
-   real                         :: wtv1
-   real                         :: wtv2
-   real                         :: exner_mean
-   real                         :: theta_mean
-   real                         :: co2p_mean
-   real                         :: up_mean
-   real                         :: vp_mean
-   real                         :: rv_mean
-   real                         :: rtp_mean
-   real                         :: zref_mean
+   real(kind=4)                 :: topma_t
+   real(kind=4)                 :: wtw
+   real(kind=4)                 :: wtu1
+   real(kind=4)                 :: wtu2
+   real(kind=4)                 :: wtv1
+   real(kind=4)                 :: wtv2
+   real(kind=4)                 :: exner_mean
+   real(kind=4)                 :: theta_mean
+   real(kind=4)                 :: co2p_mean
+   real(kind=4)                 :: up_mean
+   real(kind=4)                 :: vp_mean
+   real(kind=4)                 :: rv_mean
+   real(kind=4)                 :: rtp_mean
+   real(kind=4)                 :: zref_mean
+   real(kind=8)                 :: can_theta8
+   real(kind=8)                 :: can_shv8
+   real(kind=8)                 :: can_depth8
+   real(kind=8)                 :: can_exner8
+   real(kind=8)                 :: can_prss8
    real(kind=8)                 :: angle
    !----- External functions. -------------------------------------------------------------!
    logical           , external :: is_finite
@@ -413,14 +413,11 @@ subroutine copy_met_2_lake(i,j,ifm,dsst_dt)
    lakemet%atm_theta = dble(theta_mean)
    lakemet%atm_co2   = dble(co2p_mean )
    lakemet%atm_exner = dble(exner_mean)
-   lakemet%atm_rvap  = dble(rtp_mean  )
+   lakemet%atm_shv   = dble(rtp_mean  ) / (1.d0 + dble(rtp_mean))
    !----- SST derivative is already in double precision, just copy it. --------------------!
    lakemet%dsst_dt   = dsst_dt
    !---------------------------------------------------------------------------------------!
-
-
-
-
+   
 
 
 
@@ -431,7 +428,7 @@ subroutine copy_met_2_lake(i,j,ifm,dsst_dt)
                 is_finite8(lakemet%tanz)      .and. is_finite8(lakemet%lon)      .and.     &
                 is_finite8(lakemet%lat)       .and. is_finite8(lakemet%geoht)    .and.     &
                 is_finite8(lakemet%atm_theta) .and. is_finite8(lakemet%atm_co2)  .and.     &
-                is_finite8(lakemet%atm_exner) .and. is_finite8(lakemet%atm_rvap) .and.     &
+                is_finite8(lakemet%atm_exner) .and. is_finite8(lakemet%atm_shv)  .and.     &
                 is_finite8(lakemet%dsst_dt)   .and. is_finite (exner_mean)       .and.     &
                 is_finite (theta_mean)        .and. is_finite (co2p_mean)        .and.     &
                 is_finite (up_mean)           .and. is_finite (vp_mean)          .and.     &
@@ -451,7 +448,7 @@ subroutine copy_met_2_lake(i,j,ifm,dsst_dt)
       write(unit=*,fmt='(a,1x,es12.5)') ' - Theta          :',lakemet%atm_theta
       write(unit=*,fmt='(a,1x,es12.5)') ' - CO2            :',lakemet%atm_co2
       write(unit=*,fmt='(a,1x,es12.5)') ' - Exner          :',lakemet%atm_exner
-      write(unit=*,fmt='(a,1x,es12.5)') ' - Rvap           :',lakemet%atm_rvap
+      write(unit=*,fmt='(a,1x,es12.5)') ' - Spec. hum.     :',lakemet%atm_shv
       write(unit=*,fmt='(a,1x,es12.5)') ' - d(SST)/dt      :',lakemet%dsst_dt
       write(unit=*,fmt='(a)'          ) ' Mean values.'
       write(unit=*,fmt='(a,1x,es12.5)') ' - Exner_mean     :',exner_mean
@@ -498,27 +495,42 @@ subroutine copy_met_2_lake(i,j,ifm,dsst_dt)
       write(unit=*,fmt='(a)'          ) '-------------------------------------------------'
       call abort_run('Non-resolvable values','copy_met_2_lake','edcp_lake_misc.f90')
    end if
+   !---------------------------------------------------------------------------------------!
 
 
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Copy the canopy air space properties to double precision scratch variables.       !
+   !---------------------------------------------------------------------------------------!
+   can_theta8 = dble(leaf_g(ifm)%can_theta(i,j,1))
+   can_shv8   = dble(leaf_g(ifm)%can_rvap (i,j,1))                                         &
+              / (1.d0 +dble(leaf_g(ifm)%can_rvap (i,j,1)))
+   can_depth8 = dble(can_depth_min)
+   !---------------------------------------------------------------------------------------!
 
 
 
    !----- Pressure. -----------------------------------------------------------------------!
-   lakemet%atm_prss  = (lakemet%atm_exner * cpi8) ** cpor8 * p008
+   lakemet%atm_prss  = exner2press8(lakemet%atm_exner)
    !---------------------------------------------------------------------------------------!
 
 
    !----- Air temperature. ----------------------------------------------------------------!
-   lakemet%atm_tmp   = cpi8 * lakemet%atm_theta * lakemet%atm_exner
+   lakemet%atm_tmp   = extheta2temp8(lakemet%atm_exner,lakemet%atm_theta)
    !---------------------------------------------------------------------------------------!
 
 
+
    !---------------------------------------------------------------------------------------!
-   !   Most of ED expects specific humidity, not mixing ratio.  Since we will use          !
-   ! ed_stars, which is set up for the former, not the latter, we locally solve everything !
-   ! for specific humidity, converting in the end.                                         !
+   !     Find the pressure and Exner functions at the canopy depth, find the temperature   !
+   ! of the air above canopy at the canopy depth, and the specific enthalpy at that level. !
    !---------------------------------------------------------------------------------------!
-   lakemet%atm_shv  = lakemet%atm_rvap / (1.d0 + lakemet%atm_rvap)
+   can_prss8            = reducedpress8(lakemet%atm_prss,lakemet%atm_theta,lakemet%atm_shv &
+                                       ,lakemet%geoht,can_theta8,can_shv8,can_depth8)
+   can_exner8           = press2exner8 (can_prss8)
+   lakemet%atm_tmp_zcan = extheta2temp8(can_exner8,lakemet%atm_theta)
+   lakemet%atm_enthalpy = tq2enthalpy8 (lakemet%atm_tmp_zcan,lakemet%atm_shv,.true.)
    !---------------------------------------------------------------------------------------!
 
 
@@ -526,10 +538,9 @@ subroutine copy_met_2_lake(i,j,ifm,dsst_dt)
    !---------------------------------------------------------------------------------------!
    !     Update properties that need to use therm_lib8.                                    !
    !---------------------------------------------------------------------------------------!
-   lakemet%atm_theiv = thetaeiv8(lakemet%atm_theta,lakemet%atm_prss,lakemet%atm_tmp        &
-                                ,lakemet%atm_rvap,lakemet%atm_rvap)
    lakemet%atm_rhos  = idealdenssh8(lakemet%atm_prss,lakemet%atm_tmp,lakemet%atm_shv)
-   lakemet%atm_rhv   = rehuil8(lakemet%atm_prss,lakemet%atm_tmp,lakemet%atm_rvap)
+   lakemet%atm_rhv   = rehuil8(lakemet%atm_prss,lakemet%atm_tmp,lakemet%atm_shv,.true.)
+   !---------------------------------------------------------------------------------------!
 
 
    !---------------------------------------------------------------------------------------!
@@ -561,15 +572,17 @@ subroutine copy_lake_brams(i,j,ifm,mzg,mzs,initp)
    use mem_radiate           , only : radiate_g    ! ! structure
    use mem_leaf              , only : leaf_g       ! ! structure
    use lake_coms             , only : lakemet      ! ! intent(out)
-   use consts_coms           , only : alvl8        & ! intent(in)
-                                    , cliq8        & ! intent(in)
-                                    , tsupercool8  & ! intent(in)
-                                    , cliq         & ! intent(in)
-                                    , grav         ! ! intent(in)
+   use consts_coms           , only : grav         ! ! intent(in)
    use canopy_air_coms       , only : ubmin8       ! ! intent(in)
    use lake_coms             , only : lakesitetype & ! structure
                                     , lakemet      & ! intent(in)
                                     , tiny_lakeoff ! ! intent(in)
+   use therm_lib             , only : thetaeiv     & ! function
+                                    , press2exner  & ! function
+                                    , extheta2temp ! ! function
+   use therm_lib8            , only : alvl8        & ! function
+                                    , alvi8        & ! function
+                                    , tl2uint8     ! ! function
    use mem_edcp              , only : ed_fluxf_g   ! ! intent(in)
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
@@ -581,6 +594,9 @@ subroutine copy_lake_brams(i,j,ifm,mzg,mzs,initp)
    type(lakesitetype), target     :: initp
    !----- Local variables. ----------------------------------------------------------------!
    integer                        :: k
+   real                           :: can_shv
+   real                           :: can_exner
+   real                           :: can_temp
    !----- External functions. -------------------------------------------------------------!
    real              , external   :: sngloff
    !----- Local constants -----------------------------------------------------------------!
@@ -628,7 +644,11 @@ subroutine copy_lake_brams(i,j,ifm,mzg,mzs,initp)
 
    !----- Find the flux components of each patch. -----------------------------------------!
    leaf_g(ifm)%sensible_gc(i,j,1) = sngloff(initp%avg_sensible_gc      ,tiny_lakeoff)
-   leaf_g(ifm)%evap_gc(i,j,1)     = sngloff(initp%avg_vapor_gc * alvl8 ,tiny_lakeoff)
+   leaf_g(ifm)%evap_gc(i,j,1)     = sngloff( initp%avg_vapor_gc                            &
+                                           * ( initp%lake_fliq * alvl8(initp%lake_temp)    &
+                                             + (1.d0 - initp%lake_fliq)                    &
+                                             * alvi8(initp%lake_temp))                     &
+                                           , tiny_lakeoff )
    leaf_g(ifm)%sensible_vc(i,j,1) = 0.
    leaf_g(ifm)%evap_vc(i,j,1)     = 0.
    leaf_g(ifm)%transp(i,j,1)      = 0.
@@ -639,11 +659,18 @@ subroutine copy_lake_brams(i,j,ifm,mzg,mzs,initp)
 
 
    !----- Finding some canopy air properties. ---------------------------------------------!
-   leaf_g(ifm)%can_theiv(i,j,1)    = sngloff(initp%can_theiv ,tiny_lakeoff)
    leaf_g(ifm)%can_theta(i,j,1)    = sngloff(initp%can_theta ,tiny_lakeoff)
-   leaf_g(ifm)%can_rvap(i,j,1)     = sngloff(initp%can_rvap  ,tiny_lakeoff)
+   can_shv                         = sngloff(initp%can_shv   ,tiny_lakeoff)
+   leaf_g(ifm)%can_rvap(i,j,1)     = can_shv / (1.0 - can_shv)
    leaf_g(ifm)%can_co2(i,j,1)      = sngloff(initp%can_co2   ,tiny_lakeoff)
    leaf_g(ifm)%can_prss(i,j,1)     = sngloff(initp%can_prss  ,tiny_lakeoff)
+   can_exner                       = press2exner(leaf_g(ifm)%can_prss(i,j,1))
+   can_temp                        = extheta2temp(can_exner,leaf_g(ifm)%can_theta(i,j,1))
+   leaf_g(ifm)%can_theiv(i,j,1)    = thetaeiv( leaf_g(ifm)%can_theta(i,j,1)                &
+                                             , leaf_g(ifm)%can_prss(i,j,1)                 &
+                                             , can_temp                                    &
+                                             , leaf_g(ifm)%can_rvap(i,j,1)                 &
+                                             , leaf_g(ifm)%can_rvap(i,j,1)                 )
    !---------------------------------------------------------------------------------------!
 
 
@@ -687,8 +714,8 @@ subroutine copy_lake_brams(i,j,ifm,mzg,mzs,initp)
    !    "Soil" energy.  Because we can't store sea surface temperature, we store the       !
    ! internal energy
    !---------------------------------------------------------------------------------------!
-   leaf_g(ifm)%soil_energy (mzg,i,j,1) = sngloff(cliq8 * (initp%lake_temp - tsupercool8)   &
-                                                         ,tiny_lakeoff)
+   leaf_g(ifm)%soil_energy (mzg,i,j,1) = sngloff(tl2uint8(initp%lake_temp,initp%lake_fliq) &
+                                                ,tiny_lakeoff)
    leaf_g(ifm)%soil_water  (mzg,i,j,1) = 0.
    do k=1, mzg-1
       leaf_g(ifm)%soil_energy (k,i,j,1) = leaf_g(ifm)%soil_energy (mzg,i,j,1)

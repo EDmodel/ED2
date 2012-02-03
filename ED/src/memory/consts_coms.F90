@@ -121,7 +121,6 @@ Module consts_coms
                         , b_fdns           => fdns           & ! intent(in)
                         , b_fdnsi          => fdnsi          & ! intent(in)
                         , b_cice           => cice           & ! intent(in)
-                        , b_cicevlme       => cicevlme       & ! intent(in)
                         , b_cicei          => cicei          & ! intent(in)
                         , b_t3ple          => t3ple          & ! intent(in)
                         , b_t3plei         => t3plei         & ! intent(in)
@@ -148,7 +147,6 @@ Module consts_coms
                         , b_del_alvi3      => del_alvi3      & ! intent(in)
                         , b_tsupercool_liq => tsupercool_liq & ! intent(in)
                         , b_tsupercool_vap => tsupercool_vap & ! intent(in)
-                        , b_eta3ple        => eta3ple        & ! intent(in)
                         , b_ttripoli       => ttripoli       & ! intent(in)
                         , b_htripoli       => htripoli       & ! intent(in)
                         , b_htripolii      => htripolii      & ! intent(in)
@@ -159,8 +157,9 @@ Module consts_coms
                         , b_abswltlmin     => abswltlmin     & ! intent(in)
                         , b_lturbmin       => lturbmin       & ! intent(in)
                         , b_lnexp_min      => lnexp_min      & ! intent(in)
-                        , b_lnexp_max      => lnexp_max      ! ! intent(in)
-                                        
+                        , b_lnexp_max      => lnexp_max      & ! intent(in)
+                        , b_huge_num       => huge_num       & ! intent(in)
+                        , b_tiny_num       => tiny_num       ! ! intent(in)
 
    implicit none
    !----- Copy the variables from BRAMS. --------------------------------------------------!
@@ -279,7 +278,6 @@ Module consts_coms
    real, parameter :: fdns           = b_fdns
    real, parameter :: fdnsi          = b_fdnsi
    real, parameter :: cice           = b_cice
-   real, parameter :: cicevlme       = b_cicevlme
    real, parameter :: cicei          = b_cicei
    real, parameter :: t3ple          = b_t3ple
    real, parameter :: t3plei         = b_t3plei
@@ -306,7 +304,6 @@ Module consts_coms
    real, parameter :: del_alvi3      = b_del_alvi3
    real, parameter :: tsupercool_liq = b_tsupercool_liq
    real, parameter :: tsupercool_vap = b_tsupercool_vap
-   real, parameter :: eta3ple        = b_eta3ple
    real, parameter :: ttripoli       = b_ttripoli
    real, parameter :: htripoli       = b_htripoli
    real, parameter :: htripolii      = b_htripolii
@@ -318,6 +315,8 @@ Module consts_coms
    real, parameter :: lturbmin       = b_lturbmin
    real, parameter :: lnexp_min      = b_lnexp_min
    real, parameter :: lnexp_max      = b_lnexp_max
+   real, parameter :: huge_num       = b_huge_num
+   real, parameter :: tiny_num       = b_tiny_num
    !---------------------------------------------------------------------------------------!
 
 #else
@@ -546,17 +545,6 @@ Module consts_coms
 
 
    !---------------------------------------------------------------------------------------!
-   !    eta3ple is a constant related to the triple point that is used to find enthalpy    !
-   ! when the equilibrium temperature is above t3ple, whereas cimcp is the difference      !
-   ! between the heat capacity of ice and vapour, which is assumed to be the same as the   !
-   ! dry air, for simplicity.                                                              !
-   !---------------------------------------------------------------------------------------!
-   real, parameter :: eta3ple = (cice - cliq) * t3ple + alvi3
-   !---------------------------------------------------------------------------------------!
-
-
-
-   !---------------------------------------------------------------------------------------!
    !    Tsupercool are defined as temperatures of supercooled liquid water (water vapour)  !
    ! that will cause the internal energy (enthalpy) to be the same as ice at 0K.  It can   !
    ! be used as an offset for temperature when defining internal energy (enthalpy). The    !
@@ -574,8 +562,8 @@ Module consts_coms
    ! prefer the inverse way, Uliq is the amount of energy the parcel would need to lose to !
    ! become solid at 0K.)                                                                  !
    !---------------------------------------------------------------------------------------!
-   real, parameter :: tsupercool_liq = t3ple - (uiicet3+alli) * cliqi
-   real, parameter :: tsupercool_vap = cph2oi * ( (cph2o - cice) * t3ple - alvi3 )
+   real, parameter :: tsupercool_liq = t3ple - (uiicet3 + alli ) * cliqi
+   real, parameter :: tsupercool_vap = t3ple - (uiicet3 + alvi3) * cph2oi
    !---------------------------------------------------------------------------------------!
 
 
@@ -731,7 +719,6 @@ Module consts_coms
    real(kind=8), parameter :: del_alvi38      = dble(del_alvi3     )
    real(kind=8), parameter :: tsupercool_liq8 = dble(tsupercool_liq)
    real(kind=8), parameter :: tsupercool_vap8 = dble(tsupercool_vap)
-   real(kind=8), parameter :: eta3ple8        = dble(eta3ple       )
    real(kind=8), parameter :: ttripoli8       = dble(ttripoli      )
    real(kind=8), parameter :: htripoli8       = dble(htripoli      )
    real(kind=8), parameter :: htripolii8      = dble(htripolii     )

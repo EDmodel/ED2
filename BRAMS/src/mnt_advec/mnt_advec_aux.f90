@@ -59,11 +59,10 @@ end subroutine init_grid_spacing
 ! actual densities.                                                                        !
 !------------------------------------------------------------------------------------------!
 subroutine find_actual_densities(m1,m2,m3,rtp,rv,pp,pi0,theta,denst,densu,densv,densw)
-   use therm_lib , only : virtt     ! ! function
-   use rconstants, only : p00       & ! intent(in)
-                        , cpi       & ! intent(in)
-                        , cpor      & ! intent(in)
-                        , rdry      ! ! intent(in)
+   use therm_lib , only : virtt        & ! function
+                        , exner2press  & ! function
+                        , extheta2temp ! ! function
+   use rconstants, only : rdry         ! ! intent(in)
    implicit none
    !------ Arguments. ---------------------------------------------------------------------!
    integer                     , intent(in)    :: m1
@@ -95,8 +94,8 @@ subroutine find_actual_densities(m1,m2,m3,rtp,rv,pp,pi0,theta,denst,densu,densv,
          do k=1,m1
             !----- Find pressure and temperature. -----------------------------------------!
             exner        = pi0(k,i,j) + pp(k,i,j)
-            pres         = p00 * (cpi * exner) ** cpor
-            temp         = cpi * theta(k,i,j) * exner
+            pres         = exner2press(exner)
+            temp         = extheta2temp(exner,theta(k,i,j))
             !----- Find the virtual temperature. ------------------------------------------!
             tvir         = virtt(temp,rv(k,i,j),rtp(k,i,j))
             !----- Density comes from gas law using virtual temperature. ------------------!

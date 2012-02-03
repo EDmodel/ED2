@@ -235,11 +235,7 @@ subroutine initial_thermo_grell(m1,dtime,thp,theta,rtp,co2p,pi0,pp,pc,wp,dn0,tke
          ,tke          & ! intent(out) - Forced Turbulent kinetic energy          [   J/kg]
          ,sigw         & ! intent(out) - Vertical velocity standard deviation     [    m/s]
          ,wwind        ! ! intent(out) - Mean vertical velocity                   [    m/s]
-   use rconstants, only : cp      & ! intent(in)
-                        , cpi     & ! intent(in)
-                        , cpor    & ! intent(in)
-                        , p00     & ! intent(in)
-                        , grav    & ! intent(in)
+   use rconstants, only : grav    & ! intent(in)
                         , rdry    & ! intent(in)
                         , epi     & ! intent(in)
                         , toodry  & ! intent(in)
@@ -247,13 +243,15 @@ subroutine initial_thermo_grell(m1,dtime,thp,theta,rtp,co2p,pi0,pp,pc,wp,dn0,tke
                         , tkmin   ! ! intent(in)
 
    !------ External functions -------------------------------------------------------------!
-   use therm_lib, only: &
-           rslif        & ! Function that finds the saturation mixing ratio
-          ,thetaeiv     & ! Function that finds Thetae_iv  
-          ,thil2temp    & ! Function that gives temperature from theta_il, rliq and rice.
-          ,thil2tqall   & ! Function that finds temperature and condensed phase from thil.
-          ,idealdens    ! ! Function that gives the density for ideal gasses
-
+   use therm_lib, only : &
+            rslif        & ! Function that finds the saturation mixing ratio
+          , thetaeiv     & ! Function that finds Thetae_iv  
+          , thil2temp    & ! Function that gives temperature from theta_il, rliq and rice.
+          , thil2tqall   & ! Function that finds temperature and condensed phase from thil.
+          , idealdens    & ! Function that gives the density for ideal gasses
+          , exner2press  & ! Function that converts Exner function into pressure
+          , extheta2temp & ! Function that finds temperature from Exner and pot. temp.
+          , extemp2theta ! ! Function that finds pot. temp. from Exner and temperature
    implicit none
    !------ I/O variables ------------------------------------------------------------------!
    integer, intent(in)                  :: m1    ! Grid dimension                 [    ---]
@@ -281,13 +279,13 @@ subroutine initial_thermo_grell(m1,dtime,thp,theta,rtp,co2p,pi0,pp,pc,wp,dn0,tke
       kr=k+kgoff
       ![[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[!
       !------------------------------------------------------------------------------------!
-      !    Finding the current state variables, including the effect of shallower cumulus  !
+      !    Find the current state variables, including the effect of shallower cumulus     !
       ! if that is the case.                                                               !
       !------------------------------------------------------------------------------------!
       !------ 1. Exner function -----------------------------------------------------------!
       exner0(k) = pi0(kr)   + pp(kr)
       !------ 2. Pressure. ----------------------------------------------------------------!
-      p0(k)     = p00*(cpi*exner0(k))**cpor
+      p0(k)     = exner2press(exner0(k))
       !------------------------------------------------------------------------------------!
       ! 3. Temperature and water.                                                          !
       !------------------------------------------------------------------------------------!
@@ -296,23 +294,23 @@ subroutine initial_thermo_grell(m1,dtime,thp,theta,rtp,co2p,pi0,pp,pc,wp,dn0,tke
       qliq0(k)  = max(0.,rliq(kr))
       qice0(k)  = max(0.,rice(kr))
       qvap0(k)  = max(toodry,qtot0(k)-qice0(k)-qliq0(k))
-      t0(k)     = cpi * theta(kr) * exner0(k)
+      t0(k)     = extheta2temp(exner0(k),theta(kr))
 
       !------ 4. Finding the ice-vapour equivalent potential temperature ------------------!
-      theiv0(k) = thetaeiv(thil0(k),p0(k),t0(k),qvap0(k),qtot0(k),5)
+      theiv0(k) = thetaeiv(thil0(k),p0(k),t0(k),qvap0(k),qtot0(k))
 
       !------ 5. CO2 mixing ratio. --------------------------------------------------------!
       co20(k)   = co2p(kr)
       !------ 6. Turbulent kinetic energy [m²/s²] -----------------------------------------!
-      tke0(k)     = tkep(kr)
+      tke0(k)   = tkep(kr)
       !------ 7. Vertical velocity in terms of pressure, or Lagrangian dp/dt [ Pa/s] ------!
-      omeg(k)     = -grav*dn0(kr)*.5*( wp(kr)+wp(kr-1) )
+      omeg(k)   = -grav*dn0(kr)*.5*( wp(kr)+wp(kr-1) )
       !------ 8. Vertical velocity [m/s], this is staggered, averaging... -----------------!
-      wwind(k)    = 0.5 * (wp(kr)+wp(kr-1))
+      wwind(k)  = 0.5 * (wp(kr)+wp(kr-1))
       !------ 9. Standard-deviation of vertical velocity ----------------------------------!
-      sigw(k)     = max(wstd(kr),sigwmin)
+      sigw(k)   = max(wstd(kr),sigwmin)
       !------ 10. Air density -------------------------------------------------------------!
-      rho(k)   = idealdens(p0(k),t0(k),qvap0(k),qtot0(k))
+      rho(k)    = idealdens(p0(k),t0(k),qvap0(k),qtot0(k))
       !------------------------------------------------------------------------------------!
       !]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]!
 
@@ -320,7 +318,7 @@ subroutine initial_thermo_grell(m1,dtime,thp,theta,rtp,co2p,pi0,pp,pc,wp,dn0,tke
 
       ![[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[!
       !------------------------------------------------------------------------------------!
-      !     Finding what the state variables will be in the next time, assuming no convec- !
+      !     Find what the state variables will be in the next time, assuming no convec-    !
       ! tion at this point (we will call these forced variables).  Most variables will be  !
       ! updated using the tendency, except for the Exner function and diagnostic vari-     !
       !ables.                                                                              !
@@ -328,16 +326,16 @@ subroutine initial_thermo_grell(m1,dtime,thp,theta,rtp,co2p,pi0,pp,pc,wp,dn0,tke
       !------ 1. Exner function pc is the future Exner perturbation. ----------------------!
       exner(k) = pi0(kr)   + pc(kr)
       !------ 2. Pressure -----------------------------------------------------------------!
-      p(k)     = p00*(cpi*exner(k))**cpor
+      p(k)     = exner2press(exner(k))
       !------ 3. Ice-liquid potential temperature, with the tendency ----------------------!
       thil(k)  = thp(kr) + dthildt(k)*dtime
       !------ 4. Total mixing ratio, with the tendency ------------------------------------!
       qtot(k)  = max(toodry,rtp(kr)   + dqtotdt(k) * dtime)
-      !------ 5. Finding the equilibrium state. Temperature 1st guess is simply t0 --------!
+      !------ 5. Find the equilibrium state. Temperature 1st guess is simply t0. ----------!
       t(k)     = t0(k)
       call thil2tqall(thil(k),exner(k),p(k),qtot(k),qliq(k),qice(k),t(k),qvap(k),qsat)
       !------ 6. Finding the ice-vapour equivalent potential temperature ------------------!
-      theiv(k) = thetaeiv(thil(k),p(k),t(k),qvap(k),qtot(k),6)
+      theiv(k) = thetaeiv(thil(k),p(k),t(k),qvap(k),qtot(k))
       !------ 7. CO2 mixing ratio ---------------------------------------------------------!
       co2(k)   = co2p(kr) + dco2dt(k) * dtime
       !------ 8. Turbulent kinetic energy -------------------------------------------------!
@@ -351,7 +349,7 @@ subroutine initial_thermo_grell(m1,dtime,thp,theta,rtp,co2p,pi0,pp,pc,wp,dn0,tke
    
    ![[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[!
    !---------------------------------------------------------------------------------------!
-   !     Computing the surface variables. The only one that will be truly different is the !
+   !     Compute the surface variables. The only one that will be truly different is the   !
    ! Exner function (and consequently, pressure). The other values will be based on the    !
    ! level above. This is going to be just a boundary condition, so they will directly     !
    ! affect the parametrisation.                                                           !
@@ -359,7 +357,7 @@ subroutine initial_thermo_grell(m1,dtime,thp,theta,rtp,co2p,pi0,pp,pc,wp,dn0,tke
    !----- 1. Exner function ---------------------------------------------------------------!
    exnersur    = sqrt((pp(lpw-1)+pi0(lpw-1))*(pp(lpw)+pi0(lpw)))
    !----- 2. Pressure ---------------------------------------------------------------------!
-   psur        = p00*(cpi*exnersur)**cpor
+   psur        = exner2press(exnersur)
    !----- 3. Ice liquid potential temperature ---------------------------------------------!
    thilsur     = thp(lpw)
    !----- 4. Total mixing ratio -----------------------------------------------------------!
@@ -371,9 +369,9 @@ subroutine initial_thermo_grell(m1,dtime,thp,theta,rtp,co2p,pi0,pp,pc,wp,dn0,tke
    !----- 7. Vapour mixing ratio ----------------------------------------------------------!
    qvapsur     = max(toodry,qtotsur-qliqsur-qicesur)
    !----- 7. Temperature ------------------------------------------------------------------!
-   tsur        = cpi*theta(lpw)*exnersur
+   tsur        = extheta2temp(exnersur,theta(lpw))
    !----- 8. Ice-vapour equivalent potential temperature ----------------------------------!
-   theivsur    = thetaeiv(thilsur,psur,tsur,qvapsur,qtotsur,7)
+   theivsur    = thetaeiv(thilsur,psur,tsur,qvapsur,qtotsur)
    !----- 9. CO2 mixing ratio -------------------------------------------------------------!
    co2sur      = co2p(lpw)
    !---------------------------------------------------------------------------------------!
@@ -382,7 +380,7 @@ subroutine initial_thermo_grell(m1,dtime,thp,theta,rtp,co2p,pi0,pp,pc,wp,dn0,tke
 
 
    !---------------------------------------------------------------------------------------!
-   !     Finding the integrated moisture convergence. This is done outside the loop so we  !
+   !     Find the integrated moisture convergence. This is done outside the loop so we     !
    ! can use vapour mixing ratio at level (k-1) and (k+1).                                 !
    !---------------------------------------------------------------------------------------!
    mconv=0.

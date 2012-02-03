@@ -144,7 +144,7 @@ subroutine ed_driver()
    ! -1 -- Keep the one with the highest LAI                                               !
    ! -2 -- Keep the one with the lowest LAI                                                !
    !---------------------------------------------------------------------------------------!
-   ! call exterminate_patches_except(-1)
+   !call exterminate_patches_except(-1)
    !---------------------------------------------------------------------------------------!
 
 

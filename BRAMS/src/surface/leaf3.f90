@@ -93,13 +93,12 @@ subroutine leaf3_timestep()
    use mem_radiate    , only : radiate_g         & ! intent(inout)
                              , iswrtyp           & ! intent(in)
                              , ilwrtyp           ! ! intent(in)
-   use therm_lib      , only : bulk_on           ! ! intent(in)
-   use rconstants     , only : p00               & ! intent(in)
-                             , cpi               & ! intent(in)
-                             , cpor              & ! intent(in)
-                             , rocp              & ! intent(in)
-                             , cp                & ! intent(in)
-                             , alvl              ! ! intent(in)
+   use therm_lib      , only : bulk_on           & ! intent(in)
+                             , press2exner       & ! function
+                             , exner2press       & ! function
+                             , extheta2temp      ! ! function
+   use rconstants     , only : alvl3             & ! intent(in)
+                             , cpdry             ! ! intent(in)
    implicit none
    !----- Local variables. ----------------------------------------------------------------!
    integer  :: i
@@ -532,7 +531,7 @@ subroutine leaf3_timestep()
                                          ,leaf_g(ngrid)%leaf_class               (i,j,ip)  &
                                          ,leaf_g(ngrid)%can_prss                 (i,j,ip)  &
                                          ,.false.                                          )
-                  call leaf3_veg_diag(leaf_g(ngrid)%veg_energy                    (i,j,ip)  &
+                  call leaf3_veg_diag(leaf_g(ngrid)%veg_energy                   (i,j,ip)  &
                                      ,leaf_g(ngrid)%veg_water                    (i,j,ip)  &
                                      ,leaf_g(ngrid)%veg_hcap                     (i,j,ip)  )
                case default
@@ -543,17 +542,17 @@ subroutine leaf3_timestep()
                      if (nint(leaf_g(ngrid)%g_urban(i,j,ip)) /= 0.) then
 
                         !---- Initialise a few variables. ---------------------------------!
-                        psup1  = p00 * (cpi * ( basic_g(ngrid)%pi0(1,i,j)                  &
-                                              + basic_g(ngrid)%pp (1,i,j)))**cpor
-                        psup2  = p00 * (cpi * ( basic_g(ngrid)%pi0(2,i,j)                  &
-                                              + basic_g(ngrid)%pp (2,i,j)))**cpor
+                        psup1  = exner2press( basic_g(ngrid)%pi0(1,i,j)                    &
+                                            + basic_g(ngrid)%pp (1,i,j))
+                        psup2  = exner2press( basic_g(ngrid)%pi0(2,i,j)                    &
+                                            + basic_g(ngrid)%pp (2,i,j))
                         depe   = psup2-psup1
                         alt2   = zt(1)*grid_g(ngrid)%rtgt(i,j)
                         deze   = geoht-alt2
                         dpdz   = depe/deze
-                        exn1st = (psup2/p00)**rocp
+                        exn1st = press2exner(psup2)
                         
-                        airt= basic_g(ngrid)%theta(2,i,j)*exn1st 
+                        airt= extheta2temp(exn1st,basic_g(ngrid)%theta(2,i,j))
 
                         g_urban   = leaf_g(ngrid)%g_urban(i,j,ip)
 
@@ -606,10 +605,10 @@ subroutine leaf3_timestep()
                                           + leaf_g(ngrid)%patch_area(i,j,ip) * zsfv_town
                         turb_g(ngrid)%sflux_t(i,j) = turb_g(ngrid)%sflux_t(i,j)            &
                                           + leaf_g(ngrid)%patch_area(i,j,ip) * zh_town     &
-                                          / (cp * can_rhos)
+                                          / (cpdry * can_rhos)
                         turb_g(ngrid)%sflux_r(i,j) = turb_g(ngrid)%sflux_r(i,j)            &
                                           + leaf_g(ngrid)%patch_area(i,j,ip) * zle_town    &
-                                          / (alvl * can_rhos)
+                                          / (alvl3 * can_rhos)
                      end if
                   end if
 

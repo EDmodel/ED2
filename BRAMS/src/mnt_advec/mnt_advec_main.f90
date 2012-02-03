@@ -30,6 +30,13 @@ subroutine radvc_mnt_driver(m1,m2,m3,ia,iz,ja,jz,mynum)
    use mem_mnt_advec, only : advec_g        ! ! intent(in)
    use var_tables   , only : num_scalar     & ! intent(in)
                            , scalar_tab     ! ! intent(in)
+   use mem_scratch  , only : vctr11         & ! Scratch for scal_in
+                           , vctr12         & ! Scratch for uavg, vavg, wavg
+                           , vctr13         & ! Scratch for den(i-1)_wal
+                           , vctr14         & ! Scratch for den(i)_wal
+                           , vctr15         & ! Scratch for  densu, densv, densw
+                           , vctr16         & ! Scratch for dxtw
+                           , vctr17         ! ! Scratch for scal_out
    implicit none
 
    !----- Arguments. ----------------------------------------------------------------------!
@@ -142,8 +149,9 @@ subroutine radvc_mnt_driver(m1,m2,m3,ia,iz,ja,jz,mynum)
 
 
       !----- Copy the scalar to the advection scratch array and update boundaries. --------!
-      call atob(mzxyp,scalarp,advec_g(ngrid)%scal_in)
+      call atob(mzxyp,scalarp,advec_g(ngrid)%scal_in )
       call mpilbc_driver('fulladv',5)
+      call atob(mzxyp,advec_g(ngrid)%scal_in,advec_g(ngrid)%scal_out)
       !------------------------------------------------------------------------------------!
 
 
@@ -151,14 +159,27 @@ subroutine radvc_mnt_driver(m1,m2,m3,ia,iz,ja,jz,mynum)
       !----- Make the advection for the X direction. --------------------------------------!
       do j=ja,jz
          do k=2,m1-1
-            call monotonic_advec( m2, ia, iz, dtlt                                         &
-                                , advec_g(ngrid)%scal_in (k,:,j)                           &
-                                , advec_g(ngrid)%uavg    (k,:,j)                           &
-                                , advec_g(ngrid)%den0_wal(k,:,j)                           &
-                                , advec_g(ngrid)%den1_wal(k,:,j)                           &
-                                , advec_g(ngrid)%densu   (k,:,j)                           &
-                                , advec_g(ngrid)%dxtw    (k,:,j)                           &
-                                , advec_g(ngrid)%scal_out(k,:,j)                           )
+            !----- Copy vectors to the scratch vectors. -----------------------------------!
+            call array2xcol(m1,m2,m3,k,j,advec_g(ngrid)%scal_in ,vctr11)
+            call array2xcol(m1,m2,m3,k,j,advec_g(ngrid)%uavg    ,vctr12)
+            call array2xcol(m1,m2,m3,k,j,advec_g(ngrid)%den0_wal,vctr13)
+            call array2xcol(m1,m2,m3,k,j,advec_g(ngrid)%den1_wal,vctr14)
+            call array2xcol(m1,m2,m3,k,j,advec_g(ngrid)%densu   ,vctr15)
+            call array2xcol(m1,m2,m3,k,j,advec_g(ngrid)%dxtw    ,vctr16)
+            !------------------------------------------------------------------------------!
+
+
+
+            !----- Solve the monotonic advection. -----------------------------------------!
+            call monotonic_advec(m2,ia,iz,dtlt,vctr11,vctr12,vctr13,vctr14,vctr15,vctr16   &
+                                ,vctr17)
+            !------------------------------------------------------------------------------!
+
+
+
+            !----- Copy solution back to the output array. --------------------------------!
+            call xcol2array(m1,m2,m3,k,j,vctr17,advec_g(ngrid)%scal_out)
+            !------------------------------------------------------------------------------!
          end do
       end do
       !------------------------------------------------------------------------------------!
@@ -171,6 +192,7 @@ subroutine radvc_mnt_driver(m1,m2,m3,ia,iz,ja,jz,mynum)
       !------------------------------------------------------------------------------------!
       call atob(mzxyp,advec_g(ngrid)%scal_out,advec_g(ngrid)%scal_in)
       call mpilbc_driver('fulladv',5)
+      call atob(mzxyp,advec_g(ngrid)%scal_in,advec_g(ngrid)%scal_out)
       !------------------------------------------------------------------------------------!
 
 
@@ -178,14 +200,27 @@ subroutine radvc_mnt_driver(m1,m2,m3,ia,iz,ja,jz,mynum)
       !----- Make the advection for the Y direction. --------------------------------------!
       do i=ia,iz
          do k=2,m1-1
-            call monotonic_advec( m3, ja, jz, dtlt                                         &
-                                , advec_g(ngrid)%scal_in (k,i,:)                           &
-                                , advec_g(ngrid)%vavg    (k,i,:)                           &
-                                , advec_g(ngrid)%den1_wal(k,i,:)                           &
-                                , advec_g(ngrid)%den2_wal(k,i,:)                           &
-                                , advec_g(ngrid)%densv   (k,i,:)                           &
-                                , advec_g(ngrid)%dytw    (k,i,:)                           &
-                                , advec_g(ngrid)%scal_out(k,i,:)                           )
+            !----- Copy vectors to the scratch vectors. -----------------------------------!
+            call array2ycol(m1,m2,m3,k,i,advec_g(ngrid)%scal_in ,vctr11)
+            call array2ycol(m1,m2,m3,k,i,advec_g(ngrid)%vavg    ,vctr12)
+            call array2ycol(m1,m2,m3,k,i,advec_g(ngrid)%den1_wal,vctr13)
+            call array2ycol(m1,m2,m3,k,i,advec_g(ngrid)%den2_wal,vctr14)
+            call array2ycol(m1,m2,m3,k,i,advec_g(ngrid)%densv   ,vctr15)
+            call array2ycol(m1,m2,m3,k,i,advec_g(ngrid)%dytw    ,vctr16)
+            !------------------------------------------------------------------------------!
+
+
+
+            !----- Solve the monotonic advection. -----------------------------------------!
+            call monotonic_advec(m3,ja,jz,dtlt,vctr11,vctr12,vctr13,vctr14,vctr15,vctr16   &
+                                ,vctr17)
+            !------------------------------------------------------------------------------!
+
+
+
+            !----- Copy solution back to the output array. --------------------------------!
+            call ycol2array(m1,m2,m3,k,i,vctr17,advec_g(ngrid)%scal_out)
+            !------------------------------------------------------------------------------!
          end do
       end do
       !------------------------------------------------------------------------------------!
@@ -198,6 +233,7 @@ subroutine radvc_mnt_driver(m1,m2,m3,ia,iz,ja,jz,mynum)
       !------------------------------------------------------------------------------------!
       call atob(mzxyp,advec_g(ngrid)%scal_out,advec_g(ngrid)%scal_in)
       call mpilbc_driver('fulladv',5)
+      call atob(mzxyp,advec_g(ngrid)%scal_in,advec_g(ngrid)%scal_out)
       !------------------------------------------------------------------------------------!
 
 
@@ -205,14 +241,27 @@ subroutine radvc_mnt_driver(m1,m2,m3,ia,iz,ja,jz,mynum)
       !----- Make the advection for the Y direction. --------------------------------------!
       do j=ja,jz
          do i=ia,iz
-            call monotonic_advec( m1, ka, kz, dtlt                                         &
-                                , advec_g(ngrid)%scal_in (:,i,j)                           &
-                                , advec_g(ngrid)%wavg    (:,i,j)                           &
-                                , advec_g(ngrid)%den2_wal(:,i,j)                           &
-                                , advec_g(ngrid)%den3_wal(:,i,j)                           &
-                                , advec_g(ngrid)%densw   (:,i,j)                           &
-                                , advec_g(ngrid)%dztw    (:,i,j)                           &
-                                , advec_g(ngrid)%scal_out(:,i,j)                           )
+            !----- Copy vectors to the scratch vectors. -----------------------------------!
+            call array2zcol(m1,m2,m3,i,j,advec_g(ngrid)%scal_in ,vctr11)
+            call array2zcol(m1,m2,m3,i,j,advec_g(ngrid)%wavg    ,vctr12)
+            call array2zcol(m1,m2,m3,i,j,advec_g(ngrid)%den2_wal,vctr13)
+            call array2zcol(m1,m2,m3,i,j,advec_g(ngrid)%den3_wal,vctr14)
+            call array2zcol(m1,m2,m3,i,j,advec_g(ngrid)%densw   ,vctr15)
+            call array2zcol(m1,m2,m3,i,j,advec_g(ngrid)%dztw    ,vctr16)
+            !------------------------------------------------------------------------------!
+
+
+
+            !----- Solve the monotonic advection. -----------------------------------------!
+            call monotonic_advec(m1,ka,kz,dtlt,vctr11,vctr12,vctr13,vctr14,vctr15,vctr16   &
+                                ,vctr17)
+            !------------------------------------------------------------------------------!
+
+
+
+            !----- Copy solution back to the output array. --------------------------------!
+            call zcol2array(m1,m2,m3,i,j,vctr17,advec_g(ngrid)%scal_out)
+            !------------------------------------------------------------------------------!
          end do
       end do
       !------------------------------------------------------------------------------------!
@@ -319,7 +368,8 @@ subroutine monotonic_advec(npts,na,nz,dtime,qp,wind,ddm1,ddp0,densn,delta_n,qc)
 
 
    !---------------------------------------------------------------------------------------!
-   !     Initialise the "current" q with "previous" q in case nothing happens.             !
+   !     Initialise the "current" q with "previous" q so the indices outside the na:nz     !
+   ! range will have something.                                                            !
    !---------------------------------------------------------------------------------------!
    qc(:) = qp(:)
    !---------------------------------------------------------------------------------------!

@@ -7,9 +7,15 @@
 !==========================================================================================!
 module micro_coms
 
-   use rconstants, only : boltzmann,pi1,t00,cliq,alli,qicet3,tsupercool
-   use micphys   , only : ncat,nhcat
-
+   use rconstants, only : boltzmann      & ! intent(in)
+                        , pi1            & ! intent(in)
+                        , t00            & ! intent(in)
+                        , alli           & ! intent(in)
+                        , cliq           & ! intent(in)
+                        , tsupercool_liq & ! intent(in)
+                        , uiicet3        ! ! intent(in)
+   use micphys   , only : ncat           & ! intent(in)
+                        , nhcat          ! ! intent(in)
    implicit none
 
    !----- Precipitation table structure ---------------------------------------------------!
@@ -44,13 +50,13 @@ module micro_coms
    !---------------------------------------------------------------------------------------!
 
    !----- Minimum and maximum energy for rain ---------------------------------------------!
-   real, parameter :: qrainmin = cliq * (193.16 - tsupercool)  ! Minimum -80°C
-   real, parameter :: qrainmax = cliq * (321.16 - tsupercool) ! Maximum  48°C
+   real, parameter :: qrainmin = cliq * (193.16 - tsupercool_liq) ! Minimum -80°C
+   real, parameter :: qrainmax = cliq * (321.16 - tsupercool_liq) ! Maximum  48°C
    !----- Minimum and maximum energy for mixed phases -------------------------------------!
-   real, parameter :: qmixedmin = qicet3-100000.     ! Equivalent to former -100000 J/kg 
-   real, parameter :: qmixedmax = qicet3+350000.     ! Equivalent to former  350000 J/kg
+   real, parameter :: qmixedmin = uiicet3-100000.     ! Equivalent to former -100000 J/kg 
+   real, parameter :: qmixedmax = uiicet3+350000.     ! Equivalent to former  350000 J/kg
    !----- Maximum energy for pristine ice before it completely disappears -----------------!
-   real, parameter :: qprismax  = qicet3 + 0.99*alli ! 99% is gone
+   real, parameter :: qprismax  = uiicet3 + 0.99*alli ! 99% is gone
    !---------------------------------------------------------------------------------------!
 
    !----- Coefficients to compute the thermal conductivity --------------------------------!

@@ -205,7 +205,7 @@ subroutine shcu_env(nz)
         p00,                     &   ! intent(in)  ! parameter
         r,                       &   ! intent(in)  ! parameter
         kzi,                     &   ! intent(out) ! maybe local var.?
-        alvl,                    &   ! intent(in)  ! parameter
+        alvl3,                   &   ! intent(in)  ! parameter
         akvde                        ! intent(in/out)
    use therm_lib, only : lcl_il
    implicit none
@@ -298,7 +298,7 @@ subroutine shcu_env(nz)
    rlll  = (qve(kcon)+qve(kcon-1))/2.      
    zlll  = ze(kcon)
    thlll = tlll*(p00/plll)**(r/cp)
-   call lcl_il(thlll,plll,tlll,rlll,rlll,tlcl,plcl,dzlcl,2,.false.)
+   call lcl_il(thlll,plll,tlll,rlll,rlll,tlcl,plcl,dzlcl,.false.)
    if (dzlcl == 0.) then
       tlcl = tlll
       plcl = plll
@@ -333,10 +333,10 @@ subroutine shcu_env(nz)
    !----- EPS - Determination of environment variables ------------------------------------!
    do k=1,kmt
       dse(k)   = cp*te(k)+g*ze(k)
-      uhe(k)   = dse(k)+alvl*qve(k)
+      uhe(k)   = dse(k)+alvl3*qve(k)
       evaps(k) = es00*exp(const3*(te(k)-ta0)/(te(k)-const2))
       qvse(k)  = epslon*evaps(k)/(pe(k)-ummeps*evaps(k))
-      uhes(k)  = dse(k)+alvl*qvse(k)
+      uhes(k)  = dse(k)+alvl3*qvse(k)
       rhe(k)   = qve(k)/qvse(k)
       gamma(k) = const1*pe(k)*qvse(k)**2/evaps(k)
       gamma(k) = gamma(k)/((te(k)-const2)*(te(k)-const2))
@@ -376,7 +376,7 @@ subroutine shcu_env(nz)
    do k=1,kmt
       dsc(k)  = dse(k)+(uhc(k)-uhes(k))/(1+gamma(k))
       dsc0(k) = dse(k)+(uhe(2)-uhes(k))/(1+gamma(k))
-      qvc(k)  = qvse(k)+gamma(k)*(uhc(k)-uhes(k))/(alvl*(1+gamma(k)))
+      qvc(k)  = qvse(k)+gamma(k)*(uhc(k)-uhes(k))/(alvl3*(1+gamma(k)))
       wlc(k)  = 0.0
    end do
 
@@ -415,7 +415,7 @@ subroutine sh2mod(m1)
         picon                      ! intent(in)
    use shcu_vars_const, only : &
         DTDT,                  &   ! intent(in/out)
-        ALVL,                  &   ! intent(in) ! parameter
+        ALVL3,                 &   ! intent(in) ! parameter
         DRDT                       ! intent(in/out)
 
    use mem_scratch, only : VCTR5,  & ! INTENT(IN/OUT)
@@ -434,7 +434,7 @@ subroutine sh2mod(m1)
    !----- Compute integrated heating and moistening tendencies ----------------------------!
    do k=2,kmt
       qvct1(k) = rhoe(k)*dtdt(k)*pke(k)
-      qvct2(k) = rhoe(k)*alvl*drdt(k)
+      qvct2(k) = rhoe(k)*alvl3*drdt(k)
       qvct3(k) = (zc(k)-zc(k-1))*qvct1(k)
       qvct4(k) = (zc(k)-zc(k-1))*qvct2(k)
    end do
@@ -464,7 +464,7 @@ subroutine sh2mod(m1)
    !----- Change energy tendencies to temperature and mixing ratio tendencies. ------------!
    do k=2,m1-1
       dtdt(k)=vctr5(k)/((zzcon(k)-zzcon(k-1))*dncon(k)*picon(k))
-      drdt(k)=vctr6(k)/((zzcon(k)-zzcon(k-1))*dncon(k)*alvl)
+      drdt(k)=vctr6(k)/((zzcon(k)-zzcon(k-1))*dncon(k)*alvl3)
    end do
 
    return
@@ -612,7 +612,7 @@ subroutine W_SHALLOW(IP,JP,TIME)
         cape,                  &   ! intent(in)
         cp,                    &   ! intent(in)
         entf,                  &   ! intent(in)  ! parameter
-        alvl,                  &   ! intent(in)  ! parameter
+        alvl3,                 &   ! intent(in)  ! parameter
         alhf,                  &   ! intent(in)
         dcape,                 &   ! intent(out) ! maybe local var.?
         tcape,                 &   ! intent(out) ! maybe local var.?
@@ -652,7 +652,7 @@ subroutine W_SHALLOW(IP,JP,TIME)
    !    The effective vertical velocity at cloud base is calculated  according to the heat !
    ! engine framework as deffined by Renno' and Ingersoll, 1996 Eq.(34)                    !
    !---------------------------------------------------------------------------------------!
-   fin=rhoe(2)*(cp*entf+alvl*alhf)
+   fin=rhoe(2)*(cp*entf+alvl3*alhf)
 
    if(fin <= 50.0) then
       igo=0
@@ -704,7 +704,7 @@ subroutine SH_RATES
            ktop,               & ! intent(in)
            wc,                 & ! intent(in/out)
            dsc,                & ! intent(in)
-           alvl,               & ! intent(in)  ! parameter
+           alvl3,              & ! intent(in)  ! parameter
            wlc,                & ! intent(in)
            dse,                & ! intent(in)
            qvc,                & ! intent(in)
@@ -731,7 +731,7 @@ subroutine SH_RATES
 
    !----- Calculating the transports w's' and w'r' ----------------------------------------!
    do k=klcl+1,ktop
-      wssc(k) = wc(k)*(dsc(k)-alvl*wlc(k)-dse(k))
+      wssc(k) = wc(k)*(dsc(k)-alvl3*wlc(k)-dse(k))
       wqsc(k) = wc(k)*(qvc(k)+wlc(k)-qve(k))
    end do
 

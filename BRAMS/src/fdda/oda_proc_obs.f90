@@ -437,7 +437,7 @@ subroutine sfc_obs_convert(n1,n2,n3,pp,pi0,prs,ng,nobs)
 
   use mem_oda
   use rconstants
-  use therm_lib, only : rslif
+  use therm_lib, only : rslif, exner2press
 
   implicit none
 
@@ -461,8 +461,7 @@ subroutine sfc_obs_convert(n1,n2,n3,pp,pi0,prs,ng,nobs)
 
   do j=1,n3
      do i=1,n2
-        prs(i,j)=( (pp(1,i,j)+pp(2,i,j)+pi0(1,i,j)+pi0(2,i,j))*.5  &
-             *cpi) ** cpor * p00
+        prs(i,j)=exner2press((pp(1,i,j)+pp(2,i,j)+pi0(1,i,j)+pi0(2,i,j))*.5)
      enddo
   enddo
 

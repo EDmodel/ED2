@@ -29,13 +29,15 @@ subroutine inithis()
    use ref_sounding
    use io_params
    use mem_scratch
-   use mem_aerad , only : nwave     ! ! intent(in)
-   use grid_dims , only : maxgrds   & ! intent(in)
-                        , str_len   ! ! intent(in)
-   use mem_cuparm, only : nclouds   & ! intent(in)
-                        , nnqparm   ! ! intent(in)
-   use therm_lib , only : virtt     & ! intent(in)
-                        , vapour_on ! ! intent(in)
+   use mem_aerad , only : nwave        ! ! intent(in)
+   use grid_dims , only : maxgrds      & ! intent(in)
+                        , str_len      ! ! intent(in)
+   use mem_cuparm, only : nclouds      & ! intent(in)
+                        , nnqparm      ! ! intent(in)
+   use therm_lib , only : virtt        & ! intent(in)
+                        , vapour_on    & ! intent(in)
+                        , exner2press  & ! intent(in)
+                        , extheta2temp ! ! intent(in)
 
    implicit none
 
@@ -393,8 +395,8 @@ subroutine inithis()
 
    !----- Computing the ref. density profile, based on the perfect gas law ----------------!
    do k = 1,nnzp(1)
-      vctr4(k) = (pi01dn(k,1) / cp) ** cpor * p00
-      dn01dn(k,1) = cp * vctr4(k) / (rdry * th01dn(k,1) * pi01dn(k,1))
+      vctr4(k)    = exner2press(pi01dn(k,1))
+      dn01dn(k,1) = vctr4(k) / (rdry * extheta2temp(pi01dn(k,1),th01dn(k,1)) )
    end do
 
    close(unit=iunhd,status='keep')

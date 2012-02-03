@@ -3273,54 +3273,6 @@ module therm_lib8
 
    !=======================================================================================!
    !=======================================================================================!
-   !     This fucntion computes the change of ice-liquid potential temperature due to      !
-   ! sedimentation.  The arguments are ice-liquid potential temperature, potential temper- !
-   ! ature and temperature in Kelvin, the old and new mixing ratio [kg/kg] and the old and !
-   ! new enthalpy [J/kg].                                                                  !
-   !---------------------------------------------------------------------------------------!
-   real(kind=8) function dthil_sedimentation8(thil,theta,temp,rold,rnew,qrold,qrnew)
-      use consts_coms, only : ttripoli8 & ! intent(in)
-                            , cpdry8    & ! intent(in)
-                            , alvi38    & ! intent(in)
-                            , alvl38    ! ! intent(in)
-
-      implicit none
-      !----- Argument. --------------------------------------------------------------------!
-      real(kind=8), intent(in) :: thil  ! Ice-liquid potential temperature         [     K]
-      real(kind=8), intent(in) :: theta ! Potential temperature                    [     K]
-      real(kind=8), intent(in) :: temp  ! Temperature                              [     K]
-      real(kind=8), intent(in) :: rold  ! Old hydrometeor mixing ratio             [ kg/kg]
-      real(kind=8), intent(in) :: rnew  ! New hydrometeor mixing ratio             [ kg/kg]
-      real(kind=8), intent(in) :: qrold ! Old hydrometeor latent enthalpy          [  J/kg]
-      real(kind=8), intent(in) :: qrnew ! New hydrometeor latent enthalpy          [  J/kg]
-      !------------------------------------------------------------------------------------!
-
-
-
-      !------------------------------------------------------------------------------------!
-      !    Find the derivative based on the thermodynamics.                                !
-      !------------------------------------------------------------------------------------!
-      if (newthermo) then
-         dthil_sedimentation8 = - thil * (alvi38 * (rnew-rold) - (qrnew-qrold))            &
-                                       / (cpdry8 * max(temp,ttripoli8))
-      else
-         dthil_sedimentation8 = - thil * thil * (alvi38 *(rnew-rold) - (qrnew-qrold))      &
-                                       / (cpdry8 * max(temp,ttripoli8) * theta)
-      end if
-      !------------------------------------------------------------------------------------!
-
-      return
-   end function dthil_sedimentation8
-   !=======================================================================================!
-   !=======================================================================================!
-
-
-
-
-
-
-   !=======================================================================================!
-   !=======================================================================================!
    !     This function computes the ice-vapour equivalent potential temperature from       !
    ! theta_iland the total mixing ratio.  This is equivalent to the equivalent potential   !
    ! temperature considering also the effects of fusion/melting/sublimation.               !
@@ -3388,8 +3340,8 @@ module therm_lib8
    !---------------------------------------------------------------------------------------!
    real(kind=8) function dthetaeiv_dtlcl8(theiv,tlcl,rtot,eslcl,useice)
       use consts_coms, only : rocp8       & ! intent(in)
-                            , aklv8       & ! intent(in)
-                            , ttripoli8   ! ! intent(in)
+                            , cpdry8      & ! intent(in)
+                            , dcpvl8      ! ! intent(in)
       implicit none
       !----- Required arguments. ----------------------------------------------------------!
       real(kind=8), intent(in)           :: theiv    ! Ice-vap. equiv. pot. temp. [      K]
@@ -3400,6 +3352,10 @@ module therm_lib8
       logical     , intent(in), optional :: useice   ! Flag for considering ice   [    T|F]
       !----- Local variables --------------------------------------------------------------!
       real(kind=8)                       :: desdtlcl ! Sat. vapour pres. deriv.   [   Pa/K]
+      real(kind=8)                       :: esterm   ! es(TLC) term               [   ----]
+      real(kind=8)                       :: hhlcl    ! Enthalpy -- sensible       [   J/kg]
+      real(kind=8)                       :: qqlcl    ! Enthalpy -- latent         [   J/kg]
+      real(kind=8)                       :: qptlcl   ! Latent deriv. * T_LCL      [   J/kg]
       !------------------------------------------------------------------------------------!
 
 
@@ -3414,15 +3370,27 @@ module therm_lib8
 
 
 
-      !----- Find the derivative.  The function has a kink at ttripoli. -------------------!
-      if (tlcl > ttripoli8) then
-         dthetaeiv_dtlcl8 = theiv                                                          &
-                          * (1.d0 - rocp8 * tlcl * desdtlcl / eslcl - aklv8 * rtot / tlcl) &
-                          / tlcl
-      else
-         dthetaeiv_dtlcl8 = theiv                                                          &
-                          * (1.d0 - rocp8 * tlcl * desdtlcl / eslcl ) / tlcl
-      end if
+      !------------------------------------------------------------------------------------!
+      !     Saturation term.                                                               !
+      !------------------------------------------------------------------------------------!
+      esterm = rocp8 * tlcl * desdtlcl / eslcl
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !     Find the enthalpy terms.                                                       !
+      !------------------------------------------------------------------------------------!
+      hhlcl  = cpdry8 * tlcl
+      qqlcl  = alvl8(tlcl) * rtot
+      qptlcl = dcpvl8 * rtot * tlcl
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !      Derivative.                                                                   !
+      !------------------------------------------------------------------------------------!
+      dthetaeiv_dtlcl8 = theiv / tlcl * (1.d0 - esterm - (qqlcl - qptlcl) / hhlcl)
       !------------------------------------------------------------------------------------!
 
       return
@@ -3453,8 +3421,7 @@ module therm_lib8
    ! sion between the three phases is already taken care of.                               !
    !---------------------------------------------------------------------------------------!
    real(kind=8) function thetaeivs8(thil,temp,rsat,rliq,rice)
-      use consts_coms, only : aklv8     & ! intent(in)
-                            , ttripoli8 ! ! intent(in)
+      use consts_coms, only : cpdry8    ! ! intent(in)
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
       real(kind=8), intent(in) :: thil  ! Theta_il, ice-liquid water pot. temp.    [     K]
@@ -3473,7 +3440,7 @@ module therm_lib8
 
 
       !------ Find the saturation equivalent potential temperature. -----------------------!
-      thetaeivs8 = thil * exp ( aklv8 * rtots / max(temp,ttripoli8))
+      thetaeivs8 = thil * exp ( alvl8(temp) * rtots / (cpdry8 * temp))
       !------------------------------------------------------------------------------------!
 
       return
@@ -3498,10 +3465,8 @@ module therm_lib8
    !                 d(Thetae_iv)/d(T_LCL), use the dthetaeiv_dtlcl function instead.      !
    !---------------------------------------------------------------------------------------!
    real(kind=8) function dthetaeivs_dt8(theivs,temp,pres,rsat,useice)
-      use consts_coms, only : aklv8      & ! intent(in)
-                            , alvl38     & ! intent(in)
-                            , ttripoli8  & ! intent(in)
-                            , htripolii8 ! ! intent(in)
+      use consts_coms, only : cpdry8     & ! intent(in)
+                            , dcpvl8     ! ! intent(in)
       implicit none
       !----- Required arguments. ----------------------------------------------------------!
       real(kind=8), intent(in)           :: theivs ! Sat. ice-vap. eq. pot. temp. [      K]
@@ -3512,6 +3477,8 @@ module therm_lib8
       logical     , intent(in), optional :: useice ! Flag for considering ice     [    T|F]
       !----- Local variables --------------------------------------------------------------!
       real(kind=8)                       :: drsdt  ! Sat. mixing ratio derivative [kg/kg/K]
+      real(kind=8)                       :: hh     ! Enthalpy -- sensible         [   J/kg]
+      real(kind=8)                       :: qqaux  ! Enthalpy -- sensible         [   J/kg]
       !------------------------------------------------------------------------------------!
 
 
@@ -3524,12 +3491,17 @@ module therm_lib8
       !------------------------------------------------------------------------------------!
 
 
+
+      !------------------------------------------------------------------------------------!
+      !      Find the enthalpy terms.                                                      !
+      !------------------------------------------------------------------------------------!
+      hh    = cpdry8 * temp
+      qqaux = alvl8(temp) * (drsdt * temp - rsat) + dcpvl8 * rsat * temp
+      !------------------------------------------------------------------------------------!
+
+
       !----- Find the derivative.  Depending on the temperature, use different eqn. -------!
-      if (temp > ttripoli8) then
-         dthetaeivs_dt8 = theivs * (1.d0 + aklv8 * (drsdt*temp-rsat)/temp ) / temp
-      else
-         dthetaeivs_dt8 = theivs * (1.d0 + alvl38 * drsdt * temp * htripolii8 ) / temp
-      end if
+      dthetaeivs_dt8 = theivs / temp * ( 1.d0 + qqaux / hh )
       !------------------------------------------------------------------------------------!
 
       return
@@ -3555,11 +3527,9 @@ module therm_lib8
    !---------------------------------------------------------------------------------------!
    real(kind=8) function thetaeiv2thil8(theiv,pres,rtot,useice)
       use consts_coms, only : ep8       & ! intent(in)
-                            , alvl38    & ! intent(in)
                             , cpdry8    & ! intent(in)
                             , p008      & ! intent(in)
                             , rocp8     & ! intent(in)
-                            , ttripoli8 & ! intent(in)
                             , t3ple8    & ! intent(in)
                             , t008      ! ! intent(in)
       implicit none
@@ -3776,7 +3746,7 @@ module therm_lib8
       end if
 
       if (converged) then 
-         thetaeiv2thil8  = theiv * exp (- alvl38 * rtot / (cpdry8 * max(tlcl,ttripoli8)) )
+         thetaeiv2thil8  = theiv * exp (- alvl8(tlcl) * rtot / (cpdry8 * tlcl) )
          !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
          !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
          !write (unit=36,fmt='(a,1x,i5,1x,3(a,1x,f11.4,1x),2(a,1x,es11.4,1x))')             &
@@ -3836,12 +3806,10 @@ module therm_lib8
    !      when level >= 3 and to ignore otherwise.                                         !
    !---------------------------------------------------------------------------------------!
    subroutine thetaeivs2temp8(theivs,pres,theta,temp,rsat,useice)
-      use consts_coms, only : alvl38     & ! intent(in)
-                            , cpdry8     & ! intent(in)
+      use consts_coms, only : cpdry8     & ! intent(in)
                             , ep8        & ! intent(in)
                             , p008       & ! intent(in)
                             , rocp8      & ! intent(in)
-                            , ttripoli8  & ! intent(in)
                             , t008       ! ! intent(in)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
@@ -4055,7 +4023,6 @@ module therm_lib8
                             , ep8       & ! intent(in)
                             , p008      & ! intent(in)
                             , rocp8     & ! intent(in)
-                            , ttripoli8 & ! intent(in)
                             , t3ple8    & ! intent(in)
                             , t008      ! ! intent(in)
       implicit none
@@ -4386,10 +4353,7 @@ module therm_lib8
    ! secant and bisection and will converge.                                               !
    !---------------------------------------------------------------------------------------!
    subroutine thil2tqall8(thil,exner,pres,rtot,rliq,rice,temp,rvap,rsat)
-      use consts_coms, only : alvl38    & ! intent(in)
-                            , alvi38    & ! intent(in)
-                            , allii8    & ! intent(in)
-                            , cpdry8    & ! intent(in)
+      use consts_coms, only : cpdry8    & ! intent(in)
                             , cpdryi8   & ! intent(in)
                             , t008      & ! intent(in)
                             , toodry8   & ! intent(in)
@@ -4720,11 +4684,21 @@ module therm_lib8
          ! liquid mixing ratio.                                                            !
          !---------------------------------------------------------------------------------!
          if (abs(temp-t3ple8) < toler8*temp) then
-            rliq = min(rtot-rsat,max(0.d0,                                                 &
-                       allii8*(alvi38*(rtot-rsat)+cpdry8*max(temp,ttripoli8)               &
-                            *log(cpdryi8*exner*thil/temp))))
-            rice = max(0.d0,rtot-rsat-rliq)
+            !----- Find rliq. -------------------------------------------------------------!
+            rliq   = ( alvi8(temp) * (rtot - rsat)                                         &
+                     + cpdry8 * temp * log ( cpdryi8 * exner * thil / temp ) )             &
+                   / ( alvi8(temp) - alvl8(temp) )
+            !------------------------------------------------------------------------------!
+
+            !----- Correct rliq so it is bounded, and then find rice as the remainder. ----!
+            rliq   = max( 0.d0, min( rtot - rsat,  rliq ) )
+            rice   = max( 0.d0, rtot-rsat-rliq)
+            !------------------------------------------------------------------------------!
+
+
+            !----- Function evaluation. ---------------------------------------------------!
             funnow = theta_iceliq8(exner,temp,rliq,rice) - thil
+            !------------------------------------------------------------------------------!
          end if
          !---------------------------------------------------------------------------------!
          itb=itb+1
@@ -4790,8 +4764,7 @@ module therm_lib8
    !---------------------------------------------------------------------------------------!
    subroutine thil2tqliq8(thil,exner,pres,rtot,rliq,temp,rvap,rsat)
       use consts_coms, only : cpdryi8   & ! intent(in)
-                            , toodry8   & ! intent(in)
-                            , ttripoli8 ! ! intent(in)
+                            , toodry8   ! ! intent(in)
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
       real(kind=8), intent(in)    :: thil      ! Ice-liquid water potential temp.  [     K]
@@ -5038,7 +5011,7 @@ module therm_lib8
       !----- Arguments --------------------------------------------------------------------!
       real(kind=8), intent(in)  :: uint     ! Internal energy                     [   J/kg]
       real(kind=8), intent(out) :: temp     ! Temperature                         [      K]
-      real(kind=8), intent(out) :: fliq  ! Liquid Fraction (0-1)               [    ---]
+      real(kind=8), intent(out) :: fliq     ! Liquid Fraction (0-1)               [    ---]
       !------------------------------------------------------------------------------------!
 
 

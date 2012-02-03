@@ -20,7 +20,8 @@ subroutine leaf3_ocean(mzg,ustar,tstar,rstar,cstar,patch_rough,can_prss,can_rvap
                         , dtlloccc       & ! intent(out)
                         , can_depth      & ! intent(out)
                         , can_temp       & ! intent(out)
-                        , can_lntheta    & ! intent(out)
+                        , can_cp         & ! intent(out)
+                        , can_enthalpy   & ! intent(out)
                         , can_shv        & ! intent(out)
                         , veg_temp       & ! intent(out)
                         , veg_fliq       & ! intent(out)
@@ -39,13 +40,11 @@ subroutine leaf3_ocean(mzg,ustar,tstar,rstar,cstar,patch_rough,can_prss,can_rvap
                         , ustmin         ! ! intent(in)
    use rconstants, only : mmdry          & ! intent(in)
                         , mmdryi         & ! intent(in)
-                        , cp             & ! intent(in)
-                        , cpi            & ! intent(in)
                         , t3ple          & ! intent(in)
-                        , alvl           & ! intent(in)
                         , huge_num       ! ! intent(in)
    use therm_lib , only : rslif          & ! function
-                        , thetaeiv       ! ! function
+                        , thetaeiv       & ! function
+                        , tq2enthalpy    ! ! function
    use node_mod  , only : mynum          ! ! intent(in)
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
@@ -74,7 +73,7 @@ subroutine leaf3_ocean(mzg,ustar,tstar,rstar,cstar,patch_rough,can_prss,can_rvap
    ! fluxes with water surface and atmosphere.                                             !
    !---------------------------------------------------------------------------------------!
    dtllowcc  = dtll / (can_depth * can_rhos)
-   dtllohcc  = dtll / (can_depth * can_rhos * cp * can_temp)
+   dtllohcc  = dtll / (can_depth * can_rhos)
    dtlloccc  = mmdry * dtllowcc
    
 
@@ -101,22 +100,22 @@ subroutine leaf3_ocean(mzg,ustar,tstar,rstar,cstar,patch_rough,can_prss,can_rvap
    !---------------------------------------------------------------------------------------!
 
    !----- Compute the fluxes from water body to canopy. -----------------------------------!
-   hflxgc  = ggnet * cp * can_rhos * (ground_temp - can_temp)
-   wflxgc  = ggnet      * can_rhos * (ground_rsat - can_rvap)
-   qwflxgc = wflxgc * alvl
+   hflxgc  = ggnet * can_cp * can_rhos * (ground_temp - can_temp)
+   wflxgc  = ggnet          * can_rhos * (ground_rsat - can_rvap)
+   qwflxgc = wflxgc * tq2enthalpy(ground_temp,1.0,.true.)
    cflxgc  = 0. !----- No water carbon emission model available...
 
    !----- Compute the fluxes from atmosphere to canopy air space. -------------------------!
    rho_ustar = can_rhos  * ustar
-   eflxac    = rho_ustar * estar * cp * can_temp
+   eflxac    = rho_ustar * estar
    hflxac    = rho_ustar * tstar * can_exner
    wflxac    = rho_ustar * rstar
    cflxac    = rho_ustar * cstar * mmdryi
 
    !----- Integrate the state variables. --------------------------------------------------!
-   can_lntheta  = can_lntheta + dtllohcc * (hflxgc + hflxac)
-   can_rvap     = can_rvap    + dtllowcc * (wflxgc + wflxac)
-   can_co2      = can_co2     + dtlloccc * (cflxgc + cflxac)
+   can_enthalpy = can_enthalpy + dtllohcc * (hflxgc + qwflxgc + eflxac)
+   can_rvap     = can_rvap     + dtllowcc * (wflxgc           + wflxac)
+   can_co2      = can_co2      + dtlloccc * (cflxgc           + cflxac)
 
    !----- Integrate the fluxes. -----------------------------------------------------------!
    sensible_gc = sensible_gc +  hflxgc * dtll_factor
@@ -140,8 +139,6 @@ end subroutine leaf3_ocean
 ! future sea surface temperature.                                                          !
 !------------------------------------------------------------------------------------------!
 subroutine leaf3_ocean_diag(ifm,mzg,pastsst,futuresst,soil_energy)
-   use rconstants, only : cliq         & ! intent(in)
-                        , tsupercool   ! ! intent(in)
    use mem_grid  , only : time         ! ! intent(in)
    use io_params , only : iupdsst      & ! intent(in)
                         , ssttime1     & ! intent(in)
@@ -149,7 +146,8 @@ subroutine leaf3_ocean_diag(ifm,mzg,pastsst,futuresst,soil_energy)
    use leaf_coms , only : timefac_sst  & ! intent(out)
                         , soil_tempk   & ! intent(in)
                         , soil_fracliq ! ! intent(in)
-   use therm_lib , only : qtk          ! ! sub-routine
+   use therm_lib , only : uint2tl      & ! sub-routine
+                        , tl2uint      ! ! function
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
    integer                     , intent(in)    :: ifm
@@ -159,8 +157,8 @@ subroutine leaf3_ocean_diag(ifm,mzg,pastsst,futuresst,soil_energy)
    real        , dimension(mzg), intent(inout) :: soil_energy
    !----- Local variables. ----------------------------------------------------------------!
    integer                                     :: izg
-   integer                                     :: sst
-   integer                                     :: ssq
+   real                                        :: sst
+   real                                        :: ssq
    !---------------------------------------------------------------------------------------!
 
 
@@ -177,12 +175,12 @@ subroutine leaf3_ocean_diag(ifm,mzg,pastsst,futuresst,soil_energy)
 
    !----- Find the sea surface temperature. -----------------------------------------------!
    sst = pastsst + timefac_sst * (futuresst -pastsst)
-   ssq = cliq * (sst - tsupercool)
+   ssq = tl2uint(sst,1.0)
 
    !----- Find the sea surface internal energy, assuming that it is always liquid. --------!
    do izg=1,mzg
       soil_energy(izg) = ssq
-      call qtk(soil_energy(izg),soil_tempk(izg),soil_fracliq(izg))
+      call uint2tl(soil_energy(izg),soil_tempk(izg),soil_fracliq(izg))
    end do
    !---------------------------------------------------------------------------------------!
 

@@ -55,20 +55,14 @@ end subroutine thermo_boundary_driver
 !------------------------------------------------------------------------------------------!
 subroutine thermo(mzp,mxp,myp,ia,iz,ja,jz)
 
-   use mem_grid, only:    &
-       ngrid              ! ! intent(in)    - Current grid
-   use mem_basic, only:   &
-       basic_g            ! ! intent(inout) - Structure with the "basic" variables
-   use mem_micro, only:   &
-       micro_g            ! ! intent(inout) - Structure containing the hydrometeors
-   use mem_scratch, only: &
-       scratch,           & ! intent(out) - Scratch structure, for scratch...
-       vctr5,             & ! intent(out) - Scratch vector, for scratch...
-       vctr6              ! ! intent(out) - Scratch vector, for scratch...
-   use therm_lib, only:   &
-       level              ! ! intent(in) - Number of H2O phases 
-   use micphys, only:     &
-       availcat           ! ! intent(in) - Flag: the hydrometeor is available [T|F]
+   use mem_grid   , only : ngrid    ! ! intent(in)    - Current grid
+   use mem_basic  , only : basic_g  ! ! intent(inout) - The "basic" variables
+   use mem_micro  , only : micro_g  ! ! intent(inout) - The hydrometeors
+   use mem_scratch, only : scratch  & ! intent(out)   - Scratch structure, for scratch...
+                         , vctr5    & ! intent(out)   - Scratch vector, for scratch...
+                         , vctr6    ! ! intent(out)   - Scratch vector, for scratch...
+   use therm_lib  , only : level    ! ! intent(in)    - Number of H2O phases 
+   use micphys    , only : availcat ! ! intent(in)    - Hydrometeor is available [T|F]
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    integer, intent(in)  :: mzp    ! # of points in Z                              [   ----]
@@ -239,12 +233,11 @@ end subroutine vapthrm
 ! when water is in the liquid and vapour phases only.                                      !
 !------------------------------------------------------------------------------------------!
 subroutine satadjst(m1,m2,m3,ia,iz,ja,jz,pp,p,thil,theta,t,pi0,rtp,rv,rcp,rvls)
-   use rconstants, only : cpi           & ! intent(in)
-                        , p00           & ! intent(in)
-                        , alvl          & ! intent(in)
-                        , cp            & ! intent(in)
-                        , cpor          ! ! intent(in)
    use therm_lib , only : rslf          & ! function
+                        , alvl          & ! function
+                        , exner2press   & ! function
+                        , extheta2temp  & ! function
+                        , extemp2theta  & ! function
                         , thil2tqliq    ! ! subroutine
    implicit none
   
@@ -272,14 +265,14 @@ subroutine satadjst(m1,m2,m3,ia,iz,ja,jz,pp,p,thil,theta,t,pi0,rtp,rv,rcp,rvls)
       do i = ia,iz
          do k = 1,m1
             exner = (pi0(k,i,j) + pp(k,i,j)) 
-            p(k,i,j) = p00 * (cpi* exner) ** cpor
+            p(k,i,j) = exner2press(exner)
             !----- First guess for temperature and liquid mixing ratio --------------------!
-            t(k,i,j)   = cpi * thil(k,i,j) * exner
+            t(k,i,j)   = extheta2temp(exner,thil(k,i,j))
             rcp(k,i,j) = max(0.,rtp(k,i,j) - rslf(p(k,i,j),t(k,i,j)))
             !----- Adjusting the accordingly to the saturation point ----------------------!
             call thil2tqliq(thil(k,i,j),exner,p(k,i,j),rtp(k,i,j),rcp(k,i,j),t(k,i,j)      &
                            ,rv(k,i,j),rvls(k,i,j))
-            theta(k,i,j) = cp * t(k,i,j) / exner
+            theta(k,i,j) = extemp2theta(exner,t(k,i,j))
          end do
       end do
    end do
@@ -296,25 +289,23 @@ end subroutine satadjst
 
 !==========================================================================================!
 !==========================================================================================!
+!    This routine calculates theta and rv for "level 3 microphysics" given prognosed       !
+! theta_il, cloud, rain, pristine ice, snow, aggregates, graupel, hail, q6 (internal       !
+! energy of graupel), and q7 (internal energy of hail).                                    !
+!------------------------------------------------------------------------------------------!
 subroutine wetthrm3(m1,m2,m3,ia,iz,ja,jz,availcat,pi0,pp,thp,theta,rtp,rv,rcp,rrp,rpp,rsp  &
                    ,rap,rgp,rhp,q6,q7,rliq,rice)
 
-   !---------------------------------------------------------------------------------------!
-   !    This routine calculates theta and rv for "level 3 microphysics"
-   ! given prognosed theta_il, cloud, rain, pristine ice, snow, aggregates,
-   ! graupel, hail, q6, and q7.
-
-   use rconstants, only : cpi       & ! intent(in)
-                        , cp        & ! intent(in)
-                        , cpor      & ! intent(in)
-                        , p00       & ! intent(in)
-                        , ttripoli  & ! intent(in)
-                        , alvl      & ! intent(in)
-                        , alvi      & ! intent(in)
-                        , cpi4      & ! intent(in)
-                        , htripolii ! ! intent(in)
-   use node_mod  , only : mynum     ! ! intent(in)
-   use therm_lib , only : thil2temp ! ! Theta_il => Temperature function
+   use rconstants, only : ttripoli     & ! intent(in)
+                        , alvl3        & ! intent(in)
+                        , alvi3        & ! intent(in)
+                        , cpdryi4      & ! intent(in)
+                        , htripolii    ! ! intent(in)
+   use node_mod  , only : mynum        ! ! intent(in)
+   use therm_lib , only : thil2temp    & ! function
+                        , exner2press  & ! function
+                        , extheta2temp & ! function
+                        , extemp2theta ! ! function
 
    implicit none
 
@@ -366,18 +357,19 @@ subroutine wetthrm3(m1,m2,m3,ia,iz,ja,jz,availcat,pi0,pp,thp,theta,rtp,rv,rcp,rr
          !----- Finding the potential temperature -----------------------------------------!
          do k = 1,m1
             exner        = pi0(k,i,j) + pp(k,i,j)
-            pres         = p00 * (cpi * exner)**cpor
-            !----- Finding the first guess ------------------------------------------------!
-            til  = cpi * thp(k,i,j)   * exner
-            temp = cpi * theta(k,i,j) * exner
+            pres         = exner2press(exner)
+            !----- Find the first guess. --------------------------------------------------!
+            til  = extheta2temp(exner,thp  (k,i,j))
+            temp = extheta2temp(exner,theta(k,i,j))
             if (temp > ttripoli) then
-               temp = 0.5 * (til + sqrt(til * (til + cpi4*(alvl*rliq(k)+alvi*rice(k)))))
+               temp = 0.5 * ( til                                                          &
+                            + sqrt( til * (til + cpdryi4 * (alvl3*rliq(k)+alvi3*rice(k)))))
             else
-               temp = til * (1. + htripolii * (alvl*rliq(k)+alvi*rice(k)))
+               temp = til * (1. + htripolii * (alvl3*rliq(k)+alvi3*rice(k)))
             endif
             !----- First guess for temperature --------------------------------------------!
             temp         = thil2temp(thp(k,i,j),exner,pres,rliq(k),rice(k),temp)
-            theta(k,i,j) = cp * temp / exner
+            theta(k,i,j) = extemp2theta(exner,temp)
 
             if (rv(k,i,j) > rtp(k,i,j) .or. rliq(k) < 0. .or. rice(k) < 0.) then
                write (unit=*,fmt='(a)') '------ MODEL THERMODYNAMIC IS NON-SENSE... ------'
@@ -427,7 +419,7 @@ subroutine integ_liq_ice(m1,availcat,rcp,rrp,rpp,rsp,rap,rgp,rhp,q6,q7,rliq,rice
    ! cumulus parametrisation also needs this part to find the first guess, but not the     !
    ! temperature and potential temperature part.                                           !
    !---------------------------------------------------------------------------------------!
-   use therm_lib, only: qtk
+   use therm_lib, only : uint2tl ! ! function
    implicit none
    !----- Input variables -----------------------------------------------------------------!
    integer               , intent(in)    :: m1       ! Vertical dimension         [   ----]
@@ -502,7 +494,7 @@ subroutine integ_liq_ice(m1,availcat,rcp,rrp,rpp,rsp,rap,rgp,rhp,q6,q7,rliq,rice
    !----- Graupel is mixed, find the liquid fraction and distribute to both phases --------!
    if (availcat(6)) then
       do k = 1,m1
-         call qtk(q6(k),tcoal,frcliq)
+         call uint2tl(q6(k),tcoal,frcliq)
          rliq(k) = rliq(k) + rgp(k) * frcliq
          rice(k) = rice(k) + rgp(k) * (1. - frcliq)
       end do
@@ -512,7 +504,7 @@ subroutine integ_liq_ice(m1,availcat,rcp,rrp,rpp,rsp,rap,rgp,rhp,q6,q7,rliq,rice
    !----- Hail is also mixed, do the same as graupel --------------------------------------!
    if (availcat(7)) then
       do k = 1,m1
-         call qtk(q7(k),tcoal,frcliq)
+         call uint2tl(q7(k),tcoal,frcliq)
          rliq(k) = rliq(k) + rhp(k) * frcliq
          rice(k) = rice(k) + rhp(k) * (1. - frcliq)
       end do

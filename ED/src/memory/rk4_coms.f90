@@ -23,7 +23,7 @@ module rk4_coms
    type rk4patchtype
 
       !----- Canopy air variables. --------------------------------------------------------!
-      real(kind=8)                        :: can_enthalpy ! Canopy enthalpy      [    J/m2]
+      real(kind=8)                        :: can_enthalpy ! Canopy sp. enthalpy  [    J/kg]
       real(kind=8)                        :: can_theta    ! Pot. Temperature     [       K]
       real(kind=8)                        :: can_temp     ! Temperature          [       K]
       real(kind=8)                        :: can_shv      ! Specific humidity    [   kg/kg]
@@ -712,22 +712,29 @@ module rk4_coms
    !     Flag to determine whether the patch is too sparsely populated to be computed at   !
    ! the cohort level.  The decision is made based on the difference in order of magnitude !
    ! between the patch "natural" leaf heat capacity and the minimum heat capacity for the  !
-   ! Runge-Kutta solver (checked at copy_patch_init).                                   !
+   ! Runge-Kutta solver (checked at copy_patch_init).                                      !
    !---------------------------------------------------------------------------------------!
    logical :: toosparse
-   
+   !---------------------------------------------------------------------------------------!
+
    !----- Flag to tell whether there is at least one "resolvable" cohort in this patch ----!
    logical :: any_resolvable
+   !---------------------------------------------------------------------------------------!
 
-   !----- Canopy water and heat capacity variables. ---------------------------------------!
-   real(kind=8)    :: zoveg
-   real(kind=8)    :: zveg
-   real(kind=8)    :: wcapcan
-   real(kind=8)    :: hcapcan
-   real(kind=8)    :: ccapcan
-   real(kind=8)    :: wcapcani
-   real(kind=8)    :: hcapcani
-   real(kind=8)    :: ccapcani
+
+   !---------------------------------------------------------------------------------------!
+   !      Canopy air space capacities.  These variables are used to convert the intensive  !
+   ! version of canopy air space prognostic variables (specific enthalpy, water vapour     !
+   ! specific humidity and CO2 mixing ratio) into extensive variables.                     ! 
+   !---------------------------------------------------------------------------------------!
+   real(kind=8) :: wcapcan  ! Water capacity                               [  kg_air/m²gnd]
+   real(kind=8) :: hcapcan  ! Enthalpy capacity                            [  kg_air/m²gnd]
+   real(kind=8) :: ccapcan  ! CO2 capacity                                 [ mol_air/m²gnd]
+   real(kind=8) :: wcapcani ! Inverse of water capacity                    [  m²gnd/kg_air]
+   real(kind=8) :: hcapcani ! Inverse of enthalpy capacity                 [  m²gnd/kg_air]
+   real(kind=8) :: ccapcani ! Inverse of CO2 capacity                      [ m²gnd/mol_air]
+   !---------------------------------------------------------------------------------------!
+
    !=======================================================================================!
    !=======================================================================================!
 
@@ -1892,16 +1899,6 @@ module rk4_coms
       rk4max_can_theta   = max(rk4max_can_theta,can_theta_try)
       !----- 5. Maximum pressure. ---------------------------------------------------------!
       can_exner_try      = press2exner8(rk4max_can_prss)
-      can_theta_try      = extemp2theta8(can_exner_try,can_temp)
-      rk4min_can_theta   = min(rk4min_can_theta,can_theta_try)
-      rk4max_can_theta   = max(rk4max_can_theta,can_theta_try)
-      !----- 6. Minimum specific humidity. ------------------------------------------------!
-      can_exner_try      = press2exner8(can_prss)
-      can_theta_try      = extemp2theta8(can_exner_try,can_temp)
-      rk4min_can_theta   = min(rk4min_can_theta,can_theta_try)
-      rk4max_can_theta   = max(rk4max_can_theta,can_theta_try)
-      !----- 7. Maximum specific humidity. ------------------------------------------------!
-      can_exner_try      = press2exner8(can_prss)
       can_theta_try      = extemp2theta8(can_exner_try,can_temp)
       rk4min_can_theta   = min(rk4min_can_theta,can_theta_try)
       rk4max_can_theta   = max(rk4max_can_theta,can_theta_try)

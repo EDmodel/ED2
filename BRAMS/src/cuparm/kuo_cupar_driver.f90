@@ -208,9 +208,9 @@ subroutine conpar(m1,m2,m3,ia,iz,ja,jz,ibcon,up,vp,wp,theta,pp,pi0,dn0,rv,thsrc,
             wcon(k)      = wp(k,i,j)
             thtcon(k)    = theta(k,i,j)
             picon(k)     = (pp(k,i,j)+pi0(k,i,j))
-            tmpcon(k)    = thtcon(k)*picon(k)/cp
+            tmpcon(k)    = thtcon(k)*picon(k)/cpdry
             dncon(k)     = dn0(k,i,j)
-            prcon(k)     = (picon(k)/cp)**cpor*p00
+            prcon(k)     = (picon(k)/cpdry)**cpor*p00
             rvcon(k)     = rv(k,i,j)
             zcon(k)      = zt(k) *rtgt(i,j)
             zzcon(k)     = zm(k) *rtgt(i,j)
@@ -287,7 +287,7 @@ subroutine cu_environ(k1,k2)
 
    !----- Compute moist static energy profile ---------------------------------------------!
    do k=k1,k2
-     hz(k)=cp*tmpcon(k)+grav*zcon(k)+alvl*rvcon(k)
+     hz(k)=cpdry*tmpcon(k)+grav*zcon(k)+alvl3*rvcon(k)
    enddo
 
    !---------------------------------------------------------------------------------------!
@@ -364,12 +364,12 @@ subroutine cu_environ(k1,k2)
    end do
 
    do k=1,kmt
-     te(k)=the(k)*pke(k)/cp
-     pe(k)=(pke(k)/cp)**cpor*p00
+     te(k)=the(k)*pke(k)/cpdry
+     pe(k)=(pke(k)/cpdry)**cpor*p00
      rhoe(k)=pe(k)/(rdry*virtt(te(k),rve(k)))
    end do
    do k=1,kmt
-     thee(k)=thetaeiv(the(k),pe(k),te(k),rve(k),rve(k),3,.false.)
+     thee(k)=thetaeiv(the(k),pe(k),te(k),rve(k),rve(k),.false.)
    end do
 
 
@@ -401,7 +401,7 @@ subroutine cu_environ(k1,k2)
    rlll  = (rve(kcon)+rve(kcon+1)+rve(kcon-1))/3.
    zlll  = ze(kcon)
    thlll = tlll * (p00/plll)**rocp
-   call lcl_il(thlll,plll,tlll,rlll,rlll,tlcl,plcl,dzlcl,1,.false.)
+   call lcl_il(thlll,plll,tlll,rlll,rlll,tlcl,plcl,dzlcl,.false.)
    if (dzlcl == 0.) then
       tlcl = tlll
       plcl = plll
@@ -429,7 +429,7 @@ subroutine cu_environ(k1,k2)
    !     Locate equilibrium temperature level of an unentrained parcel. compute initial    !
    ! ABE. If ABE is less than 0, no convection.                                            !
    !---------------------------------------------------------------------------------------!
-   theu(klcl) = the(kcon)*exp(alvl*rve(kcon)/(cp*max(tlcl,ttripoli)))
+   theu(klcl) = the(kcon)*exp(alvl3*rve(kcon)/(cpdry*max(tlcl,ttripoli)))
 
    bypass = .false.
    eqloop: do k=klcl,kmt
@@ -511,7 +511,7 @@ subroutine kuocp()
    !    This is the cloud model.  Updraft is constant THETA e and saturated with respect   !
    ! to water.  There is no ice.  Cloud top is one level above ETL. THETA e of the updraft !
    !---------------------------------------------------------------------------------------!
-   theu(klcl)=the(kcon)*exp(alvl*rve(kcon)/(cp*tlcl))
+   theu(klcl)=the(kcon)*exp(alvl3*rve(kcon)/(cpdry*tlcl))
 
    !----- Equilibrium Temperature Level of the source level air. --------------------------!
    igo    = 0
@@ -738,7 +738,7 @@ subroutine kuocp()
 
    rateloop: do
       do k=2,kmt
-        ftcon(k) = alvl*preff*supply*vheat(k) /(pke(k)*rhoe(k)*vhint)
+        ftcon(k) = alvl3*preff*supply*vheat(k) /(pke(k)*rhoe(k)*vhint)
       end do
       do k=klcl,kct
         frcon(k)=bkuo*supply*vmois(k)/(rhoe(k)*vmint)
@@ -820,7 +820,7 @@ subroutine cp2mod(k1,k2)
    !----- Compute integrated heating and moistening tendencies. ---------------------------!
    do k=2,kmt
      qvct1(k) = rhoe(k)*ftcon(k)*pke(k)
-     qvct2(k) = rhoe(k)*alvl*frcon(k)
+     qvct2(k) = rhoe(k)*alvl3*frcon(k)
      qvct3(k) = (zc(k)-zc(k-1))*qvct1(k)
      qvct4(k) = (zc(k)-zc(k-1))*qvct2(k)
    end do
@@ -853,7 +853,7 @@ subroutine cp2mod(k1,k2)
    !----- Change energy tendencies to temperature and mixing ratio tendencies. ------------!
    do k=k1,k2
      ftcon(k) = vctr5(k)/((zzcon(k)-zzcon(k-1))*dncon(k)*picon(k))
-     frcon(k) = vctr6(k)/((zzcon(k)-zzcon(k-1))*dncon(k)*alvl)
+     frcon(k) = vctr6(k)/((zzcon(k)-zzcon(k-1))*dncon(k)*alvl3)
    end do
 
 return

@@ -160,9 +160,9 @@ Module rconstants
    real, parameter :: rocp    = rdry  / cpdry ! Ra/cp                           [     ----]
    real, parameter :: rocv    = rdry  / cvdry ! Ra/Cv                           [     ----]
    real, parameter :: cpocv   = cpdry / cvdry ! Cp/Cv                           [     ----]
-   real, parameter :: cpor    = cp / rdry     ! Cp/Ra                           [     ----]
-   real, parameter :: cvor    = cv / rdry     ! Cp/Ra                           [     ----]
-   real, parameter :: gocp    = grav / cpdrty ! g/Cp, dry adiabatic lapse rate  [      K/m]
+   real, parameter :: cpor    = cpdry / rdry  ! Cp/Ra                           [     ----]
+   real, parameter :: cvor    = cvdry / rdry  ! Cp/Ra                           [     ----]
+   real, parameter :: gocp    = grav / cpdry  ! g/Cp, dry adiabatic lapse rate  [      K/m]
    real, parameter :: gordry  = grav / rdry   ! g/Ra                            [      K/m]
    real, parameter :: cpdryi  = 1. / cpdry    ! 1/Cp                            [   kg K/J]
    real, parameter :: cpdryi4 = 4. * cpdryi   ! 4/Cp                            [   kg K/J]
@@ -268,19 +268,8 @@ Module rconstants
    ! prefer the inverse way, Uliq is the amount of energy the parcel would need to lose to !
    ! become solid at 0K.)                                                                  !
    !---------------------------------------------------------------------------------------!
-   real, parameter :: tsupercool_liq = t3ple - (uiicet3+alli) * cliqi
-   real, parameter :: tsupercool_vap = cph2oi * ( (cph2o - cice) * t3ple - alvi3 )
-   !---------------------------------------------------------------------------------------!
-
-
-
-   !---------------------------------------------------------------------------------------!
-   !    eta3ple is a constant related to the triple point that is used to find enthalpy    !
-   ! when the equilibrium temperature is above t3ple. cimcp (clmcp) is the difference      !
-   ! between the heat capacity of ice (liquid) and vapour, the latter assumed to be the    !
-   ! same as the dry air, for simplicity.                                                  !
-   !---------------------------------------------------------------------------------------!
-   real, parameter :: eta3ple = (cice - cliq) * t3ple + alvi
+   real, parameter :: tsupercool_liq = t3ple - (uiicet3 + alli ) * cliqi
+   real, parameter :: tsupercool_vap = t3ple - (uiicet3 + alvi3) * cph2oi
    !---------------------------------------------------------------------------------------!
 
 
@@ -422,7 +411,6 @@ Module rconstants
    real(kind=8), parameter :: alvl38          = dble(alvl3         )
    real(kind=8), parameter :: alvi38          = dble(alvi3         )
    real(kind=8), parameter :: alli8           = dble(alli          )
-   real(kind=8), parameter :: allivlme8       = dble(allivlme      )
    real(kind=8), parameter :: allii8          = dble(allii         )
    real(kind=8), parameter :: akiv8           = dble(akiv          )
    real(kind=8), parameter :: aklv8           = dble(aklv          )
@@ -434,7 +422,6 @@ Module rconstants
    real(kind=8), parameter :: del_alvi38      = dble(del_alvi3     )
    real(kind=8), parameter :: tsupercool_liq8 = dble(tsupercool_liq)
    real(kind=8), parameter :: tsupercool_vap8 = dble(tsupercool_vap)
-   real(kind=8), parameter :: eta3ple8        = dble(eta3ple       )
    real(kind=8), parameter :: ttripoli8       = dble(ttripoli      )
    real(kind=8), parameter :: htripoli8       = dble(htripoli      )
    real(kind=8), parameter :: htripolii8      = dble(htripolii     )

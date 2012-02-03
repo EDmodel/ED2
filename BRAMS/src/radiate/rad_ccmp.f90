@@ -9,7 +9,7 @@
 !«»«»«»«»«»«»«»«»«»«»«»«»«»«»«»«»«»«»«»«»«»«»«»«»«»«»«»«»«»«»«»«»«»«»«»«»«»«»«»«»«»«»«»«»«»«»«»«»«»«»«»«»«»«»«»«»«»«»«»«»!
 ![MLO - Changed many things here to double precision to avoid FPE. Changed dimensions to attempt binary reproducibility.
 subroutine shradc(nzp,rvr,rtr,dn0r,dzzr,prd,albedo,solar,cosz,fthr,rshort)
-  use rconstants, only: cp
+  use rconstants, only: cpdry
   implicit none                  
 !----- List of arguments ------------------------------------------------------------------------------------------------!
   integer     , intent(in)                     :: nzp
@@ -20,7 +20,7 @@ subroutine shradc(nzp,rvr,rtr,dn0r,dzzr,prd,albedo,solar,cosz,fthr,rshort)
 
 !----- List of parameters -----------------------------------------------------------------------------------------------!
   real(kind=8), parameter                    :: zero=dble(0.),one=dble(1.)
-  real(kind=8), parameter                    :: cpcgs=dble(10000.)*dble(cp)
+  real(kind=8), parameter                    :: cpcgs=dble(10000.)*dble(cpdry)
   integer     , parameter                    :: nzmax=200 , iiv1=  1 ,  iiv2=  2 , iiv3= 3
   integer     , parameter                    ::   iv1=  1 ,  iv2=  2 ,   iv3=  3 ,  iv4= 4  ,  iv5=  5 &
                                                ,  iv6=  6 ,  iv7=  7 ,   iv8=  8 ,  iv9= 9  , iv10= 10 &
@@ -377,7 +377,7 @@ subroutine lwradc(nzp,rvr,rtr,co2r,dn0r,temprd,prd,dzzr,fthr,rlong)
   !  ! FD1,FD2 ..... downwelling fluxes (1-vapor) (2-CO2)
   !  +--------------------------------------------------------------------
   ! The subroutine uses CGS but constants are based on the global ones.
-  use rconstants, only : grav, cp, stefan, ep , volmoll, mmco2i
+  use rconstants, only : grav, cpdry, stefan, ep , volmoll, mmco2i
   implicit none
 !----- List of arguments --------------------------------------------------------------------------------!
   integer, intent(in)                       :: nzp
@@ -389,7 +389,7 @@ subroutine lwradc(nzp,rvr,rtr,co2r,dn0r,temprd,prd,dzzr,fthr,rlong)
   real(kind=8),    parameter                      :: gcgs=dble(grav)*100.
   real(kind=8),    parameter                      :: stefancgs=1000.*dble(stefan)
   real(kind=8),    parameter                      :: prefcgs=dble(1.01325e6)
-  real(kind=8),    parameter                      :: cpcgs=dble(cp)*10000.
+  real(kind=8),    parameter                      :: cpcgs=dble(cpdry)*10000.
   real(kind=8),    parameter   , dimension(4)     :: ad=(/   8.857,    -332.8,    14607.,  -261900.           /)
   real(kind=8),    parameter   , dimension(4)     :: au=(/   9.329,    -446.4,      824.,   259700.           /)
   real(kind=8),    parameter   , dimension(5)     :: bd=(/   .6558,    .12175, 1.4976e-2, 1.4981e-3,   .49e-4 /)
@@ -740,7 +740,7 @@ subroutine shradp(nzp,rvr,dn0r,dzr,sc,pird,cosz,albedo  &
   !                        the ground                                     !
   !                                                                       !
   !+----------------------------------------------------------------------!
-  use rconstants, only : cp
+  use rconstants, only : cpdry
   implicit none
   !----- Arguments: ------------------------------------------------------!
   integer, intent(in)                     :: nzp
@@ -751,7 +751,7 @@ subroutine shradp(nzp,rvr,dn0r,dzr,sc,pird,cosz,albedo  &
   real   , intent(inout) , dimension(nzp,2) :: sc
   !----- List of constants -----------------------------------------------!
   integer, parameter                      :: iv1=1,iv2=2
-  real, parameter                         :: cpcgs=10000.*cp
+  real, parameter                         :: cpcgs=10000.*cpdry
 
   integer                                 :: nz,k
   real                                    :: raysct,rdcon1,vabs
@@ -819,7 +819,7 @@ subroutine lwradp(nzp,temprd,rvr,co2r,dn0r,dzzr,pird,sc,fthr,rlong)
   !               RLONG  - downward longwave flux at the ground                                                        !
   !                                                                                                                    !
   !--------------------------------------------------------------------------------------------------------------------!
-  use rconstants, only : grav,cp,stefan,p00,cpor
+  use rconstants, only : grav,cpdry,stefan,p00,cpor
   implicit none
   integer , intent(in)                         :: nzp
   real    , intent(in)     , dimension(nzp)    :: rvr,co2r,dn0r,temprd,dzzr, pird
@@ -830,7 +830,7 @@ subroutine lwradp(nzp,temprd,rvr,co2r,dn0r,dzzr,pird,sc,fthr,rlong)
   real    , parameter                         :: p00cgs    =10.    * p00
   real    , parameter                         :: gcgs      =100.   * grav
   real    , parameter                         :: stefancgs =1000.  * stefan
-  real    , parameter                         :: cpcgs     =10000. * cp
+  real    , parameter                         :: cpcgs     =10000. * cpdry
   integer , parameter                         ::   iv1=  1,  iv2=  2,  iv3=  3,  iv4=  4,  iv5=  5,  iv6=  6 &
                                                 ,  iv7=  7,  iv8=  8,  iv9=  9, iv10= 10, iv11= 11, iv12= 12 &
                                                 , iv13= 13, iv14= 14, iv15= 15, iv16= 16, iv17= 17, iv18= 18

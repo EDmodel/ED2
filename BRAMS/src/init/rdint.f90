@@ -214,9 +214,9 @@ subroutine initlz (name_name)
                         ,basic_g(ifm)%pi0,basic_g(ifm)%pp,basic_g(ifm)%theta               &
                         ,basic_g(ifm)%dn0,scratch%vt3dc,scratch%vt3di        )
             !----- Copying them to the micro arrays if they are allocated -----------------!
-            if (irain  >= 1) call atob(nzp*nxp*nyp,scratch%vt3da,micro_g(ifm)%rrp)
-            if (igraup >= 1) call atob(nzp*nxp*nyp,scratch%vt3dg,micro_g(ifm)%rgp)
-            if (ihail  >= 1) call atob(nzp*nxp*nyp,scratch%vt3dh,micro_g(ifm)%rhp)
+            if (irain  >= 1) call atob(nzp*nxp*nyp,scratch%vt3da,micro_g(ifm)%q2)
+            if (igraup >= 1) call atob(nzp*nxp*nyp,scratch%vt3dg,micro_g(ifm)%q6)
+            if (ihail  >= 1) call atob(nzp*nxp*nyp,scratch%vt3dh,micro_g(ifm)%q7)
             if (icloud == 7) call atob(nzp*nxp*nyp,scratch%vt3dc,micro_g(ifm)%cccnp)
             if (ipris  == 7) call atob(nzp*nxp*nyp,scratch%vt3di,micro_g(ifm)%cifnp)
          end if
@@ -478,9 +478,18 @@ subroutine initlz (name_name)
             call negadj1(nzp,nxp,nyp,1,nxp,1,nyp)
             call thermo(nzp,nxp,nyp,1,nxp,1,nyp)
             if (level  ==  3) then
-               call initqin(nzp,nxp,nyp,micro_g(ifm)%q2,micro_g(ifm)%q6,micro_g(ifm)%q7    &
+               call azero3(nzp*nxp*nyp,scratch%vt3da,scratch%vt3dg,scratch%vt3dh)
+               call azero2(nzp*nxp*nyp,scratch%vt3dc,scratch%vt3di)
+               !----- Use scratch variables to define cccnp and cifnp ---------------------!
+               call initqin(nzp,nxp,nyp,scratch%vt3da,scratch%vt3dg,scratch%vt3dh          &
                            ,basic_g(ifm)%pi0,basic_g(ifm)%pp,basic_g(ifm)%theta            &
-                           ,basic_g(ifm)%dn0,micro_g(ifm)%cccnp,micro_g(ifm)%cifnp)
+                           ,basic_g(ifm)%dn0,scratch%vt3dc,scratch%vt3di        )
+               !----- Copying them to the micro arrays if they are allocated --------------!
+               if (irain  >= 1) call atob(nzp*nxp*nyp,scratch%vt3da,micro_g(ifm)%q2)
+               if (igraup >= 1) call atob(nzp*nxp*nyp,scratch%vt3dg,micro_g(ifm)%q6)
+               if (ihail  >= 1) call atob(nzp*nxp*nyp,scratch%vt3dh,micro_g(ifm)%q7)
+               if (icloud == 7) call atob(nzp*nxp*nyp,scratch%vt3dc,micro_g(ifm)%cccnp)
+               if (ipris  == 7) call atob(nzp*nxp*nyp,scratch%vt3di,micro_g(ifm)%cifnp)
             end if
 
             !----- Heterogenous Soil Moisture Initialisation. -----------------------------!

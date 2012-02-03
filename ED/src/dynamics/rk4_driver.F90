@@ -601,6 +601,7 @@ module rk4_driver
          cpatch => csite%patch(ipa)
          do ico = 1,cpatch%ncohorts
             available_water = 0.d0
+            kroot           = cpatch%krdepth(ico)
             do k = kroot, nzg
                nsoil            = rk4site%ntext_soil(k)
                available_water  = available_water                                          &

@@ -2243,3 +2243,202 @@ real(kind=8) function eifun8(x)
 end function eifun8
 !==========================================================================================!
 !==========================================================================================!
+
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!     This subroutine extracts a vertical (z) column given a 3-D array, and the fixed      !
+! indices for the x and y dimensions.                                                      !
+!------------------------------------------------------------------------------------------!
+subroutine array2zcol(mz,mx,my,x,y,array,vector)
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   integer                          , intent(in)  :: mz
+   integer                          , intent(in)  :: mx
+   integer                          , intent(in)  :: my
+   integer                          , intent(in)  :: x
+   integer                          , intent(in)  :: y
+   real(kind=4), dimension(mz,mx,my), intent(in)  :: array
+   real(kind=4), dimension(mz)      , intent(out) :: vector
+   !----- Local variables. ----------------------------------------------------------------!
+   integer                                        :: z
+   !---------------------------------------------------------------------------------------!
+
+   do z=1,mz
+      vector(z) = array(z,x,y)
+   end do
+
+   return
+end subroutine array2zcol
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!     This subroutine extracts a longitudinal (x) column given a 3-D array, and the fixed  !
+! indices for the z and y dimensions.                                                      !
+!------------------------------------------------------------------------------------------!
+subroutine array2xcol(mz,mx,my,z,y,array,vector)
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   integer                          , intent(in)  :: mz
+   integer                          , intent(in)  :: mx
+   integer                          , intent(in)  :: my
+   integer                          , intent(in)  :: z
+   integer                          , intent(in)  :: y
+   real(kind=4), dimension(mz,mx,my), intent(in)  :: array
+   real(kind=4), dimension(mx)      , intent(out) :: vector
+   !----- Local variables. ----------------------------------------------------------------!
+   integer                                        :: x
+   !---------------------------------------------------------------------------------------!
+
+   do x=1,mx
+      vector(x) = array(z,x,y)
+   end do
+
+   return
+end subroutine array2xcol
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!     This subroutine extracts a latitudinal (y) column given a 3-D array, and the fixed   !
+! indices for the z and x dimensions.                                                      !
+!------------------------------------------------------------------------------------------!
+subroutine array2ycol(mz,mx,my,z,x,array,vector)
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   integer                          , intent(in)  :: mz
+   integer                          , intent(in)  :: mx
+   integer                          , intent(in)  :: my
+   integer                          , intent(in)  :: z
+   integer                          , intent(in)  :: x
+   real(kind=4), dimension(mz,mx,my), intent(in)  :: array
+   real(kind=4), dimension(my)      , intent(out) :: vector
+   !----- Local variables. ----------------------------------------------------------------!
+   integer                                        :: y
+   !---------------------------------------------------------------------------------------!
+
+   do y=1,my
+      vector(y) = array(z,x,y)
+   end do
+
+   return
+end subroutine array2ycol
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!     This subroutine copies a vertical (z) column to a 3-D array, using fixed indices for !
+! the x and y dimensions.                                                                  !
+!------------------------------------------------------------------------------------------!
+subroutine zcol2array(mz,mx,my,x,y,vector,array)
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   integer                          , intent(in)    :: mz
+   integer                          , intent(in)    :: mx
+   integer                          , intent(in)    :: my
+   integer                          , intent(in)    :: x
+   integer                          , intent(in)    :: y
+   real(kind=4), dimension(mz)      , intent(in)    :: vector
+   real(kind=4), dimension(mz,mx,my), intent(inout) :: array
+   !----- Local variables. ----------------------------------------------------------------!
+   integer                                          :: z
+   !---------------------------------------------------------------------------------------!
+
+   do z=1,mz
+      array(z,x,y) = vector(z)
+   end do
+
+   return
+end subroutine zcol2array
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!     This subroutine copies a longitudinal (x) column to a 3-D array, using fixed indices !
+! for the z and y dimensions.                                                              !
+!------------------------------------------------------------------------------------------!
+subroutine xcol2array(mz,mx,my,z,y,vector,array)
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   integer                          , intent(in)    :: mz
+   integer                          , intent(in)    :: mx
+   integer                          , intent(in)    :: my
+   integer                          , intent(in)    :: z
+   integer                          , intent(in)    :: y
+   real(kind=4), dimension(mz)      , intent(in)    :: vector
+   real(kind=4), dimension(mz,mx,my), intent(inout) :: array
+   !----- Local variables. ----------------------------------------------------------------!
+   integer                                          :: x
+   !---------------------------------------------------------------------------------------!
+
+   do x=1,mx
+      array(z,x,y) = vector(x)
+   end do
+
+   return
+end subroutine xcol2array
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!     This subroutine copies a latitudinal (y) column to a 3-D array, using fixed indices  !
+! for the z and x dimensions.                                                              !
+!------------------------------------------------------------------------------------------!
+subroutine ycol2array(mz,mx,my,z,x,vector,array)
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   integer                          , intent(in)    :: mz
+   integer                          , intent(in)    :: mx
+   integer                          , intent(in)    :: my
+   integer                          , intent(in)    :: z
+   integer                          , intent(in)    :: x
+   real(kind=4), dimension(mz)      , intent(in)    :: vector
+   real(kind=4), dimension(mz,mx,my), intent(inout) :: array
+   !----- Local variables. ----------------------------------------------------------------!
+   integer                                          :: y
+   !---------------------------------------------------------------------------------------!
+
+   do y=1,my
+      array(z,x,y) = vector(y)
+   end do
+
+   return
+end subroutine ycol2array
+!==========================================================================================!
+!==========================================================================================!
+

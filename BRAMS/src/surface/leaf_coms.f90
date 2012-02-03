@@ -21,7 +21,7 @@ module leaf_coms
    use grid_dims
    use rconstants, only: grav      & ! intent(in)
                        , vonk      & ! intent(in)
-                       , alvl      & ! intent(in)
+                       , alvl3     & ! intent(in)
                        , onethird  & ! intent(in)
                        , twothirds ! ! intent(in)
 
@@ -50,7 +50,7 @@ module leaf_coms
    real    :: dtll             & ! leaf timestep
             , dtll_factor      & ! leaf timestep factor (leaf timestep / model timestep)
             , dtllowcc         & ! leaf timestep   / (can_depth * can_rhos)
-            , dtllohcc         & ! leaf timestep   / (can_depth * can_rhos * cp * can_temp)
+            , dtllohcc         & ! leaf timestep   / (can_depth * can_rhos)
             , dtlloccc         & ! mmdry * leaf timestep   / (can_depth * can_rhos)
 
             , atm_up           & ! U velocity at top of surface layer            [     m/s]
@@ -58,6 +58,8 @@ module leaf_coms
             , atm_thil         & ! ice-liquid pot. temp. at top of surface layer [       K]
             , atm_theta        & ! potential temperature at top of surface layer [       K]
             , atm_temp         & ! temperature at top of surface layer           [       K]
+            , atm_temp_zcan    & ! air temperature just above the canopy air     [       K]
+            , atm_enthalpy     & ! specific enthalpy above the canopy air space  [    J/kg]
             , atm_rvap         & ! vapor mixing ratio at top of surface layer    [   kg/kg]
             , atm_rtot         & ! total mixing ratio at top of surface layer    [   kg/kg]
             , atm_shv          & ! specific humidity at top of surface layer     [   kg/kg]
@@ -75,7 +77,8 @@ module leaf_coms
             , snowfac          & ! frac. of veg. height covered by sfcwater      [     ---]
             , can_exner        & ! canopy air Exner function                     [  J/kg/K]
             , can_temp         & ! canopy air temperature                        [       K]
-            , can_lntheta      & ! log of canopy air potential temperature       [     ---]
+            , can_enthalpy     & ! canopy air specific enthalpy                  [    J/kg]
+            , can_cp           & ! canopy air specific heat at constant pressure [  J/kg/K]
             , can_rhos         & ! canopy air density                            [   kg/m³]
             , can_rsat         & ! canopy air saturation mixing ratio            [   kg/kg]
             , can_shv          & ! canopy air specific humidity                  [   kg/kg]
@@ -236,7 +239,7 @@ module leaf_coms
    !---------------------------------------------------------------------------------------!
 
    !----- Maximum transpiration allowed. --------------------------------------------------!
-   real, parameter :: transp_max     = 400. / alvl
+   real, parameter :: transp_max     = 400. / alvl3
    !---------------------------------------------------------------------------------------!
 
    !----- Is super-saturation fine? -------------------------------------------------------!
@@ -585,7 +588,7 @@ module leaf_coms
       case ('INITIAL','GRID_POINT','PATCH')
          resolvable              = .false.
 
-         can_lntheta             = 0.
+         can_enthalpy            = 0.
          can_exner               = 0
          can_rhos                = 0.
          can_depth               = 0.
@@ -606,6 +609,7 @@ module leaf_coms
       dtlloccc               = 0.
       snowfac                = 0.
 
+      can_cp                 = 0.
       can_temp               = 0
       can_rsat               = 0.
       can_shv                = 0.

@@ -812,8 +812,6 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
                                     , effarea_heat         & ! intent(in)
                                     , effarea_evap         & ! intent(in)
                                     , effarea_transp       & ! intent(in)
-                                    , zoveg                & ! intent(in)
-                                    , zveg                 & ! intent(in)
                                     , wcapcan              & ! intent(in)
                                     , wcapcani             & ! intent(in)
                                     , hcapcani             & ! intent(in)

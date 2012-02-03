@@ -18,7 +18,7 @@ subroutine cuparth(mynum,mgmxp,mgmyp,mgmzp,m1,m2,m3,ia,iz,ja,jz,i0,j0,maxiens,ie
        icoic                             !INTENT(IN)
 
   use mem_scratch2_grell
-  use rconstants, only: rdry, cp, rh2o, p00, t00, grav, cpor, pi1,onerad
+  use rconstants, only: rdry, cpdry, rh2o, p00, t00, grav, cpor, pi1,onerad
 
   !srf   mgmxp, mgmyp, mgmzp sao usadas alocar memoria para as
   !      variaveis da parametrizacao do Grell.
@@ -148,17 +148,17 @@ subroutine cuparth(mynum,mgmxp,mgmyp,mgmzp,m1,m2,m3,ia,iz,ja,jz,i0,j0,maxiens,ie
         do i = istart,iend
 
            ter11(i)= ht(i,j)
-           psur(i) = .5*( ((pp(1,i,j)+pi0(1,i,j))/cp)**cpor*p00 +  &
-                ((pp(2,i,j)+pi0(2,i,j))/cp)**cpor*p00 )*1.e-2
+           psur(i) = .5*( ((pp(1,i,j)+pi0(1,i,j))/cpdry)**cpor*p00 +  &
+                ((pp(2,i,j)+pi0(2,i,j))/cpdry)**cpor*p00 )*1.e-2
            ! Pressure in mbar
 
-           po(i,k) = ((pp(kr,i,j)+pi0(kr,i,j))/cp)**cpor*p00*1.e-2
+           po(i,k) = ((pp(kr,i,j)+pi0(kr,i,j))/cpdry)**cpor*p00*1.e-2
            ! Pressure in mbar
            us_grell(i,k) = .5*( ua(kr,i,j) + ua(kr,i-1,j) )
            vs_grell(i,k) = .5*( va(kr,i,j) + va(kr,i,j-1) )
            omeg(i,k)   = -grav*dn0(kr,i,j)*.5*( wa(kr,i,j)+wa(kr-1,i,j) )
 
-           t(i,k)  = theta(kr,i,j)*(pp(kr,i,j)+pi0(kr,i,j))/cp
+           t(i,k)  = theta(kr,i,j)*(pp(kr,i,j)+pi0(kr,i,j))/cpdry
            q(i,k)  = rv(kr,i,j)
            !variables for PBL top height
            pblidx(i) = kpbl(i,j)
@@ -174,7 +174,7 @@ subroutine cuparth(mynum,mgmxp,mgmyp,mgmzp,m1,m2,m3,ia,iz,ja,jz,i0,j0,maxiens,ie
            ! assumindo PT(KR,I,J) << exner*THT(KR,I,J)/theta
 
            !        Temperatura projetada se a conveccao nao ocorrer
-           tn(i,k) = t(i,k) + ( cpdtdt/cp )*dtime
+           tn(i,k) = t(i,k) + ( cpdtdt/cpdry )*dtime
 
            !        Umidade projetada se a conveccao nao ocorrer
            qo(i,k) = q(i,k) +   rtt(kr,i,j)*dtime
@@ -270,7 +270,7 @@ subroutine cuparth(mynum,mgmxp,mgmyp,mgmzp,m1,m2,m3,ia,iz,ja,jz,i0,j0,maxiens,ie
            !      assumindo dPi/dt (=pt(kr,i,j)) << (exner/theta)*dTheta/dt:
            !      Exner's function = pp(kr,i,j)+pi0(kr,i,j)
            exner          = pp(kr,i,j) + pi0(kr,i,j)
-           outtem(kr,i,j) = cp/exner   * outt(i,k)
+           outtem(kr,i,j) = cpdry/exner   * outt(i,k)
            ! tendencia do Theta  devida aos cumulus
            outrt(kr,i,j)  = outq(i,k)  + outqc(i,k)
            ! tendencia do Rtotal devida aos cumulus
@@ -337,7 +337,7 @@ subroutine cup_enss(mynum, m1, m2, m3, i0, j0,                 &
 
   ! USE Modules for Grell Parameterization
   use mem_scratch3_grell
-  use rconstants, only: grav, day_sec,alvl,cp
+  use rconstants, only: grav, day_sec,alvl3,cpdry
   
   implicit none
   integer maxiens,maxens,maxens2,maxens3,ensdim
@@ -874,7 +874,7 @@ subroutine cup_enss(mynum, m1, m2, m3, i0, j0,                 &
               if (ierr(i).eq.0) then
                  XHE(I,K)   = DELLAH(I,K)*MBDT + HEO(I,K)
                  XQ(I,K)    = DELLAQ(I,K)*MBDT +  QO(I,K)
-                 DELLAT(I,K)= (1./cp)*(DELLAH(I,K)-alvl*DELLAQ(I,K))
+                 DELLAT(I,K)= (1./cpdry)*(DELLAH(I,K)-alvl3*DELLAQ(I,K))
                  XT_Grell(I,K)    = DELLAT(I,K)*MBDT +  TN(I,K)
                  if (XQ(I,K).le.0.) XQ(I,K)=1.E-08
               endif

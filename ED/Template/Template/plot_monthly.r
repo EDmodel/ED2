@@ -101,7 +101,6 @@ source(paste(srcdir,"southammap.r"      ,sep="/"))
 source(paste(srcdir,"thermlib.r"        ,sep="/"))
 source(paste(srcdir,"timeutils.r"       ,sep="/"))
 #----- These should be called after the others. --------------------------------------------#
-source(paste(srcdir,"physiology.coms.r",sep="/"))
 source(paste(srcdir,"pft.coms.r"       ,sep="/"))
 
 

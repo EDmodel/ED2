@@ -288,7 +288,6 @@ subroutine grell_most_thermo_downdraft(mkx,mgmzp,klod,qtot,co2,mentrd_rate,cdd,p
    use rconstants, only : epi           & ! intent(in)
                         , rdry          & ! intent(in)
                         , t00           & ! intent(in)
-                        , cpi           & ! intent(in)
                         , toodry        & ! intent(in)
                         , toowet        ! ! intent(in)
    use therm_lib , only : thetaeiv2thil & ! subroutine

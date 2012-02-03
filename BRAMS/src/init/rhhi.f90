@@ -209,7 +209,7 @@ subroutine arrsnd(co2_on,co2con)
             case (2) !----- Potential temperature. ----------------------------------------!
                tavg      = (vctr4(nsndg) + vctr4(nsndg-1)*p00k/ps(nsndg-1)**rocp) * .5
                ps(nsndg) = (ps(nsndg-1)**rocp                                              &
-                         - grav * (zold2-zold1) * p00k/(cp*tavg)) ** cpor
+                         - grav * (zold2-zold1) * p00k/(cpdry*tavg)) ** cpor
             end select
          end if
       case default
@@ -246,7 +246,7 @@ subroutine arrsnd(co2_on,co2con)
       case (2) !----- Humidity given as mixing ratio in g/kg. -----------------------------!
          rts(nsndg) = rts(nsndg) * 1.e-3
       case (3) !----- Humidity given as relative humidity in percent. ---------------------!
-         rts(nsndg) = ptrh2rvapl(rts(nsndg)*.01,ps(nsndg),ts(nsndg))
+         rts(nsndg) = ptrh2rvapl(rts(nsndg)*.01,ps(nsndg),ts(nsndg),.false.)
       case (4) !----- Humidity given as dew point depression in Kelvin. -------------------!
          rts(nsndg) = rslf(ps(nsndg),ts(nsndg)-rts(nsndg))
       case default
@@ -323,8 +323,10 @@ subroutine refs1d(co2_on,co2con)
    use mem_scratch
    use ref_sounding
    use rconstants
-   use therm_lib   , only : virtt     & ! intent(in)
-                          , vapour_on ! ! intent(in)
+   use therm_lib   , only : virtt        & ! function
+                          , vapour_on    & ! intent(in)
+                          , exner2press  & ! function
+                          , extheta2temp ! ! function
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
    logical           , intent(in)   :: co2_on
@@ -374,7 +376,7 @@ subroutine refs1d(co2_on,co2con)
    co201dn(1,ngrid) = co201dn(2,ngrid)
 
    !----- Finding the reference Exner function, using pressure and hydrostatic assumption. !
-   pi01dn(1,ngrid) = cp * (ps(1) * p00i) ** rocp                                           &
+   pi01dn(1,ngrid) = cpdry * (ps(1) * p00i) ** rocp                                        &
                    + grav * (hs(1) - ztn(1,ngrid))                                         &
                    / (.5 * (th01dn(1,ngrid) + virtt(thds(1),rts(1)) ) )
    do k = 2,nnzp(ngrid)
@@ -384,8 +386,8 @@ subroutine refs1d(co2_on,co2con)
 
    !----- Finding the reference density. --------------------------------------------------!
    do k = 1,nnzp(ngrid)
-      vctr4(k) = (pi01dn(k,ngrid) / cp) ** cpor * p00
-      dn01dn(k,ngrid) = cp * vctr4(k) / (rdry * th01dn(k,ngrid) * pi01dn(k,ngrid))
+      vctr4(k) = exner2press(pi01dn(k,ngrid))
+      dn01dn(k,ngrid) = vctr4(k) / (rdry * extheta2temp(pi01dn(k,ngrid),th01dn(k,ngrid)))
    end do
 
    return
@@ -413,7 +415,9 @@ subroutine flds3d(n1,n2,n3,uc,vc,pi0,theta,thp,rtp,pc,rv,co2p,topt,topu,topv,rtg
                           , theta_iceliq & ! function
                           , tv2temp      & ! function
                           , vapour_on    & ! intent(in)
-                          , cloud_on     ! ! intent(in)
+                          , cloud_on     & ! intent(in)
+                          , exner2press  & ! function
+                          , extheta2temp ! ! function
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
    integer , intent(in)                     :: n1
@@ -527,8 +531,8 @@ subroutine flds3d(n1,n2,n3,uc,vc,pi0,theta,thp,rtp,pc,rv,co2p,topt,topu,topv,rtg
          !---------------------------------------------------------------------------------!
          if (cloud_on) then
             do k=1,nzp
-               p0(k)      = (pi0(k,i,j)/cp)**cpor*p00
-               temp(k)    = pi0(k,i,j)*theta(k,i,j)/cp
+               p0(k)      = exner2press(pi0(k,i,j))
+               temp(k)    = extheta2temp(pi0(k,i,j),theta(k,i,j))
                rvls(k)    = rslf(p0(k),temp(k))
                rc(k)      = max(0.,rtp(k,i,j)-rvls(k))
                thp(k,i,j) = theta_iceliq(pi0(k,i,j),temp(k),rc(k),0.)
@@ -567,6 +571,8 @@ subroutine flds3d_adap(n1,n2,n3,flpu,flpv,flpw,uc,vc,pi0,theta,thp,rtp,pc,rv,co2
    use therm_lib   , only : rslf         & ! function
                           , theta_iceliq & ! function
                           , tv2temp      & ! function
+                          , exner2press  & ! function
+                          , extheta2temp & ! function
                           , vapour_on    & ! intent(in)
                           , cloud_on     ! ! intent(in)
    implicit none
@@ -679,8 +685,8 @@ subroutine flds3d_adap(n1,n2,n3,flpu,flpv,flpw,uc,vc,pi0,theta,thp,rtp,pc,rv,co2
          !---------------------------------------------------------------------------------!
          if (cloud_on) then
             do k = 1,n1
-               p0(k)      = (pi0(k,i,j)/cp) ** cpor * p00
-               temp(k)    = pi0(k,i,j) * theta(k,i,j) / cp
+               p0(k)      = exner2press(pi0(k,i,j))
+               temp(k)    = extheta2temp(theta(k,i,j),pi0(k,i,j))
                rvls(k)    = rslf(p0(k),temp(k))
                rc(k)      = max(0.,rtp(k,i,j) - rvls(k))
                thp(k,i,j) = theta_iceliq(pi0(k,i,j),temp(k),rc(k),0.)

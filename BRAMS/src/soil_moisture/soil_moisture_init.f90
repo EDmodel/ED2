@@ -21,13 +21,7 @@ subroutine soil_moisture_init(n1,n2,n3,mzg,npat,ifm,can_theta,can_prss,glat,glon
                                 , oslmsts         & ! intent(in)
                                 , osoilcp         ! ! intent(in)
    use io_params         , only : timstr          ! ! intent(in)
-   use rconstants        , only : cpi             & ! intent(in)
-                                , rocp            & ! intent(in)
-                                , p00             & ! intent(in)
-                                , p00i            & ! intent(in)
-                                , tsupercool      & ! intent(in)
-                                , cicevlme        & ! intent(in)
-                                , cliqvlme        & ! intent(in)
+   use rconstants        , only : wdns            & ! intent(in)
                                 , t00             & ! intent(in)
                                 , t3ple           & ! intent(in)
                                 , day_sec         ! ! intent(in)
@@ -45,6 +39,9 @@ subroutine soil_moisture_init(n1,n2,n3,mzg,npat,ifm,can_theta,can_prss,glat,glon
                                 , slmstr          & ! intent(in)
                                 , slz             ! ! intent(in)
    use grid_dims         , only : str_len         ! ! intent(in)
+   use therm_lib         , only : cmtl2uext       & ! function
+                                , press2exner     & ! function
+                                , extheta2temp    ! ! function
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
    integer                           , intent(in)    :: n1
@@ -62,31 +59,74 @@ subroutine soil_moisture_init(n1,n2,n3,mzg,npat,ifm,can_theta,can_prss,glat,glon
    real   , dimension(    n2,n3,npat), intent(inout) :: psibar_10d
    real   , dimension(    n2,n3,npat), intent(in)    :: leaf_class
    !----- Local variables. ----------------------------------------------------------------!
-   character (len=str_len)                           :: usdata, usmodel
+   character (len=str_len)                           :: usdata
+   character (len=str_len)                           :: usmodel
    character (len=20)                                :: pref
-   character (len=2)                                 :: cidate,cimon
+   character (len=2)                                 :: cidate
+   character (len=2)                                 :: cimon
    character (len=1)                                 :: cgrid
    character (len=4)                                 :: ciyear
    character (len=4)                                 :: cihourmin
-   integer                                           :: i,j,k,ipat,nveg,nsoil
-   integer                                           :: qi1,qi2,qj1,qj2,ncount
-   integer                                           :: ii,jj,jc,ic,i1,j1,i2,j2,kk
-   integer                                           :: ipref,ipref_start
+   integer                                           :: i
+   integer                                           :: j
+   integer                                           :: k
+   integer                                           :: ipat
+   integer                                           :: nveg
+   integer                                           :: nsoil
+   integer                                           :: qi1
+   integer                                           :: qi2
+   integer                                           :: qj1
+   integer                                           :: qj2
+   integer                                           :: ncount
+   integer                                           :: ii
+   integer                                           :: jj
+   integer                                           :: jc
+   integer                                           :: ic
+   integer                                           :: i1
+   integer                                           :: j1
+   integer                                           :: i2
+   integer                                           :: j2
+   integer                                           :: kk
+   integer                                           :: ipref
+   integer                                           :: ipref_start
    integer                                           :: icihourmin
    integer                                           :: n4us
-   integer                                           :: nlat, nlon
-   integer                                           :: int_dif_time,da
-   integer                                           :: idate2,imonth2,iyear2,hourmin
-   logical                                           :: there,theref,sair,general
+   integer                                           :: nlat
+   integer                                           :: nlon
+   integer                                           :: int_dif_time
+   integer                                           :: da
+   integer                                           :: idate2
+   integer                                           :: imonth2
+   integer                                           :: iyear2
+   integer                                           :: hourmin
+   logical                                           :: there
+   logical                                           :: theref
+   logical                                           :: sair
+   logical                                           :: general
    real(kind=8)                                      :: dif_time
-   real, dimension(    :)            , allocatable   :: slz_us,usdum
+   real, dimension(    :)            , allocatable   :: slz_us
+   real, dimension(    :)            , allocatable   :: usdum
    real, dimension(:,:,:)            , allocatable   :: api_us
-   real, dimension(  :,:)            , allocatable   :: prlat,prlon
-   real                                              :: can_temp,soil_temp,soil_fliq
-   real                                              :: latni,latnf,lonni,lonnf
-   real                                              :: ilatn,ilonn,ilats,ilons
-   real                                              :: latn,lonn,lats,lons
-   real                                              :: dlatr,dlonr
+   real, dimension(  :,:)            , allocatable   :: prlat
+   real, dimension(  :,:)            , allocatable   :: prlon
+   real                                              :: can_exner
+   real                                              :: can_temp
+   real                                              :: soil_temp
+   real                                              :: soil_fliq
+   real                                              :: latni
+   real                                              :: latnf
+   real                                              :: lonni
+   real                                              :: lonnf
+   real                                              :: ilatn
+   real                                              :: ilonn
+   real                                              :: ilats
+   real                                              :: ilons
+   real                                              :: latn
+   real                                              :: lonn
+   real                                              :: lats
+   real                                              :: lons
+   real                                              :: dlatr
+   real                                              :: dlonr
    real                                              :: slmrel
    real                                              :: swat_new
    real                                              :: available_water
@@ -240,24 +280,36 @@ subroutine soil_moisture_init(n1,n2,n3,mzg,npat,ifm,can_theta,can_prss,glat,glon
             hoiloop: do i = 1,n2
                nveg = nint(leaf_class(i,j,ipat))
 
-               !----- Finding canopy temperature for this patch. --------------------------!
-               can_temp = can_theta(i,j,ipat) * (p00i * can_prss(i,j,ipat)) ** rocp
+               !----- Find canopy temperature for this patch. -----------------------------!
+               can_exner = press2exner (can_prss(i,j,ipat))
+               can_temp  = extheta2temp(can_exner,can_theta(i,j,ipat))
 
                available_water = 0.0
                hokloop: do k = 1,mzg
                   nsoil                  = nint(soil_text(k,i,j,ipat))
+                  !----- Initialise homogeneous soil moisture and temperature. ------------!
                   soil_water(k,i,j,ipat) = soil_idx2water(slmstr(k),nsoil)
                   soil_temp              = can_temp + stgoff(k)
-                  if (soil_temp >= t3ple) then
-                     soil_energy(k,i,j,ipat) = slcpd(nsoil) * soil_temp                    &
-                                             + soil_water(k,i,j,ipat) * cliqvlme           &
-                                             * (soil_temp-tsupercool)
+                  !------------------------------------------------------------------------!
+
+
+                  !----- Make liquid fraction consistent with temperature. ----------------!
+                  if (soil_temp == t3ple) then
+                     soil_fliq               = 0.5
+                  elseif (soil_temp > t3ple) then
                      soil_fliq               = 1.0
                   else
-                     soil_energy(k,i,j,ipat) = soil_temp * ( slcpd(nsoil)                  &
-                                                         + soil_water(k,i,j,ipat)*cicevlme)
                      soil_fliq               = 0.0
                   end if
+                  !------------------------------------------------------------------------!
+
+
+                  !----- Internal energy. -------------------------------------------------!
+                  soil_energy(k,i,j,ipat) = cmtl2uext( slcpd(nsoil)                        &
+                                                     , soil_water(k,i,j,ipat) * wdns       &
+                                                     , soil_temp , soil_fliq )
+                  !------------------------------------------------------------------------!
+
 
                   !------ Integrate the relative potential. -------------------------------!
                   if (k >= kroot(nveg) .and. nsoil /= 13) then
@@ -523,38 +575,54 @@ subroutine soil_moisture_init(n1,n2,n3,mzg,npat,ifm,can_theta,can_prss,glat,glon
             nveg = nint(leaf_class(i,j,ipat))
 
             !----- Find the canopy temperature for this patch. ----------------------------!
-            can_temp = can_theta(i,j,ipat) * (p00i * can_prss(i,j,ipat)) ** rocp
+            can_exner = press2exner (can_prss(i,j,ipat))
+            can_temp  = extheta2temp(can_exner,can_theta(i,j,ipat))
             available_water = 0.0
             hekloop: do k = 1,mzg
                nsoil = nint(soil_text(k,i,j,ipat))
-               !----- Make sure that the soil moisture is bounded... ----------------------!
-               soil_water(k,i,j,npat) = max(soilcp(nsoil)                                  &
-                                           ,min(soil_water(k,i,j,ipat), slmsts(nsoil)))
-               soil_temp = can_temp + stgoff(k)
 
-               if (soil_temp >= t3ple) then
-                  soil_energy(k,i,j,ipat) = slcpd(nsoil) * soil_temp                       &
-                                          + soil_water(k,i,j,ipat) * cliqvlme              &
-                                          * (soil_temp-tsupercool)
+               !---------------------------------------------------------------------------!
+               !      Initialise homogeneous soil moisture and temperature.  Make sure     !
+               ! that moisture is bounded.                                                 !
+               !---------------------------------------------------------------------------!
+               soil_water(k,i,j,ipat) = max(soilcp(nsoil)                                  &
+                                           ,min(soil_water(k,i,j,ipat), slmsts(nsoil)))
+               soil_temp              = can_temp + stgoff(k)
+               !---------------------------------------------------------------------------!
+
+
+               !----- Make liquid fraction consistent with temperature. -------------------!
+               if (soil_temp == t3ple) then
+                  soil_fliq               = 0.5
+               elseif (soil_temp > t3ple) then
                   soil_fliq               = 1.0
                else
-                  soil_energy(k,i,j,ipat) = soil_temp * ( slcpd(nsoil)                     &
-                                                      + soil_water(k,i,j,ipat) * cicevlme)
                   soil_fliq               = 0.0
                end if
+               !---------------------------------------------------------------------------!
+
+
+               !----- Internal energy. ----------------------------------------------------!
+               soil_energy(k,i,j,ipat) = cmtl2uext( slcpd(nsoil)                           &
+                                                  , soil_water(k,i,j,ipat) * wdns          &
+                                                  , soil_temp , soil_fliq )
+               !---------------------------------------------------------------------------!
 
 
                !------ Integrate the relative potential. ----------------------------------!
                if (k >= kroot(nveg) .and. nsoil /= 13) then
                   psi_layer       = slpots(nsoil)                                          &
-                                  / (soil_water(k,i,j,ipat) / slmsts(nsoil)) ** slbs(nsoil)
+                                  / (soil_water(k,i,j,ipat) / slmsts(nsoil))               &
+                                  ** slbs(nsoil)
                   available_water = available_water                                        &
-                                  + max(0., (psi_layer - psiwp(nsoil))                     &
+                                  + max(0., (psi_layer    - psiwp(nsoil))                  &
                                           / (psild(nsoil) - psiwp(nsoil)) )                &
                                   * soil_fliq * (slz(k+1)-slz(k))
                end if
                !---------------------------------------------------------------------------!
             end do hekloop
+            !------------------------------------------------------------------------------!
+
 
             !----- Normalise the available water. -----------------------------------------!
             available_water      = available_water / abs(slz(kroot(nveg)))

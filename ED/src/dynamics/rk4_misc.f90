@@ -19,8 +19,6 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
                                     , rk4site                & ! structure
                                     , rk4eps                 & ! intent(in)
                                     , any_resolvable         & ! intent(out)
-                                    , zoveg                  & ! intent(out)
-                                    , zveg                   & ! intent(out)
                                     , wcapcan                & ! intent(out)
                                     , wcapcani               & ! intent(out)
                                     , rk4water_stab_thresh   & ! intent(in)
@@ -95,7 +93,8 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
 
 
    !---------------------------------------------------------------------------------------!
-   !      Initialise canopy air temperature and enthalpy.                                  !
+   !      Initialise canopy air temperature and enthalpy.  Enthalpy is the actual          !
+   ! prognostic variable within one time step.                                             !
    !---------------------------------------------------------------------------------------!
    targetp%can_temp     = extheta2temp8(targetp%can_exner,targetp%can_theta)
    targetp%can_enthalpy = tq2enthalpy8(targetp%can_temp,targetp%can_shv,.true.)
@@ -110,8 +109,7 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
 
 
    !---------------------------------------------------------------------------------------!
-   !     Update the natural logarithm of theta_eiv, density, relative humidity, and the    !
-   ! saturation specific humidity.                                                         !
+   !     Update density, relative humidity, and the saturation specific humidity.          !
    !---------------------------------------------------------------------------------------!
    targetp%can_rhos     = idealdenssh8(targetp%can_prss,targetp%can_temp,targetp%can_shv)
    targetp%can_rhv      = rehuil8(targetp%can_prss,targetp%can_temp,targetp%can_shv,.true.)
@@ -575,7 +573,6 @@ subroutine update_diagnostic_vars(initp, csite,ipa)
                                     , rehuil8               & ! function
                                     , qslif8                & ! function
                                     , hq2temp8              & ! function
-                                    , press2exner8          & ! function
                                     , extemp2theta8         & ! function
                                     , thil2tqall8           ! ! function
    use consts_coms           , only : t3ple8                & ! intent(in)
@@ -635,10 +632,6 @@ subroutine update_diagnostic_vars(initp, csite,ipa)
    ! when we add condensed/frozen water in the canopy air space.                           !
    !---------------------------------------------------------------------------------------!
    if (ok_shv .and. ok_enthalpy) then
-
-      !----- Update the Exner function which is a mild function of humidity. --------------!
-      initp%can_exner = press2exner8(initp%can_prss)
-      !------------------------------------------------------------------------------------!
 
 
       !----- Update the canopy air space heat capacity at constant pressure. --------------!

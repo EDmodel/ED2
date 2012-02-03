@@ -3264,54 +3264,6 @@ module therm_lib
 
    !=======================================================================================!
    !=======================================================================================!
-   !     This fucntion computes the change of ice-liquid potential temperature due to      !
-   ! sedimentation.  The arguments are ice-liquid potential temperature, potential temper- !
-   ! ature and temperature in Kelvin, the old and new mixing ratio [kg/kg] and the old and !
-   ! new enthalpy [J/kg].                                                                  !
-   !---------------------------------------------------------------------------------------!
-   real(kind=4) function dthil_sedimentation(thil,theta,temp,rold,rnew,qrold,qrnew)
-      use consts_coms, only : ttripoli & ! intent(in)
-                            , cpdry    & ! intent(in)
-                            , alvi3    & ! intent(in)
-                            , alvl3    ! ! intent(in)
-
-      implicit none
-      !----- Argument. --------------------------------------------------------------------!
-      real(kind=4), intent(in) :: thil  ! Ice-liquid potential temperature         [     K]
-      real(kind=4), intent(in) :: theta ! Potential temperature                    [     K]
-      real(kind=4), intent(in) :: temp  ! Temperature                              [     K]
-      real(kind=4), intent(in) :: rold  ! Old hydrometeor mixing ratio             [ kg/kg]
-      real(kind=4), intent(in) :: rnew  ! New hydrometeor mixing ratio             [ kg/kg]
-      real(kind=4), intent(in) :: qrold ! Old hydrometeor latent enthalpy          [  J/kg]
-      real(kind=4), intent(in) :: qrnew ! New hydrometeor latent enthalpy          [  J/kg]
-      !------------------------------------------------------------------------------------!
-
-
-
-      !------------------------------------------------------------------------------------!
-      !    Find the derivative based on the thermodynamics.                                !
-      !------------------------------------------------------------------------------------!
-      if (newthermo) then
-         dthil_sedimentation = - thil * (alvi3 * (rnew-rold) - (qrnew-qrold))              &
-                                      / (cpdry * max(temp,ttripoli))
-      else
-         dthil_sedimentation = - thil * thil * (alvi3 *(rnew-rold) - (qrnew-qrold))        &
-                                      / (cpdry * max(temp,ttripoli) * theta)
-      end if
-      !------------------------------------------------------------------------------------!
-
-      return
-   end function dthil_sedimentation
-   !=======================================================================================!
-   !=======================================================================================!
-
-
-
-
-
-
-   !=======================================================================================!
-   !=======================================================================================!
    !     This function computes the ice-vapour equivalent potential temperature from       !
    ! theta_iland the total mixing ratio.  This is equivalent to the equivalent potential   !
    ! temperature considering also the effects of fusion/melting/sublimation.               !
@@ -3379,8 +3331,8 @@ module therm_lib
    !---------------------------------------------------------------------------------------!
    real(kind=4) function dthetaeiv_dtlcl(theiv,tlcl,rtot,eslcl,useice)
       use consts_coms, only : rocp       & ! intent(in)
-                            , aklv       & ! intent(in)
-                            , ttripoli   ! ! intent(in)
+                            , cpdry      & ! intent(in)
+                            , dcpvl      ! ! intent(in)
       implicit none
       !----- Required arguments. ----------------------------------------------------------!
       real(kind=4), intent(in)           :: theiv    ! Ice-vap. equiv. pot. temp. [      K]
@@ -3391,6 +3343,10 @@ module therm_lib
       logical     , intent(in), optional :: useice   ! Flag for considering ice   [    T|F]
       !----- Local variables --------------------------------------------------------------!
       real(kind=4)                       :: desdtlcl ! Sat. vapour pres. deriv.   [   Pa/K]
+      real(kind=4)                       :: esterm   ! es(TLC) term               [   ----]
+      real(kind=4)                       :: hhlcl    ! Enthalpy -- sensible       [   J/kg]
+      real(kind=4)                       :: qqlcl    ! Enthalpy -- latent         [   J/kg]
+      real(kind=4)                       :: qptlcl   ! Latent deriv. * T_LCL      [   J/kg]
       !------------------------------------------------------------------------------------!
 
 
@@ -3405,12 +3361,27 @@ module therm_lib
 
 
 
-      !----- Find the derivative.  The function has a kink at ttripoli. -------------------!
-      if (tlcl > ttripoli) then
-         dthetaeiv_dtlcl = theiv * (1. - rocp*tlcl*desdtlcl/eslcl - aklv*rtot/tlcl) / tlcl
-      else
-         dthetaeiv_dtlcl = theiv * (1. - rocp*tlcl*desdtlcl/eslcl                 ) / tlcl
-      end if
+      !------------------------------------------------------------------------------------!
+      !     Saturation term.                                                               !
+      !------------------------------------------------------------------------------------!
+      esterm = rocp * tlcl * desdtlcl / eslcl
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !     Find the enthalpy terms.                                                       !
+      !------------------------------------------------------------------------------------!
+      hhlcl  = cpdry * tlcl
+      qqlcl  = alvl(tlcl) * rtot
+      qptlcl = dcpvl * rtot * tlcl
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !      Derivative.                                                                   !
+      !------------------------------------------------------------------------------------!
+      dthetaeiv_dtlcl = theiv / tlcl * (1. - esterm - (qqlcl - qptlcl) / hhlcl)
       !------------------------------------------------------------------------------------!
 
       return
@@ -3441,8 +3412,7 @@ module therm_lib
    ! sion between the three phases is already taken care of.                               !
    !---------------------------------------------------------------------------------------!
    real(kind=4) function thetaeivs(thil,temp,rsat,rliq,rice)
-      use consts_coms, only : aklv     & ! intent(in)
-                            , ttripoli ! ! intent(in)
+      use consts_coms, only : cpdry    ! ! intent(in)
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
       real(kind=4), intent(in) :: thil  ! Theta_il, ice-liquid water pot. temp.    [     K]
@@ -3461,7 +3431,7 @@ module therm_lib
 
 
       !------ Find the saturation equivalent potential temperature. -----------------------!
-      thetaeivs = thil * exp ( aklv * rtots / max(temp,ttripoli))
+      thetaeivs = thil * exp ( alvl(temp) * rtots / (cpdry * temp))
       !------------------------------------------------------------------------------------!
 
       return
@@ -3486,10 +3456,8 @@ module therm_lib
    !                 d(Thetae_iv)/d(T_LCL), use the dthetaeiv_dtlcl function instead.      !
    !---------------------------------------------------------------------------------------!
    real(kind=4) function dthetaeivs_dt(theivs,temp,pres,rsat,useice)
-      use consts_coms, only : aklv      & ! intent(in)
-                            , alvl3     & ! intent(in)
-                            , ttripoli  & ! intent(in)
-                            , htripolii ! ! intent(in)
+      use consts_coms, only : cpdry     & ! intent(in)
+                            , dcpvl     ! ! intent(in)
       implicit none
       !----- Required arguments. ----------------------------------------------------------!
       real(kind=4), intent(in)           :: theivs ! Sat. ice-vap. eq. pot. temp. [      K]
@@ -3500,10 +3468,12 @@ module therm_lib
       logical     , intent(in), optional :: useice ! Flag for considering ice     [    T|F]
       !----- Local variables --------------------------------------------------------------!
       real(kind=4)                       :: drsdt  ! Sat. mixing ratio derivative [kg/kg/K]
+      real(kind=4)                       :: hh     ! Enthalpy -- sensible         [   J/kg]
+      real(kind=4)                       :: qqaux  ! Enthalpy -- sensible         [   J/kg]
       !------------------------------------------------------------------------------------!
 
 
-      !----- Find the derivative of rs with temperature. ----------------------------------!
+      !----- Find the derivative of rs with temperature and associated term. --------------!
       if (present(useice)) then
          drsdt = rslifp(pres,temp,useice)
       else
@@ -3512,12 +3482,17 @@ module therm_lib
       !------------------------------------------------------------------------------------!
 
 
+
+      !------------------------------------------------------------------------------------!
+      !      Find the enthalpy terms.                                                      !
+      !------------------------------------------------------------------------------------!
+      hh    = cpdry * temp
+      qqaux = alvl(temp) * (drsdt * temp - rsat) + dcpvl * rsat * temp
+      !------------------------------------------------------------------------------------!
+
+
       !----- Find the derivative.  Depending on the temperature, use different eqn. -------!
-      if (temp > ttripoli) then
-         dthetaeivs_dt = theivs * (1. + aklv * (drsdt*temp-rsat)/temp ) / temp
-      else
-         dthetaeivs_dt = theivs * (1. + alvl3 * drsdt * temp * htripolii ) / temp
-      end if
+      dthetaeivs_dt = theivs / temp * ( 1. + qqaux / hh )
       !------------------------------------------------------------------------------------!
 
       return
@@ -3543,11 +3518,9 @@ module therm_lib
    !---------------------------------------------------------------------------------------!
    real(kind=4) function thetaeiv2thil(theiv,pres,rtot,useice)
       use consts_coms, only : ep       & ! intent(in)
-                            , alvl3    & ! intent(in)
                             , cpdry    & ! intent(in)
                             , p00      & ! intent(in)
                             , rocp     & ! intent(in)
-                            , ttripoli & ! intent(in)
                             , t3ple    & ! intent(in)
                             , t00      ! ! intent(in)
       implicit none
@@ -3764,7 +3737,7 @@ module therm_lib
       end if
 
       if (converged) then 
-         thetaeiv2thil  = theiv * exp (- alvl3 * rtot / (cpdry * max(tlcl,ttripoli)) )
+         thetaeiv2thil  = theiv * exp (- alvl(tlcl) * rtot / (cpdry * tlcl) )
          !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
          !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
          !write (unit=36,fmt='(a,1x,i5,1x,3(a,1x,f11.4,1x),2(a,1x,es11.4,1x))')             &
@@ -3824,12 +3797,10 @@ module therm_lib
    !      when level >= 3 and to ignore otherwise.                                         !
    !---------------------------------------------------------------------------------------!
    subroutine thetaeivs2temp(theivs,pres,theta,temp,rsat,useice)
-      use consts_coms, only : alvl3     & ! intent(in)
-                            , cpdry     & ! intent(in)
+      use consts_coms, only : cpdry     & ! intent(in)
                             , ep        & ! intent(in)
                             , p00       & ! intent(in)
                             , rocp      & ! intent(in)
-                            , ttripoli  & ! intent(in)
                             , t00       ! ! intent(in)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
@@ -4043,7 +4014,6 @@ module therm_lib
                             , ep       & ! intent(in)
                             , p00      & ! intent(in)
                             , rocp     & ! intent(in)
-                            , ttripoli & ! intent(in)
                             , t3ple    & ! intent(in)
                             , t00      ! ! intent(in)
       implicit none
@@ -4374,15 +4344,11 @@ module therm_lib
    ! secant and bisection and will converge.                                               !
    !---------------------------------------------------------------------------------------!
    subroutine thil2tqall(thil,exner,pres,rtot,rliq,rice,temp,rvap,rsat)
-      use consts_coms, only : alvl3    & ! intent(in)
-                            , alvi3    & ! intent(in)
-                            , allii    & ! intent(in)
-                            , cpdry    & ! intent(in)
+      use consts_coms, only : cpdry    & ! intent(in)
                             , cpdryi   & ! intent(in)
                             , t00      & ! intent(in)
                             , toodry   & ! intent(in)
-                            , t3ple    & ! intent(in)
-                            , ttripoli ! ! intent(in)
+                            , t3ple    ! ! intent(in)
 
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
@@ -4708,11 +4674,21 @@ module therm_lib
          ! liquid mixing ratio.                                                            !
          !---------------------------------------------------------------------------------!
          if (abs(temp-t3ple) < toler*temp) then
-            rliq = min(rtot-rsat,max(0.,                                                   &
-                       allii*(alvi3*(rtot-rsat)+cpdry*max(temp,ttripoli)                   &
-                            *log(cpdryi*exner*thil/temp))))
-            rice = max(0.,rtot-rsat-rliq)
+            !----- Find rliq. -------------------------------------------------------------!
+            rliq   = ( alvi(temp) * (rtot - rsat)                                          &
+                     + cpdry * temp * log ( cpdryi * exner * thil / temp ) )               &
+                   / ( alvi(temp) - alvl(temp) )
+            !------------------------------------------------------------------------------!
+
+            !----- Correct rliq so it is bounded, and then find rice as the remainder. ----!
+            rliq   = max( 0., min( rtot - rsat,  rliq ) )
+            rice   = max( 0., rtot-rsat-rliq)
+            !------------------------------------------------------------------------------!
+
+
+            !----- Function evaluation. ---------------------------------------------------!
             funnow = theta_iceliq(exner,temp,rliq,rice) - thil
+            !------------------------------------------------------------------------------!
          end if
          !---------------------------------------------------------------------------------!
          itb=itb+1
@@ -4778,8 +4754,7 @@ module therm_lib
    !---------------------------------------------------------------------------------------!
    subroutine thil2tqliq(thil,exner,pres,rtot,rliq,temp,rvap,rsat)
       use consts_coms, only : cpdryi   & ! intent(in)
-                            , toodry   & ! intent(in)
-                            , ttripoli ! ! intent(in)
+                            , toodry   ! ! intent(in)
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
       real(kind=4), intent(in)    :: thil      ! Ice-liquid water potential temp.  [     K]

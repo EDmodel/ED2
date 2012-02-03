@@ -31,25 +31,20 @@ subroutine copy_atm2lsm(ifm,init)
                                    , iz1           & ! intent(in)
                                    , ja_1          & ! intent(in)
                                    , jz1           ! ! intent(in)
-   use rconstants           , only : cpi           & ! intent(in)
-                                   , cp            & ! intent(in)
-                                   , p00           & ! intent(in)
-                                   , p00i          & ! intent(in)
-                                   , rocp          & ! intent(in)
-                                   , cliq          & ! intent(in)
-                                   , alli          & ! intent(in)
-                                   , cice          & ! intent(in)
-                                   , t3ple         & ! intent(in)
+   use rconstants           , only : t3ple         & ! intent(in)
                                    , t00           & ! intent(in)
-                                   , cpor          & ! intent(in)
-                                   , wdnsi         & ! intent(in)
-                                   , tsupercool    ! ! intent(in)
+                                   , wdnsi         ! ! intent(in)
    use ed_node_coms         , only : mynum         ! ! intent(in)
    use mem_edcp             , only : co2_offset    & ! intent(in)
                                    , atm_co2_min   ! ! intent(in)
-   use therm_lib            , only : thetaeiv      & ! intent(in)
-                                   , rehuil        & ! intent(in)
-                                   , ptrh2rvapil   ! ! intent(in)
+   use therm_lib            , only : thetaeiv      & ! function
+                                   , rehuil        & ! function
+                                   , ptrh2rvapil   & ! function
+                                   , press2exner   & ! function
+                                   , exner2press   & ! function
+                                   , extemp2theta  & ! function
+                                   , extheta2temp  & ! function
+                                   , tl2uint       ! ! function
    use met_driver_coms      , only : imetrad       & ! intent(in)
                                    , rlong_min     & ! intent(in)
                                    , atm_rhv_min   & ! intent(in)
@@ -189,8 +184,8 @@ subroutine copy_atm2lsm(ifm,init)
                   par_beam(i,j) = fvis_beam_def * (radiate_g(ifm)%rshort(i,j)-rshortd(i,j))
                   par_diff(i,j) = fvis_diff_def * rshortd(i,j)
                case (2)
-                  press = p00 * (cpi * pi0_mean(i,j))**cpor
-               
+                  press = exner2press(pi0_mean(i,j))
+
                   call short_bdown_weissnorman(radiate_g(ifm)%rshort_diffuse(i,j),press    &
                                               ,radiate_g(ifm)%cosz(i,j),par_beam(i,j)      &
                                               ,par_diff(i,j),nir_beam(i,j),nir_diff(i,j)   &
@@ -303,7 +298,7 @@ subroutine copy_atm2lsm(ifm,init)
                   par_beam(i,j) = fvis_beam_def * (radiate_g(ifm)%rshort(i,j)-rshortd(i,j))
                   par_diff(i,j) = fvis_diff_def * rshortd(i,j)
                case (2)
-                  press = p00 * (cpi * pi0_mean(i,j))**cpor
+                  press = exner2press(pi0_mean(i,j))
                
                   call short_bdown_weissnorman(radiate_g(ifm)%rshort_diffuse(i,j),press    &
                                               ,radiate_g(ifm)%cosz(i,j),par_beam(i,j)      &
@@ -340,7 +335,7 @@ subroutine copy_atm2lsm(ifm,init)
       cgrid%met(ipy)%rlong    = radiate_g(ifm)%rlong(ix,iy)
       !----- Converting Exner function to pressure. ---------------------------------------!
       cgrid%met(ipy)%exner    = pi0_mean(ix,iy)
-      cgrid%met(ipy)%prss     = p00 * (cpi * cgrid%met(ipy)%exner)**cpor
+      cgrid%met(ipy)%prss     = exner2press(cgrid%met(ipy)%exner)
 
       !----- Finding the actual height above ground for 2nd level. ------------------------!
       cgrid%met(ipy)%geoht    = (zt(k2w)-zm(k1w)) * grid_g(ifm)%rtgt(ix,iy)
@@ -358,7 +353,8 @@ subroutine copy_atm2lsm(ifm,init)
       !------------------------------------------------------------------------------------!
       
       cgrid%met(ipy)%atm_theta    = theta_mean(ix,iy)
-      cgrid%met(ipy)%atm_tmp      = cpi * cgrid%met(ipy)%atm_theta * cgrid%met(ipy)%exner
+      cgrid%met(ipy)%atm_tmp      = extheta2temp( cgrid%met(ipy)%exner                     &
+                                                , cgrid%met(ipy)%atm_theta )
       cgrid%met(ipy)%atm_co2      = max(atm_co2_min,co2p_mean(ix,iy) + co2_offset)
 
 
@@ -368,7 +364,7 @@ subroutine copy_atm2lsm(ifm,init)
       ! atm_rhv_min and atm_rhv_max (from met_driver_coms.f90, and defined at the          !
       ! init_met_params subroutine in ed_params.f90).                                      !
       !------------------------------------------------------------------------------------!
-      relhum = rehuil(cgrid%met(ipy)%prss,cgrid%met(ipy)%atm_tmp,rv_mean(ix,iy))
+      relhum = rehuil(cgrid%met(ipy)%prss,cgrid%met(ipy)%atm_tmp,rv_mean(ix,iy),.false.)
       !------------------------------------------------------------------------------------!
       !      Check whether the relative humidity is off-bounds.  If it is, then we re-     !
       ! calculate mixing ratio exactly at the limit, then convert it to specific humidity. !
@@ -377,11 +373,13 @@ subroutine copy_atm2lsm(ifm,init)
       !------------------------------------------------------------------------------------!
       if (relhum < atm_rhv_min) then
          relhum          = atm_rhv_min
-         rv_mean(ix,iy)  = ptrh2rvapil(relhum,cgrid%met(ipy)%prss,cgrid%met(ipy)%atm_tmp)
+         rv_mean(ix,iy)  = ptrh2rvapil(relhum,cgrid%met(ipy)%prss,cgrid%met(ipy)%atm_tmp   &
+                                      ,.false.)
          rtp_mean(ix,iy) = max(rtp_mean(ix,iy), rv_mean(ix,iy))
       elseif (relhum > atm_rhv_max) then
          relhum          = atm_rhv_max
-         rv_mean(ix,iy)  = ptrh2rvapil(relhum,cgrid%met(ipy)%prss,cgrid%met(ipy)%atm_tmp)
+         rv_mean(ix,iy)  = ptrh2rvapil(relhum,cgrid%met(ipy)%prss,cgrid%met(ipy)%atm_tmp   &
+                                      ,.false.)
          rtp_mean(ix,iy) = max(rtp_mean(ix,iy), rv_mean(ix,iy))
       end if
       !----- Find the specific humidity. --------------------------------------------------!
@@ -391,7 +389,7 @@ subroutine copy_atm2lsm(ifm,init)
       !----- Find the ice-vapour equivalent potential temperature. ------------------------!
       cgrid%met(ipy)%atm_theiv = thetaeiv(cgrid%met(ipy)%atm_theta,cgrid%met(ipy)%prss     &
                                          ,cgrid%met(ipy)%atm_tmp,rtp_mean(ix,iy)           &
-                                         ,rtp_mean(ix,iy),-9)
+                                         ,rtp_mean(ix,iy))
    end do polyloop1st
 
    !----- Filling the precipitation arrays. -----------------------------------------------!
@@ -431,8 +429,9 @@ subroutine copy_atm2lsm(ifm,init)
          ! temperature, so it will respect the ideal gas law and first law of thermo-      !
          ! dynamics.                                                                       !
          !---------------------------------------------------------------------------------!
-         cpoly%met(isi)%exner        = cp * (p00i * cpoly%met(isi)%prss) **rocp
-         cpoly%met(isi)%atm_theta    = cp * cpoly%met(isi)%atm_tmp / cpoly%met(isi)%exner
+         cpoly%met(isi)%exner        = press2exner (cpoly%met(isi)%prss)
+         cpoly%met(isi)%atm_theta    = extemp2theta( cpoly%met(isi)%exner                  &
+                                                   , cpoly%met(isi)%atm_tmp )
 
          !---------------------------------------------------------------------------------!
          !     Check the relative humidity associated with the current pressure, temper-   !
@@ -440,26 +439,31 @@ subroutine copy_atm2lsm(ifm,init)
          ! the variables atm_rhv_min and atm_rhv_max (from met_driver_coms.f90, and        !
          ! defined at the init_met_params subroutine in ed_params.f90).                    !
          !---------------------------------------------------------------------------------!
-         rvaux  = cpoly%met(isi)%atm_shv / (1. - cpoly%met(isi)%atm_shv)
-         relhum = rehuil(cpoly%met(isi)%prss,cpoly%met(isi)%atm_tmp,rvaux)
+         relhum = rehuil(cpoly%met(isi)%prss,cpoly%met(isi)%atm_tmp,cpoly%met(isi)%atm_shv &
+                        ,.true.)
          !---------------------------------------------------------------------------------!
          !      Check whether the relative humidity is off-bounds.  If it is, then we re-  !
          ! calculate the mixing ratio and convert to specific humidity.                    !
          !---------------------------------------------------------------------------------!
          if (relhum < atm_rhv_min) then
             relhum = atm_rhv_min
-            rvaux  = ptrh2rvapil(relhum,cpoly%met(isi)%prss,cpoly%met(isi)%atm_tmp)
-            cpoly%met(isi)%atm_shv = rvaux / (1. + rvaux)
+            cpoly%met(isi)%atm_shv = ptrh2rvapil( relhum                                   &
+                                                , cpoly%met(isi)%prss                      &
+                                                , cpoly%met(isi)%atm_tmp                   &
+                                                , .true.)
          elseif (relhum > atm_rhv_max) then
             relhum = atm_rhv_max
-            rvaux  = ptrh2rvapil(relhum,cpoly%met(isi)%prss,cpoly%met(isi)%atm_tmp)
-            cpoly%met(isi)%atm_shv = rvaux / (1. + rvaux)
+            cpoly%met(isi)%atm_shv = ptrh2rvapil( relhum                                   &
+                                                , cpoly%met(isi)%prss                      &
+                                                , cpoly%met(isi)%atm_tmp                   &
+                                                , .true.)
          end if
          !---------------------------------------------------------------------------------!
 
          !----- Find the atmospheric equivalent potential temperature. --------------------!
+         rvaux = cpoly%met(isi)%atm_shv / (1.0 - cpoly%met(isi)%atm_shv)
          cpoly%met(isi)%atm_theiv = thetaeiv(cpoly%met(isi)%atm_theta,cpoly%met(isi)%prss  &
-                                            ,cpoly%met(isi)%atm_tmp,rvaux,rvaux,-59)
+                                            ,cpoly%met(isi)%atm_tmp,rvaux,rvaux)
 
          !----- Solar radiation -----------------------------------------------------------!
          cpoly%met(isi)%rshort_diffuse = cpoly%met(isi)%par_diffuse                        &
@@ -528,9 +532,9 @@ subroutine copy_atm2lsm(ifm,init)
          ! point) multiplied by the ice fraction.                                          !
          !---------------------------------------------------------------------------------!
          cpoly%met(isi)%qpcpg = max(0.0, cpoly%met(isi)%pcpg)                              &
-                              * ( (1.0-fice) * cliq * ( max(t3ple,cpoly%met(isi)%atm_tmp)  &
-                                                      - tsupercool)                        &
-                                + fice *cice * min(cpoly%met(isi)%atm_tmp,t3ple))
+                              * ( (1.0 - fice)                                             &
+                                * tl2uint(max(t3ple,cpoly%met(isi)%atm_tmp),1.0)           &
+                                + fice * tl2uint(min(cpoly%met(isi)%atm_tmp,t3ple),0.0) )
          !---------------------------------------------------------------------------------!
 
       end do siteloop
@@ -573,8 +577,6 @@ subroutine fill_site_precip(ifm,cgrid,m2,m3,ia,iz,ja,jz,init)
    use micphys      , only : availcat     ! ! intent(in)
    use therm_lib    , only : bulk_on      ! ! intent(in)
    use mem_basic    , only : basic_g      ! ! structure
-   use rconstants   , only : cpi          & ! intent(in)
-                           , cliq         ! ! intent(in)
    use ed_state_vars, only : edtype       ! ! structure
    use mem_edcp     , only : ed_precip_g  ! ! structure
    use ed_misc_coms , only : dtlsm        ! ! intent(in)
@@ -960,17 +962,16 @@ subroutine initialize_ed2leaf(ifm)
                            , if_adap        & ! intent(in)
                            , jdim           & ! intent(in)
                            , npatch         ! ! intent(in)
-   use rconstants   , only : cpi            & ! intent(in)
-                           , p00            & ! intent(in)
-                           , cpor           ! ! intent(in)
    use leaf_coms    , only : can_depth      ! ! intent(in)
    use mem_cuparm   , only : cuparm_g       & ! structure
                            , nnqparm        ! ! intent(in)
    use micphys      , only : availcat       ! ! intent(in)
    use mem_micro    , only : micro_g        ! ! structure
-   use therm_lib    , only : reducedpress   & ! function
+   use therm_lib    , only : bulk_on        & ! intent(in)
+                           , reducedpress   & ! function
                            , thetaeiv       & ! function
-                           , bulk_on        ! ! intent(in)
+                           , exner2press    & ! function
+                           , extheta2temp   ! ! function
    use ed_state_vars, only : edgrid_g       & ! intent(in)
                            , edtype         ! ! structure
    implicit none
@@ -1071,19 +1072,19 @@ subroutine initialize_ed2leaf(ifm)
 
    do j=1,myp
       do i=1,mxp
-         !----- Finding the atmospheric pressure and specific humidity. -------------------!
-         atm_prss                     = p00 * (cpi * pi0_mean(i,j)) ** cpor
+         !----- Find the atmospheric pressure and specific humidity. ----------------------!
+         atm_prss                     = exner2press(pi0_mean(i,j))
          atm_shv                      = rtp_mean(i,j) / (1. + rtp_mean(i,j))
-         atm_temp                     = cpi * pi0_mean(i,j) * theta_mean(i,j)
+         atm_temp                     = extheta2temp(pi0_mean(i,j),theta_mean(i,j))
 
-         !----- Computing the state variables. --------------------------------------------!
+         !----- Compute the state variables. ----------------------------------------------!
          leaf_g(ifm)%can_theta(i,j,1) =  theta_mean(i,j)
          leaf_g(ifm)%can_rvap (i,j,1) =  rv_mean(i,j)
          leaf_g(ifm)%can_prss (i,j,1) =  reducedpress(atm_prss,theta_mean(i,j),atm_shv     &
                                                      ,geoht(i,j),theta_mean(i,j)           &
                                                      ,atm_shv,can_depth)
          leaf_g(ifm)%can_theiv(i,j,1) =  thetaeiv(thil_mean(i,j),atm_prss,atm_temp         &
-                                                 ,rtp_mean(i,j),rtp_mean(i,j),-7)
+                                                 ,rtp_mean(i,j),rtp_mean(i,j))
          leaf_g(ifm)%gpp         (i,j,1) = 0.0
          leaf_g(ifm)%resphet     (i,j,1) = 0.0
          leaf_g(ifm)%plresp      (i,j,1) = 0.0
@@ -1558,10 +1559,13 @@ subroutine copy_avgvars_to_leaf(ifm)
    use mem_grid      , only : nzg                & ! intent(in)
                             , nzs                ! ! intent(in)
    use rconstants    , only : t3ple              & ! intent(in)
-                            , cliqvlme           & ! intent(in)
-                            , cicevlme           & ! intent(in)
-                            , allivlme           & ! intent(in)
-                            , alvl               ! ! intent(in)
+                            , wdns               ! ! intent(in)
+   use therm_lib     , only : alvl               & ! intent(in)
+                            , alvi               & ! intent(in)
+                            , uint2tl            & ! intent(in)
+                            , uextcm2tl          & ! intent(in)
+                            , press2exner        & ! intent(in)
+                            , extheta2temp       ! ! intent(in)
    use soil_coms     , only : soil               & ! intent(in)
                             , tiny_sfcwater_mass ! ! intent(in)
    use ed_misc_coms  , only : frqsum             ! ! intent(in)
@@ -1586,7 +1590,14 @@ subroutine copy_avgvars_to_leaf(ifm)
    integer                    :: k
    integer                    :: idbh
    integer                    :: ipft
+   integer                    :: nsoil
    real                       :: site_area_i
+   real                       :: ground_temp
+   real                       :: ground_fliq
+   real                       :: veg_temp
+   real                       :: veg_fliq
+   real                       :: can_temp
+   real                       :: can_exner
    !---------------------------------------------------------------------------------------!
 
    !----- Set the pointers ----------------------------------------------------------------!
@@ -1661,7 +1672,9 @@ subroutine copy_avgvars_to_leaf(ifm)
 
 
 
-         !----- Update vegetation properties. ---------------------------------------------!
+         !---------------------------------------------------------------------------------!
+         !      Update vegetation properties.                                              !
+         !---------------------------------------------------------------------------------!
          leaf_g(ifm)%veg_water   (ix,iy,ilp)   = cpoly%avg_leaf_water  (isi)               &
                                                + cpoly%avg_wood_water  (isi)
          leaf_g(ifm)%veg_hcap    (ix,iy,ilp)   = cpoly%avg_leaf_hcap   (isi)               &
@@ -1670,6 +1683,9 @@ subroutine copy_avgvars_to_leaf(ifm)
                                                + cpoly%avg_wood_energy (isi)
          leaf_g(ifm)%veg_lai     (ix,iy,ilp)   = cpoly%lai(isi)
          leaf_g(ifm)%veg_tai     (ix,iy,ilp)   = cpoly%lai(isi) + cgrid%wai(isi)
+         !---------------------------------------------------------------------------------!
+
+
 
          !----- Fill above ground biomass by integrating all PFTs and DBH classes. --------!
          leaf_g(ifm)%veg_agb(ix,iy,ilp)       = 0.
@@ -1679,6 +1695,9 @@ subroutine copy_avgvars_to_leaf(ifm)
                                               + cpoly%agb(ipft,idbh,isi)
             end do
          end do
+         !---------------------------------------------------------------------------------!
+
+
 
          !---------------------------------------------------------------------------------!
          !      Update canopy air properties.                                              !
@@ -1696,15 +1715,64 @@ subroutine copy_avgvars_to_leaf(ifm)
 
 
          !---------------------------------------------------------------------------------!
+         !     Temperature and liquid fraction of surfaces.  We need them to find the      !
+         ! mean latent heat of vapourisation between leaves/ground and the canopy air      !
+         ! space.                                                                          !
+         !---------------------------------------------------------------------------------!
+         !----- Ground temperature. -------------------------------------------------------!
+         if (leaf_g(ifm)%sfcwater_nlev(ix,iy,ilp) == 0.) then
+            !------ There is no temporary surface water.  Use top soil temperature. -------!
+            nsoil = cpoly%ntext_soil(nzg,isi)
+            call uextcm2tl(cgrid%avg_soil_energy(nzg,isi)                                  &
+                          ,cgrid%avg_soil_water(nzg,isi) * wdns,soil(nsoil)%slcpd          &
+                          ,ground_temp,ground_fliq )
+            !------------------------------------------------------------------------------!
+         else
+            !------ There is a temporary surface water.  Use average temperature. ---------!
+            call uint2tl(cgrid%avg_sfcw_energy(isi),ground_temp,ground_fliq)
+            !------------------------------------------------------------------------------!
+         end if
+         !----- Vegetation temperature.  Here we must check if there are plants. ----------!
+         if (leaf_g(ifm)%veg_hcap(ix,iy,ilp) > 0.) then
+            !----- There is some plant here. ----------------------------------------------!
+            call uextcm2tl(leaf_g(ifm)%veg_energy(ix,iy,ilp)                               &
+                          ,leaf_g(ifm)%veg_water (ix,iy,ilp)                               &
+                          ,leaf_g(ifm)%veg_hcap  (ix,iy,ilp)                               &
+                          ,veg_temp,veg_fliq )
+            !------------------------------------------------------------------------------!
+         else
+            !----- Site is empty.  Use canopy air space instead. --------------------------!
+            can_exner = press2exner(cpoly%avg_can_prss(isi))
+            can_temp  = extheta2temp(can_exner,leaf_g(ifm)%can_theta(ix,iy,ilp))
+            veg_temp  = can_temp
+            if (veg_temp == t3ple) then
+               veg_fliq = 0.5
+            elseif (veg_temp > t3ple) then
+               veg_fliq = 1.0
+            else
+               veg_fliq = 0.0
+            end if
+            !------------------------------------------------------------------------------!
+         end if
+         !---------------------------------------------------------------------------------!
+
+
+
+         !---------------------------------------------------------------------------------!
          !     Copy the fluxes, which will be used for output only.                        !
          !---------------------------------------------------------------------------------!
          leaf_g(ifm)%sensible_gc(ix,iy,ilp) = cpoly%avg_sensible_gc(isi)
          leaf_g(ifm)%sensible_vc(ix,iy,ilp) = ( cpoly%avg_sensible_lc(isi)                 &
                                               + cpoly%avg_sensible_wc(isi) )
-         leaf_g(ifm)%evap_gc    (ix,iy,ilp) = cpoly%avg_vapor_gc(isi) * alvl
+         leaf_g(ifm)%evap_gc    (ix,iy,ilp) = cpoly%avg_vapor_gc(isi)                      &
+                                            * ( ground_fliq * alvl(ground_temp)            &
+                                              + (1.0 - ground_fliq) * alvi(ground_temp) )
          leaf_g(ifm)%evap_vc    (ix,iy,ilp) = ( cpoly%avg_vapor_lc(isi)                    &
-                                              + cpoly%avg_vapor_wc(isi) ) * alvl
-         leaf_g(ifm)%transp     (ix,iy,ilp) = cpoly%avg_transp(isi)       * alvl
+                                              + cpoly%avg_vapor_wc(isi) )                  &
+                                            * ( veg_fliq * alvl(veg_temp)                  &
+                                              + (1.0 - veg_fliq) * alvi(veg_temp) )
+         !----- Transpiration only happens from liquid phase to vapour. -------------------!
+         leaf_g(ifm)%transp     (ix,iy,ilp) = cpoly%avg_transp(isi) * alvl(veg_temp)
          !---------------------------------------------------------------------------------!
 
 

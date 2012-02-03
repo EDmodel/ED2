@@ -39,8 +39,8 @@ contains
     ! to determine the largest value.
     
     use rconstants, only : &
-         cp,               & ! INTENT(IN)
-         cv,               & ! INTENT(IN)
+         cpdry,            & ! INTENT(IN)
+         cvdry,            & ! INTENT(IN)
          rdry                ! INTENT(IN)
     
     use ref_sounding, only : &
@@ -52,7 +52,9 @@ contains
          maxgrds,         & ! INTENT(IN)
          nzpmax,          & ! INTENT(IN)
          frqanl             ! INTENT(IN)
-    
+    use therm_lib, only : &
+         extheta2temp       ! function
+
     implicit none
     
     ! Arguments:
@@ -111,10 +113,10 @@ contains
           n2 = nnxp(ifm)
           n3 = nnyp(ifm)
           do k = 1,nnzp(ifm)
-             vctr1(k) = th01dn(k,1) * pi01dn(k,1) / cp
+             vctr1(k) = extheta2temp(pi01dn(k,1),th01dn(k,1))
           enddo
           tmax = maxval(vctr1(1:nnzp(ifm)))
-          ssmax = sqrt(cp / cv * rdry * tmax)
+          ssmax = sqrt(cpdry / cvdry * rdry * tmax)
           
           nn2 = nnxp(ifm)
           nn3 = nnyp(ifm)
