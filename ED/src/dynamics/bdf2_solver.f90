@@ -30,7 +30,7 @@ subroutine bdf2_solver(cpatch,yprev,ycurr,ynext,dydt,nstate,dtf,dtb)
   use ed_therm_lib,only    : ed_grndvap8
   use consts_coms,only     : cpdry8,p00i8,rdry8, &
        rocv8,cpocv8,cliq8,cice8,rocp8,cpocv,epim1,   &
-       alli8,t3ple8,alvi38,wdns8,cph2o8,tsupercool_liq8
+       alli8,t3ple8,alvi38,wdns8,cph2o8,tsupercool_liq8,pi18
   use therm_lib8,only      : uint2tl8,uextcm2tl8
   use soil_coms, only      : soil8,dslz8
 
@@ -267,6 +267,68 @@ subroutine bdf2_solver(cpatch,yprev,ycurr,ynext,dydt,nstate,dtf,dtb)
         
   end do
 
+  ! =======================  WOOD ==========================!
+  ! If we have yet to do wood temps, do another loop
+  ! ========================================================!
+  
+  if( id_tveg < nstate) then
+
+     do ico=1,cpatch%ncohorts
+        
+        if (ycurr%wood_resolvable(ico)) then
+           
+           id_tveg = id_tveg+1
+
+           gv   = ycurr%wood_gbh(ico)/(ycurr%can_rhos*cpdry8)
+           hfa  = pi18*ycurr%wai(ico)
+           mlc  = ycurr%wflxwc(ico)
+           mtr  = 0.d0
+           fliq = ycurr%wood_fliq(ico)
+           qv   = ynext%wood_water(ico)
+           dqvdt= dydt%wood_water(ico)
+           
+           xv  = fliq*cliq8*qv + (1.d0-fliq)*cice8*qv + ycurr%wood_hcap(ico)
+
+           ! dTc/dt ~ Tc)
+           A(id_tcan,id_tcan) = A(id_tcan,id_tcan) - gv*hfa*rhoc*cpdry8/xc
+           
+           ! A(dTc/dt ~ Tv)
+           A(id_tcan,id_tveg) = A(id_tcan,id_tveg)  &
+                + (1.d0/xc)*(gv*hfa*rhoc*cpdry8 + mlc*cph2o8 + mtr*cph2o8)
+           
+           
+           ! Note dh_rhti is rshort+rlong+Htrans(soil)+Hint-Hshed
+           
+           ! B(dTv/dt)
+           B(id_tveg) = (1.d0/xv)*           &
+                (ycurr%hflx_wrsti(ico)       &
+                - href*mlc                   &
+                - href*mtr                   &
+                + (fliq*cliq8*t3ple8 - fliq*cice8*t3ple8 - fliq*alli8)*dqvdt)
+           
+           
+           ! A(dTv/dt ~ Tc)
+           A(id_tveg,id_tcan) = A(id_tveg,id_tcan) + &
+                (hfa*gv*rhoc*cpdry8)/xv
+           
+           
+           ! A(dTv/dt ~ Tv)
+           A(id_tveg,id_tveg) = A(id_tveg,id_tveg) + &
+                (1.d0/xv)*( (fliq*cice8 - fliq*cliq8 - cice8)*dqvdt &
+                - hfa*rhoc*gv*cpdry8 - (mlc+mtr)*cph2o8)
+           
+           
+           Y(id_tveg) = (3.d0+dtf/dtb)*ycurr%leaf_temp(ico) - &
+                (dtf/dtb)*yprev%wood_temp(ico) + &
+                2.d0*B(id_tveg)*dtf
+           
+        end if
+        
+        
+     end do
+  end if
+
+
   ! Create the matrix  [3I-2Adt]
   ! And create the upper portion of the equation [4U_{n}+U_{n-1}+2Bdt]
 
@@ -286,59 +348,85 @@ subroutine bdf2_solver(cpatch,yprev,ycurr,ynext,dydt,nstate,dtf,dtb)
   ! Set the leaf and canopy temepratures in the memory buffer (rk4type)     !
   ! Update vars that otherwise would not have been diagnostic if we were    !
   ! using a different scheme.  For instance, rk4 and forward euler use      !
-  ! can_theta                                                               ! 
+  ! can_enthalpy
   !-------------------------------------------------------------------------!
   
   ! Send the canopy and leaf temperatures to the forward 
   ! Be sure to update leaf_energy and canopy ln-theta
 
 
-!!  print*,"CAN TEMP1:",ycurr%can_temp
-!!  print*,"CAN TEMP:",Y(1)
-
-!!  stop
-
   ynext%can_temp = Y(1)
   ynext%can_enthalpy = (1.d0-qc)*cpdry8*Y(1) + qc*(href + cph2o8*Y(1))
 
 
+
+  ! ------------------------------------------------------------------------!
+  ! Note: Significant assumption being made here.  The partial derivative   !
+  ! of the leaf and wood temperature assumed that phase was constant.       !
+  ! This is true unless of course the water starts oscillating around the   !
+  ! freezing point.  This solver will assume the veg system will heat and   !
+  ! cool without phase change, which of course is not true, but nothing is  !
+  ! perfect, so deal with it.  AFter ynext%leaf_Temp crosses t3ple8, it will!
+  ! change the liquid fraction to either 0 or 1 depending on the direction  !
+  ! of change.                                                              !
+  ! One possible alternative, is to determine the change in energy assuming !
+  ! no phase change, and then apply that energy to the phase change at the  !
+  ! triple point.  If the change in energy is less than phase change, set   !
+  ! the ynext temp to t3ple and linearly scale the liquid fraction.         !
+  ! ------------------------------------------------------------------------!
+
+
+  ! Current Assumption
+
   id_tveg=1
   do ico=1,cpatch%ncohorts
      if (ycurr%leaf_resolvable(ico)) then
+
         id_tveg=id_tveg+1
 
         ynext%leaf_temp(ico) = Y(id_tveg)
-        
         if(ynext%leaf_temp(ico) < t3ple8) then
-           
            ynext%leaf_fliq(ico) = 0.d0
-           
            ynext%leaf_energy(ico) = &
                 ynext%leaf_water(ico)*cice8*ynext%leaf_temp(ico) +&
                 ynext%leaf_temp(ico)*ycurr%leaf_hcap(ico)
-           
         else
-           
            ynext%leaf_fliq(ico) = 1.d0
-
            ynext%leaf_energy(ico) = ynext%leaf_temp(ico)*              &
            (ycurr%leaf_hcap(ico)+ynext%leaf_water(ico)*cliq8) - &
-                ynext%leaf_water(ico)*cliq8*tsupercool_liq8
-
+           ynext%leaf_water(ico)*cliq8*tsupercool_liq8
         end if
+
      end if
   end do
-
-
-!  print*,"============================="
-!  print*,"DTF ",dtf,"   DTB  ",dtb!
-!  print*,"N  e",ycurr%leaf_energy(1:cpatch%ncohorts)
-!  print*,"N+1e",ynext%leaf_energy(1:cpatch%ncohorts)
-!  print*,"N-1",yprev%can_temp,yprev%leaf_temp(1:cpatch%ncohorts)
-!  print*,"N  ",ycurr%can_temp,ycurr%leaf_temp(1:cpatch%ncohorts)
-!  print*,"N+1",ynext%can_temp,ynext%leaf_temp(1:cpatch%ncohorts)
-!  print*,"============================="
   
+  if( id_tveg < nstate) then
+     do ico=1,cpatch%ncohorts
+        if (ycurr%wood_resolvable(ico)) then
+
+           id_tveg=id_tveg+1
+           
+           ynext%wood_temp(ico) = Y(id_tveg)
+           if(ynext%wood_temp(ico) < t3ple8) then
+              ynext%wood_fliq(ico) = 0.d0
+              ynext%wood_energy(ico) = &
+                   ynext%wood_water(ico)*cice8*ynext%wood_temp(ico) +&
+                   ynext%wood_temp(ico)*ycurr%wood_hcap(ico)
+           else
+              ynext%wood_fliq(ico) = 1.d0
+              ynext%wood_energy(ico) = ynext%wood_temp(ico)*              &
+                   (ycurr%wood_hcap(ico)+ynext%wood_water(ico)*cliq8) - &
+                   ynext%wood_water(ico)*cliq8*tsupercool_liq8
+           end if
+        end if
+     end do
+  end if
+  
+
+  
+
+
+
   return
 end subroutine bdf2_solver
 
