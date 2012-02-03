@@ -236,6 +236,13 @@ subroutine update_patch_thermo_props(csite,ipaa,ipaz,mzg,mzs,ntext_soil)
 
    do ipa=ipaa,ipaz
 
+
+      if(csite%can_theta(ipa).lt.100. .or. csite%can_theta(ipa).gt.400.)then
+         print*,"canopy air theta was not initialized,can_theta: ",csite%can_theta(ipa)
+         print*,"trace back from update_thermo_props"
+         stop
+      end if
+
       csite%can_temp(ipa)     = csite%can_theta(ipa) * (p00i * csite%can_prss(ipa)) ** rocp
       csite%can_rhos(ipa)     = idealdenssh(csite%can_prss(ipa),csite%can_temp(ipa)        &
                                            ,csite%can_shv(ipa))

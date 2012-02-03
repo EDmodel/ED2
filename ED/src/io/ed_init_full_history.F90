@@ -2077,6 +2077,7 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
    call hdf_getslab_r(csite%can_prss,'CAN_PRSS ',dsetrank,iparallel,.true.)
    call hdf_getslab_r(csite%can_theta,'CAN_THETA ',dsetrank,iparallel,.true.)
    call hdf_getslab_r(csite%can_temp,'CAN_TEMP ',dsetrank,iparallel,.true.)
+   call hdf_getslab_r(csite%can_temp_pv,'CAN_TEMP_PV ',dsetrank,iparallel,.false.)
    call hdf_getslab_r(csite%can_shv,'CAN_SHV ',dsetrank,iparallel,.true.)
    call hdf_getslab_r(csite%can_co2,'CAN_CO2 ',dsetrank,iparallel,.true.)
    call hdf_getslab_r(csite%can_rhos,'CAN_RHOS ',dsetrank,iparallel,.true.)
@@ -2136,7 +2137,7 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
    call hdf_getslab_r(csite%wbudget_initialstorage,'WBUDGET_INITIALSTORAGE ',dsetrank,iparallel,.true.)
    call hdf_getslab_r(csite%ebudget_loss2atm,'EBUDGET_LOSS2ATM ',dsetrank,iparallel,.true.)
    call hdf_getslab_r(csite%ebudget_denseffect,'EBUDGET_DENSEFFECT ',dsetrank,iparallel,.true.)
-   call hdf_getslab_r(csite%ebudget_prsseffect,'EBUDGET_PRSSEFFECT ',dsetrank,iparallel,.true.)
+   call hdf_getslab_r(csite%ebudget_prsseffect,'EBUDGET_PRSSEFFECT ',dsetrank,iparallel,.false.)
    call hdf_getslab_r(csite%ebudget_loss2runoff,'EBUDGET_LOSS2RUNOFF ',dsetrank,iparallel,.true.)
    call hdf_getslab_r(csite%ebudget_netrad,'EBUDGET_NETRAD ',dsetrank,iparallel,.true.)
    call hdf_getslab_r(csite%ebudget_precipgain,'EBUDGET_PRECIPGAIN ',dsetrank,iparallel,.true.)
@@ -2202,6 +2203,13 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
    call hdf_getslab_r(csite%mean_runoff,'MEAN_RUNOFF ',dsetrank,iparallel,.true.)
    call hdf_getslab_r(csite%mean_qrunoff,'MEAN_QRUNOFF ',dsetrank,iparallel,.true.)
    call hdf_getslab_r(csite%htry,'HTRY ',dsetrank,iparallel,.true.)
+   call hdf_getslab_r(csite%hprev,'HPREV ',dsetrank,iparallel,.false.)
+
+   if(csite%hprev(1) < 1.0d-10)then
+      csite%hprev=csite%htry
+   end if
+   
+
    if (associated(csite%dmean_rk4step)) &
         call hdf_getslab_r(csite%dmean_rk4step,'DMEAN_RK4STEP ',dsetrank,iparallel,.false.)
    if (associated(csite%mmean_rk4step)) &
@@ -2255,7 +2263,7 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
    call hdf_getslab_r(csite%ebudget_denseffect        ,'EBUDGET_DENSEFFECT '               &
                      ,dsetrank,iparallel,.true.)
    call hdf_getslab_r(csite%ebudget_prsseffect        ,'EBUDGET_PRSSEFFECT '               &
-                     ,dsetrank,iparallel,.true.)
+                     ,dsetrank,iparallel,.false.)
    call hdf_getslab_r(csite%ebudget_loss2runoff       ,'EBUDGET_LOSS2RUNOFF '              &
                      ,dsetrank,iparallel,.true.)
    call hdf_getslab_r(csite%ebudget_loss2drainage     ,'EBUDGET_LOSS2DRAINAGE '            &
@@ -2643,11 +2651,13 @@ subroutine fill_history_patch(cpatch,paco_index,ncohorts_global,green_leaf_facto
      call hdf_getslab_r(cpatch%leaf_energy,'LEAF_ENERGY ',dsetrank,iparallel,.true.)
      call hdf_getslab_r(cpatch%leaf_hcap,'LEAF_HCAP ',dsetrank,iparallel,.true.)
      call hdf_getslab_r(cpatch%leaf_temp,'LEAF_TEMP ',dsetrank,iparallel,.true.)
+     call hdf_getslab_r(cpatch%leaf_temp_pv,'LEAF_TEMP_PV ',dsetrank,iparallel,.false.)
      call hdf_getslab_r(cpatch%leaf_water,'LEAF_WATER ',dsetrank,iparallel,.true.)
      call hdf_getslab_r(cpatch%leaf_fliq,'LEAF_FLIQ ',dsetrank,iparallel,.true.)
      call hdf_getslab_r(cpatch%wood_energy,'WOOD_ENERGY ',dsetrank,iparallel,.true.)
      call hdf_getslab_r(cpatch%wood_hcap,'WOOD_HCAP ',dsetrank,iparallel,.true.)
      call hdf_getslab_r(cpatch%wood_temp,'WOOD_TEMP ',dsetrank,iparallel,.true.)
+     call hdf_getslab_r(cpatch%wood_temp_pv,'WOOD_TEMP_PV ',dsetrank,iparallel,.false.)
      call hdf_getslab_r(cpatch%wood_water,'WOOD_WATER ',dsetrank,iparallel,.true.)
      call hdf_getslab_r(cpatch%wood_fliq,'WOOD_FLIQ ',dsetrank,iparallel,.true.)
      call hdf_getslab_r(cpatch%veg_wind,'VEG_WIND ',dsetrank,iparallel,.true.)

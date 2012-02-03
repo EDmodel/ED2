@@ -120,7 +120,10 @@ subroutine ed_init_atm()
                                                   ,csite%can_shv(ipa),csite%can_depth(ipa))
                can_exner            = press2exner(csite%can_prss(ipa))
                csite%can_temp (ipa) = extheta2temp(can_exner,csite%can_theta(ipa))
+               csite%can_temp_pv(ipa)=csite%can_temp(ipa)
                rvaux                = csite%can_shv(ipa) / (1. - csite%can_shv(ipa))
+               
+
                csite%can_theiv(ipa) = thetaeiv(csite%can_theta(ipa),csite%can_prss(ipa)    &
                                               ,csite%can_temp(ipa),rvaux,rvaux)
                csite%can_rhos (ipa) = idealdenssh(csite%can_prss(ipa)                      &
@@ -148,6 +151,8 @@ subroutine ed_init_atm()
                   cpatch%wood_water  (ico) = 0.0
                   cpatch%leaf_temp   (ico) = csite%can_temp(ipa)
                   cpatch%wood_temp   (ico) = csite%can_temp(ipa)
+                  cpatch%leaf_temp_pv (ico) = csite%can_temp_pv(ipa)
+                  cpatch%wood_temp_pv (ico) = csite%can_temp_pv(ipa)
                   if (csite%can_temp(ipa) == t3ple) then
                      cpatch%leaf_fliq   (ico) = 0.5
                      cpatch%wood_fliq   (ico) = 0.5

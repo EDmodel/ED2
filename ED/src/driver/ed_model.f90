@@ -262,6 +262,10 @@ subroutine ed_model()
          do ifm=1,ngrids
             call heun_timestep(edgrid_g(ifm))
          end do
+      case (3)
+         do ifm=1,ngrids
+            call hybrid_timestep(edgrid_g(ifm))
+         end do
       end select
       !------------------------------------------------------------------------------------!
 

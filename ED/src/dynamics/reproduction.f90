@@ -149,6 +149,8 @@ subroutine reproduction(cgrid, month)
                      rectest%pft       = ipft
                      rectest%leaf_temp = csite%can_temp(ipa)
                      rectest%wood_temp = csite%can_temp(ipa)
+                     rectest%leaf_temp_pv=csite%can_temp(ipa)
+                     rectest%wood_temp_pv=csite%can_temp(ipa)
                      rectest%hite      = hgt_min(ipft)
                      rectest%dbh       = h2dbh(rectest%hite, ipft)
                      rectest%bdead     = dbh2bd(rectest%dbh, ipft)
@@ -250,6 +252,10 @@ subroutine reproduction(cgrid, month)
                   !----- Assign temperature after init_ed_cohort_vars... ------------------!
                   cpatch%leaf_temp(ico)  = recruit(inew)%leaf_temp
                   cpatch%wood_temp(ico)  = recruit(inew)%wood_temp
+                  cpatch%leaf_temp_pv(ico)  = recruit(inew)%leaf_temp_pv
+                  cpatch%wood_temp_pv(ico)  = recruit(inew)%wood_temp_pv
+
+                  
 
                   !----- Initialise the next variables with zeroes... ---------------------!
                   cpatch%leaf_water(ico) = 0.0

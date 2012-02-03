@@ -439,7 +439,7 @@ subroutine heun_integ(h1,csite,ipa,nsteps)
 
 
       !----- Get initial derivatives ------------------------------------------------------!
-      call leaf_derivs(integration_buff%y,integration_buff%dydx,csite,ipa)
+      call leaf_derivs(integration_buff%y,integration_buff%dydx,csite,ipa,-9000.d0)
 
       !----- Get scalings used to determine stability -------------------------------------!
       call get_yscal(integration_buff%y,integration_buff%dydx,h,integration_buff%yscal     &
@@ -798,7 +798,7 @@ subroutine heun_stepper(x,h,csite,ipa,reject_step,reject_result)
    !     Compute the second term (correction) of the derivative, using the Euler's         !
    ! predicted state.                                                                      !
    !---------------------------------------------------------------------------------------!
-   call leaf_derivs(integration_buff%ak3,integration_buff%ak2, csite,ipa)
+   call leaf_derivs(integration_buff%ak3,integration_buff%ak2, csite,ipa,-9000.d0)
    !---------------------------------------------------------------------------------------!
 
 

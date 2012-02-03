@@ -113,4 +113,6 @@ OBJ_MODEL =                        \
 	update_derived_props.o     \
 	utils_c.o                  \
 	utils_f.o                  \
-	vegetation_dynamics.o
+	vegetation_dynamics.o      \
+	bdf2_solver.o            \
+	hybrid_driver.o

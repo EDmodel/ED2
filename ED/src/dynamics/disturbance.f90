@@ -153,7 +153,7 @@ module disturbance_utils
             !      Initialize all the potential as well as implemented disturbance         !
             ! patches.  n_dist_types new patches will be created, each one containing a    !
             ! different patch type.  In case no conversion to that kind of patch has       !
-            ! happened, or if the newly created patch is tiny, it will be removed soon.    !                                                                   !
+            ! happened, or if the newly created patch is tiny, it will be removed soon.    !
             !------------------------------------------------------------------------------!
             do new_lu = onsp+1, onsp+n_dist_types
                call initialize_disturbed_patch(csite,cpoly%met(isi)%atm_tmp,new_lu,1       &
@@ -774,6 +774,18 @@ module disturbance_utils
       csite%can_theta                  (np) = csite%can_theta                  (np)        &
                                             + csite%can_theta                  (cp)        &
                                             * area_fac
+      csite%can_temp                   (np) = csite%can_temp                   (np)        &
+                                            + csite%can_temp                   (cp)        &
+                                            * area_fac
+      csite%can_temp_pv                (np) = csite%can_temp_pv                (np)        &
+                                            + csite%can_temp_pv                (cp)        &
+                                            * area_fac
+      csite%htry                       (np) = csite%htry                       (np)        &
+                                            + csite%htry                       (cp)        &
+                                            * area_fac
+      csite%hprev                      (np) = csite%hprev                      (np)        &
+                                            + csite%hprev                      (cp)        &
+                                            * area_fac
       csite%can_theiv                  (np) = csite%can_theiv                  (np)        &
                                             + csite%can_theiv                  (cp)        &
                                             * area_fac
@@ -1329,9 +1341,11 @@ module disturbance_utils
                                      ,cpatch%bsapwood(nc))
 
       cpatch%leaf_temp(nc)  = csite%can_temp(np)
+      cpatch%leaf_temp_pv(nc)=csite%can_temp(np)
       cpatch%leaf_water(nc) = 0.0
       cpatch%leaf_fliq(nc)  = 0.0
       cpatch%wood_temp(nc)  = csite%can_temp(np)
+      cpatch%wood_temp_pv(nc)=csite%can_temp(np)
       cpatch%wood_water(nc) = 0.0
       cpatch%wood_fliq(nc)  = 0.0
 

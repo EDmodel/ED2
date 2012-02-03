@@ -108,3 +108,58 @@ subroutine warning(reason,subr,file)
  end subroutine warning
 !==========================================================================================!
 !==========================================================================================!
+ subroutine fail_whale(reason,location)
+
+   implicit none
+
+   character(len=*), intent(in) :: reason
+   character(len=*), intent(in) :: location
+
+   write(unit=*,fmt='(a)') ''
+   write(unit=*,fmt='(a)') ''
+   write(unit=*,fmt='(a)') ':::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::'
+   write(unit=*,fmt='(a)') '                                                                           '
+   write(unit=*,fmt='(a)') '    ___ _  _ ____    ____ ____ _ _       _ _ _ _  _ ____ _    ____         '
+   write(unit=*,fmt='(a)') '     |  |__| |___    |___ |__| | |       | | | |__| |__| |    |___         '
+   write(unit=*,fmt='(a)') '     |  |  | |___    |    |  | | |___    |_|_| |  | |  | |___ |___         '
+   write(unit=*,fmt='(a)') '                                                                           '
+   write(unit=*,fmt='(a)') '       _  _ ____ ____    ____ ____ ____ ____ _  _ ____ ___                 '
+   write(unit=*,fmt='(a)') '       |__| |__| [__     |    |__/ |__| [__  |__| |___ |  }                '
+   write(unit=*,fmt='(a)') '       |  | |  | ___]    |___ |  } |  | ___] |  | |___ |__/                '
+   write(unit=*,fmt='(a)') '                                                                           ' 
+   write(unit=*,fmt='(a)') '       _ _  _ ___ ____    _   _ ____ _  _ ____    ____ _ _  _              '
+   write(unit=*,fmt='(a)') '       | |} |  |  |  |     }_/  |  | |  | |__/    [__  | |}/|              '
+   write(unit=*,fmt='(a)') '       | | }|  |  |__|      |   |__| |__| |  }    ___] | |  |              '
+   write(unit=*,fmt='(a)') '                                                                           '
+   write(unit=*,fmt='(a)') '                                                                           '
+   write(unit=*,fmt='(a)') '                                                                           '
+   write(unit=*,fmt='(a)') '                                             .+shhhhhhhhhhyso/-`           '
+   write(unit=*,fmt='(a)') '             `.-::///+oooooooooooo+/:.`     -hhhhhhhhhhhhhhhhhhhs+.        '
+   write(unit=*,fmt='(a)') '        -/oyhhhhhhhhhhhhhhhhhhhhhhhhhhhyo:` -hhhhhhhhhhhhhhhhhhhhhhy/      '
+   write(unit=*,fmt='(a)') '     -ohhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhs:-oyhhhhhhhhhhhhhhhhhhhhhy-    '
+   write(unit=*,fmt='(a)') '   -yhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhy/ `-+yhhhhhhhhhhhhhhhhhhh+   '
+   write(unit=*,fmt='(a)') '  +hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhy:   :yhhhhhhhhhhhhhhhhhho  '
+   write(unit=*,fmt='(a)') ' ohhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhho`  `yhhhhhhhhhhhhhhhhhh+ '
+   write(unit=*,fmt='(a)') '/hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhy-  .hhhhhhhhhhyshhhhhhh-'
+   write(unit=*,fmt='(a)') 'yhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhs` +hhhhhhhh:  .hhhhhhs'
+   write(unit=*,fmt='(a)') 'hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh/`yhhhhhy.    shhhhhh'
+   write(unit=*,fmt='(a)') 'hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh+/+o+:     :hhhhhhh'
+   write(unit=*,fmt='(a)') 'hhhhhhhhhhhhhhh::yhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhso////+ohhhhhhhhs'
+   write(unit=*,fmt='(a)') 'yhhhhhhhhhhhhhh+/yhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh.'
+   write(unit=*,fmt='(a)') '/hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh: '
+   write(unit=*,fmt='(a)') ' ohhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhs.  '
+   write(unit=*,fmt='(a)') '  /hhhhhhhhhhhoohhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhho-    '
+   write(unit=*,fmt='(a)') '   `:/+++/////shhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhsosyyyys+:.       '
+   write(unit=*,fmt='(a)') '    -hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh::+/              '
+   write(unit=*,fmt='(a)') '     :/++++yhhhhhhhhhhs++oyhhhhhhhhhhs+++ohhhhhhs+/ohhhhhhhy:              '
+   write(unit=*,fmt='(a)') '           /shhhhhs+-      `:+oso+/.       .::-     `:///-.                '
+   write(unit=*,fmt='(a)') '                                                                           '
+   write(unit=*,fmt='(a)') '                                                                           '
+   write(unit=*,fmt='(a)') '                                                                           '
+   write(unit=*,fmt='(a)') ':::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::'
+
+
+   
+
+
+ end subroutine fail_whale

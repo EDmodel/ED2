@@ -888,11 +888,13 @@ module fuse_fiss_utils
       cpatch%leaf_energy(idt)          = cpatch%leaf_energy(isc)
       cpatch%leaf_hcap(idt)            = cpatch%leaf_hcap(isc)
       cpatch%leaf_temp(idt)            = cpatch%leaf_temp(isc)
+      cpatch%leaf_temp_pv(idt)         = cpatch%leaf_temp_pv(isc)
       cpatch%leaf_fliq(idt)            = cpatch%leaf_fliq(isc)
       cpatch%leaf_water(idt)           = cpatch%leaf_water(isc)
       cpatch%wood_energy(idt)          = cpatch%wood_energy(isc)
       cpatch%wood_hcap(idt)            = cpatch%wood_hcap(isc)
       cpatch%wood_temp(idt)            = cpatch%wood_temp(isc)
+      cpatch%wood_temp_pv(idt)         = cpatch%wood_temp_pv(isc)
       cpatch%wood_fliq(idt)            = cpatch%wood_fliq(isc)
       cpatch%wood_water(idt)           = cpatch%wood_water(isc)
       cpatch%veg_wind(idt)             = cpatch%veg_wind(isc)
@@ -1223,6 +1225,8 @@ module fuse_fiss_utils
          call uextcm2tl(cpatch%leaf_energy(recc),cpatch%leaf_water(recc)                   &
                        ,cpatch%leaf_hcap(recc),cpatch%leaf_temp(recc)                      &
                        ,cpatch%leaf_fliq(recc))
+         
+         
       else 
          !----- Leaf temperature cannot be found using uextcm2tl, this is a singularity. --!
          cpatch%leaf_temp(recc)  = newni                                                   &
@@ -1230,6 +1234,10 @@ module fuse_fiss_utils
                                    + cpatch%leaf_temp(donc)  * cpatch%nplant(donc))
          cpatch%leaf_fliq(recc)  = 0.0
       end if
+      
+      !----- Simply set the previous time-steps temp as the current
+      
+      
       if ( cpatch%wood_hcap(recc) > 0. ) then
          !----- Update temperature using the standard thermodynamics. ---------------------!
          call uextcm2tl(cpatch%wood_energy(recc),cpatch%wood_water(recc)                   &
@@ -1242,7 +1250,10 @@ module fuse_fiss_utils
                                    + cpatch%wood_temp(donc)  * cpatch%nplant(donc))
          cpatch%wood_fliq(recc)  = 0.0
       end if
-      !------------------------------------------------------------------------------------!
+      
+      !----- Set time-steps temp as the current
+      cpatch%leaf_temp_pv(recc) = cpatch%leaf_temp(recc)
+      cpatch%wood_temp_pv(recc) = cpatch%wood_temp(recc)
 
       !------ Find the intercellular value assuming saturation. ---------------------------!
       cpatch%lint_shv(recc) = qslif(can_prss,cpatch%leaf_temp(recc))
@@ -3088,6 +3099,10 @@ module fuse_fiss_utils
       csite%can_theta(recp)          = newareai *                                          &
                                      ( csite%can_theta(donp)          * csite%area(donp)   &
                                      + csite%can_theta(recp)          * csite%area(recp) )
+
+      csite%can_temp_pv(recp)        = newareai *                                          &
+                                     ( csite%can_temp_pv(donp)        * csite%area(donp)   &
+                                     + csite%can_temp_pv(recp)        * csite%area(recp) )
 
       csite%can_theiv(recp)          = newareai *                                          &
                                      ( csite%can_theiv(donp)          * csite%area(donp)   &

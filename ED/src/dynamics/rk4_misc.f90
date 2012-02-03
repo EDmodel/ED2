@@ -647,7 +647,7 @@ subroutine update_diagnostic_vars(initp, csite,ipa)
 
       !----- Find the canopy air temperature. ---------------------------------------------!
       initp%can_temp  = hq2temp8(initp%can_enthalpy,initp%can_shv,.true.)
-      !------------------------------------------------------------------------------------!
+
 
       !----- Find the new potential temperature. ------------------------------------------!
       initp%can_theta = extemp2theta8(initp%can_exner,initp%can_temp)
@@ -3565,6 +3565,7 @@ subroutine print_rk4patch(y,csite,ipa)
 
    !----- Find the ice-vapour equivalent potential temperature (output only). -------------!
    y_can_rvap  = y%can_shv / (1.d0 - y%can_shv)
+   print*,y%can_theta,y%can_prss,y%can_temp,y_can_rvap,y_can_rvap
    y_can_theiv = thetaeiv8(y%can_theta,y%can_prss,y%can_temp,y_can_rvap,y_can_rvap)
    !---------------------------------------------------------------------------------------!
 
