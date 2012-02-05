@@ -98,7 +98,7 @@ subroutine odeint(h1,csite,ipa,nsteps)
    timesteploop: do i=1,maxstp
 
       !----- Get initial derivatives ------------------------------------------------------!
-      call leaf_derivs(integration_buff%y,integration_buff%dydx,csite,ipa)
+      call leaf_derivs(integration_buff%y,integration_buff%dydx,csite,ipa,-9000.d0)
 
       !----- Get scalings used to determine stability -------------------------------------!
       call get_yscal(integration_buff%y, integration_buff%dydx,h,integration_buff%yscal    &
@@ -1443,7 +1443,9 @@ subroutine initialize_rk4patches(init)
                             , deallocate_rk4_aux    & ! structure
                             , allocate_rk4_patch    & ! structure
                             , allocate_rk4_coh      & ! structure
-                            , allocate_rk4_aux      ! ! structure
+                            , allocate_rk4_aux      & ! structure
+                            , allocate_bdf2_patch   &
+                            , deallocate_bdf2_patch
    use ed_misc_coms  , only : integration_scheme    ! ! intent(in)
    use grid_coms     , only : ngrids                ! ! intent(in)
    implicit none
@@ -1465,19 +1467,32 @@ subroutine initialize_rk4patches(init)
       !------------------------------------------------------------------------------------!
       !     If this is initialization, make sure soil and sfcwater arrays are allocated.   !
       !------------------------------------------------------------------------------------!
-      allocate(integration_buff%initp )
-      allocate(integration_buff%yscal )
-      allocate(integration_buff%y     )
-      allocate(integration_buff%dydx  )
-      allocate(integration_buff%yerr  )
-      allocate(integration_buff%ytemp )
 
-      call allocate_rk4_patch(integration_buff%initp )
-      call allocate_rk4_patch(integration_buff%yscal )
-      call allocate_rk4_patch(integration_buff%y     )
-      call allocate_rk4_patch(integration_buff%dydx  )
-      call allocate_rk4_patch(integration_buff%yerr  )
-      call allocate_rk4_patch(integration_buff%ytemp )
+      if(integration_scheme == 3) then
+
+         allocate(integration_buff%initp)
+         allocate(integration_buff%ytemp)
+
+         call allocate_rk4_patch(integration_buff%initp )
+         call allocate_rk4_patch(integration_buff%ytemp )
+      
+      else
+
+         allocate(integration_buff%initp )
+         allocate(integration_buff%yscal )
+         allocate(integration_buff%y     )
+         allocate(integration_buff%dydx  )
+         allocate(integration_buff%yerr  )
+         allocate(integration_buff%ytemp )
+         
+         call allocate_rk4_patch(integration_buff%initp )
+         call allocate_rk4_patch(integration_buff%yscal )
+         call allocate_rk4_patch(integration_buff%y     )
+         call allocate_rk4_patch(integration_buff%dydx  )
+         call allocate_rk4_patch(integration_buff%yerr  )
+         call allocate_rk4_patch(integration_buff%ytemp )
+
+      end if
 
 
       !------------------------------------------------------------------------------------!
@@ -1511,6 +1526,13 @@ subroutine initialize_rk4patches(init)
 
          call allocate_rk4_patch(integration_buff%ak2)
          call allocate_rk4_patch(integration_buff%ak3)
+
+      case (3) !----- Hybrid (forward Euler/BDF2)------------------------------------------!
+
+         allocate(integration_buff%dinitp)
+         call allocate_rk4_patch(integration_buff%dinitp)
+         allocate(integration_buff%yprev)
+
       end select
       !------------------------------------------------------------------------------------!
    else
@@ -1518,12 +1540,18 @@ subroutine initialize_rk4patches(init)
       !    If this is not initialization, deallocate cohort memory from integration        !
       ! patches.                                                                           !
       !------------------------------------------------------------------------------------!
-      call deallocate_rk4_coh(integration_buff%initp )
-      call deallocate_rk4_coh(integration_buff%yscal )
-      call deallocate_rk4_coh(integration_buff%y     )
-      call deallocate_rk4_coh(integration_buff%dydx  )
-      call deallocate_rk4_coh(integration_buff%yerr  )
-      call deallocate_rk4_coh(integration_buff%ytemp )
+
+      if(integration_scheme == 3)then
+         call deallocate_rk4_coh(integration_buff%initp )
+         call deallocate_rk4_coh(integration_buff%ytemp )
+      else
+         call deallocate_rk4_coh(integration_buff%initp )
+         call deallocate_rk4_coh(integration_buff%yscal )
+         call deallocate_rk4_coh(integration_buff%y     )
+         call deallocate_rk4_coh(integration_buff%dydx  )
+         call deallocate_rk4_coh(integration_buff%yerr  )
+         call deallocate_rk4_coh(integration_buff%ytemp )
+      end if
 
       !------ De-allocate the auxiliary structure. ----------------------------------------!
       call deallocate_rk4_aux()
@@ -1545,6 +1573,9 @@ subroutine initialize_rk4patches(init)
       case (2) !----- Heun's. -------------------------------------------------------------!
          call deallocate_rk4_coh(integration_buff%ak2)
          call deallocate_rk4_coh(integration_buff%ak3)
+      case (3) !----- Hybrid --------------------------------------------------------------!
+         call deallocate_rk4_coh(integration_buff%dinitp)
+         call deallocate_bdf2_patch(integration_buff%yprev)
       end select
       !------------------------------------------------------------------------------------!
    end if
@@ -1567,12 +1598,17 @@ subroutine initialize_rk4patches(init)
    ! write (unit=*,fmt='(a,1x,i5)') 'Maxcohort = ',maxcohort
 
    !----- Create new memory in each of the integration patches. ---------------------------!
-   call allocate_rk4_coh(maxcohort,integration_buff%initp )
-   call allocate_rk4_coh(maxcohort,integration_buff%yscal )
-   call allocate_rk4_coh(maxcohort,integration_buff%y     )
-   call allocate_rk4_coh(maxcohort,integration_buff%dydx  )
-   call allocate_rk4_coh(maxcohort,integration_buff%yerr  )
-   call allocate_rk4_coh(maxcohort,integration_buff%ytemp )
+   if(integration_scheme == 3)then
+      call allocate_rk4_coh(maxcohort,integration_buff%initp )
+      call allocate_rk4_coh(maxcohort,integration_buff%ytemp )
+   else
+      call allocate_rk4_coh(maxcohort,integration_buff%initp )
+      call allocate_rk4_coh(maxcohort,integration_buff%yscal )
+      call allocate_rk4_coh(maxcohort,integration_buff%y     )
+      call allocate_rk4_coh(maxcohort,integration_buff%dydx  )
+      call allocate_rk4_coh(maxcohort,integration_buff%yerr  )
+      call allocate_rk4_coh(maxcohort,integration_buff%ytemp )
+   end if
    !---------------------------------------------------------------------------------------!
 
 
@@ -1593,6 +1629,9 @@ subroutine initialize_rk4patches(init)
    case (2) !----- Heun's. ----------------------------------------------------------------!
       call allocate_rk4_coh(maxcohort,integration_buff%ak2   )
       call allocate_rk4_coh(maxcohort,integration_buff%ak3   )
+   case (3) !----- Hybrid -----------------------------------------------------------------!
+      call allocate_rk4_coh(maxcohort,integration_buff%dinitp)
+      call allocate_bdf2_patch(integration_buff%yprev,maxcohort)
    end select
    !---------------------------------------------------------------------------------------!
 

@@ -282,6 +282,7 @@ OBJ_MODEL =                         \
 	lake_coms.o                 \
 	allometry.o                 \
 	average_utils.o             \
+	bdf2_solver.o               \
 	budget_utils.o              \
 	c34constants.o              \
 	canopy_air_coms.o           \
@@ -305,7 +306,7 @@ OBJ_MODEL =                         \
 	ed_opspec.o                 \
 	ed_para_coms.o              \
 	ed_params.o                 \
-	ed_print.o                 \
+	ed_print.o                  \
 	ed_read_ed10_20_history.o   \
 	ed_read_ed21_history.o      \
 	ed_state_vars.o             \
@@ -328,6 +329,7 @@ OBJ_MODEL =                         \
 	growth_balive.o             \
 	h5_output.o                 \
 	heun_driver.o               \
+	hybrid_driver.o             \
 	hydrology_coms.o            \
 	hydrology_constants.o       \
 	init_hydro_sites.o          \

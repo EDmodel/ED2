@@ -279,6 +279,7 @@ rm -fv lake_coms.o                lake_coms.mod
 rm -fv mem_edcp.o                 mem_edcp.mod
 rm -fv allometry.o                allometry.mod
 rm -fv average_utils.o            average_utils.mod
+rm -fv bdf2_solver.o              bdf2_solver.mod
 rm -fv budget_utils.o             budget_utils.mod
 rm -fv c34constants.o             c34constants.mod
 rm -fv canopy_air_coms.o          canopy_air_coms.mod
@@ -324,6 +325,7 @@ rm -fv grid_coms.o                grid_coms.mod
 rm -fv growth_balive.o            growth_balive.mod
 rm -fv h5_output.o                h5_output.mod
 rm -fv heun_driver.o              heun_driver.mod 
+rm -fv hybrid_driver.o            hybrid_driver.mod 
 rm -fv hydrology_coms.o           hydrology_coms.mod
 rm -fv hydrology_constants.o      hydrology_constants.mod
 rm -fv init_hydro_sites.o         init_hydro_sites.mod

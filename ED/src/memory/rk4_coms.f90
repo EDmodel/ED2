@@ -217,7 +217,17 @@ module rk4_coms
       real(kind=8), pointer, dimension(:) :: growth_resp  ! Growth respiration  [µmol/m²/s]
       real(kind=8), pointer, dimension(:) :: storage_resp ! Storage respiration [µmol/m²/s]
       real(kind=8), pointer, dimension(:) :: vleaf_resp   ! Virtual leaf resp.  [µmol/m²/s]
-      !------------------------------------------------------------------------------------!
+
+
+      !------ Variables used for hybrid stepping -----------------------------------------!
+      real(kind=8)                        :: wflxgc
+      real(kind=8)                        :: wflxac
+      real(kind=8), pointer, dimension(:) :: wflxtr
+      real(kind=8), pointer, dimension(:) :: wflxlc
+      real(kind=8), pointer, dimension(:) :: wflxwc
+      real(kind=8), pointer, dimension(:) :: hflx_lrsti ! heat gained from rnet,shed,tr,int
+      real(kind=8), pointer, dimension(:) :: hflx_wrsti !
+      !-----------------------------------------------------------------------------------!
 
 
 
@@ -323,6 +333,13 @@ module rk4_coms
    end type rk4patchtype
    !---------------------------------------------------------------------------------------!
 
+   
+   type bdf2patchtype
+      real(kind=8)                        :: can_temp
+      real(kind=8),pointer,dimension(:)   :: leaf_temp
+      real(kind=8),pointer,dimension(:)   :: wood_temp
+   end type bdf2patchtype
+
 
    !---------------------------------------------------------------------------------------!
    !    Structure with atmospheric and some other site-level data that is often used       !
@@ -413,6 +430,7 @@ module rk4_coms
       type(rk4patchtype), pointer :: ak5     ! 
       type(rk4patchtype), pointer :: ak6     ! 
       type(rk4patchtype), pointer :: ak7     ! 
+      type(bdf2patchtype), pointer :: yprev  ! Previous state
    end type integration_vars
    !---------------------------------------------------------------------------------------!
 
@@ -423,10 +441,6 @@ module rk4_coms
    type(rk4auxtype)       :: rk4aux
    !=======================================================================================!
    !=======================================================================================!
-
-
-
-
 
 
    !=======================================================================================!
@@ -785,6 +799,48 @@ module rk4_coms
    contains
 
 
+     ! ==========================================================
+     ! The next three subroutines are for allocating
+     ! integration memory for the previous time-step's
+     ! leaf, wood and canopy temperature.  This is needed
+     ! only in the BDF2 implicit solver method.
+     ! =========================================================
+
+     subroutine allocate_bdf2_patch(y,maxcohort)
+       
+       implicit none
+       type(bdf2patchtype), target :: y
+       integer :: maxcohort
+       
+       allocate(y%leaf_temp(maxcohort))
+       allocate(y%wood_temp(maxcohort))
+       
+       return
+     end subroutine allocate_bdf2_patch
+
+
+     subroutine deallocate_bdf2_patch(y)
+
+       implicit none
+       type(bdf2patchtype),target :: y
+       
+       deallocate(y%leaf_temp)
+       deallocate(y%wood_temp)
+       return
+     end subroutine deallocate_bdf2_patch
+
+     
+     subroutine nullify_bdf2_patch(y)
+       
+       implicit none
+       type(bdf2patchtype), target :: y
+       
+       nullify(y%leaf_temp)
+       nullify(y%wood_temp)
+       return
+     end subroutine nullify_bdf2_patch
+
+
 
    !=======================================================================================!
    !=======================================================================================!
@@ -875,6 +931,19 @@ module rk4_coms
 
 
 
+
+  subroutine zero_bdf2_patch(y)
+
+     implicit none
+     type(bdf2patchtype),target :: y
+     
+     y%can_temp  = 0.d0
+     y%leaf_temp = 0.d0
+     y%wood_temp = 0.d0
+
+     return
+   end subroutine zero_bdf2_patch
+     
 
 
    !=======================================================================================!
@@ -1012,6 +1081,9 @@ module rk4_coms
       y%flx_sensible_gc                = 0.d0
       y%flx_sensible_ac                = 0.d0
       y%flx_heatstor_veg               = 0.d0
+
+      y%wflxgc                         = 0.d0
+      y%wflxac                         = 0.d0
 
       y%flx_drainage                   = 0.d0
       y%flx_drainage_heat              = 0.d0
@@ -1152,6 +1224,13 @@ module rk4_coms
       allocate(y%growth_resp      (maxcohort))
       allocate(y%storage_resp     (maxcohort))
       allocate(y%vleaf_resp       (maxcohort))
+
+      allocate(y%wflxlc           (maxcohort))
+      allocate(y%wflxwc           (maxcohort))
+      allocate(y%wflxtr           (maxcohort))
+      allocate(y%hflx_wrsti       (maxcohort))
+      allocate(y%hflx_lrsti       (maxcohort))
+
       allocate(y%cfx_hflxlc       (maxcohort))
       allocate(y%cfx_hflxwc       (maxcohort))
       allocate(y%cfx_qwflxlc      (maxcohort))
@@ -1234,6 +1313,13 @@ module rk4_coms
       nullify(y%growth_resp      )
       nullify(y%storage_resp     )
       nullify(y%vleaf_resp       )
+
+      nullify(y%wflxlc           )
+      nullify(y%wflxwc           )
+      nullify(y%wflxtr           )
+      nullify(y%hflx_lrsti       )
+      nullify(y%hflx_wrsti       )
+
       nullify(y%cfx_hflxlc       )
       nullify(y%cfx_hflxwc       )
       nullify(y%cfx_qwflxlc      )
@@ -1314,6 +1400,13 @@ module rk4_coms
       if (associated(y%growth_resp      )) y%growth_resp      = 0.d0
       if (associated(y%storage_resp     )) y%storage_resp     = 0.d0
       if (associated(y%vleaf_resp       )) y%vleaf_resp       = 0.d0
+
+      if (associated(y%wflxlc           )) y%wflxlc           = 0.d0
+      if (associated(y%wflxwc           )) y%wflxwc           = 0.d0
+      if (associated(y%wflxtr           )) y%wflxtr           = 0.d0
+      if (associated(y%hflx_wrsti       )) y%hflx_wrsti       = 0.d0      
+      if (associated(y%hflx_lrsti       )) y%hflx_lrsti       = 0.d0
+
       if (associated(y%cfx_hflxlc       )) y%cfx_hflxlc       = 0.d0
       if (associated(y%cfx_hflxwc       )) y%cfx_hflxwc       = 0.d0
       if (associated(y%cfx_qwflxlc      )) y%cfx_qwflxlc      = 0.d0
@@ -1394,6 +1487,14 @@ module rk4_coms
       if (associated(y%growth_resp      )) deallocate(y%growth_resp      )
       if (associated(y%storage_resp     )) deallocate(y%storage_resp     )
       if (associated(y%vleaf_resp       )) deallocate(y%vleaf_resp       )
+
+      if (associated(y%wflxlc           )) deallocate(y%wflxlc           )
+      if (associated(y%wflxwc           )) deallocate(y%wflxwc           )
+      if (associated(y%wflxtr           )) deallocate(y%wflxtr           )
+      if (associated(y%hflx_lrsti       )) deallocate(y%hflx_lrsti       )
+      if (associated(y%hflx_wrsti       )) deallocate(y%hflx_wrsti       )
+
+
       if (associated(y%cfx_hflxlc       )) deallocate(y%cfx_hflxlc       )
       if (associated(y%cfx_hflxwc       )) deallocate(y%cfx_hflxwc       )
       if (associated(y%cfx_qwflxlc      )) deallocate(y%cfx_qwflxlc      )

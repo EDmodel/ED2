@@ -2060,6 +2060,8 @@ $ED2_INFO
    !                           errors.                                                     !
    !                       1.  Fourth-order Runge-Kutta method.  ED-2.1 default method     !
    !                       2.  Heun's method (a second-order Runge-Kutta).                 !
+   !                       3.  Hybrid Stepping (BDF2 implicit step for the canopy air and  !
+   !                           leaf temp, forward Euler for else, under development).      !
    !---------------------------------------------------------------------------------------!
    INTEGRATION_SCHEME = 1,
    !---------------------------------------------------------------------------------------!

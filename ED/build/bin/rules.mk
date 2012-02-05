@@ -13,6 +13,11 @@ average_utils.o : $(ED_IO)/average_utils.f90
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)
 
+bdf2_solver.o : $(ED_DYNAMICS)/bdf2_solver.f90
+	cp -f $< $(<F:.f90=.f90)
+	$(F90_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90)
+
 budget_utils.o : $(ED_UTILS)/budget_utils.f90
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
@@ -308,6 +313,11 @@ heun_driver.o: $(ED_DYNAMICS)/heun_driver.f90
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)
 
+hybrid_driver.o : $(ED_DYNAMICS)/hybrid_driver.f90
+	cp -f $< $(<F:.f90=.f90)
+	$(F90_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90)
+
 hydrology_coms.o: $(ED_MEMORY)/hydrology_coms.f90
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
@@ -522,6 +532,5 @@ vegetation_dynamics.o : $(ED_DYNAMICS)/vegetation_dynamics.f90
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)
-
 
 include dependency.mk

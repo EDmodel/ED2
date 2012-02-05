@@ -442,7 +442,7 @@ subroutine euler_integ(h1,csite,initp,dinitp,ytemp,yscal,yerr,dydx,ipa,nsteps)
 
 
       !----- Get initial derivatives ------------------------------------------------------!
-      call leaf_derivs(initp,dinitp,csite,ipa)
+      call leaf_derivs(initp,dinitp,csite,ipa,h)
 
       !----- Get scalings used to determine stability -------------------------------------!
       call get_yscal(initp,dinitp,h,yscal,cpatch)
@@ -492,7 +492,7 @@ subroutine euler_integ(h1,csite,initp,dinitp,ytemp,yscal,yerr,dydx,ipa,nsteps)
             errmax = 1.d-1
 
             !----- Take the derivative of the upcoming step. ------------------------------!
-            call leaf_derivs(ytemp,dydx,csite,ipa)
+!!            call leaf_derivs(ytemp,dydx,csite,ipa)
          end if
 
 
@@ -568,6 +568,9 @@ subroutine euler_integ(h1,csite,initp,dinitp,ytemp,yscal,yerr,dydx,ipa,nsteps)
                hnext = 5.d0 * h
             endif
             hnext = max(2.d0*hmin,hnext)
+
+            call leaf_derivs(ytemp,dydx,csite,ipa,hnext)
+            
 
             !------ 3d. Normalise the fluxes if the user wants detailed debugging. --------!
             if (print_detailed) then

@@ -7,7 +7,7 @@
 ! whereas in LEAF-3 the actual step is done at once. This derivative will be used for the  !
 ! Runge-Kutta integration step.                                                            !
 !------------------------------------------------------------------------------------------!
-subroutine leaf_derivs(initp,dinitp,csite,ipa)
+subroutine leaf_derivs(initp,dinitp,csite,ipa,dt)
   
    use rk4_coms               , only : rk4site            & ! intent(in)
                                      , rk4patchtype       ! ! structure
@@ -21,6 +21,8 @@ subroutine leaf_derivs(initp,dinitp,csite,ipa)
    type(rk4patchtype) , target     :: dinitp    ! Structure with RK4 derivatives
    type(sitetype)     , target     :: csite     ! This site (with previous values);
    integer            , intent(in) :: ipa       ! Patch ID
+   real(kind=8)       , intent(in) :: dt        ! Current time step if euler/hybrid
+                                                ! this will be forced negative if otherwise
    !---------------------------------------------------------------------------------------!
 
    !---------------------------------------------------------------------------------------!
@@ -31,7 +33,7 @@ subroutine leaf_derivs(initp,dinitp,csite,ipa)
       !------------------------------------------------------------------------------------!
       !    Subroutine that computes the canopy and leaf fluxes.                            ! 
       !------------------------------------------------------------------------------------!
-      subroutine leaftw_derivs(mzg,mzs,initp,dinitp,csite,ipa)
+      subroutine leaftw_derivs(mzg,mzs,initp,dinitp,csite,ipa,dt)
          use rk4_coms      , only : rk4patchtype ! ! structure
          use ed_state_vars , only : sitetype     & ! structure
                                   , polygontype  ! ! structure
@@ -43,6 +45,7 @@ subroutine leaf_derivs(initp,dinitp,csite,ipa)
          integer             , intent(in) :: ipa    ! Current patch ID
          integer             , intent(in) :: mzg    ! Number of ground layers
          integer             , intent(in) :: mzs    ! Number of snow/ponding layers
+         real(kind=8)        , intent(in) :: dt
       end subroutine leaftw_derivs
       !------------------------------------------------------------------------------------!
    end interface
@@ -57,7 +60,7 @@ subroutine leaf_derivs(initp,dinitp,csite,ipa)
 
 
    !----- Find the derivatives. -----------------------------------------------------------!
-   call leaftw_derivs(nzg,nzs,initp,dinitp,csite,ipa)
+   call leaftw_derivs(nzg,nzs,initp,dinitp,csite,ipa,dt)
    !---------------------------------------------------------------------------------------!
 
    return
@@ -72,7 +75,7 @@ end subroutine leaf_derivs
 
 !==========================================================================================!
 !==========================================================================================!
-subroutine leaftw_derivs(mzg,mzs,initp,dinitp,csite,ipa)
+subroutine leaftw_derivs(mzg,mzs,initp,dinitp,csite,ipa,dt)
    use ed_max_dims          , only : nzgmax                & ! intent(in)
                                    , nzsmax                ! ! intent(in)
    use consts_coms          , only : cliq8                 & ! intent(in)
@@ -116,6 +119,7 @@ subroutine leaftw_derivs(mzg,mzs,initp,dinitp,csite,ipa)
    integer             , intent(in) :: ipa              ! Current patch number
    integer             , intent(in) :: mzg              ! Number of ground layers
    integer             , intent(in) :: mzs              ! Number of snow/ponding layers
+   real(kind=8)        , intent(in) :: dt               ! Timestep
    !----- Local variables -----------------------------------------------------------------!
    type(patchtype)     , pointer    :: cpatch           ! Current patch
    integer                          :: ico              ! Cohort counter
@@ -178,7 +182,7 @@ subroutine leaftw_derivs(mzg,mzs,initp,dinitp,csite,ipa)
       subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc        &
                                   ,dewgndflx,qdewgndflx,ddewgndflx,throughfall_tot         &
                                   ,qthroughfall_tot,dthroughfall_tot,wshed_tot,qwshed_tot  &
-                                  ,dwshed_tot)
+                                  ,dwshed_tot,dt)
          use rk4_coms     , only: rk4patchtype  ! ! structure
          use ed_state_vars, only: sitetype      & ! structure
                                 , patchtype     & ! structure
@@ -188,6 +192,7 @@ subroutine leaftw_derivs(mzg,mzs,initp,dinitp,csite,ipa)
          type (sitetype)    , target      :: csite
          integer            , intent(in)  :: ipa
          integer            , intent(in)  :: mzg
+         real(kind=8)       , intent(in)  :: dt
          real(kind=8)       , intent(out) :: hflxgc
          real(kind=8)       , intent(out) :: wflxgc
          real(kind=8)       , intent(out) :: qwflxgc
@@ -420,7 +425,7 @@ subroutine leaftw_derivs(mzg,mzs,initp,dinitp,csite,ipa)
    !---------------------------------------------------------------------------------------!
    call canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,dewgnd,qdewgnd  &
                          ,ddewgnd,throughfall_tot,qthroughfall_tot,dthroughfall_tot        &
-                         ,wshed_tot,qwshed_tot,dwshed_tot)
+                         ,wshed_tot,qwshed_tot,dwshed_tot,dt)
    !---------------------------------------------------------------------------------------!
 
 
@@ -757,8 +762,8 @@ subroutine leaftw_derivs(mzg,mzs,initp,dinitp,csite,ipa)
                      !---------------------------------------------------------------------!
                      dinitp%leaf_energy(ico) = dinitp%leaf_energy(ico)  + qloss
                      dinitp%veg_energy(ico)  = dinitp%veg_energy(ico)   + qloss
+                     initp%hflx_lrsti(ico) = initp%hflx_lrsti(ico)      + qloss
                      !---------------------------------------------------------------------!
-
 
                      !----- Integrate the total to be removed from this layer. ------------!
                      wloss_tot     = wloss_tot     + wloss
@@ -802,7 +807,7 @@ end subroutine leaftw_derivs
 !==========================================================================================!
 subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,dewgndflx    &
                             ,qdewgndflx,ddewgndflx,throughfall_tot,qthroughfall_tot        &
-                            ,dthroughfall_tot,wshed_tot,qwshed_tot,dwshed_tot)
+                            ,dthroughfall_tot,wshed_tot,qwshed_tot,dwshed_tot,dt)
    use rk4_coms              , only : rk4patchtype         & ! Structure
                                     , rk4site              & ! intent(in)
                                     , rk4aux               & ! intent(inout)
@@ -841,15 +846,14 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
                                     , t3ple8               & ! intent(in)
                                     , cpdry8               & ! intent(in)
                                     , cph2o8               & ! intent(in)
-                                    , cice8                & ! intent(in)
-                                    , cliq8                & ! intent(in)
                                     , epi8                 & ! intent(in)
                                     , huge_num8            ! ! intent(in)
    use soil_coms             , only : soil8                & ! intent(in)
                                     , dslzi8               & ! intent(in)
                                     , dewmax               ! ! intent(in)
    use therm_lib8            , only : qslif8               & ! function
-                                    , tq2enthalpy8         ! ! function
+                                    , tq2enthalpy8         & ! function
+                                    , tl2uint8             ! ! function
    use ed_misc_coms          , only : dtlsm                & ! intent(in)
                                     , fast_diagnostics     ! ! intent(in)
    use canopy_struct_dynamics, only : vertical_vel_flux8   ! ! function
@@ -874,6 +878,7 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
    real(kind=8)       , intent(out) :: wshed_tot         ! Water shed from leaves
    real(kind=8)       , intent(out) :: qwshed_tot        ! Internal energy of water shed
    real(kind=8)       , intent(out) :: dwshed_tot        ! Depth of water shed
+   real(kind=8)       , intent(in)  :: dt                ! Timestep if euler/hybrid
    !----- Local variables -----------------------------------------------------------------!
    type(patchtype)    , pointer     :: cpatch            ! Current patch
    integer                          :: ico               ! Current cohort ID
@@ -937,6 +942,9 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
    real(kind=8)                     :: qwflxwc           ! Wood -> CAS evaporation (energy)
    real(kind=8)                     :: qtransp           ! Transpiration (energy)
    real(kind=8)                     :: flux_area         ! Area between canopy and plant
+   real(kind=8)                     :: a,b,c0            ! Temporary variables for solving
+                                                         ! the CO2 ODE
+   real(kind=8)                     :: max_dwdt,dwdt     ! Used for capping leaf evap 
    !----- Functions -----------------------------------------------------------------------!
    real(kind=4), external           :: sngloff           ! Safe dble 2 single precision
    real(kind=4), external           :: compute_netrad    ! Net radiation.
@@ -1162,7 +1170,11 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
    !---------------------------------------------------------------------------------------!
 
 
-
+   !-----------------------------------------------------------------------!
+   ! The implicit solver needs to know the mass flux from ground to canopy
+   !-----------------------------------------------------------------------!
+   initp%wflxgc = wflxgc
+   
 
    !---------------------------------------------------------------------------------------!
    !     Loop over the cohorts in the patch. Calculate energy fluxes with surrounding      !
@@ -1278,6 +1290,37 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
                wflxlc  = wflxlc_try * sigmaw
                qwflxlc = wflxlc * tq2enthalpy8(initp%leaf_temp(ico),1.d0,.true.)
 
+
+
+               !---------------------------------------------------------------------------!
+               !       This is called by the hybrid solver only.                           !
+               !---------------------------------------------------------------------------!
+               if (dt>-8000.d0) then
+
+                  max_dwdt = initp%leaf_water(ico)/dt
+                  
+                  max_leaf_water = rk4leaf_maxwhc*initp%lai(ico)
+
+                  !------------------------------------------------------------------------!
+                  !     If we ever have shedding, force wshed to cap out at that maximum   !
+                  ! leaf water.  Assume this process happens before evaporation.           !
+                  !------------------------------------------------------------------------!
+                  wshed  = max(0.d0,( (initp%leaf_water(ico) + leaf_intercepted*dt)        &
+                                    - max_leaf_water) / dt)
+                  qwshed = wshed * tl2uint8(initp%leaf_temp(ico),initp%leaf_fliq(ico))
+                  dwshed = wshed * ( initp%leaf_fliq(ico) * wdnsi8                         &
+                                   + (1.d0-initp%leaf_fliq(ico)) * fdnsi8)
+                  !------------------------------------------------------------------------!
+
+
+                  !----- Then constrain the amount that can be evaporated. ----------------!
+                  wflxlc = min(wflxlc,max_dwdt+leaf_intercepted-wshed)
+                  !------------------------------------------------------------------------!
+               end if
+               !---------------------------------------------------------------------------!
+
+
+
                !---------------------------------------------------------------------------!
                !     Transpiration, consider the one-sided leaf area rather than LAI,      !
                ! when the PFT is amphistomatous, in which case it is double-sided.         !
@@ -1338,6 +1381,9 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
          !---------------------------------------------------------------------------------!
 
 
+         
+
+
 
          !----- We need to extract water from the soil equal to the transpiration. --------!
          rk4aux%extracted_water(ico,kroot) = rk4aux%extracted_water(ico,kroot) + transp
@@ -1388,6 +1434,11 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
                                  + leaf_qintercepted    ! ! Intercepted water energy
          !---------------------------------------------------------------------------------!
 
+
+         initp%wflxlc(ico)     = wflxlc
+         initp%wflxtr(ico)     = transp
+         initp%hflx_lrsti(ico) = initp%rshort_l(ico)+initp%rlong_l(ico) &
+                               - qwshed+leaf_qintercepted
 
 
          !---------------------------------------------------------------------------------!
@@ -1589,7 +1640,9 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
                                  + wood_qintercepted    ! ! Intercepted water energy
          !---------------------------------------------------------------------------------!
 
-
+         initp%wflxwc(ico) = wflxwc
+         initp%hflx_wrsti(ico) = initp%rshort_w(ico)+initp%rlong_w(ico) &
+                                 -qwshed+wood_qintercepted
 
          !---------------------------------------------------------------------------------!
          !    If the detailed output is tracked, then we save the fluxes for this cohort.  !
@@ -1684,8 +1737,31 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
    dinitp%can_co2      = ( cflxgc + cflxlc_tot + cflxac             ) * ccapcani
    !---------------------------------------------------------------------------------------!
 
+   !---------------------------------------------------------------------------------------!
+   if (.false.) then 
+   !if (dt>-8000.d0) then
 
+      a = ( cflxgc + cflxlc_tot                                                            &
+          + initp%can_rhos*initp%ggbare*mmdryi8*rk4site%atm_co2) * ccapcani
+      
+      b  = (initp%can_rhos*initp%ggbare*mmdryi8) * ccapcani
+      c0 = initp%can_co2
+      
+      ! Calculate the effective derivative
+      !      dinitp%can_co2 = ((a/b) + (c0-(a/b))*exp(-b*dt) - c0)/dt
+      
+      ! Calculate the effective cflxac term
+      
+      cflxac = (initp%can_rhos*initp%ggbare*mmdryi8*ccapcani)/dt       &
+             * (rk4site%atm_co2*dt - ((a/b)*dt - c0*exp(-b*dt)/b +     &
+                c0/b + (a/b)*exp(-b*dt)/b - (a/b)/b  ))
+      
+      dinitp%can_co2 = ( cflxgc + cflxlc_tot + cflxac) * ccapcani
 
+   end if
+   !---------------------------------------------------------------------------------------!
+
+   initp%wflxac = wflxac
 
    !---------------------------------------------------------------------------------------!
    !     Integrate diagnostic variables - These are not activated unless fast file-type    !

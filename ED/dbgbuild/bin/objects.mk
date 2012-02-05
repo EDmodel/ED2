@@ -12,6 +12,7 @@ OBJ_MODEL =                        \
 	allometry.o                \
 	an_header.o                \
 	average_utils.o            \
+	bdf2_solver.o              \
 	budget_utils.o             \
 	canopy_air_coms.o          \
 	canopy_layer_coms.o        \
@@ -71,6 +72,7 @@ OBJ_MODEL =                        \
 	hdf5_coms.o                \
 	hdf5_utils.o               \
 	heun_driver.o              \
+	hybrid_driver.o            \
 	hydrology_coms.o           \
 	hydrology_constants.o      \
 	init_hydro_sites.o         \

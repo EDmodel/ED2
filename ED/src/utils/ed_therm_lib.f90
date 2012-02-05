@@ -686,6 +686,7 @@ module ed_therm_lib
          !---------------------------------------------------------------------------------!
          ground_temp = sfcwater_temp
          ground_fliq = sfcwater_fliq
+
          !----- Compute the saturation specific humidity at ground temperature. -----------!
          ground_ssh = qslif8(can_prss,ground_temp)
          !----- The ground specific humidity in this case is just the saturation value. ---!

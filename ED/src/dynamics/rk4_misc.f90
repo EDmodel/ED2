@@ -642,6 +642,7 @@ subroutine update_diagnostic_vars(initp, csite,ipa)
       initp%can_temp  = hq2temp8(initp%can_enthalpy,initp%can_shv,.true.)
       !------------------------------------------------------------------------------------!
 
+
       !----- Find the new potential temperature. ------------------------------------------!
       initp%can_theta = extemp2theta8(initp%can_exner,initp%can_temp)
       !------------------------------------------------------------------------------------!
