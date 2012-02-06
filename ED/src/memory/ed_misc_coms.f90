@@ -113,6 +113,19 @@ Module ed_misc_coms
 
 
 
+
+   !---------------------------------------------------------------------------------------!
+   ! IBIGLEAF -- The vegetation structure.                                                 !
+   !             0.  The size-and-age structure approximation (Moorcroft et al 2001).      !
+   !                 This is the recommended method for most applications.                 !
+   !             1.  Big-leaf approximation.  PFTs won't directly compete.                 !
+   !---------------------------------------------------------------------------------------!
+   integer :: ibigleaf
+   !---------------------------------------------------------------------------------------!
+
+
+
+
    !---------------------------------------------------------------------------------------!
    ! INTEGRATION_SCHEME -- The biophysics integration scheme.                              !
    !                       0.  Euler step.  The fastest, but it doesn't estimate           !

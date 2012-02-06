@@ -2107,7 +2107,9 @@ subroutine update_psibar(m2,m3,mzg,npat,ia,iz,ja,jz,dtime,soil_energy,soil_water
    use therm_lib , only : uextcm2tl ! ! subroutine
    use mem_leaf  , only : slz       & ! intent(in)
                         , dtleaf    ! ! intent(in)
-   use leaf_coms , only : slpots    & ! intent(in)
+   use leaf_coms , only : slzt      & ! intent(in)
+                        , slmsts    & ! intent(in)
+                        , slpots    & ! intent(in)
                         , slbs      & ! intent(in)
                         , slcpd     & ! intent(in)
                         , kroot     & ! intent(in)
@@ -2140,6 +2142,7 @@ subroutine update_psibar(m2,m3,mzg,npat,ia,iz,ja,jz,dtime,soil_energy,soil_water
    integer                                           :: nveg
    real                                              :: available_water
    real                                              :: psi_layer
+   real                                              :: wgpfrac
    real                                              :: soil_temp
    real                                              :: soil_fliq
    real                                              :: weight
@@ -2169,6 +2172,14 @@ subroutine update_psibar(m2,m3,mzg,npat,ia,iz,ja,jz,dtime,soil_energy,soil_water
                   !------------------------------------------------------------------------!
 
 
+
+                  !----- Find the water potential of this layer. --------------------------!
+                  wgpfrac         = min(soil_water(k,i,j,ip)/slmsts(nsoil), 1.0)
+                  psi_layer       = slzt(k) + slpots(nsoil) / wgpfrac ** slbs(nsoil)
+                  !------------------------------------------------------------------------!
+
+
+
                   !----- Add the contribution of this layer, based on the potential. ------!
                   available_water = available_water                                        &
                                   + max(0., (psi_layer    - psiwp(nsoil))                  &
@@ -2176,6 +2187,7 @@ subroutine update_psibar(m2,m3,mzg,npat,ia,iz,ja,jz,dtime,soil_energy,soil_water
                                   * soil_fliq * (slz(k+1)-slz(k))
                   !------------------------------------------------------------------------!
                end if
+               !---------------------------------------------------------------------------!
             end do
             !------------------------------------------------------------------------------!
 

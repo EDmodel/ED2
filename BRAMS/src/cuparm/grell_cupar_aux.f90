@@ -250,8 +250,7 @@ subroutine initial_thermo_grell(m1,dtime,thp,theta,rtp,co2p,pi0,pp,pc,wp,dn0,tke
           , thil2tqall   & ! Function that finds temperature and condensed phase from thil.
           , idealdens    & ! Function that gives the density for ideal gasses
           , exner2press  & ! Function that converts Exner function into pressure
-          , extheta2temp & ! Function that finds temperature from Exner and pot. temp.
-          , extemp2theta ! ! Function that finds pot. temp. from Exner and temperature
+          , extheta2temp ! ! Function that finds pot. temp. from Exner and temperature
    implicit none
    !------ I/O variables ------------------------------------------------------------------!
    integer, intent(in)                  :: m1    ! Grid dimension                 [    ---]

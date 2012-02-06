@@ -209,12 +209,12 @@ subroutine find_avg_winds(m1,m2,m3,ia,iz,ja,jz,ka,kz,uc,up,vc,vp,wc,wp,fmapui,fm
    !     Terrain-following coordinate has slopes, and we must add the slope contribution   !
    ! to the vertical component so it becomes a true sigma-z velocity.                      !
    !---------------------------------------------------------------------------------------!
-   do j=ja,jz
-      jm1 = j-1
-      jp1 = j+1
-      do i=ia,iz
-         im1 = i-1
-         ip1 = i+1
+   do j=1,m3
+      jm1 = max( 1,j-1)
+      jp1 = min(m3,j+1)
+      do i=1,m2
+         im1 = max( 1,i-1)
+         ip1 = min(m2,i+1)
          rtgti = 1.0 / rtgt(i,j)
 
          do k=1,kz
@@ -312,10 +312,10 @@ subroutine find_walcek_densities(dtime,m1,m2,m3,uavg,vavg,wavg,denst,densu,densv
                                                 - densu(  k,im1,  j) * uavg(  k,im1,  j) )
             den2_wal(k,i,j) = den1_wal(k,i,j) - dtime / dytw(k,i,j)                        &
                                               * ( densv(  k,  i,  j) * vavg(  k,  i,  j)   &
-                                                - densv(  k,im1,  j) * vavg(  k,im1,  j) )
+                                                - densv(  k,  i,jm1) * vavg(  k,  i,jm1) )
             den3_wal(k,i,j) = den2_wal(k,i,j) - dtime / dztw(k,i,j)                        &
                                               * ( densw(  k,  i,  j) * wavg(  k,  i,  j)   &
-                                                - densw(  k,im1,  j) * wavg(  k,im1,  j) )
+                                                - densw(km1,  i,  j) * wavg(km1,  i,  j) )
          end do
       end do
    end do

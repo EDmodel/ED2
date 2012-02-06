@@ -103,7 +103,7 @@ subroutine integrate_lake(dtfull,htryio)
          !     Try a step of varying size.                                                 !
          !---------------------------------------------------------------------------------!
          select case (integration_scheme)
-         case (0)
+         case (0,3)
             !------------------------------------------------------------------------------!
             !    Euler scheme.  This is very simple so it won't have a routine by itself.  !
             ! Integrate, then update and correct diagnostic variables to avoid overshoot-  !

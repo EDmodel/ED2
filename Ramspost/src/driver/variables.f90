@@ -2075,7 +2075,13 @@ subroutine RAMS_varlib(cvar,nx,ny,nz,nsl,npat,ncld,ngrd,flnm,cdname,cdunits,ivar
       ierr= RAMS_getvar('TOPT',idim_type,ngrd,scr%e,b,flnm)
       call RAMS_comp_dn0(nx,ny,nz,b,scr%c,scr%d,scr%e,ngrd)
       call RAMS_comp_mult(nx,ny,1,a,scr%d)
-      call RAMS_comp_mults(nx,ny,1,a,alvl)
+      ierr = RAMS_getvar('CAN_THETA',idim_type,ngrd,scr%f,b,flnm)
+      ierr_getvar = ierr_getvar + ierr
+      ierr = RAMS_getvar('CAN_PRSS',idim_type,ngrd,scr%g,b,flnm)
+      ierr_getvar = ierr_getvar + ierr
+      call RAMS_comp_theta2temp(nx,ny,npat,scr%f,scr%g)
+      call RAMS_comp_wflx2latent(nx,ny,npat,a,scr%f)
+
       cdname='water flux from canopy to atmosphere'
       cdunits='W/m2'
 
@@ -3511,7 +3517,7 @@ subroutine RAMS_varlib(cvar,nx,ny,nz,nsl,npat,ncld,ngrd,flnm,cdname,cdunits,ivar
 
       call RAMS_comp_copysst(nx,ny,nsl,a(irecind))
 
-      call RAMS_comp_qwtk(nx,ny,nsl,npat,a(irecind),scr%c,scr%d)
+      call RAMS_comp_uextcm2tl(nx,ny,nsl,npat,a(irecind),scr%c,scr%d)
 
 
       select case (trim(cvar))

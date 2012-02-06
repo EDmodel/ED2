@@ -62,10 +62,11 @@ subroutine leaf3_timestep()
                              , dtll_factor       & ! intent(in)
                              , dtll              & ! intent(in)
                              , atm_theta         & ! intent(out)
-                             , atm_theiv         & ! intent(out)
+                             , atm_enthalpy      & ! intent(out)
                              , atm_shv           & ! intent(out)
                              , atm_rvap          & ! intent(out)
                              , atm_co2           & ! intent(out)
+                             , can_enthalpy      & ! intent(out)
                              , can_shv           & ! intent(out)
                              , can_rhos          & ! intent(out)
                              , geoht             & ! intent(out)
@@ -451,12 +452,12 @@ subroutine leaf3_timestep()
 
                !----- Compute the characteristic scales. ----------------------------------!
                call leaf3_stars(atm_theta                                                  &
-                               ,atm_theiv                                                  &
+                               ,atm_enthalpy                                               &
                                ,atm_shv                                                    &
                                ,atm_rvap                                                   &
                                ,atm_co2                                                    &
                                ,leaf_g(ngrid)%can_theta   (i,j,ip)                         &
-                               ,leaf_g(ngrid)%can_theiv   (i,j,ip)                         &
+                               ,can_enthalpy                                               &
                                ,can_shv                                                    &
                                ,leaf_g(ngrid)%can_rvap    (i,j,ip)                         &
                                ,leaf_g(ngrid)%can_co2     (i,j,ip)                         &

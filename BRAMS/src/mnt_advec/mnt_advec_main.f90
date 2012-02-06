@@ -316,6 +316,7 @@ end subroutine radvc_mnt_driver
 !                                                                                          !
 !------------------------------------------------------------------------------------------!
 subroutine monotonic_advec(npts,na,nz,dtime,qp,wind,ddm1,ddp0,densn,delta_n,qc)
+   use therm_lib, only : toler ! ! intent(in)
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
    integer                 , intent(in)    :: npts
@@ -347,8 +348,6 @@ subroutine monotonic_advec(npts,na,nz,dtime,qp,wind,ddm1,ddp0,densn,delta_n,qc)
    real                                    :: qguess
    real                                    :: courant
    real                                    :: alpha
-   !----- Local constants. ----------------------------------------------------------------!
-   real                    , parameter     :: eps = epsilon(1.)
    !---------------------------------------------------------------------------------------!
 
 
@@ -376,7 +375,6 @@ subroutine monotonic_advec(npts,na,nz,dtime,qp,wind,ddm1,ddp0,densn,delta_n,qc)
 
 
 
-
    !---------------------------------------------------------------------------------------!
    !     Flag every local extreme.                                                         !
    !---------------------------------------------------------------------------------------!
@@ -388,8 +386,8 @@ subroutine monotonic_advec(npts,na,nz,dtime,qp,wind,ddm1,ddp0,densn,delta_n,qc)
 
 
       !----- Flag the point as an extreme if it is one. -----------------------------------!
-      locmax     = qp(n) >= ( max(qp(nm1),qp(np1)) - eps )
-      locmin     = qp(n) <= ( max(qp(nm1),qp(np1)) + eps )
+      locmax     = qp(n) >= ( max(qp(nm1),qp(np1)) - toler )
+      locmin     = qp(n) <= ( max(qp(nm1),qp(np1)) + toler )
       extreme(n) = locmax .or. locmin
       !------------------------------------------------------------------------------------!
 
@@ -477,7 +475,8 @@ subroutine monotonic_advec(npts,na,nz,dtime,qp,wind,ddm1,ddp0,densn,delta_n,qc)
             !------------------------------------------------------------------------------!
             !     Find the first guess for this qc.                                        !
             !------------------------------------------------------------------------------!
-            qguess = (qp(n) * ddm1(n) - courant * qhalf * densn(n) + flux(nm1)/delta_n(n)) &
+            qguess = ( qp(n) * ddm1(n) - courant * qhalf * densn(n)                        &
+                     + flux(nm1)/delta_n(n) )                                              &
                    / ddp0(n)
             !------------------------------------------------------------------------------!
 
@@ -560,7 +559,7 @@ subroutine monotonic_advec(npts,na,nz,dtime,qp,wind,ddm1,ddp0,densn,delta_n,qc)
          !      Final bounded answer and the flux.                                         !
          !---------------------------------------------------------------------------------!
          qc(n)     = max(qcmin(n),min(qcmax(n),qguess))
-         flux(nm1) = delta_n(n) * (qc(n)*ddp0(n) - qp(n)*ddp0(n)) + flux(n)
+         flux(nm1) = delta_n(n) * (qc(n)*ddp0(n) - qp(n)*ddm1(n)) + flux(n)
          !---------------------------------------------------------------------------------!
       end if
       !------------------------------------------------------------------------------------!

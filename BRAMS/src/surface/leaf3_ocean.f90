@@ -111,6 +111,9 @@ subroutine leaf3_ocean(mzg,ustar,tstar,rstar,cstar,patch_rough,can_prss,can_rvap
    hflxac    = rho_ustar * tstar * can_exner
    wflxac    = rho_ustar * rstar
    cflxac    = rho_ustar * cstar * mmdryi
+   if (can_temp > 310.) then
+      can_temp = can_temp + 0.
+   end if
 
    !----- Integrate the state variables. --------------------------------------------------!
    can_enthalpy = can_enthalpy + dtllohcc * (hflxgc + qwflxgc + eflxac)
