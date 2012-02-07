@@ -182,7 +182,7 @@ module node_mod
    type(pack_buffs), dimension(  maxmach) :: node_buffs_feed
    type(pack_buffs), dimension(  maxmach) :: node_buffs_nest
    type(pack_buffs), dimension(6,maxmach) :: node_buffs_st
-   type(pack_buffs), dimension(3,maxmach) :: node_buffs_adv
+   type(pack_buffs), dimension(5,maxmach) :: node_buffs_adv
    !---------------------------------------------------------------------------------------!
 
 

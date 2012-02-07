@@ -263,14 +263,21 @@ end subroutine find_avg_winds
 !==========================================================================================!
 !     This subroutine finds the density terms as in Walcek.                                !
 !------------------------------------------------------------------------------------------!
-subroutine find_walcek_densities(dtime,m1,m2,m3,uavg,vavg,wavg,denst,densu,densv,densw     &
-                                ,den0_wal,den1_wal,den2_wal,den3_wal,dxtw,dytw,dztw)
+subroutine find_walcek_densities(dtime,m1,m2,m3,ia,iz,ja,jz,ka,kz,uavg,vavg,wavg           &
+                                ,denst,densu,densv,densw,den0_wal,den1_wal,den2_wal        &
+                                ,den3_wal,dxtw,dytw,dztw)
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
    real                        , intent(in)    :: dtime
    integer                     , intent(in)    :: m1
    integer                     , intent(in)    :: m2
    integer                     , intent(in)    :: m3
+   integer                     , intent(in)    :: ia
+   integer                     , intent(in)    :: iz
+   integer                     , intent(in)    :: ja
+   integer                     , intent(in)    :: jz
+   integer                     , intent(in)    :: ka
+   integer                     , intent(in)    :: kz
    real   , dimension(m1,m2,m3), intent(in)    :: uavg
    real   , dimension(m1,m2,m3), intent(in)    :: vavg
    real   , dimension(m1,m2,m3), intent(in)    :: wavg
@@ -299,12 +306,12 @@ subroutine find_walcek_densities(dtime,m1,m2,m3,uavg,vavg,wavg,denst,densu,densv
    !---------------------------------------------------------------------------------------!
    !     Find the four terms.                                                              !
    !---------------------------------------------------------------------------------------!
-   do j=1,m3
-      jm1 = max(1,j-1)
-      do i=1,m2
-         im1 = max(1,i-1) 
-         do k=1,m1
-            km1 = max(1,k-1)
+   do j=ja,jz
+      jm1 = j-1
+      do i=ia,iz
+         im1 = i-1
+         do k=ka,kz
+            km1 = k-1
 
             den0_wal(k,i,j) = denst(k,i,j)
             den1_wal(k,i,j) = den0_wal(k,i,j) - dtime / dxtw(k,i,j)                        &

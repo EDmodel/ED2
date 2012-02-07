@@ -117,7 +117,7 @@ subroutine radvc_mnt_driver(m1,m2,m3,ia,iz,ja,jz,mynum)
 
 
    !----- Find the Walcek's density terms. ------------------------------------------------!
-   call find_walcek_densities( dtlt, m1, m2, m3                                            &
+   call find_walcek_densities( dtlt, m1, m2, m3, ia, iz, ja, jz, ka, kz                    &
                              , advec_g(ngrid)%uavg    , advec_g(ngrid)%vavg                &
                              , advec_g(ngrid)%wavg    , advec_g(ngrid)%denst               &
                              , advec_g(ngrid)%densu   , advec_g(ngrid)%densv               &

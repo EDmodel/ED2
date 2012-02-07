@@ -1436,6 +1436,15 @@ subroutine RAMS_varlib(cvar,nx,ny,nz,nsl,npat,ncld,ngrd,flnm,cdname,cdunits,ivar
       cdname='deep conv moist rate'
       cdunits='g/kg/day'
 
+   case ('co2src') 
+      ivar_type=6
+      ierr= RAMS_getvar('CO2SRC',idim_type,ngrd,a,b,flnm)
+      ierr_getvar = ierr_getvar + ierr
+      call RAMS_comp_mults(nx,ny,nz*ncld,a,86400.)
+      call get_cumulus(nx,ny,nz,ncld,a,a6)
+      cdname='deep conv co2 rate'
+      cdunits='umol/mol/day'
+
    case ('fthrd') 
       ivar_type=3
       ierr= RAMS_getvar('FTHRD',idim_type,ngrd,a,b,flnm)

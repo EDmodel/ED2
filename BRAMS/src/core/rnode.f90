@@ -442,6 +442,8 @@ subroutine init_fields(init)
    integer                        :: j2
    integer                        :: xlbc
    integer                        :: ylbc
+   integer                        :: xadv
+   integer                        :: yadv
    integer                        :: xst
    integer                        :: yst
    integer                        :: fdzp
@@ -514,7 +516,8 @@ subroutine init_fields(init)
 
       !----- ADV variables. ---------------------------------------------------------------!
       if (vtab_r(nv,1)%iadvt == 1 .or. vtab_r(nv,1)%iadvu == 1 .or.                        &
-          vtab_r(nv,1)%iadvv == 1 .or. vtab_r(nv,1)%iadvw == 1      ) then
+          vtab_r(nv,1)%iadvv == 1 .or. vtab_r(nv,1)%iadvw == 1 .or.                        &
+          vtab_r(nv,1)%name  == 'SCAL_IN'     ) then
          npvar_mpt4(idim) = npvar_mpt4(idim) + 1
       end if
       !------------------------------------------------------------------------------------!
@@ -539,15 +542,53 @@ subroutine init_fields(init)
          ylbc       = j2 - j1 + 1 
          
          memf_mpt1 = 0
-         memf_mpt4 = 0
          do idim = 2, ndim_types
             call ze_dims(ng,idim,.false.,fdzp,fdep)
             memf_mpt1 = memf_mpt1 + fdzp * xlbc * ylbc * fdep * npvar_mpt1(idim)
-            memf_mpt4 = memf_mpt4 + fdzp * xlbc * ylbc * fdep * npvar_mpt4(idim)
          end do 
 
          nbuff_feed = max(nbuff_feed,memf_mpt1)
-         nbuff_adv  = max(nbuff_adv ,memf_mpt4)
+      end do
+   end do
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !      Find the size of the advection lateral boundary condition buffers.               !
+   !---------------------------------------------------------------------------------------!
+   nbuff_adv = 0
+   do ng=1,ngrids
+      do nm=1,nmachs
+         do iaflag=1,5
+            
+            !----- Find the appropriate type. ---------------------------------------------!
+            select case (iaflag)
+            case (2,3)
+               jtype = iaflag
+            case default
+               jtype = 1
+            end select 
+            !------------------------------------------------------------------------------!
+
+            i1         = ipaths(1,jtype,ng,nm)
+            i2         = ipaths(2,jtype,ng,nm)
+            j1         = ipaths(3,jtype,ng,nm)
+            j2         = ipaths(4,jtype,ng,nm)
+            xadv       = i2 - i1 + 1
+            yadv       = j2 - j1 + 1 
+
+            !------------------------------------------------------------------------------!
+            !     Add the number of points of all possible dimensions.                     !
+            !------------------------------------------------------------------------------!
+            memf_mpt4 = 0
+            do idim = 2, ndim_types
+               call ze_dims(ng,idim,.false.,fdzp,fdep)
+               memf_mpt4 = memf_mpt4 + fdzp * xadv * yadv * fdep * npvar_mpt4(idim)
+            end do 
+            nbuff_adv  = max(nbuff_adv ,memf_mpt4)
+            !------------------------------------------------------------------------------!
+         end do
       end do
    end do
    !---------------------------------------------------------------------------------------!
@@ -605,7 +646,7 @@ subroutine init_fields(init)
          do isflag=1,6
             call dealloc_node_buff(node_buffs_st(isflag,nm))
          end do
-         do iaflag=1,6
+         do iaflag=1,5
             call dealloc_node_buff(node_buffs_adv(iaflag,nm))
          end do
       end do
@@ -633,7 +674,7 @@ subroutine init_fields(init)
             call alloc_node_buff(node_buffs_st(isflag,nm),nbuff_st,f_ndmd_size)
          end do
 
-         do iaflag=1,6
+         do iaflag=1,5
             call dealloc_node_buff(node_buffs_adv(iaflag,nm))
             call alloc_node_buff(node_buffs_adv(iaflag,nm),nbuff_adv,f_ndmd_size)
          end do

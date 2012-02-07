@@ -89,7 +89,7 @@ subroutine node_sendadv(iaflag)
    do nm=1,nmachs
       if (iget_paths(itype,ngrid,nm) /= 0) then
          !----- Find the unique MPI flag to make sure the right message is got. -----------!
-         mpiid = 600000 + maxgrds * (nm-1) + ngrid
+         mpiid= 6000000 + 10*maxgrds*(machs(nm)-1) + 10*(ngrid-1) + iaflag
 
          !----- Post the receive. ---------------------------------------------------------!
          call MPI_Irecv(node_buffs_adv(iaflag,nm)%pack_recv_buff                           &
@@ -168,12 +168,13 @@ subroutine node_sendadv(iaflag)
                mtp = nptsxy * fdzp * fdep
 
                !----- Copy the variable to the scratch array. -----------------------------!
+               call azero(mtp,scratch%scr3)
                call mk_adv_buff(fdzp,mxp,myp,fdep,mtp,vtab_r(nv,ngrid)%var_p               &
-                               ,scratch%scr5,i1-i0,i2-i0,j1-j0,j2-j0)
+                               ,scratch%scr3,i1-i0,i2-i0,j1-j0,j2-j0)
                !---------------------------------------------------------------------------!
 
                !----- Add the boundary condition to the MPI buffer. -----------------------!
-               call MPI_Pack(scratch%scr5 ,mtp,MPI_REAL                                    &
+               call MPI_Pack(scratch%scr3 ,mtp,MPI_REAL                                    &
                             ,node_buffs_adv(iaflag,nm)%pack_send_buff                      &
                             ,node_buffs_adv(iaflag,nm)%nsend,ipos,MPI_COMM_WORLD,ierr)
                !---------------------------------------------------------------------------!
@@ -185,7 +186,7 @@ subroutine node_sendadv(iaflag)
 
 
          !----- Send out the stuff to the node. -------------------------------------------!
-         mpiid = 600000 + maxgrds * (mynum-1) + ngrid
+         mpiid = 6000000 + 10*maxgrds*(mchnum-1) + 10*(ngrid-1) + iaflag
          call MPI_Isend(node_buffs_adv(iaflag,nm)%pack_send_buff,ipos,MPI_PACKED           &
                        ,ipaths(5,itype,ngrid,nm),mpiid,MPI_COMM_WORLD,isend_req(nm),ierr)
          !---------------------------------------------------------------------------------!
@@ -350,14 +351,14 @@ subroutine node_getadv(iaflag)
 
                !----- Unpack the buffer into the scratch array. ---------------------------!
                call MPI_Unpack(node_buffs_adv(iaflag,nm)%pack_recv_buff                    &
-                              ,node_buffs_adv(iaflag,nm)%nrecv,ipos,scratch%scr6,mtp       &
+                              ,node_buffs_adv(iaflag,nm)%nrecv,ipos,scratch%scr4,mtp       &
                               ,MPI_REAL,MPI_COMM_WORLD,ierr)
                !---------------------------------------------------------------------------!
 
 
                !----- Extract the information. --------------------------------------------!
                call ex_adv_buff(fdzp,mxp,myp,fdep,mtp,vtab_r(nv,ngrid)%var_p               &
-                               ,scratch%scr6,i1-i0,i2-i0,j1-j0,j2-j0)
+                               ,scratch%scr4,i1-i0,i2-i0,j1-j0,j2-j0)
                !---------------------------------------------------------------------------!
             end if
          end do varloop

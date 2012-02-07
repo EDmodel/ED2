@@ -243,47 +243,47 @@ module mem_mnt_advec
       
       if (associated(advec%uavg      ))                                                    &
          call vtables2(advec%uavg,advecm%uavg,ng,npts,imean                                &
-                      ,'UAVG :3:mpti:advu')
+                      ,'UAVG :3:mpti:mpt3:advu')
 
       if (associated(advec%vavg      ))                                                    &
          call vtables2(advec%vavg,advecm%vavg,ng,npts,imean                                &
-                      ,'VAVG :3:mpti:advv')
+                      ,'VAVG :3:mpti:mpt3:advv')
 
       if (associated(advec%wavg      ))                                                    &
          call vtables2(advec%wavg,advecm%wavg,ng,npts,imean                                &
-                      ,'WAVG :3:mpti:advw')
+                      ,'WAVG :3:mpti:mpt3:advw')
 
       if (associated(advec%denst     ))                                                    &
          call vtables2(advec%denst,advecm%denst,ng,npts,imean                              &
-                      ,'DENST :3:mpti:advt')
+                      ,'DENST :3:mpti:mpt3:advt')
 
       if (associated(advec%densu     ))                                                    &
          call vtables2(advec%densu,advecm%densu,ng,npts,imean                              &
-                      ,'DENSU :3:mpti:advu')
+                      ,'DENSU :3:mpti:mpt3:advu')
 
       if (associated(advec%densv     ))                                                    &
          call vtables2(advec%densv,advecm%densv,ng,npts,imean                              &
-                      ,'DENSV :3:mpti:advv')
+                      ,'DENSV :3:mpti:mpt3:advv')
 
       if (associated(advec%densw     ))                                                    &
          call vtables2(advec%densw,advecm%densw,ng,npts,imean                              &
-                      ,'DENSW :3:mpti:advw')
+                      ,'DENSW :3:mpti:mpt3:advw')
 
       if (associated(advec%den0_wal  ))                                                    &
          call vtables2(advec%den0_wal,advecm%den0_wal,ng,npts,imean                        &
-                      ,'DEN0_WAL :3:mpti:advt')
+                      ,'DEN0_WAL :3:mpti:mpt3:advt')
 
       if (associated(advec%den1_wal  ))                                                    &
          call vtables2(advec%den1_wal,advecm%den1_wal,ng,npts,imean                        &
-                      ,'DEN1_WAL :3:mpti:advt')
+                      ,'DEN1_WAL :3:mpti:mpt3:advt')
 
       if (associated(advec%den2_wal  ))                                                    &
          call vtables2(advec%den2_wal,advecm%den2_wal,ng,npts,imean                        &
-                      ,'DEN2_WAL :3:mpti:advt')
+                      ,'DEN2_WAL :3:mpti:mpt3:advt')
 
       if (associated(advec%den3_wal  ))                                                    &
          call vtables2(advec%den3_wal,advecm%den3_wal,ng,npts,imean                        &
-                      ,'DEN3_WAL :3:mpti:advt')
+                      ,'DEN3_WAL :3:mpti:mpt3:advt')
       !------------------------------------------------------------------------------------!
 
 
@@ -293,15 +293,15 @@ module mem_mnt_advec
       !------------------------------------------------------------------------------------!
       if (associated(advec%dxtw      ))                                                    &
          call vtables2(advec%dxtw,advecm%dxtw,ng,npts,imean                                &
-                      ,'DXTW :3:mpti')
+                      ,'DXTW :3:mpti:mpt3')
 
       if (associated(advec%dytw      ))                                                    &
          call vtables2(advec%dytw,advecm%dytw,ng,npts,imean                                &
-                      ,'DYTW :3:mpti')
+                      ,'DYTW :3:mpti:mpt3')
 
       if (associated(advec%dztw      ))                                                    &
          call vtables2(advec%dztw,advecm%dztw,ng,npts,imean                                &
-                      ,'DZTW :3:mpti')
+                      ,'DZTW :3:mpti:mpt3')
       !------------------------------------------------------------------------------------!
 
 
@@ -311,11 +311,11 @@ module mem_mnt_advec
       !------------------------------------------------------------------------------------!
       if (associated(advec%scal_in   ))                                                    &
          call vtables2(advec%scal_in,advecm%scal_in,ng,npts,imean                          &
-                      ,'SCAL_IN :3:mpti')
+                      ,'SCAL_IN :3:mpti:mpt3')
 
       if (associated(advec%scal_out  ))                                                    &
          call vtables2(advec%scal_out,advecm%scal_out,ng,npts,imean                        &
-                      ,'SCAL_OUT :3:mpti')
+                      ,'SCAL_OUT :3:mpti:mpt3')
       !------------------------------------------------------------------------------------!
 
       return
