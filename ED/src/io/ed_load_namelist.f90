@@ -116,6 +116,7 @@ subroutine copy_nl(copy_type)
                                    , lwidth_nltree             & ! intent(out)
                                    , q10_c3                    & ! intent(out)
                                    , q10_c4                    & ! intent(out)
+                                   , lturnover_grass           & ! intent(out)
                                    , quantum_efficiency_T      ! ! intent(out)
    use phenology_coms       , only : iphen_scheme              & ! intent(out)
                                    , iphenys1                  & ! intent(out)
@@ -374,6 +375,7 @@ subroutine copy_nl(copy_type)
       lwidth_nltree             = nl%lwidth_nltree
       q10_c3                    = nl%q10_c3
       q10_c4                    = nl%q10_c4
+      lturnover_grass           = nl%lturnover_grass
       thetacrit                 = nl%thetacrit
       quantum_efficiency_T      = nl%quantum_efficiency_T
       radint                    = nl%radint

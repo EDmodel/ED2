@@ -1159,6 +1159,7 @@ subroutine ed_opspec_misc
                                     , lwidth_nltree                & ! intent(in)
                                     , q10_c3                       & ! intent(in)
                                     , q10_c4                       & ! intent(in)
+                                    , lturnover_grass              & ! intent(in)
                                     , quantum_efficiency_T         ! ! intent(in)
    use decomp_coms           , only : n_decomp_lim                 ! ! intent(in)
    use disturb_coms          , only : include_fire                 & ! intent(in)
@@ -1719,6 +1720,14 @@ end do
       write (reason,fmt='(a,1x,es12.5,a)')                                                 &
                     'Invalid Q10_C4, it must be between 1.0 and 10.  Yours is set to'      &
                     ,q10_c4,'...'
+      call opspec_fatal(reason,'opspec_misc')
+      ifaterr = ifaterr +1
+   end if
+
+   if (lturnover_grass < 1.0 .or. lturnover_grass > 10.) then
+      write (reason,fmt='(a,1x,es12.5,a)')                                                 &
+                    'Invalid LTURNOVER_GRASS, it must be between 1.0 and 10.  Yours is set to'      &
+                    ,lturnover_grass,'...'
       call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
    end if

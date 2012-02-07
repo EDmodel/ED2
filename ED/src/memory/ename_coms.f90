@@ -174,6 +174,7 @@ module ename_coms
       real                                              :: lwidth_nltree
       real                                              :: q10_c3
       real                                              :: q10_c4
+      real                                              :: lturnover_grass
       real                                              :: thetacrit
       integer                                           :: quantum_efficiency_T
       integer                                           :: n_plant_lim
@@ -421,6 +422,7 @@ module ename_coms
       enl%lwidth_nltree             = undef_real
       enl%q10_c3                    = undef_real
       enl%q10_c4                    = undef_real
+      enl%lturnover_grass           = undef_real
       enl%thetacrit                 = undef_real
       enl%quantum_efficiency_T      = undef_integer
       enl%n_plant_lim               = undef_integer

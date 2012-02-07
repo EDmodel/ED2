@@ -1761,6 +1761,7 @@ end subroutine init_decomp_params
 subroutine init_pft_resp_params()
    use physiology_coms, only : iphysiol                  & ! intent(in)
                              , rrffact                   & ! intent(in)
+                             , lturnover_grass           & ! intent(in)
                              , growthresp                ! ! intent(in)
    use pft_coms       , only : rd_low_temp               & ! intent(in)
                              , rd_high_temp              & ! intent(in)
@@ -1801,7 +1802,7 @@ subroutine init_pft_resp_params()
    growth_resp_factor(16)         = growthresp
    growth_resp_factor(17)         = 0.4503
 
-   leaf_turnover_rate(1)          = 4.0
+   leaf_turnover_rate(1)          = lturnover_grass  ! 4.0
    leaf_turnover_rate(2)          = 1.0
    leaf_turnover_rate(3)          = 0.5
    leaf_turnover_rate(4)          = onethird
