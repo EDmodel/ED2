@@ -1570,8 +1570,8 @@ subroutine init_pft_photo_params()
    dark_respiration_factor(11)    = gamma_c3
    dark_respiration_factor(12)    = gamma_c3
    dark_respiration_factor(13)    = gamma_c3
-   dark_respiration_factor(14)    = gamma_c3
-   dark_respiration_factor(15)    = gamma_c3
+   dark_respiration_factor(14)    = gamma_c3 ! why are these not c4?
+   dark_respiration_factor(15)    = gamma_c3 ! why are these not c4?
    dark_respiration_factor(16)    = gamma_c3
    dark_respiration_factor(17)    = gamma_c3 * 0.028 / 0.020
    !---------------------------------------------------------------------------------------!
@@ -1802,7 +1802,7 @@ subroutine init_pft_resp_params()
    growth_resp_factor(16)         = growthresp
    growth_resp_factor(17)         = 0.4503
 
-   leaf_turnover_rate(1)          = lturnover_grass  ! 4.0
+   leaf_turnover_rate(1)          = 4.0  !!lturnover_grass  ! 4.0
    leaf_turnover_rate(2)          = 1.0
    leaf_turnover_rate(3)          = 0.5
    leaf_turnover_rate(4)          = onethird
@@ -2301,7 +2301,7 @@ subroutine init_pft_alloc_params()
    sla_slope = -0.46
 
    !----- [KIM] - new tropical parameters. ------------------------------------------------!
-   SLA( 1) = 22.7* sla_scale !--value from Mike Dietze: mean: 22.7, median 19.1, 95% CI: 5.7, 78.6
+   SLA( 1) = 22.7 !--value from Mike Dietze: mean: 22.7, median 19.1, 95% CI: 5.7, 78.6
    SLA( 2) = 10.0**(sla_inter + sla_slope * log10(12.0/leaf_turnover_rate( 2))) * sla_scale
    SLA( 3) = 10.0**(sla_inter + sla_slope * log10(12.0/leaf_turnover_rate( 3))) * sla_scale
    SLA( 4) = 10.0**(sla_inter + sla_slope * log10(12.0/leaf_turnover_rate( 4))) * sla_scale
@@ -2316,7 +2316,7 @@ subroutine init_pft_alloc_params()
    SLA(13) = 22.0
    SLA(14) = 10.0**(sla_inter + sla_slope * log10(12.0/leaf_turnover_rate(14))) * sla_scale
    SLA(15) = 10.0**(sla_inter + sla_slope * log10(12.0/leaf_turnover_rate(15))) * sla_scale
-   SLA(16) = 10.0**(sla_inter + sla_slope * log10(12.0/leaf_turnover_rate(16))) * sla_scale
+   SLA(16) = 22.7 !--value from Mike Dietze: mean: 22.7, median 19.1, 95% CI: 5.7, 78.6
    SLA(17) = 10.0
 
    !---------------------------------------------------------------------------------------!
