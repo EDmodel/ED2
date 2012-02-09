@@ -94,9 +94,9 @@ subroutine grell_cupar_driver(cldd,clds)
          ! 4. We now compute the dynamic control, which will determine the characteristic  !
          !    mass flux for each Grell cumulus cloud.                                      !
          !---------------------------------------------------------------------------------!
-         call grell_cupar_dynamic(cldd,clds,nclouds,dtlt,maxens_cap,maxens_eff,maxens_lsf  &
-                                 ,maxens_dyn,mgmzp,closure_type,comp_modif_thermo          &
-                                 ,prec_cld,cld2prec,mynum,i,j)
+         call grell_cupar_dynamic(cldd,clds,nclouds,confrq,maxens_cap,maxens_eff           &
+                                 ,maxens_lsf,maxens_dyn,mgmzp,closure_type                 &
+                                 ,comp_modif_thermo,prec_cld,cld2prec,mynum,i,j)
 
          !---------------------------------------------------------------------------------!
          ! 5. We now go through the cloud sizes again, to compute the feedback to the      !
@@ -256,7 +256,7 @@ subroutine grell_cupar_initial(i,j,confrqd)
    !    the future values in case convection does not happen (previous values plus the     !
    !    large-scale forcing).                                                              !
    !---------------------------------------------------------------------------------------!
-   call initial_thermo_grell(mzp,dtlt               , basic_g(ngrid)%thp           (:,i,j) &
+   call initial_thermo_grell(mzp,confrqd            , basic_g(ngrid)%thp           (:,i,j) &
               , basic_g(ngrid)%theta         (:,i,j), basic_g(ngrid)%rtp           (:,i,j) &
               , vctr8                        (1:mzp), basic_g(ngrid)%pi0           (:,i,j) &
               , basic_g(ngrid)%pp            (:,i,j), basic_g(ngrid)%pc            (:,i,j) &

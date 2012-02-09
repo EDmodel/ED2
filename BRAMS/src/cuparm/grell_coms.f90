@@ -112,29 +112,29 @@ module grell_coms
   !  These variables are parameters for various Grell's computation                        !
   !----------------------------------------------------------------------------------------!
   !------ Minimum diameter for clouds to develop downdrafts and rain ----------------------!
-  real                              , parameter  :: min_down_radius = 900.
+  real                              , parameter  :: min_down_radius = 3000.
   
   !------ Epsilon is the ratio between reference downdraft and updraft mass fluxes --------!
-  real                              , parameter  :: edtmax = .95  ! Upper bound
-  real                              , parameter  :: edtmin = .20  ! Lower bound
+  real                              , parameter  :: edtmax          = .99  ! Upper bound
+  real                              , parameter  :: edtmin          = .01  ! Lower bound
   
   !------ Maximum acceptable PBL height ---------------------------------------------------!
-  real                              , parameter ::  pblhmax = 3000.
+  real                              , parameter ::  pblhmax         = 3000.
   
-  !------ Minimum cloud mixing ratio to consider the layer wet ----------------------------!
-  real                              , parameter ::  rcpmin  = 1.e-5
+  !------ Minimum cloud mixing ratio to consider the layer wet [kg/kg] --------------------!
+  real                              , parameter ::  rcpmin          = 1.e-5
   
   !------ Height relative to the top above which no downdrafts can occur ------------------!
-  real                              , parameter ::  relheight_down = 0.6
+  real                              , parameter ::  relheight_down  = 0.6
   
   !------ Percentage of mass left when hitting the ground ---------------------------------!
-  real                              , parameter ::  pmass_left     = 0.03
+  real                              , parameter ::  pmass_left      = 0.03
   
   !------ Maximum "leakage" of mass allowed (normalized) ----------------------------------!
-  real, parameter ::   masstol        = 1.e-6
+  real                              , parameter ::  masstol         = 1.e-6
 
   !----- Maximum height that a cloud can ever possibly reach [m] --------------------------!
-  real, parameter ::   zmaxtpse       = 18000.
+  real                              , parameter ::  zmaxtpse        = 18000.
 
   !----------------------------------------------------------------------------------------!
   !    Ensemble related variables. acrit and acritt are a look-up table for climatological !

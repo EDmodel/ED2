@@ -2447,7 +2447,7 @@ subroutine xcol2array(mz,mx,my,z,y,vector,array)
    integer                          , intent(in)    :: my
    integer                          , intent(in)    :: z
    integer                          , intent(in)    :: y
-   real(kind=4), dimension(mz)      , intent(in)    :: vector
+   real(kind=4), dimension(mx)      , intent(in)    :: vector
    real(kind=4), dimension(mz,mx,my), intent(inout) :: array
    !----- Local variables. ----------------------------------------------------------------!
    integer                                          :: x
@@ -2480,7 +2480,7 @@ subroutine ycol2array(mz,mx,my,z,x,vector,array)
    integer                          , intent(in)    :: my
    integer                          , intent(in)    :: z
    integer                          , intent(in)    :: x
-   real(kind=4), dimension(mz)      , intent(in)    :: vector
+   real(kind=4), dimension(my)      , intent(in)    :: vector
    real(kind=4), dimension(mz,mx,my), intent(inout) :: array
    !----- Local variables. ----------------------------------------------------------------!
    integer                                          :: y

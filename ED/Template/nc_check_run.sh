@@ -82,23 +82,25 @@ do
    atmco2=`echo ${oi}       | awk '{print $57}'`
    thcrit=`echo ${oi}       | awk '{print $58}'`
    smfire=`echo ${oi}       | awk '{print $59}'`
-   isoilbc=`echo ${oi}      | awk '{print $60}'`
-   imetrad=`echo ${oi}      | awk '{print $61}'`
-   ibranch=`echo ${oi}      | awk '{print $62}'`
-   icanrad=`echo ${oi}      | awk '{print $63}'`
-   crown=`echo   ${oi}      | awk '{print $64}'`
-   ltransvis=`echo ${oi}    | awk '{print $65}'`
-   lreflectvis=`echo ${oi}  | awk '{print $66}'`
-   ltransnir=`echo ${oi}    | awk '{print $67}'`
-   lreflectnir=`echo ${oi}  | awk '{print $68}'`
-   orienttree=`echo ${oi}   | awk '{print $69}'`
-   orientgrass=`echo ${oi}  | awk '{print $70}'`
-   clumptree=`echo ${oi}    | awk '{print $71}'`
-   clumpgrass=`echo ${oi}   | awk '{print $72}'`
-   ivegtdyn=`echo ${oi}     | awk '{print $73}'`
-   igndvap=`echo ${oi}      | awk '{print $74}'`
-   iphen=`echo ${oi}        | awk '{print $75}'`
-   iallom=`echo ${oi}       | awk '{print $76}'`
+   ipercol=`echo ${oi}      | awk '{print $60}'`
+   isoilbc=`echo ${oi}      | awk '{print $61}'`
+   runoff=`echo ${oi}       | awk '{print $62}'`
+   imetrad=`echo ${oi}      | awk '{print $63}'`
+   ibranch=`echo ${oi}      | awk '{print $64}'`
+   icanrad=`echo ${oi}      | awk '{print $65}'`
+   crown=`echo   ${oi}      | awk '{print $66}'`
+   ltransvis=`echo ${oi}    | awk '{print $67}'`
+   lreflectvis=`echo ${oi}  | awk '{print $68}'`
+   ltransnir=`echo ${oi}    | awk '{print $69}'`
+   lreflectnir=`echo ${oi}  | awk '{print $70}'`
+   orienttree=`echo ${oi}   | awk '{print $71}'`
+   orientgrass=`echo ${oi}  | awk '{print $72}'`
+   clumptree=`echo ${oi}    | awk '{print $73}'`
+   clumpgrass=`echo ${oi}   | awk '{print $74}'`
+   ivegtdyn=`echo ${oi}     | awk '{print $75}'`
+   igndvap=`echo ${oi}      | awk '{print $76}'`
+   iphen=`echo ${oi}        | awk '{print $77}'`
+   iallom=`echo ${oi}       | awk '{print $78}'`
    #---------------------------------------------------------------------------------------#
 
 

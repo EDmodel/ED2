@@ -63,6 +63,7 @@ grell_cupar_ensemble.o: rconstants.mod
 grell_cupar_environment.o: grell_coms.mod rconstants.mod therm_lib.mod
 grell_cupar_feedback.o: mem_ensemble.mod mem_scratch_grell.mod rconstants.mod
 grell_cupar_static.o: mem_ensemble.mod mem_scratch_grell.mod rconstants.mod
+grell_cupar_static.o: therm_lib.mod
 grell_cupar_updraft.o: mem_cuparm.mod rconstants.mod therm_lib.mod
 grell_extras_catt.o: grell_coms.mod mem_basic.mod mem_ensemble.mod mem_grid.mod
 grell_extras_catt.o: mem_scalar.mod mem_scratch.mod mem_scratch_grell.mod

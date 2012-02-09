@@ -180,6 +180,7 @@ subroutine grell_cupar_static(comp_noforc_cldwork,checkmass,iupmethod,maxens_cap
       ,wbuoymin0    & ! intent(out) - Updraft Minimum buoyant velocity            [    m/s]
       ,wbuoymin     ! ! intent(out) - Minimum buoyancy velocity                   [    ---]
    use rconstants, only : toodry
+   use therm_lib , only : toler
    implicit none
    
    !---------------------------------------------------------------------------------------!
@@ -618,9 +619,12 @@ subroutine grell_cupar_static(comp_noforc_cldwork,checkmass,iupmethod,maxens_cap
          call grell_efficiency_ensemble(mkx,mgmzp,maxens_eff,klou,klfc,klnb,edtmin,edtmax  &
                                        ,pwav,pwev,z_cup,uwind,vwind,dzd_cld                &
                                        ,edt_eff(:,icap))
+         !------------------------------------------------------------------------------------!
+
+
 
          !---------------------------------------------------------------------------------!
-         ! 8. Checking for water availability and evaporation consistency: we assume that  !
+         ! 8. Check for water availability and evaporation consistency: we assume that     !
          !    downdraft is always saturated, and it gets the moisture from the rain.  How- !
          !    ever, it cannot require more rain than what is available, so if that would   !
          !    be the case, we don't allow this cloud to exist.                             !
@@ -631,11 +635,16 @@ subroutine grell_cupar_static(comp_noforc_cldwork,checkmass,iupmethod,maxens_cap
                cycle stacloop
             end if
          end do ddcheckloop
+         !---------------------------------------------------------------------------------!
+
+
+
 
          !---------------------------------------------------------------------------------!
-         ! 9. Computing cloud work function associated with downdrafts.                    !
+         ! 9. Compute cloud work function associated with downdrafts.                      !
          !---------------------------------------------------------------------------------!
          call grell_cldwork_downdraft(mkx,mgmzp,klod,dbyd,dzd_cld,etad_cld,aad)
+         !---------------------------------------------------------------------------------!
 
       else
          !---------------------------------------------------------------------------------!

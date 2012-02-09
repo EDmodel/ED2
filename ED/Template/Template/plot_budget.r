@@ -36,6 +36,7 @@ scalleg        = 0.32           # Increase in y scale to fit the legend.
 ncolshov       = 200            # Target number of colours for Hovmoller diagrams.
 hovgrid        = TRUE           # Should I include a grid on the Hovmoller plots?
 
+
 #------------------------------------------------------------------------------------------#
 #------------------------------------------------------------------------------------------#
 #     List of possible plots. In case you don't want some of them, simply switch plt to F. #

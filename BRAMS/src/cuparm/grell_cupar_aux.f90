@@ -254,7 +254,7 @@ subroutine initial_thermo_grell(m1,dtime,thp,theta,rtp,co2p,pi0,pp,pc,wp,dn0,tke
    implicit none
    !------ I/O variables ------------------------------------------------------------------!
    integer, intent(in)                  :: m1    ! Grid dimension                 [    ---]
-   real   , intent(in)                  :: dtime ! Time step                      [      s]
+   real   , intent(in)                  :: dtime ! Time step (convective scale)   [      s]
    real   , intent(in)  , dimension(m1) :: thp   ! Ice-liquid potential temp.     [      K]
    real   , intent(in)  , dimension(m1) :: theta ! Potential temperature          [      K]
    real   , intent(in)  , dimension(m1) :: rtp   ! Total H2O mixing ratio         [  kg/kg]

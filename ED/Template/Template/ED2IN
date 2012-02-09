@@ -1087,7 +1087,7 @@ $ED_NL
    !            2.  Soil conductivity decreases with depth even for constant soil moisture !
    !                , otherwise it is the same as 1.                                       !
    !---------------------------------------------------------------------------------------!
-   NL%IPERCOL         = 1
+   NL%IPERCOL         = mypercol
    !---------------------------------------------------------------------------------------!
 
 
@@ -1198,7 +1198,7 @@ $ED_NL
    !                -folding lifetime" of the TSW in seconds due to runoff.  If you don't  !
    !                want runoff to happen, set this to 0.                                  !
    !---------------------------------------------------------------------------------------!
-   NL%RUNOFF_TIME    = 1800.
+   NL%RUNOFF_TIME    = myrunoff
    !---------------------------------------------------------------------------------------!
 
 
