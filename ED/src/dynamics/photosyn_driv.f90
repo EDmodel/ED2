@@ -452,7 +452,7 @@ subroutine canopy_photosynthesis(csite,cmet,mzg,ipa,lsl,ntext_soil              
                cpatch%fsw(ico) = 1.0
 
             case (1,2)
-               water_demand    = cpatch%psi_open(ico) * cpatch%lai(ico)
+               water_demand    = cpatch%psi_open(ico)
                if (cpatch%water_supply (ico) < tiny_num) then
                   cpatch%fsw(ico) = 0.0
                else
