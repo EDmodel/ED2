@@ -147,15 +147,15 @@ subroutine leaf2ed_soil_moist_energy(cgrid,ifm)
             cpatch => csite%patch(ipa)
 
             do k=1,nzg
-            
+
                ntext = cpoly%ntext_soil(k,isi)
                !---------------------------------------------------------------------------!
                !   Soil water.  Ensuring that the initial condition is within the accept-  !
                ! able range.                                                               !
                !---------------------------------------------------------------------------!
-               csite%soil_water(k,ipa) = max(soil(ntext)%soilcp                            &
-                                            ,min(soil(ntext)%slmsts                        &
-                                                ,leaf_g(ifm)%soil_water(k,ix,iy,ilp) ) )
+               csite%soil_water(k,ipa) = max( soil(ntext)%soilcp                           &
+                                            , min(soil(ntext)%slmsts                       &
+                                                 ,leaf_g(ifm)%soil_water(k,ix,iy,ilp) ) )
 
                !---------------------------------------------------------------------------!
                !   Soil temperature and liquid fraction. Simply use what we found a few    !

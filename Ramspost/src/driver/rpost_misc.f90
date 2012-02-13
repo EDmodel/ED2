@@ -1,18 +1,47 @@
+!==========================================================================================!
+!==========================================================================================!
+!     This sub-routine extracts a 3-D array from a 4-D variable.                           !
+!------------------------------------------------------------------------------------------!
+subroutine s4d_to_3d(xmax,ymax,zmax,emax,e,four,three)
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   integer                                , intent(in)  :: xmax
+   integer                                , intent(in)  :: ymax
+   integer                                , intent(in)  :: zmax
+   integer                                , intent(in)  :: emax
+   integer                                , intent(in)  :: e
+   real   , dimension(xmax,ymax,zmax,emax), intent(in)  :: four
+   real   , dimension(xmax,ymax,zmax)     , intent(out) :: three
+   !----- Local variables. ----------------------------------------------------------------!
+   integer                                              :: x
+   integer                                              :: y
+   integer                                              :: z
+   !---------------------------------------------------------------------------------------!
 
-       Subroutine S4d_to_3d(nxr,nyr,nzz,n5,ipatch,rout,rout2)
-       Dimension rout(nxr,nyr,nzz),rout2(nxr,nyr,nzz,n5)
 
-        do j=1,nyr
-         do i=1,nxr
-          do k=1,nzz
-          rout(i,j,k)=rout2(i,j,k,ipatch)
-          enddo
-         enddo
-       enddo
-       return
-       end
-!---------------------------------------------------------------------
-!-------------------------------------------------------------------
+
+   !---------------------------------------------------------------------------------------!
+   !    Extract the three dimensional array.                                               !
+   !---------------------------------------------------------------------------------------!
+   do x=1,xmax
+      do y=1,ymax
+         do z=1,zmax
+            three(x,y,z) = four(x,y,z,e)
+         end do
+      end do
+   end do
+   return
+end subroutine s4d_to_3d
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
       subroutine Ctransvar(n1,n2,n3,a,topo,nzlev,izlev,zt,ztop)
       use rpost_dims
       dimension a(n1,n2,n3),topo(n1,n2),zt(n3)

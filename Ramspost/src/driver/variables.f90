@@ -11,11 +11,12 @@ subroutine RAMS_anal_init(nfile,fnames,file_prefix,dep_zlev,iep_nx,iep_ny,iep_nz
    use rconstants, only : day_sec   & ! intent(in)
                         , hr_sec    & ! intent(in)
                         , min_sec   ! ! intent(in)
-
+   use somevars
+   
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
    integer                                          , intent(out)   :: nfile
-   character(len=str_len), dimension(maxfiles)      , intent(in)    :: fnames
+   character(len=str_len), dimension(maxfiles)      , intent(inout) :: fnames
    real                  , dimension(nzpmax,maxgrds), intent(inout) :: dep_zlev
    integer                                          , intent(inout) :: iep_np
    integer                                          , intent(inout) :: iep_nc
@@ -114,15 +115,19 @@ subroutine RAMS_anal_init(nfile,fnames,file_prefix,dep_zlev,iep_nx,iep_ny,iep_nz
       if (nfn == 1) then
          iep_ngrids=ngrids
          do n=1,ngrids
-            maxmem    = max(maxmem,nnxp(n)*nnyp(n)*max(nnzp(n),npatch*nzg,nnzp(n)*nclouds))
-            iep_nx(n) = nnxp(n)
-            iep_ny(n) = nnyp(n)
-            iep_nz(n) = nnzp(n)
+            nnxp(n)   = mynnxp(n)
+            nnyp(n)   = mynnyp(n)
+            nnzp(n)   = mynnzp(n)
+            maxmem    = max(maxmem, mynnxp(n)*mynnyp(n)                                    &
+                                  * max(mynnzp(n),npatch*nzg,mynnzp(n)*nclouds))
+            iep_nx(n) = mynnxp(n)
+            iep_ny(n) = mynnyp(n)
+            iep_nz(n) = mynnzp(n)
             iep_ng    = nzg
             iep_np    = npatch
             iep_nc    = nclouds
-            do nn=1,nnzp(n)
-               dep_zlev(nn,n)=ztn(nn,n)
+            do nn=1,mynnzp(n)
+               dep_zlev(nn,n)=myztn(nn,n)
             end do
          end do
       end if
@@ -165,19 +170,19 @@ subroutine RAMS_anal_init(nfile,fnames,file_prefix,dep_zlev,iep_nx,iep_ny,iep_nz
       nfgrids(nfn) = ngrids
 
       do ng=1,ngrids
-         nfgpnts(1,ng,nfn) = nnxp(ng)
-         nfgpnts(2,ng,nfn) = nnyp(ng)
-         nfgpnts(3,ng,nfn) = nnzp(ng)
+         nfgpnts(1,ng,nfn) = mynnxp(ng)
+         nfgpnts(2,ng,nfn) = mynnyp(ng)
+         nfgpnts(3,ng,nfn) = mynnzp(ng)
          nfgpnts(4,ng,nfn) = nzg
          fdelx(ng,nfn)     = DELTAXN(NG)
          fdely(ng,nfn)     = DELTAYN(NG)
 
-         do k=1,nnzp(ng)
-            flevels(k,ng,nfn) = ztn(k,ng)
+         do k=1,mynnzp(ng)
+            flevels(k,ng,nfn) = myztn(k,ng)
          end do
       end do
 
-      httop = zmn(nnzp(1)-1,1)
+      httop = myzmn(mynnzp(1)-1,1)
 
       close(unit=10,status='keep')
 
@@ -200,9 +205,12 @@ end subroutine RAMS_anal_init
 !==========================================================================================!
 subroutine RAMS_get_time_init(nfl,iyear,imonth,idate,ihour,imin)
    use brams_data, only : iftimes ! ! intent(in)
-   use rpost_coms, only : iyear1  & ! intent(in)
-                        , imonth1 & ! intent(in)
-                        , idate1  ! ! intent(in)
+   use somevars  , only : myiyear1  & ! intent(in)
+                        , myimonth1 & ! intent(in)
+                        , myidate1  ! ! intent(in)
+   use rpost_coms, only : iyear1    & ! intent(in)
+                        , imonth1   & ! intent(in)
+                        , idate1    ! ! intent(in)
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
    integer, intent(in)  :: nfl
@@ -213,11 +221,14 @@ subroutine RAMS_get_time_init(nfl,iyear,imonth,idate,ihour,imin)
    integer, intent(out) :: imin
    !---------------------------------------------------------------------------------------!
    
-   iyear =iyear1
-   imonth=imonth1
-   idate =idate1
-   ihour =int(float(iftimes(nfl))/10000.)
-   imin  =int(float(iftimes(nfl)-10000*ihour)/100.)
+   iyear1  = myiyear1
+   imonth1 = myimonth1
+   idate1  = myidate1
+   iyear   = myiyear1
+   imonth  = myimonth1
+   idate   = myidate1
+   ihour   = int(float(iftimes(nfl))/10000.)
+   imin    = int(float(iftimes(nfl)-10000*ihour)/100.)
    return
 end subroutine RAMS_get_time_init
 !==========================================================================================!
@@ -933,53 +944,6 @@ subroutine RAMS_varlib(cvar,nx,ny,nz,nsl,npat,ncld,ngrd,flnm,cdname,cdunits,ivar
       cdname='ice mixing ratio'
       cdunits='g/kg'
 
-   case ('total_cond')
-      ivar_type=3
-      call RAMS_comp_zero(nx,ny,nz,a)
-      ierr= RAMS_getvar('RCP',idim_type,ngrd,scr%c,b,flnm)
-      if(ierr == 0) call RAMS_comp_accum(nx,ny,nz,a,scr%c)
-      ierr= RAMS_getvar('RRP',idim_type,ngrd,scr%c,b,flnm)
-      if(ierr == 0) call RAMS_comp_accum(nx,ny,nz,a,scr%c)
-      ierr= RAMS_getvar('RPP',idim_type,ngrd,scr%c,b,flnm)
-      if(ierr == 0) call RAMS_comp_accum(nx,ny,nz,a,scr%c)
-      ierr= RAMS_getvar('RSP',idim_type,ngrd,scr%c,b,flnm)
-      if(ierr == 0) call RAMS_comp_accum(nx,ny,nz,a,scr%c)
-      ierr= RAMS_getvar('RAP',idim_type,ngrd,scr%c,b,flnm)
-      if(ierr == 0) call RAMS_comp_accum(nx,ny,nz,a,scr%c)
-      ierr= RAMS_getvar('RGP',idim_type,ngrd,scr%c,b,flnm)
-      if(ierr == 0) call RAMS_comp_accum(nx,ny,nz,a,scr%c)
-      ierr= RAMS_getvar('RHP',idim_type,ngrd,scr%c,b,flnm)
-      if(ierr == 0) call RAMS_comp_accum(nx,ny,nz,a,scr%c)
-
-      call RAMS_comp_mults(nx,ny,nz,a,1.e3)
-      call RAMS_comp_noneg(nx,ny,nz,a)
-      cdname='cloud mixing ratio'
-      cdunits='g/kg'
-
-   case ('rall')
-      ivar_type=3
-      ierr= RAMS_getvar('RV',idim_type,ngrd,a,b,flnm)
-      ierr_getvar = ierr_getvar + ierr
-      ierr= RAMS_getvar('RCP',idim_type,ngrd,scr%c,b,flnm)
-      if(ierr == 0) call RAMS_comp_accum(nx,ny,nz,a,scr%c)
-      ierr= RAMS_getvar('RRP',idim_type,ngrd,scr%c,b,flnm)
-      if(ierr == 0) call RAMS_comp_accum(nx,ny,nz,a,scr%c)
-      ierr= RAMS_getvar('RPP',idim_type,ngrd,scr%c,b,flnm)
-      if(ierr == 0) call RAMS_comp_accum(nx,ny,nz,a,scr%c)
-      ierr= RAMS_getvar('RSP',idim_type,ngrd,scr%c,b,flnm)
-      if(ierr == 0) call RAMS_comp_accum(nx,ny,nz,a,scr%c)
-      ierr= RAMS_getvar('RAP',idim_type,ngrd,scr%c,b,flnm)
-      if(ierr == 0) call RAMS_comp_accum(nx,ny,nz,a,scr%c)
-      ierr= RAMS_getvar('RGP',idim_type,ngrd,scr%c,b,flnm)
-      if(ierr == 0) call RAMS_comp_accum(nx,ny,nz,a,scr%c)
-      ierr= RAMS_getvar('RHP',idim_type,ngrd,scr%c,b,flnm)
-      if(ierr == 0) call RAMS_comp_accum(nx,ny,nz,a,scr%c)
-
-      call RAMS_comp_mults(nx,ny,nz,a,1.e3)
-      call RAMS_comp_noneg(nx,ny,nz,a)
-      cdname='vapour + condensed mixing ratio'
-      cdunits='g/kg'
-
    case ('rtp')
       ivar_type=3
       ierr= RAMS_getvar('RTP',idim_type,ngrd,a,b,flnm)
@@ -1031,23 +995,6 @@ subroutine RAMS_varlib(cvar,nx,ny,nz,nsl,npat,ncld,ngrd,flnm,cdname,cdunits,ivar
       call RAMS_comp_noneg(nx,ny,nz,a)
       cdname='relative humidity'
       cdunits='pct'
-
-   case ('clear_frac')
-      ivar_type=2
-      ierr= RAMS_getvar('RV',idim_type,ngrd,b,a,flnm)
-      ierr_getvar = ierr_getvar + ierr
-      ierr= RAMS_getvar('PI',idim_type,ngrd,scr%c,a,flnm)
-      ierr_getvar = ierr_getvar + ierr
-      ierr= RAMS_getvar('THETA',idim_type,ngrd,scr%d,a,flnm)
-      ierr_getvar = ierr_getvar + ierr
-
-      call RAMS_comp_rh(nx,ny,nz,b,scr%c,scr%d)
-      call RAMS_comp_noneg(nx,ny,nz,b)
-      
-      call cldfraction(nx,ny,nz,a,scr%c,b)
-      
-      cdname='clear sky fraction'
-      cdunits='n/d'
 
    case ('cloud_concen_mg')
       ivar_type=3
@@ -1295,27 +1242,6 @@ subroutine RAMS_varlib(cvar,nx,ny,nz,nsl,npat,ncld,ngrd,flnm,cdname,cdunits,ivar
       cdname='hail diam'
       cdunits='mm'
 
-   case ('q2','qrain')
-      ivar_type=3
-      ierr= RAMS_getvar('Q2',idim_type,ngrd,a,b,flnm)
-      ierr_getvar = ierr_getvar + ierr
-      cdname='Rain internal energy'
-      cdunits='J/kg'
-
-   case ('q6','qgraupel')
-      ivar_type=3
-      ierr= RAMS_getvar('Q6',idim_type,ngrd,a,b,flnm)
-      ierr_getvar = ierr_getvar + ierr
-      cdname='Graupel internal energy'
-      cdunits='J/kg'
-
-   case ('q7','qhail')
-      ivar_type=3
-      ierr= RAMS_getvar('Q7',idim_type,ngrd,a,b,flnm)
-      ierr_getvar = ierr_getvar + ierr
-      cdname='Hail internal energy'
-      cdunits='J/kg'
-
    case ('rain_temp')
       ivar_type=3
       ierr= RAMS_getvar('Q2',idim_type,ngrd,a,b,flnm)
@@ -1339,51 +1265,6 @@ subroutine RAMS_varlib(cvar,nx,ny,nz,nsl,npat,ncld,ngrd,flnm,cdname,cdunits,ivar
       call RAMS_comp_qtcpcp(nx,ny,nz,a)
       cdname='hail temperature'
       cdunits='C'
-
-   case ('rain_air_tempdif')
-      ivar_type=3
-      ierr= RAMS_getvar('Q2',idim_type,ngrd,a,b,flnm)
-      ierr_getvar = ierr_getvar + ierr
-      call RAMS_comp_raintemp(nx,ny,nz,a)
-      ierr= RAMS_getvar('THETA',idim_type,ngrd,scr%d,b,flnm)
-      ierr_getvar = ierr_getvar + ierr
-      ierr= RAMS_getvar('PI',idim_type,ngrd,scr%c,b,flnm)
-      ierr_getvar = ierr_getvar + ierr
-      call RAMS_comp_tempK(nx,ny,nz,scr%d,scr%c)
-      call RAMS_comp_tempC(nx,ny,nz,1,scr%d)
-      call RAMS_comp_subt(nx,ny,nz,a,scr%d)
-      cdname='rain-air temp'
-      cdunits='K'
-
-   case ('graup_air_tempdf')
-      ivar_type=3
-      ierr= RAMS_getvar('Q6',idim_type,ngrd,a,b,flnm)
-      ierr_getvar = ierr_getvar + ierr
-      call RAMS_comp_qtcpcp(nx,ny,nz,a)
-      ierr= RAMS_getvar('THETA',idim_type,ngrd,scr%d,b,flnm)
-      ierr_getvar = ierr_getvar + ierr
-      ierr= RAMS_getvar('PI',idim_type,ngrd,scr%c,b,flnm)
-      ierr_getvar = ierr_getvar + ierr
-      call RAMS_comp_tempK(nx,ny,nz,scr%d,scr%c)
-      call RAMS_comp_tempC(nx,ny,nz,1,scr%d)
-      call RAMS_comp_subt(nx,ny,nz,a,scr%d)
-      cdname='graupel-air temp'
-      cdunits='K'
-
-   case ('hail_air_tempdif')
-      ivar_type=3
-      ierr= RAMS_getvar('Q7',idim_type,ngrd,a,b,flnm)
-      ierr_getvar = ierr_getvar + ierr
-      call RAMS_comp_qtcpcp(nx,ny,nz,a)
-      ierr= RAMS_getvar('THETA',idim_type,ngrd,scr%d,b,flnm)
-      ierr_getvar = ierr_getvar + ierr
-      ierr= RAMS_getvar('PI',idim_type,ngrd,scr%c,b,flnm)
-      ierr_getvar = ierr_getvar + ierr
-      call RAMS_comp_tempK(nx,ny,nz,scr%d,scr%c)
-      call RAMS_comp_tempC(nx,ny,nz,1,scr%d)
-      call RAMS_comp_subt(nx,ny,nz,a,scr%d)
-      cdname='hail-air temp'
-      cdunits='K'
 
    case ('graup_fracliq')
       ivar_type=3
@@ -1475,53 +1356,6 @@ subroutine RAMS_varlib(cvar,nx,ny,nz,nsl,npat,ncld,ngrd,flnm,cdname,cdunits,ivar
       cdname='vert diffusion coeff'
       cdunits='m2/s'
 
-   case ('accpr','liqpcp') 
-      ivar_type=2
-      ierr= RAMS_getvar('ACCPR',idim_type,ngrd,a,b,flnm)
-      ierr_getvar = ierr_getvar + ierr
-      select case (trim(cvar))
-      case ('accpr')
-         cdname='accum rain'
-      case('liqpcp')
-         cdname='purely liquid precip'
-      end select
-      cdunits='kg/m2'
-
-   case ('accpp') 
-      ivar_type=2
-      ierr= RAMS_getvar('ACCPP',idim_type,ngrd,a,b,flnm)
-      ierr_getvar = ierr_getvar + ierr
-      cdname='accum pristine'
-      cdunits='kg/m2'
-
-   case ('accps') 
-      ivar_type=2
-      ierr= RAMS_getvar('ACCPS',idim_type,ngrd,a,b,flnm)
-      ierr_getvar = ierr_getvar + ierr
-      cdname='accum snow'
-      cdunits='kg/m2'
-
-   case ('accpa') 
-      ivar_type=2
-      ierr= RAMS_getvar('ACCPA',idim_type,ngrd,a,b,flnm)
-      ierr_getvar = ierr_getvar + ierr
-      cdname='accum aggregates'
-      cdunits='kg/m2'
-
-   case ('accpg') 
-      ivar_type=2
-      ierr= RAMS_getvar('ACCPG',idim_type,ngrd,a,b,flnm)
-      ierr_getvar = ierr_getvar + ierr
-      cdname='accum graupel'
-      cdunits='kg/m2'
-
-   case ('accph') 
-      ivar_type=2
-      ierr= RAMS_getvar('ACCPH',idim_type,ngrd,a,b,flnm)
-      ierr_getvar = ierr_getvar + ierr
-      cdname='accum hail'
-      cdunits='kg/m2'
-
    case ('totpcp','totpcp_in','precip','precip_in')
       ivar_type=2
       call RAMS_comp_zero(nx,ny,1,a)
@@ -1582,53 +1416,6 @@ subroutine RAMS_varlib(cvar,nx,ny,nz,nsl,npat,ncld,ngrd,flnm,cdname,cdunits,ivar
       cdunits='kg/m2'
       call RAMS_comp_noneg(nx,ny,1,a)
 
-   case ('pcprr')
-      ivar_type=2
-      ierr= RAMS_getvar('PCPRR',idim_type,ngrd,a,b,flnm)
-      ierr_getvar = ierr_getvar + ierr
-      call RAMS_comp_mults(nx,ny,1,a,3600.)
-      cdname='rain precip rate'
-      cdunits='mm/hr liq equiv'
-
-   case ('pcprp')
-      ivar_type=2
-      ierr= RAMS_getvar('PCPRP',idim_type,ngrd,a,b,flnm)
-      ierr_getvar = ierr_getvar + ierr
-      call RAMS_comp_mults(nx,ny,1,a,3600.)
-      cdname='pristine precip rate'
-      cdunits='mm/hr liq equiv'
-
-   case ('psprs')
-      ivar_type=2
-      ierr= RAMS_getvar('PCPRS',idim_type,ngrd,a,b,flnm)
-      ierr_getvar = ierr_getvar + ierr
-      call RAMS_comp_mults(nx,ny,1,a,3600.)
-      cdname='snow precip rate'
-      cdunits='mm/hr liq equiv'
-
-   case ('pcpra')
-      ivar_type=2
-      ierr= RAMS_getvar('PCPRA',idim_type,ngrd,a,b,flnm)
-      ierr_getvar = ierr_getvar + ierr
-      call RAMS_comp_mults(nx,ny,1,a,3600.)
-      cdname='aggregates precip rate'
-      cdunits='mm/hr liq equiv'
-
-   case ('pcprg')
-      ivar_type=2
-      ierr= RAMS_getvar('PCPRG',idim_type,ngrd,a,b,flnm)
-      ierr_getvar = ierr_getvar + ierr
-      cdname='graupel precip rate'
-      cdunits='mm/hr liq equiv'
-
-   case ('pcprh')
-      ivar_type=2
-      ierr= RAMS_getvar('PCPRH',idim_type,ngrd,a,b,flnm)
-      ierr_getvar = ierr_getvar + ierr
-      call RAMS_comp_mults(nx,ny,1,a,3600.)
-      cdname='hail precip rate'
-      cdunits='mm/hr liq equiv'
-
    case ('pcpg')
       ivar_type=2
       ierr= RAMS_getvar('PCPG',idim_type,ngrd,a,b,flnm)
@@ -1681,8 +1468,8 @@ subroutine RAMS_varlib(cvar,nx,ny,nz,nsl,npat,ncld,ngrd,flnm,cdname,cdunits,ivar
       ivar_type=9
       ierr= RAMS_getvar('CONPRR',idim_type,ngrd,a,b,flnm)
       ierr_getvar = ierr_getvar + ierr
-      call RAMS_comp_mults(nx,ny,1,a,3600.)
-      call RAMS_comp_noneg(nx,ny,1,a)
+      call RAMS_comp_mults(nx,ny,ncld,a,3600.)
+      call RAMS_comp_noneg(nx,ny,ncld,a)
       cdname='convective pcp rate'
       cdunits='mm/hr'
 
@@ -1693,9 +1480,6 @@ subroutine RAMS_varlib(cvar,nx,ny,nz,nsl,npat,ncld,ngrd,flnm,cdname,cdunits,ivar
       call RAMS_comp_noneg(nx,ny,1,a)
       cdname='accum convective pcp'
       cdunits='mm'
-
-
-
 
    case ('cape')
       ivar_type=2
@@ -1791,81 +1575,6 @@ subroutine RAMS_varlib(cvar,nx,ny,nz,nsl,npat,ncld,ngrd,flnm,cdname,cdunits,ivar
       cdname='Tropopause pressure'
       cdunits='hPa'
    !ML]   
-
-
-   ![Marcos Parâmetros da convecção para uso em STILT
-
-   case ('cfxup_deep')
-      ivar_type=3
-      ierr= RAMS_getvar('CFXUP1',idim_type,ngrd,a,b,flnm)
-      ierr_getvar = ierr_getvar + ierr
-   !   call RAMS_comp_noneg(nx,ny,nz,a)
-      cdname='Conv. upward flux - deep'
-      cdunits='kg/m2/s'
-
-   case ('cfxdn_deep')
-      ivar_type=3
-      ierr= RAMS_getvar('CFXDnx',idim_type,ngrd,a,b,flnm)
-      ierr_getvar = ierr_getvar + ierr
-   !   call RAMS_comp_nopos(nx,ny,nz,a)
-      cdname='Conv. downward flux - deep'
-      cdunits='kg/m2/s'
-
-   case ('cfxup_shal')
-      ivar_type=3
-      ierr= RAMS_getvar('CFXUP2',idim_type,ngrd,a,b,flnm)
-      ierr_getvar = ierr_getvar + ierr
-   !   call RAMS_comp_noneg(nx,ny,nz,a)
-      cdname='Conv. upward flux - shallow'
-      cdunits='kg/m2/s'
-
-   case ('efxup_deep')
-      ivar_type=3
-      ierr= RAMS_getvar('EFXUP1',idim_type,ngrd,a,b,flnm)
-      ierr_getvar = ierr_getvar + ierr
-   !   call RAMS_comp_noneg(nx,ny,nz,a)
-      cdname='Updraft entrainment flux - deep'
-      cdunits='kg/m2/s'
-
-   case ('efxdn_deep')
-      ivar_type=3
-      ierr= RAMS_getvar('EFXDnx',idim_type,ngrd,a,b,flnm)
-      ierr_getvar = ierr_getvar + ierr
-   !   call RAMS_comp_noneg(nx,ny,nz,a)
-      cdname='Downdraft entrainment flux - deep'
-      cdunits='kg/m2/s'
-
-   case ('efxup_shal')
-      ivar_type=3
-      ierr= RAMS_getvar('EFXUP2',idim_type,ngrd,a,b,flnm)
-      ierr_getvar = ierr_getvar + ierr
-   !   call RAMS_comp_noneg(nx,ny,nz,a)
-      cdname='Updraft entrainment flux - shallow'
-      cdunits='kg/m2/s'
-
-   case ('dfxup_deep')
-      ivar_type=3
-      ierr= RAMS_getvar('DFXUP1',idim_type,ngrd,a,b,flnm)
-      ierr_getvar = ierr_getvar + ierr
-   !   call RAMS_comp_noneg(nx,ny,nz,a)
-      cdname='Updraft detrainment flux - deep'
-      cdunits='kg/m2/s'
-
-   case ('dfxdn_deep')
-      ivar_type=3
-      ierr= RAMS_getvar('DFXDnx',idim_type,ngrd,a,b,flnm)
-      ierr_getvar = ierr_getvar + ierr
-   !   call RAMS_comp_noneg(nx,ny,nz,a)
-      cdname='Downdraft detrainment flux - deep'
-      cdunits='kg/m2/s'
-
-   case ('dfxup_shal')
-      ivar_type=3
-      ierr= RAMS_getvar('DFXUP2',idim_type,ngrd,a,b,flnm)
-      ierr_getvar = ierr_getvar + ierr
-   !   call RAMS_comp_noneg(nx,ny,nz,a)
-      cdname='Updraft detrainment flux - shallow'
-      cdunits='kg/m2/s'
 
    case ('cfxup')
       ivar_type=6
@@ -1967,91 +1676,6 @@ subroutine RAMS_varlib(cvar,nx,ny,nz,nsl,npat,ncld,ngrd,flnm,cdname,cdunits,ivar
        ierr_getvar = ierr_getvar + ierr
        cdname='Obukhov lenght scale'
        cdunits='m'
-
-
-   ! Vertically-integrated atmospheric moisture
-
-   case ('vertint_rt','vertint_cond')
-      ivar_type=2
-
-      ierr= RAMS_getvar('TOPT',idim_type,ngrd,scr%e,b,flnm)
-      ierr_getvar = ierr_getvar + ierr
-      call RAMS_comp_dn0(nx,ny,nz,scr%c,b,scr%d,scr%e,ngrd)
-
-      select case(trim(cvar))
-      case ('vertint_rt')
-         ierr= RAMS_getvar('RV',idim_type,ngrd,a,b,flnm)
-         ierr_getvar = ierr_getvar + ierr
-         cdname='vertint total water'
-      case ('vertint_cond')
-         call RAMS_comp_zero(nx,ny,nz,a)
-         cdname='vertint condensate'
-      end select
-
-      ierr= RAMS_getvar('RCP',idim_type,ngrd,scr%c,b,flnm)
-      if(ierr == 0) call RAMS_comp_accum(nx,ny,nz,a,scr%c)
-      ierr= RAMS_getvar('RRP',idim_type,ngrd,scr%c,b,flnm)
-      if(ierr == 0) call RAMS_comp_accum(nx,ny,nz,a,scr%c)
-      ierr= RAMS_getvar('RPP',idim_type,ngrd,scr%c,b,flnm)
-      if(ierr == 0) call RAMS_comp_accum(nx,ny,nz,a,scr%c)
-      ierr= RAMS_getvar('RSP',idim_type,ngrd,scr%c,b,flnm)
-      if(ierr == 0) call RAMS_comp_accum(nx,ny,nz,a,scr%c)
-      ierr= RAMS_getvar('RAP',idim_type,ngrd,scr%c,b,flnm)
-      if(ierr == 0) call RAMS_comp_accum(nx,ny,nz,a,scr%c)
-      ierr= RAMS_getvar('RGP',idim_type,ngrd,scr%c,b,flnm)
-      if(ierr == 0) call RAMS_comp_accum(nx,ny,nz,a,scr%c)
-      ierr= RAMS_getvar('RHP',idim_type,ngrd,scr%c,b,flnm)
-      if(ierr == 0) call RAMS_comp_accum(nx,ny,nz,a,scr%c)
-
-      call RAMS_comp_mult(nx,ny,nz,a,scr%d)
-      call RAMS_comp_vertint(nx,ny,nz,a,scr%e,ngrd)
-
-      cdunits='mm'
-
-
-   ! 2D SURFACE HEAT, MOISTURE, MOMENTUM AND RADIATIVE FLUXES
-
-   case ('SFLUX_T')
-      ivar_type=2
-      ierr= RAMS_getvar('SFLUX_T',idim_type,ngrd,a,b,flnm)
-      ierr_getvar = ierr_getvar + ierr
-      cdname='SFLUX_T'
-      cdunits='m'
-
-   case ('SFLUX_R')
-      ivar_type=2
-      ierr= RAMS_getvar('SFLUX_R',idim_type,ngrd,a,b,flnm)
-      ierr_getvar = ierr_getvar + ierr
-      cdname='SFLUX_R'
-      cdunits='m'
-
-   case ('uw')
-      ivar_type=2
-      ierr= RAMS_getvar('UW',idim_type,ngrd,a,b,flnm)
-      ierr_getvar = ierr_getvar + ierr
-      cdname='uw'
-      cdunits='m'
-
-   case ('vw')
-      ivar_type=2
-      ierr= RAMS_getvar('VW',idim_type,ngrd,a,b,flnm)
-      ierr_getvar = ierr_getvar + ierr
-      cdname='vw'
-      cdunits='m'
-
-   case ('SFLUX_W')
-      ivar_type=2
-      ierr= RAMS_getvar('SFLUX_W',idim_type,ngrd,a,b,flnm)
-      ierr_getvar = ierr_getvar + ierr
-      cdname='SFLUX_W'
-      cdunits='m'
-
-   case ('SFLUX_C')
-      ivar_type=2
-      ierr= RAMS_getvar('SFLUX_C',idim_type,ngrd,a,b,flnm)
-      ierr_getvar = ierr_getvar + ierr
-      cdname='SFLUX_C'
-      cdunits='m'
 
    case ('hflxca')
       ivar_type=2
@@ -2738,62 +2362,6 @@ subroutine RAMS_varlib(cvar,nx,ny,nz,nsl,npat,ncld,ngrd,flnm,cdname,cdunits,ivar
       cdname='number of snow levels'
       cdunits='#'
 
-   case ('grnd_mixrat_p','grnd_mixrat_ps')
-
-      irecind = 1
-      irecsize = nnxp(ngrd) * nnyp(ngrd) * npat
-      select case (trim(cvar))
-      case ('grnd_mixrat_ps')
-         ierr = RAMS_getvar('PATCH_AREA',idim_type,ngrd   &
-              ,a(irecind),b,flnm)
-         ierr_getvar = ierr_getvar + ierr
-      end select
-
-      irecind = irecind + irecsize
-      ierr = RAMS_getvar('SFC_RS',idim_type,ngrd   &
-           ,a(irecind),b,flnm)
-      ierr_getvar = ierr_getvar + ierr
-      call RAMS_comp_mults(nx,ny,npat,a(irecind),1.e3)
-
-      select case (trim(cvar))
-      case ('grnd_mixrat_p')
-         ivar_type = 7
-      case ('grnd_mixrat_ps')
-         ivar_type = 2
-         call RAMS_comp_patchsum_l(nnxp(ngrd),nnyp(ngrd),1,npat,a)
-      end select
-
-      cdname='ground mixing ratio'
-      cdunits='g/kg'
-
-   case ('soil_mixrat_p','soil_mixrat_ps')
-
-      irecind = 1
-      irecsize = nnxp(ngrd) * nnyp(ngrd) * npat
-      select case (trim(cvar))
-      case ('soil_mixrat_ps')
-         ierr = RAMS_getvar('PATCH_AREA',idim_type,ngrd   &
-              ,a(irecind),b,flnm)
-         ierr_getvar = ierr_getvar + ierr
-      end select
-
-      irecind = irecind + irecsize
-      ierr = RAMS_getvar('SOIL_RS',idim_type,ngrd   &
-           ,a(irecind),b,flnm)
-      ierr_getvar = ierr_getvar + ierr
-      call RAMS_comp_mults(nx,ny,npat,a(irecind),1.e3)
-
-      select case (trim(cvar))
-      case ('soil_mixrat_p')
-         ivar_type = 7
-      case ('soil_mixrat_ps')
-         ivar_type = 2
-         call RAMS_comp_patchsum_l(nnxp(ngrd),nnyp(ngrd),1,npat,a)
-      end select
-
-      cdname='soil mixing ratio'
-      cdunits='g/kg'
-
    case ('lwater_p','lwater_ps')
 
       irecind = 1
@@ -3449,34 +3017,6 @@ subroutine RAMS_varlib(cvar,nx,ny,nz,nsl,npat,ncld,ngrd,flnm,cdname,cdunits,ivar
       cdname='soil textural class'
       cdunits='#'
 
-   case ('soilq','soilq_ps')
-
-      irecind = 1
-      
-      select case (trim(cvar))
-      case ('soilq_ps')
-         irecsize = nnxp(ngrd) * nnyp(ngrd) * npat
-         ierr = RAMS_getvar('PATCH_AREA',idim_type,ngrd   &
-              ,a(irecind),b,flnm)
-         irecind = irecind + irecsize
-      end select
-      ierr = RAMS_getvar('SOIL_ENERGY',idim_type,ngrd   &
-           ,a(irecind),b,flnm)
-      ierr_getvar = ierr_getvar + ierr
-
-      call get_leaf_soil(nx,ny,nsl,npat,a(irecind),a2)
-
-      select case (trim(cvar))
-      case ('soilq')
-         ivar_type = 8
-      case ('soilq_ps')
-         ivar_type = 10
-         call RAMS_comp_patchsum_l(nnxp(ngrd),nnyp(ngrd),nsl,npat,a)
-      end select
-
-      cdname='soil q'
-      cdunits='J/m3'
-
    case ('smoist','smoist_ps')
 
       irecind = 1
@@ -3618,338 +3158,6 @@ subroutine RAMS_varlib(cvar,nx,ny,nz,nsl,npat,ncld,ngrd,flnm,cdname,cdunits,ivar
       cdname='Pond/snow depth'
       cdunits='m'
 
-   ! CATT
-
-   case ('CO')
-      ivar_type=3
-      ierr= RAMS_getvar('SCLP001',idim_type,ngrd,a,b,flnm)
-      ierr_getvar = ierr_getvar + ierr
-      call RAMS_comp_noneg(nx,ny,nz,a)
-      call RAMS_comp_mults(nx,ny,nz,a,1.e-6)  ! converte de mg/kg para kg/kg
-     call RAMS_transf_ppb(nx,ny,nz,a)
-      cdname='CO Concentration'
-      cdunits='ppb'
-
-      case ('src1')
-      ivar_type=3
-      ierr= RAMS_getvar('scrsc001',idim_type,ngrd,a,b,flnm)
-      ierr_getvar = ierr_getvar + ierr
-      call RAMS_comp_mults(nx,ny,nz,a,1.e-6)  ! converte de mg/day para kg/day
-      cdname='emission 1'
-      cdunits='kg/m2/day'
-
-      case ('src2')
-      ivar_type=3
-      ierr= RAMS_getvar('scrsc002',idim_type,ngrd,a,b,flnm)
-      ierr_getvar = ierr_getvar + ierr
-      call RAMS_comp_mults(nx,ny,nz,a,1.e-6)  ! converte de mg/day para kg/day
-      cdname='emission 2'
-      cdunits='kg/m2/day'
-
-      case ('src3')
-      ivar_type=3
-      ierr= RAMS_getvar('scrsc003',idim_type,ngrd,a,b,flnm)
-      ierr_getvar = ierr_getvar + ierr
-      call RAMS_comp_mults(nx,ny,nz,a,1.e-6)  ! converte de mg/day para kg/day
-      cdname='emission 3'
-      cdunits='kg/m2/day'
-
-      case ('src4')
-      ivar_type=3
-      ierr= RAMS_getvar('scrsc004',idim_type,ngrd,a,b,flnm)
-      ierr_getvar = ierr_getvar + ierr
-      call RAMS_comp_mults(nx,ny,nz,a,1.e-6)  ! converte de mg/day para kg/day
-      cdname='emission 4'
-      cdunits='kg/m2/day'
-
-      case ('src5')
-      ivar_type=3
-      ierr= RAMS_getvar('scrsc005',idim_type,ngrd,a,b,flnm)
-      ierr_getvar = ierr_getvar + ierr
-      call RAMS_comp_mults(nx,ny,nz,a,1.e-6)  ! converte de mg/day para kg/day
-      cdname='emission 5'
-      cdunits='kg/m2/day'
-
-      case ('src6')
-      ivar_type=3
-      ierr= RAMS_getvar('scrsc006',idim_type,ngrd,a,b,flnm)
-      ierr_getvar = ierr_getvar + ierr
-      call RAMS_comp_mults(nx,ny,nz,a,1.e-6)  ! converte de mg/day para kg/day
-      cdname='emission 6'
-      cdunits='kg/m2/day'
-
-       case ('src7')
-      ivar_type=3
-      ierr= RAMS_getvar('scrsc007',idim_type,ngrd,a,b,flnm)
-      ierr_getvar = ierr_getvar + ierr
-      call RAMS_comp_mults(nx,ny,nz,a,1.e-6)  ! converte de mg/day para kg/day
-      cdname='emission 7'
-      cdunits='kg/m2/day'
-
-      case ('src8')
-      ivar_type=3
-      ierr= RAMS_getvar('scrsc008',idim_type,ngrd,a,b,flnm)
-      ierr_getvar = ierr_getvar + ierr
-      call RAMS_comp_mults(nx,ny,nz,a,1.e-6)  ! converte de mg/day para kg/day
-      cdname='emission 5'
-      cdunits='kg/m2/day'
-     
-   case ('COstc')
-      ivar_type=3
-      ierr= RAMS_getvar('SCLP002',idim_type,ngrd,a,b,flnm)
-      ierr_getvar = ierr_getvar + ierr
-      call RAMS_comp_noneg(nx,ny,nz,a)
-      call RAMS_comp_mults(nx,ny,nz,a,1.e-6)  ! converte de mg/kg para kg/kg
-     call RAMS_transf_ppb(nx,ny,nz,a)
-      cdname='CO Conc. without conv. transp'
-      cdunits='ppb'
-
-   case ('COANT')
-      ivar_type=3
-      ierr= RAMS_getvar('SCLP004',idim_type,ngrd,a,b,flnm)
-      ierr_getvar = ierr_getvar + ierr
-      call RAMS_comp_noneg(nx,ny,nz,a)
-      call RAMS_comp_mults(nx,ny,nz,a,1.e-6)  ! converte de mg/kg para kg/kg
-      call RAMS_transf_ppb(nx,ny,nz,a)
-      cdname='CO Concentration ANTRO'
-      cdunits='ppb'
-
-   case ('COTOT')
-      ivar_type=3
-      ierr= RAMS_getvar('SCLP005',idim_type,ngrd,a,b,flnm)
-      ierr_getvar = ierr_getvar + ierr
-      call RAMS_comp_noneg(nx,ny,nz,a)
-      call RAMS_comp_mults(nx,ny,nz,a,1.e-6)  ! converte de mg/kg para kg/kg
-     call RAMS_transf_ppb(nx,ny,nz,a)
-      cdname='CO Conc ANTRO+BB'
-      cdunits='ppb'
-
-   case ('PM25')
-      ivar_type=3
-      ierr= RAMS_getvar('SCLP003',idim_type,ngrd,a,b,flnm)
-      ierr_getvar = ierr_getvar + ierr
-      call RAMS_comp_noneg(nx,ny,nz,a)
-      call RAMS_comp_mults(nx,ny,nz,a,1.e-6)  ! converte de mg/kg para kg/kg
-   !air density
-      ierr= RAMS_getvar('TOPT',idim_type,ngrd,scr%e,b,flnm)
-      ierr_getvar = ierr_getvar + ierr
-      call RAMS_comp_dn0(nx,ny,nz,b,scr%c,scr%d,scr%e,ngrd)
-
-      call RAMS_transf_ugm3(nx,ny,nz,a,scr%d)
-      call RAMS_comp_noneg(nx,ny,nz,a)
-      cdname='PM25 Concentration'
-      cdunits='ug/m3'
-
-
-   case ('PMINT')
-      ivar_type=2
-      ierr= RAMS_getvar('SCLP003',idim_type,ngrd,a,b,flnm)
-      ierr_getvar = ierr_getvar + ierr
-      call RAMS_comp_noneg(nx,ny,nz,a)
-      call RAMS_comp_mults(nx,ny,nz,a,1.e-6)  ! converte de mg/kg para kg/kg
-   !air density
-      ierr= RAMS_getvar('TOPT',idim_type,ngrd,scr%e,b,flnm)
-      ierr_getvar = ierr_getvar + ierr
-      call RAMS_comp_dn0(nx,ny,nz,b,scr%c,scr%d,scr%e,ngrd)
-      call RAMS_comp_mult(nx,ny,nz,a,scr%d) !Unit: kg[pm25]/m3
-      call RAMS_comp_vertint(nx,ny,nz,a,scr%e,ngrd) ! Unit: kg[pm25]/m2
-      call RAMS_comp_mults(nx,ny,nz,a,1.e+9)  ! converte de kg/m2 para ug/m2
-
-      cdname='PM25 vert int'
-      cdunits='ug/m2'
-
-   ! ------------------ AOT ------------------ 
-   ! WAVE / 0.256, 0.280, 0.296, 0.319, 0.335, 0.365, 0.420, 0.482,
-   !        0.598, 0.690, 0.762, 0.719, 0.813, 0.862, 0.926, 1.005,
-   !        1.111, 1.333, 1.562, 1.770, 2.051, 2.210, 2.584, 3.284,
-   !        3.809, 4.292,
-   !        4.546, 4.878, 5.128, 5.405, 5.714, 6.061, 6.452, 6.897,
-   !        7.407, 8.333, 9.009, 10.309,12.500,13.889,16.667,
-   !        20.000, 26.316, 35.714, 62.50                         
-   case ('aot256')
-      ivar_type=2
-      ierr= RAMS_getvar('AOT',idim_type,ngrd,scr%c,b,flnm)
-      ierr_getvar = ierr_getvar + ierr
-      call D3toD2(nx,ny,nwave,1,a,scr%c)
-      cdname='AOT 256nm'
-      cdunits=' '
-
-   case ('aot296')
-      ivar_type=2
-      ierr= RAMS_getvar('AOT',idim_type,ngrd,scr%c,b,flnm)
-      ierr_getvar = ierr_getvar + ierr
-      call D3toD2(nx,ny,nwave,3,a,scr%c)
-      cdname='AOT 296nm'
-      cdunits=' '
-
-   case ('aot335')
-      ivar_type=2
-      ierr= RAMS_getvar('AOT',idim_type,ngrd,scr%c,b,flnm)
-      ierr_getvar = ierr_getvar + ierr
-      call D3toD2(nx,ny,nwave,5,a,scr%c)
-      cdname='AOT 335nm'
-      cdunits=' '
-
-   case ('aot420')
-      ivar_type=2
-      ierr= RAMS_getvar('AOT',idim_type,ngrd,scr%c,b,flnm)
-      ierr_getvar = ierr_getvar + ierr
-      call D3toD2(nx,ny,nwave,7,a,scr%c)
-      cdname='AOT 420nm'
-      cdunits=' '
-
-   case ('aot482')
-      ivar_type=2
-      ierr= RAMS_getvar('AOT',idim_type,ngrd,scr%c,b,flnm)
-      ierr_getvar = ierr_getvar + ierr
-      call D3toD2(nx,ny,nwave,8,a,scr%c)
-      cdname='AOT 482nm'
-      cdunits=' '
-
-
-   case ('aot598')
-      ivar_type=2
-      ierr= RAMS_getvar('AOT',idim_type,ngrd,scr%c,b,flnm)
-      ierr_getvar = ierr_getvar + ierr
-      call D3toD2(nx,ny,nwave,9,a,scr%c)
-      cdname='AOT 598nm'
-      cdunits=' '
-
-   case ('aot690')
-      ivar_type=2
-      ierr= RAMS_getvar('AOT',idim_type,ngrd,scr%c,b,flnm)
-      ierr_getvar = ierr_getvar + ierr
-      call D3toD2(nx,ny,nwave,10,a,scr%c)
-      cdname='AOT 690nm'
-      cdunits=' '
-
-   case ('aot500')
-      ivar_type=2
-      ierr= RAMS_getvar('AOT',idim_type,ngrd,scr%c,b,flnm)
-      ierr_getvar = ierr_getvar + ierr
-      call D3toD2(nx,ny,nwave,11,a,scr%c)
-      cdname='AOT 500nm'
-      cdunits=' '
-
-   case ('aot550')
-      ivar_type=2
-      ierr= RAMS_getvar('AOT',idim_type,ngrd,scr%c,b,flnm)
-      ierr_getvar = ierr_getvar + ierr
-      call D3toD2(nx,ny,nwave,12,a,scr%c)
-      cdname='AOT 550nm'
-      cdunits=' '
-
-
-   case ('secog')
-      ivar_type=2
-      ierr= RAMS_getvar('DUM1',idim_type,ngrd,scr%c,b,flnm)
-      ierr_getvar = ierr_getvar + ierr
-      call D3toD2(nx,ny,nz,2,a,scr%c)
-      call RAMS_comp_mults(nx,ny,nz,a,1.e-6)  ! converte de mg/day para kg/day
-      cdname='GOES-8 ABBA CO emission'
-      cdunits='kg/m2/day'
-
-
-   case ('secod')
-      ivar_type=2
-      ierr= RAMS_getvar('DUM1',idim_type,ngrd,scr%c,b,flnm)
-      ierr_getvar = ierr_getvar + ierr
-      call D3toD2(nx,ny,nz,11,a,scr%c)
-      call RAMS_comp_mults(nx,ny,nz,a,1.e-6)  ! converte de mg/day para kg/day
-      cdname='Duncan CO emission'
-      cdunits='kg/m2/day'
-
-   case ('secoant')
-      ivar_type=2
-      ierr= RAMS_getvar('DUM1',idim_type,ngrd,scr%c,b,flnm)
-      ierr_getvar = ierr_getvar + ierr
-      call D3toD2(nx,ny,nz,11,a,scr%c)
-      call RAMS_comp_mults(nx,ny,nz,a,1.e-6)  ! converte de mg/day para kg/day
-      cdname='Antropogenic CO emission'
-      cdunits='kg/m2/day'
-
-   case ('secoe')
-      ivar_type=2
-      ierr= RAMS_getvar('DUM1',idim_type,ngrd,scr%c,b,flnm)
-      ierr_getvar = ierr_getvar + ierr
-      call D3toD2(nx,ny,nz,14,a,scr%c)
-      call RAMS_comp_mults(nx,ny,nz,a,1.e-6)  ! converte de mg/day para kg/day
-      cdname='EDGAR CO emission'
-      cdunits='kg/m2/day'
-
-
-   case ('scco')
-      ivar_type=2
-      ierr= RAMS_getvar('QSC1',idim_type,ngrd,a,b,flnm)
-      ierr_getvar = ierr_getvar + ierr
-      cdname='Massa de CO emitida'
-      cdunits='kg/(m2 day)'
-
-   case ('scpm25')
-      ivar_type=2
-      ierr= RAMS_getvar('QSC2',idim_type,ngrd,a,b,flnm)
-      ierr_getvar = ierr_getvar + ierr
-      cdname='Massa de PM25 emitida'
-      cdunits='kg/(m2 day)'
-
-   case ('sccofe')
-      ivar_type=2
-      ierr= RAMS_getvar('QSC3',idim_type,ngrd,a,b,flnm)
-      ierr_getvar = ierr_getvar + ierr
-      cdname='Massa de CO FWB - EDGAR emitida'
-      cdunits='kg/(m2 day)'
-
-   case ('sccoae')
-      ivar_type=2
-      ierr= RAMS_getvar('QSC4',idim_type,ngrd,a,b,flnm)
-      ierr_getvar = ierr_getvar + ierr
-      cdname='Massa de CO AWB - EDGAR emitida'
-      cdunits='kg/(m2 day)'
-
-   case ('sccobbe')
-      ivar_type=2
-      ierr= RAMS_getvar('QSC5',idim_type,ngrd,a,b,flnm)
-      ierr_getvar = ierr_getvar + ierr
-      cdname='Massa de CO BB - EDGAR emitida'
-      cdunits='kg/(m2 day)'
-
-   case ('sccod')
-      ivar_type=2
-      ierr= RAMS_getvar('QSC9',idim_type,ngrd,a,b,flnm)
-      ierr_getvar = ierr_getvar + ierr
-      cdname='Massa de CO Duncan emitida'
-      cdunits='kg/(m2 day)'
-
-   case ('sccol')
-      ivar_type=2
-      ierr= RAMS_getvar('QSC3',idim_type,ngrd,a,b,flnm)
-      ierr_getvar = ierr_getvar + ierr
-      cdname='Massa de CO emitida -logan'
-      cdunits='kg/(m2 day)'
-
-   case ('sccoant')
-      ivar_type=2
-      ierr= RAMS_getvar('QSC9',idim_type,ngrd,a,b,flnm)
-      ierr_getvar = ierr_getvar + ierr
-      cdname='Massa de CO emitida -ANTROPO'
-      cdunits='kg/(m2 day)'
-
-   case ('pw','pwv')
-      ivar_type=2
-      ierr= RAMS_getvar('RV',idim_type,ngrd,a,b,flnm)
-      ierr_getvar = ierr_getvar + ierr
-   !air density
-      ierr= RAMS_getvar('TOPT',idim_type,ngrd,scr%e,b,flnm)
-      ierr_getvar = ierr_getvar + ierr
-      call RAMS_comp_dn0(nx,ny,nz,b,scr%c,scr%d,scr%e,ngrd) ! d=dens_ar
-      call RAMS_comp_mult(nx,ny,nz,a,scr%d)         ! aqui a=rv*dens_ar
-      call RAMS_comp_vertint(nx,ny,nz,a,scr%e,ngrd) ! agua em kg/m^2
-      call RAMS_comp_mults(nx,ny,nz,a,0.1) !converte para cm = 1 kg/m^2 * 100 cm/m / (1000 kg/m^3 dens_agua)
-      cdname='precipitable water vapor'
-      cdunits='cm'
-
-
-
    ! ------------------------ Stilt-RAMS coupling------------
    case ('afxu')
       ivar_type=3
@@ -4000,48 +3208,9 @@ subroutine RAMS_varlib(cvar,nx,ny,nz,nsl,npat,ncld,ngrd,flnm,cdname,cdunits,ivar
       cdname='averaged sigma W'
       cdunits='m/s'
 
-   case ('tlb')
-      ivar_type=3
-      ierr= RAMS_getvar('TLB',idim_type,ngrd,a,b,flnm)
-      ierr_getvar = ierr_getvar + ierr
-      cdname='averaged Lagr timescale'
-      cdunits='s'
-
-   case ('tl')
-      ivar_type=3
-      ierr= RAMS_getvar('TL',idim_type,ngrd,a,b,flnm)
-      ierr_getvar = ierr_getvar + ierr
-      cdname='Lagr timescale'
-      cdunits='s'
-
-   case ('tkeb')
-      ivar_type=3
-      ierr= RAMS_getvar('TKEPB',idim_type,ngrd,a,b,flnm)
-      ierr_getvar = ierr_getvar + ierr
-      call RAMS_comp_noneg(nx,ny,nz,a)
-      cdname='average turb kinetic energy'
-      cdunits='m2/s2'
-
 
 
    !------------Grell cumulus scheme --------------------------
-
-   case ('wdm1')
-      ivar_type=2
-      ierr= RAMS_getvar('wetdep001',idim_type,ngrd,a,b,flnm)
-      ierr_getvar = ierr_getvar + ierr
-      call RAMS_comp_mults(nx,ny,nz,a,1.e-6)  ! converte de mg/kg para kg/kg
-      cdname='Wet deposition mass tracer 1'
-      cdunits='kg/m2'
-
-
-   case ('wdm3')
-      ivar_type=2
-      ierr= RAMS_getvar('wetdep003',idim_type,ngrd,a,b,flnm)
-      ierr_getvar = ierr_getvar + ierr
-      call RAMS_comp_mults(nx,ny,nz,a,1.e-6)  ! converte de mg/kg para kg/kg
-      cdname='Wet deposition mass tracer 3'
-      cdunits='kg/m2'
 
 
    case ('cuprliq')

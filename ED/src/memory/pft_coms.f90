@@ -487,6 +487,8 @@ module pft_coms
    !---------------------------------------------------------------------------------------!
    !----- Initial plant density in a near-bare-ground run [plant/m²]. ---------------------!
    real   , dimension(n_pft)    :: init_density
+   !----- Initial maximum LAI in a near-bare-ground run [m²/m²] - Big leaf only. ----------!
+   real   , dimension(n_pft)    :: init_laimax
    !----- Minimum height of an individual [m]. --------------------------------------------!
    real   , dimension(n_pft)    :: hgt_min
    !----- Maximum height of an individual [m]. --------------------------------------------!

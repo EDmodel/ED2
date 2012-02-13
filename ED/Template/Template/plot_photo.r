@@ -263,6 +263,9 @@ options(locatorBell=FALSE)
 #------------------------------------------------------------------------------------------#
 
 
+jallom         = c(0,0,1,1,2)
+iallom         = jallom[iallom]
+
 
 #----- Load some files with global constants. ---------------------------------------------#
 source(paste(srcdir,"allometry.r",sep="/"))

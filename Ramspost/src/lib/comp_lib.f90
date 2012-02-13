@@ -87,7 +87,7 @@ tkemin =1.E-2
       
       do i=1,n1
          do j=1,n2
-          a(i,j,1) = (ztn(2,ngrd)+ ztn(1,ngrd))
+          a(i,j,1) = (myztn(2,ngrd)+ myztn(1,ngrd))
          enddo
       enddo
 
@@ -98,7 +98,7 @@ tkemin =1.E-2
 !         print*,k,c(i,j,k),ztn(k,ngrd)
          if(c(i,j,k).lt.tkemin) then
             kzi = k
-            a(i,j,1)=0.5*(ztn(kzi,ngrd)+ ztn(kzi-1,ngrd))
+            a(i,j,1)=0.5*(myztn(kzi,ngrd)+ myztn(kzi-1,ngrd))
 	    go to 500
 	 endif
 	 enddo
@@ -118,7 +118,7 @@ entry RAMS_comp_nebulosidade(n1,n2,n3,a,b,c,e,ngrd)
          rnebu=0.
          rodzint=0
          do k=2,n3-1
-          dz=(ztn(k,ngrd)-ztn(k-1,ngrd))*(1.-e(i,j,1)/zmn(nnzp(1)-1,1))
+          dz=(myztn(k,ngrd)-myztn(k-1,ngrd))*(1.-e(i,j,1)/myzmn(mynnzp(1)-1,1))
           rnebu   = rnebu   + b(i,j,k)*c(i,j,k)*dz	  
           rodzint = rodzint +	       c(i,j,k)*dz	  
          enddo
@@ -357,7 +357,7 @@ entry RAMS_comp_z(n1,n2,n3,a,c,ngrd)
       do j=1,n2
          do i=1,n1
             a(i,j,k)=c(i,j,1)  &
-                 +ztn(k,ngrd)*(1.-c(i,j,1)/zmn(nnzp(1)-1,1))
+                 +myztn(k,ngrd)*(1.-c(i,j,1)/myzmn(mynnzp(1)-1,1))
          enddo
       enddo
    enddo
@@ -441,7 +441,7 @@ return
 entry RAMS_comp_sfcdiv(n1,n2,n3,a,ngrd)
    do j=1,n2
       do i=1,n1
-         a(i,j,1)=-(a(i,j,2)-a(i,j,1))*dztn(2,ngrd)
+         a(i,j,1)=-(a(i,j,2)-a(i,j,1))*mydztn(2,ngrd)
       enddo
    enddo
 return
@@ -563,20 +563,20 @@ entry RAMS_comp_horizdiv(n1,n2,n3,a)
    do k=2,n3
       do j=1,n2
          do i=1,n1
-            a(i,j,k)=-(a(i,j,k)-a(i,j,k-1))*dztn(k,ngrd)
+            a(i,j,k)=-(a(i,j,k)-a(i,j,k-1))*mydztn(k,ngrd)
          enddo
       enddo
    enddo
 return
 
 entry RAMS_comp_vertint(n1,n2,n3,a,topt,ngrd)
-   ztop = zmn(nnzp(1)-1,1)
+   ztop = myzmn(mynnzp(1)-1,1)
    do j = 1,n2
       do i = 1,n1
          rtgt = 1. - topt(i,j) / ztop
          a(i,j,1) = 0.
          do k = 2,n3-1
-            a(i,j,1) = a(i,j,1) + a(i,j,k) * (zmn(k,ngrd)-zmn(k-1,ngrd)) * rtgt
+            a(i,j,1) = a(i,j,1) + a(i,j,k) * (myzmn(k,ngrd)-myzmn(k-1,ngrd)) * rtgt
          enddo
       enddo
    enddo
@@ -689,10 +689,10 @@ entry acha_ztropop(n1,n2,n3,a,c,ngrd)
   do i=1,n1
     do j=1,n2
       malhakz: do k=3,n3
-        dtheta  = (c(i,j,k)-c(i,j,k-1))/(ztn(k,ngrd)-ztn(k-1,ngrd))
+        dtheta  = (c(i,j,k)-c(i,j,k-1))/(myztn(k,ngrd)-myztn(k-1,ngrd))
         if (dtheta.gt.estratosfera) exit malhakz
       end do malhakz
-      a(i,j,1)=0.5*(ztn(k,ngrd)+ztn(k-1,ngrd))
+      a(i,j,1)=0.5*(myztn(k,ngrd)+myztn(k-1,ngrd))
     end do
   end do
 return
@@ -703,7 +703,7 @@ entry acha_ttropop(n1,n2,n3,a,c,e,ngrd)
   do i=1,n1
     do j=1,n2
       malhakt: do k=3,n3
-        dtheta  = (c(i,j,k)-c(i,j,k-1))/(ztn(k,ngrd)-ztn(k-1,ngrd))
+        dtheta  = (c(i,j,k)-c(i,j,k-1))/(myztn(k,ngrd)-myztn(k-1,ngrd))
         if (dtheta.gt.estratosfera) exit malhakt
       end do malhakt
       a(i,j,1)=0.5*(e(i,j,k)+e(i,j,k-1))
@@ -717,7 +717,7 @@ entry acha_ptropop(n1,n2,n3,a,c,e,ngrd)
   do i=1,n1
     do j=1,n2
       malhakp: do k=3,n3
-        dtheta  = (c(i,j,k)-c(i,j,k-1))/(ztn(k,ngrd)-ztn(k-1,ngrd))
+        dtheta  = (c(i,j,k)-c(i,j,k-1))/(myztn(k,ngrd)-myztn(k-1,ngrd))
         if (dtheta.gt.estratosfera) exit malhakp
       end do malhakp
       a(i,j,1)=exp(0.5*(log(e(i,j,k))+log(e(i,j,k-1))))
@@ -745,11 +745,11 @@ entry get_ZItheta(n1,n2,n3,a,c,e,ngrd)
           kzi = k
           if(abs(e(i,j,k)).gt.1.e-5) then
 
-            a(i,j,1) =0.5*(ztn(kzi,ngrd)+ ztn(kzi-1,ngrd))
+            a(i,j,1) =0.5*(myztn(kzi,ngrd)+ myztn(kzi-1,ngrd))
 
           else
         
-            a(i,j,1) =0.5*(ztn(kzi,ngrd)+ ztn(kzi-1,ngrd))
+            a(i,j,1) =0.5*(myztn(kzi,ngrd)+ myztn(kzi-1,ngrd))
           endif
 
           if(a(i,j,1).lt.0..or.kzi.le.2) a(i,j,1)=0.
@@ -775,7 +775,7 @@ do j=1,n2
    do i=1,n1
       pblht=0.
       do k=2,n3
-         pblht=ztn(k,ngrd)*(1.-c(i,j,1)/zmn(nnzp(1)-1,1))
+         pblht=myztn(k,ngrd)*(1.-c(i,j,1)/myzmn(mynnzp(1)-1,1))
 !DSM         if(a(i,j,k).le.tkethrsh) goto 10
       enddo
       10 continue
@@ -831,7 +831,7 @@ entry RAMS_comp_ctprof(n1,n2,n3,a,b,ngrd)
             if(a(i,j,k).ge.0.0001.and.b(i,j,k).ge.0.99)kmax=k
          enddo
          if(kmax.gt.2)then
-            a(i,j,1)=ztn(kmax,ngrd)
+            a(i,j,1)=myztn(kmax,ngrd)
          else
             a(i,j,1)=0.0
          endif
@@ -892,20 +892,35 @@ end subroutine get_leaf_soil
 
 !==========================================================================================!
 !==========================================================================================!
+!     This sub-routine converts a 3-D array into a cloud-dependent, 4-D array.             !
+!------------------------------------------------------------------------------------------!
 subroutine get_cumulus(n1,n2,n3,n6,a,a6)
    implicit none
-   integer, intent(in) :: n1,n2,n3,n6
+   !------ Arguments. ---------------------------------------------------------------------!
+   integer                     , intent(in)  :: n1
+   integer                     , intent(in)  :: n2
+   integer                     , intent(in)  :: n3
+   integer                     , intent(in)  :: n6
    real, dimension(n1,n2,n3,n6), intent(out) :: a6
-   real, dimension(n1,n2,n3*n6), intent(in) :: a
-   integer :: kip, k,i,j,ip
+   real, dimension(n1,n2,n3*n6), intent(in)  :: a
+   !----- Local variables. ----------------------------------------------------------------!
+   integer                                   :: kic
+   integer                                   :: k
+   integer                                   :: i
+   integer                                   :: j
+   integer                                   :: ic
+   !---------------------------------------------------------------------------------------!
 
-   kip=0
-   do ip=1,n6
+
+   !---------------------------------------------------------------------------------------!
+   !---------------------------------------------------------------------------------------!
+   kic=0
+   do ic=1,n6
       do k=1,n3
-         kip=kip+1
+         kic=kic+1
          do j=1,n2
             do i=1,n1
-               a6(i,j,k,ip)=a(i,j,kip)
+               a6(i,j,k,ic)=a(i,j,kic)
             end do
          end do
       end do

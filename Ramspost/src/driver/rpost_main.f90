@@ -1,612 +1,936 @@
 !==========================================================================================!
 !==========================================================================================!
-! -                                                           -
-! - RAMSPOST - RAMS Post Processor for GrADS.                 -
-! -                                                           -
-! -------------------------------------------------------------
-! - Adapted for RAMS 4.3 by Saulo R Freitas (SP/14/05/1998)   -
-! - Adapted for RAMS 6.0 by Saulo R Freitas (SP/06/03/2005)   -
-! -------------------------------------------------------------
+!                                                                                          !
+!                         RAMSPOST - RAMS Post Processor for GrADS.                        !
+!                                                                                          !
+!------------------------------------------------------------------------------------------!
 program ramspost
+   use rpost_coms
+   use rpost_dims, only  : str_len            ! ! intent(in)
+   use brams_data
+   use leaf_coms , only  : sfclyr_init_params ! ! sub-routine
+   use somevars
+   implicit none
+   !---- Fixed size variables. ------------------------------------------------------------!
+   character(len=str_len), dimension(maxfiles)                       :: fln
+   character(len=str_len)                                            :: inp
+   character(len=str_len)                                            :: fprefix
+   character(len=str_len)                                            :: gprefix
+   character(len=str_len)                                            :: cfln
+   character(len=str_len), dimension(maxfiles)                       :: wfln
+   character(len=40)     , dimension(maxvars)                        :: vpln
+   character(len=40)                                                 :: tmpdesc
+   character(len=20)     , dimension(maxvars)                        :: vp
+   character(len=10)     , dimension(maxvars)                        :: vpun
+   character(len=20)                                                 :: tmpvar
+   character(len=20)                                                 :: proj
+   character(len=1)                                                  :: cgrid
+   character(len=2)                                                  :: ccgrid
+   character(len=2)                                                  :: patchnumber
+   character(len=2)                                                  :: cldnumber
+   character(len=15)                                                 :: chdate
+   character(len=15)                                                 :: chstep
+   character(len=15)                                                 :: xchstep
+   integer                                                           :: nvp
+   integer                                                           :: nfiles
+   integer               , dimension(maxvars)                        :: nzvp
+   integer                                                           :: nrec
+   integer                                                           :: ipresslev
+   integer               , dimension(nplmax)                         :: iplevs
+   integer                                                           :: inplevs
+   integer               , dimension(maxgrds)                        :: zlevmax
+   integer               , dimension(maxvars)                        :: ndim
+   integer                                                           :: fim_inp
+   integer                                                           :: hunit
+   integer                                                           :: nstep
+   integer                                                           :: ip
+   integer                                                           :: ic
+   integer                                                           :: iep_ng
+   integer                                                           :: iep_np
+   integer                                                           :: iep_nc
+   integer                                                           :: iep_ngrids
+   integer                                                           :: iyear
+   integer                                                           :: imonth
+   integer                                                           :: idate
+   integer                                                           :: ihour
+   integer                                                           :: imin
+   integer                                                           :: iistep
+   integer                                                           :: ng
+   integer                                                           :: nnvp
+   integer                                                           :: iv
+   integer                                                           :: nfn
+   integer                                                           :: n
+   integer                                                           :: imon
+   integer                                                           :: inplevsef
+   integer                                                           :: nxpg
+   integer                                                           :: nypg
+   integer                                                           :: nzpg
+   integer               , dimension(maxgrds)                        :: nxgrads
+   integer               , dimension(maxgrds)                        :: nygrads
+   integer               , dimension(maxgx,maxgy)                    :: iinf
+   integer               , dimension(maxgx,maxgy)                    :: jinf
+   integer               , dimension(maxgrds)                        :: nxa
+   integer               , dimension(maxgrds)                        :: nxb
+   integer               , dimension(maxgrds)                        :: nya
+   integer               , dimension(maxgrds)                        :: nyb
+   integer               , dimension(maxgrds)                        :: iep_nx
+   integer               , dimension(maxgrds)                        :: iep_ny
+   integer               , dimension(maxgrds)                        :: iep_nz
+   real                  , dimension(maxgx,maxgy,4)                  :: rmi
+   real                  , dimension(maxgx,maxgy,nzpmax)             :: routgrads
+   real                  , dimension(nxpmax,nypmax,nzepmax)          :: a
+   real                  , dimension(nxpmax,nypmax,nzepmax)          :: b
+   real                  , dimension(nxpmax,nypmax,nzepmax)          :: rout
+   real                  , dimension(nxpmax,nypmax,nplmax)           :: zplev
+   real                  , dimension(nxpmax,nypmax)                  :: mytopo
+   real                  , dimension(nxpmax,nypmax,nzpmax)           :: mypi
+   real                  , dimension(nxpmax,nypmax)                  :: rlat
+   real                  , dimension(nxpmax,nypmax)                  :: rlon
+   real                  , dimension(maxgrds)                        :: lati
+   real                  , dimension(maxgrds)                        :: latf
+   real                  , dimension(maxgrds)                        :: loni
+   real                  , dimension(maxgrds)                        :: lonf
+   real                  , dimension(nxpmax,nypmax,nzgmax,maxpatch)  :: a2
+   real                  , dimension(nxpmax,nypmax,nzgmax,maxpatch)  :: rout2
+   real                  , dimension(nxpmax,nypmax,nzpmax,maxclouds) :: a6
+   real                  , dimension(nxpmax,nypmax,nzpmax,maxclouds) :: rout6
+   real                  , dimension(nzpmax,maxgrds)                 :: dep_zlev
+   real                  , dimension(2,maxgrds)                      :: dep_glat
+   real                  , dimension(2,maxgrds)                      :: dep_glon
+   real                                                              :: rlatmin
+   real                                                              :: rlatmax
+   real                                                              :: rlonmin
+   real                                                              :: rlonmax
+   !----- Constants. ----------------------------------------------------------------------!
+   character(len=3), dimension(12), parameter :: cmo = (/ 'jan', 'feb', 'mar', 'apr'       &
+                                                        , 'may', 'jun', 'jul', 'aug'       &
+                                                        , 'sep', 'oct', 'nov', 'dec' /)
+   character(len=3), dimension(3) , parameter :: ctu = (/ 'sec',  'mn',  'hr' /)
+   !---------------------------------------------------------------------------------------!
+
+
+   namelist /rp_input/  fprefix,nvp,vp,gprefix,nstep,proj,lati,latf,loni,lonf,zlevmax      &
+                       ,ipresslev,inplevs,iplevs
+
+
+   !---------------------------------------------------------------------------------------!
+   !    Print a banner to entertain the user.                                              !
+   !---------------------------------------------------------------------------------------!
+   write (unit=*,fmt='(a)') '=========================================================='
+   write (unit=*,fmt='(a)') '    Ramspost for BRAMS-4.0.6 '
+   write (unit=*,fmt='(a)') '=========================================================='
+
 
-  ! -----------------------
-  ! -   BASIC PARAMETERS  -
-  ! -----------------------
-
-  use rpost_coms
-  use rpost_dims, only  : str_len            ! ! intent(in)
-  use brams_data
-  use leaf_coms , only  : sfclyr_init_params ! ! sub-routine
-  character(len=str_len), dimension(maxfiles) :: fln
-  character(len=str_len)                      :: inp
-  character(len=str_len)                      :: fprefix
-  character(len=str_len)                      :: gprefix
-  character(len=str_len)                      :: cfln
-  character(len=40), dimension(200)           :: vpln
-  character(len=40)                           :: cdum1
-  character(len=20), dimension(200)           :: vp
-  character(len=20), dimension(200)           :: vpun
-  character(len=20)                           :: cdum2
-  character(len=20)                           :: proj
-  character(len=20)                           :: anl2gra
-  character(len=1)                            :: cgrid
-  character(len=2)                            :: ccgrid
-  character(len=2)                            :: patchnumber
-  character(len=2)                            :: cldnumber
-  character(len=3), dimension(12)             :: cmo
-  character*15 chdate,chstep,xchstep
-  integer nvp,nfiles,nzvp(200),nrec,ipresslev,iplevs(nplmax)
-  integer inplevs,zlevmax(maxgrds),ndim(200),iproj,ianl2gra,icld
-  integer fim_inp
-  integer hunit
-
-  real a(nxpmax,nypmax,nzpmax),b(nxpmax,nypmax,nzpmax),        &
-       rout(nxpmax,nypmax,nzpmax),                             &
-       zplev(nxpmax,nypmax,nplmax),                            &
-       mytopo(nxpmax,nypmax),mypi(nxpmax,nypmax,nzpmax),       &
-       rlat(nxpmax,nypmax),rlon(nxpmax,nypmax),	               &
-       lati(maxgrds),latf(maxgrds),loni(maxgrds),lonf(maxgrds),&
-       a2(nxpmax,nypmax,nzgmax,maxpatch),                      &
-       rout2(nxpmax,nypmax,nzgmax,maxpatch),                   &
-       a6(nxpmax,nypmax,nzpmax,maxclouds),                     &
-       rout6(nxpmax,nypmax,nzpmax,maxclouds)
-
-  integer nxgrads(maxgrds),nygrads(maxgrds),            &
-       iinf (maxgx,maxgy), jinf (maxgx,maxgy),       &
-       nxa(maxgrds),nxb(maxgrds),nya(maxgrds),nyb(maxgrds) 
-  real rmi(maxgx,maxgy,4),routgrads(maxgx,maxgy,nzpmax)
-  !  ---
-
-  namelist/rp_input/ fprefix,nvp,vp,gprefix,anl2gra,proj,lati,latf,  &
-       loni,lonf,zlevmax,ipresslev,inplevs,iplevs
-
-  data cmo/'jan','feb','mar','apr','may','jun','jul','aug','sep', &
-       'oct','nov','dec'/	
-
-  dimension dep_zlev(nzpmax,maxgrds),iep_nx(maxgrds),       &
-       iep_ny(maxgrds),iep_nz(maxgrds),dep_glat(2,maxgrds), dep_glon(2,maxgrds)
-
-  character(len=str_len), dimension(maxfiles) ::  wfln
-
-  ! -----------------------------
-  ! -   INITIALIZING ROUTINES   -
-  ! -----------------------------
-  print*,'############################################'
-  print*,' RamsPost - GrADS Visualization for RAMS    '
-  print*,'############################################'
-
-  call  getarg(1,inp)
-  fim_inp=index(inp,' ')
-  if (fim_inp<3) inp='ramspost.inp'
-
-  print *, ' '
-  print *, 'Opening '//trim(inp)//' file'
-
-  open(5,file=trim(inp),status='old')
-  read(5,rp_input)
-  cgrid='0'
-  iproj   =lastchar(proj)
-  ianl2gra=lastchar(anl2gra)
-
-  ! --- frequencia com as analises serao escrita     
-  nstep = 1    
-
-  nrec=0
-  ic=lastchar(gprefix)
-  call RAMS_anal_init(nfiles,fln,fprefix,        &
-       dep_zlev,iep_nx,iep_ny,iep_nz,iep_ng,iep_np,iep_nc,   &
-       iep_ngrids)
-  chdate='00:00z00mmm1900'
-  call RAMS_get_time_init(1,iyear,imonth,idate,ihour,imin)
-  call RAMS_get_time_step(iistep,hunit,nfiles)
-
-!  print*,iyear,imonth,idate,ihour,imin      
-  write(chdate(1:2),'(i2.2)') ihour
-  write(chdate(4:5),'(i2.2)') imin
-  write(chdate(7:8),'(i2.2)') idate
-  write(chdate(12:15),'(i4.2)') iyear
-  chdate(9:11)=cmo(imonth)(1:3)
-
-  if(hunit.eq.1) chstep='          sec'
-  if(hunit.eq.2) chstep='          mn'
-  if(hunit.eq.3) chstep='          hr'
-  write(chstep(8:10),'(i3)') iistep
-
-  ! -----------------
-  ! -   GRID LOOP   -
-  ! -----------------
-
-
-  do ng=1,iep_ngrids
-     write (unit=*,fmt='(a)')       ' '
-     write (unit=*,fmt='(a)')       '========================================================='
-     write (unit=*,fmt='(a,1x,i5)'),' + Writing Grid ',ng
-     !.................
-     nnvp=nvp
-     iv=1
-     nfn=1
-     cfln=fln(nfn)
-     ip=lastchar(cfln)-9
-     !.................
-     !   rlat and rlon = lat and lon of "thermodynamic points" of RAMS model.
-     !
-     write(unit=*,fmt='(a)') ' '
-     write(unit=*,fmt='(2(a,1x))') '     * Variable:  ','lat'
-
-     call ep_getvar('lat',                    &
-          rlat,a,b,iep_nx(ng),iep_ny(ng),         &
-          1,ng,cfln(1:ip),vpln(iv),		     &
-          vpun(iv),n,iep_np,iep_nc,iep_ng,a2,rout2,a6,rout6)
-     write(unit=*,fmt='(a,1x,i5)') '       # Output variable type:  ',n
-
-     write(unit=*,fmt='(a)') ' '
-     write(unit=*,fmt='(2(a,1x))') '     * Variable:  ','lon'
-
-     call ep_getvar('lon',                    &
-          rlon,a,b,iep_nx(ng),iep_ny(ng),         &
-          1,ng,cfln(1:ip),vpln(iv),  	     &
-          vpun(iv),n,iep_np,iep_nc,iep_ng,a2,rout2,a6,rout6)
-     write(unit=*,fmt='(a,1x,i5)') '       # Output variable type:  ',n
-
-
-     !.................
-     call geo_grid(iep_nx(ng),iep_ny(ng),rlat,rlon,  &
-          dep_glon(1,ng),dep_glon(2,ng),     &
-          dep_glat(1,ng),dep_glat(2,ng),     &
-          rlatmin,rlatmax,rlonmin,rlonmax,   &
-          nxgrads(ng),nygrads(ng),           &
-          proj(1:iproj))
-     !            print*,nxgrads(ng),nygrads(ng),iep_nx(ng),iep_ny(ng)
-     !            print*, proj(1:iproj),iproj
-     !.................            
-     !
-     Call Matriz_interp(ng,nxgrads(ng),nygrads(ng),   &
-          iep_nx(ng),iep_ny(ng),	     &
-          dep_glat(1,ng),dep_glat(2,ng),     &
-          dep_glon(1,ng),dep_glon(2,ng),     &
-          iinf,jinf,rmi,                     &
-          proj(1:iproj))
-
-     !_................
-     Call define_lim(ng,nxgrads(ng),nygrads(ng),          &
-          dep_glat(1,ng),dep_glat(2,ng),	 &
-          dep_glon(1,ng),dep_glon(2,ng),	 &
-          lati(ng),latf(ng),loni(ng),lonf(ng),  &
-          nxa(ng),nxb(ng),nya(ng),nyb(ng),proj(1:iproj), &
-          iep_nx(ng),iep_ny(ng),rlat,rlon)
-     !            print*,nxgrads(ng),nygrads(ng),iep_nx(ng),iep_ny(ng) &
-     !	           ,iep_nz(ng),iv,vpln(iv), nxa(ng),nxb(ng),nya(ng),nyb(ng),&
-     !     	            vpun(iv),n
-     !     ----------------------
-     !     - WRITE GRADS BINARY -
-     !     ----------------------
-     !     ----------------------
-     write(cgrid,'(i1)')ng
-     if(anl2gra(1:ianl2gra) .ne. 'ONE' .and. &
-        anl2gra(1:ianl2gra) .ne. 'one' ) then
-       open(19,file=gprefix(1:ic)//'_g'//cgrid//'.gra',         &
-            form='unformatted',access='direct',status='unknown',  &
-            recl=4*(nxb(ng)-nxa(ng)+1)*(nyb(ng)-nya(ng)+1))	  
-       nrec=0
-     endif
-
-     do nfn=1,nfiles,nstep
-        write(unit=*,fmt='(a)')        ' '
-        write(unit=*,fmt='(a,1x,i5)')  '   - Timestep: ',nfn
-
-        cfln=fln(nfn)
-        ip=lastchar(cfln)-9
-        !.................
-!.................
-! open arquivos individuais
-     !     ----------------------
-     !     - WRITE GRADS BINARY -
-     !     ----------------------
-       if(anl2gra(1:ianl2gra) .eq. 'ONE' .or. &
-          anl2gra(1:ianl2gra) .eq. 'one' ) then
-           !print*,ftimes(nfn),ifdates(nfn),iftimes(nfn),startutc,httop 
-           call date1(ifdates(nfn),iyear,imon,idate)
-           call makefnam(wfln(nfn),gprefix(1:ic)//' ',0.,iyear,imon,idate,  &
-                        iftimes(nfn),'A','g'//cgrid,'gra')
-           !print*,iyear,imon,idate,iftimes(nfn),wfln(nfn)
-           iunit=19
-           open(iunit,file=wfln(nfn),form='unformatted',access='direct'         &
-               ,status='unknown',recl=4*(nxb(ng)-nxa(ng)+1)*(nyb(ng)-nya(ng)+1))	  
-           nrec=0
-	endif
-!.................
-
-        if(ipresslev.gt.0) then
-           write(unit=*,fmt='(a)') ' '
-           write(unit=*,fmt='(2(a,1x))') '     * Variable:  ','topo'
-
-           call ep_getvar('topo',mytopo,a,b,iep_nx(ng),iep_ny(ng), &
-                1,ng,cfln(1:ip),vpln(iv),		    &
-                vpun(iv),n,iep_np,iep_nc,iep_ng,a2,rout2,a6,rout6)
-           write(unit=*,fmt='(a,1x,i5)') '       # Output variable type:  ',n
-
-           write(unit=*,fmt='(a)') ' '
-           write(unit=*,fmt='(2(a,1x))') '     * Variable:  ','pi'
-
-           call ep_getvar('pi',mypi,a,b,iep_nx(ng),iep_ny(ng),     &
-                iep_nz(ng),ng,cfln(1:ip),vpln(iv),       &
-                vpun(iv),n,iep_np,iep_nc,iep_ng,a2,rout2,a6,rout6)
-           write(unit=*,fmt='(a,1x,i5)') '       # Output variable type:  ',n
-
-        endif
-
-      DO iv=1,nvp
-           write(unit=*,fmt='(a)') ' '
-           write(unit=*,fmt='(2(a,1x))') '     * Variable:  ',vp(iv)
-           !.................
-           call ep_getvar(vp(iv),                               &
-                rout,a,b,iep_nx(ng),iep_ny(ng),        &
-                iep_nz(ng),ng,cfln(1:ip),vpln(iv),	 &
-                vpun(iv),n,iep_np,iep_nc,iep_ng,a2,rout2,a6,rout6)
-           write(unit=*,fmt='(a,1x,i5)') '       # Output variable type:  ',n
-
-           ndim(iv)=n
-           !................
-           !.....            
-           IF(ndim(iv).eq.8) then
-              nzvp(iv)=iep_ng
-              do ipatch=1,iep_np
-                 Call S4d_to_3d(iep_nx(ng),iep_ny(ng),nzvp(iv),iep_np, &
-                      ipatch,rout,rout2)
-                 Call proj_rams_to_grads(vp(iv),ndim(iv),        &
-                      iep_nx(ng),iep_ny(ng),nzvp(iv),  &
-                      nxgrads(ng),nygrads(ng),	      &
-                      rmi,iinf,jinf,		      &
-                      rout,routgrads,rlat,rlon,proj(1:iproj))
-                 Call ep_putvar(routgrads,a,nxgrads(ng),nygrads(ng),   &
-                      nxa(ng),nxb(ng),nya(ng),nyb(ng),	    &
-                      nzvp(iv),nrec,1,iep_ng)
-                 if(nfn.eq.1) nnvp=nnvp+1
-              enddo
-              if(nfn.eq.1) nnvp=nnvp-1
-              !.....
-              !
- 	    ELSEIF(ndim(iv).eq.10) then
-!!..
-              nzvp(iv)=iep_ng
-	      Call proj_rams_to_grads(vp(iv),ndim(iv),       &
-			     iep_nx(ng),iep_ny(ng),nzvp(iv),  &
-			     nxgrads(ng),nygrads(ng),	      &
-			     rmi,iinf,jinf,		      &
-			     rout,routgrads,rlat,rlon,proj(1:iproj))
-
-	      Call ep_putvar(routgrads,a,nxgrads(ng),nygrads(ng),  &
-			     nxa(ng),nxb(ng),nya(ng),nyb(ng),	    &
-			     nzvp(iv),nrec,1,nzvp(iv))
-         ELSEIF(ndim(iv).eq.6) then
-              nzvp(iv)=iep_nz(ng)
-              do icld=1,iep_nc
-                 Call S4d_to_3d(iep_nx(ng),iep_ny(ng),nzvp(iv),iep_nc, &
-                      icld,rout,rout6)
-                 Call proj_rams_to_grads(vp(iv),ndim(iv),        &
-                      iep_nx(ng),iep_ny(ng),nzvp(iv),  &
-                      nxgrads(ng),nygrads(ng),	      &
-                      rmi,iinf,jinf,		      &
-                      rout,routgrads,rlat,rlon,proj(1:iproj))
-                 Call ep_putvar(routgrads,a,nxgrads(ng),nygrads(ng),   &
-                      nxa(ng),nxb(ng),nya(ng),nyb(ng),	    &
-                      nzvp(iv),nrec,1,nzvp(iv))
-                 if(nfn.eq.1) nnvp=nnvp+1
-              enddo
-              if(nfn.eq.1) nnvp=nnvp-1
-              !.....
-              !
-
-          ELSEIF(ndim(iv).eq.2)  THEN
-              nzvp(iv)=1
-              Call proj_rams_to_grads(vp(iv),ndim(iv),     &
-                   iep_nx(ng),iep_ny(ng),nzvp(iv),&
-                   nxgrads(ng),nygrads(ng),	    &
-                   rmi,iinf,jinf,		    &
-                   rout,routgrads,rlat,rlon,proj(1:iproj))
-              Call ep_putvar(routgrads,a,nxgrads(ng),nygrads(ng),  &
-                   nxa(ng),nxb(ng),nya(ng),nyb(ng),	    &
-                   nzvp(iv),nrec,1,1)
-              !!.....
-              !
-           ELSEIF(ndim(iv).eq.7)  THEN
-              nzvp(iv)=iep_np
-	      Call proj_rams_to_grads(vp(iv),ndim(iv),      &
-                   iep_nx(ng),iep_ny(ng),nzvp(iv),  &
-                   nxgrads(ng),nygrads(ng),	    &
-                   rmi,iinf,jinf,		    &
-                   rout,routgrads,rlat,rlon,proj(1:iproj))
-	      do ipatch=1,iep_np
-                 Call ep_putvar(routgrads,a,nxgrads(ng),nygrads(ng), &
-                      nxa(ng),nxb(ng),nya(ng),nyb(ng),	   &
-                      nzvp(iv),nrec,ipatch,ipatch)
-                 if(nfn.eq.1) nnvp=nnvp+1
-              enddo
-              if(nfn.eq.1) nnvp=nnvp-1
-           !MLO - For cloud type (x,y,cloud) dependent variable
-	   ELSEIF(ndim(iv).eq.9)  THEN
-	     nzvp(iv)=iep_nc
-	     Call proj_rams_to_grads(vp(iv),ndim(iv),      &
-			   iep_nx(ng),iep_ny(ng),nzvp(iv),  &
-			   nxgrads(ng),nygrads(ng),	    &
-			   rmi,iinf,jinf,		    &
-			   rout,routgrads,rlat,rlon,proj(1:iproj))
-	     do icld=1,iep_nc
-	       Call ep_putvar(routgrads,a,nxgrads(ng),nygrads(ng), &
-			       nxa(ng),nxb(ng),nya(ng),nyb(ng),	   &
-		 	       nzvp(iv),nrec,icld,icld)
-	       if(nfn.eq.1) nnvp=nnvp+1
-	     enddo
-	     if(nfn.eq.1) nnvp=nnvp-1
-!
-   !!.....
-              !
-           ELSEIF(ndim(iv).eq.5)  THEN
-              !	     nzvp(iv)=iep_ng
-              !	       Call proj_rams_to_grads(vp(iv),ndim(iv),       &
-              !			     iep_nx(ng),iep_ny(ng),nzvp(iv),  &
-              !			     nxgrads(ng),nygrads(ng),	      &
-              !			     rmi,iinf,jinf,		      &
-              !			     rout,routgrads,rlat,rlon,proj(1:iproj))
-              !
-              !		Call ep_putvar(routgrads,a,nxgrads(ng),nygrads(ng),  &
-              !			     nxa(ng),nxb(ng),nya(ng),nyb(ng),	    &
-              !			      nzvp(iv),nrec,1,iep_ng)
-              !!.....
-              !
-	   ELSEIF(ndim(iv).eq.3)  THEN
-              nzvp(iv)=iep_nz(ng)
-              !..
-              if(ipresslev.eq.1) then
-
-                 inplevsef=inplevs
-                 Call  ptransvar(rout,iep_nx(ng),iep_ny(ng),nzvp(iv),  &
-                      inplevs,iplevs,mypi,dep_zlev(1,ng),zplev,mytopo)
-
-                 Call proj_rams_to_grads(vp(iv),ndim(iv),	      &
-                      iep_nx(ng),iep_ny(ng),nzvp(iv),   &
-                      nxgrads(ng),nygrads(ng),	     &
-                      rmi,iinf,jinf,		     &
-                      rout,routgrads,rlat,rlon,proj(1:iproj))
-
-                 Call ep_putvar(routgrads,a,nxgrads(ng),nygrads(ng), &
-                      nxa(ng),nxb(ng),nya(ng),nyb(ng),	 &
-                      inplevsef,nrec,1,inplevsef)
-
-              elseif(ipresslev.eq.2) then
-
-                 inplevsef=inplevs
-                 Call  ctransvar(iep_nx(ng),iep_ny(ng),iep_nz(ng),rout &
-                      ,mytopo,inplevs,iplevs,ztn(1,ng),zmn(nnzp(1)-1,1))
-
-                 Call proj_rams_to_grads(vp(iv),ndim(iv),     &
-                      iep_nx(ng),iep_ny(ng),nzvp(iv), &
-                      nxgrads(ng),nygrads(ng),	   &
-                      rmi,iinf,jinf,		   &
-                      rout,routgrads,rlat,rlon,proj(1:iproj))
-
-                 Call ep_putvar(routgrads,a,nxgrads(ng),nygrads(ng),  &
-                      nxa(ng),nxb(ng),nya(ng),nyb(ng),	 &
-                      inplevsef,nrec,1,inplevsef)
-
-              elseif(ipresslev.eq.3) then
-
-                 inplevsef=inplevs
-                 Call  select_sigmaz(iep_nx(ng),iep_ny(ng),iep_nz(ng),rout &
-                      ,inplevs,iplevs)
-
-                 Call proj_rams_to_grads(vp(iv),ndim(iv),     &
-                      iep_nx(ng),iep_ny(ng),nzvp(iv), &
-                      nxgrads(ng),nygrads(ng),	   &
-                      rmi,iinf,jinf,		   &
-                      rout,routgrads,rlat,rlon,proj(1:iproj))
-
-                 Call ep_putvar(routgrads,a,nxgrads(ng),nygrads(ng),  &
-                      nxa(ng),nxb(ng),nya(ng),nyb(ng),	 &
-                      inplevsef,nrec,1,inplevsef)
-                 !!..
-              else
-                 !!..
-                 Call proj_rams_to_grads(vp(iv),ndim(iv),       &
-                      iep_nx(ng),iep_ny(ng),nzvp(iv),  &
-                      nxgrads(ng),nygrads(ng),	      &
-                      rmi,iinf,jinf,		      &
-                      rout,routgrads,rlat,rlon,proj(1:iproj))
-                 if(zlevmax(ng).ge.iep_nz(ng)) zlevmax(ng)=iep_nz(ng)-1
-
-                 Call ep_putvar(routgrads,a,nxgrads(ng),nygrads(ng),  &
-                      nxa(ng),nxb(ng),nya(ng),nyb(ng),	    &
-                      nzvp(iv),nrec,2,zlevmax(ng)+1)
-                 !!..
-              endif
-           ELSE
-             ! Removing one variable from the counting...
-             nnvp=nnvp-1
-              !!
-	   Endif
-           !!................
-           !
-           !
-           !
-
-        ENDDO
-        !.................
-
-        if(anl2gra(1:ianl2gra).eq.'ONE'.or.anl2gra(1:ianl2gra).eq.'one') close(19)
-       enddo ! enddo do NFILES
-
-      if(anl2gra(1:ianl2gra).ne.'ONE'.and.anl2gra(1:ianl2gra).ne.'one')  close(19)
-
-
-     !.................
-     !     -----------------------
-     !     - WRITE GRADS CONTROL -
-     !     -----------------------
-
-     write(cgrid,'(i1)')ng
-     iunit = 20
-     
-     do nfn=1,nfiles,nstep
-
-     iuniti=iunit
-     iunitf=iunit
-
-! case 1 : all analysis at only one grads file
-!----
-      if(anl2gra(1:ianl2gra).ne.'ONE'.and.anl2gra(1:ianl2gra).ne.'one' .and. &
-         nfn == 1 ) then 
-           open(iunit,file=gprefix(1:ic)//'_g'//cgrid//'.ctl', &
-                status='unknown')
-           write(iunit,2001) '^'//gprefix(1:ic)//'_g'//cgrid//'.gra'
-! case 2 : one analysis at one grads file
-      elseif(anl2gra(1:ianl2gra).eq.'ONE'.or.anl2gra(1:ianl2gra).eq.'one') then
-	   call date1(ifdates(nfn),iyear,imon,idate)	   
-           call makefnam(wfln(nfn),gprefix(1:ic)//' ',0.,iyear,imon,idate,  &
-                        iftimes(nfn),'A','g'//cgrid,'ctl')      
-           open(iunit,file=wfln(nfn),status='unknown')
-           write(iunit,2001) '^'//wfln(nfn)(1:lastchar(wfln(nfn))-3)//'gra'
-! case 2 with template
-           if(nfn==1) then
-	     call date1(ifdates(nfn),iyear,imon,idate)	   
-             call makefnam(wfln(nfn),gprefix(1:ic)//'-template'//' ',0.,iyear,imon,idate,  &
-                        iftimes(nfn),'A','g'//cgrid,'ctl')      
-             open(iunit+1,file=wfln(nfn),status='unknown')
-!valido somente para hora cheia  --------------------------------------vvvv-
-             write(iunit+1,2001) '^'//gprefix(1:ic)//'-A-'//'%y4-%m2-%d2-%h20000-'//'g'//cgrid//'.gra'
-             write(iunit+1,2002) 'options template'
-	     iunitf=iunit+1
-	   endif   
-	   
-      endif
-!----
-
-      do iunit=iuniti,iunitf
-           
-       write(iunit,2002) 'undef -9.99e33'
-       write(iunit,2002) 'title RAMS 4.2 Output'
-       write(iunit,2003) nxb(ng)-nxa(ng)+1,(dep_glon(i,ng),i=1,2)
-       write(iunit,2004) nyb(ng)-nya(ng)+1,(dep_glat(i,ng),i=1,2)
-       if(ipresslev.gt.0.and.ipresslev.le.2) then
-         write(iunit,2005) inplevs,(iplevs(i)*1.0,i=1,inplevs)
-       elseif(ipresslev.eq.3) then
-         write(iunit,2005) inplevs,(dep_zlev(iplevs(i),ng),i=1,inplevs)
-       else
-        if(zlevmax(ng)+1.lt.15) then
-           write(iunit,2005) zlevmax(ng), &
-                (dep_zlev(i,ng),i=2,zlevmax(ng)+1)
-        else
-           write(iunit,2005) zlevmax(ng),(dep_zlev(i,ng),i=2,15)
-           write(iunit,2055) (dep_zlev(i,ng),i=16,zlevmax(ng)+1)
-        endif
-       endif
-! case 1
-       if(anl2gra(1:ianl2gra).ne.'ONE'.and.anl2gra(1:ianl2gra).ne.'one' .and. &
-         nfn == 1 ) then 
-         write(iunit,2006) nfiles,chdate,chstep
-! case 2
-       elseif(anl2gra(1:ianl2gra).eq.'ONE'.or.anl2gra(1:ianl2gra).eq.'one') then
-
-        call RAMS_get_time_init(nfn,iyear,imonth,idate,ihour,imin)
-        write(chdate(1:2),'(i2.2)') ihour
-    	write(chdate(4:5),'(i2.2)') imin
-    	write(chdate(7:8),'(i2.2)') idate
-    	write(chdate(12:15),'(i4.2)') iyear
-    	chdate(9:11)=cmo(imonth)(1:3)
-
-       if(iunitf== iuniti)   write(iunit,2006) 1,chdate,chstep
-       if(iunitf== iuniti+1) write(iunit,2006) nfiles,chdate,chstep ! para template
-       
-       endif
-!----
-       write(iunit,2007) nnvp
-       do i=1,nvp
-
-        if(ipresslev.gt.0.and.nzvp(i).eq.iep_nz(ng)) then
-           write(iunit,2008) vp(i),inplevs,vpln(i),vpun(i)
-        else
-           if(ndim(i).eq.3) &
-                write(iunit,2008) vp(i),zlevmax(ng),vpln(i),vpun(i)
-
-           if(ndim(i).eq.2) &
-                write(iunit,2008) vp(i),0,vpln(i),vpun(i)
-
-           if(ndim(i).eq.6) then
-              il =lastchar(vp(i))
-              il2=lastchar(vpln(i))
-              do icld=1,iep_nc
-                 write(cldnumber,'(i2.2)')icld
-                 cdum2=vp(i)(1:il)//cldnumber
-                 cdum1=vpln(i)(1:il2)//': Cloud # '//cldnumber
-                 write(iunit,2008) cdum2,nzvp(i),cdum1,vpun(i)
-              enddo
-           endif
-
-           if(ndim(i).eq.7) then
-              il =lastchar(vp(i))
-              il2=lastchar(vpln(i))
-              do ipatch=1,iep_np
-                 write(patchnumber,'(i2.2)')ipatch
-                 cdum2=vp(i)(1:il)//patchnumber
-                 cdum1=vpln(i)(1:il2)//': patch # '//patchnumber
-                 write(iunit,2008) cdum2,0,cdum1,vpun(i)
-              enddo
-           endif
-           if(ndim(i).eq.8) then
-              il =lastchar(vp(i))
-              il2=lastchar(vpln(i))
-              do ipatch=1,iep_np
-                 write(patchnumber,'(i2.2)')ipatch
-                 cdum2=vp(i)(1:il)//patchnumber
-                 cdum1=vpln(i)(1:il2)//': patch # '//patchnumber
-                 write(iunit,2008) cdum2,nzvp(i),cdum1,vpun(i)
-              enddo
-           endif
-              if(ndim(i).eq.9) then
-                il =lastchar(vp(i))
-                il2=lastchar(vpln(i))
-                do icld=1,iep_nc
-                 write(cldnumber,'(i2.2)')icld
-                 cdum2=vp(i)(1:il)//cldnumber
-                 cdum1=vpln(i)(1:il2)//': Cloud # '//cldnumber
-                 write(20,2008) cdum2,0,cdum1,vpun(i)
-                enddo
-              endif
-
-           if(ndim(i).eq.5) &
-                write(iunit,2008) vp(i),nzvp(i),vpln(i),vpun(i)
-
-              if(ndim(i).eq.10) &
-                write(20,2008) vp(i),nzvp(i),vpln(i),vpun(i)
-
-         endif
-       enddo
-       write(iunit,2002) 'endvars'
-       close(iunit)
-
-      enddo ! enddo nas unidades de escrita
-
-!     endif
-  
-     if(anl2gra(1:ianl2gra).ne.'ONE'.and.anl2gra(1:ianl2gra).ne.'one' .and. &
-        nfn == 1 ) exit
-   enddo ! enddo do NFILES
-   write (unit=*,fmt='(a)')       '========================================================='
-
-  enddo  !enddo do NGRIDS
-
-2001 format('dset ',a)
-2002 format(a)
-2003 format('xdef ',i4,' linear ',2f15.3)
-2004 format('ydef ',i4,' linear ',2f15.3)
-2005 format('zdef ',i4,' levels ',60f10.1)
-2006 format('tdef ',i4,' linear ',2a15)
-2007 format('vars ',i4)
-2008 format(a,1x,i4,1x,' 99    - RAMS : ',1x,a,'[',1x,a8,1x,']')
-2055 format(60f7.0)
-close (iunit+1)
-
-  write(*,'(a)') ' ------ Ramspost execution ends ------'
-  stop
+   !---------------------------------------------------------------------------------------!
+   !    Load the namelist filename.  If none is given, assume default.                     !
+   !---------------------------------------------------------------------------------------!
+   call getarg(1,inp)
+   fim_inp=len_trim(inp)
+   if (fim_inp < 3) inp='ramspost.inp'
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !    Read the namelist.                                                                 !
+   !---------------------------------------------------------------------------------------!
+   write (unit=*,fmt='(a)' )      ' '
+   write (unit=*,fmt='(3(a,1x))') ' - Readin namelist from file ',trim(inp),'...'
+
+   open  (unit=15,file=trim(inp),status='old',action='read')
+   read  (unit=15,nml=rp_input)
+   close (unit=15,status='keep')
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !    Make some character variables lower case.                                          !
+   !---------------------------------------------------------------------------------------!
+   call tolower_sca(proj)
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !----- Determine some dimensions. ------------------------------------------------------!
+   call RAMS_anal_init(nfiles,fln,fprefix,dep_zlev,iep_nx,iep_ny,iep_nz,iep_ng,iep_np      &
+                      ,iep_nc,iep_ngrids)
+   write (unit=*,fmt='(92a)'    )    ('-',n=1,92)
+   write (unit=*,fmt='(a,1x,i5)')    ' + NFILES     =',nfiles
+   write (unit=*,fmt='(a,1x,i5)')    ' + IEP_NG     =',iep_ng
+   write (unit=*,fmt='(a,1x,i5)')    ' + IEP_NP     =',iep_np
+   write (unit=*,fmt='(a,1x,i5)')    ' + IEP_NC     =',iep_nc
+   write (unit=*,fmt='(a,1x,i5)')    ' + IEP_NGRIDS =',iep_ngrids
+   do ng=1,iep_ngrids
+      !------------------------------------------------------------------------------------!
+      !     Make sure that we don't exceed the maximum number of layers. allowed in this   !
+      ! grid.                                                                              !
+      !------------------------------------------------------------------------------------!
+      if (zlevmax(ng) >= iep_nz(ng)) zlevmax(ng) = iep_nz(ng)-1
+      !------------------------------------------------------------------------------------!
+
+      write (unit=*,fmt='(a,1x,i5)') ' + GRID       =',ng
+      write (unit=*,fmt='(a,1x,i5)') '   - IEP_NX   =',iep_nx(ng)
+      write (unit=*,fmt='(a,1x,i5)') '   - IEP_NY   =',iep_ny(ng)
+      write (unit=*,fmt='(a,1x,i5)') '   - IEP_NZ   =',iep_nz(ng)
+      write (unit=*,fmt='(a,1x,i5)') '   - ZLEVMAX  =',zlevmax(ng)
+   end do
+   write (unit=*,fmt='(92a)'    )    ('-',n=1,92)
+   write (unit=*,fmt='(a)'      )    ' '
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Determine the initial time, the time step, and the best units for time interval.  !
+   !---------------------------------------------------------------------------------------!
+   call RAMS_get_time_init(1,iyear,imonth,idate,ihour,imin)
+   call RAMS_get_time_step(iistep,hunit,nfiles)
+   write(chdate,fmt='(3(i2.2,a),i4.4)') ihour,':',imin,'z',idate,cmo(imonth),iyear
+   write(chstep,fmt='(8x,i3,a)') iistep,trim(ctu(hunit))
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !      Grid loop.                                                                       !
+   !---------------------------------------------------------------------------------------!
+   gridloop: do ng=1,iep_ngrids
+      write (unit=*,fmt='(92a)'    )    ('=',n=1,92)
+      write (unit=*,fmt='(a)'      )    ' '
+      write (unit=*,fmt='(a,1x,i5)')    ' + Writing Grid ',ng
+
+
+      !------------------------------------------------------------------------------------!
+      !    Initialise NNVP with the number of variables coming from the namelist.  In case !
+      ! it is a multiple-class variable, the actual number of output variables will        !
+      ! increase.  Conversely, if the user asked for a variable that doesn't exist, we     !
+      ! take one number out and warn him/her.                                              !
+      !------------------------------------------------------------------------------------!
+      nnvp = nvp
+      !------------------------------------------------------------------------------------!
+
+      write(cgrid,'(i1)') ng
+
+      iv   = 1
+
+      !----- Get the prefix and remove the trailing -head.txt so we can append grid info. -!
+      cfln = trim(fln(1))
+      ip   = len_trim(cfln) - 9
+      cfln = cfln(1:ip)
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !    Read latitude and longitude of the "thermodynamic points" of BRAMS.  Save them  !
+      ! to rlat and rlon, respectively.                                                    !
+      !------------------------------------------------------------------------------------!
+      write(unit=*,fmt='(a)')       ' '
+      write(unit=*,fmt='(2(a,1x))') '   - Variable:  ','lat'
+
+      call ep_getvar('lat',rlat,a,b,iep_nx(ng),iep_ny(ng),1,ng,cfln,vpln(iv)               &
+                    ,vpun(iv),n,iep_np,iep_nc,iep_ng,a2,rout2,a6,rout6)
+      write(unit=*,fmt='(a,1x,i5)') '     # Output variable type:  ',n
+
+      write(unit=*,fmt='(a)') ' '
+      write(unit=*,fmt='(2(a,1x))') '   - Variable:  ','lon'
+
+      call ep_getvar('lon',rlon,a,b,iep_nx(ng),iep_ny(ng),1,ng,cfln ,vpln(iv)              &
+                    ,vpun(iv),n,iep_np,iep_nc,iep_ng,a2,rout2,a6,rout6)
+      write(unit=*,fmt='(a,1x,i5)') '     # Output variable type:  ',n
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !     Find the dimensions of x and y domains depending on the sought projection, and !
+      ! find the mapping to interpolate values to the regular lon-lat grid if needed.      !
+      !------------------------------------------------------------------------------------!
+      call geo_grid(iep_nx(ng),iep_ny(ng),rlat,rlon,dep_glon(1,ng),dep_glon(2,ng)          &
+                   ,dep_glat(1,ng),dep_glat(2,ng),rlatmin,rlatmax,rlonmin,rlonmax          &
+                   ,nxgrads(ng),nygrads(ng),proj)
+      call array_interpol(ng,nxgrads(ng),nygrads(ng),iep_nx(ng),iep_ny(ng),dep_glat(1,ng)  &
+                         ,dep_glat(2,ng),dep_glon(1,ng),dep_glon(2,ng),iinf,jinf,rmi,proj)
+
+      call define_lim(ng,nxgrads(ng),nygrads(ng),dep_glat(1,ng),dep_glat(2,ng)             &
+                     ,dep_glon(1,ng),dep_glon(2,ng),lati(ng),latf(ng),loni(ng),lonf(ng)    &
+                     ,nxa(ng),nxb(ng),nya(ng),nyb(ng),proj,iep_nx(ng),iep_ny(ng),rlat,rlon)
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !      Open the binary file now.                                                     !
+      !------------------------------------------------------------------------------------!
+      open(unit=19,file=trim(gprefix)//'_g'//cgrid//'.gra',form='unformatted'              &
+          ,access='direct',status='replace',action='write'                                 &
+          ,recl=4*(nxb(ng)-nxa(ng)+1)*(nyb(ng)-nya(ng)+1))
+      nrec = 0
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !    Loop over all files that are to be used.                                        !
+      !------------------------------------------------------------------------------------!
+      fileloop: do nfn=1,nfiles,nstep
+         write(unit=*,fmt='(a)')        ' '
+         write(unit=*,fmt='(a,1x,i5)')  '   - Timestep: ',nfn
+
+         !---------------------------------------------------------------------------------!
+         !      Get the prefix and remove the trailing -head.txt so we can append grid     !
+         ! info.                                                                           !
+         !---------------------------------------------------------------------------------!
+         cfln = trim(fln(nfn))
+         ip   = len_trim(cfln) - 9
+         cfln = cfln(1:ip)
+         !---------------------------------------------------------------------------------!
+
+
+
+         !---------------------------------------------------------------------------------!
+         !     In case ipresslev is not zero (vertical intepolation), we must load         !
+         ! topography and Exner function so we can interpolate variables.                  !
+         !---------------------------------------------------------------------------------!
+         select case (ipresslev)
+         case (0)
+            continue
+         case default
+            !----- Load topography. -------------------------------------------------------!
+            write(unit=*,fmt='(a)') ' '
+            write(unit=*,fmt='(2(a,1x))') '     * Variable:  ','topo'
+            call ep_getvar('topo',mytopo,a,b,iep_nx(ng),iep_ny(ng),1,ng,cfln               &
+                          ,vpln(iv),vpun(iv),n,iep_np,iep_nc,iep_ng,a2,rout2,a6,rout6)
+            write(unit=*,fmt='(a,1x,i5)') '       # Output variable type:  ',n
+            !------------------------------------------------------------------------------!
+
+            !----- Load Exner function. ---------------------------------------------------!
+            write(unit=*,fmt='(a)') ' '
+            write(unit=*,fmt='(2(a,1x))') '     * Variable:  ','pi'
+            call ep_getvar('pi',mypi,a,b,iep_nx(ng),iep_ny(ng),iep_nz(ng),ng,cfln,vpln(iv) &
+                          ,vpun(iv),n,iep_np,iep_nc,iep_ng,a2,rout2,a6,rout6)
+            write(unit=*,fmt='(a,1x,i5)') '       # Output variable type:  ',n
+            !------------------------------------------------------------------------------!
+         end select
+         !---------------------------------------------------------------------------------!
+
+
+
+         !---------------------------------------------------------------------------------!
+         !     Loop over all other variables.                                              !
+         !---------------------------------------------------------------------------------!
+         varloop: do iv=1,nvp
+            write(unit=*,fmt='(a)') ' '
+            write(unit=*,fmt='(2(a,1x))') '     * Variable:  ',trim(vp(iv))
+            call ep_getvar(trim(vp(iv)),rout,a,b,iep_nx(ng),iep_ny(ng),iep_nz(ng),ng,cfln  &
+                          ,vpln(iv),vpun(iv),ndim(iv),iep_np,iep_nc,iep_ng,a2,rout2        &
+                          ,a6,rout6)
+            write(unit=*,fmt='(a,1x,i5)') '       # Output variable type:  ',ndim(iv)
+
+            !------------------------------------------------------------------------------!
+            !     Decide how to output variable depending on the variable type.            !
+            !------------------------------------------------------------------------------!
+            select case (ndim(iv))
+            case (2)
+               !---------------------------------------------------------------------------!
+               !    Two-dimensional array, no vertical information.                        !
+               !---------------------------------------------------------------------------!
+
+
+               !----- Set the number of levels. -------------------------------------------!
+               nzvp(iv) = 1
+               !---------------------------------------------------------------------------!
+
+
+               !----- Adjust projection to GrADS. -----------------------------------------!
+               call proj_rams_to_grads(vp(iv),ndim(iv),iep_nx(ng),iep_ny(ng),nzvp(iv)      &
+                                      ,nxgrads(ng),nygrads(ng),rmi,iinf,jinf,rout          &
+                                      ,routgrads,rlat,rlon,proj)
+               !---------------------------------------------------------------------------!
+
+
+               !----- Dump array to output file. ------------------------------------------!
+               call ep_putvar(19,nxgrads(ng),nygrads(ng),nzvp(iv),nxa(ng),nxb(ng),nya(ng)  &
+                             ,nyb(ng),1,1,routgrads,nrec)
+               !---------------------------------------------------------------------------!
+            case (3)
+               !---------------------------------------------------------------------------!
+               !    Three-dimensional array.                                               !
+               !---------------------------------------------------------------------------!
+
+
+               !----- Set the number of levels. -------------------------------------------!
+               nzvp(iv) = iep_nz(ng)
+               !---------------------------------------------------------------------------!
+
+
+               !---------------------------------------------------------------------------!
+               !     Decide which vertical levels to use.                                  !
+               !---------------------------------------------------------------------------!
+               select case (ipresslev)
+               case (0)
+                  !------------------------------------------------------------------------!
+                  !      Native coordinates.                                               !
+                  !------------------------------------------------------------------------!
+
+                  !----- Adjust projection to GrADS. --------------------------------------!
+                  call proj_rams_to_grads(vp(iv),ndim(iv),iep_nx(ng),iep_ny(ng),nzvp(iv)   &
+                                         ,nxgrads(ng),nygrads(ng),rmi,iinf,jinf,rout       &
+                                         ,routgrads,rlat,rlon,proj)
+                  !------------------------------------------------------------------------!
+
+                  !----- Dump array to output file. ---------------------------------------!
+                  call ep_putvar(19,nxgrads(ng),nygrads(ng),nzvp(iv),nxa(ng),nxb(ng)       &
+                                ,nya(ng),nyb(ng),2,zlevmax(ng)+1,routgrads,nrec)
+                  !------------------------------------------------------------------------!
+               case (1)
+                  !------------------------------------------------------------------------!
+                  !      Pressure levels.                                                  !
+                  !------------------------------------------------------------------------!
+
+                  !----- Set the number of levels. ----------------------------------------!
+                  inplevsef = inplevs
+                  !------------------------------------------------------------------------!
+
+                  !----- Interpolate to pressure levels. ----------------------------------!
+                  call  ptransvar(rout,iep_nx(ng),iep_ny(ng),nzvp(iv),inplevs,iplevs,mypi  &
+                                 ,dep_zlev(1,ng),zplev,mytopo)
+                  !------------------------------------------------------------------------!
+
+
+                  !----- Adjust projection to GrADS. --------------------------------------!
+                  call proj_rams_to_grads(vp(iv),ndim(iv),iep_nx(ng),iep_ny(ng),nzvp(iv)   &
+                                         ,nxgrads(ng),nygrads(ng),rmi,iinf,jinf,rout       &
+                                         ,routgrads,rlat,rlon,proj)
+                  !------------------------------------------------------------------------!
+
+                  !----- Dump array to output file. ---------------------------------------!
+                  call ep_putvar(19,nxgrads(ng),nygrads(ng),inplevsef,nxa(ng),nxb(ng)      &
+                                ,nya(ng),nyb(ng),1,inplevsef,routgrads,nrec)
+                  !------------------------------------------------------------------------!
+               case (2)
+                  !------------------------------------------------------------------------!
+                  !      Height levels.                                                    !
+                  !------------------------------------------------------------------------!
+
+                  !----- Set the number of levels. ----------------------------------------!
+                  inplevsef = inplevs
+                  !------------------------------------------------------------------------!
+
+                  !----- Interpolate to height levels. ------------------------------------!
+                  call  ctransvar(iep_nx(ng),iep_ny(ng),iep_nz(ng),rout,mytopo,inplevs     &
+                                 ,iplevs,myztn(1,ng),myzmn(mynnzp(1)-1,1))
+                  !------------------------------------------------------------------------!
+
+
+                  !----- Adjust projection to GrADS. --------------------------------------!
+                  call proj_rams_to_grads(vp(iv),ndim(iv),iep_nx(ng),iep_ny(ng),nzvp(iv)   &
+                                         ,nxgrads(ng),nygrads(ng),rmi,iinf,jinf,rout       &
+                                         ,routgrads,rlat,rlon,proj)
+                  !------------------------------------------------------------------------!
+
+
+                  !----- Dump array to output file. ---------------------------------------!
+                  call ep_putvar(19,nxgrads(ng),nygrads(ng),inplevsef,nxa(ng),nxb(ng)      &
+                                ,nya(ng),nyb(ng),1,inplevsef,routgrads,nrec)
+                  !------------------------------------------------------------------------!
+               case (3)
+                  !------------------------------------------------------------------------!
+                  !      Selected sigma-z levels.                                          !
+                  !------------------------------------------------------------------------!
+
+                  !----- Set the number of levels. ----------------------------------------!
+                  inplevsef = inplevs
+                  !------------------------------------------------------------------------!
+
+                  !----- Pick only the levels we are interested in. -----------------------!
+                  call  select_sigmaz(iep_nx(ng),iep_ny(ng),iep_nz(ng),rout,inplevs,iplevs)
+                  !------------------------------------------------------------------------!
+
+
+                  !----- Adjust projection to GrADS. --------------------------------------!
+                  call proj_rams_to_grads(vp(iv),ndim(iv),iep_nx(ng),iep_ny(ng),nzvp(iv)   &
+                                         ,nxgrads(ng),nygrads(ng),rmi,iinf,jinf,rout       &
+                                         ,routgrads,rlat,rlon,proj)
+                  !------------------------------------------------------------------------!
+
+
+                  !----- Dump array to output file. ---------------------------------------!
+                  call ep_putvar(19,nxgrads(ng),nygrads(ng),inplevsef,nxa(ng),nxb(ng)      &
+                                ,nya(ng),nyb(ng),1,inplevsef,routgrads,nrec)
+                  !------------------------------------------------------------------------!
+
+               end select
+
+            case (6)
+               !---------------------------------------------------------------------------!
+               !    Four-dimensional array, fourth dimension is the cloud-level.  We will  !
+               ! save these as independent variables.  Like in the 3-D case, we must also  !
+               ! decide which vertical levels to plot.                                     !
+               !---------------------------------------------------------------------------!
+
+               !----- Update the number of variables. -------------------------------------!
+               if (nfn == 1) nnvp = nnvp + iep_nc - 1
+               !---------------------------------------------------------------------------!
+
+
+               !----- Set the number of levels. -------------------------------------------!
+               nzvp(iv) = iep_nz(ng)
+               !---------------------------------------------------------------------------!
+
+
+               !---------------------------------------------------------------------------!
+               !     Decide which vertical levels to use.                                  !
+               !---------------------------------------------------------------------------!
+               select case (ipresslev)
+               case (0)
+                  !------------------------------------------------------------------------!
+                  !      Native coordinates.                                               !
+                  !------------------------------------------------------------------------!
+
+
+                  !------------------------------------------------------------------------!
+                  !    Loop over clouds.                                                   !
+                  !------------------------------------------------------------------------!
+                  do ic = 1,iep_nc
+                     !----- Convert the 4D array into a 3D. -------------------------------!
+                     call S4d_to_3d(iep_nx(ng),iep_ny(ng),nzvp(iv),iep_nc,ic,rout6,rout)
+                     !---------------------------------------------------------------------!
+
+
+                     !----- Adjust projection to GrADS. -----------------------------------!
+                     call proj_rams_to_grads(vp(iv),ndim(iv),iep_nx(ng),iep_ny(ng)         &
+                                            ,nzvp(iv),nxgrads(ng),nygrads(ng),rmi,iinf     &
+                                            ,jinf,rout,routgrads,rlat,rlon,proj)
+                     !---------------------------------------------------------------------!
+
+                     !----- Dump array to output file. ------------------------------------!
+                     call ep_putvar(19,nxgrads(ng),nygrads(ng),nzvp(iv),nxa(ng),nxb(ng)    &
+                                ,nya(ng),nyb(ng),2,zlevmax(ng)+1,routgrads,nrec)
+                     !---------------------------------------------------------------------!
+                  end do
+                  !------------------------------------------------------------------------!
+
+               case (1)
+                  !------------------------------------------------------------------------!
+                  !      Pressure levels.                                                  !
+                  !------------------------------------------------------------------------!
+
+                  !----- Set the number of levels. ----------------------------------------!
+                  inplevsef = inplevs
+                  !------------------------------------------------------------------------!
+
+
+                  !------------------------------------------------------------------------!
+                  !    Loop over clouds.                                                   !
+                  !------------------------------------------------------------------------!
+                  do ic = 1,iep_nc
+                     !----- Convert the 4D array into a 3D. -------------------------------!
+                     call S4d_to_3d(iep_nx(ng),iep_ny(ng),nzvp(iv),iep_nc,ic,rout6,rout)
+                     !---------------------------------------------------------------------!
+
+                     !----- Interpolate to pressure levels. -------------------------------!
+                     call  ptransvar(rout,iep_nx(ng),iep_ny(ng),nzvp(iv),inplevs,iplevs    &
+                                    ,mypi,dep_zlev(1,ng),zplev,mytopo)
+                     !---------------------------------------------------------------------!
+
+
+                     !----- Adjust projection to GrADS. -----------------------------------!
+                     call proj_rams_to_grads(vp(iv),ndim(iv),iep_nx(ng),iep_ny(ng)         &
+                                            ,nzvp(iv),nxgrads(ng),nygrads(ng),rmi,iinf     &
+                                            ,jinf,rout,routgrads,rlat,rlon,proj)
+                     !---------------------------------------------------------------------!
+
+                     !----- Dump array to output file. ------------------------------------!
+                     call ep_putvar(19,nxgrads(ng),nygrads(ng),inplevsef,nxa(ng),nxb(ng)   &
+                                   ,nya(ng),nyb(ng),1,inplevsef,routgrads,nrec)
+                     !---------------------------------------------------------------------!
+                  end do
+                  !------------------------------------------------------------------------!
+
+               case (2)
+                  !------------------------------------------------------------------------!
+                  !      Height levels.                                                    !
+                  !------------------------------------------------------------------------!
+
+                  !----- Set the number of levels. ----------------------------------------!
+                  inplevsef = inplevs
+                  !------------------------------------------------------------------------!
+
+
+                  !------------------------------------------------------------------------!
+                  !    Loop over clouds.                                                   !
+                  !------------------------------------------------------------------------!
+                  do ic = 1,iep_nc
+                     !----- Convert the 4D array into a 3D. -------------------------------!
+                     call S4d_to_3d(iep_nx(ng),iep_ny(ng),nzvp(iv),iep_nc,ic,rout6,rout)
+                     !---------------------------------------------------------------------!
+
+                     !----- Interpolate to height levels. ---------------------------------!
+                     call  ctransvar(iep_nx(ng),iep_ny(ng),iep_nz(ng),rout,mytopo,inplevs  &
+                                    ,iplevs,myztn(1,ng),myzmn(mynnzp(1)-1,1))
+                     !---------------------------------------------------------------------!
+
+
+                     !----- Adjust projection to GrADS. -----------------------------------!
+                     call proj_rams_to_grads(vp(iv),ndim(iv),iep_nx(ng),iep_ny(ng)         &
+                                            ,nzvp(iv),nxgrads(ng),nygrads(ng),rmi,iinf     &
+                                            ,jinf,rout,routgrads,rlat,rlon,proj)
+                     !---------------------------------------------------------------------!
+
+
+                     !----- Dump array to output file. ------------------------------------!
+                     call ep_putvar(19,nxgrads(ng),nygrads(ng),inplevsef,nxa(ng),nxb(ng)   &
+                                   ,nya(ng),nyb(ng),1,inplevsef,routgrads,nrec)
+                     !---------------------------------------------------------------------!
+                  end do
+                  !------------------------------------------------------------------------!
+               case (3)
+                  !------------------------------------------------------------------------!
+                  !      Selected sigma-z levels.                                          !
+                  !------------------------------------------------------------------------!
+
+                  !----- Set the number of levels. ----------------------------------------!
+                  inplevsef = inplevs
+                  !------------------------------------------------------------------------!
+
+
+                  !------------------------------------------------------------------------!
+                  !    Loop over clouds.                                                   !
+                  !------------------------------------------------------------------------!
+                  do ic = 1,iep_nc
+                     !----- Convert the 4D array into a 3D. -------------------------------!
+                     call S4d_to_3d(iep_nx(ng),iep_ny(ng),nzvp(iv),iep_nc,ic,rout6,rout)
+                     !---------------------------------------------------------------------!
+
+                     !----- Pick only the levels we are interested in. --------------------!
+                     call  select_sigmaz(iep_nx(ng),iep_ny(ng),iep_nz(ng),rout,inplevs     &
+                                        ,iplevs)
+                     !---------------------------------------------------------------------!
+
+
+                     !----- Adjust projection to GrADS. -----------------------------------!
+                     call proj_rams_to_grads(vp(iv),ndim(iv),iep_nx(ng),iep_ny(ng)         &
+                                            ,nzvp(iv),nxgrads(ng),nygrads(ng),rmi,iinf     &
+                                            ,jinf,rout,routgrads,rlat,rlon,proj)
+                     !---------------------------------------------------------------------!
+
+
+                     !----- Dump array to output file. ------------------------------------!
+                     call ep_putvar(19,nxgrads(ng),nygrads(ng),inplevsef,nxa(ng),nxb(ng)   &
+                                   ,nya(ng),nyb(ng),1,inplevsef,routgrads,nrec)
+                     !---------------------------------------------------------------------!
+                  end do
+                  !------------------------------------------------------------------------!
+
+               end select
+            case (7)
+               !---------------------------------------------------------------------------!
+               !    Three-dimensional array, third dimension is the patch-level.  We will  !
+               ! save these as independent variables.                                      !
+               !---------------------------------------------------------------------------!
+
+               !----- Update the number of variables. -------------------------------------!
+               if (nfn == 1) nnvp = nnvp + iep_np - 1
+               !---------------------------------------------------------------------------!
+
+               !----- Set the number of levels. -------------------------------------------!
+               nzvp(iv) = iep_np
+               !---------------------------------------------------------------------------!
+
+
+               !----- Adjust projection to GrADS. -----------------------------------------!
+               call proj_rams_to_grads(vp(iv),ndim(iv),iep_nx(ng),iep_ny(ng),nzvp(iv)      &
+                                      ,nxgrads(ng),nygrads(ng),rmi,iinf,jinf,rout          &
+                                      ,routgrads,rlat,rlon,proj)
+               !---------------------------------------------------------------------------!
+
+
+               !---------------------------------------------------------------------------!
+               !    Loop over all patches, and write the 2-D arrays.                       !
+               !---------------------------------------------------------------------------!
+               do ip=1,iep_np
+                  call ep_putvar(19,nxgrads(ng),nygrads(ng),nzvp(iv),nxa(ng),nxb(ng)       &
+                                   ,nya(ng),nyb(ng),ip,ip,routgrads,nrec)
+               end do
+               !---------------------------------------------------------------------------!
+
+            case (8)
+               !---------------------------------------------------------------------------!
+               !    Soil variable that has layers and patches.                             !
+               !---------------------------------------------------------------------------!
+
+
+               !----- Update the number of variables. -------------------------------------!
+               if (nfn == 1) nnvp = nnvp + iep_np - 1
+               !---------------------------------------------------------------------------!
+
+
+               !----- Set the number of levels. -------------------------------------------!
+               nzvp(iv) = iep_ng
+               !---------------------------------------------------------------------------!
+
+
+               !---------------------------------------------------------------------------!
+               !    Loop over patches.                                                     !
+               !---------------------------------------------------------------------------!
+               do ip = 1,iep_np
+                  !----- Convert the 4D array into a 3D. ----------------------------------!
+                  call S4d_to_3d(iep_nx(ng),iep_ny(ng),nzvp(iv),iep_np,ip,rout2,rout)
+                  !------------------------------------------------------------------------!
+
+
+                  !----- Adjust projection to GrADS. --------------------------------------!
+                  call proj_rams_to_grads(vp(iv),ndim(iv),iep_nx(ng),iep_ny(ng),nzvp(iv)   &
+                                         ,nxgrads(ng),nygrads(ng),rmi,iinf,jinf,rout       &
+                                         ,routgrads,rlat,rlon,proj)
+                  !------------------------------------------------------------------------!
+
+
+                  !----- Dump array to output file. ---------------------------------------!
+                  call ep_putvar(19,nxgrads(ng),nygrads(ng),nzvp(iv),nxa(ng),nxb(ng)       &
+                                   ,nya(ng),nyb(ng),1,iep_ng,routgrads,nrec)
+                  !------------------------------------------------------------------------!
+               end do
+               !---------------------------------------------------------------------------!
+
+            case (9)
+               !---------------------------------------------------------------------------!
+               !    Three-dimensional array, third dimension is the cloud-level.  We will  !
+               ! save these as independent variables.                                      !
+               !---------------------------------------------------------------------------!
+
+
+               !----- Update the number of variables. -------------------------------------!
+               if (nfn == 1) nnvp = nnvp + iep_nc - 1
+               !---------------------------------------------------------------------------!
+
+
+               !----- Set the number of levels. -------------------------------------------!
+               nzvp(iv) = iep_nc
+               !---------------------------------------------------------------------------!
+
+
+               !----- Adjust projection to GrADS. -----------------------------------------!
+               call proj_rams_to_grads(vp(iv),ndim(iv),iep_nx(ng),iep_ny(ng),nzvp(iv)      &
+                                      ,nxgrads(ng),nygrads(ng),rmi,iinf,jinf,rout          &
+                                      ,routgrads,rlat,rlon,proj)
+               !---------------------------------------------------------------------------!
+
+
+               !---------------------------------------------------------------------------!
+               !    Loop over all clouds, and write the 2-D arrays.                        !
+               !---------------------------------------------------------------------------!
+               do ic=1,iep_nc
+                  call ep_putvar(19,nxgrads(ng),nygrads(ng),nzvp(iv),nxa(ng),nxb(ng)       &
+                                   ,nya(ng),nyb(ng),ic,ic,routgrads,nrec)
+               end do
+               !---------------------------------------------------------------------------!
+
+            case (10)
+               !---------------------------------------------------------------------------!
+               !    Soil variable that has layers but no patches (obsolete).               !
+               !---------------------------------------------------------------------------!
+               !----- Set the number of levels. -------------------------------------------!
+               nzvp(iv) = iep_ng
+               !---------------------------------------------------------------------------!
+
+               !----- Adjust projection to GrADS. -----------------------------------------!
+               call proj_rams_to_grads(vp(iv),ndim(iv),iep_nx(ng),iep_ny(ng),nzvp(iv)      &
+                                      ,nxgrads(ng),nygrads(ng),rmi,iinf,jinf,rout          &
+                                      ,routgrads,rlat,rlon,proj)
+               !---------------------------------------------------------------------------!
+
+
+               !----- Dump array to output file. ------------------------------------------!
+               call ep_putvar(19,nxgrads(ng),nygrads(ng),nzvp(iv),nxa(ng),nxb(ng)          &
+                             ,nya(ng),nyb(ng),1,nzvp(iv),routgrads,nrec)
+               !---------------------------------------------------------------------------!
+            case default
+               !------ Invalid variable, remove one from the total count. -----------------!
+               if (nfn == 1) nnvp=nnvp-1
+               !---------------------------------------------------------------------------!
+            end select
+            !------------------------------------------------------------------------------!
+         end do varloop
+         !---------------------------------------------------------------------------------!
+      end do fileloop
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !     Close the binary file now.                                                     !
+      !------------------------------------------------------------------------------------!
+      close (unit=19,status='keep')
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !     Define the number of output grid points in X and Y.                            !
+      !------------------------------------------------------------------------------------!
+      nxpg = nxb(ng) - nxa(ng) + 1
+      nypg= nyb(ng) - nya(ng) + 1
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !     Open the CTL file and start writing the header.                                !
+      !------------------------------------------------------------------------------------!
+      open (unit=20,file=trim(gprefix)//'_g'//cgrid//'.ctl',status='replace'               &
+           ,action='write')
+      write(unit=20,fmt='(a)') 'dset ^'//trim(gprefix)//'_g'//cgrid//'.gra'
+      write(unit=20,fmt='(a)') 'undef -9.99e33'
+      write(unit=20,fmt='(a)') 'title BRAMS-4.0.6 output'
+      write(unit=20,fmt='(a,1x,i5,1x,a,2(1x,f14.5))')  'xdef',nxpg,'linear'                &
+                                                      ,dep_glon(1,ng),dep_glon(2,ng)
+      write(unit=20,fmt='(a,1x,i5,1x,a,2(1x,f14.5))')  'ydef',nypg,'linear'                &
+                                                      ,dep_glat(1,ng),dep_glat(2,ng)
+
+      !------------------------------------------------------------------------------------!
+      !     Write the vertical coordinates.                                                !
+      !------------------------------------------------------------------------------------!
+      select case (ipresslev)
+      case (0)
+         !----- Native coordinates.  Break it in case there are more than 15 lines. -------!
+         if (zlevmax(ng) > 15) then
+            write (unit=20,fmt='(a,1x,i5,1x,a,15(1x,f14.5))') 'zdef',zlevmax(ng),'levels'  &
+                                                             ,(dep_zlev(n,ng),n=2,15)
+            write (unit=20,fmt='(200(1x,f14.5))') (dep_zlev(n,ng),n=16,zlevmax(ng)+1)
+         else
+            write (unit=20,fmt='(a,1x,i5,1x,a,200(1x,f14.5))') 'zdef',zlevmax(ng),'levels' &
+                                                        ,(dep_zlev(n,ng),n=2,zlevmax(ng)+1)
+         end if
+         !---------------------------------------------------------------------------------!
+      case (1,2)
+         !----- Pressure or height coordinates.  ------------------------------------------!
+         write (unit=20,fmt='(a,1x,i5,1x,a,200(1x,f14.5))') 'zdef',inplevs,'levels'        &
+                                                           ,(iplevs(n)*1.0,n=1,inplevs)
+         !---------------------------------------------------------------------------------!
+      case (3)
+         !----- Selected sigma-z coordinates.  --------------------------------------------!
+         write (unit=20,fmt='(a,1x,i5,1x,a,200(1x,f14.5))') 'zdef',inplevs,'levels'        &
+                                                      ,(dep_zlev(iplevs(n),ng),n=1,inplevs)
+         !---------------------------------------------------------------------------------!
+      end select
+      !------------------------------------------------------------------------------------!
+
+      !------------------------------------------------------------------------------------!
+      !     Write time.                                                                    !
+      !------------------------------------------------------------------------------------!
+      write(unit=20,fmt='(a,1x,i5,3(1x,a))') 'tdef',nfiles,'linear',chdate,chstep
+      !------------------------------------------------------------------------------------!
+
+      !------------------------------------------------------------------------------------!
+      !     Loop over variables.                                                           !
+      !------------------------------------------------------------------------------------!
+      write(unit=20,fmt='(a,1x,i5)') 'vars',nnvp
+      varoutloop: do iv=1,nvp
+         select case (ndim(iv))
+         case (2)
+            !------------------------------------------------------------------------------!
+            !      2 D variable, no height reference.                                      !
+            !------------------------------------------------------------------------------!
+            write(unit=20,fmt='(a,2(1x,i5),4(1x,a))')  vp(iv),0,99,vpln(iv)                &
+                                                      ,'[',vpun(iv),']'
+         case (3)
+            !------------------------------------------------------------------------------!
+            !      3 D variable.  Check which vertical coordinate to use.                  !
+            !------------------------------------------------------------------------------!
+            select case (ipresslev)
+            case (0)
+               !----- Native coordinates. -------------------------------------------------!
+               write(unit=20,fmt='(a,2(1x,i5),4(1x,a))') vp(iv),zlevmax(ng),99,vpln(iv)    &
+                                                        ,'[',vpun(iv),']'
+            case default
+               !----- Other coordinates. --------------------------------------------------!
+               write(unit=20,fmt='(a,2(1x,i5),4(1x,a))') vp(iv),inplevs,99,vpln(iv)        &
+                                                        ,'[',vpun(iv),']'
+            end select
+            !------------------------------------------------------------------------------!
+         case (6)
+            !------------------------------------------------------------------------------!
+            !      4 D variable.  Make one entry per cloud, and check which vertical       !
+            ! coordinate to use.                                                           !
+            !------------------------------------------------------------------------------!
+            do ic = 1, iep_nc
+               write(cldnumber,fmt='(i2.2)') ic
+               tmpvar  = trim(vp(iv))//cldnumber
+               tmpdesc = trim(vpln(iv))//': Cloud # '//cldnumber
+               !---------------------------------------------------------------------------!
+               !      Check which vertical coordinate to use.                              !
+               !---------------------------------------------------------------------------!
+               select case (ipresslev)
+               case (0)
+                  !----- Native coordinates. ----------------------------------------------!
+                  write(unit=20,fmt='(a,2(1x,i5),4(1x,a))') tmpvar,zlevmax(ng),99,tmpdesc  &
+                                                           ,'[',vpun(iv),']'
+               case default
+                  !----- Other coordinates. -----------------------------------------------!
+                  write(unit=20,fmt='(a,2(1x,i5),4(1x,a))') tmpvar,inplevs,99,tmpdesc      &
+                                                           ,'[',vpun(iv),']'
+               end select
+               !---------------------------------------------------------------------------!
+            end do
+            !------------------------------------------------------------------------------!
+
+         case (7)
+            !------------------------------------------------------------------------------!
+            !      3-D variable.  Make one entry per patch.                                !
+            !------------------------------------------------------------------------------!
+            do ip = 1, iep_np
+               write(patchnumber,fmt='(i2.2)') ip
+               tmpvar  = trim(vp(iv))//patchnumber
+               tmpdesc = trim(vpln(iv))//': Patch # '//patchnumber
+               write(unit=20,fmt='(a,2(1x,i5),4(1x,a))') tmpvar,0,99,tmpdesc               &
+                                                        ,'[',vpun(iv),']'
+            end do
+            !------------------------------------------------------------------------------!
+
+         case (8)
+            !------------------------------------------------------------------------------!
+            !      4-D variable.  Make one entry per patch, with vertical being number of  !
+            ! soil layers.                                                                 !
+            !------------------------------------------------------------------------------!
+            do ip = 1, iep_np
+               write(patchnumber,fmt='(i2.2)') ip
+               tmpvar  = trim(vp(iv))//patchnumber
+               tmpdesc = trim(vpln(iv))//': Patch # '//patchnumber
+               write(unit=20,fmt='(a,2(1x,i5),4(1x,a))') tmpvar,nzvp(iv),99,tmpdesc        &
+                                                        ,'[',vpun(iv),']'
+            end do
+            !------------------------------------------------------------------------------!
+
+         case (9)
+            !------------------------------------------------------------------------------!
+            !      3-D variable.  Make one entry per cloud.                                !
+            !------------------------------------------------------------------------------!
+            do ic = 1, iep_nc
+               write(cldnumber,fmt='(i2.2)') ic
+               tmpvar  = trim(vp(iv))//cldnumber
+               tmpdesc = trim(vpln(iv))//': Cloud # '//cldnumber
+               write(unit=20,fmt='(a,2(1x,i5),4(1x,a))') tmpvar,0,99,tmpdesc               &
+                                                        ,'[',vpun(iv),']'
+            end do
+            !------------------------------------------------------------------------------!
+
+         case (10)
+            !------------------------------------------------------------------------------!
+            !      3-D variable, soil layers with no patch (obsolete).                     !
+            !------------------------------------------------------------------------------!
+            write(unit=20,fmt='(a,2(1x,i5),4(1x,a))')  vp(iv),nzvp(iv),99,vpln(iv)         &
+                                                      ,'[',vpun(iv),']'
+            !------------------------------------------------------------------------------!
+         end select
+         !---------------------------------------------------------------------------------!
+      end do varoutloop
+      !------------------------------------------------------------------------------------!
+      write(unit=20,fmt='(a)') 'endvars'
+      close(unit=20,status='keep')
+      write (unit=*,fmt='(92a)'    )    ('=',n=1,92)
+      write (unit=*,fmt='(a)'      )    ' '
+      !------------------------------------------------------------------------------------!
+   end do gridloop
+   !---------------------------------------------------------------------------------------!
+
+   write(*,'(a)') ' ------ Ramspost execution ends ------'
+   stop
 end program ramspost
 !==========================================================================================!
 !==========================================================================================!
@@ -653,7 +977,7 @@ subroutine ep_getvar(cvar,rout,a,b,nx,ny,nz,ng,fn,cdname,cdunits,itype,npatch,nc
    case (3)
       call atob(nx*ny*nz,a,rout)
    case (6)
-      call atob(nx*ny*nzg*nclouds,a6,rout6)
+      call atob(nx*ny*nz*nclouds,a6,rout6)
    case (7)
       call atob(nx*ny*npatch,a,rout)
    case (8)
@@ -676,58 +1000,76 @@ end subroutine ep_getvar
 !==========================================================================================!
 !==========================================================================================!
 subroutine ep_setdate(iyear1,imonth1,idate1,strtim,itrec)
-  real time
+   implicit none
+   !------ Arguments. ---------------------------------------------------------------------!
+   integer              , intent(in)  :: iyear1
+   integer              , intent(in)  :: imonth1
+   integer              , intent(in)  :: idate1
+   real                 , intent(in)  :: strtim
+   integer, dimension(6), intent(out) :: itrec
+   !---------------------------------------------------------------------------------------!
 
-  integer itrec(6)
-  itrec(1)=iyear1
-  itrec(2)=imonth1
-  itrec(3)=idate1
-  itrec(4)=int(mod(strtim,24.))
-  itrec(5)=int(mod(strtim,1.)*60)
-  itrec(6)=int(mod( (strtim) *3600.,60.))
+   itrec(1) = iyear1
+   itrec(2) = imonth1
+   itrec(3) = idate1
+   itrec(4) = int(mod(strtim,24.))
+   itrec(5) = int(mod(strtim,1.)*60)
+   itrec(6) = int(mod( (strtim) *3600.,60.))
 
-  !      print*,'---------------------------------------'
-  !      print*,itrec(1),itrec(2),itrec(3),itrec(4),itrec(5),
-  !     +       itrec(6)
-  !      print*,'---------------------------------------'
-
-  return
+   return
 end subroutine ep_setdate
+!==========================================================================================!
+!==========================================================================================!
 
-!*****************************************************************************
 
-! --------------------------------------------------------
-! -   SUBROUTINE EP_PUTVAR : WRITE ARRAY TO GRADS FILE   -
-! --------------------------------------------------------
 
-subroutine ep_putvar(rout,a,nx,ny,nxa,nxb,nya,nyb,   &
-                     nz,nrec,istartz,iendz)
-  dimension a(nx,ny),rout(nx,ny,nz)
-  integer istartz,iendz
-  ! 
-  do k=istartz,iendz
-     do j=1,ny
-        do i=1,nx
-           a(i,j)=rout(i,j,k)
-           !cc
-           !            print*,'PUT VAR=',i,j,k,a(i,j)
-           !cc
-        enddo
-     enddo
-     nrec=nrec+1
-     write (19,rec=nrec) ((a(i,j),i=nxa,nxb),j=nya,nyb)
-     !       write(19,rec=nrec) a
-  enddo
 
-  !      k=1
-  !        write(18,'(59f10.3)')((rout(ii,jj,k),ii=1,nx),jj=1,ny)
-  !        
-  return
+
+
+!==========================================================================================!
+!==========================================================================================!
+!      This subroutine dumps the array to the output binary file (gra file).               !
+!------------------------------------------------------------------------------------------!
+subroutine ep_putvar(iunit,nxp,nyp,nzp,xa,xz,ya,yz,za,zz,array3d,irec)
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   integer                     , intent(in)    :: iunit
+   integer                     , intent(in)    :: nxp
+   integer                     , intent(in)    :: nyp
+   integer                     , intent(in)    :: nzp
+   integer                     , intent(in)    :: xa
+   integer                     , intent(in)    :: xz
+   integer                     , intent(in)    :: ya
+   integer                     , intent(in)    :: yz
+   integer                     , intent(in)    :: za
+   integer                     , intent(in)    :: zz
+   real, dimension(nxp,nyp,nzp), intent(in)    :: array3d
+   integer                     , intent(inout) :: irec
+   !----- Local variables. ----------------------------------------------------------------!
+   integer                                     :: x
+   integer                                     :: y
+   integer                                     :: z
+   real, dimension(nxp,nyp)                    :: mat
+   !---------------------------------------------------------------------------------------!
+   do z=za,zz
+      do y=1,nyp
+         do x=1,nxp
+            mat(x,y) = array3d(x,y,z)
+         end do
+      end do
+
+      irec=irec+1
+      write (unit=iunit,rec=irec) ((mat(x,y),x=xa,xz),y=ya,yz)
+   end do
+
+   return
 end subroutine ep_putvar
+!==========================================================================================!
+!==========================================================================================!
 
 !-------------------------------------------------------------------
 !
-Subroutine Matriz_interp(ng,nxg,nyg,nxr,nyr,rlat1,dlat, &
+Subroutine array_interpol(ng,nxg,nyg,nxr,nyr,rlat1,dlat, &
      rlon1,dlon,iinf,jinf,rmi,proj)
   use rpost_coms
   use brams_data
@@ -736,7 +1078,7 @@ Subroutine Matriz_interp(ng,nxg,nyg,nxr,nyr,rlat1,dlat, &
   Dimension rmi(nxg,nyg,4),iinf(nxg,nyg),jinf(nxg,nyg)
   character(len=*) :: proj
   !
-  if(proj.ne.'YES'.AND.proj.ne.'yes') RETURN
+  if(trim(proj) == 'no') RETURN
 
   !       Construcao da matriz de interpolacao.
   !       Flag para pontos do grads fora do dominio do modelo
@@ -799,7 +1141,7 @@ Subroutine Matriz_interp(ng,nxg,nyg,nxr,nyr,rlat1,dlat, &
      enddo
   enddo
   return
-end Subroutine Matriz_interp
+end Subroutine array_interpol
 
 !*************************************************************************
 
@@ -814,10 +1156,9 @@ Subroutine proj_rams_to_grads(vp,n,nxr,nyr,nzz,nxg,nyg,     &
   Dimension rmi(nxg,nyg,4),iinf(nxg,nyg),jinf(nxg,nyg)
 
 
-  if(proj.ne.'YES'.AND.proj.ne.'yes') then
-     if(nxg.ne.nxr.AND.nyg.ne.nyr) then
-        print*,'Projection with problems nxr nxg ...'
-        stop
+  if(trim(proj) == 'no') then
+     if (nxg /= nxr .or. nyg /= nyr) then
+        call abort_run  ('Projection with problems...','proj_rams_to_grads','rpost_main.f90')
      endif
      call rout_to_routgrads(nxr*nyr*nzz,rout,routgrads)
      return
@@ -956,11 +1297,11 @@ Subroutine geo_grid(nx,ny,rlat,rlon,dep_glon1,dep_glon2,  &
   dep_glat1= x/nx
   dep_glat2=xx/nx
 
-  if(proj.ne.'YES'.and.proj.ne.'yes') then
+  if(proj == 'no') then
      nxg=nx
      nyg=ny
 
-  else
+  elseif (proj == 'yes') then
 
      !...... Grade para o GRADS:
 
@@ -1000,6 +1341,9 @@ Subroutine geo_grid(nx,ny,rlat,rlon,dep_glon1,dep_glon2,  &
      !            print*,rlonmin,rlonmax,rlatmin,rlatmax
      !            print*,nxg,nyg,dep_glon2,dep_glat2,dep_glat1,dep_glon1
      !            stop
+  else 
+     call abort_run   ('Invalid value for iproj: '//trim(proj)//'...' &
+                      ,'geo_grid','rpost_main.f90')
   endif
 
 

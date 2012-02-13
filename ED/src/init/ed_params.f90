@@ -3027,6 +3027,10 @@ subroutine init_pft_repro_params()
    nonlocal_dispersal(9)   =  1.000 ! 1.000
    nonlocal_dispersal(10)  =  0.325 ! 0.325
    nonlocal_dispersal(11)  =  0.074 ! 0.074
+   nonlocal_dispersal(12)  =  1.000 ! 1.000
+   nonlocal_dispersal(13)  =  1.000 ! 1.000
+   nonlocal_dispersal(14)  =  1.000 ! 1.000
+   nonlocal_dispersal(15)  =  1.000 ! 1.000
    nonlocal_dispersal(16)  =  1.000 ! 1.000
    nonlocal_dispersal(17)  =  0.766 ! 0.600
 

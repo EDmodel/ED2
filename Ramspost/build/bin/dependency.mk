@@ -2,7 +2,7 @@
 rcio.o: leaf_coms.mod micro_coms.mod rconstants.mod rpost_coms.mod
 rcio.o: rpost_dims.mod somevars.mod therm_lib.mod
 rpost_main.o: brams_data.mod leaf_coms.mod misc_coms.mod rpost_coms.mod
-rpost_main.o: rpost_dims.mod
+rpost_main.o: rpost_dims.mod somevars.mod
 rpost_misc.o: misc_coms.mod rpost_dims.mod
 variables.o: an_header.mod brams_data.mod leaf_coms.mod micro_coms.mod
 variables.o: misc_coms.mod rconstants.mod rpost_coms.mod rpost_dims.mod

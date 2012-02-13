@@ -70,13 +70,27 @@ subroutine grell_cupar_feedback(mgmzp,maxens_cap,maxens_eff,maxens_lsf,maxens_dy
    real                                  :: inv_maxens_ec  ! 1 / ( maxens_eff * maxens_cap)
    real                                  :: inv_maxens_eld ! 1 / ( maxens_eff * maxens_cap &
                                                            !     * maxens_dyn )
+   real                                  :: max_heat_si    ! Maximum heating rate in K/s
    !----- Local constant, controlling debugging information. ------------------------------!
    logical               , parameter     :: print_debug = .false.
    !---------------------------------------------------------------------------------------!
 
-   !----- Assigning the inverse of part of the ensemble dimension. ------------------------!
+
+
+   !----- Assign the inverse of part of the ensemble dimension. ---------------------------!
    inv_maxens_ec  = 1. / (maxens_eff * maxens_cap )
    inv_maxens_eld = 1. / (maxens_eff * maxens_lsf * maxens_dyn)
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Find the maximum heating rate in K/s.                                             !
+   !---------------------------------------------------------------------------------------!
+   max_heat_si = max_heat / day_sec
+   !---------------------------------------------------------------------------------------!
+
+
 
    !---------------------------------------------------------------------------------------!
    !    Initialise all output variables.  They may become the actual values in case con-   !
@@ -91,6 +105,8 @@ subroutine grell_cupar_feedback(mgmzp,maxens_cap,maxens_eff,maxens_lsf,maxens_dy
    outthil  = 0.
    outqtot  = 0.
    outco2   = 0.
+   !---------------------------------------------------------------------------------------!
+
 
    !---------------------------------------------------------------------------------------!
    !     Before we average, we just need to make sure we don't have negative reference     !
@@ -111,6 +127,9 @@ subroutine grell_cupar_feedback(mgmzp,maxens_cap,maxens_eff,maxens_lsf,maxens_dy
    where (dnmx_ens < 0.)
       dnmx_ens = 0.
    end where
+   !---------------------------------------------------------------------------------------!
+
+
 
    !---------------------------------------------------------------------------------------!
    !     Find the averaged mass fluxes for each static control.                            !
@@ -170,22 +189,19 @@ subroutine grell_cupar_feedback(mgmzp,maxens_cap,maxens_eff,maxens_lsf,maxens_dy
 
    !---------------------------------------------------------------------------------------!
    !   Average the temperature tendency among the precipitation efficiency ensemble. If it !
-   ! is heating/cooling too much, rescale the reference upward mass flux. Since max_heat   !
-   ! is given in K/day, I will compute outt in K/day just to test the value and check      !
-   ! whether it is outside the allowed range or not. After I'm done, I will rescale it     !
-   ! back to K/s.                                                                          !
+   ! is heating/cooling too much, rescale the reference upward mass flux.                  !
    !---------------------------------------------------------------------------------------!
    do k=1,mkx
       outthil(k) = upmf * sum(dellathil_eff(k,1:maxens_eff,1:maxens_cap))                  &
-                 * inv_maxens_ec * day_sec
+                 * inv_maxens_ec
    end do
    !----- Get minimum and maximum outt, and where they happen -----------------------------!
    kmin = minloc(outthil,dim=1)
    kmax = maxloc(outthil,dim=1)
    
    !----- If excessive heat happens, scale down both updrafts and downdrafts --------------!
-   if (kmax > 2 .and. outthil(kmax) > max_heat) then
-      rescale = max_heat / outthil(kmax)
+   if (kmax > 2 .and. outthil(kmax) > max_heat_si) then
+      rescale = max_heat_si / outthil(kmax)
       upmf        = upmf        * rescale
       dnmf        = dnmf        * rescale
       upmx        = upmx        * rescale
@@ -197,8 +213,8 @@ subroutine grell_cupar_feedback(mgmzp,maxens_cap,maxens_eff,maxens_lsf,maxens_dy
       end do
    end if
    !----- If excessive cooling happens, scale down both updrafts and downdrafts. ----------!
-   if (outthil(kmin)  < - max_heat) then
-      rescale = - max_heat/ outthil(kmin)
+   if (outthil(kmin)  < - max_heat_si) then
+      rescale = - max_heat_si/ outthil(kmin)
       upmf        = upmf        * rescale
       dnmf        = dnmf        * rescale
       upmx        = upmx        * rescale
@@ -211,8 +227,8 @@ subroutine grell_cupar_feedback(mgmzp,maxens_cap,maxens_eff,maxens_lsf,maxens_dy
    end if
    !----- Heating close to the surface needs to be smaller, being strict there ------------!
    do k=1,2
-      if (outthil(k) > 0.5 * max_heat) then
-         rescale = 0.5 * max_heat / outthil(k)
+      if (outthil(k) > 0.5 * max_heat_si) then
+         rescale = 0.5 * max_heat_si / outthil(k)
          upmf        = upmf        * rescale
          dnmf        = dnmf        * rescale
          upmx        = upmx        * rescale
@@ -223,10 +239,6 @@ subroutine grell_cupar_feedback(mgmzp,maxens_cap,maxens_eff,maxens_lsf,maxens_dy
             outthil(l) = outthil(l) * rescale
          end do
       end if
-   end do
-   !----- Converting outthil to K/s -------------------------------------------------------!
-   do k=1,mkx
-      outthil(k) = outthil(k) / day_sec
    end do
    !---------------------------------------------------------------------------------------!
 
@@ -240,24 +252,29 @@ subroutine grell_cupar_feedback(mgmzp,maxens_cap,maxens_eff,maxens_lsf,maxens_dy
       outco2(k)  = upmf * sum(dellaco2_eff (k,1:maxens_eff,1:maxens_cap))                  &
                  * inv_maxens_ec
    end do
+   !---------------------------------------------------------------------------------------!
+
+
 
    !---------------------------------------------------------------------------------------!
-   !   Computing precipitation. It should never be negative, so making sure that this      !
-   ! never happens. I will skip this in case this cloud is too shallow.                    !
+   !   Compute precipitation.  It should never be negative, so we check whether this ever  !
+   ! happens.                                                                              !
    !---------------------------------------------------------------------------------------!
    if (any(comp_down_cap)) then
       do icap=1,maxens_cap
          do iedt=1,maxens_eff
-            precip        = precip + upmf * max(0.,sum(pw_eff(1:mkx,iedt,icap)))
+            do k=1,mkx
+               precip = precip + upmf * pw_eff(k,iedt,icap)
+            end do
          end do
       end do
-      precip = precip * inv_maxens_ec
+      precip = max(0.,precip) * inv_maxens_ec
    end if
    
    !---------------------------------------------------------------------------------------!
    !    Redefining epsilon.                                                                !
    !---------------------------------------------------------------------------------------!
-   if (any(comp_down_cap) .and. upmf > 0) then
+   if (any(comp_down_cap) .and. upmf > 0.) then
       edt  = dnmf/upmf
    end if
 
@@ -475,14 +492,11 @@ subroutine grell_cupar_output(m1,mgmzp,maxens_cap,rtgt,zm,zt,dnmf,upmf,dnmx,upmx
                              ,outthil,precip,xierr,zklod,zklou,zklcl,zklfc,zkdt,zklnb      &
                              ,zktop,conprr,thsrc,rtsrc,co2src,areadn,areaup,wdndraft       &
                              ,wupdraft,wbuoymin,cuprliq,cuprice,i,j,icld,mynum)
-   use mem_ensemble     , only : &
-           ensemble_vars       ! ! type
-   use mem_scratch_grell, only : &
-           kgoff               & ! intent(in) - BRAMS grid offset
-          ,mkx                 ! ! intent(in) - # of cloud grid levels
- 
-   use rconstants       , only : &
-           toodry              ! ! intent(in) - Minimum mixing ratio              [  kg/kg]
+   use mem_ensemble     , only : ensemble_vars ! ! type
+   use mem_scratch_grell, only : kgoff         & ! intent(in)
+                               , mkx           ! ! intent(in)
+   use rconstants       , only : toodry        & ! intent(in)
+                               , day_sec       ! ! intent(in)
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
    integer            , intent(in)  :: m1          ! Number of levels
@@ -561,6 +575,7 @@ subroutine grell_cupar_output(m1,mgmzp,maxens_cap,rtgt,zm,zt,dnmf,upmf,dnmx,upmx
    integer                            :: kr        ! BRAMS level counter
    real                               :: exner     ! Exner fctn. for tend. conv.  [ J/kg/K]
    real                               :: nmoki     ! 1/nmok
+   real                               :: zhgt      ! Height
    integer                            :: klod      ! Downdraft origin
    integer                            :: klou      ! Updraft origin
    integer                            :: klcl      ! Lifting condensation level
@@ -573,9 +588,7 @@ subroutine grell_cupar_output(m1,mgmzp,maxens_cap,rtgt,zm,zt,dnmf,upmf,dnmx,upmx
    real, dimension(m1,maxens_cap)   :: cuprice_cap  ! Cumulus ice mixing ratio    [  kg/kg]
    !----- Local constants, for debugging. -------------------------------------------------!
    integer                          :: iun
-   logical, parameter               :: print_debug=.false.
-   character(len=9) , parameter     :: fmti='(a,1x,i6)'
-   character(len=13), parameter     :: fmtf='(a,1x,es14.7)'
+   logical          , parameter     :: print_debug=.false.
    !---------------------------------------------------------------------------------------!
 
 
@@ -637,6 +650,8 @@ subroutine grell_cupar_output(m1,mgmzp,maxens_cap,rtgt,zm,zt,dnmf,upmf,dnmx,upmx
    ktop  = max(1,min(mkx,nint(real(sum(ktop_cap ,mask = is_cloud))/nmok)))
    !---------------------------------------------------------------------------------------!
 
+
+
    !---------------------------------------------------------------------------------------!
    !    Fix the levels, here I will add back the offset so the output will be consistent.  !
    ! I shall return these variables even when no cloud developed for debugging purposes.   !
@@ -648,6 +663,9 @@ subroutine grell_cupar_output(m1,mgmzp,maxens_cap,rtgt,zm,zt,dnmf,upmf,dnmx,upmx
    zklod  = (zt(klod  + kgoff)-zm(kgoff))*rtgt
    zklnb  = (zt(klnb  + kgoff)-zm(kgoff))*rtgt
    zktop  = (zt(ktop  + kgoff)-zm(kgoff))*rtgt
+   !---------------------------------------------------------------------------------------!
+
+
 
    !---------------------------------------------------------------------------------------!
    !    Precipitation is simply copied, it could even be output directly from the main     !
@@ -662,6 +680,9 @@ subroutine grell_cupar_output(m1,mgmzp,maxens_cap,rtgt,zm,zt,dnmf,upmf,dnmx,upmx
       rtsrc(kr)   = outqtot(k)
       co2src(kr)  = outco2(k)
    end do
+   !---------------------------------------------------------------------------------------!
+
+
 
    !---------------------------------------------------------------------------------------!
    !   Compute the relative area covered by downdrafts and updrafts.                       !
@@ -685,6 +706,9 @@ subroutine grell_cupar_output(m1,mgmzp,maxens_cap,rtgt,zm,zt,dnmf,upmf,dnmx,upmx
          end do
       end if
    end do stacloop
+   !---------------------------------------------------------------------------------------!
+
+
 
    !----- Find the averaged area. ---------------------------------------------------------! 
    areadn   = sum(areadn_cap)   * nmoki
@@ -692,10 +716,65 @@ subroutine grell_cupar_output(m1,mgmzp,maxens_cap,rtgt,zm,zt,dnmf,upmf,dnmx,upmx
    wdndraft = sum(wdndraft_cap) * nmoki
    wupdraft = sum(wupdraft_cap) * nmoki
    wbuoymin = sum(wbuoymin_cap) * nmoki
-   do kr=1,m1
-      cuprliq(kr) = sum(cuprliq_cap(kr,1:maxens_cap)) * nmoki
-      cuprice(kr) = sum(cuprice_cap(kr,1:maxens_cap)) * nmoki
+   do icap=1,maxens_cap
+      do kr=1,m1
+         cuprliq(kr) = cuprliq(kr) + cuprliq_cap(kr,icap) * nmoki
+         cuprice(kr) = cuprice(kr) + cuprice_cap(kr,icap) * nmoki
+      end do
    end do
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     If printing debug, check whether the cloud happened and print the cloud           !
+   ! characteristics.                                                                      !
+   !---------------------------------------------------------------------------------------!
+   if (print_debug) then
+      write(unit=20+icld,fmt='(92a)'             ) ('-',k=1,92)
+      write(unit=20+icld,fmt='(a)'               ) ''
+      write(unit=20+icld,fmt='(a,1x,i5)'         ) '  I        =',i
+      write(unit=20+icld,fmt='(a,1x,i5)'         ) '  J        =',j
+      write(unit=20+icld,fmt='(a,1x,i5)'         ) '  NMOK     =',nint(nmok)
+      write(unit=20+icld,fmt='(a)'               ) ''
+      write(unit=20+icld,fmt='(a,1x,i5,1x,f10.2)') '  DET      =',kdet,zkdt
+      write(unit=20+icld,fmt='(a,1x,i5,1x,f10.2)') '  LOU      =',klou,zklou
+      write(unit=20+icld,fmt='(a,1x,i5,1x,f10.2)') '  LCL      =',klcl,zklcl
+      write(unit=20+icld,fmt='(a,1x,i5,1x,f10.2)') '  LFC      =',klfc,zklfc
+      write(unit=20+icld,fmt='(a,1x,i5,1x,f10.2)') '  LOD      =',klod,zklod
+      write(unit=20+icld,fmt='(a,1x,i5,1x,f10.2)') '  LNB      =',klnb,zklnb
+      write(unit=20+icld,fmt='(a,1x,i5,1x,f10.2)') '  TOP      =',ktop,zktop
+      write(unit=20+icld,fmt='(a)'               ) ''
+      write(unit=20+icld,fmt='(a,1x,es12.5)'     ) '  DNMF     =',dnmf
+      write(unit=20+icld,fmt='(a,1x,es12.5)'     ) '  UPMF     =',upmf
+      write(unit=20+icld,fmt='(a,1x,es12.5)'     ) '  DNMX     =',dnmx
+      write(unit=20+icld,fmt='(a,1x,es12.5)'     ) '  UPMX     =',upmx
+      write(unit=20+icld,fmt='(a,1x,es12.5)'     ) '  AREADN   =',areadn
+      write(unit=20+icld,fmt='(a,1x,es12.5)'     ) '  AREAUP   =',areaup
+      write(unit=20+icld,fmt='(a,1x,es12.5)'     ) '  WDNDRAFT =',wdndraft
+      write(unit=20+icld,fmt='(a,1x,es12.5)'     ) '  WUPDRAFT =',wupdraft
+      write(unit=20+icld,fmt='(a,1x,es12.5)'     ) '  WBUOYMIN =',wbuoymin
+      write(unit=20+icld,fmt='(a,1x,es12.5)'     ) '  CONPRR   =',conprr * day_sec
+      write(unit=20+icld,fmt='(a)'               ) ''
+      write(unit=20+icld,fmt='(7(a,1x))')   '           K','      HEIGHT','       THSRC'   &
+                                           ,'       RTSRC','      CO2SRC','     CUPRICE'   &
+                                           ,'     CUPRLIQ'
+      write(unit=20+icld,fmt='(92(a))') ('-',k=1,92)
+      do k=m1,1,-1
+         zhgt = ( zt(k+kgoff) - zm(kgoff) ) * rtgt
+         write (unit=20+icld,fmt='(i12,1x,f12.2,1x,5(es12.5,1x))')                         &
+                                                              k                            &
+                                                            , zhgt                         &
+                                                            , thsrc  (k) * day_sec         &
+                                                            , rtsrc  (k) * day_sec * 1000. &
+                                                            , co2src (k) * day_sec         &
+                                                            , cuprice(k) * 1000.           &
+                                                            , cuprliq(k) * 1000.
+      end do
+      write(unit=20+icld,fmt='(92(a))') ('-',k=1,92)
+      write(unit=20+icld,fmt='(a)'               ) ''
+   end if
+   !---------------------------------------------------------------------------------------!
 
 
    return
