@@ -136,7 +136,8 @@ subroutine copy_nl(copy_type)
                                    , plantation_file           & ! intent(out)
                                    , lu_rescale_file           & ! intent(out)
                                    , sm_fire                   & ! intent(out)
-                                   , time2canopy               ! ! intent(out)
+                                   , time2canopy               & ! intent(out)
+                                   , min_patch_area            ! ! intent(out)
    use pft_coms             , only : include_these_pft         & ! intent(out)
                                    , agri_stock                & ! intent(out)
                                    , plantation_stock          & ! intent(out)
@@ -439,6 +440,7 @@ subroutine copy_nl(copy_type)
       maxpatch                  = nl%maxpatch
       maxcohort                 = nl%maxcohort
       min_site_area             = nl%min_site_area
+      min_patch_area            = nl%min_patch_area
       ioptinpt                  = nl%ioptinpt
       zrough                    = nl%zrough
 

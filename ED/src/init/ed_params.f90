@@ -3259,8 +3259,7 @@ end subroutine init_pft_derived_params
 !==========================================================================================!
 subroutine init_disturb_params
 
-   use disturb_coms , only : min_new_patch_area       & ! intent(out)
-                           , treefall_hite_threshold  & ! intent(out)
+   use disturb_coms , only : treefall_hite_threshold  & ! intent(out)
                            , forestry_on              & ! intent(out)
                            , agriculture_on           & ! intent(out)
                            , plantation_year          & ! intent(out)
@@ -3277,9 +3276,6 @@ subroutine init_disturb_params
    use soil_coms    , only : slz                      ! ! intent(in)
    use grid_coms    , only : nzg                      ! ! intent(in)
    implicit none
-   
-   !----- Minimum area that a patch must have to be created. ------------------------------!
-   min_new_patch_area = 0.005
 
    !----- Only trees above this height create a gap when they fall. -----------------------!
    treefall_hite_threshold = 10.0 

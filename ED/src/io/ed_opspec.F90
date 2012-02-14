@@ -1165,7 +1165,8 @@ subroutine ed_opspec_misc
                                     , ianth_disturb                & ! intent(in)
                                     , sm_fire                      & ! intent(in)
                                     , time2canopy                  & ! intent(in)
-                                    , treefall_disturbance_rate    ! ! intent(in)
+                                    , treefall_disturbance_rate    & ! intent(in)
+                                    , min_patch_area               ! ! intent(in)
    use phenology_coms        , only : iphen_scheme                 & ! intent(in)
                                     , radint                       & ! intent(in)
                                     , radslp                       & ! intent(in)
@@ -1226,6 +1227,12 @@ subroutine ed_opspec_misc
       write (reason,fmt='(a,2x,a,1x,es12.5,a)')                                            &
          'Invalid MIN_SITE_AREA, it must be between 0.0001 and 0.10.'                      &
         ,'Yours is set to ',min_site_area,'...'
+   end if
+
+   if (min_patch_area < 0.000001 .or. min_patch_area > 0.02) then
+      write (reason,fmt='(a,2x,a,1x,es12.5,a)')                                            &
+         'Invalid MIN_PATCH_AREA, it must be between 0.000001 and 0.02.'                   &
+        ,'Yours is set to ',min_patch_area,'...'
    end if
 
    if (ifoutput /= 0 .and. ifoutput /= 3) then

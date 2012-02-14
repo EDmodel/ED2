@@ -1115,30 +1115,33 @@ $ED_NL
 
    !---------------------------------------------------------------------------------------!
    ! The following variables control the size of sub-polygon structures in ED-2.           !
-   ! MAXSITE       -- This is the strict maximum number of sites that each polygon can     !
-   !                  contain.  Currently this is used only when the user wants to run the !
-   !                  same polygon with multiple soil types.  If there aren't that many    !
-   !                  different soil types with a minimum area (check MIN_SITE_AREA        !
-   !                  below), then the model will allocate just the amount needed.         !
-   ! MAXPATCH      -- If number of patches in a given site exceeds MAXPATCH, force patch   !
-   !                  fusion.  If MAXPATCH is 0, then fusion will never happen.  If        !
-   !                  MAXPATCH is negative, then the absolute value is used only during    !
-   !                  the initialization, and fusion will never happen again.  Notice that !
-   !                  if the patches are too different, then the actual number of patches  !
-   !                  in a site may exceed MAXPATCH.                                       !
-   ! MAXCOHORT     -- If number of cohorts in a given patch exceeds MAXCOHORT, force       !
-   !                  cohort fusion.  If MAXCOHORT is 0, then fusion will never happen.    !
-   !                  If MAXCOHORT is negative, then the absolute value is used only       !
-   !                  during the initialization, and fusion will never happen again.       !
-   !                  Notice that if the cohorts are too different, then the actual number !
-   !                  of cohorts in a patch may exceed MAXCOHORT.                          !
-   ! MIN_SITE_AREA -- This is the minimum fraction area of a given soil type that allows a !
-   !                  site to be created (ignored if IED_INIT_MODE is set to 3).           !
+   ! MAXSITE        -- This is the strict maximum number of sites that each polygon can    !
+   !                   contain.  Currently this is used only when the user wants to run    !
+   !                   the same polygon with multiple soil types.  If there aren't that    !
+   !                   many different soil types with a minimum area (check MIN_SITE_AREA  !
+   !                   below), then the model will allocate just the amount needed.        !
+   ! MAXPATCH       -- If number of patches in a given site exceeds MAXPATCH, force patch  !
+   !                   fusion.  If MAXPATCH is 0, then fusion will never happen.  If       !
+   !                   MAXPATCH is negative, then the absolute value is used only during   !
+   !                   the initialization, and fusion will never happen again.  Notice     !
+   !                   that if the patches are too different, then the actual number of    !
+   !                   patches in a site may exceed MAXPATCH.                              !
+   ! MAXCOHORT      -- If number of cohorts in a given patch exceeds MAXCOHORT, force      !
+   !                   cohort fusion.  If MAXCOHORT is 0, then fusion will never happen.   !
+   !                   If MAXCOHORT is negative, then the absolute value is used only      !
+   !                   during the initialization, and fusion will never happen again.      !
+   !                   Notice that if the cohorts are too different, then the actual       !
+   !                   number of cohorts in a patch may exceed MAXCOHORT.                  !
+   ! MIN_SITE_AREA  -- This is the minimum fraction area of a given soil type that allows  !
+   !                   a site to be created (ignored if IED_INIT_MODE is set to 3).        !
+   ! MIN_PATCH_AREA -- This is the minimum fraction area of a given soil type that allows  !
+   !                   a site to be created (ignored if IED_INIT_MODE is set to 3).        !
    !---------------------------------------------------------------------------------------!
-   NL%MAXSITE       =   1
-   NL%MAXPATCH      =  20
-   NL%MAXCOHORT     =  80
-   NL%MIN_SITE_AREA = 0.005
+   NL%MAXSITE        =     1
+   NL%MAXPATCH       =    20
+   NL%MAXCOHORT      =    80
+   NL%MIN_SITE_AREA  = 0.005
+   NL%MIN_PATCH_AREA = 0.005
    !---------------------------------------------------------------------------------------!
 
 

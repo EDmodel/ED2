@@ -15,7 +15,7 @@ subroutine apply_forestry(cpoly, isi, year)
                                    , copy_sitetype_mask         ! ! subroutine
    use disturb_coms         , only : ianth_disturb              & ! intent(in)
                                    , lutime                     & ! intent(in)
-                                   , min_new_patch_area         & ! intent(in)
+                                   , min_patch_area             & ! intent(in)
                                    , plantation_year            & ! intent(in)
                                    , plantation_rotation        & ! intent(in)
                                    , mature_harvest_age         ! ! intent(in)
@@ -162,7 +162,7 @@ subroutine apply_forestry(cpoly, isi, year)
    ! area for a new patch, do not harvest, and update the memory for the next year.        !
    !---------------------------------------------------------------------------------------!
    if (total_site_biomass == 0.0 .or.                                                      &
-       total_harvest_target <= total_site_biomass * min_new_patch_area) then
+       total_harvest_target <= total_site_biomass * min_patch_area) then
       cpoly%primary_harvest_memory(isi)   = primary_harvest_target
       cpoly%secondary_harvest_memory(isi) = secondary_harvest_target
       return
@@ -229,7 +229,7 @@ subroutine apply_forestry(cpoly, isi, year)
    ! just terminate it.                                                                    !
    !---------------------------------------------------------------------------------------!
    csite%area(newp) = total_harvested_area
-   if (total_harvested_area > min_new_patch_area) then
+   if (total_harvested_area > min_patch_area) then
       write(unit=*,fmt='(a,1x,i5)')     'LANDUSE YEAR          =',clutime%landuse_year
       write(unit=*,fmt='(a,1x,es12.5)') 'LANDUSE 14            =',clutime%landuse(14)
       write(unit=*,fmt='(a,1x,es12.5)') 'LANDUSE 18            =',clutime%landuse(18)
@@ -687,7 +687,7 @@ subroutine norm_harv_patch(csite,newp)
 
    use ed_state_vars , only : sitetype            & ! structure
                             , patchtype           ! ! structure
-   use disturb_coms  , only : min_new_patch_area  ! ! intent(in)
+   use disturb_coms  , only : min_patch_area      ! ! intent(in)
    use ed_max_dims   , only : n_pft               ! ! intent(in)
    use grid_coms     , only : nzg                 & ! intent(in)
                             , nzs                 ! ! intent(in)
@@ -701,7 +701,7 @@ subroutine norm_harv_patch(csite,newp)
    !---------------------------------------------------------------------------------------!
 
    !----- Skip normalization when the patch is too small.  It will be terminated soon. ----!
-   if (csite%area(newp) < min_new_patch_area) then
+   if (csite%area(newp) < min_patch_area) then
       return
    else
       !----- To make the values the weighted average of all contributing patches. ---------!

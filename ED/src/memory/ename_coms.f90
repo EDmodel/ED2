@@ -241,6 +241,7 @@ module ename_coms
       integer                                           :: maxpatch
       integer                                           :: maxcohort
       real                                              :: min_site_area
+      real                                              :: min_patch_area
 
       !----- Directory for optimizer inputs. ----------------------------------------------!
       character(len=str_len)                            :: ioptinpt
@@ -487,6 +488,7 @@ module ename_coms
       enl%maxpatch                  = undef_integer
       enl%maxcohort                 = undef_integer
       enl%min_site_area             = undef_real
+      enl%min_patch_area            = undef_real
 
       enl%ioptinpt                  = undef_path
       enl%zrough                    = undef_real

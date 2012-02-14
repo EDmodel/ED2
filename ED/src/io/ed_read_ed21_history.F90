@@ -851,7 +851,7 @@ subroutine read_ed21_history_unstruct
    use fuse_fiss_utils, only : terminate_cohorts       ! ! subroutine
    use disturb_coms   , only : ianth_disturb           & ! intent(in)
                              , lu_rescale_file         & ! intent(in)
-                             , min_new_patch_area      ! ! intent(in)
+                             , min_patch_area          ! ! intent(in)
    use soil_coms      , only : soil                    ! ! intent(in)
 
    implicit none
@@ -1530,9 +1530,9 @@ subroutine read_ed21_history_unstruct
                         !     Make sure that no area is going to be zero for a given land  !
                         ! use type when the counter part is not.                           !
                         !------------------------------------------------------------------!
-                        oldarea(ilu)          = max(0.5 * min_new_patch_area,oldarea(ilu))
-                        newarea(ilu,xclosest) = max(0.5 * min_new_patch_area               &
-                                                   ,newarea(ilu,xclosest))
+                        oldarea(ilu)          = max( 0.5 * min_patch_area,oldarea(ilu))
+                        newarea(ilu,xclosest) = max( 0.5 * min_patch_area                  &
+                                                   , newarea(ilu,xclosest))
                         !------------------------------------------------------------------!
                      end do
 

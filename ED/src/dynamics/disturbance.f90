@@ -40,7 +40,7 @@ module disturbance_utils
                               , sitetype                & ! structure
                               , patchtype               ! ! structure
       use ed_misc_coms , only : current_time            ! ! intent(in)
-      use disturb_coms , only : min_new_patch_area      & ! intent(in)
+      use disturb_coms , only : min_patch_area          & ! intent(in)
                               , mature_harvest_age      & ! intent(in)
                               , plantation_rotation     & ! intent(in)
                               , ianth_disturb           & ! intent(in)
@@ -214,7 +214,7 @@ module disturbance_utils
 
                end do
                
-               if (area > min_new_patch_area) then
+               if (area > min_patch_area) then
                   write(unit=*,fmt='(a,1x,es12.5,1x,a,1x,i5)')                             &
                       ' ---> Making new patch, with area=',area,' for dist_type=',new_lu
 

@@ -50,7 +50,6 @@ subroutine read_ed10_ed20_history_file
                              , area_indices        ! ! subroutine
    use fuse_fiss_utils, only : sort_cohorts        & ! subroutine
                              , sort_patches        ! ! subroutine
-   use disturb_coms   , only : min_new_patch_area  ! ! intent(in)
    implicit none
 
    !----- Local constants. ----------------------------------------------------------------!

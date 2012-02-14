@@ -59,6 +59,7 @@ module disturb_coms
    ! included, whereas 0 means that it won't.                                              !
    !---------------------------------------------------------------------------------------!
    integer :: ianth_disturb
+   !---------------------------------------------------------------------------------------!
 
 
    !---------------------------------------------------------------------------------------!
@@ -80,6 +81,9 @@ module disturb_coms
    real :: time2canopy
    !---------------------------------------------------------------------------------------!
 
+   !----- Minimum relative area required for a patch to be created or maintained. ---------!
+   real :: min_patch_area 
+   !---------------------------------------------------------------------------------------!
 
 
    !----- The prefix for land use disturbance rates. The path and prefix must be included. !
@@ -100,8 +104,6 @@ module disturb_coms
    !=======================================================================================!
    !    Patch dynamics variables, to be set in ed_params.f90.                              !
    !---------------------------------------------------------------------------------------!
-   !----- Minimum relative area required for a patch to be created or maintained. ---------!
-   real :: min_new_patch_area 
    !----- Only trees above this height create a gap when they fall. -----------------------!
    real :: treefall_hite_threshold
    !=======================================================================================!

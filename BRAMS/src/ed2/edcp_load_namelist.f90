@@ -89,7 +89,8 @@ subroutine read_ednl(iunit,filename)
                                    , lu_rescale_file                       & ! intent(out)
                                    , treefall_disturbance_rate             & ! intent(out)
                                    , time2canopy                           & ! intent(out)
-                                   , sm_fire                               ! ! intent(out)
+                                   , sm_fire                               & ! intent(out)
+                                   , min_patch_area                        ! ! intent(out)
    use pft_coms             , only : include_these_pft                     & ! intent(out)
                                    , agri_stock                            & ! intent(out)
                                    , plantation_stock                      & ! intent(out)
@@ -237,10 +238,10 @@ subroutine read_ednl(iunit,filename)
                        ,lwidth_nltree,q10_c3,q10_c4,thetacrit,quantum_efficiency_t         &
                        ,n_plant_lim,n_decomp_lim,include_fire,sm_fire,ianth_disturb        &
                        ,icanturb,include_these_pft,agri_stock,plantation_stock             &
-                       ,pft_1st_check,maxpatch,maxcohort,treefall_disturbance_rate         &
-                       ,time2canopy,iprintpolys,npvars,printvars,pfmtstr,ipmin,ipmax       &
-                       ,imetrad,iphenys1,iphenysf,iphenyf1,iphenyff,iedcnfgf,event_file    &
-                       ,phenpath
+                       ,pft_1st_check,maxpatch,maxcohort,min_patch_area                    &
+                       ,treefall_disturbance_rate,time2canopy,iprintpolys,npvars,printvars &
+                       ,pfmtstr,ipmin,ipmax,imetrad,iphenys1,iphenysf,iphenyf1,iphenyff    &
+                       ,iedcnfgf,event_file,phenpath
 
    !----- Initialise some database variables with a non-sense path. -----------------------!
    soil_database   (:) = undef_path
@@ -361,6 +362,7 @@ subroutine read_ednl(iunit,filename)
       write (unit=*,fmt=*) ' maxsite                   =',maxsite
       write (unit=*,fmt=*) ' maxpatch                  =',maxpatch
       write (unit=*,fmt=*) ' maxcohort                 =',maxcohort
+      write (unit=*,fmt=*) ' min_patch_area            =',min_patch_area
       write (unit=*,fmt=*) ' treefall_disturbance_rate =',treefall_disturbance_rate
       write (unit=*,fmt=*) ' time2canopy               =',time2canopy
       write (unit=*,fmt=*) ' iprintpolys               =',iprintpolys

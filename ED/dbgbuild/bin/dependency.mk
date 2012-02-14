@@ -142,8 +142,8 @@ ed_opspec.o: mem_polygons.mod met_driver_coms.mod pft_coms.mod
 ed_opspec.o: phenology_coms.mod physiology_coms.mod rk4_coms.mod soil_coms.mod
 ed_print.o: ed_max_dims.mod ed_misc_coms.mod ed_node_coms.mod ed_state_vars.mod
 ed_print.o: ed_var_tables.mod
-ed_read_ed10_20_history.o: allometry.mod consts_coms.mod disturb_coms.mod
-ed_read_ed10_20_history.o: ed_max_dims.mod ed_misc_coms.mod ed_state_vars.mod
+ed_read_ed10_20_history.o: allometry.mod consts_coms.mod ed_max_dims.mod
+ed_read_ed10_20_history.o: ed_misc_coms.mod ed_state_vars.mod
 ed_read_ed10_20_history.o: fuse_fiss_utils.mod grid_coms.mod mem_polygons.mod
 ed_read_ed10_20_history.o: pft_coms.mod
 ed_read_ed21_history.o: allometry.mod consts_coms.mod disturb_coms.mod

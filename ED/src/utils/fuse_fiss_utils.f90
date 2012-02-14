@@ -221,7 +221,7 @@ module fuse_fiss_utils
       use ed_state_vars, only : polygontype        & ! Structure
                               , sitetype           & ! Structure
                               , patchtype          ! ! Structure
-      use disturb_coms , only : min_new_patch_area ! ! intent(in)
+      use disturb_coms , only : min_patch_area     ! ! intent(in)
       use ed_misc_coms , only : iqoutput           & ! intent(in)
                               , imoutput           & ! intent(in)
                               , idoutput           ! ! intent(in)
@@ -249,7 +249,7 @@ module fuse_fiss_utils
       !------------------------------------------------------------------------------------!
       elim_area = 0.0
       do ipa = 1,csite%npatches
-         if (csite%area(ipa) < min_new_patch_area) then
+         if (csite%area(ipa) < min_patch_area) then
             elim_area = elim_area + csite%area(ipa)
             remain_table(ipa) = .false.
          end if

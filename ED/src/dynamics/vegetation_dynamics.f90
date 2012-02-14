@@ -12,27 +12,30 @@ subroutine vegetation_dynamics(new_month,new_year)
    use disturb_coms     , only : include_fire           ! ! intent(in)
    use disturbance_utils, only : apply_disturbances     & ! subroutine
                                , site_disturbance_rates ! ! subroutine
-   use fuse_fiss_utils  , only : fuse_patches           ! ! subroutine
+   use fuse_fiss_utils  , only : fuse_patches           & ! subroutine
+                               , terminate_patches      ! ! subroutine
    use ed_state_vars    , only : edgrid_g               & ! intent(inout)
-                               , edtype                 ! ! variable type
+                               , edtype                 & ! variable type
+                               , polygontype            ! ! variable type
    use growth_balive    , only : dbalive_dt             ! ! subroutine
    use consts_coms      , only : day_sec                & ! intent(in)
                                , yr_day                 ! ! intent(in)
    use mem_polygons     , only : maxpatch               ! ! intent(in)
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
-   logical     , intent(in)   :: new_month
-   logical     , intent(in)   :: new_year
+   logical          , intent(in)   :: new_month
+   logical          , intent(in)   :: new_year
    !----- Local variables. ----------------------------------------------------------------!
-   type(edtype), pointer      :: cgrid
-   real                       :: tfact1
-   real                       :: tfact2
-   integer                    :: doy
-   integer                    :: ip
-   integer                    :: isite
-   integer                    :: ifm
+   type(edtype)     , pointer      :: cgrid
+   type(polygontype), pointer      :: cpoly
+   real                            :: tfact1
+   real                            :: tfact2
+   integer                         :: doy
+   integer                         :: ipy
+   integer                         :: isi
+   integer                         :: ifm
    !----- External functions. -------------------------------------------------------------!
-   integer     , external     :: julday
+   integer          , external     :: julday
    !---------------------------------------------------------------------------------------!
 
    !----- Find the day of year. -----------------------------------------------------------!
@@ -107,10 +110,18 @@ subroutine vegetation_dynamics(new_month,new_year)
 
       !------------------------------------------------------------------------------------!
       !      Fuse patches last, after all updates have been applied.  This reduces the     !
-      ! number of patch variables that actually need to be fused.                          !
+      ! number of patch variables that actually need to be fused.  After fusing, we also   !
+      ! check whether there are patches that are too small, and terminate them.            !
       !------------------------------------------------------------------------------------!
       if(new_year) then
          if (maxpatch >= 0) call fuse_patches(cgrid,ifm)
+         do ipy = 1,cgrid%npolygons
+            cpoly => cgrid%polygon(ipy)
+              
+            do isi = 1, cpoly%nsites
+               call terminate_patches(cpoly%site(isi))
+            end do
+         end do
       end if
       !------------------------------------------------------------------------------------!
 
@@ -164,8 +175,6 @@ subroutine vegetation_dynamics_eq_0(new_month,new_year)
    real                       :: tfact1
    real                       :: tfact2
    integer                    :: doy
-   integer                    :: ip
-   integer                    :: isite
    integer                    :: ifm
    !----- External functions. -------------------------------------------------------------!
    integer     , external     :: julday
