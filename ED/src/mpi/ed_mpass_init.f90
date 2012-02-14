@@ -269,7 +269,8 @@ subroutine ed_masterput_nl(par_run)
    use rk4_coms             , only : rk4_tolerance             & ! intent(in)
                                    , ibranch_thermo            & ! intent(in)
                                    , ipercol                   ! ! intent(in)
-
+   use detailed_coms        , only : idetailed                 & ! intent(in)
+                                   , patch_keep                ! ! intent(in)
    implicit none
    include 'mpif.h'
    integer :: ierr
@@ -505,6 +506,10 @@ subroutine ed_masterput_nl(par_run)
    call MPI_Bcast(edres,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
 
    call MPI_Bcast(attach_metadata,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
+
+
+   call MPI_Bcast(idetailed,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(patch_keep,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
 
    !---------------------------------------------------------------------------------------!
    !   One last thing to send is the layer index based on the soil_depth. It is not really !
@@ -1349,7 +1354,8 @@ subroutine ed_nodeget_nl
    use rk4_coms             , only : rk4_tolerance             & ! intent(out)
                                    , ibranch_thermo            & ! intent(out)
                                    , ipercol                   ! ! intent(out)
-
+   use detailed_coms        , only : idetailed                 & ! intent(out)
+                                   , patch_keep                ! ! intent(out)
    implicit none
    include 'mpif.h'
    integer :: ierr
@@ -1591,6 +1597,9 @@ subroutine ed_nodeget_nl
    call MPI_Bcast(edres,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
    
    call MPI_Bcast(attach_metadata,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
+
+   call MPI_Bcast(idetailed,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(patch_keep,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    
 !------------------------------------------------------------------------------------------!
 !     Receiving the layer index based on soil_depth. This is allocatable, so I first       !

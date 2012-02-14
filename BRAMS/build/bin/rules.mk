@@ -1429,6 +1429,11 @@ decomp_coms.o : $(ED_MEMORY)/decomp_coms.f90
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)
 
+detailed_coms.o : $(ED_MEMORY)/detailed_coms.f90
+	cp -f $< $(<F:.f90=.f90)
+	$(F90_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90)
+
 disturb_coms.o : $(ED_MEMORY)/disturb_coms.f90
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)

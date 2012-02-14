@@ -291,6 +291,7 @@ OBJ_MODEL =                         \
 	canopy_struct_dynamics.o    \
 	consts_coms.o               \
 	decomp_coms.o               \
+	detailed_coms.o             \
 	disturb_coms.o              \
 	disturbance.o               \
 	ed_filelist.o               \

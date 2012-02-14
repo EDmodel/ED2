@@ -1187,6 +1187,11 @@ subroutine ed_opspec_misc
    use rk4_coms              , only : ibranch_thermo               & ! intent(in)
                                     , ipercol                      & ! intent(in)
                                     , rk4_tolerance                ! ! intent(in)
+   use mem_polygons          , only : n_ed_region                  & ! intent(in)
+                                    , n_poi                        ! ! intent(in)
+   use detailed_coms         , only : idetailed                    & ! intent(in)
+                                    , patch_keep                   ! ! intent(in)
+
    use met_driver_coms       , only : imetrad                      ! ! intent(in)
 #if defined(COUPLED)
 #else
@@ -1197,8 +1202,12 @@ subroutine ed_opspec_misc
    implicit none
    !----- Local variables -----------------------------------------------------------------!
    character(len=str_len) :: reason
-   integer                :: ifaterr,ifm,ipft
-   logical                :: agri_ok,plantation_ok
+   integer                :: ifaterr
+   integer                :: ifm
+   integer                :: ipft
+   logical                :: agri_ok
+   logical                :: plantation_ok
+   logical                :: patch_detailed
    !----- Local constants -----------------------------------------------------------------!
    integer, parameter :: skip=huge(6)
    !---------------------------------------------------------------------------------------!
@@ -2131,6 +2140,50 @@ end do
       ifaterr = ifaterr +1
       call opspec_fatal(reason,'opspec_misc')
    end if
+
+
+   if (idetailed < 0 .or. idetailed > 63) then
+      write (reason,fmt='(a,1x,i4,a)')                                                     &
+                    'Invalid IDETAILED, it must be between 0 and 63.  Yours is set to'     &
+                    ,idetailed,'...'
+      ifaterr = ifaterr +1
+      call opspec_fatal(reason,'opspec_misc')
+   elseif (idetailed > 0) then
+      patch_detailed = ibclr(idetailed,5) > 0
+
+      if (patch_detailed .and. (n_poi > 1 .or. n_ed_region > 0)) then
+         write(unit=*,fmt='(a)')       '--------------------------------------------------'
+         write(unit=*,fmt='(a,1x,i6)') ' IDETAILED   = ',idetailed
+         write(unit=*,fmt='(a,1x,i6)') ' N_POI       = ',n_poi
+         write(unit=*,fmt='(a,1x,i6)') ' N_ED_REGION = ',n_ed_region
+         write(unit=*,fmt='(a)')       ' '
+         write(unit=*,fmt='(a)')       ' The following should be all F in regional runs'
+         write(unit=*,fmt='(a)')       '    or multiple polygon runs'
+         write(unit=*,fmt='(a,1x,l1)') ' - BUDGET              [ 1] = ',btest(idetailed,0)
+         write(unit=*,fmt='(a,1x,l1)') ' - PHOTOSYNTHESIS      [ 2] = ',btest(idetailed,1)
+         write(unit=*,fmt='(a,1x,l1)') ' - DETAILED INTEGRATOR [ 4] = ',btest(idetailed,2)
+         write(unit=*,fmt='(a,1x,l1)') ' - SANITY CHECK BOUNDS [ 8] = ',btest(idetailed,3)
+         write(unit=*,fmt='(a,1x,l1)') ' - ERROR RECORDING     [16] = ',btest(idetailed,4)
+         write(unit=*,fmt='(a)')       '--------------------------------------------------'
+         write (reason,fmt='(2(a,1x))') 'Only single polygon runs are allowed'             &
+                                       ,'with detailed patch-level output...'
+         ifaterr = ifaterr +1
+         call opspec_fatal(reason,'opspec_misc')
+      end if
+
+      if (patch_keep < -2) then
+         write (reason,fmt='(a,2x,a,1x,i4,a)')                                             &
+                       'Invalid PATCH_KEEP, it must be between -2 and number of patches.'  &
+                      ,'Yours is set to',patch_keep,'...'
+         ifaterr = ifaterr +1
+         call opspec_fatal(reason,'opspec_misc')
+      end if
+      !------------------------------------------------------------------------------------!
+   end if
+   !---------------------------------------------------------------------------------------!
+
+
+
 
    !----- Stop the run if there are any fatal errors. -------------------------------------!
    if (ifaterr > 0) then

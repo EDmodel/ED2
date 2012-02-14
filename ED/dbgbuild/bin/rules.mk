@@ -68,6 +68,11 @@ decomp_coms.o : $(ED_MEMORY)/decomp_coms.f90
 	/bin/cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
 
+detailed_coms.o : $(ED_MEMORY)/detailed_coms.f90
+	/bin/rm -f $(<F:.f90=.f90)
+	/bin/cp -f $< $(<F:.f90=.f90)
+	$(F90_COMMAND) $(<F:.f90=.f90)
+
 disturbance.o : $(ED_DYNAMICS)/disturbance.f90
 	/bin/rm -f $(<F:.f90=.f90)
 	/bin/cp -f $< $(<F:.f90=.f90)

@@ -234,6 +234,8 @@ subroutine copy_nl(copy_type)
                                    , ipercol                   & ! intent(out)
                                    , rk4_tolerance             ! ! intent(out)
    use ed_para_coms         , only : loadmeth                  ! ! intent(out)
+   use detailed_coms        , only : idetailed                 & ! intent(out)
+                                   , patch_keep                ! ! intent(out)
    use consts_coms          , only : vonk                      & ! intent(in)
                                    , day_sec                   & ! intent(in)
                                    , hr_sec                    & ! intent(in)
@@ -439,7 +441,10 @@ subroutine copy_nl(copy_type)
       min_site_area             = nl%min_site_area
       ioptinpt                  = nl%ioptinpt
       zrough                    = nl%zrough
-      
+
+      idetailed                 = nl%idetailed
+      patch_keep                = nl%patch_keep
+
       nnxp                      = nl%nnxp
       nnyp                      = nl%nnyp
 

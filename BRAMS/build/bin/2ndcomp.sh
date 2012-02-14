@@ -288,6 +288,7 @@ rm -fv canopy_radiation_coms.o    canopy_radiation_coms.mod
 rm -fv canopy_struct_dynamics.o   canopy_struct_dynamics.mod
 rm -fv consts_coms.o              consts_coms.mod
 rm -fv decomp_coms.o              decomp_coms.mod
+rm -fv detailed_coms.o            detailed_coms.mod
 rm -fv disturb_coms.o             disturb_coms.mod
 rm -fv disturbance.o              disturbance.mod
 rm -fv ed_bare_restart.o          ed_bare_restart.mod

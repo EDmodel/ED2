@@ -2139,58 +2139,60 @@ end subroutine init_pft_mort_params
 !==========================================================================================!
 subroutine init_pft_alloc_params()
 
-   use pft_coms    , only : leaf_turnover_rate    & ! intent(in)
-                          , is_tropical           & ! intent(out)
-                          , is_grass              & ! intent(out)
-                          , rho                   & ! intent(out)
-                          , SLA                   & ! intent(out)
-                          , horiz_branch          & ! intent(out)
-                          , q                     & ! intent(out)
-                          , qsw                   & ! intent(out)
-                          , init_density          & ! intent(out)
-                          , agf_bs                & ! intent(out)
-                          , brf_wd                & ! intent(out)
-                          , hgt_min               & ! intent(out)
-                          , hgt_ref               & ! intent(out)
-                          , hgt_max               & ! intent(out)
-                          , min_dbh               & ! intent(out)
-                          , dbh_crit              & ! intent(out)
-                          , min_bdead             & ! intent(out)
-                          , bdead_crit            & ! intent(out)
-                          , b1Ht                  & ! intent(out)
-                          , b2Ht                  & ! intent(out)
-                          , b1Bs_small            & ! intent(out)
-                          , b2Bs_small            & ! intent(out)
-                          , b1Bs_large            & ! intent(out)
-                          , b2Bs_large            & ! intent(out)
-                          , b1Ca                  & ! intent(out)
-                          , b2Ca                  & ! intent(out)
-                          , b1Rd                  & ! intent(out)
-                          , b2Rd                  & ! intent(out)
-                          , b1Vol                 & ! intent(out)
-                          , b2Vol                 & ! intent(out)
-                          , b1Bl                  & ! intent(out)
-                          , b2Bl                  & ! intent(out)
-                          , b1WAI                 & ! intent(out)
-                          , b2WAI                 & ! intent(out)
-                          , C2B                   & ! intent(out)
-                          , sla_scale             & ! intent(out)
-                          , sla_inter             & ! intent(out)
-                          , sla_slope             & ! intent(out)
-                          , sapwood_ratio         ! ! intent(out)
-   use allometry   , only : h2dbh                 & ! function
-                          , dbh2bd                ! ! function
-   use consts_coms , only : twothirds             & ! intent(in)
-                          , pi1                   ! ! intent(in)
-   use ed_max_dims , only : n_pft                 & ! intent(in)
-                          , str_len               ! ! intent(in)
-   use ed_misc_coms, only : iallom                & ! intent(in)
-                          , ibigleaf              ! ! intent(in)
+   use pft_coms     , only : leaf_turnover_rate    & ! intent(in)
+                           , is_tropical           & ! intent(out)
+                           , is_grass              & ! intent(out)
+                           , rho                   & ! intent(out)
+                           , SLA                   & ! intent(out)
+                           , horiz_branch          & ! intent(out)
+                           , q                     & ! intent(out)
+                           , qsw                   & ! intent(out)
+                           , init_density          & ! intent(out)
+                           , agf_bs                & ! intent(out)
+                           , brf_wd                & ! intent(out)
+                           , hgt_min               & ! intent(out)
+                           , hgt_ref               & ! intent(out)
+                           , hgt_max               & ! intent(out)
+                           , min_dbh               & ! intent(out)
+                           , dbh_crit              & ! intent(out)
+                           , min_bdead             & ! intent(out)
+                           , bdead_crit            & ! intent(out)
+                           , b1Ht                  & ! intent(out)
+                           , b2Ht                  & ! intent(out)
+                           , b1Bs_small            & ! intent(out)
+                           , b2Bs_small            & ! intent(out)
+                           , b1Bs_large            & ! intent(out)
+                           , b2Bs_large            & ! intent(out)
+                           , b1Ca                  & ! intent(out)
+                           , b2Ca                  & ! intent(out)
+                           , b1Rd                  & ! intent(out)
+                           , b2Rd                  & ! intent(out)
+                           , b1Vol                 & ! intent(out)
+                           , b2Vol                 & ! intent(out)
+                           , b1Bl                  & ! intent(out)
+                           , b2Bl                  & ! intent(out)
+                           , b1WAI                 & ! intent(out)
+                           , b2WAI                 & ! intent(out)
+                           , C2B                   & ! intent(out)
+                           , sla_scale             & ! intent(out)
+                           , sla_inter             & ! intent(out)
+                           , sla_slope             & ! intent(out)
+                           , sapwood_ratio         ! ! intent(out)
+   use allometry    , only : h2dbh                 & ! function
+                           , dbh2bd                ! ! function
+   use consts_coms  , only : twothirds             & ! intent(in)
+                           , pi1                   ! ! intent(in)
+   use ed_max_dims  , only : n_pft                 & ! intent(in)
+                           , str_len               ! ! intent(in)
+   use ed_misc_coms , only : iallom                & ! intent(in)
+                           , ibigleaf              ! ! intent(in)
+   use detailed_coms, only : idetailed             ! ! intent(in)
    implicit none
    !----- Local variables. ----------------------------------------------------------------!
    integer                           :: ipft
    integer                           :: n
    real                              :: aux
+   logical                           :: write_allom
    !----- Constants shared by both bdead and bleaf (tropical PFTs) ------------------------!
    real                  , parameter :: a1          =  -1.981
    real                  , parameter :: b1          =   1.047
@@ -2231,10 +2233,14 @@ subroutine init_pft_alloc_params()
    real, dimension(3)    , parameter :: nleaf       = (/-2.5108071, 1.2818788,  0.5912507/)
    real, dimension(2)    , parameter :: ncrown_area = (/ 0.1184295, 1.0521197            /)
    !----- Other constants. ----------------------------------------------------------------!
-   logical               , parameter :: write_allom = .false.
    character(len=str_len), parameter :: allom_file  = 'allom_param.txt'
    !---------------------------------------------------------------------------------------!
 
+
+
+   !----- Check whether to print the allometry table or not. ------------------------------!
+   write_allom = btest(idetailed,5)
+   !---------------------------------------------------------------------------------------!
 
 
    !----- Carbon-to-biomass ratio of plant tissues. ---------------------------------------!
@@ -3059,6 +3065,7 @@ end subroutine init_pft_repro_params
 !------------------------------------------------------------------------------------------!
 subroutine init_pft_derived_params()
    use decomp_coms          , only : f_labile             ! ! intent(in)
+   use detailed_coms        , only : idetailed            ! ! intent(in)
    use ed_max_dims          , only : n_pft                & ! intent(in)
                                    , str_len              ! ! intent(in)
    use consts_coms          , only : onesixth             & ! intent(in)
@@ -3107,10 +3114,15 @@ subroutine init_pft_derived_params()
    real                              :: wood_hcap_min
    real                              :: lai_min
    real                              :: min_plant_dens
-   logical               , parameter :: print_zero_table = .false.
-   character(len=str_len), parameter :: zero_table_fn    = 'minimum.size.txt'
+   logical                           :: print_zero_table
+   character(len=str_len), parameter :: zero_table_fn    = 'pft_sizes.txt'
    !---------------------------------------------------------------------------------------!
 
+   !---------------------------------------------------------------------------------------!
+   !     Decide whether to write the table with the sizes.                                 !
+   !---------------------------------------------------------------------------------------!
+   print_zero_table = btest(idetailed,5)
+   !---------------------------------------------------------------------------------------!
 
    !---------------------------------------------------------------------------------------!
    !     The minimum recruitment size and the recruit carbon to nitrogen ratio.  Both      !
@@ -3368,6 +3380,7 @@ end subroutine init_disturb_params
 !                                                                                          !
 !------------------------------------------------------------------------------------------!
 subroutine init_physiology_params()
+   use detailed_coms  , only : idetailed           ! ! intent(in)
    use physiology_coms, only : iphysiol            & ! intent(in)
                              , klowco2in           & ! intent(in)
                              , c34smin_lint_co2    & ! intent(out)
@@ -3664,7 +3677,7 @@ subroutine init_physiology_params()
    !     Parameters that control debugging output.                                         !
    !---------------------------------------------------------------------------------------!
    !----- I should print detailed debug information. --------------------------------------!
-   print_photo_debug = .false.
+   print_photo_debug = btest(idetailed,1)
    !----- File name prefix for the detailed information in case of debugging. -------------!
    photo_prefix      = 'photo_state_'
    !---------------------------------------------------------------------------------------!
@@ -4403,6 +4416,7 @@ subroutine init_rk4_params()
    use met_driver_coms, only : prss_min               & ! intent(in)
                              , prss_max               ! ! intent(in)
    use consts_coms    , only : wdnsi8                 ! ! intent(in)
+   use detailed_coms  , only : idetailed              ! ! intent(in)
    use rk4_coms       , only : rk4_tolerance          & ! intent(in)
                              , ibranch_thermo         & ! intent(in)
                              , maxstp                 & ! intent(out)
@@ -4497,15 +4511,19 @@ subroutine init_rk4_params()
 
 
    !---------------------------------------------------------------------------------------!
-   !     Variables used to keep track on the error.                                        !
+   !     Variables used to keep track on the error.  We use the idetailed flag to          !
+   ! determine whether to create the output value or not.                                  !
    !---------------------------------------------------------------------------------------!
-   record_err     = .false.                  ! Compute and keep track of the errors.
-   print_detailed = .false.                  ! Print detailed information about the thermo-
-                                             !    dynamic state.  This will create one file
-                                             !    for each patch, so it is not recommended 
-                                             !    for simulations that span over one month.
-   print_thbnd    = .false.                  ! Make a file with thermodynamic boundaries.
-   print_budget   = .false.                  ! Make a file with budget terms.
+   !------ Detailed budget (every DTLSM). -------------------------------------------------!
+   print_budget   = btest(idetailed,0)
+   if (print_budget) checkbudget = .true.
+   !------ Detailed output from the integrator (every HDID). ------------------------------!
+   print_detailed = btest(idetailed,2)
+   !------ Thermodynamic boundaries for sanity check (every HDID). ------------------------!
+   print_thbnd    = btest(idetailed,3)
+   !------ Daily error statistics (count how often a variable shrunk the time step). ------!
+   record_err     = btest(idetailed,4)
+   !---------------------------------------------------------------------------------------!
    errmax_fout    = 'error_max_count.txt'    ! File with the maximum error count 
    sanity_fout    = 'sanity_check_count.txt' ! File with the sanity check count
    thbnds_fout    = 'thermo_bounds.txt'      ! File with the thermodynamic boundaries.

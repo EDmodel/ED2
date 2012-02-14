@@ -14,6 +14,7 @@ rm -fv charutils.?90                 charutils.o                charutils.mod
 rm -fv consts_coms.?90               consts_coms.o              consts_coms.mod 
 rm -fv dateutils.?90                 dateutils.o                dateutils.mod 
 rm -fv decomp_coms.?90               decomp_coms.o              decomp_coms.mod 
+rm -fv detailed_coms.?90             detailed_coms.o            detailed_coms.mod 
 rm -fv disturbance.?90               disturbance.o              disturbance.mod 
 rm -fv disturb_coms.?90              disturb_coms.o             disturb_coms.mod 
 rm -fv edio.?90                      edio.o                     edio.mod 

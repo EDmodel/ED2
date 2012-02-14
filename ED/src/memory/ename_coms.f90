@@ -232,6 +232,10 @@ module ename_coms
       character(len=str_len)                            :: phenpath
       character(len=str_len)                            :: event_file
 
+      !----- Variables to control detailed output. ----------------------------------------!
+      integer                                           :: idetailed
+      integer                                           :: patch_keep
+
       !----- Variables that control the sought number of patches and cohorts. -------------!
       integer                                           :: maxsite
       integer                                           :: maxpatch
@@ -475,6 +479,9 @@ module ename_coms
       enl%iedcnfgf                  = undef_path
       enl%phenpath                  = undef_path
       enl%event_file                = undef_path
+
+      enl%idetailed                 = undef_integer
+      enl%patch_keep                = undef_integer
 
       enl%maxsite                   = undef_integer
       enl%maxpatch                  = undef_integer

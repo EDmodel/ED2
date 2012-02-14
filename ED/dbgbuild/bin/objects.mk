@@ -23,6 +23,7 @@ OBJ_MODEL =                        \
 	consts_coms.o              \
 	dateutils.o                \
 	decomp_coms.o              \
+	detailed_coms.o            \
 	disturbance.o              \
 	disturb_coms.o             \
 	edio.o                     \
