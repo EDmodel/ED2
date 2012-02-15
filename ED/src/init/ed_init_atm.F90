@@ -4,7 +4,8 @@
 ! conditions plus some soil parameters.                                                    !
 !------------------------------------------------------------------------------------------!
 subroutine ed_init_atm()
-   use ed_misc_coms          , only : runtype           ! ! intent(in)
+   use ed_misc_coms          , only : runtype           & ! intent(in)
+                                    , ibigleaf          ! ! intent(in)
    use ed_state_vars         , only : edtype            & ! structure
                                     , polygontype       & ! structure
                                     , sitetype          & ! structure
@@ -22,6 +23,7 @@ subroutine ed_init_atm()
                                     , nzg               & ! intent(in)
                                     , ngrids            ! ! intent(in)
    use fuse_fiss_utils       , only : fuse_patches      & ! subroutine
+                                    , rescale_patches   & ! subroutine
                                     , fuse_cohorts      & ! subroutine
                                     , terminate_cohorts & ! subroutine
                                     , split_cohorts     ! ! subroutine
@@ -337,51 +339,108 @@ subroutine ed_init_atm()
       call update_polygon_derived_props(cgrid)
 
       !----- Fuse similar patches to speed up the run. ------------------------------------!
-      call fuse_patches(cgrid,igr)
+      select case(ibigleaf)
+      case (0)
+         !---------------------------------------------------------------------------------!
+         !    Size and age structure.  Start by fusing similar patches.                    !
+         !---------------------------------------------------------------------------------!
+         call fuse_patches(cgrid,igr)
+         !---------------------------------------------------------------------------------!
 
-      !------------------------------------------------------------------------------------!
-      !    Loop over all polygons/sites/patches, and fuse/split/terminate cohorts as       !
-      ! needed.                                                                            !
-      !------------------------------------------------------------------------------------!
-      polyloop3: do ipy = 1,cgrid%npolygons
-         ncohorts     = 0
-         npatches     = 0
-         poly_lai     = 0.0
-         poly_nplant  = 0.0
 
-         cpoly => cgrid%polygon(ipy)
-         poly_area_i = 1./sum(cpoly%area(:))
+         !---------------------------------------------------------------------------------!
+         !    Loop over all polygons/sites/patches, and fuse/split/terminate cohorts as    !
+         ! needed.                                                                         !
+         !---------------------------------------------------------------------------------!
+         polyloop3: do ipy = 1,cgrid%npolygons
+            ncohorts     = 0
+            npatches     = 0
+            poly_lai     = 0.0
+            poly_nplant  = 0.0
 
-         siteloop3: do isi = 1,cpoly%nsites
-            csite => cpoly%site(isi)
-            site_area_i = 1./sum(csite%area(:))
+            cpoly => cgrid%polygon(ipy)
+            poly_area_i = 1./sum(cpoly%area(:))
 
-            patchloop3: do ipa = 1,csite%npatches
-               npatches = npatches + 1
-               cpatch => csite%patch(ipa)
+            siteloop3: do isi = 1,cpoly%nsites
+               csite => cpoly%site(isi)
+               site_area_i = 1./sum(csite%area(:))
 
-               if (cpatch%ncohorts > 0) then
-                  call fuse_cohorts(csite,ipa,cpoly%green_leaf_factor(:,isi),cpoly%lsl(isi))
-                  call terminate_cohorts(csite,ipa,elim_nplant,elim_lai)
-                  call split_cohorts(cpatch,cpoly%green_leaf_factor(:,isi), cpoly%lsl(isi))
-               end if
+               patchloop3: do ipa = 1,csite%npatches
+                  npatches = npatches + 1
+                  cpatch => csite%patch(ipa)
 
-               cohortloop3: do ico = 1,cpatch%ncohorts
-                  ncohorts=ncohorts+1
-                  poly_lai    = poly_lai + cpatch%lai(ico) * csite%area(ipa)               &
-                                         * cpoly%area(isi) * site_area_i * poly_area_i
-                  poly_nplant = poly_nplant + cpatch%nplant(ico) * csite%area(ipa)         &
+                  if (cpatch%ncohorts > 0) then
+                     call fuse_cohorts(csite,ipa,cpoly%green_leaf_factor(:,isi)            &
+                                      ,cpoly%lsl(isi))
+                     call terminate_cohorts(csite,ipa,elim_nplant,elim_lai)
+                     call split_cohorts(cpatch,cpoly%green_leaf_factor(:,isi)              &
+                                       ,cpoly%lsl(isi))
+                  end if
+
+                  cohortloop3: do ico = 1,cpatch%ncohorts
+                     ncohorts=ncohorts+1
+                     poly_lai    = poly_lai + cpatch%lai(ico) * csite%area(ipa)            &
                                             * cpoly%area(isi) * site_area_i * poly_area_i
-               end do cohortloop3
-            end do patchloop3
-         end do siteloop3
+                     poly_nplant = poly_nplant + cpatch%nplant(ico) * csite%area(ipa)      &
+                                               * cpoly%area(isi) * site_area_i             &
+                                               * poly_area_i
+                  end do cohortloop3
+               end do patchloop3
+            end do siteloop3
 
-         write(unit=*,fmt='(2(a,1x,i6,1x),2(a,1x,f9.4,1x),2(a,1x,f7.2,1x),2(a,1x,i4,1x))') &
-             'Grid:',igr,'Poly:',ipy,'Lon:',cgrid%lon(ipy),'Lat: ',cgrid%lat(ipy)          &
-            ,'Nplants:',poly_nplant,'Avg. LAI:',poly_lai                                   &
-            ,'NPatches:',npatches,'NCohorts:',ncohorts
-      end do polyloop3
+            write(unit = *                                                                 &
+                 ,fmt  = '(2(a,1x,i6,1x),2(a,1x,f9.4,1x),2(a,1x,f7.2,1x),2(a,1x,i4,1x))')  &
+                     'Grid:',igr,'Poly:',ipy,'Lon:',cgrid%lon(ipy),'Lat: ',cgrid%lat(ipy)  &
+                    ,'Nplants:',poly_nplant,'Avg. LAI:',poly_lai                           &
+                    ,'NPatches:',npatches,'NCohorts:',ncohorts
+         end do polyloop3
+         !---------------------------------------------------------------------------------!
+
+
+      case (1)
+         !---------------------------------------------------------------------------------!
+         !     Big leaf.  No need to do anything, just print the banner.                   !
+         !---------------------------------------------------------------------------------!
+         polyloop4: do ipy = 1,cgrid%npolygons
+            ncohorts     = 0
+            npatches     = 0
+            poly_lai     = 0.0
+            poly_nplant  = 0.0
+            
+            cpoly => cgrid%polygon(ipy)
+            poly_area_i = 1./sum(cpoly%area(:))
+            
+            siteloop4: do isi = 1,cpoly%nsites
+               csite => cpoly%site(isi)
+               site_area_i = 1./sum(csite%area(:))
+               
+               !call rescale_patches(csite)
+               
+               patchloop4: do ipa = 1,csite%npatches
+                  npatches = npatches + 1
+                  cpatch => csite%patch(ipa)
+               
+                  cohortloop4: do ico = 1,cpatch%ncohorts
+                     ncohorts=ncohorts+1
+                     poly_lai    = poly_lai + cpatch%lai(ico) * csite%area(ipa)            &
+                                         * cpoly%area(isi) * site_area_i * poly_area_i
+                     poly_nplant = poly_nplant + cpatch%nplant(ico) * csite%area(ipa)      &
+                                           * cpoly%area(isi) * site_area_i * poly_area_i
+                  end do cohortloop4
+               end do patchloop4
+            end do siteloop4
+            
+            write( unit = *                                                                &
+                 , fmt  = '(2(a,1x,i6,1x),2(a,1x,f9.4,1x),2(a,1x,f7.2,1x),2(a,1x,i4,1x))') &
+                'Grid:',igr,'Poly:',ipy,'Lon:',cgrid%lon(ipy),'Lat: ',cgrid%lat(ipy)       &
+               ,'Nplants:',poly_nplant,'Avg. LAI:',poly_lai                                &
+               ,'NPatches:',npatches,'NCohorts:',ncohorts
+            end do polyloop4
+         !---------------------------------------------------------------------------------!
+         end select
+      !------------------------------------------------------------------------------------!
    end do gridloop
+   !---------------------------------------------------------------------------------------!
 
    return
 end subroutine ed_init_atm

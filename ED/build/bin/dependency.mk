@@ -33,7 +33,7 @@ farq_leuning.o: physiology_coms.mod rk4_coms.mod
 fire.o: allometry.mod consts_coms.mod disturb_coms.mod ed_misc_coms.mod
 fire.o: ed_state_vars.mod grid_coms.mod soil_coms.mod
 forestry.o: allometry.mod disturb_coms.mod disturbance_utils.mod ed_max_dims.mod
-forestry.o: ed_state_vars.mod fuse_fiss_utils.mod grid_coms.mod
+forestry.o: ed_misc_coms.mod ed_state_vars.mod fuse_fiss_utils.mod grid_coms.mod
 growth_balive.o: allometry.mod consts_coms.mod decomp_coms.mod ed_max_dims.mod
 growth_balive.o: ed_misc_coms.mod ed_state_vars.mod ed_therm_lib.mod
 growth_balive.o: grid_coms.mod mortality.mod pft_coms.mod physiology_coms.mod
@@ -67,8 +67,9 @@ radiate_driver.o: allometry.mod canopy_layer_coms.mod canopy_radiation_coms.mod
 radiate_driver.o: consts_coms.mod ed_max_dims.mod ed_misc_coms.mod
 radiate_driver.o: ed_state_vars.mod grid_coms.mod soil_coms.mod
 reproduction.o: allometry.mod consts_coms.mod decomp_coms.mod ed_max_dims.mod
-reproduction.o: ed_state_vars.mod ed_therm_lib.mod fuse_fiss_utils.mod
-reproduction.o: grid_coms.mod mem_polygons.mod pft_coms.mod phenology_coms.mod
+reproduction.o: ed_misc_coms.mod ed_state_vars.mod ed_therm_lib.mod
+reproduction.o: fuse_fiss_utils.mod grid_coms.mod mem_polygons.mod pft_coms.mod
+reproduction.o: phenology_coms.mod
 rk4_derivs.o: canopy_struct_dynamics.mod consts_coms.mod ed_max_dims.mod
 rk4_derivs.o: ed_misc_coms.mod ed_state_vars.mod grid_coms.mod pft_coms.mod
 rk4_derivs.o: physiology_coms.mod rk4_coms.mod soil_coms.mod therm_lib8.mod

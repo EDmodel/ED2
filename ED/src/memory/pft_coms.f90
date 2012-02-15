@@ -495,6 +495,8 @@ module pft_coms
    real   , dimension(n_pft)    :: hgt_max
    !----- Minimum biomass density [kgC/m²] required to form a new recruit. ----------------!
    real   , dimension(n_pft) :: min_recruit_size
+   !----- Amount of biomass [kgC] in one tree, used for 'big-leaf' ED. --------------------!
+   real   , dimension(n_pft) :: one_plant_c
    !---------------------------------------------------------------------------------------!
    !    Fraction of (positive) carbon balance devoted to storage (unwise to set this to    !
    ! anything other than zero unless storage turnover rate is adjusted accordingly).       !

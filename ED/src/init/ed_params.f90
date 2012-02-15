@@ -1330,7 +1330,8 @@ end subroutine init_can_air_params
 ! cohorts (or when both must be considered).                                               !
 !------------------------------------------------------------------------------------------!
 subroutine init_can_lyr_params()
-   use canopy_layer_coms, only : ncanlyr                     & ! intent(out)
+   use canopy_layer_coms, only : tai_lyr_max                 & ! intent(out)
+                               , ncanlyr                     & ! intent(out)
                                , ncanlyrp1                   & ! intent(out)
                                , ncanlyrt2                   & ! intent(out)
                                , zztop0                      & ! intent(out)
@@ -1357,6 +1358,13 @@ subroutine init_can_lyr_params()
    implicit none
    !----- Local variables. ----------------------------------------------------------------!
    integer    :: ilyr
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !      Set the maximum tai that each layer is allowed to have.                          !
+   !---------------------------------------------------------------------------------------!
+   tai_lyr_max = 1.0
    !---------------------------------------------------------------------------------------!
 
 
@@ -1938,6 +1946,7 @@ subroutine init_pft_mort_params()
    use consts_coms , only : t00                        & ! intent(in)
                           , lnexp_max                  & ! intent(in)
                           , twothirds                  ! ! intent(in)
+   use ed_misc_coms, only : ibigleaf                   ! ! intent(in)
    use disturb_coms, only : treefall_disturbance_rate  & ! intent(inout)
                           , time2canopy                ! ! intent(in)
 
@@ -2081,10 +2090,10 @@ subroutine init_pft_mort_params()
 
    !---------------------------------------------------------------------------------------!
    !     Here we check whether patches should be created or the treefall should affect     !
-   ! only the mortality (quasi- size-structured approximation; other disturbances may be   !
-   ! turned off for a true size-structured approximation).                                 !
+   ! only the mortality (big leaf or quasi- size-structured approximation; other           !
+   ! disturbances may be turned off for a true size-structured approximation).             !
    !---------------------------------------------------------------------------------------!
-   if (treefall_disturbance_rate < 0.) then
+   if (treefall_disturbance_rate < 0. .or. ibigleaf == 1) then
       !------------------------------------------------------------------------------------!
       !      We incorporate the disturbance rate into the density-independent mortality    !
       ! rate and turn off the patch-creating treefall disturbance.                         !
@@ -2148,6 +2157,7 @@ subroutine init_pft_alloc_params()
                            , q                     & ! intent(out)
                            , qsw                   & ! intent(out)
                            , init_density          & ! intent(out)
+                           , init_laimax           & ! intent(out)
                            , agf_bs                & ! intent(out)
                            , brf_wd                & ! intent(out)
                            , hgt_min               & ! intent(out)
@@ -2179,8 +2189,10 @@ subroutine init_pft_alloc_params()
                            , sla_slope             & ! intent(out)
                            , sapwood_ratio         ! ! intent(out)
    use allometry    , only : h2dbh                 & ! function
-                           , dbh2bd                ! ! function
+                           , dbh2bd                & ! function
+                           , dbh2bl                ! ! function
    use consts_coms  , only : twothirds             & ! intent(in)
+                           , huge_num              & ! intent(in)
                            , pi1                   ! ! intent(in)
    use ed_max_dims  , only : n_pft                 & ! intent(in)
                            , str_len               ! ! intent(in)
@@ -2192,6 +2204,7 @@ subroutine init_pft_alloc_params()
    integer                           :: ipft
    integer                           :: n
    real                              :: aux
+   real                              :: init_bleaf
    logical                           :: write_allom
    !----- Constants shared by both bdead and bleaf (tropical PFTs) ------------------------!
    real                  , parameter :: a1          =  -1.981
@@ -2377,38 +2390,6 @@ subroutine init_pft_alloc_params()
    qsw(14:15)  = SLA(14:15) / sapwood_ratio(14:15)  !new is SLA(14:15)(3900.0*2.0/1000.0)
    qsw(16)     = SLA(16)    / sapwood_ratio(16)
    qsw(17)     = SLA(17)    / sapwood_ratio(17)
-   !---------------------------------------------------------------------------------------!
-
-
-
-   !---------------------------------------------------------------------------------------!
-   !    Initial density of plants, for near-bare-ground simulations [# of individuals/m2]  !
-   !---------------------------------------------------------------------------------------!
-   select case (ibigleaf)
-   case (0)
-       !----- Size and age structure. -----------------------------------------------------!
-       init_density(1)     = 0.1
-       init_density(2:4)   = 0.1
-       init_density(5)     = 0.1
-       init_density(6:8)   = 0.1
-       init_density(9:11)  = 0.1
-       init_density(12:13) = 0.1
-       init_density(14:15) = 0.1
-       init_density(16)    = 0.1
-       init_density(17)    = 0.1
-    case(1)
-       !----- Big leaf. -------------------------------------------------------------------!
-       init_density(1)     = 0.1
-       init_density(2:4)   = 1.e-3
-       init_density(5)     = 0.1
-       init_density(6:8)   = 1.e-3
-       init_density(9:11)  = 1.e-3
-       init_density(12:13) = 0.1
-       init_density(14:15) = 0.1
-       init_density(16)    = 0.1
-       init_density(17)    = 1.e-3
-       !-----------------------------------------------------------------------------------!
-   end select
    !---------------------------------------------------------------------------------------!
 
 
@@ -2814,26 +2795,62 @@ subroutine init_pft_alloc_params()
    end select
    !---------------------------------------------------------------------------------------!
 
+
+
+   !---------------------------------------------------------------------------------------!
+   !    Initial density of plants, for near-bare-ground simulations [# of individuals/m2]  !
+   !---------------------------------------------------------------------------------------!
+   select case (ibigleaf)
+   case (0)
+       !----- Size and age structure. -----------------------------------------------------!
+       init_density(1)     = 0.1
+       init_density(2:4)   = 0.1
+       init_density(5)     = 0.1
+       init_density(6:8)   = 0.1
+       init_density(9:11)  = 0.1
+       init_density(12:13) = 0.1
+       init_density(14:15) = 0.1
+       init_density(16)    = 0.1
+       init_density(17)    = 0.1
+
+       !----- Define a non-sense number. --------------------------------------------------!
+       init_laimax(1:17)   = huge_num
+
+    case(1)
+       !----- Big leaf. 1st we set the maximum initial LAI for each PFT. ------------------!
+       init_laimax(1:17)   = 0.1
+       do ipft=1,n_pft
+          init_bleaf = dbh2bl(dbh_crit(ipft),ipft)
+          init_density(ipft) = init_laimax(ipft) / (init_bleaf * SLA(ipft))
+       end do
+       !-----------------------------------------------------------------------------------!
+   end select
+   !---------------------------------------------------------------------------------------!
+
+
    if (write_allom) then
       open (unit=18,file=trim(allom_file),status='replace',action='write')
-      write(unit=18,fmt='(260a)') ('-',n=1,260)
-      write(unit=18,fmt='(20(1x,a))') '         PFT','    Tropical','       Grass'         &
+      write(unit=18,fmt='(286a)') ('-',n=1,286)
+      write(unit=18,fmt='(22(1x,a))') '         PFT','    Tropical','       Grass'         &
                                      ,'         Rho','        b1Ht','        b2Ht'         &
                                      ,'     Hgt_ref','        b1Bl','        b2Bl'         &
                                      ,'  b1Bs_Small','  b2Bs_Small','  b1Bs_Large'         &
                                      ,'  b1Bs_Large','        b1Ca','        b2Ca'         &
                                      ,'     Hgt_min','     Hgt_max','     Min_DBH'         &
-                                     ,'    DBH_Crit','  Bdead_Crit'
-      write(unit=18,fmt='(260a)') ('-',n=1,260)
+                                     ,'    DBH_Crit','  Bdead_Crit','   Init_dens'         &
+                                     ,' Init_LAImax'
+
+      write(unit=18,fmt='(286a)') ('-',n=1,286)
       do ipft=1,n_pft
          write (unit=18,fmt='(8x,i5,2(12x,l1),17(1x,es12.5))')                             &
                         ipft,is_tropical(ipft),is_grass(ipft),rho(ipft),b1Ht(ipft)         &
                        ,b2Ht(ipft),hgt_ref(ipft),b1Bl(ipft),b2Bl(ipft),b1Bs_small(ipft)    &
                        ,b2Bs_small(ipft),b1Bs_large(ipft),b2Bs_large(ipft),b1Ca(ipft)      &
                        ,b2Ca(ipft),hgt_min(ipft),hgt_max(ipft),min_dbh(ipft)               &
-                       ,dbh_crit(ipft),bdead_crit(ipft)
+                       ,dbh_crit(ipft),bdead_crit(ipft),init_density(ipft)                 &
+                       ,init_laimax(ipft)
       end do
-      write(unit=18,fmt='(260a)') ('-',n=1,260)
+      write(unit=18,fmt='(286a)') ('-',n=1,286)
       close(unit=18,status='keep')
    end if
 
@@ -2997,11 +3014,11 @@ end subroutine init_pft_leaf_params
 !------------------------------------------------------------------------------------------!
 subroutine init_pft_repro_params()
 
-   use pft_coms , only : r_fract            & ! intent(out)
-                       , st_fract           & ! intent(out)
-                       , seed_rain          & ! intent(out)
-                       , nonlocal_dispersal & ! intent(out)
-                       , repro_min_h        ! ! intent(out)
+   use pft_coms, only : r_fract            & ! intent(out)
+                      , st_fract           & ! intent(out)
+                      , seed_rain          & ! intent(out)
+                      , nonlocal_dispersal & ! intent(out)
+                      , repro_min_h        ! ! intent(out)
    implicit none
 
    r_fract(1)              = 0.3
@@ -3083,6 +3100,7 @@ subroutine init_pft_derived_params()
                                    , pft_name16           & ! intent(in)
                                    , hgt_max              & ! intent(in)
                                    , dbh_crit             & ! intent(in)
+                                   , one_plant_c          & ! intent(out)
                                    , min_recruit_size     & ! intent(out)
                                    , min_cohort_size      & ! intent(out)
                                    , negligible_nplant    & ! intent(out)
@@ -3131,7 +3149,7 @@ subroutine init_pft_derived_params()
    !---------------------------------------------------------------------------------------!
    if (print_zero_table) then
       open  (unit=61,file=trim(zero_table_fn),status='replace',action='write')
-      write (unit=61,fmt='(23(a,1x))')                '  PFT',        'NAME            '   &
+      write (unit=61,fmt='(24(a,1x))')                '  PFT',        'NAME            '   &
                                               ,'     HGT_MIN','         DBH'               &
                                               ,'   BLEAF_MIN','   BROOT_MIN'               &
                                               ,'BSAPWOOD_MIN','  BALIVE_MIN'               &
@@ -3142,7 +3160,7 @@ subroutine init_pft_derived_params()
                                               ,'MIN_COH_SIZE',' NEGL_NPLANT'               &
                                               ,'         SLA','VEG_HCAP_MIN'               &
                                               ,'     LAI_MIN','     HGT_MAX'               &
-                                              ,'    DBH_CRIT'
+                                              ,'    DBH_CRIT',' ONE_PLANT_C'
    end if
    min_plant_dens = onesixth * minval(init_density)
    do ipft = 1,n_pft
@@ -3171,6 +3189,12 @@ subroutine init_pft_derived_params()
       !------------------------------------------------------------------------------------!
 
 
+      !------------------------------------------------------------------------------------!
+      !    Biomass of one individual plant at recruitment.                                 !
+      !------------------------------------------------------------------------------------!
+      one_plant_c(ipft)      =  bdead_min + balive_min
+      !------------------------------------------------------------------------------------!
+
 
       !------------------------------------------------------------------------------------!
       !    The definition of the minimum recruitment size is the minimum amount of biomass !
@@ -3178,7 +3202,7 @@ subroutine init_pft_derived_params()
       ! ground state value as the minimum recruitment size, but this may change depending  !
       ! on how well it goes.                                                               !
       !------------------------------------------------------------------------------------!
-      min_recruit_size(ipft) = min_plant_dens * (bdead_min + balive_min)
+      min_recruit_size(ipft) = min_plant_dens * one_plant_c(ipft)
       !------------------------------------------------------------------------------------!
 
 
@@ -3226,7 +3250,7 @@ subroutine init_pft_derived_params()
 
 
       if (print_zero_table) then
-         write (unit=61,fmt='(i5,1x,a16,1x,21(es12.5,1x))')                                &
+         write (unit=61,fmt='(i5,1x,a16,1x,22(es12.5,1x))')                                &
                                                      ipft,pft_name16(ipft),hgt_min(ipft)   &
                                                     ,dbh,bleaf_min,broot_min,bsapwood_min  &
                                                     ,balive_min,bdead_min,bleaf_max        &
@@ -3236,7 +3260,8 @@ subroutine init_pft_derived_params()
                                                     ,min_cohort_size(ipft)                 &
                                                     ,negligible_nplant(ipft)               &
                                                     ,sla(ipft),veg_hcap_min(ipft)          &
-                                                    ,lai_min,hgt_max(ipft),dbh_crit(ipft)
+                                                    ,lai_min,hgt_max(ipft),dbh_crit(ipft)  &
+                                                    ,one_plant_c(ipft)
       end if
       !------------------------------------------------------------------------------------!
    end do

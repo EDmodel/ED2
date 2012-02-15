@@ -161,6 +161,7 @@ do
    igndvap=`echo ${oi}      | awk '{print $76}'`
    iphen=`echo ${oi}        | awk '{print $77}'`
    iallom=`echo ${oi}       | awk '{print $78}'`
+   ibigleaf=`echo ${oi}     | awk '{print $79}'`
    #---------------------------------------------------------------------------------------#
 
 

@@ -8,12 +8,14 @@ subroutine vegetation_dynamics(new_month,new_year)
    use grid_coms        , only : ngrids
    use ed_misc_coms     , only : current_time           & ! intent(in)
                                , dtlsm                  & ! intent(in)
-                               , frqsum                 ! ! intent(in)
+                               , frqsum                 & ! intent(in)
+                               , ibigleaf               ! ! intent(in)
    use disturb_coms     , only : include_fire           ! ! intent(in)
    use disturbance_utils, only : apply_disturbances     & ! subroutine
                                , site_disturbance_rates ! ! subroutine
    use fuse_fiss_utils  , only : fuse_patches           & ! subroutine
-                               , terminate_patches      ! ! subroutine
+                               , terminate_patches      & ! subroutine
+                               , rescale_patches        ! ! subroutine
    use ed_state_vars    , only : edgrid_g               & ! intent(inout)
                                , edtype                 & ! variable type
                                , polygontype            ! ! variable type
@@ -109,19 +111,41 @@ subroutine vegetation_dynamics(new_month,new_year)
 
 
       !------------------------------------------------------------------------------------!
-      !      Fuse patches last, after all updates have been applied.  This reduces the     !
-      ! number of patch variables that actually need to be fused.  After fusing, we also   !
-      ! check whether there are patches that are too small, and terminate them.            !
+      !      Patch dynamics.                                                               !
       !------------------------------------------------------------------------------------!
-      if(new_year) then
-         if (maxpatch >= 0) call fuse_patches(cgrid,ifm)
-         do ipy = 1,cgrid%npolygons
-            cpoly => cgrid%polygon(ipy)
-              
-            do isi = 1, cpoly%nsites
-               call terminate_patches(cpoly%site(isi))
+      if (new_year) then
+         select case(ibigleaf)
+         case (0)
+            !------------------------------------------------------------------------------!
+            !    Size and age structure.  Fuse patches last, after all updates have been   !
+            ! applied.  This reduces the number of patch variables that actually need to   !
+            ! be fused.  After fusing, we also check whether there are patches that are    !
+            ! too small, and terminate them.                                               !
+            !------------------------------------------------------------------------------!
+            if (maxpatch >= 0) call fuse_patches(cgrid,ifm)
+            do ipy = 1,cgrid%npolygons
+               cpoly => cgrid%polygon(ipy)
+                 
+               do isi = 1, cpoly%nsites
+                  call terminate_patches(cpoly%site(isi))
+               end do
             end do
-         end do
+            !------------------------------------------------------------------------------!
+
+         case (1)
+            !------------------------------------------------------------------------------!
+            !    Big leaf.  All that we do is rescale the patches.                         !
+            !------------------------------------------------------------------------------!
+            do ipy = 1,cgrid%npolygons
+               cpoly => cgrid%polygon(ipy)
+                 
+               do isi = 1, cpoly%nsites
+                  call rescale_patches(cpoly%site(isi))
+               end do
+            end do
+            !------------------------------------------------------------------------------!
+         end select
+         !---------------------------------------------------------------------------------!
       end if
       !------------------------------------------------------------------------------------!
 

@@ -131,6 +131,7 @@ module ename_coms
 
       !----- Options for model dynamics. --------------------------------------------------!
       integer                                           :: ivegt_dynamics
+      integer                                           :: ibigleaf
       integer                                           :: integration_scheme
       real                                              :: rk4_tolerance
       integer                                           :: ibranch_thermo
@@ -383,6 +384,7 @@ module ename_coms
  
 
       enl%ivegt_dynamics            = undef_integer
+      enl%ibigleaf                  = undef_integer
       enl%integration_scheme        = undef_integer
       enl%rk4_tolerance             = undef_real
       enl%ibranch_thermo            = undef_integer

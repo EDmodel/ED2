@@ -114,6 +114,7 @@ subroutine read_ednl(iunit,filename)
                                    , thsums_database                       & ! intent(out)
                                    , end_time                              & ! intent(out)
                                    , ivegt_dynamics                        & ! intent(out)
+                                   , ibigleaf                              & ! intent(out)
                                    , integration_scheme                    & ! intent(out)
                                    , ffilout                               & ! intent(out)
                                    , dtlsm                                 & ! intent(out)
@@ -226,7 +227,7 @@ subroutine read_ednl(iunit,filename)
                        ,itoutput,isoutput,attach_metadata,outfast,outstate,ffilout,sfilout &
                        ,ied_init_mode,edres,sfilin,veg_database,soil_database,lu_database  &
                        ,plantation_file,lu_rescale_file,thsums_database,soilstate_db       &
-                       ,soildepth_db,isoilstateinit,isoildepthflg,ivegt_dynamics           &
+                       ,soildepth_db,isoilstateinit,isoildepthflg,ivegt_dynamics,ibigleaf  &
                        ,integration_scheme,rk4_tolerance,ibranch_thermo,iphysiol,iallom    &
                        ,iphen_scheme,radint,radslp,repro_scheme,lapse_scheme,crown_mod     &
                        ,icanrad,ltrans_vis,ltrans_nir,lreflect_vis,lreflect_nir            &
@@ -301,6 +302,7 @@ subroutine read_ednl(iunit,filename)
       write (unit=*,fmt=*) ' isoilstateinit            =',isoilstateinit
       write (unit=*,fmt=*) ' isoildepthflg             =',isoildepthflg
       write (unit=*,fmt=*) ' ivegt_dynamics            =',ivegt_dynamics
+      write (unit=*,fmt=*) ' ibigleaf                  =',ibigleaf
       write (unit=*,fmt=*) ' integration_scheme        =',integration_scheme
       write (unit=*,fmt=*) ' rk4_tolerance             =',rk4_tolerance
       write (unit=*,fmt=*) ' ibranch_thermo            =',ibranch_thermo

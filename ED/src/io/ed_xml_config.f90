@@ -142,6 +142,8 @@ recursive subroutine read_ed_xml_config(filename)
          if(texist) sfilout = trim(cval)
          call getConfigINT  ('ivegt_dynamics','misc',i,ival,texist)
          if(texist) ivegt_dynamics = ival
+         call getConfigINT  ('ibigleaf','misc',i,ival,texist)
+         if(texist) ibigleaf = ival
          call getConfigINT  ('integration_scheme','misc',i,ival,texist)
          if(texist) integration_scheme = ival
 
