@@ -24,14 +24,15 @@ subroutine bdf2_solver(cpatch,yprev,ycurr,ynext,dydt,nstate,dtf,dtb)
 
   use grid_coms,only         : nzg,nzs
   use rk4_coms,only          : effarea_evap,effarea_heat,effarea_transp, &
-       rk4site,rk4patchtype,bdf2patchtype
+       rk4site,rk4patchtype,bdf2patchtype,checkbudget,hcapcan
+  use ed_misc_coms,only   : fast_diagnostics
   use ed_state_vars,only   : patchtype
   use therm_lib8,only      : reducedpress8,idealdenssh8
   use ed_therm_lib,only    : ed_grndvap8
   use consts_coms,only     : cpdry8,p00i8,rdry8, &
        rocv8,cpocv8,cliq8,cice8,rocp8,cpocv,epim1,   &
        alli8,t3ple8,alvi38,wdns8,cph2o8,tsupercool_liq8,pi18
-  use therm_lib8,only      : uint2tl8,uextcm2tl8
+  use therm_lib8,only      : uint2tl8,uextcm2tl8,tq2enthalpy8, tl2uint8
   use soil_coms, only      : soil8,dslz8
 
   implicit none
@@ -78,6 +79,16 @@ subroutine bdf2_solver(cpatch,yprev,ycurr,ynext,dydt,nstate,dtf,dtb)
   real(kind=8)                  :: qv    ! water mass on vegetation  [kg/m2]
   real(kind=8)                  :: dqvdt ! time partial of qv  [kg/m2/s]
   real(kind=8)                  :: xv    ! lumped term (vegetation)
+
+  real(kind=8)  :: eflxac
+  real(kind=8)  :: qwflxgc
+  real(kind=8)  :: qwflxac
+  real(kind=8)  :: hflxac
+  real(kind=8)  :: qwflxlc,qwflxlc_tot
+  real(kind=8)  :: qwflxwc,qwflxwc_tot
+  real(kind=8)  :: qtransp,qtransp_tot
+  real(kind=8)  :: hflxlc,hflxlc_tot
+  real(kind=8)  :: hflxwc,hflxwc_tot
   
 
   !==========================================================================!
@@ -136,6 +147,9 @@ subroutine bdf2_solver(cpatch,yprev,ycurr,ynext,dydt,nstate,dtf,dtb)
        ,ynext%ground_shv,ynext%ground_ssh,ynext%ground_temp               &
        ,ynext%ground_fliq,ynext%ggsoil)
 
+  
+  
+
   !----- Initialize the matrices used for the linear operations -------------!
 
   A = 0.d0
@@ -160,21 +174,9 @@ subroutine bdf2_solver(cpatch,yprev,ycurr,ynext,dydt,nstate,dtf,dtb)
 
   
   ! USES NEW TG
-  B(id_tcan) = (1.d0/xc)*       &
-       (gg*rhoc*cpdry8*Tg       &
-       + mgc*(href+cph2o8*Tg)    &
-       + ga*rhoc*cpdry8*Ta      &
-       + mac*href               &
-       + mac*cph2o8*0.5d0*Ta     &
-       + sum(ycurr%wflxlc)*href &
-       + sum(ycurr%wflxtr)*href &
-       + sum(ycurr%wflxwc)*href &
-       - dc*rhoc*href*dqcdt)
-
-  ! USES OLD HFLXGC
 !!  B(id_tcan) = (1.d0/xc)*       &
-!!       (gg*rhoc*cpdry8*(ycurr%ground_temp-ycurr%can_temp) &
-!!       + mgc*(href+cph2o8*Tg)   &
+!!       (gg*rhoc*cpdry8*Tg       &
+!!       + mgc*(href+cph2o8*Tg)    &
 !!       + ga*rhoc*cpdry8*Ta      &
 !!       + mac*href               &
 !!       + mac*cph2o8*0.5d0*Ta     &
@@ -183,22 +185,36 @@ subroutine bdf2_solver(cpatch,yprev,ycurr,ynext,dydt,nstate,dtf,dtb)
 !!       + sum(ycurr%wflxwc)*href &
 !!       - dc*rhoc*href*dqcdt)
 
+  ! USES ycurr HFLXGC
+  B(id_tcan) = (1.d0/xc)*       &
+       (gg*rhoc*cpdry8*(ycurr%ground_temp-ycurr%can_temp) &
+       + mgc*(href+cph2o8*Tg)   &
+       + ga*rhoc*cpdry8*Ta      &
+       + mac*href               &
+       + mac*cph2o8*0.5d0*Ta     &
+       + sum(ycurr%wflxlc)*href &
+       + sum(ycurr%wflxtr)*href &
+       + sum(ycurr%wflxwc)*href &
+       - dc*rhoc*href*dqcdt)
+
+
 
   ! USES NEW TG
-  A(id_tcan,id_tcan) = (1.d0/xc)*           &
-       (-gg*rhoc*cpdry8                     &
-       -ga*rhoc*cpdry8                      &
-       +0.5d0*mac*cph2o8)                   &
-       -(dqcdt*dc*rhoc/(xc**2.d0))*           &
-       ((1.d0-qc)*cpdry8 + qc*cph2o8)*(cph2o8-cpdry8)
-  
-  ! USES OLD HFLXGC
 !!  A(id_tcan,id_tcan) = (1.d0/xc)*           &
-!!       (-ga*rhoc*cpdry8                      &
+!!       (-gg*rhoc*cpdry8                     &
+!!       -ga*rhoc*cpdry8                      &
 !!       +0.5d0*mac*cph2o8)                   &
 !!       -(dqcdt*dc*rhoc/(xc**2.d0))*           &
 !!       ((1.d0-qc)*cpdry8 + qc*cph2o8)*(cph2o8-cpdry8)
   
+  ! USES ycurr HFLXGC
+  A(id_tcan,id_tcan) = (1.d0/xc)*           &
+       (-ga*rhoc*cpdry8                      &
+       +0.5d0*mac*cph2o8)                   &
+       -(dqcdt*dc*rhoc/(xc**2.d0))*           &
+       ((1.d0-qc)*cpdry8 + qc*cph2o8)*(cph2o8-cpdry8)
+  
+
 
 
   Y(id_tcan) = (3.d0+(dtf/dtb))*ycurr%can_temp -            &
@@ -237,7 +253,7 @@ subroutine bdf2_solver(cpatch,yprev,ycurr,ynext,dydt,nstate,dtf,dtb)
              + (1.d0/xc)*(gv*hfa*rhoc*cpdry8 + mlc*cph2o8 + mtr*cph2o8)
         
         
-        ! Note dh_rhti is rshort+rlong+Htrans(soil)+Hint-Hshed
+        ! Note hflx_lrsti is rshort+rlong+Htrans(soil)+Hint-Hshed
 
         ! B(dTv/dt)
         B(id_tveg) = (1.d0/xv)*           &
@@ -297,7 +313,7 @@ subroutine bdf2_solver(cpatch,yprev,ycurr,ynext,dydt,nstate,dtf,dtb)
                 + (1.d0/xc)*(gv*hfa*rhoc*cpdry8 + mlc*cph2o8 + mtr*cph2o8)
            
            
-           ! Note dh_rhti is rshort+rlong+Htrans(soil)+Hint-Hshed
+           ! Note hflx_wrsti is rshort+rlong+Hint-Hshed
            
            ! B(dTv/dt)
            B(id_tveg) = (1.d0/xv)*           &
@@ -359,7 +375,6 @@ subroutine bdf2_solver(cpatch,yprev,ycurr,ynext,dydt,nstate,dtf,dtb)
   ynext%can_enthalpy = (1.d0-qc)*cpdry8*Y(1) + qc*(href + cph2o8*Y(1))
 
 
-
   ! ------------------------------------------------------------------------!
   ! Note: Significant assumption being made here.  The partial derivative   !
   ! of the leaf and wood temperature assumed that phase was constant.       !
@@ -375,8 +390,10 @@ subroutine bdf2_solver(cpatch,yprev,ycurr,ynext,dydt,nstate,dtf,dtb)
   ! the ynext temp to t3ple and linearly scale the liquid fraction.         !
   ! ------------------------------------------------------------------------!
 
-
-  ! Current Assumption
+  qwflxlc_tot = 0.d0
+  qtransp_tot = 0.d0
+  hflxlc_tot  = 0.d0
+  
 
   id_tveg=1
   do ico=1,cpatch%ncohorts
@@ -397,6 +414,24 @@ subroutine bdf2_solver(cpatch,yprev,ycurr,ynext,dydt,nstate,dtf,dtb)
            ynext%leaf_water(ico)*cliq8*tsupercool_liq8
         end if
 
+        ! Back calculate the latent and sensible heat fluxes of leaves
+        ! ========================================================================
+        
+        ! First calculate the effective qflxlc
+        qwflxlc = ycurr%wflxlc(ico)*tq2enthalpy8(ycurr%leaf_temp(ico),1.d0,.true.)        
+        
+        ! Then effective transpiraiton
+        qtransp = ycurr%wflxtr(ico)*tq2enthalpy8(ycurr%leaf_temp(ico),1.d0,.true.)
+
+        ! Use the resulting change in leaf energy to back-caculate what heat
+        ! flux would had been
+        hflxlc  = ycurr%hflx_lrsti(ico) - qwflxlc - qtransp - &
+             (ynext%leaf_energy(ico)-ycurr%leaf_energy(ico))/dtf
+
+        qwflxlc_tot = qwflxlc_tot + qwflxlc
+        qtransp_tot = qtransp_tot + qtransp
+        hflxlc_tot  = hflxlc_tot  + hflxlc
+        
      end if
   end do
   
@@ -418,11 +453,90 @@ subroutine bdf2_solver(cpatch,yprev,ycurr,ynext,dydt,nstate,dtf,dtb)
                    (ycurr%wood_hcap(ico)+ynext%wood_water(ico)*cliq8) - &
                    ynext%wood_water(ico)*cliq8*tsupercool_liq8
            end if
+
+
+           ! Back calculate the latent and sensible heat fluxes of leaves
+           ! ========================================================================
+           
+           ! First calculate the effective qflxwc
+           qwflxwc = ycurr%wflxwc(ico)*tq2enthalpy8(ycurr%wood_temp(ico),1.d0,.true.)        
+           
+           ! Use the resulting change in wood energy to back-caculate what heat
+           ! flux would had been
+           hflxwc  = ycurr%hflx_wrsti(ico) - qwflxwc - &
+                (ynext%wood_energy(ico)-ycurr%wood_energy(ico))/dtf
+
+           qwflxwc_tot = qwflxwc_tot + qwflxwc
+           hflxwc_tot  = hflxwc_tot  + hflxwc
+
+
+
         end if
      end do
   end if
   
 
+  !!!! ===========================================================
+  !!!! THIS SCHEME IS NOT UPDATING PRINT DETAILED FLUXES BETWEEN
+  !!!! LEAVES/WOOD WITH CANOPY AIR
+  !!!! ===========================================================
+
+
+
+
+  ! Update eulerian based budget fluxes
+  ! ============================================================
+  
+  qwflxgc = ycurr%wflxgc * tq2enthalpy8(ycurr%ground_temp,1.d0,.true.)
+  
+  
+  eflxac = hcapcan*(ynext%can_enthalpy-ycurr%can_enthalpy)/dtf  - &
+       (dydt%avg_sensible_gc + qwflxgc                          + &
+       hflxlc_tot + qwflxlc_tot + qtransp_tot + hflxwc_tot + qwflxwc_tot)
+  
+  
+  qwflxac = ycurr%wflxac * tq2enthalpy8(0.5*(ycurr%can_temp+Ta),1.d0,.true.)
+  
+  hflxac  = eflxac-qwflxac
+  
+
+  if(checkbudget)then 
+     
+     ! Remove the previous integration
+     ynext%ebudget_loss2atm   = ynext%ebudget_loss2atm            - &
+          dydt%ebudget_loss2atm*dtf
+     
+     
+     ! Add the new integration
+     dydt%ebudget_loss2atm    = -eflxac
+     ynext%ebudget_loss2atm   = ynext%ebudget_loss2atm - eflxac*dtf
+     
+  end if
+  
+  if (fast_diagnostics .or. checkbudget ) then     
+
+     ! Update the sensible heat flux diagnostic
+     ynext%avg_sensible_ac = ynext%avg_sensible_ac - dydt%avg_sensible_ac*dtf
+     ynext%avg_sensible_ac = ynext%avg_sensible_ac + (hflxac)*dtf
+
+
+  end if
+
+
+  ! Make corrections to sensible heat flux and tstar
+  ! ======================================================
+  
+  ! Remove the previous increment
+  ynext%tpwp      = ynext%tpwp-dydt%tpwp*dtf
+  ynext%avg_tstar = ynext%avg_tstar-dydt%tstar*dtf
+  
+
+  ! Make the current increment
+  ynext%avg_tstar = ynext%tstar + &
+       dtf*(hflxac/(rhoc*ycurr%ustar*ycurr%can_exner))
+   
+
+  ynext%tpwp = ynext%tpwp -(hflxac/(rhoc*ycurr%can_exner))*dtf
   
 
 
