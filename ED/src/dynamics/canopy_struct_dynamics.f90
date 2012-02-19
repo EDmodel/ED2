@@ -143,6 +143,7 @@ module canopy_struct_dynamics
                                   , tq2enthalpy          ! ! function
       use allometry        , only : h2crownbh            & ! function
                                   , dbh2bl               ! ! function
+      use phenology_coms   , only : elongf_min           ! ! intent(in)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       type(polygontype)   , target      :: cpoly         ! Current polygon
@@ -227,6 +228,8 @@ module canopy_struct_dynamics
       real           :: can_reynolds ! Reynolds number of the Sfc. mixing layer [      ---]
       real           :: ground_temp  ! Ground temperature                       [      ---]
       real           :: stab_clm4    ! Stability parameter (CLM4, eq. 5.104)    [      ---]
+      logical        :: dry_grasses  ! Flag to check whether LAI+WAI is zero    [      ---]
+      real           :: tai_drygrass ! TAI for when a grass-only patch is dry   [    m2/m2]
       !----- External functions. ----------------------------------------------------------!
       real(kind=4), external :: cbrt ! Cubic root that works for negative numbers
       !------------------------------------------------------------------------------------!
@@ -816,6 +819,16 @@ module canopy_struct_dynamics
             end do
 
          case default
+
+            !------------------------------------------------------------------------------!
+            !     Branches are turned on.  In arid places, there is a chance that all      !
+            ! cohorts will be grasses with phenology status is set to 2.  This creates a   !
+            ! singularity, so we must check whether this is the case.                      !
+            !------------------------------------------------------------------------------!
+            dry_grasses = sum(cpatch%lai(:)+cpatch%wai(:)) == 0.0
+            !------------------------------------------------------------------------------!
+
+
             !----- Use the default wood area index. ---------------------------------------!
             do ico=1,cpatch%ncohorts
                ipft = cpatch%pft(ico)
@@ -825,7 +838,22 @@ module canopy_struct_dynamics
                !---------------------------------------------------------------------------!
                htopcrown = cpatch%hite(ico)
                hbotcrown = h2crownbh(cpatch%hite(ico),ipft)
-               ladcohort = (cpatch%lai(ico) + cpatch%wai(ico)) / (htopcrown - hbotcrown)
+               if (dry_grasses) then
+                  !------------------------------------------------------------------------!
+                  !     Dry grasses only.  Create a pseudo TAI so it won't be a            !
+                  ! singularity.                                                           !
+                  !------------------------------------------------------------------------!
+                  tai_drygrass = elongf_min * dbh2bl(cpatch%dbh(ico),ipft)
+                  ladcohort    = tai_drygrass / (htopcrown - hbotcrown)
+                  !------------------------------------------------------------------------!
+               else
+                  !------------------------------------------------------------------------!
+                  !     At least one plant has branches or leaves, use the real stuff      !
+                  ! instead.                                                               !
+                  !------------------------------------------------------------------------!
+                  ladcohort = (cpatch%lai(ico) + cpatch%wai(ico)) / (htopcrown - hbotcrown)
+                  !------------------------------------------------------------------------!
+               end if
                kapartial = min(ncanlyr,floor  ((hbotcrown * zztop0i)**ehgti) + 1)
                kafull    = min(ncanlyr,ceiling((hbotcrown * zztop0i)**ehgti) + 1)
                kzpartial = min(ncanlyr,ceiling((htopcrown * zztop0i)**ehgti))
@@ -1365,6 +1393,7 @@ module canopy_struct_dynamics
                                   , soil_rough8          ! ! intent(in)
       use allometry        , only : h2crownbh            & ! function
                                   , dbh2bl               ! ! function
+      use phenology_coms   , only : elongf_min           ! ! intent(in)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       type(sitetype)     , target     :: csite         ! Current site
@@ -1435,6 +1464,8 @@ module canopy_struct_dynamics
       real(kind=8)   :: can_reynolds ! Reynolds number of the sfc. mixing layer [      ---]
       real(kind=8)   :: ground_temp  ! Ground temperature                       [      ---]
       real(kind=8)   :: stab_clm4    ! Stability parameter (CLM4, eq. 5.104)    [      ---]
+      logical        :: dry_grasses  ! Flag to check whether LAI+WAI is zero    [      ---]
+      real(kind=8)   :: tai_drygrass ! TAI for when a grass-only patch is dry   [    m2/m2]
       !------ External procedures ---------------------------------------------------------!
       real(kind=8), external :: cbrt8    ! Cubic root that works for negative numbers
       real(kind=4), external :: sngloff  ! Safe double -> simple precision.
@@ -1969,6 +2000,16 @@ module canopy_struct_dynamics
             end do
 
          case default
+
+            !------------------------------------------------------------------------------!
+            !     Branches are turned on.  In arid places, there is a chance that all      !
+            ! cohorts will be grasses with phenology status is set to 2.  This creates a   !
+            ! singularity, so we must check whether this is the case.                      !
+            !------------------------------------------------------------------------------!
+            dry_grasses = sum(cpatch%lai(:)+cpatch%wai(:)) == 0.0
+            !------------------------------------------------------------------------------!
+
+
             !----- Use the default wood area index. ---------------------------------------!
             do ico=1,cpatch%ncohorts
                ipft = cpatch%pft(ico)
@@ -1978,7 +2019,22 @@ module canopy_struct_dynamics
                !---------------------------------------------------------------------------!
                htopcrown = dble(cpatch%hite(ico))
                hbotcrown = dble(h2crownbh(cpatch%hite(ico),ipft))
-               ladcohort = (initp%lai(ico) + initp%wai(ico)) / (htopcrown - hbotcrown)
+               if (dry_grasses) then
+                  !------------------------------------------------------------------------!
+                  !     Dry grasses only.  Create a pseudo TAI so it won't be a            !
+                  ! singularity.                                                           !
+                  !------------------------------------------------------------------------!
+                  tai_drygrass = dble(elongf_min * dbh2bl(cpatch%dbh(ico),ipft))
+                  ladcohort    = tai_drygrass / (htopcrown - hbotcrown)
+                  !------------------------------------------------------------------------!
+               else
+                  !------------------------------------------------------------------------!
+                  !     At least one plant has branches or leaves, use the real stuff      !
+                  ! instead.                                                               !
+                  !------------------------------------------------------------------------!
+                  ladcohort = (initp%lai(ico) + initp%wai(ico)) / (htopcrown - hbotcrown)
+                  !------------------------------------------------------------------------!
+               end if
                kapartial = min(ncanlyr,floor  ((hbotcrown * zztop0i8)**ehgti8) + 1)
                kafull    = min(ncanlyr,ceiling((hbotcrown * zztop0i8)**ehgti8) + 1)
                kzpartial = min(ncanlyr,ceiling((htopcrown * zztop0i8)**ehgti8))

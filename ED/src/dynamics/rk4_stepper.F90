@@ -274,7 +274,6 @@ module rk4_stepper
       !----- Local variables --------------------------------------------------------------!
       type(patchtype)   , pointer     :: cpatch
       real(kind=8)                    :: combh
-      real(kind=8)                    :: dpdt
       !------------------------------------------------------------------------------------!
 
 
@@ -312,12 +311,6 @@ module rk4_stepper
       !------------------------------------------------------------------------------------!
 
 
-      !------ Estimate the derivative of canopy pressure. ---------------------------------!
-      dpdt          = (ak7%can_prss - y%can_prss) / combh
-      dydx%can_prss = dpdt * rk4_b21
-      !------------------------------------------------------------------------------------!
-
-
       !------ Get the new derivative evaluation. ------------------------------------------!
       call leaf_derivs(ak7, ak2, csite, ipa,-9000.d0)
       !------------------------------------------------------------------------------------!
@@ -334,13 +327,6 @@ module rk4_stepper
       call update_diagnostic_vars(ak7, csite,ipa)
       call rk4_sanity_check(ak7,reject_step,csite,ipa,dydx,h,print_diags)
       if (reject_step) return
-      !------------------------------------------------------------------------------------!
-
-
-      !------ Estimate the derivative of canopy pressure. ---------------------------------!
-      dpdt          = (ak7%can_prss - y%can_prss) / combh
-      dydx%can_prss = dydx%can_prss + dpdt * rk4_b31
-      ak2%can_prss  =                 dpdt * rk4_b32
       !------------------------------------------------------------------------------------!
 
 
@@ -364,14 +350,6 @@ module rk4_stepper
       !------------------------------------------------------------------------------------!
 
 
-      !------ Estimate the derivative of canopy pressure. ---------------------------------!
-      dpdt          = (ak7%can_prss - y%can_prss) / combh
-      dydx%can_prss = dydx%can_prss + dpdt * rk4_b41
-      ak2%can_prss  = ak2%can_prss  + dpdt * rk4_b42
-      ak3%can_prss  =                 dpdt * rk4_b43
-      !------------------------------------------------------------------------------------!
-
-
       !------ Get the new derivative evaluation. ------------------------------------------!
       call leaf_derivs(ak7, ak4, csite, ipa,-9000.d0)
       !------------------------------------------------------------------------------------!
@@ -390,15 +368,6 @@ module rk4_stepper
       call update_diagnostic_vars(ak7, csite,ipa)
       call rk4_sanity_check(ak7,reject_step,csite,ipa,dydx,h,print_diags)
       if (reject_step) return
-      !------------------------------------------------------------------------------------!
-
-
-      !------ Estimate the derivative of canopy pressure. ---------------------------------!
-      dpdt          = (ak7%can_prss - y%can_prss) / combh
-      dydx%can_prss = dydx%can_prss + dpdt * rk4_b51
-      ak2%can_prss  = ak2%can_prss  + dpdt * rk4_b52
-      ak3%can_prss  = ak3%can_prss  + dpdt * rk4_b53
-      ak4%can_prss  =                 dpdt * rk4_b54
       !------------------------------------------------------------------------------------!
 
 
@@ -424,16 +393,6 @@ module rk4_stepper
       !------------------------------------------------------------------------------------!
 
 
-      !------ Estimate the derivative of canopy pressure. ---------------------------------!
-      dpdt          = (ak7%can_prss - y%can_prss) / combh
-      dydx%can_prss = dydx%can_prss + dpdt * rk4_b61
-      ak2%can_prss  = ak2%can_prss  + dpdt * rk4_b62
-      ak3%can_prss  = ak3%can_prss  + dpdt * rk4_b63
-      ak4%can_prss  = ak4%can_prss  + dpdt * rk4_b64
-      ak5%can_prss  =                 dpdt * rk4_b65
-      !------------------------------------------------------------------------------------!
-
-
       !------ Get the new derivative evaluation. ------------------------------------------!
       call leaf_derivs(ak7, ak6, csite,ipa,-9000.d0)
       !------------------------------------------------------------------------------------!
@@ -453,34 +412,6 @@ module rk4_stepper
       call rk4_sanity_check(yout, reject_result, csite,ipa,dydx,h,print_diags)
       !------------------------------------------------------------------------------------!
       if(reject_result)return
-      !------------------------------------------------------------------------------------!
-
-
-      !------ Estimate the derivative of canopy pressure. ---------------------------------!
-      dpdt          = (ak7%can_prss - y%can_prss) / combh
-      dydx%can_prss = dydx%can_prss + dpdt * rk4_c1
-      ak3%can_prss  = ak3%can_prss  + dpdt * rk4_c3
-      ak4%can_prss  = ak4%can_prss  + dpdt * rk4_c4
-      ak6%can_prss  =                 dpdt * rk4_c6
-      !------------------------------------------------------------------------------------!
-
-
-
-      !------------------------------------------------------------------------------------!
-      !      Average the pressure derivative estimates.                                    !
-      !------------------------------------------------------------------------------------!
-      dydx%can_prss = dydx%can_prss                                                        &
-                    / (rk4_b21 + rk4_b31 + rk4_b41 + rk4_b51 + rk4_b61 + rk4_c1)
-      ak2%can_prss  = ak2%can_prss                                                         &
-                    / (          rk4_b32 + rk4_b42 + rk4_b52 + rk4_b62         )
-      ak3%can_prss  = ak3%can_prss                                                         &
-                    / (                    rk4_b43 + rk4_b53 + rk4_b63 + rk4_c3)
-      ak4%can_prss  = ak4%can_prss                                                         &
-                    / (                              rk4_b54 + rk4_b64 + rk4_c4)
-      ak5%can_prss  = ak5%can_prss                                                         &
-                    / (                                        rk4_b65         )
-      ak6%can_prss  = ak6%can_prss                                                         &
-                    / (                                                  rk4_c6)
       !------------------------------------------------------------------------------------!
 
 

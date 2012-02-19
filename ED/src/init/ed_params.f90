@@ -1543,7 +1543,7 @@ subroutine init_pft_photo_params()
    Vm0(11)                   =  6.981875 * vmfact_c3
    Vm0(12:13)                = 18.300000 * vmfact_c3
    Vm0(14:15)                = 12.500000 * vmfact_c4
-   Vm0(16)                   = 25.000000 * vmfact_c3
+   Vm0(16)                   = 21.875000 * vmfact_c3
    Vm0(17)                   = 15.625000 * vmfact_c3
    !---------------------------------------------------------------------------------------!
 
@@ -1809,7 +1809,7 @@ subroutine init_pft_resp_params()
    growth_resp_factor(16)         = growthresp
    growth_resp_factor(17)         = 0.4503
 
-   leaf_turnover_rate(1)          = 4.0
+   leaf_turnover_rate(1)          = 3.0
    leaf_turnover_rate(2)          = 1.0
    leaf_turnover_rate(3)          = 0.5
    leaf_turnover_rate(4)          = onethird
@@ -1824,7 +1824,7 @@ subroutine init_pft_resp_params()
    leaf_turnover_rate(13)         = 2.0
    leaf_turnover_rate(14)         = 2.0
    leaf_turnover_rate(15)         = 2.0
-   leaf_turnover_rate(16)         = 4.0
+   leaf_turnover_rate(16)         = 2.0
    leaf_turnover_rate(17)         = onesixth
 
    !----- Root turnover rate.  ------------------------------------------------------------!
@@ -2131,8 +2131,8 @@ subroutine init_pft_mort_params()
    plant_min_temp(10:11)    = t00-20.0
    plant_min_temp(12:13)    = t00-80.0
    plant_min_temp(14:15)    = t00+2.5
-   plant_min_temp(16)       = t00-10.0
-   plant_min_temp(17)       = t00-10.0
+   plant_min_temp(16)       = t00-20.0
+   plant_min_temp(17)       = t00-15.0
 
    return
 end subroutine init_pft_mort_params
@@ -2830,27 +2830,27 @@ subroutine init_pft_alloc_params()
 
    if (write_allom) then
       open (unit=18,file=trim(allom_file),status='replace',action='write')
-      write(unit=18,fmt='(286a)') ('-',n=1,286)
-      write(unit=18,fmt='(22(1x,a))') '         PFT','    Tropical','       Grass'         &
+      write(unit=18,fmt='(299a)') ('-',n=1,299)
+      write(unit=18,fmt='(23(1x,a))') '         PFT','    Tropical','       Grass'         &
                                      ,'         Rho','        b1Ht','        b2Ht'         &
                                      ,'     Hgt_ref','        b1Bl','        b2Bl'         &
                                      ,'  b1Bs_Small','  b2Bs_Small','  b1Bs_Large'         &
                                      ,'  b1Bs_Large','        b1Ca','        b2Ca'         &
                                      ,'     Hgt_min','     Hgt_max','     Min_DBH'         &
                                      ,'    DBH_Crit','  Bdead_Crit','   Init_dens'         &
-                                     ,' Init_LAImax'
+                                     ,' Init_LAImax','         SLA'
 
-      write(unit=18,fmt='(286a)') ('-',n=1,286)
+      write(unit=18,fmt='(299a)') ('-',n=1,299)
       do ipft=1,n_pft
-         write (unit=18,fmt='(8x,i5,2(12x,l1),17(1x,es12.5))')                             &
+         write (unit=18,fmt='(8x,i5,2(12x,l1),20(1x,es12.5))')                             &
                         ipft,is_tropical(ipft),is_grass(ipft),rho(ipft),b1Ht(ipft)         &
                        ,b2Ht(ipft),hgt_ref(ipft),b1Bl(ipft),b2Bl(ipft),b1Bs_small(ipft)    &
                        ,b2Bs_small(ipft),b1Bs_large(ipft),b2Bs_large(ipft),b1Ca(ipft)      &
                        ,b2Ca(ipft),hgt_min(ipft),hgt_max(ipft),min_dbh(ipft)               &
                        ,dbh_crit(ipft),bdead_crit(ipft),init_density(ipft)                 &
-                       ,init_laimax(ipft)
+                       ,init_laimax(ipft),sla(ipft)
       end do
-      write(unit=18,fmt='(286a)') ('-',n=1,286)
+      write(unit=18,fmt='(299a)') ('-',n=1,299)
       close(unit=18,status='keep')
    end if
 
@@ -3812,8 +3812,8 @@ subroutine init_soil_coms
 
 
    !----- Initialise some standard variables. ---------------------------------------------!
-   water_stab_thresh   = 3.0    ! Minimum water mass to be considered stable     [   kg/m2]
-   snowmin             = 3.0    ! Minimum snow mass needed to create a new layer [   kg/m2]
+   water_stab_thresh   = 5.0    ! Minimum water mass to be considered stable     [   kg/m2]
+   snowmin             = 5.0    ! Minimum snow mass needed to create a new layer [   kg/m2]
    dewmax              = 3.0e-5 ! Maximum dew flux rate (deprecated)             [ kg/m2/s]
    soil_rough          = 0.05   ! Soil roughness height                          [       m]
    snow_rough          = 0.001  ! Snowcover roughness height                     [       m]

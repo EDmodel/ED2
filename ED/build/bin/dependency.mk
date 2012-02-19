@@ -9,13 +9,14 @@ ed_met_driver.o: met_driver_coms.mod pft_coms.mod therm_lib.mod
 ed_model.o: consts_coms.mod disturb_coms.mod ed_misc_coms.mod ed_node_coms.mod
 ed_model.o: ed_state_vars.mod grid_coms.mod mem_polygons.mod rk4_coms.mod
 ed_model.o: rk4_driver.mod
-bdf2_solver.o: consts_coms.mod ed_state_vars.mod ed_therm_lib.mod grid_coms.mod
-bdf2_solver.o: rk4_coms.mod soil_coms.mod therm_lib8.mod
+bdf2_solver.o: consts_coms.mod ed_misc_coms.mod ed_state_vars.mod
+bdf2_solver.o: ed_therm_lib.mod grid_coms.mod rk4_coms.mod soil_coms.mod
+bdf2_solver.o: therm_lib8.mod
 canopy_struct_dynamics.o: allometry.mod canopy_air_coms.mod
 canopy_struct_dynamics.o: canopy_layer_coms.mod consts_coms.mod
 canopy_struct_dynamics.o: ed_state_vars.mod grid_coms.mod met_driver_coms.mod
-canopy_struct_dynamics.o: pft_coms.mod physiology_coms.mod rk4_coms.mod
-canopy_struct_dynamics.o: soil_coms.mod therm_lib.mod
+canopy_struct_dynamics.o: pft_coms.mod phenology_coms.mod physiology_coms.mod
+canopy_struct_dynamics.o: rk4_coms.mod soil_coms.mod therm_lib.mod
 disturbance.o: allometry.mod consts_coms.mod decomp_coms.mod disturb_coms.mod
 disturbance.o: ed_max_dims.mod ed_misc_coms.mod ed_state_vars.mod
 disturbance.o: ed_therm_lib.mod fuse_fiss_utils.mod grid_coms.mod
@@ -29,7 +30,7 @@ events.o: allometry.mod consts_coms.mod decomp_coms.mod disturbance_utils.mod
 events.o: ed_misc_coms.mod ed_state_vars.mod ed_therm_lib.mod
 events.o: fuse_fiss_utils.mod grid_coms.mod pft_coms.mod therm_lib.mod
 farq_leuning.o: c34constants.mod consts_coms.mod pft_coms.mod phenology_coms.mod
-farq_leuning.o: physiology_coms.mod rk4_coms.mod
+farq_leuning.o: physiology_coms.mod rk4_coms.mod therm_lib8.mod
 fire.o: allometry.mod consts_coms.mod disturb_coms.mod ed_misc_coms.mod
 fire.o: ed_state_vars.mod grid_coms.mod soil_coms.mod
 forestry.o: allometry.mod disturb_coms.mod disturbance_utils.mod ed_max_dims.mod
