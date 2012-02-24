@@ -983,6 +983,7 @@ subroutine updateWatertableBaseflow(cpoly,isi,ipa,baseflow)
 
    csite => cpoly%site(isi)
    slsl  = cpoly%lsl(isi)
+   nsoil = cpoly%ntext_soil(slsl,isi)
 
    !! determine freeze
    call qwtk(csite%soil_energy(slsl,ipa),csite%soil_water(slsl,ipa)*1.e3,soil(nsoil)%slcpd,tempk,fracliq)
@@ -991,8 +992,6 @@ subroutine updateWatertableBaseflow(cpoly,isi,ipa,baseflow)
 
    !! calc max free-drainage as cap to baseflow
    !! assumes layer below is permenantly at minimal water capacity
-   slsl  = cpoly%lsl(isi)
-   nsoil = cpoly%ntext_soil(slsl,isi)
    potn_fd = -dslzi(slsl)+soil(nsoil)%slpots* &
         ((soil(nsoil)%slmsts/soil(nsoil)%soilcp)**soil(nsoil)%slbs - &
         (soil(nsoil)%slmsts/csite%soil_water(slsl,ipa))**soil(nsoil)%slbs)
