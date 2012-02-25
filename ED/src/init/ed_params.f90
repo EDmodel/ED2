@@ -1037,8 +1037,8 @@ subroutine init_can_air_params()
    !                        is used to calculate the heat and moisture storage capacity in !
    !                        the canopy air space.                                          !
    !---------------------------------------------------------------------------------------!
-   veg_height_min        = minval(hgt_min) ! alternative: minval(hgt_min) 
-   minimum_canopy_depth  = 1.5             ! alternative: minval(hgt_min) 
+   veg_height_min        = 1.0  ! alternative: minval(hgt_min) 
+   minimum_canopy_depth  = 5.0  ! alternative: minval(hgt_min) 
 
    !----- This is the dimensionless exponential wind atenuation factor. -------------------!
    exar  = 2.5
@@ -2239,11 +2239,11 @@ subroutine init_pft_alloc_params()
    !     The "z" parameters were obtaining by using the original balive and computing      !
    ! bdead as the difference between the total biomass and the original balive.            !
    !---------------------------------------------------------------------------------------!
-   real, dimension(3)    , parameter :: odead_small = (/-1.1138270, 2.4404830,  2.1806320/)
-   real, dimension(3)    , parameter :: odead_large = (/ 0.1362546, 2.4217390,  6.9483532/)
-   real, dimension(3)    , parameter :: ndead_small = (/-1.8822770, 2.4407750,  1.0082490/)
-   real, dimension(3)    , parameter :: ndead_large = (/-1.8229460, 2.4259890,  1.0011870/)
-   real, dimension(3)    , parameter :: nleaf       = (/-2.5108071, 1.2818788,  0.5912507/)
+   real, dimension(3)    , parameter :: odead_small = (/-1.1138270, 2.4404830, 2.1806320 /)
+   real, dimension(3)    , parameter :: odead_large = (/ 0.1362546, 2.4217390, 6.9483532 /)
+   real, dimension(3)    , parameter :: ndead_small = (/-1.2639530, 2.4323610, 1.8018010 /)
+   real, dimension(3)    , parameter :: ndead_large = (/-0.8346805, 2.4255736, 2.6822805 /)
+   real, dimension(3)    , parameter :: nleaf       = (/ 0.0192512, 0.9749494, 2.5858509 /)
    real, dimension(2)    , parameter :: ncrown_area = (/ 0.1184295, 1.0521197            /)
    !----- Other constants. ----------------------------------------------------------------!
    character(len=str_len), parameter :: allom_file  = 'allom_param.txt'
@@ -2320,7 +2320,7 @@ subroutine init_pft_alloc_params()
    sla_slope = -0.46
 
    !----- [KIM] - new tropical parameters. ------------------------------------------------!
-   SLA( 1) = 10.0**(sla_inter + sla_slope * log10(12.0/leaf_turnover_rate( 1))) * sla_scale
+   SLA( 1) = 21.0 ! 10.0**(sla_inter + sla_slope * log10(12.0/leaf_turnover_rate( 1))) * sla_scale
    SLA( 2) = 10.0**(sla_inter + sla_slope * log10(12.0/leaf_turnover_rate( 2))) * sla_scale
    SLA( 3) = 10.0**(sla_inter + sla_slope * log10(12.0/leaf_turnover_rate( 3))) * sla_scale
    SLA( 4) = 10.0**(sla_inter + sla_slope * log10(12.0/leaf_turnover_rate( 4))) * sla_scale
@@ -2333,9 +2333,9 @@ subroutine init_pft_alloc_params()
    SLA(11) = 60.0
    SLA(12) = 22.0
    SLA(13) = 22.0
-   SLA(14) = 10.0**(sla_inter + sla_slope * log10(12.0/leaf_turnover_rate(14))) * sla_scale
-   SLA(15) = 10.0**(sla_inter + sla_slope * log10(12.0/leaf_turnover_rate(15))) * sla_scale
-   SLA(16) = 10.0**(sla_inter + sla_slope * log10(12.0/leaf_turnover_rate(16))) * sla_scale
+   SLA(14) = 21.0 ! 10.0**(sla_inter + sla_slope * log10(12.0/leaf_turnover_rate(14))) * sla_scale
+   SLA(15) = 21.0 ! 10.0**(sla_inter + sla_slope * log10(12.0/leaf_turnover_rate(15))) * sla_scale
+   SLA(16) = 21.0 ! 10.0**(sla_inter + sla_slope * log10(12.0/leaf_turnover_rate(16))) * sla_scale
    SLA(17) = 10.0
 
    !---------------------------------------------------------------------------------------!
@@ -2573,7 +2573,7 @@ subroutine init_pft_alloc_params()
             b2Bl(ipft) = C2B * b2l + c2l * b2Ht(ipft) + aux
          case (2)
             !---- Based on modified Chave et al. (2001) allometry. ------------------------!
-            b1Bl(ipft) = C2B * exp(nleaf(1) + nleaf(3) * log(rho(ipft)))
+            b1Bl(ipft) = C2B * exp(nleaf(1)) * rho(ipft) / nleaf(3)
             b2Bl(ipft) = nleaf(2)
          end select
       end if
@@ -2645,9 +2645,9 @@ subroutine init_pft_alloc_params()
 
          case (2)
             !---- Based an alternative modification of Chave et al. (2001) allometry. -----!
-            b1Bs_small(ipft) = C2B * exp(ndead_small(1) + ndead_small(3) * log(rho(ipft)))
+            b1Bs_small(ipft) = C2B * exp(ndead_small(1)) * rho(ipft) / ndead_small(3)
             b2Bs_small(ipft) = ndead_small(2)
-            b1Bs_large(ipft) = C2B * exp(ndead_large(1) + ndead_large(3) * log(rho(ipft)))
+            b1Bs_large(ipft) = C2B * exp(ndead_large(1)) * rho(ipft) / ndead_large(3)
             b2Bs_large(ipft) = ndead_large(2)
 
          end select
@@ -2715,20 +2715,22 @@ subroutine init_pft_alloc_params()
    !        didn't develop the allometry, but the original reference is in German...)      !
    !---------------------------------------------------------------------------------------!
    !----- Intercept. ----------------------------------------------------------------------!
-   b1WAI(1)     = 0.0          ! Tiny WAI for grasses
+   b1WAI(1)     = 0.0192 * 0.5 ! Tiny WAI for grasses
    b1WAI(2:4)   = 0.0192 * 0.5 ! Broadleaf
    b1WAI(5)     = 0.0          ! Tiny WAI for grasses
    b1WAI(6:8)   = 0.0553 * 0.5 ! Needleleaf
    b1WAI(9:11)  = 0.0192 * 0.5 ! Broadleaf
-   b1WAI(12:16) = 0.0          ! Tiny WAI for grasses
+   b1WAI(12:13) = 0.0          ! Tiny WAI for grasses
+   b1WAI(14:16) = 0.0192 * 0.5 ! Tiny WAI for grasses
    b1WAI(17)    = 0.0553 * 0.5 ! Needleleaf
    !----- Slope. --------------------------------------------------------------------------!
-   b2WAI(1)     = 1.0          ! Tiny WAI for grasses
+   b2WAI(1)     = 2.0947       ! Tiny WAI for grasses
    b2WAI(2:4)   = 2.0947       ! Broadleaf
    b2WAI(5)     = 1.0          ! Tiny WAI for grasses
    b2WAI(6:8)   = 1.9769       ! Needleleaf
    b2WAI(9:11)  = 2.0947       ! Broadleaf
-   b2WAI(12:16) = 1.0          ! Tiny WAI for grasses
+   b2WAI(12:13) = 1.0          ! Tiny WAI for grasses
+   b2WAI(14:16) = 2.0947       ! Tiny WAI for grasses
    b2WAI(17)    = 1.9769       ! Needleleaf
    !---------------------------------------------------------------------------------------!
 
@@ -2803,15 +2805,28 @@ subroutine init_pft_alloc_params()
    select case (ibigleaf)
    case (0)
        !----- Size and age structure. -----------------------------------------------------!
-       init_density(1)     = 0.1
-       init_density(2:4)   = 0.1
-       init_density(5)     = 0.1
-       init_density(6:8)   = 0.1
-       init_density(9:11)  = 0.1
-       init_density(12:13) = 0.1
-       init_density(14:15) = 0.1
-       init_density(16)    = 0.1
-       init_density(17)    = 0.1
+       select case (iallom)
+       case (0,1)
+          init_density(1)     = 1.0
+          init_density(2:4)   = 1.0
+          init_density(5)     = 0.1
+          init_density(6:8)   = 0.1
+          init_density(9:11)  = 0.1
+          init_density(12:13) = 0.1
+          init_density(14:15) = 0.1
+          init_density(16)    = 1.0
+          init_density(17)    = 1.0
+       case (2)
+          init_density(1)     = 0.1
+          init_density(2:4)   = 0.1
+          init_density(5)     = 0.1
+          init_density(6:8)   = 0.1
+          init_density(9:11)  = 0.1
+          init_density(12:13) = 0.1
+          init_density(14:15) = 0.1
+          init_density(16)    = 0.1
+          init_density(17)    = 0.1
+       end select
 
        !----- Define a non-sense number. --------------------------------------------------!
        init_laimax(1:17)   = huge_num

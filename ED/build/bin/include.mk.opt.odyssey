@@ -284,10 +284,10 @@ ifeq ($(KIND_COMP),D)
 endif
 ifeq ($(KIND_COMP),E)
    USE_INTERF=1
-   F_OPTS= -FR -O3 -recursive -Vaxlib -traceback -axP
-   C_OPTS= -O3 -DLITTLE -traceback
-   LOADER_OPTS= -FR -O3 -Vaxlib  -traceback -axP
-   C_LOADER_OPTS=-v -traceback
+   F_OPTS= -FR -O3 -recursive -fno-alias -unroll -static -axP
+   C_OPTS= -O3 -DLITTLE -static 
+   LOADER_OPTS= -FR -O3 -fno-alias -unroll -axP
+   C_LOADER_OPTS=-v -static 
    #---------------------------------------------------------------------------------------#
 endif
 #------------------------------------------------------------------------------------------#

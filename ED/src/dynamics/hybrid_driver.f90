@@ -1598,10 +1598,7 @@ subroutine hybrid_timestep(cgrid)
       !------------------------------------------------------------------------------------!
 
 
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      ! DISABLING WOOD FOR RIGHT NOW
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      if(.false.)then
+
 
       !------------------------------------------------------------------------------------!
       !     Check wood properties, but only for those cohorts with sufficient LAI.         !
@@ -1696,7 +1693,6 @@ subroutine hybrid_timestep(cgrid)
       if(record_err .and. cflag10) integ_err(10,2) = integ_err(10,2) + 1_8
       !------------------------------------------------------------------------------------!
 
-   end if
 
    !------------------------------------------------------------------------------------!
    !     Check the water mass of the virtual pool.  The energy is checked only when     !
