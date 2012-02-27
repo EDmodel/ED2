@@ -1543,7 +1543,7 @@ subroutine init_pft_photo_params()
    Vm0(11)                   =  6.981875 * vmfact_c3
    Vm0(12:13)                = 18.300000 * vmfact_c3
    Vm0(14:15)                = 12.500000 * vmfact_c4
-   Vm0(16)                   = 21.875000 * vmfact_c3
+   Vm0(16)                   = 25.000000 * vmfact_c3
    Vm0(17)                   = 15.625000 * vmfact_c3
    !---------------------------------------------------------------------------------------!
 
@@ -1581,7 +1581,7 @@ subroutine init_pft_photo_params()
    dark_respiration_factor(14)    = gamma_c3
    dark_respiration_factor(15)    = gamma_c3
    dark_respiration_factor(16)    = gamma_c3
-   dark_respiration_factor(17)    = gamma_c3 * 0.028 / 0.020
+   dark_respiration_factor(17)    = gamma_c3 * 1.2
    !---------------------------------------------------------------------------------------!
 
 

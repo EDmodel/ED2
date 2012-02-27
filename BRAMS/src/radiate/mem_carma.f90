@@ -179,7 +179,7 @@ module mem_carma
       integer                     , intent(in)    :: ng
       !------------------------------------------------------------------------------------!
 
-      if (associated(car(ng)%aot ))  nullify (car(ng)%aot )
+      nullify (car(ng)%aot )
 
   
       return

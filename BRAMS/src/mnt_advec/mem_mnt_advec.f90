@@ -118,22 +118,22 @@ module mem_mnt_advec
       !------------------------------------------------------------------------------------!
 
       
-      if (associated(advec%uavg      )) nullify(advec%uavg      )
-      if (associated(advec%vavg      )) nullify(advec%vavg      )
-      if (associated(advec%wavg      )) nullify(advec%wavg      )
-      if (associated(advec%scal_in   )) nullify(advec%scal_in   )
-      if (associated(advec%scal_out  )) nullify(advec%scal_out  )
-      if (associated(advec%denst     )) nullify(advec%denst     )
-      if (associated(advec%densu     )) nullify(advec%densu     )
-      if (associated(advec%densv     )) nullify(advec%densv     )
-      if (associated(advec%densw     )) nullify(advec%densw     )
-      if (associated(advec%den0_wal  )) nullify(advec%den0_wal  )
-      if (associated(advec%den1_wal  )) nullify(advec%den1_wal  )
-      if (associated(advec%den2_wal  )) nullify(advec%den2_wal  )
-      if (associated(advec%den3_wal  )) nullify(advec%den3_wal  )
-      if (associated(advec%dxtw      )) nullify(advec%dxtw      )
-      if (associated(advec%dytw      )) nullify(advec%dytw      )
-      if (associated(advec%dztw      )) nullify(advec%dztw      )
+      nullify(advec%uavg      )
+      nullify(advec%vavg      )
+      nullify(advec%wavg      )
+      nullify(advec%scal_in   )
+      nullify(advec%scal_out  )
+      nullify(advec%denst     )
+      nullify(advec%densu     )
+      nullify(advec%densv     )
+      nullify(advec%densw     )
+      nullify(advec%den0_wal  )
+      nullify(advec%den1_wal  )
+      nullify(advec%den2_wal  )
+      nullify(advec%den3_wal  )
+      nullify(advec%dxtw      )
+      nullify(advec%dytw      )
+      nullify(advec%dztw      )
 
       return
    end subroutine nullify_advec

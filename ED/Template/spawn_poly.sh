@@ -544,7 +544,7 @@ do
          ;;
       Santarem_KM66)
          metdriverdb=${sitemet}'/Santarem_KM66/Santarem_KM66_HEADER'
-         metcyc1=2001
+         metcyc1=2002
          metcycf=2010
          imetavg=1
          ;;

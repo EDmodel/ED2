@@ -106,7 +106,7 @@ contains
 
     do nd=1,na2d
        do nsc=1,ngrid
-          if (associated(scal(nd,ngrid)%d2))   nullify (scal(nd,ngrid)%d2)
+          nullify (scal(nd,ngrid)%d2)
        enddo
     enddo
 
@@ -128,7 +128,7 @@ contains
 
     do nd=1,na3d
        do nsc=1,ngrid
-          if (associated(scal(nd,ngrid)%d3))   nullify (scal(nd,ngrid)%d3)
+          nullify (scal(nd,ngrid)%d3)
        enddo
     enddo
 

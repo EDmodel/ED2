@@ -279,9 +279,9 @@ module micro_coms
      implicit none
      type (pcp_tab_type), intent(inout) :: sedtab
 
-     if (associated(sedtab%pcpfillc)) nullify (sedtab%pcpfillc)
-     if (associated(sedtab%pcpfillr)) nullify (sedtab%pcpfillr)
-     if (associated(sedtab%sfcpcp  )) nullify (sedtab%sfcpcp  )
+     nullify (sedtab%pcpfillc)
+     nullify (sedtab%pcpfillr)
+     nullify (sedtab%sfcpcp  )
 
      return
   end subroutine nullify_sedimtab

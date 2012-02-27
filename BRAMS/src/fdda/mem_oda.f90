@@ -136,14 +136,14 @@ contains
     implicit none
     type (oda_vars) :: oda
 
-    if (associated(oda%uk))      nullify (oda%uk)
-    if (associated(oda%vk))      nullify (oda%vk)
-    if (associated(oda%tk))      nullify (oda%tk)
-    if (associated(oda%rk))      nullify (oda%rk)
-    if (associated(oda%ukv))     nullify (oda%ukv)
-    if (associated(oda%vkv))     nullify (oda%vkv)
-    if (associated(oda%tkv))     nullify (oda%tkv)
-    if (associated(oda%rkv))     nullify (oda%rkv)
+    nullify (oda%uk)
+    nullify (oda%vk)
+    nullify (oda%tk)
+    nullify (oda%rk)
+    nullify (oda%ukv)
+    nullify (oda%vkv)
+    nullify (oda%tkv)
+    nullify (oda%rkv)
 
     return
   end subroutine nullify_oda
