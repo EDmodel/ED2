@@ -141,8 +141,8 @@ module mem_ensemble
       !------------------------------------------------------------------------------------!
       !      Scalars, for dynamic control ensemble calculation and feedback.               !
       !------------------------------------------------------------------------------------!
-      real :: prev_dnmf                    ! Dndraft mass flux last time          [kg/m²/s]
-      real :: precip                       ! Precipitation rate                   [kg/m²/s]
+      real, pointer, dimension(:) :: prev_dnmf ! Dndraft mass flux last time      [kg/m²/s]
+      real, pointer, dimension(:) :: precip    ! Precipitation rate               [kg/m²/s]
 
    end type ensemble_vars
 
@@ -230,6 +230,9 @@ module mem_ensemble
       allocate (ensemble%outthil                        (mgmzp)                      )
       allocate (ensemble%outco2                         (mgmzp)                      )
 
+
+      allocate (ensemble%prev_dnmf                      (    1)                      )
+      allocate (ensemble%precip                         (    1)                      )
       return
    end subroutine alloc_ensemble
    !=======================================================================================!
@@ -306,6 +309,9 @@ module mem_ensemble
       if(associated(ensemble%outqtot        ))  nullify(ensemble%outqtot        )
       if(associated(ensemble%outthil        ))  nullify(ensemble%outthil        )
 
+      if(associated(ensemble%prev_dnmf      ))  nullify(ensemble%prev_dnmf      )
+      if(associated(ensemble%precip         ))  nullify(ensemble%precip         )
+
       return
    end subroutine nullify_ensemble
    !=======================================================================================!
@@ -381,6 +387,9 @@ module mem_ensemble
       if(associated(ensemble%outco2         ))  deallocate(ensemble%outco2         )
       if(associated(ensemble%outqtot        ))  deallocate(ensemble%outqtot        )
       if(associated(ensemble%outthil        ))  deallocate(ensemble%outthil        )
+
+      if(associated(ensemble%prev_dnmf      ))  deallocate(ensemble%prev_dnmf      )
+      if(associated(ensemble%precip         ))  deallocate(ensemble%precip         )
 
       return
    end subroutine dealloc_ensemble
@@ -459,8 +468,8 @@ module mem_ensemble
       if(associated(ensemble%outthil        ))  ensemble%outthil         = 0.
 
       !----- Real variables ----------------------------------------------------------------!
-      ensemble%prev_dnmf         = 0.
-      ensemble%precip            = 0.
+      if(associated(ensemble%prev_dnmf      ))  ensemble%prev_dnmf       = 0.
+      if(associated(ensemble%precip         ))  ensemble%precip          = 0.
       !-------------------------------------------------------------------------------------!
 
       return

@@ -1037,7 +1037,7 @@ subroutine init_can_air_params()
    !                        is used to calculate the heat and moisture storage capacity in !
    !                        the canopy air space.                                          !
    !---------------------------------------------------------------------------------------!
-   veg_height_min        = 1.0  ! alternative: minval(hgt_min) 
+   veg_height_min        = minval(hgt_min)
    minimum_canopy_depth  = 5.0  ! alternative: minval(hgt_min) 
 
    !----- This is the dimensionless exponential wind atenuation factor. -------------------!
@@ -1824,7 +1824,7 @@ subroutine init_pft_resp_params()
    leaf_turnover_rate(13)         = 2.0
    leaf_turnover_rate(14)         = 2.0
    leaf_turnover_rate(15)         = 2.0
-   leaf_turnover_rate(16)         = 2.0
+   leaf_turnover_rate(16)         = 3.0
    leaf_turnover_rate(17)         = onesixth
 
    !----- Root turnover rate.  ------------------------------------------------------------!

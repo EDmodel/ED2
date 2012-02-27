@@ -48,7 +48,7 @@ subroutine grell_cupar_feedback(mgmzp,maxens_cap,maxens_eff,maxens_lsf,maxens_dy
             outco2         & ! CO2 mixing ratio tendency                         [   ppm/s]
            ,outqtot        & ! Total water mixing ratio tendency                 [ kg/kg/s]
            ,outthil        ! ! Ice-liquid pot. temperature tendency              [     K/s]
-   real                          , intent(inout) ::                                        &
+   real   , dimension(1)         , intent(inout) ::                                        &
             precip         ! ! Precipitation rate                                 [kg/m²/s]
    !----- Arguments, output variables. ----------------------------------------------------!
    real                  , intent(inout) :: dnmf              ! Ref. dnward mass flx (m0)
@@ -264,11 +264,11 @@ subroutine grell_cupar_feedback(mgmzp,maxens_cap,maxens_eff,maxens_lsf,maxens_dy
       do icap=1,maxens_cap
          do iedt=1,maxens_eff
             do k=1,mkx
-               precip = precip + upmf * pw_eff(k,iedt,icap)
+               precip(1) = precip(1) + upmf * pw_eff(k,iedt,icap)
             end do
          end do
       end do
-      precip = max(0.,precip) * inv_maxens_ec
+      precip(1) = max(0.,precip(1)) * inv_maxens_ec
    end if
    
    !---------------------------------------------------------------------------------------!
@@ -283,7 +283,7 @@ subroutine grell_cupar_feedback(mgmzp,maxens_cap,maxens_eff,maxens_lsf,maxens_dy
       iun=mynum+50
       write(unit=iun,fmt='(a)') '---------------------------------------------------------'
       write(unit=iun,fmt='(3(a,1x,i5,1x))') ' I=',i,'J=',j,'ICLD=',icld
-      write(unit=iun,fmt='(4(a,1x,f10.4,1x))') ' PRECIP   =',precip                        &
+      write(unit=iun,fmt='(4(a,1x,f10.4,1x))') ' PRECIP   =',precip(1)                     &
                                               ,' EDT      =',edt                           &
                                               ,' DNMF     =',dnmf                          &
                                               ,' UPMF     =',upmf
@@ -546,7 +546,7 @@ subroutine grell_cupar_output(m1,mgmzp,maxens_cap,rtgt,zm,zt,dnmf,upmf,dnmx,upmx
    real   , dimension(mgmzp)           , intent(in) :: outco2
    real   , dimension(mgmzp)           , intent(in) :: outqtot
    real   , dimension(mgmzp)           , intent(in) :: outthil
-   real                                , intent(in) :: precip
+   real   , dimension(    1)           , intent(in) :: precip
    !----- Output variables. ---------------------------------------------------------------!
    real, dimension(m1), intent(inout) :: thsrc     ! Potential temperature fdbck  [    K/s]
    real, dimension(m1), intent(inout) :: rtsrc     ! Total mixing ratio feedback  [kg/kg/s]
@@ -671,7 +671,7 @@ subroutine grell_cupar_output(m1,mgmzp,maxens_cap,rtgt,zm,zt,dnmf,upmf,dnmx,upmx
    !    Precipitation is simply copied, it could even be output directly from the main     !
    ! subroutine, brought here just to be together with the other source terms.             !
    !---------------------------------------------------------------------------------------!
-   conprr = precip
+   conprr = precip(1)
    
    do k=1,mkx
       kr    = k + kgoff

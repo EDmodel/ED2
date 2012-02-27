@@ -512,7 +512,7 @@ subroutine grell_cupar_dynamic(cldd,clds,nclouds,dtime,maxens_cap,maxens_eff,max
                ierr(icld)      = ensemble_e(icld)%ierr_cap(icap)
                pwav(icld)      = ensemble_e(icld)%pwav_cap(icap)
                pwev(icld)      = ensemble_e(icld)%pwev_cap(icap)
-               prev_dnmf(icld) = ensemble_e(icld)%prev_dnmf
+               prev_dnmf(icld) = ensemble_e(icld)%prev_dnmf(1)
 
                !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
                !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!

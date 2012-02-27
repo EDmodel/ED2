@@ -422,23 +422,23 @@ subroutine read_ed21_history_file
                memsize(1)  = int(1,8)
                memoffs(1)  = 0_8
 
-               call hdf_getslab_r( cpoly%area       (is), 'AREA_SI '                       &
+               call hdf_getslab_r( cpoly%area       (is:is), 'AREA_SI '                    &
                                  , dsetrank, iparallel, .true.)
-               call hdf_getslab_r( cpoly%moist_f    (is), 'MOIST_F '                       &
+               call hdf_getslab_r( cpoly%moist_f    (is:is), 'MOIST_F '                    &
                                  , dsetrank, iparallel, .true.)
-               call hdf_getslab_r( cpoly%moist_W    (is), 'MOIST_W '                       &
+               call hdf_getslab_r( cpoly%moist_W    (is:is), 'MOIST_W '                    &
                                  , dsetrank, iparallel, .true.)
-               call hdf_getslab_r( cpoly%elevation  (is), 'ELEVATION '                     &
+               call hdf_getslab_r( cpoly%elevation  (is:is), 'ELEVATION '                  &
                                  , dsetrank, iparallel, .true.)
-               call hdf_getslab_r( cpoly%slope      (is), 'SLOPE '                         &
+               call hdf_getslab_r( cpoly%slope      (is:is), 'SLOPE '                      &
                                  , dsetrank, iparallel, .true.)
-               call hdf_getslab_r( cpoly%aspect     (is), 'ASPECT '                        &
+               call hdf_getslab_r( cpoly%aspect     (is:is), 'ASPECT '                     &
                                  , dsetrank, iparallel, .true.)
-               call hdf_getslab_r( cpoly%TCI        (is), 'TCI '                           &
+               call hdf_getslab_r( cpoly%TCI        (is:is), 'TCI '                        &
                                  , dsetrank, iparallel, .true.)
-               call hdf_getslab_i( cpoly%patch_count(is), 'PATCH_COUNT '                   &
+               call hdf_getslab_i( cpoly%patch_count(is:is), 'PATCH_COUNT '                &
                                  , dsetrank, iparallel, .true.)
-               call hdf_getslab_i( cpoly%ncol_soil  (is), 'NCOL_SOIL_SI '                  &
+               call hdf_getslab_i( cpoly%ncol_soil  (is:is), 'NCOL_SOIL_SI '               &
                                  , dsetrank, iparallel, .true.)
 
                !----- Load 2D dataset. ----------------------------------------------------!
@@ -456,19 +456,19 @@ subroutine read_ed21_history_file
                memdims(2)   = int(1,8)
                memsize(2)   = int(1,8)
                memoffs(2)   = 0_8
-               call hdf_getslab_i(cpoly%ntext_soil(nzg,is),'NTEXT_SOIL_SI ',dsetrank       &
-                                 ,iparallel,.true.)
+               call hdf_getslab_i(cpoly%ntext_soil(nzg:nzg,is:is),'NTEXT_SOIL_SI '         &
+                                 ,dsetrank,iparallel,.true.)
 
 
 
 
-               !------------------------------------------------------------------------------!
-               !     The soil layer in this case is use defined, so take this from the        !
-               ! grid level variable, and not from the dataset.                               !
-               !------------------------------------------------------------------------------!
+               !---------------------------------------------------------------------------!
+               !     The soil layer in this case is use defined, so take this from the     !
+               ! grid level variable, and not from the dataset.                            !
+               !---------------------------------------------------------------------------!
                cpoly%lsl(is)  = cgrid%lsl(ipy)  ! Initialize lowest soil layer
 
-               !----- Now fill the soil column based on the top layer data. ------------------!
+               !----- Now fill the soil column based on the top layer data. ---------------!
                do k=1,nzg-1
                   cpoly%ntext_soil(k,is) = cpoly%ntext_soil(nzg,is)
                end do
@@ -477,7 +477,7 @@ subroutine read_ed21_history_file
 
                if (sipa_n(si_index) > 0) then
 
-                  !----- Fill 1D polygon (site unique) level variables. ----------------------!
+                  !----- Fill 1D polygon (site unique) level variables. -------------------!
                   call allocate_sitetype(csite,sipa_n(si_index))
 
                   !----- Reset the HDF5 auxiliary variables before moving to the next level. -!
@@ -487,7 +487,7 @@ subroutine read_ed21_history_file
                   memoffs  = 0_8
                   memdims  = 0_8
                   memsize  = 1_8
-                  !---------------------------------------------------------------------------!
+                  !------------------------------------------------------------------------!
 
                   iparallel = 0
                   
@@ -499,47 +499,55 @@ subroutine read_ed21_history_file
                   memsize(1)  = int(csite%npatches,8)
                   memoffs(1)  = 0
 
-                  call hdf_getslab_i(csite%dist_type ,'DIST_TYPE ' ,dsetrank,iparallel,.true.)
-                  call hdf_getslab_r(csite%age       ,'AGE '       ,dsetrank,iparallel,.true.)
-                  call hdf_getslab_r(csite%area      ,'AREA '      ,dsetrank,iparallel,.true.)
-                  call hdf_getslab_r(csite%sum_dgd   ,'SUM_DGD '   ,dsetrank,iparallel,.true.)
-                  call hdf_getslab_r(csite%sum_chd   ,'SUM_CHD '   ,dsetrank,iparallel,.true.)
-                  call hdf_getslab_i(csite%plantation,'PLANTATION ',dsetrank,iparallel,.true.)
-
-                  call hdf_getslab_r(csite%fast_soil_C       ,'FAST_SOIL_C '                  &
+                  call hdf_getslab_i(csite%dist_type ,'DIST_TYPE '                         &
                                     ,dsetrank,iparallel,.true.)
-                  call hdf_getslab_r(csite%slow_soil_C       ,'SLOW_SOIL_C '                  &
+                  call hdf_getslab_r(csite%age       ,'AGE '                               &
                                     ,dsetrank,iparallel,.true.)
-                  call hdf_getslab_r(csite%fast_soil_N       ,'FAST_SOIL_N '                  &
+                  call hdf_getslab_r(csite%area      ,'AREA '                              &
                                     ,dsetrank,iparallel,.true.)
-                  call hdf_getslab_r(csite%structural_soil_C ,'STRUCTURAL_SOIL_C '            &
+                  call hdf_getslab_r(csite%sum_dgd   ,'SUM_DGD '                           &
                                     ,dsetrank,iparallel,.true.)
-                  call hdf_getslab_r(csite%structural_soil_L ,'STRUCTURAL_SOIL_L '            &
+                  call hdf_getslab_r(csite%sum_chd   ,'SUM_CHD '                           &
                                     ,dsetrank,iparallel,.true.)
-                  call hdf_getslab_r(csite%mineralized_soil_N,'MINERALIZED_SOIL_N '           &
+                  call hdf_getslab_i(csite%plantation,'PLANTATION '                        &
                                     ,dsetrank,iparallel,.true.)
 
+                  call hdf_getslab_r(csite%fast_soil_C       ,'FAST_SOIL_C '               &
+                                    ,dsetrank,iparallel,.true.)
+                  call hdf_getslab_r(csite%slow_soil_C       ,'SLOW_SOIL_C '               &
+                                    ,dsetrank,iparallel,.true.)
+                  call hdf_getslab_r(csite%fast_soil_N       ,'FAST_SOIL_N '               &
+                                    ,dsetrank,iparallel,.true.)
+                  call hdf_getslab_r(csite%structural_soil_C ,'STRUCTURAL_SOIL_C '         &
+                                    ,dsetrank,iparallel,.true.)
+                  call hdf_getslab_r(csite%structural_soil_L ,'STRUCTURAL_SOIL_L '         &
+                                    ,dsetrank,iparallel,.true.)
+                  call hdf_getslab_r(csite%mineralized_soil_N,'MINERALIZED_SOIL_N '        &
+                                    ,dsetrank,iparallel,.true.)
 
-                  !---------------------------------------------------------------------------!
-                  !     Loop over all sites and fill the patch-level variables.               !
-                  !---------------------------------------------------------------------------!
+
+                  !------------------------------------------------------------------------!
+                  !     Loop over all sites and fill the patch-level variables.            !
+                  !------------------------------------------------------------------------!
                   patchloop: do ipa = 1,csite%npatches
 
-                     !------------------------------------------------------------------------!
-                     !     Reset the HDF5 auxiliary variables before moving to the next       !
-                     ! level.                                                                 !
-                     !------------------------------------------------------------------------!
+                     !---------------------------------------------------------------------!
+                     !     Reset the HDF5 auxiliary variables before moving to the next    !
+                     ! level.                                                              !
+                     !---------------------------------------------------------------------!
                      globdims = 0_8
                      chnkdims = 0_8
                      chnkoffs = 0_8
                      memoffs  = 0_8
                      memdims  = 0_8
                      memsize  = 1_8
-                     !------------------------------------------------------------------------!
+                     !---------------------------------------------------------------------!
 
                      cpatch => csite%patch(ipa)
 
-                     !----- Initialise patch-level variables that depend on the cohort ones. -!
+                     !---------------------------------------------------------------------!
+                     !    Initialise patch-level variables that depend on the cohort ones. !
+                     !---------------------------------------------------------------------!
                      csite%lai(ipa)               = 0.0
                      csite%wpa(ipa)               = 0.0
                      csite%wai(ipa)               = 0.0
@@ -548,12 +556,12 @@ subroutine read_ed21_history_file
                      pa_index = sipa_id(si_index) + ipa - 1
                      call allocate_patchtype(cpatch,paco_n(pa_index))
 
-                     !------------------------------------------------------------------------!
-                     !     Empty patches may exist, so make sure that this part is called     !
-                     ! only when there are cohorts.                                           !
-                     !------------------------------------------------------------------------!
+                     !---------------------------------------------------------------------!
+                     !     Empty patches may exist, so make sure that this part is called  !
+                     ! only when there are cohorts.                                        !
+                     !---------------------------------------------------------------------!
                      if (cpatch%ncohorts > 0) then
-                        !----- First the 1-D variables. --------------------------------------!
+                        !----- First the 1-D variables. -----------------------------------!
                         dsetrank = 1
                         globdims(1) = int(dset_ncohorts_global,8)
                         chnkdims(1) = int(cpatch%ncohorts,8)
@@ -562,16 +570,20 @@ subroutine read_ed21_history_file
                         memsize(1)  = int(cpatch%ncohorts,8)
                         memoffs(1)  = 0_8
 
-                        call hdf_getslab_r(cpatch%dbh   ,'DBH '   ,dsetrank,iparallel,.true.)
-                        call hdf_getslab_r(cpatch%bdead ,'BDEAD ' ,dsetrank,iparallel,.true.)
-                        call hdf_getslab_i(cpatch%pft   ,'PFT '   ,dsetrank,iparallel,.true.)
-                        call hdf_getslab_r(cpatch%nplant,'NPLANT ',dsetrank,iparallel,.true.)
+                        call hdf_getslab_r(cpatch%dbh   ,'DBH '                            &
+                                          ,dsetrank,iparallel,.true.)
+                        call hdf_getslab_r(cpatch%bdead ,'BDEAD '                          &
+                                          ,dsetrank,iparallel,.true.)
+                        call hdf_getslab_i(cpatch%pft   ,'PFT '                            &
+                                          ,dsetrank,iparallel,.true.)
+                        call hdf_getslab_r(cpatch%nplant,'NPLANT '                         &
+                                          ,dsetrank,iparallel,.true.)
 
-                        !---------------------------------------------------------------------!
-                        !    Find derived properties from Bdead.  In the unlikely case that   !
-                        ! bdead is zero, then we use DBH as the starting point.  In both      !
-                        ! cases we assume that plants are in allometry.                       !
-                        !---------------------------------------------------------------------!
+                        !------------------------------------------------------------------!
+                        !    Find derived properties from Bdead.  In the unlikely case     !
+                        ! that bdead is zero, then we use DBH as the starting point.  In   !
+                        ! both cases we assume that plants are in allometry.               !
+                        !------------------------------------------------------------------!
                         do ico=1,cpatch%ncohorts
                            ipft = cpatch%pft(ico)
 
@@ -587,18 +599,18 @@ subroutine read_ed21_history_file
 
                            cpatch%bleaf(ico)  = dbh2bl(cpatch%dbh(ico),cpatch%pft(ico))
 
-                           !----- Find the other pools. --------------------------------------!
+                           !----- Find the other pools. -----------------------------------!
                            salloc  = (1.0 + q(ipft) + qsw(ipft) * cpatch%hite(ico))
                            salloci = 1.0 / salloc
                            cpatch%balive  (ico) = cpatch%bleaf(ico) * salloc
                            cpatch%broot   (ico) = cpatch%balive(ico) * q(ipft) * salloci
-                           cpatch%bsapwood(ico) = cpatch%balive(ico) * qsw(ipft)              &
+                           cpatch%bsapwood(ico) = cpatch%balive(ico) * qsw(ipft)           &
                                                 * cpatch%hite(ico) * salloci
                            cpatch%bstorage(ico) = 0.0
                            cpatch%phenology_status(ico) = 0
                         end do
 
-                        !----- Then the 2-D variables. ---------------------------------------!
+                        !----- Then the 2-D variables. ------------------------------------!
                         dsetrank    = 2
                         globdims(1) = 13_8
                         chnkdims(1) = 13_8
@@ -613,10 +625,14 @@ subroutine read_ed21_history_file
                         memsize(2)  = int(cpatch%ncohorts,8)
                         memoffs(2)  = 0_8
 
-                        call hdf_getslab_r(cpatch%cb    ,'CB '    ,dsetrank,iparallel,.true.)
-                        call hdf_getslab_r(cpatch%cb_max,'CB_MAX ',dsetrank,iparallel,.true.)
+                        call hdf_getslab_r(cpatch%cb    ,'CB '                             &
+                                          ,dsetrank,iparallel,.true.)
+                        call hdf_getslab_r(cpatch%cb_max,'CB_MAX '                         &
+                                          ,dsetrank,iparallel,.true.)
                         
-                        !----- The following variables are initialised with default values. --!
+                        !------------------------------------------------------------------!
+                        !    The following variables are initialised with default values.  !
+                        !------------------------------------------------------------------!
                         cpatch%dagb_dt              = 0.
                         cpatch%dba_dt               = 0.
                         cpatch%ddbh_dt              = 0.
@@ -625,26 +641,26 @@ subroutine read_ed21_history_file
                         cpatch%par_l                = 0.0
                         
                         cohortloop: do ico=1,cpatch%ncohorts
-                           !------------------------------------------------------------------!
-                           !    We will now check the PFT of each cohort, so we determine     !
-                           ! if this is a valid PFT.  If not, then we must decide what we     !
-                           ! should do...                                                     !
-                           !------------------------------------------------------------------!
+                           !---------------------------------------------------------------!
+                           !    We will now check the PFT of each cohort, so we determine  !
+                           ! if this is a valid PFT.  If not, then we must decide what we  !
+                           ! should do...                                                  !
+                           !---------------------------------------------------------------!
                            if (.not. include_pft(cpatch%pft(ico))) then
                               select case(pft_1st_check)
                               case (0)
-                                 !----- Stop the run. ----------------------------------------!
-                                 write (unit=*,fmt='(a,1x,i5,1x,a)')                          &
-                                       'I found a cohort with PFT=',cpatch%pft(ico)           &
+                                 !----- Stop the run. -------------------------------------!
+                                 write (unit=*,fmt='(a,1x,i5,1x,a)')                       &
+                                       'I found a cohort with PFT=',cpatch%pft(ico)        &
                                       ,' and it is not in your include_these_pft...'
-                                 call fatal_error('Invalid PFT in history file'               &
-                                                 ,'read_ed21_history_file'                    &
+                                 call fatal_error('Invalid PFT in history file'            &
+                                                 ,'read_ed21_history_file'                 &
                                                  ,'ed_read_ed21_history.F90')
 
                               case (1)
-                                 !----- Include the unexpected PFT in the list. --------------!
-                                 write (unit=*,fmt='(a,1x,i5,1x,a)')                          &
-                                       'I found a cohort with PFT=',cpatch%pft(ico)           &
+                                 !----- Include the unexpected PFT in the list. -----------!
+                                 write (unit=*,fmt='(a,1x,i5,1x,a)')                       &
+                                       'I found a cohort with PFT=',cpatch%pft(ico)        &
                                       ,'... Including this PFT in your include_these_pft...'
                                  include_pft(cpatch%pft(ico))          = .true.
                                  include_these_pft(count(include_pft)) = cpatch%pft(ico)
@@ -656,103 +672,107 @@ subroutine read_ed21_history_file
                                  end if
 
                               case (2)
-                                 !----- Ignore the unexpect PFT. -----------------------------!
-                                 write (unit=*,fmt='(a,1x,i5,1x,a)')                          &
-                                       'I found a cohort with PFT=',cpatch%pft(ico)           &
+                                 !----- Ignore the unexpect PFT. --------------------------!
+                                 write (unit=*,fmt='(a,1x,i5,1x,a)')                       &
+                                       'I found a cohort with PFT=',cpatch%pft(ico)        &
                                       ,'... Ignoring it...'
-                                 !------------------------------------------------------------!
-                                 !    The way we will ignore this cohort is by setting its    !
-                                 ! nplant to zero, and calling the "terminate_cohorts"        !
-                                 ! subroutine right after this.                               !
-                                 !------------------------------------------------------------!
+                                 !---------------------------------------------------------!
+                                 !    The way we will ignore this cohort is by setting its !
+                                 ! nplant to zero, and calling the "terminate_cohorts"     !
+                                 ! subroutine right after this.                            !
+                                 !---------------------------------------------------------!
                                  cpatch%nplant(ico) = 0.
                               end select
                            end if
 
-                           !------------------------------------------------------------------!
-                           !     Make sure that the biomass won't lead to FPE.  This          !
-                           ! should never happen when using a stable ED-2.1 version, but      !
-                           ! older versions had "zombie" cohorts.  Here we ensure that        !
-                           ! the model initialises with stable numbers whilst ensuring        !
-                           ! that the cohorts will be eliminated.                             !
-                           !------------------------------------------------------------------!
-                           if (cpatch%balive(ico) > 0.            .and.                       &
+                           !---------------------------------------------------------------!
+                           !     Make sure that the biomass won't lead to FPE.  This       !
+                           ! should never happen when using a stable ED-2.1 version, but   !
+                           ! older versions had "zombie" cohorts.  Here we ensure that     !
+                           ! the model initialises with stable numbers whilst ensuring     !
+                           ! that the cohorts will be eliminated.                          !
+                           !---------------------------------------------------------------!
+                           if (cpatch%balive(ico) > 0.            .and.                    &
                                cpatch%balive(ico) < tiny_biomass) then
                               cpatch%balive(ico) = tiny_biomass
                            end if
-                           if (cpatch%bleaf(ico) > 0.            .and.                        &
+                           if (cpatch%bleaf(ico) > 0.            .and.                     &
                                cpatch%bleaf(ico) < tiny_biomass) then
                               cpatch%bleaf(ico) = tiny_biomass
                            end if
-                           if (cpatch%broot(ico) > 0.            .and.                        &
+                           if (cpatch%broot(ico) > 0.            .and.                     &
                                cpatch%broot(ico) < tiny_biomass) then
                               cpatch%broot(ico) = tiny_biomass
                            end if
-                           if (cpatch%bsapwood(ico) > 0.            .and.                     &
+                           if (cpatch%bsapwood(ico) > 0.            .and.                  &
                                cpatch%bsapwood(ico) < tiny_biomass) then
                               cpatch%bsapwood(ico) = tiny_biomass
                            end if
-                           if (cpatch%bdead(ico) > 0.            .and.                        &
+                           if (cpatch%bdead(ico) > 0.            .and.                     &
                                cpatch%bdead(ico) < tiny_biomass) then
                               cpatch%bdead(ico) = tiny_biomass
                            end if
-                           if (cpatch%bstorage(ico) > 0.            .and.                     &
+                           if (cpatch%bstorage(ico) > 0.            .and.                  &
                                cpatch%bstorage(ico) < tiny_biomass) then
                               cpatch%bstorage(ico) = tiny_biomass
                            end if
-                           !------------------------------------------------------------------!
+                           !---------------------------------------------------------------!
 
 
 
 
-                           !----- Compute the above-ground biomass. --------------------------!
-                           cpatch%agb(ico) = ed_biomass(cpatch%bdead(ico),cpatch%balive(ico)  &
-                                                       ,cpatch%bleaf(ico),cpatch%pft(ico)     &
-                                                       ,cpatch%hite(ico),cpatch%bstorage(ico) &
-                                                       ,cpatch%bsapwood(ico))
+                           !----- Compute the above-ground biomass. -----------------------!
+                           cpatch%agb(ico) = ed_biomass(cpatch%bdead(ico)                  &
+                                                       ,cpatch%balive(ico)                 &
+                                                       ,cpatch%bleaf(ico)                  &
+                                                       ,cpatch%pft(ico)                    &
+                                                       ,cpatch%hite(ico)                   &
+                                                       ,cpatch%bstorage(ico)               &
+                                                       ,cpatch%bsapwood(ico) )
 
                            cpatch%basarea(ico)  = pio4 * cpatch%dbh(ico) * cpatch%dbh(ico)
 
                             
-                           !----- Assign LAI, WPA, and WAI -----------------------------------!
-                           call area_indices(cpatch%nplant(ico),cpatch%bleaf(ico)             &
-                                            ,cpatch%bdead(ico),cpatch%balive(ico)             &
-                                            ,cpatch%dbh(ico), cpatch%hite(ico)                &
-                                            ,cpatch%pft(ico), SLA(cpatch%pft(ico))            &
-                                            ,cpatch%lai(ico),cpatch%wpa(ico), cpatch%wai(ico) &
-                                            ,cpatch%crown_area(ico),cpatch%bsapwood(ico))
+                           !----- Assign LAI, WPA, and WAI --------------------------------!
+                           call area_indices(cpatch%nplant(ico),cpatch%bleaf(ico)          &
+                                            ,cpatch%bdead(ico),cpatch%balive(ico)          &
+                                            ,cpatch%dbh(ico), cpatch%hite(ico)             &
+                                            ,cpatch%pft(ico), SLA(cpatch%pft(ico))         &
+                                            ,cpatch%lai(ico),cpatch%wpa(ico)               &
+                                            ,cpatch%wai(ico),cpatch%crown_area(ico)        &
+                                            ,cpatch%bsapwood(ico))
 
 
-                           !----- Update the derived patch-level variables. ------------------!
+                           !----- Update the derived patch-level variables. ---------------!
                            csite%lai(ipa)  = csite%lai(ipa) + cpatch%lai(ico)
                            csite%wpa(ipa)  = csite%wpa(ipa) + cpatch%wpa(ico)
                            csite%wai(ipa)  = csite%wai(ipa) + cpatch%wai(ico)
-                           csite%plant_ag_biomass(ipa) = csite%plant_ag_biomass(ipa)          &
+                           csite%plant_ag_biomass(ipa) = csite%plant_ag_biomass(ipa)       &
                                                        + cpatch%agb(ico)*cpatch%nplant(ico)
 
-                           !----- Initialise the other cohort level variables. ---------------!
+                           !----- Initialise the other cohort level variables. ------------!
                            call init_ed_cohort_vars(cpatch,ico,cpoly%lsl(isi))
                         end do cohortloop
 
-                        !---------------------------------------------------------------------!
-                        !    Eliminate any "unwanted" cohort (i.e., those which nplant was    !
-                        ! set to zero so it would be removed).                                !
-                        !---------------------------------------------------------------------!
+                        !------------------------------------------------------------------!
+                        !    Eliminate any "unwanted" cohort (i.e., those which nplant was !
+                        ! set to zero so it would be removed).                             !
+                        !------------------------------------------------------------------!
                         call terminate_cohorts(csite,ipa,elim_nplant,elim_lai)
 
                      end if
                   end do patchloop
                else
-                  !----- This should never happen, but, just in case... ----------------------!
-                  call fatal_error('A site with no patches was found...'                      &
+                  !----- This should never happen, but, just in case... -------------------!
+                  call fatal_error('A site with no patches was found...'                   &
                                   ,'read_ed21_history_file','ed_read_ed21_history.F90')
                end if
 
-               !----- Initialise the other patch-level variables. ----------------------------!
+               !----- Initialise the other patch-level variables. -------------------------!
                call init_ed_patch_vars(csite,1,csite%npatches,cpoly%lsl(isi))
 
             end if
-            !---------------------------------------------------------------------------------!
+            !------------------------------------------------------------------------------!
          end do siteloop
          !---------------------------------------------------------------------------------!
 
@@ -1430,23 +1450,23 @@ subroutine read_ed21_history_unstruct
                   memsize (1) = int(1,8)
                   memoffs (1) = 0_8
 
-                  call hdf_getslab_r( tpoly%area       (is)     , 'AREA_SI '               &
+                  call hdf_getslab_r( tpoly%area       (is:is)     , 'AREA_SI '            &
                                     , dsetrank, iparallel, .true.)
-                  call hdf_getslab_r( tpoly%moist_f    (is)     , 'MOIST_F '               &
+                  call hdf_getslab_r( tpoly%moist_f    (is:is)     , 'MOIST_F '            &
                                     , dsetrank, iparallel, .true.)
-                  call hdf_getslab_r( tpoly%moist_W    (is)     , 'MOIST_W '               &
+                  call hdf_getslab_r( tpoly%moist_W    (is:is)     , 'MOIST_W '            &
                                     , dsetrank, iparallel, .true.)
-                  call hdf_getslab_r( tpoly%elevation  (is)     , 'ELEVATION '             &
+                  call hdf_getslab_r( tpoly%elevation  (is:is)     , 'ELEVATION '          &
                                     , dsetrank, iparallel, .true.)
-                  call hdf_getslab_r( tpoly%slope      (is)     , 'SLOPE '                 &
+                  call hdf_getslab_r( tpoly%slope      (is:is)     , 'SLOPE '              &
                                     , dsetrank, iparallel, .true.)
-                  call hdf_getslab_r( tpoly%aspect     (is)     , 'ASPECT '                &
+                  call hdf_getslab_r( tpoly%aspect     (is:is)     , 'ASPECT '             &
                                     , dsetrank, iparallel, .true.)
-                  call hdf_getslab_r( tpoly%TCI        (is)     , 'TCI '                   &
+                  call hdf_getslab_r( tpoly%TCI        (is:is)     , 'TCI '                &
                                     , dsetrank, iparallel, .true.)
-                  call hdf_getslab_i( tpoly%patch_count(is)     , 'PATCH_COUNT '           &
+                  call hdf_getslab_i( tpoly%patch_count(is:is)     , 'PATCH_COUNT '        &
                                     , dsetrank, iparallel, .true.)
-                  call hdf_getslab_i( tpoly%lsl        (is)     ,'LSL_SI '                 &
+                  call hdf_getslab_i( tpoly%lsl        (is:is)     ,'LSL_SI '              &
                                     , dsetrank, iparallel, .true.)
                   !------------------------------------------------------------------------!
 

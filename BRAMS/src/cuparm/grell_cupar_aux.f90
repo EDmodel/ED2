@@ -430,7 +430,7 @@ subroutine initial_winds_grell(prec_cld,m1,m2,m3,i,j,jdim,last_dnmf,ua,va,prev_d
    real   , dimension(m2,m3)    , intent(in)    :: last_dnmf ! Last time downdraft
    real   , dimension(m1,m2,m3) , intent(in)    :: ua        ! Zonal wind
    real   , dimension(m1,m2,m3) , intent(in)    :: va        ! Meridional wind
-   real                         , intent(inout) :: prev_dnmf ! Previous downdraft
+   real   , dimension(1)        , intent(inout) :: prev_dnmf ! Previous downdraft
    !------ Local variables ----------------------------------------------------------------!
    integer            :: k         ! Counter for current Grell level
    integer            :: kr        ! Counter for corresponding BRAMS level
@@ -438,7 +438,7 @@ subroutine initial_winds_grell(prec_cld,m1,m2,m3,i,j,jdim,last_dnmf,ua,va,prev_d
 
    
    !------ Initializing scalars -----------------------------------------------------------!
-   prev_dnmf = last_dnmf(i,j)
+   prev_dnmf(1) = last_dnmf(i,j)
    !---------------------------------------------------------------------------------------!
    !    Transferring the values from BRAMS to Grell's levels, remembering that Grell's     !
    ! grid goes from 1 to m1-1.                                                             !

@@ -889,7 +889,7 @@ $CUPARM_OPTIONS
    ! PS3: If NCLOUDS >= 3, then the middle ones will necessarily use Grell's               !
    !      parameterization.                                                                !
    !---------------------------------------------------------------------------------------!
-   NCLOUDS  = 2,
+   NCLOUDS  = 4,
    !---------------------------------------------------------------------------------------!
 
 
@@ -945,8 +945,8 @@ $CUPARM_OPTIONS
    !             (grell_coms.f90).  Default min_down_radius is 900.                        !
    ! DEPTH_MIN - Minimum depth that the cloud must have [m].                               !
    !---------------------------------------------------------------------------------------!
-   RADIUS    = 12000., 600., ! 4577., 1746., 666.,
-   DEPTH_MIN =  1200., 100., ! 457.7, 174.6, 66.6,
+   RADIUS    = 12000., 4800., 1800., 600.,
+   DEPTH_MIN =  6000., 2400.,  900., 200.,
    !---------------------------------------------------------------------------------------!
 
 
@@ -971,11 +971,11 @@ $CUPARM_OPTIONS
    !---------------------------------------------------------------------------------------!
    !     The following variables are scalars.                                              !
    !---------------------------------------------------------------------------------------!
-   CLD2PREC = 0.001,  ! Ratio of conversion of condensates to precipitation.       [   ---]
+   CLD2PREC = 0.002,  ! Ratio of conversion of condensates to precipitation.       [   ---]
    ZKBMAX   = 4000.,  ! Maximum AGL height in which updrafts can originate.        [     m]
    ZCUTDOWN = 3000.,  ! Maximum AGL height in which downdrafts can originate.      [     m]
    Z_DETR   = 1250.,  ! Top of the downdraft detrainment layer                     [     m]
-   MAX_HEAT =  600.,  ! Maximum heating rate allowed for feedback                  [ K/day]
+   MAX_HEAT =  250.,  ! Maximum heating rate allowed for feedback                  [ K/day]
    !---------------------------------------------------------------------------------------!
 
 
@@ -1340,7 +1340,7 @@ $MODEL_OPTIONS
       !           or 1, only the first value will be considered, and if ICO2=2, then       !
       !           provide one value per level.  Unit here is µmol/mol.                     !
       !------------------------------------------------------------------------------------!
-      ICO2   =    0,
+      ICO2   =    1,
       CO2CON = 380.,
       !------------------------------------------------------------------------------------!
 
@@ -1829,7 +1829,7 @@ $ED2_INFO
    !          If time is a problem, i.e., the runs are too slow, then try making it        !
    !          larger, but not much larger so to avoid problems...                          !
    !---------------------------------------------------------------------------------------!
-   DTLSM  = 240.0,
+   DTLSM  = 600.0,
    !---------------------------------------------------------------------------------------!
 
 
@@ -2109,7 +2109,7 @@ $ED2_INFO
    !                   2.  Similar to 1, but branches are treated as separate pools in the !
    !                       biophysics (thus doubling the number of prognostic variables).  !
    !---------------------------------------------------------------------------------------!
-   IBRANCH_THERMO = 0,        
+   IBRANCH_THERMO = 1,        
    !---------------------------------------------------------------------------------------!
 
 
@@ -2157,7 +2157,7 @@ $ED2_INFO
    !                  a few genuses in Costa Rica.  References:                            !
    !                  Cole and Ewel (2006), and Calvo Alvarado et al. (2008).              !
    !---------------------------------------------------------------------------------------!
-   IALLOM          = 2,
+   IALLOM          = 1,
    !---------------------------------------------------------------------------------------!
 
 
@@ -2372,22 +2372,22 @@ $ED2_INFO
    ! Q10_C3        -- Q10 factor for C3 plants (used only if IPHYSIOL is set to 2 or 3).   !
    ! Q10_C4        -- Q10 factor for C4 plants (used only if IPHYSIOL is set to 2 or 3).   !
    !---------------------------------------------------------------------------------------!
-   VMFACT_C3       =   1.25,
+   VMFACT_C3       =   1.00,
    VMFACT_C4       =   1.00,
    MPHOTO_TRC3     =    9.0,
    MPHOTO_TEC3     =    7.2,
-   MPHOTO_C4       =    5.0,
+   MPHOTO_C4       =    5.2,
    BPHOTO_BLC3     = 10000.,
    BPHOTO_NLC3     = 1000.,
-   BPHOTO_C4       = 8000.,
-   KW_GRASS        =   300.,
-   KW_TREE         =   300.,
+   BPHOTO_C4       = 10000.,
+   KW_GRASS        =   600.,
+   KW_TREE         =   450.,
    GAMMA_C3        =  0.015,
-   GAMMA_C4        =  0.036,
-   D0_GRASS        =  0.015,
-   D0_TREE         =  0.015,
+   GAMMA_C4        =  0.040,
+   D0_GRASS        =  0.016,
+   D0_TREE         =  0.016,
    ALPHA_C3        =  0.080,
-   ALPHA_C4        =  0.053,
+   ALPHA_C4        =  0.055,
    KLOWCO2IN       =  4000.,
    RRFFACT         =  1.000,
    GROWTHRESP      =  0.33333333333,
@@ -2410,7 +2410,7 @@ $ED2_INFO
    !                       ing point is by definition -1.5MPa, so make sure that the value !
    !                       is above -1.5.                                                  !
    !---------------------------------------------------------------------------------------!
-   THETACRIT       = -1.20,
+   THETACRIT       = -1.28,
    !---------------------------------------------------------------------------------------!
 
 
@@ -2498,7 +2498,7 @@ $ED2_INFO
    !             4.  Same as 0, but if finds the ground conductance following CLM          !
    !                 technical note (equations 5.98-5.100).                                !
    !---------------------------------------------------------------------------------------!
-   ICANTURB        = 4,       
+   ICANTURB        = 2,       
    !---------------------------------------------------------------------------------------!
 
 
@@ -2561,8 +2561,8 @@ $ED2_INFO
    ! MIN_PATCH_AREA -- This is the minimum fraction area of a given soil type that allows  !
    !                   a site to be created (ignored if IED_INIT_MODE is set to 3).        !
    !---------------------------------------------------------------------------------------!
-   MAXPATCH       =    10,
-   MAXCOHORT      =    60,
+   MAXPATCH       =    15,
+   MAXCOHORT      =    72,
    MIN_PATCH_AREA = 0.005,
    !---------------------------------------------------------------------------------------!
 
