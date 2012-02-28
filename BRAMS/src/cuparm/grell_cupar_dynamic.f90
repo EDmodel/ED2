@@ -926,8 +926,12 @@ subroutine grell_grell_solver(nclouds,cldd,clds,dtime,fac,aatot0,aatot,mfke,ierr
       if (nsolv == 0) exit queq_loop
 
       !----- Allocate some vectors we need for solving the linear system. -----------------!
-      allocate(kke(nsolv,nsolv),diagkke(nsolv),mfo(nsolv),mb(nsolv),cldidx(nsolv))
-      
+      allocate(kke    (nsolv,nsolv))
+      allocate(diagkke      (nsolv))
+      allocate(mfo          (nsolv))
+      allocate(mb           (nsolv))
+      allocate(cldidx       (nsolv))
+
       !----- Store the actual cloud number of the clouds that exist. ----------------------!
       cldidx = pack(cloud,okcld)
 
@@ -970,7 +974,12 @@ subroutine grell_grell_solver(nclouds,cldd,clds,dtime,fac,aatot0,aatot,mfke,ierr
          !     The matrix is singular or almost singular, so we cannot solve these clouds. !
          ! We can quit this routine after freeing the allocated arrays.                    !
          !---------------------------------------------------------------------------------!
-         deallocate(kke,mfo,mb,cldidx)
+         deallocate(kke    )
+         deallocate(diagkke)
+         deallocate(mfo    )
+         deallocate(mb     )
+         deallocate(cldidx )
+         !---------------------------------------------------------------------------------!
          exit queq_loop
       elseif (any(mb < 0.) .or. any(diagkke == 0.)) then
          !---------------------------------------------------------------------------------!
@@ -985,7 +994,12 @@ subroutine grell_grell_solver(nclouds,cldd,clds,dtime,fac,aatot0,aatot,mfke,ierr
             end if
          end do
          !----- Free memory so it will be ready to be allocated again next time. ----------!
-         deallocate(kke,diagkke,mfo,mb,cldidx)
+         deallocate(kke    )
+         deallocate(diagkke)
+         deallocate(mfo    )
+         deallocate(mb     )
+         deallocate(cldidx )
+         !---------------------------------------------------------------------------------!
       else
          !---------------------------------------------------------------------------------!
          !     All mass flux terms are zero or positive, we are all set.  Simply copy the  !
@@ -998,7 +1012,12 @@ subroutine grell_grell_solver(nclouds,cldd,clds,dtime,fac,aatot0,aatot,mfke,ierr
             upmx(jcld) = max(0.,mfo(jsol) / kke(jsol,jsol))
          end do
          !----- Free memory before leaving the subroutine. --------------------------------!
-         deallocate(kke,diagkke,mfo,mb,cldidx)
+         deallocate(kke    )
+         deallocate(diagkke)
+         deallocate(mfo    )
+         deallocate(mb     )
+         deallocate(cldidx )
+         !---------------------------------------------------------------------------------!
          exit queq_loop
       end if
 
@@ -1103,8 +1122,12 @@ subroutine grell_arakschu_solver(nclouds,cldd,clds,mgmzp,dtime,p_cup,clim,whlev,
       if (nsolv == 0) exit queq_loop
 
       !----- Allocate some vectors we need for solving the linear system. -----------------!
-      allocate(kke(nsolv,nsolv),diagkke(nsolv),mfo(nsolv),mb(nsolv),cldidx(nsolv))
-      
+      allocate(kke    (nsolv,nsolv))
+      allocate(diagkke      (nsolv))
+      allocate(mfo          (nsolv))
+      allocate(mb           (nsolv))
+      allocate(cldidx       (nsolv))
+
       !----- Store the actual cloud number of those clouds 
       cldidx = pack(cloud,okcld)
 
@@ -1170,7 +1193,11 @@ subroutine grell_arakschu_solver(nclouds,cldd,clds,mgmzp,dtime,p_cup,clim,whlev,
          !     The matrix is singular or almost singular, so we cannot solve these clouds. !
          ! We can quit this routine after freeing the allocated arrays.                    !
          !---------------------------------------------------------------------------------!
-         deallocate(kke,mfo,mb,cldidx)
+         deallocate(kke    )
+         deallocate(diagkke)
+         deallocate(mfo    )
+         deallocate(mb     )
+         deallocate(cldidx )
          exit queq_loop
       elseif (any(mb < 0.) .or. any(diagkke == 0.)) then
          !---------------------------------------------------------------------------------!
@@ -1184,7 +1211,12 @@ subroutine grell_arakschu_solver(nclouds,cldd,clds,mgmzp,dtime,p_cup,clim,whlev,
             end if
          end do
          !----- Free memory so it will be ready to be allocated next time. ----------------!
-         deallocate(kke,diagkke,mfo,mb,cldidx)
+         deallocate(kke    )
+         deallocate(diagkke)
+         deallocate(mfo    )
+         deallocate(mb     )
+         deallocate(cldidx )
+         !---------------------------------------------------------------------------------!
       else
          !---------------------------------------------------------------------------------!
          !     All mass flux terms are zero or positive, we are all set.  Simply copy the  !
@@ -1197,7 +1229,12 @@ subroutine grell_arakschu_solver(nclouds,cldd,clds,mgmzp,dtime,p_cup,clim,whlev,
             upmx(jcld) = max(0.,mfo(jsol) / kke(jsol,jsol))
          end do
          !----- Free memory before leaving the subroutine. --------------------------------!
-         deallocate(kke,diagkke,mfo,mb,cldidx)
+         deallocate(kke    )
+         deallocate(diagkke)
+         deallocate(mfo    )
+         deallocate(mb     )
+         deallocate(cldidx )
+         !---------------------------------------------------------------------------------!
          exit queq_loop
       end if
 
@@ -1295,8 +1332,13 @@ subroutine grell_inre_solver(nclouds,cldd,clds,tscal,fac,aatot0,mfke,ierr,upmf,u
       if (nsolv == 0) exit inre_loop
 
       !----- Allocate some vectors we need for solving the linear system. -----------------!
-      allocate(kke(nsolv,nsolv),diagkke(nsolv),mfo(nsolv),mb(nsolv),cldidx(nsolv))
-      
+      allocate(kke    (nsolv,nsolv))
+      allocate(diagkke      (nsolv))
+      allocate(mfo          (nsolv))
+      allocate(mb           (nsolv))
+      allocate(cldidx       (nsolv))
+      !------------------------------------------------------------------------------------!
+
       !----- Store the actual cloud number of those clouds 
       cldidx = pack(cloud,okcld)
 
@@ -1340,7 +1382,11 @@ subroutine grell_inre_solver(nclouds,cldd,clds,tscal,fac,aatot0,mfke,ierr,upmf,u
          !     The matrix is singular or almost singular, so we cannot solve these clouds. !
          ! We can quit this routine after freeing the allocated arrays.                    !
          !---------------------------------------------------------------------------------!
-         deallocate(kke,diagkke,mfo,mb,cldidx)
+         deallocate(kke    )
+         deallocate(diagkke)
+         deallocate(mfo    )
+         deallocate(mb     )
+         deallocate(cldidx )
          exit inre_loop
       elseif (any(mb < 0.) .or. any(diagkke == 0.)) then
          !---------------------------------------------------------------------------------!
@@ -1354,7 +1400,12 @@ subroutine grell_inre_solver(nclouds,cldd,clds,tscal,fac,aatot0,mfke,ierr,upmf,u
             end if
          end do
          !----- Free memory so it will be ready to be allocated next time. ----------------!
-         deallocate(kke,diagkke,mfo,mb,cldidx)
+         deallocate(kke    )
+         deallocate(diagkke)
+         deallocate(mfo    )
+         deallocate(mb     )
+         deallocate(cldidx )
+         !---------------------------------------------------------------------------------!
       else
          !---------------------------------------------------------------------------------!
          !     All mass flux terms are zero or positive, we are all set.  Simply copy the  !
@@ -1367,7 +1418,12 @@ subroutine grell_inre_solver(nclouds,cldd,clds,tscal,fac,aatot0,mfke,ierr,upmf,u
             upmx(jcld) = max(0.,mfo(jsol) / kke(jsol,jsol))
          end do
          !----- Free memory before leaving the subroutine. --------------------------------!
-         deallocate(kke,diagkke,mfo,mb,cldidx)
+         deallocate(kke    )
+         deallocate(diagkke)
+         deallocate(mfo    )
+         deallocate(mb     )
+         deallocate(cldidx )
+         !---------------------------------------------------------------------------------!
          exit inre_loop
       end if
 

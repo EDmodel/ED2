@@ -1367,8 +1367,10 @@ subroutine nodeget_grid_dimens()
    include 'interface.h'
    include 'mpif.h'
    !----- Local variables -----------------------------------------------------------------!
-   integer                              :: nm,ierr,ng,zzz
-   integer, allocatable, dimension(:,:) :: node_buffs_tmp
+   integer                              :: nm
+   integer                              :: ierr
+   integer                              :: ng
+   integer                              :: zzz
    !---------------------------------------------------------------------------------------!
 
 

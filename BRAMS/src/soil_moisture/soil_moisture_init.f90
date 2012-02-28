@@ -144,11 +144,12 @@ subroutine soil_moisture_init(n1,n2,n3,mzg,npat,ifm,can_theta,can_prss,glat,glon
    imonth2 = imontha
    idate2  = idatea
    
-   !----- Determining which kind of soil moisture we are using. ---------------------------!
+   !----- Determine which kind of soil moisture we are using. -----------------------------!
    ipref_start = index(usdata_in,'/',back=.true.) + 1
+   !---------------------------------------------------------------------------------------!
 
 
-   !----- Defining the layer thickness based on the dataset. ------------------------------!
+   !----- Define the layer thickness based on the dataset. --------------------------------!
    ipref = len_trim(usdata_in)
    pref  = usdata_in(ipref_start:ipref)
 
@@ -166,9 +167,10 @@ subroutine soil_moisture_init(n1,n2,n3,mzg,npat,ifm,can_theta,can_prss,glat,glon
       allocate(slz_us(n4us))
       slz_us = (/ -2.4, -0.4, -0.1, 0. /)
    end select
+   !---------------------------------------------------------------------------------------!
 
 
-   !----- Making the input/output file name. ----------------------------------------------!
+   !----- Make the input/output file name. ------------------------------------------------!
    if ((runtype(1:7) == 'history') .and.                                                   &
        ((soil_moist == 'h') .or. (soil_moist == 'h') .or.                                  &
         (soil_moist == 'a') .or. (soil_moist == 'a'))     ) then
@@ -179,16 +181,24 @@ subroutine soil_moisture_init(n1,n2,n3,mzg,npat,ifm,can_theta,can_prss,glat,glon
    else
       int_dif_time = 0
    end if
+   !---------------------------------------------------------------------------------------!
 
-   !----- Check whether it should look for files up to 5 days older than the initial date. !
+
+   !---------------------------------------------------------------------------------------!
+   !     Check whether to look for files up to 5 days older than the initial date or not.  !
+   !---------------------------------------------------------------------------------------!
    if ((soil_moist_fail == 'l')) then
       da = 5
    else
       da = 1
    end if
+   !---------------------------------------------------------------------------------------!
 
    sair = .false.
 
+   !---------------------------------------------------------------------------------------!
+   !     Look for the files.                                                               !
+   !---------------------------------------------------------------------------------------!
    filefinder: do i=1,da
 
       write(cidate,fmt='(i2.2)') idate2
@@ -196,7 +206,7 @@ subroutine soil_moisture_init(n1,n2,n3,mzg,npat,ifm,can_theta,can_prss,glat,glon
       write(ciyear,fmt='(i4.4)') iyear2
       write(cgrid ,fmt='(i1)'  ) ifm
 
-      !----- Finding the hour of simulation. ----------------------------------------------!
+      !----- Find- the hour of this simulation. -------------------------------------------!
       if ((itimea >= 0000).and.(itimea < 1200)) then
          hourmin = 0000
          if(pref == 'GL_SM.GPCP.'  .or.  pref == 'GL_SM.GPNR.')        hourmin = 00
@@ -247,7 +257,13 @@ subroutine soil_moisture_init(n1,n2,n3,mzg,npat,ifm,can_theta,can_prss,glat,glon
       if (sair) exit filefinder
       call alt_dia(idatea, imontha, iyeara,(int_dif_time-i),idate2, imonth2, iyear2)
    end do filefinder
+   !---------------------------------------------------------------------------------------!
 
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Check whether the soil moisture file exists.                                      !
+   !---------------------------------------------------------------------------------------!
    inquire (file=trim(usmodel),exist=there)
 
    size_usmodel  = filesize4(trim(usmodel))
@@ -265,6 +281,7 @@ subroutine soil_moisture_init(n1,n2,n3,mzg,npat,ifm,can_theta,can_prss,glat,glon
          else
             write(unit=*,fmt='(a)') ' Failed initialising heterogeneous soil moisture...'
             write(unit=*,fmt='(a)') ' Going for a homogeneous initial state.'
+            deallocate(slz_us)
             return
          end if
       end if
@@ -331,8 +348,11 @@ subroutine soil_moisture_init(n1,n2,n3,mzg,npat,ifm,can_theta,can_prss,glat,glon
                !---------------------------------------------------------------------------!
 
             end do hoiloop
+            !------------------------------------------------------------------------------!
          end do hojloop
+         !---------------------------------------------------------------------------------!
       end do hoploop
+      !------------------------------------------------------------------------------------!
 
 
       write(unit=*,fmt='(a)') '|------------------------------------------------|'
@@ -340,7 +360,7 @@ subroutine soil_moisture_init(n1,n2,n3,mzg,npat,ifm,can_theta,can_prss,glat,glon
       write(unit=*,fmt='(a)') '|     points within the input domain             |'
       write(unit=*,fmt='(a)') '|------------------------------------------------|'
        
-      !----- Defining the domain boundaries. ----------------------------------------------!
+      !----- Define the domain boundaries. ---------------==-------------------------------!
       inquire (file=TRIM(usdata_in)//'_ENT', exist=general)
       if (general) then
         open (unit=93,file=TRIM(usdata_in)//'_ENT',status='old')
@@ -404,10 +424,12 @@ subroutine soil_moisture_init(n1,n2,n3,mzg,npat,ifm,can_theta,can_prss,glat,glon
          end select
       end if
 
-      allocate(prlat(nlon,nlat),prlon(nlon,nlat))
+      allocate(prlat(nlon,nlat))
+      allocate(prlon(nlon,nlat))
       call api_prlatlon(nlon,nlat,prlat,prlon,ilatn,ilonn,latni,lonni)
 
-      allocate(api_us(nlon,nlat,n4us),usdum(n4us))
+      allocate(api_us(nlon,nlat,n4us))
+      allocate(usdum           (n4us))
 
 
       write(unit=*,fmt='(a)') '------------------------------------------------'
@@ -631,6 +653,10 @@ subroutine soil_moisture_init(n1,n2,n3,mzg,npat,ifm,can_theta,can_prss,glat,glon
          end do heiloop
       end do hejloop
    end do heploop
+
+   !----- Free memory. --------------------------------------------------------------------!
+   deallocate(slz_us)
+   !---------------------------------------------------------------------------------------!
 
    return
 end subroutine soil_moisture_init

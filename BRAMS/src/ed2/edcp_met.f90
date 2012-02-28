@@ -1011,8 +1011,7 @@ subroutine initialize_ed2leaf(ifm)
    allocate (rv_mean    (mxp,myp))
    allocate (rtp_mean   (mxp,myp))
    allocate (geoht      (mxp,myp))
-
-
+   !---------------------------------------------------------------------------------------!
 
 
 
@@ -1118,6 +1117,7 @@ subroutine initialize_ed2leaf(ifm)
    deallocate (rv_mean   )
    deallocate (rtp_mean  )
    deallocate (geoht     )
+   !---------------------------------------------------------------------------------------!
 
    return
 end subroutine initialize_ed2leaf

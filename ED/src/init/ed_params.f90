@@ -1543,7 +1543,7 @@ subroutine init_pft_photo_params()
    Vm0(11)                   =  6.981875 * vmfact_c3
    Vm0(12:13)                = 18.300000 * vmfact_c3
    Vm0(14:15)                = 12.500000 * vmfact_c4
-   Vm0(16)                   = 25.000000 * vmfact_c3
+   Vm0(16)                   = 21.875000 * vmfact_c3
    Vm0(17)                   = 15.625000 * vmfact_c3
    !---------------------------------------------------------------------------------------!
 
@@ -1809,7 +1809,7 @@ subroutine init_pft_resp_params()
    growth_resp_factor(16)         = growthresp
    growth_resp_factor(17)         = 0.4503
 
-   leaf_turnover_rate(1)          = 3.0
+   leaf_turnover_rate(1)          = 4.0
    leaf_turnover_rate(2)          = 1.0
    leaf_turnover_rate(3)          = 0.5
    leaf_turnover_rate(4)          = onethird
@@ -1822,9 +1822,9 @@ subroutine init_pft_resp_params()
    leaf_turnover_rate(11)         = 0.0
    leaf_turnover_rate(12)         = 2.0
    leaf_turnover_rate(13)         = 2.0
-   leaf_turnover_rate(14)         = 2.0
-   leaf_turnover_rate(15)         = 2.0
-   leaf_turnover_rate(16)         = 3.0
+   leaf_turnover_rate(14)         = 4.0
+   leaf_turnover_rate(15)         = 4.0
+   leaf_turnover_rate(16)         = 4.0
    leaf_turnover_rate(17)         = onesixth
 
    !----- Root turnover rate.  ------------------------------------------------------------!

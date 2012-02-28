@@ -286,6 +286,8 @@ else
          ,grid_g(ifm)%topt,grid_g(icm)%topt &
          ,is_grids(ifm)%rr_dn0,is_grids(ifm)%rr_dn0u &
          ,is_grids(ifm)%rr_dn0v,ztn(:,ifm),ztop )
+   deallocate(plt)
+   deallocate(pltc)
 endif
 
 
@@ -512,6 +514,9 @@ call ezcntr(plt(1,1),nnxp(ifm),nnyp(ifm))
 !call ae1m1(nnzp(ifm)*nnxp(ifm)*nnyp(ifm),plt3b(1,1,1),plt3(1,1,1),var2(1))
 !plt(1:nnxp(ifm),1:nnyp(ifm)) =plt3b(12,1:nnxp(ifm),1:nnyp(ifm))
 !call ezcntr(plt,nnxp(ifm),nnyp(ifm))
+deallocate (plt)
+deallocate (plt3)
+deallocate (plt3b)
 
 
 return

@@ -477,12 +477,12 @@ do
       crop=16
       plantation=17
       ;;
-   fns)
+   fns*)
       pfts='1,16'
       crop=1
       plantation=17
       ;;
-   s77)
+   s77*)
       pfts='1,16'
       crop=16
       plantation=17

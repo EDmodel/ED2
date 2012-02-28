@@ -19,7 +19,7 @@
 module var_tables
 
    !----- Maximum number of variables of all types (3d + 2d + leaf + CARMA + Grell). ------!
-   integer, parameter :: maxvars=1600
+   integer, parameter :: maxvars=3200
    !---------------------------------------------------------------------------------------!
 
 
