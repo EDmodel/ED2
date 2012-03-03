@@ -293,6 +293,7 @@ subroutine event_harvest(agb_frac8,bgb_frac8,fol_frac8,stor_frac8)
   use fuse_fiss_utils, only: terminate_cohorts
   use allometry, only : bd2dbh, dbh2h, bl2dbh, bl2h, area_indices, ed_biomass
   use consts_coms, only : pio4
+  use ed_misc_coms     , only : igrass               ! ! intent(in)
   implicit none
   real(kind=8),intent(in) :: agb_frac8
   real(kind=8),intent(in) :: bgb_frac8
@@ -387,7 +388,7 @@ subroutine event_harvest(agb_frac8,bgb_frac8,fol_frac8,stor_frac8)
                  end if
 
                  if(cpatch%bdead(ico) .gt. tiny(1.0)) then
-                    if(is_grass(cpatch%pft(ico))) then 
+                    if(is_grass(cpatch%pft(ico)) .and. igrass==1) then 
                         cpatch%dbh(ico)  = bl2dbh(cpatch%bleaf(ico),cpatch%pft(ico)) 
                         cpatch%hite(ico) = bl2h  (cpatch%bleaf(ico),cpatch%pft(ico))
                     else

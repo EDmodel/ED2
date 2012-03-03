@@ -386,6 +386,7 @@ module fuse_fiss_utils
       use canopy_layer_coms   , only : crown_mod           ! ! intent(in)
       use allometry           , only : dbh2h               & ! function
                                      , dbh2bl              ! ! function
+      use ed_misc_coms        , only : igrass              ! ! intent(in)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       type(sitetype)         , target      :: csite             ! Current site
@@ -495,7 +496,7 @@ module fuse_fiss_utils
                   ! leaves fully flushed, this is the same as adding the individual LAIs,  !
                   ! but if they are not, we need to consider that LAI may grow...          !
                   !------------------------------------------------------------------------!
-                  if (is_grass(cpatch%pft(donc))) then
+                  if (is_grass(cpatch%pft(donc)) .and. igrass==1) then
                       !--use actual bleaf for grass
                       lai_max = ( cpatch%nplant(recc) * cpatch%bleaf(recc)                 &
                                 + cpatch%nplant(donc) * cpatch%bleaf(donc) )               &
@@ -661,7 +662,8 @@ module fuse_fiss_utils
                                       , dbh2bd                 ! ! function
       use ed_misc_coms         , only : iqoutput               & ! intent(in)
                                       , imoutput               & ! intent(in)
-                                      , idoutput               ! ! intent(in)
+                                      , idoutput               & ! intent(in)
+                                      , igrass                 ! ! intent(in)
       use canopy_layer_coms    , only : crown_mod              ! ! intent(in)
       implicit none
       !----- Constants --------------------------------------------------------------------!
@@ -808,7 +810,7 @@ module fuse_fiss_utils
                !---------------------------------------------------------------------------!
 
                !----- Tweaking bdead, to ensure carbon is conserved. ----------------------!
-               if (is_grass(cpatch%pft(ico))) then 
+               if (is_grass(cpatch%pft(ico)) .and. igrass==1) then 
                    !-- use bleaf for grass
                    cpatch%bleaf(ico)  = cpatch%bleaf(ico) * (1.-epsilon)
                    cpatch%dbh  (ico)  = bl2dbh(cpatch%bleaf(ico), cpatch%pft(ico))
@@ -1149,7 +1151,8 @@ module fuse_fiss_utils
       use ed_misc_coms  , only : imoutput               & ! intent(in)
                                , iqoutput               & ! intent(in)
                                , idoutput               & ! intent(in)
-                               , ndcycle                ! ! intent(in)
+                               , ndcycle                & ! intent(in)
+                               , igrass                 ! ! intent(in)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       type(patchtype) , target     :: cpatch            ! Current patch
@@ -1188,7 +1191,7 @@ module fuse_fiss_utils
 
       !----- Conserve carbon by calculating bdead first. ----------------------------------!
       !----- Then get dbh and hite from bdead. --------------------------------------------!
-      if (is_grass(cpatch%pft(donc))) then
+      if (is_grass(cpatch%pft(donc)) .and. igrass==1) then
           !--use bleaf for grass
           cpatch%bleaf(recc) = ( cpatch%nplant(recc) * cpatch%bleaf(recc)                  &
                                + cpatch%nplant(donc) * cpatch%bleaf(donc) ) * newni
@@ -3892,6 +3895,7 @@ module fuse_fiss_utils
       use ed_max_dims         , only : n_pft      ! ! intent(in)
       use pft_coms            , only : hgt_min    & ! intent(in)
                                      , is_grass   ! ! intent(in)
+      use ed_misc_coms        , only : igrass     ! ! intent(in)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       type(sitetype)         , target     :: csite     ! Current site
@@ -3938,7 +3942,7 @@ module fuse_fiss_utils
 
 
          !----- Find the potential (on-allometry) leaf area index. ------------------------!
-         if (is_grass(ipft)) then
+         if (is_grass(ipft) .and. igrass==1) then
              !--use actual bleaf for grass
              lai_pot = cpatch%nplant(ico) * cpatch%sla(ico) * cpatch%bleaf(ico)
          else

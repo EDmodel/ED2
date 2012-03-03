@@ -38,6 +38,8 @@ module growth_balive
                                  , ed_biomass             ! ! function
       use mortality       , only : mortality_rates        ! ! subroutine
       use fuse_fiss_utils , only : sort_cohorts           ! ! subroutine
+      use ed_misc_coms    , only : igrass                 ! ! intent(in)
+
 
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
@@ -190,17 +192,12 @@ module growth_balive
                   !------------------------------------------------------------------------!
                   balive_in = cpatch%balive(ico)
 
-                  if(is_grass(ipft)) then
-                      !--may want to...
-                      !--- check carbon balance over the current month to test if this 
-                      !--- cohort should be terminated 
-                      !if cb_act/cb_max xxx ! monthly carbon balance is 
-                      
+                  if(is_grass(ipft).and. igrass==1) then
                       call alloc_plant_c_balance_grass(csite,ipa,ico,salloc,salloci        &
                                                 ,carbon_balance,nitrogen_uptake            &
                                                 ,cpoly%green_leaf_factor(ipft,isi))
                       call sort_cohorts(cpatch)
-	              else
+                  else
                       call alloc_plant_c_balance(csite,ipa,ico,salloc,salloci              &
                                                 ,carbon_balance,nitrogen_uptake            &
                                                 ,cpoly%green_leaf_factor(ipft,isi))

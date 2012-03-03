@@ -141,6 +141,7 @@ module canopy_struct_dynamics
       use pft_coms         , only : is_grass             ! ! intent(in)
       use allometry        , only : h2crownbh            & ! function
                                   , dbh2bl               ! ! function
+      use ed_misc_coms     , only : igrass               ! ! intent(in)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       type(polygontype)   , target      :: cpoly         ! Current polygon
@@ -727,7 +728,7 @@ module canopy_struct_dynamics
 
 
                !------ Estimate WAI. ------------------------------------------------------!
-               if (is_grass(ipft)) then
+               if (is_grass(ipft) .and. igrass==1) then
                    !--use actual leaf mass for grass
                waiuse = 0.10 * cpatch%nplant(ico) * cpatch%sla(ico)                        &
                       * cpatch%bleaf(ico)
@@ -1326,6 +1327,7 @@ module canopy_struct_dynamics
       use pft_coms         , only : is_grass             ! ! intent(in)
       use allometry        , only : h2crownbh            & ! function
                                   , dbh2bl               ! ! function
+      use ed_misc_coms     , only : igrass               ! ! intent(in)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       type(sitetype)     , target     :: csite         ! Current site
@@ -1877,7 +1879,7 @@ module canopy_struct_dynamics
 
 
                !------ Estimate WAI. ------------------------------------------------------!
-               if (is_grass(ipft)) then
+               if (is_grass(ipft) .and. igrass==1) then
                    !--use actual leaf mass for grass
                    waiuse = 1.d-1 * initp%nplant(ico) * dble(cpatch%sla(ico))              &
                           * dble(cpatch%bleaf(ico))

@@ -1106,6 +1106,7 @@ subroutine ed_opspec_misc
                                     , ivegt_dynamics               & ! intent(in)
                                     , integration_scheme           & ! intent(in)
                                     , iallom                       & ! intent(in)
+                                    , igrass                       & ! intent(in)
                                     , min_site_area                ! ! intent(in)
    use canopy_air_coms       , only : icanturb                     & ! intent(in)
                                     , isfclyrm                     & ! intent(in)
@@ -1497,6 +1498,14 @@ end do
       write (reason,fmt='(a,1x,i4,a)')                                                     &
                     'Invalid IALLOM, it must be between 0 and 2. Yours is set to'          &
                     ,iallom,'...'
+      call opspec_fatal(reason,'opspec_misc')
+      ifaterr = ifaterr +1
+   end if
+
+   if (igrass < 0 .or. igrass > 1) then
+      write (reason,fmt='(a,1x,i4,a)')                                                     &
+                    'Invalid IGRASS, it must be between 0 and 1. Yours is set to'          &
+                    ,igrass,'...'
       call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
    end if

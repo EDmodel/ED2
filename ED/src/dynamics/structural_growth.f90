@@ -26,6 +26,8 @@ subroutine structural_growth(cgrid, month)
                             , n_dbh                  ! ! intent(in)
    use ed_therm_lib  , only : calc_veg_hcap          & ! function
                             , update_veg_energy_cweh ! ! function
+   use ed_misc_coms  , only : igrass                 ! ! intent(in)
+
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    type(edtype)     , target     :: cgrid
@@ -232,7 +234,7 @@ subroutine structural_growth(cgrid, month)
                cb_act = 0.0
                cb_max = 0.0
                
-               if (is_grass(ipft)) then  !!Grass loop, use past month's carbon balance only
+               if (is_grass(ipft).and. igrass==1) then  !!Grass loop, use past month's carbon balance only
                   cb_act =  cpatch%cb(update_month,ico)
                   cb_max =  cpatch%cb_max(update_month,ico)
                else  !!Tree loop, use annual average carbon balance
@@ -522,7 +524,8 @@ subroutine plant_structural_allocation(ipft,hite,dbh,lat,phen_status,f_bseeds,f_
                             , dbh_crit     & ! intent(in)
                             , hgt_max      & ! intent(in)
                             , is_grass     ! ! intent(in)
-   use ed_misc_coms  , only : current_time ! ! intent(in)
+   use ed_misc_coms  , only : current_time & ! intent(in)
+                            , igrass       ! ! intent(in)
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    integer          , intent(in)  :: ipft
@@ -583,7 +586,7 @@ subroutine plant_structural_allocation(ipft,hite,dbh,lat,phen_status,f_bseeds,f_
          ! growth_balive since it isn't actually structural growth
          !---------------------------------------------------------------------------------!
          hgtfudge= (hite * (1 + 1.0e-4))
-      if (is_grass(ipft)) then !!Grass loop
+      if (is_grass(ipft).and. igrass==1) then !!Grass loop
           if ((hite * (1 + 1.0e-4)) >= hgt_max(ipft)) then 
              !-----------------------------------------------------------------------------!
              !    Grasses have reached the maximum height, stop growing in size and send   !
@@ -662,6 +665,8 @@ subroutine update_derived_cohort_props(cpatch,ico,green_leaf_factor,lsl)
                             , ed_biomass          & ! function
                             , area_indices        ! ! subroutine
    use consts_coms   , only : pio4                ! ! intent(in)
+   use ed_misc_coms  , only : igrass              ! ! intent(in)
+
    
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
@@ -678,7 +683,7 @@ subroutine update_derived_cohort_props(cpatch,ico,green_leaf_factor,lsl)
    ipft    = cpatch%pft(ico)
    
    !----- Get DBH and height --------------------------------------------------------------!
-   if (is_grass(ipft)) then 
+   if (is_grass(ipft).and. igrass==1) then 
        !--Grasses get dbh_effective and height from bleaf
        cpatch%dbh(ico)  = bl2dbh(cpatch%bleaf(ico), ipft)
        cpatch%hite(ico) = bl2h(cpatch%bleaf(ico),ipft)
@@ -701,7 +706,7 @@ subroutine update_derived_cohort_props(cpatch,ico,green_leaf_factor,lsl)
       end select
 
       
-      if (is_grass(ipft)) then
+      if (is_grass(ipft).and. igrass==1) then
       !---ALS== not sure what maximum leaf should be for grasses?  Use actual leaves for now.
           bl_max = cpatch%bleaf(ico)
       else

@@ -2185,12 +2185,14 @@ subroutine init_pft_alloc_params()
                           , pi1                   ! ! intent(in)
    use ed_max_dims , only : n_pft                 & ! intent(in)
                           , str_len               ! ! intent(in)
-   use ed_misc_coms, only : iallom                ! ! intent(in)
+   use ed_misc_coms, only : iallom                & ! intent(in)
+                          , igrass                ! ! intent(in)
    implicit none
    !----- Local variables. ----------------------------------------------------------------!
    integer                           :: ipft
    integer                           :: n
    real                              :: aux
+   real                              :: init_density_grass
    !----- Constants shared by both bdead and bleaf (tropical PFTs) ------------------------!
    real                  , parameter :: a1          =  -1.981
    real                  , parameter :: b1          =   1.047
@@ -2378,14 +2380,20 @@ subroutine init_pft_alloc_params()
    !---------------------------------------------------------------------------------------!
    !    Initial density of plants, for near-bare-ground simulations [# of individuals/m2]  !
    !---------------------------------------------------------------------------------------!
-   init_density(1)     = 0.1
+   if (igrass==1) then
+       init_density_grass = 1.
+   else
+       init_density_grass = 0.1
+   end if
+   
+   init_density(1)     = init_density_grass
    init_density(2:4)   = 0.1
    init_density(5)     = 0.1
    init_density(6:8)   = 0.1
    init_density(9:11)  = 0.1
    init_density(12:13) = 0.1
    init_density(14:15) = 0.1
-   init_density(16)    = 0.1
+   init_density(16)    = init_density_grass
    init_density(17)    = 0.1
    !---------------------------------------------------------------------------------------!
 

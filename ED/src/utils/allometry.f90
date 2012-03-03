@@ -96,13 +96,14 @@ module allometry
                              , b2Bs_large  & ! intent(in), lookup table
                              , is_grass    & ! intent(in)
                              , dbh_crit    ! ! intent(in), lookup table
+      use ed_misc_coms, only : igrass      ! ! intent(in)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       real   , intent(in) :: dbh
       integer, intent(in) :: ipft
       !------------------------------------------------------------------------------------!
 
-      if (is_grass(ipft)) then
+      if (is_grass(ipft).and. igrass==1) then
          dbh2bd = 0.0
       else if (dbh <= dbh_crit(ipft)) then
          dbh2bd = b1Bs_small(ipft) / C2B * dbh ** b2Bs_small(ipft)
@@ -172,6 +173,8 @@ module allometry
                              , b2Bl        & ! intent(in), lookup table
                              , hgt_max     & ! intent(in), lookup table
                              , is_grass    ! ! intent(in)
+      use ed_misc_coms, only : igrass      ! ! intent(in)
+
 
       implicit none
       !----- Arguments --------------------------------------------------------------------!
@@ -182,7 +185,7 @@ module allometry
       real                :: mdbh
       !------------------------------------------------------------------------------------!
       
-      if (is_grass(ipft)) then 
+      if (is_grass(ipft) .and. igrass==1) then 
           !-- use height for grasses
           mdbh   = min(h2dbh(hite,ipft),dbh_crit(ipft))
       else
@@ -209,7 +212,7 @@ module allometry
                              , b2Bl        & ! intent(in), lookup table
                              , hgt_max     & ! intent(in), lookup table
                              , is_grass    ! ! intent(in)
-
+      use ed_misc_coms, only : igrass      ! ! intent(in)
 
       implicit none
       !----- Arguments --------------------------------------------------------------------!
@@ -219,7 +222,7 @@ module allometry
       real                :: mdbh
       !------------------------------------------------------------------------------------!
       
-      if (is_grass(ipft)) then 
+      if (is_grass(ipft) .and. igrass==1) then 
       !--- The grasses really shouldent use this function at all - use size2bl
           ! test grasses against maximum height rather than maximum dbh
           mdbh = min(dbh, h2dbh(hgt_max(ipft),ipft))
@@ -244,15 +247,15 @@ module allometry
    !           INVERSION OF DBH2BL                                                         !
    !=======================================================================================!
    real function bl2dbh(bleaf,ipft)
-      use pft_coms, only:  is_tropical & ! intent(in), lookup table
-                         , rho         & ! intent(in), lookup table
-                         , dbh_crit    & ! intent(in), lookup table
-                         , hgt_max     & ! intent(in), lookup table
-                         , is_grass    & ! intent(in)
-                         , C2B         & ! intent(in)
-                         , b1Bl        & ! intent(in), lookup table
-                         , b2Bl        ! ! intent(in), lookup table
-   
+      use pft_coms,     only : is_tropical & ! intent(in), lookup table
+                             , rho         & ! intent(in), lookup table
+                             , dbh_crit    & ! intent(in), lookup table
+                             , hgt_max     & ! intent(in), lookup table
+                             , is_grass    & ! intent(in)
+                             , C2B         & ! intent(in)
+                             , b1Bl        & ! intent(in), lookup table
+                             , b2Bl        ! ! intent(in), lookup table
+      use ed_misc_coms, only : igrass      ! ! intent(in)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       real   , intent(in) :: bleaf
@@ -263,7 +266,7 @@ module allometry
 
       mdbh = (bleaf * C2B / b1Bl(ipft) ) ** (1./b2Bl(ipft))
 
-      if (is_grass(ipft)) then  
+      if (is_grass(ipft) .and. igrass==1) then  
           ! For grasses, limit maximum effective dbh by maximum height
           bl2dbh = min(mdbh, h2dbh(hgt_max(ipft),ipft))
       else
@@ -336,6 +339,7 @@ module allometry
                              , is_grass    & ! intent(in)
                              , b1Ca        & ! intent(in)
                              , b2Ca        ! ! intent(in)
+      use ed_misc_coms, only : igrass      ! ! intent(in)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       real   , intent(in) :: dbh
@@ -359,7 +363,7 @@ module allometry
 
          case default
             !----- Impose a maximum crown area. -------------------------------------------!
-            if (is_grass(ipft)) then
+            if (is_grass(ipft) .and. igrass==1) then
                  dbh2ca = b1Ca(ipft) * min(dbh,h2dbh(hgt_max(ipft),ipft) ) ** b2Ca(ipft)
             else
                  dbh2ca = b1Ca(ipft) * min(dbh,dbh_crit(ipft)            ) ** b2Ca(ipft)
@@ -555,6 +559,7 @@ module allometry
       use consts_coms , only : onethird        & ! intent(in)
                              , pi1             ! ! intent(in)
       use rk4_coms    , only : ibranch_thermo  ! ! intent(in)
+      use ed_misc_coms, only : igrass          ! ! intent(in)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       integer , intent(in)  :: pft        ! Plant functional type            [         ---]
@@ -585,7 +590,7 @@ module allometry
       lai = bleaf * nplant * sla
 
       !----- Find the crown area. ---------------------------------------------------------!
-      if (is_grass(pft)) then
+      if (is_grass(pft) .and. igrass==1) then
           !-- use height for grasses
           crown_area = min(1.0, nplant * dbh2ca(h2dbh(hite,pft),sla,pft))
       else
