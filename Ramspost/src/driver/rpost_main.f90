@@ -490,7 +490,8 @@ program ramspost
                   !------------------------------------------------------------------------!
                   do ic = 1,iep_nc
                      !----- Convert the 4D array into a 3D. -------------------------------!
-                     call S4d_to_3d(iep_nx(ng),iep_ny(ng),nzvp(iv),iep_nc,ic,rout6,rout)
+                     call s4d_to_3d(nxpmax,nypmax,nzpmax,maxclouds,                        &
+                          iep_nx(ng),iep_ny(ng),nzvp(iv),iep_nc,ic,rout6,rout)
                      !---------------------------------------------------------------------!
 
 
@@ -522,7 +523,8 @@ program ramspost
                   !------------------------------------------------------------------------!
                   do ic = 1,iep_nc
                      !----- Convert the 4D array into a 3D. -------------------------------!
-                     call S4d_to_3d(iep_nx(ng),iep_ny(ng),nzvp(iv),iep_nc,ic,rout6,rout)
+                     call s4d_to_3d(nxpmax,nypmax,nzpmax,maxclouds,                        &
+                          iep_nx(ng),iep_ny(ng),nzvp(iv),iep_nc,ic,rout6,rout)
                      !---------------------------------------------------------------------!
 
                      !----- Interpolate to pressure levels. -------------------------------!
@@ -559,7 +561,8 @@ program ramspost
                   !------------------------------------------------------------------------!
                   do ic = 1,iep_nc
                      !----- Convert the 4D array into a 3D. -------------------------------!
-                     call S4d_to_3d(iep_nx(ng),iep_ny(ng),nzvp(iv),iep_nc,ic,rout6,rout)
+                     call s4d_to_3d(nxpmax,nypmax,nzpmax,maxclouds,                        &
+                          iep_nx(ng),iep_ny(ng),nzvp(iv),iep_nc,ic,rout6,rout)
                      !---------------------------------------------------------------------!
 
                      !----- Interpolate to height levels. ---------------------------------!
@@ -596,7 +599,8 @@ program ramspost
                   !------------------------------------------------------------------------!
                   do ic = 1,iep_nc
                      !----- Convert the 4D array into a 3D. -------------------------------!
-                     call S4d_to_3d(iep_nx(ng),iep_ny(ng),nzvp(iv),iep_nc,ic,rout6,rout)
+                     call s4d_to_3d(nxpmax,nypmax,nzpmax,maxclouds,                        &
+                          iep_nx(ng),iep_ny(ng),nzvp(iv),iep_nc,ic,rout6,rout)
                      !---------------------------------------------------------------------!
 
                      !----- Pick only the levels we are interested in. --------------------!
@@ -672,7 +676,8 @@ program ramspost
                !---------------------------------------------------------------------------!
                do ip = 1,iep_np
                   !----- Convert the 4D array into a 3D. ----------------------------------!
-                  call S4d_to_3d(iep_nx(ng),iep_ny(ng),nzvp(iv),iep_np,ip,rout2,rout)
+                  call s4d_to_3d(nxpmax,nypmax,nzpmax,maxpatch,                            &
+                       iep_nx(ng),iep_ny(ng),nzvp(iv),iep_np,ip,rout2,rout)
                   !------------------------------------------------------------------------!
 
 

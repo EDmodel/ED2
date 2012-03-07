@@ -2,16 +2,20 @@
 !==========================================================================================!
 !     This sub-routine extracts a 3-D array from a 4-D variable.                           !
 !------------------------------------------------------------------------------------------!
-subroutine s4d_to_3d(xmax,ymax,zmax,emax,e,four,three)
+subroutine s4d_to_3d(xmax,ymax,zmax,emax,xact,yact,zact,eact,e,four,three)
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
    integer                                , intent(in)  :: xmax
    integer                                , intent(in)  :: ymax
    integer                                , intent(in)  :: zmax
    integer                                , intent(in)  :: emax
+   integer                                , intent(in)  :: xact
+   integer                                , intent(in)  :: yact
+   integer                                , intent(in)  :: zact
+   integer                                , intent(in)  :: eact
    integer                                , intent(in)  :: e
    real   , dimension(xmax,ymax,zmax,emax), intent(in)  :: four
-   real   , dimension(xmax,ymax,zmax)     , intent(out) :: three
+   real   , dimension(xact,yact,zact)     , intent(out) :: three
    !----- Local variables. ----------------------------------------------------------------!
    integer                                              :: x
    integer                                              :: y
@@ -23,9 +27,9 @@ subroutine s4d_to_3d(xmax,ymax,zmax,emax,e,four,three)
    !---------------------------------------------------------------------------------------!
    !    Extract the three dimensional array.                                               !
    !---------------------------------------------------------------------------------------!
-   do x=1,xmax
-      do y=1,ymax
-         do z=1,zmax
+   do x=1,xact
+      do y=1,yact
+         do z=1,zact
             three(x,y,z) = four(x,y,z,e)
          end do
       end do
