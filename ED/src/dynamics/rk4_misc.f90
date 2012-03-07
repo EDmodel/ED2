@@ -3079,7 +3079,7 @@ subroutine print_errmax(errmax,yerr,yscal,cpatch,y,ytemp)
    write(unit=*,fmt='(5(a,1x))')  'Name            ','   Max.Error','   Abs.Error'&
                                 &,'       Scale','Problem(T|F)'
 
-   errmax       = max(0.0,abs(yerr%can_enthalpy/yscal%can_enthalpy))
+   errmax       = max(0.d0,abs(yerr%can_enthalpy/yscal%can_enthalpy))
    troublemaker = large_error(yerr%can_enthalpy,yscal%can_enthalpy)
    write(unit=*,fmt=onefmt) 'CAN_ENTHALPY:',errmax,yerr%can_enthalpy,yscal%can_enthalpy    &
                                            ,troublemaker

@@ -1,10 +1,4 @@
 # DO NOT DELETE THIS LINE - used by make depend
-error_mod.o: grid_dims.mod
-gridteste.o: boundarymod.mod gridmod.mod mapmod.mod processormod.mod
-init_advect.o: advmessagemod.mod boundarymod.mod errormod.mod gridmod.mod
-init_advect.o: mapmod.mod processormod.mod
-radvc_mnt.o: adv_message_mod.mod mem_basic.mod mem_grid.mod mem_scratch.mod
-radvc_mnt.o: node_mod.mod rconstants.mod therm_lib.mod var_tables.mod
 cyclic_mod.o: grid_dims.mod
 rbnd.o: catt_start.mod mem_basic.mod mem_grid.mod mem_scratch.mod mem_tend.mod
 rbnd.o: mem_turb.mod node_mod.mod ref_sounding.mod therm_lib.mod var_tables.mod
@@ -606,7 +600,6 @@ canopy_air_coms.o: consts_coms.mod therm_lib.mod therm_lib8.mod
 canopy_radiation_coms.o: ed_max_dims.mod
 consts_coms.o: rconstants.mod
 decomp_coms.o: ed_max_dims.mod
-detailed_coms.o: ed_max_dims.mod
 disturb_coms.o: ed_max_dims.mod
 ed_max_dims.o: grid_dims.mod
 ed_mem_alloc.o: ed_max_dims.mod ed_mem_grid_dim_defs.mod ed_node_coms.mod
@@ -678,11 +671,9 @@ update_derived_props.o: allometry.mod canopy_air_coms.mod consts_coms.mod
 update_derived_props.o: ed_misc_coms.mod ed_state_vars.mod ed_therm_lib.mod
 update_derived_props.o: fuse_fiss_utils.mod grid_coms.mod soil_coms.mod
 update_derived_props.o: therm_lib.mod
-adv_message_mod.mod: adv_message_mod.o
 advect_kit.mod: mod_advect_kit.o
 allometry.mod: allometry.o
 an_header.mod: an_header.o
-boundary_mod.mod: boundary_mod.o
 c34constants.mod: c34constants.o
 canopy_air_coms.mod: canopy_air_coms.o
 canopy_layer_coms.mod: canopy_layer_coms.o
@@ -709,7 +700,6 @@ ed_var_tables.mod: ed_var_tables.o
 ed_work_vars.mod: ed_work_vars.o
 emission_source_map.mod: emission_source_map.o
 ename_coms.mod: ename_coms.o
-error_mod.mod: error_mod.o
 extras.mod: extra.o
 farq_leuning.mod: farq_leuning.o
 fuse_fiss_utils.mod: fuse_fiss_utils.o
@@ -717,7 +707,6 @@ fusion_fission_coms.mod: fusion_fission_coms.o
 grell_coms.mod: grell_coms.o
 grid_coms.mod: grid_coms.o
 grid_dims.mod: grid_dims.o
-grid_mod.mod: grid_mod.o
 grid_struct.mod: grid_struct.o
 growth_balive.mod: growth_balive.o
 harr_coms.mod: harr_coms.o
@@ -725,7 +714,6 @@ hdf5_coms.mod: hdf5_coms.o
 hdf5_utils.mod: hdf5_utils.o
 hydrology_coms.mod: hydrology_coms.o
 hydrology_constants.mod: hydrology_constants.o
-init_advect.mod: init_advect.o
 io_params.mod: io_params.o
 isan_coms.mod: isan_coms.o
 ke_coms.mod: ke_coms.o
@@ -736,7 +724,6 @@ libxml2f90_module.mod: libxml2f90.f90_pp.o
 libxml2f90_strings_module.mod: libxml2f90.f90_pp.o
 ll_module.mod: libxml2f90.f90_pp.o
 machine_arq.mod: machine_arq.o
-mapmod.mod: MapMod.o
 mem_aerad.mod: mem_aerad.o
 mem_all.mod: mem_all.o
 mem_basic.mod: mem_basic.o
@@ -785,7 +772,6 @@ micphys.mod: micphys.o
 micro_coms.mod: micro_coms.o
 mod_ghostblock.mod: mod_GhostBlock.o
 mod_ghostblockpartition.mod: mod_GhostBlockPartition.o
-monotonic_adv.mod: radvc_mnt.o
 mortality.mod: mortality.o
 node_mod.mod: node_mod.o
 obs_input.mod: obs_input.o
@@ -796,7 +782,6 @@ phenology_coms.mod: phenology_coms.o
 phenology_startup.mod: phenology_startup.o
 physiology_coms.mod: physiology_coms.o
 plume_utils.mod: plumerise_vector.o
-processor_mod.mod: processor_mod.o
 rad_carma.mod: rad_carma.o
 rconstants.mod: rconstants.o
 ref_sounding.mod: ref_sounding.o

@@ -2,7 +2,7 @@
 
 # RAMS root directory.
 #
-EDBRAMS_ROOT=/n/Moorcroft_Lab/Users/mlongo/EDBRAMS
+EDBRAMS_ROOT=/home/rknox/Models/r28X/EDBRAMS
 
 # MCD: EDBRAMS_ROOT=/n/Moorcroft_Lab/Users/mcd/EDBRAMS
 # KIM: EDBRAMS_ROOT=/n/Moorcroft_Lab/Users/kim/ed-code/EDBRAMS
@@ -36,7 +36,6 @@ MASS=$(BRAMS_ROOT)/src/mass
 MEMORY=$(BRAMS_ROOT)/src/memory
 MICRO=$(BRAMS_ROOT)/src/micro
 MKSFC=$(BRAMS_ROOT)/src/mksfc
-MNTADVEC=$(BRAMS_ROOT)/src/mnt_advec
 MPI=$(BRAMS_ROOT)/src/mpi
 NESTING=$(BRAMS_ROOT)/src/nesting
 OLDGRELL=$(BRAMS_ROOT)/src/oldgrell
@@ -46,6 +45,7 @@ SOIL_MOISTURE=$(BRAMS_ROOT)/src/soil_moisture
 SURFACE=$(BRAMS_ROOT)/src/surface
 TEB_SPM=$(BRAMS_ROOT)/src/teb_spm
 TURB=$(BRAMS_ROOT)/src/turb
+MNTADVEC=$(BRAMS_ROOT)/src/mnt_advec
 
 
 # ED directories that will be accessed by BRAMS
