@@ -602,7 +602,6 @@ canopy_air_coms.o: consts_coms.mod therm_lib.mod therm_lib8.mod
 canopy_radiation_coms.o: ed_max_dims.mod
 consts_coms.o: rconstants.mod
 decomp_coms.o: ed_max_dims.mod
-detailed_coms.o: ed_max_dims.mod
 disturb_coms.o: ed_max_dims.mod
 ed_max_dims.o: grid_dims.mod
 ed_mem_alloc.o: ed_max_dims.mod ed_mem_grid_dim_defs.mod ed_node_coms.mod

@@ -4,7 +4,6 @@
 !  output, which can be used for debugging.                                                !
 !------------------------------------------------------------------------------------------!
 module detailed_coms
-   use ed_max_dims, only : str_len ! ! intent(in)
 
    implicit none
 

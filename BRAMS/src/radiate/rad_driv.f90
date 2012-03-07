@@ -774,7 +774,7 @@ subroutine zen(m2,m3,ia,iz,ja,jz,iswrtyp,ilwrtyp,glon,glat,cosz)
             radlat=dble(glat(i,j))*pio1808
             cosz(i,j) = sngl(dsin(radlat)*sdec+dcos(radlat)*cdec*dcos(hrangl))
             !----- Making sure that it is bounded -----------------------------------------!
-            cosz(i,j) = max(-1.d0,min(1.d0,cosz(i,j)))
+            cosz(i,j) = max(-1.0,min(1.0,cosz(i,j)))
          end do
       end do
    else
