@@ -130,6 +130,7 @@ subroutine copy_nl(copy_type)
    use decomp_coms          , only : n_decomp_lim              & ! intent(out)
                                    , LloydTaylor               ! ! intent(out)
    use disturb_coms         , only : include_fire              & ! intent(out)
+                                   , fire_parameter            & ! intent(out)
                                    , ianth_disturb             & ! intent(out)
                                    , treefall_disturbance_rate & ! intent(out)
                                    , lu_database               & ! intent(out)
@@ -386,6 +387,7 @@ subroutine copy_nl(copy_type)
       n_plant_lim               = nl%n_plant_lim
       n_decomp_lim              = nl%n_decomp_lim
       include_fire              = nl%include_fire
+      fire_parameter            = nl%fire_parameter
       sm_fire                   = nl%sm_fire
       ianth_disturb             = nl%ianth_disturb
 

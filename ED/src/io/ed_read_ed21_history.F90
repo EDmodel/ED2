@@ -871,11 +871,9 @@ subroutine read_ed21_history_unstruct
                              , sitetype                & ! variable type
                              , patchtype               & ! variable type
                              , edtype                  & ! variable type
-                             , edgrid_g                & ! variable type
-                             , allocate_polygontype    & ! subroutine
+                             , edgrid_g                & ! subroutine
                              , allocate_sitetype       & ! subroutine
-                             , allocate_patchtype      & ! subroutine
-                             , deallocate_polygontype  ! ! subroutine
+                             , allocate_patchtype      ! ! subroutine
    use grid_coms      , only : ngrids                  & ! intent(in)
                              , nzg                     ! ! intent(in)
    use consts_coms    , only : pio4                    ! ! intent(in)
@@ -907,7 +905,6 @@ subroutine read_ed21_history_unstruct
    !----- Local variables. ----------------------------------------------------------------!
    type(edtype)          , pointer                              :: cgrid
    type(polygontype)     , pointer                              :: cpoly
-   type(polygontype)     , pointer                              :: tpoly
    type(sitetype)        , pointer                              :: csite
    type(patchtype)       , pointer                              :: cpatch
    character(len=str_len), dimension(maxlist)                   :: full_list
@@ -928,6 +925,16 @@ subroutine read_ed21_history_unstruct
    integer               , dimension(  :)         , allocatable :: paco_id
    integer               , dimension(:,:)         , allocatable :: this_ntext
    integer               , dimension(  :)         , allocatable :: islakesite
+   real                  , dimension(  :)         , allocatable :: tpoly_area
+   real                  , dimension(  :)         , allocatable :: tpoly_moist_f
+   real                  , dimension(  :)         , allocatable :: tpoly_moist_w
+   real                  , dimension(  :)         , allocatable :: tpoly_elevation
+   real                  , dimension(  :)         , allocatable :: tpoly_slope
+   real                  , dimension(  :)         , allocatable :: tpoly_aspect
+   real                  , dimension(  :)         , allocatable :: tpoly_TCI
+   integer               , dimension(  :)         , allocatable :: tpoly_patch_count
+   integer               , dimension(  :)         , allocatable :: tpoly_lsl
+   integer               , dimension(:,:)         , allocatable :: tpoly_ntext_soil
    integer                                                      :: year
    integer                                                      :: igr
    integer                                                      :: ipy
@@ -1405,15 +1412,23 @@ subroutine read_ed21_history_unstruct
 
 
             !------------------------------------------------------------------------------!
-            !     Site level.  Here we allocate a temporary site that will grab the        !
-            ! soil type information.  We then copy the data with the closest soil texture  !
-            ! properties to the definite site, preserving the previously assigned area.    !
+            !     Site level.  Here we allocate temporary site variables that will grab    !
+            ! the soil type information.  We then copy the data with the closest soil      !
+            ! texture properties to the definite site, preserving the previously assigned  !
+            ! area.                                                                        !
             !------------------------------------------------------------------------------!
             nsites_inp = ndry_sites
-            nullify  (tpoly)
-            allocate (tpoly)
-            allocate (this_ntext(dset_nzg,nsites_inp))
-            call allocate_polygontype(tpoly,nsites_inp)
+            allocate (this_ntext        (dset_nzg,nsites_inp))
+            allocate (tpoly_area        (         nsites_inp))
+            allocate (tpoly_moist_f     (         nsites_inp))
+            allocate (tpoly_moist_w     (         nsites_inp))
+            allocate (tpoly_elevation   (         nsites_inp))
+            allocate (tpoly_slope       (         nsites_inp))
+            allocate (tpoly_aspect      (         nsites_inp))
+            allocate (tpoly_TCI         (         nsites_inp))
+            allocate (tpoly_patch_count (         nsites_inp))
+            allocate (tpoly_lsl         (         nsites_inp))
+            allocate (tpoly_ntext_soil  (     nzg,nsites_inp))
             !------------------------------------------------------------------------------!
 
 
@@ -1450,23 +1465,23 @@ subroutine read_ed21_history_unstruct
                   memsize (1) = int(1,8)
                   memoffs (1) = 0_8
 
-                  call hdf_getslab_r( tpoly%area       (is:is)     , 'AREA_SI '            &
+                  call hdf_getslab_r( tpoly_area       (is:is)     , 'AREA_SI '            &
                                     , dsetrank, iparallel, .true.)
-                  call hdf_getslab_r( tpoly%moist_f    (is:is)     , 'MOIST_F '            &
+                  call hdf_getslab_r( tpoly_moist_f    (is:is)     , 'MOIST_F '            &
                                     , dsetrank, iparallel, .true.)
-                  call hdf_getslab_r( tpoly%moist_W    (is:is)     , 'MOIST_W '            &
+                  call hdf_getslab_r( tpoly_moist_W    (is:is)     , 'MOIST_W '            &
                                     , dsetrank, iparallel, .true.)
-                  call hdf_getslab_r( tpoly%elevation  (is:is)     , 'ELEVATION '          &
+                  call hdf_getslab_r( tpoly_elevation  (is:is)     , 'ELEVATION '          &
                                     , dsetrank, iparallel, .true.)
-                  call hdf_getslab_r( tpoly%slope      (is:is)     , 'SLOPE '              &
+                  call hdf_getslab_r( tpoly_slope      (is:is)     , 'SLOPE '              &
                                     , dsetrank, iparallel, .true.)
-                  call hdf_getslab_r( tpoly%aspect     (is:is)     , 'ASPECT '             &
+                  call hdf_getslab_r( tpoly_aspect     (is:is)     , 'ASPECT '             &
                                     , dsetrank, iparallel, .true.)
-                  call hdf_getslab_r( tpoly%TCI        (is:is)     , 'TCI '                &
+                  call hdf_getslab_r( tpoly_TCI        (is:is)     , 'TCI '                &
                                     , dsetrank, iparallel, .true.)
-                  call hdf_getslab_i( tpoly%patch_count(is:is)     , 'PATCH_COUNT '        &
+                  call hdf_getslab_i( tpoly_patch_count(is:is)     , 'PATCH_COUNT '        &
                                     , dsetrank, iparallel, .true.)
-                  call hdf_getslab_i( tpoly%lsl        (is:is)     ,'LSL_SI '              &
+                  call hdf_getslab_i( tpoly_lsl        (is:is)     ,'LSL_SI '              &
                                     , dsetrank, iparallel, .true.)
                   !------------------------------------------------------------------------!
 
@@ -1500,7 +1515,7 @@ subroutine read_ed21_history_unstruct
                   ! soil type, so all that we need is to save one layer for each site.     !
                   !------------------------------------------------------------------------!
 
-                  tpoly%ntext_soil(nzg,is) = this_ntext(dset_nzg,is)
+                  tpoly_ntext_soil(nzg,is) = this_ntext(dset_nzg,is)
                   
                   !------------------------------------------------------------------------!
                end if
@@ -1523,11 +1538,11 @@ subroutine read_ed21_history_unstruct
                !---------------------------------------------------------------------------!
                textdist_min = huge(1.)
                is_try       = 0
-               do isi_try = 1, tpoly%nsites
+               do isi_try = 1, nsites_inp
                   if (islakesite(isi_try) == 0) then
                      is_try    = is_try + 1
 
-                     nsoil_try = tpoly%ntext_soil(nzg,is_try)
+                     nsoil_try = tpoly_ntext_soil(nzg,is_try)
 
                      !---------------------------------------------------------------------!
                      !     Find the "distance" between the two sites based on the sand and !
@@ -1559,13 +1574,13 @@ subroutine read_ed21_history_unstruct
                ! be different and we want them to be based on the user settings rather     !
                ! than the old run setting.                                                 !
                !---------------------------------------------------------------------------!
-               cpoly%moist_f     (isi) = tpoly%moist_f     (is_best)
-               cpoly%moist_w     (isi) = tpoly%moist_w     (is_best)
-               cpoly%elevation   (isi) = tpoly%elevation   (is_best)
-               cpoly%slope       (isi) = tpoly%slope       (is_best)
-               cpoly%aspect      (isi) = tpoly%aspect      (is_best)
-               cpoly%TCI         (isi) = tpoly%TCI         (is_best)
-               cpoly%patch_count (isi) = tpoly%patch_count (is_best)
+               cpoly%moist_f     (isi) = tpoly_moist_f     (is_best)
+               cpoly%moist_w     (isi) = tpoly_moist_w     (is_best)
+               cpoly%elevation   (isi) = tpoly_elevation   (is_best)
+               cpoly%slope       (isi) = tpoly_slope       (is_best)
+               cpoly%aspect      (isi) = tpoly_aspect      (is_best)
+               cpoly%TCI         (isi) = tpoly_TCI         (is_best)
+               cpoly%patch_count (isi) = tpoly_patch_count (is_best)
                !---------------------------------------------------------------------------!
 
 
@@ -1910,10 +1925,18 @@ subroutine read_ed21_history_unstruct
             !------------------------------------------------------------------------------!
 
             !----- Deallocate the temporary polygon and soil structure. -------------------!
-            call deallocate_polygontype(tpoly)
-            deallocate(tpoly)
-            deallocate(this_ntext          )
-            deallocate(islakesite          )
+            deallocate (this_ntext        )
+            deallocate (tpoly_area        )
+            deallocate (tpoly_moist_f     )
+            deallocate (tpoly_moist_w     )
+            deallocate (tpoly_elevation   )
+            deallocate (tpoly_slope       )
+            deallocate (tpoly_aspect      )
+            deallocate (tpoly_TCI         )
+            deallocate (tpoly_patch_count )
+            deallocate (tpoly_lsl         )
+            deallocate (tpoly_ntext_soil  )
+            deallocate (islakesite        )
             !------------------------------------------------------------------------------!
 
          end do polyloop

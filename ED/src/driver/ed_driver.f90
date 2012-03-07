@@ -24,6 +24,7 @@ subroutine ed_driver()
                                 , recvnum             ! ! intent(in)
    use detailed_coms     , only : idetailed           & ! intent(in)
                                 , patch_keep          ! ! intent(in)
+   use phenology_aux     , only : first_phenology     ! ! subroutine
    implicit none
    !----- Included variables. -------------------------------------------------------------!
    include 'mpif.h' ! MPI commons

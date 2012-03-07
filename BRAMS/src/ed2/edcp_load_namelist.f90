@@ -83,6 +83,7 @@ subroutine read_ednl(iunit,filename)
    use decomp_coms          , only : n_decomp_lim                          & ! intent(out)
                                    , LloydTaylor                           ! ! intent(out)
    use disturb_coms         , only : include_fire                          & ! intent(out)
+                                   , fire_parameter                        & ! intent(out)
                                    , ianth_disturb                         & ! intent(out)
                                    , lu_database                           & ! intent(out)
                                    , plantation_file                       & ! intent(out)
@@ -237,9 +238,9 @@ subroutine read_ednl(iunit,filename)
                        ,kw_tree,gamma_c3,gamma_c4,d0_grass,d0_tree,alpha_c3                &
                        ,alpha_c4,klowco2in,rrffact,growthresp,lwidth_grass,lwidth_bltree   &
                        ,lwidth_nltree,q10_c3,q10_c4,thetacrit,quantum_efficiency_t         &
-                       ,n_plant_lim,n_decomp_lim,include_fire,sm_fire,ianth_disturb        &
-                       ,icanturb,include_these_pft,agri_stock,plantation_stock             &
-                       ,pft_1st_check,maxpatch,maxcohort,min_patch_area                    &
+                       ,n_plant_lim,n_decomp_lim,include_fire,fire_parameter,sm_fire       &
+                       ,ianth_disturb,icanturb,include_these_pft,agri_stock                &
+                       ,plantation_stock,pft_1st_check,maxpatch,maxcohort,min_patch_area   &
                        ,treefall_disturbance_rate,time2canopy,iprintpolys,npvars,printvars &
                        ,pfmtstr,ipmin,ipmax,imetrad,iphenys1,iphenysf,iphenyf1,iphenyff    &
                        ,iedcnfgf,event_file,phenpath
@@ -354,6 +355,7 @@ subroutine read_ednl(iunit,filename)
       write (unit=*,fmt=*) ' n_plant_lim               =',n_plant_lim
       write (unit=*,fmt=*) ' n_decomp_lim              =',n_decomp_lim
       write (unit=*,fmt=*) ' include_fire              =',include_fire
+      write (unit=*,fmt=*) ' fire_parameter            =',fire_parameter
       write (unit=*,fmt=*) ' sm_fire                   =',sm_fire
       write (unit=*,fmt=*) ' ianth_disturb             =',ianth_disturb
       write (unit=*,fmt=*) ' icanturb                  =',icanturb

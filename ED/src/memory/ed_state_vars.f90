@@ -4743,8 +4743,8 @@ contains
     implicit none
     
     type(edtype),target :: cgrid
+    integer             :: ipy
 
-       if(associated(cgrid%polygon                 )) deallocate(cgrid%polygon                 )
        if(associated(cgrid%lat                     )) deallocate(cgrid%lat                     )
        if(associated(cgrid%lon                     )) deallocate(cgrid%lon                     )
        if(associated(cgrid%xatm                    )) deallocate(cgrid%xatm                    )
@@ -5252,6 +5252,12 @@ contains
     if(associated(cgrid%qmsqu_vapor_wc       )) deallocate(cgrid%qmsqu_vapor_wc       )
     if(associated(cgrid%qmsqu_vapor_gc       )) deallocate(cgrid%qmsqu_vapor_gc       )
 
+    do ipy=1,cgrid%npolygons
+       call deallocate_polygontype(cgrid%polygon(ipy))
+    end do
+    if(associated(cgrid%polygon              )) deallocate(cgrid%polygon              )
+
+
     return
   end subroutine deallocate_edtype
 !============================================================================!
@@ -5268,11 +5274,11 @@ contains
     implicit none
 
     type(polygontype),target :: cpoly
+    integer                  :: isi
 
     if(associated(cpoly%sipa_id                     )) deallocate(cpoly%sipa_id                     )
     if(associated(cpoly%sipa_n                      )) deallocate(cpoly%sipa_n                      )
     if(associated(cpoly%patch_count                 )) deallocate(cpoly%patch_count                 )
-    if(associated(cpoly%site                        )) deallocate(cpoly%site                        )
     if(associated(cpoly%sitenum                     )) deallocate(cpoly%sitenum                     )
 
     if(associated(cpoly%lsl                         )) deallocate(cpoly%lsl                         )
@@ -5295,7 +5301,7 @@ contains
     if(associated(cpoly%wai_pft                     )) deallocate(cpoly%wai_pft                     )
 
     if(associated(cpoly%TCI                         )) deallocate(cpoly%TCI                         )
-    if(associated(cpoly%pptweight                   )) deallocate(cpoly%pptweight                         )
+    if(associated(cpoly%pptweight                   )) deallocate(cpoly%pptweight                   )
     if(associated(cpoly%lsl                         )) deallocate(cpoly%lsl                         )
     if(associated(cpoly%hydro_next                  )) deallocate(cpoly%hydro_next                  )
     if(associated(cpoly%hydro_prev                  )) deallocate(cpoly%hydro_prev                  )
@@ -5445,6 +5451,12 @@ contains
     if(associated(cpoly%mmean_co2_residual        )) deallocate(cpoly%mmean_co2_residual        )
     if(associated(cpoly%mmean_energy_residual     )) deallocate(cpoly%mmean_energy_residual     )
     if(associated(cpoly%mmean_water_residual      )) deallocate(cpoly%mmean_water_residual      )
+
+    do isi = 1, cpoly%nsites
+       call deallocate_sitetype(cpoly%site(isi))
+    end do
+    if(associated(cpoly%site                        )) deallocate(cpoly%site                        )
+
 
     return
   end subroutine deallocate_polygontype

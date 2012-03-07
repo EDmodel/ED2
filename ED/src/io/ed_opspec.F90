@@ -1163,6 +1163,7 @@ subroutine ed_opspec_misc
                                     , quantum_efficiency_T         ! ! intent(in)
    use decomp_coms           , only : n_decomp_lim                 ! ! intent(in)
    use disturb_coms          , only : include_fire                 & ! intent(in)
+                                    , fire_parameter               & ! intent(in)
                                     , ianth_disturb                & ! intent(in)
                                     , sm_fire                      & ! intent(in)
                                     , time2canopy                  & ! intent(in)
@@ -1797,13 +1798,22 @@ end do
       ifaterr = ifaterr +1
    end if
 
-   if (include_fire < 0 .or. include_fire > 2) then
+   if (include_fire < 0 .or. include_fire > 3) then
       write (reason,fmt='(a,1x,i4,a)')                                                     &
-                    'Invalid INCLUDE_FIRE, it must be between 0 and 2. Yours is set to'    &
+                    'Invalid INCLUDE_FIRE, it must be between 0 and 3. Yours is set to'    &
                     ,include_fire,'...'
       call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
+   else if (include_fire /= 0) then
+      if (fire_parameter < 0.0 .or. fire_parameter > 100.) then
+         write (reason,fmt='(a,1x,es12.5,a)')                                              &
+               'Invalid FIRE_PARAMETER, it must be between 0 and 100.. Yours is set to'    &
+             , fire_parameter,'...'
+         call opspec_fatal(reason,'opspec_misc')
+         ifaterr = ifaterr +1
+      end if
    end if
+
    
    if (sm_fire < -3.1 .or. sm_fire > 1.) then
       write (reason,fmt='(a,1x,es12.5,a)')                                                 &

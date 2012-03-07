@@ -297,26 +297,28 @@ do
    atmco2=`echo ${oi}       | awk '{print $57}'`
    thcrit=`echo ${oi}       | awk '{print $58}'`
    smfire=`echo ${oi}       | awk '{print $59}'`
-   ipercol=`echo ${oi}      | awk '{print $60}'`
-   isoilbc=`echo ${oi}      | awk '{print $61}'`
-   runoff=`echo ${oi}       | awk '{print $62}'`
-   imetrad=`echo ${oi}      | awk '{print $63}'`
-   ibranch=`echo ${oi}      | awk '{print $64}'`
-   icanrad=`echo ${oi}      | awk '{print $65}'`
-   crown=`echo   ${oi}      | awk '{print $66}'`
-   ltransvis=`echo ${oi}    | awk '{print $67}'`
-   lreflectvis=`echo ${oi}  | awk '{print $68}'`
-   ltransnir=`echo ${oi}    | awk '{print $69}'`
-   lreflectnir=`echo ${oi}  | awk '{print $70}'`
-   orienttree=`echo ${oi}   | awk '{print $71}'`
-   orientgrass=`echo ${oi}  | awk '{print $72}'`
-   clumptree=`echo ${oi}    | awk '{print $73}'`
-   clumpgrass=`echo ${oi}   | awk '{print $74}'`
-   ivegtdyn=`echo ${oi}     | awk '{print $75}'`
-   igndvap=`echo ${oi}      | awk '{print $76}'`
-   iphen=`echo ${oi}        | awk '{print $77}'`
-   iallom=`echo ${oi}       | awk '{print $78}'`
-   ibigleaf=`echo ${oi}     | awk '{print $79}'`
+   ifire=`echo ${oi}        | awk '{print $60}'`
+   fireparm=`echo ${oi}     | awk '{print $61}'`
+   ipercol=`echo ${oi}      | awk '{print $62}'`
+   isoilbc=`echo ${oi}      | awk '{print $63}'`
+   runoff=`echo ${oi}       | awk '{print $64}'`
+   imetrad=`echo ${oi}      | awk '{print $65}'`
+   ibranch=`echo ${oi}      | awk '{print $66}'`
+   icanrad=`echo ${oi}      | awk '{print $67}'`
+   crown=`echo   ${oi}      | awk '{print $68}'`
+   ltransvis=`echo ${oi}    | awk '{print $69}'`
+   lreflectvis=`echo ${oi}  | awk '{print $70}'`
+   ltransnir=`echo ${oi}    | awk '{print $71}'`
+   lreflectnir=`echo ${oi}  | awk '{print $72}'`
+   orienttree=`echo ${oi}   | awk '{print $73}'`
+   orientgrass=`echo ${oi}  | awk '{print $74}'`
+   clumptree=`echo ${oi}    | awk '{print $75}'`
+   clumpgrass=`echo ${oi}   | awk '{print $76}'`
+   ivegtdyn=`echo ${oi}     | awk '{print $77}'`
+   igndvap=`echo ${oi}      | awk '{print $78}'`
+   iphen=`echo ${oi}        | awk '{print $79}'`
+   iallom=`echo ${oi}       | awk '{print $80}'`
+   ibigleaf=`echo ${oi}     | awk '{print $81}'`
    #---------------------------------------------------------------------------------------#
 
 
@@ -1113,6 +1115,8 @@ do
    sed -i s@myatmco2@${atmco2}@g             ${ED2IN}
    sed -i s@mythcrit@${thcrit}@g             ${ED2IN}
    sed -i s@mysmfire@${smfire}@g             ${ED2IN}
+   sed -i s@myfire@${ifire}@g                ${ED2IN}
+   sed -i s@myfuel@${fireparm}@g             ${ED2IN}
    sed -i s@mymetavg@${imetavg}@g            ${ED2IN}
    sed -i s@mypercol@${ipercol}@g            ${ED2IN}
    sed -i s@mysoilbc@${isoilbc}@g            ${ED2IN}

@@ -10,7 +10,6 @@ subroutine vegetation_dynamics(new_month,new_year)
                                , dtlsm                  & ! intent(in)
                                , frqsum                 & ! intent(in)
                                , ibigleaf               ! ! intent(in)
-   use disturb_coms     , only : include_fire           ! ! intent(in)
    use disturbance_utils, only : apply_disturbances     & ! subroutine
                                , site_disturbance_rates ! ! subroutine
    use fuse_fiss_utils  , only : fuse_patches           & ! subroutine
@@ -179,7 +178,6 @@ subroutine vegetation_dynamics_eq_0(new_month,new_year)
    use ed_misc_coms     , only : current_time           & ! intent(in)
                                , dtlsm                  & ! intent(in)
                                , frqsum                 ! ! intent(in)
-   use disturb_coms     , only : include_fire           ! ! intent(in)
    use disturbance_utils, only : apply_disturbances     & ! subroutine
                                , site_disturbance_rates ! ! subroutine
    use fuse_fiss_utils  , only : fuse_patches           ! ! subroutine

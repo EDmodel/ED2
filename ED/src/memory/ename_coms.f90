@@ -181,6 +181,7 @@ module ename_coms
       integer                                           :: n_decomp_lim
       integer                                           :: decomp_scheme
       integer                                           :: include_fire
+      real                                              :: fire_parameter
       real                                              :: sm_fire
       integer                                           :: ianth_disturb
       integer                                           :: icanturb
@@ -434,6 +435,7 @@ module ename_coms
       enl%n_decomp_lim              = undef_integer
       enl%decomp_scheme             = undef_integer
       enl%include_fire              = undef_integer
+      enl%fire_parameter            = undef_real
       enl%sm_fire                   = undef_real
       enl%ianth_disturb             = undef_integer
       enl%icanturb                  = undef_integer

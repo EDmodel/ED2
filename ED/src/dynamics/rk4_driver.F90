@@ -553,10 +553,10 @@ module rk4_driver
       end do
       !----- Find the bottommost layer to consider. ---------------------------------------!
       select case(include_fire)
-      case (0,2)
-         ka = k_fire_first
       case (1)
          ka = rk4site%lsl
+      case default
+         ka = k_fire_first
       end select
       !----- Add soil moisture. -----------------------------------------------------------!
       do k=ka,nzg

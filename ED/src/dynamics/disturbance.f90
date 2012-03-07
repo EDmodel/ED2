@@ -1003,7 +1003,7 @@ module disturbance_utils
             select case (include_fire)
             case (0) 
                fire_dist_rate = 0.0
-            case (1,2)
+            case default
                fire_dist_rate = sum(cpoly%lambda_fire(1:12,isi)) / 12.0
             end select
             cpoly%fire_disturbance_rate(isi) = fire_dist_rate
@@ -1849,7 +1849,7 @@ module disturbance_utils
                                 , ed_biomass               ! ! function
       use ed_max_dims    , only : n_pft                    ! ! intent(in)
       use phenology_coms , only : retained_carbon_fraction ! ! intent(in)
-
+      use phenology_aux  , only : pheninit_balive_bstorage ! ! intent(in)
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
       type(sitetype)                  , target     :: csite
@@ -1922,7 +1922,7 @@ module disturbance_utils
       !      Initialise the active and storage biomass scaled by the leaf drought phenology (or start with 1.0 if the plant doesn't !
       ! shed their leaves due to water stress.                                             !
       !------------------------------------------------------------------------------------!
-      call pheninit_balive_bstorage(mzg,csite,np,nc,ntext_soil,green_leaf_factor)
+      call pheninit_balive_bstorage(csite,mzg,np,nc,ntext_soil,green_leaf_factor)
       !------------------------------------------------------------------------------------!
 
 

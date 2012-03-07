@@ -2460,24 +2460,28 @@ $ED2_INFO
 
    !---------------------------------------------------------------------------------------!
    !      The following parameters adjust the fire disturbance in the model.               !
-   ! INCLUDE_FIRE  -- Which threshold to use for fires.                                    !
-   !                  0.  No fires;                                                        !
-   !                  1.  (deprecated) Fire will be triggered with enough biomass and      !
-   !                      integrated ground water depth less than a threshold.  Based on   !
-   !                      ED-1, the threshold assumes that the soil is 1 m, so deeper      !
-   !                      soils will need to be much drier to allow fires to happen and    !
-   !                      often  will never allow fires.                                   !
-   !                  2.  Fire will be triggered with enough biomass and the total soil    !
-   !                      water at the top 75 cm falls below a threshold.                  !
-   ! SM_FIRE       -- This is used only when INCLUDE_FIRE = 2.  The sign here matters.     !
-   !                  >= 0. - Minimum relative soil moisture above dry air of the top 75cm !
-   !                          that will prevent fires to happen.                           !
-   !                  <  0. - Minimum mean soil moisture potential in MPa of the top 75 cm !
-   !                          that will prevent fires to happen.  The dry air soil         !
-   !                          potential is defined as -3.1 MPa, so make sure SM_FIRE   is  !
-   !                          greater than this value.                                     !
+   ! INCLUDE_FIRE   -- Which threshold to use for fires.                                   !
+   !                   0.  No fires;                                                       !
+   !                   1.  (deprecated) Fire will be triggered with enough biomass and     !
+   !                       integrated ground water depth less than a threshold.  Based on  !
+   !                       ED-1, the threshold assumes that the soil is 1 m, so deeper     !
+   !                       soils will need to be much drier to allow fires to happen and   !
+   !                       often  will never allow fires.                                  !
+   !                   2.  Fire will be triggered with enough biomass and the total soil   !
+   !                       water at the top 75 cm falls below a threshold.                 !
+   ! FIRE_PARAMETER -- If fire happens, this will control the intensity of the disturbance !
+   !                   given the amount of fuel (currently the total above-ground          !
+   !                   biomass).                                                           !
+   ! SM_FIRE        -- This is used only when INCLUDE_FIRE = 2.  The sign here matters.    !
+   !                   >= 0. - Minimum relative soil moisture above dry air of the top 1m  !
+   !                           that will prevent fires to happen.                          !
+   !                   <  0. - Minimum mean soil moisture potential in MPa of the top 1m   !
+   !                           that will prevent fires to happen.  The dry air soil        !
+   !                           potential is defined as -3.1 MPa, so make sure SM_FIRE is   !
+   !                           greater than this value.                                    !
    !---------------------------------------------------------------------------------------!
    INCLUDE_FIRE    = 2,
+   FIRE_PARAMETER  = 1.,
    SM_FIRE         = -1.40,
    !---------------------------------------------------------------------------------------!
 

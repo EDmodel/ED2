@@ -49,10 +49,15 @@ module disturb_coms
    !    soil is 1 m, so deeper soils will need to be much drier to allow fires to happen   !
    !    and often will never allow fires because the threshold may be below the minimum    !
    !    possible soil moisture.                                                            !
-   ! 2. Fire will be triggered with enough biomass and the total soil water at the top 75  !
-   !    cm falls below a (relative) threshold.                                             !
+   ! 2. Fire will be triggered with enough biomass and the total soil water at the top 1.0 !
+   !    m falls below a (relative) threshold.                                              !
+   ! 3. Similar to 2, but the fire intensity will depend on the soil dryness above the     !
+   !    threshold (the drier the soil the more extreme the fire is).                       !
    !---------------------------------------------------------------------------------------!
    integer :: include_fire
+
+   !----- Dimensionless parameter controlling speed of fire spread. -----------------------!
+   real :: fire_parameter
 
    !---------------------------------------------------------------------------------------!
    !     Anthropogenic disturbance.  1 means that anthropogenic disturbances will be       !
@@ -147,9 +152,6 @@ module disturb_coms
    !=======================================================================================!
    !     Fire parameters.                                                                  !
    !---------------------------------------------------------------------------------------!
-
-   !----- Dimensionless parameter controlling speed of fire spread. -----------------------!
-   real :: fire_parameter
 
    !---------------------------------------------------------------------------------------!
    !     Fire may occur if total equivalent water depth (ground + underground) falls below !

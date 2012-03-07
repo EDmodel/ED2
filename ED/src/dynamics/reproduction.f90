@@ -5,49 +5,50 @@
 ! want it, in which case the seedling biomass will go to the litter pools.                 !
 !------------------------------------------------------------------------------------------!
 subroutine reproduction(cgrid, month)
-   use ed_state_vars      , only : edtype                & ! structure
-                                 , polygontype           & ! structure
-                                 , sitetype              & ! structure
-                                 , patchtype             & ! structure
-                                 , allocate_patchtype    & ! subroutine
-                                 , copy_patchtype        & ! subroutine
-                                 , deallocate_patchtype  ! ! subroutine
-   use pft_coms           , only : recruittype           & ! structure
-                                 , zero_recruit          & ! subroutine
-                                 , copy_recruit          & ! subroutine
-                                 , seedling_mortality    & ! intent(in)
-                                 , c2n_stem              & ! intent(in)
-                                 , l2n_stem              & ! intent(in)
-                                 , min_recruit_size      & ! intent(in)
-                                 , one_plant_c           & ! intent(in)
-                                 , c2n_recruit           & ! intent(in)
-                                 , seed_rain             & ! intent(in)
-                                 , include_pft           & ! intent(in)
-                                 , include_pft_ag        & ! intent(in)
-                                 , qsw                   & ! intent(in)
-                                 , q                     & ! intent(in)
-                                 , agf_bs                & ! intent(in)
-                                 , sla                   & ! intent(in)
-                                 , hgt_min               & ! intent(in)
-                                 , plant_min_temp        ! ! intent(in)
-   use decomp_coms        , only : f_labile              ! ! intent(in)
-   use ed_max_dims        , only : n_pft                 ! ! intent(in)
-   use fuse_fiss_utils    , only : sort_cohorts          & ! subroutine
-                                 , terminate_cohorts     & ! subroutine
-                                 , fuse_cohorts          & ! subroutine
-                                 , split_cohorts         & ! subroutine
-                                 , rescale_patches       ! ! subroutine
-   use phenology_coms     , only : repro_scheme          ! ! intent(in)
-   use mem_polygons       , only : maxcohort             ! ! intent(in)
-   use consts_coms        , only : pio4                  ! ! intent(in)
-   use ed_therm_lib       , only : calc_veg_hcap         ! ! function
-   use allometry          , only : dbh2bd                & ! function
-                                 , dbh2bl                & ! function
-                                 , h2dbh                 & ! function
-                                 , ed_biomass            & ! function
-                                 , area_indices          ! ! subroutine
-   use grid_coms          , only : nzg                   ! ! intent(in)
-   use ed_misc_coms       , only : ibigleaf              ! ! intent(in)
+   use ed_state_vars      , only : edtype                   & ! structure
+                                 , polygontype              & ! structure
+                                 , sitetype                 & ! structure
+                                 , patchtype                & ! structure
+                                 , allocate_patchtype       & ! subroutine
+                                 , copy_patchtype           & ! subroutine
+                                 , deallocate_patchtype     ! ! subroutine
+   use pft_coms           , only : recruittype              & ! structure
+                                 , zero_recruit             & ! subroutine
+                                 , copy_recruit             & ! subroutine
+                                 , seedling_mortality       & ! intent(in)
+                                 , c2n_stem                 & ! intent(in)
+                                 , l2n_stem                 & ! intent(in)
+                                 , min_recruit_size         & ! intent(in)
+                                 , one_plant_c              & ! intent(in)
+                                 , c2n_recruit              & ! intent(in)
+                                 , seed_rain                & ! intent(in)
+                                 , include_pft              & ! intent(in)
+                                 , include_pft_ag           & ! intent(in)
+                                 , qsw                      & ! intent(in)
+                                 , q                        & ! intent(in)
+                                 , agf_bs                   & ! intent(in)
+                                 , sla                      & ! intent(in)
+                                 , hgt_min                  & ! intent(in)
+                                 , plant_min_temp           ! ! intent(in)
+   use decomp_coms        , only : f_labile                 ! ! intent(in)
+   use ed_max_dims        , only : n_pft                    ! ! intent(in)
+   use fuse_fiss_utils    , only : sort_cohorts             & ! subroutine
+                                 , terminate_cohorts        & ! subroutine
+                                 , fuse_cohorts             & ! subroutine
+                                 , split_cohorts            & ! subroutine
+                                 , rescale_patches          ! ! subroutine
+   use phenology_coms     , only : repro_scheme             ! ! intent(in)
+   use mem_polygons       , only : maxcohort                ! ! intent(in)
+   use consts_coms        , only : pio4                     ! ! intent(in)
+   use ed_therm_lib       , only : calc_veg_hcap            ! ! function
+   use allometry          , only : dbh2bd                   & ! function
+                                 , dbh2bl                   & ! function
+                                 , h2dbh                    & ! function
+                                 , ed_biomass               & ! function
+                                 , area_indices             ! ! subroutine
+   use grid_coms          , only : nzg                      ! ! intent(in)
+   use ed_misc_coms       , only : ibigleaf                 ! ! intent(in)
+   use phenology_aux      , only : pheninit_balive_bstorage ! ! intent(in)
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    type(edtype)     , target     :: cgrid
@@ -268,7 +269,7 @@ subroutine reproduction(cgrid, month)
                      ! tissues, we will make them consistent with the initial amount of    !
                      ! water available.  This is done inside pheninit_alive_storage.       !
                      !---------------------------------------------------------------------!
-                     call pheninit_balive_bstorage(nzg,csite,ipa,ico                       &
+                     call pheninit_balive_bstorage(csite,nzg,ipa,ico                       &
                                                   ,cpoly%ntext_soil(:,isi)                 &
                                                   ,cpoly%green_leaf_factor(:,isi))
                      !---------------------------------------------------------------------!
