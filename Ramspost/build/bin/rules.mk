@@ -113,6 +113,11 @@ rnumr.o: $(RPOST_LIB)/rnumr.f90
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)
 
+rout_coms.o: $(RPOST_MEMORY)/rout_coms.f90
+	cp -f $< $(<F:.f90=.f90)
+	$(F90_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90)
+
 rpost_coms.o: $(RPOST_MEMORY)/rpost_coms.f90
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)

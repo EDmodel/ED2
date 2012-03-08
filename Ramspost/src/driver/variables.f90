@@ -392,9 +392,10 @@ end function RAMS_getvar
 !==========================================================================================!
 !==========================================================================================!
 subroutine RAMS_varlib(cvar,nx,ny,nz,nsl,npat,ncld,ngrd,flnm,cdname,cdunits,ivar_type &
-                      ,a,b,a2,a6)
+                      ,a,b)
    use rconstants
    use rpost_coms
+   use rout_coms , only : undefflg        ! ! intent(in)
    use rpost_dims, only : nwave           ! ! intent(in)
    use leaf_coms , only : ustmin          & ! intent(in)
                         , ubmin           ! ! intent(in)
@@ -421,8 +422,6 @@ subroutine RAMS_varlib(cvar,nx,ny,nz,nsl,npat,ncld,ngrd,flnm,cdname,cdunits,ivar
    character(len=*)              , intent(out)   :: cdunits
    real            , dimension(*), intent(inout) :: a
    real            , dimension(*), intent(inout) :: b
-   real            , dimension(*), intent(inout) :: a2
-   real            , dimension(*), intent(inout) :: a6
    !----- Local variables. ----------------------------------------------------------------!
    integer                                       :: idim_type
    integer                                       :: irecind
@@ -1303,7 +1302,6 @@ subroutine RAMS_varlib(cvar,nx,ny,nz,nsl,npat,ncld,ngrd,flnm,cdname,cdunits,ivar
       ierr= RAMS_getvar('THSRC',idim_type,ngrd,a,b,flnm)
       ierr_getvar = ierr_getvar + ierr
       call RAMS_comp_mults(nx,ny,nz*ncld,a,86400.)
-      call get_cumulus(nx,ny,nz,ncld,a,a6)
       cdname='deep conv heat rate'
       cdunits='K/day'
 
@@ -1313,7 +1311,6 @@ subroutine RAMS_varlib(cvar,nx,ny,nz,nsl,npat,ncld,ngrd,flnm,cdname,cdunits,ivar
       ierr_getvar = ierr_getvar + ierr
       call RAMS_comp_mults(nx,ny,nz*ncld,a,86400.)
       call RAMS_comp_mults(nx,ny,nz*ncld,a,1000.)
-      call get_cumulus(nx,ny,nz,ncld,a,a6)
       cdname='deep conv moist rate'
       cdunits='g/kg/day'
 
@@ -1322,7 +1319,6 @@ subroutine RAMS_varlib(cvar,nx,ny,nz,nsl,npat,ncld,ngrd,flnm,cdname,cdunits,ivar
       ierr= RAMS_getvar('CO2SRC',idim_type,ngrd,a,b,flnm)
       ierr_getvar = ierr_getvar + ierr
       call RAMS_comp_mults(nx,ny,nz*ncld,a,86400.)
-      call get_cumulus(nx,ny,nz,ncld,a,a6)
       cdname='deep conv co2 rate'
       cdunits='umol/mol/day'
 
@@ -1504,7 +1500,7 @@ subroutine RAMS_varlib(cvar,nx,ny,nz,nsl,npat,ncld,ngrd,flnm,cdname,cdunits,ivar
       ierr_getvar = ierr_getvar + ierr
       call RAMS_comp_press(nx,ny,nz,scr%c)
    !- cape
-      call cape_cine(nx,ny,nz,scr%c,scr%d,scr%e,a,'cape',-9.99e33)
+      call cape_cine(nx,ny,nz,scr%c,scr%d,scr%e,a,'cape',undefflg)
 
       cdname='cape'
       cdunits='J/kg'
@@ -1532,7 +1528,7 @@ subroutine RAMS_varlib(cvar,nx,ny,nz,nsl,npat,ncld,ngrd,flnm,cdname,cdunits,ivar
       ierr_getvar = ierr_getvar + ierr
       call RAMS_comp_press(nx,ny,nz,scr%c)
    !- cape
-      call cape_cine(nx,ny,nz,scr%c,scr%d,scr%e,a,'cine',-9.99e33)
+      call cape_cine(nx,ny,nz,scr%c,scr%d,scr%e,a,'cine',undefflg)
 
       cdname='cine'
       cdunits='J/kg'
@@ -1581,7 +1577,6 @@ subroutine RAMS_varlib(cvar,nx,ny,nz,nsl,npat,ncld,ngrd,flnm,cdname,cdunits,ivar
       ierr= RAMS_getvar('CFXUP',idim_type,ngrd,a,b,flnm)
       ierr_getvar = ierr_getvar + ierr
       call RAMS_comp_noneg(nx,ny,nz*ncld,a)
-      call get_cumulus(nx,ny,nz,ncld,a,a6)
       cdname='Convective upward flux'
       cdunits='kg/m2/s'
 
@@ -1590,7 +1585,6 @@ subroutine RAMS_varlib(cvar,nx,ny,nz,nsl,npat,ncld,ngrd,flnm,cdname,cdunits,ivar
       ierr= RAMS_getvar('CFXDN',idim_type,ngrd,a,b,flnm)
       ierr_getvar = ierr_getvar + ierr
       call RAMS_comp_nopos(nx,ny,nz*ncld,a)
-      call get_cumulus(nx,ny,nz,ncld,a,a6)
       cdname='Convective downward flux'
       cdunits='kg/m2/s'
 
@@ -1599,7 +1593,6 @@ subroutine RAMS_varlib(cvar,nx,ny,nz,nsl,npat,ncld,ngrd,flnm,cdname,cdunits,ivar
       ierr= RAMS_getvar('DFXUP',idim_type,ngrd,a,b,flnm)
       ierr_getvar = ierr_getvar + ierr
       call RAMS_comp_noneg(nx,ny,nz*ncld,a)
-      call get_cumulus(nx,ny,nz,ncld,a,a6)
       cdname='Detrainment upward flux'
       cdunits='kg/m2/s'
 
@@ -1608,7 +1601,6 @@ subroutine RAMS_varlib(cvar,nx,ny,nz,nsl,npat,ncld,ngrd,flnm,cdname,cdunits,ivar
       ierr= RAMS_getvar('DFXDN',idim_type,ngrd,a,b,flnm)
       ierr_getvar = ierr_getvar + ierr
       call RAMS_comp_noneg(nx,ny,nz*ncld,a)
-      call get_cumulus(nx,ny,nz,ncld,a,a6)
       cdname='Detrainment upward flux'
       cdunits='kg/m2/s'
 
@@ -1617,7 +1609,6 @@ subroutine RAMS_varlib(cvar,nx,ny,nz,nsl,npat,ncld,ngrd,flnm,cdname,cdunits,ivar
       ierr= RAMS_getvar('EFXUP',idim_type,ngrd,a,b,flnm)
       ierr_getvar = ierr_getvar + ierr
       call RAMS_comp_noneg(nx,ny,nz*ncld,a)
-      call get_cumulus(nx,ny,nz,ncld,a,a6)
       cdname='Entrainment upward flux'
       cdunits='kg/m2/s'
 
@@ -1626,7 +1617,6 @@ subroutine RAMS_varlib(cvar,nx,ny,nz,nsl,npat,ncld,ngrd,flnm,cdname,cdunits,ivar
       ierr= RAMS_getvar('EFXDN',idim_type,ngrd,a,b,flnm)
       ierr_getvar = ierr_getvar + ierr
       call RAMS_comp_noneg(nx,ny,nz*ncld,a)
-      call get_cumulus(nx,ny,nz,ncld,a,a6)
       cdname='Entrainment upward flux'
       cdunits='kg/m2/s'
 
@@ -3034,7 +3024,6 @@ subroutine RAMS_varlib(cvar,nx,ny,nz,nsl,npat,ncld,ngrd,flnm,cdname,cdunits,ivar
       select case (trim(cvar))
       case ('smoist')
          ivar_type = 8
-         call get_leaf_soil(nx,ny,nsl,npat,a,a2)
       case ('smoist_ps')
          ivar_type = 10
          call RAMS_comp_patchsum_l(nnxp(ngrd),nnyp(ngrd),nsl,npat,a)
@@ -3072,7 +3061,6 @@ subroutine RAMS_varlib(cvar,nx,ny,nz,nsl,npat,ncld,ngrd,flnm,cdname,cdunits,ivar
       select case (trim(cvar))
       case ('tsoil')
          call RAMS_comp_tempC(nx,ny,nsl,npat,a)
-         call get_leaf_soil(nx,ny,nsl,npat,a,a2)
          ivar_type = 8
       case ('tsoil_ps')
          ivar_type = 10
@@ -3106,7 +3094,6 @@ subroutine RAMS_varlib(cvar,nx,ny,nz,nsl,npat,ncld,ngrd,flnm,cdname,cdunits,ivar
       select case (trim(cvar))
       case ('smfrac')
          ivar_type = 8
-         call get_leaf_soil(nx,ny,nsl,npat,a,a2)
       case ('smfrac_ps')
          ivar_type = 10
          call RAMS_comp_patchsum_l(nnxp(ngrd),nnyp(ngrd),nsl,npat,a)
@@ -3219,7 +3206,6 @@ subroutine RAMS_varlib(cvar,nx,ny,nz,nsl,npat,ncld,ngrd,flnm,cdname,cdunits,ivar
       ierr_getvar = ierr_getvar + ierr
       call RAMS_comp_noneg(nx,ny,nz*ncld,a)
       call RAMS_comp_mults(nx,ny,nz*ncld,a,1000.)
-      call get_cumulus(nx,ny,nz,ncld,a,a6)
       cdname='Conv. water mixing ratio'
       cdunits='g/kg'
 
@@ -3229,7 +3215,6 @@ subroutine RAMS_varlib(cvar,nx,ny,nz,nsl,npat,ncld,ngrd,flnm,cdname,cdunits,ivar
       ierr_getvar = ierr_getvar + ierr
       call RAMS_comp_noneg(nx,ny,nz*ncld,a)
       call RAMS_comp_mults(nx,ny,nz*ncld,a,1000.)
-      call get_cumulus(nx,ny,nz,ncld,a,a6)
       cdname='Conv. water mixing ratio'
       cdunits='g/kg'
 

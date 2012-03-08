@@ -23,9 +23,9 @@ subroutine s4d_to_3d(xmax,ymax,zmax,emax,e,four,three)
    !---------------------------------------------------------------------------------------!
    !    Extract the three dimensional array.                                               !
    !---------------------------------------------------------------------------------------!
-   do x=1,xmax
+   do z=1,zmax
       do y=1,ymax
-         do z=1,zmax
+         do x=1,xmax
             three(x,y,z) = four(x,y,z,e)
          end do
       end do
@@ -42,41 +42,67 @@ end subroutine s4d_to_3d
 
 !==========================================================================================!
 !==========================================================================================!
-      subroutine Ctransvar(n1,n2,n3,a,topo,nzlev,izlev,zt,ztop)
-      use rpost_dims
-      dimension a(n1,n2,n3),topo(n1,n2),zt(n3)
-      real b(nzpmax,4)
-      integer izlev(nzpmax)
+subroutine ctransvar(nx,ny,nz,a3d,topo,nzlev,izlev,zt,ztop)
+   use rpost_dims
+   use rout_coms , only : undefflg
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   integer                     , intent(in)    :: nx
+   integer                     , intent(in)    :: ny
+   integer                     , intent(in)    :: nz
+   integer                     , intent(in)    :: nzlev
+   real                        , intent(in)    :: ztop
+   real   , dimension(nx,ny,nz), intent(inout) :: a3d
+   real   , dimension(nx,ny   ), intent(in)    :: topo
+   real   , dimension(nzpmax  ), intent(in)    :: zt
+   real   , dimension(nplmax  ), intent(in)    :: izlev
+   !----- Local variables. ----------------------------------------------------------------!
+   real   , dimension(nzpmax,4)                :: tmpvar
+   integer                                     :: i
+   integer                                     :: j
+   integer                                     :: k
+   !---------------------------------------------------------------------------------------!
 
-      do k=1,nzlev
-! niveis onde serao interpolados os valores
-        b(k,4)=float(izlev(k))
-      enddo
 
-      do j=1,n2
-         do i=1,n1
-            do k=1,n3
-               b(k,1)=a(i,j,k)
-               b(k,2)=topo(i,j)+zt(k)*(1.-topo(i,j)/ztop)
-!	       if(i.eq.50.and.j.eq.50)  print*,i,j,k,topo(i,j),zt(k), &
-!        b(k,1),b(k,2)
-            enddo
-            call htint(n3,b(1,1),b(1,2),nzlev,b(1,3),b(1,4))
-            do k=1,nzlev
-	     if( b(k,4).lt.topo(i,j)) then
-	       a(i,j,k)= -9.99e33
-!	       print*,i,j,b(k,4),topo(i,j)
-!	       stop
-	     else
-               a(i,j,k)=b(k,3)
-	     endif
-!              if(i.eq.50.and.j.eq.50)  print*,b(k,3)
-            enddo
-         enddo
-      enddo
-         
-      return
-      end
+
+   !---------------------------------------------------------------------------------------!
+   !     These are the levels for which we interpolate.                                    !
+   !---------------------------------------------------------------------------------------!
+   do k=1,nzlev
+      tmpvar(k,4) = izlev(k)
+   end do
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Run the interpolation for all grid points.                                        !
+   !---------------------------------------------------------------------------------------!
+   do j=1,ny
+      do i=1,nx
+         do k=1,nz
+            tmpvar(k,1) = a3d(i,j,k)
+            tmpvar(k,2) = topo(i,j) + zt(k) * (1. - topo(i,j) / ztop)
+         end do
+         call htint(nz,tmpvar(:,1),tmpvar(:,2),nzlev,tmpvar(:,3),tmpvar(:,4))
+
+         do k=1,nzlev
+            if (tmpvar(k,4) < topo(i,j)) then
+               a3d (i,j,k) = undefflg
+            else
+               a3d (i,j,k) = tmpvar(k,3)
+            end if
+         end do
+      end do
+   end do
+
+   return
+end subroutine ctransvar
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
 
 
 !==========================================================================================!
@@ -241,75 +267,121 @@ end subroutine define_lim
 return
 end
 
-! ---------------------------------------------------------------
-! -   SUBROUTINE PTRANSVAR : LOAD RAMS VARIABLE FROM ANALYSIS   -
-! ---------------------------------------------------------------
+!==========================================================================================!
+!==========================================================================================!
+!     Subroutine ptransvar.  This subroutine interpolates the 3-d variable to the sought   !
+! pressure levels.                                                                         !
+!------------------------------------------------------------------------------------------!
+subroutine ptransvar(a3d,nx,ny,nz,nplev,iplev,exner,zlev,zplev,topo)
+   use rpost_dims
+   use therm_lib , only: press2exner ! ! function
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   integer                        , intent(in)    :: nx
+   integer                        , intent(in)    :: ny
+   integer                        , intent(in)    :: nz
+   integer                        , intent(in)    :: nplev
+   real   , dimension(nplmax)     , intent(in)    :: iplev
+   real   , dimension(nx,ny,nz)   , intent(inout) :: a3d
+   real   , dimension(nx,ny)      , intent(in)    :: topo
+   real   , dimension(nx,ny,nz)   , intent(in)    :: exner
+   real   , dimension(nx,ny,nplev), intent(inout) :: zplev
+   real   , dimension(nzpmax)     , intent(inout) :: zlev
+   !----- Local variables. ----------------------------------------------------------------!
+   real   , dimension(nzpmax,4)                   :: tmpvar
+   integer                                        :: i
+   integer                                        :: j
+   integer                                        :: k
+   integer                                        :: kk
+   !---------------------------------------------------------------------------------------!
 
-      subroutine ptransvar(a,nx,ny,nz,nplev,iplev,pi,zlev,zplev,topo)
-      use rpost_dims
-      real b(nzpmax,4)
-      real a(nx,ny,nz),topo(nx,ny),pi(nx,ny,nz), &
-           zlev(*),zplev(nx,ny,20)
-      integer nx,ny,nz,nplev,iplev(20)
 
-!      print*,nx,ny,nz,nplev,iplev
+   !----- Find the exner function equivalent for the pressure levels. ---------------------!
+   do k=1,nplev
+      tmpvar(nplev-k+1,4) = press2exner(100.*iplev(k)) 
+   end do
+   !---------------------------------------------------------------------------------------!
 
 
-      do i=1,nplev
-        b(nplev-i+1,4)=1004.*(iplev(i)/1000.)**.286
-      enddo
+   !---------------------------------------------------------------------------------------!
+   !     Interpolate the variable.                                                         !
+   !---------------------------------------------------------------------------------------!
+   do j=1,ny
+      do i=1,nx
+         do k=1,nz
+            kk = nz-k+1
+            tmpvar(kk,1)=a3d  (i,j,k)
+            tmpvar(kk,2)=exner(i,j,k)
+         end do
 
+         call htint(nz,tmpvar(:,1),tmpvar(:,2),nplev,tmpvar(:,3),tmpvar(:,4))
+         do k=1,nplev
+            a3d(i,j,nplev-k+1) = tmpvar(k,3)
+         end do
+
+         do k=1,nz
+            kk=nz-k+1
+            tmpvar(kk,1) = zlev(k)+topo(i,j)
+            tmpvar(kk,2) = exner(i,j,k)
+         end do
+         call htint(nz,tmpvar(:,1),tmpvar(:,2),nplev,tmpvar(:,3),tmpvar(:,4))
+         do k=1,nplev
+            zplev(i,j,nplev-k+1) = tmpvar(k,3)
+         end do
+      end do
+   end do
+   return
+end subroutine ptransvar
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!     This subroutine selects the sought sigma-z levels.                                   !
+!------------------------------------------------------------------------------------------!
+subroutine select_sigmaz(nx,ny,nz,a3d,nzlev,zlev)
+   use rpost_dims
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   integer                     , intent(in)    :: nx
+   integer                     , intent(in)    :: ny
+   integer                     , intent(in)    :: nz
+   integer                     , intent(in)    :: nzlev
+   real   , dimension(nx,ny,nz), intent(inout) :: a3d
+   real   , dimension(nzlev)   , intent(in)    :: zlev
+   !----- Local variables. ----------------------------------------------------------------!
+   integer                                     :: i
+   integer                                     :: j
+   integer                                     :: k
+   integer                                     :: ilev
+   !---------------------------------------------------------------------------------------!
+
+   do k=1,nzlev
+      ilev = nint(zlev(k))
       do j=1,ny
-        do i=1,nx
-          do k=1,nz
-            kk=nz-k+1
-            b(kk,1)=a(i,j,k)
-            b(kk,2)=pi(i,j,k)
-          enddo
-          call htint(nz,b(1,1),b(1,2),nplev,b(1,3),b(1,4))
-          do k=1,nplev
-!            print*,i,j,k,a(i,j,k),b(k,3),pi(i,j,k),b(k,4)
-            a(i,j,nplev-k+1)=b(k,3)
-
-          enddo
-          
-          do k=1,nz
-            kk=nz-k+1
-            b(kk,1)=zlev(k)+topo(i,j)
-            b(kk,2)=pi(i,j,k)
-          enddo
-          call htint(nz,b(1,1),b(1,2),nplev,b(1,3),b(1,4))
-          do k=1,nplev
-            zplev(i,j,nplev-k+1)=b(k,3)
-          enddo
-        enddo
-      enddo
-      
-      return
-      end
-!***************************************************************************
-
-!***************************************************************************
-!***************************************************************************
-
-!--------------------------------------------------
-      subroutine select_sigmaz(n1,n2,n3,a,nzlev,izlev)
-      use rpost_dims
-      dimension a(n1,n2,n3)
-      real b(nzpmax,4)
-      integer izlev(nzpmax)
-
-      do k=1,nzlev
-       do j=1,n2
-         do i=1,n1
-	    a(i,j,k)=a(i,j,izlev(k))
-         enddo
-       enddo
-      enddo
+         do i=1,nx
+            a3d(i,j,k) = a3d(i,j,ilev)
+         end do
+      end do
+   end do
  
-      return
-      end
-!-------------------------------------------------------------------
+   return
+end subroutine select_sigmaz
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
 subroutine date1(ib,iy,im,id)
 iy=int(ib/10000)
 im=int( (ib-iy*10000)/100 )

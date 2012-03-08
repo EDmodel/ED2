@@ -16,6 +16,7 @@ subroutine RAMS_comp(n1,n2,n3,n4,n5,n6)
 use somevars
 use rconstants
 use rpost_coms
+use rout_coms, only : undefflg
 use therm_lib, only : uint2tl        & ! function
                     , dewfrostpoint  & ! function
                     , rslif          & ! function
@@ -202,7 +203,7 @@ entry set_undef(n1,n2,n3,a,c)
   do j=1,n2
       do i=1,n1
 	a(i,j,1)=c(i,j,1)
-!        if(a(i,j,1) .lt. 0.0001) a(i,j,1) = -9.99e33
+!        if(a(i,j,1) .lt. 0.0001) a(i,j,1) = undefflg
 !	print*,i,j,klevel,c(i,j,klevel)
       enddo
   enddo
@@ -589,7 +590,7 @@ entry RAMS_comp_raintemp(n1,n2,n3,a)
             if (a(i,j,k) > 0.) then
                a(i,j,k) = tsupercool_liq + a(i,j,k) * cliqi - t00
             else
-               a(i,j,k) = -9.99e33
+               a(i,j,k) = undefflg
             end if
          enddo
       enddo
@@ -604,7 +605,7 @@ entry RAMS_comp_qtcpcp(n1,n2,n3,a)
                call uint2tl(a(i,j,k),temptemp,fracliq)
                a(i,j,k) = temptemp - t00
             else
-               a(i,j,k) = -9.99e33
+               a(i,j,k) = undefflg
             end if
          end do
       end do
@@ -1531,13 +1532,13 @@ end subroutine RAMS_comp_solenoidy
 !==========================================================================================!
 subroutine RAMS_comp_sfcwmeantemp(n1,n2,ns,np,a,b,c,d,e)
    use rconstants
+   use rout_coms, only  : undefflg
    use therm_lib, only: uint2tl
    implicit none 
    integer :: n1,n2,ns,np,nlev,i,j,ip,k
    real, dimension(n1,n2,np)    :: a,d,e
    real, dimension(n1,n2,ns,np) :: b,c
    real :: temptemp,fracliq,snowarea,xmasstot
-   real, parameter :: undef=-9.99e33
    !a  area
    !b energy
    !c  mass
@@ -1575,10 +1576,10 @@ subroutine RAMS_comp_sfcwmeantemp(n1,n2,ns,np,a,b,c,d,e)
            if (snowarea > 0.) then
               e(i,j,1) = e(i,j,1) / snowarea
            else
-              e(i,j,1) = undef
+              e(i,j,1) = undefflg
            end if
         else
-           e(i,j,1) = undef
+           e(i,j,1) = undefflg
         end if
      end do
    end do
@@ -1623,11 +1624,11 @@ end subroutine RAMS_comp_thetaeiv
 !==========================================================================================!
 !==========================================================================================!
 subroutine RAMS_comp_sfcwinteg(n1,n2,ns,np,a,c,d,e)
+   use rout_coms, only : undefflg
    implicit none 
    integer :: n1,n2,ns,np,nlev,i,j,ip,k
    real, dimension(n1,n2,np)    :: a,d,e
    real, dimension(n1,n2,ns,np) :: c
-   real, parameter :: undef=-9.99e33
    !a  area                                                   
    !c mass/depth                                             
    !d  nlev                                                   
@@ -1635,7 +1636,7 @@ subroutine RAMS_comp_sfcwinteg(n1,n2,ns,np,a,c,d,e)
       do j=1,n2                                               
         do i=1,n1                                             
            if (a(i,j,1) > 0.99) then                          
-              e(i,j,1) = -9.99e33                                
+              e(i,j,1) = undefflg                           
            else
               e(i,j,1) = 0.                                  
               do ip=2,np                                     
@@ -1746,6 +1747,7 @@ end subroutine RAMS_comp_patchsum
 !------------------------------------------------------------------------------------------!
 subroutine RAMS_comp_patchsum_l(nx,ny,nz,np,iovar)
    use leaf_coms, only : min_patch_area
+   use rout_coms, only : undefflg
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
    integer                         , intent(in)    :: nx
@@ -1804,7 +1806,7 @@ subroutine RAMS_comp_patchsum_l(nx,ny,nz,np,iovar)
                end do
                psum(x,y,z)    = psum(x,y,z) / landarea
             else
-               psum(x,y,z)    = -9.99e33
+               psum(x,y,z)    = undefflg
             end if
          end do
       end do
