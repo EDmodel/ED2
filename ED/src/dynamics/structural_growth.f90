@@ -161,10 +161,6 @@ subroutine structural_growth(cgrid, month)
                seed_litter        = cpatch%bseeds(ico) * cpatch%nplant(ico)                &
                                   * seedling_mortality(ipft)
                                   
-               write (unit=*,fmt='(a)') '------------seed terms----------'
-               write (unit=*,fmt='(a,1x,es12.4)') ' - bseeds:       ',cpatch%bseeds(ico)
-               write (unit=*,fmt='(a,1x,es12.4)') ' - seed litter:  ',seed_litter
-               write (unit=*,fmt='(a,1x,es12.4)') ' - bstorage:     ',cpatch%bstorage(ico)
                
                !---------------------------------------------------------------------------!
                !      Rebalance the plant nitrogen uptake considering the actual alloc-    !
@@ -626,13 +622,7 @@ subroutine plant_structural_allocation(ipft,hite,dbh,lat,phen_status,f_bseeds,f_
       close (unit=66,status='keep')
    end if
    !---------------------------------------------------------------------------------------!
-      write (unit=*,fmt='(a)') '------------allocation to repro----------'
-      write (unit=*,fmt='(a,1x,es12.4)') ' - f_bseeds:      ',f_bseeds
-      write (unit=*,fmt='(a,1x,es12.4)') ' - f_bdead:       ',f_bdead
-      write (unit=*,fmt='(a,1x,es12.4)') ' - hgt_max:       ',hgt_max(ipft)
-      write (unit=*,fmt='(a,1x,es12.4)') ' - repro_min_h:   ',repro_min_h(ipft)
-      write (unit=*,fmt='(a,1x,es12.4)') ' - hite:          ',hite      
-      write (unit=*,fmt='(a,1x,es12.4)') ' - hite + epsilon:',hgtfudge     
+  
    return
 end subroutine plant_structural_allocation
 !==========================================================================================!

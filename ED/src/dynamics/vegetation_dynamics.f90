@@ -12,9 +12,11 @@ subroutine vegetation_dynamics(new_month,new_year)
    use disturb_coms     , only : include_fire           ! ! intent(in)
    use disturbance_utils, only : apply_disturbances     & ! subroutine
                                , site_disturbance_rates ! ! subroutine
-   use fuse_fiss_utils  , only : fuse_patches           ! ! subroutine
+   use fuse_fiss_utils  , only : fuse_patches           & ! subroutine
+                               , terminate_patches      ! ! subroutine
    use ed_state_vars    , only : edgrid_g               & ! intent(inout)
-                               , edtype                 ! ! variable type
+                               , edtype                 & ! variable type
+                               , polygontype            ! ! variable type
    use growth_balive    , only : dbalive_dt             ! ! subroutine
    use consts_coms      , only : day_sec                & ! intent(in)
                                , yr_day                 ! ! intent(in)
@@ -25,11 +27,12 @@ subroutine vegetation_dynamics(new_month,new_year)
    logical     , intent(in)   :: new_year
    !----- Local variables. ----------------------------------------------------------------!
    type(edtype), pointer      :: cgrid
+   type(polygontype), pointer :: cpoly
    real                       :: tfact1
    real                       :: tfact2
    integer                    :: doy
-   integer                    :: ip
-   integer                    :: isite
+   integer                    :: ipy
+   integer                    :: isi
    integer                    :: ifm
    !----- External functions. -------------------------------------------------------------!
    integer     , external     :: julday
@@ -111,6 +114,14 @@ subroutine vegetation_dynamics(new_month,new_year)
       !------------------------------------------------------------------------------------!
       if(new_year) then
          if (maxpatch >= 0) call fuse_patches(cgrid,ifm)
+         do ipy = 1,cgrid%npolygons
+            cpoly => cgrid%polygon(ipy)
+
+            do isi = 1, cpoly%nsites
+               call terminate_patches(cpoly%site(isi))
+            end do
+         end do
+
       end if
       !------------------------------------------------------------------------------------!
 

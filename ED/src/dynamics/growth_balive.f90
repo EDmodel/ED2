@@ -1081,14 +1081,6 @@ module growth_balive
          cpatch%today_nppsapwood(ico) = 0.0
          cpatch%today_nppdaily(ico)   = carbon_balance * cpatch%nplant(ico)
       end if
-
-      write (unit=*,fmt='(a,1x,es12.4)') '   - CARBON BAL:      ',carbon_balance
-      write (unit=*,fmt='(a,1x,es12.4)') '   - BLEAF:           ',cpatch%bleaf(ico)
-      write (unit=*,fmt='(a,1x,es12.4)') '   - BROOT:           ',cpatch%broot(ico)
-      write (unit=*,fmt='(a,1x,es12.4)') '   - BSAPWOODA:       ',cpatch%bsapwooda(ico)
-      write (unit=*,fmt='(a,1x,es12.4)') '   - BSAPWOODB:       ',cpatch%bsapwoodb(ico)
-      write (unit=*,fmt='(a,1x,es12.4)') '   - TODAY_GPP:       ',cpatch%today_gpp(ico)
-      write (unit=*,fmt='(a,1x,i6)')     '   - PHENOLOGY_STATUS:',cpatch%phenology_status(ico)
             
       return
    end subroutine alloc_plant_c_balance
@@ -1210,14 +1202,6 @@ subroutine alloc_plant_c_balance_grass(csite,ipa,ico,salloc,salloci,carbon_balan
          cpatch%hite(ico) = min(hgt_max(ipft), bl2h(cpatch%bleaf(ico), ipft))  !just in case the plant wants to grow too much this particular day
          cpatch%dbh(ico)  = h2dbh(cpatch%hite(ico), ipft) !--effective_dbh value for grasses
              
-         !---ALS===
-         ! testing h2dbh against dbh2h to make sure that they get the same value -------!
-   !      dbh_to_height = dbh2h(ipft, cpatch%dbh(ico))
-   !      if (abs(cpatch%hite(ico) - dbh_to_height) > epsilon(1.)) then
-   !          write (unit=*,fmt='(a,1x,es12.4)') '   - dbh_to_height:      ',dbh_to_height
-   !          write (unit=*,fmt='(a,1x,es12.4)') '   - height:             ',cpatch%hite(ico)
-   !      end if
-         !---ALS===
          
          !----- put remaining carbon in the storage pool -------------------------------!
          cpatch%bstorage(ico) = max(0.0, cpatch%bstorage(ico) + increment)
@@ -1263,8 +1247,6 @@ subroutine alloc_plant_c_balance_grass(csite,ipa,ico,salloc,salloci,carbon_balan
          !--test here if pft is agriculture, if so put most carbon into grain and ------!
          !- maybe a little into storage -- STILL TO BE WRITTEN! ------------------------!
          increment = carbon_balance ! subtract the part that goes into grain for ag here
-
-         write (unit=*,fmt='(a,1x,es12.4)') '   - increment(cb>0,h=max):          ',increment
 
          cpatch%bstorage(ico) = cpatch%bstorage(ico) + increment
          nitrogen_uptake      = nitrogen_uptake      + increment / c2n_storage
@@ -1329,15 +1311,6 @@ subroutine alloc_plant_c_balance_grass(csite,ipa,ico,salloc,salloci,carbon_balan
       cpatch%today_nppdaily(ico)   = carbon_balance * cpatch%nplant(ico)
    end if
 
-   write (unit=*,fmt='(a,1x,i12)')    '   ----COHORT:        ',ico
-   write (unit=*,fmt='(a,1x,es12.4)') '   - CARBON BAL:      ',carbon_balance
-   write (unit=*,fmt='(a,1x,es12.4)') '   - HITE:            ',cpatch%hite(ico)
-   write (unit=*,fmt='(a,1x,es12.4)') '   - BLEAF:           ',cpatch%bleaf(ico)
-   write (unit=*,fmt='(a,1x,es12.4)') '   - BDEAD:           ',cpatch%bdead(ico)
-   write (unit=*,fmt='(a,1x,i12)') '   - PHENOLOGY_STATUS:',cpatch%phenology_status(ico)
-   write (unit=*,fmt='(a,1x,es12.4)') '   - ELONGF:          ',cpatch%elongf(ico)
-   write (unit=*,fmt='(a,1x,es12.4)') '   - BSTORAGE:        ',cpatch%bstorage(ico)
-   write (unit=*,fmt='(a,1x,es12.4)') '   - INCREMENT:       ',increment
          
    return
 end subroutine alloc_plant_c_balance_grass

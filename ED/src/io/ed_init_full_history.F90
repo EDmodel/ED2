@@ -2636,7 +2636,7 @@ subroutine fill_history_patch(cpatch,paco_index,ncohorts_global,green_leaf_facto
      if (all(cpatch%crown_area == 0.)) then
          do ico= 1,cpatch%ncohorts
               cpatch%crown_area(ico) = min(1.0, cpatch%nplant(ico) * dbh2ca(cpatch%dbh(ico)  &
-                               ,cpatch%sla(ico),cpatch%pft(ico)))
+                               ,cpatch%hite(ico),cpatch%sla(ico),cpatch%pft(ico)))
          end do
      end if
 

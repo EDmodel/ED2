@@ -330,7 +330,7 @@ module allometry
    !=======================================================================================!
    !    Canopy Area allometry from Dietze and Clark (2008).                                !
    !---------------------------------------------------------------------------------------!
-   real function dbh2ca(dbh,sla,ipft)
+   real function dbh2ca(dbh,hite,sla,ipft)
       use ed_misc_coms, only : iallom      ! ! intent(in)
 
       use pft_coms    , only : dbh_crit    & ! intent(in)
@@ -343,6 +343,7 @@ module allometry
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       real   , intent(in) :: dbh
+      real   , intent(in) :: hite
       real   , intent(in) :: sla
       integer, intent(in) :: ipft
       !----- Internal variables -----------------------------------------------------------!
@@ -354,7 +355,8 @@ module allometry
          dbh2ca = 0.0
       else
 
-         loclai = sla * dbh2bl(dbh,ipft)
+         !!loclai = sla * dbh2bl(dbh,ipft)
+         loclai = sla * size2bl(dbh,hite,ipft)  ! make this function generic to size, not just dbh
 
          select case (iallom)
          case (0)
@@ -590,13 +592,7 @@ module allometry
       lai = bleaf * nplant * sla
 
       !----- Find the crown area. ---------------------------------------------------------!
-      if (is_grass(pft) .and. igrass==1) then
-          !-- use height for grasses
-          crown_area = min(1.0, nplant * dbh2ca(h2dbh(hite,pft),sla,pft))
-      else
-          !-- use dbh for treess
-          crown_area = min(1.0, nplant * dbh2ca(dbh,sla,pft))
-      end if
+      crown_area = min(1.0, nplant * dbh2ca(dbh,hite,sla,pft))
 
       !------------------------------------------------------------------------------------!
       !     Here we check whether we need to compute the branch, stem, and effective       !
@@ -615,7 +611,7 @@ module allometry
          !    Solve branches using the equations from Ahrends et al. (2010).               !
          !---------------------------------------------------------------------------------!
          wai = nplant * b1WAI(pft) * min(dbh,dbh_crit(pft)) ** b2WAI(pft)
-         wpa = wai * dbh2ca(dbh,sla,pft)
+         wpa = wai * dbh2ca(dbh,hite,sla,pft)
          !---------------------------------------------------------------------------------!
 
       end select
