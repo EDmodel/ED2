@@ -1316,9 +1316,14 @@ subroutine RAMS_varlib(cvar,nx,ny,nz,nsl,npat,ncld,ngrd,flnm,cdname,cdunits,ivar
 
    case ('co2src') 
       ivar_type=6
-      ierr= RAMS_getvar('CO2SRC',idim_type,ngrd,a,b,flnm)
-      ierr_getvar = ierr_getvar + ierr
-      call RAMS_comp_mults(nx,ny,nz*ncld,a,86400.)
+      if (co2_on) then
+         ierr= RAMS_getvar('CO2SRC',idim_type,ngrd,a,b,flnm)
+         ierr_getvar = ierr_getvar + ierr
+         call RAMS_comp_mults(nx,ny,nz*ncld,a,86400.)
+      else
+         write (unit=*,fmt='(a,1x,es12.5)') '       # Assigning zero CO2SRC =',co2con(1)
+         call ae0(nx*ny*nz*ncld,a,0.)
+      end if
       cdname='deep conv co2 rate'
       cdunits='umol/mol/day'
 
@@ -1702,8 +1707,8 @@ subroutine RAMS_varlib(cvar,nx,ny,nz,nsl,npat,ncld,ngrd,flnm,cdname,cdunits,ivar
       ierr_getvar = ierr_getvar + ierr
       ierr = RAMS_getvar('CAN_PRSS',idim_type,ngrd,scr%g,b,flnm)
       ierr_getvar = ierr_getvar + ierr
-      call RAMS_comp_theta2temp(nx,ny,npat,scr%f,scr%g)
-      call RAMS_comp_wflx2latent(nx,ny,npat,a,scr%f)
+      call RAMS_comp_theta2temp(nx,ny,1,scr%f,scr%g)
+      call RAMS_comp_wflx2latent(nx,ny,1,a,scr%f)
 
       cdname='water flux from canopy to atmosphere'
       cdunits='W/m2'

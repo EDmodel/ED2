@@ -1,14 +1,14 @@
 # DO NOT DELETE THIS LINE - used by make depend
 rcio.o: leaf_coms.mod micro_coms.mod rconstants.mod rpost_coms.mod
 rcio.o: rpost_dims.mod somevars.mod therm_lib.mod
-rpost_main.o: brams_data.mod leaf_coms.mod misc_coms.mod rpost_coms.mod
-rpost_main.o: rpost_dims.mod somevars.mod
-rpost_misc.o: misc_coms.mod rpost_dims.mod
+rpost_main.o: brams_data.mod leaf_coms.mod misc_coms.mod rconstants.mod
+rpost_main.o: rout_coms.mod rpost_coms.mod rpost_dims.mod somevars.mod
+rpost_misc.o: misc_coms.mod rout_coms.mod rpost_dims.mod therm_lib.mod
 variables.o: an_header.mod brams_data.mod leaf_coms.mod micro_coms.mod
-variables.o: misc_coms.mod rconstants.mod rpost_coms.mod rpost_dims.mod
-variables.o: scratch_coms.mod somevars.mod
-comp_lib.o: leaf_coms.mod rconstants.mod rpost_coms.mod soil_coms.mod
-comp_lib.o: somevars.mod therm_lib.mod
+variables.o: misc_coms.mod rconstants.mod rout_coms.mod rpost_coms.mod
+variables.o: rpost_dims.mod scratch_coms.mod somevars.mod
+comp_lib.o: leaf_coms.mod rconstants.mod rout_coms.mod rpost_coms.mod
+comp_lib.o: soil_coms.mod somevars.mod therm_lib.mod
 dted.o: /n/Moorcroft_Lab/Users/mlongo/EDBRAMS/Ramspost/src/include/utils_sub_names.h
 dted.o:
 eenviron.o: /n/Moorcroft_Lab/Users/mlongo/EDBRAMS/Ramspost/src/include/utils_sub_names.h
@@ -41,6 +41,7 @@ leaf_coms.mod: leaf_coms.o
 micro_coms.mod: micro_coms.o
 misc_coms.mod: misc_coms.o
 rconstants.mod: rconstants.o
+rout_coms.mod: rout_coms.o
 rpost_coms.mod: rpost_coms.o
 rpost_dims.mod: rpost_dims.o
 scratch_coms.mod: scratch_coms.o
