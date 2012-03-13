@@ -90,7 +90,7 @@ subroutine rams_mem_alloc(proc_type)
    integer                        , intent(in) :: proc_type
    !----- Local Variables: ----------------------------------------------------------------!
    integer, pointer , dimension(:)             :: nmzp,nmxp,nmyp
-   integer                                     :: ng,nv,imean,na,ne,ntpts
+   integer                                     :: ng,nv,imean,na,ne,ntpts,id
    logical                                     :: Alloc_Old_Grell_Flag
    !----- Local variables because of TEB_SPM ----------------------------------------------!
    type(gaspart_vars), pointer :: gaspart_p
@@ -613,39 +613,35 @@ subroutine rams_mem_alloc(proc_type)
       allocate(extra3d (na_extra3d,ngrids))
       allocate(extra2dm(na_extra2d,ngrids))
       allocate(extra3dm(na_extra3d,ngrids))
-      call nullify_extra2d(extra2d,na_extra2d,ngrids)
-      call nullify_extra2d(extra2dm,na_extra2d,ngrids)
-      call nullify_extra3d(extra3d,na_extra3d,ngrids)
-      call nullify_extra3d(extra3dm,na_extra3d,ngrids)
-      do ng=1,ngrids
-         call alloc_extra2d(extra2d,nmxp(ng),nmyp(ng),na_extra2d,ng)
-         call zero_extra2d(extra2d,na_extra2d,ng)
-         if (imean == 1) then
-            call alloc_extra2d(extra2dm,nmxp(ng),nmyp(ng),na_extra2d,ng)
-            call zero_extra2d(extra2dm,na_extra2d,ng)
-         else
-            call alloc_extra2d(extra2dm,1,1,na_extra2d,ng)
-            call zero_extra2d(extra2dm,na_extra2d,ng)
-         end if
-         call alloc_extra3d(extra3d,nmzp(ng),nmxp(ng),nmyp(ng),na_extra3d,ng)
-         call zero_extra3d(extra3d,na_extra3d,ng)
-         if (imean == 1) then
-            call alloc_extra3d(extra3dm,  &
-                 nmzp(ng),nmxp(ng),nmyp(ng),na_extra3d,ng)
-            call zero_extra3d(extra3dm,na_extra3d,ng)
-         else
-            call alloc_extra3d(extra3dm,1,1,1,na_extra3d,ng)
-            call zero_extra3d(extra3dm,na_extra3d,ng)
-         end if
-      end do
       do ng=1,ngrids
          do na=1,na_extra2d
-            call filltab_extra2d(extra2d(na,ng),extra2dm(na,ng),imean, &
-                 nmxp(ng),nmyp(ng),ng,na)
+            call nullify_extra2d(extra2d(na,ng))
+            call nullify_extra2d(extra2dm(na,ng))
+            call alloc_extra2d(extra2d(na,ng),nmxp(ng),nmyp(ng))
+            if (imean == 1) then
+               call alloc_extra2d(extra2dm(na,ng),nmxp(ng),nmyp(ng))
+            else
+               call alloc_extra2d(extra2dm(na,ng),1,1)
+            end if
+            call zero_extra2d(extra2d(na,ng))
+            call zero_extra2d(extra2dm(na,ng))
+            call filltab_extra2d(extra2d(na,ng),extra2dm(na,ng),imean,nmxp(ng),nmyp(ng)    &
+                                ,ng,na)
          end do
+
          do na=1,na_extra3d
-            call filltab_extra3d(extra3d(na,ng),extra3dm(na,ng),imean, &
-                 nmzp(ng),nmxp(ng),nmyp(ng),ng,na)
+            call nullify_extra3d(extra3d(na,ng))
+            call nullify_extra3d(extra3dm(na,ng))
+            call alloc_extra3d(extra3d(na,ng),nmzp(ng),nmxp(ng),nmyp(ng))
+            if (imean == 1) then
+               call alloc_extra3d(extra3dm(na,ng),nmzp(ng),nmxp(ng),nmyp(ng))
+            else
+               call alloc_extra3d(extra3dm(na,ng),1,1,1)
+            end if
+            call zero_extra3d(extra3d(na,ng))
+            call zero_extra3d(extra3dm(na,ng))
+            call filltab_extra3d(extra3d(na,ng),extra3dm(na,ng),imean,nmzp(ng),nmxp(ng)    &
+                                ,nmyp(ng),ng,na)
          end do
       end do
    end if
@@ -664,17 +660,16 @@ subroutine rams_mem_alloc(proc_type)
       allocate(carma(ngrids))
       allocate(carma_m(ngrids))
       do ng=1,ngrids
-         call nullify_carma(carma,ng)
-         call alloc_carma(carma,ng,nmxp(ng),nmyp(ng),nwave)
-         call zero_carma(carma,ng)
-         call nullify_carma(carma_m,ng)
+         call nullify_carma(carma(ng))
+         call nullify_carma(carma_m(ng))
+         call alloc_carma(carma(ng),nmxp(ng),nmyp(ng),nwave)
          if(imean == 1) then
-            call alloc_carma(carma_m,ng,nmxp(ng),nmyp(ng),nwave)
-            call zero_carma(carma_m,ng)
+            call alloc_carma(carma_m(ng),nmxp(ng),nmyp(ng),nwave)
          else
-            call alloc_carma(carma_m,ng,1,1,nwave)
-            call zero_carma(carma_m,ng)
+            call alloc_carma(carma_m(ng),1,1,nwave)
          end if
+         call zero_carma(carma(ng))
+         call zero_carma(carma_m(ng))
 
          call filltab_carma(carma(ng),carma_m(ng),ng,imean,nmxp(ng),nmyp(ng),nwave)
       end do

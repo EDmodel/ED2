@@ -21,33 +21,56 @@ MAKE=/usr/bin/make
 
 # libraries.
 
-BASE=$(ED_ROOT)/dbgbuild/
+BASE=$(BRAMS_ROOT)/i11dbg/
+LIBUTILS=$(BASE)/libutils-$(UTILS_VERSION)-opt.a
 
 # Activate appropriate parts below, comment out others.
 
+# NCAR Graphics.
+
+#---------------------------------------------------------------
+# If you are using a standard installation of NCAR Graphics, set:
+#       LOADER=ncargf90
+# in the machine-dependent sections below
+#LIBNCARG=
+#---------------------------------------------------------------
+# If you are using the NCAR dummy libraries...
+
+NCARG_DIR=$(BASE)
+#LIBNCARG=-L$(NCARG_DIR) -lncarg-$(UTILS_VERSION) -lncarg_c-$(UTILS_VERSION) \
+#                        -lncarg_gks-$(UTILS_VERSION)
+#LIBNCARG=-L$(NCARG_DIR) -lncarg-$(UTILS_VERSION) 
+LIBNCARG=$(BASE)/libncarg-$(UTILS_VERSION).a
 #---------------------------------------------------------------
 # If you are using a real distribution of NCAR Graphics...
 #NCARG_DIR=/usr/local/ncarg-4.3.0/lib
 #LIBNCARG=-L$(NCARG_DIR) -lncarg -lncarg_gks -lncarg_c -L/usr/X11R6/lib -lX11 -ldl
 #---------------------------------------------------------------
 
-# HDF libraries  -----------------------------------------------
+# HDF libraries-------------------------------------------------
 # HDF4 library: Instructions to install: www.cptec.inpe.br/brams
 # If you run "configure" script, you don't need to edit line bellow
-#HDF_LIBS=-L.hdf4_libs -lmfhdf -ldf -lz -ljpeg -lsz
+#USE_HDF4=1
+#HDF4_LIBS=-lmfhdf -ldf -lz -ljpeg
+USE_HDF4=0
+HDF4_LIBS=
 # --------------------------------------------------------------
 
 # HDF 5  Libraries
-# ED2 HAS OPTIONAL HDF 5 I/O
 # If you wish to use this functionality specify USE_HDF5=1
 # and specify the location of the include directory
 # library files. Make sure you include the zlib.a location too.
 USE_HDF5=1
-HDF5_INCS=-I/n/Moorcroft_Lab/Users/mlongo/util/hdflib/hdf5_32/hdf5/lib \
-          -I/n/Moorcroft_Lab/Users/mlongo/util/hdflib/hdf5_32/hdf5/include
-HDF5_LIBS=-L/n/Moorcroft_Lab/Users/mlongo/util/hdflib/hdf5_32/hdf5/lib \
-          -lhdf5 -lm -lhdf5_fortran -lhdf5 -lhdf5_hl                   \
-          -L/n/Moorcroft_Lab/Lab/mlongo/util/hdflib/hdf5_32/zlib/lib -lz
+HDF5_INCS=
+HDF5_LIBS=-lhdf5 -lm -lhdf5_fortran -lhdf5 -lhdf5_hl -lz
+#HDF5_INCS=
+#HDF5_LIBS=-L/n/sw/hdf5-1.8.5_intel-11.1.072/ -lhdf5 -lm -lhdf5_fortran -lhdf5 -lhdf5_hl -lz
+# MPI_Wtime. ---------------------------------------------------
+# If USE_MPIWTIME=1, then it will use MPI libraries to compute
+# the wall time (the only double-precision intrinsic).  In case
+# you don't have it, leave USE_MPIWTIME=0, in which case it will
+# use a simpler, single-precision function.
+USE_MPIWTIME=1
 
 #---------------------------------------------------------------
 # If you have a version of hdf5 compiled in parallel, then you
@@ -67,20 +90,6 @@ USENC=0
 NC_LIBS=-L/dev/null
 # --------------------------------------------------------------
 
-# interface ----------------------------------------------------
-# This should be 1 unless you are running with -gen-interfaces.
-# Interfaces usually make the compilation to crash when the 
-# -gen-interfaces option are on, so this flag bypass all 
-# interfaces in the code.
-USE_INTERF=1
-
-# MPI_Wtime. ---------------------------------------------------
-# If USE_MPIWTIME=1, then it will use MPI libraries to compute
-# the wall time (the only double-precision intrinsic).  In case
-# you don't have it, leave USE_MPIWTIME=0, in which case it will
-# use a simpler, single-precision function.
-USE_MPIWTIME=0
-
 #----------------- SGI -n32 ------------------------------------
 #CMACH=SGI
 #F_COMP=f90
@@ -91,6 +100,7 @@ USE_MPIWTIME=0
 #LOADER=f90
 #LOADER_OPTS=-n32
 #LIBS=-lm
+#-----------------------------------------------------------------
 
 #----------------- IBM ------------------------------------
 #CMACH=IBM
@@ -174,7 +184,7 @@ USE_MPIWTIME=0
 #C_COMP=pgcc
 #C_OPTS=-O3 -DUNDERSCORE -DLITTLE
 #LOADER=pgf90
-#LOADER_OPTS=-v -Wl,
+#LOADER_OPTS=-v -Wl,-static
 #LIBS=
 #-----------------------------------------------------------------
 
@@ -202,12 +212,14 @@ USE_MPIWTIME=0
 
 #-----------------  LINUX INTEL FORTRAN-95 Compiler/GCC  ---------
 CMACH=PC_LINUX1
-F_COMP=ifort
-C_COMP=icc
-LOADER=ifort
-C_LOADER=icc
+F_COMP=mpif90
+C_COMP=mpicc
+LOADER=mpif90
+C_LOADER=mpicc
 LIBS=
 MOD_EXT=mod
+#-----------------------------------------------------------------
+
 
 ##################################### COMPILER OPTIONS #####################################
 #------------------------------------------------------------------------------------------#
@@ -243,55 +255,57 @@ KIND_COMP=A
 #------------------------------------------------------------------------------------------#
 ifeq ($(KIND_COMP),A)
    USE_INTERF=0
-   F_OPTS= -FR -O0 -recursive -Vaxlib  -check all -g -fpe0 -no-ftz -gen-interfaces         \
+   F_OPTS= -FR -O0 -recursive -Vaxlib  -check all -g -fpe0 -ftz -gen-interfaces            \
             -warn interfaces -debug extended -debug inline_debug_info                      \
-             -debug-parameters all -traceback -ftrapuv -fpstkchk -implicitnone -openmp
+             -debug-parameters all -traceback -ftrapuv -fp-stack-check -implicitnone       \
+             -openmp -assume byterecl
    C_OPTS= -O0 -DLITTLE  -g -traceback -debug extended
-   LOADER_OPTS= -FR -O0 -Vaxlib  -check all -g -fpe0 -no-ftz -gen-interfaces               \
+   LOADER_OPTS= -FR -O0 -Vaxlib  -check all -g -fpe0 -ftz -gen-interfaces                  \
               -warn interfaces -debug extended -debug inline_debug_info                    \
-              -debug-parameters all -traceback -ftrapuv -fpstkchk -implicitnone -openmp
+              -debug-parameters all -traceback -ftrapuv -fp-stack-check -implicitnone      \
+              -openmp -assume byterecl
    C_LOADER_OPTS=-v -g -traceback
    #---------------------------------------------------------------------------------------#
 endif
 ifeq ($(KIND_COMP),B)
    USE_INTERF=1
-   F_OPTS= -FR -O0 -recursive -Vaxlib  -check all -g -fpe0 -no-ftz  -debug extended        \
+   F_OPTS= -FR -O0 -recursive -Vaxlib  -check all -g -fpe0 -ftz  -debug extended           \
            -debug inline_debug_info -debug-parameters all -traceback -ftrapuv              \
-           -fp-stack-check -implicitnone -openmp
+           -fp-stack-check -implicitnone -openmp -assume byterecl
    C_OPTS= -O0 -DLITTLE  -g -traceback -debug extended
-   LOADER_OPTS= -FR -O0 -Vaxlib  -check all -g -fpe0 -no-ftz -debug extended               \
+   LOADER_OPTS= -FR -O0 -Vaxlib  -check all -g -fpe0 -ftz -debug extended                  \
                 -debug inline_debug_info -debug-parameters all -traceback -ftrapuv         \
-                -fp-stack-check -implicitnone -openmp
+                -fp-stack-check -implicitnone -openmp -assume byterecl
    C_LOADER_OPTS=-v -g -traceback
    #---------------------------------------------------------------------------------------#
 endif
 ifeq ($(KIND_COMP),C)
     USE_INTERF=1
-    F_OPTS= -FR -O2 -recursive -Vaxlib  -check all -g -fpe0 -no-ftz  -debug extended       \
+    F_OPTS= -FR -O2 -recursive -Vaxlib  -check all -g -fpe0 -ftz  -debug extended          \
             -debug inline_debug_info -debug-parameters all -traceback -ftrapuv             \
-            -fp-stack-check -implicitnone -openmp
+            -fp-stack-check -implicitnone -openmp -assume byterecl
     C_OPTS= -O2 -DLITTLE  -g -traceback -debug extended
-    LOADER_OPTS= -FR -O2 -Vaxlib  -check all -g -fpe0 -no-ftz -debug extended              \
+    LOADER_OPTS= -FR -O2 -Vaxlib  -check all -g -fpe0 -ftz -debug extended                 \
                  -debug inline_debug_info -debug-parameters all -traceback -ftrapuv        \
-                 -fp-stack-check -implicitnone -openmp
+                 -fp-stack-check -implicitnone -openmp -assume byterecl
     C_LOADER_OPTS=-v -g -traceback
    #---------------------------------------------------------------------------------------#
 endif
 ifeq ($(KIND_COMP),D)
    USE_INTERF=1
-   F_OPTS= -FR -O2 -recursive -Vaxlib -check all -fpe0 -no-ftz  -traceback -ftrapuv        \
-           -fp-stack-check -implicitnone -openmp
+   F_OPTS= -FR -O2 -recursive -Vaxlib -check all -fpe0 -ftz  -traceback -ftrapuv           \
+           -fp-stack-check -implicitnone -openmp -assume byterecl
    C_OPTS= -O2 -DLITTLE -traceback
-   LOADER_OPTS= -FR -O2 -Vaxlib  -check all -fpe0 -no-ftz -traceback -ftrapuv -fp-stack-check \
-                -implicitnone -openmp
+   LOADER_OPTS= -FR -O2 -Vaxlib  -check all -fpe0 -ftz -traceback -ftrapuv -fp-stack-check \
+                -implicitnone -openmp -assume byterecl
    C_LOADER_OPTS=-v -traceback
    #---------------------------------------------------------------------------------------#
 endif
 ifeq ($(KIND_COMP),E)
    USE_INTERF=1
-   F_OPTS= -FR -O3 -recursive -Vaxlib -traceback -axP
+   F_OPTS= -FR -O3 -recursive -Vaxlib -traceback -axP -assume byterecl
    C_OPTS= -O3 -DLITTLE -traceback
-   LOADER_OPTS= -FR -O3 -Vaxlib  -traceback -axP
+   LOADER_OPTS= -FR -O3 -Vaxlib  -traceback -axP -assume byterecl
    C_LOADER_OPTS=-v -traceback
    #---------------------------------------------------------------------------------------#
 endif
@@ -301,6 +315,7 @@ endif
 
 
 #-----------------------------------------------------------------
+
 # If compiling for a single-CPU platform only (without MPI):
 
 #-----------------------------------------------------------------
@@ -343,14 +358,17 @@ endif
 #-----------------------------------------------------------------
 
 #---------------LINUX Portland Group pgf77/gcc--------------------
-MPI_PATH=/n/Moorcroft_Lab/Users/mlongo/util/mpich-1.2.7p1/intel_9.1.036_32
-PAR_INCS=-I$(MPI_PATH)/include
-PAR_LIBS=-L$(MPI_PATH)/lib -lmpich -lpmpich
-PAR_DEFS=-DRAMS_MPI
+#MPI_PATH=/n/Moorcroft_Lab/Lab/apps/i91
+#PAR_INCS=-I$(MPI_PATH)/include
+#PAR_LIBS=-L$(MPI_PATH)/lib -lmpich -lpmpich
+#PAR_DEFS=-DRAMS_MPI
 #-----------------------------------------------------------------
 
 #---------------If using scritps 'mpicc' e 'mpif90'---------------'
-#PAR_DEFS=-DRAMS_MPI
+MPI_PATH=
+PAR_INCS=
+PAR_LIBS=
+PAR_DEFS=-DRAMS_MPI
 #-----------------------------------------------------------------
 
 # For IBM,HP,SGI,ALPHA,LINUX use these:

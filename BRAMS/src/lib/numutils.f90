@@ -1,139 +1,103 @@
-!############################# Change Log ##################################
-! 2.0.0
-!
-!###########################################################################
-!  Copyright (C)  1990, 1995, 1999, 2000, 2003 - All Rights Reserved
-!  Regional Atmospheric Modeling System - RAMS
-!###########################################################################
-
-subroutine azerov(n1)
-implicit none
-integer :: n,n1
-real :: a1(n1),a2(n1),a3(n1),a4(n1),a5(n1)
-entry azero(n1,a1)
-   do n=1,n1
-      a1(n)=0.
-   enddo
-return
-entry azero2(n1,a1,a2)
-   do n=1,n1
-      a1(n)=0.
-      a2(n)=0.
-   enddo
-return
-entry azero3(n1,a1,a2,a3)
-   do n=1,n1
-      a1(n)=0.
-      a2(n)=0.
-      a3(n)=0.
-   enddo
-return
-entry azero4(n1,a1,a2,a3,a4)
-   do n=1,n1
-      a1(n)=0.
-      a2(n)=0.
-      a3(n)=0.
-      a4(n)=0.
-   enddo
-return
-entry azero5(n1,a1,a2,a3,a4,a5)
-   do n=1,n1
-      a1(n)=0.
-      a2(n)=0.
-      a3(n)=0.
-      a4(n)=0.
-      a5(n)=0.
-   enddo
-return
-end
-
-![MLO ---- Similar to azerov, but for integers.
-subroutine izerov(n1)
-  implicit none
-  integer :: n,n1
-  integer :: ijk1(n1),ijk2(n1),ijk3(n1),ijk4(n1),ijk5(n1)
-  entry izero(n1,ijk1)
-     do n=1,n1
-        ijk1(n)=0
-     enddo
-  return
-  entry izero2(n1,ijk1,ijk2)
-     do n=1,n1
-        ijk1(n)=0
-        ijk2(n)=0
-     enddo
-  return
-  entry izero3(n1,ijk1,ijk2,ijk3)
-     do n=1,n1
-        ijk1(n)=0
-        ijk2(n)=0
-        ijk3(n)=0
-     enddo
-  return
-  entry izero4(n1,ijk1,ijk2,ijk3,ijk4)
-     do n=1,n1
-        ijk1(n)=0
-        ijk2(n)=0
-        ijk3(n)=0
-        ijk4(n)=0
-     enddo
-  return
-  entry izero5(n1,ijk1,ijk2,ijk3,ijk4,ijk5)
-     do n=1,n1
-        ijk1(n)=0
-        ijk2(n)=0
-        ijk3(n)=0
-        ijk4(n)=0
-        ijk5(n)=0
-     enddo
-  return
-end subroutine izerov
-
-![MLO - Just to generate a matrix full of ones...
-subroutine aonev(n1)
-implicit none
-integer :: n,n1
-real :: a1(n1),a2(n1),a3(n1),a4(n1),a5(n1)
-entry aone(n1,a1)
-   do n=1,n1
-      a1(n)=1.
-   enddo
-return
-entry aone2(n1,a1,a2)
-   do n=1,n1
-      a1(n)=1.
-      a2(n)=1.
-   enddo
-return
-entry aone3(n1,a1,a2,a3)
-   do n=1,n1
-      a1(n)=1.
-      a2(n)=1.
-      a3(n)=1.
-   enddo
-return
-entry aone4(n1,a1,a2,a3,a4)
-   do n=1,n1
-      a1(n)=1.
-      a2(n)=1.
-      a3(n)=1.
-      a4(n)=1.
-   enddo
-return
-entry aone5(n1,a1,a2,a3,a4,a5)
-   do n=1,n1
-      a1(n)=1.
-      a2(n)=1.
-      a3(n)=1.
-      a4(n)=1.
-      a5(n)=1.
-   enddo
-return
-end subroutine aonev
-!MLO]
+!==========================================================================================!
+!==========================================================================================!
+!  Change Log                                                                              !
+!  2.0.0                                                                                   !
+!                                                                                          !
+!------------------------------------------------------------------------------------------!
+!  Copyright (C)  1990, 1995, 1999, 2000, 2003 - All Rights Reserved                       !
+!  Regional Atmospheric Modeling System - RAMS                                             !
+!==========================================================================================!
+!==========================================================================================!
 
 
 
+
+
+!==========================================================================================!
+!==========================================================================================!
+!      This sub-routine flushes all elements of this array to zero.  Legacy from the old   !
+! code, when vector operations didn't exist.                                               !
+!------------------------------------------------------------------------------------------!
+subroutine azero(nmax,arr)
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   integer                 , intent(in)  :: nmax
+   real   , dimension(nmax), intent(out) :: arr
+   !----- Local variables. ----------------------------------------------------------------!
+   integer                               :: n
+   !---------------------------------------------------------------------------------------!
+
+   do n=1,nmax
+      arr(n) = 0.
+   end do
+
+   return
+end subroutine azero
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!      This sub-routine flushes all elements of this array to zero.  Legacy from the old   !
+! code, when vector operations didn't exist.  The only difference between this one and     !
+! azero is that the input vector here is integer.                                          !
+!------------------------------------------------------------------------------------------!
+subroutine izero(nmax,arr)
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   integer                 , intent(in)  :: nmax
+   integer, dimension(nmax), intent(out) :: arr
+   !----- Local variables. ----------------------------------------------------------------!
+   integer                               :: n
+   !---------------------------------------------------------------------------------------!
+
+   do n=1,nmax
+      arr(n) = 0
+   end do
+
+   return
+end subroutine izero
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!      This sub-routine flushes all elements of this array to one.  Legacy from the old    !
+! code, when vector operations didn't exist.                                               !
+!------------------------------------------------------------------------------------------!
+subroutine aone(nmax,arr)
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   integer                 , intent(in)  :: nmax
+   real   , dimension(nmax), intent(out) :: arr
+   !----- Local variables. ----------------------------------------------------------------!
+   integer                               :: n
+   !---------------------------------------------------------------------------------------!
+
+   do n=1,nmax
+      arr(n) = 1.
+   end do
+
+   return
+end subroutine aone
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
 subroutine ae1t0(n1,a,b,c)
 implicit none
 integer :: n1

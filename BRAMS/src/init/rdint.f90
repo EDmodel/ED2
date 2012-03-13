@@ -207,8 +207,11 @@ subroutine initlz (name_name)
          call thermo(nzp,nxp,nyp,1,nxp,1,nyp)
 
          if (level  ==  3) then
-            call azero3(nzp*nxp*nyp,scratch%vt3da,scratch%vt3dg,scratch%vt3dh)
-            call azero2(nzp*nxp*nyp,scratch%vt3dc,scratch%vt3di)
+            call azero(nzp*nxp*nyp,scratch%vt3da)
+            call azero(nzp*nxp*nyp,scratch%vt3dg)
+            call azero(nzp*nxp*nyp,scratch%vt3dh)
+            call azero(nzp*nxp*nyp,scratch%vt3dc)
+            call azero(nzp*nxp*nyp,scratch%vt3di)
             !----- Use scratch variables to define cccnp and cifnp ------------------------!
             call initqin(nzp,nxp,nyp,scratch%vt3da,scratch%vt3dg,scratch%vt3dh             &
                         ,basic_g(ifm)%pi0,basic_g(ifm)%pp,basic_g(ifm)%theta               &
@@ -478,8 +481,11 @@ subroutine initlz (name_name)
             call negadj1(nzp,nxp,nyp,1,nxp,1,nyp)
             call thermo(nzp,nxp,nyp,1,nxp,1,nyp)
             if (level  ==  3) then
-               call azero3(nzp*nxp*nyp,scratch%vt3da,scratch%vt3dg,scratch%vt3dh)
-               call azero2(nzp*nxp*nyp,scratch%vt3dc,scratch%vt3di)
+               call azero(nzp*nxp*nyp,scratch%vt3da)
+               call azero(nzp*nxp*nyp,scratch%vt3dg)
+               call azero(nzp*nxp*nyp,scratch%vt3dh)
+               call azero(nzp*nxp*nyp,scratch%vt3dc)
+               call azero(nzp*nxp*nyp,scratch%vt3di)
                !----- Use scratch variables to define cccnp and cifnp ---------------------!
                call initqin(nzp,nxp,nyp,scratch%vt3da,scratch%vt3dg,scratch%vt3dh          &
                            ,basic_g(ifm)%pi0,basic_g(ifm)%pp,basic_g(ifm)%theta            &

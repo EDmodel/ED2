@@ -800,10 +800,14 @@ subroutine read_ed21_history_file
       end if
 
       !------ Deallocate the temporary vectors, so no memory leak happens. ----------------!
-      deallocate(file_lats,file_lons)
-      deallocate(paco_n,paco_id)
-      deallocate(sipa_n,sipa_id)
-      deallocate(pysi_n,pysi_id )
+      deallocate(file_lats)
+      deallocate(file_lons)
+      deallocate(paco_n   )
+      deallocate(paco_id  )
+      deallocate(sipa_n   )
+      deallocate(sipa_id  )
+      deallocate(pysi_n   )
+      deallocate(pysi_id  )
       
    end do gridloop
    

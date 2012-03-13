@@ -331,7 +331,11 @@ module phenology_startup
          end do
       end do
 
-      deallocate(flat,flon,varc,varp)
+      deallocate(flat )
+      deallocate(flon )
+      deallocate(fdist)
+      deallocate(varc )
+      deallocate(varp )
 
       return
    end subroutine read_thermal_sums

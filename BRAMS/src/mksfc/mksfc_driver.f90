@@ -107,7 +107,10 @@ subroutine make_sfcfiles()
 
   !srf : para Itanium II com runtype=history
   !allocate( sfcfile_p(ngrids) )
-  if(allocated(sfcfile_p)) deallocate(sfcfile_p);allocate(sfcfile_p(ngrids))
+  if (allocated(sfcfile_p)) then 
+     deallocate(sfcfile_p)
+  end if
+  allocate(sfcfile_p(ngrids))
   do ifm = 1,ngrids
      call alloc_sfcfile(sfcfile_p(ifm),nnxp(ifm),nnyp(ifm),nzg,npatch)
   end do

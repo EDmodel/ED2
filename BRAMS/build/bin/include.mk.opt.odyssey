@@ -253,12 +253,12 @@ KIND_COMP=E
 #------------------------------------------------------------------------------------------#
 ifeq ($(KIND_COMP),A)
    USE_INTERF=0
-   F_OPTS= -FR -O0 -recursive -Vaxlib  -check all -g -fpe0 -ftz -gen-interfaces            \
+   F_OPTS= -FR -O0 -recursive -Vaxlib  -check all -g -fpe0 -no-ftz -gen-interfaces         \
             -warn interfaces -debug extended -debug inline_debug_info                      \
              -debug-parameters all -traceback -ftrapuv -fp-stack-check -implicitnone       \
              -openmp -assume byterecl -e90
    C_OPTS= -O0 -DLITTLE  -g -traceback -debug extended
-   LOADER_OPTS= -FR -O0 -Vaxlib  -check all -g -fpe0 -ftz -gen-interfaces                  \
+   LOADER_OPTS= -FR -O0 -Vaxlib  -check all -g -fpe0 -no-ftz -gen-interfaces               \
               -warn interfaces -debug extended -debug inline_debug_info                    \
               -debug-parameters all -traceback -ftrapuv -fp-stack-check -implicitnone      \
               -openmp -assume byterecl -e90
@@ -267,11 +267,11 @@ ifeq ($(KIND_COMP),A)
 endif
 ifeq ($(KIND_COMP),B)
    USE_INTERF=1
-   F_OPTS= -FR -O0 -recursive -Vaxlib  -check all -g -fpe0 -ftz  -debug extended           \
+   F_OPTS= -FR -O0 -recursive -Vaxlib  -check all -g -fpe0 -no-ftz  -debug extended        \
            -debug inline_debug_info -debug-parameters all -traceback -ftrapuv              \
            -fp-stack-check -implicitnone -openmp -assume byterecl
    C_OPTS= -O0 -DLITTLE  -g -traceback -debug extended
-   LOADER_OPTS= -FR -O0 -Vaxlib  -check all -g -fpe0 -ftz -debug extended                  \
+   LOADER_OPTS= -FR -O0 -Vaxlib  -check all -g -fpe0 -no-ftz -debug extended               \
                 -debug inline_debug_info -debug-parameters all -traceback -ftrapuv         \
                 -fp-stack-check -implicitnone -openmp -assume byterecl
    C_LOADER_OPTS=-v -g -traceback
@@ -279,11 +279,11 @@ ifeq ($(KIND_COMP),B)
 endif
 ifeq ($(KIND_COMP),C)
     USE_INTERF=1
-    F_OPTS= -FR -O2 -recursive -Vaxlib  -check all -g -fpe0 -ftz  -debug extended          \
+    F_OPTS= -FR -O2 -recursive -Vaxlib  -check all -g -fpe0 -no-ftz  -debug extended       \
             -debug inline_debug_info -debug-parameters all -traceback -ftrapuv             \
             -fp-stack-check -implicitnone -openmp -assume byterecl
     C_OPTS= -O2 -DLITTLE  -g -traceback -debug extended
-    LOADER_OPTS= -FR -O2 -Vaxlib  -check all -g -fpe0 -ftz -debug extended                 \
+    LOADER_OPTS= -FR -O2 -Vaxlib  -check all -g -fpe0 -no-ftz -debug extended              \
                  -debug inline_debug_info -debug-parameters all -traceback -ftrapuv        \
                  -fp-stack-check -implicitnone -openmp -assume byterecl
     C_LOADER_OPTS=-v -g -traceback
@@ -291,10 +291,10 @@ ifeq ($(KIND_COMP),C)
 endif
 ifeq ($(KIND_COMP),D)
    USE_INTERF=1
-   F_OPTS= -FR -O2 -recursive -Vaxlib -check all -fpe0 -ftz  -traceback -ftrapuv           \
+   F_OPTS= -FR -O2 -recursive -Vaxlib -check all -fpe0 -no-ftz  -traceback -ftrapuv        \
            -fp-stack-check -implicitnone -openmp -assume byterecl
    C_OPTS= -O2 -DLITTLE -traceback
-   LOADER_OPTS= -FR -O2 -Vaxlib  -check all -fpe0 -ftz -traceback -ftrapuv -fp-stack-check \
+   LOADER_OPTS= -FR -O2 -Vaxlib  -check all -fpe0 -no-ftz -traceback -ftrapuv -fp-stack-check \
                 -implicitnone -openmp -assume byterecl
    C_LOADER_OPTS=-v -traceback
    #---------------------------------------------------------------------------------------#
