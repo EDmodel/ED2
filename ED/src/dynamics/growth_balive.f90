@@ -1165,13 +1165,11 @@ subroutine alloc_plant_c_balance_grass(csite,ipa,ico,salloc,salloci,carbon_balan
       if ((cpatch%hite(ico)*(1 + 1e-4)) < hgt_max(ipft)) then ! - could use repro_min_h here instead
          !------------------------------------------------------------------------------!
          ! The grass is in a vegetative growth phase, put carbon into growth.           !
-         ! if plant is drought stressed (elongf<1) then allow partial growth            !
-         ! and put any excess carbon in storage.                                        !
          !------------------------------------------------------------------------------!
          !--allow grass to use carbon from that day and from storage to grow
          available_carbon = carbon_balance + cpatch%bstorage(ico)
 
-         !--scale maximum growth by elongf
+         !--scale maximum growth by elongf (currently grass is "evergreen" so elongf=1)
          delta_balive = available_carbon * cpatch%elongf(ico)
          increment    = available_carbon * (1. - cpatch%elongf(ico))
 
@@ -1199,14 +1197,14 @@ subroutine alloc_plant_c_balance_grass(csite,ipa,ico,salloc,salloci,carbon_balan
          cpatch%today_nppdaily(ico)  = carbon_balance * cpatch%nplant(ico)
          
          !----- update height for grasses to match new leaf mass -----------------------!
-         cpatch%hite(ico) = min(hgt_max(ipft), bl2h(cpatch%bleaf(ico), ipft))  !just in case the plant wants to grow too much this particular day
+         cpatch%hite(ico) = min(hgt_max(ipft), bl2h(cpatch%bleaf(ico), ipft))  !limit by maximum height
          cpatch%dbh(ico)  = h2dbh(cpatch%hite(ico), ipft) !--effective_dbh value for grasses
              
          
          !----- put remaining carbon in the storage pool -------------------------------!
          cpatch%bstorage(ico) = max(0.0, cpatch%bstorage(ico) + increment)
          !------------------------------------------------------------------------------!
-
+         
 
          if (increment <= 0.0)  then
             !---------------------------------------------------------------------------!
@@ -1246,11 +1244,15 @@ subroutine alloc_plant_c_balance_grass(csite,ipa,ico,salloc,salloci,carbon_balan
          
          !--test here if pft is agriculture, if so put most carbon into grain and ------!
          !- maybe a little into storage -- STILL TO BE WRITTEN! ------------------------!
+         !----- Consider adding allocation to harvest pool here ------------------------!
+         !---ALS=== Agriculture
          increment = carbon_balance ! subtract the part that goes into grain for ag here
 
          cpatch%bstorage(ico) = cpatch%bstorage(ico) + increment
          nitrogen_uptake      = nitrogen_uptake      + increment / c2n_storage
                               
+         
+         
          !----- NPP allocation in diff pools in Kg C/m2/day. ---------------------------!
          cpatch%today_nppleaf(ico)    = 0.0
          cpatch%today_nppfroot(ico)   = 0.0

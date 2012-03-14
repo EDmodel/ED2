@@ -416,7 +416,7 @@ module allometry
 
    !=======================================================================================!
    !=======================================================================================!
-   integer function dbh2krdepth(hgt,dbh,ipft,lsl)
+   integer function dbh2krdepth(hite,dbh,ipft,lsl)
       use ed_misc_coms, only : iallom   ! ! intent(in)
       use grid_coms   , only : nzg      ! ! intent(in)
       use soil_coms   , only : slz      ! ! intent(in)
@@ -424,7 +424,7 @@ module allometry
                              , b2Rd     ! ! intent(in)
       implicit none 
       !----- Arguments --------------------------------------------------------------------!
-      real   , intent(in) :: hgt
+      real   , intent(in) :: hite
       real   , intent(in) :: dbh
       integer, intent(in) :: ipft
       integer, intent(in) :: lsl
@@ -441,7 +441,7 @@ module allometry
          !---------------------------------------------------------------------------------!
          !    Original ED-2.1 (I don't know the source for this equation, though).         !
          !---------------------------------------------------------------------------------!
-         volume     = dbh2vol(hgt,dbh,ipft) 
+         volume     = dbh2vol(hite,dbh,ipft) 
          root_depth = b1Rd(ipft)  * volume ** b2Rd(ipft)
 
       case (2)
@@ -449,7 +449,7 @@ module allometry
          !    This is just a test allometry, that imposes root depth to be 0.5 m for       !
          ! plants that are 0.15-m tall, and 5.0 m for plants that are 35-m tall.           !
          !---------------------------------------------------------------------------------!
-         root_depth = b1Rd(ipft) * hgt ** b2Rd(ipft)
+         root_depth = b1Rd(ipft) * hite ** b2Rd(ipft)
       end select
 
 

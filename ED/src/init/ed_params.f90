@@ -2910,7 +2910,7 @@ subroutine init_pft_leaf_params()
    case (2)
       phenology(1)     = 0
       phenology(2:4)   = 4
-      phenology(5)     = 4
+      phenology(5)     = 0
       phenology(6:8)   = 0
       phenology(9:11)  = 2
       phenology(12:15) = 4
