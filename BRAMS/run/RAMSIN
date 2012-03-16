@@ -1056,6 +1056,15 @@ $MODEL_OPTIONS
 
 
    !---------------------------------------------------------------------------------------!
+   ! IADVEC -- 1 - Original advection scheme                                               !
+   !           2 - Monotic advection scheme, as in Freitas et al. (2001, in press JAMES).  !
+   !---------------------------------------------------------------------------------------!
+   IADVEC   = 1,
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
    ! IEXEV -- Exner function tendency.                                                     !
    !          1 -- original BRAMS.  This ignores advection, compression and heating.  Not  !
    !               recommended, but this is the only option that works if IF_ADAP is 1.    !
@@ -2057,12 +2066,31 @@ $ED2_INFO
 
 
 
+
+   !---------------------------------------------------------------------------------------!
+   ! IBIGLEAF -- Do you want to run ED as a 'big leaf' model?                              !
+   !             0.  No, use the standard size- and age-structure (Moorcroft et al. 2001)  !
+   !                 This is the recommended method for most applications.                 !
+   !             1. 'big leaf' ED:  this will have no horizontal or vertical hetero-       !
+   !                 geneities; 1 patch per PFT and 1 cohort per patch; no vertical        !
+   !                 growth, recruits will 'appear' instantaneously at maximum height.     !
+   !                                                                                       !
+   ! N.B. if you set IBIGLEAF to 1, you MUST turn off the crown model (CROWN_MOD = 0)      !
+   !---------------------------------------------------------------------------------------!
+   IBIGLEAF = 0,
+   !---------------------------------------------------------------------------------------!
+
+
+
+
    !---------------------------------------------------------------------------------------!
    ! INTEGRATION_SCHEME -- The biophysics integration scheme.                              !
    !                       0.  Euler step.  The fastest, but it doesn't estimate           !
    !                           errors.                                                     !
    !                       1.  Fourth-order Runge-Kutta method.  ED-2.1 default method     !
    !                       2.  Heun's method (a second-order Runge-Kutta).                 !
+   !                       3.  Hybrid Stepping (BDF2 implicit step for the canopy air and  !
+   !                           leaf temp, forward Euler for else, under development).      !
    !---------------------------------------------------------------------------------------!
    INTEGRATION_SCHEME = 1,
    !---------------------------------------------------------------------------------------!
@@ -2432,24 +2460,28 @@ $ED2_INFO
 
    !---------------------------------------------------------------------------------------!
    !      The following parameters adjust the fire disturbance in the model.               !
-   ! INCLUDE_FIRE  -- Which threshold to use for fires.                                    !
-   !                  0.  No fires;                                                        !
-   !                  1.  (deprecated) Fire will be triggered with enough biomass and      !
-   !                      integrated ground water depth less than a threshold.  Based on   !
-   !                      ED-1, the threshold assumes that the soil is 1 m, so deeper      !
-   !                      soils will need to be much drier to allow fires to happen and    !
-   !                      often  will never allow fires.                                   !
-   !                  2.  Fire will be triggered with enough biomass and the total soil    !
-   !                      water at the top 75 cm falls below a threshold.                  !
-   ! SM_FIRE       -- This is used only when INCLUDE_FIRE = 2.  The sign here matters.     !
-   !                  >= 0. - Minimum relative soil moisture above dry air of the top 75cm !
-   !                          that will prevent fires to happen.                           !
-   !                  <  0. - Minimum mean soil moisture potential in MPa of the top 75 cm !
-   !                          that will prevent fires to happen.  The dry air soil         !
-   !                          potential is defined as -3.1 MPa, so make sure SM_FIRE   is  !
-   !                          greater than this value.                                     !
+   ! INCLUDE_FIRE   -- Which threshold to use for fires.                                   !
+   !                   0.  No fires;                                                       !
+   !                   1.  (deprecated) Fire will be triggered with enough biomass and     !
+   !                       integrated ground water depth less than a threshold.  Based on  !
+   !                       ED-1, the threshold assumes that the soil is 1 m, so deeper     !
+   !                       soils will need to be much drier to allow fires to happen and   !
+   !                       often  will never allow fires.                                  !
+   !                   2.  Fire will be triggered with enough biomass and the total soil   !
+   !                       water at the top 75 cm falls below a threshold.                 !
+   ! FIRE_PARAMETER -- If fire happens, this will control the intensity of the disturbance !
+   !                   given the amount of fuel (currently the total above-ground          !
+   !                   biomass).                                                           !
+   ! SM_FIRE        -- This is used only when INCLUDE_FIRE = 2.  The sign here matters.    !
+   !                   >= 0. - Minimum relative soil moisture above dry air of the top 1m  !
+   !                           that will prevent fires to happen.                          !
+   !                   <  0. - Minimum mean soil moisture potential in MPa of the top 1m   !
+   !                           that will prevent fires to happen.  The dry air soil        !
+   !                           potential is defined as -3.1 MPa, so make sure SM_FIRE is   !
+   !                           greater than this value.                                    !
    !---------------------------------------------------------------------------------------!
    INCLUDE_FIRE    = 2,
+   FIRE_PARAMETER  = 1.,
    SM_FIRE         = -1.40,
    !---------------------------------------------------------------------------------------!
 
@@ -2529,21 +2561,24 @@ $ED2_INFO
 
    !---------------------------------------------------------------------------------------!
    ! The following variables control the size of sub-polygon structures in ED-2.           !
-   ! MAXPATCH  -- If number of patches in a given site exceeds MAXPATCH, force patch       !
-   !              fusion.  If MAXPATCH is 0, then fusion will never happen.  If MAXPATCH   !
-   !              is negative, then the absolute value is used only during the             !
-   !              initialization, and fusion will never happen again.  Notice that if the  !
-   !              patches are too different, then the actual number of patches in a site   !
-   !              may exceed MAXPATCH.                                                     !
-   ! MAXCOHORT -- If number of cohorts in a given patch exceeds MAXCOHORT, force cohort    !
-   !              fusion.  If MAXCOHORT is 0, then fusion will never happen.  If MAXCOHORT !
-   !              is negative, then the absolute value is used only during the             !
-   !              initialization, and fusion will never happen again.  Notice that if the  !
-   !              cohorts are too different, then the actual number of cohorts in a patch  !
-   !              may exceed MAXCOHORT.                                                    !
+   ! MAXPATCH       -- If number of patches in a given site exceeds MAXPATCH, force patch  !
+   !                   fusion.  If MAXPATCH is 0, then fusion will never happen.  If       !
+   !                   MAXPATCH is negative, then the absolute value is used only during   !
+   !                   the initialization, and fusion will never happen again.  Notice     !
+   !                   that if the patches are too different, then the actual number of    !
+   !                   patches in a site may exceed MAXPATCH.                              !
+   ! MAXCOHORT      -- If number of cohorts in a given patch exceeds MAXCOHORT, force      !
+   !                   cohort fusion.  If MAXCOHORT is 0, then fusion will never happen.   !
+   !                   If MAXCOHORT is negative, then the absolute value is used only      !
+   !                   during the initialization, and fusion will never happen again.      !
+   !                   Notice that if the cohorts are too different, then the actual       !
+   !                   number of cohorts in a patch may exceed MAXCOHORT.                  !
+   ! MIN_PATCH_AREA -- This is the minimum fraction area of a given soil type that allows  !
+   !                   a site to be created (ignored if IED_INIT_MODE is set to 3).        !
    !---------------------------------------------------------------------------------------!
-   MAXPATCH  =  15,
-   MAXCOHORT = 100,
+   MAXPATCH       =    10,
+   MAXCOHORT      =    60,
+   MIN_PATCH_AREA = 0.005,
    !---------------------------------------------------------------------------------------!
 
 

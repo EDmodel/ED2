@@ -57,47 +57,131 @@ subroutine harr_raddriv(m1,m2,m3,nclouds,ncrad,ifm,if_adap,time,deltat,ia,iz,ja,
                        ,con_c,con_r,con_p,con_s,con_a,con_g,con_h                          &
                        ,cuprliq,cuprice,cuparea,cupierr,mynum)
 
-   use mem_harr,        only: mg, mb, mpb
-   use mem_grid,        only: zm, zt
-   use rconstants,      only: cpor, p00i, stefan, cp, cpi, p00, hr_sec, toodry
-   use micphys,         only: ncat,rxmin
-   use mem_leaf,        only: isfcl
-   use mem_radiate,     only: rad_cosz_min
-   use harr_coms,       only: rl,dzl,dl,pl,co2l,o3l,vp,u,tp,omgp,gp,zml,ztl,tl             &
-                             ,flxus,flxds,flxul,flxdl,fu,fd,zero_harr_met_scratch          &
-                             ,zero_harr_flx_scratch,nradmax,tairk,rhoi,rhoe,rhov,press     &
-                             ,rcl_parm,rpl_parm,area_parm,flx_diff
- 
+   use mem_harr   , only : mg                    & ! intent(in)
+                         , mb                    & ! intent(in)
+                         , mpb                   ! ! intent(in)
+   use mem_grid   , only : zm                    & ! intent(in)
+                         , zt                    ! ! intent(in)
+   use rconstants , only : stefan                & ! intent(in)
+                         , cpdry                 & ! intent(in)
+                         , hr_sec                & ! intent(in)
+                         , toodry                ! ! intent(in)
+   use micphys    , only : ncat                  & ! intent(inout)
+                         , rxmin                 ! ! intent(inout)
+   use mem_leaf   , only : isfcl                 ! ! intent(in)
+   use mem_radiate, only : rad_cosz_min          ! ! intent(in)
+   use harr_coms  , only : rl                    & ! intent(inout)
+                         , dzl                   & ! intent(inout)
+                         , dl                    & ! intent(inout)
+                         , pl                    & ! intent(inout)
+                         , co2l                  & ! intent(inout)
+                         , o3l                   & ! intent(inout)
+                         , vp                    & ! intent(inout)
+                         , u                     & ! intent(inout)
+                         , tp                    & ! intent(inout)
+                         , omgp                  & ! intent(inout)
+                         , gp                    & ! intent(inout)
+                         , zml                   & ! intent(inout)
+                         , ztl                   & ! intent(inout)
+                         , tl                    & ! intent(inout)
+                         , flxus                 & ! intent(inout)
+                         , flxds                 & ! intent(inout)
+                         , flxul                 & ! intent(inout)
+                         , flxdl                 & ! intent(inout)
+                         , fu                    & ! intent(inout)
+                         , fd                    & ! intent(inout)
+                         , zero_harr_met_scratch & ! subroutine
+                         , zero_harr_flx_scratch & ! subroutine
+                         , nradmax               & ! intent(inout)
+                         , tairk                 & ! intent(inout)
+                         , rhoi                  & ! intent(inout)
+                         , rhoe                  & ! intent(inout)
+                         , rhov                  & ! intent(inout)
+                         , press                 & ! intent(inout)
+                         , rcl_parm              & ! intent(inout)
+                         , rpl_parm              & ! intent(inout)
+                         , area_parm             & ! intent(inout)
+                         , flx_diff              ! ! intent(inout)
+   use therm_lib  , only : exner2press           & ! function
+                         , extheta2temp          ! ! function
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
-   integer                            , intent(in)    :: m1,m2,m3,nclouds,ncrad
-   integer                            , intent(in)    :: mynum,ifm,if_adap
-   integer                            , intent(in)    :: ia,iz,ja,jz
-   integer                            , intent(in)    :: nadd_rad,iswrtyp,ilwrtyp,icumfdbk
-   real(kind=8)                       , intent(in)    :: time
-   real                               , intent(in)    :: deltat
-   real, dimension(m2,m3)             , intent(in)    :: topt,glon,glat,flpw,rtgt
-   real, dimension(m1,m2,m3)          , intent(in)    :: pi0,pp,rho,theta,rv,co2p
-   real, dimension(m1,m2,m3)          , intent(in)    :: sh_c,sh_r,sh_p,sh_s,sh_a,sh_g,sh_h
-   real, dimension(m1,m2,m3)          , intent(in)    :: con_c,con_r,con_p,con_s,con_a
-   real, dimension(m1,m2,m3)          , intent(in)    :: con_g,con_h
-   real, dimension(m2,m3,nclouds)     , intent(in)    :: cuparea
-   real, dimension(m2,m3,nclouds)     , intent(in)    :: cupierr
-   real, dimension(m1,m2,m3,nclouds)  , intent(in)    :: cuprliq
-   real, dimension(m1,m2,m3,nclouds)  , intent(in)    :: cuprice
-   real, dimension(m2,m3)             , intent(inout) :: rshort,rlong,rlongup,cosz,albedt
-   real, dimension(m2,m3)             , intent(inout) :: rshort_top,rshortup_top
-   real, dimension(m2,m3)             , intent(inout) :: rshort_diffuse
-   real, dimension(m2,m3)             , intent(inout) :: rlongup_top
-   real, dimension(m1,m2,m3)          , intent(inout) :: fthrd,fthrd_lw
+   integer                                    , intent(in)    :: m1
+   integer                                    , intent(in)    :: m2
+   integer                                    , intent(in)    :: m3
+   integer                                    , intent(in)    :: nclouds
+   integer                                    , intent(in)    :: ncrad
+   integer                                    , intent(in)    :: mynum
+   integer                                    , intent(in)    :: ifm
+   integer                                    , intent(in)    :: if_adap
+   integer                                    , intent(in)    :: ia
+   integer                                    , intent(in)    :: iz
+   integer                                    , intent(in)    :: ja
+   integer                                    , intent(in)    :: jz
+   integer                                    , intent(in)    :: nadd_rad
+   integer                                    , intent(in)    :: iswrtyp
+   integer                                    , intent(in)    :: ilwrtyp
+   integer                                    , intent(in)    :: icumfdbk
+   real(kind=8)                               , intent(in)    :: time
+   real(kind=4)                               , intent(in)    :: deltat
+   real(kind=4), dimension(m2,m3)             , intent(in)    :: topt
+   real(kind=4), dimension(m2,m3)             , intent(in)    :: glon
+   real(kind=4), dimension(m2,m3)             , intent(in)    :: glat
+   real(kind=4), dimension(m2,m3)             , intent(in)    :: flpw
+   real(kind=4), dimension(m2,m3)             , intent(in)    :: rtgt
+   real(kind=4), dimension(m1,m2,m3)          , intent(in)    :: pi0
+   real(kind=4), dimension(m1,m2,m3)          , intent(in)    :: pp
+   real(kind=4), dimension(m1,m2,m3)          , intent(in)    :: rho
+   real(kind=4), dimension(m1,m2,m3)          , intent(in)    :: theta
+   real(kind=4), dimension(m1,m2,m3)          , intent(in)    :: rv
+   real(kind=4), dimension(m1,m2,m3)          , intent(in)    :: co2p
+   real(kind=4), dimension(m1,m2,m3)          , intent(in)    :: sh_c
+   real(kind=4), dimension(m1,m2,m3)          , intent(in)    :: sh_r
+   real(kind=4), dimension(m1,m2,m3)          , intent(in)    :: sh_p
+   real(kind=4), dimension(m1,m2,m3)          , intent(in)    :: sh_s
+   real(kind=4), dimension(m1,m2,m3)          , intent(in)    :: sh_a
+   real(kind=4), dimension(m1,m2,m3)          , intent(in)    :: sh_g
+   real(kind=4), dimension(m1,m2,m3)          , intent(in)    :: sh_h
+   real(kind=4), dimension(m1,m2,m3)          , intent(in)    :: con_c
+   real(kind=4), dimension(m1,m2,m3)          , intent(in)    :: con_r
+   real(kind=4), dimension(m1,m2,m3)          , intent(in)    :: con_p
+   real(kind=4), dimension(m1,m2,m3)          , intent(in)    :: con_s
+   real(kind=4), dimension(m1,m2,m3)          , intent(in)    :: con_a
+   real(kind=4), dimension(m1,m2,m3)          , intent(in)    :: con_g
+   real(kind=4), dimension(m1,m2,m3)          , intent(in)    :: con_h
+   real(kind=4), dimension(m2,m3,nclouds)     , intent(in)    :: cuparea
+   real(kind=4), dimension(m2,m3,nclouds)     , intent(in)    :: cupierr
+   real(kind=4), dimension(m1,m2,m3,nclouds)  , intent(in)    :: cuprliq
+   real(kind=4), dimension(m1,m2,m3,nclouds)  , intent(in)    :: cuprice
+   real(kind=4), dimension(m2,m3)             , intent(inout) :: rshort
+   real(kind=4), dimension(m2,m3)             , intent(inout) :: rlong
+   real(kind=4), dimension(m2,m3)             , intent(inout) :: rlongup
+   real(kind=4), dimension(m2,m3)             , intent(inout) :: cosz
+   real(kind=4), dimension(m2,m3)             , intent(inout) :: albedt
+   real(kind=4), dimension(m2,m3)             , intent(inout) :: rshort_top
+   real(kind=4), dimension(m2,m3)             , intent(inout) :: rshortup_top
+   real(kind=4), dimension(m2,m3)             , intent(inout) :: rshort_diffuse
+   real(kind=4), dimension(m2,m3)             , intent(inout) :: rlongup_top
+   real(kind=4), dimension(m1,m2,m3)          , intent(inout) :: fthrd
+   real(kind=4), dimension(m1,m2,m3)          , intent(inout) :: fthrd_lw
    !------ Local arrays -------------------------------------------------------------------!
-   integer                                            :: ka
-   integer                                            :: nrad
-   integer                                            :: koff
-   integer                                            :: icld
-   integer                                            :: i,j,k,ib,ig,kk,ik,krad,mcat
-   real                                               :: area_csky
+   integer                                                    :: ka
+   integer                                                    :: nrad
+   integer                                                    :: koff
+   integer                                                    :: icld
+   integer                                                    :: i
+   integer                                                    :: j
+   integer                                                    :: k
+   integer                                                    :: ib
+   integer                                                    :: ig
+   integer                                                    :: kk
+   integer                                                    :: ik
+   integer                                                    :: krad
+   integer                                                    :: mcat
+   real(kind=4)                                               :: area_csky
+   real(kind=4)                                               :: exner
    !---------------------------------------------------------------------------------------!
+
 
    !---------------------------------------------------------------------------------------!
    !    Copy surface and vertical-column values from model to radiation memory space.  In  !
@@ -115,11 +199,12 @@ subroutine harr_raddriv(m1,m2,m3,nclouds,ncrad,ifm,if_adap,time,deltat,ia,iz,ja,
 
 
          do k = ka,m1-1
-            tairk(k)     = theta(k,i,j) * (pi0(k,i,j)+pp(k,i,j)) * cpi
+            exner        = pi0(k,i,j)+pp(k,i,j)
+            tairk(k)     = extheta2temp(exner,theta(k,i,j))
             rhoe(k)      = rho(k,i,j)
             rhov(k)      = max(toodry,rv(k,i,j)) * rhoe(k)
             rhoi(k)      = 1./rho(k,i,j)
-            press(k)     = p00 * (cpi * (pi0(k,i,j)+pp(k,i,j)) ) ** cpor
+            press(k)     = exner2press(exner)
             dl(k-koff)   = rho(k,i,j)
             pl(k-koff)   = press(k)
             tl(k-koff)   = tairk(k)
@@ -259,7 +344,7 @@ subroutine harr_raddriv(m1,m2,m3,nclouds,ncrad,ifm,if_adap,time,deltat,ia,iz,ja,
                      fthrd(k,i,j) = fthrd(k,i,j)                                           &
                                   + ( (flxds(krad)-flxds(krad-1)                           &
                                     + flxus(krad-1)-flxus(krad))                           &
-                                    / (dl(krad) * dzl(krad) * cp)) * area_parm
+                                    / (dl(krad) * dzl(krad) * cpdry)) * area_parm
                   end do
                end if
             end if
@@ -279,11 +364,11 @@ subroutine harr_raddriv(m1,m2,m3,nclouds,ncrad,ifm,if_adap,time,deltat,ia,iz,ja,
                   fthrd(k,i,j)    = fthrd(k,i,j)                                           &
                                   + ( (flxdl(krad)-flxdl(krad-1)                           &
                                     + flxul(krad-1)-flxul(krad))                           &
-                                    / (dl(krad) * dzl(krad) * cp)) * area_parm
+                                    / (dl(krad) * dzl(krad) * cpdry)) * area_parm
                   fthrd_lw(k,i,j) = fthrd_lw(k,i,j)                                        &
                                   + ( (flxdl(krad)-flxdl(krad-1)                           &
                                     + flxul(krad-1)-flxul(krad))                           &
-                                    / (dl(krad) * dzl(krad) * cp)) * area_parm
+                                    / (dl(krad) * dzl(krad) * cpdry)) * area_parm
                end do
             end if
          end do cldloop
@@ -632,9 +717,7 @@ subroutine cloud_opt(m1,ka,nrad,koff,mcat,icld,time,mynum)
                          , jhabtab      & ! intent(in)
                          , parm         & ! intent(in) 
                          , availcat     ! ! intent(in)
-   use rconstants , only : p00i         & ! intent(in)
-                         , rocp         & ! intent(in) 
-                         , hr_sec       & ! intent(in)
+   use rconstants , only : hr_sec       & ! intent(in)
                          , lnexp_min    ! ! intent(in)
    use harr_coms  , only : jhcatharr    & ! intent(in)
                           ,dzl          & ! intent(in)

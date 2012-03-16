@@ -374,7 +374,9 @@ subroutine get_sc_up_wet( mgmzp,n1,se,se_cup,sc_up,k22,kbcon,ktop,cd, &
   iwd =1
   iall=0
 
-  call azero3(mgmzp,sc_up_c,pw_up,henry_coef)
+  call azero(mgmzp,sc_up_c)
+  call azero(mgmzp,pw_up)
+  call azero(mgmzp,henry_coef)
 
 
   do k=1,k22-1

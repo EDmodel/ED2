@@ -312,18 +312,14 @@ subroutine spatial_averages
    use grid_coms             , only : ngrids             & ! intent(in)
                                     , nzg                & ! intent(in)
                                     , nzs                ! ! intent(in)
-   use consts_coms           , only : alvl               & ! intent(in)
-                                    , cpi                & ! intent(in)
-                                    , wdns               & ! intent(in)
-                                    , p00i               & ! intent(in)
-                                    , t00                & ! intent(in)
-                                    , rocp               & ! intent(in)
-                                    , umol_2_kgC         & ! intent(in)
-                                    , day_sec            ! ! intent(in)
+   use consts_coms           , only : wdns               & ! intent(in)
+                                    , t00                ! ! intent(in)
    use ed_misc_coms          , only : frqsum             ! ! intent(in)
-   use therm_lib             , only : qwtk               & ! subroutine
-                                    , qtk                & ! subroutine
-                                    , idealdenssh        ! ! function
+   use therm_lib             , only : uextcm2tl          & ! subroutine
+                                    , uint2tl            & ! subroutine
+                                    , idealdenssh        & ! function
+                                    , press2exner        & ! function
+                                    , extheta2temp       ! ! function
    use soil_coms             , only : tiny_sfcwater_mass & ! intent(in)
                                     , isoilbc            & ! intent(in)
                                     , soil               & ! intent(in)
@@ -357,6 +353,7 @@ subroutine spatial_averages
    real                           :: dslzsum_i
    real                           :: rdepth
    real                           :: soil_mstpot
+   real                           :: can_exner
    !---------------------------------------------------------------------------------------!
 
    !----- Time scale for output.  We will use the inverse more often. ---------------------!
@@ -579,12 +576,14 @@ subroutine spatial_averages
                                      + site_avg_soil_hcap(k) * cpoly%area(isi)*poly_area_i
 
                !----- Finding the average temperature and liquid fraction. ----------------!
-               call qwtk(cpoly%avg_soil_energy(k,isi),cpoly%avg_soil_water(k,isi)*wdns     &
-                        ,site_avg_soil_hcap(k),cpoly%avg_soil_temp(k,isi)                  &
-                        ,cpoly%avg_soil_fracliq(k,isi))
+               call uextcm2tl( cpoly%avg_soil_energy (k,isi)                               &
+                             , cpoly%avg_soil_water  (k,isi) * wdns                        &
+                             , site_avg_soil_hcap    (k)                                   &
+                             , cpoly%avg_soil_temp   (k,isi)                               &
+                             , cpoly%avg_soil_fracliq(k,isi) )
             end do
             
-            !------------------------------------------------------------------------------! 
+            !------------------------------------------------------------------------------!
             !     For layers beneath the lowest soil level, assign a default soil          !
             ! potential and soil moisture consistent with the boundary condition.          !
             !------------------------------------------------------------------------------!
@@ -659,8 +658,8 @@ subroutine spatial_averages
             if (cpoly%avg_sfcw_mass(isi) > tiny_sfcwater_mass) then
                cpoly%avg_sfcw_energy(isi) = cpoly%avg_sfcw_energy(isi)                     &
                                           / cpoly%avg_sfcw_mass(isi)
-               call qtk(cpoly%avg_sfcw_energy(isi),cpoly%avg_sfcw_tempk(isi)               &
-                       ,cpoly%avg_sfcw_fracliq(isi))
+               call uint2tl(cpoly%avg_sfcw_energy(isi),cpoly%avg_sfcw_tempk(isi)           &
+                           ,cpoly%avg_sfcw_fracliq(isi))
             else
                cpoly%avg_sfcw_mass(isi)    = 0.
                cpoly%avg_sfcw_depth(isi)   = 0.
@@ -693,9 +692,9 @@ subroutine spatial_averages
                   !----- Check whether there is any heat storage. -------------------------!
                   if (csite%avg_leaf_hcap(ipa) > 0.) then
                      !----- Yes, use the default thermodynamics. --------------------------!
-                     call qwtk(csite%avg_leaf_energy(ipa),csite%avg_leaf_water(ipa)        &
-                              ,csite%avg_leaf_hcap(ipa),csite%avg_leaf_temp(ipa)           &
-                              ,csite%avg_leaf_fliq(ipa))
+                     call uextcm2tl(csite%avg_leaf_energy(ipa),csite%avg_leaf_water(ipa)   &
+                                   ,csite%avg_leaf_hcap(ipa),csite%avg_leaf_temp(ipa)      &
+                                   ,csite%avg_leaf_fliq(ipa))
                   else
                      !----- No, copy the canopy air properties. ---------------------------!
                      csite%avg_leaf_temp(ipa) = csite%can_temp(ipa)
@@ -716,9 +715,9 @@ subroutine spatial_averages
                   !----- Check whether there is any heat storage. -------------------------!
                   if (csite%avg_wood_hcap(ipa) > 0.) then
                      !----- Yes, use the default thermodynamics. --------------------------!
-                     call qwtk(csite%avg_wood_energy(ipa),csite%avg_wood_water(ipa)        &
-                              ,csite%avg_wood_hcap(ipa),csite%avg_wood_temp(ipa)           &
-                              ,csite%avg_wood_fliq(ipa))
+                     call uextcm2tl(csite%avg_wood_energy(ipa),csite%avg_wood_water(ipa)   &
+                                   ,csite%avg_wood_hcap(ipa),csite%avg_wood_temp(ipa)      &
+                                   ,csite%avg_wood_fliq(ipa))
                   else
                      !----- No, copy the canopy air properties. ---------------------------!
                      csite%avg_wood_temp(ipa) = csite%can_temp(ipa)
@@ -1033,11 +1032,11 @@ subroutine spatial_averages
             cpoly%avg_can_shv     (isi) = sum(csite%can_shv    * csite%area) * site_area_i
             cpoly%avg_can_co2     (isi) = sum(csite%can_co2    * csite%area) * site_area_i
             cpoly%avg_can_prss    (isi) = sum(csite%can_prss   * csite%area) * site_area_i
-            cpoly%avg_can_temp    (isi) = cpoly%avg_can_theta(isi)                         &
-                                        * (p00i * cpoly%avg_can_prss(isi)) ** rocp
-            cpoly%avg_can_rhos    (isi) = idealdenssh(cpoly%avg_can_prss(isi)              &
-                                                     ,cpoly%avg_can_temp(isi)              &
-                                                     ,cpoly%avg_can_shv (isi) )
+            can_exner                   = press2exner (cpoly%avg_can_prss(isi))
+            cpoly%avg_can_temp    (isi) = extheta2temp(can_exner,cpoly%avg_can_theta (isi))
+            cpoly%avg_can_rhos    (isi) = idealdenssh( cpoly%avg_can_prss  (isi)           &
+                                                     , cpoly%avg_can_temp  (isi)           &
+                                                     , cpoly%avg_can_shv   (isi)           )
             !------------------------------------------------------------------------------!
             !   Site average of leaf and stem properties.  Again, we average "extensive"   !
             ! properties and find the average temperature based on the average leaf and    !
@@ -1061,9 +1060,9 @@ subroutine spatial_averages
             ! assign mean canopy temperature.                                              !
             !------------------------------------------------------------------------------!
             if (cpoly%avg_leaf_hcap(isi) > 0.) then
-               call qwtk(cpoly%avg_leaf_energy(isi),cpoly%avg_leaf_water(isi)                &
-                        ,cpoly%avg_leaf_hcap(isi),cpoly%avg_leaf_temp(isi)                   &
-                        ,cpoly%avg_leaf_fliq(isi))
+               call uextcm2tl(cpoly%avg_leaf_energy(isi),cpoly%avg_leaf_water(isi)         &
+                             ,cpoly%avg_leaf_hcap(isi),cpoly%avg_leaf_temp(isi)            &
+                             ,cpoly%avg_leaf_fliq(isi))
             else
                cpoly%avg_leaf_temp(isi) = cpoly%avg_can_temp(isi)
                if (cpoly%avg_can_temp(isi) > t00) then
@@ -1080,9 +1079,9 @@ subroutine spatial_averages
             ! ature.  Otherwise, assign mean canopy temperature.                           !
             !------------------------------------------------------------------------------!
             if (cpoly%avg_wood_hcap(isi) > 0.) then
-               call qwtk(cpoly%avg_wood_energy(isi),cpoly%avg_wood_water(isi)                &
-                        ,cpoly%avg_wood_hcap(isi),cpoly%avg_wood_temp(isi)                   &
-                        ,cpoly%avg_wood_fliq(isi))
+               call uextcm2tl(cpoly%avg_wood_energy(isi),cpoly%avg_wood_water(isi)         &
+                             ,cpoly%avg_wood_hcap(isi),cpoly%avg_wood_temp(isi)            &
+                             ,cpoly%avg_wood_fliq(isi))
             else
                cpoly%avg_wood_temp(isi) = cpoly%avg_can_temp(isi)
                if (cpoly%avg_can_temp(isi) > t00) then
@@ -1114,7 +1113,8 @@ subroutine spatial_averages
             skin_hcap   = cpoly%avg_leaf_hcap(isi)                                         &
                         + cpoly%avg_wood_hcap(isi)                                         &
                         + site_avg_soil_hcap(nzg) * dslz(nzg)
-            call qwtk(skin_energy,skin_water,skin_hcap,cpoly%avg_skin_temp(isi),skin_fliq)
+            call uextcm2tl(skin_energy,skin_water,skin_hcap                                &
+                          ,cpoly%avg_skin_temp(isi),skin_fliq)
             !------------------------------------------------------------------------------!
          end do siteloop
          !---------------------------------------------------------------------------------!
@@ -1228,11 +1228,11 @@ subroutine spatial_averages
          cgrid%avg_can_shv     (ipy) = sum(cpoly%avg_can_shv   * cpoly%area) * poly_area_i
          cgrid%avg_can_co2     (ipy) = sum(cpoly%avg_can_co2   * cpoly%area) * poly_area_i
          cgrid%avg_can_prss    (ipy) = sum(cpoly%avg_can_prss  * cpoly%area) * poly_area_i
-         cgrid%avg_can_temp    (ipy) = cgrid%avg_can_theta(ipy)                            &
-                                     * (p00i * cgrid%avg_can_prss(ipy)) ** rocp
-         cgrid%avg_can_rhos    (ipy) = idealdenssh(cgrid%avg_can_prss(ipy)                 &
-                                                  ,cgrid%avg_can_temp(ipy)                 &
-                                                  ,cgrid%avg_can_shv (ipy) )
+         can_exner                   = press2exner (cgrid%avg_can_prss(ipy))
+         cgrid%avg_can_temp    (ipy) = extheta2temp(can_exner,cgrid%avg_can_theta(ipy))
+         cgrid%avg_can_rhos    (ipy) = idealdenssh ( cgrid%avg_can_prss  (ipy)             &
+                                                   , cgrid%avg_can_temp  (ipy)             &
+                                                   , cgrid%avg_can_shv   (ipy)             )
          !---------------------------------------------------------------------------------!
          !    Similar to the site level, average mass, heat capacity and energy then find  !
          ! the average temperature and liquid water fraction.                              !
@@ -1260,9 +1260,9 @@ subroutine spatial_averages
             !     Finding the average temperature and liquid fraction.  The polygon-level  !
             ! mean heat capacity was already found during the site loop.                   !
             !------------------------------------------------------------------------------!
-            call qwtk(cgrid%avg_soil_energy(k,ipy),cgrid%avg_soil_water(k,ipy)*wdns        &
-                     ,poly_avg_soil_hcap(k),cgrid%avg_soil_temp(k,ipy)                     &
-                     ,cgrid%avg_soil_fracliq(k,ipy))
+            call uextcm2tl(cgrid%avg_soil_energy(k,ipy),cgrid%avg_soil_water(k,ipy)*wdns   &
+                          ,poly_avg_soil_hcap(k),cgrid%avg_soil_temp(k,ipy)                &
+                          ,cgrid%avg_soil_fracliq(k,ipy))
          end do
          cgrid%avg_soil_wetness(ipy) = sum(cpoly%avg_soil_wetness * cpoly%area)            &
                                      * poly_area_i
@@ -1281,8 +1281,8 @@ subroutine spatial_averages
          if (cgrid%avg_sfcw_mass(ipy) > tiny_sfcwater_mass) then
             cgrid%avg_sfcw_energy(ipy) = cgrid%avg_sfcw_energy(ipy)                        &
                                        / cgrid%avg_sfcw_mass(ipy)
-            call qtk(cgrid%avg_sfcw_energy(ipy),cgrid%avg_sfcw_tempk(ipy)                  &
-                    ,cgrid%avg_sfcw_fracliq(ipy))
+            call uint2tl(cgrid%avg_sfcw_energy(ipy),cgrid%avg_sfcw_tempk(ipy)              &
+                        ,cgrid%avg_sfcw_fracliq(ipy))
          else
             cgrid%avg_sfcw_mass(ipy)    = 0.
             cgrid%avg_sfcw_depth(ipy)   = 0.
@@ -1302,9 +1302,9 @@ subroutine spatial_averages
          cgrid%avg_wood_water(ipy)  = sum(cpoly%avg_wood_water  * cpoly%area) * poly_area_i
          cgrid%avg_wood_hcap(ipy)   = sum(cpoly%avg_wood_hcap   * cpoly%area) * poly_area_i
          if (cgrid%avg_leaf_hcap(ipy) > 0.) then
-            call qwtk(cgrid%avg_leaf_energy(ipy),cgrid%avg_leaf_water(ipy)                   &
-                     ,cgrid%avg_leaf_hcap(ipy),cgrid%avg_leaf_temp(ipy)                      &
-                     ,cgrid%avg_leaf_fliq(ipy))
+            call uextcm2tl(cgrid%avg_leaf_energy(ipy),cgrid%avg_leaf_water(ipy)            &
+                          ,cgrid%avg_leaf_hcap(ipy),cgrid%avg_leaf_temp(ipy)               &
+                          ,cgrid%avg_leaf_fliq(ipy))
          else
             cgrid%avg_leaf_temp(ipy) = cgrid%avg_can_temp(ipy)
             if (cgrid%avg_can_temp(ipy) > 0.0) then
@@ -1316,9 +1316,9 @@ subroutine spatial_averages
             end if
          end if
          if (cgrid%avg_wood_hcap(ipy) > 0.) then
-            call qwtk(cgrid%avg_wood_energy(ipy),cgrid%avg_wood_water(ipy)                   &
-                     ,cgrid%avg_wood_hcap(ipy),cgrid%avg_wood_temp(ipy)                      &
-                     ,cgrid%avg_wood_fliq(ipy))
+            call uextcm2tl(cgrid%avg_wood_energy(ipy),cgrid%avg_wood_water(ipy)            &
+                          ,cgrid%avg_wood_hcap(ipy),cgrid%avg_wood_temp(ipy)               &
+                          ,cgrid%avg_wood_fliq(ipy))
          else
             cgrid%avg_wood_temp(ipy) = cgrid%avg_can_temp(ipy)
             if (cgrid%avg_can_temp(ipy) > 0.0) then
@@ -1352,7 +1352,8 @@ subroutine spatial_averages
          skin_hcap   = cgrid%avg_leaf_hcap(ipy)                                            &
                      + cgrid%avg_wood_hcap(ipy)                                            &
                      + poly_avg_soil_hcap(nzg) * dslz(nzg)
-         call qwtk(skin_energy,skin_water,skin_hcap,cgrid%avg_skin_temp(ipy),skin_fliq)
+         call uextcm2tl(skin_energy,skin_water,skin_hcap                                   &
+                       ,cgrid%avg_skin_temp(ipy),skin_fliq)
          !---------------------------------------------------------------------------------!
 
       end do polyloop

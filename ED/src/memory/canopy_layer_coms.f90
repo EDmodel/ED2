@@ -20,6 +20,14 @@ module canopy_layer_coms
 
 
    !---------------------------------------------------------------------------------------!
+   !     For big-leaf version of ED, we must define the target thickness of each layer in  !
+   ! terms of total (leaf+wood) area index.                                                !
+   !---------------------------------------------------------------------------------------!
+   real    :: tai_lyr_max
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
    !      Variables that define the number of layers in the canopy.                        !
    !   The height of the top of each layer is defined as:                                  !
    !   Ht(n) = Ht(0) * n^Eh                                                                !

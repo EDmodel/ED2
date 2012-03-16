@@ -190,7 +190,7 @@ subroutine sfcprt(n2,n3,mzg,mzs,npat,leaf,vnam,lprt)
 use mem_leaf
 use leaf_coms
 use rconstants, only: wdns
-use therm_lib, only: qtk, qwtk
+use therm_lib, only: uint2tl, uextcm2tl
 type (leaf_vars) :: leaf
 
 dimension tempkk(20),fracliqq(20),area(20)
@@ -338,13 +338,13 @@ do k = k1,k2
 
                do i = i1,i2
                   if (ipat == 1 .and. k == mzg) then
-                     call qtk(leaf%soil_energy(k,i,j,ipat)  &
+                     call uint2tl(leaf%soil_energy(k,i,j,ipat)  &
                         ,tempkk(i+1-i1),fracliqq(i+1-i1))
                   elseif (ipat == 1) then
                      soil_tempk(i+1-i1) = leaf%soil_energy(k,i,j,ipat)
                   else
                      nsoil = nint(leaf%soil_text(k,i,j,ipat))
-                     call qwtk(leaf%soil_energy(k,i,j,ipat)       &
+                     call uextcm2tl(leaf%soil_energy(k,i,j,ipat)       &
                               ,leaf%soil_water (k,i,j,ipat)*wdns  &
                               ,slcpd(nsoil),tempkk(i+1-i1),fracliqq(i+1-i1))
                   endif
@@ -368,7 +368,7 @@ do k = k1,k2
             elseif (vnam == 'sfcwater_temp'  ) then
                do i = i1,i2
                   nsoil = nint(leaf%soil_text(k,i,j,ipat))
-                  call qwtk(leaf%soil_energy(k,i,j,ipat)       &
+                  call uextcm2tl(leaf%soil_energy(k,i,j,ipat)       &
                            ,leaf%soil_water (k,i,j,ipat)*wdns  &
                            ,slcpd(nsoil),tempkk(i+1-i1),fracliqq(i+1-i1))
                enddo
@@ -592,7 +592,14 @@ FUNCTION OPTLIB(VARN,K,I,J,IPLGRD,FMT,TILO)
 use mem_all
 use var_tables
 use rconstants
-use therm_lib, only: rehul,rehui,rehuil,virtt
+use therm_lib, only : rehul        & ! intent(in)
+                    , rehui        & ! intent(in)
+                    , rehuil       & ! intent(in)
+                    , virtt        & ! intent(in)
+                    , exner2press  & ! intent(in)
+                    , press2exner  & ! intent(in)
+                    , extheta2temp & ! intent(in)
+                    , extemp2theta ! ! intent(in)
 CHARACTER*(*) VARN
 CHARACTER*8 FMT,TILO
 !
@@ -847,7 +854,7 @@ ELSEIF(VARN.EQ.'TEMP') THEN
     VALTHET = basic_g(ngrid)%THETA(k,i,j)
     VALPP   = basic_g(ngrid)%PP(k,i,j)
     VALPI0  = basic_g(ngrid)%PI0(k,i,j)
-    OPTLIB  = VALTHET*(VALPP+VALPI0)/CP
+    OPTLIB  = VALTHET*(VALPP+VALPI0)/CPDRY
   ENDIF
 !
 !            TEMPERATURE
@@ -860,7 +867,7 @@ ELSEIF(VARN.EQ.'TEMPC') THEN
     VALTHET = basic_g(ngrid)%THETA(k,i,j)
     VALPP   = basic_g(ngrid)%PP(k,i,j)
     VALPI0  = basic_g(ngrid)%PI0(k,i,j)
-    OPTLIB  = VALTHET*(VALPP+VALPI0)/CP - t00
+    OPTLIB  = VALTHET*(VALPP+VALPI0)/CPDRY - t00
   ENDIF
 !
 !           VIRTUAL TEMPERATURE
@@ -877,7 +884,7 @@ ELSEIF(VARN.EQ.'TV') THEN
     VALRV = 0
     IF (LEVEL.GE.1)  VALRV = basic_g(ngrid)%RV(k,i,j)
     OPTLIB = virtt(VALTHET,VALRV,VALRTP)  &
-                 *(VALPP + VALPI0)/CP
+                 *(VALPP + VALPI0)/CPDRY
   ENDIF
 !
 !           VIRTUAL TEMPERATURE PERTURBATION
@@ -895,7 +902,7 @@ ELSEIF(VARN.EQ.'TVP') THEN
     VALRV = 0
     IF (LEVEL.GE.1)  VALRV = basic_g(ngrid)%RV(k,i,j)
     OPTLIB = (virtt(VALTHET,VALRV,VALRTP) -VALTHV0)  &
-                 *(VALPP + VALPI0)/CP
+                 *(VALPP + VALPI0)/CPDRY
   ENDIF
 !
 !           TOTAL WATER MIXING RATIO
@@ -1198,10 +1205,10 @@ ELSEIF(VARN.EQ.'SUPSATW') THEN
     VALTHET= basic_g(ngrid)%THETA(k,i,j)
     VALPP  = basic_g(ngrid)%PP(k,i,j)
     VALPI0 = basic_g(ngrid)%PI0(k,i,j)
-    VALTEMP= VALTHET*(VALPP+VALPI0)/CP
-    VALPRS = ((VALPI0 + VALPP)/CP)**CPOR * P00
+    VALTEMP= extheta2temp(VALPP+VALPI0,VALTHET)
+    VALPRS = exner2press(VALPI0 + VALPP)
     VALRV  = basic_g(ngrid)%RV(k,i,j)
-    OPTLIB = 100.*REHUL(VALPRS,VALTEMP,VALRV)
+    OPTLIB = 100.*REHUL(VALPRS,VALTEMP,VALRV,.false.)
     IF(OPTLIB > 100.)THEN
        OPTLIB=OPTLIB-100.
     ELSE
@@ -1219,10 +1226,10 @@ ELSEIF(VARN.EQ.'SUPSATI') THEN
     VALTHET= basic_g(ngrid)%THETA(k,i,j)
     VALPP  = basic_g(ngrid)%PP(k,i,j)
     VALPI0 = basic_g(ngrid)%PI0(k,i,j)
-    VALTEMP= VALTHET*(VALPP+VALPI0)/CP
-    VALPRS = ((VALPI0 + VALPP)/CP)**CPOR * P00
+    VALTEMP= extheta2temp(VALPP+VALPI0,VALTHET)
+    VALPRS = exner2press(VALPI0 + VALPP)
     VALRV  = basic_g(ngrid)%RV(k,i,j)
-    OPTLIB = 100.*REHUI(VALPRS,VALTEMP,VALRV)
+    OPTLIB = 100.*REHUI(VALPRS,VALTEMP,VALRV,.false.)
     IF(OPTLIB > 100.)THEN
        OPTLIB=OPTLIB-100.
     ELSE
@@ -1240,10 +1247,10 @@ ELSEIF(VARN.EQ.'RELHUM') THEN
     VALTHET= basic_g(ngrid)%THETA(k,i,j)
     VALPP  = basic_g(ngrid)%PP(k,i,j)
     VALPI0 = basic_g(ngrid)%PI0(k,i,j)
-    VALTEMP= VALTHET*(VALPP+VALPI0)/CP
-    VALPRS = ((VALPI0 + VALPP)/CP)**CPOR * P00
+    VALTEMP= extheta2temp(VALPP+VALPI0,VALTHET)
+    VALPRS = exner2press(VALPI0 + VALPP)
     VALRV  = basic_g(ngrid)%RV(k,i,j)
-    OPTLIB = 100. * rehuil(VALPRS,VALTEMP,VALRV)
+    OPTLIB = 100. * rehuil(VALPRS,VALTEMP,VALRV,.false.)
   ENDIF
 !
 !           TOTAL NUMBER CONCENTRATION OF CCN
@@ -1737,11 +1744,11 @@ use ref_sounding
 use rconstants
 use mem_turb
 use ref_sounding
-use therm_lib, only: rehuil,tv2temp
+use therm_lib, only: rehuil,tv2temp,exner2press
 
 IF(INITIAL.NE.2)THEN
   do k=1,nsndg
-     vctr1(k) = 100. *rehuil(ps(k),ts(k),rts(k))
+     vctr1(k) = 100. *rehuil(ps(k),ts(k),rts(k),.false.)
   end do
   WRITE(M,41)
 41      FORMAT(/,'------------------------------SOUNDING INPUT-------'  &
@@ -1755,7 +1762,7 @@ IF(INITIAL.NE.2)THEN
 ENDIF
 !
 DO K=1,NNZP(1)
-  VCTR1(K)=P00*(PI01DN(K,1)/CP)**CPOR
+  VCTR1(K)=exner2press(PI01DN(K,1))
   VCTR2(K)=tv2temp(TH01DN(K,1),RT01DN(K,1))
 ENDDO
 WRITE(M,310)IREF,JREF,TOPREF,(ZTN(K,1),U01DN(K,1),V01DN(K,1)  &

@@ -65,12 +65,9 @@ subroutine leaf2ed_soil_moist_energy(cgrid,ifm)
    use grid_coms    , only : nzg          & ! intent(in)
                            , nzs          ! ! intent(in)
    use ed_therm_lib , only : ed_grndvap   ! ! subroutine
-   use therm_lib8   , only : qwtk8        ! ! subroutine
-   use therm_lib    , only : qwtk         ! ! subroutine
-   use rconstants   , only : wdns         & ! intent(in)
-                           , tsupercool   & ! intent(in)
-                           , cicevlme     & ! intent(in)
-                           , cliqvlme     ! ! intent(in)
+   use therm_lib    , only : uextcm2tl    & ! subroutine
+                           , cmtl2uext    ! ! function
+   use rconstants   , only : wdns         ! ! intent(in)
    use mem_leaf     , only : leaf_g       ! ! structure
    use leaf_coms    , only : slcpd        ! ! intent(in)
    use soil_coms    , only : soil         ! ! intent(in)
@@ -138,9 +135,9 @@ subroutine leaf2ed_soil_moist_energy(cgrid,ifm)
          !---------------------------------------------------------------------------------!
          do k=1,nzg
             lsoil_text(k) =nint(leaf_g(ifm)%soil_text(k,ix,iy,ilp))
-            call qwtk(leaf_g(ifm)%soil_energy(k,ix,iy,ilp)                                 &
-                     ,leaf_g(ifm)%soil_water(k,ix,iy,ilp)*wdns                             &
-                     ,slcpd(lsoil_text(k)),lsoil_temp(k),lsoil_fliq(k))
+            call uextcm2tl(leaf_g(ifm)%soil_energy(k,ix,iy,ilp)                            &
+                          ,leaf_g(ifm)%soil_water(k,ix,iy,ilp)*wdns                        &
+                          ,slcpd(lsoil_text(k)),lsoil_temp(k),lsoil_fliq(k))
          end do
          !---------------------------------------------------------------------------------!
 
@@ -150,15 +147,15 @@ subroutine leaf2ed_soil_moist_energy(cgrid,ifm)
             cpatch => csite%patch(ipa)
 
             do k=1,nzg
-            
+
                ntext = cpoly%ntext_soil(k,isi)
                !---------------------------------------------------------------------------!
                !   Soil water.  Ensuring that the initial condition is within the accept-  !
                ! able range.                                                               !
                !---------------------------------------------------------------------------!
-               csite%soil_water(k,ipa) = max(soil(ntext)%soilcp                            &
-                                            ,min(soil(ntext)%slmsts                        &
-                                                ,leaf_g(ifm)%soil_water(k,ix,iy,ilp) ) )
+               csite%soil_water(k,ipa) = max( soil(ntext)%soilcp                           &
+                                            , min(soil(ntext)%slmsts                       &
+                                                 ,leaf_g(ifm)%soil_water(k,ix,iy,ilp) ) )
 
                !---------------------------------------------------------------------------!
                !   Soil temperature and liquid fraction. Simply use what we found a few    !
@@ -173,11 +170,10 @@ subroutine leaf2ed_soil_moist_energy(cgrid,ifm)
                !   Soil energy. Now that temperature, moisture and liquid partition are    !
                ! set, simply use the definition of internal energy to find it.             !
                !---------------------------------------------------------------------------!
-               csite%soil_energy(k,ipa) = soil(ntext)%slcpd * csite%soil_tempk(k,ipa)      &
-                                        + csite%soil_water(k,ipa)                          &
-                                        * ( fice * cicevlme * csite%soil_tempk(k,ipa)      &
-                                          + csite%soil_fracliq(k,ipa) * cliqvlme           &
-                                          * (csite%soil_tempk(k,ipa) - tsupercool) )
+               csite%soil_energy(k,ipa) = cmtl2uext( soil(ntext)%slcpd                     &
+                                                   , csite%soil_water  (k,ipa) * wdns      &
+                                                   , csite%soil_tempk  (k,ipa)             &
+                                                   , csite%soil_fracliq(k,ipa)             )
             end do
             
             !----- Initialising surface snow/pond layers with nothing as default. ---------!

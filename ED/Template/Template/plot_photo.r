@@ -1,6 +1,6 @@
 #----- Here is the user-defined variable section. -----------------------------------------#
 here           = "thispath"                                  # Current directory.
-srcdir         = "/n/Moorcroft_Lab/Users/mlongo/util/Rsc" # Source  directory.
+srcdir         = "/n/moorcroft_data/mlongo/util/Rsc"      # Source  directory.
 outroot        = "thisoutroot" # Source  directory.
 myplaces       = c("thispoly")
 iphoto         = myphysiol
@@ -262,6 +262,9 @@ nout    = length(outform)
 options(locatorBell=FALSE)
 #------------------------------------------------------------------------------------------#
 
+
+jallom         = c(0,0,1,1,2)
+iallom         = jallom[iallom]
 
 
 #----- Load some files with global constants. ---------------------------------------------#

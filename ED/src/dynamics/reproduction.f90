@@ -5,55 +5,60 @@
 ! want it, in which case the seedling biomass will go to the litter pools.                 !
 !------------------------------------------------------------------------------------------!
 subroutine reproduction(cgrid, month)
-   use ed_state_vars      , only : edtype                & ! structure
-                                 , polygontype           & ! structure
-                                 , sitetype              & ! structure
-                                 , patchtype             & ! structure
-                                 , allocate_patchtype    & ! subroutine
-                                 , copy_patchtype        & ! subroutine
-                                 , deallocate_patchtype  ! ! subroutine
-   use pft_coms           , only : recruittype           & ! structure
-                                 , zero_recruit          & ! subroutine
-                                 , copy_recruit          & ! subroutine
-                                 , seedling_mortality    & ! intent(in)
-                                 , c2n_stem              & ! intent(in)
-                                 , l2n_stem              & ! intent(in)
-                                 , min_recruit_size      & ! intent(in)
-                                 , c2n_recruit           & ! intent(in)
-                                 , seed_rain             & ! intent(in)
-                                 , include_pft           & ! intent(in)
-                                 , include_pft_ag        & ! intent(in)
-                                 , qsw                   & ! intent(in)
-                                 , q                     & ! intent(in)
-                                 , sla                   & ! intent(in)
-                                 , hgt_min               & ! intent(in)
-                                 , phenology             & ! intent(in)
-                                 , plant_min_temp        ! ! intent(in)
-   use decomp_coms        , only : f_labile              ! ! intent(in)
-   use ed_max_dims        , only : n_pft                 ! ! intent(in)
-   use fuse_fiss_utils    , only : sort_cohorts          & ! subroutine
-                                 , terminate_cohorts     & ! subroutine
-                                 , fuse_cohorts          & ! subroutine
-                                 , split_cohorts         ! ! subroutine
-   use phenology_coms     , only : spot_phen             & ! intent(in)
-                                 , elongf_min            & ! intent(in)
-                                 , repro_scheme          ! ! intent(in)
-   use mem_polygons       , only : maxcohort             ! ! intent(in)
-   use consts_coms        , only : pio4                  ! ! intent(in)
-   use ed_therm_lib       , only : calc_veg_hcap         ! ! function
-   use soil_coms          , only : soil                  & ! intent(in), look-up table
-                                 , slz                   & ! intent(in)
-                                 , dslz                  ! ! intent(in)
-   use allometry          , only : dbh2bd                & ! function
-                                 , dbh2bl                & ! function
-                                 , h2dbh                 & ! function
-                                 , size2bl               & ! function
-                                 , dbh2h                 & ! function
-                                 , ed_biomass            & ! function
-                                 , dbh2krdepth           & ! function
-                                 , area_indices          ! ! subroutine
-   use grid_coms          , only : nzg                   ! ! intent(in)
-   use ed_misc_coms       , only : ivegt_dynamics        ! ! intent(in)
+   use ed_state_vars      , only : edtype                   & ! structure
+                                 , polygontype              & ! structure
+                                 , sitetype                 & ! structure
+                                 , patchtype                & ! structure
+                                 , allocate_patchtype       & ! subroutine
+                                 , copy_patchtype           & ! subroutine
+                                 , deallocate_patchtype     ! ! subroutine
+   use pft_coms           , only : recruittype              & ! structure
+                                 , zero_recruit             & ! subroutine
+                                 , copy_recruit             & ! subroutine
+                                 , seedling_mortality       & ! intent(in)
+                                 , c2n_stem                 & ! intent(in)
+                                 , l2n_stem                 & ! intent(in)
+                                 , min_recruit_size         & ! intent(in)
+                                 , c2n_recruit              & ! intent(in)
+                                 , one_plant_c              & ! intent(in)
+                                 , seed_rain                & ! intent(in)
+                                 , include_pft              & ! intent(in)
+                                 , include_pft_ag           & ! intent(in)
+                                 , qsw                      & ! intent(in)
+                                 , q                        & ! intent(in)
+                                 , agf_bs                   & ! intent(in)
+                                 , sla                      & ! intent(in)
+                                 , hgt_min                  & ! intent(in)
+                                 , phenology                & ! intent(in)
+                                 , plant_min_temp           ! ! intent(in)
+   use decomp_coms        , only : f_labile                 ! ! intent(in)
+   use ed_max_dims        , only : n_pft                    ! ! intent(in)
+   use fuse_fiss_utils    , only : sort_cohorts             & ! subroutine
+                                 , terminate_cohorts        & ! subroutine
+                                 , fuse_cohorts             & ! subroutine
+                                 , split_cohorts            & ! subroutine
+                                 , rescale_patches          ! ! subroutine
+   use phenology_coms     , only : spot_phen                & ! intent(in)
+                                 , elongf_min               & ! intent(in)
+                                 , repro_scheme             ! ! intent(in)
+   use mem_polygons       , only : maxcohort                ! ! intent(in)
+   use consts_coms        , only : pio4                     ! ! intent(in)
+   use ed_therm_lib       , only : calc_veg_hcap            ! ! function
+   use soil_coms          , only : soil                     & ! intent(in), look-up table
+                                 , slz                      & ! intent(in)
+                                 , dslz                     ! ! intent(in)
+   use allometry          , only : dbh2bd                   & ! function
+                                 , dbh2bl                   & ! function
+                                 , h2dbh                    & ! function
+                                 , size2bl                  & ! function
+                                 , dbh2h                    & ! function
+                                 , ed_biomass               & ! function
+                                 , dbh2krdepth              & ! function
+                                 , area_indices             ! ! subroutine
+   use grid_coms          , only : nzg                      ! ! intent(in)
+   use ed_misc_coms       , only : ivegt_dynamics           ! ! intent(in)
+   use ed_misc_coms       , only : ibigleaf                 ! ! intent(in)
+   use phenology_aux      , only : pheninit_balive_bstorage ! ! intent(in)
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    type(edtype)     , target     :: cgrid
@@ -89,6 +94,12 @@ subroutine reproduction(cgrid, month)
    real                                :: salloci    ! bleaf:balive ratio
    real                                :: bleaf_max  ! maximum bleaf
    real                                :: balive_max ! balive if on-allometry
+   real                                :: nplant_inc
+   real                                :: bleaf_plant   
+   real                                :: bdead_plant   
+   real                                :: broot_plant   
+   real                                :: bsapwood_plant
+   real                                :: balive_plant
    !----- Saved variables -----------------------------------------------------------------!
    logical          , save             :: first_time = .true.
    !---------------------------------------------------------------------------------------!
@@ -104,351 +115,509 @@ subroutine reproduction(cgrid, month)
       if (repro_scheme == 0) seedling_mortality(1:n_pft) = 1.0
       first_time = .false.
    end if
+   !---------------------------------------------------------------------------------------!
 
 
-   !----- The big loops start here. -------------------------------------------------------!
-   polyloop: do ipy = 1,cgrid%npolygons
-   
+
+   !---------------------------------------------------------------------------------------!
+   !     Decide which vegetation structure to use.                                         !
+   !---------------------------------------------------------------------------------------!
+   select case (ibigleaf)
+   case (0)
       !------------------------------------------------------------------------------------!
-      !     Check whether this is late spring/early summer.  This is needed for temperate  !
-      ! broadleaf deciduous trees.  Late spring means June in the Northern Hemisphere, or  !
-      ! December in the Southern Hemisphere.                                               !
-      !------------------------------------------------------------------------------------!
-      late_spring = (cgrid%lat(ipy) >= 0.0 .and. month == 6) .or.                          &
-                    (cgrid%lat(ipy) < 0.0 .and. month == 12)
-
-      cpoly => cgrid%polygon(ipy)
-      siteloop_sort: do isi = 1,cpoly%nsites
-         csite => cpoly%site(isi)
-
-         !---------------------------------------------------------------------------------!
-         !      Cohorts may have grown differently, so we need to sort them by size.       !
-         !---------------------------------------------------------------------------------!
-         patchloop_sort: do ipa = 1,csite%npatches
-            cpatch => csite%patch(ipa)
-            call sort_cohorts(cpatch)
-         end do patchloop_sort
-      end do siteloop_sort
-
-      !------- Update the repro arrays. ---------------------------------------------------!
-      call seed_dispersal(cpoly,late_spring)
+      !                        Size- and age_structure reproduction                        !
       !------------------------------------------------------------------------------------!
 
-      siteloop: do isi = 1,cpoly%nsites
-         csite => cpoly%site(isi)
 
+      !----- The big loops start here. -------------------------------------------------------!
+      polyloop: do ipy = 1,cgrid%npolygons
+      
          !---------------------------------------------------------------------------------!
-         !    For the recruitment to happen, five requirements must be met:                !
-         !    1.  PFT is included in this simulation;                                      !
-         !    2.  It is not too cold (min_monthly_temp > plant_min_temp - 5)               !
-         !    3.  We are dealing with EITHER a non-agriculture patch OR                    !
-         !        a PFT that could exist in an agricultural patch.                         !
-         !    4.  There must be sufficient carbon to form the recruits.                    !
-         !    5.  It is not too dry to grow a new plant                                    !
+         !     Check whether this is late spring/early summer.  This is needed for         !
+         ! temperate broadleaf deciduous trees.  Late spring means June in the Northern    !
+         ! Hemisphere, or December in the Southern Hemisphere.                             !
          !---------------------------------------------------------------------------------!
-         patchloop: do ipa = 1,csite%npatches
-            inew = 0
-            call zero_recruit(n_pft,recruit)
-            cpatch => csite%patch(ipa)
+         late_spring = (cgrid%lat(ipy) >= 0.0 .and. month == 6) .or.                       &
+                       (cgrid%lat(ipy) < 0.0 .and. month == 12)
 
-            !---- This time we loop over PFTs, not cohorts. -------------------------------!
-            pftloop: do ipft = 1, n_pft
+         cpoly => cgrid%polygon(ipy)
+         siteloop_sort: do isi = 1,cpoly%nsites
+            csite => cpoly%site(isi)
 
-               !---------------------------------------------------------------------------!
-               !    Check to make sure we are including the PFT and that it is not too     !
-               ! cold.                                                                     !
-               !---------------------------------------------------------------------------!
-               if( include_pft(ipft)                                         .and.         &
-                   cpoly%min_monthly_temp(isi) >= plant_min_temp(ipft) - 5.0 .and.         &
-                   repro_scheme /= 0 ) then
+            !------------------------------------------------------------------------------!
+            !      Cohorts may have grown differently, so we need to sort them by size.    !
+            !------------------------------------------------------------------------------!
+            patchloop_sort: do ipa = 1,csite%npatches
+               cpatch => csite%patch(ipa)
+               call sort_cohorts(cpatch)
+            end do patchloop_sort
+         end do siteloop_sort
 
-                  !------------------------------------------------------------------------!
-                  !     Make sure that this is not agriculture or that it is fine for this !
-                  ! PFT to be in an agriculture patch.                                     !
-                  !------------------------------------------------------------------------!
-                  if(csite%dist_type(ipa) /= 1 .or. include_pft_ag(ipft)) then
+         !------- Update the repro arrays. ------------------------------------------------!
+         call seed_dispersal(cpoly,late_spring)
+         !---------------------------------------------------------------------------------!
+
+         siteloop: do isi = 1,cpoly%nsites
+            csite => cpoly%site(isi)
+
+            !---------------------------------------------------------------------------------!
+            !    For the recruitment to happen, five requirements must be met:                !
+            !    1.  PFT is included in this simulation;                                      !
+            !    2.  It is not too cold (min_monthly_temp > plant_min_temp - 5)               !
+            !    3.  We are dealing with EITHER a non-agriculture patch OR                    !
+            !        a PFT that could exist in an agricultural patch.                         !
+            !    4.  There must be sufficient carbon to form the recruits.                    !
+            !    5.  It is not too dry to grow a new plant                                    !
+            !---------------------------------------------------------------------------------!
+            patchloop: do ipa = 1,csite%npatches
+               inew = 0
+               call zero_recruit(n_pft,recruit)
+               cpatch => csite%patch(ipa)
+
+               !---- This time we loop over PFTs, not cohorts. -------------------------------!
+               pftloop: do ipft = 1, n_pft
+
+                  !---------------------------------------------------------------------------!
+                  !    Check to make sure we are including the PFT and that it is not too     !
+                  ! cold.                                                                     !
+                  !---------------------------------------------------------------------------!
+                  if( include_pft(ipft)                                         .and.         &
+                      cpoly%min_monthly_temp(isi) >= plant_min_temp(ipft) - 5.0 .and.         &
+                      repro_scheme /= 0 ) then
+
+                     !------------------------------------------------------------------------!
+                     !     Make sure that this is not agriculture or that it is fine for this !
+                     ! PFT to be in an agriculture patch.                                     !
+                     !------------------------------------------------------------------------!
+                     if(csite%dist_type(ipa) /= 1 .or. include_pft_ag(ipft)) then
 
 
-                     !---------------------------------------------------------------------!
-                     !    Check to make sure it is not too dry for a new recruit to grow   !
-                     !   To do this we caluclate the elongf for a minimum height plant,    !
-                     !   then find the phenology status associated with that elongf.       !
-                     !   If phenology status is other than 1 we do not allow reproduction  !
-                     !   but allow the plant to keep the seed biomass for future use.      !
-                     !                                        Mar 6, 2012 ALS              !
-                     !---------------------------------------------------------------------!
-                     krdepth=dbh2krdepth(hgt_min(ipft), h2dbh(hgt_min(ipft),ipft),         &
-                                         ipft, cpoly%lsl(isi))
-                     mzg = nzg
-                                               
-                                               
-                                               
-                     !     Here we decide how to compute the mean available water fraction.!
-                     if (spot_phen) then
-                        !----- Use soil potential to determine phenology. -----------------!
-                        paw_avg = 0.0
-                        do k=krdepth,mzg
-                           nsoil = cpoly%ntext_soil(k,isi)
+                        !---------------------------------------------------------------------!
+                        !    Check to make sure it is not too dry for a new recruit to grow   !
+                        !   To do this we caluclate the elongf for a minimum height plant,    !
+                        !   then find the phenology status associated with that elongf.       !
+                        !   If phenology status is other than 1 we do not allow reproduction  !
+                        !   but allow the plant to keep the seed biomass for future use.      !
+                        !                                        Mar 6, 2012 ALS              !
+                        !---------------------------------------------------------------------!
+                        krdepth=dbh2krdepth(hgt_min(ipft), h2dbh(hgt_min(ipft),ipft),         &
+                                            ipft, cpoly%lsl(isi))
+                        mzg = nzg
 
-                           psi_layer = soil(nsoil)%slpots / (csite%soil_water(k,ipa)       &
-                                     / soil(nsoil)%slmsts) ** soil(nsoil)%slbs
-                           psi_wilt  = soil(nsoil)%slpots / (soil(nsoil)%soilwp            &
-                                     / soil(nsoil)%slmsts) ** soil(nsoil)%slbs
-                           psi_crit  = soil(nsoil)%slpots  / (soil(nsoil)%soilld           &
-                                     / soil(nsoil)%slmsts) ** soil(nsoil)%slbs
-                           paw_avg = paw_avg   + max(0.0, (psi_layer - psi_wilt))          &
-                                               * dslz(k) / (psi_crit  - psi_wilt)
-                        end do
-                        paw_avg = - paw_avg / slz(krdepth)
-                     else 
-                        !----- Use soil moisture (mass) to determine phenology. ------------!
-                        paw_avg = 0.0
-                        do k = krdepth, mzg
-                           nsoil = cpoly%ntext_soil(k,isi)
-                           paw_avg = paw_avg                                                &
-                                   + max(0.0, (csite%soil_water(k,ipa) - soil(nsoil)%soilwp))&
-                                   * dslz(k) / (soil(nsoil)%soilld - soil(nsoil)%soilwp)
-                        end do
-                        paw_avg = - paw_avg / slz(krdepth)
-                     end if
 
-                     !----------------------------------------------------------------------!
-                     !    We make the elongation factor 1.0 when we are not solving the     !
-                     ! vegetation dynamics, otherwise we assign the normal values.          !
-                     !----------------------------------------------------------------------!
-                     select case (ivegt_dynamics)
-                     case (0)
-                        elongf = 1.0
 
-                     case default
-                        select case (phenology(ipft))
-                        case (1)
-                           if (paw_avg < 1.0) then
-                              elongf = 0.0
-                           else
-                              elongf = 1.0
-                           end if
-                        case (3,4)
-                           elongf  = max(0.0,min(1.0,paw_avg))
+                        !     Here we decide how to compute the mean available water fraction.!
+                        if (spot_phen) then
+                           !----- Use soil potential to determine phenology. -----------------!
+                           paw_avg = 0.0
+                           do k=krdepth,mzg
+                              nsoil = cpoly%ntext_soil(k,isi)
+
+                              psi_layer = soil(nsoil)%slpots / (csite%soil_water(k,ipa)       &
+                                        / soil(nsoil)%slmsts) ** soil(nsoil)%slbs
+                              psi_wilt  = soil(nsoil)%slpots / (soil(nsoil)%soilwp            &
+                                        / soil(nsoil)%slmsts) ** soil(nsoil)%slbs
+                              psi_crit  = soil(nsoil)%slpots  / (soil(nsoil)%soilld           &
+                                        / soil(nsoil)%slmsts) ** soil(nsoil)%slbs
+                              paw_avg = paw_avg   + max(0.0, (psi_layer - psi_wilt))          &
+                                                  * dslz(k) / (psi_crit  - psi_wilt)
+                           end do
+                           paw_avg = - paw_avg / slz(krdepth)
+                        else 
+                           !----- Use soil moisture (mass) to determine phenology. ------------!
+                           paw_avg = 0.0
+                           do k = krdepth, mzg
+                              nsoil = cpoly%ntext_soil(k,isi)
+                              paw_avg = paw_avg                                                &
+                                      + max(0.0, (csite%soil_water(k,ipa) - soil(nsoil)%soilwp))&
+                                      * dslz(k) / (soil(nsoil)%soilld - soil(nsoil)%soilwp)
+                           end do
+                           paw_avg = - paw_avg / slz(krdepth)
+                        end if
+
+                        !----------------------------------------------------------------------!
+                        !    We make the elongation factor 1.0 when we are not solving the     !
+                        ! vegetation dynamics, otherwise we assign the normal values.          !
+                        !----------------------------------------------------------------------!
+                        select case (ivegt_dynamics)
+                        case (0)
+                           elongf = 1.0
+
                         case default
-                           elongf  = 1.0
+                           select case (phenology(ipft))
+                           case (1)
+                              if (paw_avg < 1.0) then
+                                 elongf = 0.0
+                              else
+                                 elongf = 1.0
+                              end if
+                           case (3,4)
+                              elongf  = max(0.0,min(1.0,paw_avg))
+                           case default
+                              elongf  = 1.0
+                           end select
                         end select
-                     end select
-                     !---------------------------------------------------------------------!
+                        !---------------------------------------------------------------------!
 
-                     !----- Set phenology status according to the elongation factor. ------!
-                     if (elongf >= 1.0) then
-                        phenology_status = 0
-                     elseif (elongf > elongf_min) then
-                        phenology_status = -1
+                        !----- Set phenology status according to the elongation factor. ------!
+                        if (elongf >= 1.0) then
+                           phenology_status = 0
+                        elseif (elongf > elongf_min) then
+                           phenology_status = -1
+                        else
+                           phenology_status = 2
+                           elongf           = 0.
+                        end if
+                        !---------------------------------------------------------------------!
+                        !---------------------------------------------------------------------!
+                        !---------------------------------------------------------------------!
+
+                        if (phenology_status==0) then   ! it is not too dry
+                             !---------------------------------------------------------------------!
+                             !    We assign the recruit in the temporary recruitment structure.    !
+                             !---------------------------------------------------------------------!
+                             rectest%pft       = ipft
+                             rectest%leaf_temp = csite%can_temp(ipa)
+                             rectest%wood_temp = csite%can_temp(ipa)
+                             !- recruits start at minimum height and dbh and bleaf are calculated from that
+                             rectest%hite      = hgt_min(ipft)
+                             rectest%dbh       = h2dbh(rectest%hite, ipft)
+                             rectest%bdead     = dbh2bd(rectest%dbh, ipft)
+                             rectest%bleaf     = size2bl(rectest%dbh,rectest%hite, ipft)
+                             rectest%balive    = rectest%bleaf                                     &
+                                               * (1.0 + q(ipft) + qsw(ipft) * rectest%hite)
+                             !- the number of plants we can make depends on how much carbon is available
+                             rectest%nplant    = csite%repro(ipft,ipa)                             &
+                                               / (rectest%balive + rectest%bdead)
+                              if(include_pft(ipft)) then
+                                rectest%nplant = rectest%nplant + seed_rain(ipft)
+                             end if
+
+                             !---------------------------------------------------------------------!
+                             ! If there is enough carbon, form the recruits.                       !
+                             !---------------------------------------------------------------------!
+                             if ( rectest%nplant * (rectest%balive + rectest%bdead) >              &
+                                  min_recruit_size(ipft)) then
+                                inew = inew + 1
+                                call copy_recruit(rectest,recruit(inew))
+                                !----- Reset the carbon available for reproduction. ---------------!
+                                csite%repro(ipft,ipa) = 0.0
+                             end if
+                        end if
+
+
+
                      else
-                        phenology_status = 2
-                        elongf           = 0.
-                     end if
-                     !---------------------------------------------------------------------!
-                     !---------------------------------------------------------------------!
-                     !---------------------------------------------------------------------!
+                        !---------------------------------------------------------------------!
+                        !     If we have reached this branch, we are in an agricultural       !
+                        ! patch.  Send the seed litter to the soil pools for decomposition.   !
+                        !---------------------------------------------------------------------!
+                        !---ALS=== dont send all seeds to litter!  Keep it for harvesting - need to change when I sort out what to do with the seed biomass for ag
+                        ! - maybe tree crops want to do this but I won't worry about that for now.
 
-                     if (phenology_status==0) then   ! it is not too dry
-                          !---------------------------------------------------------------------!
-                          !    We assign the recruit in the temporary recruitment structure.    !
-                          !---------------------------------------------------------------------!
-                          rectest%pft       = ipft
-                          rectest%leaf_temp = csite%can_temp(ipa)
-                          rectest%wood_temp = csite%can_temp(ipa)
-                          !- recruits start at minimum height and dbh and bleaf are calculated from that
-                          rectest%hite      = hgt_min(ipft)
-                          rectest%dbh       = h2dbh(rectest%hite, ipft)
-                          rectest%bdead     = dbh2bd(rectest%dbh, ipft)
-                          rectest%bleaf     = size2bl(rectest%dbh,rectest%hite, ipft)
-                          rectest%balive    = rectest%bleaf                                     &
-                                            * (1.0 + q(ipft) + qsw(ipft) * rectest%hite)
-                          !- the number of plants we can make depends on how much carbon is available
-                          rectest%nplant    = csite%repro(ipft,ipa)                             &
-                                            / (rectest%balive + rectest%bdead)
-                           if(include_pft(ipft)) then
-                             rectest%nplant = rectest%nplant + seed_rain(ipft)
-                          end if
-                          
-                          !---------------------------------------------------------------------!
-                          ! If there is enough carbon, form the recruits.                       !
-                          !---------------------------------------------------------------------!
-                          if ( rectest%nplant * (rectest%balive + rectest%bdead) >              &
-                               min_recruit_size(ipft)) then
-                             inew = inew + 1
-                             call copy_recruit(rectest,recruit(inew))
-                             !----- Reset the carbon available for reproduction. ---------------!
-                             csite%repro(ipft,ipa) = 0.0
-                          end if
+                        csite%fast_soil_N(ipa) = csite%fast_soil_N(ipa)                       &
+                                               + csite%repro(ipft,ipa) / c2n_recruit(ipft)
+                        csite%fast_soil_C(ipa) = csite%fast_soil_C(ipa)                       &
+                                               + csite%repro(ipft,ipa)
+                        csite%repro(ipft,ipa)  = 0.0
                      end if
-
-                     
-                     
-                  else
-                     !---------------------------------------------------------------------!
-                     !     If we have reached this branch, we are in an agricultural       !
-                     ! patch.  Send the seed litter to the soil pools for decomposition.   !
-                     !---------------------------------------------------------------------!
-                     !---ALS=== dont send all seeds to litter!  Keep it for harvesting - need to change when I sort out what to do with the seed biomass for ag
-                     ! - maybe tree crops want to do this but I won't worry about that for now.
-                     
-                     csite%fast_soil_N(ipa) = csite%fast_soil_N(ipa)                       &
-                                            + csite%repro(ipft,ipa) / c2n_recruit(ipft)
-                     csite%fast_soil_C(ipa) = csite%fast_soil_C(ipa)                       &
-                                            + csite%repro(ipft,ipa)
-                     csite%repro(ipft,ipa)  = 0.0
                   end if
-               end if
-            end do pftloop
+               end do pftloop
 
-            !----- Update the number of cohorts with the recently created. ----------------!
-            ncohorts_new = cpatch%ncohorts + inew
+               !----- Update the number of cohorts with the recently created. -------------!
+               ncohorts_new = cpatch%ncohorts + inew
+               
+               !---------------------------------------------------------------------------!
+               !     The number of recruits is now known. If there is any recruit, then we !
+               ! allocate the temporary patch vector with the current number plus the      !
+               ! number of recruits.                                                       !
+               !---------------------------------------------------------------------------!
+               if (ncohorts_new > cpatch%ncohorts) then
+                  nullify(temppatch)
+                  allocate(temppatch)
+                  call allocate_patchtype(temppatch,cpatch%ncohorts)
+
+                  !----- Fill the temp space with the current patches. --------------------!
+                  call copy_patchtype(cpatch,temppatch,1,cpatch%ncohorts,1,cpatch%ncohorts)
+
+                  !----- Deallocate the current patch. ------------------------------------!
+                  call deallocate_patchtype(cpatch)
+
+                  !----- Reallocate the current site. -------------------------------------!
+                  call allocate_patchtype(cpatch,ncohorts_new)
+
+                  !----- Transfer the temp values back in. --------------------------------!
+                  call copy_patchtype(temppatch,cpatch,1,temppatch%ncohorts                &
+                                     ,1,temppatch%ncohorts)
+
+                  inew = 0
+                  recloop: do ico = temppatch%ncohorts+1,ncohorts_new
+                     !---------------------------------------------------------------------!
+                     !     Add the recruits, copying the information from the recruitment  !
+                     ! table, and derive other variables or assume standard initial        !
+                     ! values.                                                             !
+                     !---------------------------------------------------------------------!
+                     inew = inew + 1
+
+                     !----- Copy from recruitment table (I). ------------------------------!
+                     cpatch%pft(ico)       = recruit(inew)%pft
+                     cpatch%hite(ico)      = recruit(inew)%hite
+                     cpatch%dbh(ico)       = recruit(inew)%dbh
+                     !---------------------------------------------------------------------!
+
+                     !----- Carry out standard initialization. ----------------------------!
+                     call init_ed_cohort_vars(cpatch,ico,cpoly%lsl(isi))
+                     !---------------------------------------------------------------------!
+
+
+                     !----- Copy from recruitment table (II). -----------------------------!
+                     cpatch%bdead(ico)     = recruit(inew)%bdead
+                     cpatch%nplant(ico)    = recruit(inew)%nplant
+                     !---------------------------------------------------------------------!
+
+
+                     !---------------------------------------------------------------------!
+                     !     Even though we brought leaf biomass and biomass of the active   !
+                     ! tissues, we will make them consistent with the initial amount of    !
+                     ! water available.  This is done inside pheninit_alive_storage.       !
+                     !---------------------------------------------------------------------!
+                     call pheninit_balive_bstorage(csite,nzg,ipa,ico                       &
+                                                  ,cpoly%ntext_soil(:,isi)                 &
+                                                  ,cpoly%green_leaf_factor(:,isi))
+                     !---------------------------------------------------------------------!
+
+
+                     !----- Assign temperature after init_ed_cohort_vars... ---------------!
+                     cpatch%leaf_temp(ico)  = recruit(inew)%leaf_temp
+                     cpatch%wood_temp(ico)  = recruit(inew)%wood_temp
+                     cpatch%leaf_temp_pv(ico)  = recruit(inew)%leaf_temp_pv
+                     cpatch%wood_temp_pv(ico)  = recruit(inew)%wood_temp_pv
+
+                     
+
+                     !----- Initialise the next variables with zeroes... ------------------!
+                     cpatch%leaf_water(ico) = 0.0
+                     cpatch%leaf_fliq (ico) = 0.0
+                     cpatch%wood_water(ico) = 0.0
+                     cpatch%wood_fliq (ico) = 0.0
+                     !---------------------------------------------------------------------!
+
+                     !---------------------------------------------------------------------!
+                     !    Computing initial AGB and Basal Area. Their derivatives will be  !
+                     ! zero.                                                               !
+                     !---------------------------------------------------------------------!
+                     cpatch%agb(ico)     = ed_biomass(cpatch%bdead(ico),cpatch%bleaf(ico)  &
+                                                    ,cpatch%bsapwooda(ico),cpatch%pft(ico))
+                     cpatch%basarea(ico) = pio4 * cpatch%dbh(ico)  * cpatch%dbh(ico)
+                     cpatch%dagb_dt(ico) = 0.0
+                     cpatch%dba_dt(ico)  = 0.0
+                     cpatch%ddbh_dt(ico) = 0.0
+                     !---------------------------------------------------------------------!
+                     !     Setting new_recruit_flag to 1 indicates that this cohort is     !
+                     ! included when we tally agb_recruit, basal_area_recruit.             !
+                     !---------------------------------------------------------------------!
+                     cpatch%new_recruit_flag(ico) = 1
+                     
+                     !---------------------------------------------------------------------!
+                     !    Obtain derived properties.                                       !
+                     !---------------------------------------------------------------------!
+                     !----- Find LAI, WPA, WAI. -------------------------------------------!
+                     call area_indices(cpatch%nplant(ico),cpatch%bleaf(ico)                &
+                                      ,cpatch%bdead(ico),cpatch%balive(ico)                &
+                                      ,cpatch%dbh(ico),cpatch%hite(ico),cpatch%pft(ico)    &
+                                      ,cpatch%sla(ico),cpatch%lai(ico),cpatch%wpa(ico)     &
+                                      ,cpatch%wai(ico),cpatch%crown_area(ico)              &
+                                      ,cpatch%bsapwooda(ico))
+                     !----- Find heat capacity and vegetation internal energy. ------------!
+                     call calc_veg_hcap(cpatch%bleaf(ico),cpatch%bdead(ico)                &
+                                       ,cpatch%bsapwooda(ico),cpatch%nplant(ico)            &
+                                       ,cpatch%pft(ico)                                    &
+                                       ,cpatch%leaf_hcap(ico),cpatch%wood_hcap(ico))
+
+                     cpatch%leaf_energy(ico) = cpatch%leaf_hcap(ico)*cpatch%leaf_temp(ico)
+                     cpatch%wood_energy(ico) = cpatch%wood_hcap(ico)*cpatch%wood_temp(ico)
+
+                     call is_resolvable(csite,ipa,ico,cpoly%green_leaf_factor(:,isi))
+
+                     !----- Update number of cohorts in this site. ------------------------!
+                     csite%cohort_count(ipa) = csite%cohort_count(ipa) + 1
+                  end do recloop
+
+                  !---- Remove the temporary patch. ---------------------------------------!
+                  call deallocate_patchtype(temppatch)
+                  deallocate(temppatch)
+               end if
+            end do patchloop
+            
             
             !------------------------------------------------------------------------------!
-            !     The number of recruits is now known. If there is any recruit, then we    !
-            ! allocate the temporary patch vector with the current number plus the number  !
-            ! of recruits.                                                                 !
+            !   Now that recruitment has occured, terminate, fuse, split, and re-sort.     !
             !------------------------------------------------------------------------------!
-            if (ncohorts_new > cpatch%ncohorts) then
-               nullify(temppatch)
-               allocate(temppatch)
-               call allocate_patchtype(temppatch,cpatch%ncohorts)
+            update_patch_loop: do ipa = 1,csite%npatches
+               cpatch => csite%patch(ipa)
 
-               !----- Fill the temp space with the current patches. -----------------------!
-               call copy_patchtype(cpatch,temppatch,1,cpatch%ncohorts,1,cpatch%ncohorts)
+               if(cpatch%ncohorts > 0 .and. maxcohort >= 0) then
+                  call terminate_cohorts(csite,ipa,elim_nplant,elim_lai)
+                  call fuse_cohorts(csite,ipa, cpoly%green_leaf_factor(:,isi)              &
+                                   ,cpoly%lsl(isi))
+                  call split_cohorts(cpatch, cpoly%green_leaf_factor(:,isi),cpoly%lsl(isi))
+               end if
 
-               !----- Deallocate the current patch. ---------------------------------------!
-               call deallocate_patchtype(cpatch)
+               !----- Sort the cohorts by height. -----------------------------------------!
+               call sort_cohorts(cpatch)
 
-               !----- Reallocate the current site. ----------------------------------------!
-               call allocate_patchtype(cpatch,ncohorts_new)
+               !----- Update the number of cohorts (this is redundant...). ----------------!
+               csite%cohort_count(ipa) = cpatch%ncohorts
 
-               !----- Transfer the temp values back in. -----------------------------------!
-               call copy_patchtype(temppatch,cpatch,1,temppatch%ncohorts                   &
-                                  ,1,temppatch%ncohorts)
+               !----- Since cohorts may have changed, update patch properties... ----------!
+               call update_patch_derived_props(csite,cpoly%lsl(isi),cpoly%met(isi)%prss    &
+                                              ,ipa)
+               call update_budget(csite,cpoly%lsl(isi),ipa,ipa)
+            end do update_patch_loop
 
-               inew = 0
-               recloop: do ico = temppatch%ncohorts+1,ncohorts_new
-                  !------------------------------------------------------------------------!
-                  !     Add the recruits, copying the information from the recruitment     !
-                  ! table, and derive other variables or assume standard initial values.   !
-                  !------------------------------------------------------------------------!
-                  inew = inew + 1
-
-                  !----- Copy from recruitment table (I). ---------------------------------!
-                  cpatch%pft(ico)       = recruit(inew)%pft
-                  cpatch%hite(ico)      = recruit(inew)%hite
-                  cpatch%dbh(ico)       = recruit(inew)%dbh
-                  
-
-                  !------------------------------------------------------------------------!
-
-                  !----- Carry out standard initialization. -------------------------------!
-                  call init_ed_cohort_vars(cpatch,ico,cpoly%lsl(isi))
-                  !------------------------------------------------------------------------!
-
-
-                  !----- Copy from recruitment table (II). --------------------------------!
-                  cpatch%bdead(ico)     = recruit(inew)%bdead
-                  cpatch%nplant(ico)    = recruit(inew)%nplant
-                  !------------------------------------------------------------------------!
-
-                  !------------------------------------------------------------------------!
-                  !     Even though we brought leaf biomass and biomass of the active      !
-                  ! tissues, we will make them consistent with the initial amount of water !
-                  ! available.  This is done inside pheninit_alive_storage.                !
-                  !------------------------------------------------------------------------!
-                  call pheninit_balive_bstorage(nzg,csite,ipa,ico,cpoly%ntext_soil(:,isi)  &
-                                               ,cpoly%green_leaf_factor(:,isi))
-                  !------------------------------------------------------------------------!
-                  !----- Assign temperature after init_ed_cohort_vars... ------------------!
-                  cpatch%leaf_temp(ico)  = recruit(inew)%leaf_temp
-                  cpatch%wood_temp(ico)  = recruit(inew)%wood_temp
-
-                  !----- Initialise the next variables with zeroes... ---------------------!
-                  cpatch%leaf_water(ico) = 0.0
-                  cpatch%leaf_fliq (ico) = 0.0
-                  cpatch%wood_water(ico) = 0.0
-                  cpatch%wood_fliq (ico) = 0.0
-                  !------------------------------------------------------------------------!
-
-                  !------------------------------------------------------------------------!
-                  !    Computing initial AGB and Basal Area. Their derivatives will be     !
-                  ! zero.                                                                  !
-                  !------------------------------------------------------------------------!
-                  cpatch%agb(ico)     = ed_biomass(cpatch%bdead(ico),cpatch%bleaf(ico)     &
-                                                  ,cpatch%bsapwooda(ico),cpatch%pft(ico))
-                  cpatch%basarea(ico) = pio4 * cpatch%dbh(ico)  * cpatch%dbh(ico)
-                  cpatch%dagb_dt(ico) = 0.0
-                  cpatch%dba_dt(ico)  = 0.0
-                  cpatch%ddbh_dt(ico) = 0.0
-                  !------------------------------------------------------------------------!
-                  !     Setting new_recruit_flag to 1 indicates that this cohort is        !
-                  ! included when we tally agb_recruit, basal_area_recruit.                !
-                  !------------------------------------------------------------------------!
-                  cpatch%new_recruit_flag(ico) = 1
-                  
-                  !------------------------------------------------------------------------!
-                  !    Obtain derived properties.                                          !
-                  !------------------------------------------------------------------------!
-                  !----- Find LAI, WPA, WAI. ----------------------------------------------!
-                  call area_indices(cpatch%nplant(ico),cpatch%bleaf(ico),cpatch%bdead(ico) &
-                                   ,cpatch%balive(ico),cpatch%dbh(ico), cpatch%hite(ico)   &
-                                   ,cpatch%pft(ico),cpatch%sla(ico), cpatch%lai(ico)       &
-                                   ,cpatch%wpa(ico),cpatch%wai(ico)                        &
-                                   ,cpatch%crown_area(ico),cpatch%bsapwooda(ico))
-                  !----- Find heat capacity and vegetation internal energy. ---------------!
-                  call calc_veg_hcap(cpatch%bleaf(ico),cpatch%bdead(ico)                   &
-                                    ,cpatch%bsapwooda(ico),cpatch%nplant(ico)              &
-                                    ,cpatch%pft(ico)                                       &
-                                    ,cpatch%leaf_hcap(ico),cpatch%wood_hcap(ico))
-
-                  cpatch%leaf_energy(ico) = cpatch%leaf_hcap(ico) * cpatch%leaf_temp(ico)
-                  cpatch%wood_energy(ico) = cpatch%wood_hcap(ico) * cpatch%wood_temp(ico)
-
-                  call is_resolvable(csite,ipa,ico,cpoly%green_leaf_factor(:,isi))
-
-                  !----- Update number of cohorts in this site. ---------------------------!
-                  csite%cohort_count(ipa) = csite%cohort_count(ipa) + 1
-               end do recloop
-
-               !---- Remove the temporary patch. ------------------------------------------!
-               call deallocate_patchtype(temppatch)
-               deallocate(temppatch)
-            end if
-         end do patchloop
-         
-         
+            !----- Since patch properties may have changed, update site properties... -----!
+            call update_site_derived_props(cpoly,0,isi)
+            
+            !----- Reset minimum monthly temperature. -------------------------------------!
+            cpoly%min_monthly_temp(isi) = huge(1.)
+         end do siteloop
          !---------------------------------------------------------------------------------!
-         !   Now that recruitment has occured, terminate, fuse, split, and re-sort.        !
+      end do polyloop
+      !------------------------------------------------------------------------------------!
+
+
+
+   case (1)
+      !------------------------------------------------------------------------------------!
+      !                                    'big leaf' ED                                   !
+      !  Growth and reproduction are done together as there is no vertical structure in    !
+      ! big leaf ED so the cohorts cannot grow vertically.  Therefore daily NPP is         !
+      ! is accumulated and monthly the nplant of each cohort is increased (1 cohort per    !
+      ! patch and 1 patch per pft and disturbance type).
+      !------------------------------------------------------------------------------------!
+
+      
+      !----- The big loops start here. ----------------------------------------------------!
+      polyloop_big: do ipy = 1,cgrid%npolygons
+         cpoly => cgrid%polygon(ipy)
+         late_spring = (cgrid%lat(ipy) >= 0.0 .and. month == 6) .or.                       &
+                       (cgrid%lat(ipy) < 0.0 .and. month == 12)
+
+         !------- Update the repro arrays. ------------------------------------------------!
+         call seed_dispersal(cpoly,late_spring)
          !---------------------------------------------------------------------------------!
-         update_patch_loop: do ipa = 1,csite%npatches
-            cpatch => csite%patch(ipa)
 
-            if(cpatch%ncohorts > 0 .and. maxcohort >= 0) then
-               call terminate_cohorts(csite,ipa,elim_nplant,elim_lai)
-               call fuse_cohorts(csite,ipa, cpoly%green_leaf_factor(:,isi),cpoly%lsl(isi))                         
-               call split_cohorts(cpatch, cpoly%green_leaf_factor(:,isi),cpoly%lsl(isi))
-            end if
+         siteloop_big: do isi = 1,cpoly%nsites
+            csite => cpoly%site(isi)
 
-            !----- Sort the cohorts by height. --------------------------------------------!
-            call sort_cohorts(cpatch)
+            patchloop_big: do ipa = 1,csite%npatches
+               cpatch => csite%patch(ipa)
 
-            !----- Update the number of cohorts (this is redundant...). -------------------!
-            csite%cohort_count(ipa) = cpatch%ncohorts
+              !----------------------------------------------------------------------------!
+              !    There should only be ONE cohort... if there are more, crash             !
+              !----------------------------------------------------------------------------!
+               if (cpatch%ncohorts > 1) then
+                 write (unit=*,fmt='(a,1x,es12.5)') ' + PATCH   : ',ipa
+                 write (unit=*,fmt='(a,1x,es12.5)') ' + NCOHORTS: ',cpatch%ncohorts
+                 call fatal_error('NCOHORTS can never be greater than 1 for big-leaf runs' &
+                                  ,'reproduction' ,'reproduction.f90')
+               end if 
+               
+               cohortloop_big: do ico = 1, cpatch%ncohorts  
 
-            !----- Since cohorts may have changed, update patch properties... -------------!
-            call update_patch_derived_props(csite,cpoly%lsl(isi),cpoly%met(isi)%prss,ipa)
-            call update_budget(csite,cpoly%lsl(isi),ipa,ipa)
-         end do update_patch_loop
+                  ipft = cpatch%pft(ico)
 
-         !----- Since patch properties may have changed, update site properties... --------!
-         call update_site_derived_props(cpoly,0,isi)
-         
-         !----- Reset minimum monthly temperature. ----------------------------------------!
-         cpoly%min_monthly_temp(isi) = huge(1.)
-      end do siteloop
-   end do polyloop
+
+                  !------------------------------------------------------------------------!
+                  !    Check to make sure that it is not too cold and reproduction is on   !
+                  !------------------------------------------------------------------------!
+                  if( cpoly%min_monthly_temp(isi) >= plant_min_temp(ipft) - 5.0 .and.      &
+                      repro_scheme /= 0 ) then
+
+                        nplant_inc = csite%repro(ipft,ipa) / one_plant_c(ipft)
+                        
+                        !------------------------------------------------------------------!
+                        !    Will only reproduce/grow if on-allometry so dont' have to     !
+                        ! worry about elongation factor                                    !
+                        !------------------------------------------------------------------!
+                        bleaf_plant    = dbh2bl(cpatch%dbh(ico),ipft) 
+                        bdead_plant    = dbh2bd(cpatch%dbh(ico),ipft)
+                        balive_plant   = dbh2bl(cpatch%dbh(ico),ipft) * (1.0 + qsw(ipft)  &
+                                         * cpatch%hite(ico) + q(ipft))
+                        broot_plant    = balive_plant * q(ipft) / (1.0 + qsw(ipft)        &
+                                         * cpatch%hite(ico) + q(ipft))
+                        bsapwood_plant = balive_plant * qsw(ipft) * cpatch%hite(ico)      &
+                                         / (1.0 + qsw(ipft) * cpatch%hite(ico) + q(ipft))
+                        
+                        cpatch%today_nppleaf(ico)   =  nplant_inc * bleaf_plant
+                        cpatch%today_nppfroot(ico)  =  nplant_inc * broot_plant
+                        cpatch%today_nppsapwood(ico)=  nplant_inc * bsapwood_plant
+                        cpatch%today_nppwood(ico)   = agf_bs(ipft) * nplant_inc            &
+                                                       * bdead_plant
+                        cpatch%today_nppcroot(ico)  = (1. - agf_bs(ipft)) * nplant_inc     &
+                                                       * bdead_plant
+
+                        cpatch%nplant(ico) = cpatch%nplant(ico) + nplant_inc
+                        
+                        
+                        !----- Reset the carbon available for reproduction. ---------------!
+                        csite%repro(ipft,ipa) = 0.0
+
+
+                        !------------------------------------------------------------------!
+                        !    Obtain derived properties these will have changed             !
+                        !------------------------------------------------------------------!
+                        !----- Find LAI, WPA, WAI. ----------------------------------------!
+                        call area_indices(cpatch%nplant(ico),cpatch%bleaf(ico)             &
+                                      ,cpatch%bdead(ico),cpatch%balive(ico),cpatch%dbh(ico)&
+                                      ,cpatch%hite(ico), cpatch%pft(ico),cpatch%sla(ico)   &
+                                      ,cpatch%lai(ico), cpatch%wpa(ico),cpatch%wai(ico)    &
+                                      ,cpatch%crown_area(ico),cpatch%bsapwooda(ico))
+                        !----- Find heat capacity and vegetation internal energy. ---------!
+                        call calc_veg_hcap(cpatch%bleaf(ico),cpatch%bdead(ico)             &
+                                       ,cpatch%bsapwooda(ico),cpatch%nplant(ico)            &
+                                       ,cpatch%pft(ico)                                    &
+                                       ,cpatch%leaf_hcap(ico),cpatch%wood_hcap(ico))
+
+                        cpatch%leaf_energy(ico) = cpatch%leaf_hcap(ico)                    &
+                                                  * cpatch%leaf_temp(ico)
+                        cpatch%wood_energy(ico) = cpatch%wood_hcap(ico)                    &
+                                                  * cpatch%wood_temp(ico)
+  
+                        call is_resolvable(csite,ipa,ico,cpoly%green_leaf_factor(:,isi))
+                  end if
+               end do cohortloop_big
+            end do patchloop_big
+            
+            
+            !------------------------------------------------------------------------------!
+            !   Now that recruitment has occured rescale patches and update properties     !
+            !------------------------------------------------------------------------------!
+            !call rescale_patches(csite)
+            
+            update_patch_loop_big: do ipa = 1,csite%npatches
+               cpatch => csite%patch(ipa)
+
+                  !----- Update the number of cohorts (this is redundant...). -------------!
+                  csite%cohort_count(ipa) = cpatch%ncohorts
+
+                  !----- Since cohorts may have changed, update patch properties... -------!
+                  call update_patch_derived_props(csite,cpoly%lsl(isi)                     &
+                                                 ,cpoly%met(isi)%prss,ipa)
+                  call update_budget(csite,cpoly%lsl(isi),ipa,ipa)
+            end do update_patch_loop_big
+
+            !----- Since patch properties may have changed, update site properties... -----!
+            call update_site_derived_props(cpoly,0,isi)
+            
+            !----- Reset minimum monthly temperature. -------------------------------------!
+            cpoly%min_monthly_temp(isi) = huge(1.)
+         end do siteloop_big
+         !---------------------------------------------------------------------------------!
+      end do polyloop_big
+      !------------------------------------------------------------------------------------!
+
+   end select
    return
 end subroutine reproduction
 !==========================================================================================!
@@ -576,6 +745,7 @@ subroutine seed_dispersal(cpoly,late_spring)
                                  , nonlocal_dispersal    & ! intent(in)
                                  , seedling_mortality    & ! intent(in)
                                  , phenology             ! ! intent(in)
+   use ed_misc_coms       , only : ibigleaf              ! ! intent(in)
 
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
@@ -632,8 +802,16 @@ subroutine seed_dispersal(cpoly,late_spring)
                if (phenology(donpft) /= 2 .or. late_spring) then
                   nseedling   = donpatch%nplant(donco) * donpatch%bseeds(donco)            &
                               * (1.0 - seedling_mortality(donpft))
-                  nseed_stays = nseedling * (1.0 - nonlocal_dispersal(donpft))
-                  nseed_maygo = nseedling * nonlocal_dispersal(donpft)
+                  select case (ibigleaf)
+                  case (0)
+                     nseed_stays = nseedling * (1.0 - nonlocal_dispersal(donpft))
+                     nseed_maygo = nseedling * nonlocal_dispersal(donpft)
+                  case (1)
+                     !---- if bigleaf cannot disperse seedlings to other patches ----------!
+                     nseed_stays = nseedling
+                     nseed_maygo = 0.
+                  end select
+
                else
                   !----- Not a good time for reproduction.  No seedlings. -----------------!
                   nseedling     = 0.
@@ -704,8 +882,16 @@ subroutine seed_dispersal(cpoly,late_spring)
                if (phenology(donpft) /= 2 .or. late_spring) then
                   nseedling   = donpatch%nplant(donco) * donpatch%bseeds(donco)            &
                               * (1.0 - seedling_mortality(donpft))
-                  nseed_stays = nseedling * (1.0 - nonlocal_dispersal(donpft))
-                  nseed_maygo = nseedling * nonlocal_dispersal(donpft)
+
+                  select case (ibigleaf)
+                  case (0)
+                     nseed_stays = nseedling * (1.0 - nonlocal_dispersal(donpft))
+                     nseed_maygo = nseedling * nonlocal_dispersal(donpft)
+                  case (1)
+                     !---- if bigleaf cannot disperse seedlings to other patches ----------!
+                     nseed_stays = nseedling
+                     nseed_maygo = 0.
+                  end select
                else
                   !----- Not a good time for reproduction.  No seedlings. -----------------!
                   nseedling   = 0.

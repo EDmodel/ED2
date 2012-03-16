@@ -91,12 +91,12 @@ contains
     !  Deallocate arrays
 
     do nsc=1,naddsc
-       if (associated(scal(nsc)%sclp))   nullify (scal(nsc)%sclp)
-       if (associated(scal(nsc)%sclt))   nullify (scal(nsc)%sclt)
-       if (associated(scal(nsc)%drydep)) nullify (scal(nsc)%drydep)
+       nullify (scal(nsc)%sclp)
+       nullify (scal(nsc)%sclt)
+       nullify (scal(nsc)%drydep)
        ! For CATT
-       if (associated(scal(nsc)%wetdep)) nullify (scal(nsc)%wetdep)
-       if (associated(scal(nsc)%srcsc)) nullify (scal(nsc)%srcsc)
+       nullify (scal(nsc)%wetdep)
+       nullify (scal(nsc)%srcsc)
     enddo
 
     return

@@ -290,7 +290,7 @@ subroutine sndproc (lp,lz,xlat,xlon,elev,idsta,tp,zp,pp,rp,dz,fz,zz)
 
 use isan_coms
 use rconstants
-use therm_lib, only: ptrh2rvapl,virtt
+use therm_lib, only: ptrh2rvapl,virtt,press2exner
 implicit none
                    
 real, dimension(*) :: tp,zp,pp,rp,dz,fz,zz
@@ -450,7 +450,7 @@ do k=1,lp
          !    Since this is radiosonde, always use liquid water to define vapour mixing    !
          ! ratio. This is the WMO standard, so we assume the data is in standard form.     !
          !---------------------------------------------------------------------------------!
-         rss=ptrh2rvapl(rp(k),pp(k),tp(k))
+         rss=ptrh2rvapl(rp(k),pp(k),tp(k),.false.)
          thz(k)=virtt(thz(k),rss)
       endif
    endif
@@ -458,28 +458,28 @@ enddo
 
 ! Recompute heights
 
-pio=cp*(pp(lbc)/p00)**rocp
+pio=press2exner(pp(lbc))
 zso=zp(lbc)
 tho=thz(lbc)
 do k=lbc+1,lp
    zp(k)=1.e30
    if(pp(k) < 1e19 .and. thz(k) < 1e19)then
-      zp(k)=zso+.5*(thz(k)+tho)*(pio-cp*(pp(k)/p00)**rocp)/grav
+      zp(k)=zso+.5*(thz(k)+tho)*(pio-press2exner(pp(k)))/grav
       zso=zp(k)
-      pio=cp*(pp(k)/p00)**rocp
+      pio=press2exner(pp(k))
       tho=thz(k)
    endif
 enddo
 
 zso=zp(lbc)
-pio=cp*(pp(lbc)/p00)**rocp
+pio=press2exner(pp(lbc))
 tho=thz(lbc)
 do k=lbc-1,1,-1
    zp(k)=1.e30
    if(pp(k) < 1e19 .and. thz(k) < 1e19)then
-      zp(k)=zso+.5*(thz(k)+tho)*(pio-cp*(pp(k)/p00)**rocp)/grav
+      zp(k)=zso+.5*(thz(k)+tho)*(pio-press2exner(pp(k)))/grav
       zso=zp(k)
-      pio=cp*(pp(k)/p00)**rocp
+      pio=press2exner(pp(k))
       tho=thz(k)
    endif
 enddo
@@ -869,12 +869,12 @@ if(tx.lt.1.e19.and.px.lt.1.e19) then
       !     Assuming relative humidity with respect to the liquid phase. This is observed  !
       ! data, and following the WMO convention this should be in liquid phase.             !
       !------------------------------------------------------------------------------------!
-      sf_r(nsu)=rehul(px,tx,rslf(px,tdx))
+      sf_r(nsu)=rehul(px,tx,rslf(px,tdx),.false.)
    else
       sf_r(nsu)=1.e30
    endif
    if(zx.lt.1.e19) then
-      sf_s(nsu)=cp*tx+grav*zx
+      sf_s(nsu)=cpdry*tx+grav*zx
    else
       sf_s(nsu)=1.e30
    endif

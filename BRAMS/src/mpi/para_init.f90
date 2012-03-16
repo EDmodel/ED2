@@ -31,7 +31,8 @@ subroutine node_decomp(init)
    !----- Arguments. ----------------------------------------------------------------------!
    logical                       , intent(in) :: init
    !----- Local variables. ----------------------------------------------------------------!
-   integer, dimension(ndim_types)             :: npvar
+   integer, dimension(ndim_types)             :: npvar_mpt1
+   integer, dimension(ndim_types)             :: npvar_mpt4
    integer                                    :: ngr
    integer                                    :: idn
    integer                                    :: isn
@@ -50,6 +51,7 @@ subroutine node_decomp(init)
    integer                                    :: num_lbc_buff
    integer                                    :: num_nest_buff
    integer                                    :: num_six_buff
+   integer                                    :: num_adv_buff
    integer                                    :: num_feed_buff
    integer                                    :: itype
    integer                                    :: i1
@@ -132,15 +134,27 @@ subroutine node_decomp(init)
             if (scalar_tab(nf,ifm)%name==scalar_tab(nc,icm)%name) nestvar=nestvar+1
          end do
       end do
+      !------------------------------------------------------------------------------------!
+
 
       !---- Find number of LBC variables to be communicated. ------------------------------!
-      npvar(:) = 0
+      npvar_mpt1(:) = 0
+      npvar_mpt4(:) = 0
       do nv = 1,num_var(ng)
-         if (vtab_r(nv,ng)%impt1 == 1 ) then
-            idim        = vtab_r(nv,ng)%idim_type
-            npvar(idim) = npvar(idim) + 1
+         idim = vtab_r(nv,ng)%idim_type
+         !----- LBC variables. ------------------------------------------------------------!
+         if (vtab_r(nv,ng)%impt1 == 1 ) npvar_mpt1(idim) = npvar_mpt1(idim) + 1
+         !---------------------------------------------------------------------------------!
+
+
+         !----- ADV variables. ------------------------------------------------------------!
+         if (vtab_r(nv,1)%iadvt == 1 .or. vtab_r(nv,1)%iadvu == 1 .or.                     &
+             vtab_r(nv,1)%iadvv == 1 .or. vtab_r(nv,1)%iadvw == 1      ) then
+            npvar_mpt4(idim) = npvar_mpt4(idim) + 1
          end if
+         !---------------------------------------------------------------------------------!
       end do
+      !------------------------------------------------------------------------------------!
 
 
       sourcemach1: do isn=1,nmachs
@@ -148,6 +162,7 @@ subroutine node_decomp(init)
             num_lbc_buff  = 0
             num_nest_buff = 0
             num_six_buff  = 0
+            num_adv_buff  = 0
             num_feed_buff = 0
 
             itype=1
@@ -163,12 +178,14 @@ subroutine node_decomp(init)
 
                !------ Add the total number of points to be sent. -------------------------!
                num_lbc_buff = 0
+               num_adv_buff = 0
                do idim =2,ndim_types
                   call ze_dims(ng,idim,.true.,fdzp,fdep)
-                  num_lbc_buff = num_lbc_buff + ixy * fdzp * fdep * npvar(idim)
+                  num_lbc_buff = num_lbc_buff + ixy * fdzp * fdep * npvar_mpt1(idim)
+                  num_adv_buff = num_adv_buff + ixy * fdzp * fdep * npvar_mpt4(idim)
                end do
-               
-               num_lbc_buff = num_lbc_buff + 2 *(sum(npvar(:)) + 100)
+               num_lbc_buff = num_lbc_buff + 2 *(sum(npvar_mpt1(:)) + 100)
+               num_adv_buff = num_adv_buff + 2 *(sum(npvar_mpt4(:)) + 100)
             end if
             !------------------------------------------------------------------------------!
 
@@ -219,6 +236,7 @@ subroutine node_decomp(init)
             !------ Update the buffer size with the highest value so far. -----------------!
             lbc_buffs(1,idn,isn) = max( lbc_buffs(1,idn,isn)                               &
                                       , num_lbc_buff                                       &
+                                      , num_adv_buff                                       &
                                       , num_nest_buff                                      &
                                       , num_six_buff                                       &
                                       , num_feed_buff)
@@ -244,11 +262,14 @@ subroutine node_decomp(init)
                ixy = (i2-i1+1)*(j2-j1+1)
 
                num_lbc_buff = 0
+               num_adv_buff = 0
                do idim =2,ndim_types
                   call ze_dims(ng,idim,.true.,fdzp,fdep)
-                  num_lbc_buff = num_lbc_buff + ixy * fdzp * fdep * npvar(idim)
+                  num_lbc_buff = num_lbc_buff + ixy * fdzp * fdep * npvar_mpt1(idim)
+                  num_adv_buff = num_adv_buff + ixy * fdzp * fdep * npvar_mpt4(idim)
                end do
-               num_lbc_buff = num_lbc_buff + 2*(sum(npvar(:)) + 100)
+               num_lbc_buff = num_lbc_buff + 2*(sum(npvar_mpt1(:)) + 100)
+               num_adv_buff = num_adv_buff + 2*(sum(npvar_mpt4(:)) + 100)
             end if
 
             itype = 5
@@ -283,6 +304,7 @@ subroutine node_decomp(init)
 
             lbc_buffs(2,idn,isn) = max( lbc_buffs(2,idn,isn)                               &
                                       , num_lbc_buff                                       &
+                                      , num_adv_buff                                       &
                                       , num_nest_buff                                      &
                                       , num_six_buff                                       &
                                       , num_feed_buff)

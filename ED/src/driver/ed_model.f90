@@ -58,7 +58,6 @@ subroutine ed_model()
                             , reset_integ_err     ! ! subroutine
    use ed_node_coms  , only : mynum               & ! intent(in)
                             , nnodetot            ! ! intent(in)
-   use disturb_coms  , only : include_fire        ! ! intent(in)
    use mem_polygons  , only : n_ed_region         & ! intent(in)
                             , n_poi               & ! intent(in)
                             , maxpatch            & ! intent(in)
@@ -261,6 +260,10 @@ subroutine ed_model()
       case (2)
          do ifm=1,ngrids
             call heun_timestep(edgrid_g(ifm))
+         end do
+      case (3)
+         do ifm=1,ngrids
+            call hybrid_timestep(edgrid_g(ifm))
          end do
       end select
       !------------------------------------------------------------------------------------!

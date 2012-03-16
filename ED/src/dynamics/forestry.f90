@@ -15,7 +15,7 @@ subroutine apply_forestry(cpoly, isi, year)
                                    , copy_sitetype_mask         ! ! subroutine
    use disturb_coms         , only : ianth_disturb              & ! intent(in)
                                    , lutime                     & ! intent(in)
-                                   , min_new_patch_area         & ! intent(in)
+                                   , min_patch_area             & ! intent(in)
                                    , plantation_year            & ! intent(in)
                                    , plantation_rotation        & ! intent(in)
                                    , mature_harvest_age         ! ! intent(in)
@@ -26,6 +26,7 @@ subroutine apply_forestry(cpoly, isi, year)
                                    , n_dbh                      ! ! intent(in)
    use grid_coms            , only : nzg                        & ! intent(in)
                                    , nzs                        ! ! intent(in)
+   use ed_misc_coms         , only : ibigleaf                   ! ! intent(in)
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    type(polygontype)             , target      :: cpoly
@@ -162,12 +163,37 @@ subroutine apply_forestry(cpoly, isi, year)
    ! area for a new patch, do not harvest, and update the memory for the next year.        !
    !---------------------------------------------------------------------------------------!
    if (total_site_biomass == 0.0 .or.                                                      &
-       total_harvest_target <= total_site_biomass * min_new_patch_area) then
+       total_harvest_target <= total_site_biomass * min_patch_area) then
       cpoly%primary_harvest_memory(isi)   = primary_harvest_target
       cpoly%secondary_harvest_memory(isi) = secondary_harvest_target
       return
    end if
    !---------------------------------------------------------------------------------------!
+
+   if (ibigleaf == 1) then
+      newp = csite%npatches
+      !------ Compute current stocks of agb in mature forests. ----------------------------!
+      call inventory_mat_forests(cpoly,isi,area_mature_primary,agb_mature_primary          &
+                                ,area_mature_secondary,agb_mature_secondary                &
+                                ,area_mature_plantation,agb_mature_plantation)     
+
+      !------ Compute the mature-forest harvest rates. ------------------------------------!
+      call mat_forest_harv_rates(agb_mature_primary,agb_mature_secondary                   &
+                                ,agb_mature_plantation,primary_harvest_target              &
+                                ,secondary_harvest_target,lambda_mature_primary            &
+                                ,lambda_mature_secondary,lambda_mature_plantation          &
+                                ,harvest_deficit)                                    
+
+      !------ Apply harvesting to the mature stands. --------------------------------------!
+      call harv_mat_patches(cpoly,isi,newp,lambda_mature_primary                           &
+                           ,lambda_mature_secondary,lambda_mature_plantation)
+        !----- Clear out the primary harvest memory. --------------------------------------!
+      cpoly%primary_harvest_memory(isi) = 0.0
+
+      !----- There still may be a deficit if we have harvested all of the patch agb. ------!
+      cpoly%secondary_harvest_memory(isi) = harvest_deficit
+      return
+   end if
 
 
 
@@ -229,7 +255,7 @@ subroutine apply_forestry(cpoly, isi, year)
    ! just terminate it.                                                                    !
    !---------------------------------------------------------------------------------------!
    csite%area(newp) = total_harvested_area
-   if (total_harvested_area > min_new_patch_area) then
+   if (total_harvested_area > min_patch_area) then
       write(unit=*,fmt='(a,1x,i5)')     'LANDUSE YEAR          =',clutime%landuse_year
       write(unit=*,fmt='(a,1x,es12.5)') 'LANDUSE 14            =',clutime%landuse(14)
       write(unit=*,fmt='(a,1x,es12.5)') 'LANDUSE 18            =',clutime%landuse(18)
@@ -459,6 +485,7 @@ subroutine harv_mat_patches(cpoly,isi,newp,lambda_mature_primary                
                                , insert_survivors     & ! subroutine
                                , increment_patch_vars ! ! subroutine
    use ed_max_dims      , only : n_pft                ! ! intent(in)
+   use ed_misc_coms     , only : ibigleaf             ! ! intent(in)
 
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
@@ -473,6 +500,7 @@ subroutine harv_mat_patches(cpoly,isi,newp,lambda_mature_primary                
    type(patchtype)                    , pointer    :: cpatch
    real             , dimension(n_pft)             :: mindbh_harvest
    integer                                         :: ipa
+   integer                                         :: ico
    logical                                         :: mature_plantation
    logical                                         :: mature_primary
    logical                                         :: mature_secondary
@@ -519,20 +547,32 @@ subroutine harv_mat_patches(cpoly,isi,newp,lambda_mature_primary                
       end if
 
 
-     
-      !------ Found a patch that is contributing to the new patch. ------------------------!
-      if (dA > 0.0 .and. csite%plant_ag_biomass(ipa) >= 0.01) then
-         csite%area(ipa) = csite%area(ipa) - dA
-         call increment_patch_vars(csite,newp,ipa,dA)
-         !---------------------------------------------------------------------------------!
-         !     The destination patch disturbance type was previously set to 1 (agri-       !
-         ! culture), but I think it should be 2 (secondary forest) - MLO.  Added the       !
-         ! insert survivors subroutine here just to generalise, with the target biomass    !
-         ! the survivorship should be 0.                                                   !
-         !---------------------------------------------------------------------------------!
-         call accum_dist_litt(csite,newp,ipa,new_lu,dA,poly_dist_type,mindbh_harvest)
-      end if
+      select case (ibigleaf)
+      case (0)
+         !------ Found a patch that is contributing to the new patch. ---------------------!
+         if (dA > 0.0 .and. csite%plant_ag_biomass(ipa) >= 0.01) then
+            csite%area(ipa) = csite%area(ipa) - dA
+            call increment_patch_vars(csite,newp,ipa,dA)
+            !------------------------------------------------------------------------------!
+            !     The destination patch disturbance type was previously set to 1 (agri-    !
+            ! culture), but I think it should be 2 (secondary forest) - MLO.  Added the    !
+            ! insert survivors subroutine here just to generalise, with the target biomass !
+            ! the survivorship should be 0.                                                !
+            !------------------------------------------------------------------------------!
+            call accum_dist_litt(csite,newp,ipa,new_lu,dA,poly_dist_type,mindbh_harvest)
+         end if
+      case (1)
+         if (dA > 0.0 .and. csite%plant_ag_biomass(ipa) >= 0.01) then
+            cpatch=>csite%patch(ipa)
+            do ico=1,cpatch%ncohorts
+               cpatch%nplant(ico) = cpatch%nplant(ico) * (1.0-dA/csite%area(ipa))
+            end do
+            csite%area(ipa) = csite%area(ipa) - dA
+            csite%age(ipa)  = csite%age(ipa) * (1.0-dA/csite%area(ipa))
+         end if
+      end select
    end do
+
 
    return
 end subroutine harv_mat_patches
@@ -686,7 +726,7 @@ subroutine norm_harv_patch(csite,newp)
 
    use ed_state_vars , only : sitetype            & ! structure
                             , patchtype           ! ! structure
-   use disturb_coms  , only : min_new_patch_area  ! ! intent(in)
+   use disturb_coms  , only : min_patch_area      ! ! intent(in)
    use ed_max_dims   , only : n_pft               ! ! intent(in)
    use grid_coms     , only : nzg                 & ! intent(in)
                             , nzs                 ! ! intent(in)
@@ -700,7 +740,7 @@ subroutine norm_harv_patch(csite,newp)
    !---------------------------------------------------------------------------------------!
 
    !----- Skip normalization when the patch is too small.  It will be terminated soon. ----!
-   if (csite%area(newp) < min_new_patch_area) then
+   if (csite%area(newp) < min_patch_area) then
       return
    else
       !----- To make the values the weighted average of all contributing patches. ---------!

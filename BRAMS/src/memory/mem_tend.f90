@@ -171,35 +171,35 @@ module mem_tend
       type(tend_vars), intent(inout) :: tend
       !------------------------------------------------------------------------------------!
 
-      if (associated(tend%ut  ))  nullify (tend%ut  )
-      if (associated(tend%vt  ))  nullify (tend%vt  )
-      if (associated(tend%wt  ))  nullify (tend%wt  )
-      if (associated(tend%pt  ))  nullify (tend%pt  )
-      if (associated(tend%tht ))  nullify (tend%tht )
-      if (associated(tend%rtt ))  nullify (tend%rtt )
-      if (associated(tend%co2t))  nullify (tend%co2t)
-      if (associated(tend%tket))  nullify (tend%tket)
-      if (associated(tend%epst))  nullify (tend%epst)
+      nullify (tend%ut  )
+      nullify (tend%vt  )
+      nullify (tend%wt  )
+      nullify (tend%pt  )
+      nullify (tend%tht )
+      nullify (tend%rtt )
+      nullify (tend%co2t)
+      nullify (tend%tket)
+      nullify (tend%epst)
 
       !----- TEB_SPM. ---------------------------------------------------------------------!
       if (teb_spm==1 .and. isource == 1) then
-         if (associated(gaspart_g(1)%pnot  )) nullify (gaspart_g(1)%pnot  )
-         if (associated(gaspart_g(1)%pno2t )) nullify (gaspart_g(1)%pno2t )
-         if (associated(gaspart_g(1)%ppm25t)) nullify (gaspart_g(1)%ppm25t)
-         if (associated(gaspart_g(1)%pcot  )) nullify (gaspart_g(1)%pcot  )
-         if (associated(gaspart_g(1)%pso2t )) nullify (gaspart_g(1)%pso2t )
-         if (associated(gaspart_g(1)%pso4t )) nullify (gaspart_g(1)%pso4t )
-         if (associated(gaspart_g(1)%paert )) nullify (gaspart_g(1)%paert )
-         if (associated(gaspart_g(1)%pvoct )) nullify (gaspart_g(1)%pvoct )
+         nullify (gaspart_g(1)%pnot  )
+         nullify (gaspart_g(1)%pno2t )
+         nullify (gaspart_g(1)%ppm25t)
+         nullify (gaspart_g(1)%pcot  )
+         nullify (gaspart_g(1)%pso2t )
+         nullify (gaspart_g(1)%pso4t )
+         nullify (gaspart_g(1)%paert )
+         nullify (gaspart_g(1)%pvoct )
 
          if (ichemi==1) then
-            if (associated(gaspart_g(1)%po3t  )) nullify (gaspart_g(1)%po3t  )
-            if (associated(gaspart_g(1)%prhcot)) nullify (gaspart_g(1)%prhcot)
-            if (associated(gaspart_g(1)%pho2t )) nullify (gaspart_g(1)%pho2t )
-            if (associated(gaspart_g(1)%po3pt )) nullify (gaspart_g(1)%po3pt )
-            if (associated(gaspart_g(1)%po1dt )) nullify (gaspart_g(1)%po1dt )
-            if (associated(gaspart_g(1)%phot  )) nullify (gaspart_g(1)%phot  )
-            if (associated(gaspart_g(1)%proot )) nullify (gaspart_g(1)%proot )
+            nullify (gaspart_g(1)%po3t  )
+            nullify (gaspart_g(1)%prhcot)
+            nullify (gaspart_g(1)%pho2t )
+            nullify (gaspart_g(1)%po3pt )
+            nullify (gaspart_g(1)%po1dt )
+            nullify (gaspart_g(1)%phot  )
+            nullify (gaspart_g(1)%proot )
          end if
       end if
 

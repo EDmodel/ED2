@@ -1415,7 +1415,7 @@ end subroutine alloc_plant_c_balance_grass
             delta_bsapwooda = max (0.0, balive_max * qsw(ipft) * cpatch%hite(ico)          &
                             * salloci * agf_bs(ipft) - cpatch%bsapwooda(ico))
             delta_bsapwoodb = max (0.0, balive_max * qsw(ipft) * cpatch%hite(ico)          &
-                            * salloci * (1-agf_bs(ipft)) - cpatch%bsapwoodb(ico))
+                            * salloci * (1.-agf_bs(ipft)) - cpatch%bsapwoodb(ico))
 
             !------------------------------------------------------------------------------!
             ! If the available carbon is less than what we need to get back to allometry.  !
@@ -1428,7 +1428,7 @@ end subroutine alloc_plant_c_balance_grass
             f_bsapwooda = delta_bsapwooda / (balive_max * qsw(ipft) * cpatch%hite(ico)     &
                         * salloci * agf_bs(ipft))
             f_bsapwoodb = delta_bsapwoodb / (balive_max * qsw(ipft) * cpatch%hite(ico)     &
-                        * salloci * (1-agf_bs(ipft)))
+                        * salloci * (1.-agf_bs(ipft)))
             f_total     = f_bleaf + f_broot + f_bsapwooda + f_bsapwoodb
 
             !------------------------------------------------------------------------------!

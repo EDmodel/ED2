@@ -33,7 +33,7 @@
 !                                                                                          !
 !------------------------------------------------------------------------------------------!
 module farq_leuning
-
+   use therm_lib8, only : toler8
 
    !---------------------------------------------------------------------------------------!
    !     This is a flag used in various sub-routines and functions and denote that we      !
@@ -49,7 +49,8 @@ module farq_leuning
    ! so it is a good idea to use a somewhat more strict tolerance than the ones used in    !
    ! therm_lib8.                                                                           !
    !---------------------------------------------------------------------------------------!
-   real(kind=8), parameter :: tolerfl8 = 1.d-10
+   ! real(kind=8), parameter :: tolerfl8 = 1.d-10
+   real(kind=8), parameter :: tolerfl8 = toler8
    !---------------------------------------------------------------------------------------!
 
 
@@ -119,7 +120,6 @@ module farq_leuning
                                 , gbh_2_gbw8               & ! intent(in)
                                 , gbw_2_gbc8               & ! intent(in)
                                 , o2_ref8                  ! ! intent(in)
-      use therm_lib8     , only : rslif8                   ! ! function
       use consts_coms    , only : mmh2oi8                  & ! intent(in)
                                 , mmh2o8                   & ! intent(in)
                                 , mmdryi8                  & ! intent(in)

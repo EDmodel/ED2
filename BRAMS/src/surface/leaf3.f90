@@ -62,10 +62,11 @@ subroutine leaf3_timestep()
                              , dtll_factor       & ! intent(in)
                              , dtll              & ! intent(in)
                              , atm_theta         & ! intent(out)
-                             , atm_theiv         & ! intent(out)
+                             , atm_enthalpy      & ! intent(out)
                              , atm_shv           & ! intent(out)
                              , atm_rvap          & ! intent(out)
                              , atm_co2           & ! intent(out)
+                             , can_enthalpy      & ! intent(out)
                              , can_shv           & ! intent(out)
                              , can_rhos          & ! intent(out)
                              , geoht             & ! intent(out)
@@ -86,20 +87,14 @@ subroutine leaf3_timestep()
                              , co2_on            & ! intent(in)
                              , co2con            ! ! intent(in)
    use mem_turb       , only : turb_g            ! ! intent(inout)
-   use mem_cuparm     , only : cuparm_g          & ! intent(in)
-                             , nnqparm           & ! intent(in)
-                             , nclouds           ! ! intent(in)
-   use mem_micro      , only : micro_g           ! ! intent(in)
    use mem_radiate    , only : radiate_g         & ! intent(inout)
                              , iswrtyp           & ! intent(in)
                              , ilwrtyp           ! ! intent(in)
-   use therm_lib      , only : bulk_on           ! ! intent(in)
-   use rconstants     , only : p00               & ! intent(in)
-                             , cpi               & ! intent(in)
-                             , cpor              & ! intent(in)
-                             , rocp              & ! intent(in)
-                             , cp                & ! intent(in)
-                             , alvl              ! ! intent(in)
+   use therm_lib      , only : press2exner       & ! function
+                             , exner2press       & ! function
+                             , extheta2temp      ! ! function
+   use rconstants     , only : alvl3             & ! intent(in)
+                             , cpdry             ! ! intent(in)
    implicit none
    !----- Local variables. ----------------------------------------------------------------!
    integer  :: i
@@ -142,121 +137,10 @@ subroutine leaf3_timestep()
    !---------------------------------------------------------------------------------------!
 
 
-
    !---------------------------------------------------------------------------------------!
-   !      Here we copy a few variables to scratch arrays, as they may not be always exist. !
-   ! In case they don't, we fill the scratch arrays with the default values.  The follow-  !
-   ! ing scratch arrays will contain the following fields.                                 !
-   !                                                                                       !
-   ! vt3do => CO2 mixing ratio                                                             !
-   ! vt3dp => precipitation rate from cumulus parametrisation.                             !
-   ! vt2dq => precipitation rate from bulk microphysics                                    !
-   ! vt2dr => internal energy associated with precipitation rate from bulk microphysics    !
-   ! vt2ds => depth associated with precipitation rate from bulk microphysics              !
+   !     Call several initialisation sub-routines.                                         !
    !---------------------------------------------------------------------------------------!
-   !----- Check whether we have CO2, and copy to an scratch array. ------------------------!
-   if (co2_on) then
-      call atob(mzp*mxp*myp,basic_g(ngrid)%co2p,scratch%vt3do)
-   else
-      call ae0(mzp*mxp*myp,scratch%vt3do,co2con(1))
-   end if
-   !----- Check whether cumulus parametrisation was used, and copy to scratch array. ------!
-   if (nnqparm(ngrid) /= 0) then
-      call atob(mxp*myp*nclouds,cuparm_g(ngrid)%conprr,scratch%vt3dp)
-   else
-      call azero(mxp*myp*nclouds,scratch%vt3dp)
-   end if
-   !----- Check whether bulk microphysics was used, and copy values to scratch array. -----!
-   if (bulk_on) then
-      call atob(mxp*myp,micro_g(ngrid)%pcpg ,scratch%vt2dq)
-      call atob(mxp*myp,micro_g(ngrid)%qpcpg,scratch%vt2dr)
-      call atob(mxp*myp,micro_g(ngrid)%dpcpg,scratch%vt2ds)
-   else
-      call azero(mxp*myp,scratch%vt2dq)
-      call azero(mxp*myp,scratch%vt2dr)
-      call azero(mxp*myp,scratch%vt2ds)
-   end if 
-   !---------------------------------------------------------------------------------------!
-
-
-
-
-   !---------------------------------------------------------------------------------------!
-   !     Copy surface atmospheric variables into 2-D arrays for input to LEAF.  The 2-D    !
-   ! arrays are save as the following:                                                     !!
-   !                                                                                       !
-   ! vt2da => ice-liquid potential temperature                                             !
-   ! vt2db => potential temperature                                                        !
-   ! vt2dc => water vapour mixing ratio                                                    !
-   ! vt2dd => total water mixing ratio (ice + liquid + vapour)                             !
-   ! vt2de => CO2 mixing ratio                                                             !
-   ! vt2df => zonal wind speed                                                             !
-   ! vt2dg => meridional wind speed                                                        !
-   ! vt2dh => Exner function                                                               !
-   ! vt2di => Air density                                                                  !
-   ! vt2dj => Reference height                                                             !
-   ! vt2dk => Precipitation rate                                                           !
-   ! vt2dl => Internal energy of precipitation rate                                        !
-   ! vt2dm => Depth associated with the precipitation rate                                 !
-   !---------------------------------------------------------------------------------------!
-   select case (if_adap)
-   case (0)
-      call sfc_fields( mzp,mxp,myp,ia,iz,ja,jz,jdim                                        &
-                     , basic_g(ngrid)%thp   , basic_g(ngrid)%theta , basic_g(ngrid)%rv     &
-                     , basic_g(ngrid)%rtp   , scratch%vt3do        , basic_g(ngrid)%up     &
-                     , basic_g(ngrid)%vp    , basic_g(ngrid)%dn0   , basic_g(ngrid)%pp     &
-                     , basic_g(ngrid)%pi0   , grid_g(ngrid)%rtgt   , zt                    &
-                     , zm                   , scratch%vt2da        , scratch%vt2db         &
-                     , scratch%vt2dc        , scratch%vt2dd        , scratch%vt2de         &
-                     , scratch%vt2df        , scratch%vt2dg        , scratch%vt2dh         &
-                     , scratch%vt2di        , scratch%vt2dj                                ) 
-   case (1)
-      call sfc_fields_adap(mzp,mxp,myp,ia,iz,ja,jz,jdim                                    &
-                     , grid_g(ngrid)%flpu   , grid_g(ngrid)%flpv   , grid_g(ngrid)%flpw    &
-                     , grid_g(ngrid)%topma  , grid_g(ngrid)%aru    , grid_g(ngrid)%arv     &
-                     , basic_g(ngrid)%thp   , basic_g(ngrid)%theta , basic_g(ngrid)%rv     &
-                     , basic_g(ngrid)%rtp   , scratch%vt3do        , basic_g(ngrid)%up     &
-                     , basic_g(ngrid)%vp    , basic_g(ngrid)%dn0   , basic_g(ngrid)%pp     &
-                     , basic_g(ngrid)%pi0   , zt                   , zm                    &
-                     , dzt                  , scratch%vt2da        , scratch%vt2db         &
-                     , scratch%vt2dc        , scratch%vt2dd        , scratch%vt2de         &
-                     , scratch%vt2df        , scratch%vt2dg        , scratch%vt2dh         &
-                     , scratch%vt2di        , scratch%vt2dj                                )
-   end select
-   !---------------------------------------------------------------------------------------!
-
-
-
-   !----- Fill surface precipitation arrays for input to LEAF-3 ---------------------------!
-   call sfc_pcp(mxp,myp,nclouds,ia,iz,ja,jz,dtll,dtll_factor,scratch%vt2db,scratch%vt2dh   &
-               ,scratch%vt3dp,scratch%vt2dq,scratch%vt2dr,scratch%vt2ds,scratch%vt2dk      &
-               ,scratch%vt2dl,scratch%vt2dm)
-   !---------------------------------------------------------------------------------------!
-
-
-   !---------------------------------------------------------------------------------------!
-   !     Reset fluxes, albedo, and upwelling long-wave radiation.                          !
-   !---------------------------------------------------------------------------------------!
-   call azero(mxp*myp       ,turb_g(ngrid)%sflux_u    )
-   call azero(mxp*myp       ,turb_g(ngrid)%sflux_v    )
-   call azero(mxp*myp       ,turb_g(ngrid)%sflux_w    )
-   call azero(mxp*myp       ,turb_g(ngrid)%sflux_t    )
-   call azero(mxp*myp       ,turb_g(ngrid)%sflux_r    )
-   call azero(mxp*myp       ,turb_g(ngrid)%sflux_c    )
-   call azero(mxp*myp*npatch,leaf_g(ngrid)%sensible_gc)
-   call azero(mxp*myp*npatch,leaf_g(ngrid)%sensible_vc)
-   call azero(mxp*myp*npatch,leaf_g(ngrid)%evap_gc    )
-   call azero(mxp*myp*npatch,leaf_g(ngrid)%evap_vc    )
-   call azero(mxp*myp*npatch,leaf_g(ngrid)%transp     )
-   call azero(mxp*myp*npatch,leaf_g(ngrid)%gpp        )
-   call azero(mxp*myp*npatch,leaf_g(ngrid)%plresp     )
-   call azero(mxp*myp*npatch,leaf_g(ngrid)%resphet    )
-   call azero(mxp*myp*npatch,leaf_g(ngrid)%rshort_gnd )
-   call azero(mxp*myp*npatch,leaf_g(ngrid)%rlong_gnd  )
-   if (iswrtyp > 0 .or. ilwrtyp > 0) then
-      call azero(mxp*myp,radiate_g(ngrid)%albedt)
-      call azero(mxp*myp,radiate_g(ngrid)%rlongup)
-   end if
+   call leaf3_step_startup()
    !---------------------------------------------------------------------------------------!
 
 
@@ -452,12 +336,12 @@ subroutine leaf3_timestep()
 
                !----- Compute the characteristic scales. ----------------------------------!
                call leaf3_stars(atm_theta                                                  &
-                               ,atm_theiv                                                  &
+                               ,atm_enthalpy                                               &
                                ,atm_shv                                                    &
                                ,atm_rvap                                                   &
                                ,atm_co2                                                    &
                                ,leaf_g(ngrid)%can_theta   (i,j,ip)                         &
-                               ,leaf_g(ngrid)%can_theiv   (i,j,ip)                         &
+                               ,can_enthalpy                                               &
                                ,can_shv                                                    &
                                ,leaf_g(ngrid)%can_rvap    (i,j,ip)                         &
                                ,leaf_g(ngrid)%can_co2     (i,j,ip)                         &
@@ -532,7 +416,7 @@ subroutine leaf3_timestep()
                                          ,leaf_g(ngrid)%leaf_class               (i,j,ip)  &
                                          ,leaf_g(ngrid)%can_prss                 (i,j,ip)  &
                                          ,.false.                                          )
-                  call leaf3_veg_diag(leaf_g(ngrid)%veg_energy                    (i,j,ip)  &
+                  call leaf3_veg_diag(leaf_g(ngrid)%veg_energy                   (i,j,ip)  &
                                      ,leaf_g(ngrid)%veg_water                    (i,j,ip)  &
                                      ,leaf_g(ngrid)%veg_hcap                     (i,j,ip)  )
                case default
@@ -543,17 +427,17 @@ subroutine leaf3_timestep()
                      if (nint(leaf_g(ngrid)%g_urban(i,j,ip)) /= 0.) then
 
                         !---- Initialise a few variables. ---------------------------------!
-                        psup1  = p00 * (cpi * ( basic_g(ngrid)%pi0(1,i,j)                  &
-                                              + basic_g(ngrid)%pp (1,i,j)))**cpor
-                        psup2  = p00 * (cpi * ( basic_g(ngrid)%pi0(2,i,j)                  &
-                                              + basic_g(ngrid)%pp (2,i,j)))**cpor
+                        psup1  = exner2press( basic_g(ngrid)%pi0(1,i,j)                    &
+                                            + basic_g(ngrid)%pp (1,i,j))
+                        psup2  = exner2press( basic_g(ngrid)%pi0(2,i,j)                    &
+                                            + basic_g(ngrid)%pp (2,i,j))
                         depe   = psup2-psup1
                         alt2   = zt(1)*grid_g(ngrid)%rtgt(i,j)
                         deze   = geoht-alt2
                         dpdz   = depe/deze
-                        exn1st = (psup2/p00)**rocp
+                        exn1st = press2exner(psup2)
                         
-                        airt= basic_g(ngrid)%theta(2,i,j)*exn1st 
+                        airt= extheta2temp(exn1st,basic_g(ngrid)%theta(2,i,j))
 
                         g_urban   = leaf_g(ngrid)%g_urban(i,j,ip)
 
@@ -606,10 +490,10 @@ subroutine leaf3_timestep()
                                           + leaf_g(ngrid)%patch_area(i,j,ip) * zsfv_town
                         turb_g(ngrid)%sflux_t(i,j) = turb_g(ngrid)%sflux_t(i,j)            &
                                           + leaf_g(ngrid)%patch_area(i,j,ip) * zh_town     &
-                                          / (cp * can_rhos)
+                                          / (cpdry * can_rhos)
                         turb_g(ngrid)%sflux_r(i,j) = turb_g(ngrid)%sflux_r(i,j)            &
                                           + leaf_g(ngrid)%patch_area(i,j,ip) * zle_town    &
-                                          / (alvl * can_rhos)
+                                          / (alvl3 * can_rhos)
                      end if
                   end if
 
@@ -756,5 +640,178 @@ subroutine leaf3_timestep()
    !---------------------------------------------------------------------------------------!
    return
 end subroutine leaf3_timestep
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+subroutine leaf3_step_startup()
+   use mem_basic      , only : basic_g           & ! intent(in)
+                             , co2_on            & ! intent(in)
+                             , co2con            ! ! intent(in)
+   use node_mod       , only : mzp               & ! intent(in)
+                             , mxp               & ! intent(in)
+                             , myp               & ! intent(in)
+                             , ia                & ! intent(in)
+                             , iz                & ! intent(in)
+                             , ja                & ! intent(in)
+                             , jz                & ! intent(in)
+                             , ibcon             & ! intent(in)
+                             , mynum             ! ! intent(in)
+   use mem_scratch    , only : scratch           ! ! intent(inout)
+   use mem_grid       , only : nstbot            & ! intent(in)
+                             , ngrid             & ! intent(in)
+                             , grid_g            & ! intent(in)
+                             , time              & ! intent(in)
+                             , dtlt              & ! intent(in)
+                             , dzt               & ! intent(in)
+                             , zt                & ! intent(in)
+                             , zm                & ! intent(in)
+                             , nzg               & ! intent(in)
+                             , nzs               & ! intent(in)
+                             , istp              & ! intent(in)
+                             , npatch            & ! intent(in)
+                             , jdim              & ! intent(in)
+                             , itimea            & ! intent(in)
+                             , if_adap           ! ! intent(in)
+   use mem_cuparm     , only : cuparm_g          & ! intent(in)
+                             , nnqparm           & ! intent(in)
+                             , nclouds           ! ! intent(in)
+   use mem_micro      , only : micro_g           ! ! intent(in)
+   use leaf_coms      , only : dtll              & ! intent(in)
+                             , dtll_factor       ! ! intent(in)
+   use mem_turb       , only : turb_g            ! ! intent(in)
+   use mem_leaf       , only : leaf_g            ! ! intent(in)
+   use mem_radiate    , only : radiate_g         & ! intent(inout)
+                             , iswrtyp           & ! intent(in)
+                             , ilwrtyp           ! ! intent(in)
+   use therm_lib      , only : bulk_on           ! ! intent(in)
+   implicit none
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !      Here we copy a few variables to scratch arrays, as they may not be always exist. !
+   ! In case they don't, we fill the scratch arrays with the default values.  The follow-  !
+   ! ing scratch arrays will contain the following fields.                                 !
+   !                                                                                       !
+   ! vt3do => CO2 mixing ratio                                                             !
+   ! vt3dp => precipitation rate from cumulus parametrisation.                             !
+   ! vt2dq => precipitation rate from bulk microphysics                                    !
+   ! vt2dr => internal energy associated with precipitation rate from bulk microphysics    !
+   ! vt2ds => depth associated with precipitation rate from bulk microphysics              !
+   !---------------------------------------------------------------------------------------!
+   !----- Check whether we have CO2, and copy to an scratch array. ------------------------!
+   if (co2_on) then
+      call atob(mzp*mxp*myp,basic_g(ngrid)%co2p,scratch%vt3do)
+   else
+      call ae0(mzp*mxp*myp,scratch%vt3do,co2con(1))
+   end if
+   !----- Check whether cumulus parametrisation was used, and copy to scratch array. ------!
+   if (nnqparm(ngrid) /= 0) then
+      call atob(mxp*myp*nclouds,cuparm_g(ngrid)%conprr,scratch%vt3dp)
+   else
+      call azero(mxp*myp*nclouds,scratch%vt3dp)
+   end if
+   !----- Check whether bulk microphysics was used, and copy values to scratch array. -----!
+   if (bulk_on) then
+      call atob(mxp*myp,micro_g(ngrid)%pcpg ,scratch%vt2dq)
+      call atob(mxp*myp,micro_g(ngrid)%qpcpg,scratch%vt2dr)
+      call atob(mxp*myp,micro_g(ngrid)%dpcpg,scratch%vt2ds)
+   else
+      call azero(mxp*myp,scratch%vt2dq)
+      call azero(mxp*myp,scratch%vt2dr)
+      call azero(mxp*myp,scratch%vt2ds)
+   end if 
+   !---------------------------------------------------------------------------------------!
+
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Copy surface atmospheric variables into 2-D arrays for input to LEAF.  The 2-D    !
+   ! arrays are save as the following:                                                     !!
+   !                                                                                       !
+   ! vt2da => ice-liquid potential temperature                                             !
+   ! vt2db => potential temperature                                                        !
+   ! vt2dc => water vapour mixing ratio                                                    !
+   ! vt2dd => total water mixing ratio (ice + liquid + vapour)                             !
+   ! vt2de => CO2 mixing ratio                                                             !
+   ! vt2df => zonal wind speed                                                             !
+   ! vt2dg => meridional wind speed                                                        !
+   ! vt2dh => Exner function                                                               !
+   ! vt2di => Air density                                                                  !
+   ! vt2dj => Reference height                                                             !
+   ! vt2dk => Precipitation rate                                                           !
+   ! vt2dl => Internal energy of precipitation rate                                        !
+   ! vt2dm => Depth associated with the precipitation rate                                 !
+   !---------------------------------------------------------------------------------------!
+   select case (if_adap)
+   case (0)
+      call sfc_fields( mzp,mxp,myp,ia,iz,ja,jz,jdim                                        &
+                     , basic_g(ngrid)%thp   , basic_g(ngrid)%theta , basic_g(ngrid)%rv     &
+                     , basic_g(ngrid)%rtp   , scratch%vt3do        , basic_g(ngrid)%up     &
+                     , basic_g(ngrid)%vp    , basic_g(ngrid)%dn0   , basic_g(ngrid)%pp     &
+                     , basic_g(ngrid)%pi0   , grid_g(ngrid)%rtgt   , zt                    &
+                     , zm                   , scratch%vt2da        , scratch%vt2db         &
+                     , scratch%vt2dc        , scratch%vt2dd        , scratch%vt2de         &
+                     , scratch%vt2df        , scratch%vt2dg        , scratch%vt2dh         &
+                     , scratch%vt2di        , scratch%vt2dj                                ) 
+   case (1)
+      call sfc_fields_adap(mzp,mxp,myp,ia,iz,ja,jz,jdim                                    &
+                     , grid_g(ngrid)%flpu   , grid_g(ngrid)%flpv   , grid_g(ngrid)%flpw    &
+                     , grid_g(ngrid)%topma  , grid_g(ngrid)%aru    , grid_g(ngrid)%arv     &
+                     , basic_g(ngrid)%thp   , basic_g(ngrid)%theta , basic_g(ngrid)%rv     &
+                     , basic_g(ngrid)%rtp   , scratch%vt3do        , basic_g(ngrid)%up     &
+                     , basic_g(ngrid)%vp    , basic_g(ngrid)%dn0   , basic_g(ngrid)%pp     &
+                     , basic_g(ngrid)%pi0   , zt                   , zm                    &
+                     , dzt                  , scratch%vt2da        , scratch%vt2db         &
+                     , scratch%vt2dc        , scratch%vt2dd        , scratch%vt2de         &
+                     , scratch%vt2df        , scratch%vt2dg        , scratch%vt2dh         &
+                     , scratch%vt2di        , scratch%vt2dj                                )
+   end select
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !----- Fill surface precipitation arrays for input to LEAF-3 ---------------------------!
+   call sfc_pcp(mxp,myp,nclouds,ia,iz,ja,jz,dtll,dtll_factor,scratch%vt2db,scratch%vt2dh   &
+               ,scratch%vt3dp,scratch%vt2dq,scratch%vt2dr,scratch%vt2ds,scratch%vt2dk      &
+               ,scratch%vt2dl,scratch%vt2dm)
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Reset fluxes, albedo, and upwelling long-wave radiation.                          !
+   !---------------------------------------------------------------------------------------!
+   call azero(mxp*myp       ,turb_g(ngrid)%sflux_u    )
+   call azero(mxp*myp       ,turb_g(ngrid)%sflux_v    )
+   call azero(mxp*myp       ,turb_g(ngrid)%sflux_w    )
+   call azero(mxp*myp       ,turb_g(ngrid)%sflux_t    )
+   call azero(mxp*myp       ,turb_g(ngrid)%sflux_r    )
+   call azero(mxp*myp       ,turb_g(ngrid)%sflux_c    )
+   call azero(mxp*myp*npatch,leaf_g(ngrid)%sensible_gc)
+   call azero(mxp*myp*npatch,leaf_g(ngrid)%sensible_vc)
+   call azero(mxp*myp*npatch,leaf_g(ngrid)%evap_gc    )
+   call azero(mxp*myp*npatch,leaf_g(ngrid)%evap_vc    )
+   call azero(mxp*myp*npatch,leaf_g(ngrid)%transp     )
+   call azero(mxp*myp*npatch,leaf_g(ngrid)%gpp        )
+   call azero(mxp*myp*npatch,leaf_g(ngrid)%plresp     )
+   call azero(mxp*myp*npatch,leaf_g(ngrid)%resphet    )
+   call azero(mxp*myp*npatch,leaf_g(ngrid)%rshort_gnd )
+   call azero(mxp*myp*npatch,leaf_g(ngrid)%rlong_gnd  )
+   if (iswrtyp > 0 .or. ilwrtyp > 0) then
+      call azero(mxp*myp,radiate_g(ngrid)%albedt)
+      call azero(mxp*myp,radiate_g(ngrid)%rlongup)
+   end if
+   !---------------------------------------------------------------------------------------!
+
+   return
+end subroutine leaf3_step_startup
 !==========================================================================================!
 !==========================================================================================!

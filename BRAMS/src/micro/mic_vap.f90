@@ -25,22 +25,19 @@ subroutine diffprep(lcat)
    !----- Arguments -----------------------------------------------------------------------!
    integer, intent(in) :: lcat
    !----- Local variables -----------------------------------------------------------------!
-   integer :: k,if1,if4,if6,if8,lhcat
-   real    :: fre,scdei
+   integer             :: k
+   integer             :: if1
+   integer             :: lhcat
+   real                :: fre
+   real                :: scdei
    !---------------------------------------------------------------------------------------!
 
    !----- Selecting whether to use liquid or ice related stuff ----------------------------!
    select case (lcat)
    case (1,2)
       if1 = 1
-      if4 = 4
-      if6 = 6
-      if8 = 8
    case default
       if1 = 2
-      if4 = 5
-      if6 = 7
-      if8 = 9
    end select
 
    !---------------------------------------------------------------------------------------!
@@ -53,15 +50,15 @@ subroutine diffprep(lcat)
 
       if (rx(k,lcat) < rxmin(lcat)) cycle mainloop
 
-      fre = frefac1(lhcat) * emb(k,lcat) ** pwmasi(lhcat)                                  &
-          + rdynvsci(k) * frefac2(lhcat) * emb(k,lcat) ** cdp1(lhcat)
+      fre           = frefac1(lhcat) * emb(k,lcat) ** pwmasi(lhcat)                        &
+                    + rdynvsci(k) * frefac2(lhcat) * emb(k,lcat) ** cdp1(lhcat)
 
       sb(k,lcat)    = cx(k,lcat) * rhoa(k) * fre * pi4dt
       su(k,lcat)    = vapdif(k)  * sb(k,lcat)
       sd(k,lcat)    = sh(k,lcat) * rx(k,lcat)
-      se(k,lcat)    = su(k,lcat) * sa(k,if6) + sb(k,lcat) * thrmcon(k)
-      sf(k,lcat)    = su(k,lcat) * sl(if1) - sb(k,lcat) * sa(k,2)
-      sg(k,lcat)    = su(k,lcat) * sa(k,if8) + sb(k,lcat) * sa(k,3) + sj(lcat) * qr(k,lcat)
+      se(k,lcat)    = su(k,lcat) * sa6(k,lcat) + sb(k,lcat) * thrmcon(k)
+      sf(k,lcat)    = su(k,lcat) * lx(k,lcat)  - sb(k,lcat) * sa2(k)
+      sg(k,lcat)    = su(k,lcat) * sa8(k,lcat) + sb(k,lcat) * sa3(k) + sj(lcat) * qr(k,lcat)
       
       scdei         = 1. / (sc(if1) * sd(k,lcat) + se(k,lcat))
       ss(k,lcat)    = sf(k,lcat) * scdei
@@ -71,7 +68,7 @@ subroutine diffprep(lcat)
 
 
    !---------------------------------------------------------------------------------------!
-   !    Iced categories. The first trial assumed Mj = 1 and assuming rvap to be the        !
+   !    Ice categories. The first trial assumed Mj = 1 and assuming rvap to be the         !
    ! previous rvap. If that gives T above the triple point, then force it to be at the     !
    ! triple point, and Mj becomes 0. Otherwise, happy with the temperature and Mj is set   !
    ! to 1.                                                                                 !
@@ -112,7 +109,7 @@ subroutine diffprep(lcat)
    lastloop: do k = k1(lcat),k2(lcat)
       if (rx(k,lcat) < rxmin(lcat)) cycle lastloop
 
-      sy(k,lcat) = rvsrefp(k,if1) * sm(k,lcat) * sw(k,lcat) - sa(k,if4)
+      sy(k,lcat) = rvsrefp(k,if1) * sm(k,lcat) * sw(k,lcat) - sa4(k,lcat)
       sz(k,lcat) = 1. - rvsrefp(k,if1) * ss(k,lcat) * sm(k,lcat)
       sumuy(k)   = sumuy(k) + su(k,lcat) * sy(k,lcat)
       sumuz(k)   = sumuz(k) + su(k,lcat) * sz(k,lcat)
@@ -191,10 +188,8 @@ subroutine vapflux(lcat)
    select case (lcat)
    case (1:2)
       if1 = 1
-      if4 = 4
    case (3:7)
       if1 = 2
-      if4 = 5
    end select
 
    mainloop: do k = k1(lcat),k2(lcat)
@@ -210,7 +205,7 @@ subroutine vapflux(lcat)
       else
          tx(k,lcat)  = t3ple
       end if
-      vap(k,lcat) = su(k,lcat) * (rvap(k) + sa(k,if4) - rvsrefp(k,if1) * tx(k,lcat))
+      vap(k,lcat) = su(k,lcat) * (rvap(k) + sa4(k,lcat) - rvsrefp(k,if1) * tx(k,lcat))
 
 
       !------------------------------------------------------------------------------------!
@@ -394,9 +389,23 @@ end subroutine psxfer
 !------------------------------------------------------------------------------------------!
 subroutine newtemp()
 
-   use rconstants
-   use micphys
-   use therm_lib, only: rslf,rsif
+   use rconstants, only : t00           ! ! intent(in)
+   use micphys   , only : k1            & ! intent(in)
+                        , k2            & ! intent(in)
+                        , tairstr       & ! intent(in)
+                        , sa1           & ! intent(in)
+                        , rvstr         & ! intent(in)
+                        , rvap          & ! intent(in)
+                        , exner         & ! intent(in)
+                        , press         & ! intent(in)
+                        , tair          & ! intent(out)
+                        , tairc         & ! intent(out)
+                        , pottemp       & ! intent(out)
+                        , rvlsair       & ! intent(out)
+                        , rvisair       ! ! intent(out)
+   use therm_lib , only : rslf          & ! function
+                        , rsif          & ! function
+                        , extemp2theta  ! ! function
 
    implicit none
 
@@ -404,13 +413,14 @@ subroutine newtemp()
    integer             :: k
    !---------------------------------------------------------------------------------------!
 
+
    do k = k1(10),k2(10)
-      tair(k)    = tairstr(k) + sa(k,1) * (rvstr(k) - rvap(k))
+      tair(k)    = tairstr(k) + sa1(k) * (rvstr(k) - rvap(k))
       tairc(k)   = tair(k)    - t00
-      pottemp(k) = tair(k) * cp / exner(k)
+      pottemp(k) = extemp2theta(exner(k),tair(k))
 
       rvlsair(k) = rslf(press(k),tair(k))
-      rvisair(k) = rsif (press(k),tair(k))
+      rvisair(k) = rsif(press(k),tair(k))
    end do
 
    return

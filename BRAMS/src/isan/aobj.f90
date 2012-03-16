@@ -21,7 +21,6 @@ real, allocatable :: ps_scr(:,:)
 
 
 integer, save :: nvar=1
-real, allocatable :: pscr(:,:)
 
 if (ctype == 'isen') then
 
@@ -53,18 +52,11 @@ if (ctype == 'isen') then
 
 elseif (ctype == 'sigz') then
 
-!allocate(pscr(nxp,nyp))
-!pscr(1:nxp,1:nyp)=ps_u(1:nxp,1:nyp,2)
-!call ezcntr(pscr,nxp,nyp)
    call obanl (nxp,nyp,nsigz,nvar, ps_u, g_lat, g_lon  &
               ,nsta,nsta,         ups_u,up_lat,up_lon  &
               ,nxp,nyp,            ps_u, g_lat, g_lon  &
               ,igridfl,wvlnth(ng),respon(ng),gobsep,gobrad,gridwt(ng)  &
               ,polelat,polelon,swx,swy,delx,dely)
-!pscr(1:nxp,1:nyp)=ps_u(1:nxp,1:nyp,20)
-!call ezcntr(pscr,nxp,nyp)
-!call clsgks
-!stop
    call obanl (nxp,nyp,nsigz,nvar, ps_v, g_lat, g_lon  &
               ,nsta,nsta,         ups_v,up_lat,up_lon  &
               ,nxp,nyp,            ps_v, g_lat, g_lon  &

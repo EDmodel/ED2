@@ -114,24 +114,24 @@ contains
     type (varinit_vars) :: varinit
 
 
-    if (associated(varinit%varup))     nullify (varinit%varup)
-    if (associated(varinit%varvp))     nullify (varinit%varvp)
-    if (associated(varinit%varpp))     nullify (varinit%varpp)
-    if (associated(varinit%vartp))     nullify (varinit%vartp)
-    if (associated(varinit%varrp))     nullify (varinit%varrp)
-    if (associated(varinit%varop))     nullify (varinit%varop)
-    if (associated(varinit%varuf))     nullify (varinit%varuf)
-    if (associated(varinit%varvf))     nullify (varinit%varvf)
-    if (associated(varinit%varpf))     nullify (varinit%varpf)
-    if (associated(varinit%vartf))     nullify (varinit%vartf)
-    if (associated(varinit%varrf))     nullify (varinit%varrf)
-    if (associated(varinit%varof))     nullify (varinit%varof)
-    if (associated(varinit%varwts))    nullify (varinit%varwts)
+    nullify (varinit%varup)
+    nullify (varinit%varvp)
+    nullify (varinit%varpp)
+    nullify (varinit%vartp)
+    nullify (varinit%varrp)
+    nullify (varinit%varop)
+    nullify (varinit%varuf)
+    nullify (varinit%varvf)
+    nullify (varinit%varpf)
+    nullify (varinit%vartf)
+    nullify (varinit%varrf)
+    nullify (varinit%varof)
+    nullify (varinit%varwts)
 
-    if (associated(varinit%varcph))     nullify (varinit%varcph)
-    if (associated(varinit%varcfh))     nullify (varinit%varcfh)
-    if (associated(varinit%varrph))     nullify (varinit%varrph)
-    if (associated(varinit%varrfh))     nullify (varinit%varrfh)
+    nullify (varinit%varcph)
+    nullify (varinit%varcfh)
+    nullify (varinit%varrph)
+    nullify (varinit%varrfh)
 
     return
   end subroutine nullify_varinit

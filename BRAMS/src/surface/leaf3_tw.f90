@@ -69,10 +69,10 @@ subroutine leaf3_tw(mzg,mzs,soil_water, soil_energy,soil_text,sfcwater_energy_in
    use mem_leaf
    use rconstants
    use mem_scratch
-   use therm_lib   , only : qwtk        & ! subroutine
-                          , qtk         & ! subroutine
-                          , hpqz2temp   & ! function
-                          , idealdenssh ! ! function
+   use therm_lib   , only : uextcm2tl   & ! subroutine
+                          , uint2tl     & ! subroutine
+                          , idealdenssh & ! function
+                          , tl2uint     ! ! function
    use catt_start  , only : CATT        ! ! intent(in)
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
@@ -164,6 +164,8 @@ subroutine leaf3_tw(mzg,mzs,soil_water, soil_energy,soil_text,sfcwater_energy_in
    real                                   :: extracted_water
    real                                   :: wloss
    real                                   :: qwloss
+   real                                   :: wlossvlme
+   real                                   :: qwlossvlme
    real                                   :: soilcond
    real                                   :: slz0
    real                                   :: ezg
@@ -444,7 +446,7 @@ subroutine leaf3_tw(mzg,mzs,soil_water, soil_energy,soil_text,sfcwater_energy_in
       else
          w_flux(k) = - min(-w_flux(k),soil_liq(k),half_soilair(k-1))
       endif
-      qw_flux(k) = w_flux(k) * cliqvlme * (soil_tempk(k) - tsupercool)
+      qw_flux(k) = w_flux(k) * wdns * tl2uint(soil_tempk(k),1.0)
    end do
    !---------------------------------------------------------------------------------------!
 
@@ -476,7 +478,7 @@ subroutine leaf3_tw(mzg,mzs,soil_water, soil_energy,soil_text,sfcwater_energy_in
       end if
       !------------------------------------------------------------------------------------!
    end select
-   qw_flux(1) = w_flux(1) * cliqvlme * (soil_tempk(1) - tsupercool)
+   qw_flux(1) = w_flux(1) * wdns * tl2uint(soil_tempk(1),1.0)
    !---------------------------------------------------------------------------------------!
 
 
@@ -496,11 +498,38 @@ subroutine leaf3_tw(mzg,mzs,soil_water, soil_energy,soil_text,sfcwater_energy_in
    extracted_water = transp_tot * dtll
    if (extracted_water > 0. .and. available_water > 0.) then
       do k = ktrans,mzg
-         wloss  = wdnsi * dslzi(k) * extracted_water * available_layer(k) / available_water
-         qwloss = wloss * cliqvlme * (soil_tempk(k) - tsupercool)
+         !---------------------------------------------------------------------------------!
+         !    Find the loss of water and internal energy from the soil due to              !
+         ! transpiration.  wloss and qwloss are in units of kg/m2 and J/m2, respectively,  !
+         ! which are consistent with vegetation.                                           !
+         !---------------------------------------------------------------------------------!
+         wloss  = extracted_water * available_layer(k) / available_water
+         qwloss = wloss * tl2uint(soil_tempk(k),1.0)
+         !---------------------------------------------------------------------------------!
 
-         soil_water(k)  = soil_water(k)  - wloss
-         soil_energy(k) = soil_energy(k) - qwloss
+         !---------------------------------------------------------------------------------!
+         !    Wlossvlme and qwlossvlme are in m3/m3 and J/m3, which are consistent with    !
+         ! soil.                                                                           !
+         !---------------------------------------------------------------------------------!
+         wlossvlme = wdnsi * dslzi(k) * wloss
+         qwlossvlme = qwloss * dslzi(k)
+         !---------------------------------------------------------------------------------!
+
+
+         !---------------------------------------------------------------------------------!
+         !    Remove energy and water from soil.                                           !
+         !---------------------------------------------------------------------------------!
+         soil_water(k)  = soil_water(k)  - wlossvlme
+         soil_energy(k) = soil_energy(k) - qwlossvlme
+         !---------------------------------------------------------------------------------!
+         
+         !---------------------------------------------------------------------------------!
+         !    Add the internal energy to the leaves.  Water shan't be added because it     !
+         ! doesn't stay in the leaves, instead it goes to the canopy air space, but that   !
+         ! was taken care of in leaf3_canopy.                                              !
+         !---------------------------------------------------------------------------------!
+         veg_energy = veg_energy + qwloss
+         !---------------------------------------------------------------------------------!
       end do
    end if
    !---------------------------------------------------------------------------------------!
@@ -526,12 +555,12 @@ subroutine leaf3_tw(mzg,mzs,soil_water, soil_energy,soil_text,sfcwater_energy_in
       !     Get rid of some liquid water from the top layer through runoff.                !
       !------------------------------------------------------------------------------------!
       if (runoff_time > 0.0 .and. sfcwater_mass(ksn) > 0.0) then
-         call qtk(sfcwater_energy_ext(ksn) / sfcwater_mass(ksn)                            &
-                 ,sfcwater_tempk(ksn),sfcwater_fracliq(ksn))
+         call uint2tl(sfcwater_energy_ext(ksn) / sfcwater_mass(ksn)                        &
+                     ,sfcwater_tempk(ksn),sfcwater_fracliq(ksn))
          wloss  = max(0., min(1.0,dtll/runoff_time)                                        &
                         * (sfcwater_mass(ksn) - min_sfcwater_mass)                         &
                         * (sfcwater_fracliq(ksn) - 0.1) / 0.9)
-         qwloss = wloss * cliq * (sfcwater_tempk(ksn) - tsupercool)
+         qwloss = wloss * tl2uint(sfcwater_tempk(ksn),1.0)
          sfcwater_energy_ext(ksn) = sfcwater_energy_ext(ksn) - qwloss
          sfcwater_mass(ksn)       = sfcwater_mass(ksn)       - wloss
          sfcwater_depth(ksn)      = sfcwater_depth(ksn)      - wloss * wdnsi
@@ -566,8 +595,8 @@ subroutine leaf3_soilsfcw_diag(ip,mzg,mzs,soil_energy,soil_water,soil_text,sfcwa
                         , virtual_energy      & ! intent(out)
                         , virtual_water       & ! intent(out) 
                         , virtual_depth       ! ! intent(out)
-   use therm_lib , only : qwtk                & ! sub-routine
-                        , qtk                 ! ! sub-routine
+   use therm_lib , only : uextcm2tl           & ! sub-routine
+                        , uint2tl             ! ! sub-routine
    use rconstants, only : wdns                ! ! intent(in)
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
@@ -598,8 +627,8 @@ subroutine leaf3_soilsfcw_diag(ip,mzg,mzs,soil_energy,soil_water,soil_text,sfcwa
    !----- Find the soil temperature and liquid water fraction. ----------------------------!
    do k = 1,mzg
       nsoil = nint(soil_text(k))
-      call qwtk(soil_energy(k),soil_water(k)*wdns,slcpd(nsoil)                             &
-               ,soil_tempk(k),soil_fracliq(k))
+      call uextcm2tl(soil_energy(k),soil_water(k)*wdns,slcpd(nsoil)                        &
+                    ,soil_tempk(k),soil_fracliq(k))
    end do
    !---------------------------------------------------------------------------------------!
 
@@ -614,7 +643,7 @@ subroutine leaf3_soilsfcw_diag(ip,mzg,mzs,soil_energy,soil_water,soil_text,sfcwa
       !----- Initial call, find the extensive internal energy from the intensive. ---------!
       do k=1,ksn
          sfcwater_energy_ext(k) = sfcwater_energy_int(k) * sfcwater_mass(k)
-         call qtk(sfcwater_energy_int(k),sfcwater_tempk(k),sfcwater_fracliq(k))
+         call uint2tl(sfcwater_energy_int(k),sfcwater_tempk(k),sfcwater_fracliq(k))
       end do
       !----- Fill the layers above with zeroes or dummy values. ---------------------------!
       if (ksn == 0) then
@@ -636,7 +665,7 @@ subroutine leaf3_soilsfcw_diag(ip,mzg,mzs,soil_energy,soil_water,soil_text,sfcwa
       !----- Convert extensive internal energy into intensive. ----------------------------!     
       do k=1,ksn
          sfcwater_energy_int(k) = sfcwater_energy_ext(k) / sfcwater_mass(k)
-         call qtk(sfcwater_energy_int(k),sfcwater_tempk(k),sfcwater_fracliq(k))
+         call uint2tl(sfcwater_energy_int(k),sfcwater_tempk(k),sfcwater_fracliq(k))
       end do
       !----- Fill the layers above with zeroes or dummy values. ---------------------------!
       if (ksn == 0) then
@@ -701,12 +730,10 @@ subroutine leaf3_adjust_sfcw(mzg,mzs,soil_energy,soil_water,soil_text,sfcwater_n
                          , newsfcw_depth  => vctr18 ! ! intent(out)
    use rconstants , only : wdns                     & ! intent(in)
                          , wdnsi                    & ! intent(in)
-                         , cliq                     & ! intent(in)
-                         , cice                     & ! intent(in)
-                         , qliqt3                   & ! intent(in)
-                         , tsupercool               ! ! intent(in)
-   use therm_lib  , only : qtk                      & ! sub-routine
-                         , qwtk                     ! ! sub-routine
+                         , uiliqt3                  ! ! intent(in)
+   use therm_lib  , only : uint2tl                  & ! sub-routine
+                         , uextcm2tl                & ! sub-routine
+                         , tl2uint                  ! ! function
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
    integer, intent(in) :: mzg
@@ -879,7 +906,7 @@ subroutine leaf3_adjust_sfcw(mzg,mzs,soil_energy,soil_water,soil_text,sfcwater_n
          ! are assuming thermal equilibrium, the temperature and liquid fraction of the    !
          ! attempted layer is the same as the average temperature of the augmented pool.   !
          !---------------------------------------------------------------------------------!
-         call qwtk(energy_tot,wmass_tot,hcapdry_tot,temp_try,fliq_try)
+         call uextcm2tl(energy_tot,wmass_tot,hcapdry_tot,temp_try,fliq_try)
          !---------------------------------------------------------------------------------!
 
 
@@ -888,8 +915,7 @@ subroutine leaf3_adjust_sfcw(mzg,mzs,soil_energy,soil_water,soil_text,sfcwater_n
          ! and fraction of liquid water distribution we have just found, keeping the mass  !
          ! constant.                                                                       !
          !---------------------------------------------------------------------------------!
-         energy_try = wmass_try * (        fliq_try  * cliq * (temp_try - tsupercool)      &
-                                  + (1.0 - fliq_try) * cice *  temp_try              )
+         energy_try = wmass_try * tl2uint(temp_try,fliq_try)
          !---------------------------------------------------------------------------------!
 
 
@@ -907,7 +933,7 @@ subroutine leaf3_adjust_sfcw(mzg,mzs,soil_energy,soil_water,soil_text,sfcwater_n
          ! the attempted layer.                                                            !
          !---------------------------------------------------------------------------------!
          i_energy_try = energy_try / wmass_try
-         call qtk(i_energy_try,temp_try,fliq_try)
+         call uint2tl(i_energy_try,temp_try,fliq_try)
         !---------------------------------------------------------------------------------!
       end if
       !------------------------------------------------------------------------------------!
@@ -973,7 +999,7 @@ subroutine leaf3_adjust_sfcw(mzg,mzs,soil_energy,soil_water,soil_text,sfcwater_n
          !      Enough mass to keep this layer.                                            !
          !---------------------------------------------------------------------------------!
          !----- Compute the internal energy and depth associated with percolated water. ---!
-         energy_perc = wmass_perc * cliq * (temp_try - tsupercool)
+         energy_perc = wmass_perc * tl2uint(temp_try,1.0)
          depth_perc  = wmass_perc * wdnsi
          !----- Find the new water mass and energy for this layer. ------------------------!
          sfcwater_mass      (k) = wmass_try  - wmass_perc
@@ -1103,7 +1129,7 @@ subroutine leaf3_adjust_sfcw(mzg,mzs,soil_energy,soil_water,soil_text,sfcwater_n
          !---------------------------------------------------------------------------------!
          if ( sfcwater_mass(k)                > min_sfcwater_mass        .and.             &
               water_stab_thresh * thicknet(k) <= sum_sfcw_mass           .and.             &
-              sfcwater_energy_ext(k)          <  sfcwater_mass(k)*qliqt3       ) then
+              sfcwater_energy_ext(k)          <  sfcwater_mass(k)*uiliqt3      ) then
             newlayers = newlayers + 1
          end if
          !---------------------------------------------------------------------------------!

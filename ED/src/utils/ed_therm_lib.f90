@@ -116,22 +116,20 @@ module ed_therm_lib
    !                                                                                       !
    !     We look at leaf and wood separately, but the idea is the same.  When heat         !
    ! capacity is zero (i.e., no leaves or not solving branchwood thermodynamics), we       !
-   ! cannot find the temperature using qwtk because it is a singularity.  Notice that this !
-   ! is different skipping when cohorts are not resolvable...  If the cohort is not        !
-   ! resolvable but still has some heat capacity, we should update internal energy using   !
-   ! the traditional method, and NEVER force the heat capacity to be zero, otherwise we    !
-   ! violate the fact that heat capacity is a linear function of mass and this will cause  !
-   ! problems during the fusion/splitting process.                                         !
+   ! cannot find the temperature using uextcm2tl because it is a singularity.  Notice that !
+   ! this is different than skipping when cohorts are not resolvable...  If the cohort is  !
+   ! not resolvable but still has some heat capacity, we should update internal energy     !
+   ! using the traditional method, and NEVER force the heat capacity to be zero, otherwise !
+   ! we violate the fact that heat capacity is a linear function of mass and this will     !
+   ! cause problems during the fusion/splitting process.                                   !
    !                                                                                       !
    !    The "cweh" mean "consistent water&energy&hcap" assumption                          !
    !---------------------------------------------------------------------------------------!
    subroutine update_veg_energy_cweh(csite,ipa,ico,old_leaf_hcap,old_wood_hcap)
-      use ed_state_vars, only : sitetype   & ! Structure
-                              , patchtype  ! ! Structure
-      use therm_lib    , only : qwtk       ! ! subroutine
-      use consts_coms  , only : cliq       & ! intent(in)
-                              , cice       & ! intent(in)
-                              , tsupercool ! ! intent(in)
+      use ed_state_vars, only : sitetype   & ! structure
+                              , patchtype  ! ! structure
+      use therm_lib    , only : uextcm2tl  & ! subroutine
+                              , cmtl2uext  ! ! function
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       type(sitetype) , target     :: csite
@@ -178,19 +176,15 @@ module ed_therm_lib
          ! fraction of water held by leaves, we can recalculate the internal energy by     !
          ! just switching the old heat capacity by the new one.                            !
          !---------------------------------------------------------------------------------!
-         cpatch%leaf_energy(ico) = cpatch%leaf_hcap(ico) * cpatch%leaf_temp(ico)           &
-                                 + cpatch%leaf_water(ico)                                  &
-                                 * ( cliq * cpatch%leaf_fliq(ico)                          &
-                                   * (cpatch%leaf_temp(ico) - tsupercool)                  &
-                                   + cice * (1.-cpatch%leaf_fliq(ico))                     &
-                                          * cpatch%leaf_temp(ico))
+         cpatch%leaf_energy(ico) = cmtl2uext(cpatch%leaf_hcap(ico),cpatch%leaf_water(ico)  &
+                                            ,cpatch%leaf_temp(ico),cpatch%leaf_fliq(ico) )
          !---------------------------------------------------------------------------------!
 
 
 
          !----- This is a sanity check, it can be removed if it doesn't crash. ------------!
-         call qwtk(cpatch%leaf_energy(ico),cpatch%leaf_water(ico),cpatch%leaf_hcap(ico)    &
-                  ,new_temp,new_fliq)
+         call uextcm2tl(cpatch%leaf_energy(ico),cpatch%leaf_water(ico)                     &
+                       ,cpatch%leaf_hcap(ico),new_temp,new_fliq)
          !---------------------------------------------------------------------------------!
 
 
@@ -246,19 +240,15 @@ module ed_therm_lib
          ! fraction of water held by leaves, we can recalculate the internal energy by     !
          ! just switching the old heat capacity by the new one.                            !
          !---------------------------------------------------------------------------------!
-         cpatch%wood_energy(ico) = cpatch%wood_hcap(ico) * cpatch%wood_temp(ico)           &
-                                + cpatch%wood_water(ico)                                   &
-                                * ( cliq * cpatch%wood_fliq(ico)                           &
-                                  * (cpatch%wood_temp(ico) - tsupercool)                   &
-                                  + cice * (1.-cpatch%wood_fliq(ico))                      &
-                                         * cpatch%wood_temp(ico))
+         cpatch%wood_energy(ico) = cmtl2uext(cpatch%wood_hcap(ico),cpatch%wood_water(ico)  &
+                                            ,cpatch%wood_temp(ico),cpatch%wood_fliq (ico) )
          !---------------------------------------------------------------------------------!
 
 
 
          !----- This is a sanity check, it can be removed if it doesn't crash. ------------!
-         call qwtk(cpatch%wood_energy(ico),cpatch%wood_water(ico),cpatch%wood_hcap(ico)    &
-                  ,new_temp,new_fliq)
+         call uextcm2tl(cpatch%wood_energy(ico),cpatch%wood_water(ico)                     &
+                       ,cpatch%wood_hcap(ico),new_temp,new_fliq)
          !---------------------------------------------------------------------------------!
 
 
@@ -332,7 +322,7 @@ module ed_therm_lib
                                 , gorh2o      & ! intent(in)
                                 , lnexp_min   & ! intent(in)
                                 , huge_num    ! ! intent(in)
-      use therm_lib      , only : rslif       ! ! function
+      use therm_lib      , only : qslif       ! ! function
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       integer     , intent(in)  :: ksn           ! # of surface water layers    [     ----]
@@ -375,8 +365,7 @@ module ed_therm_lib
          ground_temp = topsoil_temp
          ground_fliq = topsoil_fliq
          !----- Compute the saturation specific humidity at ground temperature. -----------!
-         ground_ssh  = rslif(can_prss,ground_temp)
-         ground_ssh  = ground_ssh / (1.0 + ground_ssh)
+         ground_ssh  = qslif(can_prss,ground_temp)
          !----- Determine alpha. ----------------------------------------------------------!
          slpotvn      = soil(nsoil)%slpots                                                 &
                       / (topsoil_water / soil(nsoil)%slmsts) ** soil(nsoil)%slbs
@@ -462,8 +451,7 @@ module ed_therm_lib
          ground_temp = sfcwater_temp
          ground_fliq = sfcwater_fliq
          !----- Compute the saturation specific humidity at ground temperature. -----------!
-         ground_ssh = rslif(can_prss,ground_temp)
-         ground_ssh = ground_ssh / (1.0 + ground_ssh)
+         ground_ssh = qslif(can_prss,ground_temp)
          !----- The ground specific humidity in this case is just the saturation value. ---!
          ground_shv = ground_ssh
          !----- The conductance should be large so it won't contribute to the net value. --!
@@ -518,7 +506,7 @@ module ed_therm_lib
                                 , gorh2o8      & ! intent(in)
                                 , lnexp_min8   & ! intent(in)
                                 , huge_num8    ! ! intent(in)
-      use therm_lib8     , only : rslif8       ! ! function
+      use therm_lib8     , only : qslif8       ! ! function
       use rk4_coms       , only : rk4site      ! ! intent(in)
       use grid_coms      , only : nzg          ! ! intent(in)
       use ed_max_dims    , only : n_pft        ! ! intent(in)
@@ -610,8 +598,7 @@ module ed_therm_lib
          ground_temp = topsoil_temp
          ground_fliq = topsoil_fliq
          !----- Compute the saturation specific humidity at ground temperature. -----------!
-         ground_ssh  = rslif8(can_prss,ground_temp)
-         ground_ssh  = ground_ssh / (1.d0 + ground_ssh)
+         ground_ssh  = qslif8(can_prss,ground_temp)
          !----- Determine alpha. ----------------------------------------------------------!
          slpotvn      = soil8(nsoil)%slpots                                                &
                       / (use_soil_h2o / soil8(nsoil)%slmsts) ** soil8(nsoil)%slbs
@@ -697,9 +684,9 @@ module ed_therm_lib
          !---------------------------------------------------------------------------------!
          ground_temp = sfcwater_temp
          ground_fliq = sfcwater_fliq
+
          !----- Compute the saturation specific humidity at ground temperature. -----------!
-         ground_ssh = rslif8(can_prss,ground_temp)
-         ground_ssh = ground_ssh / (1.d0 + ground_ssh)
+         ground_ssh = qslif8(can_prss,ground_temp)
          !----- The ground specific humidity in this case is just the saturation value. ---!
          ground_shv  = ground_ssh
          !----- The conductance should be large so it won't contribute to the net value. --!

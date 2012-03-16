@@ -30,6 +30,6 @@ module shcu_vars_const
 
 !  COMMON/SHCTES/
   real, parameter :: CPR=3.4965, CP=1004., P00=1E5, RCP=.286,  &
-       ALVL=2.5E6, ALIV=2.834E6, AKLV=2340.6, AKIV=2825.7, G=9.8, R=287.
+       ALVL3=2.5E6, ALIV=2.834E6, AKLV=2340.6, AKIV=2825.7, G=9.8, R=287.
 
 end module shcu_vars_const

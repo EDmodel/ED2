@@ -17,7 +17,7 @@ lonlat=${here}'/joborder.txt'
 #----- Should the output be in a disk other than the one set in "here"? -------------------#
 outthere='y'
 #----- Disk name (usually just the path until right before your own directory). -----------#
-diskthere='/n/scratch2/moorcroft_lab'
+diskthere='/n/moorcroftfs2'
 #----- This is the default path with the met driver. --------------------------------------#
 sitemetdef='/n/moorcroft_data/mlongo/data/ed2_data/site_met_driver'
 #----- This is the header with the Sheffield data. ----------------------------------------#
@@ -32,7 +32,7 @@ copy2scratch='y'
 #    In case we should copy, this is the source where the data is organised to go.  This   #
 # will override sitemetdef and pdroughtpath.                                               #
 #------------------------------------------------------------------------------------------#
-packdatasrc='/n/data/moorcroft_lab/mlongo/stripe_1M_35'
+packdatasrc='/n/moorcroft_data/mlongo/data/2scratch'
 
 #------------------------------------------------------------------------------------------#
 #      History run variables.                                                              #
@@ -297,23 +297,28 @@ do
    atmco2=`echo ${oi}       | awk '{print $57}'`
    thcrit=`echo ${oi}       | awk '{print $58}'`
    smfire=`echo ${oi}       | awk '{print $59}'`
-   isoilbc=`echo ${oi}      | awk '{print $60}'`
-   imetrad=`echo ${oi}      | awk '{print $61}'`
-   ibranch=`echo ${oi}      | awk '{print $62}'`
-   icanrad=`echo ${oi}      | awk '{print $63}'`
-   crown=`echo   ${oi}      | awk '{print $64}'`
-   ltransvis=`echo ${oi}    | awk '{print $65}'`
-   lreflectvis=`echo ${oi}  | awk '{print $66}'`
-   ltransnir=`echo ${oi}    | awk '{print $67}'`
-   lreflectnir=`echo ${oi}  | awk '{print $68}'`
-   orienttree=`echo ${oi}   | awk '{print $69}'`
-   orientgrass=`echo ${oi}  | awk '{print $70}'`
-   clumptree=`echo ${oi}    | awk '{print $71}'`
-   clumpgrass=`echo ${oi}   | awk '{print $72}'`
-   ivegtdyn=`echo ${oi}     | awk '{print $73}'`
-   igndvap=`echo ${oi}      | awk '{print $74}'`
-   iphen=`echo ${oi}        | awk '{print $75}'`
-   iallom=`echo ${oi}       | awk '{print $76}'`
+   ifire=`echo ${oi}        | awk '{print $60}'`
+   fireparm=`echo ${oi}     | awk '{print $61}'`
+   ipercol=`echo ${oi}      | awk '{print $62}'`
+   isoilbc=`echo ${oi}      | awk '{print $63}'`
+   runoff=`echo ${oi}       | awk '{print $64}'`
+   imetrad=`echo ${oi}      | awk '{print $65}'`
+   ibranch=`echo ${oi}      | awk '{print $66}'`
+   icanrad=`echo ${oi}      | awk '{print $67}'`
+   crown=`echo   ${oi}      | awk '{print $68}'`
+   ltransvis=`echo ${oi}    | awk '{print $69}'`
+   lreflectvis=`echo ${oi}  | awk '{print $70}'`
+   ltransnir=`echo ${oi}    | awk '{print $71}'`
+   lreflectnir=`echo ${oi}  | awk '{print $72}'`
+   orienttree=`echo ${oi}   | awk '{print $73}'`
+   orientgrass=`echo ${oi}  | awk '{print $74}'`
+   clumptree=`echo ${oi}    | awk '{print $75}'`
+   clumpgrass=`echo ${oi}   | awk '{print $76}'`
+   ivegtdyn=`echo ${oi}     | awk '{print $77}'`
+   igndvap=`echo ${oi}      | awk '{print $78}'`
+   iphen=`echo ${oi}        | awk '{print $79}'`
+   iallom=`echo ${oi}       | awk '{print $80}'`
+   ibigleaf=`echo ${oi}     | awk '{print $81}'`
    #---------------------------------------------------------------------------------------#
 
 
@@ -460,12 +465,12 @@ do
    #---------------------------------------------------------------------------------------#
    case ${polyiata} in
    wch|zmh|nqn)
-      pfts='5,6,7,8,9,10,11,17'
+      pfts='6,7,8,9,10,11,16,17'
       crop=5
       plantation=17
       ;;
    hvd)
-      pfts='5,6,8,9,10,11'
+      pfts='6,8,9,10,11,16'
       crop=5
       plantation=8
       ;;
@@ -474,12 +479,12 @@ do
       crop=16
       plantation=17
       ;;
-   fns)
+   fns*)
       pfts='1,16'
       crop=1
       plantation=17
       ;;
-   s77)
+   s77*)
       pfts='1,16'
       crop=16
       plantation=17
@@ -517,8 +522,8 @@ do
          ;;
       Harvard)
          metdriverdb=${sitemet}'/Harvard_Forest/Harvard_Forest_HEADER'
-         metcyc1=1993
-         metcycf=2008
+         metcyc1=1992
+         metcycf=2003
          imetavg=1
          ;;
       Manaus_KM34)
@@ -537,6 +542,12 @@ do
          metdriverdb=${sitemet}'/Reserva_Pe_de_Gigante/Reserva_Pe-de-Gigante_HEADER'
          metcyc1=2001
          metcycf=2003
+         imetavg=1
+         ;;
+      Santarem_KM66)
+         metdriverdb=${sitemet}'/Santarem_KM66/Santarem_KM66_HEADER'
+         metcyc1=2002
+         metcycf=2010
          imetavg=1
          ;;
       Santarem_KM67)
@@ -619,6 +630,12 @@ do
       #------------------------------------------------------------------------------------#
 
       case ${metdriver} in
+      Santarem_KM66)
+         metdriverdb=${pdroughtpath}'/Santarem_KM66/S66_'${metdesc}'_HEADER'
+         metcyc1=1600
+         metcycf=1609
+         imetavg=1
+         ;;
       Santarem_KM67)
          metdriverdb=${pdroughtpath}'/Santarem_KM67/S67_'${metdesc}'_HEADER'
          metcyc1=1600
@@ -952,7 +969,7 @@ do
    then
       sed -i s@CRASHED@HISTORY@g ${here}/${polyname}/statusrun.txt
       runt='HISTORY'
-      toler=`calc.sh ${toler}/10`
+      # toler=`calc.sh ${toler}/10`
    fi
    #---------------------------------------------------------------------------------------#
 
@@ -969,6 +986,12 @@ do
    then
       thissfilin=${fullygrown}
       case ${polyiata} in
+      hvd)
+         thissfilin=${bioinit}'/harvard.'
+         ;;
+      s66)
+         thissfilin=${bioinit}'/km67_ustein_newallom.'
+         ;;
       s67)
          thissfilin=${bioinit}'/km67_ustein_newallom.'
          ;;
@@ -1092,8 +1115,12 @@ do
    sed -i s@myatmco2@${atmco2}@g             ${ED2IN}
    sed -i s@mythcrit@${thcrit}@g             ${ED2IN}
    sed -i s@mysmfire@${smfire}@g             ${ED2IN}
+   sed -i s@myfire@${ifire}@g                ${ED2IN}
+   sed -i s@myfuel@${fireparm}@g             ${ED2IN}
    sed -i s@mymetavg@${imetavg}@g            ${ED2IN}
+   sed -i s@mypercol@${ipercol}@g            ${ED2IN}
    sed -i s@mysoilbc@${isoilbc}@g            ${ED2IN}
+   sed -i s@myrunoff@${runoff}@g             ${ED2IN}
    sed -i s@mymetrad@${imetrad}@g            ${ED2IN}
    sed -i s@mybranch@${ibranch}@g            ${ED2IN}
    sed -i s@mycanrad@${icanrad}@g            ${ED2IN}
@@ -1107,6 +1134,7 @@ do
    sed -i s@myclumptree@${clumptree}@g       ${ED2IN}
    sed -i s@myclumpgrass@${clumpgrass}@g     ${ED2IN}
    sed -i s@myvegtdyn@${ivegtdyn}@g          ${ED2IN}
+   sed -i s@mybigleaf@${ibigleaf}@g          ${ED2IN}
    sed -i s@myubmin@${ubmin}@g               ${ED2IN}
    sed -i s@myugbmin@${ugbmin}@g             ${ED2IN}
    sed -i s@myustmin@${ustmin}@g             ${ED2IN}

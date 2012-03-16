@@ -131,13 +131,15 @@ subroutine copy_nl(copy_type)
    use decomp_coms          , only : n_decomp_lim              & ! intent(out)
                                    , LloydTaylor               ! ! intent(out)
    use disturb_coms         , only : include_fire              & ! intent(out)
+                                   , fire_parameter            & ! intent(out)
                                    , ianth_disturb             & ! intent(out)
                                    , treefall_disturbance_rate & ! intent(out)
                                    , lu_database               & ! intent(out)
                                    , plantation_file           & ! intent(out)
                                    , lu_rescale_file           & ! intent(out)
                                    , sm_fire                   & ! intent(out)
-                                   , time2canopy               ! ! intent(out)
+                                   , time2canopy               & ! intent(out)
+                                   , min_patch_area            ! ! intent(out)
    use pft_coms             , only : include_these_pft         & ! intent(out)
                                    , agri_stock                & ! intent(out)
                                    , plantation_stock          & ! intent(out)
@@ -167,6 +169,7 @@ subroutine copy_nl(copy_type)
                                    , end_time                  & ! intent(out)
                                    , radfrq                    & ! intent(out)
                                    , ivegt_dynamics            & ! intent(out)
+                                   , ibigleaf                  & ! intent(out)
                                    , integration_scheme        & ! intent(out)
                                    , ffilout                   & ! intent(out)
                                    , idoutput                  & ! intent(out)
@@ -236,6 +239,8 @@ subroutine copy_nl(copy_type)
                                    , ipercol                   & ! intent(out)
                                    , rk4_tolerance             ! ! intent(out)
    use ed_para_coms         , only : loadmeth                  ! ! intent(out)
+   use detailed_coms        , only : idetailed                 & ! intent(out)
+                                   , patch_keep                ! ! intent(out)
    use consts_coms          , only : vonk                      & ! intent(in)
                                    , day_sec                   & ! intent(in)
                                    , hr_sec                    & ! intent(in)
@@ -333,6 +338,7 @@ subroutine copy_nl(copy_type)
       ed_reg_lonmax             = nl%ed_reg_lonmax
 
       ivegt_dynamics            = nl%ivegt_dynamics
+      ibigleaf                  = nl%ibigleaf
       integration_scheme        = nl%integration_scheme
       rk4_tolerance             = nl%rk4_tolerance
       ibranch_thermo            = nl%ibranch_thermo
@@ -385,6 +391,7 @@ subroutine copy_nl(copy_type)
       n_plant_lim               = nl%n_plant_lim
       n_decomp_lim              = nl%n_decomp_lim
       include_fire              = nl%include_fire
+      fire_parameter            = nl%fire_parameter
       sm_fire                   = nl%sm_fire
       ianth_disturb             = nl%ianth_disturb
 
@@ -441,9 +448,13 @@ subroutine copy_nl(copy_type)
       maxpatch                  = nl%maxpatch
       maxcohort                 = nl%maxcohort
       min_site_area             = nl%min_site_area
+      min_patch_area            = nl%min_patch_area
       ioptinpt                  = nl%ioptinpt
       zrough                    = nl%zrough
-      
+
+      idetailed                 = nl%idetailed
+      patch_keep                = nl%patch_keep
+
       nnxp                      = nl%nnxp
       nnyp                      = nl%nnyp
 

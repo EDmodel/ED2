@@ -98,7 +98,7 @@ subroutine nakanishi(m1,m2,m3,m4,ia,iz,ja,jz,jd,tkep,tket,vt3dd,vt3de,vt3dh,vt3d
                             , qq       => vctr38   ! ! intent(out)
    use rconstants,     only : abslmomin            & ! intent(in)
                             , abswltlmin           & ! intent(in)
-                            , cp                   & ! intent(in)
+                            , cpdry                & ! intent(in)
                             , grav                 & ! intent(in)
                             , ltscalemax           & ! intent(in)
                             , sigwmin              & ! intent(in)
@@ -353,18 +353,18 @@ subroutine nakanishi(m1,m2,m3,m4,ia,iz,ja,jz,jd,tkep,tket,vt3dd,vt3de,vt3dh,vt3d
             !    -> Or, if the PBL is convective, then the PBL is defined as the level     !
             !       where the first minimum of w'theta'                                    !
             !------------------------------------------------------------------------------!
-            kpbl(i,j) = k2w
-            pblhgt(i,j)=zagl(k2w)
-            aux= wltl0 * grav / (cp * thetav0(k2w))
+            kpbl(i,j)   = k2w
+            pblhgt(i,j) = zagl(k2w)
+            aux         = wltl0 * grav / (cpdry * thetav0(k2w))
             convmixlay: do k=k2w+1,m1-1
-               kpbl(i,j) = k
-               pblhgt(i,j)=0.5*(zagl(k)+zagl(k-1))
-               wstarw=cbrt(aux * pblhgt(i,j) )
-               thetavp(k)=thetav0(k2w)+8.5*wltl0/(wstarw*cp)
-               ri = grav * (thetav0(k)-thetavp(k)) * (zagl(k)-zagl(k2w))                   &
-                  / ( thetavp(k) * ((uspd(k)-uspd(k2w)) * (uspd(k)-uspd(k2w))       &
-                    + (vspd(k)-vspd(k2w)) * (vspd(k)-vspd(k2w))                    &
-                    + 100.*ustarw*ustarw) )
+               kpbl(i,j)   = k
+               pblhgt(i,j) = 0.5*(zagl(k) + zagl(k-1))
+               wstarw      = cbrt(aux * pblhgt(i,j) )
+               thetavp(k)  = thetav0(k2w) + 8.5 * wltl0 / (wstarw*cpdry)
+               ri          = grav * (thetav0(k)-thetavp(k)) * (zagl(k)-zagl(k2w))          &
+                           / ( thetavp(k) * ((uspd(k)-uspd(k2w)) * (uspd(k)-uspd(k2w))     &
+                             + (vspd(k)-vspd(k2w)) * (vspd(k)-vspd(k2w))                   &
+                             + 100. * ustarw * ustarw) )
                if (ri >= 0.25) exit convmixlay
             end do convmixlay
          end if

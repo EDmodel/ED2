@@ -29,39 +29,83 @@ subroutine inithis()
    use ref_sounding
    use io_params
    use mem_scratch
-   use mem_aerad , only : nwave     ! ! intent(in)
-   use grid_dims , only : maxgrds   & ! intent(in)
-                        , str_len   ! ! intent(in)
-   use mem_cuparm, only : nclouds   & ! intent(in)
-                        , nnqparm   ! ! intent(in)
-   use therm_lib , only : virtt     & ! intent(in)
-                        , vapour_on ! ! intent(in)
+   use mem_aerad , only : nwave        ! ! intent(in)
+   use grid_dims , only : maxgrds      & ! intent(in)
+                        , str_len      ! ! intent(in)
+   use mem_cuparm, only : nclouds      & ! intent(in)
+                        , nnqparm      ! ! intent(in)
+   use therm_lib , only : virtt        & ! intent(in)
+                        , vapour_on    & ! intent(in)
+                        , exner2press  & ! intent(in)
+                        , extheta2temp ! ! intent(in)
 
    implicit none
 
    !----- Local variables -----------------------------------------------------------------!
-   character (len=str_len)                              :: hnamel, hnamelh
-   character (len=2)                                    :: cng
-   integer                                              :: ngrids1,ioutput1,nzg1,nzs1
-   integer                                              :: npatch1,nclouds1
-   integer                                              :: iyr,imn,idy,itm,ie,ngrmin
-   integer                                              :: maxarr,maxarr2
-   integer                                              :: ngr,maxx1,maxy1,maxz1
-   integer                                              :: npts,nptsh,nv,nvh,i,k,nzpg1,nc
-   integer                                       , save :: iunhd=11,inhunt=10
-   integer          , allocatable, dimension(:)         :: nnxp1,nnyp1,nnzp1
-   integer          , allocatable, dimension(:)         :: nnqparm1
-   real                                                 :: ztop1
-   real             , allocatable, dimension(:)         :: scr,scr2,scr3
-   real             , allocatable, dimension(:)         :: platn1,plonn1
-   real             , allocatable, dimension(:)         :: u01dn1,v01dn1,rt01dn1,th01dn1
-   real             , allocatable, dimension(:)         :: pi01dn1,dn01dn1,co201dn1
-   real             , allocatable, dimension(:,:)       :: xmn1,xtn1,ymn1,ytn1,zmn1,ztn1
-   real             , allocatable, dimension(:,:)       :: topt1,parea
-   real(kind=8) :: time1
-   type (head_table), allocatable, dimension(:)  , save :: hr_table
+   character (len=str_len)                                  :: hnamel
+   character (len=str_len)                                  :: hnamelh
+   character (len=2)                                        :: cng
+   integer                                                  :: ngrids1
+   integer                                                  :: ioutput1
+   integer                                                  :: nzg1
+   integer                                                  :: nzs1
+   integer                                                  :: npatch1
+   integer                                                  :: nclouds1
+   integer                                                  :: iyr
+   integer                                                  :: imn
+   integer                                                  :: idy
+   integer                                                  :: itm
+   integer                                                  :: ie
+   integer                                                  :: ngrmin
+   integer                                                  :: maxarr
+   integer                                                  :: maxarr2
+   integer                                                  :: ngr
+   integer                                                  :: maxx1
+   integer                                                  :: maxy1
+   integer                                                  :: maxz1
+   integer                                                  :: npts
+   integer                                                  :: nptsh
+   integer                                                  :: nv
+   integer                                                  :: nvh
+   integer                                                  :: i
+   integer                                                  :: k
+   integer                                                  :: nzpg1
+   integer                                                  :: nc
+   real(kind=8)                                             :: time1
+   integer          , allocatable, dimension(:)             :: nnxp1
+   integer          , allocatable, dimension(:)             :: nnyp1
+   integer          , allocatable, dimension(:)             :: nnzp1
+   integer          , allocatable, dimension(:)             :: nnqparm1
+   real                                                     :: ztop1
+   real             , allocatable, dimension(:)             :: scr
+   real             , allocatable, dimension(:)             :: scr2
+   real             , allocatable, dimension(:)             :: scr3
+   real             , allocatable, dimension(:)             :: platn1
+   real             , allocatable, dimension(:)             :: plonn1
+   real             , allocatable, dimension(:)             :: u01dn1
+   real             , allocatable, dimension(:)             :: v01dn1
+   real             , allocatable, dimension(:)             :: rt01dn1
+   real             , allocatable, dimension(:)             :: th01dn1
+   real             , allocatable, dimension(:)             :: pi01dn1
+   real             , allocatable, dimension(:)             :: dn01dn1
+   real             , allocatable, dimension(:)             :: co201dn1
+   real             , allocatable, dimension(:,:)           :: xmn1
+   real             , allocatable, dimension(:,:)           :: xtn1
+   real             , allocatable, dimension(:,:)           :: ymn1
+   real             , allocatable, dimension(:,:)           :: ytn1
+   real             , allocatable, dimension(:,:)           :: zmn1
+   real             , allocatable, dimension(:,:)           :: ztn1
+   real             , allocatable, dimension(:,:)           :: topt1
+   real             , allocatable, dimension(:,:)           :: parea
+   type (head_table), allocatable, dimension(:)             :: hr_table
+   integer                                       , save     :: iunhd  = 11
+   integer                                       , save     :: inhunt = 10
    !----- External functions --------------------------------------------------------------!
-   integer, external :: cio_i,cio_f,cio_i_sca,cio_f_sca,cio_f8_sca
+   integer                                       , external :: cio_i
+   integer                                       , external :: cio_f
+   integer                                       , external :: cio_i_sca
+   integer                                       , external :: cio_f_sca
+   integer                                       , external :: cio_f8_sca
    !---------------------------------------------------------------------------------------!
 
 
@@ -74,8 +118,12 @@ subroutine inithis()
 
    ie=cio_i_sca(iunhd,1,'ngrids',ngrids1,1)
 
-   allocate (nnxp1(ngrids1),nnyp1(ngrids1),nnzp1(ngrids1))
-   allocate (platn1(ngrids1),plonn1(ngrids1),nnqparm1(ngrids1))
+   allocate (nnxp1   (ngrids1))
+   allocate (nnyp1   (ngrids1))
+   allocate (nnzp1   (ngrids1))
+   allocate (platn1  (ngrids1))
+   allocate (plonn1  (ngrids1))
+   allocate (nnqparm1(ngrids1))
 
    ie=cio_i(iunhd,1,'nnxp',nnxp1,ngrids1)
    ie=cio_i(iunhd,1,'nnyp',nnyp1,ngrids1)
@@ -138,13 +186,17 @@ subroutine inithis()
       maxx1=max(maxx1,nnxp1(ngr))
       maxy1=max(maxy1,nnyp1(ngr))
       maxz1=max(maxz1,nnzp1(ngr))
-   enddo
+   end do
+   !---------------------------------------------------------------------------------------!
 
-   !---- Allocating variables based on the maximum dimensions -----------------------------!
-   allocate(xmn1(maxx1,ngrids1),xtn1(maxx1,ngrids1))
-   allocate(ymn1(maxy1,ngrids1),ytn1(maxy1,ngrids1))
-   allocate(zmn1(maxz1,ngrids1),ztn1(maxz1,ngrids1))
-
+   !---- Allocate variables based on the maximum dimensions -------------------------------!
+   allocate(xmn1(maxx1,ngrids1))
+   allocate(xtn1(maxx1,ngrids1))
+   allocate(ymn1(maxy1,ngrids1))
+   allocate(ytn1(maxy1,ngrids1))
+   allocate(zmn1(maxz1,ngrids1))
+   allocate(ztn1(maxz1,ngrids1))
+   !---------------------------------------------------------------------------------------!
 
 
 
@@ -156,14 +208,14 @@ subroutine inithis()
       ie=cio_f(iunhd,1,'ytn'//cng,ytn1(:,ngr),nnyp1(ngr))
       ie=cio_f(iunhd,1,'zmn'//cng,zmn1(:,ngr),nnzp1(ngr))
       ie=cio_f(iunhd,1,'ztn'//cng,ztn1(:,ngr),nnzp1(ngr))
-   enddo
+   end do
 
    allocate (topt1(maxarr2,ngrids1))
-   allocate (parea(maxarr,ngrids1))
+   allocate (parea(maxarr ,ngrids1))
 
-   allocate (scr(maxarr))
-   allocate (scr2(maxarr))
-   allocate (scr3(maxarr))
+   allocate (scr  (maxarr))
+   allocate (scr2 (maxarr))
+   allocate (scr3 (maxarr))
 
    call rams_f_open(inhunt,hnamel,'UNFORMATTED','OLD','READ',0)
 
@@ -196,6 +248,7 @@ subroutine inithis()
    end do
 
    rewind(unit=inhunt)
+   !---------------------------------------------------------------------------------------!
 
 
    !----- Need wind rotation for the general case -----------------------------------------!
@@ -329,20 +382,30 @@ subroutine inithis()
                              ,1,vtab_r(nv,1)%var_p,nclouds,ngr,vtab_r(nv,1)%name,9)
             end if
             exit
+            !------------------------------------------------------------------------------!
          end if
+         !---------------------------------------------------------------------------------!
       end do
-
+      !------------------------------------------------------------------------------------!
    end do
+   !---------------------------------------------------------------------------------------!
 
-   !----- Close the input history file and free some memory -------------------------------!
+   !----- Close the input history file. ---------------------------------------------------!
    close(unit=inhunt)
-   deallocate(scr,scr2,scr3,hr_table)
+   !---------------------------------------------------------------------------------------!
+
 
 
    !-----  Prepare 1D reference sounding --------------------------------------------------!
    nzpg1=nnzp1(1)
-   allocate(u01dn1(nzpg1), v01dn1(nzpg1),rt01dn1(nzpg1),th01dn1(nzpg1),pi01dn1(nzpg1)      &
-           ,dn01dn1(nzpg1), co201dn1(nzpg1) )
+   allocate(u01dn1  (nzpg1))
+   allocate(v01dn1  (nzpg1))
+   allocate(rt01dn1 (nzpg1))
+   allocate(th01dn1 (nzpg1))
+   allocate(pi01dn1 (nzpg1))
+   allocate(dn01dn1 (nzpg1))
+   allocate(co201dn1(nzpg1))
+   !---------------------------------------------------------------------------------------!
 
    cng='01'
    ie=cio_f(iunhd,1,'u01dn'//cng  ,  u01dn1,nnzp1(1))
@@ -358,24 +421,27 @@ subroutine inithis()
    call htint(nzpg1,u01dn1,ztn1(1,1) ,nnzp(1),u01dn(1,1),ztn(1,1))
    call htint(nzpg1,v01dn1,ztn1(1,1) ,nnzp(1),v01dn(1,1),ztn(1,1))
 
-   !----- Assing vapour mixing ratio only if the user is running a "wet" run --------------!
+   !----- Assign vapour mixing ratio only if the user is running a "wet" run --------------!
    if (vapour_on) then
       call htint(nzpg1,rt01dn1,ztn1(1,1),nnzp(1),rt01dn(1,1),ztn(1,1))
    else
       rt01dn(1:nnzp(ngrid),1) = 0.
    end if
+   !---------------------------------------------------------------------------------------!
 
-   !----- Assing CO2 mixing ratio only if the user is running a CO2 run -------------------!
+   !----- Assign CO2 mixing ratio only if the user is running a CO2 run -------------------!
    if (co2_on) then
       call htint(nzpg1,co201dn1,ztn1(1,1),nnzp(1),co201dn(1,1),ztn(1,1))
    else
       co201dn(1:nnzp(ngrid),1) = co2con(1)
-   endif
+   end if
+   !---------------------------------------------------------------------------------------!
 
-   !----- Saving the virtual potential temperature ----------------------------------------!
+   !----- Save the virtual potential temperature ------------------------------------------!
    do k = 1,nnzp(ngrid)
       th01dn(k,1) = virtt(vctr1(k),rt01dn(k,1))
    end do
+   !---------------------------------------------------------------------------------------!
 
    !----- Lowest level: same as the one just above ----------------------------------------!
    u01dn(1,1)  = u01dn(2,1)
@@ -384,18 +450,23 @@ subroutine inithis()
    th01dn(1,1) = th01dn(2,1)
    pi01dn(1,1) = pi01dn1(1) + grav * (ztn1(1,1)-ztn(1,1))                                  &
                / (.5 * (th01dn(1,1) + virtt(th01dn1(1),rt01dn1(1)) ) )
+   !---------------------------------------------------------------------------------------!
 
-   !----- Computing the ref. Exner function profile, based on hydrostatic equilibrium -----!
+
+   !----- Compute the ref. Exner function profile, based on hydrostatic equilibrium. ------!
    do k = 2,nnzp(1)
       pi01dn(k,1) = pi01dn(k-1,1) - grav                                                   &
                                   / (dzmn(k-1,1)* .5 * (th01dn(k,1) + th01dn(k-1,1)))
    end do
+   !---------------------------------------------------------------------------------------!
 
-   !----- Computing the ref. density profile, based on the perfect gas law ----------------!
+
+   !----- Find the ref. density profile, based on the perfect gas law. --------------------!
    do k = 1,nnzp(1)
-      vctr4(k) = (pi01dn(k,1) / cp) ** cpor * p00
-      dn01dn(k,1) = cp * vctr4(k) / (rdry * th01dn(k,1) * pi01dn(k,1))
+      vctr4(k)    = exner2press(pi01dn(k,1))
+      dn01dn(k,1) = vctr4(k) / (rdry * extheta2temp(pi01dn(k,1),th01dn(k,1)) )
    end do
+   !---------------------------------------------------------------------------------------!
 
    close(unit=iunhd,status='keep')
 
@@ -405,6 +476,37 @@ subroutine inithis()
                                        , basic_g(1)%dn0u   ,basic_g(1)%dn0v   &
                                        , basic_g(1)%th0    ,grid_g(1)%topt    &
                                        , grid_g(1)%rtgt    )
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !----- Free memory of all allocatable variables. ---------------------------------------!
+   deallocate(nnxp1    )
+   deallocate(nnyp1    )
+   deallocate(nnzp1    )
+   deallocate(nnqparm1 )
+   deallocate(scr      )
+   deallocate(scr2     )
+   deallocate(scr3     )
+   deallocate(platn1   )
+   deallocate(plonn1   )
+   deallocate(u01dn1   )
+   deallocate(v01dn1   )
+   deallocate(rt01dn1  )
+   deallocate(th01dn1  )
+   deallocate(pi01dn1  )
+   deallocate(dn01dn1  )
+   deallocate(co201dn1 )
+   deallocate(xmn1     )
+   deallocate(xtn1     )
+   deallocate(ymn1     )
+   deallocate(ytn1     )
+   deallocate(zmn1     )
+   deallocate(ztn1     )
+   deallocate(topt1    )
+   deallocate(parea    )
+   deallocate(hr_table )
+   !---------------------------------------------------------------------------------------!
 
    return
 end subroutine inithis

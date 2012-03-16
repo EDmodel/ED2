@@ -583,6 +583,20 @@ $ED_NL
    !---------------------------------------------------------------------------------------!
 
 
+   !---------------------------------------------------------------------------------------!
+   ! IBIGLEAF -- Do you want to run ED as a 'big leaf' model?                              !
+   !             0.  No, use the standard size- and age-structure (Moorcroft et al. 2001)  !
+   !                 This is the recommended method for most applications.                 !
+   !             1. 'big leaf' ED:  this will have no horizontal or vertical hetero-       !
+   !                 geneities; 1 patch per PFT and 1 cohort per patch; no vertical        !
+   !                 growth, recruits will 'appear' instantaneously at maximum height.     !
+   !                                                                                       !
+   ! N.B. if you set IBIGLEAF to 1, you MUST turn off the crown model (CROWN_MOD = 0)      !
+   !---------------------------------------------------------------------------------------!
+   NL%IBIGLEAF = mybigleaf
+   !---------------------------------------------------------------------------------------!
+
+
 
 
    !---------------------------------------------------------------------------------------!
@@ -591,6 +605,8 @@ $ED_NL
    !                           errors.                                                     !
    !                       1.  Fourth-order Runge-Kutta method.  ED-2.1 default method     !
    !                       2.  Heun's method (a second-order Runge-Kutta).                 !
+   !                       3.  Hybrid Stepping (BDF2 implicit step for the canopy air and  !
+   !                           leaf temp, forward Euler for else, under development).      !
    !---------------------------------------------------------------------------------------!
    NL%INTEGRATION_SCHEME = 1
    !---------------------------------------------------------------------------------------!
@@ -958,24 +974,28 @@ $ED_NL
 
    !---------------------------------------------------------------------------------------!
    !      The following parameters adjust the fire disturbance in the model.               !
-   ! INCLUDE_FIRE  -- Which threshold to use for fires.                                    !
-   !                  0.  No fires;                                                        !
-   !                  1.  (deprecated) Fire will be triggered with enough biomass and      !
-   !                      integrated ground water depth less than a threshold.  Based on   !
-   !                      ED-1, the threshold assumes that the soil is 1 m, so deeper      !
-   !                      soils will need to be much drier to allow fires to happen and    !
-   !                      often  will never allow fires.                                   !
-   !                  2.  Fire will be triggered with enough biomass and the total soil    !
-   !                      water at the top 75 cm falls below a threshold.                  !
-   ! SM_FIRE       -- This is used only when INCLUDE_FIRE = 2.  The sign here matters.     !
-   !                  >= 0. - Minimum relative soil moisture above dry air of the top 75cm !
-   !                          that will prevent fires to happen.                           !
-   !                  <  0. - Minimum mean soil moisture potential in MPa of the top 75 cm !
-   !                          that will prevent fires to happen.  The dry air soil         !
-   !                          potential is defined as -3.1 MPa, so make sure SM_FIRE   is  !
-   !                          greater than this value.                                     !
+   ! INCLUDE_FIRE   -- Which threshold to use for fires.                                   !
+   !                   0.  No fires;                                                       !
+   !                   1.  (deprecated) Fire will be triggered with enough biomass and     !
+   !                       integrated ground water depth less than a threshold.  Based on  !
+   !                       ED-1, the threshold assumes that the soil is 1 m, so deeper     !
+   !                       soils will need to be much drier to allow fires to happen and   !
+   !                       often  will never allow fires.                                  !
+   !                   2.  Fire will be triggered with enough biomass and the total soil   !
+   !                       water at the top 75 cm falls below a threshold.                 !
+   ! FIRE_PARAMETER -- If fire happens, this will control the intensity of the disturbance !
+   !                   given the amount of fuel (currently the total above-ground          !
+   !                   biomass).                                                           !
+   ! SM_FIRE        -- This is used only when INCLUDE_FIRE = 2.  The sign here matters.    !
+   !                   >= 0. - Minimum relative soil moisture above dry air of the top 1m  !
+   !                           that will prevent fires to happen.                          !
+   !                   <  0. - Minimum mean soil moisture potential in MPa of the top 1m   !
+   !                           that will prevent fires to happen.  The dry air soil        !
+   !                           potential is defined as -3.1 MPa, so make sure SM_FIRE is   !
+   !                           greater than this value.                                    !
    !---------------------------------------------------------------------------------------!
-   NL%INCLUDE_FIRE    = 2
+   NL%INCLUDE_FIRE    = myfire
+   NL%FIRE_PARAMETER  = myfuel
    NL%SM_FIRE         = mysmfire
    !---------------------------------------------------------------------------------------!
 
@@ -1085,7 +1105,7 @@ $ED_NL
    !            2.  Soil conductivity decreases with depth even for constant soil moisture !
    !                , otherwise it is the same as 1.                                       !
    !---------------------------------------------------------------------------------------!
-   NL%IPERCOL         = 1
+   NL%IPERCOL         = mypercol
    !---------------------------------------------------------------------------------------!
 
 
@@ -1133,30 +1153,33 @@ $ED_NL
 
    !---------------------------------------------------------------------------------------!
    ! The following variables control the size of sub-polygon structures in ED-2.           !
-   ! MAXSITE       -- This is the strict maximum number of sites that each polygon can     !
-   !                  contain.  Currently this is used only when the user wants to run the !
-   !                  same polygon with multiple soil types.  If there aren't that many    !
-   !                  different soil types with a minimum area (check MIN_SITE_AREA        !
-   !                  below), then the model will allocate just the amount needed.         !
-   ! MAXPATCH      -- If number of patches in a given site exceeds MAXPATCH, force patch   !
-   !                  fusion.  If MAXPATCH is 0, then fusion will never happen.  If        !
-   !                  MAXPATCH is negative, then the absolute value is used only during    !
-   !                  the initialization, and fusion will never happen again.  Notice that !
-   !                  if the patches are too different, then the actual number of patches  !
-   !                  in a site may exceed MAXPATCH.                                       !
-   ! MAXCOHORT     -- If number of cohorts in a given patch exceeds MAXCOHORT, force       !
-   !                  cohort fusion.  If MAXCOHORT is 0, then fusion will never happen.    !
-   !                  If MAXCOHORT is negative, then the absolute value is used only       !
-   !                  during the initialization, and fusion will never happen again.       !
-   !                  Notice that if the cohorts are too different, then the actual number !
-   !                  of cohorts in a patch may exceed MAXCOHORT.                          !
-   ! MIN_SITE_AREA -- This is the minimum fraction area of a given soil type that allows a !
-   !                  site to be created (ignored if IED_INIT_MODE is set to 3).           !
+   ! MAXSITE        -- This is the strict maximum number of sites that each polygon can    !
+   !                   contain.  Currently this is used only when the user wants to run    !
+   !                   the same polygon with multiple soil types.  If there aren't that    !
+   !                   many different soil types with a minimum area (check MIN_SITE_AREA  !
+   !                   below), then the model will allocate just the amount needed.        !
+   ! MAXPATCH       -- If number of patches in a given site exceeds MAXPATCH, force patch  !
+   !                   fusion.  If MAXPATCH is 0, then fusion will never happen.  If       !
+   !                   MAXPATCH is negative, then the absolute value is used only during   !
+   !                   the initialization, and fusion will never happen again.  Notice     !
+   !                   that if the patches are too different, then the actual number of    !
+   !                   patches in a site may exceed MAXPATCH.                              !
+   ! MAXCOHORT      -- If number of cohorts in a given patch exceeds MAXCOHORT, force      !
+   !                   cohort fusion.  If MAXCOHORT is 0, then fusion will never happen.   !
+   !                   If MAXCOHORT is negative, then the absolute value is used only      !
+   !                   during the initialization, and fusion will never happen again.      !
+   !                   Notice that if the cohorts are too different, then the actual       !
+   !                   number of cohorts in a patch may exceed MAXCOHORT.                  !
+   ! MIN_SITE_AREA  -- This is the minimum fraction area of a given soil type that allows  !
+   !                   a site to be created (ignored if IED_INIT_MODE is set to 3).        !
+   ! MIN_PATCH_AREA -- This is the minimum fraction area of a given soil type that allows  !
+   !                   a site to be created (ignored if IED_INIT_MODE is set to 3).        !
    !---------------------------------------------------------------------------------------!
-   NL%MAXSITE       =   1
-   NL%MAXPATCH      =  20
-   NL%MAXCOHORT     =  80
-   NL%MIN_SITE_AREA = 0.005
+   NL%MAXSITE        =     1
+   NL%MAXPATCH       =    20
+   NL%MAXCOHORT      =    80
+   NL%MIN_SITE_AREA  = 0.005
+   NL%MIN_PATCH_AREA = 0.005
    !---------------------------------------------------------------------------------------!
 
 
@@ -1196,7 +1219,7 @@ $ED_NL
    !                -folding lifetime" of the TSW in seconds due to runoff.  If you don't  !
    !                want runoff to happen, set this to 0.                                  !
    !---------------------------------------------------------------------------------------!
-   NL%RUNOFF_TIME    = 1800.
+   NL%RUNOFF_TIME    = myrunoff
    !---------------------------------------------------------------------------------------!
 
 
@@ -1323,6 +1346,49 @@ $ED_NL
    !---------------------------------------------------------------------------------------!
    NL%IEDCNFGF   = 'config.xml'
    NL%EVENT_FILE = 'myevents.xml'
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     The following variables are used to control the detailed output for debugging     !
+   ! purposes.                                                                             !
+   !                                                                                       !
+   !  IDETAILED -- This flag controls the possible detailed outputs, mostly used for       !
+   !               debugging purposes.  Notice that this doesn't replace the normal debug- !
+   !               ger options, the idea is to provide detailed output to check bad        !
+   !               assumptions.  The options are additive, and the indices below represent !
+   !               the different types of output:                                          !
+   !                                                                                       !
+   !               1  -- Detailed budget (every DTLSM)                                     !
+   !               2  -- Detailed photosynthesis (every DTLSM)                             !
+   !               4  -- Detailed output from the integrator (every HDID)                  !
+   !               8  -- Thermodynamic bounds for sanity check (every DTLSM)               !
+   !               16 -- Daily error stats (which variable caused the time step to shrink) !
+   !               32 -- Allometry parameters, and minimum and maximum sizes               !
+   !                     (two files, only at the beginning)                                !
+   !                                                                                       !
+   !               In case you don't want any detailed output (likely for most runs), set  !
+   !               IDETAILED to zero.  In case you want to generate multiple outputs, add  !
+   !               the number of the sought options: for example, if you want detailed     !
+   !               photosynthesis and detailed output from the integrator, set IDETAILED   !
+   !               to 6 (2 + 4).  Any combination of the above outputs is acceptable, al-  !
+   !               though all but the last produce a sheer amount of txt files, in which   !
+   !               case you may want to look at variable PATCH_KEEP.  It is also a good    !
+   !               idea to set IVEGT_DYNAMICS to 0 when using the first five outputs.      !
+   !                                                                                       !
+   !                                                                                       !
+   ! PATCH_KEEP -- This option will eliminate all patches except one from the initial-     !
+   !               isation.  This is only used when one of the first five types of         !
+   !               detailed output is active, otherwise it will be ignored.  Options are:  !
+   !                 -2.  Keep only the patch with the lowest potential LAI                !
+   !                 -1.  Keep only the patch with the highest potential LAI               !
+   !                  0.  Keep all patches.                                                !
+   !                > 0.  Keep the patch with the provided index.  In case the index is    !
+   !                      not valid, the model will crash.                                 !
+   !---------------------------------------------------------------------------------------!
+   NL%IDETAILED  = 0
+   NL%PATCH_KEEP = 0
    !---------------------------------------------------------------------------------------!
 
 

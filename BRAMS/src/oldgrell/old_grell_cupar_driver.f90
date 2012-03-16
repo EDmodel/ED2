@@ -224,8 +224,7 @@ end subroutine old_grell_cupar_driver
 !==========================================================================================!
 subroutine include_shal_effect(m1,m2,m3,ia,iz,ja,jz,dtlt                                   &
                               ,thetasta,rvsta,theta,rv,pi0,pp,thsrc,rtsrc)
-   use therm_lib , only : rslf
-   use rconstants, only : cpi,cpor,p00
+   use therm_lib , only : rslf,exner2press,extheta2temp
    implicit none
    integer, intent(in)                                           :: ia,iz,ja,jz
    integer, intent(in)                                           :: m1,m2,m3
@@ -234,15 +233,16 @@ subroutine include_shal_effect(m1,m2,m3,ia,iz,ja,jz,dtlt                        
    real   , intent(in)   , dimension(m1,m2,m3)                   :: theta,rv,pi0,pp
    real   , intent(in)   , dimension(m1,m2,m3)                   :: thsrc,rtsrc
    integer                                                       :: i,j,k
-   real                                                          :: press,rsat,tempk
+   real                                                          :: exner,press,rsat,tempk
    do j=ja,jz
       do i=ia,iz
          do k=2,m1
             ! Updating the potential temperature
             thetasta(k,i,j) = theta(k,i,j)+dtlt*thsrc(k,i,j)
             ! Finding the vapour mixing ratio after the shallow cumulus call
-            press=p00*(cpi*(pi0(k,i,j)+pp(k,i,j)))**cpor
-            tempk=cpi*theta(k,i,j)*(pi0(k,i,j)+pp(k,i,j))
+            exner=pi0(k,i,j)+pp(k,i,j)
+            press=exner2press(exner)
+            tempk=extheta2temp(exner,theta(k,i,j))
             rsat =rslf(press,tempk)
             
             rvsta(k,i,j) = max(epsilon(1.),min(rsat,rv(k,i,j)+dtlt*rtsrc(k,i,j)))

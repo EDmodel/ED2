@@ -576,7 +576,8 @@ character*(*) pathname
 !     new input data holding arrays:
 
 real readin2(360000)
-character*16 newname1*str_len,fmtstr*5,newne*6
+character(len=str_len) ::  newname1
+character(len=5) :: fmtstr
 character*3  degns,degew
 character*12 dtedfile
 character*4 subdir

@@ -28,8 +28,8 @@
 !           NCAR Technical Note NCAR/TN-461+STR, Boulder, CO, May 2004.                    !
 !                                                                                          !
 !------------------------------------------------------------------------------------------!
-subroutine leaf3_stars(theta_atm,theiv_atm,shv_atm,rvap_atm,co2_atm                        &
-                      ,theta_can,theiv_can,shv_can,rvap_can,co2_can                        &
+subroutine leaf3_stars(theta_atm,enthalpy_atm,shv_atm,rvap_atm,co2_atm                     &
+                      ,theta_can,enthalpy_can,shv_can,rvap_can,co2_can                     &
                       ,zref,dheight,uref,dtll,rough,ustar,tstar,estar,qstar,rstar,cstar    &
                       ,zeta,rib,r_aer)
    use mem_leaf  , only : istar      ! ! intent(in)
@@ -54,12 +54,12 @@ subroutine leaf3_stars(theta_atm,theiv_atm,shv_atm,rvap_atm,co2_atm             
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    real, intent(in)  :: theta_atm    ! Above canopy air pot. temperature        [        K]
-   real, intent(in)  :: theiv_atm    ! Above canopy air eq. pot. temp           [        K]
+   real, intent(in)  :: enthalpy_atm ! Above canopy air specific enthalpy       [     J/kg]
    real, intent(in)  :: shv_atm      ! Above canopy vapour spec. hum.           [kg/kg_air]
    real, intent(in)  :: rvap_atm     ! Above canopy vapour mixing ratio         [kg/kg_air]
    real, intent(in)  :: co2_atm      ! Above canopy CO2 mixing ratio            [ µmol/mol]
    real, intent(in)  :: theta_can    ! Canopy air potential temperature         [        K]
-   real, intent(in)  :: theiv_can    ! Canopy air equiv. potential temperature  [        K]
+   real, intent(in)  :: enthalpy_can ! Canopy air specific enthalpy             [     J/kg]
    real, intent(in)  :: shv_can      ! Canopy air vapour spec. humidity         [kg/kg_air]
    real, intent(in)  :: rvap_can     ! Canopy air vapour mixing ratio           [kg/kg_air]
    real, intent(in)  :: co2_can      ! Canopy air CO2 mixing ratio              [ µmol/mol]
@@ -307,11 +307,11 @@ subroutine leaf3_stars(theta_atm,theiv_atm,shv_atm,rvap_atm,co2_atm             
    end select
 
    !----- Finding all stars. --------------------------------------------------------------!
-   tstar = c3 *    (theta_atm - theta_can)
-   estar = c3 * log(theiv_atm / theiv_can)
-   qstar = c3 *    (shv_atm   - shv_can  )
-   rstar = c3 *    (rvap_atm  - rvap_can )
-   cstar = c3 *    (co2_atm   - co2_can  )
+   tstar = c3 * (theta_atm    - theta_can   )
+   estar = c3 * (enthalpy_atm - enthalpy_can)
+   qstar = c3 * (shv_atm      - shv_can     )
+   rstar = c3 * (rvap_atm     - rvap_can    )
+   cstar = c3 * (co2_atm      - co2_can     )
 
    if (abs(tstar) < 1.e-7) tstar = 0.
    if (abs(estar) < 1.e-7) estar = 0.
@@ -489,8 +489,8 @@ subroutine leaf3_grndvap(topsoil_energy,topsoil_water,topsoil_text,sfcwater_ener
                          , lnexp_min   & ! intent(in)
                          , huge_num    ! ! intent(in)
    use therm_lib  , only : rslif       & ! function
-                         , qwtk        & ! function
-                         , qtk         ! ! function
+                         , uextcm2tl   & ! function
+                         , uint2tl     ! ! function
    use mem_leaf   , only : igrndvap    ! ! intent(in)
 
    implicit none
@@ -537,7 +537,7 @@ subroutine leaf3_grndvap(topsoil_energy,topsoil_water,topsoil_text,sfcwater_ener
       ! determined by the alpha and beta parameters.                                       !
       !------------------------------------------------------------------------------------!
       nsoil = nint(topsoil_text)
-      call qwtk(topsoil_energy,topsoil_water*wdns,slcpd(nsoil),ground_temp,ground_fliq)
+      call uextcm2tl(topsoil_energy,topsoil_water*wdns,slcpd(nsoil),ground_temp,ground_fliq)
       !----- Compute the saturation mixing ratio at ground temperature. -------------------!
       ground_rsat = rslif(can_prss,ground_temp)
       !------------------------------------------------------------------------------------!
@@ -620,7 +620,7 @@ subroutine leaf3_grndvap(topsoil_energy,topsoil_water,topsoil_text,sfcwater_ener
       ! is "pure" water or snow, we let it evaporate freely.  We can understand  this as   !
       ! the limit of alpha and beta tending to one.                                        !
       !------------------------------------------------------------------------------------!
-      call qtk(sfcwater_energy_int,ground_temp,ground_fliq)
+      call uint2tl(sfcwater_energy_int,ground_temp,ground_fliq)
       !----- Compute the saturation specific humidity at ground temperature. --------------!
       ground_rsat = rslif(can_prss,ground_temp)
       !----- The ground specific humidity in this case is just the saturation value. ------!
@@ -841,16 +841,14 @@ end subroutine sfc_fields_adap
 !==========================================================================================!
 subroutine sfc_pcp(m2,m3,mcld,ia,iz,ja,jz,dtime,dtime_factor,theta2,exner2,conprr,bulkpcpg &
                   ,bulkqpcpg,bulkdpcpg,leafpcpg,leafqpcpg,leafdpcpg)
-   use rconstants, only : cice        & ! intent(in)
-                        , cliq        & ! intent(in)
-                        , cpi         & ! intent(in)
-                        , tsupercool  & ! intent(in)
-                        , t3ple       & ! intent(in)
-                        , t00         & ! intent(in)
-                        , hr_sec      & ! intent(in)
-                        , wdnsi       ! ! intent(in)
-   use node_mod  , only : mynum       ! ! intent(in)
-   use grid_dims , only : str_len     ! ! intent(in)
+   use rconstants, only : t3ple        & ! intent(in)
+                        , t00          & ! intent(in)
+                        , hr_sec       & ! intent(in)
+                        , wdnsi        ! ! intent(in)
+   use node_mod  , only : mynum        ! ! intent(in)
+   use grid_dims , only : str_len      ! ! intent(in)
+   use therm_lib , only : tl2uint      & ! function
+                        , extheta2temp ! ! function
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
    integer                       , intent(in)    :: m2
@@ -920,7 +918,7 @@ subroutine sfc_pcp(m2,m3,mcld,ia,iz,ja,jz,dtime,dtime_factor,theta2,exner2,conpr
       iloop: do i=ia,iz
 
          !----- Estimate the precipitation temperature. -----------------------------------!
-         rain_temp     = cpi * theta2(i,j) * exner2(i,j)
+         rain_temp     = extheta2temp(exner2(i,j),theta2(i,j))
 
 
          !----- Integrate precipitation rate. ---------------------------------------------!
@@ -978,8 +976,8 @@ subroutine sfc_pcp(m2,m3,mcld,ia,iz,ja,jz,dtime,dtime_factor,theta2,exner2,conpr
          ! fraction plus the specific internal energy of ice (below or at the triple       !
          ! point) multiplied by the ice fraction.                                          !
          !---------------------------------------------------------------------------------!
-         cumqpcpg = cumpcpg  * ( (1.0-fice) * cliq * ( max(t3ple,rain_temp) - tsupercool)  &
-                             +        fice  * cice *   min(rain_temp,t3ple)              )
+         cumqpcpg = cumpcpg  * ( (1.0-fice) * tl2uint(max(t3ple,rain_temp),1.0)            &
+                               +      fice  * tl2uint(min(rain_temp,t3ple),0.0) )
          !---------------------------------------------------------------------------------!
 
 
@@ -1221,8 +1219,7 @@ subroutine leaf3_sfcrad(mzg,mzs,ip,soil_water,soil_color,soil_text,sfcwater_dept
    use rconstants
    use mem_scratch
    use node_mod     , only : mynum         ! ! intent(in)
-   use therm_lib    , only : qwtk          & ! subroutine
-                           , qtk           & ! subroutine
+   use therm_lib    , only : uextcm2tl     & ! subroutine
                            , idealdenssh   ! ! function
    use catt_start   , only : CATT          ! ! intent(in)
    use teb_spm_start, only : TEB_SPM       ! ! intent(in)
@@ -1591,7 +1588,8 @@ end function leaf3_reduced_wind
 ! - gbh is in J/(K m2 s), and                                                              !
 ! - gbw is in kg_H2O/m2/s.                                                                 !
 !------------------------------------------------------------------------------------------!
-subroutine leaf3_aerodynamic_conductances(iveg,veg_wind,veg_temp,can_temp,can_shv,can_rhos)
+subroutine leaf3_aerodynamic_conductances(iveg,veg_wind,veg_temp,can_temp,can_shv,can_rhos &
+                                         ,can_cp)
    use leaf_coms , only : leaf_width & ! intent(in)
                         , aflat_turb & ! intent(in)
                         , aflat_lami & ! intent(in)
@@ -1606,8 +1604,7 @@ subroutine leaf3_aerodynamic_conductances(iveg,veg_wind,veg_temp,can_temp,can_sh
                         , gbw        ! ! intent(in)
    use rconstants, only : gr_coeff   & ! intent(in)
                         , th_diffi   & ! intent(in)
-                        , th_diff    & ! intent(in)
-                        , cp         ! ! intent(in)
+                        , th_diff    ! ! intent(in)
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
    integer                      :: iveg            ! Vegetation class           [      ---]
@@ -1616,6 +1613,7 @@ subroutine leaf3_aerodynamic_conductances(iveg,veg_wind,veg_temp,can_temp,can_sh
    real(kind=4)   , intent(in)  :: can_temp        ! Canopy air temperature     [        K]
    real(kind=4)   , intent(in)  :: can_shv         ! Canopy air spec. hum.      [    kg/kg]
    real(kind=4)   , intent(in)  :: can_rhos        ! Canopy air density         [    kg/m³]
+   real(kind=4)   , intent(in)  :: can_cp          ! Canopy air spec. heat      [   J/kg/K]
    !----- Local variables. ----------------------------------------------------------------!
    real(kind=4)                 :: lwidth          ! Leaf width                 [        m]
    real(kind=4)                 :: grashof         ! Grashof number             [      ---]
@@ -1675,7 +1673,7 @@ subroutine leaf3_aerodynamic_conductances(iveg,veg_wind,veg_temp,can_temp,can_sh
    ! water fluxes [J/K/m²/s and kg/m²/s, respectively].                                    !
    !---------------------------------------------------------------------------------------!
    gbh_mos = free_gbh_mos + forced_gbh_mos
-   gbh     =             gbh_mos * can_rhos * cp
+   gbh     =             gbh_mos * can_rhos * can_cp
    gbw     = gbh_2_gbw * gbh_mos * can_rhos
    !---------------------------------------------------------------------------------------!
 
@@ -1694,32 +1692,31 @@ end subroutine leaf3_aerodynamic_conductances
 !      This sub-routine copies some atmospheric fields from the 2-D arrays to the common   !
 ! module variable.                                                                         !
 !------------------------------------------------------------------------------------------!
-subroutine leaf3_atmo1d(m2,m3,i,j,thp,theta,rv,rtp,co2p,up,vp,pitot,dens,height,pcpg,qpcpg &
-                      ,dpcpg)
-   use leaf_coms , only : ubmin     & ! intent(in)
-                        , atm_up    & ! intent(out)
-                        , atm_vp    & ! intent(out)
-                        , atm_thil  & ! intent(out)
-                        , atm_theta & ! intent(out)
-                        , atm_rvap  & ! intent(out)
-                        , atm_rtot  & ! intent(out)
-                        , atm_shv   & ! intent(out)
-                        , geoht     & ! intent(out)
-                        , atm_exner & ! intent(out)
-                        , atm_co2   & ! intent(out)
-                        , atm_prss  & ! intent(out)
-                        , atm_rhos  & ! intent(out)
-                        , atm_vels  & ! intent(out)
-                        , atm_temp  & ! intent(out)
-                        , atm_theiv & ! intent(out)
-                        , pcpgl     & ! intent(out)
-                        , qpcpgl    & ! intent(out)
-                        , dpcpgl    ! ! intent(out)
-   use rconstants, only : srtwo     & ! intent(in)
-                        , cpi       & ! intent(in)
-                        , p00       & ! intent(in)
-                        , cpor      ! ! intent(in)
-   use therm_lib , only : thetaeiv  ! ! function
+subroutine leaf3_atmo1d(m2,m3,i,j,thp,theta,rv,rtp,co2p,up,vp,pitot,dens,height            &
+                       ,pcpg,qpcpg,dpcpg)
+   use leaf_coms , only : ubmin        & ! intent(in)
+                        , atm_up       & ! intent(out)
+                        , atm_vp       & ! intent(out)
+                        , atm_thil     & ! intent(out)
+                        , atm_theta    & ! intent(out)
+                        , atm_rvap     & ! intent(out)
+                        , atm_rtot     & ! intent(out)
+                        , atm_shv      & ! intent(out)
+                        , geoht        & ! intent(out)
+                        , atm_exner    & ! intent(out)
+                        , atm_co2      & ! intent(out)
+                        , atm_prss     & ! intent(out)
+                        , atm_rhos     & ! intent(out)
+                        , atm_vels     & ! intent(out)
+                        , atm_temp     & ! intent(out)
+                        , atm_theiv    & ! intent(out)
+                        , pcpgl        & ! intent(out)
+                        , qpcpgl       & ! intent(out)
+                        , dpcpgl       ! ! intent(out)
+   use rconstants, only : srtwo        ! ! intent(in)
+   use therm_lib , only : thetaeiv     & ! function
+                        , exner2press  & ! function
+                        , extheta2temp ! ! function
 
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
@@ -1743,6 +1740,7 @@ subroutine leaf3_atmo1d(m2,m3,i,j,thp,theta,rv,rtp,co2p,up,vp,pitot,dens,height,
    !----- Local variables. ----------------------------------------------------------------!
    real                                  :: wfact
    real                                  :: vels_1st
+   real                                  :: tmp
    !---------------------------------------------------------------------------------------!
 
 
@@ -1770,9 +1768,9 @@ subroutine leaf3_atmo1d(m2,m3,i,j,thp,theta,rv,rtp,co2p,up,vp,pitot,dens,height,
    geoht        = height(i,j)
    atm_exner    = pitot(i,j)
    atm_co2      = co2p(i,j)
-   atm_prss     = p00 * (cpi * atm_exner) ** cpor
-   atm_temp     = cpi * atm_theta * atm_exner
-   atm_theiv    = thetaeiv(atm_thil,atm_prss,atm_temp,atm_rvap,atm_rtot,-67)
+   atm_prss     = exner2press(atm_exner)
+   atm_temp     = extheta2temp(atm_exner,atm_theta)
+   atm_theiv    = thetaeiv(atm_thil,atm_prss,atm_temp,atm_rvap,atm_rtot)
    pcpgl        = pcpg(i,j)
    qpcpgl       = qpcpg(i,j)
    dpcpgl       = dpcpg(i,j)
@@ -1810,19 +1808,19 @@ subroutine leaf0(m2,m3,mpat,i,j,can_theta,can_rvap,can_co2,can_prss,can_theiv,pa
                         , can_rhv        & ! intent(out)
                         , can_exner      & ! intent(out)
                         , can_temp       & ! intent(out)
-                        , can_lntheta    & ! intent(out)
-                        , can_rhos       ! ! intent(out)
-   use rconstants, only : cp             & ! intent(in)
-                        , cpi            & ! intent(in)
-                        , ep             & ! intent(in)
-                        , p00            & ! intent(in)
-                        , p00i           & ! intent(in)
-                        , rocp           & ! intent(in)
-                        , cpor           ! ! intent(in)
+                        , can_enthalpy   & ! intent(out)
+                        , can_rhos       & ! intent(out)
+                        , can_cp         ! ! intent(out)
+   use rconstants, only : ep             & ! intent(in)
+                        , cpdry          & ! intent(in)
+                        , cph2o          ! ! intent(in)
    use therm_lib , only : thetaeiv       & ! function
                         , rslif          & ! function
                         , reducedpress   & ! function
-                        , idealdenssh    ! ! function
+                        , idealdenssh    & ! function
+                        , press2exner    & ! function
+                        , extheta2temp   & ! function
+                        , tq2enthalpy    ! ! function
 
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
@@ -1851,8 +1849,8 @@ subroutine leaf0(m2,m3,mpat,i,j,can_theta,can_rvap,can_co2,can_prss,can_theiv,pa
    can_prss(i,j,2)   = reducedpress(atm_prss,atm_theta,atm_shv,geoht,can_theta(i,j,2)      &
                                    ,can_shv,can_depth_min)
 
-   can_exner         = cp  * (p00i * can_prss(i,j,2)) ** rocp
-   can_temp          = cpi * can_theta(i,j,2) * can_exner
+   can_exner         = press2exner(can_prss(i,j,2))
+   can_temp          = extheta2temp(can_exner,can_theta(i,j,2))
 
    can_rsat          = rslif(can_prss(i,j,2),can_temp)
 
@@ -1860,10 +1858,11 @@ subroutine leaf0(m2,m3,mpat,i,j,can_theta,can_rvap,can_co2,can_prss,can_theiv,pa
                      / ( can_rsat * (ep + can_rvap(i,j,2)))
 
    can_theiv(i,j,2)  = thetaeiv(can_theta(i,j,2),can_prss(i,j,2),can_temp,can_rvap(i,j,2)  &
-                               ,can_rvap(i,j,2),-26)
+                               ,can_rvap(i,j,2))
 
-   can_lntheta       = log(can_theta(i,j,2))
+   can_enthalpy      = tq2enthalpy(can_temp,can_shv,.true.)
    can_rhos          = idealdenssh(can_prss(i,j,2),can_temp,can_shv)
+   can_cp            = (1.0 - can_shv) * cpdry + can_shv * cph2o
    !---------------------------------------------------------------------------------------!
 
 
@@ -2105,17 +2104,19 @@ end subroutine leaf3_solve_veg
 !------------------------------------------------------------------------------------------!
 subroutine update_psibar(m2,m3,mzg,npat,ia,iz,ja,jz,dtime,soil_energy,soil_water,soil_text &
                         ,leaf_class,psibar_10d)
-   use therm_lib , only : qwtk    ! ! subroutine
-   use mem_leaf  , only : slz     & ! intent(in)
-                        , dtleaf  ! ! intent(in)
-   use leaf_coms , only : slpots  & ! intent(in)
-                        , slbs    & ! intent(in)
-                        , slcpd   & ! intent(in)
-                        , kroot   & ! intent(in)
-                        , psild   & ! intent(in)
-                        , psiwp   ! ! intent(in)
-   use rconstants, only : wdns    & ! intent(in)
-                        , day_sec ! ! intent(in)
+   use therm_lib , only : uextcm2tl ! ! subroutine
+   use mem_leaf  , only : slz       & ! intent(in)
+                        , dtleaf    ! ! intent(in)
+   use leaf_coms , only : slzt      & ! intent(in)
+                        , slmsts    & ! intent(in)
+                        , slpots    & ! intent(in)
+                        , slbs      & ! intent(in)
+                        , slcpd     & ! intent(in)
+                        , kroot     & ! intent(in)
+                        , psild     & ! intent(in)
+                        , psiwp     ! ! intent(in)
+   use rconstants, only : wdns      & ! intent(in)
+                        , day_sec   ! ! intent(in)
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
    integer                           , intent(in)    :: m2
@@ -2141,6 +2142,7 @@ subroutine update_psibar(m2,m3,mzg,npat,ia,iz,ja,jz,dtime,soil_energy,soil_water
    integer                                           :: nveg
    real                                              :: available_water
    real                                              :: psi_layer
+   real                                              :: wgpfrac
    real                                              :: soil_temp
    real                                              :: soil_fliq
    real                                              :: weight
@@ -2165,9 +2167,17 @@ subroutine update_psibar(m2,m3,mzg,npat,ia,iz,ja,jz,dtime,soil_energy,soil_water
 
                if (nsoil /= 13) then
                   !----- Find the liquid fraction, which will scale available water. ------!
-                  call qwtk(soil_energy(k,i,j,ip),soil_water(k,i,j,ip)*wdns,slcpd(nsoil)   &
-                           ,soil_temp,soil_fliq)
+                  call uextcm2tl(soil_energy(k,i,j,ip),soil_water(k,i,j,ip)*wdns           &
+                                ,slcpd(nsoil),soil_temp,soil_fliq)
                   !------------------------------------------------------------------------!
+
+
+
+                  !----- Find the water potential of this layer. --------------------------!
+                  wgpfrac         = min(soil_water(k,i,j,ip)/slmsts(nsoil), 1.0)
+                  psi_layer       = slzt(k) + slpots(nsoil) / wgpfrac ** slbs(nsoil)
+                  !------------------------------------------------------------------------!
+
 
 
                   !----- Add the contribution of this layer, based on the potential. ------!
@@ -2177,6 +2187,7 @@ subroutine update_psibar(m2,m3,mzg,npat,ia,iz,ja,jz,dtime,soil_energy,soil_water
                                   * soil_fliq * (slz(k+1)-slz(k))
                   !------------------------------------------------------------------------!
                end if
+               !---------------------------------------------------------------------------!
             end do
             !------------------------------------------------------------------------------!
 

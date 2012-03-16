@@ -514,6 +514,11 @@ mem_mksfc.o : $(MKSFC)/mem_mksfc.f90
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90) 
 
+mem_mnt_advec.o : $(MNTADVEC)/mem_mnt_advec.f90
+	cp -f $< $(<F:.f90=.f90)
+	$(F90_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90) 
+
 mem_nestb.o : $(NESTING)/mem_nestb.f90
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
@@ -704,6 +709,16 @@ mksfc_top.o : $(MKSFC)/mksfc_top.f90
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90) 
 
+mnt_advec_aux.o : $(MNTADVEC)/mnt_advec_aux.f90
+	cp -f $< $(<F:.f90=.f90)
+	$(F90_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90)
+
+mnt_advec_main.o : $(MNTADVEC)/mnt_advec_main.f90
+	cp -f $< $(<F:.f90=.f90)
+	$(F90_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90)
+
 mod_advect_kit.o : $(CORE)/mod_advect_kit.f90
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
@@ -730,6 +745,11 @@ model.o : $(CORE)/model.f90
 	rm -f $(<F:.f90=.f90) 
 
 modsched.o : $(CORE)/modsched.f90
+	cp -f $< $(<F:.f90=.f90)
+	$(F90_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90) 
+
+mpass_advec.o : $(MPI)/mpass_advec.f90
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90) 
@@ -1504,6 +1524,11 @@ ed_state_vars.o : $(ED_MEMORY)/ed_state_vars.f90
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)
 
+detailed_coms.o : $(ED_MEMORY)/detailed_coms.f90
+	cp -f $< $(<F:.f90=.f90)
+	$(F90_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90)
+
 ed_therm_lib.o : $(ED_UTILS)/ed_therm_lib.f90
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
@@ -1780,6 +1805,16 @@ update_derived_props.o : $(ED_UTILS)/update_derived_props.f90
 	rm -f $(<F:.f90=.f90)
 
 vegetation_dynamics.o : $(ED_DYNAMICS)/vegetation_dynamics.f90
+	cp -f $< $(<F:.f90=.f90)
+	$(F90_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90)
+
+hybrid_driver.o : $(ED_DYNAMICS)/hybrid_driver.f90
+	cp -f $< $(<F:.f90=.f90)
+	$(F90_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90)
+
+bdf2_solver.o : $(ED_DYNAMICS)/bdf2_solver.f90
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)

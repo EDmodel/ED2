@@ -331,7 +331,11 @@ module phenology_startup
          end do
       end do
 
-      deallocate(flat,flon,varc,varp)
+      deallocate(flat )
+      deallocate(flon )
+      deallocate(fdist)
+      deallocate(varc )
+      deallocate(varp )
 
       return
    end subroutine read_thermal_sums
@@ -420,20 +424,20 @@ module phenology_startup
    !---------------------------------------------------------------------------------------!
    subroutine read_prescribed_phenology
 
-      use ed_state_vars , only : edgrid_g           & ! structure
-                               , edtype             & ! structure
-                               , polygontype        & ! structure
-                               , sitetype           ! ! structure
-      use ed_misc_coms  , only : imontha            & ! intent(in)
-                               , idatea             & ! intent(in)
-                               , iyeara             ! ! intent(in)
-      use grid_coms     , only : ngrids             ! ! intent(in)
-      use phenology_coms, only : prescribed_phen    & ! structure
-                               , phenpath           & ! intent(in)
-                               , max_phenology_dist ! ! intent(in)
-      use ed_max_dims   , only : str_len            & ! intent(in)
-                               , maxlist            ! ! intent(in)
-
+      use ed_state_vars , only : edgrid_g              & ! structure
+                               , edtype                & ! structure
+                               , polygontype           & ! structure
+                               , sitetype              ! ! structure
+      use ed_misc_coms  , only : imontha               & ! intent(in)
+                               , idatea                & ! intent(in)
+                               , iyeara                ! ! intent(in)
+      use grid_coms     , only : ngrids                ! ! intent(in)
+      use phenology_coms, only : prescribed_phen       & ! structure
+                               , phenpath              & ! intent(in)
+                               , max_phenology_dist    ! ! intent(in)
+      use ed_max_dims   , only : str_len               & ! intent(in)
+                               , maxlist               ! ! intent(in)
+      use phenology_aux , only : prescribed_leaf_state ! ! subroutine
       implicit none
       !----- Local variables. -------------------------------------------------------------!
       type(edtype)                              , pointer   :: cgrid

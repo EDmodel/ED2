@@ -52,7 +52,7 @@ contains
 
     ! Deallocate all scratch arrays
 
-    if (associated(turb_s_local%hksc ))  nullify (turb_s_local%hksc )
+    nullify (turb_s_local%hksc )
 
     return
   end subroutine nullify_turb_s

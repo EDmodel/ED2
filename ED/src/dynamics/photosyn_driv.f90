@@ -459,7 +459,7 @@ subroutine canopy_photosynthesis(csite,cmet,mzg,ipa,lsl,ntext_soil              
                cpatch%fsw(ico) = 1.0
 
             case (1,2)
-               water_demand    = cpatch%psi_open(ico) !!* cpatch%lai(ico) !! remove the LAI to revert back to old units (which turned out to be correct)
+               water_demand    = cpatch%psi_open(ico) * cpatch%lai(ico) 
                if (cpatch%water_supply (ico) < tiny_num) then
                   cpatch%fsw(ico) = 0.0
                else
@@ -668,6 +668,8 @@ subroutine print_photo_details(cmet,csite,ipa,ico,limit_flag,vm,compp)
    else
       par_area  = 0.0
       parv      = 0.0
+      nir_area  = 0.0
+      nirv      = 0.0
       util_parv = 0.0
    end if
 

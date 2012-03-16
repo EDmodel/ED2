@@ -1,6 +1,6 @@
 #----- Here is the user-defined variable section. -----------------------------------------#
 here           = "thispath"      # Current directory.
-srcdir         = "/n/Moorcroft_Lab/Users/mlongo/util/Rsc"
+srcdir         = "/n/moorcroft_data/mlongo/util/Rsc"     
 outroot        = "thisoutroot"
 daybeg         = thisdatea
 monthbeg       = thismontha
@@ -136,6 +136,7 @@ source(paste(srcdir,"pretty.time.r",sep="/"))
 source(paste(srcdir,"rconstants.r" ,sep="/"))
 source(paste(srcdir,"sombreado.r"  ,sep="/"))
 source(paste(srcdir,"southammap.r" ,sep="/"))
+source(paste(srcdir,"thermlib.r"   ,sep="/"))
 source(paste(srcdir,"timeutils.r"  ,sep="/"))
 
 #----- Define some default legend colours and names. --------------------------------------#
@@ -428,11 +429,13 @@ for (year in yeara:yearz){
              #                             myday$DMEAN.STORAGE.RESP[ipy] -
              #                             myday$DMEAN.VLEAF.RESP  [ipy]            )
 
-             p$sens       = c (p$sens  , myday$DMEAN.SENSIBLE.GC[ipy] 
-                                       + myday$DMEAN.SENSIBLE.LC[ipy]
-                                       + myday$DMEAN.SENSIBLE.WC[ipy])
-             p$evap       = c (p$evap  ,myday$DMEAN.EVAP     [ipy]   * alvl        )
-             p$transp     = c (p$transp,myday$DMEAN.TRANSP   [ipy]   * alvl        )
+             p$sens       = c (p$sens  , myday$DMEAN.SENSIBLE.GC    [ipy] 
+                                       + myday$DMEAN.SENSIBLE.LC    [ipy]
+                                       + myday$DMEAN.SENSIBLE.WC    [ipy])
+             p$evap       = c (p$evap  , myday$DMEAN.EVAP           [ipy]
+                                       * alvli(myday$DMEAN.CAN.TEMP [ipy])         )
+             p$transp     = c (p$transp, myday$DMEAN.TRANSP         [ipy]
+                                       * alvli(myday$DMEAN.CAN.TEMP [ipy])         )
 
              p$atm.temp   = c (p$atm.temp,myday$DMEAN.ATM.TEMP [ipy] - t00         )
              p$atm.shv    = c (p$atm.shv ,myday$DMEAN.ATM.SHV  [ipy] * 1000.       )

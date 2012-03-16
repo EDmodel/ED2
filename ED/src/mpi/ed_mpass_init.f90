@@ -250,13 +250,15 @@ subroutine ed_masterput_nl(par_run)
                                    , plantation_stock          & ! intent(in)
                                    , pft_1st_check             ! ! intent(in)
    use disturb_coms         , only : include_fire              & ! intent(in)
+                                   , fire_parameter            & ! intent(in)
                                    , ianth_disturb             & ! intent(in)
                                    , treefall_disturbance_rate & ! intent(in)
                                    , lu_database               & ! intent(in)
                                    , plantation_file           & ! intent(in)
                                    , lu_rescale_file           & ! intent(in)
                                    , sm_fire                   & ! intent(in)
-                                   , time2canopy               ! ! intent(in)
+                                   , time2canopy               & ! intent(in)
+                                   , min_patch_area            ! ! intent(in)
    use optimiz_coms         , only : ioptinpt                  ! ! intent(in)
    use canopy_layer_coms    , only : crown_mod                 ! ! intent(in)
    use canopy_radiation_coms, only : icanrad                   & ! intent(in)
@@ -271,7 +273,8 @@ subroutine ed_masterput_nl(par_run)
    use rk4_coms             , only : rk4_tolerance             & ! intent(in)
                                    , ibranch_thermo            & ! intent(in)
                                    , ipercol                   ! ! intent(in)
-
+   use detailed_coms        , only : idetailed                 & ! intent(in)
+                                   , patch_keep                ! ! intent(in)
    implicit none
    include 'mpif.h'
    integer :: ierr
@@ -448,6 +451,7 @@ subroutine ed_masterput_nl(par_run)
    call MPI_Bcast(n_plant_lim,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(n_decomp_lim,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(include_fire,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(fire_parameter,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(sm_fire,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(ianth_disturb,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(include_these_pft,n_pft,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
@@ -501,6 +505,7 @@ subroutine ed_masterput_nl(par_run)
    call MPI_Bcast(maxpatch,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(maxcohort,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(min_site_area,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(min_patch_area,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
 
   
    call MPI_Bcast(ioptinpt,str_len,MPI_CHARACTER,mainnum,MPI_COMM_WORLD,ierr)
@@ -509,6 +514,10 @@ subroutine ed_masterput_nl(par_run)
    call MPI_Bcast(edres,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
 
    call MPI_Bcast(attach_metadata,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
+
+
+   call MPI_Bcast(idetailed,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(patch_keep,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
 
    !---------------------------------------------------------------------------------------!
    !   One last thing to send is the layer index based on the soil_depth. It is not really !
@@ -1334,13 +1343,15 @@ subroutine ed_nodeget_nl
                                    , plantation_stock          & ! intent(out)
                                    , pft_1st_check             ! ! intent(out)
    use disturb_coms         , only : include_fire              & ! intent(out)
+                                   , fire_parameter            & ! intent(out)
                                    , ianth_disturb             & ! intent(out)
                                    , treefall_disturbance_rate & ! intent(out)
                                    , lu_database               & ! intent(out)
                                    , plantation_file           & ! intent(out)
                                    , lu_rescale_file           & ! intent(out)
                                    , sm_fire                   & ! intent(out)
-                                   , time2canopy               ! ! intent(out)
+                                   , time2canopy               & ! intent(out)
+                                   , min_patch_area            ! ! intent(out)
    use optimiz_coms         , only : ioptinpt                  ! ! intent(out)
    use canopy_layer_coms    , only : crown_mod                 ! ! intent(out)
    use canopy_radiation_coms, only : icanrad                   & ! intent(out)
@@ -1355,7 +1366,8 @@ subroutine ed_nodeget_nl
    use rk4_coms             , only : rk4_tolerance             & ! intent(out)
                                    , ibranch_thermo            & ! intent(out)
                                    , ipercol                   ! ! intent(out)
-
+   use detailed_coms        , only : idetailed                 & ! intent(out)
+                                   , patch_keep                ! ! intent(out)
    implicit none
    include 'mpif.h'
    integer :: ierr
@@ -1538,6 +1550,7 @@ subroutine ed_nodeget_nl
    call MPI_Bcast(n_plant_lim,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(n_decomp_lim,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(include_fire,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(fire_parameter,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(sm_fire,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(ianth_disturb,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(include_these_pft,n_pft,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
@@ -1591,6 +1604,7 @@ subroutine ed_nodeget_nl
    call MPI_Bcast(maxpatch,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(maxcohort,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(min_site_area,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(min_patch_area,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
 
   
    call MPI_Bcast(ioptinpt,str_len,MPI_CHARACTER,master_num,MPI_COMM_WORLD,ierr)
@@ -1599,6 +1613,9 @@ subroutine ed_nodeget_nl
    call MPI_Bcast(edres,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
    
    call MPI_Bcast(attach_metadata,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
+
+   call MPI_Bcast(idetailed,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(patch_keep,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    
 !------------------------------------------------------------------------------------------!
 !     Receiving the layer index based on soil_depth. This is allocatable, so I first       !

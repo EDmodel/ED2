@@ -24,6 +24,7 @@ subroutine structural_growth(cgrid, month)
    use decomp_coms   , only : f_labile               ! ! intent(in)
    use ed_max_dims   , only : n_pft                  & ! intent(in)
                             , n_dbh                  ! ! intent(in)
+   use ed_misc_coms  , only : ibigleaf               ! ! intent(in)
    use ed_therm_lib  , only : calc_veg_hcap          & ! function
                             , update_veg_energy_cweh ! ! function
    use ed_misc_coms  , only : igrass                 ! ! intent(in)
@@ -130,13 +131,14 @@ subroutine structural_growth(cgrid, month)
                !----- Grow plants; bdead gets fraction f_bdead of bstorage. ---------------!
                cpatch%bdead(ico) = cpatch%bdead(ico) + f_bdead * cpatch%bstorage(ico)
 
-               
-               !------ NPP allocation to wood and course roots in KgC /m2 -----------------!
-               cpatch%today_NPPwood(ico) = agf_bs(ipft) * f_bdead * cpatch%bstorage(ico)   &
-                                          * cpatch%nplant(ico)
-               cpatch%today_NPPcroot(ico) = (1. - agf_bs(ipft)) * f_bdead                  &
-                                          * cpatch%bstorage(ico) * cpatch%nplant(ico)
-                                          
+               if (ibigleaf == 0 ) then
+                  !------ NPP allocation to wood and course roots in KgC /m2 --------------!
+                  cpatch%today_NPPwood(ico) = agf_bs(ipft)*f_bdead*cpatch%bstorage(ico)    &
+                                             * cpatch%nplant(ico)
+                  cpatch%today_NPPcroot(ico) = (1. - agf_bs(ipft)) * f_bdead               &
+                                             * cpatch%bstorage(ico) * cpatch%nplant(ico)
+               end if
+
                !---------------------------------------------------------------------------!
                !      Rebalance the plant nitrogen uptake considering the actual alloc-    !
                ! ation to structural growth.  This is necessary because c2n_stem does not  !
@@ -522,6 +524,7 @@ subroutine plant_structural_allocation(ipft,hite,dbh,lat,phen_status,f_bseeds,f_
                             , is_grass     ! ! intent(in)
    use ed_misc_coms  , only : current_time & ! intent(in)
                             , igrass       ! ! intent(in)
+   use ed_misc_coms  , only : ibigleaf     ! ! intent(in)
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    integer          , intent(in)  :: ipft
@@ -566,53 +569,77 @@ subroutine plant_structural_allocation(ipft,hite,dbh,lat,phen_status,f_bseeds,f_
    !---------------------------------------------------------------------------------------!
 
 
+   select case (ibigleaf)
+   case (0)
+      !------------------------------------------------------------------------------------!
+      !      Size and age structure.  Calculate fraction of bstorage going to bdead and    !
+      ! reproduction.  First we must make sure that the plant should do something here.  A !
+      ! plant should not allocate anything to reproduction or growth if it is not the      !
+      ! right time of year (for cold deciduous plants), or if the plants are actively      !
+      ! dropping leaves or off allometry.                                                  !
+      !------------------------------------------------------------------------------------!
+      if ((phenology(ipft) /= 2   .or.  late_spring) .and. phen_status == 0)    then
+
+            !------------------------------------------------------------------------------!
+            !---ALS=== This is where allocation to seeds is occuring.  It will need to be  !
+            ! modified but I'm leaving it for later --- GRASSES!  Want to add a functional !
+            ! form to constrain this throughout the season - also consider moving this to  !
+            ! growth_balive since it isn't actually structural growth                      !
+            !------------------------------------------------------------------------------!
+         if (is_grass(ipft).and. igrass==1) then !-----------------Grass loop--------------!
+             if ((hite * (1 + 1.0e-4)) >= hgt_max(ipft)) then 
+                !--------------------------------------------------------------------------!
+                !   Grasses have reached the maximum height, stop growing in size and send !
+                ! everything to reproduction.                                              !
+                !--------------------------------------------------------------------------!
+                f_bseeds = 1.0 - st_fract(ipft)
+                f_bdead  = 0.0
+             elseif ((hite * (1 + epsilon(1.))) <= repro_min_h(ipft)) then
+                !----- The plant is too short, invest as much as it can in growth. --------!
+                f_bseeds = 0.0
+                f_bdead  = 0.0
+             else ! repro_min_h < hite< hgt_max
+                !----- Plant is with a certain height, use prescribed reproduction rate. --!
+                f_bseeds = r_fract(ipft)
+                f_bdead  = 0.0
+             end if
+         elseif (hite <= repro_min_h(ipft)) then !----------------- Tree Loop -------------!
+            !----- The plant is too short, invest as much as it can in growth. ------------!
+            f_bseeds = 0.0
+            f_bdead  = 1.0 - st_fract(ipft) - f_bseeds 
+         else
+            !----- Plant is with a certain height, use prescribed reproduction rate. ------!
+            f_bseeds = r_fract(ipft)
+            f_bdead  = 1.0 - st_fract(ipft) - f_bseeds 
+         end if !!end tree loop
+      else  !-- Plant should not allocate carbon to seeds or grow new biomass -------------!
+         f_bdead  = 0.0
+         f_bseeds = 0.0
+      end if
+      !------------------------------------------------------------------------------------!
+   case (1)
+      !------------------------------------------------------------------------------------!
+      !    Big-leaf solver.  As long as it is OK to grow, everything goes into 'reproduct- !
+      !  ion'.  This will ultimately be used to increase NPLANT of the 'big leaf' cohort.  !
+      !------------------------------------------------------------------------------------!
+      if ((phenology(ipft) /= 2   .or.  late_spring) .and. phen_status == 0)    then
+         !---------------------------------------------------------------------------------!
+         ! A plant should only grow if it is the right time of year (for cold deciduous    !
+         ! plants), or if the plants are not actively dropping leaves or off allometry.    !
+         !---------------------------------------------------------------------------------!
+         f_bseeds = 1.0 - st_fract(ipft)
+         f_bdead  = 0.0
+      else
+         f_bdead  = 0.0
+         f_bseeds = 0.0
+      end if 
+   end select
+   !---------------------------------------------------------------------------------------!
+
+
+
 
    !---------------------------------------------------------------------------------------!
-   !      Calculate fraction of bstorage going to bdead and reproduction.  First we must   !
-   ! make sure that the plant should do something here.  A plant should not allocate any-  !
-   ! thing to reproduction or growth if it is not the right time of year (for cold         !
-   ! deciduous plants), or if the plants are actively dropping leaves or off allometry.    !
-   !---------------------------------------------------------------------------------------!
-   if ((phenology(ipft) /= 2   .or.  late_spring) .and. phen_status == 0)    then
-         
-         !---------------------------------------------------------------------------------!
-         !---ALS=== This is where allocation to seeds is occuring.  It will need to be 
-         ! modified but I'm leaving it for later --- GRASSES!  Want to add a functional form
-         ! to constrain this throughout the season - also consider moving this to 
-         ! growth_balive since it isn't actually structural growth
-         !---------------------------------------------------------------------------------!
-         hgtfudge= (hite * (1 + 1.0e-4))
-      if (is_grass(ipft).and. igrass==1) then !!Grass loop
-          if ((hite * (1 + 1.0e-4)) >= hgt_max(ipft)) then 
-             !-----------------------------------------------------------------------------!
-             !    Grasses have reached the maximum height, stop growing in size and send   !
-             ! everything to reproduction.                                                 !
-             !-----------------------------------------------------------------------------!
-             f_bseeds = 1.0 - st_fract(ipft)
-             f_bdead = 0.0
-          elseif ((hite * (1 + epsilon(1.))) <= repro_min_h(ipft)) then
-             !----- The plant is too short, invest as much as it can in growth. -----------!
-             f_bseeds = 0.0
-             f_bdead = 0.0
-          else ! repro_min_h < hite< hgt_max
-             !----- Plant is with a certain height, use prescribed reproduction rate. -----!
-             f_bseeds = r_fract(ipft)
-             f_bdead = 0.0
-          end if
-      elseif (hite <= repro_min_h(ipft)) then !! Tree loop
-         !----- The plant is too short, invest as much as it can in growth. ---------------!
-         f_bseeds = 0.0
-         f_bdead  = 1.0 - st_fract(ipft) - f_bseeds 
-      else
-         !----- Plant is with a certain height, use prescribed reproduction rate. ---------!
-         f_bseeds = r_fract(ipft)
-         f_bdead  = 1.0 - st_fract(ipft) - f_bseeds 
-      end if !!end tree loop
-   else
-      f_bdead  = 0.0
-      f_bseeds = 0.0
-   end if
-   
    if (printout) then
       open (unit=66,file=fracfile,status='old',position='append',action='write')
       write (unit=66,fmt='(6(i12,1x),2(11x,l1,1x),7(f12.4,1x))')                           &

@@ -190,11 +190,13 @@ subroutine init_ed_cohort_vars(cpatch,ico, lsl)
    cpatch%leaf_energy(ico)      = 0.
    cpatch%leaf_hcap(ico)        = 0.
    cpatch%leaf_temp(ico)        = 0.
+   cpatch%leaf_temp_pv(ico)     = 0.
    cpatch%leaf_water(ico)       = 0.
    cpatch%leaf_fliq(ico)        = 0.
    cpatch%wood_energy(ico)      = 0.
    cpatch%wood_hcap(ico)        = 0.
    cpatch%wood_temp(ico)        = 0.
+   cpatch%wood_temp_pv(ico)     = 0.
    cpatch%wood_water(ico)       = 0.
    cpatch%wood_fliq(ico)        = 0.
    cpatch%veg_wind(ico)         = 0.
@@ -449,32 +451,33 @@ subroutine init_ed_patch_vars(csite,ip1,ip2,lsl)
    csite%A_o_max(1:n_pft,ip1:ip2) = 0.0
    csite%A_c_max(1:n_pft,ip1:ip2) = 0.0
 
-   csite%htry(ip1:ip2) = 1.0
-   
+   csite%htry(ip1:ip2)  = 1.0
+   csite%hprev(ip1:ip2) = 0.1
 
-   csite%co2budget_gpp(ip1:ip2)            = 0.0
-   csite%co2budget_gpp_dbh(:,ip1:ip2)      = 0.0
-   csite%co2budget_rh(ip1:ip2)             = 0.0
-   csite%co2budget_plresp(ip1:ip2)         = 0.0
-   csite%co2budget_initialstorage(ip1:ip2) = 0.0
-   csite%co2budget_loss2atm(ip1:ip2)       = 0.0
-   csite%co2budget_denseffect(ip1:ip2)     = 0.0
-   csite%co2budget_residual(ip1:ip2)       = 0.0
-   csite%wbudget_precipgain(ip1:ip2)       = 0.0
-   csite%wbudget_loss2atm(ip1:ip2)         = 0.0
-   csite%wbudget_loss2runoff(ip1:ip2)      = 0.0
-   csite%wbudget_loss2drainage(ip1:ip2)    = 0.0
-   csite%wbudget_denseffect(ip1:ip2)       = 0.0
-   csite%wbudget_initialstorage(ip1:ip2)   = 0.0
-   csite%wbudget_residual(ip1:ip2)         = 0.0
-   csite%ebudget_precipgain(ip1:ip2)       = 0.0
-   csite%ebudget_netrad(ip1:ip2)           = 0.0
-   csite%ebudget_loss2atm(ip1:ip2)         = 0.0
-   csite%ebudget_loss2runoff(ip1:ip2)      = 0.0
-   csite%ebudget_loss2drainage(ip1:ip2)    = 0.0
-   csite%ebudget_denseffect(ip1:ip2)       = 0.0
-   csite%ebudget_initialstorage(ip1:ip2)   = 0.0
-   csite%ebudget_residual(ip1:ip2)         = 0.0
+   csite%co2budget_gpp             (ip1:ip2) = 0.0
+   csite%co2budget_gpp_dbh       (:,ip1:ip2) = 0.0
+   csite%co2budget_rh              (ip1:ip2) = 0.0
+   csite%co2budget_plresp          (ip1:ip2) = 0.0
+   csite%co2budget_initialstorage  (ip1:ip2) = 0.0
+   csite%co2budget_loss2atm        (ip1:ip2) = 0.0
+   csite%co2budget_denseffect      (ip1:ip2) = 0.0
+   csite%co2budget_residual        (ip1:ip2) = 0.0
+   csite%wbudget_precipgain        (ip1:ip2) = 0.0
+   csite%wbudget_loss2atm          (ip1:ip2) = 0.0
+   csite%wbudget_loss2runoff       (ip1:ip2) = 0.0
+   csite%wbudget_loss2drainage     (ip1:ip2) = 0.0
+   csite%wbudget_denseffect        (ip1:ip2) = 0.0
+   csite%wbudget_initialstorage    (ip1:ip2) = 0.0
+   csite%wbudget_residual          (ip1:ip2) = 0.0
+   csite%ebudget_precipgain        (ip1:ip2) = 0.0
+   csite%ebudget_netrad            (ip1:ip2) = 0.0
+   csite%ebudget_loss2atm          (ip1:ip2) = 0.0
+   csite%ebudget_loss2runoff       (ip1:ip2) = 0.0
+   csite%ebudget_loss2drainage     (ip1:ip2) = 0.0
+   csite%ebudget_denseffect        (ip1:ip2) = 0.0
+   csite%ebudget_prsseffect        (ip1:ip2) = 0.0
+   csite%ebudget_initialstorage    (ip1:ip2) = 0.0
+   csite%ebudget_residual          (ip1:ip2) = 0.0
 
 
 
@@ -613,6 +616,7 @@ subroutine init_ed_patch_vars(csite,ip1,ip2,lsl)
 
    csite%can_theiv   (ip1:ip2) = 0.0
    csite%can_temp    (ip1:ip2) = 0.0
+   csite%can_temp_pv (ip1:ip2) = 0.0
    csite%can_rhos    (ip1:ip2) = 0.0
    csite%can_depth   (ip1:ip2) = 0.0
    csite%opencan_frac(ip1:ip2) = 0.0
@@ -842,8 +846,8 @@ subroutine new_patch_sfc_props(csite,ipa,mzg,mzs,ntext_soil)
                             , slz                & ! intent(in)
                             , tiny_sfcwater_mass ! ! intent(in)
    use consts_coms   , only : wdns               ! ! intent(in)
-   use therm_lib     , only : qwtk               & ! subroutine
-                            , qtk                ! ! subroutine
+   use therm_lib     , only : uextcm2tl          & ! subroutine
+                            , uint2tl            ! ! subroutine
    use ed_therm_lib  , only : ed_grndvap         ! ! subroutine
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
@@ -862,8 +866,8 @@ subroutine new_patch_sfc_props(csite,ipa,mzg,mzs,ntext_soil)
    !----- Finding soil temperature and liquid water fraction. -----------------------------!
    do k = 1, mzg
       nsoil = ntext_soil(k)
-      call qwtk(csite%soil_energy(k,ipa), csite%soil_water(k,ipa)*wdns                     &
-                ,soil(nsoil)%slcpd, csite%soil_tempk(k,ipa), csite%soil_fracliq(k,ipa))
+      call uextcm2tl(csite%soil_energy(k,ipa), csite%soil_water(k,ipa)*wdns                &
+                    ,soil(nsoil)%slcpd, csite%soil_tempk(k,ipa), csite%soil_fracliq(k,ipa))
    end do
    !---------------------------------------------------------------------------------------! 
 
@@ -881,8 +885,8 @@ subroutine new_patch_sfc_props(csite,ipa,mzg,mzs,ntext_soil)
       csite%nlev_sfcwater(ipa) = k
       csite%sfcwater_energy(k,ipa) = csite%sfcwater_energy(k,ipa)                          &
                                    / csite%sfcwater_mass(k,ipa)
-      call qtk(csite%sfcwater_energy(k,ipa),csite%sfcwater_tempk(k,ipa)                    &
-              ,csite%sfcwater_fracliq(k,ipa))
+      call uint2tl(csite%sfcwater_energy(k,ipa),csite%sfcwater_tempk(k,ipa)                &
+                  ,csite%sfcwater_fracliq(k,ipa))
    end do snowloop
    !---------------------------------------------------------------------------------------!
    !     Now, just to be safe, we will assign zeroes to layers above.                      !
