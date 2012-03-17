@@ -581,6 +581,8 @@ module pft_coms
    !---------------------------------------------------------------------------------------!
    type recruittype
       integer :: pft
+      integer :: krdepth
+      integer :: phenology_status
       real    :: leaf_temp
       real    :: wood_temp
       real    :: leaf_temp_pv
@@ -589,7 +591,12 @@ module pft_coms
       real    :: dbh
       real    :: bdead
       real    :: bleaf
+      real    :: broot
+      real    :: bsapwood
       real    :: balive
+      real    :: paw_avg
+      real    :: elongf
+      real    :: bstorage
       real    :: nplant
    end type recruittype
    !=======================================================================================!
@@ -614,18 +621,25 @@ module pft_coms
       !------------------------------------------------------------------------------------!
 
       do p=1,maxp
-         recruit(p)%pft       = 0
-         recruit(p)%leaf_temp = 0.
-         recruit(p)%wood_temp = 0.
-         recruit(p)%leaf_temp_pv = 0.
-         recruit(p)%wood_temp_pv = 0.
-         recruit(p)%hite      = 0.
-         recruit(p)%dbh       = 0.
-         recruit(p)%bdead     = 0.
-         recruit(p)%bleaf     = 0.
-         recruit(p)%balive    = 0.
-         recruit(p)%nplant    = 0.
-      end do
+         recruit(p)%pft              = 0
+         recruit(p)%krdepth          = 0
+         recruit(p)%phenology_status = 0
+         recruit(p)%leaf_temp        = 0.
+         recruit(p)%wood_temp        = 0.
+         recruit(p)%leaf_temp_pv     = 0.
+         recruit(p)%wood_temp_pv     = 0.
+         recruit(p)%hite             = 0.
+         recruit(p)%dbh              = 0.
+         recruit(p)%bdead            = 0.
+         recruit(p)%bleaf            = 0.
+         recruit(p)%broot            = 0.
+         recruit(p)%bsapwood         = 0.
+         recruit(p)%balive           = 0.
+         recruit(p)%paw_avg          = 0.
+         recruit(p)%elongf           = 0.
+         recruit(p)%bstorage         = 0.
+         recruit(p)%nplant           = 0.
+       end do
 
       return
    end subroutine zero_recruit
@@ -648,17 +662,24 @@ module pft_coms
       type(recruittype), intent(out) :: rectarget
       !------------------------------------------------------------------------------------!
 
-      rectarget%pft       = recsource%pft
-      rectarget%leaf_temp = recsource%leaf_temp
-      rectarget%wood_temp = recsource%wood_temp
-      rectarget%leaf_temp_pv = recsource%leaf_temp_pv
-      rectarget%wood_temp_pv = recsource%wood_temp_pv
-      rectarget%hite      = recsource%hite
-      rectarget%dbh       = recsource%dbh
-      rectarget%bdead     = recsource%bdead
-      rectarget%bleaf     = recsource%bleaf
-      rectarget%balive    = recsource%balive
-      rectarget%nplant    = recsource%nplant
+      rectarget%pft              = recsource%pft
+      rectarget%krdepth          = recsource%krdepth
+      rectarget%phenology_status = recsource%phenology_status
+      rectarget%leaf_temp        = recsource%leaf_temp
+      rectarget%wood_temp        = recsource%wood_temp
+      rectarget%leaf_temp_pv     = recsource%leaf_temp_pv
+      rectarget%wood_temp_pv     = recsource%wood_temp_pv
+      rectarget%hite             = recsource%hite
+      rectarget%dbh              = recsource%dbh
+      rectarget%bdead            = recsource%bdead
+      rectarget%bleaf            = recsource%bleaf
+      rectarget%broot            = recsource%broot
+      rectarget%bsapwood         = recsource%bsapwood
+      rectarget%balive           = recsource%balive
+      rectarget%paw_avg          = recsource%paw_avg
+      rectarget%elongf           = recsource%elongf
+      rectarget%bstorage         = recsource%bstorage
+      rectarget%nplant           = recsource%nplant
 
       return
    end subroutine copy_recruit

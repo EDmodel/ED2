@@ -45,7 +45,8 @@ subroutine reproduction(cgrid, month)
                                  , dbh2bl                   & ! function
                                  , h2dbh                    & ! function
                                  , ed_biomass               & ! function
-                                 , area_indices             ! ! subroutine
+                                 , area_indices             & ! subroutine
+                                 , dbh2krdepth              ! ! function
    use grid_coms          , only : nzg                      ! ! intent(in)
    use ed_misc_coms       , only : ibigleaf                 ! ! intent(in)
    use phenology_aux      , only : pheninit_balive_bstorage ! ! intent(in)
@@ -71,11 +72,12 @@ subroutine reproduction(cgrid, month)
    real                                :: elim_nplant
    real                                :: elim_lai
    real                                :: nplant_inc
-   real                                :: bleaf_plant   
-   real                                :: bdead_plant   
-   real                                :: broot_plant   
+   real                                :: bleaf_plant
+   real                                :: bdead_plant
+   real                                :: broot_plant
    real                                :: bsapwood_plant
    real                                :: balive_plant
+   real                                :: rec_biomass
    !----- Saved variables -----------------------------------------------------------------!
    logical          , save             :: first_time = .true.
    !---------------------------------------------------------------------------------------!
@@ -151,6 +153,7 @@ subroutine reproduction(cgrid, month)
 
                !---- This time we loop over PFTs, not cohorts. ----------------------------!
                pftloop: do ipft = 1, n_pft
+                  
 
                   !------------------------------------------------------------------------!
                   !    Check to make sure we are including the PFT and that it is not too  !
@@ -176,27 +179,40 @@ subroutine reproduction(cgrid, month)
                         rectest%wood_temp_pv=csite%can_temp(ipa)
                         rectest%hite      = hgt_min(ipft)
                         rectest%dbh       = h2dbh(rectest%hite, ipft)
+                        rectest%krdepth   = dbh2krdepth(rectest%hite,rectest%dbh           &
+                                                       ,rectest%pft,cpoly%lsl(isi))
                         rectest%bdead     = dbh2bd(rectest%dbh, ipft)
-                        rectest%bleaf     = dbh2bl(rectest%dbh, ipft)
-                        rectest%balive    = rectest%bleaf                                  &
-                                          * (1.0 + q(ipft) + qsw(ipft) * rectest%hite)
-                        rectest%nplant    = csite%repro(ipft,ipa)                          &
-                                          / (rectest%balive + rectest%bdead)
 
-                        if(include_pft(ipft)) then
+                        call pheninit_balive_bstorage(nzg,rectest%pft,rectest%krdepth      &
+                                                     ,rectest%hite,rectest%dbh             &
+                                                     ,csite%soil_water(:,ipa)              &
+                                                     ,cpoly%ntext_soil(:,isi)              &
+                                                     ,cpoly%green_leaf_factor(:,isi)       &
+                                                     ,rectest%paw_avg,rectest%elongf       &
+                                                     ,rectest%phenology_status             &
+                                                     ,rectest%bleaf,rectest%broot          &
+                                                     ,rectest%bsapwood,rectest%balive      &
+                                                     ,rectest%bstorage)
+
+                        rectest%nplant    = csite%repro(ipft,ipa)                          &
+                                          / ( rectest%balive + rectest%bdead               &
+                                            + rectest%bstorage)
+
+                        if (include_pft(ipft)) then
                            rectest%nplant = rectest%nplant + seed_rain(ipft)
                         end if
 
-                        ! If there is enough carbon, form the recruits.
-                        if ( rectest%nplant * (rectest%balive + rectest%bdead) >           &
-                             min_recruit_size(ipft)) then
+                        !----- If there is enough carbon, form the recruits. --------------!
+                        rec_biomass = rectest%nplant * ( rectest%balive + rectest%bdead    &
+                                                       + rectest%bstorage )
+                        if (rec_biomass > min_recruit_size(ipft)) then
                            inew = inew + 1
                            call copy_recruit(rectest,recruit(inew))
 
                            !----- Reset the carbon available for reproduction. ------------!
-                           csite%repro(ipft,ipa) = 0.0
-
+                           csite%repro(ipft,ipa) = 0.0                          
                         end if
+                        !------------------------------------------------------------------!
                      else
                         !------------------------------------------------------------------!
                         !     If we have reached this branch, we are in an agricultural    !
@@ -208,9 +224,16 @@ subroutine reproduction(cgrid, month)
                         csite%fast_soil_C(ipa) = csite%fast_soil_C(ipa)                    &
                                                + csite%repro(ipft,ipa)
                         csite%repro(ipft,ipa)  = 0.0
+                        !------------------------------------------------------------------!
                      end if
+                     !---------------------------------------------------------------------!
                   end if
+                  !------------------------------------------------------------------------!
                end do pftloop
+               !---------------------------------------------------------------------------!
+
+
+
 
                !----- Update the number of cohorts with the recently created. -------------!
                ncohorts_new = cpatch%ncohorts + inew
@@ -259,29 +282,23 @@ subroutine reproduction(cgrid, month)
 
 
                      !----- Copy from recruitment table (II). -----------------------------!
-                     cpatch%bdead(ico)     = recruit(inew)%bdead
-                     cpatch%nplant(ico)    = recruit(inew)%nplant
+                     cpatch%nplant          (ico) = recruit(inew)%nplant 
+                     cpatch%bdead           (ico) = recruit(inew)%bdead 
+                     cpatch%paw_avg         (ico) = recruit(inew)%paw_avg
+                     cpatch%elongf          (ico) = recruit(inew)%elongf
+                     cpatch%phenology_status(ico) = recruit(inew)%phenology_status
+                     cpatch%bleaf           (ico) = recruit(inew)%bleaf
+                     cpatch%broot           (ico) = recruit(inew)%broot
+                     cpatch%bsapwood        (ico) = recruit(inew)%bsapwood
+                     cpatch%balive          (ico) = recruit(inew)%balive
+                     cpatch%bstorage        (ico) = recruit(inew)%bstorage
+                     cpatch%leaf_temp       (ico) = recruit(inew)%leaf_temp
+                     cpatch%wood_temp       (ico) = recruit(inew)%wood_temp
+                     cpatch%leaf_temp_pv    (ico) = recruit(inew)%leaf_temp_pv
+                     cpatch%wood_temp_pv    (ico) = recruit(inew)%wood_temp_pv
                      !---------------------------------------------------------------------!
 
 
-                     !---------------------------------------------------------------------!
-                     !     Even though we brought leaf biomass and biomass of the active   !
-                     ! tissues, we will make them consistent with the initial amount of    !
-                     ! water available.  This is done inside pheninit_alive_storage.       !
-                     !---------------------------------------------------------------------!
-                     call pheninit_balive_bstorage(csite,nzg,ipa,ico                       &
-                                                  ,cpoly%ntext_soil(:,isi)                 &
-                                                  ,cpoly%green_leaf_factor(:,isi))
-                     !---------------------------------------------------------------------!
-
-
-                     !----- Assign temperature after init_ed_cohort_vars... ---------------!
-                     cpatch%leaf_temp(ico)  = recruit(inew)%leaf_temp
-                     cpatch%wood_temp(ico)  = recruit(inew)%wood_temp
-                     cpatch%leaf_temp_pv(ico)  = recruit(inew)%leaf_temp_pv
-                     cpatch%wood_temp_pv(ico)  = recruit(inew)%wood_temp_pv
-
-                     
 
                      !----- Initialise the next variables with zeroes... ------------------!
                      cpatch%leaf_water(ico) = 0.0
@@ -289,6 +306,7 @@ subroutine reproduction(cgrid, month)
                      cpatch%wood_water(ico) = 0.0
                      cpatch%wood_fliq (ico) = 0.0
                      !---------------------------------------------------------------------!
+
 
                      !---------------------------------------------------------------------!
                      !    Computing initial AGB and Basal Area. Their derivatives will be  !
@@ -417,7 +435,6 @@ subroutine reproduction(cgrid, month)
                cohortloop_big: do ico = 1, cpatch%ncohorts  
 
                   ipft = cpatch%pft(ico)
-
 
                   !------------------------------------------------------------------------!
                   !    Check to make sure that it is not too cold and reproduction is on   !
@@ -724,7 +741,7 @@ subroutine seed_dispersal(cpoly,late_spring)
                   ! this patch and site so the total carbon is preserved.                  !
                   !------------------------------------------------------------------------!
                   csite%repro(donpft,recpa) = csite%repro(donpft,recpa)                    &
-                                            + nseed_maygo * csite%area(recpa)
+                                            + nseed_maygo * csite%area(donpa)
                   !------------------------------------------------------------------------!
 
 
@@ -807,8 +824,8 @@ subroutine seed_dispersal(cpoly,late_spring)
                      ! preserved.                                                          !
                      !---------------------------------------------------------------------!
                      recsite%repro(donpft,recpa) = recsite%repro(donpft,recpa)             &
-                                                 + nseed_maygo * recsite%area(recpa)       &
-                                                 * cpoly%area(recsi)
+                                                 + nseed_maygo * recsite%area(donpa)       &
+                                                 * cpoly%area(donsi)
                      !---------------------------------------------------------------------!
 
 
@@ -818,7 +835,7 @@ subroutine seed_dispersal(cpoly,late_spring)
                      !---------------------------------------------------------------------!
                      if (recpa == donpa .and. recsi == donsi) then
                         recsite%repro(donpft,recpa) = recsite%repro(donpft,recpa)          &
-                                                     + nseed_stays
+                                                    + nseed_stays
                      end if
                      !---------------------------------------------------------------------!
 

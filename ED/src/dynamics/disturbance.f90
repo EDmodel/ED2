@@ -1919,10 +1919,16 @@ module disturbance_utils
       cpatch%bdead(nc) = dbh2bd(cpatch%dbh(nc),cpatch%pft(nc))
 
       !------------------------------------------------------------------------------------!
-      !      Initialise the active and storage biomass scaled by the leaf drought phenology (or start with 1.0 if the plant doesn't !
-      ! shed their leaves due to water stress.                                             !
+      !      Initialise the active and storage biomass scaled by the leaf drought          !
+      ! phenology (or start with 1.0 if the plant doesn't shed their leaves due to water   !
+      ! stress.                                                                            !
       !------------------------------------------------------------------------------------!
-      call pheninit_balive_bstorage(csite,mzg,np,nc,ntext_soil,green_leaf_factor)
+      call pheninit_balive_bstorage(mzg,cpatch%pft(nc),cpatch%krdepth(nc),cpatch%hite(nc)  &
+                                   ,cpatch%dbh(nc),csite%soil_water(:,np),ntext_soil       &
+                                   ,green_leaf_factor,cpatch%paw_avg(nc),cpatch%elongf(nc) &
+                                   ,cpatch%phenology_status(nc),cpatch%bleaf(nc)           &
+                                   ,cpatch%broot(nc),cpatch%bsapwood(nc),cpatch%balive(nc) &
+                                   ,cpatch%bstorage(nc))
       !------------------------------------------------------------------------------------!
 
 
