@@ -21,7 +21,7 @@ subroutine grell_cupar_dynamic(cldd,clds,nclouds,dtime,maxens_cap,maxens_eff,max
                               ,cld2prec,mynum,i,j)
    use mem_ensemble     , only : ensemble_vars & ! structure
                                , ensemble_e    ! ! intent(inout)
-
+   use grid_dims        , only : str_len       ! ! intent(in)
    use mem_scratch_grell, only : &
        co2                & ! intent(in)  - CO2 mixing ratio with forcing.        [    ppm]
       ,co2sur             & ! intent(in)  - surface CO2 mixing ratio              [    ppm]
@@ -190,6 +190,8 @@ subroutine grell_cupar_dynamic(cldd,clds,nclouds,dtime,maxens_cap,maxens_eff,max
    integer                                :: x_ktop   ! Cloud top level
    logical                                :: x_comp_dn! Downdraft flag
    real                                   :: x_qsat
+   !----- Flag for the sanity check. ------------------------------------------------------!
+   character(len=str_len)                 :: which    ! Flag to locate sanity check
    !---------------------------------------------------------------------------------------!
    !---------------------------------------------------------------------------------------!
    !    Miscellaneous parameters                                                           !
@@ -216,7 +218,7 @@ subroutine grell_cupar_dynamic(cldd,clds,nclouds,dtime,maxens_cap,maxens_eff,max
          call zero_scratch_grell(1)
 
          !---------------------------------------------------------------------------------!
-         ! 1. Copying the variables stored at the ensemble structure to temporary arrays.  !
+         ! 1. Copy the variables stored at the ensemble structure to temporary arrays.     !
          !---------------------------------------------------------------------------------!
          !----- ierr and klnb have the cloud index because of the dyn. control ensemble. --!
          ierr    (icld) = ensemble_e(icld)%ierr_cap     (icap)
@@ -322,8 +324,9 @@ subroutine grell_cupar_dynamic(cldd,clds,nclouds,dtime,maxens_cap,maxens_eff,max
                      modif_comp_if: if (comp_modif_thermo .and.                            &
                                         ensemble_e(icld)%ierr_cap(icap) == 0) then
                         !------------------------------------------------------------------!
-                        ! 5b. Compute the modified structure, finding the consistent set   !
-                        !     and then interpolating them to the cloud levels.             !
+                        ! 5b. Compute the modified structure: find the consistent set then !
+                        !     interpolate them to the cloud levels, and check whether the  !
+                        !     profile makes sense.                                         !
                         !------------------------------------------------------------------!
                         do k=1,mkx
                            x_t(k)    = t  (k)
@@ -337,10 +340,16 @@ subroutine grell_cupar_dynamic(cldd,clds,nclouds,dtime,maxens_cap,maxens_eff,max
                                                 ,x_qtot_cup,x_qvap_cup,x_qliq_cup          &
                                                 ,x_qice_cup,x_qsat_cup,x_co2_cup,x_rho_cup &
                                                 ,x_theiv_cup,x_theivs_cup)
+                        write (which,fmt='(3(a,i4.4))') 'nudge_environment_icap=',icap     &
+                                                       ,'_icld=',icld,'_jcld=',jcld
+                        call grell_sanity_check(mkx,mgmzp,z_cup,x_p_cup,x_exner_cup        &
+                                               ,x_theiv_cup,x_thil_cup,x_t_cup,x_qtot_cup  &
+                                               ,x_qvap_cup,x_qliq_cup,x_qice_cup,x_co2_cup &
+                                               ,x_rho_cup,which)
 
                         !------------------------------------------------------------------!
-                        ! 5c. Finding the updraft thermodynamics between the updraft       !
-                        !     origin and the level of free convection.                     !
+                        ! 5c. Find the updraft thermodynamics between the updraft origin   !
+                        !     and the level of free convection.                            !
                         !------------------------------------------------------------------!
                         call grell_buoy_below_lfc(mkx,mgmzp,klou(icld),klfc(icld)          &
                                                  ,x_exner_cup,x_p_cup,x_theiv_cup          &
@@ -360,7 +369,8 @@ subroutine grell_cupar_dynamic(cldd,clds,nclouds,dtime,maxens_cap,maxens_eff,max
                                                 ,x_theivu_cld)
 
                         !------------------------------------------------------------------!
-                        ! 5e. Getting the updraft moisture profile                         !
+                        ! 5e. Get the updraft moisture profile, and check whether it makes !
+                        !     sense or not.                                                !
                         !------------------------------------------------------------------!
                         call grell_most_thermo_updraft(prec_cld(icld),.false.,mkx,mgmzp    &
                                                       ,klfc(icld),ktop(icld),cld2prec,cdu  &
@@ -375,6 +385,12 @@ subroutine grell_cupar_dynamic(cldd,clds,nclouds,dtime,maxens_cap,maxens_eff,max
                                                       ,x_co2u_cld,x_rhou_cld,x_dbyu        &
                                                       ,x_pwu_cld,x_pwav,x_klnb,x_ktop      &
                                                       ,x_ierr)
+                        write (which,fmt='(3(a,i4.4))') 'nudge_updraft_icap=',icap         &
+                                                       ,'_icld=',icld,'_jcld=',jcld
+                        call grell_sanity_check(mkx,mgmzp,z_cup,x_p_cup,x_exner_cup        &
+                                               ,x_theivu_cld,x_thilu_cld,x_tu_cld          &
+                                               ,x_qtotu_cld,x_qvapu_cld,x_qliqu_cld        &
+                                               ,x_qiceu_cld,x_co2u_cld,x_rhou_cld,which)
 
                         !------------------------------------------------------------------!
                         ! 5f. Recalculating the updraft cloud work                         !
@@ -408,9 +424,15 @@ subroutine grell_cupar_dynamic(cldd,clds,nclouds,dtime,maxens_cap,maxens_eff,max
                                                            ,x_qsatd_cld,x_co2d_cld         &
                                                            ,x_rhod_cld,x_dbyd,x_pwd_cld    &
                                                            ,x_pwev,x_ierr)
+                           write (which,fmt='(3(a,i4.4))') 'nudge_downdraft_icap=',icap    &
+                                                          ,'_icld=',icld,'_jcld=',jcld
+                           call grell_sanity_check(mkx,mgmzp,z_cup,x_p_cup,x_exner_cup     &
+                                                  ,x_theivd_cld,x_thild_cld,x_td_cld       &
+                                                  ,x_qtotd_cld,x_qvapd_cld,x_qliqd_cld     &
+                                                  ,x_qiced_cld,x_co2d_cld,x_rhod_cld,which)
 
                            !---------------------------------------------------------------!
-                           ! 5i. Computing cloud work function associated with downdrafts. !
+                           ! 5i. Compute cloud work function associated with downdrafts.   !
                            !---------------------------------------------------------------!
                            call grell_cldwork_downdraft(mkx,mgmzp,klod,x_dbyd,dzd_cld      &
                                                        ,etad_cld,x_aad)

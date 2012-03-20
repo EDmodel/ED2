@@ -1528,6 +1528,10 @@ module ed_var_tables
       if (associated(vt_vec%var_ip)) nullify(vt_vec%var_ip)
       if (associated(vt_vec%var_cp)) nullify(vt_vec%var_cp)
       if (associated(vt_vec%var_dp)) nullify(vt_vec%var_dp)
+      if (associated(vt_vec%sca_rp)) nullify(vt_vec%sca_rp)
+      if (associated(vt_vec%sca_ip)) nullify(vt_vec%sca_ip)
+      if (associated(vt_vec%sca_cp)) nullify(vt_vec%sca_cp)
+      if (associated(vt_vec%sca_dp)) nullify(vt_vec%sca_dp)
       return
    end subroutine nullify_vt_vector_pointers
    !=======================================================================================!

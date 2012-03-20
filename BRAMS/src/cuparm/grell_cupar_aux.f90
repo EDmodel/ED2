@@ -185,8 +185,8 @@ end subroutine initial_tend_grell
 ! is a deep convection call, then it will include the effect of shallow convection, and    !
 ! make the variables for the case in which no convection happens consistent with this.     !
 !------------------------------------------------------------------------------------------!
-subroutine initial_thermo_grell(m1,dtime,thp,theta,rtp,co2p,pi0,pp,pc,wp,dn0,tkep,rliq     &
-                               ,rice,wstd)
+subroutine initial_thermo_grell(m1,mgmzp,dtime,thp,theta,rtp,co2p,pi0,pp,pc,wp,dn0,tkep    &
+                               ,rliq,rice,wstd)
 
    use mem_scratch_grell, only : &
           dco2dt       & ! intent(in)  - Total CO2 mixing ratio tendency          [  ppm/s]
@@ -222,6 +222,7 @@ subroutine initial_thermo_grell(m1,dtime,thp,theta,rtp,co2p,pi0,pp,pc,wp,dn0,tke
          ,qicesur      & ! intent(out) - Sfc. ice mixing ratio                    [  kg/kg]
          ,rho0         & ! intent(out) - Density                                  [  kg/m³]
          ,rho          & ! intent(out) - Density with forcing                     [  kg/m³]
+         ,rhosur       & ! intent(out) - Sfc. density                             [  kg/m³]
          ,t0           & ! intent(out) - Current Temperature                      [      K]
          ,t            & ! intent(out) - Forced Temperature                       [      K]
          ,tsur         & ! intent(out) - Sfc. Temperature                         [      K]
@@ -254,6 +255,7 @@ subroutine initial_thermo_grell(m1,dtime,thp,theta,rtp,co2p,pi0,pp,pc,wp,dn0,tke
    implicit none
    !------ I/O variables ------------------------------------------------------------------!
    integer, intent(in)                  :: m1    ! Grid dimension                 [    ---]
+   integer, intent(in)                  :: mgmzp ! Dim. of the scratch arrays     [    ---]
    real   , intent(in)                  :: dtime ! Time step (convective scale)   [      s]
    real   , intent(in)  , dimension(m1) :: thp   ! Ice-liquid potential temp.     [      K]
    real   , intent(in)  , dimension(m1) :: theta ! Potential temperature          [      K]
@@ -345,7 +347,8 @@ subroutine initial_thermo_grell(m1,dtime,thp,theta,rtp,co2p,pi0,pp,pc,wp,dn0,tke
       !]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]!
 
    end do
-   
+
+
    ![[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[!
    !---------------------------------------------------------------------------------------!
    !     Compute the surface variables. The only one that will be truly different is the   !
@@ -373,9 +376,22 @@ subroutine initial_thermo_grell(m1,dtime,thp,theta,rtp,co2p,pi0,pp,pc,wp,dn0,tke
    theivsur    = thetaeiv(thilsur,psur,tsur,qvapsur,qtotsur)
    !----- 9. CO2 mixing ratio -------------------------------------------------------------!
    co2sur      = co2p(lpw)
+   !----- 10. Air density -----------------------------------------------------------------!
+   rhosur      = idealdens(psur,tsur,qvapsur,qtotsur)
    !---------------------------------------------------------------------------------------!
    !]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]!
 
+
+   !---------------------------------------------------------------------------------------!
+   !     Check the profiles we will use.                                                   !
+   !---------------------------------------------------------------------------------------!
+   call grell_sanity_check(mkx,mgmzp,z,p0,exner0,theiv0,thil0,t0,qtot0,qvap0,qliq0         &
+                          ,qice0,co20,rho0,'thermo_zero')
+   call grell_sanity_check(mkx,mgmzp,z,p,exner,theiv,thil,t,qtot,qvap,qliq,qice,co2        &
+                          ,rho,'thermo_extrap')
+   call grell_sanity_check(1,1,0.,psur,exnersur,theivsur,thilsur,tsur,qtotsur,qvapsur      &
+                          ,qliqsur,qicesur,co2sur,rhosur,'thermo_surface')
+   !---------------------------------------------------------------------------------------!
 
 
    !---------------------------------------------------------------------------------------!
@@ -977,5 +993,170 @@ subroutine grell_massflx_stats(m1,icld,itest,dti,maxens_dyn,maxens_lsf,maxens_ef
    end if
    return
 end subroutine grell_massflx_stats
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!     This sub-routine checks whether the partial results in the cumulus parametrisation   !
+! make sense or not.                                                                       !
+!------------------------------------------------------------------------------------------!
+subroutine grell_sanity_check(mkx,mgmzp,z,press,exner,theiv,thil,t,qtot,qvap,qliq,qice     &
+                             ,co2,rho,which)
+   use grell_coms, only : grellmax_zcheck & ! intent(in)
+                        , grell_lapse_wet & ! intent(in)
+                        , grellmin_t0     & ! intent(in)
+                        , grellmax_t0     & ! intent(in)
+                        , grellmin_rhv    & ! intent(in)
+                        , grellmax_rhv    & ! intent(in)
+                        , grellmin_co2    & ! intent(in)
+                        , grellmax_co2    ! ! intent(in)
+   use therm_lib , only : extemp2theta    & ! intent(in)
+                        , eslif           & ! intent(in)
+                        , thetaeivs       ! ! intent(in)
+   use rconstants, only : ep              & ! intent(in)
+                        , t00             & ! intent(in)
+                        , gocp            ! ! intent(in)
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   integer                           , intent(in) :: mkx   ! Number of layers
+   integer                           , intent(in) :: mgmzp ! Array dimensions
+   real            , dimension(mgmzp), intent(in) :: z     ! Height              [       m]
+   real            , dimension(mgmzp), intent(in) :: press ! Pressure            [      Pa]
+   real            , dimension(mgmzp), intent(in) :: exner ! Exner function      [  J/kg/K]
+   real            , dimension(mgmzp), intent(in) :: theiv ! Equiv. pot. temp.   [       K]
+   real            , dimension(mgmzp), intent(in) :: thil  ! I.L. Pot. temp.     [       K]
+   real            , dimension(mgmzp), intent(in) :: t     ! Temperature         [       K]
+   real            , dimension(mgmzp), intent(in) :: qtot  ! Total mixing ratio  [   kg/kg]
+   real            , dimension(mgmzp), intent(in) :: qvap  ! Vapour mixing ratio [   kg/kg]
+   real            , dimension(mgmzp), intent(in) :: qliq  ! Liquid mixing ratio [   kg/kg]
+   real            , dimension(mgmzp), intent(in) :: qice  ! Ice mixing ratio    [   kg/kg]
+   real            , dimension(mgmzp), intent(in) :: co2   ! CO2 mixing ratio    [µmol/mol]
+   real            , dimension(mgmzp), intent(in) :: rho   ! Air density         [   kg/m3]
+   character(len=*)                  , intent(in) :: which ! Which call?
+   !----- Local variables. ----------------------------------------------------------------!
+   real    :: grellmin_t      ! Minimum temperature                              [       K]
+   real    :: grellmax_t      ! Maximum temperature                              [       K]
+   real    :: grellmin_thil   ! Minimum ice-liquid potential temperature         [       K]
+   real    :: grellmax_thil   ! Maximum ice-liquid potential temperature         [       K]
+   real    :: grellmin_theiv  ! Minimum ice-vapour equivalent pot. temperature   [       K]
+   real    :: grellmax_theiv  ! Maximum ice-vapour equivalent pot. temperature   [       K]
+   real    :: grellmin_pvap   ! Minimum vapour pressure                          [      Pa]
+   real    :: grellmax_pvap   ! Maximum vapour pressure                          [      Pa]
+   real    :: grellmin_qvap   ! Minimum vapour mixing ratio                      [   kg/kg]
+   real    :: grellmax_qvap   ! Maximum vapour mixing ratio                      [   kg/kg]
+   real    :: grellmin_qtot   ! Minimum total mixing ratio                       [   kg/kg]
+   real    :: grellmax_qtot   ! Maximum total mixing ratio                       [   kg/kg]
+   logical :: everything_fine ! This will become false if anything looks wrong   [     T|F]
+   integer :: k               ! Counter                                          [      --]
+   integer :: l               ! Counter                                          [      --]
+   integer :: m               ! Counter                                          [      --]
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !      Let's be optimistic and assume that everything is fine.                          !
+   !---------------------------------------------------------------------------------------!
+   everything_fine = .true.
+   !---------------------------------------------------------------------------------------!
+
+   !----- Loop over all layers and check for problems. ------------------------------------!
+   checkloop: do k = 1,mkx
+      if (z(k) > grellmax_zcheck) exit checkloop
+
+      !------------------------------------------------------------------------------------!
+      !     Find derived bounds.                                                           !
+      !------------------------------------------------------------------------------------!
+      !----- Temperature. -----------------------------------------------------------------!
+      grellmin_t      = grellmin_t0 - gocp            * z(k)
+      grellmax_t      = grellmax_t0 - grell_lapse_wet * z(k)
+      everything_fine = t(k) >= grellmin_t .and. t(k) <= grellmax_t
+      !----- Vapour pressure. -------------------------------------------------------------!
+      grellmin_pvap   = grellmin_rhv * eslif(grellmin_t)
+      grellmin_pvap   = grellmax_rhv * eslif(grellmax_t)
+      !----- Vapour mixing ratio. ---------------------------------------------------------!
+      grellmin_qvap   = ep * grellmin_pvap / (press(k) - grellmin_pvap)
+      grellmax_qvap   = ep * grellmax_pvap / (press(k) - grellmax_pvap)
+      everything_fine = qvap(k) >= grellmin_qvap .and. qvap(k) <= grellmax_qvap
+      !----- Total mixing ratio.  Minimum is unsaturated, maximum assumed to 2*qvap... ----!
+      grellmin_qtot   = grellmin_qvap
+      grellmax_qtot   = grellmax_qvap * 2.0
+      everything_fine = qtot(k) >= grellmin_qtot .and. qtot(k) <= grellmax_qtot
+      !----- Ice-liquid potential temperature. --------------------------------------------!
+      grellmin_thil   = extemp2theta(exner(k),grellmin_t)
+      grellmax_thil   = extemp2theta(exner(k),grellmax_t)
+      everything_fine = thil(k) >= grellmin_thil .and. thil(k) <= grellmax_thil
+      !----- Ice-vapour equivalent potential temperature. ---------------------------------!
+      grellmin_theiv  = grellmin_thil
+      grellmax_theiv  = thetaeivs(grellmax_thil,grellmax_t,grellmax_qvap,grellmax_qvap,0.)
+      everything_fine = theiv(k) >= grellmin_theiv .and. theiv(k) <= grellmax_theiv
+      !----- CO2 mixing ratio. ------------------------------------------------------------!
+      everything_fine = co2(k) >= grellmin_co2 .and. co2(k) <= grellmax_co2
+      !------------------------------------------------------------------------------------!
+
+      if (.not. everything_fine) then
+         !---------------------------------------------------------------------------------!
+         !      This is the problem of being optimistic: more often than not you may be    !
+         ! disappointed... But hey, don't hate me messenger, I'm just going to print       !
+         ! this so you can work towards a better model.                                    !
+         !---------------------------------------------------------------------------------!
+         write (unit=*,fmt='(150a)'    ) ('-',m=1,169)
+         write (unit=*,fmt='(3(a,1x))' ) ' -> Event: ',trim(which)                         &
+                                        ,' has unrealistic thermodynamics...'
+         write (unit=*,fmt='(150a)'    ) ('-',m=1,169)
+         write (unit=*,fmt='(a)'       ) ' BOUNDS'
+         write (unit=*,fmt='(a)'       ) ''
+         write (unit=*,fmt='(a,es12.5)') ' Min TEMP  [    degC]: ',grellmin_t     - t00
+         write (unit=*,fmt='(a,es12.5)') ' Max TEMP  [    degC]: ',grellmax_t     - t00
+         write (unit=*,fmt='(a,es12.5)') ' Min THIL  [       K]: ',grellmin_thil
+         write (unit=*,fmt='(a,es12.5)') ' Max THIL  [       K]: ',grellmax_thil
+         write (unit=*,fmt='(a,es12.5)') ' Min THEIV [       K]: ',grellmin_theiv
+         write (unit=*,fmt='(a,es12.5)') ' Max THEIV [       K]: ',grellmax_theiv
+         write (unit=*,fmt='(a,es12.5)') ' Min PVAP  [     hPa]: ',grellmin_pvap  * 0.01
+         write (unit=*,fmt='(a,es12.5)') ' Max PVAP  [     hPa]: ',grellmax_pvap  * 0.01
+         write (unit=*,fmt='(a,es12.5)') ' Min QVAP  [    g/kg]: ',grellmin_qvap  * 1000.
+         write (unit=*,fmt='(a,es12.5)') ' Max QVAP  [    g/kg]: ',grellmax_qvap  * 1000.
+         write (unit=*,fmt='(a,es12.5)') ' Min QTOT  [    g/kg]: ',grellmin_qtot  * 1000.
+         write (unit=*,fmt='(a,es12.5)') ' Max QTOT  [    g/kg]: ',grellmax_qtot  * 1000.
+         write (unit=*,fmt='(a,es12.5)') ' Min CO2   [umol/mol]: ',grellmin_co2
+         write (unit=*,fmt='(a,es12.5)') ' Max CO2   [umol/mol]: ',grellmax_co2
+         write (unit=*,fmt='(a)'       ) ''
+         write (unit=*,fmt='(150a)'    ) ('-',m=1,169)
+         write (unit=*,fmt='(13(a,1x))') '       LAYER','      HEIGHT','    PRESSURE'      &
+                                        ,'       EXNER','        TEMP','    THETA_IL'      &
+                                        ,'  THETAT_EIV','        QVAP','        QLIQ'      &
+                                        ,'        QICE','        QTOT','     DENSITY'      &
+                                        ,'         CO2'
+         write (unit=*,fmt='(13(a,1x))') '         ---','           m','         hPa'      &
+                                        ,'      J/kg/K','        degC','           K'      &
+                                        ,'           K','        g/kg','        g/kg'      &
+                                        ,'        g/kg','        g/kg','       kg/m3'      &
+                                        ,'    umol/mol'
+         write (unit=*,fmt='(150a)'    ) ('-',m=1,169)
+          do l=mkx,1,-1
+            write (unit=*,fmt='(i12,1x,12(f12.2))')                                        &
+                                         l,z(l),press(l)*0.01,exner(l),t(l)-t00,thil(l)    &
+                                        ,theiv(l),qvap(l)*1000.,qliq(l)*1000.              &
+                                        ,qice(l)*1000.,qtot(l)*1000.,rho(l),co2(l)
+         end do
+         write (unit=*,fmt='(150a)'    ) ('-',m=1,169)
+         write (unit=*,fmt='(a)'       ) ''
+         call brams_fail_whale()
+         call abort_run('Unreasonable thermodynamic variables','grell_sanity_check'        &
+                       ,'grell_cupar_aux.f90')
+         !---------------------------------------------------------------------------------!
+      end if
+      !------------------------------------------------------------------------------------!
+   end do checkloop
+   !---------------------------------------------------------------------------------------!
+
+   return
+end subroutine grell_sanity_check
 !==========================================================================================!
 !==========================================================================================!

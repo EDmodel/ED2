@@ -1170,6 +1170,7 @@ subroutine ed_opspec_misc
                                     , treefall_disturbance_rate    & ! intent(in)
                                     , min_patch_area               ! ! intent(in)
    use phenology_coms        , only : iphen_scheme                 & ! intent(in)
+                                    , repro_scheme                 & ! intent(in)
                                     , radint                       & ! intent(in)
                                     , radslp                       & ! intent(in)
                                     , thetacrit                    ! ! intent(in)
@@ -1547,6 +1548,14 @@ end do
       write (reason,fmt='(a,1x,i4,a)')                                                     &
                     'Invalid IPHEN_SCHEME, it must be between -1 and 3. Yours is set to'   &
                     ,iphen_scheme,'...'
+      call opspec_fatal(reason,'opspec_misc')
+      ifaterr = ifaterr +1
+   end if
+
+   if (repro_scheme < 0 .or. repro_scheme > 3) then
+      write (reason,fmt='(a,1x,i4,a)')                                                     &
+                    'Invalid REPRO_SCHEME, it must be between  0 and 3. Yours is set to'   &
+                    ,repro_scheme,'...'
       call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
    end if

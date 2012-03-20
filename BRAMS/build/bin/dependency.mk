@@ -51,13 +51,13 @@ grell_cupar_driver.o: mem_basic.mod mem_cuparm.mod mem_ensemble.mod mem_grid.mod
 grell_cupar_driver.o: mem_mass.mod mem_micro.mod mem_scalar.mod mem_scratch.mod
 grell_cupar_driver.o: mem_scratch_grell.mod mem_tend.mod mem_turb.mod
 grell_cupar_driver.o: micphys.mod node_mod.mod therm_lib.mod
-grell_cupar_dynamic.o: grell_coms.mod mem_ensemble.mod mem_scratch_grell.mod
-grell_cupar_dynamic.o: rconstants.mod therm_lib.mod
+grell_cupar_dynamic.o: grell_coms.mod grid_dims.mod mem_ensemble.mod
+grell_cupar_dynamic.o: mem_scratch_grell.mod rconstants.mod therm_lib.mod
 grell_cupar_ensemble.o: rconstants.mod
 grell_cupar_environment.o: grell_coms.mod rconstants.mod therm_lib.mod
 grell_cupar_feedback.o: mem_ensemble.mod mem_scratch_grell.mod rconstants.mod
-grell_cupar_static.o: mem_ensemble.mod mem_scratch_grell.mod rconstants.mod
-grell_cupar_static.o: therm_lib.mod
+grell_cupar_static.o: grid_dims.mod mem_ensemble.mod mem_scratch_grell.mod
+grell_cupar_static.o: rconstants.mod therm_lib.mod
 grell_cupar_updraft.o: mem_cuparm.mod rconstants.mod therm_lib.mod
 grell_extras_catt.o: grell_coms.mod mem_basic.mod mem_ensemble.mod mem_grid.mod
 grell_extras_catt.o: mem_scalar.mod mem_scratch.mod mem_scratch_grell.mod
@@ -72,6 +72,8 @@ shcu_vars_const.o: conv_coms.mod grid_dims.mod
 souza_cupar_driver.o: conv_coms.mod mem_basic.mod mem_cuparm.mod mem_grid.mod
 souza_cupar_driver.o: mem_micro.mod mem_scratch.mod mem_tend.mod mem_turb.mod
 souza_cupar_driver.o: node_mod.mod shcu_vars_const.mod therm_lib.mod
+~grell_cupar_static.o: grid_dims.mod mem_ensemble.mod mem_scratch_grell.mod
+~grell_cupar_static.o: rconstants.mod therm_lib.mod
 edcp_driver.o: consts_coms.mod ed_misc_coms.mod ed_node_coms.mod
 edcp_driver.o: ed_state_vars.mod ed_work_vars.mod grid_coms.mod io_params.mod
 edcp_driver.o: leaf_coms.mod mem_edcp.mod mem_grid.mod mem_leaf.mod

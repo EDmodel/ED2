@@ -205,13 +205,24 @@ subroutine reproduction(cgrid, month)
                         !----- If there is enough carbon, form the recruits. --------------!
                         rec_biomass = rectest%nplant * ( rectest%balive + rectest%bdead    &
                                                        + rectest%bstorage )
-                        if (rec_biomass > min_recruit_size(ipft)) then
-                           inew = inew + 1
-                           call copy_recruit(rectest,recruit(inew))
-
-                           !----- Reset the carbon available for reproduction. ------------!
-                           csite%repro(ipft,ipa) = 0.0                          
-                        end if
+                        
+                        select case (repro_scheme)
+                        case (3)
+                           if (rec_biomass > min_recruit_size(ipft) .and.                  &
+                               rectest%phenology_status == 0) then
+                              inew = inew + 1
+                              call copy_recruit(rectest,recruit(inew))
+                              !----- Reset the carbon available for reproduction. ---------!
+                              csite%repro(ipft,ipa) = 0.0                          
+                           end if
+                        case default
+                           if (rec_biomass > min_recruit_size(ipft)) then
+                              inew = inew + 1
+                              call copy_recruit(rectest,recruit(inew))
+                              !----- Reset the carbon available for reproduction. ---------!
+                              csite%repro(ipft,ipa) = 0.0                          
+                           end if
+                        end select
                         !------------------------------------------------------------------!
                      else
                         !------------------------------------------------------------------!
@@ -764,7 +775,7 @@ subroutine seed_dispersal(cpoly,late_spring)
       end do siteloop1 
       !------------------------------------------------------------------------------------!
 
-   case (2)
+   case (2,3)
 
       !------------------------------------------------------------------------------------!
       !     Seeds are dispersed amongst patches that belong to the same polygon.  They are !

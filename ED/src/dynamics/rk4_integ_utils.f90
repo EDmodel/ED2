@@ -1468,7 +1468,8 @@ subroutine initialize_rk4patches(init)
       !     If this is initialization, make sure soil and sfcwater arrays are allocated.   !
       !------------------------------------------------------------------------------------!
 
-      if(integration_scheme == 3) then
+      select case (integration_scheme)
+      case (3)
 
          allocate(integration_buff%initp)
          allocate(integration_buff%ytemp)
@@ -1476,7 +1477,7 @@ subroutine initialize_rk4patches(init)
          call allocate_rk4_patch(integration_buff%initp )
          call allocate_rk4_patch(integration_buff%ytemp )
       
-      else
+      case default
 
          allocate(integration_buff%initp )
          allocate(integration_buff%yscal )
@@ -1492,7 +1493,7 @@ subroutine initialize_rk4patches(init)
          call allocate_rk4_patch(integration_buff%yerr  )
          call allocate_rk4_patch(integration_buff%ytemp )
 
-      end if
+      end select
 
 
       !------------------------------------------------------------------------------------!
