@@ -7324,7 +7324,7 @@ contains
     ! =================================================
     
     
-    use ed_var_tables,only:num_var,vt_info,var_table,nullify_vt_vector_pointers
+    use ed_var_tables,only:num_var,vt_info,var_table,reset_vt_vector_pointers
     use ed_node_coms,only:mynum,mchnum,machs,nmachs,nnodetot,sendnum,recvnum,master_num
     use ed_max_dims, only: maxgrds, maxmach
     implicit none
@@ -7353,14 +7353,9 @@ contains
     do igr = 1,ngrids
        cgrid => edgrid_g(igr)
        
-       if (num_var(igr)>0) then
+       if (num_var(igr) > 0) then
           do nv=1,num_var(igr)
-             if (associated(vt_info(nv,igr)%vt_vector)) then
-                do iptr=1,vt_info(nv,igr)%nptrs
-                   call nullify_vt_vector_pointers(vt_info(nv,igr)%vt_vector(iptr))
-                end do
-                deallocate(vt_info(nv,igr)%vt_vector)
-             end if
+             call reset_vt_vector_pointers(vt_info(nv,igr))
           end do
        end if
 

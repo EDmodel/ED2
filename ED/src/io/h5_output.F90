@@ -59,7 +59,6 @@ subroutine h5_output(vtype)
    !------ Arguments. ---------------------------------------------------------------------!
    character(len=*)                                 , intent(in) :: vtype
    !------ Local variables. ---------------------------------------------------------------!
-   type(var_table_vector)                           , pointer    :: vtvec
    character(len=str_len)                                        :: anamel
    character(len=3)                                              :: cgrid
    character(len=40)                                             :: subaname
@@ -569,14 +568,14 @@ subroutine h5_output(vtype)
                      write (unit=*,fmt='(a,1x,i12,1x,a)') '        ~ Pointer ',iptr,'...'
                   end if
 
-                  vtvec => vt_info(nv,ngr)%vt_vector(iptr)
+
                   !------------------------------------------------------------------------!
                   !      Set the size of the chunk and it's offset in the global dataset.  !
                   !------------------------------------------------------------------------!
-                  if (vtvec%varlen > 0 ) then
+                  if (vt_info(nv,ngr)%vt_vector(iptr)%varlen > 0 ) then
                      if (verbose) then
                         write (unit=*,fmt='(a,1x,i12,1x,a)')                               &
-                                     '          + Length',vtvec%varlen,'...'
+                          '          + Length',vt_info(nv,ngr)%vt_vector(iptr)%varlen,'...'
                      end if
                      !---------------------------------------------------------------------!
                      !     Evaluate the variable output type.  Resolve the dimensioning    !
@@ -584,7 +583,9 @@ subroutine h5_output(vtype)
                      ! description of the various datatype.                                !
                      !---------------------------------------------------------------------!
                      !----- Initialize hyperslab indices. ---------------------------------!
-                     call geth5dims(vt_info(nv,ngr)%idim_type,vtvec%varlen,vtvec%globid    &
+                     call geth5dims(vt_info(nv,ngr)%idim_type                              &
+                                   ,vt_info(nv,ngr)%vt_vector(iptr)%varlen                 &
+                                   ,vt_info(nv,ngr)%vt_vector(iptr)%globid                 &
                                    ,vt_info(nv,ngr)%var_len_global,dsetrank,varn,nrec,irec)
 
 
@@ -642,43 +643,51 @@ subroutine h5_output(vtype)
                      end if
                      select case (vt_info(nv,ngr)%dtype)
                      case ('R') !----- Real variable (vector). ----------------------------!
-                        call h5dwrite_f(dset_id,H5T_NATIVE_REAL,vtvec%var_rp,globdims      &
-                                       ,hdferr,file_space_id=filespace                     &
+                        call h5dwrite_f(dset_id,H5T_NATIVE_REAL                            &
+                                       ,vt_info(nv,ngr)%vt_vector(iptr)%var_rp             &
+                                       ,globdims,hdferr,file_space_id=filespace            &
                                        ,mem_space_id=memspace)
 
                      case ('D') !----- Double precision variable (vector). ----------------!
-                        call h5dwrite_f(dset_id,H5T_NATIVE_DOUBLE,vtvec%var_dp,globdims    &
-                                       ,hdferr,file_space_id=filespace                     &
+                        call h5dwrite_f(dset_id,H5T_NATIVE_DOUBLE                          &
+                                       ,vt_info(nv,ngr)%vt_vector(iptr)%var_dp             &
+                                       ,globdims,hdferr,file_space_id=filespace            &
                                        ,mem_space_id=memspace)
 
                      case ('I') !----- Integer variable (vector). -------------------------!
-                        call h5dwrite_f(dset_id,H5T_NATIVE_INTEGER,vtvec%var_ip,globdims   &
-                                       ,hdferr,file_space_id=filespace                     &
+                        call h5dwrite_f(dset_id,H5T_NATIVE_INTEGER                         &
+                                       ,vt_info(nv,ngr)%vt_vector(iptr)%var_ip             &
+                                       ,globdims,hdferr,file_space_id=filespace            &
                                        ,mem_space_id=memspace)
 
                      case ('C') !----- Character variable (vector). -----------------------!
-                        call h5dwrite_f(dset_id,H5T_NATIVE_CHARACTER,vtvec%var_cp,globdims &
+                        call h5dwrite_f(dset_id,H5T_NATIVE_CHARACTER                       &
+                                       ,vt_info(nv,ngr)%vt_vector(iptr)%var_cp,globdims    &
                                        ,hdferr,file_space_id=filespace                     &
                                        ,mem_space_id = memspace)
 
                      case ('r') !----- Real variable (scalar). ----------------------------!
-                        call h5dwrite_f(dset_id,H5T_NATIVE_REAL,vtvec%sca_rp,globdims      &
-                                       ,hdferr,file_space_id=filespace                     &
+                        call h5dwrite_f(dset_id,H5T_NATIVE_REAL                            &
+                                       ,vt_info(nv,ngr)%vt_vector(iptr)%sca_rp             &
+                                       ,globdims,hdferr,file_space_id=filespace            &
                                        ,mem_space_id=memspace)
 
                      case ('d') !----- Double precision variable (scalar). ----------------!
-                        call h5dwrite_f(dset_id,H5T_NATIVE_DOUBLE,vtvec%sca_dp,globdims    &
-                                       ,hdferr,file_space_id=filespace                     &
+                        call h5dwrite_f(dset_id,H5T_NATIVE_DOUBLE                          &
+                                       ,vt_info(nv,ngr)%vt_vector(iptr)%sca_dp             &
+                                       ,globdims,hdferr,file_space_id=filespace            &
                                        ,mem_space_id=memspace)
 
                      case ('i') !----- Integer variable (scalar). -------------------------!
-                        call h5dwrite_f(dset_id,H5T_NATIVE_INTEGER,vtvec%sca_ip,globdims   &
-                                       ,hdferr,file_space_id=filespace                     &
+                        call h5dwrite_f(dset_id,H5T_NATIVE_INTEGER                         &
+                                       ,vt_info(nv,ngr)%vt_vector(iptr)%sca_ip             &
+                                       ,globdims,hdferr,file_space_id=filespace            &
                                        ,mem_space_id=memspace)
 
                      case ('c') !----- Character variable (scalar). -----------------------!
-                        call h5dwrite_f(dset_id,H5T_NATIVE_CHARACTER,vtvec%sca_cp,globdims &
-                                       ,hdferr,file_space_id=filespace                     &
+                        call h5dwrite_f(dset_id,H5T_NATIVE_CHARACTER                       &
+                                       ,vt_info(nv,ngr)%vt_vector(iptr)%sca_cp             &
+                                       ,globdims,hdferr,file_space_id=filespace            &
                                        ,mem_space_id=memspace)
 
                      end select

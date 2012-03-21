@@ -254,26 +254,40 @@ subroutine initial_thermo_grell(m1,mgmzp,dtime,thp,theta,rtp,co2p,pi0,pp,pc,wp,d
           , extheta2temp ! ! Function that finds pot. temp. from Exner and temperature
    implicit none
    !------ I/O variables ------------------------------------------------------------------!
-   integer, intent(in)                  :: m1    ! Grid dimension                 [    ---]
-   integer, intent(in)                  :: mgmzp ! Dim. of the scratch arrays     [    ---]
-   real   , intent(in)                  :: dtime ! Time step (convective scale)   [      s]
-   real   , intent(in)  , dimension(m1) :: thp   ! Ice-liquid potential temp.     [      K]
-   real   , intent(in)  , dimension(m1) :: theta ! Potential temperature          [      K]
-   real   , intent(in)  , dimension(m1) :: rtp   ! Total H2O mixing ratio         [  kg/kg]
-   real   , intent(in)  , dimension(m1) :: co2p  ! Total CO2 mixing ratio         [    ppm]
-   real   , intent(in)  , dimension(m1) :: pi0   ! Reference Exner function       [ J/kg/K]
-   real   , intent(in)  , dimension(m1) :: pp    ! Current perturbation on pi     [ J/kg/K]
-   real   , intent(in)  , dimension(m1) :: pc    ! Future perturbation on pi      [ J/kg/K]
-   real   , intent(in)  , dimension(m1) :: dn0   ! Reference density              [  kg/m³]
-   real   , intent(in)  , dimension(m1) :: wp    ! Vertical velocity              [    m/s]
-   real   , intent(in)  , dimension(m1) :: tkep  ! Turbulent kinetic energy       [   J/kg]
-   real   , intent(in)  , dimension(m1) :: rliq  ! Liquid water mixing ratio      [  kg/kg]
-   real   , intent(in)  , dimension(m1) :: rice  ! Ice mixing ratio               [  kg/kg]
-   real   , intent(in)  , dimension(m1) :: wstd  ! Standard deviation of wp       [    m/s]
+   integer, intent(in)                  :: m1     ! Grid dimension               [     ---]
+   integer, intent(in)                  :: mgmzp  ! Dim. of the scratch arrays   [     ---]
+   real   , intent(in)                  :: dtime  ! Time step (convective scale) [       s]
+   real   , intent(in)  , dimension(m1) :: thp    ! Ice-liquid potential temp.   [       K]
+   real   , intent(in)  , dimension(m1) :: theta  ! Potential temperature        [       K]
+   real   , intent(in)  , dimension(m1) :: rtp    ! Total H2O mixing ratio       [   kg/kg]
+   real   , intent(in)  , dimension(m1) :: co2p   ! Total CO2 mixing ratio       [umol/mol]
+   real   , intent(in)  , dimension(m1) :: pi0    ! Reference Exner function     [  J/kg/K]
+   real   , intent(in)  , dimension(m1) :: pp     ! Current perturbation on pi   [  J/kg/K]
+   real   , intent(in)  , dimension(m1) :: pc     ! Future perturbation on pi    [  J/kg/K]
+   real   , intent(in)  , dimension(m1) :: dn0    ! Reference density            [   kg/m³]
+   real   , intent(in)  , dimension(m1) :: wp     ! Vertical velocity            [     m/s]
+   real   , intent(in)  , dimension(m1) :: tkep   ! Turbulent kinetic energy     [    J/kg]
+   real   , intent(in)  , dimension(m1) :: rliq   ! Liquid water mixing ratio    [   kg/kg]
+   real   , intent(in)  , dimension(m1) :: rice   ! Ice mixing ratio             [   kg/kg]
+   real   , intent(in)  , dimension(m1) :: wstd   ! Standard deviation of wp     [     m/s]
    !------ Local variables ----------------------------------------------------------------!
-   integer                              :: k,kr  ! Counters
-   real                                 :: dq    ! Diff. on vapour mixing ratio   [  kg/kg]
-   real                                 :: qsat  ! Sat. mixing ratio (scratch)    [  kg/kg]
+   integer                              :: k      ! Counters                     [     ---]
+   integer                              :: kr     ! Counters                     [     ---]
+   real                                 :: dq     ! Diff. on vapour mixing ratio [   kg/kg]
+   real                                 :: qsat   ! Sat. mixing ratio (scratch)  [   kg/kg]
+   !------ Surface variables, copied to a dummy array because of interface check. ---------!
+   real                  , dimension(1) :: z1     ! Height                       [       m]
+   real                  , dimension(1) :: exner1 ! Exner function               [  J/kg/K]
+   real                  , dimension(1) :: p1     ! Pressure                     [      Pa]
+   real                  , dimension(1) :: thil1  ! Ice-liquid potential temp.   [       K]
+   real                  , dimension(1) :: qtot1  ! Total water mixing ratio     [   kg/kg]
+   real                  , dimension(1) :: qliq1  ! Liquid water mixing ratio    [   kg/kg]
+   real                  , dimension(1) :: qice1  ! Ice mixing ratio             [   kg/kg]
+   real                  , dimension(1) :: qvap1  ! Vapour mixing ratio          [   kg/kg]
+   real                  , dimension(1) :: t1     ! Temperature                  [       K]
+   real                  , dimension(1) :: theiv1 ! Equiv. ice vapour pot. temp. [       K]
+   real                  , dimension(1) :: co21   ! CO2 mixing ratio             [umol/mol] 
+   real                  , dimension(1) :: rho1   ! Density                      [   kg/m³]
    !---------------------------------------------------------------------------------------!
 
    do k=1,mkx
@@ -356,28 +370,41 @@ subroutine initial_thermo_grell(m1,mgmzp,dtime,thp,theta,rtp,co2p,pi0,pp,pc,wp,d
    ! level above. This is going to be just a boundary condition, so they will directly     !
    ! affect the parametrisation.                                                           !
    !---------------------------------------------------------------------------------------!
+   !----- 0. Height, always 0. ------------------------------------------------------------!
+   z1(1)       = 0.
    !----- 1. Exner function ---------------------------------------------------------------!
    exnersur    = sqrt((pp(lpw-1)+pi0(lpw-1))*(pp(lpw)+pi0(lpw)))
+   exner1(1)   = exnersur
    !----- 2. Pressure ---------------------------------------------------------------------!
    psur        = exner2press(exnersur)
+   p1(1)       = psur
    !----- 3. Ice liquid potential temperature ---------------------------------------------!
    thilsur     = thp(lpw)
+   thil1(1)    = thilsur
    !----- 4. Total mixing ratio -----------------------------------------------------------!
    qtotsur     = max(toodry,rtp(lpw))
+   qtot1(1)    = qtotsur
    !----- 5. Liquid water mixing ratio ----------------------------------------------------!
    qliqsur     = max(0.,rliq(lpw))
+   qliq1(1)    = qliqsur
    !----- 6. Ice mixing ratio -------------------------------------------------------------!
    qicesur     = max(0.,rice(lpw))
+   qice1(1)    = qicesur
    !----- 7. Vapour mixing ratio ----------------------------------------------------------!
    qvapsur     = max(toodry,qtotsur-qliqsur-qicesur)
+   qvap1(1)    = qvapsur
    !----- 7. Temperature ------------------------------------------------------------------!
    tsur        = extheta2temp(exnersur,theta(lpw))
+   t1(1)       = tsur
    !----- 8. Ice-vapour equivalent potential temperature ----------------------------------!
    theivsur    = thetaeiv(thilsur,psur,tsur,qvapsur,qtotsur)
+   theiv1(1)   = theivsur
    !----- 9. CO2 mixing ratio -------------------------------------------------------------!
    co2sur      = co2p(lpw)
+   co21(1)     = co2sur
    !----- 10. Air density -----------------------------------------------------------------!
    rhosur      = idealdens(psur,tsur,qvapsur,qtotsur)
+   rho1(1)     = rhosur
    !---------------------------------------------------------------------------------------!
    !]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]!
 
@@ -389,8 +416,8 @@ subroutine initial_thermo_grell(m1,mgmzp,dtime,thp,theta,rtp,co2p,pi0,pp,pc,wp,d
                           ,qice0,co20,rho0,'thermo_zero')
    call grell_sanity_check(mkx,mgmzp,z,p,exner,theiv,thil,t,qtot,qvap,qliq,qice,co2        &
                           ,rho,'thermo_extrap')
-   call grell_sanity_check(1,1,0.,psur,exnersur,theivsur,thilsur,tsur,qtotsur,qvapsur      &
-                          ,qliqsur,qicesur,co2sur,rhosur,'thermo_surface')
+   call grell_sanity_check(1,1,z1,p1,exner1,theiv1,thil1,t1,qtot1,qvap1,qliq1,qice1,co21   &
+                          ,rho1,'thermo_surface')
    !---------------------------------------------------------------------------------------!
 
 

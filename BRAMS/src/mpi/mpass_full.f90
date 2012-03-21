@@ -136,9 +136,8 @@ subroutine master_sendinit()
                ! scratch variable that is large enough to receive any subdomain.           !
                !---------------------------------------------------------------------------!
                call azero(npts,scratch%scr2)
-               call mk_full_buff(vtab_r(nv,ng)%var_p,scratch%scr2                          &
-                                ,fdzp,nnxp(ng),nnyp(ng),fdep                               &
-                                ,nxbeg(nm,ng),nxend(nm,ng),nybeg(nm,ng),nyend(nm,ng))
+               call mk_full_buff(vtab_r(nv,ng)%var_p,scratch%scr2,fdzp,nnxp(ng),nnyp(ng)   &
+                                ,fdep,sdxp,sdyp,ixoff(nm,ng),iyoff(nm,ng))
                !---------------------------------------------------------------------------!
 
 
@@ -360,7 +359,7 @@ subroutine node_getinit()
             ! will direct it to the right place.                                           !
             !------------------------------------------------------------------------------!
             call azero(npts_exp,scratch%scr1)
-            call MPI_Recv(scratch%scr1,npts_exp,MPI_REAL,master_num,mpivarid               &
+            call MPI_Recv(scratch%scr1,vtab_r(nv,ng)%npts,MPI_REAL,master_num,mpivarid     &
                          ,MPI_COMM_WORLD,MPI_STATUS_IGNORE,ierr)
             !------------------------------------------------------------------------------!
 
@@ -371,7 +370,7 @@ subroutine node_getinit()
             ! the actual variable to which the variable table points.                      !
             !------------------------------------------------------------------------------!
             call ex_full_buff(vtab_r(nv,ng)%var_p,scratch%scr1,fdzp,sdxp,sdyp,fdep         &
-                             ,sdxp,sdyp,0,0,1,sdxp,1,sdyp)
+                             ,sdxp,sdyp,0,0)
             !------------------------------------------------------------------------------!
          end if
 
@@ -479,25 +478,24 @@ subroutine node_sendall()
             ! scratch variable that is large enough to receive any subdomain.              !
             !------------------------------------------------------------------------------!
             call azero(vtab_r(nv,ng)%npts,scratch%scr6)
-            call mk_full_buff(vtab_r(nv,ng)%var_p,scratch%scr6,fdzp,sdxp,sdyp,fdep         &
-                             ,1,sdxp,1,sdyp)
+            call mk_full_buff(vtab_r(nv,ng)%var_p,scratch%scr6,fdzp,sdxp,sdyp,fdep,sdxp    &
+                             ,sdyp,0,0)
             !------------------------------------------------------------------------------!
 
 
 
-            !------------------------------------------------------------------------------! 
+            !------------------------------------------------------------------------------!
             !    Send the messages to the head node.  They go in three steps, the first    !
             ! with the variable name, the second with the dimensions, and the third with   !
             ! the field.                                                                   !
-            !------------------------------------------------------------------------------! 
+            !------------------------------------------------------------------------------!
             call MPI_Send(vtab_r(nv,ng)%name,16,MPI_CHARACTER,master_num,mpinameid         &
                          ,MPI_COMM_WORLD,ierr)
             call MPI_Send(msgtags,ntags,MPI_INTEGER,master_num,mpitagsid                   &
                          ,MPI_COMM_WORLD,ierr)
             call MPI_Send(scratch%scr6,vtab_r(nv,ng)%npts,MPI_REAL,master_num,mpivtabid    &
                          ,MPI_COMM_WORLD,ierr)
-            !------------------------------------------------------------------------------! 
-
+            !------------------------------------------------------------------------------!
          end if
       end do varloop
    end do gridloop
@@ -710,7 +708,7 @@ subroutine master_getall()
          ! actual variable to which the variable table points.                             !
          !---------------------------------------------------------------------------------!
          call ex_full_buff(vtab_r(nv,ng)%var_p,scratch%scr1,fdzp,nnxp(ng),nnyp(ng),fdep    &
-                          ,sdxp,sdyp,ioff,joff,iwest,ieast,jsouth,jnorth)
+                          ,sdxp,sdyp,ioff,joff)
          !---------------------------------------------------------------------------------!
       end do varloop
    end do machloop
@@ -729,38 +727,39 @@ end subroutine master_getall
 !     This subroutine copies part of the full domain to the buffer matrix, which will be   !
 ! sent to the nodes.                                                                       !
 !------------------------------------------------------------------------------------------!
-subroutine mk_full_buff(mydata,buff,nz,nx,ny,ne,iwest,ieast,jsouth,jnorth)
+subroutine mk_full_buff(mydata,buff,nz,nx,ny,ne,mx,my,xoff,yoff)
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    integer                     , intent(in)    :: nz
    integer                     , intent(in)    :: nx
    integer                     , intent(in)    :: ny
    integer                     , intent(in)    :: ne
-   integer                     , intent(in)    :: iwest
-   integer                     , intent(in)    :: ieast
-   integer                     , intent(in)    :: jsouth
-   integer                     , intent(in)    :: jnorth
+   integer                     , intent(in)    :: mx
+   integer                     , intent(in)    :: my
+   integer                     , intent(in)    :: xoff
+   integer                     , intent(in)    :: yoff
    real, dimension(nz,nx,ny,ne), intent(in)    :: mydata
-   real, dimension(*)          , intent(inout) :: buff
+   real, dimension(nz,mx,my,ne), intent(out)   :: buff
    !----- Local variables. ----------------------------------------------------------------!
-   integer                                     :: ind
-   integer                                     :: i
-   integer                                     :: j
-   integer                                     :: k
-   integer                                     :: l
+   integer                                     :: x
+   integer                                     :: y
+   integer                                     :: z
+   integer                                     :: e
+   integer                                     :: xabs
+   integer                                     :: yabs
    !---------------------------------------------------------------------------------------!
 
 
    !---------------------------------------------------------------------------------------!
    !     Copy the information to the buffer.                                               !
    !---------------------------------------------------------------------------------------!
-   ind = 0
-   do l=1,ne
-      do j=jsouth,jnorth
-         do i=iwest,ieast
-            do k=1,nz
-               ind       = ind + 1
-               buff(ind) = mydata(k,i,j,l)
+   do e=1,ne
+      do y=1,my
+         yabs = y + yoff
+         do x=1,mx
+            xabs = x + xoff
+            do z=1,nz
+               buff(z,x,y,e) = mydata(z,xabs,yabs,e)
             end do
          end do
       end do
@@ -782,7 +781,7 @@ end subroutine mk_full_buff
 !     This subroutine extracts the information stored in the buffer, and copies to the     !
 ! actual place that will be used by the head node.                                         !
 !------------------------------------------------------------------------------------------!
-subroutine ex_full_buff(mydata,buff,nz,nx,ny,ne,mx,my,ioff,joff,iwest,ieast,jsouth,jnorth)
+subroutine ex_full_buff(mydata,buff,nz,nx,ny,ne,mx,my,xoff,yoff)
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    integer                     , intent(in)    :: ne
@@ -791,35 +790,30 @@ subroutine ex_full_buff(mydata,buff,nz,nx,ny,ne,mx,my,ioff,joff,iwest,ieast,jsou
    integer                     , intent(in)    :: nz
    integer                     , intent(in)    :: mx
    integer                     , intent(in)    :: my
-   integer                     , intent(in)    :: ioff
-   integer                     , intent(in)    :: joff
-   integer                     , intent(in)    :: iwest
-   integer                     , intent(in)    :: ieast
-   integer                     , intent(in)    :: jsouth
-   integer                     , intent(in)    :: jnorth
+   integer                     , intent(in)    :: xoff
+   integer                     , intent(in)    :: yoff
    real, dimension(nz,mx,my,ne), intent(in)    :: buff
    real, dimension(nz,nx,ny,ne), intent(inout) :: mydata
    !----- Local variables. ----------------------------------------------------------------!
-   integer                                     :: iabs
-   integer                                     :: jabs
-   integer                                     :: i
-   integer                                     :: j
-   integer                                     :: k
-   integer                                     :: l
-   integer                                     :: ind
+   integer                                     :: xabs
+   integer                                     :: yabs
+   integer                                     :: x
+   integer                                     :: y
+   integer                                     :: z
+   integer                                     :: e
    !---------------------------------------------------------------------------------------!
 
 
    !---------------------------------------------------------------------------------------!
    !    Copy the buffer information.                                                       !
    !---------------------------------------------------------------------------------------!
-   do l=1,ne
-      do j=jsouth,jnorth
-         jabs = j + joff
-         do i=iwest,ieast
-            iabs = i + ioff
-            do k=1,nz
-               mydata(k,iabs,jabs,l) = buff(k,i,j,l)
+   do e=1,ne
+      do y=1,my
+         yabs = y + yoff
+         do x=1,mx
+            xabs = x + xoff
+            do z=1,nz
+               mydata(z,xabs,yabs,e) = buff(z,x,y,e)
             end do
          end do
       end do

@@ -249,11 +249,11 @@ subroutine master_getanl(vtype)
          !----- Instantaneous variables, use var_p pointer --------------------------------!
          case ('LITE') 
               call ex_full_buff(vtab_r(nv,ng)%var_p,scratch%scr1,fdzp,nnxp(ng),nnyp(ng)    &
-                               ,fdep,mlon,mlat,ioff,joff,iwest,ieast,jsouth,jnorth)
+                               ,fdep,mlon,mlat,ioff,joff)
          !----- Averaged variables, use var_m pointer -------------------------------------!
          case ('MEAN','BOTH') 
               call ex_full_buff(vtab_r(nv,ng)%var_m,scratch%scr1,fdzp,nnxp(ng),nnyp(ng)    &
-                               ,fdep,mlon,mlat,ioff,joff,iwest,ieast,jsouth,jnorth)
+                               ,fdep,mlon,mlat,ioff,joff)
          end select 
       end do varloop
    end do machloop
