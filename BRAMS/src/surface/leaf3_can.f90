@@ -16,9 +16,10 @@ subroutine leaf3_canopy(mzg,mzs,ksn,soil_energy,soil_water,soil_text,sfcwater_ma
    use therm_lib , only : eslif          & ! function
                         , rslif          & ! function
                         , thetaeiv       & ! function
-                        , thrhsh2temp    & ! function
                         , tslif          & ! function
-                        , qwtk           ! ! subroutine
+                        , uextcm2tl      & ! subroutine
+                        , tl2uint        & ! function
+                        , tq2enthalpy    ! ! function
    use catt_start, only : CATT
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
@@ -123,7 +124,7 @@ subroutine leaf3_canopy(mzg,mzs,ksn,soil_energy,soil_water,soil_text,sfcwater_ma
 
    !----- Find the time step auxiliary variables. -----------------------------------------!
    dtllowcc = dtll / (can_depth * can_rhos)
-   dtllohcc = dtll / (can_depth * can_rhos * cp * can_temp)
+   dtllohcc = dtll / (can_depth * can_rhos)
    dtlloccc = dtllowcc * mmdry
    !---------------------------------------------------------------------------------------!
 
@@ -133,7 +134,7 @@ subroutine leaf3_canopy(mzg,mzs,ksn,soil_energy,soil_water,soil_text,sfcwater_ma
    !     Find the atmosphere -> canopy fluxes.                                             !
    !---------------------------------------------------------------------------------------!
    rho_ustar  = can_rhos  * ustar
-   eflxac     = rho_ustar * estar * cp * can_temp ! Enthalpy exchange
+   eflxac     = rho_ustar * estar                 ! Enthalpy exchange
    hflxac     = rho_ustar * tstar * can_exner     ! Sensible heat exchange
    wflxac     = rho_ustar * rstar                 ! Water vapour exchange
    cflxac     = rho_ustar * cstar * mmdryi        ! CO2 exchange
@@ -213,8 +214,8 @@ subroutine leaf3_canopy(mzg,mzs,ksn,soil_energy,soil_water,soil_text,sfcwater_ma
    !     Both are defined as positive quantities.  Sensible heat is defined by only one    !
    ! variable, hflxgc [J/m2/s], which can be either positive or negative.                  !
    !---------------------------------------------------------------------------------------!
-   hflxgc = ggnet * can_rhos * cp * (ground_temp - can_temp)
-   wflx   = ggnet * can_rhos      * (ground_rsat - can_rvap)
+   hflxgc = ggnet * can_rhos * can_cp * (ground_temp - can_temp)
+   wflx   = ggnet * can_rhos          * (ground_rsat - can_rvap)
    !---------------------------------------------------------------------------------------!
 
 
@@ -234,7 +235,7 @@ subroutine leaf3_canopy(mzg,mzs,ksn,soil_energy,soil_water,soil_text,sfcwater_ma
       ! density based on MCD suggestion on 11/16/2009.                                     !
       !------------------------------------------------------------------------------------!
       dewgndflx  = min(-wflx,(can_rvap - toodry) / dtllowcc)
-      qdewgndflx = dewgndflx * (alvi - ground_fliq * alli)
+      qdewgndflx = dewgndflx * tq2enthalpy(ground_temp,1.0,.true.)
       ddewgndflx = dewgndflx * (ground_fliq * wdnsi + (1.0-ground_fliq) * fdnsi)
       !----- Set evaporation fluxes to zero. ----------------------------------------------!
       wflxgc     = 0.0
@@ -262,7 +263,7 @@ subroutine leaf3_canopy(mzg,mzs,ksn,soil_energy,soil_water,soil_text,sfcwater_ma
       qdewgndflx = 0.0
       ddewgndflx = 0.0
       wflxgc     = max(0.,min(wflx,sfcwater_mass(ksn)/dtll))
-      qwflxgc    = wflx * (alvi - ground_fliq * alli)
+      qwflxgc    = wflx * tq2enthalpy(ground_temp,1.0,.true.)
 
    else
       !------------------------------------------------------------------------------------!
@@ -274,7 +275,7 @@ subroutine leaf3_canopy(mzg,mzs,ksn,soil_energy,soil_water,soil_text,sfcwater_ma
       !------------------------------------------------------------------------------------!
       wflxgc  = can_rhos * ggnet * ggsoil * (ground_rvap - can_rvap) / (ggnet + ggsoil)
       !----- Adjust the flux according to the surface fraction (no phase bias). -----------!
-      qwflxgc = wflxgc * ( alvi - ground_fliq * alli)
+      qwflxgc = wflxgc * tq2enthalpy(ground_temp,1.0,.true.)
       !----- Set condensation fluxes to zero. ---------------------------------------------!
       dewgndflx  = 0.0
       qdewgndflx = 0.0
@@ -312,7 +313,8 @@ subroutine leaf3_canopy(mzg,mzs,ksn,soil_energy,soil_water,soil_text,sfcwater_ma
       !    Find the aerodynamic conductances for heat and water at the leaf boundary       !
       ! layer.                                                                             !
       !------------------------------------------------------------------------------------!
-      call leaf3_aerodynamic_conductances(nveg,veg_wind,veg_temp,can_temp,can_rvap,can_rhos)
+      call leaf3_aerodynamic_conductances(nveg,veg_wind,veg_temp,can_temp,can_rvap         &
+                                         ,can_rhos,can_cp)
       !------------------------------------------------------------------------------------!
 
 
@@ -462,8 +464,7 @@ subroutine leaf3_canopy(mzg,mzs,ksn,soil_energy,soil_water,soil_text,sfcwater_ma
       elseif (wtemp > leaf_maxwhc * stai) then
          !----- Shed water in excess of the leaf holding water capacity. ------------------!
          wshed_tot  = wtemp - leaf_maxwhc * stai
-         qwshed_tot = wshed_tot * (     veg_fliq  * cliq * (veg_temp - tsupercool)         &
-                                  + (1.-veg_fliq) * cice *  veg_temp )
+         qwshed_tot = wshed_tot * tl2uint(veg_temp,veg_fliq)
          dwshed_tot = wshed_tot * (veg_fliq * wdnsi + (1.0 - veg_fliq) * fdnsi)
          veg_water  = leaf_maxwhc * stai
       else
@@ -477,8 +478,8 @@ subroutine leaf3_canopy(mzg,mzs,ksn,soil_energy,soil_water,soil_text,sfcwater_ma
 
 
       !------ Find the associated latent heat flux from vegetation to canopy. -------------!
-      qwflxvc     = wflxvc     * (alvi - alli * veg_fliq)
-      qtransp_loc = transp_loc *  alvl !----- Liquid phase only in transpiration. ---------!
+      qwflxvc     = wflxvc     * tq2enthalpy(veg_temp,1.0,.true.)
+      qtransp_loc = transp_loc * tq2enthalpy(veg_temp,1.0,.true.)
       !------------------------------------------------------------------------------------!
 
 
@@ -498,10 +499,12 @@ subroutine leaf3_canopy(mzg,mzs,ksn,soil_energy,soil_water,soil_text,sfcwater_ma
       !------------------------------------------------------------------------------------!
       !      Update enthalpy, CO2, and canopy mixing ratio.                                !
       !------------------------------------------------------------------------------------!
-      can_lntheta      = can_lntheta                                                       &
-                       + dtllohcc * ( hflxgc + hflxvc + hflxac)
-      can_rvap         = can_rvap                                                          &
-                       + dtllowcc * (wflxgc - dewgndflx + wflxvc + transp_loc + wflxac)
+      can_enthalpy = can_enthalpy                                                          &
+                   + dtllohcc * ( hflxgc + qwflxgc  - qdewgndflx                           &
+                                + hflxvc + qwflxvc  + qtransp_loc                          &
+                                + eflxac)
+      can_rvap     = can_rvap                                                              &
+                   + dtllowcc * ( wflxgc - dewgndflx + wflxvc + transp_loc + wflxac)
       !------------------------------------------------------------------------------------!
 
 
@@ -531,7 +534,7 @@ subroutine leaf3_canopy(mzg,mzs,ksn,soil_energy,soil_water,soil_text,sfcwater_ma
       !------------------------------------------------------------------------------------!
 
       !----- Update the canopy prognostic variables. --------------------------------------!
-      can_lntheta  = can_lntheta  + dtllohcc * (hflxgc + qwflxgc   + hflxac)
+      can_enthalpy = can_enthalpy + dtllohcc * (hflxgc + qwflxgc - qdewgndflx + eflxac)
       can_rvap     = can_rvap     + dtllowcc * (wflxgc - dewgndflx + wflxac)
 
       !------------------------------------------------------------------------------------!
@@ -567,6 +570,8 @@ subroutine leaf3_can_diag(ip,can_theta,can_theiv,can_rvap,leaf_class,can_prss,in
    use leaf_coms , only : atm_prss      & ! intent(in)
                         , atm_theta     & ! intent(in)
                         , atm_shv       & ! intent(in)
+                        , atm_temp_zcan & ! intent(in)
+                        , atm_enthalpy  & ! intent(in)
                         , geoht         & ! intent(in)
                         , veg_ht        & ! intent(in)
                         , can_shv       & ! intent(out)
@@ -576,17 +581,24 @@ subroutine leaf3_can_diag(ip,can_theta,can_theiv,can_rvap,leaf_class,can_prss,in
                         , can_depth_min & ! intent(in)
                         , can_temp      & ! intent(out)
                         , can_exner     & ! intent(inout)
-                        , can_lntheta   & ! intent(inout)
-                        , can_rhos      ! ! intent(inout)
-   use rconstants, only : cp            & ! intent(in)
-                        , cpi           & ! intent(in)
+                        , can_enthalpy  & ! intent(inout)
+                        , can_rhos      & ! intent(inout)
+                        , can_cp        ! ! intent(inout)
+   use rconstants, only : cpdry         & ! intent(in)
+                        , cph2o         & ! intent(in)
                         , ep            & ! intent(in)
                         , p00i          & ! intent(in)
                         , rocp          ! ! intent(in)
    use therm_lib , only : reducedpress  & ! function
                         , rslif         & ! function
                         , idealdenssh   & ! function
-                        , thetaeiv      ! ! function
+                        , thetaeiv      & ! function
+                        , press2exner   & ! function
+                        , extheta2temp  & ! function
+                        , extemp2theta  & ! function
+                        , tq2enthalpy   & ! function
+                        , hq2temp       ! ! function
+
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
    integer, intent(in)      :: ip
@@ -622,21 +634,6 @@ subroutine leaf3_can_diag(ip,can_theta,can_theiv,can_rvap,leaf_class,can_prss,in
 
 
 
-
-   !---------------------------------------------------------------------------------------!
-   !     If this is the initial step, we initialise the canopy air "dry enthropy" (log of  !
-   ! potential temperature).  If not, we update the actual potential temperature from the  !
-   ! logarithm.                                                                            !
-   !---------------------------------------------------------------------------------------!
-   if (initial) then
-      can_lntheta = log(can_theta)
-   else
-      can_theta   = exp(can_lntheta)
-   end if
-   !---------------------------------------------------------------------------------------!
-
-
-
    !---------------------------------------------------------------------------------------!
    !    Update canopy air pressure and the Exner function here.  Canopy air pressure is    !
    ! assumed to remain constant during one LEAF full timestep, which means that heat       !
@@ -648,7 +645,12 @@ subroutine leaf3_can_diag(ip,can_theta,can_theiv,can_rvap,leaf_class,can_prss,in
    if (initial) then
       can_prss  = reducedpress(atm_prss,atm_theta,atm_shv,geoht,can_theta,can_shv          &
                               ,can_depth)
-      can_exner = cp  * (p00i * can_prss) ** rocp
+      can_exner = press2exner(can_prss)
+
+      !----- Also, find the specific enthalpy of the air aloft. ---------------------------!
+      atm_temp_zcan = extheta2temp(can_exner,atm_theta)
+      atm_enthalpy  = tq2enthalpy(atm_temp_zcan,atm_shv,.true.)
+      !------------------------------------------------------------------------------------!
    end if
    !---------------------------------------------------------------------------------------!
 
@@ -656,9 +658,16 @@ subroutine leaf3_can_diag(ip,can_theta,can_theiv,can_rvap,leaf_class,can_prss,in
 
 
    !---------------------------------------------------------------------------------------!
-   !    Find the canopy air temperature.
+   !     If this is the initial step, we initialise the canopy air specific enthalpy.      !
+   ! Otherwise, we update temperature and potential temperature from enthalpy.             !
    !---------------------------------------------------------------------------------------!
-   can_temp = cpi * can_theta * can_exner
+   if (initial) then
+      can_temp     = extheta2temp(can_exner,can_theta)
+      can_enthalpy = tq2enthalpy(can_temp,can_shv,.true.)
+   else
+      can_temp    = hq2temp(can_enthalpy,can_shv,.true.)
+      can_theta   = extemp2theta(can_exner,can_temp)
+   end if
    !---------------------------------------------------------------------------------------!
 
 
@@ -693,7 +702,16 @@ subroutine leaf3_can_diag(ip,can_theta,can_theiv,can_rvap,leaf_class,can_prss,in
    ! currently a diagnostic variable only, but it should become the main variable if we    !
    ! ever switch to foggy canopy air space.                                                !
    !---------------------------------------------------------------------------------------!
-   can_theiv = thetaeiv(can_theta,can_prss,can_temp,can_rvap,can_rvap,-84)
+   can_theiv = thetaeiv(can_theta,can_prss,can_temp,can_rvap,can_rvap)
+   !---------------------------------------------------------------------------------------!
+
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Find the canopy air space specific heat at constant pressure.                     !
+   !---------------------------------------------------------------------------------------!
+   can_cp    = (1.0 - can_shv) * cpdry + can_shv * cph2o
    !---------------------------------------------------------------------------------------!
 
 
@@ -720,7 +738,7 @@ subroutine leaf3_veg_diag(veg_energy,veg_water,veg_hcap)
                         , veg_fliq         & ! intent(out)
                         , resolvable       ! ! intent(in)
    use rconstants, only : t3ple            ! ! intent(in)
-   use therm_lib , only : qwtk             ! ! function
+   use therm_lib , only : uextcm2tl        ! ! function
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
    real   , intent(inout) :: veg_energy
@@ -736,7 +754,7 @@ subroutine leaf3_veg_diag(veg_energy,veg_water,veg_hcap)
    ! leaves.                                                                               !
    !---------------------------------------------------------------------------------------!
    if (resolvable) then
-      call qwtk(veg_energy,veg_water,veg_hcap,veg_temp,veg_fliq)
+      call uextcm2tl(veg_energy,veg_water,veg_hcap,veg_temp,veg_fliq)
    else
       veg_temp = can_temp
       if (veg_temp > t3ple) then

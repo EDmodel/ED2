@@ -1,139 +1,103 @@
-!############################# Change Log ##################################
-! 2.0.0
-!
-!###########################################################################
-!  Copyright (C)  1990, 1995, 1999, 2000, 2003 - All Rights Reserved
-!  Regional Atmospheric Modeling System - RAMS
-!###########################################################################
-
-subroutine azerov(n1)
-implicit none
-integer :: n,n1
-real :: a1(n1),a2(n1),a3(n1),a4(n1),a5(n1)
-entry azero(n1,a1)
-   do n=1,n1
-      a1(n)=0.
-   enddo
-return
-entry azero2(n1,a1,a2)
-   do n=1,n1
-      a1(n)=0.
-      a2(n)=0.
-   enddo
-return
-entry azero3(n1,a1,a2,a3)
-   do n=1,n1
-      a1(n)=0.
-      a2(n)=0.
-      a3(n)=0.
-   enddo
-return
-entry azero4(n1,a1,a2,a3,a4)
-   do n=1,n1
-      a1(n)=0.
-      a2(n)=0.
-      a3(n)=0.
-      a4(n)=0.
-   enddo
-return
-entry azero5(n1,a1,a2,a3,a4,a5)
-   do n=1,n1
-      a1(n)=0.
-      a2(n)=0.
-      a3(n)=0.
-      a4(n)=0.
-      a5(n)=0.
-   enddo
-return
-end
-
-![MLO ---- Similar to azerov, but for integers.
-subroutine izerov(n1)
-  implicit none
-  integer :: n,n1
-  integer :: ijk1(n1),ijk2(n1),ijk3(n1),ijk4(n1),ijk5(n1)
-  entry izero(n1,ijk1)
-     do n=1,n1
-        ijk1(n)=0
-     enddo
-  return
-  entry izero2(n1,ijk1,ijk2)
-     do n=1,n1
-        ijk1(n)=0
-        ijk2(n)=0
-     enddo
-  return
-  entry izero3(n1,ijk1,ijk2,ijk3)
-     do n=1,n1
-        ijk1(n)=0
-        ijk2(n)=0
-        ijk3(n)=0
-     enddo
-  return
-  entry izero4(n1,ijk1,ijk2,ijk3,ijk4)
-     do n=1,n1
-        ijk1(n)=0
-        ijk2(n)=0
-        ijk3(n)=0
-        ijk4(n)=0
-     enddo
-  return
-  entry izero5(n1,ijk1,ijk2,ijk3,ijk4,ijk5)
-     do n=1,n1
-        ijk1(n)=0
-        ijk2(n)=0
-        ijk3(n)=0
-        ijk4(n)=0
-        ijk5(n)=0
-     enddo
-  return
-end subroutine izerov
-
-![MLO - Just to generate a matrix full of ones...
-subroutine aonev(n1)
-implicit none
-integer :: n,n1
-real :: a1(n1),a2(n1),a3(n1),a4(n1),a5(n1)
-entry aone(n1,a1)
-   do n=1,n1
-      a1(n)=1.
-   enddo
-return
-entry aone2(n1,a1,a2)
-   do n=1,n1
-      a1(n)=1.
-      a2(n)=1.
-   enddo
-return
-entry aone3(n1,a1,a2,a3)
-   do n=1,n1
-      a1(n)=1.
-      a2(n)=1.
-      a3(n)=1.
-   enddo
-return
-entry aone4(n1,a1,a2,a3,a4)
-   do n=1,n1
-      a1(n)=1.
-      a2(n)=1.
-      a3(n)=1.
-      a4(n)=1.
-   enddo
-return
-entry aone5(n1,a1,a2,a3,a4,a5)
-   do n=1,n1
-      a1(n)=1.
-      a2(n)=1.
-      a3(n)=1.
-      a4(n)=1.
-      a5(n)=1.
-   enddo
-return
-end subroutine aonev
-!MLO]
+!==========================================================================================!
+!==========================================================================================!
+!  Change Log                                                                              !
+!  2.0.0                                                                                   !
+!                                                                                          !
+!------------------------------------------------------------------------------------------!
+!  Copyright (C)  1990, 1995, 1999, 2000, 2003 - All Rights Reserved                       !
+!  Regional Atmospheric Modeling System - RAMS                                             !
+!==========================================================================================!
+!==========================================================================================!
 
 
 
+
+
+!==========================================================================================!
+!==========================================================================================!
+!      This sub-routine flushes all elements of this array to zero.  Legacy from the old   !
+! code, when vector operations didn't exist.                                               !
+!------------------------------------------------------------------------------------------!
+subroutine azero(nmax,arr)
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   integer                 , intent(in)  :: nmax
+   real   , dimension(nmax), intent(out) :: arr
+   !----- Local variables. ----------------------------------------------------------------!
+   integer                               :: n
+   !---------------------------------------------------------------------------------------!
+
+   do n=1,nmax
+      arr(n) = 0.
+   end do
+
+   return
+end subroutine azero
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!      This sub-routine flushes all elements of this array to zero.  Legacy from the old   !
+! code, when vector operations didn't exist.  The only difference between this one and     !
+! azero is that the input vector here is integer.                                          !
+!------------------------------------------------------------------------------------------!
+subroutine izero(nmax,arr)
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   integer                 , intent(in)  :: nmax
+   integer, dimension(nmax), intent(out) :: arr
+   !----- Local variables. ----------------------------------------------------------------!
+   integer                               :: n
+   !---------------------------------------------------------------------------------------!
+
+   do n=1,nmax
+      arr(n) = 0
+   end do
+
+   return
+end subroutine izero
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!      This sub-routine flushes all elements of this array to one.  Legacy from the old    !
+! code, when vector operations didn't exist.                                               !
+!------------------------------------------------------------------------------------------!
+subroutine aone(nmax,arr)
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   integer                 , intent(in)  :: nmax
+   real   , dimension(nmax), intent(out) :: arr
+   !----- Local variables. ----------------------------------------------------------------!
+   integer                               :: n
+   !---------------------------------------------------------------------------------------!
+
+   do n=1,nmax
+      arr(n) = 1.
+   end do
+
+   return
+end subroutine aone
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
 subroutine ae1t0(n1,a,b,c)
 implicit none
 integer :: n1
@@ -2243,3 +2207,203 @@ real(kind=8) function eifun8(x)
 end function eifun8
 !==========================================================================================!
 !==========================================================================================!
+
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!     This subroutine extracts a vertical (z) column given a 3-D array, and the fixed      !
+! indices for the x and y dimensions.                                                      !
+!------------------------------------------------------------------------------------------!
+subroutine array2zcol(mz,mx,my,x,y,array,vector)
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   integer                          , intent(in)  :: mz
+   integer                          , intent(in)  :: mx
+   integer                          , intent(in)  :: my
+   integer                          , intent(in)  :: x
+   integer                          , intent(in)  :: y
+   real(kind=4), dimension(mz,mx,my), intent(in)  :: array
+   real(kind=4), dimension(mz)      , intent(out) :: vector
+   !----- Local variables. ----------------------------------------------------------------!
+   integer                                        :: z
+   !---------------------------------------------------------------------------------------!
+
+   do z=1,mz
+      vector(z) = array(z,x,y)
+   end do
+
+   return
+end subroutine array2zcol
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!     This subroutine extracts a longitudinal (x) column given a 3-D array, and the fixed  !
+! indices for the z and y dimensions.                                                      !
+!------------------------------------------------------------------------------------------!
+subroutine array2xcol(mz,mx,my,z,y,array,vector)
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   integer                          , intent(in)  :: mz
+   integer                          , intent(in)  :: mx
+   integer                          , intent(in)  :: my
+   integer                          , intent(in)  :: z
+   integer                          , intent(in)  :: y
+   real(kind=4), dimension(mz,mx,my), intent(in)  :: array
+   real(kind=4), dimension(mx)      , intent(out) :: vector
+   !----- Local variables. ----------------------------------------------------------------!
+   integer                                        :: x
+   !---------------------------------------------------------------------------------------!
+
+   do x=1,mx
+      vector(x) = array(z,x,y)
+   end do
+
+   return
+end subroutine array2xcol
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!     This subroutine extracts a latitudinal (y) column given a 3-D array, and the fixed   !
+! indices for the z and x dimensions.                                                      !
+!------------------------------------------------------------------------------------------!
+subroutine array2ycol(mz,mx,my,z,x,array,vector)
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   integer                          , intent(in)  :: mz
+   integer                          , intent(in)  :: mx
+   integer                          , intent(in)  :: my
+   integer                          , intent(in)  :: z
+   integer                          , intent(in)  :: x
+   real(kind=4), dimension(mz,mx,my), intent(in)  :: array
+   real(kind=4), dimension(my)      , intent(out) :: vector
+   !----- Local variables. ----------------------------------------------------------------!
+   integer                                        :: y
+   !---------------------------------------------------------------------------------------!
+
+   do y=1,my
+      vector(y) = array(z,x,y)
+   end do
+
+   return
+end subroutine array2ycol
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!     This subroutine copies a vertical (z) column to a 3-D array, using fixed indices for !
+! the x and y dimensions.                                                                  !
+!------------------------------------------------------------------------------------------!
+subroutine zcol2array(mz,mx,my,x,y,vector,array)
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   integer                          , intent(in)    :: mz
+   integer                          , intent(in)    :: mx
+   integer                          , intent(in)    :: my
+   integer                          , intent(in)    :: x
+   integer                          , intent(in)    :: y
+   real(kind=4), dimension(mz)      , intent(in)    :: vector
+   real(kind=4), dimension(mz,mx,my), intent(inout) :: array
+   !----- Local variables. ----------------------------------------------------------------!
+   integer                                          :: z
+   !---------------------------------------------------------------------------------------!
+
+   do z=1,mz
+      array(z,x,y) = vector(z)
+   end do
+
+   return
+end subroutine zcol2array
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!     This subroutine copies a longitudinal (x) column to a 3-D array, using fixed indices !
+! for the z and y dimensions.                                                              !
+!------------------------------------------------------------------------------------------!
+subroutine xcol2array(mz,mx,my,z,y,vector,array)
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   integer                          , intent(in)    :: mz
+   integer                          , intent(in)    :: mx
+   integer                          , intent(in)    :: my
+   integer                          , intent(in)    :: z
+   integer                          , intent(in)    :: y
+   real(kind=4), dimension(mx)      , intent(in)    :: vector
+   real(kind=4), dimension(mz,mx,my), intent(inout) :: array
+   !----- Local variables. ----------------------------------------------------------------!
+   integer                                          :: x
+   !---------------------------------------------------------------------------------------!
+
+   do x=1,mx
+      array(z,x,y) = vector(x)
+   end do
+
+   return
+end subroutine xcol2array
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!     This subroutine copies a latitudinal (y) column to a 3-D array, using fixed indices  !
+! for the z and x dimensions.                                                              !
+!------------------------------------------------------------------------------------------!
+subroutine ycol2array(mz,mx,my,z,x,vector,array)
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   integer                          , intent(in)    :: mz
+   integer                          , intent(in)    :: mx
+   integer                          , intent(in)    :: my
+   integer                          , intent(in)    :: z
+   integer                          , intent(in)    :: x
+   real(kind=4), dimension(my)      , intent(in)    :: vector
+   real(kind=4), dimension(mz,mx,my), intent(inout) :: array
+   !----- Local variables. ----------------------------------------------------------------!
+   integer                                          :: y
+   !---------------------------------------------------------------------------------------!
+
+   do y=1,my
+      array(z,x,y) = vector(y)
+   end do
+
+   return
+end subroutine ycol2array
+!==========================================================================================!
+!==========================================================================================!
+
+

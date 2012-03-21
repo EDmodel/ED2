@@ -308,7 +308,7 @@ module allometry
          volume     = dbh2vol(hgt,dbh,ipft) 
          root_depth = b1Rd(ipft)  * volume ** b2Rd(ipft)
 
-      case (2)
+      case (1,2)
          !---------------------------------------------------------------------------------!
          !    This is just a test allometry, that imposes root depth to be 0.5 m for       !
          ! plants that are 0.15-m tall, and 5.0 m for plants that are 35-m tall.           !
@@ -443,8 +443,8 @@ module allometry
    !        climate change conditions.  The Open Geography Journal, 3, 91-102  (they       !
    !        didn't develop the allometry, but the original reference is in German...)      !
    !---------------------------------------------------------------------------------------!
-   subroutine area_indices(nplant,bleaf,bdead,balive,dbh,hite,pft,sla,lai,wpa,wai          &
-                          ,crown_area,bsapwood)
+   subroutine area_indices(nplant,bleaf,bdead,balive,dbh,hite,pft,sla,lai,wai,crown_area   &
+                          ,bsapwood)
       use pft_coms    , only : is_tropical     & ! intent(in)
                              , rho             & ! intent(in)
                              , C2B             & ! intent(in)
@@ -466,7 +466,6 @@ module allometry
       real    , intent(in)  :: hite       ! Plant height                     [           m]
       real    , intent(in)  :: sla        ! Specific leaf area               [m²leaf/plant]
       real    , intent(out) :: lai        ! Leaf area index                  [   m²leaf/m²]
-      real    , intent(out) :: wpa        ! Wood projected area              [   m²wood/m²]
       real    , intent(out) :: wai        ! Wood area index                  [   m²wood/m²]
       real    , intent(out) :: crown_area ! Crown area                       [  m²crown/m²]
       !----- Local variables --------------------------------------------------------------!
@@ -495,7 +494,6 @@ module allometry
       select case (ibranch_thermo)
       case (0) 
          !----- Ignore branches and trunk. ------------------------------------------------!
-         wpa  = 0.
          wai  = 0.
          !---------------------------------------------------------------------------------!
 
@@ -504,7 +502,6 @@ module allometry
          !    Solve branches using the equations from Ahrends et al. (2010).               !
          !---------------------------------------------------------------------------------!
          wai = nplant * b1WAI(pft) * min(dbh,dbh_crit(pft)) ** b2WAI(pft)
-         wpa = wai * dbh2ca(dbh,sla,pft)
          !---------------------------------------------------------------------------------!
 
       end select

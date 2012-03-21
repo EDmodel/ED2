@@ -557,7 +557,7 @@ do nv=1,nvars
       if(rsfc_obs%t>-998. .and. rsfc_obs%td>-998. .and.  &
          rsfc_obs%p>-998.) &
       varn(nv)=100.*min(1.,rehul(rsfc_obs%p,rsfc_obs%t+t00 &
-                                ,rslf(rsfc_obs%p,rsfc_obs%td+t00)))
+                                ,rslf(rsfc_obs%p,rsfc_obs%td+t00),.false.))
    else
       print*,'UNKNOWN CONVERT VARIABLE in sfc_data_convert !!!!',cvar
       stop 'sfc_data_convert'
@@ -624,18 +624,18 @@ integer :: ll,nv,k,nlev
          if(rupa_obs%p(k)>-998.) varn(k)=rupa_obs%p(k)
       elseif(cvar(1:ll)=='pi') then  
          ! Exner function
-         if(rupa_obs%p(k)>-998.) varn(k)=cp*(rupa_obs%p(k)*p00i)**rocp
+         if(rupa_obs%p(k)>-998.) varn(k)=cpdry*(rupa_obs%p(k)*p00i)**rocp
       elseif(cvar(1:ll)=='dewptc') then  
          ! dewpoint in C
          if(rupa_obs%r(k)>-998..and.rupa_obs%t(k)>-998..and.  &
             rupa_obs%p(k)>-998.) &
-            vv     =ptrh2rvapl(rupa_obs%r(k),rupa_obs%p(k),rupa_obs%t(k)+t00)
+            vv     =ptrh2rvapl(rupa_obs%r(k),rupa_obs%p(k),rupa_obs%t(k)+t00,.false.)
             varn(k)=dewpoint(rupa_obs%p(k),vv )-t00
       elseif(cvar(1:ll)=='dewptf') then  
          ! dewpoint in F
          if(rupa_obs%r(k)>-998..and.rupa_obs%t(k)>-998..and.  &
                 rupa_obs%p(k)>-998.) &
-            vv     =ptrh2rvapl(rupa_obs%r(k),rupa_obs%p(k),rupa_obs%t(k)+t00)
+            vv     =ptrh2rvapl(rupa_obs%r(k),rupa_obs%p(k),rupa_obs%t(k)+t00,.false.)
             varn(k)=(dewpoint(rupa_obs%p(k),vv )-t00)*1.8+32.
       elseif(cvar(1:ll)=='geo') then  
          ! geopotential in m
@@ -644,7 +644,7 @@ integer :: ll,nv,k,nlev
          ! vapor in kg/kg
          if(rupa_obs%r(k)>-998..and.rupa_obs%t(k)>-998..and.  &
             rupa_obs%p(k)>-998.) &
-            varn(k)= ptrh2rvapl(rupa_obs%r(k),rupa_obs%p(k),rupa_obs%t(k)+t00)
+            varn(k)= ptrh2rvapl(rupa_obs%r(k),rupa_obs%p(k),rupa_obs%t(k)+t00,.false.)
        elseif(cvar(1:ll)=='relhum') then  
          ! rh in percent
          if(rupa_obs%r(k)>-998.) varn(k)=100.  &

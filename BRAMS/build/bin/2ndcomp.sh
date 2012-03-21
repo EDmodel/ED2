@@ -103,6 +103,7 @@ rm -fv mem_mass.o                 mem_mass.mod
 rm -fv mem_mclat.o                mem_mclat.mod
 rm -fv mem_micro.o                mem_micro.mod
 rm -fv mem_mksfc.o                mem_mksfc.mod
+rm -fv mem_mnt_advec.o            mem_mnt_advec.mod
 rm -fv mem_nestb.o                mem_nestb.mod
 rm -fv mem_oda.o                  mem_oda.mod
 rm -fv mem_opt_scratch.o          mem_opt_scratch.mod
@@ -143,12 +144,15 @@ rm -fv mksfc_ndvi.o               mksfc_ndvi.mod
 rm -fv mksfc_sfc.o                mksfc_sfc.mod
 rm -fv mksfc_sst.o                mksfc_sst.mod
 rm -fv mksfc_top.o                mksfc_top.mod
+rm -fv mnt_advec_aux.o            mnt_advec_aux.mod
+rm -fv mnt_advec_main.o           mnt_advec_main.mod
 rm -fv mod_advect_kit.o           mod_advect_kit.mod
 rm -fv mod_GhostBlock.o           mod_GhostBlock.mod
 rm -fv mod_GhostBlockPartition.o  mod_GhostBlockPartition.mod
 rm -fv mod_ozone.o                mod_ozone.mod
 rm -fv model.o                    model.mod
 rm -fv modsched.o                 modsched.mod
+rm -fv mpass_advec.o              mpass_advec.mod
 rm -fv mpass_cyclic.o             mpass_cyclic.mod
 rm -fv mpass_dtl.o                mpass_dtl.mod
 rm -fv mpass_feed.o               mpass_feed.mod
@@ -275,6 +279,7 @@ rm -fv lake_coms.o                lake_coms.mod
 rm -fv mem_edcp.o                 mem_edcp.mod
 rm -fv allometry.o                allometry.mod
 rm -fv average_utils.o            average_utils.mod
+rm -fv bdf2_solver.o              bdf2_solver.mod
 rm -fv budget_utils.o             budget_utils.mod
 rm -fv c34constants.o             c34constants.mod
 rm -fv canopy_air_coms.o          canopy_air_coms.mod
@@ -283,6 +288,7 @@ rm -fv canopy_radiation_coms.o    canopy_radiation_coms.mod
 rm -fv canopy_struct_dynamics.o   canopy_struct_dynamics.mod
 rm -fv consts_coms.o              consts_coms.mod
 rm -fv decomp_coms.o              decomp_coms.mod
+rm -fv detailed_coms.o            detailed_coms.mod
 rm -fv disturb_coms.o             disturb_coms.mod
 rm -fv disturbance.o              disturbance.mod
 rm -fv ed_bare_restart.o          ed_bare_restart.mod
@@ -320,6 +326,7 @@ rm -fv grid_coms.o                grid_coms.mod
 rm -fv growth_balive.o            growth_balive.mod
 rm -fv h5_output.o                h5_output.mod
 rm -fv heun_driver.o              heun_driver.mod 
+rm -fv hybrid_driver.o            hybrid_driver.mod 
 rm -fv hydrology_coms.o           hydrology_coms.mod
 rm -fv hydrology_constants.o      hydrology_constants.mod
 rm -fv init_hydro_sites.o         init_hydro_sites.mod

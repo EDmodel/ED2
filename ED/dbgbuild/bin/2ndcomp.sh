@@ -3,6 +3,7 @@ rm -fv edmain.?90                    edmain.o                   edmain.mod
 rm -fv allometry.?90                 allometry.o                allometry.mod 
 rm -fv an_header.?90                 an_header.o                an_header.mod 
 rm -fv average_utils.?90             average_utils.o            average_utils.mod 
+rm -fv bdf2_solver.?90               bdf2_solver.o              bdf2_solver.mod 
 rm -fv budget_utils.?90              budget_utils.o             budget_utils.mod 
 rm -fv canopy_air_coms.?90           canopy_air_coms.o          canopy_air_coms.mod 
 rm -fv canopy_layer_coms.?90         canopy_layer_coms.o        canopy_layer_coms.mod 
@@ -13,6 +14,7 @@ rm -fv charutils.?90                 charutils.o                charutils.mod
 rm -fv consts_coms.?90               consts_coms.o              consts_coms.mod 
 rm -fv dateutils.?90                 dateutils.o                dateutils.mod 
 rm -fv decomp_coms.?90               decomp_coms.o              decomp_coms.mod 
+rm -fv detailed_coms.?90             detailed_coms.o            detailed_coms.mod 
 rm -fv disturbance.?90               disturbance.o              disturbance.mod 
 rm -fv disturb_coms.?90              disturb_coms.o             disturb_coms.mod 
 rm -fv edio.?90                      edio.o                     edio.mod 
@@ -62,6 +64,7 @@ rm -fv h5_output.?90                 h5_output.o                h5_output.mod
 rm -fv hdf5_coms.?90                 hdf5_coms.o                hdf5_coms.mod 
 rm -fv hdf5_utils.?90                hdf5_utils.o               hdf5_utils.mod 
 rm -fv heun_driver.?90               heun_driver.o              heun_driver.mod 
+rm -fv hybrid_driver.?90             hybrid_driver.o            hybrid_driver.mod 
 rm -fv hydrology_coms.?90            hydrology_coms.o           hydrology_coms.mod 
 rm -fv hydrology_constants.?90       hydrology_constants.o      hydrology_constants.mod 
 rm -fv init_hydro_sites.?90          init_hydro_sites.o         init_hydro_sites.mod 

@@ -42,8 +42,8 @@ real, allocatable :: vctr1(:),vctr2(:),vctr3(:),vctr4(:)
 
 allocate(vctr1(n1),vctr2(n1),vctr3(n1),vctr4(n1))
 
-c1 = rdry / (cp - rdry)
-c2 = cp * (rdry / p00) ** c1
+c1 = rdry / (cpdry - rdry)
+c2 = cpdry * (rdry / p00) ** c1
 if (icm >= 1) then
    do k = 1,n1
       vctr1(k) = thref(k,icm) * dnref(k,icm)
@@ -101,8 +101,8 @@ call fmint3(n1c,n2c,n3c,n1f,n2f,n3f,maxiz,maxix,maxiy  &
      ,ifm,icm,nbot,ntop,jd,1,0,0,'t'  &
      ,th0c,th0f,dn0c,dn0f,scr1,scr2,toptf,vt2da,b(1),b(1),b(1),0)
 
-c1 = rdry / (cp - rdry)
-c2 = cp * (rdry / p00) ** c1
+c1 = rdry / (cpdry - rdry)
+c2 = cpdry * (rdry / p00) ** c1
 pi0f(1:n1f,1:n2f,1:n3f) = c2 * (dn0f(1:n1f,1:n2f,1:n3f)  &
                             *   th0f(1:n1f,1:n2f,1:n3f) ) ** c1
 
@@ -267,8 +267,8 @@ do k = 2,n1
 enddo
 
 do k = 1,n1
-  vctr1(k) = (piref(k) / cp) ** cpor * p00
-  dnref(k) = cp * vctr1(k)  &
+  vctr1(k) = (piref(k) / cpdry) ** cpor * p00
+  dnref(k) = cpdry * vctr1(k)  &
      / (rdry * thref(k) * piref(k))
 enddo
 
@@ -285,7 +285,7 @@ do j=1,n3
 
     c1=grav*2.*(1.-topt(i,j)/ztop)
     c2=(1-cpor)
-    c3=cp**c2
+    c3=cpdry**c2
     do k=n1-1,1,-1
       pi0(k,i,j)=pi0(k+1,i,j)  &
                 +c1*(zt(k+1)-zt(k))/(th0(k,i,j)+th0(k+1,i,j))

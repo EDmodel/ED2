@@ -24,30 +24,27 @@ subroutine each_call(m1,dtlt)
    ! should not coallesce.                                                                 !
    !---------------------------------------------------------------------------------------!
 
-   use rconstants, only : &
-           pi4            & ! intent(in)
-          ,alvl           & ! intent(in)
-          ,alvi           & ! intent(in)
-          ,alli           & ! intent(in)
-          ,cliq           & ! intent(in)
-          ,cice           & ! intent(in)
-          ,tsupercool     ! ! intent(in)
-
-   use micphys, only :    &
-           jnmb           & ! intent(in)
-          ,cfmas          & ! intent(in)
-          ,parm           & ! intent(in)
-          ,pwmas          & ! intent(in)
-          ,emb            & ! intent(out)
-          ,colf           & ! intent(out)
-          ,pi4dt          & ! intent(out)
-          ,sl             & ! intent(out)
-          ,sc             & ! intent(out)
-          ,sj             & ! intent(out)
-          ,jhcat          & ! intent(out)
-          ,sh             & ! intent(out)
-          ,sm             & ! intent(out)
-          ,sq             ! ! intent(out)
+   use rconstants, only : pi4            & ! intent(in)
+                        , cliq           & ! intent(in)
+                        , cice           & ! intent(in)
+                        , tsupercool_liq & ! intent(in)
+                        , alvl3          & ! intent(in)
+                        , alvi3          & ! intent(in)
+                        , dcpvl          & ! intent(in)
+                        , dcpvi          ! ! intent(in)
+   use micphys   , only : jnmb           & ! intent(in)
+                        , cfmas          & ! intent(in)
+                        , parm           & ! intent(in)
+                        , pwmas          & ! intent(in)
+                        , emb            & ! intent(out)
+                        , colf           & ! intent(out)
+                        , pi4dt          & ! intent(out)
+                        , sc             & ! intent(out)
+                        , sj             & ! intent(out)
+                        , jhcat          & ! intent(out)
+                        , sh             & ! intent(out)
+                        , sm             & ! intent(out)
+                        , sq             ! ! intent(out)
 
    implicit none
 
@@ -55,7 +52,9 @@ subroutine each_call(m1,dtlt)
    integer, intent(in) :: m1
    real   , intent(in) :: dtlt
    !----- Local Variables -----------------------------------------------------------------!
-   integer :: lcat, lhcat, k
+   integer             :: lcat
+   integer             :: lhcat
+   integer             :: k
    !---------------------------------------------------------------------------------------!
 
 
@@ -63,8 +62,6 @@ subroutine each_call(m1,dtlt)
    colf  = .785 * dtlt
    pi4dt = pi4  * dtlt
 
-   sl(1) = alvl
-   sl(2) = alvi
    sc(1) = cliq
    sc(2) = cice
    sj(1) = 0
@@ -74,7 +71,7 @@ subroutine each_call(m1,dtlt)
    sj(5) = 0
    sj(6) = 1
    sj(7) = 1
-   sq(1) = tsupercool
+   sq(1) = tsupercool_liq
    sq(2) = 0.
 
    do lcat = 1,7
@@ -112,66 +109,90 @@ end subroutine each_call
 !==========================================================================================!
 subroutine fill_thermovars(m1,i,j,flpw,thp,btheta,pp,rtp,rv,wp,dn0,pi0,micro)
 
-   use mem_micro, only : micro_vars ! INTENT(IN) - micro structure
-
-   use micphys, only : &
-        ncat           & ! intent(in)
-       ,availcat       & ! intent(in)
-       ,progncat       & ! intent(in)
-       ,jnmb           & ! intent(in)
-       ,rxmin          & ! intent(in)
-       ,cxmin          & ! intent(in)
-       ,jhcat          & ! intent(in)
-       ,k1             & ! intent(out)
-       ,k2             & ! intent(out)
-       ,k3             & ! intent(out)
-       ,lpw            & ! intent(out)
-       ,rx             & ! intent(out)
-       ,cx             & ! intent(out)
-       ,qr             & ! intent(out)
-       ,qx             & ! intent(out)
-       ,sa             & ! intent(out)
-       ,thil           & ! intent(out)
-       ,pottemp        & ! intent(out)
-       ,til            & ! intent(out)
-       ,theiv          & ! intent(out)
-       ,rvstr          & ! intent(out)
-       ,tair           & ! intent(out)
-       ,tairstr        & ! intent(out)
-       ,pottemp        & ! intent(out)
-       ,qhydm          & ! intent(out)
-       ,press          & ! intent(out)
-       ,exner          & ! intent(out)
-       ,vertvelo       & ! intent(out)
-       ,rhoa           & ! intent(out)
-       ,rhoi           & ! intent(out)
-       ,rvap           & ! intent(out)
-       ,rtot           & ! intent(out)
-       ,rliq           & ! intent(out)
-       ,rice           & ! intent(out)
-       ,totcond        & ! intent(out)
-       ,vap            & ! intent(out)
-       ,tx             & ! intent(out)
-       ,emb            & ! intent(out)
-       ,rxfer          & ! intent(out)
-       ,qrxfer         & ! intent(out)
-       ,enxfer         & ! intent(out)
-       ,cccnx          & ! intent(out)
-       ,cifnx          ! ! intent(out)
-
-   use rconstants, only : p00, cpi, cp, cpor,alvi,alvl, tsupercool, cliqi
-   use therm_lib , only : qtk,thil2temp,dtempdrs,thetaeiv
+   use mem_micro , only : micro_vars     ! ! intent(in) - micro structure
+   use micphys   , only : ncat           & ! intent(in)
+                        , availcat       & ! intent(in)
+                        , progncat       & ! intent(in)
+                        , jnmb           & ! intent(in)
+                        , rxmin          & ! intent(in)
+                        , cxmin          & ! intent(in)
+                        , jhcat          & ! intent(in)
+                        , k1             & ! intent(out)
+                        , k2             & ! intent(out)
+                        , k3             & ! intent(out)
+                        , lpw            & ! intent(out)
+                        , rx             & ! intent(out)
+                        , cx             & ! intent(out)
+                        , qr             & ! intent(out)
+                        , qx             & ! intent(out)
+                        , sa1            & ! intent(out)
+                        , thil           & ! intent(out)
+                        , pottemp        & ! intent(out)
+                        , til            & ! intent(out)
+                        , theiv          & ! intent(out)
+                        , rvstr          & ! intent(out)
+                        , tair           & ! intent(out)
+                        , tairstr        & ! intent(out)
+                        , pottemp        & ! intent(out)
+                        , press          & ! intent(out)
+                        , exner          & ! intent(out)
+                        , vertvelo       & ! intent(out)
+                        , rhoa           & ! intent(out)
+                        , rhoi           & ! intent(out)
+                        , rvap           & ! intent(out)
+                        , rtot           & ! intent(out)
+                        , rliq           & ! intent(out)
+                        , rice           & ! intent(out)
+                        , totcond        & ! intent(out)
+                        , vap            & ! intent(out)
+                        , tx             & ! intent(out)
+                        , lx             & ! intent(out)
+                        , emb            & ! intent(out)
+                        , rxfer          & ! intent(out)
+                        , qrxfer         & ! intent(out)
+                        , enxfer         & ! intent(out)
+                        , cccnx          & ! intent(out)
+                        , cifnx          ! ! intent(out)
+   use rconstants, only : alvi3          & ! intent(in)
+                        , alvl3          & ! intent(in)
+                        , tsupercool_liq & ! intent(in)
+                        , cliqi          ! ! intent(in)
+   use therm_lib , only : uint2tl        & ! function
+                        , thil2temp      & ! function
+                        , dtempdrs       & ! function
+                        , thetaeiv       & ! function
+                        , alvl           & ! function
+                        , alvi           & ! function
+                        , exner2press    & ! function
+                        , extemp2theta   & ! function
+                        , extheta2temp   ! ! function
 
    implicit none
 
    !----- Arguments -----------------------------------------------------------------------!
-   integer                         , intent(in ) :: m1, i, j
+   integer                         , intent(in ) :: m1
+   integer                         , intent(in ) :: i
+   integer                         , intent(in ) :: j
    real                            , intent(in ) :: flpw
-   real             , dimension(m1), intent(in ) :: thp,btheta,pp,rtp,rv,wp,dn0,pi0
+   real             , dimension(m1), intent(in ) :: thp
+   real             , dimension(m1), intent(in ) :: btheta
+   real             , dimension(m1), intent(in ) :: pp
+   real             , dimension(m1), intent(in ) :: rtp
+   real             , dimension(m1), intent(in ) :: rv
+   real             , dimension(m1), intent(in ) :: wp
+   real             , dimension(m1), intent(in ) :: dn0
+   real             , dimension(m1), intent(in ) :: pi0
    type (micro_vars)               , intent(in ) :: micro 
    !----- Local Variables -----------------------------------------------------------------!
-   integer                             :: k, lcatt, lcat, jcat,lhcat
-   real                                :: rhomin, frac, tcoal, fracliq
+   integer                                       :: k
+   integer                                       :: lcatt
+   integer                                       :: lcat
+   integer                                       :: jcat
+   integer                                       :: lhcat
+   real                                          :: rhomin
+   real                                          :: frac
+   real                                          :: tcoal
+   real                                          :: fracliq
    !---------------------------------------------------------------------------------------!
 
    !----- Finding the lowest level above ground -------------------------------------------!
@@ -181,7 +202,7 @@ subroutine fill_thermovars(m1,i,j,flpw,thp,btheta,pp,rtp,rv,wp,dn0,pi0,micro)
    do k=1,m1
       thil     (k) = thp   (k)
       exner    (k) = pi0   (k) + pp (k)
-      press    (k) = p00 * (cpi * exner(k))**cpor
+      press    (k) = exner2press(exner(k))
       vertvelo (k) = wp    (k)
       rhoa     (k) = dn0   (k)
       rhoi     (k) = 1./ rhoa(k)
@@ -197,6 +218,8 @@ subroutine fill_thermovars(m1,i,j,flpw,thp,btheta,pp,rtp,rv,wp,dn0,pi0,micro)
          cx(k,lcat)  = 0.
          qr(k,lcat)  = 0.
          qx(k,lcat)  = 0.
+         tx(k,lcat)  = 0.
+         lx(k,lcat)  = 0.
          vap(k,lcat) = 0.
       end do
 
@@ -252,7 +275,9 @@ subroutine fill_thermovars(m1,i,j,flpw,thp,btheta,pp,rtp,rv,wp,dn0,pi0,micro)
             rx(k,2)    = micro%rrp(k,i,j)
             rliq(k)    = rliq(k) + rx(k,2)
             qx(k,2)    = micro%q2(k,i,j)
-            tx(k,2)    = tsupercool + cliqi * qx(k,2)
+            !---- Rain has to be in liquid phase even if it is supercooled. ---------------!
+            tx(k,2)    = tsupercool_liq + cliqi * qx(k,2)
+            lx(k,2)    = alvl(tx(k,2))
             qr(k,2)    = qx(k,2) * rx(k,2)
             if (progncat(2)) cx(k,2) = micro%crp(k,i,j)
          else
@@ -327,7 +352,8 @@ subroutine fill_thermovars(m1,i,j,flpw,thp,btheta,pp,rtp,rv,wp,dn0,pi0,micro)
             k2(6)      = k
             rx(k,6)    = micro%rgp(k,i,j)
             qx(k,6)    = micro%q6(k,i,j)
-            call qtk(qx(k,6),tx(k,6),fracliq)
+            call uint2tl(qx(k,6),tx(k,6),fracliq)
+            lx(k,6)    = alvl(tx(k,6)) * fracliq + alvi(tx(k,6)) * (1.0 - fracliq)
             rliq(k)    = rliq(k) + rx(k,6)*fracliq
             rice(k)    = rice(k) + rx(k,6)*(1.-fracliq)
             qr(k,6)    = qx(k,6)          * rx(k,6)
@@ -349,7 +375,8 @@ subroutine fill_thermovars(m1,i,j,flpw,thp,btheta,pp,rtp,rv,wp,dn0,pi0,micro)
             k2(7)      = k
             rx(k,7)    = micro%rhp(k,i,j)
             qx(k,7)    = micro%q7(k,i,j)
-            call qtk(qx(k,7),tx(k,7),fracliq)
+            call uint2tl(qx(k,7),tx(k,7),fracliq)
+            lx(k,7)    = alvl(tx(k,7)) * fracliq + alvi(tx(k,7)) * (1.0 - fracliq)
             rliq(k)    = rliq(k) + rx(k,7)*fracliq
             rice(k)    = rice(k) + rx(k,7)*(1.-fracliq)
             qr(k,7)    = qx(k,7)          * rx(k,7)
@@ -379,18 +406,17 @@ subroutine fill_thermovars(m1,i,j,flpw,thp,btheta,pp,rtp,rv,wp,dn0,pi0,micro)
    ! which will be used to update thil after precipitation (sedimentation) takes place.    !
    !---------------------------------------------------------------------------------------!
    do k=1,m1
-      til(k)     = thil(k) * exner(k) * cpi
+      til(k)     = extheta2temp(exner(k),thil(k))
       totcond(k) = rliq(k) + rice(k)
       rvap(k)    = rtot(k)-totcond(k)
       rvstr(k)   = rvap(k)
-      qhydm(k)   = alvl*rliq(k) + alvi *rice(k)
       !----- 1st guess for temperature, then temperature from theta-il and condensates. ---!
-      tcoal      = btheta(k) * exner(k) * cpi
+      tcoal      = extheta2temp(exner(k),btheta(k))
       tair(k)    = thil2temp(thil(k),exner(k),press(k),rliq(k),rice(k),tcoal)
       tairstr(k) = tair(k)
-      pottemp(k) = cp * tair(k) / exner(k)
+      pottemp(k) = extemp2theta(exner(k),tair(k))
       !----- The A1 term in Walko et al. (2000) according to the new thermodynamics. ------!
-      sa(k,1) = (-1) * dtempdrs(exner(k),thil(k),tairstr(k),rliq(k),rice(k),1.e-12)
+      sa1(k) = (-1.) * dtempdrs(exner(k),thil(k),tairstr(k),rliq(k),rice(k),1.e-12)
 
       !------------------------------------------------------------------------------------!
       !    Ice-vapour equivalent potential temperature. This variable is conserved even    !
@@ -398,34 +424,67 @@ subroutine fill_thermovars(m1,i,j,flpw,thp,btheta,pp,rtp,rv,wp,dn0,pi0,micro)
       ! compute the new theta-il (ice-liquid potential temperature) in the end of this     !
       ! subroutine.                                                                        !
       !------------------------------------------------------------------------------------!
-      theiv(k)   = thetaeiv(thil(k),press(k),tair(k),rvap(k),rtot(k),4,.true.)
+      theiv(k)   = thetaeiv(thil(k),press(k),tair(k),rvap(k),rtot(k),.true.)
    end do
    
    !---------------------------------------------------------------------------------------!
    !    Initialise temperature for cloud and pristine ice, because they can nucleate and   !
-   ! that will require an initial temperature. Snow and aggregates would not need this     !
-   ! in principle, but we will play it safe anyway. For rain, graupel, and hail, we use    !
-   ! their actual temperature if they already exist, otherwise assume environment          !
-   ! temperature. Again, this is probably unecessary but we are just trying to play it     !
-   ! safe.                                                                                 !
+   ! that will require an initial temperature. Snow and aggregates also need to be         !
+   ! assigned a temperature so their latent heat can be corrected for temperature.  For    !
+   ! rain, graupel, and hail, we use their actual temperature if they already exist,       !
+   ! otherwise assume environment temperature.                                             !
    !---------------------------------------------------------------------------------------!
    do lcat=1,7
       select case (lcat)
-      case (1,3,4,5)
-         !----- Hydrometeors with no known temperature. Assume tair. ----------------------!
+      case (1)
+         !---------------------------------------------------------------------------------!
+         !      Cloud droplets.  These are small, liquid-only hydrometeors, fill in with   !
+         ! air temperature and assign latent heat as liquid-only.                          !
+         !---------------------------------------------------------------------------------!
          do k=1,m1
             tx(k,lcat) = tair(k)
+            lx(k,lcat) = alvl(tx(k,lcat))
          end do
-      case (2,6,7)
          !---------------------------------------------------------------------------------!
-         !    The levels with hydrometeors were already initialised using the internal     !
-         ! energy. Therefore we only to fill the other levels with tair.                   !
+
+      case (2)
+         !---------------------------------------------------------------------------------!
+         !     Rain drops.  Levels which already had rain drops were already filled in,    !
+         ! here we just complete the other levels. Because rain-drops are liquid-only      !
+         ! hydrometeors, set latent heat accordingly.                                      !
          !---------------------------------------------------------------------------------!
          do k=1,m1
             if (rx(k,lcat) < rxmin(lcat)) then
                tx(k,lcat) = tair(k)
+               lx(k,lcat) = alvl(tx(k,lcat))
             end if
          end do
+         !---------------------------------------------------------------------------------!
+
+      case(3,4,5)
+         !---------------------------------------------------------------------------------!
+         !      Pristine ice, snow flakes, or aggregates.  These are small, ice-only       !
+         ! hydrometeors, fill in with air temperature and assign latent heat as ice-only.  !
+         !---------------------------------------------------------------------------------!
+         do k=1,m1
+            tx(k,lcat) = tair(k)
+            lx(k,lcat) = alvi(tx(k,lcat))
+         end do
+         !---------------------------------------------------------------------------------!
+      case (6,7)
+         !---------------------------------------------------------------------------------!
+         !      Graupel and hail.  The levels with hydrometeors were already initialised   !
+         ! using the internal energy. Therefore we only to fill the other levels with      !
+         ! tair.  Although graupel and hail are mixed phase, we initialise latent heat     !
+         ! with ice thermodynamics.                                                        !
+         !---------------------------------------------------------------------------------!
+         do k=1,m1
+            if (rx(k,lcat) < rxmin(lcat)) then
+               tx(k,lcat) = tair(k)
+               lx(k,lcat) = 0.5 * (alvi(tx(k,lcat)) + alvl(tx(k,lcat)))
+            end if
+         end do
+         !---------------------------------------------------------------------------------!
       end select
    end do
 
@@ -463,10 +522,10 @@ subroutine update_thermo(m1)
                          , thil          & ! intent(out)   
                          , pottemp       & ! intent(out)   
                          , tair          ! ! intent(out)   
-   use therm_lib  , only : qtk           & ! subroutine    
+   use therm_lib  , only : uint2tl       & ! subroutine    
                          , thetaeiv2thil & ! function
-                         , thil2temp     ! ! function
-   use rconstants , only : cp            ! ! intent(in)
+                         , thil2temp     & ! function
+                         , extemp2theta  ! ! function
    !----- Argument ------------------------------------------------------------------------!
    integer, intent(in) :: m1
    !----- Local variables -----------------------------------------------------------------!
@@ -505,7 +564,7 @@ subroutine update_thermo(m1)
    do lcat=6,7
       do k = lpw,m1
          if (rx(k,lcat) > rxmin(lcat)) then
-            call qtk(qx(k,lcat),tcoal,fracliq)
+            call uint2tl(qx(k,lcat),tcoal,fracliq)
             rliq(k) = rliq(k) + rx(k,lcat)*fracliq
             rice(k) = rice(k) + rx(k,lcat)*(1.-fracliq)
          end if
@@ -526,7 +585,7 @@ subroutine update_thermo(m1)
    do k = lpw,m1
       thil(k)    = thetaeiv2thil(theiv(k),press(k),rtot(k),.true.)
       tair(k)    = thil2temp(thil(k),exner(k),press(k),rliq(k),rice(k),tair(k))
-      pottemp(k) = cp * tair(k) / exner(k)
+      pottemp(k) = extemp2theta(exner(k),tair(k))
    end do
 
    return
@@ -543,80 +602,81 @@ end subroutine update_thermo
 !==========================================================================================!
 subroutine each_column(m1,dtlt)
 
-  use rconstants, only :   &
-          pi4              & ! intent(in)
-         ,t3ple            & ! intent(in)
-         ,es3ple           & ! intent(in)
-         ,t00              & ! intent(in)
-         ,ep               & ! intent(in)
-         ,epes3ple         & ! intent(in)
-         ,alvl             & ! intent(in)
-         ,alvi               ! intent(in)
-
-  use micphys, only :      &
-          k1               & ! intent(in)
-         ,k2               & ! intent(in)
-         ,lpw              & ! intent(in)
-         ,press            & ! intent(in)
-         ,tair             & ! intent(in)
-         ,jhabtab          & ! intent(in)
-         ,colf             & ! intent(in)
-         ,tairstr          & ! intent(in)
-         ,rvstr            & ! intent(in)
-         ,rxmin            & ! intent(in)
-         ,rvap             & ! intent(in)
-         ,rvlsair          & ! intent(out)
-         ,rvisair          & ! intent(out)
-         ,rhoa             & ! intent(in)
-         ,rhoi             & ! intent(in)
-         ,press            & ! intent(in)
-         ,colf             & ! intent(out)
-         ,pi4dt            & ! intent(out)
-         ,tairc            & ! intent(out)
-         ,thrmcon          & ! intent(out)
-         ,dynvisc          & ! intent(out)
-         ,jhcat            & ! intent(out)
-         ,vapdif           & ! intent(out)
-         ,rdynvsci         & ! intent(out)
-         ,denfac           & ! intent(out)
-         ,colfacr          & ! intent(out)
-         ,colfacr2         & ! intent(out)
-         ,colfacc          & ! intent(out)
-         ,colfacc2         & ! intent(out)
-         ,tref             & ! intent(out)
-         ,sa               & ! intent(out)
-         ,sumuy            & ! intent(out)
-         ,sumuz            & ! intent(out)
-         ,sumvr            & ! intent(out)
-         ,rvsref           & ! intent(out)
-         ,rvsrefp          & ! intent(out)
-         ,sh               ! ! intent(out)
-
-
-    use micro_coms, only : &
-           ckcoeff         & ! intent(in)
-          ,dvcoeff         & ! intent(in)
-          ,vdcoeff         & ! intent(in)
-          ,dtempmax        ! ! intent(in)
-
-   use therm_lib  , only : &
-           rslf            & ! Function
-          ,rsif            & ! Function
-          ,rslfp           & ! Function
-          ,rsifp           & ! Function
-          ,rehuil          ! ! Function
-
-
-
-  
+  use rconstants  , only : pi4           & ! intent(in)
+                         , t3ple         & ! intent(in)
+                         , es3ple        & ! intent(in)
+                         , t00           & ! intent(in)
+                         , ep            & ! intent(in)
+                         , epes3ple      ! ! intent(in)
+  use micphys     , only : ncat          & ! intent(in)
+                         , k1            & ! intent(in)
+                         , k2            & ! intent(in)
+                         , lpw           & ! intent(in)
+                         , press         & ! intent(in)
+                         , tair          & ! intent(in)
+                         , jhabtab       & ! intent(in)
+                         , colf          & ! intent(in)
+                         , tairstr       & ! intent(in)
+                         , rvstr         & ! intent(in)
+                         , rxmin         & ! intent(in)
+                         , rvap          & ! intent(in)
+                         , lx            & ! intent(in)
+                         , rvlsair       & ! intent(out)
+                         , rvisair       & ! intent(out)
+                         , rhoa          & ! intent(in)
+                         , rhoi          & ! intent(in)
+                         , press         & ! intent(in)
+                         , sa1           & ! intent(out)
+                         , colf          & ! intent(out)
+                         , pi4dt         & ! intent(out)
+                         , tairc         & ! intent(out)
+                         , thrmcon       & ! intent(out)
+                         , dynvisc       & ! intent(out)
+                         , jhcat         & ! intent(out)
+                         , vapdif        & ! intent(out)
+                         , rdynvsci      & ! intent(out)
+                         , denfac        & ! intent(out)
+                         , colfacr       & ! intent(out)
+                         , colfacr2      & ! intent(out)
+                         , colfacc       & ! intent(out)
+                         , colfacc2      & ! intent(out)
+                         , tref          & ! intent(out)
+                         , sa2           & ! intent(out)
+                         , sa3           & ! intent(out)
+                         , sa4           & ! intent(out)
+                         , sa6           & ! intent(out)
+                         , sa8           & ! intent(out)
+                         , sumuy         & ! intent(out)
+                         , sumuz         & ! intent(out)
+                         , sumvr         & ! intent(out)
+                         , rvsref        & ! intent(out)
+                         , rvsrefp       & ! intent(out)
+                         , sh            ! ! intent(out)
+    use micro_coms, only : ckcoeff       & ! intent(in)
+                         , dvcoeff       & ! intent(in)
+                         , vdcoeff       & ! intent(in)
+                         , dtempmax      ! ! intent(in)
+   use therm_lib  , only : rslf          & ! function
+                         , rsif          & ! function
+                         , rslfp         & ! function
+                         , rsifp         & ! function
+                         , rehuil        & ! function
+                         , alvl          & ! function
+                         , alvi          & ! function
+                         , tl2uint       & ! function
+                         , uint2tl       ! ! function
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    integer, intent(in) :: m1
    real   , intent(in) :: dtlt
    !----- Local Variables -----------------------------------------------------------------!
-   integer :: k,nt,ns,irh
-   real    :: relhum,pvap
-   real    :: tauxkelvin
+   integer             :: k
+   integer             :: nt
+   integer             :: ns
+   integer             :: irh
+   integer             :: lcat
+   real                :: relhum
+   real                :: pvap
    !---------------------------------------------------------------------------------------!
 
    do k = lpw,m1-1
@@ -632,7 +692,7 @@ subroutine each_column(m1,dtlt)
       !----- Diagnose habit of pristine ice and snow --------------------------------------!
       nt = max(1,min(31,-nint(tairc(k))))
       !----- THERMO DILEMMA : Shouldn't it be rehuil here? --------------------------------!
-      relhum = min(1.,rehuil(press(k),tair(k),rvap(k)))
+      relhum = min(1.,rehuil(press(k),tair(k),rvap(k),.false.))
 
       irh = nint(100.*relhum)
       ns = max(1,irh)
@@ -651,39 +711,71 @@ subroutine each_column(m1,dtlt)
       colfacc(k)  = colfacr(k) * rhoa(k)
       colfacc2(k) = 2. * colfacc(k)
 
-      tref(k,1)   = tair(k) - min(dtempmax,700. * (rvlsair(k) - rvap(k)))
-      sa(k,2)     = thrmcon(k) * sa(k,1)
-      sa(k,3)     = thrmcon(k) * (tairstr(k) + sa(k,1) * rvstr(k))
+      tref(k,1) = tair(k) - min(dtempmax,700. * (rvlsair(k) - rvap(k)))
+      tref(k,2) = min(t3ple,tref(k,1))
+
+
+      sa2(k)    = thrmcon(k) * sa1(k)
+      sa3(k)    = thrmcon(k) * (tairstr(k) + sa1(k) * rvstr(k))
 
       sumuy(k) = 0.
       sumuz(k) = 0.
       sumvr(k) = 0.
-   end do
-
-   !----- Liquid water properties ---------------------------------------------------------!
-   do k = k1(8),k2(8)
+      
       rvsref (k,1) = rslf(press(k),tref(k,1))
       rvsrefp(k,1) = rslfp(press(k),tref(k,1))
-
-      sa(k,4)      = rvsrefp(k,1) * tref(k,1) - rvsref(k,1)
-      sa(k,6)      = alvl * rvsrefp(k,1)
-      sa(k,8)      = alvl * sa(k,4)
-   enddo
-   !----- Ice properties ------------------------------------------------------------------!
-   do k = k1(9),k2(9)
-      tref(k,2)    = min(t3ple,tref(k,1))
       rvsref (k,2) = rsif(press(k),tref(k,2))
       rvsrefp(k,2) = rsifp(press(k),tref(k,2))
-
-      sa(k,5)      = rvsrefp(k,2) * tref(k,2) - rvsref(k,2)
-      sa(k,7)      = alvi * rvsrefp(k,2)
-      sa(k,9)      = alvi * sa(k,5)
-      sh(k,3)      = 0.
-      sh(k,4)      = 0.
-      sh(k,5)      = 0.
+      
    end do
+   !---------------------------------------------------------------------------------------!
 
 
+
+   !---------------------------------------------------------------------------------------!
+   !     Loop over all categories, and within each category, we loop over all levels that  !
+   ! contain the hydrometeor.                                                              !
+   !---------------------------------------------------------------------------------------!
+   do lcat=1,ncat
+      select case(lcat)
+      case (1:2)
+         !---------------------------------------------------------------------------------!
+         !     Cloud droplets and rain drop.  These are liquid-only hydrometeors, so we    !
+         ! use the liquid phase thermodynamics.                                            !
+         !---------------------------------------------------------------------------------!
+         do k = k1(10),k2(10)
+            sa4(k,lcat) = rvsrefp(k,1) * tref(k,1) - rvsref(k,1)
+            sa6(k,lcat) = lx(k,lcat) * rvsrefp(k,1)
+            sa8(k,lcat) = lx(k,lcat) * sa4(k,lcat)
+         end do
+         !---------------------------------------------------------------------------------!
+      case (3:5)
+         !---------------------------------------------------------------------------------!
+         !     Pristine ice, snow flakes, and aggregates.  These are ice-only hydro-       !
+         ! meteors, so we use ice phase thermodynamics.                                    !
+         !---------------------------------------------------------------------------------!
+         do k = k1(10),k2(10)
+            sa4(k,lcat) = rvsrefp(k,2) * tref(k,2) - rvsref(k,2)
+            sa6(k,lcat) = lx(k,lcat) * rvsrefp(k,2)
+            sa8(k,lcat) = lx(k,lcat) * sa4(k,lcat)
+            sh (k,lcat) = 0.
+         end do
+         !---------------------------------------------------------------------------------!
+      case (6:7)
+         !---------------------------------------------------------------------------------!
+         !     Graupel and hail.  These are mixed phase hydrometeors, but we use the ice   !
+         ! values here.  We, however, don't change the value of sh for them.               !
+         !---------------------------------------------------------------------------------!
+         do k = k1(10), k2(10)
+            sa4(k,lcat) = rvsrefp(k,2) * tref(k,2) - rvsref(k,2)
+            sa6(k,lcat) = lx(k,lcat) * rvsrefp(k,2)
+            sa8(k,lcat) = lx(k,lcat) * sa4(k,lcat)
+         end do
+         !---------------------------------------------------------------------------------!
+      end select
+      !------------------------------------------------------------------------------------!
+   end do
+   !---------------------------------------------------------------------------------------!
    return
 end subroutine each_column
 !==========================================================================================!
@@ -805,46 +897,54 @@ end subroutine enemb
 !==========================================================================================!
 subroutine x02(lcat)
 
-   use rconstants, only: &
-        qicet3,          & ! INTENT(IN)
-        qliqt3,          & ! INTENT(IN)
-        alli               ! INTENT(IN)
-
-   use micphys, only:  &
-        rx,            & ! INTENT(INOUT)
-        rxmin,         & ! intent(in)
-        jhcat,         & ! INTENT(IN)
-        k1,            & ! intent(in)
-        k2,            & ! intent(in)
-        rhoa,          & ! intent(in)
-        vterm,         & ! INTENT(OUT)
-        vtfac,         & ! INTENT(IN)
-        emb,           & ! INTENT(IN)
-        pwvtmasi,      & ! INTENT(IN)
-        denfac,        & ! INTENT(IN)
-        qx,            & ! INTENT(OUT)
-        qr,            & ! INTENT(INOUT)
-        cx,            & ! INTENT(INOUT)
-        enmlttab,      & ! INTENT(IN)
-        dnfac,         & ! INTENT(IN)
-        pwmasi,        & ! INTENT(IN)
-        gnu,           & ! INTENT(IN)
-        shedtab          ! INTENT(IN)
-
-   use therm_lib, only : qtk
-   
-   use micro_coms, only : &
-        qrainmin,         & ! INTENT(IN)
-        qrainmax          ! ! INTENT(IN)
-
+   use rconstants, only : uiicet3        & ! intent(in)
+                        , uiliqt3        ! ! intent(in)
+   use micphys   , only : rx             & ! intent(inout)
+                        , rxmin          & ! intent(in)
+                        , jhcat          & ! intent(in)
+                        , k1             & ! intent(in)
+                        , k2             & ! intent(in)
+                        , rhoa           & ! intent(in)
+                        , vterm          & ! intent(out)
+                        , vtfac          & ! intent(in)
+                        , emb            & ! intent(in)
+                        , pwvtmasi       & ! intent(in)
+                        , denfac         & ! intent(in)
+                        , qx             & ! intent(out)
+                        , qr             & ! intent(inout)
+                        , cx             & ! intent(inout)
+                        , enmlttab       & ! intent(in)
+                        , dnfac          & ! intent(in)
+                        , pwmasi         & ! intent(in)
+                        , gnu            & ! intent(in)
+                        , shedtab        ! ! intent(in)
+   use therm_lib , only : uint2tl        ! ! sub-routine
+   use micro_coms, only : qrainmin       & ! intent(in)
+                        , qrainmax       ! ! intent(in)
    implicit none
-
    !----- Argument ------------------------------------------------------------------------!
    integer, intent(in)                :: lcat
    !----- Local Variables -----------------------------------------------------------------!
-   integer :: k,jflag,lhcat,inc,idns
-   real    :: rinv,closs,rxinv,rmelt,fracliq,cmelt,tcoal,ricetor6,rshed,rmltshed,qrmelt
-   real    :: qrmltshed,shedmass,fracmloss,dn
+   integer                            :: k
+   integer                            :: jflag
+   integer                            :: lhcat
+   integer                            :: inc
+   integer                            :: idns
+   real                               :: rinv
+   real                               :: closs
+   real                               :: rxinv
+   real                               :: rmelt
+   real                               :: fracliq
+   real                               :: cmelt
+   real                               :: tcoal
+   real                               :: ricetor6
+   real                               :: rshed
+   real                               :: rmltshed
+   real                               :: qrmelt
+   real                               :: qrmltshed
+   real                               :: shedmass
+   real                               :: fracmloss
+   real                               :: dn
    !---------------------------------------------------------------------------------------!
 
    k1(lcat) = k1(10)
@@ -893,11 +993,11 @@ subroutine x02(lcat)
             rinv       = 1. / rx(k,lcat)
             qx(k,lcat) = qr(k,lcat) * rinv
 
-            call qtk(qx(k,lcat),tcoal,fracliq)
+            call uint2tl(qx(k,lcat),tcoal,fracliq)
 
             rmelt  = rx(k,lcat)    * fracliq
             cmelt  = cx(k,lcat)    * fracliq
-            qrmelt = qliqt3        * rmelt
+            qrmelt = uiliqt3       * rmelt
 
             rx(k,lcat) = rx(k,lcat) - rmelt
             rx(k,1)    = rx(k,1)    + rmelt
@@ -919,7 +1019,7 @@ subroutine x02(lcat)
 
             rinv = 1. / rx(k,lcat)
             qx(k,lcat) = qr(k,lcat) * rinv
-            call qtk(qx(k,lcat),tcoal,fracliq)
+            call uint2tl(qx(k,lcat),tcoal,fracliq)
 
             if (fracliq > 1.e-6) then
                rmelt = rx(k,lcat) * fracliq
@@ -931,8 +1031,8 @@ subroutine x02(lcat)
                ricetor6   = min(rx(k,lcat) - rmelt,rmelt)
                rx(k,lcat) = rx(k,lcat) - rmelt - ricetor6
                rx(k,6)    = rx(k,6) + rmelt + ricetor6
-               qr(k,6)    = qr(k,6) + rmelt * qliqt3 + ricetor6 * qicet3
-               qx(k,lcat) = qicet3 !---- All water is gone, leave ice at 0°C only ---------!
+               qr(k,6)    = qr(k,6) + rmelt * uiliqt3 + ricetor6 * uiicet3
+               qx(k,lcat) = uiicet3 !---- All water is gone, leave ice at 0°C only --------!
                qr(k,lcat) = qx(k,lcat) * rx(k,lcat)
                if (rx(k,6) > rxmin(6)) qx(k,6)    = qr(k,6)    / rx(k,6)
 
@@ -950,11 +1050,11 @@ subroutine x02(lcat)
          if (rx(k,lcat) >= rxmin(lcat)) then
             rxinv = 1. / rx(k,lcat)
             qx(k,lcat) = qr(k,lcat) * rxinv
-            call qtk(qx(k,lcat),tcoal,fracliq)
+            call uint2tl(qx(k,lcat),tcoal,fracliq)
 
             if (fracliq > 0.95) then
                rx(k,2) = rx(k,2) + rx(k,6)
-               qr(k,2) = qr(k,2) + rx(k,6) * qliqt3
+               qr(k,2) = qr(k,2) + rx(k,6) * uiliqt3
                cx(k,2) = cx(k,2) + cx(k,6)
                qx(k,2) = qr(k,2) / rx(k,2)
                rx(k,6) = 0.
@@ -971,11 +1071,11 @@ subroutine x02(lcat)
          if (rx(k,lcat) >= rxmin(lcat)) then
             rxinv = 1. / rx(k,lcat)
             qx(k,lcat) = qr(k,lcat) * rxinv
-            call qtk(qx(k,lcat),tcoal,fracliq)
+            call uint2tl(qx(k,lcat),tcoal,fracliq)
 
             if (fracliq > 0.95) then
                rx(k,2) = rx(k,2) + rx(k,7)
-               qr(k,2) = qr(k,2) + rx(k,7) * qliqt3
+               qr(k,2) = qr(k,2) + rx(k,7) * uiliqt3
                cx(k,2) = cx(k,2) + cx(k,7)
                qx(k,2) = qr(k,2) / rx(k,2)
                rx(k,7) = 0.
@@ -991,7 +1091,7 @@ subroutine x02(lcat)
                idns       = max(1,nint(1.e3 * dn * gnu(lcat)))
                rshed      = rx(k,lcat) * shedtab(inc,idns)
                rmltshed   = rshed
-               qrmltshed  = rmltshed * qliqt3
+               qrmltshed  = rmltshed * uiliqt3
 
                rx(k,2)    = rx(k,2)    + rmltshed
                qr(k,2)    = qr(k,2)    + qrmltshed
@@ -1067,8 +1167,6 @@ end subroutine pc03
 !==========================================================================================!
 !==========================================================================================!
 subroutine sedim(m1,lcat,if_adap,mynum,pcpg,qpcpg,dpcpg,dtlti,pcpfillc,pcpfillr,sfcpcp,dzt)
-
-   use rconstants, only : cpi,ttripoli,alvl,alvi,alli,cp  ! intent(in)
    use micphys   , only : &
            k1             & ! intent(in   )
           ,k2             & ! intent(in   )
@@ -1110,16 +1208,37 @@ subroutine sedim(m1,lcat,if_adap,mynum,pcpg,qpcpg,dpcpg,dtlti,pcpfillc,pcpfillr,
    implicit none
 
    !----- Arguments -----------------------------------------------------------------------!
-   integer                                    , intent(in)    :: m1,lcat,if_adap,mynum
+   integer                                    , intent(in)    :: m1
+   integer                                    , intent(in)    :: lcat
+   integer                                    , intent(in)    :: if_adap
+   integer                                    , intent(in)    :: mynum
    real                                       , intent(in)    :: dtlti
    real, dimension(m1                        ), intent(in)    :: dzt
-   real, dimension(m1,maxkfall,nembfall,nhcat), intent(in)    :: pcpfillc, pcpfillr
+   real, dimension(m1,maxkfall,nembfall,nhcat), intent(in)    :: pcpfillc
+   real, dimension(m1,maxkfall,nembfall,nhcat), intent(in)    :: pcpfillr
    real, dimension(   maxkfall,nembfall,nhcat), intent(in)    :: sfcpcp
-   real                                       , intent(inout) :: pcpg, qpcpg, dpcpg
+   real                                       , intent(inout) :: pcpg
+   real                                       , intent(inout) :: qpcpg
+   real                                       , intent(inout) :: dpcpg
    !----- Local Variables -----------------------------------------------------------------!
-   integer :: k,lhcat,iemb,iemb2,kkf,kk,jcat,ee
-   real    :: dispemb,riemb,wt2,psfc
-   real    :: tcoal,fracliq,dqlat,coldrhoa,roldrhoa,qroldrhoa
+   integer                                                    :: k
+   integer                                                    :: lhcat
+   integer                                                    :: iemb
+   integer                                                    :: iemb2
+   integer                                                    :: kkf
+   integer                                                    :: kk
+   integer                                                    :: jcat
+   integer                                                    :: ee
+   real                                                       :: dispemb
+   real                                                       :: riemb
+   real                                                       :: wt2
+   real                                                       :: psfc
+   real                                                       :: tcoal
+   real                                                       :: fracliq
+   real                                                       :: dqlat
+   real                                                       :: coldrhoa
+   real                                                       :: roldrhoa
+   real                                                       :: qroldrhoa
    !---------------------------------------------------------------------------------------!
 
    !----- Zero out any "fall" cells that might accumulate precipitation -------------------!
@@ -1149,9 +1268,8 @@ subroutine sedim(m1,lcat,if_adap,mynum,pcpg,qpcpg,dpcpg,dtlti,pcpfillc,pcpfillr,
 
       do kkf = 1,min(maxkfall,k-1)
          kk = k + 1 - kkf
-
-         cfall(kk) = cfall(kk) + coldrhoa  * rhoi(kk) * pcpfillc(k,kkf,iemb,lhcat)
-         rfall(kk) = rfall(kk) + roldrhoa  * rhoi(kk) * pcpfillr(k,kkf,iemb,lhcat)
+         cfall (kk) = cfall (kk) + coldrhoa  * rhoi(kk) * pcpfillc(k,kkf,iemb,lhcat)
+         rfall (kk) = rfall (kk) + roldrhoa  * rhoi(kk) * pcpfillr(k,kkf,iemb,lhcat)
          qrfall(kk) = qrfall(kk) + qroldrhoa * rhoi(kk) * pcpfillr(k,kkf,iemb,lhcat)
       end do
 
@@ -1213,23 +1331,23 @@ end subroutine sedim
 !------------------------------------------------------------------------------------------!
 subroutine negadj1(m1,m2,m3,ia,iz,ja,jz)
 
-   use mem_basic  , only:  &
-           basic_g         ! intent(out)
-
-   use mem_micro  , only : &
-           micro_g         ! ! intent(out)
-
-   use mem_grid   , only : &
-           grid_g          & ! intent(in)
-          ,ngrid           ! ! intent(in)
-
-   use therm_lib  , only : &
-           vapour_on       ! ! intent(in)
+   use mem_basic  , only : basic_g         ! intent(out)
+   use mem_micro  , only : micro_g         ! ! intent(out)
+   use mem_grid   , only : grid_g          & ! intent(in)
+                         , ngrid           ! ! intent(in)
+   use therm_lib  , only : vapour_on       ! ! intent(in)
 
    implicit none
 
    !----- Arguments -----------------------------------------------------------------------!
-   integer, intent(in) :: m1,m2,m3,ia,iz,ja,jz
+   integer, intent(in) :: m1
+   integer, intent(in) :: m2
+   integer, intent(in) :: m3
+   integer, intent(in) :: ia
+   integer, intent(in) :: iz
+   integer, intent(in) :: ja
+   integer, intent(in) :: jz
+   !---------------------------------------------------------------------------------------!
 
    if (.not. vapour_on) return
 

@@ -14,7 +14,7 @@ module rpost_dims
                                        !             in x-direction
    integer, parameter :: nypmax=300    ! NYPMAX  - Maximum number of points 
                                        !             in y-direction
-   integer, parameter :: nzpmax=200    ! NZPMAX  - Maximum number of points 
+   integer, parameter :: nzpmax=100    ! NZPMAX  - Maximum number of points 
                                        !             in z-direction
                                        ! If you change nzpmax, also change nplmax 
                                        ! at ramspost_A.f90
@@ -95,6 +95,13 @@ module rpost_dims
    integer, parameter :: nplmax   = nzpmax
    !---------------------------------------------------------------------------------------!
 
+
+   !---------------------------------------------------------------------------------------!
+   !  Set NZEPMAX to the largest of NZPMAX*MAXCLOUDS, NZGMAX*MAXPATCH.                     !
+   !---------------------------------------------------------------------------------------!
+   integer, parameter :: nzepmax = max(nzpmax*maxclouds,nzgmax*maxpatch)
+   !---------------------------------------------------------------------------------------!
+
    !---------------------------------------------------------------------------------------!
    !     GrADS maximum dimensions.  Because of the projection from polar-stereographic to  !
    ! regular longitude/latitude, GrADS dimensions must exceed the maximum grid size for a  !
@@ -103,6 +110,14 @@ module rpost_dims
    real   , parameter :: stfac = 1.2
    integer, parameter :: maxgx = ceiling(stfac * nxpmax)
    integer, parameter :: maxgy = ceiling(stfac * nypmax)
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !      Maximum number of variables.                                                     !
+   !---------------------------------------------------------------------------------------!
+   integer, parameter :: maxvars = 256
    !---------------------------------------------------------------------------------------!
 
 end module rpost_dims

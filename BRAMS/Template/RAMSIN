@@ -889,7 +889,7 @@ $CUPARM_OPTIONS
    ! PS3: If NCLOUDS >= 3, then the middle ones will necessarily use Grell's               !
    !      parameterization.                                                                !
    !---------------------------------------------------------------------------------------!
-   NCLOUDS  = 2,
+   NCLOUDS  = 4,
    !---------------------------------------------------------------------------------------!
 
 
@@ -917,7 +917,7 @@ $CUPARM_OPTIONS
    ! CONFRQ: how often should the cumulus parametrisation be updated?                      !
    ! CPTIME: when I should start computing the cumulus parametrisation.                    !
    !---------------------------------------------------------------------------------------!
-   CONFRQ = 1200.,
+   CONFRQ =  720.,
    CPTIME =    0.,
    !---------------------------------------------------------------------------------------!
 
@@ -945,8 +945,8 @@ $CUPARM_OPTIONS
    !             (grell_coms.f90).  Default min_down_radius is 900.                        !
    ! DEPTH_MIN - Minimum depth that the cloud must have [m].                               !
    !---------------------------------------------------------------------------------------!
-   RADIUS    = 12000., 600., ! 4577., 1746., 666.,
-   DEPTH_MIN =  1200., 100., ! 457.7, 174.6, 66.6,
+   RADIUS    = 12000., 4800., 1800., 600.,
+   DEPTH_MIN =  6000., 2400.,  900., 200.,
    !---------------------------------------------------------------------------------------!
 
 
@@ -963,7 +963,7 @@ $CUPARM_OPTIONS
    !           velocity and sigma-w and assuming normal distribution, so this option works !
    !           only when IDIFFK is 1 or 7.                                                 !
    !---------------------------------------------------------------------------------------!
-   CAP_MAXS  =  -25.,
+   CAP_MAXS  =  -20.,
    !---------------------------------------------------------------------------------------!
 
 
@@ -971,11 +971,11 @@ $CUPARM_OPTIONS
    !---------------------------------------------------------------------------------------!
    !     The following variables are scalars.                                              !
    !---------------------------------------------------------------------------------------!
-   CLD2PREC = 0.001,  ! Ratio of conversion of condensates to precipitation.       [   ---]
+   CLD2PREC = 0.002,  ! Ratio of conversion of condensates to precipitation.       [   ---]
    ZKBMAX   = 4000.,  ! Maximum AGL height in which updrafts can originate.        [     m]
    ZCUTDOWN = 3000.,  ! Maximum AGL height in which downdrafts can originate.      [     m]
    Z_DETR   = 1250.,  ! Top of the downdraft detrainment layer                     [     m]
-   MAX_HEAT =  600.,  ! Maximum heating rate allowed for feedback                  [ K/day]
+   MAX_HEAT =  250.,  ! Maximum heating rate allowed for feedback                  [ K/day]
    !---------------------------------------------------------------------------------------!
 
 
@@ -1049,6 +1049,15 @@ $MODEL_OPTIONS
    !                the most.  This is the option you should use for most simulations.     !
    !---------------------------------------------------------------------------------------!
    ICORFLG  = 1,             ! Coriolis flag/2D v-component  -  0=off, 1=on
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   ! IADVEC -- 1 - Original advection scheme                                               !
+   !           2 - Monotic advection scheme, as in Freitas et al. (2001, in press JAMES).  !
+   !---------------------------------------------------------------------------------------!
+   IADVEC   = 2,
    !---------------------------------------------------------------------------------------!
 
 
@@ -1331,7 +1340,7 @@ $MODEL_OPTIONS
       !           or 1, only the first value will be considered, and if ICO2=2, then       !
       !           provide one value per level.  Unit here is µmol/mol.                     !
       !------------------------------------------------------------------------------------!
-      ICO2   =    0,
+      ICO2   =    1,
       CO2CON = 380.,
       !------------------------------------------------------------------------------------!
 
@@ -1768,7 +1777,7 @@ $MODEL_OPTIONS
       !          is set to 5, CPARM represents the concentration of CCN.  Otherwise, the   !
       !          value is ignored if the IXXXX variable is set to 5.                       !
       !------------------------------------------------------------------------------------!
-      CPARM   =  .3e9,  ! cloud droplets, or less frequently, CCN
+      CPARM   =  1.3e9, ! cloud droplets, or less frequently, CCN
       RPARM   =  1e-3,  ! rain drops
       PPARM   =  0.,    ! pristine ice (ignored as IPRIS must be 5)
       SPARM   =  1e-3,  ! snow
@@ -1992,7 +2001,7 @@ $ED2_INFO
    !---------------------------------------------------------------------------------------!
    VEG_DATABASE      = '/n/Moorcroft_Lab/Lab/data/ed2_data/oge2OLD/OGE2_',
    SOIL_DATABASE     = '/n/Moorcroft_Lab/Lab/data/ed2_data/faoOLD/FAO_',
-   LU_DATABASE       = '/n/Moorcroft_Lab/Lab/data/ed2_data/land_use/glu/glu-',
+   LU_DATABASE       = '/n/Moorcroft_Lab/Lab/data/ed2_data/land_use/glu-3.3.1+sa1/half/glu-3.3.1+sa1-',
    PLANTATION_FILE   = '',
    LU_RESCALE_FILE   = '/n/Moorcroft_Lab/Lab/data/ed2_data/21restart/rescale/SA1relative.lu.area-22km-2038.txt',
    THSUMS_DATABASE   = '/n/Moorcroft_Lab/Lab/data/ed2_data/ed_inputs/',
@@ -2045,12 +2054,31 @@ $ED2_INFO
 
 
 
+
+   !---------------------------------------------------------------------------------------!
+   ! IBIGLEAF -- Do you want to run ED as a 'big leaf' model?                              !
+   !             0.  No, use the standard size- and age-structure (Moorcroft et al. 2001)  !
+   !                 This is the recommended method for most applications.                 !
+   !             1. 'big leaf' ED:  this will have no horizontal or vertical hetero-       !
+   !                 geneities; 1 patch per PFT and 1 cohort per patch; no vertical        !
+   !                 growth, recruits will 'appear' instantaneously at maximum height.     !
+   !                                                                                       !
+   ! N.B. if you set IBIGLEAF to 1, you MUST turn off the crown model (CROWN_MOD = 0)      !
+   !---------------------------------------------------------------------------------------!
+   IBIGLEAF = 0,
+   !---------------------------------------------------------------------------------------!
+
+
+
+
    !---------------------------------------------------------------------------------------!
    ! INTEGRATION_SCHEME -- The biophysics integration scheme.                              !
    !                       0.  Euler step.  The fastest, but it doesn't estimate           !
    !                           errors.                                                     !
    !                       1.  Fourth-order Runge-Kutta method.  ED-2.1 default method     !
    !                       2.  Heun's method (a second-order Runge-Kutta).                 !
+   !                       3.  Hybrid Stepping (BDF2 implicit step for the canopy air and  !
+   !                           leaf temp, forward Euler for else, under development).      !
    !---------------------------------------------------------------------------------------!
    INTEGRATION_SCHEME = 1,
    !---------------------------------------------------------------------------------------!
@@ -2081,7 +2109,7 @@ $ED2_INFO
    !                   2.  Similar to 1, but branches are treated as separate pools in the !
    !                       biophysics (thus doubling the number of prognostic variables).  !
    !---------------------------------------------------------------------------------------!
-   IBRANCH_THERMO = 0,        
+   IBRANCH_THERMO = 1,        
    !---------------------------------------------------------------------------------------!
 
 
@@ -2129,7 +2157,7 @@ $ED2_INFO
    !                  a few genuses in Costa Rica.  References:                            !
    !                  Cole and Ewel (2006), and Calvo Alvarado et al. (2008).              !
    !---------------------------------------------------------------------------------------!
-   IALLOM          = 2,
+   IALLOM          = 1,
    !---------------------------------------------------------------------------------------!
 
 
@@ -2193,6 +2221,10 @@ $ED2_INFO
    !                     to the same polygon, even if they are in different sites.  They   !
    !                     can't go outside their original polygon, though.  This is the     !
    !                     same as option 1 if there is only one site per polygon.           !
+   !                 3.  Similar to 2, but recruits will only be formed if their phenology !
+   !                     status would be "leaves fully flushed".  This only matters for    !
+   !                     drought deciduous plants.  This option is for testing purposes    !
+   !                     only, think 50 times before using it...                           !
    !---------------------------------------------------------------------------------------!
    REPRO_SCHEME    = 2,
    !---------------------------------------------------------------------------------------!
@@ -2259,9 +2291,9 @@ $ED2_INFO
    LTRANS_NIR     =  0.270,
    LREFLECT_VIS   =  0.100,
    LREFLECT_NIR   =  0.540,
-   ORIENT_TREE    =  0.150,
-   ORIENT_GRASS   = -0.050,
-   CLUMP_TREE     =  1.000,
+   ORIENT_TREE    =  0.100,
+   ORIENT_GRASS   = -0.100,
+   CLUMP_TREE     =  0.800,
    CLUMP_GRASS    =  1.000,
    !---------------------------------------------------------------------------------------!
 
@@ -2297,7 +2329,7 @@ $ED2_INFO
    !                      depth, H it the crown height and psi_fc and psi_wp are the       !
    !                      matric potentials at wilting point and field capacity.  This is  !
    !---------------------------------------------------------------------------------------!
-   H2O_PLANT_LIM   = 1,
+   H2O_PLANT_LIM   = 2,
    !---------------------------------------------------------------------------------------!
 
 
@@ -2344,22 +2376,22 @@ $ED2_INFO
    ! Q10_C3        -- Q10 factor for C3 plants (used only if IPHYSIOL is set to 2 or 3).   !
    ! Q10_C4        -- Q10 factor for C4 plants (used only if IPHYSIOL is set to 2 or 3).   !
    !---------------------------------------------------------------------------------------!
-   VMFACT_C3       =   1.25,
+   VMFACT_C3       =   1.00,
    VMFACT_C4       =   1.00,
    MPHOTO_TRC3     =    9.0,
    MPHOTO_TEC3     =    7.2,
-   MPHOTO_C4       =    5.0,
+   MPHOTO_C4       =    5.2,
    BPHOTO_BLC3     = 10000.,
    BPHOTO_NLC3     = 1000.,
-   BPHOTO_C4       = 8000.,
-   KW_GRASS        =   300.,
-   KW_TREE         =   300.,
+   BPHOTO_C4       = 10000.,
+   KW_GRASS        =   600.,
+   KW_TREE         =   450.,
    GAMMA_C3        =  0.015,
-   GAMMA_C4        =  0.036,
-   D0_GRASS        =  0.015,
-   D0_TREE         =  0.015,
+   GAMMA_C4        =  0.040,
+   D0_GRASS        =  0.016,
+   D0_TREE         =  0.016,
    ALPHA_C3        =  0.080,
-   ALPHA_C4        =  0.053,
+   ALPHA_C4        =  0.055,
    KLOWCO2IN       =  4000.,
    RRFFACT         =  1.000,
    GROWTHRESP      =  0.33333333333,
@@ -2382,7 +2414,7 @@ $ED2_INFO
    !                       ing point is by definition -1.5MPa, so make sure that the value !
    !                       is above -1.5.                                                  !
    !---------------------------------------------------------------------------------------!
-   THETACRIT       = -1.20,
+   THETACRIT       = -1.15,
    !---------------------------------------------------------------------------------------!
 
 
@@ -2421,25 +2453,29 @@ $ED2_INFO
 
    !---------------------------------------------------------------------------------------!
    !      The following parameters adjust the fire disturbance in the model.               !
-   ! INCLUDE_FIRE  -- Which threshold to use for fires.                                    !
-   !                  0.  No fires;                                                        !
-   !                  1.  (deprecated) Fire will be triggered with enough biomass and      !
-   !                      integrated ground water depth less than a threshold.  Based on   !
-   !                      ED-1, the threshold assumes that the soil is 1 m, so deeper      !
-   !                      soils will need to be much drier to allow fires to happen and    !
-   !                      often  will never allow fires.                                   !
-   !                  2.  Fire will be triggered with enough biomass and the total soil    !
-   !                      water at the top 75 cm falls below a threshold.                  !
-   ! SM_FIRE       -- This is used only when INCLUDE_FIRE = 2.  The sign here matters.     !
-   !                  >= 0. - Minimum relative soil moisture above dry air of the top 75cm !
-   !                          that will prevent fires to happen.                           !
-   !                  <  0. - Minimum mean soil moisture potential in MPa of the top 75 cm !
-   !                          that will prevent fires to happen.  The dry air soil         !
-   !                          potential is defined as -3.1 MPa, so make sure SM_FIRE   is  !
-   !                          greater than this value.                                     !
+   ! INCLUDE_FIRE   -- Which threshold to use for fires.                                   !
+   !                   0.  No fires;                                                       !
+   !                   1.  (deprecated) Fire will be triggered with enough biomass and     !
+   !                       integrated ground water depth less than a threshold.  Based on  !
+   !                       ED-1, the threshold assumes that the soil is 1 m, so deeper     !
+   !                       soils will need to be much drier to allow fires to happen and   !
+   !                       often  will never allow fires.                                  !
+   !                   2.  Fire will be triggered with enough biomass and the total soil   !
+   !                       water at the top 75 cm falls below a threshold.                 !
+   ! FIRE_PARAMETER -- If fire happens, this will control the intensity of the disturbance !
+   !                   given the amount of fuel (currently the total above-ground          !
+   !                   biomass).                                                           !
+   ! SM_FIRE        -- This is used only when INCLUDE_FIRE = 2.  The sign here matters.    !
+   !                   >= 0. - Minimum relative soil moisture above dry air of the top 1m  !
+   !                           that will prevent fires to happen.                          !
+   !                   <  0. - Minimum mean soil moisture potential in MPa of the top 1m   !
+   !                           that will prevent fires to happen.  The dry air soil        !
+   !                           potential is defined as -3.1 MPa, so make sure SM_FIRE is   !
+   !                           greater than this value.                                    !
    !---------------------------------------------------------------------------------------!
-   INCLUDE_FIRE    = 2,
-   SM_FIRE         = 0.07,
+   INCLUDE_FIRE    =     2,
+   FIRE_PARAMETER  =   0.1,
+   SM_FIRE         = -1.45,
    !---------------------------------------------------------------------------------------!
 
 
@@ -2470,7 +2506,7 @@ $ED2_INFO
    !             4.  Same as 0, but if finds the ground conductance following CLM          !
    !                 technical note (equations 5.98-5.100).                                !
    !---------------------------------------------------------------------------------------!
-   ICANTURB        = 4,       
+   ICANTURB        = 2,       
    !---------------------------------------------------------------------------------------!
 
 
@@ -2518,21 +2554,24 @@ $ED2_INFO
 
    !---------------------------------------------------------------------------------------!
    ! The following variables control the size of sub-polygon structures in ED-2.           !
-   ! MAXPATCH  -- If number of patches in a given site exceeds MAXPATCH, force patch       !
-   !              fusion.  If MAXPATCH is 0, then fusion will never happen.  If MAXPATCH   !
-   !              is negative, then the absolute value is used only during the             !
-   !              initialization, and fusion will never happen again.  Notice that if the  !
-   !              patches are too different, then the actual number of patches in a site   !
-   !              may exceed MAXPATCH.                                                     !
-   ! MAXCOHORT -- If number of cohorts in a given patch exceeds MAXCOHORT, force cohort    !
-   !              fusion.  If MAXCOHORT is 0, then fusion will never happen.  If MAXCOHORT !
-   !              is negative, then the absolute value is used only during the             !
-   !              initialization, and fusion will never happen again.  Notice that if the  !
-   !              cohorts are too different, then the actual number of cohorts in a patch  !
-   !              may exceed MAXCOHORT.                                                    !
+   ! MAXPATCH       -- If number of patches in a given site exceeds MAXPATCH, force patch  !
+   !                   fusion.  If MAXPATCH is 0, then fusion will never happen.  If       !
+   !                   MAXPATCH is negative, then the absolute value is used only during   !
+   !                   the initialization, and fusion will never happen again.  Notice     !
+   !                   that if the patches are too different, then the actual number of    !
+   !                   patches in a site may exceed MAXPATCH.                              !
+   ! MAXCOHORT      -- If number of cohorts in a given patch exceeds MAXCOHORT, force      !
+   !                   cohort fusion.  If MAXCOHORT is 0, then fusion will never happen.   !
+   !                   If MAXCOHORT is negative, then the absolute value is used only      !
+   !                   during the initialization, and fusion will never happen again.      !
+   !                   Notice that if the cohorts are too different, then the actual       !
+   !                   number of cohorts in a patch may exceed MAXCOHORT.                  !
+   ! MIN_PATCH_AREA -- This is the minimum fraction area of a given soil type that allows  !
+   !                   a site to be created (ignored if IED_INIT_MODE is set to 3).        !
    !---------------------------------------------------------------------------------------!
-   MAXPATCH  =  10,
-   MAXCOHORT =  60,
+   MAXPATCH       =    10,
+   MAXCOHORT      =    60,
+   MIN_PATCH_AREA = 0.005,
    !---------------------------------------------------------------------------------------!
 
 

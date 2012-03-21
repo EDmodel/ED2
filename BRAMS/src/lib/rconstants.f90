@@ -152,23 +152,23 @@ Module rconstants
    !---------------------------------------------------------------------------------------!
    ! Dry air properties                                                                    !
    !---------------------------------------------------------------------------------------!
-   real, parameter :: rdry   = rmol/mmdry    ! Gas constant for dry air (Ra)    [   J/kg/K]
-   real, parameter :: rdryi  = mmdry/rmol    ! 1./Gas constant for dry air (Ra) [   kg K/J]
-   real, parameter :: cp     = 3.5 * rdry    ! Specific heat at constant press. [   J/kg/K]
-   real, parameter :: cv     = 2.5 * rdry    ! Specific heat at constant volume [   J/kg/K]
-   real, parameter :: cpog   = cp /grav      ! cp/g                             [      m/K]
-   real, parameter :: rocp   = rdry / cp     ! Ra/cp                            [     ----]
-   real, parameter :: rocv   = rdry / cv     ! Ra/Cv                            [     ----]
-   real, parameter :: cpocv  = cp / cv       ! Cp/Cv                            [     ----]
-   real, parameter :: cpor   = cp / rdry     ! Cp/Ra                            [     ----]
-   real, parameter :: cvor   = cv / rdry     ! Cp/Ra                            [     ----]
-   real, parameter :: gocp   = grav / cp     ! g/Cp, dry adiabatic lapse rate   [      K/m]
-   real, parameter :: gordry = grav / rdry   ! g/Ra                             [      K/m]
-   real, parameter :: cpi    = 1. / cp       ! 1/Cp                             [   kg K/J]
-   real, parameter :: cpi4   = 4. * cpi      ! 4/Cp                             [   kg K/J]
-   real, parameter :: p00or  = p00 / rdry    ! p0 ** (Ra/Cp)                    [   Pa^2/7]
-   real, parameter :: p00k   = 26.8269579527 ! p0 ** (Ra/Cp)                    [   Pa^2/7]
-   real, parameter :: p00ki  = 1. / p00k     ! p0 ** (-Ra/Cp)                   [  Pa^-2/7]
+   real, parameter :: rdry    = rmol/mmdry    ! Gas constant for dry air (Ra)   [   J/kg/K]
+   real, parameter :: rdryi   = mmdry/rmol    ! 1./Gas const. for dry air (Ra)  [   kg K/J]
+   real, parameter :: cpdry   = 3.5 * rdry    ! Spec. heat at constant press.   [   J/kg/K]
+   real, parameter :: cvdry   = 2.5 * rdry    ! Spec. heat at constant volume   [   J/kg/K]
+   real, parameter :: cpog    = cpdry /grav   ! cp/g                            [      m/K]
+   real, parameter :: rocp    = rdry  / cpdry ! Ra/cp                           [     ----]
+   real, parameter :: rocv    = rdry  / cvdry ! Ra/Cv                           [     ----]
+   real, parameter :: cpocv   = cpdry / cvdry ! Cp/Cv                           [     ----]
+   real, parameter :: cpor    = cpdry / rdry  ! Cp/Ra                           [     ----]
+   real, parameter :: cvor    = cvdry / rdry  ! Cp/Ra                           [     ----]
+   real, parameter :: gocp    = grav / cpdry  ! g/Cp, dry adiabatic lapse rate  [      K/m]
+   real, parameter :: gordry  = grav / rdry   ! g/Ra                            [      K/m]
+   real, parameter :: cpdryi  = 1. / cpdry    ! 1/Cp                            [   kg K/J]
+   real, parameter :: cpdryi4 = 4. * cpdryi   ! 4/Cp                            [   kg K/J]
+   real, parameter :: p00or   = p00 / rdry    ! p0 ** (Ra/Cp)                   [   Pa^2/7]
+   real, parameter :: p00k    = 26.8269579527 ! p0 ** (Ra/Cp)                   [   Pa^2/7]
+   real, parameter :: p00ki   = 1. / p00k     ! p0 ** (-Ra/Cp)                  [  Pa^-2/7]
    !---------------------------------------------------------------------------------------!
 
 
@@ -177,11 +177,13 @@ Module rconstants
    ! Water vapour properties                                                               !
    !---------------------------------------------------------------------------------------!
    real, parameter :: rh2o    = rmol/mmh2o  ! Gas const. for water vapour (Rv)  [   J/kg/K]
+   real, parameter :: cph2o   = 1859.       ! Heat capacity at const. pres.     [   J/kg/K]
+   real, parameter :: cph2oi  = 1. / cph2o  ! Inverse of heat capacity          [   kg K/J]
+   real, parameter :: cvh2o   = cph2o-rh2o  ! Heat capacity at const. volume    [   J/kg/K]
    real, parameter :: gorh2o  = grav / rh2o ! g/Rv                              [      K/m]
    real, parameter :: ep      = mmh2o/mmdry ! or Ra/Rv, epsilon                 [    kg/kg]
    real, parameter :: epi     = mmdry/mmh2o ! or Rv/Ra, 1/epsilon               [    kg/kg]
    real, parameter :: epim1   = epi-1.      ! that 0.61 term of virtual temp.   [    kg/kg]
-   real, parameter :: rh2oocp = rh2o / cp   ! Rv/cp                             [     ----]
    real, parameter :: toodry  = 1.e-8       ! Minimum acceptable mixing ratio.  [    kg/kg]
    real, parameter :: toowet  = 3.e-2       ! Maximum acceptable mixing ratio.  [    kg/kg]
    !---------------------------------------------------------------------------------------!
@@ -194,7 +196,6 @@ Module rconstants
    real, parameter :: wdns     = 1.000e3    ! Liquid water density              [    kg/m³]
    real, parameter :: wdnsi    = 1./wdns    ! Inverse of liquid water density   [    m³/kg]
    real, parameter :: cliq     = 4.186e3    ! Liquid water specific heat (Cl)   [   J/kg/K]
-   real, parameter :: cliqvlme = wdns*cliq  ! Water heat capacity × water dens. [   J/m³/K]
    real, parameter :: cliqi    = 1./cliq    ! Inverse of water heat capacity    [   kg K/J]
    !---------------------------------------------------------------------------------------!
 
@@ -208,7 +209,6 @@ Module rconstants
    real, parameter :: fdns     = 2.000e2      ! Frost density                   [    kg/m³]
    real, parameter :: fdnsi    = 1./fdns      ! Inverse of frost density        [    m³/kg]
    real, parameter :: cice     = 2.093e3      ! Ice specific heat (Ci)          [   J/kg/K]
-   real, parameter :: cicevlme = wdns * cice  ! Heat capacity × water density   [   J/m³/K]
    real, parameter :: cicei    = 1. / cice    ! Inverse of ice heat capacity    [   kg K/J]
    !---------------------------------------------------------------------------------------!
 
@@ -217,40 +217,50 @@ Module rconstants
    !---------------------------------------------------------------------------------------!
    ! Phase change properties                                                               !
    !---------------------------------------------------------------------------------------!
-   real, parameter :: t3ple     = 273.16        ! Water triple point temp. (T3) [        K]
-   real, parameter :: t3plei    = 1./t3ple      ! 1./T3                         [      1/K]
-   real, parameter :: es3ple    = 611.65685464  ! Vapour pressure at T3 (es3)   [       Pa]
-   real, parameter :: es3plei   = 1./es3ple     ! 1./es3                        [     1/Pa]
-   real, parameter :: epes3ple  = ep * es3ple   ! epsilon × es3                 [ Pa kg/kg]
-   real, parameter :: rh2ot3ple = rh2o * t3ple  ! Rv × T3                       [     J/kg]
-   real, parameter :: alvl      = 2.50e6        ! Lat. heat - vaporisation (Lv) [     J/kg]
-   real, parameter :: alvi      = 2.834e6       ! Lat. heat - sublimation  (Ls) [     J/kg]
-   real, parameter :: alli      = 3.34e5        ! Lat. heat - fusion       (Lf) [     J/kg]
-   real, parameter :: allivlme  = wdns * alli   ! Lat. heat × water density     [     J/m³]
-   real, parameter :: alvl2     = alvl * alvl   ! Lv²                           [   J²/kg²]
-   real, parameter :: alvi2     = alvi * alvi   ! Ls²                           [   J²/kg²]
-   real, parameter :: allii     = 1.   / alli   ! 1./Lf                         [     kg/J]
-   real, parameter :: aklv      = alvl / cp     ! Lv/Cp                         [        K]
-   real, parameter :: akiv      = alvi / cp     ! Ls/Cp                         [        K]
-   real, parameter :: lvordry   = alvl / rdry   ! Lv/Ra                         [        K]
-   real, parameter :: lvorvap   = alvl / rh2o   ! Lv/Rv                         [        K]
-   real, parameter :: lsorvap   = alvi / rh2o   ! Ls/Rv                         [        K]
-   real, parameter :: lvt3ple   = alvl * t3ple  ! Lv × T3                       [   K J/kg]
-   real, parameter :: lst3ple   = alvi * t3ple  ! Ls × T3                       [   K J/kg]
-   real, parameter :: qicet3    = cice * t3ple  ! q at triple point, only ice   [     J/kg]
-   real, parameter :: qliqt3    = qicet3 + alli ! q at triple point, only liq.  [     J/kg]
+   real, parameter :: t3ple     = 273.16         ! Water triple point temp. (T3)[        K]
+   real, parameter :: t3plei    = 1./t3ple       ! 1./T3                        [      1/K]
+   real, parameter :: es3ple    = 611.65685464   ! Vapour pressure at T3 (es3)  [       Pa]
+   real, parameter :: es3plei   = 1./es3ple      ! 1./es3                       [     1/Pa]
+   real, parameter :: epes3ple  = ep * es3ple    ! epsilon × es3                [ Pa kg/kg]
+   real, parameter :: rh2ot3ple = rh2o * t3ple   ! Rv × T3                      [     J/kg]
+   real, parameter :: alli      = 3.34e5         ! Lat. heat - fusion       (Lf)[     J/kg]
+   real, parameter :: alvl3     = 2.50e6         ! Lat. heat - vaporisation (Lv)[     J/kg]
+   real, parameter :: alvi3     = alli + alvl3   ! Lat. heat - sublimation  (Ls)[     J/kg]
+   real, parameter :: allii     = 1.   / alli    ! 1./Lf                        [     kg/J]
+   real, parameter :: aklv      = alvl3 / cpdry  ! Lv/Cp                        [        K]
+   real, parameter :: akiv      = alvi3 / cpdry  ! Ls/Cp                        [        K]
+   real, parameter :: lvordry   = alvl3 / rdry   ! Lv/Ra                        [        K]
+   real, parameter :: lvorvap   = alvl3 / rh2o   ! Lv/Rv                        [        K]
+   real, parameter :: lsorvap   = alvi3 / rh2o   ! Ls/Rv                        [        K]
+   real, parameter :: lvt3ple   = alvl3 * t3ple  ! Lv × T3                      [   K J/kg]
+   real, parameter :: lst3ple   = alvi3 * t3ple  ! Ls × T3                      [   K J/kg]
+   real, parameter :: uiicet3   = cice * t3ple   ! u at triple point, only ice  [     J/kg]
+   real, parameter :: uiliqt3   = uiicet3 + alli ! u at triple point, only liq. [     J/kg]
+   real, parameter :: dcpvl     = cph2o - cliq   ! difference of sp. heat       [   J/kg/K]
+   real, parameter :: dcpvi     = cph2o - cice   ! difference of sp. heat       [   J/kg/K]
    !---------------------------------------------------------------------------------------!
 
 
+   !---------------------------------------------------------------------------------------!
+   !     The following variables are useful when defining the derivatives of theta_il.     !
+   !   They correspond to L?(T) - L?' T.                                                   !
+   !---------------------------------------------------------------------------------------!
+   real, parameter :: del_alvl3 = alvl3 - dcpvl * t3ple
+   real, parameter :: del_alvi3 = alvi3 - dcpvi * t3ple
+   !---------------------------------------------------------------------------------------!
+
 
    !---------------------------------------------------------------------------------------!
-   !    Tsupercool is the temperature of supercooled water that will cause the energy to   !
-   ! be the same as ice at 0K. It can be used as an offset for temperature when defining   !
-   ! internal energy. The next two methods of defining the internal energy for the liquid  !
-   ! part:                                                                                 !
+   !    Tsupercool are defined as temperatures of supercooled liquid water (water vapour)  !
+   ! that will cause the internal energy (enthalpy) to be the same as ice at 0K.  It can   !
+   ! be used as an offset for temperature when defining internal energy (enthalpy). The    !
+   ! next two methods of defining the internal energy for the liquid part:                 !
    !                                                                                       !
-   !   Uliq = Mliq × [ Cice × T3 + Cliq × (T - T3) + Lf]                                   !
-   !   Uliq = Mliq × Cliq × (T - Tsupercool)                                               !
+   !   Uliq = Mliq [ Cice T3 + Cliq (T - T3) + Lf]                                         !
+   !   Uliq = Mliq Cliq (T - Tsupercool_liq)                                               !
+   !                                                                                       !
+   !   H    = Mliq [ Cice T3 + Cliq (Ts - T3) + Lv3 + (Cpv - Cliq) (Ts-T3) + Cpv (T-T3) ]  !
+   !   H    = Mliq Cpv (T - Tsupercool_vap) ]                                              !
    !                                                                                       !
    !     You may be asking yourself why would we have the ice term in the internal energy  !
    ! definition. The reason is that we can think that internal energy is the amount of     !
@@ -258,20 +268,8 @@ Module rconstants
    ! prefer the inverse way, Uliq is the amount of energy the parcel would need to lose to !
    ! become solid at 0K.)                                                                  !
    !---------------------------------------------------------------------------------------!
-   real, parameter :: tsupercool = t3ple - (qicet3+alli) * cliqi
-   !---------------------------------------------------------------------------------------!
-
-
-
-   !---------------------------------------------------------------------------------------!
-   !    eta3ple is a constant related to the triple point that is used to find enthalpy    !
-   ! when the equilibrium temperature is above t3ple. cimcp (clmcp) is the difference      !
-   ! between the heat capacity of ice (liquid) and vapour, the latter assumed to be the    !
-   ! same as the dry air, for simplicity.                                                  !
-   !---------------------------------------------------------------------------------------!
-   real, parameter :: eta3ple = (cice - cliq) * t3ple + alvi
-   real, parameter :: cimcp   =  cice - cp
-   real, parameter :: clmcp   =  cliq - cp
+   real, parameter :: tsupercool_liq = t3ple - (uiicet3 + alli ) * cliqi
+   real, parameter :: tsupercool_vap = t3ple - (uiicet3 + alvi3) * cph2oi
    !---------------------------------------------------------------------------------------!
 
 
@@ -285,9 +283,9 @@ Module rconstants
    !    ature as a thermodynamic variable in deep atmospheric models. Mon. Wea. Rev.,      !
    !    v. 109, 1094-1102.                                                                 !
    !---------------------------------------------------------------------------------------!
-   real, parameter :: ttripoli  = 253.        ! "Tripoli-Cotton" temp. (Ttr)    [        K]
-   real, parameter :: htripoli  = cp*ttripoli ! Sensible enthalpy at T=Ttr      [     J/kg]
-   real, parameter :: htripolii = 1./htripoli ! 1./htripoli                     [     kg/J]
+   real, parameter :: ttripoli  = 253.           ! "Tripoli-Cotton" temp. (Ttr) [        K]
+   real, parameter :: htripoli  = cpdry*ttripoli ! Sensible enthalpy at T=Ttr   [     J/kg]
+   real, parameter :: htripolii = 1./htripoli    ! 1./htripoli                  [     kg/J]
    !---------------------------------------------------------------------------------------!
 
 
@@ -377,16 +375,19 @@ Module rconstants
    real(kind=8), parameter :: p00ki8          = dble(p00ki         )
    real(kind=8), parameter :: rdry8           = dble(rdry          )
    real(kind=8), parameter :: rdryi8          = dble(rdryi         )
-   real(kind=8), parameter :: cp8             = dble(cp            )
-   real(kind=8), parameter :: cv8             = dble(cv            )
+   real(kind=8), parameter :: cpdry8          = dble(cpdry         )
+   real(kind=8), parameter :: cvdry8          = dble(cvdry         )
    real(kind=8), parameter :: cpog8           = dble(cpog          )
    real(kind=8), parameter :: rocp8           = dble(rocp          )
    real(kind=8), parameter :: rocv8           = dble(rocv          )
    real(kind=8), parameter :: cpocv8          = dble(cpocv         )
    real(kind=8), parameter :: cpor8           = dble(cpor          )
-   real(kind=8), parameter :: cpi8            = dble(cpi           )
-   real(kind=8), parameter :: cpi48           = dble(cpi4          )
+   real(kind=8), parameter :: cpdryi8         = dble(cpdryi        )
+   real(kind=8), parameter :: cpdryi48        = dble(cpdryi4       )
    real(kind=8), parameter :: rh2o8           = dble(rh2o          )
+   real(kind=8), parameter :: cph2o8          = dble(cph2o         )
+   real(kind=8), parameter :: cph2oi8         = dble(cph2oi        )
+   real(kind=8), parameter :: cvh2o8          = dble(cvh2o         )
    real(kind=8), parameter :: gorh2o8         = dble(gorh2o        )
    real(kind=8), parameter :: ep8             = dble(ep            )
    real(kind=8), parameter :: epi8            = dble(epi           )
@@ -395,33 +396,32 @@ Module rconstants
    real(kind=8), parameter :: wdns8           = dble(wdns          )
    real(kind=8), parameter :: wdnsi8          = dble(wdnsi         )
    real(kind=8), parameter :: cliq8           = dble(cliq          )
-   real(kind=8), parameter :: cliqvlme8       = dble(cliqvlme      )
    real(kind=8), parameter :: cliqi8          = dble(cliqi         )
    real(kind=8), parameter :: idns8           = dble(idns          )
    real(kind=8), parameter :: idnsi8          = dble(idnsi         )
    real(kind=8), parameter :: fdns8           = dble(fdns          )
    real(kind=8), parameter :: fdnsi8          = dble(fdnsi         )
    real(kind=8), parameter :: cice8           = dble(cice          )
-   real(kind=8), parameter :: cicevlme8       = dble(cicevlme      )
    real(kind=8), parameter :: cicei8          = dble(cicei         )
    real(kind=8), parameter :: t3ple8          = dble(t3ple         )
    real(kind=8), parameter :: t3plei8         = dble(t3plei        )
    real(kind=8), parameter :: es3ple8         = dble(es3ple        )
    real(kind=8), parameter :: es3plei8        = dble(es3plei       )
    real(kind=8), parameter :: epes3ple8       = dble(epes3ple      )
-   real(kind=8), parameter :: alvl8           = dble(alvl          )
-   real(kind=8), parameter :: alvi8           = dble(alvi          )
+   real(kind=8), parameter :: alvl38          = dble(alvl3         )
+   real(kind=8), parameter :: alvi38          = dble(alvi3         )
    real(kind=8), parameter :: alli8           = dble(alli          )
-   real(kind=8), parameter :: allivlme8       = dble(allivlme      )
    real(kind=8), parameter :: allii8          = dble(allii         )
    real(kind=8), parameter :: akiv8           = dble(akiv          )
    real(kind=8), parameter :: aklv8           = dble(aklv          )
-   real(kind=8), parameter :: qicet38         = dble(qicet3        )
-   real(kind=8), parameter :: qliqt38         = dble(qliqt3        )
-   real(kind=8), parameter :: tsupercool8     = dble(tsupercool    )
-   real(kind=8), parameter :: eta3ple8        = dble(eta3ple       )
-   real(kind=8), parameter :: cimcp8          = dble(cimcp         )
-   real(kind=8), parameter :: clmcp8          = dble(clmcp         )
+   real(kind=8), parameter :: uiicet38        = dble(uiicet3       )
+   real(kind=8), parameter :: uiliqt38        = dble(uiliqt3       )
+   real(kind=8), parameter :: dcpvl8          = dble(dcpvl         )
+   real(kind=8), parameter :: dcpvi8          = dble(dcpvi         )
+   real(kind=8), parameter :: del_alvl38      = dble(del_alvl3     )
+   real(kind=8), parameter :: del_alvi38      = dble(del_alvi3     )
+   real(kind=8), parameter :: tsupercool_liq8 = dble(tsupercool_liq)
+   real(kind=8), parameter :: tsupercool_vap8 = dble(tsupercool_vap)
    real(kind=8), parameter :: ttripoli8       = dble(ttripoli      )
    real(kind=8), parameter :: htripoli8       = dble(htripoli      )
    real(kind=8), parameter :: htripolii8      = dble(htripolii     )
@@ -434,6 +434,7 @@ Module rconstants
    real(kind=8), parameter :: th_diff8        = dble(th_diff       )
    real(kind=8), parameter :: th_diffi8       = dble(th_diffi      )
    real(kind=8), parameter :: kin_visc8       = dble(kin_visc      )
+   real(kind=8), parameter :: kin_visci8      = dble(kin_visci     )
    real(kind=8), parameter :: th_expan8       = dble(th_expan      )
    real(kind=8), parameter :: gr_coeff8       = dble(gr_coeff      )
    real(kind=8), parameter :: lnexp_min8      = dble(lnexp_min     )
@@ -446,3 +447,5 @@ Module rconstants
 
 
 end module rconstants
+!==========================================================================================!
+!==========================================================================================!

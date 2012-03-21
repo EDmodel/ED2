@@ -475,6 +475,7 @@ subroutine shdf5_irec_f(ndims,dims,dsetname,ivara,rvara,cvara,dvara,lvara  &
      allocate(dvaraTEMP(1:dims(1)))
      call h5dread_f(dsetid_f,H5T_NATIVE_DOUBLE,dvaraTEMP, dimshf, hdferr )
      rvara(1:dims(1)) = sngl(dvaraTEMP(1:dims(1)))
+     deallocate(dvaraTEMP)
      stop
   endif
 

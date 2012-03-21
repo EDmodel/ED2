@@ -52,7 +52,7 @@ subroutine radiate(mzp,mxp,myp,ia,iz,ja,jz,mynum)
                           ,vctr12         & ! intent(inout)
                           ,scratch        ! ! intent(inout)
    use mem_micro   , only: micro_g        ! ! intent(in)
-   use therm_lib   , only: qtk            & ! subroutine
+   use therm_lib   , only: uint2tl        & ! subroutine
                           ,level          & ! intent(in)
                           ,cloud_on       & ! intent(in)
                           ,bulk_on        ! ! intent(in)
@@ -157,7 +157,7 @@ subroutine radiate(mzp,mxp,myp,ia,iz,ja,jz,mynum)
                do i=ia,iz
                   ka = nint(grid_g(ngrid)%flpw(i,j))
                   do k=ka,kz
-                     call qtk(micro_g(ngrid)%q6(k,i,j),tcoal,fracliq)
+                     call uint2tl(micro_g(ngrid)%q6(k,i,j),tcoal,fracliq)
                      lwl(k,i,j) = lwl(k,i,j) + fracliq*micro_g(ngrid)%rgp(k,i,j)
                      iwl(k,i,j) = iwl(k,i,j) + (1.-fracliq)*micro_g(ngrid)%rgp(k,i,j)
                   end do
@@ -170,7 +170,7 @@ subroutine radiate(mzp,mxp,myp,ia,iz,ja,jz,mynum)
                do i=ia,iz
                   ka = nint(grid_g(ngrid)%flpw(i,j))
                   do k=ka,kz
-                     call qtk(micro_g(ngrid)%q7(k,i,j),tcoal,fracliq)
+                     call uint2tl(micro_g(ngrid)%q7(k,i,j),tcoal,fracliq)
                      lwl(k,i,j) = lwl(k,i,j) + fracliq*micro_g(ngrid)%rhp(k,i,j)
                      iwl(k,i,j) = iwl(k,i,j) + (1.-fracliq)*micro_g(ngrid)%rhp(k,i,j)
                   end do
@@ -491,7 +491,7 @@ subroutine radcomp(m1,m2,m3,ifm,ia,iz,ja,jz,theta,pi0,pp,rv,dn0,rtp,co2p,fthrd,r
                          , solfac          & ! intent(in)
                          , sun_longitude   & ! intent(in)
                          , rad_cosz_min    ! ! intent(in)
-   use rconstants , only : cpi             & ! intent(in)
+   use rconstants , only : cpdryi          & ! intent(in)
                          , cpor            & ! intent(in)
                          , p00             & ! intent(in)
                          , stefan          & ! intent(in)
@@ -531,7 +531,7 @@ subroutine radcomp(m1,m2,m3,ifm,ia,iz,ja,jz,theta,pi0,pp,rv,dn0,rtp,co2p,fthrd,r
          end do
          do k = 1,m1
             !---- Compute some basic thermodynamic variables (pressure, temperature). -----!
-            pird(k) = (pp(k,i,j) + pi0(k,i,j)) * cpi
+            pird(k) = (pp(k,i,j) + pi0(k,i,j)) * cpdryi
             temprd(k) = theta(k,i,j) * pird(k)
             rvr(k)  = max(0.,rv(k,i,j))
             rtr(k)  = max(rvr(k),rtp(k,i,j))
@@ -774,7 +774,7 @@ subroutine zen(m2,m3,ia,iz,ja,jz,iswrtyp,ilwrtyp,glon,glat,cosz)
             radlat=dble(glat(i,j))*pio1808
             cosz(i,j) = sngl(dsin(radlat)*sdec+dcos(radlat)*cdec*dcos(hrangl))
             !----- Making sure that it is bounded -----------------------------------------!
-            cosz(i,j) = max(-1.d0,min(1.d0,cosz(i,j)))
+            cosz(i,j) = max(-1.0,min(1.0,cosz(i,j)))
          end do
       end do
    else

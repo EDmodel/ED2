@@ -1,6 +1,6 @@
 #----- Here is the user-defined variable section. -----------------------------------------#
 here           = "thispath"      # Current directory.
-srcdir         = "/n/Moorcroft_Lab/Users/mlongo/util/Rsc"
+srcdir         = "/n/moorcroft_data/mlongo/util/Rsc"     
 outroot        = "thisoutroot"
 daybeg         = thisdatea
 monthbeg       = thismontha
@@ -58,16 +58,16 @@ tsplot04 = list(vnam="mcopft"   ,desc="Maintenance costs"         ,unit="kgC/m2/
 
 #----- Size (DBH) and age structure of cohort level variables. ----------------------------#
 npsas  = 10
-psas01 = list(vnam="beamextco",desc="Downward direct light"     ,unit="--"          , plt=T)
-psas02 = list(vnam="gppco"    ,desc="Gross primary productivity",unit="kgC/plant/yr", plt=T)
-psas03 = list(vnam="respco"   ,desc="Total plant respiration"   ,unit="kgC/plant/yr", plt=T)
-psas04 = list(vnam="nppco"    ,desc="Net primary productivity"  ,unit="kgC/plant/yr", plt=T)
-psas05 = list(vnam="mcostco"  ,desc="Maintenance costs"         ,unit="kgC/plant/yr", plt=T)
-psas06 = list(vnam="ncbmortco",desc="Mortality due to Neg. CB"  ,unit="1/yr"        , plt=T)
-psas07 = list(vnam="agbco"    ,desc="Above-ground biomass"      ,unit="kgC/plant"   , plt=T)
-psas08 = list(vnam="fsoco"    ,desc="Fraction of open stomata"  ,unit="--"          , plt=T)
-psas09 = list(vnam="nplantco" ,desc="Plant density"             ,unit="plant/m2"    , plt=T)
-psas10 = list(vnam="laico"    ,desc="Leaf area index"           ,unit="m2/m2"       , plt=T)
+psas01 = list(vnam="lightbeamco",desc="Downward direct light"   ,unit="--"          , plt=T)
+psas02 = list(vnam="gppco"      ,desc="Gross primary product."  ,unit="kgC/plant/yr", plt=T)
+psas03 = list(vnam="respco"     ,desc="Total plant respiration" ,unit="kgC/plant/yr", plt=T)
+psas04 = list(vnam="nppco"      ,desc="Net primary productivity",unit="kgC/plant/yr", plt=T)
+psas05 = list(vnam="mcostco"    ,desc="Maintenance costs"       ,unit="kgC/plant/yr", plt=T)
+psas06 = list(vnam="ncbmortco"  ,desc="Mortality due to Neg. CB",unit="1/yr"        , plt=T)
+psas07 = list(vnam="agbco"      ,desc="Above-ground biomass"    ,unit="kgC/plant"   , plt=T)
+psas08 = list(vnam="fsoco"      ,desc="Fraction of open stomata",unit="--"          , plt=T)
+psas09 = list(vnam="nplantco"   ,desc="Plant density"           ,unit="plant/m2"    , plt=T)
+psas10 = list(vnam="laico"      ,desc="Leaf area index"         ,unit="m2/m2"       , plt=T)
 #----- Similar to Hovmoller diagrams. -----------------------------------------------------#
 nhov = 4
 hovdi01 = list(vnam   = c("gpp","plresp","hetresp","nep")
@@ -136,6 +136,7 @@ source(paste(srcdir,"pretty.time.r",sep="/"))
 source(paste(srcdir,"rconstants.r" ,sep="/"))
 source(paste(srcdir,"sombreado.r"  ,sep="/"))
 source(paste(srcdir,"southammap.r" ,sep="/"))
+source(paste(srcdir,"thermlib.r"   ,sep="/"))
 source(paste(srcdir,"timeutils.r"  ,sep="/"))
 
 #----- Define some default legend colours and names. --------------------------------------#
@@ -296,7 +297,7 @@ for (ipy in 1:nplaces){
    p$soil.temp    = NULL
    p$soil.moist   = NULL
    #----- Cohort level lists. -------------------------------------------------------------#
-   p$beamextco    = list()
+   p$lightbeamco  = list()
    p$gppco        = list()
    p$respco       = list()
    p$nppco        = list()
@@ -428,11 +429,13 @@ for (year in yeara:yearz){
              #                             myday$DMEAN.STORAGE.RESP[ipy] -
              #                             myday$DMEAN.VLEAF.RESP  [ipy]            )
 
-             p$sens       = c (p$sens  , myday$DMEAN.SENSIBLE.GC[ipy] 
-                                       + myday$DMEAN.SENSIBLE.LC[ipy]
-                                       + myday$DMEAN.SENSIBLE.WC[ipy])
-             p$evap       = c (p$evap  ,myday$DMEAN.EVAP     [ipy]   * alvl        )
-             p$transp     = c (p$transp,myday$DMEAN.TRANSP   [ipy]   * alvl        )
+             p$sens       = c (p$sens  , myday$DMEAN.SENSIBLE.GC    [ipy] 
+                                       + myday$DMEAN.SENSIBLE.LC    [ipy]
+                                       + myday$DMEAN.SENSIBLE.WC    [ipy])
+             p$evap       = c (p$evap  , myday$DMEAN.EVAP           [ipy]
+                                       * alvli(myday$DMEAN.CAN.TEMP [ipy])         )
+             p$transp     = c (p$transp, myday$DMEAN.TRANSP         [ipy]
+                                       * alvli(myday$DMEAN.CAN.TEMP [ipy])         )
 
              p$atm.temp   = c (p$atm.temp,myday$DMEAN.ATM.TEMP [ipy] - t00         )
              p$atm.shv    = c (p$atm.shv ,myday$DMEAN.ATM.SHV  [ipy] * 1000.       )
@@ -463,23 +466,24 @@ for (year in yeara:yearz){
              hetresppanow  = myday$DMEAN.RH.PA[apa:zpa]
 
              #----- Load the other cohort-level variables. --------------------------------#
-             pftconow      = myday$PFT[aco:zco]
-             nplantconow   = myday$NPLANT[aco:zco]
-             agbconow      = myday$AGB.CO[aco:zco]
-             laiconow      = myday$LAI.CO[aco:zco]
-             gppconow      = myday$DMEAN.GPP.CO[aco:zco]
-             respconow     = myday$DMEAN.LEAF.RESP.CO   [aco:zco] + 
-                             myday$DMEAN.ROOT.RESP.CO   [aco:zco] +
-                             growth.resp.fac[myday$PFT[aco:zco]] *
-                             ( myday$DMEAN.GPP.CO      [aco:zco]  -
-                               myday$DMEAN.LEAF.RESP.CO[aco:zco]  -
-                               myday$DMEAN.ROOT.RESP.CO[aco:zco]  )
-             nppconow      = gppconow-respconow
-             mcostconow    = myday$LEAF.MAINTENANCE [aco:zco] + 
-                             myday$ROOT.MAINTENANCE [aco:zco] 
-             ncbmortconow  = myday$MORT.RATE.CO[aco:zco,2]
-             fsoconow      = myday$DMEAN.FS.OPEN.CO[aco:zco]
-             beamextconow  = myday$DMEAN.BEAMEXT.LEVEL[aco:zco]
+             pftconow       = myday$PFT[aco:zco]
+             nplantconow    = myday$NPLANT[aco:zco]
+             agbconow       = myday$AGB.CO[aco:zco]
+             laiconow       = myday$LAI.CO[aco:zco]
+             gppconow       = myday$DMEAN.GPP.CO[aco:zco]
+             respconow      = ( myday$DMEAN.LEAF.RESP.CO   [aco:zco]
+                              + myday$DMEAN.ROOT.RESP.CO   [aco:zco]
+                              + growth.resp.fac[myday$PFT[aco:zco]]
+                              * ( myday$DMEAN.GPP.CO      [aco:zco]
+                                - myday$DMEAN.LEAF.RESP.CO[aco:zco]
+                                - myday$DMEAN.ROOT.RESP.CO[aco:zco]  )
+                              )
+             nppconow       = gppconow-respconow
+             mcostconow     = myday$LEAF.MAINTENANCE [aco:zco] + 
+                              myday$ROOT.MAINTENANCE [aco:zco] 
+             ncbmortconow   = myday$MORT.RATE.CO[aco:zco,2]
+             fsoconow       = myday$DMEAN.FS.OPEN.CO[aco:zco]
+             lightbeamconow = myday$DMEAN.LIGHTBEAM.LEVEL[aco:zco]
              #-----------------------------------------------------------------------------#
 
 
@@ -537,33 +541,33 @@ for (year in yeara:yearz){
              monyear  = paste("m",cmonth,"y",year,sep="")
              if (day == firstday){
                 #----- Binding the current cohorts. ---------------------------------------#
-                p$beamextco[[monyear]] = beamextconow  * ndaysi
-                p$gppco[[monyear]]     = gppconow      * ndaysi
-                p$respco[[monyear]]    = respconow     * ndaysi
-                p$nppco[[monyear]]     = nppconow      * ndaysi
-                p$mcostco[[monyear]]   = mcostconow    * ndaysi
-                p$ncbmortco[[monyear]] = ncbmortconow  * ndaysi
-                p$agbco[[monyear]]     = agbconow      * ndaysi
-                p$fsoco[[monyear]]     = fsoconow      * ndaysi
-                p$nplantco[[monyear]]  = nplantconow   * ndaysi
-                p$dbhco[[monyear]]     = dbhconow      * ndaysi
-                p$laico[[monyear]]     = laiconow      * ndaysi
+                p$lightbeamco[[monyear]] = lightbeamconow * ndaysi
+                p$gppco      [[monyear]] = gppconow       * ndaysi
+                p$respco     [[monyear]] = respconow      * ndaysi
+                p$nppco      [[monyear]] = nppconow       * ndaysi
+                p$mcostco    [[monyear]] = mcostconow     * ndaysi
+                p$ncbmortco  [[monyear]] = ncbmortconow   * ndaysi
+                p$agbco      [[monyear]] = agbconow       * ndaysi
+                p$fsoco      [[monyear]] = fsoconow       * ndaysi
+                p$nplantco   [[monyear]] = nplantconow    * ndaysi
+                p$dbhco      [[monyear]] = dbhconow       * ndaysi
+                p$laico      [[monyear]] = laiconow       * ndaysi
                 #----- The following variables are not averaged. --------------------------#
-                p$pftco[[monyear]]     = pftconow
-                p$ageco[[monyear]]     = ageconow
-                p$areaco[[monyear]]    = areaconow
+                p$pftco      [[monyear]] = pftconow
+                p$ageco      [[monyear]] = ageconow
+                p$areaco     [[monyear]] = areaconow
              }else{
-                p$beamextco[[monyear]] = p$beamextco[[monyear]] + beamextconow * ndaysi
-                p$gppco[[monyear]]     = p$gppco[[monyear]]     + gppconow     * ndaysi
-                p$respco[[monyear]]    = p$respco[[monyear]]    + respconow    * ndaysi
-                p$nppco[[monyear]]     = p$nppco[[monyear]]     + nppconow     * ndaysi
-                p$mcostco[[monyear]]   = p$mcostco[[monyear]]   + mcostconow   * ndaysi
-                p$ncbmortco[[monyear]] = p$ncbmortco[[monyear]] + ncbmortconow * ndaysi
-                p$agbco[[monyear]]     = p$agbco[[monyear]]     + agbconow     * ndaysi
-                p$fsoco[[monyear]]     = p$fsoco[[monyear]]     + fsoconow     * ndaysi
-                p$nplantco[[monyear]]  = p$nplantco[[monyear]]  + nplantconow  * ndaysi
-                p$dbhco[[monyear]]     = p$dbhco[[monyear]]     + dbhconow     * ndaysi
-                p$laico[[monyear]]     = p$laico[[monyear]]     + laiconow     * ndaysi
+                p$lightbeamco[[monyear]] = p$lightbeamco[[monyear]] + lightbeamconow*ndaysi
+                p$gppco      [[monyear]] = p$gppco      [[monyear]] + gppconow      *ndaysi
+                p$respco     [[monyear]] = p$respco     [[monyear]] + respconow     *ndaysi
+                p$nppco      [[monyear]] = p$nppco      [[monyear]] + nppconow      *ndaysi
+                p$mcostco    [[monyear]] = p$mcostco    [[monyear]] + mcostconow    *ndaysi
+                p$ncbmortco  [[monyear]] = p$ncbmortco  [[monyear]] + ncbmortconow  *ndaysi
+                p$agbco      [[monyear]] = p$agbco      [[monyear]] + agbconow      *ndaysi
+                p$fsoco      [[monyear]] = p$fsoco      [[monyear]] + fsoconow      *ndaysi
+                p$nplantco   [[monyear]] = p$nplantco   [[monyear]] + nplantconow   *ndaysi
+                p$dbhco      [[monyear]] = p$dbhco      [[monyear]] + dbhconow      *ndaysi
+                p$laico      [[monyear]] = p$laico      [[monyear]] + laiconow      *ndaysi
              } #end if month=sasmonth
              #-----------------------------------------------------------------------------#
 

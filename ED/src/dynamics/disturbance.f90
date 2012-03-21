@@ -39,8 +39,9 @@ module disturbance_utils
                               , polygontype             & ! structure
                               , sitetype                & ! structure
                               , patchtype               ! ! structure
-      use ed_misc_coms , only : current_time            ! ! intent(in)
-      use disturb_coms , only : min_new_patch_area      & ! intent(in)
+      use ed_misc_coms , only : current_time            & ! intent(in)
+                              , ibigleaf                ! ! intent(in)
+      use disturb_coms , only : min_patch_area          & ! intent(in)
                               , mature_harvest_age      & ! intent(in)
                               , plantation_rotation     & ! intent(in)
                               , ianth_disturb           & ! intent(in)
@@ -51,6 +52,8 @@ module disturbance_utils
       use mem_polygons , only : maxcohort               ! ! intent(in)
       use grid_coms    , only : nzg                     & ! intent(in)
                               , nzs                     ! ! intent(in)
+      use pft_coms     , only : include_pft             ! ! intent(in)
+      use allometry    , only : area_indices            ! ! function
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
       type(edtype)                   , target      :: cgrid
@@ -58,15 +61,26 @@ module disturbance_utils
       type(polygontype)              , pointer     :: cpoly
       type(sitetype)                 , pointer     :: csite
       type(sitetype)                 , pointer     :: tsite
+      type(patchtype)                , pointer     :: cpatch
       type(patchtype)                , pointer     :: qpatch
       integer                                      :: ipy
       integer                                      :: isi
       integer                                      :: ipa
+      integer                                      :: ico
+      integer                                      :: ipft
+      integer                                      :: i
+      integer                                      :: i1
+      integer                                      :: i2
+      integer                                      :: mypfts
       integer                                      :: onsp
       integer                                      :: old_lu
       integer                                      :: new_lu
+      integer                                      :: new_add
       integer                                      :: poly_dest_type
+      integer, dimension(:)          , allocatable :: pfts
       logical, dimension(:)          , allocatable :: disturb_mask
+      logical, dimension(:)          , allocatable :: acceptor_mask
+      logical                                      :: have_acceptor
       logical                                      :: ploughed
       logical                                      :: abandoned
       logical                                      :: natural
@@ -83,164 +97,472 @@ module disturbance_utils
       real                                         :: dA
       real                                         :: elim_nplant
       real                                         :: elim_lai
+      real   , dimension(3)                        :: area_old
+      real   , dimension(3)                        :: area_new
       !------------------------------------------------------------------------------------!
 
-      !----- Allocating the temporary site that will host the original patches. -----------!
-      nullify(tsite)
-      allocate(tsite)
 
-      polyloop: do ipy = 1,cgrid%npolygons
-         
-         cpoly => cgrid%polygon(ipy)
-         siteloop: do isi = 1,cpoly%nsites
 
-            csite => cpoly%site(isi)
+      !------------------------------------------------------------------------------------!
+      !    Select which type of vegetation structure this run is solving.                  !
+      !------------------------------------------------------------------------------------!
+      select case (ibigleaf)
+      case (0)
+         !----- Allocating the temporary site that will host the original patches. --------!
+         nullify(tsite)
+         allocate(tsite)
 
-            !----- Store AGB, basal area profiles in memory. ------------------------------!
-            call update_site_derived_props(cpoly, 1,isi)
-            initial_agb(1:n_pft,1:n_dbh)        = cpoly%agb(1:n_pft,1:n_dbh,isi)
-            initial_basal_area(1:n_pft,1:n_dbh) = cpoly%basal_area(1:n_pft,1:n_dbh,isi)
+         polyloop: do ipy = 1,cgrid%npolygons
+            
+            cpoly => cgrid%polygon(ipy)
+            siteloop: do isi = 1,cpoly%nsites
 
-            !------------------------------------------------------------------------------!
-            !      First take care of harvesting, i.e., secondary -> secondary and         !
-            ! primary -> secondary.                                                        !
-            !------------------------------------------------------------------------------!
-            call apply_forestry(cpoly,isi, current_time%year)
+               csite => cpoly%site(isi)
 
-            !----- Update the cut output variables. ---------------------------------------!
-            call update_site_derived_props(cpoly, 1,isi)
-            cpoly%agb_cut(1:n_pft,1:n_dbh,isi) = cpoly%agb_cut(1:n_pft, 1:n_dbh,isi)       &
-                                               + initial_agb(1:n_pft, 1:n_dbh)             &
-                                               - cpoly%agb(1:n_pft, 1:n_dbh,isi)
+               !----- Store AGB, basal area profiles in memory. ---------------------------!
+               call update_site_derived_props(cpoly, 1,isi)
+               initial_agb(1:n_pft,1:n_dbh)        = cpoly%agb(1:n_pft,1:n_dbh,isi)
+               initial_basal_area(1:n_pft,1:n_dbh) = cpoly%basal_area(1:n_pft,1:n_dbh,isi)
 
-            cpoly%basal_area_cut(1:n_pft,1:n_dbh,isi) =                                    &
+               !---------------------------------------------------------------------------!
+               !      First take care of harvesting, i.e., secondary -> secondary and      !
+               ! primary -> secondary.                                                     !
+               !---------------------------------------------------------------------------!
+               call apply_forestry(cpoly,isi, current_time%year)
+
+               !----- Update the cut output variables. ------------------------------------!
+               call update_site_derived_props(cpoly, 1,isi)
+               cpoly%agb_cut(1:n_pft,1:n_dbh,isi) = cpoly%agb_cut(1:n_pft, 1:n_dbh,isi)    &
+                                                  + initial_agb(1:n_pft, 1:n_dbh)          &
+                                                  - cpoly%agb(1:n_pft, 1:n_dbh,isi)
+
+               cpoly%basal_area_cut(1:n_pft,1:n_dbh,isi) =                                 &
                                                  cpoly%basal_area_cut(1:n_pft,1:n_dbh,isi) &
                                                + initial_basal_area(1:n_pft,1:n_dbh)       &
                                                - cpoly%basal_area(1:n_pft,1:n_dbh,isi)
 
-            !----- Save the Original Number (of) Site Patches, onsp... --------------------!
-            onsp = csite%npatches
+               !----- Save the Original Number (of) Site Patches, onsp... -----------------!
+               onsp = csite%npatches
 
 
-            !------------------------------------------------------------------------------!
-            !     Create a temporary site with vectors containing all current patches as   !
-            ! well as n_dist_types patches.  Create the newly disturbed patches in here,   !
-            ! and depending on how many are created, repopulate the existing site's patch  !
-            ! vectors.                                                                     !
-            !------------------------------------------------------------------------------!
-            call allocate_sitetype(tsite,onsp)
+               !---------------------------------------------------------------------------!
+               !     Create a temporary site with vectors containing all current patches   !
+               ! as well as n_dist_types patches.  Create the newly disturbed patches in   !
+               ! here, and depending on how many are created, repopulate the existing      !
+               ! site's patch vectors.                                                     !
+               !---------------------------------------------------------------------------!
+               call allocate_sitetype(tsite,onsp)
 
-            allocate(disturb_mask(onsp + n_dist_types))
-            disturb_mask         = .false.
-            disturb_mask(1:onsp) = .true.
+               allocate(disturb_mask(onsp + n_dist_types))
+               disturb_mask         = .false.
+               disturb_mask(1:onsp) = .true.
 
-            !------------------------------------------------------------------------------!
-            !     Transfer the origial patch values into the front end of the temp's       !
-            ! space.                                                                       !
-            !------------------------------------------------------------------------------!
-            call copy_sitetype_mask(csite,tsite,disturb_mask(1:onsp),count(disturb_mask)   &
-                                   ,count(disturb_mask))
+               !---------------------------------------------------------------------------!
+               !     Transfer the origial patch values into the front end of the temp's    !
+               ! space.                                                                    !
+               !---------------------------------------------------------------------------!
+               call copy_sitetype_mask(csite,tsite,disturb_mask(1:onsp)                    &
+                                      ,count(disturb_mask),count(disturb_mask))
 
-            !----- Reallocate and transfer them back. -------------------------------------!
-            call deallocate_sitetype(csite)
-            call allocate_sitetype(csite,onsp + n_dist_types)
-            call copy_sitetype_mask(tsite,csite,disturb_mask(1:onsp),count(disturb_mask)   &
-                                   ,count(disturb_mask))
-            call deallocate_sitetype(tsite)
-
-
-            !------------------------------------------------------------------------------!
-            !      Initialize all the potential as well as implemented disturbance         !
-            ! patches.  n_dist_types new patches will be created, each one containing a    !
-            ! different patch type.  In case no conversion to that kind of patch has       !
-            ! happened, or if the newly created patch is tiny, it will be removed soon.    !                                                                   !
-            !------------------------------------------------------------------------------!
-            do new_lu = onsp+1, onsp+n_dist_types
-               call initialize_disturbed_patch(csite,cpoly%met(isi)%atm_tmp,new_lu,1       &
-                                              ,cpoly%lsl(isi))
-            end do
-
-            !----- Loop over q, the *destination* landuse type. ---------------------------!
-            new_lu_loop: do new_lu = 1, n_dist_types
-               !----- Set up area to zero, in case no conversion happens. -----------------!
-               area = 0.0
-
-               do ipa=1,onsp
-                  !----- Save the old land use in a shorter variable for convenience. -----!
-                  old_lu        = csite%dist_type(ipa)
-                  is_plantation = csite%plantation(ipa) == 1
-
-                  !------------------------------------------------------------------------!
-                  !    Now we add the area associated with each kind of possible disturb-  !
-                  ! ance that can happen.  Types of conversion that are solved here are:   !
-                  ! * ploughed  - conversion from primary/secondary land to agriculture.   !
-                  ! * abandoned - conversion from agriculture to secondary land.           !
-                  ! * natural   - natural disturbance from primary/secondary land to       !
-                  !               primary land (fires or tree fall)                        !
-                  ! * logged    - conversion from primary/secondary land to secondary      !
-                  !               land due to logging.                                     !
-                  !------------------------------------------------------------------------!
-                  ploughed  = new_lu == 1 .and. old_lu /= 1
-                  abandoned = new_lu == 2 .and. old_lu == 1
-                  !----- Natural disturbance, either trees are old or there is a fire. ----!
-                  natural   = new_lu == 3 .and. old_lu /= 1 .and.                          &
-                              ( csite%age(ipa) > time2canopy .or.                          &
-                                cpoly%nat_dist_type(isi) == 1)
-                  !----- Check whether the patch is ready  be harvested. ------------------!
-                  mature_primary    = old_lu == 3                                  .and.   &
-                                      csite%age(ipa)         > mature_harvest_age
-                  mature_plantation = is_plantation                                .and.   &
-                                      csite%age(ipa)         > plantation_rotation
-                  mature_secondary  = old_lu == 2 .and. (.not. is_plantation)      .and.   &
-                                      csite%age(ipa)         > mature_harvest_age
-                  !------------------------------------------------------------------------!
-                  logged    = new_lu == 2 .and.                                            &
-                              ( mature_primary .or. mature_plantation .or.                 &
-                                mature_secondary)
-
-                  !------------------------------------------------------------------------!
-                  !    Add area if any of the disturbances that produce of type new_lu has !
-                  ! happened.  The ones that produce type other than new_lu will be always !
-                  ! false for new_lu.                                                      !
-                  !------------------------------------------------------------------------!
-                  if  (ploughed .or. abandoned .or. natural .or. logged) then
-                     dA = csite%area(ipa)                                                  &
-                        * (1. - exp(- ( cpoly%disturbance_rates(new_lu,old_lu,isi)         &
-                                      + cpoly%disturbance_memory(new_lu,old_lu,isi) ) ) )
-                     area = area + dA
-                  end if
-                  !------------------------------------------------------------------------!
+               !----- Reallocate and transfer them back. ----------------------------------!
+               call deallocate_sitetype(csite)
+               call allocate_sitetype(csite,onsp + n_dist_types)
+               call copy_sitetype_mask(tsite,csite,disturb_mask(1:onsp)                    &
+                                      ,count(disturb_mask),count(disturb_mask))
+               call deallocate_sitetype(tsite)
 
 
+               !---------------------------------------------------------------------------!
+               !      Initialize all the potential as well as implemented disturbance      !
+               ! patches.  n_dist_types new patches will be created, each one containing a !
+               ! different patch type.  In case no conversion to that kind of patch has    !
+               ! happened, or if the newly created patch is tiny, it will be removed soon. !
+               !---------------------------------------------------------------------------!
+               do new_lu = onsp+1, onsp+n_dist_types
+                  call initialize_disturbed_patch(csite,cpoly%met(isi)%atm_tmp,new_lu,1    &
+                                                 ,cpoly%lsl(isi))
                end do
-               
-               if (area > min_new_patch_area) then
-                  write(unit=*,fmt='(a,1x,es12.5,1x,a,1x,i5)')                             &
-                      ' ---> Making new patch, with area=',area,' for dist_type=',new_lu
 
-                  !------------------------------------------------------------------------!
-                  !     Set the flag that this patch should be kept as a newly created     !
-                  ! transition patch.                                                      !
-                  !------------------------------------------------------------------------!
-                  disturb_mask(onsp+new_lu)     = .true.
-  
-                  csite%dist_type(onsp+new_lu)  = new_lu
-                  csite%plantation(onsp+new_lu) = 0
-                  csite%area(onsp+new_lu)       = area
-                  
-                  !----- Initialize to zero the new trasitioned patches. ------------------!
-                  call initialize_disturbed_patch(csite,cpoly%met(isi)%atm_tmp,onsp+new_lu &
-                                                 ,1,cpoly%lsl(isi))
+               !----- Loop over q, the *destination* landuse type. ------------------------!
+               new_lu_loop: do new_lu = 1, n_dist_types
+                  !----- Set up area to zero, in case no conversion happens. --------------!
+                  area = 0.0
 
-                  !----- Now go through patches, adding its contribution to the new patch. !
                   do ipa=1,onsp
                      !----- Save the old land use in a shorter variable for convenience. --!
                      old_lu        = csite%dist_type(ipa)
                      is_plantation = csite%plantation(ipa) == 1
 
-                     !----- Check whether this patch can be disturbed. --------------------!
+                     !---------------------------------------------------------------------!
+                     !    Now we add the area associated with each kind of possible        !
+                     ! disturbance that can happen.  Types of conversion that are solved   !
+                     ! here are:                                                           !
+                     ! * ploughed  - conversion from primary/secondary land to agriculture.!
+                     ! * abandoned - conversion from agriculture to secondary land.        !
+                     ! * natural   - natural disturbance from primary/secondary land to    !
+                     !               primary land (fires or tree fall)                     !
+                     ! * logged    - conversion from primary/secondary land to secondary   !
+                     !               land due to logging.                                  !
+                     !---------------------------------------------------------------------!
                      ploughed  = new_lu == 1 .and. old_lu /= 1
                      abandoned = new_lu == 2 .and. old_lu == 1
+                     !----- Natural disturbance, either trees are old or there is a fire. -!
+                     natural   = new_lu == 3 .and. old_lu /= 1 .and.                       &
+                                 ( csite%age(ipa) > time2canopy .or.                       &
+                                   cpoly%nat_dist_type(isi) == 1)
+                     !----- Check whether the patch is ready  be harvested. ---------------!
+                     mature_primary    = old_lu == 3                               .and.   &
+                                         csite%age(ipa)         > mature_harvest_age
+                     mature_plantation = is_plantation                             .and.   &
+                                         csite%age(ipa)         > plantation_rotation
+                     mature_secondary  = old_lu == 2 .and. (.not. is_plantation)   .and.   &
+                                         csite%age(ipa)         > mature_harvest_age
+                     !---------------------------------------------------------------------!
+                     logged    = new_lu == 2 .and.                                         &
+                                 ( mature_primary .or. mature_plantation .or.              &
+                                   mature_secondary)
+
+                     !---------------------------------------------------------------------!
+                     !    Add area if any of the disturbances that produce of type new_lu  !
+                     ! has happened.  The ones that produce type other than new_lu will be !
+                     ! always false for new_lu.                                            !
+                     !---------------------------------------------------------------------!
+                     if  (ploughed .or. abandoned .or. natural .or. logged) then
+                        dA = csite%area(ipa)                                               &
+                           * (1. - exp(- ( cpoly%disturbance_rates(new_lu,old_lu,isi)      &
+                             + cpoly%disturbance_memory(new_lu,old_lu,isi) ) ) )
+                        area = area + dA
+                     end if
+                     !---------------------------------------------------------------------!
+
+
+                  end do
+                  
+                  if (area > min_patch_area) then
+                     write(unit=*,fmt='(a,1x,es12.5,1x,a,1x,i5)')                          &
+                         ' ---> Making new patch, with area=',area,' for dist_type=',new_lu
+
+                     !---------------------------------------------------------------------!
+                     !     Set the flag that this patch should be kept as a newly created  !
+                     ! transition patch.                                                   !
+                     !---------------------------------------------------------------------!
+                     disturb_mask(onsp+new_lu)     = .true.
+     
+                     csite%dist_type(onsp+new_lu)  = new_lu
+                     csite%plantation(onsp+new_lu) = 0
+                     csite%area(onsp+new_lu)       = area
+                     
+                     !---------------------------------------------------------------------!
+                     !     Initialize to zero the new trasitioned patches.                 !
+                     !---------------------------------------------------------------------!
+                     call initialize_disturbed_patch(csite,cpoly%met(isi)%atm_tmp          &
+                                                    ,onsp+new_lu,1,cpoly%lsl(isi))
+
+                     !---------------------------------------------------------------------!
+                     !    Now go through patches, adding its contribution to the new       !
+                     ! patch.                                                              !
+                     !---------------------------------------------------------------------!
+                     do ipa=1,onsp
+                        !------------------------------------------------------------------!
+                        !     Save the old land use in a shorter variable for convenience. !
+                        !------------------------------------------------------------------!
+                        old_lu        = csite%dist_type(ipa)
+                        is_plantation = csite%plantation(ipa) == 1
+
+                        !----- Check whether this patch can be disturbed. -----------------!
+                        ploughed  = new_lu == 1 .and. old_lu /= 1
+                        abandoned = new_lu == 2 .and. old_lu == 1
+                        natural   = new_lu == 3 .and. old_lu /= 1 .and.                    &
+                                    ( csite%age(ipa) > time2canopy .or.                    &
+                                      cpoly%nat_dist_type(isi) == 1)
+                        !----- Check whether the patch is ready  be harvested. ------------!
+                        mature_primary    = old_lu == 3                              .and. &
+                                            csite%age(ipa)         > mature_harvest_age
+                        mature_plantation = is_plantation                            .and. &
+                                            csite%age(ipa)         > plantation_rotation
+                        mature_secondary  = old_lu == 2 .and. (.not. is_plantation)  .and. &
+                                            csite%age(ipa)         > mature_harvest_age
+                        !------------------------------------------------------------------!
+                        logged    = new_lu == 2 .and.                                      &
+                                    ( mature_primary .or. mature_plantation .or.           &
+                                      mature_secondary)
+
+                        !------------------------------------------------------------------!
+                        !     Adjust some information to be sent to the disturbance        !
+                        ! routine.                                                         !
+                        !------------------------------------------------------------------!
+                        if (natural) then
+                           poly_dest_type          = cpoly%nat_dist_type(isi)
+                           mindbh_harvest(1:n_pft) = huge(1.)
+                        elseif (logged .and. mature_primary) then
+                           poly_dest_type          = 2
+                           mindbh_harvest(1:n_pft) = cpoly%mindbh_primary(1:n_pft,isi)
+                        elseif (logged) then
+                           poly_dest_type          = 2
+                           mindbh_harvest(1:n_pft) = cpoly%mindbh_secondary(1:n_pft,isi)
+                        else
+                           poly_dest_type          = 0
+                           mindbh_harvest(1:n_pft) = huge(1.)
+                        end if
+                        !------------------------------------------------------------------!
+
+
+
+                        !------------------------------------------------------------------!
+                        !    If the patch is going to be disturbed, compute the area of    !
+                        ! the disturbed patch to be added to the new destination patch and !
+                        ! update the litter layer.                                         !
+                        !------------------------------------------------------------------!
+                        if (ploughed .or. abandoned .or. natural .or. logged) then
+                           dA  = csite%area(ipa)                                           &
+                               * (1. - exp(- ( cpoly%disturbance_rates(new_lu,old_lu,isi)  &
+                                 + cpoly%disturbance_memory(new_lu,old_lu,isi) ) ) ) 
+
+                           area_fac = dA / csite%area(onsp+new_lu)
+                         
+                           call increment_patch_vars(csite,new_lu+onsp,ipa,area_fac)
+                           call insert_survivors(csite,new_lu+onsp,ipa,new_lu,area_fac     &
+                                                ,poly_dest_type,mindbh_harvest)
+                           call accum_dist_litt(csite,new_lu+onsp,ipa,new_lu,area_fac      &
+                                               ,poly_dest_type,mindbh_harvest)
+
+                           !----- Update patch area. --------------------------------------!
+                           csite%area(ipa) = csite%area(ipa) - dA
+                        end if
+                     end do
+
+                     !---------------------------------------------------------------------!
+                     !      Update temperature and density.  This must be done before      !
+                     ! planting, since the leaf temperature is initially assigned as the   !
+                     ! canopy air temperature.                                             !
+                     !---------------------------------------------------------------------!
+                     call update_patch_thermo_props(csite,new_lu+onsp,new_lu+onsp,nzg,nzs  &
+                                                   ,cpoly%ntext_soil(:,isi))
+
+                     !----- If the new patch is agriculture, plant it with grasses. -------!
+                     if (new_lu == 1) then 
+                        call plant_patch(csite,new_lu+onsp,nzg                             &
+                                        ,cpoly%agri_stocking_pft(isi)                      &
+                                        ,cpoly%agri_stocking_density(isi)                  &
+                                        ,cpoly%ntext_soil(:,isi)                           &
+                                        ,cpoly%green_leaf_factor(:,isi), 1.0               &
+                                        ,cpoly%lsl(isi))
+                     end if
+
+                     qpatch => csite%patch(new_lu+onsp)
+
+                     !----- Fuse then terminate cohorts. ----------------------------------!
+                     if (csite%patch(new_lu+onsp)%ncohorts > 0 .and. maxcohort >= 0) then
+                        call fuse_cohorts(csite,new_lu+onsp,cpoly%green_leaf_factor(:,isi) &
+                                         ,cpoly%lsl(isi))
+                        call terminate_cohorts(csite,new_lu+onsp,elim_nplant,elim_lai)
+                        call split_cohorts(qpatch,cpoly%green_leaf_factor(:,isi)           &
+                                          ,cpoly%lsl(isi))
+                     end if
+                 
+                     !----- Store AGB, basal area profiles in memory. ---------------------!
+                     initial_agb(1:n_pft,1:n_dbh) = cpoly%agb(1:n_pft, 1:n_dbh,isi)
+                     initial_basal_area(1:n_pft,1:n_dbh) =                                 &
+                                                      cpoly%basal_area(1:n_pft,1:n_dbh,isi)
+
+                     !---------------------------------------------------------------------!
+                     !     Update the derived properties including veg_height, and patch-  !
+                     ! -level LAI, WAI.                                                    !
+                     !---------------------------------------------------------------------!
+                     call update_patch_derived_props( csite,cpoly%lsl(isi)                 &
+                                                    , cpoly%met(isi)%prss                  &
+                                                    , new_lu+onsp)
+                     !----- Update soil temperature, liquid fraction, etc. ----------------!
+                     call new_patch_sfc_props(csite,new_lu+onsp,nzg,nzs                    &
+                                             ,cpoly%ntext_soil(:,isi))
+                     !----- Update budget properties. -------------------------------------!
+                     call update_budget(csite,cpoly%lsl(isi),new_lu+onsp,new_lu+onsp)
+
+                     !----- Update AGB, basal area. ---------------------------------------!
+                     call update_site_derived_props(cpoly,1,isi)
+
+                     !----- Update either cut or mortality. -------------------------------!
+                     if (new_lu /= 3) then
+                        cpoly%agb_cut(1:n_pft,1:n_dbh,isi) =                               &
+                               cpoly%agb_cut(1:n_pft, 1:n_dbh,isi)                         &
+                             + initial_agb(1:n_pft, 1:n_dbh)                               &
+                             - cpoly%agb(1:n_pft, 1:n_dbh,isi)
+                        cpoly%basal_area_cut(1:n_pft, 1:n_dbh,isi) =                       &
+                               cpoly%basal_area_cut(1:n_pft, 1:n_dbh,isi)                  &
+                             + initial_basal_area(1:n_pft, 1:n_dbh)                        &
+                             - cpoly%basal_area(1:n_pft, 1:n_dbh,isi)
+                     else
+                        cpoly%agb_mort(1:n_pft,1:n_dbh,isi) =                              &
+                               cpoly%agb_mort(1:n_pft,1:n_dbh,isi)                         &
+                             + initial_agb(1:n_pft,1:n_dbh)                                &
+                             - cpoly%agb(1:n_pft,1:n_dbh,isi)
+                        cpoly%basal_area_mort(1:n_pft, 1:n_dbh,isi) =                      &
+                               cpoly%basal_area_mort(1:n_pft, 1:n_dbh,isi)                 &
+                             + initial_basal_area(1:n_pft, 1:n_dbh)                        &
+                             - cpoly%basal_area(1:n_pft, 1:n_dbh,isi)
+                     endif
+                     
+                     !----- Clear the disturbance memory for this disturbance type. -------!
+                     cpoly%disturbance_memory(new_lu,1:n_dist_types,isi) = 0.0
+
+                  elseif(area > 0.0)then
+                     !---------------------------------------------------------------------!
+                     !     The patch creation has been skipped because the area was too    !
+                     ! small.  Put the current disturbance rates in memory to be added at  !
+                     ! the next timestep.                                                  !
+                     !---------------------------------------------------------------------!
+                     cpoly%disturbance_memory(new_lu,1:n_dist_types,isi) =                 &
+                            cpoly%disturbance_memory(new_lu,1:n_dist_types,isi)            &
+                          + cpoly%disturbance_rates(new_lu,1:n_dist_types,isi)
+                  end if
+               end do new_lu_loop
+
+               !---------------------------------------------------------------------------!
+               !      Reallocate the current site to fit the original patches and whatever !
+               ! was generated in disturbance (ie, make it non sparse).  Populate the      !
+               ! original site with both the modified original patches, and the newly      !
+               ! created patches.  The index of all of these are disturb_mask.  This mask  !
+               ! should be one for all original patches, and sparse from there after.      !
+               !---------------------------------------------------------------------------!
+               call allocate_sitetype(tsite,count(disturb_mask))
+               call copy_sitetype_mask(csite,tsite,disturb_mask,size(disturb_mask)         &
+                                      ,count(disturb_mask))
+               call deallocate_sitetype(csite)
+               call allocate_sitetype(csite,count(disturb_mask))
+             
+               disturb_mask = .false.
+               disturb_mask(1:csite%npatches) = .true.
+               call copy_sitetype_mask(tsite,csite,disturb_mask(1:csite%npatches)          &
+                                      ,count(disturb_mask),count(disturb_mask))
+             
+               call deallocate_sitetype(tsite)
+               deallocate(disturb_mask)
+               !---------------------------------------------------------------------------!
+
+             
+            end do siteloop
+         end do polyloop
+
+         !----- Free memory before leaving... ---------------------------------------------!
+         deallocate(tsite)
+      case (1)
+         !---------------------------------------------------------------------------------!
+         !      Big leaf.                                                                  !
+         !---------------------------------------------------------------------------------!
+         !----- Allocate the temporary site that will host the original patches. ----------!
+         nullify (tsite)
+         allocate(tsite)
+
+         polyloop2: do ipy = 1,cgrid%npolygons
+
+            cpoly => cgrid%polygon(ipy)
+            siteloop2: do isi = 1,cpoly%nsites
+
+               csite => cpoly%site(isi)
+
+               !----- Store AGB, basal area profiles in memory. ---------------------------!
+               call update_site_derived_props(cpoly, 1,isi)
+               initial_agb(1:n_pft,1:n_dbh)        = cpoly%agb(1:n_pft,1:n_dbh,isi)
+               initial_basal_area(1:n_pft,1:n_dbh) = cpoly%basal_area(1:n_pft,1:n_dbh,isi)
+
+               !---------------------------------------------------------------------------!
+               !      First take care of harvesting, i.e., secondary -> secondary and      !
+               ! primary -> secondary.                                                     !
+               !---------------------------------------------------------------------------!
+               call apply_forestry(cpoly,isi, current_time%year)
+
+               !----- Update the cut output variables. ------------------------------------!
+               call update_site_derived_props(cpoly, 1,isi)
+               cpoly%agb_cut(1:n_pft,1:n_dbh,isi) = cpoly%agb_cut(1:n_pft, 1:n_dbh,isi)    &
+                                                  + initial_agb(1:n_pft, 1:n_dbh)          &
+                                                  - cpoly%agb(1:n_pft, 1:n_dbh,isi)
+
+               cpoly%basal_area_cut(1:n_pft,1:n_dbh,isi) =                                 &
+                                                 cpoly%basal_area_cut(1:n_pft,1:n_dbh,isi) &
+                                               + initial_basal_area(1:n_pft,1:n_dbh)       &
+                                               - cpoly%basal_area(1:n_pft,1:n_dbh,isi)
+
+               !----- Save the Original Number (of) Site Patches, onsp... -----------------!
+               onsp = csite%npatches
+
+
+               !---------------------------------------------------------------------------!
+               !     Create a temporary site with vectors containing all current patches   !
+               ! as well as n_dist_types * mypfts patches. Create the newly disturbed      !
+               ! patches here and repopulate the existing site's patch vectors.            !
+               !---------------------------------------------------------------------------!
+               mypfts=count(include_pft)
+               allocate(pfts(mypfts))
+               i1=0
+               do i=1,n_pft
+                  if (include_pft(i)) then
+                     i1=i1+1
+                     pfts(i1)=i
+                  end if
+               end do
+               call allocate_sitetype(tsite,onsp)
+
+               allocate(disturb_mask(onsp + (n_dist_types-1) * mypfts +1 ))
+               disturb_mask         = .false.
+               disturb_mask(1:onsp) = .true.
+
+               !---------------------------------------------------------------------------!
+               !     Transfer the origial patch values into the front end of the temp's    !
+               ! space.                                                                    !
+               !---------------------------------------------------------------------------!
+               call copy_sitetype_mask(csite,tsite,disturb_mask(1:onsp)                    &
+                                      ,count(disturb_mask),count(disturb_mask))
+
+               !----- Reallocate and transfer them back. ----------------------------------!
+               call deallocate_sitetype(csite)
+               call allocate_sitetype(csite,onsp + (n_dist_types-1) * mypfts +1)
+               call copy_sitetype_mask(tsite,csite,disturb_mask(1:onsp)                    &
+                                      ,count(disturb_mask),count(disturb_mask))
+               call deallocate_sitetype(tsite)
+
+
+               !---------------------------------------------------------------------------!
+               !      Initialize all the potential as well as implemented disturbance      !
+               ! patches.  n_dist_types new patches will be created, each one containing a !
+               ! different patch type.  In case no conversion to that kind of patch has    !
+               ! happened, or if the newly created patch is tiny, it will be removed soon. !
+               !---------------------------------------------------------------------------!
+               do new_lu = onsp+1, onsp+(n_dist_types-1)*mypfts+1
+                  call initialize_disturbed_patch(csite,cpoly%met(isi)%atm_tmp,new_lu,1    &
+                                                 ,cpoly%lsl(isi))
+               end do
+
+
+
+               !---------------------------------------------------------------------------!
+               !    First round, determine areas disturbanced and change the areas of the  !
+               ! existing patches.                                                         !
+               !---------------------------------------------------------------------------!
+               
+               !----- Loop over q, the *destination* landuse type. ------------------------!
+               new_lu_loop2: do new_lu = 1, n_dist_types
+                  !----- Set up area to zero, in case no conversion happens. --------------!
+                  area = 0.0
+
+                  do ipa=1,onsp
+                     !----- Save the old land use in a shorter variable for convenience. --!
+                     old_lu        = csite%dist_type(ipa)
+                     is_plantation = csite%plantation(ipa) == 1
+
+                     !---------------------------------------------------------------------!
+                     !    Now we add the area associated with each kind of possible        !
+                     ! disturbance that can happen.  Types of conversion that are solved   !
+                     ! here are:                                                           !
+                     ! * ploughed  - conversion from primary/secondary land to agriculture.!
+                     ! * abandoned - conversion from agriculture to secondary land.        !
+                     ! * natural   - natural disturbance from primary/secondary land to    !
+                     !               primary land (fires or tree fall)                     !
+                     ! * logged    - conversion from primary/secondary land to secondary   !
+                     !               land due to logging.                                  !
+                     !---------------------------------------------------------------------!
+                     ploughed  = new_lu == 1 .and. old_lu /= 1
+                     abandoned = new_lu == 2 .and. old_lu == 1
+                     !----- Natural disturbance, either trees are old or there is a fire. -!
                      natural   = new_lu == 3 .and. old_lu /= 1 .and.                       &
                                  ( csite%age(ipa) > time2canopy .or.                       &
                                    cpoly%nat_dist_type(isi) == 1)
@@ -257,159 +579,361 @@ module disturbance_utils
                                    mature_secondary)
 
                      !---------------------------------------------------------------------!
-                     !     Adjust some information to be sent to the disturbance routine.  !
+                     !    Add area if any of the disturbances that produce of type new_lu  !
+                     ! has happened.  The ones that produce type other than new_lu will be !
+                     ! always false for new_lu.                                            !
                      !---------------------------------------------------------------------!
-                     if (natural) then
-                        poly_dest_type          = cpoly%nat_dist_type(isi)
-                        mindbh_harvest(1:n_pft) = huge(1.)
-                     elseif (logged .and. mature_primary) then
-                        poly_dest_type          = 2
-                        mindbh_harvest(1:n_pft) = cpoly%mindbh_primary(1:n_pft,isi)
-                     elseif (logged) then
-                        poly_dest_type          = 2
-                        mindbh_harvest(1:n_pft) = cpoly%mindbh_secondary(1:n_pft,isi)
-                     else
-                        poly_dest_type          = 0
-                        mindbh_harvest(1:n_pft) = huge(1.)
+                     if  (ploughed .or. abandoned .or. natural .or. logged) then
+                        dA = csite%area(ipa)                                               &
+                           * (1. - exp(- ( cpoly%disturbance_rates(new_lu,old_lu,isi)      &
+                                         + cpoly%disturbance_memory(new_lu,old_lu,isi) )))
+                        area = area + dA
                      end if
                      !---------------------------------------------------------------------!
 
 
-
-                     !---------------------------------------------------------------------!
-                     !    If the patch is going to be disturbed, compute the area of the   !
-                     ! disturbed patch to be added to the new destination patch and update !
-                     ! the litter layer.                                                   !
-                     !---------------------------------------------------------------------!
-                     if (ploughed .or. abandoned .or. natural .or. logged) then
-                        dA  = csite%area(ipa)                                              &
-                            * (1. - exp(- ( cpoly%disturbance_rates(new_lu,old_lu,isi)     &
-                                       + cpoly%disturbance_memory(new_lu,old_lu,isi) ) ) ) 
-
-                        area_fac = dA / csite%area(onsp+new_lu)
-                      
-                        call increment_patch_vars(csite,new_lu+onsp,ipa,area_fac)
-                        call insert_survivors(csite,new_lu+onsp,ipa,new_lu,area_fac        &
-                                             ,poly_dest_type,mindbh_harvest)
-                        call accum_dist_litt(csite,new_lu+onsp,ipa,new_lu,area_fac         &
-                                            ,poly_dest_type,mindbh_harvest)
-
-                        !----- Update patch area. -----------------------------------------!
-                        csite%area(ipa) = csite%area(ipa) - dA
-                     end if
                   end do
 
-                  !------------------------------------------------------------------------!
-                  !      Update temperature and density.  This must be done before plant-  !
-                  ! ing, since the leaf temperature is initially assigned as the canopy    !
-                  ! air temperature.                                                       !
-                  !------------------------------------------------------------------------!
-                  call update_patch_thermo_props(csite,new_lu+onsp,new_lu+onsp,nzg,nzs     &
-                                                ,cpoly%ntext_soil(:,isi))
+                  if (area > min_patch_area) then
 
-                  !----- If the new patch is agriculture, plant it with grasses. ----------!
-                  if (new_lu == 1) then 
-                     call plant_patch(csite,new_lu+onsp,nzg,cpoly%agri_stocking_pft(isi)   &
-                                     ,cpoly%agri_stocking_density(isi)                     &
-                                     ,cpoly%ntext_soil(:,isi)                              &
-                                     ,cpoly%green_leaf_factor(:,isi), 1.0, cpoly%lsl(isi))
+                     !---------------------------------------------------------------------!
+                     !     Set the flag that this patch should be kept as a newly created  !
+                     ! transition patch.                                                   !
+                     !---------------------------------------------------------------------!
+                     if(new_lu == 1) then
+                        disturb_mask(onsp+new_lu)      = .true.
+                        csite%dist_type(onsp+new_lu)   = new_lu
+                        csite%plantation(onsp+new_lu)  = 0
+                        csite%area(onsp+new_lu)        = area
+                        !----- Initialize to zero the new trasitioned patches. ------------!
+                        call initialize_disturbed_patch(csite,cpoly%met(isi)%atm_tmp       &
+                                                    ,onsp+new_lu,1,cpoly%lsl(isi))
+                     else
+                        do ipft=1,mypfts
+                           i                           = (new_lu-2)*mypfts+1+ipft
+                           disturb_mask(onsp+i)        = .true.
+                           csite%dist_type(onsp+i)     = new_lu
+                           csite%plantation(onsp+i)    = 0
+                           csite%area(onsp+i)          = area / real(mypfts)
+                           !----- Initialize to zero the new trasitioned patches. ---------!
+                           call initialize_disturbed_patch(csite,cpoly%met(isi)%atm_tmp    &
+                                                    ,onsp+i,1,cpoly%lsl(isi))
+                        end do
+                     end if
+                     !---------------------------------------------------------------------!
+
+
+                     !---------------------------------------------------------------------!
+                     !    Now go through patches, adding its contribution to the new       !
+                     ! patch.                                                              !
+                     !---------------------------------------------------------------------!
+                     do ipa=1,onsp
+                        !------------------------------------------------------------------!
+                        !     Save the old land use in a shorter variable for convenience. !
+                        !------------------------------------------------------------------!
+                        old_lu        = csite%dist_type(ipa)
+                        is_plantation = csite%plantation(ipa) == 1
+
+                        !----- Check whether this patch can be disturbed. -----------------!
+                        ploughed  = new_lu == 1 .and. old_lu /= 1
+                        abandoned = new_lu == 2 .and. old_lu == 1
+                        natural   = new_lu == 3 .and. old_lu /= 1 .and.                    &
+                                    ( csite%age(ipa) > time2canopy .or.                    &
+                                      cpoly%nat_dist_type(isi) == 1)
+                        !----- Check whether the patch is ready  be harvested. ------------!
+                        mature_primary    = old_lu == 3                              .and. &
+                                            csite%age(ipa)         > mature_harvest_age
+                        mature_plantation = is_plantation                            .and. &
+                                            csite%age(ipa)         > plantation_rotation
+                        mature_secondary  = old_lu == 2 .and. (.not. is_plantation)  .and. &
+                                            csite%age(ipa)         > mature_harvest_age
+                        !------------------------------------------------------------------!
+                        logged    = new_lu == 2 .and.                                      &
+                                    ( mature_primary .or. mature_plantation .or.           &
+                                      mature_secondary)
+
+                        !------------------------------------------------------------------!
+                        !     Adjust some information to be sent to the disturbance        !
+                        !  routine.                                                        !
+                        !------------------------------------------------------------------!
+                        if (natural) then
+                           poly_dest_type          = cpoly%nat_dist_type(isi)
+                           mindbh_harvest(1:n_pft) = huge(1.)
+                        elseif (logged .and. mature_primary) then
+                           poly_dest_type          = 2
+                           mindbh_harvest(1:n_pft) = cpoly%mindbh_primary(1:n_pft,isi)
+                        elseif (logged) then
+                           poly_dest_type          = 2
+                           mindbh_harvest(1:n_pft) = cpoly%mindbh_secondary(1:n_pft,isi)
+                        else
+                           poly_dest_type          = 0
+                           mindbh_harvest(1:n_pft) = huge(1.)
+                        end if
+                        !------------------------------------------------------------------!
+
+
+
+                        !------------------------------------------------------------------!
+                        !    If the patch is going to be disturbed, compute the area of    !
+                        ! the disturbed patch to be added to the new destination patch and !
+                        ! update the litter layer.                                         !
+                        !------------------------------------------------------------------!
+                        if (ploughed) then
+                           dA  = csite%area(ipa)                                           &
+                               * (1. - exp(- ( cpoly%disturbance_rates(new_lu,old_lu,isi)  &
+                                          + cpoly%disturbance_memory(new_lu,old_lu,isi)))) 
+
+                           area_fac = dA / csite%area(onsp+new_lu)
+                           call increment_patch_vars(csite,new_lu+onsp,ipa,area_fac)
+                           call accum_dist_litt(csite,new_lu+onsp,ipa,new_lu,area_fac      &
+                                               ,poly_dest_type,mindbh_harvest)
+
+                           !----- Update patch area. --------------------------------------!
+                           csite%area(ipa) = csite%area(ipa) - dA
+                        else if(abandoned .or. natural .or. logged)then
+                           do ipft=1,mypfts
+                              i   = (new_lu-2)*mypfts+1+ipft
+                              dA  = csite%area(ipa)                                        &
+                                  * (1. - exp(-(cpoly%disturbance_rates(new_lu,old_lu,isi) &
+                                          + cpoly%disturbance_memory(new_lu,old_lu,isi))))
+                              dA = dA / real(mypfts)
+
+                              area_fac = dA / csite%area(onsp+i)
+                              call increment_patch_vars(csite,onsp+i,ipa,area_fac)
+                              call accum_dist_litt(csite,onsp+i,ipa,new_lu,area_fac        &
+                                                  ,poly_dest_type,mindbh_harvest)
+                           end do
+                           !----- Update patch area. --------------------------------------!
+                           csite%area(ipa) = csite%area(ipa) - dA
+                        end if
+                     end do
+
+                     !----- Clear the disturbance memory for this disturbance type. -------!
+                     cpoly%disturbance_memory(new_lu,1:n_dist_types,isi) = 0.0
+
+                  elseif(area > 0.0)then
+                     !---------------------------------------------------------------------!
+                     !     The patch creation has been skipped because the area was too    !
+                     ! small.  Put the current disturbance rates in memory to be added at  !
+                     ! the next timestep.                                                  !
+                     !---------------------------------------------------------------------!
+                     cpoly%disturbance_memory(new_lu,1:n_dist_types,isi) =                 &
+                            cpoly%disturbance_memory(new_lu,1:n_dist_types,isi)            &
+                          + cpoly%disturbance_rates(new_lu,1:n_dist_types,isi)
                   end if
+               end do new_lu_loop2
 
-                  qpatch => csite%patch(new_lu+onsp)
 
-                  !----- Fuse then terminate cohorts. -------------------------------------!
-                  if (csite%patch(new_lu+onsp)%ncohorts > 0 .and. maxcohort >= 0) then
-                     call fuse_cohorts(csite,new_lu+onsp,cpoly%green_leaf_factor(:,isi)    &
-                                      ,cpoly%lsl(isi))
-                     call terminate_cohorts(csite,new_lu+onsp,elim_nplant,elim_lai)
-                     call split_cohorts(qpatch,cpoly%green_leaf_factor(:,isi)              &
-                                       ,cpoly%lsl(isi))
-                  end if
-              
-                  !----- Store AGB, basal area profiles in memory. ------------------------!
-                  initial_agb(1:n_pft,1:n_dbh) = cpoly%agb(1:n_pft, 1:n_dbh,isi)
-                  initial_basal_area(1:n_pft,1:n_dbh) =                                    &
-                                                      cpoly%basal_area(1:n_pft,1:n_dbh,isi)
+
+               !---------------------------------------------------------------------------!
+               !    Now we try to find the acceptor patch(es). If there is no one,         !
+               ! we create them.                                                           !
+               !---------------------------------------------------------------------------!
+               do new_lu = 1, n_dist_types
+                  !----- Save the old land use in a shorter variable for convenience. -----!
+                  old_lu        = csite%dist_type(ipa)
+                  is_plantation = csite%plantation(ipa) == 1
+
+                  !----- Check whether this patch can be disturbed. -----------------------!
+                  ploughed  = new_lu == 1 .and. old_lu /= 1
+                  abandoned = new_lu == 2 .and. old_lu == 1
+                  natural   = new_lu == 3 .and. old_lu /= 1 .and.                          &
+                              ( csite%age(ipa) > time2canopy .or.                          &
+                                cpoly%nat_dist_type(isi) == 1)
+                  !----- Check whether the patch is ready  be harvested. ------------------!
+                  mature_primary    = old_lu == 3                                 .and.    &
+                                      csite%age(ipa)         > mature_harvest_age
+                  mature_plantation = is_plantation                               .and.    &
+                                      csite%age(ipa)         > plantation_rotation
+                  mature_secondary  = old_lu == 2 .and. (.not. is_plantation)     .and.    &
+                                      csite%age(ipa)         > mature_harvest_age
+                  !------------------------------------------------------------------------!
+                  logged    = new_lu == 2 .and.                                            &
+                              ( mature_primary .or. mature_plantation .or.                 &
+                                mature_secondary)
 
                   !------------------------------------------------------------------------!
-                  !     Update the derived properties including veg_height, and patch-     !
-                  ! -level LAI, WAI, WPA.                                                  !
+                  !     Adjust some information to be sent to the disturbance routine.     !
                   !------------------------------------------------------------------------!
-                  call update_patch_derived_props(csite,cpoly%lsl(isi),cpoly%met(isi)%prss &
-                                                 ,new_lu+onsp)
-                  !----- Update soil temperature, liquid fraction, etc. -------------------!
-                  call new_patch_sfc_props(csite,new_lu+onsp,nzg,nzs                       &
-                                          ,cpoly%ntext_soil(:,isi))
-                  !----- Update budget properties. ----------------------------------------!
-                  call update_budget(csite,cpoly%lsl(isi),new_lu+onsp,new_lu+onsp)
-
-                  !----- Update AGB, basal area. ------------------------------------------!
-                  call update_site_derived_props(cpoly,1,isi)
-
-                  !----- Update either cut or mortality. ----------------------------------!
-                  if (new_lu /= 3) then
-                     cpoly%agb_cut(1:n_pft,1:n_dbh,isi) =                                  &
-                            cpoly%agb_cut(1:n_pft, 1:n_dbh,isi)                            &
-                          + initial_agb(1:n_pft, 1:n_dbh)                                  &
-                          - cpoly%agb(1:n_pft, 1:n_dbh,isi)
-                     cpoly%basal_area_cut(1:n_pft, 1:n_dbh,isi) =                          &
-                            cpoly%basal_area_cut(1:n_pft, 1:n_dbh,isi)                     &
-                          + initial_basal_area(1:n_pft, 1:n_dbh)                           &
-                          - cpoly%basal_area(1:n_pft, 1:n_dbh,isi)
+                  if (natural) then
+                     poly_dest_type          = cpoly%nat_dist_type(isi)
+                     mindbh_harvest(1:n_pft) = huge(1.)
+                  elseif (logged .and. mature_primary) then
+                     poly_dest_type          = 2
+                     mindbh_harvest(1:n_pft) = cpoly%mindbh_primary(1:n_pft,isi)
+                  elseif (logged) then
+                     poly_dest_type          = 2
+                     mindbh_harvest(1:n_pft) = cpoly%mindbh_secondary(1:n_pft,isi)
                   else
-                     cpoly%agb_mort(1:n_pft,1:n_dbh,isi) =                                 &
-                            cpoly%agb_mort(1:n_pft,1:n_dbh,isi)                            &
-                          + initial_agb(1:n_pft,1:n_dbh)                                   &
-                          - cpoly%agb(1:n_pft,1:n_dbh,isi)
-                     cpoly%basal_area_mort(1:n_pft, 1:n_dbh,isi) =                         &
-                            cpoly%basal_area_mort(1:n_pft, 1:n_dbh,isi)                    &
-                          + initial_basal_area(1:n_pft, 1:n_dbh)                           &
-                          - cpoly%basal_area(1:n_pft, 1:n_dbh,isi)
-                  endif
+                     poly_dest_type          = 0
+                     mindbh_harvest(1:n_pft) = huge(1.)
+                  end if
+                  !------------------------------------------------------------------------!
                   
-                  !----- Clear the disturbance memory for this disturbance type. ----------!
-                  cpoly%disturbance_memory(new_lu,1:n_dist_types,isi) = 0.0
+                  if(new_lu ==1)then
+                     i1=1
+                     i2=1
+                  else
+                     i1=(new_lu-2)*mypfts+1+1
+                     i2=(new_lu-2)*mypfts+1+mypfts
+                  end if
+                  
+                  do i=i1,i2
+                     if (disturb_mask(onsp+i)) then
+                        area_old = 0.0
+                        allocate(acceptor_mask(onsp))
+                        acceptor_mask = .false.
+                        do ipa = 1,onsp
+                           area_old(csite%dist_type(ipa)) = area_old(csite%dist_type(ipa)) &
+                                                          + csite%area(ipa)
+                           if ( csite%dist_type(ipa) == new_lu ) then
+                              acceptor_mask(ipa) = .true.
+                           end if
+                        end do
 
-               elseif(area > 0.0)then
-                  !------------------------------------------------------------------------!
-                  !     The patch creation has been skipped because the area was too       !
-                  ! small.  Put the current disturbance rates in memory to be added at the !
-                  ! next timestep.                                                         !
-                  !------------------------------------------------------------------------!
-                  cpoly%disturbance_memory(new_lu,1:n_dist_types,isi) =                    &
-                         cpoly%disturbance_memory(new_lu,1:n_dist_types,isi)               &
-                       + cpoly%disturbance_rates(new_lu,1:n_dist_types,isi)
-               end if
-            end do new_lu_loop
+                        if (count(acceptor_mask) > 0) then
+                           do ipa =1,onsp
+                              if (acceptor_mask(ipa)) then
+                                 dA       = csite%area(ipa) * csite%area(onsp+i)           &
+                                          / area_old(new_lu)
+                                 area_fac = csite%area(ipa) / (csite%area(ipa) + dA)
+                                 call normal_patch_vars(csite,ipa,area_fac)
 
-            !------------------------------------------------------------------------------!
-            !      Reallocate the current site to fit the original patches and whatever    !
-            ! was generated in disturbance (ie, make it non sparse).  Populate the         !
-            ! original site with both the modified original patches, and the newly created !
-            ! patches.  The index of all of these are disturb_mask.  This mask should be   !
-            ! ones for all original patches, and sparse from there after.                  !
-            !------------------------------------------------------------------------------!
-            call allocate_sitetype(tsite,count(disturb_mask))
-            call copy_sitetype_mask(csite,tsite,disturb_mask,size(disturb_mask)            &
-                                   ,count(disturb_mask))
-            call deallocate_sitetype(csite)
-            call allocate_sitetype(csite,count(disturb_mask))
-          
-            disturb_mask = .false.
-            disturb_mask(1:csite%npatches) = .true.
-            call copy_sitetype_mask(tsite,csite,disturb_mask(1:csite%npatches)             &
-                                   ,count(disturb_mask),count(disturb_mask))
-          
-            call deallocate_sitetype(tsite)
-            deallocate(disturb_mask)
-            !------------------------------------------------------------------------------!
+                                 area_fac = dA / (csite%area(ipa) + dA)
+                                 call increment_patch_vars(csite,ipa,i+onsp,area_fac)
+                                 call accum_dist_litt(csite,ipa,i+onsp,new_lu,area_fac     &
+                                                ,poly_dest_type,mindbh_harvest)
+                                 area_fac = csite%area(ipa) / (csite%area(ipa) + dA)
+                                 cpatch=>csite%patch(ipa)
+                                 do ico=1,cpatch%ncohorts
+                                    cpatch%nplant(ico)= cpatch%nplant(ico) * area_fac
 
-          
-         end do siteloop
-      end do polyloop
+                                    !------ Compute all area indices needed. --------------!
+                                    call area_indices(cpatch%nplant(ico),cpatch%bleaf(ico) &
+                                                     ,cpatch%bdead(ico),cpatch%balive(ico) &
+                                                     ,cpatch%dbh(ico),cpatch%hite(ico)     &
+                                                     ,cpatch%pft(ico),cpatch%sla(ico)      &
+                                                     ,cpatch%lai(ico),cpatch%wai(ico)      &
+                                                     ,cpatch%crown_area(ico)               &
+                                                     ,cpatch%bsapwood(ico))
+                                 end do
+                                 csite%area(ipa)     = csite%area(ipa)     / area_fac
+                                 csite%age(ipa)      = csite%age(ipa)      * area_fac
 
-      !----- Free memory before leaving... ------------------------------------------------!
-      deallocate(tsite)
+                                 disturb_mask(onsp+i) = .false.
+                               end if
+                           end do
+                        else
+                           !---------------------------------------------------------------!
+                           !      Update temperature and density.                          !
+                           !---------------------------------------------------------------!
+                           call update_patch_thermo_props(csite,i+onsp,i+onsp,nzg          &
+                                                         ,nzs,cpoly%ntext_soil(:,isi))
+
+                           if (new_lu == 1) then
+                              !------------------------------------------------------------!
+                              !    If the new patch is agriculture, plant it with grasses. !
+                              !------------------------------------------------------------!
+                              call plant_patch(csite,i+onsp,nzg                            &
+                                              ,cpoly%agri_stocking_pft(isi)                &
+                                              ,cpoly%agri_stocking_density(isi)            &
+                                              ,cpoly%ntext_soil(:,isi)                     &
+                                              ,cpoly%green_leaf_factor(:,isi), 1.0         &
+                                              ,cpoly%lsl(isi))
+                              write(unit=*,fmt='(a,1x,es12.5,1x,a,1x,i5,1x,a,1x,i5)')      &
+                              ' ---> Making new patch, with area=',csite%area(i+onsp)      &
+                                  ,' for dist_type=',new_lu                                &
+                                  ,' with pft=',cpoly%agri_stocking_pft(isi)
+                           else
+                              call plant_patch(csite,i+onsp,nzg,pfts(i)                    &
+                                              ,cpoly%agri_stocking_density(isi)            &
+                                              ,cpoly%ntext_soil(:,isi)                     &
+                                              ,cpoly%green_leaf_factor(:,isi), 1.0         &
+                                              ,cpoly%lsl(isi))
+                              write(unit=*,fmt='(a,1x,es12.5,1x,a,1x,i5,1x,a,1x,i5)')      &
+                              ' ---> Making new patch, with area=',csite%area(i+onsp),     &
+                              ' for dist_type=',new_lu,' with pft=',pfts(i)
+                           end if
+                           !---------------------------------------------------------------!
+                           !     Update the derived properties including veg_height, and   !
+                           ! patch--level LAI, WAI.                                         !
+                           !---------------------------------------------------------------!
+                           call update_patch_derived_props(csite,cpoly%lsl(isi)            &
+                                                          ,cpoly%met(isi)%prss             &
+                                                          ,i+onsp)
+                           !----- Update soil temperature, liquid fraction, etc. ----------!
+                           call new_patch_sfc_props(csite,i+onsp,nzg,nzs                   &
+                                                   ,cpoly%ntext_soil(:,isi))
+                           !----- Update budget properties. -------------------------------!
+                           call update_budget(csite,cpoly%lsl(isi),i+onsp,i+onsp)
+
+                        end if
+                        !----- Store AGB, basal area profiles in memory. ------------------!
+                        initial_agb(1:n_pft,1:n_dbh) = cpoly%agb(1:n_pft, 1:n_dbh,isi)
+                        initial_basal_area(1:n_pft,1:n_dbh) =                              &
+                                                     cpoly%basal_area(1:n_pft,1:n_dbh,isi)
+
+
+                        !----- Update AGB, basal area. ------------------------------------!
+                        call update_site_derived_props(cpoly,1,isi)
+
+                        !----- Update either cut or mortality. ----------------------------!
+                        if (new_lu /= 3) then
+                           cpoly%agb_cut(1:n_pft,1:n_dbh,isi) =                            &
+                                  cpoly%agb_cut(1:n_pft, 1:n_dbh,isi)                      &
+                                + initial_agb(1:n_pft, 1:n_dbh)                            &
+                                - cpoly%agb(1:n_pft, 1:n_dbh,isi)
+                           cpoly%basal_area_cut(1:n_pft, 1:n_dbh,isi) =                    &
+                                  cpoly%basal_area_cut(1:n_pft, 1:n_dbh,isi)               &
+                                + initial_basal_area(1:n_pft, 1:n_dbh)                     &
+                                - cpoly%basal_area(1:n_pft, 1:n_dbh,isi)
+                        else
+                           cpoly%agb_mort(1:n_pft,1:n_dbh,isi) =                           &
+                                  cpoly%agb_mort(1:n_pft,1:n_dbh,isi)                      &
+                                + initial_agb(1:n_pft,1:n_dbh)                             &
+                                - cpoly%agb(1:n_pft,1:n_dbh,isi)
+                           cpoly%basal_area_mort(1:n_pft, 1:n_dbh,isi) =                   &
+                                  cpoly%basal_area_mort(1:n_pft, 1:n_dbh,isi)              &
+                                + initial_basal_area(1:n_pft, 1:n_dbh)                     &
+                                - cpoly%basal_area(1:n_pft, 1:n_dbh,isi)
+                        end if
+                     
+                        deallocate(acceptor_mask)
+                     end if
+                  end do
+               end do
+               !---------------------------------------------------------------------------!
+               !      Reallocate the current site to fit the original patches and whatever !
+               ! was generated in disturbance (ie, make it non sparse).  Populate the      !
+               ! original site with both the modified original patches, and the newly      !
+               ! created patches.  The index of all of these are disturb_mask.  This mask  !
+               ! should be ones for all original patches, and sparse from there after.     !
+               !---------------------------------------------------------------------------!
+               call allocate_sitetype(tsite,count(disturb_mask))
+               call copy_sitetype_mask(csite,tsite,disturb_mask,size(disturb_mask)         &
+                                      ,count(disturb_mask))
+               call deallocate_sitetype(csite)
+               call allocate_sitetype(csite,count(disturb_mask))
+
+               disturb_mask = .false.
+               disturb_mask(1:csite%npatches) = .true.
+               call copy_sitetype_mask(tsite,csite,disturb_mask(1:csite%npatches)          &
+                                      ,count(disturb_mask),count(disturb_mask))
+
+               call deallocate_sitetype(tsite)
+               deallocate(disturb_mask)
+               deallocate(pfts)
+               !---------------------------------------------------------------------------!
+
+
+            end do siteloop2
+         end do polyloop2
+
+         !----- Free memory before leaving... ---------------------------------------------!
+         deallocate(tsite)
+
+      end select
+      !------------------------------------------------------------------------------------!
 
       return
    end subroutine apply_disturbances
@@ -478,7 +1002,7 @@ module disturbance_utils
             select case (include_fire)
             case (0) 
                fire_dist_rate = 0.0
-            case (1,2)
+            case default
                fire_dist_rate = sum(cpoly%lambda_fire(1:12,isi)) / 12.0
             end select
             cpoly%fire_disturbance_rate(isi) = fire_dist_rate
@@ -725,6 +1249,81 @@ module disturbance_utils
 
 
 
+   !=======================================================================================!
+   !=======================================================================================!
+   !     This subroutine will re-scale some patch variables using new area fraction.       !
+   !---------------------------------------------------------------------------------------!
+   subroutine normal_patch_vars(csite,ipa, area_fac)
+      use ed_state_vars, only : sitetype  & ! structure
+                              , patchtype ! ! structure
+      use ed_max_dims  , only : n_pft     ! ! intent(in)
+      use grid_coms    , only : nzg       ! ! intent(in)
+
+
+      implicit none
+      !----- Arguments. -------------------------------------------------------------------!
+      type(sitetype), target      :: csite
+      integer       , intent(in)  :: ipa
+      real          , intent(in)  :: area_fac
+      !----- Local variables. -------------------------------------------------------------!
+      integer                     :: k
+      !------------------------------------------------------------------------------------!
+
+      csite%fast_soil_C       (ipa) = csite%fast_soil_C       (ipa) * area_fac
+      csite%slow_soil_C       (ipa) = csite%slow_soil_C       (ipa) * area_fac
+      csite%structural_soil_C (ipa) = csite%structural_soil_C (ipa) * area_fac
+      csite%structural_soil_L (ipa) = csite%structural_soil_L (ipa) * area_fac
+      csite%mineralized_soil_N(ipa) = csite%mineralized_soil_N(ipa) * area_fac
+      csite%fast_soil_N       (ipa) = csite%fast_soil_N       (ipa) * area_fac
+      csite%sum_dgd           (ipa) = csite%sum_dgd           (ipa) * area_fac
+      csite%sum_chd           (ipa) = csite%sum_chd           (ipa) * area_fac
+      csite%can_theta         (ipa) = csite%can_theta         (ipa) * area_fac
+      csite%can_theiv         (ipa) = csite%can_theiv         (ipa) * area_fac
+      csite%can_prss          (ipa) = csite%can_prss          (ipa) * area_fac
+      csite%can_shv           (ipa) = csite%can_shv           (ipa) * area_fac
+      csite%can_co2           (ipa) = csite%can_co2           (ipa) * area_fac
+      csite%can_depth         (ipa) = csite%can_depth         (ipa) * area_fac
+      csite%ggbare            (ipa) = csite%ggbare            (ipa) * area_fac
+      csite%ggveg             (ipa) = csite%ggveg             (ipa) * area_fac
+      csite%rough             (ipa) = csite%rough             (ipa) * area_fac
+      csite%mean_rh           (ipa) = csite%mean_rh           (ipa) * area_fac
+      csite%today_A_decomp    (ipa) = csite%today_A_decomp    (ipa) * area_fac
+      csite%today_Af_decomp   (ipa) = csite%today_Af_decomp   (ipa) * area_fac
+      csite%fsc_in            (ipa) = csite%fsc_in            (ipa) * area_fac
+      csite%ssc_in            (ipa) = csite%ssc_in            (ipa) * area_fac
+      csite%ssl_in            (ipa) = csite%ssl_in            (ipa) * area_fac
+      csite%fsn_in            (ipa) = csite%fsn_in            (ipa) * area_fac
+      csite%total_plant_nitrogen_uptake(ipa) = csite%total_plant_nitrogen_uptake(ipa)      &
+                                             * area_fac
+
+
+      !----- Do the same thing for the multiple-level variables. --------------------------!
+      do k=1,n_pft
+         csite%repro                 (k,ipa) = csite%repro          (k,ipa) * area_fac
+      end do
+      do k = 1, csite%nlev_sfcwater(ipa)
+         csite%sfcwater_mass         (k,ipa) = csite%sfcwater_mass  (k,ipa) * area_fac
+         csite%sfcwater_energy       (k,ipa) = csite%sfcwater_energy(k,ipa) * area_fac
+         csite%sfcwater_depth        (k,ipa) = csite%sfcwater_depth (k,ipa) * area_fac
+      end do
+      do k = 1, nzg
+         csite%soil_energy           (k,ipa) = csite%soil_energy    (k,ipa) * area_fac
+         csite%soil_water(k,ipa)             = csite%soil_water     (k,ipa) * area_fac
+      end do
+      
+      csite%fast_soil_C(ipa)                 = csite%fast_soil_C(ipa)       * area_fac
+      csite%structural_soil_C(ipa)           = csite%structural_soil_C(ipa) * area_fac
+      csite%structural_soil_L(ipa)           = csite%structural_soil_L(ipa) * area_fac
+      csite%fast_soil_N(ipa)                 = csite%fast_soil_N(ipa)       * area_fac
+      return
+   end subroutine normal_patch_vars
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
 
    !=======================================================================================!
    !=======================================================================================!
@@ -773,6 +1372,18 @@ module disturbance_utils
                                             * area_fac
       csite%can_theta                  (np) = csite%can_theta                  (np)        &
                                             + csite%can_theta                  (cp)        &
+                                            * area_fac
+      csite%can_temp                   (np) = csite%can_temp                   (np)        &
+                                            + csite%can_temp                   (cp)        &
+                                            * area_fac
+      csite%can_temp_pv                (np) = csite%can_temp_pv                (np)        &
+                                            + csite%can_temp_pv                (cp)        &
+                                            * area_fac
+      csite%htry                       (np) = csite%htry                       (np)        &
+                                            + csite%htry                       (cp)        &
+                                            * area_fac
+      csite%hprev                      (np) = csite%hprev                      (np)        &
+                                            + csite%hprev                      (cp)        &
                                             * area_fac
       csite%can_theiv                  (np) = csite%can_theiv                  (np)        &
                                             + csite%can_theiv                  (cp)        &
@@ -954,7 +1565,6 @@ module disturbance_utils
             !------------------------------------------------------------------------------!
             tpatch%lai                (nco) = tpatch%lai              (nco) * survival_fac
             tpatch%wai                (nco) = tpatch%wai              (nco) * survival_fac
-            tpatch%wpa                (nco) = tpatch%wpa              (nco) * survival_fac
             tpatch%nplant             (nco) = tpatch%nplant           (nco) * survival_fac
             tpatch%mean_gpp           (nco) = tpatch%mean_gpp         (nco) * survival_fac
             tpatch%mean_leaf_resp     (nco) = tpatch%mean_leaf_resp   (nco) * survival_fac
@@ -974,7 +1584,6 @@ module disturbance_utils
             tpatch%today_gpp_max      (nco) = tpatch%today_gpp_max    (nco) * survival_fac
             tpatch%today_leaf_resp    (nco) = tpatch%today_leaf_resp  (nco) * survival_fac
             tpatch%today_root_resp    (nco) = tpatch%today_root_resp  (nco) * survival_fac
-            tpatch%Psi_open           (nco) = tpatch%Psi_open         (nco) * survival_fac
             tpatch%gpp                (nco) = tpatch%gpp              (nco) * survival_fac
             tpatch%leaf_respiration   (nco) = tpatch%leaf_respiration (nco) * survival_fac
             tpatch%root_respiration   (nco) = tpatch%root_respiration (nco) * survival_fac
@@ -1238,7 +1847,7 @@ module disturbance_utils
                                 , ed_biomass               ! ! function
       use ed_max_dims    , only : n_pft                    ! ! intent(in)
       use phenology_coms , only : retained_carbon_fraction ! ! intent(in)
-
+      use phenology_aux  , only : pheninit_balive_bstorage ! ! intent(in)
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
       type(sitetype)                  , target     :: csite
@@ -1308,10 +1917,16 @@ module disturbance_utils
       cpatch%bdead(nc) = dbh2bd(cpatch%dbh(nc),cpatch%pft(nc))
 
       !------------------------------------------------------------------------------------!
-      !      Initialise the active and storage biomass scaled by the leaf drought phenology (or start with 1.0 if the plant doesn't !
-      ! shed their leaves due to water stress.                                             !
+      !      Initialise the active and storage biomass scaled by the leaf drought          !
+      ! phenology (or start with 1.0 if the plant doesn't shed their leaves due to water   !
+      ! stress.                                                                            !
       !------------------------------------------------------------------------------------!
-      call pheninit_balive_bstorage(mzg,csite,np,nc,ntext_soil,green_leaf_factor)
+      call pheninit_balive_bstorage(mzg,cpatch%pft(nc),cpatch%krdepth(nc),cpatch%hite(nc)  &
+                                   ,cpatch%dbh(nc),csite%soil_water(:,np),ntext_soil       &
+                                   ,green_leaf_factor,cpatch%paw_avg(nc),cpatch%elongf(nc) &
+                                   ,cpatch%phenology_status(nc),cpatch%bleaf(nc)           &
+                                   ,cpatch%broot(nc),cpatch%bsapwood(nc),cpatch%balive(nc) &
+                                   ,cpatch%bstorage(nc))
       !------------------------------------------------------------------------------------!
 
 
@@ -1319,8 +1934,8 @@ module disturbance_utils
       !----- Compute all area indices needed. ---------------------------------------------!
       call area_indices(cpatch%nplant(nc),cpatch%bleaf(nc),cpatch%bdead(nc)                &
                        ,cpatch%balive(nc),cpatch%dbh(nc),cpatch%hite(nc),cpatch%pft(nc)    &
-                       ,cpatch%sla(nc),cpatch%lai(nc),cpatch%wpa(nc),cpatch%wai(nc)        &
-                       ,cpatch%crown_area(nc),cpatch%bsapwood(nc))
+                       ,cpatch%sla(nc),cpatch%lai(nc),cpatch%wai(nc),cpatch%crown_area(nc) &
+                       ,cpatch%bsapwood(nc))
 
 
       !----- Find the new basal area and above-ground biomass. ----------------------------!
@@ -1330,9 +1945,11 @@ module disturbance_utils
                                      ,cpatch%bsapwood(nc))
 
       cpatch%leaf_temp(nc)  = csite%can_temp(np)
+      cpatch%leaf_temp_pv(nc)=csite%can_temp(np)
       cpatch%leaf_water(nc) = 0.0
       cpatch%leaf_fliq(nc)  = 0.0
       cpatch%wood_temp(nc)  = csite%can_temp(np)
+      cpatch%wood_temp_pv(nc)=csite%can_temp(np)
       cpatch%wood_water(nc) = 0.0
       cpatch%wood_fliq(nc)  = 0.0
 

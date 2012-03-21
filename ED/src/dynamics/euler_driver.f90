@@ -20,12 +20,7 @@ subroutine euler_timestep(cgrid)
    use ed_max_dims           , only : n_dbh              ! ! intent(in)
    use soil_coms             , only : soil_rough         & ! intent(in)
                                     , snow_rough         ! ! intent(in)
-   use consts_coms           , only : cp                 & ! intent(in)
-                                    , mmdryi             & ! intent(in)
-                                    , day_sec            & ! intent(in)
-                                    , umol_2_kgC         ! ! intent(in)
-   use canopy_struct_dynamics, only : canopy_turbulence8 ! ! subroutine
-
+   use therm_lib             , only : tq2enthalpy        ! ! function
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    type(edtype)             , target      :: cgrid
@@ -46,17 +41,19 @@ subroutine euler_timestep(cgrid)
    real                                   :: leaf_flux
    real                                   :: veg_tai
    real                                   :: wcurr_loss2atm
+   real                                   :: ecurr_netrad
    real                                   :: ecurr_loss2atm
    real                                   :: co2curr_loss2atm
    real                                   :: wcurr_loss2drainage
    real                                   :: ecurr_loss2drainage
    real                                   :: wcurr_loss2runoff
    real                                   :: ecurr_loss2runoff
-   real                                   :: old_can_theiv
+   real                                   :: old_can_enthalpy
    real                                   :: old_can_shv
    real                                   :: old_can_co2
    real                                   :: old_can_rhos
    real                                   :: old_can_temp
+   real                                   :: old_can_prss
    real                                   :: fm
    !----- External functions. -------------------------------------------------------------!
    real, external                         :: compute_netrad
@@ -107,11 +104,12 @@ subroutine euler_timestep(cgrid)
 
 
             !----- Save the previous thermodynamic state. ---------------------------------!
-            old_can_theiv    = csite%can_theiv(ipa)
             old_can_shv      = csite%can_shv(ipa)
             old_can_co2      = csite%can_co2(ipa)
             old_can_rhos     = csite%can_rhos(ipa)
             old_can_temp     = csite%can_temp(ipa)
+            old_can_prss     = csite%can_prss(ipa)
+            old_can_enthalpy = tq2enthalpy(csite%can_temp(ipa),csite%can_shv(ipa),.true.)
             !------------------------------------------------------------------------------!
 
 
@@ -119,37 +117,51 @@ subroutine euler_timestep(cgrid)
             !------------------------------------------------------------------------------!
             !    Copy the meteorological variables to the rk4site structure.               !
             !------------------------------------------------------------------------------!
-            call copy_met_2_rk4site(nzg,cmet%vels,cmet%atm_theiv,cmet%atm_theta            &
-                                   ,cmet%atm_tmp,cmet%atm_shv,cmet%atm_co2,cmet%geoht      &
-                                   ,cmet%exner,cmet%pcpg,cmet%qpcpg,cmet%dpcpg,cmet%prss   &
-                                   ,cmet%rshort,cmet%rlong,cmet%par_beam,cmet%par_diffuse  &
-                                   ,cmet%nir_beam,cmet%nir_diffuse,cmet%geoht              &
-                                   ,cpoly%lsl(isi),cpoly%ntext_soil(:,isi)                 &
-                                   ,cpoly%green_leaf_factor(:,isi)                         &
-                                   ,cgrid%lon(ipy),cgrid%lat(ipy),cgrid%cosz(ipy))
+            call copy_met_2_rk4site(nzg,csite%can_theta(ipa),csite%can_shv(ipa)            &
+                                   ,csite%can_depth(ipa),cmet%vels,cmet%atm_theiv          &
+                                   ,cmet%atm_theta,cmet%atm_tmp,cmet%atm_shv,cmet%atm_co2  &
+                                   ,cmet%geoht,cmet%exner,cmet%pcpg,cmet%qpcpg,cmet%dpcpg  &
+                                   ,cmet%prss,cmet%rshort,cmet%rlong,cmet%par_beam         &
+                                   ,cmet%par_diffuse,cmet%nir_beam,cmet%nir_diffuse        &
+                                   ,cmet%geoht,cpoly%lsl(isi),cpoly%ntext_soil(:,isi)      &
+                                   ,cpoly%green_leaf_factor(:,isi),cgrid%lon(ipy)          &
+                                   ,cgrid%lat(ipy),cgrid%cosz(ipy))
+            !------------------------------------------------------------------------------!
+
 
             !----- Compute current storage terms. -----------------------------------------!
             call update_budget(csite,cpoly%lsl(isi),ipa,ipa)
+            !------------------------------------------------------------------------------!
 
 
             !------------------------------------------------------------------------------!
             !     Set up the integration patch.                                            !
             !------------------------------------------------------------------------------!
             call copy_patch_init(csite,ipa,integration_buff%initp)
+            !------------------------------------------------------------------------------!
+
+
 
             !----- Get photosynthesis, stomatal conductance, and transpiration. -----------!
             call canopy_photosynthesis(csite,cmet,nzg,ipa,cpoly%lsl(isi)                   &
                                       ,cpoly%ntext_soil(:,isi)                             &
                                       ,cpoly%leaf_aging_factor(:,isi)                      &
                                       ,cpoly%green_leaf_factor(:,isi))
+            !------------------------------------------------------------------------------!
+
+
 
             !----- Compute root and heterotrophic respiration. ----------------------------!
             call soil_respiration(csite,ipa,nzg,cpoly%ntext_soil(:,isi))
+            !------------------------------------------------------------------------------!
+
+
 
             !------------------------------------------------------------------------------!
             !     Set up the remaining, carbon-dependent variables to the buffer.          !
             !------------------------------------------------------------------------------!
             call copy_patch_init_carbon(csite,ipa,integration_buff%initp)
+            !------------------------------------------------------------------------------!
 
 
             !------------------------------------------------------------------------------!
@@ -160,12 +172,18 @@ subroutine euler_timestep(cgrid)
                                       ,integration_buff%dinitp,integration_buff%ytemp      &
                                       ,integration_buff%yscal,integration_buff%yerr        &
                                       ,integration_buff%dydx,ipa,wcurr_loss2atm            &
-                                      ,ecurr_loss2atm,co2curr_loss2atm,wcurr_loss2drainage &
-                                      ,ecurr_loss2drainage,wcurr_loss2runoff               &
-                                      ,ecurr_loss2runoff,nsteps)
+                                      ,ecurr_netrad,ecurr_loss2atm,co2curr_loss2atm        &
+                                      ,wcurr_loss2drainage,ecurr_loss2drainage             &
+                                      ,wcurr_loss2runoff,ecurr_loss2runoff,nsteps)
+            !------------------------------------------------------------------------------!
+
+
 
             !----- Add the number of steps into the step counter. -------------------------!
             cgrid%workload(13,ipy) = cgrid%workload(13,ipy) + real(nsteps)
+            !------------------------------------------------------------------------------!
+
+
 
             !------------------------------------------------------------------------------!
             !    Update the minimum monthly temperature, based on canopy temperature.      !
@@ -173,16 +191,20 @@ subroutine euler_timestep(cgrid)
             if (cpoly%site(isi)%can_temp(ipa) < cpoly%min_monthly_temp(isi)) then
                cpoly%min_monthly_temp(isi) = cpoly%site(isi)%can_temp(ipa)
             end if
-               
+            !------------------------------------------------------------------------------!
+
+
+
             !------------------------------------------------------------------------------!
             !     Compute the residuals.                                                   !
             !------------------------------------------------------------------------------!
             call compute_budget(csite,cpoly%lsl(isi),cmet%pcpg,cmet%qpcpg,ipa              &
-                               ,wcurr_loss2atm,ecurr_loss2atm,co2curr_loss2atm             &
-                               ,wcurr_loss2drainage,ecurr_loss2drainage,wcurr_loss2runoff  &
-                               ,ecurr_loss2runoff,cpoly%area(isi),cgrid%cbudget_nep(ipy)   &
-                               ,old_can_theiv,old_can_shv,old_can_co2,old_can_rhos         &
-                               ,old_can_temp)
+                               ,wcurr_loss2atm,ecurr_netrad,ecurr_loss2atm                 &
+                               ,co2curr_loss2atm,wcurr_loss2drainage,ecurr_loss2drainage   &
+                               ,wcurr_loss2runoff,ecurr_loss2runoff,cpoly%area(isi)        &
+                               ,cgrid%cbudget_nep(ipy),old_can_enthalpy,old_can_shv        &
+                               ,old_can_co2,old_can_rhos,old_can_temp,old_can_prss)
+            !------------------------------------------------------------------------------!
          end do patchloop
       end do siteloop
    end do polyloop
@@ -203,18 +225,15 @@ end subroutine euler_timestep
 ! that most of the Euler method utilises the subroutines from Runge-Kutta.                 !
 !------------------------------------------------------------------------------------------!
 subroutine integrate_patch_euler(csite,initp,dinitp,ytemp,yscal,yerr,dydx,ipa              &
-                                ,wcurr_loss2atm,ecurr_loss2atm,co2curr_loss2atm            &
-                                ,wcurr_loss2drainage,ecurr_loss2drainage,wcurr_loss2runoff &
-                                ,ecurr_loss2runoff,nsteps)
+                                ,wcurr_loss2atm,ecurr_netrad,ecurr_loss2atm                &
+                                ,co2curr_loss2atm,wcurr_loss2drainage,ecurr_loss2drainage  &
+                                ,wcurr_loss2runoff,ecurr_loss2runoff,nsteps)
    use ed_state_vars   , only : sitetype             & ! structure
                               , patchtype            ! ! structure
    use ed_misc_coms    , only : dtlsm                ! ! intent(in)
    use soil_coms       , only : soil_rough           & ! intent(in)
                               , snow_rough           ! ! intent(in)
    use canopy_air_coms , only : exar8                ! ! intent(in)
-   use consts_coms     , only : vonk8                & ! intent(in)
-                              , cp8                  & ! intent(in)
-                              , cpi8                 ! ! intent(in)
    use rk4_coms        , only : integration_vars     & ! structure
                               , rk4patchtype         & ! structure
                               , rk4site              & ! intent(inout)
@@ -237,6 +256,7 @@ subroutine integrate_patch_euler(csite,initp,dinitp,ytemp,yscal,yerr,dydx,ipa   
    type(rk4patchtype)    , target      :: dydx
    integer               , intent(in)  :: ipa
    real                  , intent(out) :: wcurr_loss2atm
+   real                  , intent(out) :: ecurr_netrad
    real                  , intent(out) :: ecurr_loss2atm
    real                  , intent(out) :: co2curr_loss2atm
    real                  , intent(out) :: wcurr_loss2drainage
@@ -291,9 +311,9 @@ subroutine integrate_patch_euler(csite,initp,dinitp,ytemp,yscal,yerr,dydx,ipa   
    !---------------------------------------------------------------------------------------!
    ! Move the state variables from the integrated patch to the model patch.                !
    !---------------------------------------------------------------------------------------!
-   call initp2modelp(tend-tbeg,initp,csite,ipa,wcurr_loss2atm,ecurr_loss2atm               &
-                    ,co2curr_loss2atm,wcurr_loss2drainage,ecurr_loss2drainage              &
-                    ,wcurr_loss2runoff,ecurr_loss2runoff)
+   call initp2modelp(tend-tbeg,initp,csite,ipa,wcurr_loss2atm,ecurr_netrad                 &
+                    ,ecurr_loss2atm,co2curr_loss2atm,wcurr_loss2drainage                   &
+                    ,ecurr_loss2drainage,wcurr_loss2runoff,ecurr_loss2runoff)
 
    return
 end subroutine integrate_patch_euler
@@ -348,10 +368,9 @@ subroutine euler_integ(h1,csite,initp,dinitp,ytemp,yscal,yerr,dydx,ipa,nsteps)
                              , time                   ! ! intent(in)
    use soil_coms      , only : dslz8                  & ! intent(in)
                              , runoff_time            ! ! intent(in)
-   use consts_coms    , only : cliq8                  & ! intent(in)
-                             , t3ple8                 & ! intent(in)
-                             , tsupercool8            & ! intent(in)
+   use consts_coms    , only : t3ple8                 & ! intent(in)
                              , wdnsi8                 ! ! intent(in)
+   use therm_lib8     , only : tl2uint8               ! ! intent(in)
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    type(sitetype)            , target      :: csite            ! Current site
@@ -423,7 +442,7 @@ subroutine euler_integ(h1,csite,initp,dinitp,ytemp,yscal,yerr,dydx,ipa,nsteps)
 
 
       !----- Get initial derivatives ------------------------------------------------------!
-      call leaf_derivs(initp,dinitp,csite,ipa)
+      call leaf_derivs(initp,dinitp,csite,ipa,h)
 
       !----- Get scalings used to determine stability -------------------------------------!
       call get_yscal(initp,dinitp,h,yscal,cpatch)
@@ -473,7 +492,7 @@ subroutine euler_integ(h1,csite,initp,dinitp,ytemp,yscal,yerr,dydx,ipa,nsteps)
             errmax = 1.d-1
 
             !----- Take the derivative of the upcoming step. ------------------------------!
-            call leaf_derivs(ytemp,dydx,csite,ipa)
+!!            call leaf_derivs(ytemp,dydx,csite,ipa)
          end if
 
 
@@ -550,6 +569,9 @@ subroutine euler_integ(h1,csite,initp,dinitp,ytemp,yscal,yerr,dydx,ipa,nsteps)
             endif
             hnext = max(2.d0*hmin,hnext)
 
+            call leaf_derivs(ytemp,dydx,csite,ipa,hnext)
+            
+
             !------ 3d. Normalise the fluxes if the user wants detailed debugging. --------!
             if (print_detailed) then
                call norm_rk4_fluxes(ytemp,h)
@@ -589,13 +611,13 @@ subroutine euler_integ(h1,csite,initp,dinitp,ytemp,yscal,yerr,dydx,ipa,nsteps)
          ! hdid (no reason to be faster than that).                                        !
          !---------------------------------------------------------------------------------!
          if (simplerunoff .and. ksn >= 1) then
-         
+
             if (initp%sfcwater_mass(ksn)    > 0.d0   .and.                                 &
                 initp%sfcwater_fracliq(ksn) > 1.d-1        ) then
 
                wfreeb = min(1.d0,dtrk4*runoff_time_i) * initp%sfcwater_mass(ksn)           &
                       * (initp%sfcwater_fracliq(ksn) - 1.d-1) / 9.d-1
-               qwfree = wfreeb * cliq8 * (initp%sfcwater_tempk(ksn) - tsupercool8 )
+               qwfree = wfreeb * tl2uint8(initp%sfcwater_tempk(ksn),1.d0)
 
                initp%sfcwater_mass(ksn) = initp%sfcwater_mass(ksn)   - wfreeb
                initp%sfcwater_depth(ksn) = initp%sfcwater_depth(ksn) - wfreeb * wdnsi8

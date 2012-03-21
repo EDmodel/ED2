@@ -142,6 +142,8 @@ recursive subroutine read_ed_xml_config(filename)
          if(texist) sfilout = trim(cval)
          call getConfigINT  ('ivegt_dynamics','misc',i,ival,texist)
          if(texist) ivegt_dynamics = ival
+         call getConfigINT  ('ibigleaf','misc',i,ival,texist)
+         if(texist) ibigleaf = ival
          call getConfigINT  ('integration_scheme','misc',i,ival,texist)
          if(texist) integration_scheme = ival
 
@@ -652,7 +654,10 @@ recursive subroutine read_ed_xml_config(filename)
         
         !! GENERAL
         call getConfigREAL  ('min_new_patch_area','disturbance',i,rval,texist)
-        if(texist) min_new_patch_area = real(rval)
+        if(texist) min_patch_area = real(rval)
+        !! GENERAL
+        call getConfigREAL  ('min_patch_area','disturbance',i,rval,texist)
+        if(texist) min_patch_area = real(rval)
         call getConfigINT  ('include_fire','disturbance',i,ival,texist)
         if(texist) include_fire = ival
         call getConfigINT  ('ianth_disturb','disturbance',i,ival,texist)

@@ -390,7 +390,6 @@ subroutine varweight(n1,n2,n3,varwts,topt,rtgt)
       call abort_run('Incorrect specification of znudtop!','varweight','nud_analysis.f90')
    end if
 
-
    do j=1,n3
       do i=1,n2
 

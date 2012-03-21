@@ -1,228 +1,300 @@
+!==========================================================================================!
+!==========================================================================================!
+!     Module with extra stuff used by CATT.                                                !
+!------------------------------------------------------------------------------------------!
 module extras
 
-  ! Used in CATT
 
-  implicit none
+   implicit none
 
-  integer, parameter :: na_extra2d=4, na_extra3d=6
+   integer, parameter :: na_extra2d=4
+   integer, parameter :: na_extra3d=6
 
-  type ext2d
-     real,pointer,dimension(:,:) :: d2
-  end type ext2d
-  type ext3d
-     real,pointer,dimension(:,:,:) :: d3
-  end type ext3d
+   type ext2d
+      real, pointer, dimension(:,:)   :: d2
+   end type ext2d
+   type(ext2d), dimension(:,:), allocatable :: extra2d
+   type(ext2d), dimension(:,:), allocatable :: extra2dm
 
-  type(ext2d),allocatable :: extra2d(:,:),extra2dm(:,:)
-  ! extrad3d(indice,ngrid)
-  type(ext3d),allocatable :: extra3d(:,:),extra3dm(:,:)
+   type ext3d
+      real, pointer, dimension(:,:,:) :: d3
+   end type ext3d
+   type(ext3d), dimension(:,:), allocatable :: extra3d
+   type(ext3d), dimension(:,:), allocatable :: extra3dm
 
-contains
+   !=======================================================================================!
+   !=======================================================================================!
 
-  subroutine alloc_extra2d(scal,m1,m2,na2d,ngrid)
 
-    implicit none
+   contains
 
-    type (ext2d),intent(INOUT) :: scal(:,:)
-    integer,intent(IN) :: m1,m2 !Dimension of arrays
-    integer,intent(IN) :: na2d ! number of 2d extras arrays without ngrid
-    integer,intent(IN) :: ngrid
-    integer :: j
 
-    do j=1,na2d
-       allocate(scal(j,ngrid)%d2(m1,m2))
-    end do
 
-  end subroutine alloc_extra2d
+   !=======================================================================================!
+   !=======================================================================================!
+   !    Allocate arrays.                                                                   !
+   !---------------------------------------------------------------------------------------!
+   subroutine alloc_extra2d(scal,m1,m2)
 
-  !---------------------------------------------------------------
+      implicit none
+      !----- Arguments. -------------------------------------------------------------------!
+      type (ext2d), intent(inout) :: scal
+      integer     , intent(in)    :: m1   ! dimension of arrays
+      integer     , intent(in)    :: m2   ! dimension of arrays
+      !------------------------------------------------------------------------------------!
 
-  subroutine alloc_extra3d(scal,m1,m2,m3,na3d,ngrid)
+      allocate(scal%d2(m1,m2))
 
-    implicit none
+      return
+   end subroutine alloc_extra2d
+   !=======================================================================================!
+   !=======================================================================================!
 
-    type (ext3d),intent(INOUT) :: scal(:,:)
-    integer,intent(IN) :: m1,m2,m3 !Dimension of arrays
-    integer,intent(IN) :: na3d ! number of 2d extras arrays without ngrid
-    integer,intent(IN) :: ngrid
-    integer :: j
 
-    do j=1,na3d
-       allocate(scal(j,ngrid)%d3(m1,m2,m3))
-    end do
-  end subroutine alloc_extra3d
 
-  !---------------------------------------------------------------
 
-  subroutine dealloc_extra2d(scal,na2d,ngrid)
 
-    implicit none
 
-    type (ext2d),intent(INOUT) :: scal(:,:)
-    integer,intent(in) :: ngrid,na2d
-    integer :: nsc,nd
+   !=======================================================================================!
+   !=======================================================================================!
+   !    Deallocate arrays.                                                                 !
+   !---------------------------------------------------------------------------------------!
+   subroutine dealloc_extra2d(scal)
 
-    !  Deallocate arrays
+      implicit none
 
-    do nd=1,na2d
-       do nsc=1,ngrid
-          if (associated(scal(nd,nsc)%d2))   deallocate (scal(nd,nsc)%d2)
-       enddo
-    end do
+      !----- Arguments. -------------------------------------------------------------------!
+      type (ext2d), intent(inout) :: scal
+      !------------------------------------------------------------------------------------!
 
-  end subroutine dealloc_extra2d
+      if (associated(scal%d2)) deallocate(scal%d2)
 
-  !---------------------------------------------------------------
+      return
+   end subroutine dealloc_extra2d
+   !=======================================================================================!
+   !=======================================================================================!
 
-  subroutine dealloc_extra3d(scal,na3d,ngrid)
 
-    implicit none
 
-    type (ext3d),intent(INOUT) :: scal(:,:)
-    integer,intent(in) :: ngrid,na3d
-    integer :: nsc,nd
 
-    !  Deallocate arrays
 
-    do nd=1,na3d
-       do nsc=1,ngrid
-          if (associated(scal(nd,nsc)%d3))   deallocate (scal(nd,nsc)%d3)
-       enddo
-    end do
 
-  end subroutine dealloc_extra3d
+   !=======================================================================================!
+   !=======================================================================================!
+   !    Nullify arrays.                                                                    !
+   !---------------------------------------------------------------------------------------!
+   subroutine nullify_extra2d(scal)
 
-  !---------------------------------------------------------------
+      implicit none
 
-  subroutine nullify_extra2d(scal,na2d,ngrid)
+      !----- Arguments. -------------------------------------------------------------------!
+      type (ext2d), intent(inout) :: scal
+      !------------------------------------------------------------------------------------!
 
-    implicit none
+      nullify (scal%d2)
 
-    type (ext2d),intent(INOUT) :: scal(:,:)
-    integer,intent(in) :: na2d,ngrid
-    integer :: nsc,nd
+      return
+   end subroutine nullify_extra2d
+   !=======================================================================================!
+   !=======================================================================================!
 
-    !  Deallocate arrays
 
-    do nd=1,na2d
-       do nsc=1,ngrid
-          if (associated(scal(nd,ngrid)%d2))   nullify (scal(nd,ngrid)%d2)
-       enddo
-    enddo
 
-    return
-  end subroutine nullify_extra2d
 
-  !---------------------------------------------------------------
 
 
-  subroutine nullify_extra3d(scal,na3d,ngrid)
+   !=======================================================================================!
+   !=======================================================================================!
+   !    Initialise arrays.                                                                 !
+   !---------------------------------------------------------------------------------------!
+   subroutine zero_extra2d(scal)
 
-    implicit none
+      implicit none
 
-    type (ext3d),intent(INOUT) :: scal(:,:)
-    integer,intent(in) :: na3d,ngrid
-    integer :: nsc,nd
+      !----- Arguments. -------------------------------------------------------------------!
+      type (ext2d), intent(inout) :: scal
+      !------------------------------------------------------------------------------------!
 
-    !  Deallocate arrays
+      if(associated(scal%d2)) scal%d2(:,:) = 0.0
 
-    do nd=1,na3d
-       do nsc=1,ngrid
-          if (associated(scal(nd,ngrid)%d3))   nullify (scal(nd,ngrid)%d3)
-       enddo
-    enddo
+      return
 
-    return
-  end subroutine nullify_extra3d
+   end subroutine zero_extra2d
+   !=======================================================================================!
+   !=======================================================================================!
 
-  !---------------------------------------------------------------
-  subroutine filltab_extra2d(scal2,scalm2,imean,n1,n2,ng,na)
 
-    use var_tables
 
-    implicit none
 
-    type (ext2d) :: scal2,scalm2
-    integer, intent(in) :: imean,n1,n2,ng,na
 
-    integer :: npts
-    character (len=7) :: sname
 
-    ! Fill pointers to arrays into variable tables
+   !=======================================================================================!
+   !=======================================================================================!
+   !     Fill pointers to arrays into variable tables.                                     !
+   !---------------------------------------------------------------------------------------!
+   subroutine filltab_extra2d(scal2,scalm2,imean,n1,n2,ng,na)
+      use var_tables
+      implicit none
+      !----- Arguments. -------------------------------------------------------------------!
+      type(ext2d), intent(inout) :: scal2
+      type(ext2d), intent(inout) :: scalm2
+      integer    , intent(in)    :: imean
+      integer    , intent(in)    :: n1
+      integer    , intent(in)    :: n2
+      integer    , intent(in)    :: ng
+      integer    , intent(in)    :: na
+      !----- Local variables. -------------------------------------------------------------!
+      integer                    :: npts
+      character (len=7)          :: sname
+      !------------------------------------------------------------------------------------!
 
-    if (associated(scal2%d2)) then
-       npts=n1*n2
-       write(sname,'(a2,i3.3)') 'd2', na
-       call vtables2 (scal2%d2,scalm2%d2  &
-            ,ng, npts, imean,  &
-            trim(sname)//' :2:hist:anal:mpti:mpt3') ! Default - Column oriented Proc.
+      if (associated(scal2%d2)) then
+         npts  = n1*n2
+         write(sname,'(a2,i3.3)') 'd2', na
+         call vtables2 (scal2%d2,scalm2%d2,ng, npts, imean                                 &
+                       ,trim(sname)//' :2:hist:anal:mpti:mpt3')
+      end if
+      return
+   end subroutine filltab_extra2d
+   !=======================================================================================!
+   !=======================================================================================!
 
-    endif
 
-  end subroutine filltab_extra2d
 
-  !---------------------------------------------------------------
-  subroutine filltab_extra3d(scal3,scalm3,imean,n1,n2,n3,ng,na)
 
-    use var_tables
 
-    implicit none
 
-    type (ext3d) :: scal3,scalm3
-    integer, intent(in) :: imean,n1,n2,n3,ng,na
+   !=======================================================================================!
+   !=======================================================================================!
+   !    Allocate arrays.                                                                   !
+   !---------------------------------------------------------------------------------------!
+   subroutine alloc_extra3d(scal,m1,m2,m3)
 
-    integer :: npts
-    character (len=7) :: sname
+      implicit none
+      !----- Arguments. -------------------------------------------------------------------!
+      type (ext3d), intent(inout) :: scal
+      integer     , intent(in)    :: m1   ! dimension of arrays
+      integer     , intent(in)    :: m2   ! dimension of arrays
+      integer     , intent(in)    :: m3   ! dimension of arrays
+      !------------------------------------------------------------------------------------!
 
-    ! Fill pointers to arrays into variable tables
+      allocate(scal%d3(m1,m2,m3))
 
-    if (associated(scal3%d3)) then
-       npts=n1*n2*n3
-       write(sname,'(a2,i3.3)') 'd3', na
-       call vtables2 (scal3%d3,scalm3%d3  &
-            ,ng, npts, imean,  &
-            sname//' :3:hist:anal:mpti:mpt3') ! Default - Column oriented Proc.
+      return
+   end subroutine alloc_extra3d
+   !=======================================================================================!
+   !=======================================================================================!
 
-    endif
 
-    return
-  end subroutine filltab_extra3d
 
-  !-----------------------------------------------------------------
-  subroutine zero_extra3d(scal,na3d,ngrid)
 
-    implicit none
 
-    type (ext3d),intent(INOUT) :: scal(:,:)
-    integer,intent(in) :: na3d,ngrid
-    integer :: nsc
 
-    !  Deallocate arrays
+   !=======================================================================================!
+   !=======================================================================================!
+   !    Deallocate arrays.                                                                 !
+   !---------------------------------------------------------------------------------------!
+   subroutine dealloc_extra3d(scal)
 
-    do nsc=1,na3d
-       scal(nsc,ngrid)%d3(:,:,:)=0.
-    enddo
+      implicit none
 
-    return
-  end subroutine zero_extra3d
+      !----- Arguments. -------------------------------------------------------------------!
+      type (ext3d), intent(inout) :: scal
+      !------------------------------------------------------------------------------------!
 
-  !-----------------------------------------------------------------
-  subroutine zero_extra2d(scal,na2d,ngrid)
+      if (associated(scal%d3)) deallocate(scal%d3)
 
-    implicit none
+      return
+   end subroutine dealloc_extra3d
+   !=======================================================================================!
+   !=======================================================================================!
 
-    type (ext2d),intent(INOUT) :: scal(:,:)
-    integer,intent(in) :: na2d,ngrid
-    integer :: nsc
 
-    !  Deallocate arrays
 
-    do nsc=1,na2d
-       scal(nsc,ngrid)%d2(:,:)=0.
-    enddo
 
-    return
-  end subroutine zero_extra2d
 
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !    Nullify arrays.                                                                    !
+   !---------------------------------------------------------------------------------------!
+   subroutine nullify_extra3d(scal)
+
+      implicit none
+
+      !----- Arguments. -------------------------------------------------------------------!
+      type (ext3d), intent(inout) :: scal
+      !------------------------------------------------------------------------------------!
+
+      nullify (scal%d3)
+
+      return
+   end subroutine nullify_extra3d
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !    Initialise arrays.                                                                 !
+   !---------------------------------------------------------------------------------------!
+   subroutine zero_extra3d(scal)
+
+      implicit none
+
+      !----- Arguments. -------------------------------------------------------------------!
+      type (ext3d), intent(inout) :: scal
+      !------------------------------------------------------------------------------------!
+
+      if(associated(scal%d3)) scal%d3(:,:,:) = 0.0
+
+      return
+
+   end subroutine zero_extra3d
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !     Fill pointers to arrays into variable tables.                                     !
+   !---------------------------------------------------------------------------------------!
+   subroutine filltab_extra3d(scal3,scalm3,imean,n1,n2,n3,ng,na)
+      use var_tables
+      implicit none
+      !----- Arguments. -------------------------------------------------------------------!
+      type(ext3d), intent(inout) :: scal3
+      type(ext3d), intent(inout) :: scalm3
+      integer    , intent(in)    :: imean
+      integer    , intent(in)    :: n1
+      integer    , intent(in)    :: n2
+      integer    , intent(in)    :: n3
+      integer    , intent(in)    :: ng
+      integer    , intent(in)    :: na
+      !----- Local variables. -------------------------------------------------------------!
+      integer                    :: npts
+      character (len=7)          :: sname
+      !------------------------------------------------------------------------------------!
+
+      if (associated(scal3%d3)) then
+         npts  = n1*n2*n3
+         write(sname,'(a2,i3.3)') 'd3', na
+         call vtables2 (scal3%d3,scalm3%d3,ng, npts, imean                                 &
+                       ,trim(sname)//' :3:hist:anal:mpti:mpt3')
+      end if
+      return
+   end subroutine filltab_extra3d
+   !=======================================================================================!
+   !=======================================================================================!
 
 end module extras
+!==========================================================================================!
+!==========================================================================================!

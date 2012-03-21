@@ -22,6 +22,7 @@ rm -fv rconstants.o         rconstants.mod
 rm -fv rgrad.o              rgrad.mod
 rm -fv rnamel.o             rnamel.mod
 rm -fv rnumr.o              rnumr.mod
+rm -fv rout_coms.o          rout_coms.mod
 rm -fv rpost_coms.o         rpost_coms.mod
 rm -fv rpost_dims.o         rpost_dims.mod
 rm -fv rpost_filelist.o     rpost_filelist.mod

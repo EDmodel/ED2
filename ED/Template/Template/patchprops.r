@@ -1,6 +1,7 @@
 #----- Here is the user-defined variable section. -----------------------------------------#
 here           = "thispath"                               # Current directory.
-srcdir         = "/n/Moorcroft_Lab/Users/mlongo/util/Rsc" # Property directory.
+there          = "thatpath"    # Directory where analyses/history are 
+srcdir         = "/n/moorcroft_data/mlongo/util/Rsc"      # Property directory.
 when           = c("thismontha/thisdatea/thisyeara","thishoura:thisminua:00")               # Time to grab the history
 outroot        = "thisoutroot"
 myplaces       = c("thispoly")                            # Places to find patch properties
@@ -171,8 +172,8 @@ for (ipy in 1:nplaces){
    place = myplaces[ipy]
 
    #----- Retrieve default information about this place and set up some variables. --------#
-   thispoi  = locations(where=place,here=here)
-   inpref   = paste(here,place,"histo",place,sep="/")
+   thispoi  = locations(where=place,here=there)
+   inpref   = paste(there,place,"histo",place,sep="/")
    outpref  = thispoi$pathout
    lieu     = thispoi$lieu
    suffix   = thispoi$iata

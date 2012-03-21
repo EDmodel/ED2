@@ -560,7 +560,7 @@ else
    dt2al2 = dts
    a1da2 = 1.
 endif
-rdto2cv = sspct ** 2 * rdry * dts / (2.0 * cv)
+rdto2cv = sspct ** 2 * rdry * dts / (2.0 * cvdry)
 
 do j = ja,jz
    do i = ia,iz

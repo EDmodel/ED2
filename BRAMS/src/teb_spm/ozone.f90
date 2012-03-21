@@ -39,7 +39,7 @@ subroutine ozone(mzp,mxp,myp,ia,iz,ja,jz,ng,deltat)
        basic_g(ng)%pi0     ,basic_g(ng)%pp,          &
        basic_g(ng)%rv      ,radiate_g(ng)%rshort,    &
        radiate_g(ng)%cosz  ,grid_g(ng)%rtgt,         &
-       grid_g(ng)%topma    ,deltat,cpi,cpor,p00,zt,  &
+       grid_g(ng)%topma    ,deltat,cpdryi,cpor,p00,zt,  &
        gaspart_g(ng)%pnot  ,gaspart_g(ng)%pno2t,     &
        gaspart_g(ng)%pcot  ,gaspart_g(ng)%pvoct,     &
        gaspart_g(ng)%po3t  ,gaspart_g(ng)%pso2t,     &
@@ -63,7 +63,7 @@ subroutine chemistry(  m1,  m2,   m3, ia, iz, ja, jz,       &
      HOi ,        RO2i ,                  & 
      theta,    dn0    ,    pi0  ,   pp   ,   &
      rv  , rshort    ,   cosz  ,   rtgt  ,   &
-     topt,   dtlt    ,      cpi,   cpor  ,   &
+     topt,   dtlt    ,      cpdryi,   cpor  ,   &
      p00,     zt,                                   &
      not  ,        no2t  ,          cot , & 
      vocst  ,         o3t  , so2t, so4t,rchot  ,&
@@ -100,7 +100,7 @@ subroutine chemistry(  m1,  m2,   m3, ia, iz, ja, jz,       &
 
   ! model's "constants" used
 
-  real                   :: cpi,cpor,p00,avo,temp
+  real                   :: cpdryi,cpor,p00,avo,temp
 
   !velocities coefficients
 
@@ -135,11 +135,11 @@ subroutine chemistry(  m1,  m2,   m3, ia, iz, ja, jz,       &
 
            !calculating absolute temperature using Exner function and Theta
 
-           tempk(ik,i,j)=theta(ik,i,j)*pi0(ik,i,j)*cpi
+           tempk(ik,i,j)=theta(ik,i,j)*pi0(ik,i,j)*cpdryi
 
            !calculating pressure
 
-           ppi(ik,i,j)=((pp(ik,i,j)+pi0(ik,i,j))*cpi)**cpor*p00
+           ppi(ik,i,j)=((pp(ik,i,j)+pi0(ik,i,j))*cpdryi)**cpor*p00
 
            !calculationg the height of each grid point above sea level
 

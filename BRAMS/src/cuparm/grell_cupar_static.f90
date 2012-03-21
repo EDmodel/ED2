@@ -31,6 +31,8 @@ subroutine grell_cupar_static(comp_noforc_cldwork,checkmass,iupmethod,maxens_cap
                              ,etad_cld_cap,etau_cld_cap,rhod_cld_cap,rhou_cld_cap          &
                              ,qliqd_cld_cap,qliqu_cld_cap,qiced_cld_cap,qiceu_cld_cap,i,j  &
                              ,icld,mynum)
+   use grid_dims        , only : &
+       str_len      ! ! intent(in) - Typical string length. 
    use mem_ensemble     , only : &
        ensemble_vars             ! ! structure - The ensemble scratch structure. ----------!
 
@@ -180,6 +182,7 @@ subroutine grell_cupar_static(comp_noforc_cldwork,checkmass,iupmethod,maxens_cap
       ,wbuoymin0    & ! intent(out) - Updraft Minimum buoyant velocity            [    m/s]
       ,wbuoymin     ! ! intent(out) - Minimum buoyancy velocity                   [    ---]
    use rconstants, only : toodry
+   use therm_lib , only : toler
    implicit none
    
    !---------------------------------------------------------------------------------------!
@@ -301,6 +304,8 @@ subroutine grell_cupar_static(comp_noforc_cldwork,checkmass,iupmethod,maxens_cap
    real :: edt        ! dnmf/upmf                                                 [    ---]
    !----- Scratch array -------------------------------------------------------------------!
    real, dimension(mgmzp) :: scrvar    ! Scratch variable
+   !----- String for sanity check. --------------------------------------------------------!
+   character(len=str_len) :: which
    !----- Parameter to print debug stuff. -------------------------------------------------!
    logical, parameter :: print_debug=.false.
    !---------------------------------------------------------------------------------------!
@@ -405,12 +410,17 @@ subroutine grell_cupar_static(comp_noforc_cldwork,checkmass,iupmethod,maxens_cap
 
       !------------------------------------------------------------------------------------!
       ! G. Calculate all thermodynamic properties at the cloud level. The cloud levels are !
-      !    staggered in relation to BRAMS model.                                           !
+      !    staggered in relation to BRAMS model.  We must check whether the result is      !
+      !    reasonable.                                                                     !
       !------------------------------------------------------------------------------------!
       call grell_thermo_cldlev(mkx,mgmzp,z_cup,exner,thil,t,qtot,qliq,qice,co2,exnersur    &
                               ,thilsur,tsur,qtotsur,qliqsur,qicesur,co2sur,exner_cup,p_cup &
                               ,t_cup,thil_cup,qtot_cup,qvap_cup,qliq_cup,qice_cup,qsat_cup &
                               ,co2_cup,rho_cup,theiv_cup,theivs_cup)
+      write(which,fmt='(2(a,i4.4))') 'extrap_environment_icap=',icap,'_icld=',icld
+      call grell_sanity_check(mkx,mgmzp,z_cup,p_cup,exner_cup,theiv_cup,thil_cup,t_cup     &
+                             ,qtot_cup,qvap_cup,qliq_cup,qice_cup,co2_cup,rho_cup          &
+                             ,which)
 
       !------------------------------------------------------------------------------------!
       ! H. Initialise drafts liquid mixing ratio and density.  These will be the           !
@@ -452,7 +462,7 @@ subroutine grell_cupar_static(comp_noforc_cldwork,checkmass,iupmethod,maxens_cap
       end if
 
       !------------------------------------------------------------------------------------!
-      ! 3. Finding the level of free convection. Two important points here:                !
+      ! 3. Find the level of free convection.  Two important points here:                  !
       !    a. This call may end up preventing convection, so I must check after the call   !
       !    b. This subroutine may also affect the updraft originating level.               !
       !------------------------------------------------------------------------------------!
@@ -469,13 +479,13 @@ subroutine grell_cupar_static(comp_noforc_cldwork,checkmass,iupmethod,maxens_cap
       end if
 
       !------------------------------------------------------------------------------------!
-      ! 4. Finding the minimum saturation thetae_iv. This will be the bottom of the stable !
+      ! 4. Find the minimum saturation thetae_iv. This will be the bottom of the stable    !
       !    layer.                                                                          !
       !------------------------------------------------------------------------------------!
       kstabi=(klfc - 1) + minloc(theivs_cup(klfc:kstabm),dim=1)
 
       !------------------------------------------------------------------------------------!
-      ! 5. Increasing the detrainment in stable layers provided that there is such layer.  !
+      ! 5. Increase the detrainment in stable layers provided that there is such layer.    !
       !    this rate increases linearly until a maximum value, currently set to 10 times   !
       !    the entrainment rate.  If the cloud is sufficiently small, we further simplify  !
       !    and assume detrainment to be equal to entrainment (otherwise the detrainment    !
@@ -494,14 +504,15 @@ subroutine grell_cupar_static(comp_noforc_cldwork,checkmass,iupmethod,maxens_cap
                               ,theivu_cld)
 
       !------------------------------------------------------------------------------------!
-      ! 7. Finding the normalized mass fluxes associated with updrafts. Since we are using !
+      ! 7. Find the normalized mass fluxes associated with updrafts.  Since we are using  !
       !    height-based vertical coordinate, there is no need to find the forced           !
       !    normalized mass flux, they'll be the same, so just copy it afterwards.          !
       !------------------------------------------------------------------------------------!
       call grell_nms_updraft(mkx,mgmzp,klou,klfc,ktpse,mentru_rate,cdu,dzu_cld,etau_cld)
 
       !------------------------------------------------------------------------------------!
-      ! 8. Finding the moisture profiles associated with updrafts.                         !
+      ! 8. Find the moisture profiles associated with updrafts, and check whether the      !
+      !    profile makes sense or not.                                                     !
       !------------------------------------------------------------------------------------!
       call grell_most_thermo_updraft(prec_cld,.true.,mkx,mgmzp,klfc,ktpse                  &
                                     ,cld2prec,cdu,mentru_rate,qtot,co2,p_cup,exner_cup     &
@@ -510,9 +521,13 @@ subroutine grell_cupar_static(comp_noforc_cldwork,checkmass,iupmethod,maxens_cap
                                     ,dzu_cld,thilu_cld,tu_cld,qtotu_cld,qvapu_cld          &
                                     ,qliqu_cld,qiceu_cld,qsatu_cld,co2u_cld,rhou_cld,dbyu  &
                                     ,pwu_cld,pwav,klnb,ktop,ierr)
+      write(which,fmt='(2(a,i4.4))') 'extrap_updraft_icap=',icap,'_icld=',icld
+      call grell_sanity_check(mkx,mgmzp,z_cup,p_cup,exner_cup,theivu_cld,thilu_cld,tu_cld  &
+                             ,qtotu_cld,qvapu_cld,qliqu_cld,qiceu_cld,co2u_cld,rhou_cld    &
+                             ,which)
 
       !------------------------------------------------------------------------------------!
-      ! 9. Checking whether we found a cloud top. Since this may keep convection to        !
+      ! 9. Check whether we found a cloud top. Since this may keep convection to           !
       !    happen, I check whether I should move on or break here.  Also check whether     !
       !    this cloud qualifies to be in this spectrum size. It need to be thicker than    !
       !    the minimum value provided by the user, and there must be some condensation     !
@@ -530,7 +545,7 @@ subroutine grell_cupar_static(comp_noforc_cldwork,checkmass,iupmethod,maxens_cap
       end if
 
       !------------------------------------------------------------------------------------!
-      !10. Finding the cloud work function associated with updrafts. If this cloud doesn't !
+      !10. Find the cloud work function associated with updrafts. If this cloud doesn't    !
       !    produce cloud work, break the run, we don't simulate lazy clouds in this model. !
       !------------------------------------------------------------------------------------!
       call grell_cldwork_updraft(mkx,mgmzp,klou,ktop,dbyu,dzu_cld,etau_cld,aau)
@@ -545,7 +560,7 @@ subroutine grell_cupar_static(comp_noforc_cldwork,checkmass,iupmethod,maxens_cap
 
       ![[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[!
       !------------------------------------------------------------------------------------!
-      ! J. Finding the downdraft counterpart of the above properties, namely where the     !
+      ! J. Find the downdraft counterpart of the above properties, namely where the        !
       !    downdrafts detrain all its mass, where they originate, their mass, energy and   !
       !    moisture properties. This should be done only when it is a cloud that has       !
       !    downdrafts.  In case we cannot find a suitable level in which downdrafts        !
@@ -596,7 +611,8 @@ subroutine grell_cupar_static(comp_noforc_cldwork,checkmass,iupmethod,maxens_cap
                                    ,theivs_cup,dzd_cld,theivd_cld)
 
          !---------------------------------------------------------------------------------!
-         ! 6. Moisture properties of downdraft.  If buoyancy happens to be non-sense, we   !
+         ! 6. Moisture properties of downdraft, and its sanity check.  Besides the thermo- !
+         !    dynamics, we must check whether buoyancy makes sense, in case it doesn't we  !
          !    will assign an error flag to this cloud and don't let it happen.             !
          !---------------------------------------------------------------------------------!
          call grell_most_thermo_downdraft(mkx,mgmzp,klod,qtot,co2,mentrd_rate,cdd,p_cup    &
@@ -606,6 +622,10 @@ subroutine grell_cupar_static(comp_noforc_cldwork,checkmass,iupmethod,maxens_cap
                                          ,qtotd_cld,qvapd_cld,qliqd_cld,qiced_cld          &
                                          ,qsatd_cld,co2d_cld,rhod_cld,dbyd,pwd_cld,pwev    &
                                          ,ierr)
+         write(which,fmt='(2(a,i4.4))') 'extrap_downdraft_icap=',icap,'_icld=',icld
+         call grell_sanity_check(mkx,mgmzp,z_cup,p_cup,exner_cup,theivd_cld,thild_cld      &
+                                ,td_cld,qtotd_cld,qvapd_cld,qliqd_cld,qiced_cld,co2d_cld   &
+                                ,rhod_cld,which)
          if (ierr /= 0) then
             ierr_cap(icap) = ierr
             cycle stacloop
@@ -618,9 +638,12 @@ subroutine grell_cupar_static(comp_noforc_cldwork,checkmass,iupmethod,maxens_cap
          call grell_efficiency_ensemble(mkx,mgmzp,maxens_eff,klou,klfc,klnb,edtmin,edtmax  &
                                        ,pwav,pwev,z_cup,uwind,vwind,dzd_cld                &
                                        ,edt_eff(:,icap))
+         !------------------------------------------------------------------------------------!
+
+
 
          !---------------------------------------------------------------------------------!
-         ! 8. Checking for water availability and evaporation consistency: we assume that  !
+         ! 8. Check for water availability and evaporation consistency: we assume that     !
          !    downdraft is always saturated, and it gets the moisture from the rain.  How- !
          !    ever, it cannot require more rain than what is available, so if that would   !
          !    be the case, we don't allow this cloud to exist.                             !
@@ -631,11 +654,16 @@ subroutine grell_cupar_static(comp_noforc_cldwork,checkmass,iupmethod,maxens_cap
                cycle stacloop
             end if
          end do ddcheckloop
+         !---------------------------------------------------------------------------------!
+
+
+
 
          !---------------------------------------------------------------------------------!
-         ! 9. Computing cloud work function associated with downdrafts.                    !
+         ! 9. Compute cloud work function associated with downdrafts.                      !
          !---------------------------------------------------------------------------------!
          call grell_cldwork_downdraft(mkx,mgmzp,klod,dbyd,dzd_cld,etad_cld,aad)
+         !---------------------------------------------------------------------------------!
 
       else
          !---------------------------------------------------------------------------------!
@@ -663,14 +691,14 @@ subroutine grell_cupar_static(comp_noforc_cldwork,checkmass,iupmethod,maxens_cap
 
       ![[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[!
       !------------------------------------------------------------------------------------!
-      ! K. Finding the non-forced cloud work, which will require computing most            !
-      !    subroutines again. This will go and compute even if the tests would prevent     !
-      !    the cloud to happen. This part will be skipped if the user is asking for moist- !
-      !    ure convergence only.                                                           !
+      ! K. Find the non-forced cloud work, which will require computing most subroutines   !
+      !    again.  This will go and compute even if the tests would prevent the cloud to   !
+      !    happen. This part will be skipped if the user is asking for moisture            !
+      !    convergence only.                                                               !
       !------------------------------------------------------------------------------------!
       if (comp_noforc_cldwork) then
          !---------------------------------------------------------------------------------!
-         ! i.     Initialising error flag                                                  !
+         ! i.     Initialise error flag.                                                   !
          !---------------------------------------------------------------------------------!
          ierr0    = 0
          comp_dn0 = comp_dn
@@ -683,13 +711,17 @@ subroutine grell_cupar_static(comp_noforc_cldwork,checkmass,iupmethod,maxens_cap
 
          !---------------------------------------------------------------------------------!
          ! iii.   Calculate all thermodynamic properties at the cloud level and initialize !
-         !        draft thermodynamic properties                                           !
+         !        draft thermodynamic properties (sanity check too...).                    !
          !---------------------------------------------------------------------------------!
          call grell_thermo_cldlev(mkx,mgmzp,z_cup,exner0,thil0,t0,qtot0,qliq0,qice0,co20   &
                                  ,exnersur,thilsur,tsur,qtotsur,qliqsur,qicesur,co2sur     &
                                  ,exner0_cup,p0_cup,t0_cup,thil0_cup,qtot0_cup,qvap0_cup   &
                                  ,qliq0_cup,qice0_cup,qsat0_cup,co20_cup,rho0_cup          &
                                  ,theiv0_cup,theivs0_cup)
+         write(which,fmt='(2(a,i4.4))') 'zero_environment_icap=',icap,'_icld=',icld
+         call grell_sanity_check(mkx,mgmzp,z_cup,p0_cup,exner0_cup,theiv0_cup,thil0_cup    &
+                                ,t0_cup,qtot0_cup,qvap0_cup,qliq0_cup,qice0_cup,co20_cup   &
+                                ,rho0_cup,which)
 
          !---------------------------------------------------------------------------------!
          ! iv.    Calculate the thermodynamic properties below the level of free convec-   !
@@ -708,7 +740,8 @@ subroutine grell_cupar_static(comp_noforc_cldwork,checkmass,iupmethod,maxens_cap
                                  ,dzu_cld,theiv0u_cld)
 
          !---------------------------------------------------------------------------------!
-         ! vi.    Finding the moisture profiles associated with updrafts.                  !
+         ! vi.    Find the moisture profiles associated with updrafts, and check whether   !
+         !        they make sense or not.                                                  !
          !---------------------------------------------------------------------------------!
          call grell_most_thermo_updraft(comp_down_cap(icap),.false.,mkx,mgmzp,klfc,ktop    &
                                        ,cld2prec,cdu,mentru_rate,qtot0,co20,p0_cup         &
@@ -718,8 +751,13 @@ subroutine grell_cupar_static(comp_noforc_cldwork,checkmass,iupmethod,maxens_cap
                                        ,t0u_cld,qtot0u_cld,qvap0u_cld,qliq0u_cld           &
                                        ,qice0u_cld,qsat0u_cld,co20u_cld,rho0u_cld,dby0u    &
                                        ,pw0u_cld,pwav0,klnb0,ktop0,ierr0)
+         write(which,fmt='(2(a,i4.4))') 'zero_updraft_icap=',icap
+         call grell_sanity_check(mkx,mgmzp,z_cup,p0_cup,exner0_cup,theiv0u_cld,thil0u_cld  &
+                                ,t0u_cld,qtot0u_cld,qvap0u_cld,qliq0u_cld,qice0u_cld       &
+                                ,co20u_cld,rho0u_cld,which)
+
          !---------------------------------------------------------------------------------!
-         ! vii.   Finding the cloud work function                                          !
+         ! vii.   Find the cloud work function.                                            !
          !---------------------------------------------------------------------------------!
          call grell_cldwork_updraft(mkx,mgmzp,klou,ktop,dby0u,dzu_cld,etau_cld,aa0u)
          
@@ -742,6 +780,10 @@ subroutine grell_cupar_static(comp_noforc_cldwork,checkmass,iupmethod,maxens_cap
                                             ,qvap0d_cld,qliq0d_cld,qice0d_cld,qsat0d_cld   &
                                             ,co20d_cld,rho0d_cld,dby0d,pw0d_cld,pwev0      &
                                             ,ierr0)
+            write(which,fmt='(a,i4.4)') 'zero_downdraft_icap=',icap
+            call grell_sanity_check(mkx,mgmzp,z_cup,p0_cup,exner0_cup,theiv0d_cld          &
+                                   ,thil0d_cld,t0d_cld,qtot0d_cld,qvap0d_cld,qliq0d_cld    &
+                                   ,qice0d_cld,co20d_cld,rho0d_cld,which)
 
             !------------------------------------------------------------------------------!
             ! x.     Downdraft cloud work function.                                        !

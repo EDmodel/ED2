@@ -32,8 +32,8 @@ Module isan_coms
   !------------------------------------------------------------------------------------
 
   integer, parameter :: maxpr=100 ,maxisn=100 ,maxx=1000 ,maxy=1000  &
-       ,maxtimes=5000 ,maxagrds=10    ,maxsigz=100  &
-       ,maxlev=9999   ,maxsname=100000 ,maxisfiles=100000
+       ,maxtimes=50000 ,maxagrds=10    ,maxsigz=100  &
+       ,maxlev=9999   ,maxsname=100000 ,maxisfiles=50000
   !---------------------------------------------------------------------------
   integer :: ioflgisz,ioflgvar,natime,iszstage,ivrstage,iyear,imonth,idate  &
        ,ihour,isan_inc,i1st_flg,iupa_flg,isfc_flg

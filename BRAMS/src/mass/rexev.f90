@@ -51,7 +51,8 @@ subroutine exevolve(m1,m2,m3,ifm,ia,iz,ja,jz,izu,jzv,jdim,mynum,edt,key)
    !  not a "dry" run.  Otherwise, leave the values equal to zero, which will impose       !
    ! theta=theta_v                                                                         !
    !---------------------------------------------------------------------------------------!
-   call azero2(m1*m2*m3,scratch%vt3dp,scratch%vt3dq)
+   call azero(m1*m2*m3,scratch%vt3dp)
+   call azero(m1*m2*m3,scratch%vt3dq)
    if (vapour_on) then
       !----- If water is allowed, copy them to scratch arrays -----------------------------!
       call atob(m1*m2*m3,basic_g(ifm)%rtp,scratch%vt3dp)
@@ -484,7 +485,9 @@ subroutine exthvadv(m1,m2,m3,ia,iz,ja,jz,izu,jzv,jdim,mynum,edt,up,uc,vp,vc,wp,w
 
    !----- Save the total size of matrices -------------------------------------------------!
    isiz=m1*m2*m3
-   call azero3(m1*m2*m3,scratch%vt3da,scratch%vt3db,scratch%vt3dc)
+   call azero(m1*m2*m3,scratch%vt3da)
+   call azero(m1*m2*m3,scratch%vt3db)
+   call azero(m1*m2*m3,scratch%vt3dc)
    call prep_timeave(m1,m2,m3,edt,up,uc,vp,vc,wp,wc,scratch%vt3da,scratch%vt3db            &
                     ,scratch%vt3dc)
   
