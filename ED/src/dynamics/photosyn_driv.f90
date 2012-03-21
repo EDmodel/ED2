@@ -97,11 +97,9 @@ subroutine canopy_photosynthesis(csite,cmet,mzg,ipa,lsl,ntext_soil              
 
    !----- Find the patch-level Total Leaf and Wood Area Index. ----------------------------!
    csite%lai(ipa) = 0.0
-   csite%wpa(ipa) = 0.0
    csite%wai(ipa) = 0.0
    do ico=1,cpatch%ncohorts
       csite%lai(ipa)  = csite%lai(ipa)  + cpatch%lai(ico)
-      csite%wpa(ipa)  = csite%wpa(ipa)  + cpatch%wpa(ico)
       csite%wai(ipa)  = csite%wai(ipa)  + cpatch%wai(ico)
    end do
    !---------------------------------------------------------------------------------------!
@@ -337,7 +335,6 @@ subroutine canopy_photosynthesis(csite,cmet,mzg,ipa,lsl,ntext_soil              
              , vm                          & ! Max. capacity of Rubisco         [µmol/m²/s]
              , compp                       & ! Gross photo. compensation point  [ µmol/mol]
              , limit_flag                  & ! Photosynthesis limitation flag   [      ---]
-             , csite%old_stoma_data_max(ipft,ipa) & ! Previous state            [      ---]
              )
          end if
       end do
@@ -418,7 +415,6 @@ subroutine canopy_photosynthesis(csite,cmet,mzg,ipa,lsl,ntext_soil              
              , vm                          & ! Max. capacity of Rubisco         [µmol/m²/s]
              , compp                       & ! Gross photo. compensation point  [ µmol/mol]
              , limit_flag                  & ! Photosynthesis limitation flag   [      ---]
-             , csite%old_stoma_data_max(ipft,ipa) & ! Previous state            [      ---]
              )
 
             !----- Convert leaf respiration to [µmol/m²ground/s] --------------------------!

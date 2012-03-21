@@ -193,7 +193,6 @@ subroutine normalize_averaged_vars(cgrid,frqsum,dtlsm)
             csite%avg_albedo_beam    (ipa) = csite%avg_albedo_beam    (ipa) * frqsumi
             csite%avg_albedo_diffuse (ipa) = csite%avg_albedo_diffuse (ipa) * frqsumi
             csite%avg_rlong_albedo   (ipa) = csite%avg_rlong_albedo   (ipa) * frqsumi
-            csite%aux                (ipa) = csite%aux                (ipa) * frqsumi
             csite%avg_vapor_lc       (ipa) = csite%avg_vapor_lc       (ipa) * frqsumi
             csite%avg_vapor_wc       (ipa) = csite%avg_vapor_wc       (ipa) * frqsumi
             csite%avg_vapor_gc       (ipa) = csite%avg_vapor_gc       (ipa) * frqsumi
@@ -228,7 +227,6 @@ subroutine normalize_averaged_vars(cgrid,frqsum,dtlsm)
                csite%avg_sensible_gg(k,ipa) = csite%avg_sensible_gg(k,ipa) * frqsumi
                csite%avg_smoist_gg(k,ipa)   = csite%avg_smoist_gg(k,ipa)   * frqsumi
                csite%avg_transloss(k,ipa)   = csite%avg_transloss(k,ipa)   * frqsumi
-               csite%aux_s(k,ipa)           = csite%aux_s(k,ipa)           * frqsumi
             end do
             !------------------------------------------------------------------------------!
             
@@ -394,7 +392,6 @@ subroutine reset_averaged_vars(cgrid)
       cgrid%avg_runoff           (ipy) = 0.0
       cgrid%avg_drainage         (ipy) = 0.0
       cgrid%avg_drainage_heat    (ipy) = 0.0
-      cgrid%aux                  (ipy) = 0.0
       cgrid%avg_carbon_ac        (ipy) = 0.0
       cgrid%avg_carbon_st        (ipy) = 0.0
       cgrid%avg_sensible_lc      (ipy) = 0.0
@@ -406,7 +403,6 @@ subroutine reset_averaged_vars(cgrid)
       cgrid%avg_sensible_ac      (ipy) = 0.0
       cgrid%avg_runoff_heat      (ipy) = 0.0 
 
-      cgrid%aux_s              (:,ipy) = 0.0
       cgrid%avg_smoist_gg      (:,ipy) = 0.0
       cgrid%avg_transloss      (:,ipy) = 0.0
       cgrid%avg_sensible_gg    (:,ipy) = 0.0
@@ -552,8 +548,6 @@ subroutine reset_averaged_vars(cgrid)
             csite%avg_runoff_heat(ipa)      = 0.0
             csite%avg_rk4step(ipa)          = 0.0
             csite%avg_available_water(ipa)  = 0.0
-            csite%aux(ipa)                  = 0.0
-            csite%aux_s(:,ipa)              = 0.0
             csite%mean_rh(ipa)              = 0.0
          
             cohortloop: do ico=1,cpatch%ncohorts
@@ -787,12 +781,6 @@ subroutine integrate_ed_daily_output_state(cgrid)
                      cpatch%dmean_light_level_diff(ico) =                                  &
                                                cpatch%dmean_light_level_diff(ico)          &
                                              + cpatch%light_level_diff(ico)
-                     cpatch%dmean_beamext_level(ico)    = cpatch%dmean_beamext_level(ico)  &
-                                                        + cpatch%beamext_level(ico)
-                     cpatch%dmean_diffext_level(ico)    = cpatch%dmean_diffext_level(ico)  &
-                                                        + cpatch%diffext_level(ico)
-                     cpatch%dmean_lambda_light(ico)     = cpatch%dmean_lambda_light(ico)   &
-                                                        + cpatch%lambda_light(ico)
                   end if
                   !------------------------------------------------------------------------!
 
@@ -826,11 +814,6 @@ subroutine integrate_ed_daily_output_state(cgrid)
 
                end if
             end do
-
-            if (rshort_tot > rshort_twilight_min) then
-               csite%dmean_lambda_light(ipa) = csite%dmean_lambda_light(ipa)               &
-                                             + csite%lambda_light(ipa)
-            end if
          end do patchloop
 
          !---------------------------------------------------------------------------------!
@@ -2088,11 +2071,9 @@ subroutine normalize_ed_daily_output_vars(cgrid)
    do ipy=1,cgrid%npolygons
       cpoly => cgrid%polygon(ipy)
       cgrid%lai_pft            (:,ipy) = 0.
-      cgrid%wpa_pft            (:,ipy) = 0.
       cgrid%wai_pft            (:,ipy) = 0.
       do isi=1,cpoly%nsites
          cpoly%lai_pft (:,isi)  = 0.
-         cpoly%wpa_pft (:,isi)  = 0.
          cpoly%wai_pft (:,isi)  = 0.
       end do
    end do
@@ -2324,12 +2305,6 @@ subroutine normalize_ed_daily_output_vars(cgrid)
                                                      * dtlsm_o_daylight
                   cpatch%dmean_light_level_diff(ico) = cpatch%dmean_light_level_diff(ico)  &
                                                      * dtlsm_o_daylight
-                  cpatch%dmean_beamext_level   (ico) = cpatch%dmean_beamext_level   (ico)  &
-                                                     * dtlsm_o_daylight
-                  cpatch%dmean_diffext_level   (ico) = cpatch%dmean_diffext_level   (ico)  &
-                                                     * dtlsm_o_daylight
-                  cpatch%dmean_lambda_light    (ico) = cpatch%dmean_lambda_light    (ico)  &
-                                                     * dtlsm_o_daylight
                else
                   cpatch%dmean_fs_open         (ico) = 0.
                   cpatch%dmean_fsw             (ico) = 0.
@@ -2340,9 +2315,6 @@ subroutine normalize_ed_daily_output_vars(cgrid)
                   cpatch%dmean_light_level     (ico) = 0.
                   cpatch%dmean_light_level_beam(ico) = 0.
                   cpatch%dmean_light_level_diff(ico) = 0.
-                  cpatch%dmean_beamext_level   (ico) = 0.
-                  cpatch%dmean_diffext_level   (ico) = 0.
-                  cpatch%dmean_lambda_light    (ico) = 0.
                end if
             end do cohortloop
 
@@ -2379,17 +2351,7 @@ subroutine normalize_ed_daily_output_vars(cgrid)
                                              * frqsum_o_daysec
             csite%dmean_rk4step(ipa)         = csite%dmean_rk4step(ipa)                    &
                                              * frqsum_o_daysec
-            !------------------------------------------------------------------------------!
-            !     The light level is averaged over the length of day light only.  We find  !
-            ! this variable only if there is any day light (this is to avoid problems with !
-            ! polar nights).                                                               !
-            !------------------------------------------------------------------------------!
-            if (cpoly%daylight(isi) >= dtlsm) then
-               csite%dmean_lambda_light(ipa)    = csite%dmean_lambda_light(ipa)            &
-                                                * dtlsm / cpoly%daylight(isi)
-            else
-               csite%dmean_lambda_light(ipa)    = 0.0
-            end if
+
             !------------------------------------------------------------------------------!
             !     Heterotrophic respiration is currently the integral over a day, given    !
             ! in µmol(CO2)/m²/s, so we multiply by the number of seconds in a year and     !
@@ -2421,9 +2383,6 @@ subroutine normalize_ed_daily_output_vars(cgrid)
                do ipft=1,n_pft
                   cpoly%lai_pft(ipft,isi)  = cpoly%lai_pft(ipft,isi)                       &
                                            + sum(cpatch%lai,cpatch%pft == ipft)            &
-                                           * csite%area(ipa) * site_area_i
-                  cpoly%wpa_pft(ipft,isi)  = cpoly%wpa_pft(ipft,isi)                       &
-                                           + sum(cpatch%wpa,cpatch%pft == ipft)            &
                                            * csite%area(ipa) * site_area_i
                   cpoly%wai_pft(ipft,isi)  = cpoly%wai_pft(ipft,isi)                       &
                                            + sum(cpatch%wai,cpatch%pft == ipft)            &
@@ -2468,8 +2427,6 @@ subroutine normalize_ed_daily_output_vars(cgrid)
       do ipft=1,n_pft
          cgrid%lai_pft(ipft,ipy)  = cgrid%lai_pft(ipft,ipy)                                &
                                   + sum(cpoly%lai_pft(ipft,:)*cpoly%area) * poly_area_i
-         cgrid%wpa_pft(ipft,ipy)  = cgrid%wpa_pft(ipft,ipy)                                &
-                                  + sum(cpoly%wpa_pft(ipft,:)*cpoly%area) * poly_area_i
          cgrid%wai_pft(ipft,ipy)  = cgrid%wai_pft(ipft,ipy)                                &
                                   + sum(cpoly%wai_pft(ipft,:)*cpoly%area) * poly_area_i
       end do
@@ -2673,7 +2630,6 @@ subroutine zero_ed_daily_output_vars(cgrid)
       cgrid%dmean_atm_prss       (ipy) = 0.
       cgrid%dmean_atm_vels       (ipy) = 0.
       cgrid%lai_pft            (:,ipy) = 0.
-      cgrid%wpa_pft            (:,ipy) = 0.
       cgrid%wai_pft            (:,ipy) = 0.
       cgrid%dmean_co2_residual   (ipy) = 0.
       cgrid%dmean_energy_residual(ipy) = 0.
@@ -2684,7 +2640,6 @@ subroutine zero_ed_daily_output_vars(cgrid)
          csite => cpoly%site(isi)
 
          cpoly%lai_pft              (:,isi) = 0.
-         cpoly%wpa_pft              (:,isi) = 0.
          cpoly%wai_pft              (:,isi) = 0.
          cpoly%dmean_co2_residual     (isi) = 0.
          cpoly%dmean_energy_residual  (isi) = 0.
@@ -2697,7 +2652,6 @@ subroutine zero_ed_daily_output_vars(cgrid)
             csite%dmean_water_residual (ipa) = 0.
             csite%dmean_rh             (ipa) = 0.
             csite%dmean_rk4step        (ipa) = 0.
-            csite%dmean_lambda_light   (ipa) = 0.
             csite%dmean_A_decomp       (ipa) = 0.
             csite%dmean_Af_decomp      (ipa) = 0.
             csite%dmean_albedo         (ipa) = 0.
@@ -2728,9 +2682,6 @@ subroutine zero_ed_daily_output_vars(cgrid)
                cpatch%dmean_light_level(ico)      = 0.
                cpatch%dmean_light_level_beam(ico) = 0.
                cpatch%dmean_light_level_diff(ico) = 0.
-               cpatch%dmean_beamext_level(ico)    = 0.
-               cpatch%dmean_diffext_level(ico)    = 0.
-               cpatch%dmean_lambda_light(ico)     = 0.
             end do
          end do
       end do
@@ -2858,8 +2809,6 @@ subroutine integrate_ed_monthly_output_vars(cgrid)
 
       cgrid%mmean_lai_pft     (:,ipy) = cgrid%mmean_lai_pft     (:,ipy)                    &
                                       + cgrid%lai_pft           (:,ipy)
-      cgrid%mmean_wpa_pft     (:,ipy) = cgrid%mmean_wpa_pft     (:,ipy)                    &
-                                      + cgrid%wpa_pft           (:,ipy)
       cgrid%mmean_wai_pft     (:,ipy) = cgrid%mmean_wai_pft     (:,ipy)                    &
                                       + cgrid%wai_pft           (:,ipy)
 
@@ -3010,9 +2959,6 @@ subroutine integrate_ed_monthly_output_vars(cgrid)
             csite%mmean_rk4step(ipa)         = csite%mmean_rk4step(ipa)                    &
                                              + csite%dmean_rk4step(ipa)
 
-            csite%mmean_lambda_light(ipa)    = csite%mmean_lambda_light(ipa)               &
-                                             + csite%dmean_lambda_light(ipa)
-
             cpatch => csite%patch(ipa)
             cohort_loop: do ico=1,cpatch%ncohorts
                cpatch%mmean_fs_open     (ico) = cpatch%mmean_fs_open     (ico)             &
@@ -3065,12 +3011,6 @@ subroutine integrate_ed_monthly_output_vars(cgrid)
                                                   + cpatch%dmean_light_level_beam(ico)
                cpatch%mmean_light_level_diff(ico) = cpatch%mmean_light_level_diff(ico)     &
                                                   + cpatch%dmean_light_level_diff(ico)
-               cpatch%mmean_beamext_level(ico)    = cpatch%mmean_beamext_level(ico)        &
-                                                  + cpatch%dmean_beamext_level(ico)
-               cpatch%mmean_diffext_level(ico)    = cpatch%mmean_diffext_level(ico)        &
-                                                  + cpatch%dmean_diffext_level(ico)
-               cpatch%mmean_lambda_light(ico)     = cpatch%mmean_lambda_light(ico)         &
-                                                  + cpatch%dmean_lambda_light(ico)
 
                !----- Mortality rates. ----------------------------------------------------!
                do imt=1,n_mort
@@ -3270,7 +3210,6 @@ subroutine normalize_ed_monthly_output_vars(cgrid)
       cgrid%mmean_runoff         (ipy) = cgrid%mmean_runoff         (ipy) * ndaysi
       cgrid%mmean_drainage       (ipy) = cgrid%mmean_drainage       (ipy) * ndaysi
       cgrid%mmean_lai_pft      (:,ipy) = cgrid%mmean_lai_pft      (:,ipy) * ndaysi
-      cgrid%mmean_wpa_pft      (:,ipy) = cgrid%mmean_wpa_pft      (:,ipy) * ndaysi
       cgrid%mmean_wai_pft      (:,ipy) = cgrid%mmean_wai_pft      (:,ipy) * ndaysi
 
       cgrid%mmean_co2_residual(ipy)    = cgrid%mmean_co2_residual(ipy)    * ndaysi
@@ -3421,7 +3360,6 @@ subroutine normalize_ed_monthly_output_vars(cgrid)
             csite%mmean_water_residual(ipa)  = csite%mmean_water_residual(ipa)  * ndaysi
             csite%mmean_rh(ipa)              = csite%mmean_rh(ipa)              * ndaysi
             csite%mmean_rk4step(ipa)         = csite%mmean_rk4step(ipa)         * ndaysi
-            csite%mmean_lambda_light(ipa)    = csite%mmean_lambda_light(ipa)    * ndaysi
             csite%mmean_A_decomp(ipa)        = csite%mmean_A_decomp(ipa)        * ndaysi
             csite%mmean_Af_decomp(ipa)       = csite%mmean_Af_decomp(ipa)       * ndaysi
             csite%mmean_albedo(ipa)          = csite%mmean_albedo(ipa)          * ndaysi
@@ -3478,12 +3416,6 @@ subroutine normalize_ed_monthly_output_vars(cgrid)
                cpatch%mmean_light_level_beam (ico) = cpatch%mmean_light_level_beam(ico)    &
                                                    * ndaysi
                cpatch%mmean_light_level_diff (ico) = cpatch%mmean_light_level_diff(ico)    &
-                                                   * ndaysi
-               cpatch%mmean_beamext_level (ico)    = cpatch%mmean_beamext_level(ico)       &
-                                                   * ndaysi
-               cpatch%mmean_diffext_level (ico)    = cpatch%mmean_diffext_level(ico)       &
-                                                   * ndaysi
-               cpatch%mmean_lambda_light(ico)      = cpatch%mmean_lambda_light(ico)        &
                                                    * ndaysi
 
                !----- Define to which PFT this cohort belongs. ----------------------------!
@@ -3907,7 +3839,6 @@ subroutine zero_ed_monthly_output_vars(cgrid)
       cgrid%mmean_runoff             (ipy) = 0.
       cgrid%mmean_drainage           (ipy) = 0.
       cgrid%mmean_lai_pft          (:,ipy) = 0.
-      cgrid%mmean_wpa_pft          (:,ipy) = 0.
       cgrid%mmean_wai_pft          (:,ipy) = 0.
       cgrid%agb_pft                (:,ipy) = 0.
       cgrid%ba_pft                 (:,ipy) = 0.
@@ -3949,7 +3880,6 @@ subroutine zero_ed_monthly_output_vars(cgrid)
             csite%mmean_water_residual    (ipa) = 0.
             csite%mmean_rh                (ipa) = 0.
             csite%mmean_rk4step           (ipa) = 0.
-            csite%mmean_lambda_light      (ipa) = 0.
             csite%mmean_A_decomp          (ipa) = 0.
             csite%mmean_Af_decomp         (ipa) = 0.
             csite%mmean_albedo            (ipa) = 0.
@@ -3986,9 +3916,6 @@ subroutine zero_ed_monthly_output_vars(cgrid)
                cpatch%mmean_light_level       (ico) = 0.
                cpatch%mmean_light_level_beam  (ico) = 0.
                cpatch%mmean_light_level_diff  (ico) = 0.
-               cpatch%mmean_beamext_level     (ico) = 0.
-               cpatch%mmean_diffext_level     (ico) = 0.
-               cpatch%mmean_lambda_light      (ico) = 0.
                cpatch%mmean_mort_rate       (:,ico) = 0.
             end do
          end do

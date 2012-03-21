@@ -6,7 +6,6 @@
 module ed_state_vars
 
   use grid_coms, only: nzg,nzs,ngrids
-  use c34constants, only : stoma_data,n_stoma_atts
   use ed_max_dims, only: max_site,n_pft,n_dbh,n_age,n_mort,n_dist_types      &
                        ,maxmach,maxgrds, str_len
   use disturb_coms, only : lutime,num_lu_trans,max_lu_years
@@ -113,9 +112,6 @@ module ed_state_vars
 
      ! Leaf area index (m2 leaf / m2 ground)
      real ,pointer,dimension(:) :: lai
-
-     ! Wood projected area (m2 wood / m2 ground)
-     real ,pointer,dimension(:) :: wpa
 
      ! Wood area index (m2 wood / m2 ground)
      real ,pointer,dimension(:) :: wai
@@ -299,14 +295,6 @@ module ed_state_vars
      ! Monthly mean Mortality rate [yr-1] (only frost mortality changes...)
      real , pointer, dimension(:,:) :: mmean_mort_rate
 
-     ! This is where you keep the derivatives of the 
-     ! stomatal conductance residual and the old met conditions.
-     type(stoma_data) ,pointer,dimension(:) :: old_stoma_data
-
-     ! This vector is just for transporting the data into and out
-     ! of the HDF5 file
-     real ,pointer,dimension(:,:)           :: old_stoma_vector
-
      ! Transpiration rate, open stomata (kg/m2_leaf/s)
      real ,pointer,dimension(:) :: Psi_open
 
@@ -334,17 +322,6 @@ module ed_state_vars
      real, pointer, dimension(:) :: light_level_diff
      real, pointer, dimension(:) :: dmean_light_level_diff
      real, pointer, dimension(:) :: mmean_light_level_diff
-     real, pointer, dimension(:) :: beamext_level
-     real, pointer, dimension(:) :: dmean_beamext_level
-     real, pointer, dimension(:) :: mmean_beamext_level
-     real, pointer, dimension(:) :: diffext_level
-     real, pointer, dimension(:) :: dmean_diffext_level
-     real, pointer, dimension(:) :: mmean_diffext_level
-
-     ! Light extinction of this cohort, its diurnal and monthly means
-     real, pointer, dimension(:) :: lambda_light
-     real, pointer, dimension(:) :: dmean_lambda_light
-     real, pointer, dimension(:) :: mmean_lambda_light
 
      ! Photosynthetically active radiation (PAR) absorbed by the 
      ! cohort leaves(units are W/m2)
@@ -541,9 +518,6 @@ module ed_state_vars
      ! Leaf area index (m2 leaf / m2 ground)
      real, pointer,dimension(:) :: lai
 
-     ! Wood projected area (m2 wood / m2 ground)
-     real, pointer,dimension(:) :: wpa
-
      ! Wood area index (m2 wood / m2 ground)
      real, pointer,dimension(:) :: wai
 
@@ -558,9 +532,6 @@ module ed_state_vars
 
      ! Fractional area of the patch
      real , pointer,dimension(:) :: area
-
-     ! Fractional area of the patch (considers lai weighting)
-     real, pointer,dimension(:) :: laiarea
 
      ! Soil carbon concentration, fast pool (kg/m2)
      real , pointer,dimension(:) :: fast_soil_C 
@@ -626,11 +597,6 @@ module ed_state_vars
      real , pointer, dimension(:) :: ggveg
      real , pointer, dimension(:) :: ggnet
      real , pointer, dimension(:) :: ggsoil
-
-     ! Mean light extinction coefficient, its diurnal and monthly cycle.
-     real , pointer, dimension(:) :: lambda_light
-     real , pointer, dimension(:) :: dmean_lambda_light
-     real , pointer, dimension(:) :: mmean_lambda_light
 
 
      ! Number of cohorts in the patch
@@ -709,11 +675,6 @@ module ed_state_vars
      ! of the canopy (umol/m2 leaf/s).  Used by mortality function.
      real, pointer,dimension(:,:) :: A_o_max  ! open stomata
      real, pointer,dimension(:,:) :: A_c_max  ! closed stomata
-     
-     ! This will hold the stomatal conductance data from the previous 
-     ! time step corresponding to A_o_max
-     type(stoma_data), pointer,dimension(:,:)  :: old_stoma_data_max
-     real, pointer,dimension(:,:,:)            :: old_stoma_vector_max
 
      ! Average daily temperature [K]
      real , pointer,dimension(:) :: avg_daily_temp  
@@ -961,9 +922,6 @@ module ed_state_vars
      ! coarse woody debris contribution to rh (umol/m2/s)
      real , pointer,dimension(:) :: cwd_rh
 
-     ! Integer flag specifying whether this patch is to be fused
-     integer , pointer,dimension(:) :: fuse_flag
-
      ! Plant density broken down into size and PFT bins.  Used in patch fusion
      real, pointer,dimension(:,:,:) :: cumlai_profile !(n_pft,ff_nhgt,npatches)
 
@@ -1076,10 +1034,6 @@ module ed_state_vars
                                                     !  soil layer                              [kg/m2/s]
      real,pointer,dimension(:)   :: avg_drainage_heat! Average internal energy loss due to water 
                                                      ! drainage through the lower soil layer   [kg/m2/s]
-
-     !----- Auxillary Variables (user can modify to view any variable ----------------------!
-     real,pointer,dimension(:)   :: aux             ! Auxillary surface variable
-     real,pointer,dimension(:,:) :: aux_s           ! Auxillary soil variable
      
      !----- Sensible heat ------------------------------------------------------------------!
 
@@ -1176,8 +1130,6 @@ module ed_state_vars
      !-------------------------------------------------------------------------------------!
 
      real,   pointer,dimension(:,:) :: lai_pft    ! Site level mean LAI, grouped by cohort PFT
-                                                  ! [m2/m2] (n_pft,nsites)
-     real,   pointer,dimension(:,:) :: wpa_pft    ! Woody Projected Area, grouped by cohort PFT
                                                   ! [m2/m2] (n_pft,nsites)
      real,   pointer,dimension(:,:) :: wai_pft    ! Woody area index, grouped by cohort PFT
                                                   ! [m2/m2] (n_pft,nsites)
@@ -1350,14 +1302,9 @@ module ed_state_vars
      real,pointer,dimension(:)   :: avg_drainage    ! Total drainage
      real,pointer,dimension(:)   :: avg_drainage_heat! Total drainage heat flux
 
-     !----- Auxiliary Variables (user can modify to view any variable -----------------------------------------------!
-     real,pointer,dimension(:)   :: aux             ! Auxillary surface variable
-     real,pointer,dimension(:,:) :: aux_s           ! Auxillary soil variable
-
-     !---- Polygon LAI, WPA, and WAI ------------------------------------------------------!
+     !---- Polygon LAI and WAI --------------------------------------------------------------------------------------!
      real, pointer, dimension(:) :: lai
      real, pointer, dimension(:) :: avg_lma
-     real, pointer, dimension(:) :: wpa
      real, pointer, dimension(:) :: wai
 
      !----- Sensible heat -------------------------------------------------------------------------------------------!
@@ -1639,14 +1586,9 @@ module ed_state_vars
      real,pointer,dimension(:)   :: avg_drainage      ! Total drainage through the soil bottom
      real,pointer,dimension(:)   :: avg_drainage_heat ! Total drainage internal heat loss
 
-     !----- Auxillary Variables (user can modify to view any variable --------!
-     real,pointer,dimension(:)   :: aux             ! Auxillary surface variable
-     real,pointer,dimension(:,:) :: aux_s           ! Auxillary soil variable
-
-     !----- LAI, WPA, and WAI ------------------------------------------------!
+     !----- LAI, and WAI -----------------------------------------------------!
      real,pointer,dimension(:) :: lai
      real,pointer,dimension(:) :: avg_lma
-     real,pointer,dimension(:) :: wpa
      real,pointer,dimension(:) :: wai
 
 
@@ -1993,7 +1935,6 @@ module ed_state_vars
      ! averages but they are written at the daily analysis               !
      !-------------------------------------------------------------------!
      real, pointer, dimension(:,:) :: lai_pft    ! (n_pft       , npolygons)
-     real, pointer, dimension(:,:) :: wpa_pft    ! (n_pft       , npolygons)
      real, pointer, dimension(:,:) :: wai_pft    ! (n_pft       , npolygons)
      real, pointer, dimension(:,:) :: dmean_gpp_dbh    !(n_dbh       ,npolygons)
 
@@ -2008,7 +1949,6 @@ module ed_state_vars
 
      real, pointer, dimension(:,:) :: mmean_gpp_dbh  !(n_dbh       ,npolygons)
      real, pointer, dimension(:,:) :: mmean_lai_pft  !(n_pft       ,npolygons)
-     real, pointer, dimension(:,:) :: mmean_wpa_pft  !(n_pft       ,npolygons)
      real, pointer, dimension(:,:) :: mmean_wai_pft  !(n_pft       ,npolygons)
 
      !-------------------------------------------------------------------!
@@ -2244,7 +2184,7 @@ contains
     num_var = 0
     
     allocate(vt_info(maxvars,ngrids))
-    vt_info(:,:)%first=.true.
+    vt_info(:,:)%vector_allocated = .false.
 
 
     !  Initialize the global offsets
@@ -2334,7 +2274,6 @@ contains
 
        allocate(cgrid%lai  (npolygons))
        allocate(cgrid%avg_lma(npolygons))
-       allocate(cgrid%wpa  (npolygons))
        allocate(cgrid%wai  (npolygons))
 
        ! Fast time flux diagnostics
@@ -2353,8 +2292,6 @@ contains
        allocate(cgrid%avg_runoff        (npolygons))
        allocate(cgrid%avg_drainage       (npolygons))
        allocate(cgrid%avg_drainage_heat  (npolygons))
-       allocate(cgrid%aux           (npolygons))
-       allocate(cgrid%aux_s         (nzg,npolygons))
        allocate(cgrid%avg_rshort_gnd   (npolygons))
        allocate(cgrid%avg_rlong_gnd    (npolygons))
        allocate(cgrid%avg_ustar        (npolygons))
@@ -2508,7 +2445,6 @@ contains
        allocate(cgrid%avg_rlongup        (npolygons))
        
        allocate(cgrid%lai_pft            (n_pft       ,npolygons))
-       allocate(cgrid%wpa_pft            (n_pft       ,npolygons))
        allocate(cgrid%wai_pft            (n_pft       ,npolygons))
 
        allocate(cgrid%workload             (13          ,npolygons))
@@ -2653,7 +2589,6 @@ contains
           allocate(cgrid%mmean_fsn            (             npolygons))
           allocate(cgrid%mmean_gpp_dbh        (n_dbh       ,npolygons))
           allocate(cgrid%mmean_lai_pft        (n_pft       ,npolygons))
-          allocate(cgrid%mmean_wpa_pft        (n_pft       ,npolygons))
           allocate(cgrid%mmean_wai_pft        (n_pft       ,npolygons))
           allocate(cgrid%mmean_can_temp       (             npolygons))
           allocate(cgrid%mmean_can_shv        (             npolygons))
@@ -2853,7 +2788,6 @@ contains
     allocate(cpoly%probharv_secondary(n_pft,nsites))
 
     allocate(cpoly%lai_pft(n_pft,nsites))
-    allocate(cpoly%wpa_pft(n_pft,nsites))
     allocate(cpoly%wai_pft(n_pft,nsites))
 
     allocate(cpoly%TCI(nsites))      
@@ -2912,7 +2846,6 @@ contains
 
     allocate(cpoly%lai  (nsites)) 
     allocate(cpoly%avg_lma(nsites))
-    allocate(cpoly%wpa  (nsites))
     allocate(cpoly%wai  (nsites))
     ! Fast time flux diagnostics
     ! ---------------------------------------------
@@ -2931,8 +2864,6 @@ contains
     allocate(cpoly%avg_runoff        (nsites))
     allocate(cpoly%avg_drainage  (nsites))
     allocate(cpoly%avg_drainage_heat  (nsites))
-    allocate(cpoly%aux           (nsites))
-    allocate(cpoly%aux_s         (nzg,nsites))
     allocate(cpoly%avg_rshort_gnd   (nsites))
     allocate(cpoly%avg_rlong_gnd    (nsites))
     allocate(cpoly%avg_ustar        (nsites))
@@ -3046,12 +2977,10 @@ contains
     end do
 
     allocate(csite%lai(npatches))
-    allocate(csite%wpa(npatches))
     allocate(csite%wai(npatches))
     allocate(csite%dist_type(npatches))
     allocate(csite%age(npatches))
     allocate(csite%area(npatches))
-    allocate(csite%laiarea(npatches))
     allocate(csite%fast_soil_C(npatches))
     allocate(csite%slow_soil_C(npatches))
     allocate(csite%structural_soil_C(npatches))
@@ -3075,7 +3004,6 @@ contains
     allocate(csite%ggveg(npatches))
     allocate(csite%ggnet(npatches))
     allocate(csite%ggsoil(npatches))
-    allocate(csite%lambda_light(npatches))
     allocate(csite%cohort_count(npatches))
     allocate(csite%pname(npatches))
     
@@ -3103,9 +3031,6 @@ contains
     allocate(csite%par_l_diffuse_max(npatches))
     allocate(csite%A_o_max(n_pft,npatches)) 
     allocate(csite%A_c_max(n_pft,npatches)) 
-
-    allocate(csite%old_stoma_data_max(n_pft,npatches))
-    allocate(csite%old_stoma_vector_max(n_stoma_atts,n_pft,npatches))
 
     allocate(csite%avg_daily_temp(npatches))  
     allocate(csite%avg_monthly_gndwater(npatches))  
@@ -3174,7 +3099,6 @@ contains
     allocate(csite%f_decomp(npatches))
     allocate(csite%rh(npatches))
     allocate(csite%cwd_rh(npatches))
-    allocate(csite%fuse_flag(npatches))
     allocate(csite%cumlai_profile(n_pft,ff_nhgt,npatches))
     allocate(csite%plant_ag_biomass(npatches))
 
@@ -3235,8 +3159,6 @@ contains
     allocate(csite%avg_runoff    (npatches))
     allocate(csite%avg_drainage  (npatches))
     allocate(csite%avg_drainage_heat  (npatches))
-    allocate(csite%aux           (npatches))
-    allocate(csite%aux_s         (nzg,npatches))
     allocate(csite%avg_sensible_lc  (npatches))
     allocate(csite%avg_sensible_wc  (npatches))
     allocate(csite%avg_qwshed_vg    (npatches))
@@ -3274,7 +3196,6 @@ contains
 
     if (imoutput > 0 .or. idoutput > 0 .or. iqoutput > 0) then
        allocate(csite%dmean_rk4step           (npatches))
-       allocate(csite%dmean_lambda_light      (npatches))
        allocate(csite%dmean_co2_residual      (npatches))
        allocate(csite%dmean_energy_residual   (npatches))
        allocate(csite%dmean_water_residual    (npatches))
@@ -3287,7 +3208,6 @@ contains
     end if
     if (imoutput > 0 .or. iqoutput > 0) then
        allocate(csite%mmean_rk4step           (npatches))
-       allocate(csite%mmean_lambda_light      (npatches))
        allocate(csite%mmean_co2_residual      (npatches))
        allocate(csite%mmean_energy_residual   (npatches))
        allocate(csite%mmean_water_residual    (npatches))
@@ -3345,7 +3265,6 @@ contains
     allocate(cpatch%broot(ncohorts))
     allocate(cpatch%bsapwood(ncohorts))
     allocate(cpatch%lai(ncohorts))
-    allocate(cpatch%wpa(ncohorts))
     allocate(cpatch%wai(ncohorts))
     allocate(cpatch%crown_area(ncohorts))
     allocate(cpatch%leaf_resolvable(ncohorts))
@@ -3399,10 +3318,6 @@ contains
     allocate(cpatch%monthly_dndt(ncohorts))
     allocate(cpatch%mort_rate(n_mort,ncohorts))
 
-    ! Soon to be replaced
-    allocate(cpatch%old_stoma_data(ncohorts))
-    allocate(cpatch%old_stoma_vector(n_stoma_atts,ncohorts))
-
     allocate(cpatch%Psi_open(ncohorts))
     allocate(cpatch%krdepth(ncohorts))
     allocate(cpatch%first_census(ncohorts))
@@ -3410,9 +3325,6 @@ contains
     allocate(cpatch%light_level(ncohorts))
     allocate(cpatch%light_level_beam(ncohorts))
     allocate(cpatch%light_level_diff(ncohorts))
-    allocate(cpatch%beamext_level(ncohorts))
-    allocate(cpatch%diffext_level(ncohorts))
-    allocate(cpatch%lambda_light(ncohorts))
     allocate(cpatch%par_l(ncohorts))
     allocate(cpatch%par_l_beam(ncohorts))
     allocate(cpatch%par_l_diffuse(ncohorts))
@@ -3462,9 +3374,6 @@ contains
        allocate(cpatch%dmean_light_level(ncohorts))
        allocate(cpatch%dmean_light_level_beam(ncohorts))
        allocate(cpatch%dmean_light_level_diff(ncohorts))
-       allocate(cpatch%dmean_beamext_level(ncohorts))
-       allocate(cpatch%dmean_diffext_level(ncohorts))
-       allocate(cpatch%dmean_lambda_light(ncohorts))
        allocate(cpatch%dmean_fs_open(ncohorts))
        allocate(cpatch%dmean_fsw(ncohorts))
        allocate(cpatch%dmean_fsn(ncohorts))
@@ -3493,9 +3402,6 @@ contains
        allocate(cpatch%mmean_light_level(ncohorts))
        allocate(cpatch%mmean_light_level_beam(ncohorts))
        allocate(cpatch%mmean_light_level_diff(ncohorts))
-       allocate(cpatch%mmean_beamext_level(ncohorts))
-       allocate(cpatch%mmean_diffext_level(ncohorts))
-       allocate(cpatch%mmean_lambda_light(ncohorts))
        allocate(cpatch%mmean_fs_open(ncohorts))
        allocate(cpatch%mmean_fsw(ncohorts))
        allocate(cpatch%mmean_fsn(ncohorts))
@@ -3610,7 +3516,6 @@ contains
 
        nullify(cgrid%lai                     )
        nullify(cgrid%avg_lma                 )
-       nullify(cgrid%wpa                     )
        nullify(cgrid%wai                     )
 
        ! Fast time flux diagnostics
@@ -3629,8 +3534,6 @@ contains
        nullify(cgrid%avg_runoff              )
        nullify(cgrid%avg_drainage            )
        nullify(cgrid%avg_drainage_heat       )
-       nullify(cgrid%aux                     )
-       nullify(cgrid%aux_s                   )
        nullify(cgrid%avg_rshort_gnd          )
        nullify(cgrid%avg_rlong_gnd           )
        nullify(cgrid%avg_ustar               )
@@ -3858,7 +3761,6 @@ contains
      nullify(cgrid%dmean_energy_residual   )
      nullify(cgrid%dmean_water_residual    )
      nullify(cgrid%lai_pft                 )
-     nullify(cgrid%wpa_pft                 )
      nullify(cgrid%wai_pft                 )
      nullify(cgrid%mmean_ustar             )
      nullify(cgrid%mmean_tstar             )
@@ -3901,7 +3803,6 @@ contains
      nullify(cgrid%mmean_vleaf_resp        )
      nullify(cgrid%mmean_gpp_dbh           )
      nullify(cgrid%mmean_lai_pft           )
-     nullify(cgrid%mmean_wpa_pft           )
      nullify(cgrid%mmean_wai_pft           )
      nullify(cgrid%mmean_can_temp          )
      nullify(cgrid%mmean_can_shv           )
@@ -4086,7 +3987,6 @@ contains
 
 
     nullify(cpoly%lai_pft)
-    nullify(cpoly%wpa_pft)
     nullify(cpoly%wai_pft)
 
     nullify(cpoly%TCI)   
@@ -4142,7 +4042,6 @@ contains
     nullify(cpoly%avg_lma    )
     nullify(cpoly%daylight)
     nullify(cpoly%lai    )
-    nullify(cpoly%wpa    )
     nullify(cpoly%wai    )
     
     ! Fast time flux diagnostics
@@ -4161,8 +4060,6 @@ contains
     nullify(cpoly%avg_runoff    )
     nullify(cpoly%avg_drainage  )
     nullify(cpoly%avg_drainage_heat  )
-    nullify(cpoly%aux           )
-    nullify(cpoly%aux_s         )
     nullify(cpoly%avg_rshort_gnd   )
     nullify(cpoly%avg_rlong_gnd    )
     nullify(cpoly%avg_ustar        )
@@ -4265,7 +4162,6 @@ contains
     nullify(csite%dist_type)
     nullify(csite%age)
     nullify(csite%area)
-    nullify(csite%laiarea)
     nullify(csite%fast_soil_C)
     nullify(csite%slow_soil_C)
     nullify(csite%structural_soil_C)
@@ -4291,11 +4187,7 @@ contains
     nullify(csite%ggveg)
     nullify(csite%ggnet)
     nullify(csite%ggsoil)
-    nullify(csite%lambda_light)
-    nullify(csite%dmean_lambda_light)
-    nullify(csite%mmean_lambda_light)
     nullify(csite%lai)
-    nullify(csite%wpa)
     nullify(csite%wai)
 
     nullify(csite%sfcwater_mass)
@@ -4322,8 +4214,6 @@ contains
     nullify(csite%par_l_diffuse_max) 
     nullify(csite%A_o_max) 
     nullify(csite%A_c_max) 
-    nullify(csite%old_stoma_data_max)
-    nullify(csite%old_stoma_vector_max)
     nullify(csite%avg_daily_temp)
     nullify(csite%avg_monthly_gndwater)
     nullify(csite%mean_rh)
@@ -4407,7 +4297,6 @@ contains
     nullify(csite%f_decomp)
     nullify(csite%rh)
     nullify(csite%cwd_rh)
-    nullify(csite%fuse_flag)
     nullify(csite%cumlai_profile)
     nullify(csite%plant_ag_biomass)
 
@@ -4470,8 +4359,6 @@ contains
     nullify(csite%avg_runoff    )
     nullify(csite%avg_drainage  )
     nullify(csite%avg_drainage_heat  )
-    nullify(csite%aux           )
-    nullify(csite%aux_s         )
     nullify(csite%avg_sensible_lc  )
     nullify(csite%avg_sensible_wc  )
     nullify(csite%avg_qwshed_vg    )
@@ -4546,7 +4433,6 @@ contains
     nullify(cpatch%broot)
     nullify(cpatch%bsapwood)
     nullify(cpatch%lai)
-    nullify(cpatch%wpa)
     nullify(cpatch%wai)
     nullify(cpatch%crown_area)
     nullify(cpatch%leaf_resolvable)
@@ -4624,8 +4510,6 @@ contains
     nullify(cpatch%monthly_dndt)
     nullify(cpatch%mort_rate)
     nullify(cpatch%mmean_mort_rate)
-    nullify(cpatch%old_stoma_data)
-    nullify(cpatch%old_stoma_vector)
     nullify(cpatch%Psi_open)
     nullify(cpatch%krdepth)
     nullify(cpatch%first_census)
@@ -4639,15 +4523,6 @@ contains
     nullify(cpatch%light_level_diff)
     nullify(cpatch%dmean_light_level_diff)
     nullify(cpatch%mmean_light_level_diff)
-    nullify(cpatch%beamext_level)
-    nullify(cpatch%dmean_beamext_level)
-    nullify(cpatch%mmean_beamext_level)
-    nullify(cpatch%diffext_level)
-    nullify(cpatch%dmean_diffext_level)
-    nullify(cpatch%mmean_diffext_level)
-    nullify(cpatch%lambda_light)
-    nullify(cpatch%dmean_lambda_light)
-    nullify(cpatch%mmean_lambda_light)
     nullify(cpatch%dmean_par_l)
     nullify(cpatch%dmean_par_l_beam)
     nullify(cpatch%dmean_par_l_diff)
@@ -4798,7 +4673,6 @@ contains
 
        if(associated(cgrid%lai                     )) deallocate(cgrid%lai                     ) 
        if(associated(cgrid%avg_lma                 )) deallocate(cgrid%avg_lma                    )
-       if(associated(cgrid%wpa                     )) deallocate(cgrid%wpa                     )
        if(associated(cgrid%wai                     )) deallocate(cgrid%wai                     )
 
        ! Fast time flux diagnostics
@@ -4817,8 +4691,6 @@ contains
        if(associated(cgrid%avg_runoff              )) deallocate(cgrid%avg_runoff              )
        if(associated(cgrid%avg_drainage            )) deallocate(cgrid%avg_drainage            )
        if(associated(cgrid%avg_drainage_heat       )) deallocate(cgrid%avg_drainage_heat       )
-       if(associated(cgrid%aux                     )) deallocate(cgrid%aux                     )
-       if(associated(cgrid%aux_s                   )) deallocate(cgrid%aux_s                   )
        if(associated(cgrid%avg_rshort_gnd          )) deallocate(cgrid%avg_rshort_gnd          )
        if(associated(cgrid%avg_rlong_gnd           )) deallocate(cgrid%avg_rlong_gnd           )
        if(associated(cgrid%avg_ustar               )) deallocate(cgrid%avg_ustar               )
@@ -5061,7 +4933,6 @@ contains
        if(associated(cgrid%dmean_water_residual    )) deallocate(cgrid%dmean_water_residual    )
 
        if(associated(cgrid%lai_pft                 )) deallocate(cgrid%lai_pft                 )
-       if(associated(cgrid%wpa_pft                 )) deallocate(cgrid%wpa_pft                 )
        if(associated(cgrid%wai_pft                 )) deallocate(cgrid%wai_pft                 )
        if(associated(cgrid%mmean_gpp               )) deallocate(cgrid%mmean_gpp               )
        if(associated(cgrid%mmean_nppleaf           )) deallocate(cgrid%mmean_nppleaf           )
@@ -5104,7 +4975,6 @@ contains
        if(associated(cgrid%mmean_vleaf_resp        )) deallocate(cgrid%mmean_vleaf_resp        )
        if(associated(cgrid%mmean_gpp_dbh           )) deallocate(cgrid%mmean_gpp_dbh           )
        if(associated(cgrid%mmean_lai_pft           )) deallocate(cgrid%mmean_lai_pft           )
-       if(associated(cgrid%mmean_wpa_pft           )) deallocate(cgrid%mmean_wpa_pft           )
        if(associated(cgrid%mmean_wai_pft           )) deallocate(cgrid%mmean_wai_pft           )
        if(associated(cgrid%mmean_can_temp          )) deallocate(cgrid%mmean_can_temp          )
        if(associated(cgrid%mmean_can_shv           )) deallocate(cgrid%mmean_can_shv           )
@@ -5297,7 +5167,6 @@ contains
 
 
     if(associated(cpoly%lai_pft                     )) deallocate(cpoly%lai_pft                     )
-    if(associated(cpoly%wpa_pft                     )) deallocate(cpoly%wpa_pft                     )
     if(associated(cpoly%wai_pft                     )) deallocate(cpoly%wai_pft                     )
 
     if(associated(cpoly%TCI                         )) deallocate(cpoly%TCI                         )
@@ -5354,8 +5223,7 @@ contains
     
     if(associated(cpoly%lai                         )) deallocate(cpoly%lai                         )
     if(associated(cpoly%avg_lma                     )) deallocate(cpoly%avg_lma                     )
-    if(associated(cpoly%wpa                         )) deallocate(cpoly%wpa                         )
-    if(associated(cpoly%wai                         )) deallocate(cpoly%wai                         )
+   if(associated(cpoly%wai                         )) deallocate(cpoly%wai                         )
 
     ! Fast time flux diagnostics
     ! ---------------------------------------------
@@ -5373,8 +5241,6 @@ contains
     if(associated(cpoly%avg_runoff                  )) deallocate(cpoly%avg_runoff                  )
     if(associated(cpoly%avg_drainage                )) deallocate(cpoly%avg_drainage                )
     if(associated(cpoly%avg_drainage_heat           )) deallocate(cpoly%avg_drainage_heat           )
-    if(associated(cpoly%aux                         )) deallocate(cpoly%aux                         )
-    if(associated(cpoly%aux_s                       )) deallocate(cpoly%aux_s                       )
     if(associated(cpoly%avg_rshort_gnd              )) deallocate(cpoly%avg_rshort_gnd              )
     if(associated(cpoly%avg_rlong_gnd               )) deallocate(cpoly%avg_rlong_gnd               )
     if(associated(cpoly%avg_ustar                   )) deallocate(cpoly%avg_ustar                   )
@@ -5482,7 +5348,6 @@ contains
     if(associated(csite%dist_type                    )) deallocate(csite%dist_type                    )
     if(associated(csite%age                          )) deallocate(csite%age                          )
     if(associated(csite%area                         )) deallocate(csite%area                         )
-    if(associated(csite%laiarea                      )) deallocate(csite%laiarea                      )
     if(associated(csite%fast_soil_C                  )) deallocate(csite%fast_soil_C                  )
     if(associated(csite%slow_soil_C                  )) deallocate(csite%slow_soil_C                  )
     if(associated(csite%structural_soil_C            )) deallocate(csite%structural_soil_C            )
@@ -5508,11 +5373,7 @@ contains
     if(associated(csite%ggveg                        )) deallocate(csite%ggveg                        )
     if(associated(csite%ggnet                        )) deallocate(csite%ggnet                        )
     if(associated(csite%ggsoil                       )) deallocate(csite%ggsoil                       )
-    if(associated(csite%lambda_light                 )) deallocate(csite%lambda_light                 )
-    if(associated(csite%dmean_lambda_light           )) deallocate(csite%dmean_lambda_light           )
-    if(associated(csite%mmean_lambda_light           )) deallocate(csite%mmean_lambda_light           )
     if(associated(csite%lai                          )) deallocate(csite%lai                          )
-    if(associated(csite%wpa                          )) deallocate(csite%wpa                          )
     if(associated(csite%wai                          )) deallocate(csite%wai                          )
 
     if(associated(csite%sfcwater_mass                )) deallocate(csite%sfcwater_mass                )
@@ -5539,9 +5400,6 @@ contains
     if(associated(csite%par_l_diffuse_max            )) deallocate(csite%par_l_diffuse_max            )
     if(associated(csite%A_o_max                      )) deallocate(csite%A_o_max                      )
     if(associated(csite%A_c_max                      )) deallocate(csite%A_c_max                      )
-
-    if(associated(csite%old_stoma_data_max           )) deallocate(csite%old_stoma_data_max           )
-    if(associated(csite%old_stoma_vector_max         )) deallocate(csite%old_stoma_vector_max         )
 
     if(associated(csite%avg_daily_temp               )) deallocate(csite%avg_daily_temp               )
     if(associated(csite%avg_monthly_gndwater         )) deallocate(csite%avg_monthly_gndwater         )
@@ -5626,7 +5484,6 @@ contains
     if(associated(csite%f_decomp                     )) deallocate(csite%f_decomp                     )
     if(associated(csite%rh                           )) deallocate(csite%rh                           )
     if(associated(csite%cwd_rh                       )) deallocate(csite%cwd_rh                       )
-    if(associated(csite%fuse_flag                    )) deallocate(csite%fuse_flag                    )
     if(associated(csite%cumlai_profile               )) deallocate(csite%cumlai_profile               )
     if(associated(csite%plant_ag_biomass             )) deallocate(csite%plant_ag_biomass             )
 
@@ -5686,8 +5543,6 @@ contains
     if(associated(csite%avg_runoff                   )) deallocate(csite%avg_runoff                   )
     if(associated(csite%avg_drainage                 )) deallocate(csite%avg_drainage                 )
     if(associated(csite%avg_drainage_heat            )) deallocate(csite%avg_drainage_heat            )
-    if(associated(csite%aux                          )) deallocate(csite%aux                          )
-    if(associated(csite%aux_s                        )) deallocate(csite%aux_s                        )
     if(associated(csite%avg_sensible_lc              )) deallocate(csite%avg_sensible_lc              )
     if(associated(csite%avg_sensible_wc              )) deallocate(csite%avg_sensible_wc              )
     if(associated(csite%avg_qwshed_vg                )) deallocate(csite%avg_qwshed_vg                )
@@ -5766,7 +5621,6 @@ contains
     if(associated(cpatch%broot))               deallocate(cpatch%broot)
     if(associated(cpatch%bsapwood))            deallocate(cpatch%bsapwood)
     if(associated(cpatch%lai))                 deallocate(cpatch%lai)
-    if(associated(cpatch%wpa))                 deallocate(cpatch%wpa)
     if(associated(cpatch%wai))                 deallocate(cpatch%wai)
     if(associated(cpatch%crown_area))          deallocate(cpatch%crown_area)
     if(associated(cpatch%leaf_resolvable))     deallocate(cpatch%leaf_resolvable)
@@ -5845,8 +5699,6 @@ contains
     if(associated(cpatch%mort_rate))           deallocate(cpatch%mort_rate)
     if(associated(cpatch%mmean_mort_rate))     deallocate(cpatch%mmean_mort_rate)
 
-    if(associated(cpatch%old_stoma_data))         deallocate(cpatch%old_stoma_data)
-    if(associated(cpatch%old_stoma_vector))       deallocate(cpatch%old_stoma_vector)
     if(associated(cpatch%Psi_open))               deallocate(cpatch%Psi_open)
     if(associated(cpatch%krdepth))                deallocate(cpatch%krdepth)
     if(associated(cpatch%first_census))           deallocate(cpatch%first_census)
@@ -5860,15 +5712,6 @@ contains
     if(associated(cpatch%light_level_diff))       deallocate(cpatch%light_level_diff)
     if(associated(cpatch%dmean_light_level_diff)) deallocate(cpatch%dmean_light_level_diff)
     if(associated(cpatch%mmean_light_level_diff)) deallocate(cpatch%mmean_light_level_diff)
-    if(associated(cpatch%beamext_level))          deallocate(cpatch%beamext_level)
-    if(associated(cpatch%dmean_beamext_level))    deallocate(cpatch%dmean_beamext_level)
-    if(associated(cpatch%mmean_beamext_level))    deallocate(cpatch%mmean_beamext_level)
-    if(associated(cpatch%diffext_level))          deallocate(cpatch%diffext_level)
-    if(associated(cpatch%dmean_diffext_level))    deallocate(cpatch%dmean_diffext_level)
-    if(associated(cpatch%mmean_diffext_level))    deallocate(cpatch%mmean_diffext_level)
-    if(associated(cpatch%lambda_light))           deallocate(cpatch%lambda_light)
-    if(associated(cpatch%dmean_lambda_light))     deallocate(cpatch%dmean_lambda_light)
-    if(associated(cpatch%mmean_lambda_light))     deallocate(cpatch%mmean_lambda_light)
     if(associated(cpatch%par_l))                  deallocate(cpatch%par_l)
     if(associated(cpatch%par_l_beam))             deallocate(cpatch%par_l_beam)
     if(associated(cpatch%par_l_diffuse))          deallocate(cpatch%par_l_diffuse)
@@ -5973,8 +5816,6 @@ contains
       integer         , intent(in) :: opaa  ! First output patch index
       integer         , intent(in) :: opaz  ! Last  output patch index
       !----- Local variables. -------------------------------------------------------------!
-      type(stoma_data), pointer    :: osdi  ! Old stomate data - input patch
-      type(stoma_data), pointer    :: osdo  ! Old stomate data - output patch
       integer                      :: ipa   ! Counter for the input  site patches
       integer                      :: opa   ! Counter for the output site patches
       integer                      :: k     ! Vertical layer counter
@@ -6036,9 +5877,7 @@ contains
          osite%ggveg(opa)                       = isite%ggveg(ipa)
          osite%ggnet(opa)                       = isite%ggnet(ipa)
          osite%ggsoil(opa)                      = isite%ggsoil(ipa)
-         osite%lambda_light(opa)                = isite%lambda_light(ipa)
          osite%lai(opa)                         = isite%lai(ipa)
-         osite%wpa(opa)                         = isite%wpa(ipa)
          osite%wai(opa)                         = isite%wai(ipa)
          osite%avg_daily_temp(opa)              = isite%avg_daily_temp(ipa)
          osite%avg_monthly_gndwater(opa)        = isite%avg_monthly_gndwater(ipa)
@@ -6105,7 +5944,6 @@ contains
          osite%f_decomp(opa)                    = isite%f_decomp(ipa)
          osite%rh(opa)                          = isite%rh(ipa)
          osite%cwd_rh(opa)                      = isite%cwd_rh(ipa)
-         osite%fuse_flag(opa)                   = isite%fuse_flag(ipa)
          osite%plant_ag_biomass(opa)            = isite%plant_ag_biomass(ipa)
          osite%mean_wflux(opa)                  = isite%mean_wflux(ipa)
          osite%mean_latflux(opa)                = isite%mean_latflux(ipa)
@@ -6164,7 +6002,6 @@ contains
          osite%avg_runoff(opa)                  = isite%avg_runoff(ipa)
          osite%avg_drainage(opa)                = isite%avg_drainage(ipa)
          osite%avg_drainage_heat(opa)           = isite%avg_drainage_heat(ipa)
-         osite%aux(opa)                         = isite%aux(ipa)
          osite%avg_sensible_lc(opa)             = isite%avg_sensible_lc(ipa)
          osite%avg_sensible_wc(opa)             = isite%avg_sensible_wc(ipa)
          osite%avg_qwshed_vg(opa)               = isite%avg_qwshed_vg(ipa)
@@ -6209,7 +6046,6 @@ contains
             osite%avg_smoist_gg(k,opa)          =  isite%avg_smoist_gg(k,ipa)
             osite%avg_transloss(k,opa)          =  isite%avg_transloss(k,ipa)
             osite%avg_sensible_gg(k,opa)        =  isite%avg_sensible_gg(k,ipa)
-            osite%aux_s(k,opa)                  =  isite%aux_s(k,ipa)
          end do
 
          !----- PFT types. ----------------------------------------------------------------!
@@ -6217,35 +6053,10 @@ contains
             osite%repro(ipft,opa)                =  isite%repro(ipft,ipa)
             osite%A_o_max(ipft,opa)              =  isite%A_o_max(ipft,ipa)
             osite%A_c_max(ipft,opa)              =  isite%A_c_max(ipft,ipa)
-            
-            do isto=1,n_stoma_atts
-               osite%old_stoma_vector_max(isto,ipft,opa) =                                 &
-                                                  isite%old_stoma_vector_max(isto,ipft,ipa)
-            end do
 
             do ihgt=1,ff_nhgt
                osite%cumlai_profile(ipft,ihgt,opa) = isite%cumlai_profile(ipft,ihgt,ipa)
             end do
-            
-            !----- This is to copy the old_stoma_data_max structure. ----------------------!
-            osdo => osite%old_stoma_data_max(ipft,opa)
-            osdi => isite%old_stoma_data_max(ipft,ipa)
-           
-            osdo%recalc           = osdi%recalc
-            osdo%T_L              = osdi%T_L
-            osdo%e_A              = osdi%e_A
-            osdo%PAR              = osdi%PAR
-            osdo%rb_factor        = osdi%rb_factor
-            osdo%prss             = osdi%prss
-            osdo%phenology_factor = osdi%phenology_factor
-            osdo%gsw_open         = osdi%gsw_open
-            osdo%ilimit           = osdi%ilimit
-            osdo%T_L_residual     = osdi%T_L_residual
-            osdo%e_a_residual     = osdi%e_a_residual
-            osdo%par_residual     = osdi%par_residual
-            osdo%rb_residual      = osdi%rb_residual
-            osdo%leaf_residual    = osdi%leaf_residual
-            osdo%gsw_residual     = osdi%gsw_residual
          end do
 
          !----- DBH types. ----------------------------------------------------------------!
@@ -6259,7 +6070,6 @@ contains
             osite%dmean_co2_residual   (opa) = isite%dmean_co2_residual   (ipa)
             osite%dmean_energy_residual(opa) = isite%dmean_energy_residual(ipa)
             osite%dmean_water_residual (opa) = isite%dmean_water_residual (ipa)
-            osite%dmean_lambda_light   (opa) = isite%dmean_lambda_light   (ipa)
             osite%dmean_A_decomp       (opa) = isite%dmean_A_decomp       (ipa)
             osite%dmean_Af_decomp      (opa) = isite%dmean_Af_decomp      (ipa)
             osite%dmean_rk4step        (opa) = isite%dmean_rk4step        (ipa)
@@ -6273,7 +6083,6 @@ contains
             osite%mmean_co2_residual   (opa) = isite%mmean_co2_residual   (ipa)
             osite%mmean_energy_residual(opa) = isite%mmean_energy_residual(ipa)
             osite%mmean_water_residual (opa) = isite%mmean_water_residual (ipa)
-            osite%mmean_lambda_light   (opa) = isite%mmean_lambda_light   (ipa)
             osite%mmean_A_decomp       (opa) = isite%mmean_A_decomp       (ipa)
             osite%mmean_Af_decomp      (opa) = isite%mmean_Af_decomp      (ipa)
             osite%mmean_rk4step        (opa) = isite%mmean_rk4step        (ipa)
@@ -6330,7 +6139,6 @@ contains
     integer,dimension(newsz) :: incmask
     logical,dimension(masksz)           :: logmask
     integer :: i,k,m,inc,ipft,icyc
-    type(stoma_data),pointer :: osdi,osdo
 
     inc = 0
     do i=1,masksz
@@ -6370,9 +6178,7 @@ contains
     siteout%ggveg(1:inc)                = pack(sitein%ggveg,logmask)
     siteout%ggnet(1:inc)                = pack(sitein%ggnet,logmask)
     siteout%ggsoil(1:inc)               = pack(sitein%ggsoil,logmask)
-    siteout%lambda_light(1:inc)         = pack(sitein%lambda_light,logmask)
     siteout%lai(1:inc)                  = pack(sitein%lai,logmask)
-    siteout%wpa(1:inc)                  = pack(sitein%wpa,logmask)
     siteout%wai(1:inc)                  = pack(sitein%wai,logmask)
     siteout%avg_daily_temp(1:inc)       = pack(sitein%avg_daily_temp,logmask)
     siteout%avg_monthly_gndwater(1:inc) = pack(sitein%avg_monthly_gndwater,logmask)
@@ -6439,7 +6245,6 @@ contains
     siteout%f_decomp(1:inc)             = pack(sitein%f_decomp,logmask)
     siteout%rh(1:inc)                   = pack(sitein%rh,logmask)
     siteout%cwd_rh(1:inc)               = pack(sitein%cwd_rh,logmask)
-    siteout%fuse_flag(1:inc)            = pack(sitein%fuse_flag,logmask)
     siteout%plant_ag_biomass(1:inc)     = pack(sitein%plant_ag_biomass,logmask)
     siteout%mean_wflux(1:inc)           = pack(sitein%mean_wflux,logmask)
     siteout%mean_latflux(1:inc)         = pack(sitein%mean_latflux,logmask)
@@ -6498,7 +6303,6 @@ contains
     siteout%avg_runoff(1:inc)           = pack(sitein%avg_runoff,logmask)
     siteout%avg_drainage(1:inc)         = pack(sitein%avg_drainage,logmask)
     siteout%avg_drainage_heat(1:inc)    = pack(sitein%avg_drainage_heat,logmask)
-    siteout%aux(1:inc)                  = pack(sitein%aux,logmask)
     siteout%avg_sensible_lc(1:inc)      = pack(sitein%avg_sensible_lc,logmask)
     siteout%avg_sensible_wc(1:inc)      = pack(sitein%avg_sensible_wc,logmask)
     siteout%avg_qwshed_vg(1:inc)        = pack(sitein%avg_qwshed_vg,logmask)
@@ -6545,7 +6349,6 @@ contains
        siteout%avg_smoist_gg(k,1:inc)      = pack(sitein%avg_smoist_gg(k,:),logmask)
        siteout%avg_transloss(k,1:inc)      = pack(sitein%avg_transloss(k,:),logmask)
        siteout%avg_sensible_gg(k,1:inc)    = pack(sitein%avg_sensible_gg(k,:),logmask)
-       siteout%aux_s(k,1:inc)              = pack(sitein%aux_s(k,:),logmask)
     end do
 
     ! pft types
@@ -6554,10 +6357,6 @@ contains
        siteout%repro(k,1:inc)            = pack(sitein%repro(k,:),logmask)
        siteout%A_o_max(k,1:inc)          = pack(sitein%A_o_max(k,:),logmask)
        siteout%A_c_max(k,1:inc)          = pack(sitein%A_c_max(k,:),logmask)
-       
-       do m=1,n_stoma_atts
-          siteout%old_stoma_vector_max(m,k,1:inc) = pack(sitein%old_stoma_vector_max(m,k,:),logmask)
-       end do
 
        do m=1,ff_nhgt
           siteout%cumlai_profile(k,m,1:inc)       = pack(sitein%cumlai_profile(k,m,:),logmask)
@@ -6569,47 +6368,18 @@ contains
         siteout%co2budget_gpp_dbh(k,1:inc)        = pack(sitein%co2budget_gpp_dbh(k,:),logmask)
     end do
 
-    
-    ! Old_stoma_data_max type
-    ! Derived type with n_pft x n_patch, so.... the intrinsic "pack" wont work
-
     do m=1,newsz
        k=incmask(m)
        call allocate_patchtype(siteout%patch(m),sitein%patch(k)%ncohorts)
-       
        call copy_patchtype(sitein%patch(k),siteout%patch(m),1,sitein%patch(k)%ncohorts,1,sitein%patch(k)%ncohorts)
-
-       do ipft=1,n_pft
-
-          osdo => siteout%old_stoma_data_max(ipft,m)
-          osdi => sitein%old_stoma_data_max(ipft,k)
-          
-          osdo%recalc           = osdi%recalc
-          osdo%T_L              = osdi%T_L
-          osdo%e_A              = osdi%e_A
-          osdo%PAR              = osdi%PAR
-          osdo%rb_factor        = osdi%rb_factor
-          osdo%prss             = osdi%prss
-          osdo%phenology_factor = osdi%phenology_factor
-          osdo%gsw_open         = osdi%gsw_open
-          osdo%ilimit           = osdi%ilimit
-          osdo%T_L_residual     = osdi%T_L_residual
-          osdo%e_a_residual     = osdi%e_a_residual
-          osdo%par_residual     = osdi%par_residual
-          osdo%rb_residual      = osdi%rb_residual
-          osdo%leaf_residual    = osdi%leaf_residual
-          osdo%gsw_residual     = osdi%gsw_residual
-
-       end do
-       
     end do
-       
+
+
     if (idoutput > 0 .or. imoutput > 0 .or. iqoutput > 0) then
        siteout%dmean_rh             (1:inc) = pack(sitein%dmean_rh             ,logmask)
        siteout%dmean_co2_residual   (1:inc) = pack(sitein%dmean_co2_residual   ,logmask)
        siteout%dmean_energy_residual(1:inc) = pack(sitein%dmean_energy_residual,logmask)
        siteout%dmean_water_residual (1:inc) = pack(sitein%dmean_water_residual ,logmask)
-       siteout%dmean_lambda_light   (1:inc) = pack(sitein%dmean_lambda_light   ,logmask)
        siteout%dmean_A_decomp       (1:inc) = pack(sitein%dmean_A_decomp       ,logmask)
        siteout%dmean_Af_decomp      (1:inc) = pack(sitein%dmean_Af_decomp      ,logmask)
        siteout%dmean_rk4step        (1:inc) = pack(sitein%dmean_rk4step        ,logmask)
@@ -6623,7 +6393,6 @@ contains
        siteout%mmean_co2_residual   (1:inc) = pack(sitein%mmean_co2_residual   ,logmask)
        siteout%mmean_energy_residual(1:inc) = pack(sitein%mmean_energy_residual,logmask)
        siteout%mmean_water_residual (1:inc) = pack(sitein%mmean_water_residual ,logmask)
-       siteout%mmean_lambda_light   (1:inc) = pack(sitein%mmean_lambda_light   ,logmask)
        siteout%mmean_A_decomp       (1:inc) = pack(sitein%mmean_A_decomp       ,logmask)
        siteout%mmean_Af_decomp      (1:inc) = pack(sitein%mmean_Af_decomp      ,logmask)
        siteout%mmean_rk4step        (1:inc) = pack(sitein%mmean_rk4step        ,logmask)
@@ -6675,7 +6444,6 @@ contains
     integer,dimension(masksz):: imask
     logical,dimension(masksz)  :: mask
     integer :: i,k,m,inc
-    type(stoma_data),pointer :: osdi,osdo
 
     do i=1,masksz
        imask(i) = i
@@ -6702,7 +6470,6 @@ contains
     patchout%broot(1:inc)            = pack(patchin%broot,mask)
     patchout%bsapwood(1:inc)         = pack(patchin%bsapwood,mask)
     patchout%lai(1:inc)              = pack(patchin%lai,mask)
-    patchout%wpa(1:inc)              = pack(patchin%wpa,mask)
     patchout%wai(1:inc)              = pack(patchin%wai,mask)
     patchout%crown_area(1:inc)       = pack(patchin%crown_area,mask)
     patchout%leaf_resolvable(1:inc)  = pack(patchin%leaf_resolvable,mask)
@@ -6760,9 +6527,6 @@ contains
     patchout%light_level(1:inc)      = pack(patchin%light_level,mask)
     patchout%light_level_beam(1:inc) = pack(patchin%light_level_beam,mask)
     patchout%light_level_diff(1:inc) = pack(patchin%light_level_diff,mask)
-    patchout%beamext_level(1:inc)      = pack(patchin%beamext_level,mask)
-    patchout%diffext_level(1:inc)      = pack(patchin%diffext_level,mask)
-    patchout%lambda_light(1:inc)     = pack(patchin%lambda_light,mask)
     patchout%par_l(1:inc)            = pack(patchin%par_l,mask)
     patchout%par_l_beam(1:inc)       = pack(patchin%par_l_beam,mask)
     patchout%par_l_diffuse(1:inc)    = pack(patchin%par_l_diffuse,mask)
@@ -6811,41 +6575,13 @@ contains
           patchout%cb(i,m)               = patchin%cb(i,k)
           patchout%cb_max(i,m)           = patchin%cb_max(i,k)
        end do
-       do i = 1,n_stoma_atts
-          patchout%old_stoma_vector(i,m) = patchin%old_stoma_vector(i,k)
-       end do
        do i = 1,n_mort
           patchout%mort_rate(i,m)       = patchin%mort_rate(i,k)
        end do
     end do
 
-    
-    
-    ! Copy the stoma data
-    do m=1,inc
-       k=incmask(m)
-       
-       osdo => patchout%old_stoma_data(m)
-       osdi => patchin%old_stoma_data(k)
 
-       osdo%recalc           = osdi%recalc
-       osdo%T_L              = osdi%T_L
-       osdo%e_A              = osdi%e_A
-       osdo%PAR              = osdi%PAR
-       osdo%rb_factor        = osdi%rb_factor
-       osdo%prss             = osdi%prss
-       osdo%phenology_factor = osdi%phenology_factor
-       osdo%gsw_open         = osdi%gsw_open
-       osdo%ilimit           = osdi%ilimit
-       osdo%T_L_residual     = osdi%T_L_residual
-       osdo%e_a_residual     = osdi%e_a_residual
-       osdo%par_residual     = osdi%par_residual
-       osdo%rb_residual      = osdi%rb_residual
-       osdo%leaf_residual    = osdi%leaf_residual
-       osdo%gsw_residual     = osdi%gsw_residual
-       
-    end do
-    
+
     if (idoutput > 0 .or. imoutput > 0 .or. iqoutput > 0) then
        patchout%dmean_fs_open         (1:inc) = pack(patchin%dmean_fs_open         ,mask)
        patchout%dmean_fsw             (1:inc) = pack(patchin%dmean_fsw             ,mask)
@@ -6853,12 +6589,9 @@ contains
        patchout%dmean_psi_open        (1:inc) = pack(patchin%dmean_psi_open        ,mask)
        patchout%dmean_psi_closed      (1:inc) = pack(patchin%dmean_psi_closed      ,mask)
        patchout%dmean_water_supply    (1:inc) = pack(patchin%dmean_water_supply    ,mask)
-       patchout%dmean_lambda_light    (1:inc) = pack(patchin%dmean_lambda_light    ,mask)
        patchout%dmean_light_level     (1:inc) = pack(patchin%dmean_light_level     ,mask)
        patchout%dmean_light_level_beam(1:inc) = pack(patchin%dmean_light_level_beam,mask)
        patchout%dmean_light_level_diff(1:inc) = pack(patchin%dmean_light_level_diff,mask)
-       patchout%dmean_beamext_level   (1:inc) = pack(patchin%dmean_beamext_level   ,mask)
-       patchout%dmean_diffext_level   (1:inc) = pack(patchin%dmean_diffext_level   ,mask)
        patchout%dmean_gpp             (1:inc) = pack(patchin%dmean_gpp             ,mask)
        patchout%dmean_nppleaf         (1:inc) = pack(patchin%dmean_nppleaf         ,mask)
        patchout%dmean_nppfroot        (1:inc) = pack(patchin%dmean_nppfroot        ,mask)
@@ -6884,12 +6617,9 @@ contains
        patchout%mmean_root_maintenance(1:inc) = pack(patchin%mmean_root_maintenance,mask)
        patchout%mmean_leaf_drop       (1:inc) = pack(patchin%mmean_leaf_drop       ,mask)
        patchout%mmean_cb              (1:inc) = pack(patchin%mmean_cb              ,mask)
-       patchout%mmean_lambda_light    (1:inc) = pack(patchin%mmean_lambda_light    ,mask)
        patchout%mmean_light_level     (1:inc) = pack(patchin%mmean_light_level     ,mask)
        patchout%mmean_light_level_beam(1:inc) = pack(patchin%mmean_light_level_beam,mask)
        patchout%mmean_light_level_diff(1:inc) = pack(patchin%mmean_light_level_diff,mask)
-       patchout%mmean_beamext_level   (1:inc) = pack(patchin%mmean_beamext_level   ,mask)
-       patchout%mmean_diffext_level   (1:inc) = pack(patchin%mmean_diffext_level   ,mask)
        patchout%mmean_gpp             (1:inc) = pack(patchin%mmean_gpp             ,mask)
        patchout%mmean_nppleaf         (1:inc) = pack(patchin%mmean_nppleaf         ,mask)
        patchout%mmean_nppfroot        (1:inc) = pack(patchin%mmean_nppfroot        ,mask)
@@ -6948,7 +6678,6 @@ contains
     implicit none
     integer :: ipin1,ipin2,ipout1,ipout2
     type(patchtype),target :: patchin,patchout
-    type(stoma_data),pointer :: osdo,osdi
     integer :: iout,iin
 
     if (ipout2-ipout1.ne.ipin2-ipin1) then
@@ -6981,7 +6710,6 @@ contains
        patchout%broot(iout)            = patchin%broot(iin)
        patchout%bsapwood(iout)         = patchin%bsapwood(iin)
        patchout%lai(iout)              = patchin%lai(iin)
-       patchout%wpa(iout)              = patchin%wpa(iin)
        patchout%wai(iout)              = patchin%wai(iin)
        patchout%crown_area(iout)       = patchin%crown_area(iin)
        patchout%leaf_resolvable(iout)  = patchin%leaf_resolvable(iin)
@@ -7042,9 +6770,6 @@ contains
        patchout%light_level(iout)      = patchin%light_level(iin)
        patchout%light_level_beam(iout) = patchin%light_level_beam(iin)
        patchout%light_level_diff(iout) = patchin%light_level_diff(iin)
-       patchout%beamext_level(iout)    = patchin%beamext_level(iin)
-       patchout%diffext_level(iout)    = patchin%diffext_level(iin)
-       patchout%lambda_light(iout)     = patchin%lambda_light(iin)
        patchout%par_l(iout)            = patchin%par_l(iin)
        patchout%par_l_beam(iout)       = patchin%par_l_beam(iin)
        patchout%par_l_diffuse(iout)    = patchin%par_l_diffuse(iin)
@@ -7087,27 +6812,6 @@ contains
        patchout%vm_bar(iout)           = patchin%vm_bar(iin)
        patchout%sla(iout)              = patchin%sla(iin)
 
-       patchout%old_stoma_vector(:,iout) = patchin%old_stoma_vector(:,iin)
-       
-       osdo => patchout%old_stoma_data(iout)
-       osdi => patchin%old_stoma_data(iin)
-
-       osdo%recalc           = osdi%recalc
-       osdo%T_L              = osdi%T_L
-       osdo%e_A              = osdi%e_A
-       osdo%PAR              = osdi%PAR
-       osdo%rb_factor        = osdi%rb_factor
-       osdo%prss             = osdi%prss
-       osdo%phenology_factor = osdi%phenology_factor
-       osdo%gsw_open         = osdi%gsw_open
-       osdo%ilimit           = osdi%ilimit
-       osdo%T_L_residual     = osdi%T_L_residual
-       osdo%e_a_residual     = osdi%e_a_residual
-       osdo%par_residual     = osdi%par_residual
-       osdo%rb_residual      = osdi%rb_residual
-       osdo%leaf_residual    = osdi%leaf_residual
-       osdo%gsw_residual     = osdi%gsw_residual
-
        if (imoutput > 0 .or. idoutput > 0 .or. iqoutput > 0) then
           patchout%dmean_fs_open           (iout) = patchin%dmean_fs_open           (iin)
           patchout%dmean_fsw               (iout) = patchin%dmean_fsw               (iin)
@@ -7118,9 +6822,6 @@ contains
           patchout%dmean_light_level       (iout) = patchin%dmean_light_level       (iin)
           patchout%dmean_light_level_beam  (iout) = patchin%dmean_light_level_beam  (iin)
           patchout%dmean_light_level_diff  (iout) = patchin%dmean_light_level_diff  (iin)
-          patchout%dmean_beamext_level     (iout) = patchin%dmean_beamext_level     (iin)
-          patchout%dmean_diffext_level     (iout) = patchin%dmean_diffext_level     (iin)
-          patchout%dmean_lambda_light      (iout) = patchin%dmean_lambda_light      (iin)
           patchout%dmean_gpp               (iout) = patchin%dmean_gpp               (iin)
           patchout%dmean_nppleaf           (iout) = patchin%dmean_nppleaf           (iin)
           patchout%dmean_nppfroot          (iout) = patchin%dmean_nppfroot          (iin)
@@ -7149,8 +6850,6 @@ contains
           patchout%mmean_light_level       (iout) = patchin%mmean_light_level       (iin)
           patchout%mmean_light_level_beam  (iout) = patchin%mmean_light_level_beam  (iin)
           patchout%mmean_light_level_diff  (iout) = patchin%mmean_light_level_diff  (iin)
-          patchout%mmean_beamext_level     (iout) = patchin%mmean_beamext_level     (iin)
-          patchout%mmean_diffext_level     (iout) = patchin%mmean_diffext_level     (iin)
           patchout%mmean_gpp               (iout) = patchin%mmean_gpp               (iin)
           patchout%mmean_nppleaf           (iout) = patchin%mmean_nppleaf           (iin)
           patchout%mmean_nppfroot          (iout) = patchin%mmean_nppfroot          (iin)
@@ -7165,7 +6864,6 @@ contains
           patchout%mmean_storage_resp      (iout) = patchin%mmean_storage_resp      (iin)
           patchout%mmean_vleaf_resp        (iout) = patchin%mmean_vleaf_resp        (iin)
           patchout%mmean_mort_rate       (:,iout) = patchin%mmean_mort_rate       (:,iin)
-          patchout%mmean_lambda_light      (iout) = patchin%mmean_lambda_light      (iin)
           patchout%mmean_par_l             (iout) = patchin%mmean_par_l             (iin)
           patchout%mmean_par_l_beam        (iout) = patchin%mmean_par_l_beam        (iin)
           patchout%mmean_par_l_diff        (iout) = patchin%mmean_par_l_diff        (iin)
@@ -7353,7 +7051,7 @@ contains
     do igr = 1,ngrids
        cgrid => edgrid_g(igr)
        
-       if (num_var(igr) > 0) then
+       if (num_var(igr)>0) then
           do nv=1,num_var(igr)
              call reset_vt_vector_pointers(vt_info(nv,igr))
           end do
@@ -8178,13 +7876,6 @@ contains
               var_len,var_len_global,max_ptrs,'AVG_DRAINAGE_HEAT :11:hist:anal') 
          call metadata_edio(nvar,igr,'polygon average internal energy loss through lower soil layer','[W/m2]','ipoly') 
       end if
-     
-      if (associated(cgrid%aux)) then
-         nvar=nvar+1
-         call vtable_edio_r(npts,cgrid%aux,nvar,igr,init,cgrid%pyglob_id, &
-              var_len,var_len_global,max_ptrs,'AUX :11:hist:anal') 
-         call metadata_edio(nvar,igr,'Auxillary variable - user discretion,see rk4_derivs.f90','[user-defined]','ipoly') 
-      end if
       
 
       if (associated(cgrid%avg_rshort_gnd)) then
@@ -8365,13 +8056,6 @@ contains
          call vtable_edio_r(npts,cgrid%lai,nvar,igr,init,cgrid%pyglob_id, &
               var_len,var_len_global,max_ptrs,'LAI :11:hist:anal:dail') 
          call metadata_edio(nvar,igr,'Polygon  LAI','[m2/m2]','ipoly') 
-      end if
-
-      if (associated(cgrid%wpa)) then
-         nvar=nvar+1
-         call vtable_edio_r(npts,cgrid%wpa,nvar,igr,init,cgrid%pyglob_id, &
-              var_len,var_len_global,max_ptrs,'WPA :11:hist:anal:dail') 
-         call metadata_edio(nvar,igr,'Polygon wood projected area','[m2/m2]','ipoly') 
       end if
 
       if (associated(cgrid%avg_lma)) then
@@ -10953,13 +10637,6 @@ contains
          call metadata_edio(nvar,igr,'Polygon averaged soil moisture sink to transpiration','[kg/m2/s]','ipoly-nzg') 
       end if
 
-      if (associated(cgrid%aux_s)) then
-         nvar=nvar+1
-         call vtable_edio_r(npts,cgrid%aux_s,nvar,igr,init,cgrid%pyglob_id, &
-              var_len,var_len_global,max_ptrs,'AUX_S :12:hist:anal') 
-         call metadata_edio(nvar,igr,'Soil layer discretized, auxillary variable, see rk4_derivs.f90','[user-defined]','ipoly-nzg') 
-      end if
-
       
       if (associated(cgrid%avg_sensible_gg)) then
          nvar=nvar+1
@@ -11186,13 +10863,6 @@ contains
          call metadata_edio(nvar,igr,'Leaf Area Index','[m2/m2]','NA') 
       end if
       
-      if(associated(cgrid%wpa_pft)) then
-         nvar=nvar+1
-         call vtable_edio_r(npts,cgrid%wpa_pft,nvar,igr,init,cgrid%pyglob_id, &
-              var_len,var_len_global,max_ptrs,'WPA_PFT :14:hist:anal:dail') 
-         call metadata_edio(nvar,igr,'Wood Projected Area','[m2/m2]','NA') 
-      end if
-      
       if(associated(cgrid%wai_pft)) then
          nvar=nvar+1
          call vtable_edio_r(npts,cgrid%wai_pft,nvar,igr,init,cgrid%pyglob_id, &
@@ -11204,13 +10874,6 @@ contains
          nvar=nvar+1
          call vtable_edio_r(npts,cgrid%mmean_lai_pft,nvar,igr,init,cgrid%pyglob_id, &
               var_len,var_len_global,max_ptrs,'MMEAN_LAI_PFT :14:hist:mont:dcyc') 
-         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
-      end if
-      
-      if(associated(cgrid%mmean_wpa_pft)) then
-         nvar=nvar+1
-         call vtable_edio_r(npts,cgrid%mmean_wpa_pft,nvar,igr,init,cgrid%pyglob_id, &
-              var_len,var_len_global,max_ptrs,'MMEAN_WPA_PFT :14:hist:mont:dcyc') 
          call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
       end if
       
@@ -11934,13 +11597,6 @@ contains
          call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
       end if
       
-      if (associated(cpoly%wpa_pft)) then
-         nvar=nvar+1
-           call vtable_edio_r(npts,cpoly%wpa_pft,nvar,igr,init,cpoly%siglob_id, &
-           var_len,var_len_global,max_ptrs,'WPA_PFT_SI :24:hist:dail') 
-         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
-      end if
-      
       if (associated(cpoly%wai_pft)) then
          nvar=nvar+1
            call vtable_edio_r(npts,cpoly%wai_pft,nvar,igr,init,cpoly%siglob_id, &
@@ -12215,13 +11871,6 @@ contains
          call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
       end if
 
-      if (associated(csite%fuse_flag)) then
-         nvar=nvar+1
-           call vtable_edio_i(npts,csite%fuse_flag,nvar,igr,init,csite%paglob_id, &
-           var_len,var_len_global,max_ptrs,'FUSE_FLAG :30:hist') 
-         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
-      end if
-
       if (associated(csite%age)) then
          nvar=nvar+1
            call vtable_edio_r(npts,csite%age,nvar,igr,init,csite%paglob_id, &
@@ -12392,38 +12041,10 @@ contains
            call metadata_edio(nvar,igr,'Soil conductance for evaporation','[m/s]','NA') 
       end if
 
-      if (associated(csite%lambda_light)) then
-         nvar=nvar+1
-           call vtable_edio_r(npts,csite%lambda_light,nvar,igr,init,csite%paglob_id, &
-           var_len,var_len_global,max_ptrs,'LAMBDA_LIGHT :31:hist') 
-         call metadata_edio(nvar,igr,'Light extinction','[m2/,2]','NA') 
-      end if
-     
-      if (associated(csite%dmean_lambda_light)) then
-         nvar=nvar+1
-           call vtable_edio_r(npts,csite%dmean_lambda_light,nvar,igr,init,csite%paglob_id, &
-           var_len,var_len_global,max_ptrs,'DMEAN_LAMBDA_LIGHT :31:hist:dail') 
-         call metadata_edio(nvar,igr,'Light extinction','[m2/,2]','NA') 
-      end if
-     
-      if (associated(csite%mmean_lambda_light)) then
-         nvar=nvar+1
-           call vtable_edio_r(npts,csite%mmean_lambda_light,nvar,igr,init,csite%paglob_id, &
-           var_len,var_len_global,max_ptrs,'MMEAN_LAMBDA_LIGHT :31:hist:mont:dcyc') 
-         call metadata_edio(nvar,igr,'Light extinction','[m2/,2]','NA') 
-      end if
-
       if (associated(csite%lai)) then
          nvar=nvar+1
            call vtable_edio_r(npts,csite%lai,nvar,igr,init,csite%paglob_id, &
            var_len,var_len_global,max_ptrs,'LAI_PA :31:hist:dail') 
-         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
-      end if
-
-      if (associated(csite%wpa)) then
-         nvar=nvar+1
-           call vtable_edio_r(npts,csite%wpa,nvar,igr,init,csite%paglob_id, &
-           var_len,var_len_global,max_ptrs,'WPA_PA :31:hist:dail') 
          call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
       end if
 
@@ -13579,28 +13200,6 @@ contains
 
 
 
-
-
-
-      !------------------------------------------------------------------------------------!
-      !------------------------------------------------------------------------------------!
-      !       This part should have only 3-D vectors with dimensions n_stoma_atts and      !
-      ! n_dbh.  Notice that they all use the same npts.  Here you should only add vari-    !
-      ! ables of type 316.                                                                 !
-      !------------------------------------------------------------------------------------!
-      npts = csite%npatches * n_stoma_atts * n_pft
-
-      if (associated(csite%old_stoma_vector_max)) then
-         nvar=nvar+1
-         call vtable_edio_r(npts,csite%old_stoma_vector_max,nvar,igr,init,csite%paglob_id, &
-              var_len,var_len_global,max_ptrs,'OLD_STOMA_VECTOR_MAX :316:hist') 
-         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
-      end if
-      !------------------------------------------------------------------------------------!
-      !------------------------------------------------------------------------------------!
-
-
-
       !----- Save the number of patch-level (sitetype) variables that go to the output. ---!
       if (init == 0) niosite=nvar-niopoly-niogrid-nioglobal
       !------------------------------------------------------------------------------------!
@@ -13845,13 +13444,6 @@ contains
          nvar=nvar+1
            call vtable_edio_r(npts,cpatch%lai,nvar,igr,init,cpatch%coglob_id, &
            var_len,var_len_global,max_ptrs,'LAI_CO :41:hist:dail:mont:year:dcyc') 
-         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
-      end if
-
-      if (associated(cpatch%wpa)) then
-         nvar=nvar+1
-           call vtable_edio_r(npts,cpatch%wpa,nvar,igr,init,cpatch%coglob_id, &
-           var_len,var_len_global,max_ptrs,'WPA_CO :41:hist:dail:mont:year:dcyc') 
          call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
       end if
 
@@ -14364,20 +13956,6 @@ contains
          call metadata_edio(nvar,igr,'Relative light level, diffuse fraction','[NA]','icohort') 
       end if
 
-      if (associated(cpatch%beamext_level)) then
-         nvar=nvar+1
-           call vtable_edio_r(npts,cpatch%beamext_level,nvar,igr,init,cpatch%coglob_id, &
-           var_len,var_len_global,max_ptrs,'BEAMEXT_LEVEL :41:hist') 
-         call metadata_edio(nvar,igr,'Beam extinction level','[NA]','icohort') 
-      end if
-
-      if (associated(cpatch%diffext_level)) then
-         nvar=nvar+1
-           call vtable_edio_r(npts,cpatch%diffext_level,nvar,igr,init,cpatch%coglob_id, &
-           var_len,var_len_global,max_ptrs,'DIFFEXT_LEVEL :41:hist') 
-         call metadata_edio(nvar,igr,'diff extinction level','[NA]','icohort') 
-      end if
-
       if (associated(cpatch%dmean_light_level)) then
          nvar=nvar+1
            call vtable_edio_r(npts,cpatch%dmean_light_level,nvar,igr,init,cpatch%coglob_id, &
@@ -14399,20 +13977,6 @@ contains
          call metadata_edio(nvar,igr,'Diurnal mean of Relative light level (diffuse)','[NA]','icohort') 
       end if
 
-      if (associated(cpatch%dmean_beamext_level)) then
-         nvar=nvar+1
-           call vtable_edio_r(npts,cpatch%dmean_beamext_level,nvar,igr,init,cpatch%coglob_id, &
-           var_len,var_len_global,max_ptrs,'DMEAN_BEAMEXT_LEVEL :41:hist:dail') 
-         call metadata_edio(nvar,igr,'Diurnal mean of beam extinction level ','[NA]','icohort') 
-      end if
-
-      if (associated(cpatch%dmean_diffext_level)) then
-         nvar=nvar+1
-           call vtable_edio_r(npts,cpatch%dmean_diffext_level,nvar,igr,init,cpatch%coglob_id, &
-           var_len,var_len_global,max_ptrs,'DMEAN_DIFFEXT_LEVEL :41:hist:dail') 
-         call metadata_edio(nvar,igr,'Diurnal mean of diff extinction level ','[NA]','icohort') 
-      end if
-
       if (associated(cpatch%mmean_light_level)) then
          nvar=nvar+1
            call vtable_edio_r(npts,cpatch%mmean_light_level,nvar,igr,init,cpatch%coglob_id, &
@@ -14432,41 +13996,6 @@ contains
            call vtable_edio_r(npts,cpatch%mmean_light_level_diff,nvar,igr,init,cpatch%coglob_id, &
            var_len,var_len_global,max_ptrs,'MMEAN_LIGHT_LEVEL_DIFF :41:hist:mont:dcyc') 
          call metadata_edio(nvar,igr,'Monthly mean of Relative light level (diff)','[NA]','icohort') 
-      end if
-
-      if (associated(cpatch%mmean_beamext_level)) then
-         nvar=nvar+1
-           call vtable_edio_r(npts,cpatch%mmean_beamext_level,nvar,igr,init,cpatch%coglob_id, &
-           var_len,var_len_global,max_ptrs,'MMEAN_BEAMEXT_LEVEL :41:hist:mont:dcyc') 
-         call metadata_edio(nvar,igr,'Diurnal mean of beam extinction level ','[NA]','icohort') 
-      end if
-
-      if (associated(cpatch%mmean_diffext_level)) then
-         nvar=nvar+1
-           call vtable_edio_r(npts,cpatch%mmean_diffext_level,nvar,igr,init,cpatch%coglob_id, &
-           var_len,var_len_global,max_ptrs,'MMEAN_DIFFEXT_LEVEL :41:hist:mont:dcyc') 
-         call metadata_edio(nvar,igr,'Diurnal mean of diff extinction level ','[NA]','icohort') 
-      end if
-
-      if (associated(cpatch%lambda_light)) then
-         nvar=nvar+1
-           call vtable_edio_r(npts,cpatch%lambda_light,nvar,igr,init,cpatch%coglob_id, &
-           var_len,var_len_global,max_ptrs,'LAMBDA_LIGHT_CO :41:hist') 
-         call metadata_edio(nvar,igr,'Light extinction','[m2/m2]','icohort') 
-      end if
-
-      if (associated(cpatch%dmean_lambda_light)) then
-         nvar=nvar+1
-           call vtable_edio_r(npts,cpatch%dmean_lambda_light,nvar,igr,init,cpatch%coglob_id, &
-           var_len,var_len_global,max_ptrs,'DMEAN_LAMBDA_LIGHT_CO :41:hist:dail') 
-         call metadata_edio(nvar,igr,'Diurnal mean of light extinction ','[m2/m2]','icohort') 
-      end if
-
-      if (associated(cpatch%mmean_lambda_light)) then
-         nvar=nvar+1
-           call vtable_edio_r(npts,cpatch%mmean_lambda_light,nvar,igr,init,cpatch%coglob_id, &
-           var_len,var_len_global,max_ptrs,'MMEAN_LAMBDA_LIGHT_CO :41:hist:mont:dcyc') 
-         call metadata_edio(nvar,igr,'Monthly mean of light extinction ','[m2/m2]','icohort') 
       end if
 
       if (associated(cpatch%par_l)) then
@@ -15058,27 +14587,6 @@ contains
            call vtable_edio_r(npts,cpatch%cb_max,nvar,igr,init,cpatch%coglob_id, &
            var_len,var_len_global,max_ptrs,'CB_MAX :49:hist:mont:dcyc:year') 
          call metadata_edio(nvar,igr,'TOC carbon balance previous 12 months+current','[kgC/plant]','13 - icohort') 
-      end if
-      !------------------------------------------------------------------------------------!
-      !------------------------------------------------------------------------------------!
-
-
-
-
-
-      !------------------------------------------------------------------------------------!
-      !------------------------------------------------------------------------------------!
-      !       This part should have only 2-D vectors, with dimension n_stoma_atts and      !
-      ! ncohorts.  Notice that they all use the same npts.  Here you should only add vari- !
-      ! ables of type 416.                                                                 !
-      !------------------------------------------------------------------------------------!
-      npts = cpatch%ncohorts * 16
-
-      if (associated(cpatch%old_stoma_vector)) then
-         nvar=nvar+1
-         call vtable_edio_r(npts,cpatch%old_stoma_vector,nvar,igr,init,cpatch%coglob_id, &
-              var_len,var_len_global,max_ptrs,'OLD_STOMA_VECTOR :416:hist')
-         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA')
       end if
       !------------------------------------------------------------------------------------!
       !------------------------------------------------------------------------------------!

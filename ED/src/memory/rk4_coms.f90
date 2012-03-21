@@ -204,7 +204,6 @@ module rk4_coms
       real(kind=8), pointer, dimension(:) :: veg_wind      ! Cohort-level wind  [      m/s]
       real(kind=8), pointer, dimension(:) :: lai          ! Leaf area index     [    m²/m²]
       real(kind=8), pointer, dimension(:) :: wai          ! Wood area index     [    m²/m²]
-      real(kind=8), pointer, dimension(:) :: wpa          ! Wood projected area [    m²/m²]
       real(kind=8), pointer, dimension(:) :: tai          ! Tree area index     [    m²/m²]
       real(kind=8), pointer, dimension(:) :: crown_area   ! Crown area          [    m²/m²]
       real(kind=8), pointer, dimension(:) :: elongf       ! Elongation factor   [     ----]
@@ -1211,7 +1210,6 @@ module rk4_coms
       allocate(y%veg_wind         (maxcohort))
       allocate(y%lai              (maxcohort))
       allocate(y%wai              (maxcohort))
-      allocate(y%wpa              (maxcohort))
       allocate(y%tai              (maxcohort))
       allocate(y%crown_area       (maxcohort))
       allocate(y%elongf           (maxcohort))
@@ -1300,7 +1298,6 @@ module rk4_coms
       nullify(y%veg_wind         )
       nullify(y%lai              )
       nullify(y%wai              )
-      nullify(y%wpa              )
       nullify(y%tai              )
       nullify(y%crown_area       )
       nullify(y%elongf           )
@@ -1387,7 +1384,6 @@ module rk4_coms
       if (associated(y%veg_wind         )) y%veg_wind         = 0.d0
       if (associated(y%lai              )) y%lai              = 0.d0
       if (associated(y%wai              )) y%wai              = 0.d0
-      if (associated(y%wpa              )) y%wpa              = 0.d0
       if (associated(y%tai              )) y%tai              = 0.d0
       if (associated(y%crown_area       )) y%crown_area       = 0.d0
       if (associated(y%elongf           )) y%elongf           = 0.d0
@@ -1474,7 +1470,6 @@ module rk4_coms
       if (associated(y%veg_wind         )) deallocate(y%veg_wind         )
       if (associated(y%lai              )) deallocate(y%lai              )
       if (associated(y%wai              )) deallocate(y%wai              )
-      if (associated(y%wpa              )) deallocate(y%wpa              )
       if (associated(y%tai              )) deallocate(y%tai              )
       if (associated(y%crown_area       )) deallocate(y%crown_area       )
       if (associated(y%elongf           )) deallocate(y%elongf           )

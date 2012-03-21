@@ -1432,16 +1432,16 @@ subroutine nodeget_grid_dimens()
 
    !----- Assigning the node_mod shortcuts with the appropiate values. --------------------!
    do ng=1,ngrids
-      mmxp(ng)=nodemxp(mynum,ng)
-      mmyp(ng)=nodemyp(mynum,ng)
-      mmzp(ng)=nodemzp(mynum,ng)
-      mia(ng)=nodeia(mynum,ng)
-      miz(ng)=nodeiz(mynum,ng)
-      mja(ng)=nodeja(mynum,ng)
-      mjz(ng)=nodejz(mynum,ng)
-      mi0(ng)=nodei0(mynum,ng)
-      mj0(ng)=nodej0(mynum,ng)
-      mibcon(ng)=nodeibcon(mynum,ng)
+      mmxp(ng)   = nodemxp(mynum,ng)
+      mmyp(ng)   = nodemyp(mynum,ng)
+      mmzp(ng)   = nodemzp(mynum,ng)
+      mia(ng)    = nodeia(mynum,ng)
+      miz(ng)    = nodeiz(mynum,ng)
+      mja(ng)    = nodeja(mynum,ng)
+      mjz(ng)    = nodejz(mynum,ng)
+      mi0(ng)    = nodei0(mynum,ng)
+      mj0(ng)    = nodej0(mynum,ng)
+      mibcon(ng) = nodeibcon(mynum,ng)
    end do
    write (unit=*,fmt='(a)') '---------------------------------------------------------'
    write (unit=*,fmt='(a,1x,i5)') 'In nodeget_grid_dimens, mynum=',mynum

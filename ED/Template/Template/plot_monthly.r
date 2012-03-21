@@ -294,10 +294,9 @@ for (place in myplaces){
 
    #----- Cohort level lists. -------------------------------------------------------------#
    lightco      = list()
-   beamextco    = list()
-   diffextco    = list()
+   lightbeamco  = list()
+   lightdiffco  = list()
    parlco       = list()
-   lambdaco     = list()
    gppco        = list()
    gpplco       = list()
    respco       = list()
@@ -781,9 +780,8 @@ for (place in myplaces){
              ncbmortconow    = mymont$MMEAN.MORT.RATE[,2]
              fsoconow        = mymont$MMEAN.FS.OPEN.CO
              lightconow      = mymont$MMEAN.LIGHT.LEVEL
-             lambdaconow     = mymont$MMEAN.LAMBDA.LIGHT.CO
-             beamextconow    = mymont$MMEAN.BEAMEXT.LEVEL
-             diffextconow    = mymont$MMEAN.BEAMEXT.LEVEL
+             lightbeamconow  = mymont$MMEAN.LIGHT.LEVEL.BEAM
+             lightdiffconow  = mymont$MMEAN.LIGHT.LEVEL.DIFF
              parlconow       = mymont$MMEAN.PAR.L
 
              baliveconow     = mymont$BALIVE
@@ -842,9 +840,8 @@ for (place in myplaces){
              ncbmortconow    = NA 
              fsoconow        = NA 
              lightconow      = NA 
-             lambdaconow     = NA 
-             beamextconow    = NA 
-             diffextconow    = NA 
+             lightbeamconow  = NA 
+             lightdiffconow  = NA 
              parlconow       = NA 
              demandconow     = NA 
              supplyconow     = NA 
@@ -1130,39 +1127,38 @@ for (place in myplaces){
              cmonth = substring(100+month,2,3)
              labwhen     = paste("y",cyear,"m",cmonth,sep="")
              #----- Binding the current cohorts. ------------------------------------------#
-             lightco  [[labwhen]] = lightconow
-             beamextco[[labwhen]] = beamextconow
-             diffextco[[labwhen]] = diffextconow
-             parlco   [[labwhen]] = parlconow
-             lambdaco [[labwhen]] = lambdaconow
-             gppco    [[labwhen]] = gppconow
-             gpplco   [[labwhen]] = gpplconow
-             respco   [[labwhen]] = respconow
-             nppco    [[labwhen]] = nppconow
-             cbrbarco [[labwhen]] = cbrbarconow
-             cbalco   [[labwhen]] = cbalconow
-             mcostco  [[labwhen]] = mcostconow
-             ncbmortco[[labwhen]] = ncbmortconow
-             agbco    [[labwhen]] = agbconow
-             fsoco    [[labwhen]] = fsoconow
-             nplantco [[labwhen]] = nplantconow * areaconow
-             heightco [[labwhen]] = heightconow
-             baco     [[labwhen]] = nplantconow * baconow * areaconow
-             pftco    [[labwhen]] = pftconow
-             dbhco    [[labwhen]] = dbhconow
-             laico    [[labwhen]] = laiconow
-             waico    [[labwhen]] = waiconow
-             taico    [[labwhen]] = taiconow
-             ageco    [[labwhen]] = ageconow
-             areaco   [[labwhen]] = areaconow
-             demandco [[labwhen]] = demandconow
-             supplyco [[labwhen]] = supplyconow
-             baliveco [[labwhen]] = baliveconow
-             bdeadco  [[labwhen]] = bdeadconow
-             bleafco  [[labwhen]] = bleafconow
-             brootco  [[labwhen]] = brootconow
-             bswoodco [[labwhen]] = bswoodconow
-             bstoreco [[labwhen]] = bstoreconow
+             lightco     [[labwhen]] = lightconow
+             lightbeamco [[labwhen]] = lightbeamconow
+             lightdiffco [[labwhen]] = lightdiffconow
+             parlco      [[labwhen]] = parlconow
+             gppco       [[labwhen]] = gppconow
+             gpplco      [[labwhen]] = gpplconow
+             respco      [[labwhen]] = respconow
+             nppco       [[labwhen]] = nppconow
+             cbrbarco    [[labwhen]] = cbrbarconow
+             cbalco      [[labwhen]] = cbalconow
+             mcostco     [[labwhen]] = mcostconow
+             ncbmortco   [[labwhen]] = ncbmortconow
+             agbco       [[labwhen]] = agbconow
+             fsoco       [[labwhen]] = fsoconow
+             nplantco    [[labwhen]] = nplantconow * areaconow
+             heightco    [[labwhen]] = heightconow
+             baco        [[labwhen]] = nplantconow * baconow * areaconow
+             pftco       [[labwhen]] = pftconow
+             dbhco       [[labwhen]] = dbhconow
+             laico       [[labwhen]] = laiconow
+             waico       [[labwhen]] = waiconow
+             taico       [[labwhen]] = taiconow
+             ageco       [[labwhen]] = ageconow
+             areaco      [[labwhen]] = areaconow
+             demandco    [[labwhen]] = demandconow
+             supplyco    [[labwhen]] = supplyconow
+             baliveco    [[labwhen]] = baliveconow
+             bdeadco     [[labwhen]] = bdeadconow
+             bleafco     [[labwhen]] = bleafconow
+             brootco     [[labwhen]] = brootconow
+             bswoodco    [[labwhen]] = bswoodconow
+             bstoreco    [[labwhen]] = bstoreconow
           } #end if month=sasmonth
           #--------------------------------------------------------------------------------#
 

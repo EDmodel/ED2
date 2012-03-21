@@ -93,7 +93,6 @@ subroutine update_patch_derived_props(csite,lsl,prss,ipa)
    !----- Reset properties. ---------------------------------------------------------------!
    csite%veg_height(ipa)       = 0.0
    csite%lai(ipa)              = 0.0
-   csite%wpa(ipa)              = 0.0
    csite%wai(ipa)              = 0.0
    weight_sum                  = 0.0
    csite%opencan_frac(ipa)     = 1.0
@@ -110,7 +109,6 @@ subroutine update_patch_derived_props(csite,lsl,prss,ipa)
 
       !----- Update the patch-level area indices. -----------------------------------------!
       csite%lai(ipa)  = csite%lai(ipa)  + cpatch%lai(ico)
-      csite%wpa(ipa)  = csite%wpa(ipa)  + cpatch%wpa(ico)
       csite%wai(ipa)  = csite%wai(ipa)  + cpatch%wai(ico)
       !------------------------------------------------------------------------------------!
 

@@ -75,7 +75,7 @@ module ed_var_tables
    !---------------------------------------------------------------------------------------!
    !    Define data type for main variable table                                           !
    !---------------------------------------------------------------------------------------!
-   integer, parameter :: maxvars = 1500
+   integer, parameter :: maxvars = 1100
    !---------------------------------------------------------------------------------------!
 
 
@@ -99,7 +99,6 @@ module ed_var_tables
 
    !---------------------------------------------------------------------------------------!
    type var_table
-      logical             :: first
       integer             :: idim_type
       integer             :: nptrs
       integer             :: ihist
@@ -122,6 +121,7 @@ module ed_var_tables
       character (len=64)  :: lname   ! Long name for description in file
       character (len=16)  :: units   ! Unit description of the data
       character (len=64)  :: dimlab
+      logical             :: vector_allocated
       !----- Multiple pointer defs (maxptrs) ----------------------------------------------!
       type(var_table_vector), allocatable, dimension(:) :: vt_vector
    end type var_table
@@ -197,7 +197,9 @@ module ed_var_tables
       ! follow.                                                                            !
       !------------------------------------------------------------------------------------!
       if (init == 0) then
+         !----- Make sure we have a clean start. ------------------------------------------!
          call reset_vt_vector_pointers(vt_info(nv,igr))
+         !---------------------------------------------------------------------------------!
 
          !----- Count the number of variables. --------------------------------------------!
          num_var(igr) = num_var(igr) + 1
@@ -208,6 +210,7 @@ module ed_var_tables
          vt_info(nv,igr)%nptrs          = 0
          vt_info(nv,igr)%var_len_global = var_len_global
 
+         vt_info(nv,igr)%vector_allocated = .true.
          allocate(vt_info(nv,igr)%vt_vector(max_ptrs))
          read(tokens(2),fmt=*) vt_info(nv,igr)%idim_type
 
@@ -280,7 +283,7 @@ module ed_var_tables
          ! init = 0 then do this part.  Since I think this should never happen, I will     !
          ! also make a fuss to warn the user.                                              !
          !---------------------------------------------------------------------------------!
-         if (.not. allocated(vt_info(nv,igr)%vt_vector)) then
+         if (.not. vt_info(nv,igr)%vector_allocated) then
             write (unit=*,fmt='(a)') ' '
             write (unit=*,fmt='(a)') '----------------------------------------------'
             write (unit=*,fmt='(a)') ' WARNING! WARNING! WARNING! WARNING! WARNING! '
@@ -290,7 +293,7 @@ module ed_var_tables
             write (unit=*,fmt='(a)') ' - Subroutine vtable_edio_r (file ed_var_tables.f90)'
             write (unit=*,fmt='(a,1x,i4,1x,a,1x,i2,1x,a)')                                 &
                                      ' - Vt_vector for variable',nv,'of grid',igr          &
-                                     ,'is not associated              !'
+                                     ,'is not allocated              !'
             write (unit=*,fmt='(a)') ' - I will allocate it now.'
             write (unit=*,fmt='(a,1x,i20,1x,a)') ' - MAX_PTRS=',max_ptrs,'...'
             write (unit=*,fmt='(a,1x,a,1x,a)') ' - Tabstr=',tabstr,'...'
@@ -367,7 +370,9 @@ module ed_var_tables
       ! follow.                                                                            !
       !------------------------------------------------------------------------------------!
       if (init == 0) then
+         !----- Make sure we have a clean start. ------------------------------------------!
          call reset_vt_vector_pointers(vt_info(nv,igr))
+         !---------------------------------------------------------------------------------!
 
          !----- Count the number of variables. --------------------------------------------!
          num_var(igr) = num_var(igr) + 1
@@ -378,6 +383,7 @@ module ed_var_tables
          vt_info(nv,igr)%nptrs          = 0
          vt_info(nv,igr)%var_len_global = var_len_global
 
+         vt_info(nv,igr)%vector_allocated = .true.
          allocate(vt_info(nv,igr)%vt_vector(max_ptrs))
          read(tokens(2),fmt=*) vt_info(nv,igr)%idim_type
 
@@ -450,7 +456,7 @@ module ed_var_tables
          ! init = 0 then do this part.  Since I think this should never happen, I will     !
          ! also make a fuss to warn the user.                                              !
          !---------------------------------------------------------------------------------!
-         if (.not. allocated(vt_info(nv,igr)%vt_vector)) then
+         if (.not. vt_info(nv,igr)%vector_allocated) then
             write (unit=*,fmt='(a)') ' '
             write (unit=*,fmt='(a)') '----------------------------------------------'
             write (unit=*,fmt='(a)') ' WARNING! WARNING! WARNING! WARNING! WARNING! '
@@ -460,7 +466,7 @@ module ed_var_tables
             write (unit=*,fmt='(a)') ' - Subroutine vtable_edio_r (file ed_var_tables.f90)'
             write (unit=*,fmt='(a,1x,i4,1x,a,1x,i2,1x,a)')                                 &
                                      ' - Vt_vector for variable',nv,'of grid',igr          &
-                                     ,'is not associated              !'
+                                     ,'is not allocated              !'
             write (unit=*,fmt='(a)') ' - I will allocate it now.'
             write (unit=*,fmt='(a,1x,i20,1x,a)') ' - MAX_PTRS=',max_ptrs,'...'
             write (unit=*,fmt='(a,1x,a,1x,a)') ' - Tabstr=',tabstr,'...'
@@ -536,7 +542,9 @@ module ed_var_tables
       ! follow.                                                                            !
       !------------------------------------------------------------------------------------!
       if (init == 0) then
+         !----- Make sure we have a clean start. ------------------------------------------!
          call reset_vt_vector_pointers(vt_info(nv,igr))
+         !---------------------------------------------------------------------------------!
 
          !----- Count the number of variables. --------------------------------------------!
          num_var(igr) = num_var(igr) + 1
@@ -547,6 +555,7 @@ module ed_var_tables
          vt_info(nv,igr)%nptrs          = 0
          vt_info(nv,igr)%var_len_global = var_len_global
 
+         vt_info(nv,igr)%vector_allocated = .true.
          allocate(vt_info(nv,igr)%vt_vector(max_ptrs))
          read(tokens(2),fmt=*) vt_info(nv,igr)%idim_type
 
@@ -619,7 +628,7 @@ module ed_var_tables
          ! init = 0 then do this part.  Since I think this should never happen, I will     !
          ! also make a fuss to warn the user.                                              !
          !---------------------------------------------------------------------------------!
-         if (.not. allocated(vt_info(nv,igr)%vt_vector)) then
+         if (.not. vt_info(nv,igr)%vector_allocated) then
             write (unit=*,fmt='(a)') ' '
             write (unit=*,fmt='(a)') '----------------------------------------------'
             write (unit=*,fmt='(a)') ' WARNING! WARNING! WARNING! WARNING! WARNING! '
@@ -629,7 +638,7 @@ module ed_var_tables
             write (unit=*,fmt='(a)') ' - Subroutine vtable_edio_r (file ed_var_tables.f90)'
             write (unit=*,fmt='(a,1x,i4,1x,a,1x,i2,1x,a)')                                 &
                                      ' - Vt_vector for variable',nv,'of grid',igr          &
-                                     ,'is not associated              !'
+                                     ,'is not allocated              !'
             write (unit=*,fmt='(a)') ' - I will allocate it now.'
             write (unit=*,fmt='(a,1x,i20,1x,a)') ' - MAX_PTRS=',max_ptrs,'...'
             write (unit=*,fmt='(a,1x,a,1x,a)') ' - Tabstr=',tabstr,'...'
@@ -705,7 +714,9 @@ module ed_var_tables
       ! follow.                                                                            !
       !------------------------------------------------------------------------------------!
       if (init == 0) then
+         !----- Make sure we have a clean start. ------------------------------------------!
          call reset_vt_vector_pointers(vt_info(nv,igr))
+         !---------------------------------------------------------------------------------!
 
          !----- Count the number of variables. --------------------------------------------!
          num_var(igr) = num_var(igr) + 1
@@ -716,6 +727,7 @@ module ed_var_tables
          vt_info(nv,igr)%nptrs          = 0
          vt_info(nv,igr)%var_len_global = var_len_global
 
+         vt_info(nv,igr)%vector_allocated = .true.
          allocate(vt_info(nv,igr)%vt_vector(max_ptrs))
          read(tokens(2),fmt=*) vt_info(nv,igr)%idim_type
 
@@ -788,7 +800,7 @@ module ed_var_tables
          ! init = 0 then do this part.  Since I think this should never happen, I will     !
          ! also make a fuss to warn the user.                                              !
          !---------------------------------------------------------------------------------!
-         if (.not. allocated(vt_info(nv,igr)%vt_vector)) then
+         if (.not. vt_info(nv,igr)%vector_allocated) then
             write (unit=*,fmt='(a)') ' '
             write (unit=*,fmt='(a)') '----------------------------------------------'
             write (unit=*,fmt='(a)') ' WARNING! WARNING! WARNING! WARNING! WARNING! '
@@ -798,7 +810,7 @@ module ed_var_tables
             write (unit=*,fmt='(a)') ' - Subroutine vtable_edio_r (file ed_var_tables.f90)'
             write (unit=*,fmt='(a,1x,i4,1x,a,1x,i2,1x,a)')                                 &
                                      ' - Vt_vector for variable',nv,'of grid',igr          &
-                                     ,'is not associated              !'
+                                     ,'is not allocated              !'
             write (unit=*,fmt='(a)') ' - I will allocate it now.'
             write (unit=*,fmt='(a,1x,i20,1x,a)') ' - MAX_PTRS=',max_ptrs,'...'
             write (unit=*,fmt='(a,1x,a,1x,a)') ' - Tabstr=',tabstr,'...'
@@ -872,7 +884,9 @@ module ed_var_tables
       ! follow.                                                                            !
       !------------------------------------------------------------------------------------!
       if (init == 0) then
+         !----- Make sure we have a clean start. ------------------------------------------!
          call reset_vt_vector_pointers(vt_info(nv,igr))
+         !---------------------------------------------------------------------------------!
 
          !----- Count the number of variables. --------------------------------------------!
          num_var(igr) = num_var(igr) + 1
@@ -883,6 +897,7 @@ module ed_var_tables
          vt_info(nv,igr)%nptrs          = 0
          vt_info(nv,igr)%var_len_global = var_len_global
 
+         vt_info(nv,igr)%vector_allocated = .true.
          allocate(vt_info(nv,igr)%vt_vector(max_ptrs))
          read(tokens(2),fmt=*) vt_info(nv,igr)%idim_type
 
@@ -955,7 +970,7 @@ module ed_var_tables
          ! init = 0 then do this part.  Since I think this should never happen, I will     !
          ! also make a fuss to warn the user.                                              !
          !---------------------------------------------------------------------------------!
-         if (.not. allocated(vt_info(nv,igr)%vt_vector)) then
+         if (.not. vt_info(nv,igr)%vector_allocated) then
             write (unit=*,fmt='(a)') ' '
             write (unit=*,fmt='(a)') '----------------------------------------------'
             write (unit=*,fmt='(a)') ' WARNING! WARNING! WARNING! WARNING! WARNING! '
@@ -965,7 +980,7 @@ module ed_var_tables
             write (unit=*,fmt='(a)') ' - Subroutine vtable_edio_r (file ed_var_tables.f90)'
             write (unit=*,fmt='(a,1x,i4,1x,a,1x,i2,1x,a)')                                 &
                                      ' - Vt_vector for variable',nv,'of grid',igr          &
-                                     ,'is not associated              !'
+                                     ,'is not allocated              !'
             write (unit=*,fmt='(a)') ' - I will allocate it now.'
             write (unit=*,fmt='(a,1x,i20,1x,a)') ' - MAX_PTRS=',max_ptrs,'...'
             write (unit=*,fmt='(a,1x,a,1x,a)') ' - Tabstr=',tabstr,'...'
@@ -1040,7 +1055,9 @@ module ed_var_tables
       ! follow.                                                                            !
       !------------------------------------------------------------------------------------!
       if (init == 0) then
+         !----- Make sure we have a clean start. ------------------------------------------!
          call reset_vt_vector_pointers(vt_info(nv,igr))
+         !---------------------------------------------------------------------------------!
 
          !----- Count the number of variables. --------------------------------------------!
          num_var(igr) = num_var(igr) + 1
@@ -1051,6 +1068,7 @@ module ed_var_tables
          vt_info(nv,igr)%nptrs          = 0
          vt_info(nv,igr)%var_len_global = var_len_global
 
+         vt_info(nv,igr)%vector_allocated = .true.
          allocate(vt_info(nv,igr)%vt_vector(max_ptrs))
          read(tokens(2),fmt=*) vt_info(nv,igr)%idim_type
 
@@ -1123,7 +1141,7 @@ module ed_var_tables
          ! init = 0 then do this part.  Since I think this should never happen, I will     !
          ! also make a fuss to warn the user.                                              !
          !---------------------------------------------------------------------------------!
-         if (.not. allocated(vt_info(nv,igr)%vt_vector)) then
+         if (.not. vt_info(nv,igr)%vector_allocated) then
             write (unit=*,fmt='(a)') ' '
             write (unit=*,fmt='(a)') '----------------------------------------------'
             write (unit=*,fmt='(a)') ' WARNING! WARNING! WARNING! WARNING! WARNING! '
@@ -1133,7 +1151,7 @@ module ed_var_tables
             write (unit=*,fmt='(a)') ' - Subroutine vtable_edio_r (file ed_var_tables.f90)'
             write (unit=*,fmt='(a,1x,i4,1x,a,1x,i2,1x,a)')                                 &
                                      ' - Vt_vector for variable',nv,'of grid',igr          &
-                                     ,'is not associated              !'
+                                     ,'is not allocated              !'
             write (unit=*,fmt='(a)') ' - I will allocate it now.'
             write (unit=*,fmt='(a,1x,i20,1x,a)') ' - MAX_PTRS=',max_ptrs,'...'
             write (unit=*,fmt='(a,1x,a,1x,a)') ' - Tabstr=',tabstr,'...'
@@ -1207,7 +1225,9 @@ module ed_var_tables
       ! follow.                                                                            !
       !------------------------------------------------------------------------------------!
       if (init == 0) then
+         !----- Make sure we have a clean start. ------------------------------------------!
          call reset_vt_vector_pointers(vt_info(nv,igr))
+         !---------------------------------------------------------------------------------!
 
          !----- Count the number of variables. --------------------------------------------!
          num_var(igr) = num_var(igr) + 1
@@ -1218,6 +1238,7 @@ module ed_var_tables
          vt_info(nv,igr)%nptrs          = 0
          vt_info(nv,igr)%var_len_global = var_len_global
 
+         vt_info(nv,igr)%vector_allocated = .true.
          allocate(vt_info(nv,igr)%vt_vector(max_ptrs))
          read(tokens(2),fmt=*) vt_info(nv,igr)%idim_type
 
@@ -1290,7 +1311,7 @@ module ed_var_tables
          ! init = 0 then do this part.  Since I think this should never happen, I will     !
          ! also make a fuss to warn the user.                                              !
          !---------------------------------------------------------------------------------!
-         if (.not. allocated(vt_info(nv,igr)%vt_vector)) then
+         if (.not. vt_info(nv,igr)%vector_allocated) then
             write (unit=*,fmt='(a)') ' '
             write (unit=*,fmt='(a)') '----------------------------------------------'
             write (unit=*,fmt='(a)') ' WARNING! WARNING! WARNING! WARNING! WARNING! '
@@ -1300,7 +1321,7 @@ module ed_var_tables
             write (unit=*,fmt='(a)') ' - Subroutine vtable_edio_r (file ed_var_tables.f90)'
             write (unit=*,fmt='(a,1x,i4,1x,a,1x,i2,1x,a)')                                 &
                                      ' - Vt_vector for variable',nv,'of grid',igr          &
-                                     ,'is not associated              !'
+                                     ,'is not allocated              !'
             write (unit=*,fmt='(a)') ' - I will allocate it now.'
             write (unit=*,fmt='(a,1x,i20,1x,a)') ' - MAX_PTRS=',max_ptrs,'...'
             write (unit=*,fmt='(a,1x,a,1x,a)') ' - Tabstr=',tabstr,'...'
@@ -1374,7 +1395,9 @@ module ed_var_tables
       ! follow.                                                                            !
       !------------------------------------------------------------------------------------!
       if (init == 0) then
+         !----- Make sure we have a clean start. ------------------------------------------!
          call reset_vt_vector_pointers(vt_info(nv,igr))
+         !---------------------------------------------------------------------------------!
 
          !----- Count the number of variables. --------------------------------------------!
          num_var(igr) = num_var(igr) + 1
@@ -1385,6 +1408,7 @@ module ed_var_tables
          vt_info(nv,igr)%nptrs          = 0
          vt_info(nv,igr)%var_len_global = var_len_global
 
+         vt_info(nv,igr)%vector_allocated = .true.
          allocate(vt_info(nv,igr)%vt_vector(max_ptrs))
          read(tokens(2),fmt=*) vt_info(nv,igr)%idim_type
 
@@ -1457,7 +1481,7 @@ module ed_var_tables
          ! init = 0 then do this part.  Since I think this should never happen, I will     !
          ! also make a fuss to warn the user.                                              !
          !---------------------------------------------------------------------------------!
-         if (.not. allocated(vt_info(nv,igr)%vt_vector)) then
+         if (.not. vt_info(nv,igr)%vector_allocated) then
             write (unit=*,fmt='(a)') ' '
             write (unit=*,fmt='(a)') '----------------------------------------------'
             write (unit=*,fmt='(a)') ' WARNING! WARNING! WARNING! WARNING! WARNING! '
@@ -1467,7 +1491,7 @@ module ed_var_tables
             write (unit=*,fmt='(a)') ' - Subroutine vtable_edio_r (file ed_var_tables.f90)'
             write (unit=*,fmt='(a,1x,i4,1x,a,1x,i2,1x,a)')                                 &
                                      ' - Vt_vector for variable',nv,'of grid',igr          &
-                                     ,'is not associated              !'
+                                     ,'is not allocated              !'
             write (unit=*,fmt='(a)') ' - I will allocate it now.'
             write (unit=*,fmt='(a,1x,i20,1x,a)') ' - MAX_PTRS=',max_ptrs,'...'
             write (unit=*,fmt='(a,1x,a,1x,a)') ' - Tabstr=',tabstr,'...'
@@ -1520,37 +1544,50 @@ module ed_var_tables
 
    !=======================================================================================!
    !=======================================================================================!
-   !     This sub-routine nullifies all vector pointers and de-allocate the vector.        !
+   !     This subroutine unlinks all pointers then deallocate the vector, for a safe re-   !
+   ! allocation.                                                                           !
    !---------------------------------------------------------------------------------------!
    subroutine reset_vt_vector_pointers(vt)
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
-      type(var_table)                     , intent(inout) :: vt
+      type(var_table), intent(inout) :: vt
       !----- Local variables. -------------------------------------------------------------!
-      integer                                             :: iptr
+      integer                        :: iptr
       !------------------------------------------------------------------------------------!
-      
-      !------------------------------------------------------------------------------------!
-      !    Point to the vector.                                                            !
-      !------------------------------------------------------------------------------------!
-      if (allocated(vt%vt_vector)) then
 
-         do iptr=1,vt%nptrs
-            !----- Unlink the pointers so we can safely deallocate the arrays. ------------!
-            if (associated(vt%vt_vector(iptr)%var_rp)) nullify(vt%vt_vector(iptr)%var_rp)
-            if (associated(vt%vt_vector(iptr)%var_ip)) nullify(vt%vt_vector(iptr)%var_ip)
-            if (associated(vt%vt_vector(iptr)%var_cp)) nullify(vt%vt_vector(iptr)%var_cp)
-            if (associated(vt%vt_vector(iptr)%var_dp)) nullify(vt%vt_vector(iptr)%var_dp)
-            if (associated(vt%vt_vector(iptr)%sca_rp)) nullify(vt%vt_vector(iptr)%sca_rp)
-            if (associated(vt%vt_vector(iptr)%sca_ip)) nullify(vt%vt_vector(iptr)%sca_ip)
-            if (associated(vt%vt_vector(iptr)%sca_cp)) nullify(vt%vt_vector(iptr)%sca_cp)
-            if (associated(vt%vt_vector(iptr)%sca_dp)) nullify(vt%vt_vector(iptr)%sca_dp)
-            !------------------------------------------------------------------------------!
-         end do
-         !---------------------------------------------------------------------------------!
-         deallocate(vt%vt_vector)
-      end if
       !------------------------------------------------------------------------------------!
+      !      I actually don't know why, but the typical "if (allocated(vt%vt_vector))"     !
+      ! doesn't work here, so instead we save a logical test...                            !
+      !------------------------------------------------------------------------------------!
+      if (.not. vt%vector_allocated) return
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !     Go through all pointer elements and nullify those associated with variables.   !
+      ! We must do that before we deallocate so only the pointers, not the true arrays,    !
+      ! are deallocated.                                                                   !
+      !------------------------------------------------------------------------------------!
+      do iptr=1,vt%nptrs
+         if (associated(vt%vt_vector(iptr)%var_rp)) nullify(vt%vt_vector(iptr)%var_rp)
+         if (associated(vt%vt_vector(iptr)%var_ip)) nullify(vt%vt_vector(iptr)%var_ip)
+         if (associated(vt%vt_vector(iptr)%var_cp)) nullify(vt%vt_vector(iptr)%var_cp)
+         if (associated(vt%vt_vector(iptr)%var_dp)) nullify(vt%vt_vector(iptr)%var_dp)
+         if (associated(vt%vt_vector(iptr)%sca_rp)) nullify(vt%vt_vector(iptr)%sca_rp)
+         if (associated(vt%vt_vector(iptr)%sca_ip)) nullify(vt%vt_vector(iptr)%sca_ip)
+         if (associated(vt%vt_vector(iptr)%sca_cp)) nullify(vt%vt_vector(iptr)%sca_cp)
+         if (associated(vt%vt_vector(iptr)%sca_dp)) nullify(vt%vt_vector(iptr)%sca_dp)
+      end do
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !      Now it's safe to deallocate, just remind to update the logical flag...        !
+      !------------------------------------------------------------------------------------!
+      deallocate(vt%vt_vector)
+      vt%vector_allocated = .false.
+      !------------------------------------------------------------------------------------!
+
       return
    end subroutine reset_vt_vector_pointers
    !=======================================================================================!

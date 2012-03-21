@@ -367,7 +367,7 @@ module disturbance_utils
 
                      !---------------------------------------------------------------------!
                      !     Update the derived properties including veg_height, and patch-  !
-                     ! -level LAI, WAI, WPA.                                               !
+                     ! -level LAI, WAI.                                                    !
                      !---------------------------------------------------------------------!
                      call update_patch_derived_props( csite,cpoly%lsl(isi)                 &
                                                     , cpoly%met(isi)%prss                  &
@@ -813,8 +813,7 @@ module disturbance_utils
                                                      ,cpatch%bdead(ico),cpatch%balive(ico) &
                                                      ,cpatch%dbh(ico),cpatch%hite(ico)     &
                                                      ,cpatch%pft(ico),cpatch%sla(ico)      &
-                                                     ,cpatch%lai(ico),cpatch%wpa(ico)      &
-                                                     ,cpatch%wai(ico)                      &
+                                                     ,cpatch%lai(ico),cpatch%wai(ico)      &
                                                      ,cpatch%crown_area(ico)               &
                                                      ,cpatch%bsapwood(ico))
                                  end do
@@ -857,7 +856,7 @@ module disturbance_utils
                            end if
                            !---------------------------------------------------------------!
                            !     Update the derived properties including veg_height, and   !
-                           ! patch--level LAI, WAI, WPA.                                   !
+                           ! patch--level LAI, WAI.                                         !
                            !---------------------------------------------------------------!
                            call update_patch_derived_props(csite,cpoly%lsl(isi)            &
                                                           ,cpoly%met(isi)%prss             &
@@ -1566,7 +1565,6 @@ module disturbance_utils
             !------------------------------------------------------------------------------!
             tpatch%lai                (nco) = tpatch%lai              (nco) * survival_fac
             tpatch%wai                (nco) = tpatch%wai              (nco) * survival_fac
-            tpatch%wpa                (nco) = tpatch%wpa              (nco) * survival_fac
             tpatch%nplant             (nco) = tpatch%nplant           (nco) * survival_fac
             tpatch%mean_gpp           (nco) = tpatch%mean_gpp         (nco) * survival_fac
             tpatch%mean_leaf_resp     (nco) = tpatch%mean_leaf_resp   (nco) * survival_fac
@@ -1936,8 +1934,8 @@ module disturbance_utils
       !----- Compute all area indices needed. ---------------------------------------------!
       call area_indices(cpatch%nplant(nc),cpatch%bleaf(nc),cpatch%bdead(nc)                &
                        ,cpatch%balive(nc),cpatch%dbh(nc),cpatch%hite(nc),cpatch%pft(nc)    &
-                       ,cpatch%sla(nc),cpatch%lai(nc),cpatch%wpa(nc),cpatch%wai(nc)        &
-                       ,cpatch%crown_area(nc),cpatch%bsapwood(nc))
+                       ,cpatch%sla(nc),cpatch%lai(nc),cpatch%wai(nc),cpatch%crown_area(nc) &
+                       ,cpatch%bsapwood(nc))
 
 
       !----- Find the new basal area and above-ground biomass. ----------------------------!
