@@ -32,6 +32,7 @@ OBJECTS =                           \
             rgrad.o                 \
             rnamel.o                \
             rnumr.o                 \
+            rout_coms.o             \
             rpost_coms.o            \
             rpost_dims.o            \
             rpost_filelist.o        \

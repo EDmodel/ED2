@@ -107,18 +107,18 @@ contains
 
     ! Deallocate all scratch arrays
 
-    if (associated(opt%ind1_x_a  ))  nullify (opt%ind1_x_a  )
-    if (associated(opt%ind1_x_b  ))  nullify (opt%ind1_x_b  )
-    if (associated(opt%ind2_x_a  ))  nullify (opt%ind2_x_a  )
-    if (associated(opt%ind2_x_b  ))  nullify (opt%ind2_x_b  )
-    if (associated(opt%weight_x_a))  nullify (opt%weight_x_a)
-    if (associated(opt%weight_x_b))  nullify (opt%weight_x_b)
-    if (associated(opt%ind1_y_a  ))  nullify (opt%ind1_y_a  )
-    if (associated(opt%ind1_y_b  ))  nullify (opt%ind1_y_b  )
-    if (associated(opt%ind2_y_a  ))  nullify (opt%ind2_y_a  )
-    if (associated(opt%ind2_y_b  ))  nullify (opt%ind2_y_b  )
-    if (associated(opt%weight_y_a))  nullify (opt%weight_y_a)
-    if (associated(opt%weight_y_b))  nullify (opt%weight_y_b)
+    nullify (opt%ind1_x_a  )
+    nullify (opt%ind1_x_b  )
+    nullify (opt%ind2_x_a  )
+    nullify (opt%ind2_x_b  )
+    nullify (opt%weight_x_a)
+    nullify (opt%weight_x_b)
+    nullify (opt%ind1_y_a  )
+    nullify (opt%ind1_y_b  )
+    nullify (opt%ind2_y_a  )
+    nullify (opt%ind2_y_b  )
+    nullify (opt%weight_y_a)
+    nullify (opt%weight_y_b)
 
 
     return

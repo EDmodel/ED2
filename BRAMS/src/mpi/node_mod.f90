@@ -149,6 +149,7 @@ module node_mod
    integer                                         :: nbuff_nest
    integer                                         :: f_ndmd_size
    integer                                         :: nbuff_st
+   integer                                         :: nbuff_adv
    !---------------------------------------------------------------------------------------!
    integer, dimension(maxmach)                     :: irecv_req
    integer, dimension(maxmach)                     :: isend_req
@@ -181,6 +182,7 @@ module node_mod
    type(pack_buffs), dimension(  maxmach) :: node_buffs_feed
    type(pack_buffs), dimension(  maxmach) :: node_buffs_nest
    type(pack_buffs), dimension(6,maxmach) :: node_buffs_st
+   type(pack_buffs), dimension(5,maxmach) :: node_buffs_adv
    !---------------------------------------------------------------------------------------!
 
 

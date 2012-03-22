@@ -180,7 +180,7 @@ logical function cumulus_time(initial,time,cptime,confrq,deltat)
 
  
    cumulus_time = (.not. (initial == 2 .and. time < cptime - dble(deltat))) .and. &
-                  mod(time,confrq) < deltat 
+        mod(time,dble(confrq)) < dble(deltat)
 
    return
 end function cumulus_time

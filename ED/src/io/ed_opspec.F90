@@ -500,6 +500,12 @@ subroutine ed_opspec_times
       !   Check outfast setting and adjusting it if needed. Depending on the               !
       ! configuration, this will cause the run to crash.                                   !
       !------------------------------------------------------------------------------------!
+      elseif (frqfast < 10*60) then
+         write(reason,fmt='(a,1x,a,1x,es14.7)')                                    &
+             'FRQFAST must be greater than 10min (600 sec) when daily and/or monthly'    &
+            ,'analysis are on or you will create a memory leak. Yours is set to ',frqfast
+         call opspec_fatal(reason,'opspec_misc')
+         ifaterr = ifaterr +1
       elseif(outfast == 0.) then
          !----- User didn't specify any outfast, use frqfast ------------------------------!
          outfast    = frqfast
@@ -909,8 +915,6 @@ subroutine ed_opspec_times
       !------------------------------------------------------------------------------------!
       elseif (outstate /= 0. .or. outstate > frqstate) then
 
-         outstate = frqstate
-         nrec_state = 1
          write (unit=*,fmt='(a)') ' '
          write (unit=*,fmt='(a)') '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
          write (unit=*,fmt='(a)') '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
@@ -920,10 +924,14 @@ subroutine ed_opspec_times
          write (unit=*,fmt='(a)') ' -> Outstate cannot be different than frqstate when'
          write (unit=*,fmt='(a)') '    unitstate is set to 3 (years).'
          write (unit=*,fmt='(a,1x,f7.0,1x,a)')                                             &
-                                  '    Oustate was redefined to ',outstate,'years.'
+                                  '    Oustate was set to ',outstate,'years.'
+         write (unit=*,fmt='(a,1x,f7.0,1x,a)')                                             &
+                                  '    Oustate was redefined to ',frqstate,'years.'
          write (unit=*,fmt='(a)') '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
          write (unit=*,fmt='(a)') '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
          write (unit=*,fmt='(a)') ' '
+         outstate = frqstate
+         nrec_state = 1
       else !----- The user either knew or was lucky, don't print the banner ---------------!
          outstate = frqstate
          nrec_state = 1
@@ -1104,6 +1112,7 @@ subroutine ed_opspec_misc
                                     , runtype                      & ! intent(in)
                                     , ied_init_mode                & ! intent(in)
                                     , ivegt_dynamics               & ! intent(in)
+                                    , ibigleaf                     & ! intent(in)
                                     , integration_scheme           & ! intent(in)
                                     , iallom                       & ! intent(in)
                                     , min_site_area                ! ! intent(in)
@@ -1162,11 +1171,14 @@ subroutine ed_opspec_misc
                                     , quantum_efficiency_T         ! ! intent(in)
    use decomp_coms           , only : n_decomp_lim                 ! ! intent(in)
    use disturb_coms          , only : include_fire                 & ! intent(in)
+                                    , fire_parameter               & ! intent(in)
                                     , ianth_disturb                & ! intent(in)
                                     , sm_fire                      & ! intent(in)
                                     , time2canopy                  & ! intent(in)
-                                    , treefall_disturbance_rate    ! ! intent(in)
+                                    , treefall_disturbance_rate    & ! intent(in)
+                                    , min_patch_area               ! ! intent(in)
    use phenology_coms        , only : iphen_scheme                 & ! intent(in)
+                                    , repro_scheme                 & ! intent(in)
                                     , radint                       & ! intent(in)
                                     , radslp                       & ! intent(in)
                                     , thetacrit                    ! ! intent(in)
@@ -1187,6 +1199,11 @@ subroutine ed_opspec_misc
    use rk4_coms              , only : ibranch_thermo               & ! intent(in)
                                     , ipercol                      & ! intent(in)
                                     , rk4_tolerance                ! ! intent(in)
+   use mem_polygons          , only : n_ed_region                  & ! intent(in)
+                                    , n_poi                        ! ! intent(in)
+   use detailed_coms         , only : idetailed                    & ! intent(in)
+                                    , patch_keep                   ! ! intent(in)
+
    use met_driver_coms       , only : imetrad                      ! ! intent(in)
 #if defined(COUPLED)
 #else
@@ -1197,8 +1214,12 @@ subroutine ed_opspec_misc
    implicit none
    !----- Local variables -----------------------------------------------------------------!
    character(len=str_len) :: reason
-   integer                :: ifaterr,ifm,ipft
-   logical                :: agri_ok,plantation_ok
+   integer                :: ifaterr
+   integer                :: ifm
+   integer                :: ipft
+   logical                :: agri_ok
+   logical                :: plantation_ok
+   logical                :: patch_detailed
    !----- Local constants -----------------------------------------------------------------!
    integer, parameter :: skip=huge(6)
    !---------------------------------------------------------------------------------------!
@@ -1217,6 +1238,12 @@ subroutine ed_opspec_misc
       write (reason,fmt='(a,2x,a,1x,es12.5,a)')                                            &
          'Invalid MIN_SITE_AREA, it must be between 0.0001 and 0.10.'                      &
         ,'Yours is set to ',min_site_area,'...'
+   end if
+
+   if (min_patch_area < 0.000001 .or. min_patch_area > 0.02) then
+      write (reason,fmt='(a,2x,a,1x,es12.5,a)')                                            &
+         'Invalid MIN_PATCH_AREA, it must be between 0.000001 and 0.02.'                   &
+        ,'Yours is set to ',min_patch_area,'...'
    end if
 
    if (ifoutput /= 0 .and. ifoutput /= 3) then
@@ -1276,6 +1303,19 @@ subroutine ed_opspec_misc
    end if
 
    if (ied_init_mode == -8) then 
+      !------------------------------------------------------------------------------------!
+      !     The special 8-layer model works only in size- and age-structured runs.         !
+      !------------------------------------------------------------------------------------!
+      if (ibigleaf == 1) then
+         write (reason,fmt='(a)')                                                          &
+                            'IED_INIT_MODE can''t be -8 when running big leaf mode.'       &
+                            ,trim(runtype),'...'
+         call opspec_fatal(reason,'opspec_misc')
+         ifaterr = ifaterr +1
+      end if
+      !------------------------------------------------------------------------------------!
+
+
       !------------------------------------------------------------------------------------!
       !     This is just for idealised test runs and shouldn't be used as a regular        !
       ! option.                                                                            !
@@ -1447,13 +1487,25 @@ end do
       ifaterr = ifaterr +1
    end if
 
+   if (ibigleaf < 0 .or. ibigleaf > 1) then
+      write (reason,fmt='(a,1x,i4,a)')                                                     &
+         'Invalid IBIGLEAF, it must be between 0 and 1. Yours is set to',ibigleaf,'...'
+      call opspec_fatal(reason,'opspec_misc')
+      ifaterr = ifaterr +1
+   elseif (ibigleaf == 1 .and. crown_mod /= 0) then
+      write (reason,fmt='(a,1x,i4,a)')                                                     &
+         'CROWN_MOD must be turned off when IBIGLEAF is set to 1...'
+      call opspec_fatal(reason,'opspec_misc')
+      ifaterr = ifaterr +1
+   end if
+
    !---------------------------------------------------------------------------------------!
    !      Integration scheme can be only 0 (Euler) or 1 (4th order Runge-Kutta).  The      !
    ! branch thermodynamics is currently working only with Runge-Kutta, so we won't allow   !
    ! using it in case the user decides for Euler.                                          !
    !---------------------------------------------------------------------------------------!
    select case (integration_scheme)
-   case (0:2)
+   case (0:3)
       !------------------------------------------------------------------------------------!
       !   Check the branch thermodynamics.                                                 !
       !------------------------------------------------------------------------------------!
@@ -1504,6 +1556,14 @@ end do
       write (reason,fmt='(a,1x,i4,a)')                                                     &
                     'Invalid IPHEN_SCHEME, it must be between -1 and 3. Yours is set to'   &
                     ,iphen_scheme,'...'
+      call opspec_fatal(reason,'opspec_misc')
+      ifaterr = ifaterr +1
+   end if
+
+   if (repro_scheme < 0 .or. repro_scheme > 3) then
+      write (reason,fmt='(a,1x,i4,a)')                                                     &
+                    'Invalid REPRO_SCHEME, it must be between  0 and 3. Yours is set to'   &
+                    ,repro_scheme,'...'
       call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
    end if
@@ -1755,13 +1815,22 @@ end do
       ifaterr = ifaterr +1
    end if
 
-   if (include_fire < 0 .or. include_fire > 2) then
+   if (include_fire < 0 .or. include_fire > 3) then
       write (reason,fmt='(a,1x,i4,a)')                                                     &
-                    'Invalid INCLUDE_FIRE, it must be between 0 and 2. Yours is set to'    &
+                    'Invalid INCLUDE_FIRE, it must be between 0 and 3. Yours is set to'    &
                     ,include_fire,'...'
       call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
+   else if (include_fire /= 0) then
+      if (fire_parameter < 0.0 .or. fire_parameter > 100.) then
+         write (reason,fmt='(a,1x,es12.5,a)')                                              &
+               'Invalid FIRE_PARAMETER, it must be between 0 and 100.. Yours is set to'    &
+             , fire_parameter,'...'
+         call opspec_fatal(reason,'opspec_misc')
+         ifaterr = ifaterr +1
+      end if
    end if
+
    
    if (sm_fire < -3.1 .or. sm_fire > 1.) then
       write (reason,fmt='(a,1x,es12.5,a)')                                                 &
@@ -2131,6 +2200,50 @@ end do
       ifaterr = ifaterr +1
       call opspec_fatal(reason,'opspec_misc')
    end if
+
+
+   if (idetailed < 0 .or. idetailed > 63) then
+      write (reason,fmt='(a,1x,i4,a)')                                                     &
+                    'Invalid IDETAILED, it must be between 0 and 63.  Yours is set to'     &
+                    ,idetailed,'...'
+      ifaterr = ifaterr +1
+      call opspec_fatal(reason,'opspec_misc')
+   elseif (idetailed > 0) then
+      patch_detailed = ibclr(idetailed,5) > 0
+
+      if (patch_detailed .and. (n_poi > 1 .or. n_ed_region > 0)) then
+         write(unit=*,fmt='(a)')       '--------------------------------------------------'
+         write(unit=*,fmt='(a,1x,i6)') ' IDETAILED   = ',idetailed
+         write(unit=*,fmt='(a,1x,i6)') ' N_POI       = ',n_poi
+         write(unit=*,fmt='(a,1x,i6)') ' N_ED_REGION = ',n_ed_region
+         write(unit=*,fmt='(a)')       ' '
+         write(unit=*,fmt='(a)')       ' The following should be all F in regional runs'
+         write(unit=*,fmt='(a)')       '    or multiple polygon runs'
+         write(unit=*,fmt='(a,1x,l1)') ' - BUDGET              [ 1] = ',btest(idetailed,0)
+         write(unit=*,fmt='(a,1x,l1)') ' - PHOTOSYNTHESIS      [ 2] = ',btest(idetailed,1)
+         write(unit=*,fmt='(a,1x,l1)') ' - DETAILED INTEGRATOR [ 4] = ',btest(idetailed,2)
+         write(unit=*,fmt='(a,1x,l1)') ' - SANITY CHECK BOUNDS [ 8] = ',btest(idetailed,3)
+         write(unit=*,fmt='(a,1x,l1)') ' - ERROR RECORDING     [16] = ',btest(idetailed,4)
+         write(unit=*,fmt='(a)')       '--------------------------------------------------'
+         write (reason,fmt='(2(a,1x))') 'Only single polygon runs are allowed'             &
+                                       ,'with detailed patch-level output...'
+         ifaterr = ifaterr +1
+         call opspec_fatal(reason,'opspec_misc')
+      end if
+
+      if (patch_keep < -2) then
+         write (reason,fmt='(a,2x,a,1x,i4,a)')                                             &
+                       'Invalid PATCH_KEEP, it must be between -2 and number of patches.'  &
+                      ,'Yours is set to',patch_keep,'...'
+         ifaterr = ifaterr +1
+         call opspec_fatal(reason,'opspec_misc')
+      end if
+      !------------------------------------------------------------------------------------!
+   end if
+   !---------------------------------------------------------------------------------------!
+
+
+
 
    !----- Stop the run if there are any fatal errors. -------------------------------------!
    if (ifaterr > 0) then

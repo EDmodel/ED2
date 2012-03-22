@@ -97,11 +97,9 @@ subroutine canopy_photosynthesis(csite,cmet,mzg,ipa,lsl,ntext_soil              
 
    !----- Find the patch-level Total Leaf and Wood Area Index. ----------------------------!
    csite%lai(ipa) = 0.0
-   csite%wpa(ipa) = 0.0
    csite%wai(ipa) = 0.0
    do ico=1,cpatch%ncohorts
       csite%lai(ipa)  = csite%lai(ipa)  + cpatch%lai(ico)
-      csite%wpa(ipa)  = csite%wpa(ipa)  + cpatch%wpa(ico)
       csite%wai(ipa)  = csite%wai(ipa)  + cpatch%wai(ico)
    end do
    !---------------------------------------------------------------------------------------!
@@ -337,7 +335,6 @@ subroutine canopy_photosynthesis(csite,cmet,mzg,ipa,lsl,ntext_soil              
              , vm                          & ! Max. capacity of Rubisco         [µmol/m²/s]
              , compp                       & ! Gross photo. compensation point  [ µmol/mol]
              , limit_flag                  & ! Photosynthesis limitation flag   [      ---]
-             , csite%old_stoma_data_max(ipft,ipa) & ! Previous state            [      ---]
              )
          end if
       end do
@@ -418,7 +415,6 @@ subroutine canopy_photosynthesis(csite,cmet,mzg,ipa,lsl,ntext_soil              
              , vm                          & ! Max. capacity of Rubisco         [µmol/m²/s]
              , compp                       & ! Gross photo. compensation point  [ µmol/mol]
              , limit_flag                  & ! Photosynthesis limitation flag   [      ---]
-             , csite%old_stoma_data_max(ipft,ipa) & ! Previous state            [      ---]
              )
 
             !----- Convert leaf respiration to [µmol/m²ground/s] --------------------------!
@@ -452,7 +448,7 @@ subroutine canopy_photosynthesis(csite,cmet,mzg,ipa,lsl,ntext_soil              
                cpatch%fsw(ico) = 1.0
 
             case (1,2)
-               water_demand    = cpatch%psi_open(ico)
+               water_demand    = cpatch%psi_open(ico) * cpatch%lai(ico)
                if (cpatch%water_supply (ico) < tiny_num) then
                   cpatch%fsw(ico) = 0.0
                else
@@ -661,6 +657,8 @@ subroutine print_photo_details(cmet,csite,ipa,ico,limit_flag,vm,compp)
    else
       par_area  = 0.0
       parv      = 0.0
+      nir_area  = 0.0
+      nirv      = 0.0
       util_parv = 0.0
    end if
 

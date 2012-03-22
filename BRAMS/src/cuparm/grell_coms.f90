@@ -112,29 +112,29 @@ module grell_coms
   !  These variables are parameters for various Grell's computation                        !
   !----------------------------------------------------------------------------------------!
   !------ Minimum diameter for clouds to develop downdrafts and rain ----------------------!
-  real                              , parameter  :: min_down_radius = 900.
+  real                              , parameter  :: min_down_radius = 3000.
   
   !------ Epsilon is the ratio between reference downdraft and updraft mass fluxes --------!
-  real                              , parameter  :: edtmax = .95  ! Upper bound
-  real                              , parameter  :: edtmin = .20  ! Lower bound
+  real                              , parameter  :: edtmax          = .99  ! Upper bound
+  real                              , parameter  :: edtmin          = .01  ! Lower bound
   
   !------ Maximum acceptable PBL height ---------------------------------------------------!
-  real                              , parameter ::  pblhmax = 3000.
+  real                              , parameter ::  pblhmax         = 3000.
   
-  !------ Minimum cloud mixing ratio to consider the layer wet ----------------------------!
-  real                              , parameter ::  rcpmin  = 1.e-5
+  !------ Minimum cloud mixing ratio to consider the layer wet [kg/kg] --------------------!
+  real                              , parameter ::  rcpmin          = 1.e-5
   
   !------ Height relative to the top above which no downdrafts can occur ------------------!
-  real                              , parameter ::  relheight_down = 0.6
+  real                              , parameter ::  relheight_down  = 0.6
   
   !------ Percentage of mass left when hitting the ground ---------------------------------!
-  real                              , parameter ::  pmass_left     = 0.03
+  real                              , parameter ::  pmass_left      = 0.03
   
   !------ Maximum "leakage" of mass allowed (normalized) ----------------------------------!
-  real, parameter ::   masstol        = 1.e-6
+  real                              , parameter ::  masstol         = 1.e-6
 
   !----- Maximum height that a cloud can ever possibly reach [m] --------------------------!
-  real, parameter ::   zmaxtpse       = 18000.
+  real                              , parameter ::  zmaxtpse        = 18000.
 
   !----------------------------------------------------------------------------------------!
   !    Ensemble related variables. acrit and acritt are a look-up table for climatological !
@@ -161,6 +161,21 @@ module grell_coms
                           , 625.0 , 619.0 , 645.0 , 627.0 , 665.0 , 659.0 , 688.0 , 743.0  &
                           , 813.0 , 886.0 , 947.0 ,1138.0 ,1377.0 ,1896.0                 /)
   !----------------------------------------------------------------------------------------!
+
+
+  !----------------------------------------------------------------------------------------!
+  !      List of maximum and minimum values that are acceptable.                           !
+  !----------------------------------------------------------------------------------------!
+  real, parameter :: grellmax_zcheck = 9000.  ! Maximum height to test         [        m]
+  real, parameter :: grell_lapse_wet = 0.0045 ! Typical lapse rate             [      K/m]
+  real, parameter :: grellmin_t0     = 184.   ! Minimum surface temperature    [        K]
+  real, parameter :: grellmax_t0     = 341.   ! Maximum surface temperature    [        K]
+  real, parameter :: grellmin_rhv    = 0.001  ! Minimum relative humidity      [      ---]
+  real, parameter :: grellmax_rhv    = 1.0    ! Maximum relative humidity      [      ---]
+  real, parameter :: grellmin_co2    = 50.    ! Minimum CO2 mixing ratio       [ µmol/mol]
+  real, parameter :: grellmax_co2    = 1000.  ! Maximum CO2 mixing ratio       [ µmol/mol]
+  !----------------------------------------------------------------------------------------!
+
 
   contains
 !==========================================================================================!
@@ -287,6 +302,8 @@ module grell_coms
 
       return
    end subroutine define_grell_coms
-!==========================================================================================!
-!==========================================================================================!
+   !=======================================================================================!
+   !=======================================================================================!
 end module grell_coms
+!==========================================================================================!
+!==========================================================================================!

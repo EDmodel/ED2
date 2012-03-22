@@ -136,7 +136,7 @@ subroutine master_sendinit()
                ! scratch variable that is large enough to receive any subdomain.           !
                !---------------------------------------------------------------------------!
                call azero(npts,scratch%scr2)
-               call mk_full_buff(vtab_r(nv,ng)%var_p,scratch%scr2                          &
+               call mk_full_buff(vtab_r(nv,ng)%var_p,scratch%scr2,npts                     &
                                 ,fdzp,nnxp(ng),nnyp(ng),fdep                               &
                                 ,nxbeg(nm,ng),nxend(nm,ng),nybeg(nm,ng),nyend(nm,ng))
                !---------------------------------------------------------------------------!
@@ -370,8 +370,8 @@ subroutine node_getinit()
             !     Extract the received information and place it into the right place in    !
             ! the actual variable to which the variable table points.                      !
             !------------------------------------------------------------------------------!
-            call ex_full_buff(vtab_r(nv,ng)%var_p,scratch%scr1,fdzp,sdxp,sdyp,fdep         &
-                             ,sdxp,sdyp,0,0,1,sdxp,1,sdyp)
+            call ex_full_buff(vtab_r(nv,ng)%var_p,scratch%scr1,vtab_r(nv,ng)%npts,fdzp     &
+                             ,sdxp,sdyp,fdep,sdxp,sdyp,0,0,1,sdxp,1,sdyp)
             !------------------------------------------------------------------------------!
          end if
 
@@ -479,8 +479,8 @@ subroutine node_sendall()
             ! scratch variable that is large enough to receive any subdomain.              !
             !------------------------------------------------------------------------------!
             call azero(vtab_r(nv,ng)%npts,scratch%scr6)
-            call mk_full_buff(vtab_r(nv,ng)%var_p,scratch%scr6,fdzp,sdxp,sdyp,fdep         &
-                             ,1,sdxp,1,sdyp)
+            call mk_full_buff(vtab_r(nv,ng)%var_p,scratch%scr6,vtab_r(nv,ng)%npts          &
+                             ,fdzp,sdxp,sdyp,fdep,1,sdxp,1,sdyp)
             !------------------------------------------------------------------------------!
 
 
@@ -709,8 +709,8 @@ subroutine master_getall()
          !     Extract the received information and place it into the right place in the   !
          ! actual variable to which the variable table points.                             !
          !---------------------------------------------------------------------------------!
-         call ex_full_buff(vtab_r(nv,ng)%var_p,scratch%scr1,fdzp,nnxp(ng),nnyp(ng),fdep    &
-                          ,sdxp,sdyp,ioff,joff,iwest,ieast,jsouth,jnorth)
+         call ex_full_buff(vtab_r(nv,ng)%var_p,scratch%scr1,npts,fdzp,nnxp(ng),nnyp(ng)    &
+                          ,fdep,sdxp,sdyp,ioff,joff,iwest,ieast,jsouth,jnorth)
          !---------------------------------------------------------------------------------!
       end do varloop
    end do machloop
@@ -729,19 +729,20 @@ end subroutine master_getall
 !     This subroutine copies part of the full domain to the buffer matrix, which will be   !
 ! sent to the nodes.                                                                       !
 !------------------------------------------------------------------------------------------!
-subroutine mk_full_buff(mydata,buff,nz,nx,ny,ne,iwest,ieast,jsouth,jnorth)
+subroutine mk_full_buff(mydata,buff,npts,nz,nx,ny,ne,iwest,ieast,jsouth,jnorth)
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    integer                     , intent(in)    :: nz
    integer                     , intent(in)    :: nx
    integer                     , intent(in)    :: ny
    integer                     , intent(in)    :: ne
+   integer                     , intent(in)    :: npts
    integer                     , intent(in)    :: iwest
    integer                     , intent(in)    :: ieast
    integer                     , intent(in)    :: jsouth
    integer                     , intent(in)    :: jnorth
    real, dimension(nz,nx,ny,ne), intent(in)    :: mydata
-   real, dimension(*)          , intent(inout) :: buff
+   real, dimension(npts)       , intent(inout) :: buff
    !----- Local variables. ----------------------------------------------------------------!
    integer                                     :: ind
    integer                                     :: i
@@ -767,6 +768,31 @@ subroutine mk_full_buff(mydata,buff,nz,nx,ny,ne,iwest,ieast,jsouth,jnorth)
    end do
    !---------------------------------------------------------------------------------------!
 
+
+
+   !---------------------------------------------------------------------------------------!
+   !      Crash in case there is a mismatch between the number of points in copied and the !
+   ! dimension of the buffer.                                                              !
+   !---------------------------------------------------------------------------------------!
+   if (ind /= npts) then
+      write (unit=*,fmt='(a)') '----------------------------------------------------------'
+      write (unit=*,fmt='(a)') ' Mismatch between expected buffer size and amount copied! '
+      write (unit=*,fmt='(a)') '----------------------------------------------------------'
+      write (unit=*,fmt='(a,1x,i6)') ' NZ     = ',nz
+      write (unit=*,fmt='(a,1x,i6)') ' NX     = ',nx
+      write (unit=*,fmt='(a,1x,i6)') ' NY     = ',ny
+      write (unit=*,fmt='(a,1x,i6)') ' NE     = ',ne
+      write (unit=*,fmt='(a,1x,i6)') ' IWEST  = ',iwest
+      write (unit=*,fmt='(a,1x,i6)') ' IEAST  = ',ieast
+      write (unit=*,fmt='(a,1x,i6)') ' JSOUTH = ',jsouth
+      write (unit=*,fmt='(a,1x,i6)') ' JNORTH = ',jnorth
+      write (unit=*,fmt='(a,1x,i6)') ' IND    = ',ind
+      write (unit=*,fmt='(a,1x,i6)') ' NPTS   = ',npts
+      write (unit=*,fmt='(a)') '----------------------------------------------------------'
+      call abort_run('Incorrect buffer size','mk_full_buff','mpass_full.f90')
+   end if
+   !---------------------------------------------------------------------------------------!
+
    return
 end subroutine mk_full_buff
 !==========================================================================================!
@@ -782,9 +808,11 @@ end subroutine mk_full_buff
 !     This subroutine extracts the information stored in the buffer, and copies to the     !
 ! actual place that will be used by the head node.                                         !
 !------------------------------------------------------------------------------------------!
-subroutine ex_full_buff(mydata,buff,nz,nx,ny,ne,mx,my,ioff,joff,iwest,ieast,jsouth,jnorth)
+subroutine ex_full_buff(mydata,buff,npts,nz,nx,ny,ne,mx,my,ioff,joff,iwest,ieast           &
+                       ,jsouth,jnorth)
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
+   integer                     , intent(in)    :: npts
    integer                     , intent(in)    :: ne
    integer                     , intent(in)    :: nx
    integer                     , intent(in)    :: ny
@@ -797,7 +825,7 @@ subroutine ex_full_buff(mydata,buff,nz,nx,ny,ne,mx,my,ioff,joff,iwest,ieast,jsou
    integer                     , intent(in)    :: ieast
    integer                     , intent(in)    :: jsouth
    integer                     , intent(in)    :: jnorth
-   real, dimension(nz,mx,my,ne), intent(in)    :: buff
+   real, dimension(npts)       , intent(in)    :: buff
    real, dimension(nz,nx,ny,ne), intent(inout) :: mydata
    !----- Local variables. ----------------------------------------------------------------!
    integer                                     :: iabs
@@ -807,23 +835,98 @@ subroutine ex_full_buff(mydata,buff,nz,nx,ny,ne,mx,my,ioff,joff,iwest,ieast,jsou
    integer                                     :: k
    integer                                     :: l
    integer                                     :: ind
+   logical                                     :: icopy
+   logical                                     :: jcopy
    !---------------------------------------------------------------------------------------!
 
 
    !---------------------------------------------------------------------------------------!
    !    Copy the buffer information.                                                       !
    !---------------------------------------------------------------------------------------!
-   do l=1,ne
-      do j=jsouth,jnorth
+   !----- ind is the buffer index, notice that not everything will be copied. -------------!
+   ind = 0
+   eloop: do l=1,ne
+      yloop: do j=1,my
+         !----- Jabs is the absolute Y position. ------------------------------------------!
          jabs = j + joff
-         do i=iwest,ieast
-            iabs = i + ioff
-            do k=1,nz
-               mydata(k,iabs,jabs,l) = buff(k,i,j,l)
-            end do
-         end do
-      end do
-   end do
+         !----- Jcopy is a flag telling whether this Y column is a resolved grid point. ---!
+         jcopy = j >= jsouth .and. j <= jnorth
+         xloop: do i=1,mx
+            !----- Iabs is the absolute X position. ---------------------------------------!
+            iabs  = i + ioff
+            !------------------------------------------------------------------------------!
+            !     Sanity check.                                                            !
+            !------------------------------------------------------------------------------!
+            if (iabs < 1 .or. iabs > nx .or. jabs < 1 .or. jabs > ny) then
+               write (unit=*,fmt='(a)') '-------------------------------------------------'
+               write (unit=*,fmt='(a)') ' Point overboard!!!'
+               write (unit=*,fmt='(a)') '-------------------------------------------------'
+               write (unit=*,fmt='(a,1x,i6)') ' I      = ',i
+               write (unit=*,fmt='(a,1x,i6)') ' IABS   = ',iabs
+               write (unit=*,fmt='(a,1x,i6)') ' J      = ',j
+               write (unit=*,fmt='(a,1x,i6)') ' JABS   = ',jabs
+               write (unit=*,fmt='(a,1x,i6)') ' NZ     = ',nz
+               write (unit=*,fmt='(a,1x,i6)') ' NX     = ',nx
+               write (unit=*,fmt='(a,1x,i6)') ' NY     = ',ny
+               write (unit=*,fmt='(a,1x,i6)') ' NE     = ',ne
+               write (unit=*,fmt='(a,1x,i6)') ' MX     = ',mx
+               write (unit=*,fmt='(a,1x,i6)') ' MY     = ',my
+               write (unit=*,fmt='(a,1x,i6)') ' IOFF   = ',ioff
+               write (unit=*,fmt='(a,1x,i6)') ' IWEST  = ',iwest
+               write (unit=*,fmt='(a,1x,i6)') ' IEAST  = ',ieast
+               write (unit=*,fmt='(a,1x,i6)') ' JOFF   = ',joff
+               write (unit=*,fmt='(a,1x,i6)') ' JSOUTH = ',jsouth
+               write (unit=*,fmt='(a,1x,i6)') ' JNORTH = ',jnorth
+               write (unit=*,fmt='(a,1x,i6)') ' IND    = ',ind
+               write (unit=*,fmt='(a,1x,i6)') ' NPTS   = ',npts
+               write (unit=*,fmt='(a)') '-------------------------------------------------'
+               call abort_run('Grid point offset is wrong','ex_full_buff','mpass_full.f90')
+            end if
+            !------------------------------------------------------------------------------!
+
+
+            !----- Same as jcopy but for the X rows. --------------------------------------!
+            icopy = i >= iwest .and. i <= ieast
+
+            zloop: do k=1,nz
+               !----- We always update ind, but we do not always copy to mydata. ----------!
+               ind = ind + 1
+
+               !----- Check whether this is copied or not. --------------------------------!
+               if (icopy .and. jcopy) then
+                  mydata(k,iabs,jabs,l) = buff(ind)
+               end if
+            end do zloop
+         end do xloop
+      end do yloop
+   end do eloop
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Sanity check.                                                                     !
+   !---------------------------------------------------------------------------------------!
+   if (ind /= npts) then
+      write (unit=*,fmt='(a)') '----------------------------------------------------------'
+      write (unit=*,fmt='(a)') ' Mismatch between expected buffer size and amount copied! '
+      write (unit=*,fmt='(a)') '----------------------------------------------------------'
+      write (unit=*,fmt='(a,1x,i6)') ' NZ     = ',nz
+      write (unit=*,fmt='(a,1x,i6)') ' NX     = ',nx
+      write (unit=*,fmt='(a,1x,i6)') ' NY     = ',ny
+      write (unit=*,fmt='(a,1x,i6)') ' NE     = ',ne
+      write (unit=*,fmt='(a,1x,i6)') ' MX     = ',mx
+      write (unit=*,fmt='(a,1x,i6)') ' MY     = ',my
+      write (unit=*,fmt='(a,1x,i6)') ' IOFF   = ',ioff
+      write (unit=*,fmt='(a,1x,i6)') ' IWEST  = ',iwest
+      write (unit=*,fmt='(a,1x,i6)') ' IEAST  = ',ieast
+      write (unit=*,fmt='(a,1x,i6)') ' JOFF   = ',joff
+      write (unit=*,fmt='(a,1x,i6)') ' JSOUTH = ',jsouth
+      write (unit=*,fmt='(a,1x,i6)') ' JNORTH = ',jnorth
+      write (unit=*,fmt='(a,1x,i6)') ' IND    = ',ind
+      write (unit=*,fmt='(a,1x,i6)') ' NPTS   = ',npts
+      write (unit=*,fmt='(a)') '----------------------------------------------------------'
+      call abort_run('Incorrect buffer size','ex_full_buff','mpass_full.f90')
+   end if
    !---------------------------------------------------------------------------------------!
 
    return

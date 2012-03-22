@@ -149,77 +149,84 @@ end subroutine strain
 ! virtual temperature profile. It will consider the effect of condensed phase.             !
 !------------------------------------------------------------------------------------------!
 subroutine bruvais(ibruvais,m1,m2,m3,ia,iz,ja,jz,pi0,pp,theta,rtp,rv,rtgt,flpw,en2)
-   use mem_scratch, only :  & !
-           vctr11           & ! intent(out) - Potential temperature
-          ,vctr12           & ! intent(out) - Virtual potential temperature
-          ,vctr1            & ! intent(out) - Height above ground
-          ,vctr2            & ! intent(out) - coefficient #1 (either cl1 or ci1)
-          ,vctr3            & ! intent(out) - coefficient #2 (either cl2 or ci2)
-          ,vctr4            & ! intent(out) - coefficient #3 (either cl3 or ci3)
-          ,vctr5            & ! intent(out) - Delta-z between k and k+1
-          ,vctr6            & ! intent(out) - Delta-z between k-1 and k
-          ,vctr10           & ! intent(out) - Ratio between z(k)-z(k-½) and z(k+½)-z(k-½)
-          ,vctr19           & ! intent(out) - g / Height above ground
-          ,vctr25           & ! intent(out) - d(theta_v)/dz at k+½
-          ,vctr26           & ! intent(out) - d(theta_v)/dz at k-½
-          ,vctr27           & ! intent(out) - Full Exner function                  [J/kg/K]
-          ,vctr28           & ! intent(out) - Pressure                             [    Pa]
-          ,vctr29           & ! intent(out) - Temperature                          [     K]
-          ,vctr30           & ! intent(out) - Saturation mixing ratio              [ kg/kg]
-          ,vctr31           ! ! intent(out) - Condensed  mixing ratio              [ kg/kg]
+   use mem_scratch, only : vctr11       & ! intent(out) - Potential temperature
+                         , vctr12       & ! intent(out) - Virtual potential temperature
+                         , vctr1        & ! intent(out) - Height above ground
+                         , vctr2        & ! intent(out) - coeff. #1 (either cl1 or ci1)
+                         , vctr3        & ! intent(out) - coeff. #2 (either cl2 or ci2)
+                         , vctr4        & ! intent(out) - coeff. #3 (either cl3 or ci3)
+                         , vctr5        & ! intent(out) - Delta-z between k and k+1
+                         , vctr6        & ! intent(out) - Delta-z between k-1 and k
+                         , vctr10       & ! intent(out) - [z(k)-z(k-½)]/[z(k+½)-z(k-½)]
+                         , vctr19       & ! intent(out) - g / Height above ground
+                         , vctr25       & ! intent(out) - d(theta_v)/dz at k+½
+                         , vctr26       & ! intent(out) - d(theta_v)/dz at k-½
+                         , vctr27       & ! intent(out) - Full Exner function      [J/kg/K]
+                         , vctr28       & ! intent(out) - Pressure                 [    Pa]
+                         , vctr29       & ! intent(out) - Temperature              [     K]
+                         , vctr30       & ! intent(out) - Saturation mixing ratio  [ kg/kg]
+                         , vctr31       ! ! intent(out) - Condensed  mixing ratio  [ kg/kg]
 
-   use mem_grid, only    : &
-           zt              & ! intent(in)
-          ,zm              & ! intent(in)
-          ,nzp             & ! intent(in)
-          ,nz              & ! intent(in)
-          ,nzpmax          ! ! intent(in)
+   use mem_grid   , only : zt           & ! intent(in)
+                         , zm           & ! intent(in)
+                         , nzp          & ! intent(in)
+                         , nz           & ! intent(in)
+                         , nzpmax       ! ! intent(in)
 
-   use rconstants, only  : &
-           grav            & ! intent(in)
-          ,t00             & ! intent(in)
-          ,p00             & ! intent(in)
-          ,alvl            & ! intent(in)
-          ,alvi            & ! intent(in)
-          ,rdry            & ! intent(in)
-          ,cp              & ! intent(in)
-          ,cpi             & ! intent(in)
-          ,cpor            & ! intent(in)
-          ,ep              ! ! intent(in)
+   use rconstants , only : grav         & ! intent(in)
+                         , t00          & ! intent(in)
+                         , alvl3        & ! intent(in)
+                         , alvi3        & ! intent(in)
+                         , rdry         & ! intent(in)
+                         , cpdry        & ! intent(in)
+                         , cpdryi       & ! intent(in)
+                         , ep           ! ! intent(in)
 
-   use therm_lib, only   : &
-           virtt           & ! function
-          ,rslf            & ! function
-          ,rsif            & ! function
-          ,vapour_on       & ! intent(in)
-          ,cloud_on        & ! intent(in)
-          ,bulk_on         ! ! intent(in)
+   use therm_lib  , only : virtt        & ! function
+                         , rslf         & ! function
+                         , rsif         & ! function
+                         , exner2press  & ! function
+                         , extheta2temp & ! function
+                         , vapour_on    & ! intent(in)
+                         , cloud_on     & ! intent(in)
+                         , bulk_on      ! ! intent(in)
 
    implicit none
 
    !----- Arguments -----------------------------------------------------------------------!
-   integer                  , intent(in   ) :: ibruvais ! Method to compute N²     [   ---]
-   integer                  , intent(in   ) :: m1,m2,m3 ! Z,X,Y dimensions         [   ---]
-   integer                  , intent(in   ) :: ia,iz    ! West-East node bound.    [   ---]
-   integer                  , intent(in   ) :: ja,jz    ! South-North node bound.  [   ---]
-   real, dimension(m1,m2,m3), intent(in   ) :: pi0      ! Ref. Exner function      [J/kg/K]
-   real, dimension(m1,m2,m3), intent(in   ) :: pp       ! Perturbation on Exner    [J/kg/K]
-   real, dimension(m1,m2,m3), intent(in   ) :: theta    ! Potential temperature    [     K]
-   real, dimension(m1,m2,m3), intent(in   ) :: rtp      ! Total mixing ratio       [ kg/kg]
-   real, dimension(m1,m2,m3), intent(in   ) :: rv       ! Vapour mixing ratio      [ kg/kg]       
-   real, dimension(   m2,m3), intent(in   ) :: rtgt     ! Sigma-z correction       [   m/m]
-   real, dimension(   m2,m3), intent(in   ) :: flpw     ! Lowest point in W grid   [   ---]
-   real, dimension(m1,m2,m3), intent(inout) :: en2      ! (Brunt-Väisälä freq.)²   [   Hz²]
+   integer                  , intent(in   ) :: ibruvais ! Method to compute N²    [    ---]
+   integer                  , intent(in   ) :: m1       ! Z dimensions            [    ---]
+   integer                  , intent(in   ) :: m2       ! X dimensions            [    ---]
+   integer                  , intent(in   ) :: m3       ! Y dimensions            [    ---]
+   integer                  , intent(in   ) :: ia       ! West end index          [    ---]
+   integer                  , intent(in   ) :: iz       ! East end index          [    ---]
+   integer                  , intent(in   ) :: ja       ! South end index         [    ---]
+   integer                  , intent(in   ) :: jz       ! North end index         [    ---]
+   real, dimension(m1,m2,m3), intent(in   ) :: pi0      ! Ref. Exner function     [ J/kg/K]
+   real, dimension(m1,m2,m3), intent(in   ) :: pp       ! Perturbation on Exner   [ J/kg/K]
+   real, dimension(m1,m2,m3), intent(in   ) :: theta    ! Potential temperature   [      K]
+   real, dimension(m1,m2,m3), intent(in   ) :: rtp      ! Total mixing ratio      [  kg/kg]
+   real, dimension(m1,m2,m3), intent(in   ) :: rv       ! Vapour mixing ratio     [  kg/kg]       
+   real, dimension(   m2,m3), intent(in   ) :: rtgt     ! Sigma-z correction      [    m/m]
+   real, dimension(   m2,m3), intent(in   ) :: flpw     ! Lowest point in W grid  [    ---]
+   real, dimension(m1,m2,m3), intent(inout) :: en2      ! (Brunt-Väisälä freq.)²  [    Hz²]
    !----- Local variables -----------------------------------------------------------------!
-   integer :: i,j,k,ki,k2,k1
-   real :: temp,rvlsi,rvii
+   integer                                  :: i
+   integer                                  :: j
+   integer                                  :: k
+   integer                                  :: ki
+   integer                                  :: k2
+   integer                                  :: k1
+   real                                     :: temp
+   real                                     :: rvlsi
+   real                                     :: rvii
    !----- Local constants, for alternative method to compute N², test only ----------------!
-   real, parameter :: cl1 = alvl / rdry
-   real, parameter :: cl2 = ep * alvl ** 2 / (cp * rdry)
-   real, parameter :: cl3 = alvl / cp
-   real, parameter :: ci1 = alvi / rdry
-   real, parameter :: ci2 = ep * alvi ** 2 / (cp * rdry)
-   real, parameter :: ci3 = alvi / cp
+   real                     , parameter     :: cl1 = alvl3 / rdry
+   real                     , parameter     :: cl2 = ep * alvl3 ** 2 / (cpdry * rdry)
+   real                     , parameter     :: cl3 = alvl3 / cpdry
+   real                     , parameter     :: ci1 = alvi3 / rdry
+   real                     , parameter     :: ci2 = ep * alvi3 ** 2 / (cpdry * rdry)
+   real                     , parameter     :: ci3 = alvi3 / cpdry
 
    !---------------------------------------------------------------------------------------!
 
@@ -275,8 +282,8 @@ subroutine bruvais(ibruvais,m1,m2,m3,ia,iz,ja,jz,pi0,pp,theta,rtp,rv,rtgt,flpw,e
 
             do k=k1,m1
                vctr27(k) = pi0(k,i,j) + pp(k,i,j)
-               vctr28(k) = p00 * (cpi   * vctr27(k)) ** cpor
-               vctr29(k) = theta(k,i,j) * vctr27(k)  * cpi
+               vctr28(k) = exner2press(vctr27(k))
+               vctr29(k) = extheta2temp(vctr27(k),theta(k,i,j))
 
                !---------------------------------------------------------------------------!
                !    Deciding which coefficient to use. This is inconsistent with most      !

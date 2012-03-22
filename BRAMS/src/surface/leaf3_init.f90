@@ -641,7 +641,13 @@ subroutine sfcinit_nofile(n1,n2,n3,mzg,mzs,npat,ifm,theta,pi0,pp,rv,co2p,seatp,s
    use io_params
    use rconstants
    use therm_lib  , only : reducedpress & ! function
-                         , thetaeiv     ! ! function
+                         , thetaeiv     & ! function
+                         , press2exner  & ! function
+                         , exner2press  & ! function
+                         , extheta2temp & ! function
+                         , cmtl2uext    & ! function
+                         , tl2uint      & ! function
+                         , tq2enthalpy  ! ! function
 
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
@@ -776,8 +782,8 @@ subroutine sfcinit_nofile(n1,n2,n3,mzg,mzs,npat,ifm,theta,pi0,pp,rv,co2p,seatp,s
    jloop: do j = 1,n3
       iloop: do i = 1,n2
          k2=nint(flpw(i,j))
-         piv(i,j)  = 0.5 * cpi * (pi0(k2-1,i,j) + pi0(k2,i,j) + pp(k2-1,i,j) + pp(k2,i,j))
-         prsv(i,j) = piv(i,j) ** cpor * p00
+         piv(i,j)  = 0.5 * (pi0(k2-1,i,j) + pi0(k2,i,j) + pp(k2-1,i,j) + pp(k2,i,j))
+         prsv(i,j) = exner2press(piv(i,j))
          geoht     = (zt(k2)-zm(k2-1)) * rtgt(i,j)
 
          atm_theta = theta(k2,i,j)
@@ -792,12 +798,26 @@ subroutine sfcinit_nofile(n1,n2,n3,mzg,mzs,npat,ifm,theta,pi0,pp,rv,co2p,seatp,s
          !---------------------------------------------------------------------------------!
          can_prss(i,j,1)    = reducedpress(atm_prss,atm_theta,atm_shv,geoht                &
                                           ,atm_theta,atm_shv,can_depth)
+         can_exner          = press2exner(can_prss(i,j,1))
          can_theta(i,j,1)   = theta(k2,i,j)
          can_rvap(i,j,1)    = rv(k2,i,j)
+         can_shv            = can_rvap(i,j,1) / (can_rvap(i,j,1) + 1.)
          can_co2(i,j,1)     = co2p(k2,i,j)
-         can_temp           = theta(k2,i,j) * (p00i * can_prss(i,j,1)) ** rocp
+         can_temp           = extheta2temp(can_exner,atm_theta)
          can_theiv(i,j,1)   = thetaeiv(can_theta(i,j,1),can_prss(i,j,1),can_temp           &
-                                      ,can_rvap(i,j,1),can_rvap(i,j,1),-91)
+                                      ,can_rvap(i,j,1),can_rvap(i,j,1))
+         can_enthalpy       = tq2enthalpy(can_temp,can_shv,.true.)
+         !---------------------------------------------------------------------------------!
+
+
+
+         !---------------------------------------------------------------------------------!
+         !     Find the temperature immediately above the canopy air space and the         !
+         ! specific enthalpy associated with it.                                           !
+         !---------------------------------------------------------------------------------!
+         atm_temp_zcan      = extheta2temp(can_exner,atm_theta)
+         atm_enthalpy       = tq2enthalpy(atm_temp_zcan,atm_shv,.true.)
+         !---------------------------------------------------------------------------------!
 
          !----- Water patch, so we set vegetation properties to zero. ---------------------!
          veg_energy(i,j,1)  = 0.0
@@ -813,8 +833,8 @@ subroutine sfcinit_nofile(n1,n2,n3,mzg,mzs,npat,ifm,theta,pi0,pp,rv,co2p,seatp,s
          soil_energy(:,i,j,1) = 0.
          soil_water (:,i,j,1) = 1.
          psibar_10d   (i,j,1) = 1.
-         soil_energy(mzg,i,j,1) =  cliq * (seatp(i,j) + (seatf(i,j) - seatp(i,j))          &
-                                                      * timefac_sst  - tsupercool)
+         soil_energy(mzg,i,j,1) = tl2uint( seatp(i,j)+(seatf(i,j)-seatp(i,j))*timefac_sst  &
+                                         , 1.0)
 
          !----- Fluxes.  Initially they should be all zero. -------------------------------!
          sensible_gc (i,j,1) = 0.0
@@ -918,19 +938,21 @@ subroutine sfcinit_nofile(n1,n2,n3,mzg,mzs,npat,ifm,theta,pi0,pp,rv,co2p,seatp,s
                !     By default, initialize soil internal energy at a temperature equal to !
                ! can_temp + stgoff(k).  If the temperature is initially below triple       !
                ! point, we assume all soil water to be frozen, otherwise we assume all     !
-               ! water to be liquid.                                                       !
+               ! water to be liquid.  If soil temperature is exactly at the triple point,  !
+               ! assume that the fraction is 50%.                                          !
                !---------------------------------------------------------------------------!
                soil_temp = can_temp + stgoff(k)
-               if (can_temp >= t3ple) then
-                  soil_energy(k,i,j,ipat) = slcpd(nsoil) * soil_temp                       &
-                                          + soil_water(k,i,j,ipat)                         &
-                                          * cliqvlme * (soil_temp - tsupercool)
-                  soil_fliq               = 1.0
+               if (soil_temp == t3ple) then
+                  soil_fliq = 0.5
+               elseif (soil_temp > t3ple) then
+                  soil_fliq = 1.0
                else
-                  soil_energy(k,i,j,ipat) = slcpd(nsoil) * soil_temp                       &
-                                          + soil_water(k,i,j,ipat) * cicevlme * soil_temp
-                  soil_fliq               = 0.0
+                  soil_fliq = 0.0
                end if
+
+               soil_energy(k,i,j,ipat) = cmtl2uext( slcpd(nsoil)                           &
+                                                  , soil_water(k,i,j,ipat)                 &
+                                                  , soil_temp,soil_fliq )
 
                !------ Integrate the relative potential. ----------------------------------!
                if (k >= kroot(nveg) .and. nsoil /= 13) then
@@ -968,11 +990,11 @@ subroutine sfcinit_nofile(n1,n2,n3,mzg,mzs,npat,ifm,theta,pi0,pp,rv,co2p,seatp,s
             case (2)
                sfcwater_depth (1,i,j,ipat) = 6.
                sfcwater_mass  (1,i,j,ipat) = idns * sfcwater_depth(1,i,j,ipat)
-               sfcwater_energy(1,i,j,ipat) = cice * min(t3ple,can_temp)
+               sfcwater_energy(1,i,j,ipat) = tl2uint(min(t3ple,can_temp),0.0)
             case (17,20)
                sfcwater_depth (1,i,j,ipat) = .1
-               sfcwater_mass  (1,i,j,ipat) = wdns * sfcwater_depth(1,i,j,ipat) 
-               sfcwater_energy(1,i,j,ipat) = cliq * (max(t3ple,can_temp) -tsupercool)
+               sfcwater_mass  (1,i,j,ipat) = wdns * sfcwater_depth(1,i,j,ipat)
+               sfcwater_energy(1,i,j,ipat) = tl2uint(max(t3ple,can_temp),1.0)
             end select
 
             !------------------------------------------------------------------------------!

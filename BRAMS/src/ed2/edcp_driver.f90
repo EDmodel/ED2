@@ -19,6 +19,7 @@ subroutine ed_coup_driver()
                             , idoutput            & ! intent(in)
                             , imoutput            & ! intent(in)
                             , iqoutput            & ! intent(in)
+                            , isoutput            & ! intent(in)
                             , iyoutput            & ! intent(in)
                             , runtype             ! ! intent(in)
    use ed_work_vars  , only : ed_dealloc_work     & ! subroutine
@@ -30,6 +31,7 @@ subroutine ed_coup_driver()
                             , recvnum             ! ! intent(in)
    use io_params     , only : ioutput             ! ! intent(in)
    use rk4_coms      , only : checkbudget         ! ! intent(in)
+   use phenology_aux , only : first_phenology     ! ! subroutine
    implicit none
    !----- Local variables. ----------------------------------------------------------------!
    character(len=12)           :: c0
@@ -89,7 +91,7 @@ subroutine ed_coup_driver()
    !---------------------------------------------------------------------------------------!
    if (mynum /= 1) call MPI_Recv(ping,1,MPI_INTEGER,recvnum,91,MPI_COMM_WORLD              &
                                 ,MPI_STATUS_IGNORE,ierr)
-   if (mynum == 1) write (unit=*,fmt='(a)') ' [+] Checking for XML config...'
+   if (mynum == nnodetot) write (unit=*,fmt='(a)') ' [+] Checking for XML config...'
    call overwrite_with_xml_config(mynum)
    if (mynum < nnodetot ) call MPI_Send(ping,1,MPI_INTEGER,sendnum,91,MPI_COMM_WORLD,ierr)
 
@@ -121,7 +123,7 @@ subroutine ed_coup_driver()
       if (mynum /= 1) call MPI_Recv(ping,1,MPI_INTEGER,recvnum,90,MPI_COMM_WORLD           &
                                    ,MPI_STATUS_IGNORE,ierr)
 
-      if (mynum == 1) write (unit=*,fmt='(a)') ' [+] Init_Full_History_Restart...'
+      if (mynum == nnodetot) write (unit=*,fmt='(a)') ' [+] Init_Full_History_Restart...'
       call init_full_history_restart()
 
       if (mynum < nnodetot ) call MPI_Send(ping,1,MPI_INTEGER,sendnum,90,MPI_COMM_WORLD    &
@@ -131,21 +133,21 @@ subroutine ed_coup_driver()
       !------------------------------------------------------------------------------------!
       !      Initialize state properties of polygons/sites/patches/cohorts.                !
       !------------------------------------------------------------------------------------!
-      if (mynum == 1) write (unit=*,fmt='(a)') ' [+] Load_Ecosystem_State...'
+      if (mynum == nnodetot) write (unit=*,fmt='(a)') ' [+] Load_Ecosystem_State...'
       call load_ecosystem_state()
    end if
 
    !---------------------------------------------------------------------------------------!
    !      Initialize hydrology related variables.                                          !
    !---------------------------------------------------------------------------------------!
-   if (mynum == 1) write (unit=*,fmt='(a)') ' [+] Initializing Hydrology...'
+   if (mynum == nnodetot) write (unit=*,fmt='(a)') ' [+] Initializing Hydrology...'
    call initHydrology()
 
 
    !---------------------------------------------------------------------------------------!
    !      Initialize the flux arrays that pass to the atmosphere.                          !
    !---------------------------------------------------------------------------------------!
-   if (mynum == 1) write (unit=*,fmt='(a)') ' [+] Initialise flux arrays...'
+   if (mynum == nnodetot) write (unit=*,fmt='(a)') ' [+] Initialise flux arrays...'
    do ifm=1,ngrids
       call newgrid(ifm)
       call initialize_ed2leaf(ifm)
@@ -164,13 +166,18 @@ subroutine ed_coup_driver()
    !      Initialize ed fields that depend on the atmosphere.                              !
    !---------------------------------------------------------------------------------------!
    if (trim(runtype) /= 'HISTORY') then
-      if (mynum == nnodetot) write (unit=*,fmt='(a)') ' [+] ed_init_atm...'
+      if (mynum == nnodetot) then
+         write (unit=*,fmt='(a)') ' [+] Initialise atmospheric fields...'
+      end if
       call ed_init_atm()
    end if
 
    !---------------------------------------------------------------------------------------!
    !      Initialize upwelling long wave and albedo from sst and air temperature.          !
    !---------------------------------------------------------------------------------------!
+   if (mynum == nnodetot) then
+      write (unit=*,fmt='(a)') ' [+] Initialise radiation...'
+   end if
    call ed_init_radiation()
 
 
@@ -179,6 +186,9 @@ subroutine ed_coup_driver()
    ! init_full_history_restart because it depends on some meteorological variables that    !
    ! are initialized in ed_init_atm.                                                       !
    !---------------------------------------------------------------------------------------!
+   if (mynum == nnodetot) then
+      write (unit=*,fmt='(a)') ' [+] Initialise derived properties...'
+   end if
    do ifm=1,ngrids
       call update_derived_props(edgrid_g(ifm))
    end do
@@ -191,6 +201,7 @@ subroutine ed_coup_driver()
    ! been set up.                                                                          !
    !---------------------------------------------------------------------------------------!
    if (trim(runtype) /= 'HISTORY') then
+      if (mynum == nnodetot) write (unit=*,fmt='(a)') ' [+] Initialise phenology...'
       do ifm=1,ngrids
          call first_phenology(edgrid_g(ifm))
       end do
@@ -204,14 +215,14 @@ subroutine ed_coup_driver()
    ! the indexing of the vectors to allow for segmented I/O of hyperslabs and referencing  !
    ! of high level hierarchical data types with their parent types.                        !
    !---------------------------------------------------------------------------------------!
-   if (mynum == 1) write (unit=*,fmt='(a)') ' [+] Filltab_Alltypes...'
+   if (mynum == nnodetot) write (unit=*,fmt='(a)') ' [+] Filltab_Alltypes...'
    call filltab_alltypes()
 
 
    !---------------------------------------------------------------------------------------!
    !      Check how the output was configure and determining the averaging frequency.      !
    !---------------------------------------------------------------------------------------!
-   if (mynum == 1) write(unit=*,fmt='(a)') ' [+] Finding frqsum...'
+   if (mynum == nnodetot) write(unit=*,fmt='(a)') ' [+] Finding frqsum...'
    call find_frqsum()
 
    !---------------------------------------------------------------------------------------!
@@ -220,17 +231,20 @@ subroutine ed_coup_driver()
    !---------------------------------------------------------------------------------------!
    if (trim(runtype) /= 'HISTORY') then
       if (imoutput > 0 .or. iqoutput > 0) then
+         if (mynum == nnodetot) write(unit=*,fmt='(a)') ' [+] Reset monthly means...'
          do ifm=1,ngrids
             call zero_ed_monthly_output_vars(edgrid_g(ifm))
             call zero_ed_daily_output_vars(edgrid_g(ifm))
          end do
       elseif (idoutput > 0) then
+         if (mynum == nnodetot) write(unit=*,fmt='(a)') ' [+] Reset daily means...'
          do ifm=1,ngrids
             call zero_ed_daily_output_vars(edgrid_g(ifm))
          end do
       end if
 
       !----- Output Initial State. --------------------------------------------------------!
+      if (mynum == nnodetot) write(unit=*,fmt='(a)') ' [+] Update annual means...'
       do ifm=1,ngrids
          call update_ed_yearly_vars(edgrid_g(ifm))
       end do
@@ -239,8 +253,10 @@ subroutine ed_coup_driver()
    !---------------------------------------------------------------------------------------!
    !      Allocate memory to the integration patch.                                        !
    !---------------------------------------------------------------------------------------!
+   if (mynum == nnodetot) write(unit=*,fmt='(a)') ' [+] Initialise RK4 patches...'
    call initialize_rk4patches(.true.)
 
+   if (mynum == nnodetot) write(unit=*,fmt='(a)') ' [+] Reset averaged variables...'
    do ifm=1,ngrids
       call reset_averaged_vars(edgrid_g(ifm))
    end do
@@ -249,8 +265,9 @@ subroutine ed_coup_driver()
    !---------------------------------------------------------------------------------------!
    !      Output initial state.                                                            !
    !---------------------------------------------------------------------------------------!
-   if (ioutput  /= 0) then
-      call h5_output('INST')
+   if (mynum == nnodetot) write(unit=*,fmt='(a)') ' [+] Output initial state...'
+   if (ifoutput  /= 0) call h5_output('INST')
+   if (isoutput  /= 0) then
       select case (trim(runtype))
       case ('INITIAL')
          call h5_output('HIST')
@@ -263,6 +280,7 @@ subroutine ed_coup_driver()
    !---------------------------------------------------------------------------------------!
    !      Deallocate the work arrays.                                                      !
    !---------------------------------------------------------------------------------------!
+   if (mynum == nnodetot) write(unit=*,fmt='(a)') ' [+] Deallocate work arrays...'
    do ifm=1,ngrids
       call ed_dealloc_work(work_e(ifm))
    end do
@@ -270,6 +288,7 @@ subroutine ed_coup_driver()
    !---------------------------------------------------------------------------------------!
    !      Get the CPU time and print the banner.                                           !
    !---------------------------------------------------------------------------------------!
+   if (mynum == nnodetot) write(unit=*,fmt='(a)') ' [+] Get CPU time...'
    if (mynum == nnodetot) then
       call timing(1,cputime1)
       wtime2=walltime(wtime_start)

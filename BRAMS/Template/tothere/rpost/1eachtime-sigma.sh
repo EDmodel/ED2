@@ -11,18 +11,18 @@
 #------------------------------------------------------------------------------------------#
 #    CHANGE LOG                                                                            #
 #------------------------------------------------------------------------------------------#
-ramspost='myoutpath/rpost/ramspost_6.2'    # Name of executable file
-tmpfolder='myoutpath/rpost/.temp'      # Name of a timestrrary folder
+ramspost='/n/moorcroftfs2/mlongo/EDBRAMS/coupled/monotonic-test/rpost/ramspost_6.2'    # Name of executable file
+tmpfolder='/n/moorcroftfs2/mlongo/EDBRAMS/coupled/monotonic-test/rpost/.temp'      # Name of a timestrrary folder
 nice=''                      # Command to "nice" the job.  Put nothing if you don't want 
                              #      to be nice
-runoutput='myoutpath/rpost/ramspost.out'     # Name of a renewable output file
+runoutput='/n/moorcroftfs2/mlongo/EDBRAMS/coupled/monotonic-test/rpost/ramspost.out'     # Name of a renewable output file
 compression='none'           # Kind of compression:(Z, bz2, zip, gz, or none)   
 title='EDBRAMS-1.4'          # Title to appear in the header 
                              #   (no practical relevance)
 deleteintctl='y'             # Delete intermediate ctl [y/N]
                              # (a template will be provided)
 outshell='y'
-shellout='myoutpath/rpost/serial_out.out'    # File for 1eachtime-sigma.sh output
+shellout='/n/moorcroftfs2/mlongo/EDBRAMS/coupled/monotonic-test/rpost/serial_out.out'    # File for 1eachtime-sigma.sh output
 
 #------------------------------------------------------------------------------------------#
 #------------------------------------------------------------------------------------------#
@@ -91,7 +91,7 @@ fi
 
 
 #----- Determine the analysis prefix from the list. ---------------------------------------#
-fprefix=`grep -i FPREFIX ramspost.inp`
+fprefix=`grep -i FPREFIX ramspost.inp | grep -vi "\-\-"`
 fprefix=`echo ${fprefix} | sed s/" "/""/g |sed s/"'"/""/g`
 ext=`echo ${fprefix} |wc -c`
 p=0
@@ -114,7 +114,7 @@ fprefix=`echo ${fprefix} | awk '{print substr($1,9,'${ext}')}'`
 #------------------------------------------------------------------------------------------#
 # Determine the output file prefix from the namelist.                                      #
 #------------------------------------------------------------------------------------------#
-gprefix=`grep -i GPREFIX ramspost.inp`
+gprefix=`grep -i GPREFIX ramspost.inp | grep -vi "\-\-"`
 gprefix=`echo ${gprefix} | sed s/" "/""/g |sed s/"'"/""/g`
 ext=`echo ${gprefix} |wc -c`
 p=0

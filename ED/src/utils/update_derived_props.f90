@@ -93,7 +93,6 @@ subroutine update_patch_derived_props(csite,lsl,prss,ipa)
    !----- Reset properties. ---------------------------------------------------------------!
    csite%veg_height(ipa)       = 0.0
    csite%lai(ipa)              = 0.0
-   csite%wpa(ipa)              = 0.0
    csite%wai(ipa)              = 0.0
    weight_sum                  = 0.0
    csite%opencan_frac(ipa)     = 1.0
@@ -110,7 +109,6 @@ subroutine update_patch_derived_props(csite,lsl,prss,ipa)
 
       !----- Update the patch-level area indices. -----------------------------------------!
       csite%lai(ipa)  = csite%lai(ipa)  + cpatch%lai(ico)
-      csite%wpa(ipa)  = csite%wpa(ipa)  + cpatch%wpa(ico)
       csite%wai(ipa)  = csite%wai(ipa)  + cpatch%wai(ico)
       !------------------------------------------------------------------------------------!
 
@@ -209,8 +207,8 @@ subroutine update_patch_thermo_props(csite,ipaa,ipaz,mzg,mzs,ntext_soil)
   
    use ed_state_vars, only : sitetype      ! ! structure
    use therm_lib    , only : idealdenssh   & ! function
-                           , qwtk          & ! function
-                           , qtk           ! ! function
+                           , uextcm2tl     & ! function
+                           , uint2tl       ! ! function
    use consts_coms  , only : p00i          & ! intent(in)
                            , rocp          & ! intent(in)
                            , t00           & ! intent(in)
@@ -244,16 +242,16 @@ subroutine update_patch_thermo_props(csite,ipaa,ipaz,mzg,mzs,ntext_soil)
       do k = 1, mzg
          nsoil    = ntext_soil(k)
          soilhcap = soil(nsoil)%slcpd
-         call qwtk(csite%soil_energy(k,ipa),csite%soil_water(k,ipa)*wdns,soilhcap          &
-                  ,csite%soil_tempk(k,ipa),csite%soil_fracliq(k,ipa))
+         call uextcm2tl(csite%soil_energy(k,ipa),csite%soil_water(k,ipa)*wdns,soilhcap     &
+                       ,csite%soil_tempk(k,ipa),csite%soil_fracliq(k,ipa))
       end do
 
       !----- Update temporary surface water temperature and liquid water fraction. --------!
       ksn = csite%nlev_sfcwater(ipa)
       csite%total_sfcw_depth(ipa) = 0.
       do k = 1, ksn
-         call qtk(csite%sfcwater_energy(k,ipa),csite%sfcwater_tempk(k,ipa)                 &
-                 ,csite%sfcwater_fracliq(k,ipa))
+         call uint2tl(csite%sfcwater_energy(k,ipa),csite%sfcwater_tempk(k,ipa)             &
+                     ,csite%sfcwater_fracliq(k,ipa))
          csite%total_sfcw_depth(ipa) =  csite%total_sfcw_depth(ipa)                        &
                                      +  csite%sfcwater_depth(k,ipa)
       end do
@@ -399,10 +397,9 @@ subroutine read_soil_moist_temp(cgrid,igr)
    use soil_coms     , only : soilstate_db & ! intent(in)
                             , soil         & ! intent(in)
                             , slz          ! ! intent(in)
-   use consts_coms   , only : cliqvlme     & ! intent(in)
-                            , cicevlme     & ! intent(in)
-                            , t3ple        & ! intent(in)
-                            , tsupercool   ! ! intent(in)
+   use consts_coms   , only : wdns         & ! intent(in)
+                            , t3ple        ! ! intent(in)
+   use therm_lib     , only : cmtl2uext    ! ! function
    use grid_coms     , only : nzg          & ! intent(in)
                             , nzs          & ! intent(in)
                             , ngrids       ! ! intent(in)
@@ -511,20 +508,18 @@ subroutine read_soil_moist_temp(cgrid,igr)
                               csite%soil_water(k,ipa) = max(soil(ntext)%soilcp             &
                                                            ,soilw2 * soil(ntext)%slmsts)
                            endif
-                           if(csite%soil_tempk(k,ipa) > t3ple)then
-                              csite%soil_energy(k,ipa) = soil(ntext)%slcpd                 &
-                                                       * csite%soil_tempk(k,ipa)           &
-                                                       + csite%soil_water(k,ipa)           &
-                                                       * cliqvlme*(csite%soil_tempk(k,ipa) &
-                                                                 - tsupercool)
+                           if (csite%soil_tempk(k,ipa) > t3ple) then
                               csite%soil_fracliq(k,ipa) = 1.0
-                           else
-                              csite%soil_energy(k,ipa) = soil(ntext)%slcpd                 &
-                                                       * csite%soil_tempk(k,ipa)           &
-                                                       + csite%soil_water(k,ipa)           &
-                                                       * cicevlme*csite%soil_tempk(k,ipa)
+                           elseif (csite%soil_tempk(k,ipa) < t3ple) then
                               csite%soil_fracliq(k,ipa) = 0.0
+                           else
+                              csite%soil_fracliq(k,ipa) = 0.5
                            end if
+                           csite%soil_energy(k,ipa) = cmtl2uext( soil(ntext)%slcpd         &
+                                                               , csite%soil_water(k,ipa)   &
+                                                               * wdns                      &
+                                                               , csite%soil_tempk(k,ipa)   &
+                                                               , csite%soil_fracliq(k,ipa))
                         end do
 
 

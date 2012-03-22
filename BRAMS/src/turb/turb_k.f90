@@ -100,7 +100,8 @@ subroutine diffuse()
    !  - vt3dp -> water vapour mixing ratio;                                                !
    !  - vt3dq -> total water substance mixing ratio.                                       !
    !---------------------------------------------------------------------------------------!
-   call azero2(mxyzp,scratch%vt3dp,scratch%vt3dq)
+   call azero(mxyzp,scratch%vt3dp)
+   call azero(mxyzp,scratch%vt3dq)
    if (vapour_on) then
      call atob(mxyzp,basic_g(ngrid)%rv,scratch%vt3dp)
      call atob(mxyzp,basic_g(ngrid)%rtp,scratch%vt3dq)

@@ -619,9 +619,9 @@ subroutine pr_hystatic_z(np,z1,z2,t1,t2,r1,r2,p1,p2)
      if(z2(n).lt.1.e20.and.t1(n).lt.1.e20.and.  &
           t2(n).lt.1.e20.and.r1(n).lt.1.e20.and.  &
           r2(n).lt.1.e20 ) then
-        raux = ptrh2rvapil(r1(n),p1*100.,t1(n))
+        raux = ptrh2rvapil(r1(n),p1*100.,t1(n),.false.)
         tv1=virtt(t1(n),raux)
-        raux = ptrh2rvapil(r2(n),p2*100.,t2(n))
+        raux = ptrh2rvapil(r2(n),p2*100.,t2(n),.false.)
         tv2=virtt(t2(n),raux)
         z1(n)=z2(n)- rdry*.5*(tv1+tv2)*(log(p1/p2))/grav
         !print*,z1(n),z2(n),t1(n),t2(n),tv1,tv2,p1,p2
@@ -638,7 +638,7 @@ subroutine pr_hystatic_z(np,z1,z2,t1,t2,r1,r2,p1,p2)
      if(t2(n).lt.1.e20.and.z1(n).lt.1.e20  &
           .and.z2(n).lt.1.e20.and.r1(n).lt.1.e20  &
           .and.r2(n).lt.1.e20 ) then
-        raux=ptrh2rvapil(r2(n),p2*100.,t2(n))
+        raux=ptrh2rvapil(r2(n),p2*100.,t2(n),.false.)
         vtfact=virtt(t2(n),raux)/t2(n)
         t1(n)=-t2(n)- (2.*grav*(z1(n)-z2(n))  &
              /(rdry *(log(p1/p2))) )  &

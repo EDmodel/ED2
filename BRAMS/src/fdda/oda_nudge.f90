@@ -162,7 +162,10 @@ endif
 
 ng=ngrid
 if (wt_oda_grid(ng) > 0.0 .and. time >= todabeg .and. time <= todaend) then
-      if(allocated(plt)) deallocate(plt);allocate(plt(nnxp(ng),nnyp(ng)))
+      if (allocated(plt)) then
+         deallocate(plt)
+      end if
+      allocate(plt(nnxp(ng),nnyp(ng)))
 
 call oda_tendency(mmzp(ng),mmxp(ng),mmyp(ng),mia(ng),miz(ng),mja(ng),mjz(ng)  &
                  ,basic_g(ng)%up,tend_g(ng)%ut,oda_g(ng)%uk,oda_g(ng)%ukv  &

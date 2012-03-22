@@ -49,16 +49,22 @@ module disturb_coms
    !    soil is 1 m, so deeper soils will need to be much drier to allow fires to happen   !
    !    and often will never allow fires because the threshold may be below the minimum    !
    !    possible soil moisture.                                                            !
-   ! 2. Fire will be triggered with enough biomass and the total soil water at the top 75  !
-   !    cm falls below a (relative) threshold.                                             !
+   ! 2. Fire will be triggered with enough biomass and the total soil water at the top 1.0 !
+   !    m falls below a (relative) threshold.                                              !
+   ! 3. Similar to 2, but the fire intensity will depend on the soil dryness above the     !
+   !    threshold (the drier the soil the more extreme the fire is).                       !
    !---------------------------------------------------------------------------------------!
    integer :: include_fire
+
+   !----- Dimensionless parameter controlling speed of fire spread. -----------------------!
+   real :: fire_parameter
 
    !---------------------------------------------------------------------------------------!
    !     Anthropogenic disturbance.  1 means that anthropogenic disturbances will be       !
    ! included, whereas 0 means that it won't.                                              !
    !---------------------------------------------------------------------------------------!
    integer :: ianth_disturb
+   !---------------------------------------------------------------------------------------!
 
 
    !---------------------------------------------------------------------------------------!
@@ -80,6 +86,9 @@ module disturb_coms
    real :: time2canopy
    !---------------------------------------------------------------------------------------!
 
+   !----- Minimum relative area required for a patch to be created or maintained. ---------!
+   real :: min_patch_area 
+   !---------------------------------------------------------------------------------------!
 
 
    !----- The prefix for land use disturbance rates. The path and prefix must be included. !
@@ -100,8 +109,6 @@ module disturb_coms
    !=======================================================================================!
    !    Patch dynamics variables, to be set in ed_params.f90.                              !
    !---------------------------------------------------------------------------------------!
-   !----- Minimum relative area required for a patch to be created or maintained. ---------!
-   real :: min_new_patch_area 
    !----- Only trees above this height create a gap when they fall. -----------------------!
    real :: treefall_hite_threshold
    !=======================================================================================!
@@ -145,9 +152,6 @@ module disturb_coms
    !=======================================================================================!
    !     Fire parameters.                                                                  !
    !---------------------------------------------------------------------------------------!
-
-   !----- Dimensionless parameter controlling speed of fire spread. -----------------------!
-   real :: fire_parameter
 
    !---------------------------------------------------------------------------------------!
    !     Fire may occur if total equivalent water depth (ground + underground) falls below !
