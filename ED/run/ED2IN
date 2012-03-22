@@ -271,8 +271,8 @@ $ED_NL
    ! FFILOUT -- Path and prefix for analysis files (all but history/restart).              !
    ! SFILOUT -- Path and prefix for history files.                                         !
    !---------------------------------------------------------------------------------------!
-   NL%FFILOUT = '/n/moorcroftfs1/nlevine/WaterStress/m34/TEST/analy/m34'
-   NL%SFILOUT = '/n/moorcroftfs1/nlevine/WaterStress/m34/TEST/histo/m34'
+   NL%FFILOUT = 'paththere/thisrun/analy/thispoly'
+   NL%SFILOUT = 'paththere/thisrun/histo/thispoly'
    !---------------------------------------------------------------------------------------!
 
 
@@ -604,7 +604,7 @@ $ED_NL
    !                  between 1.e-7 and 1.e-1, but recommended values are between 1.e-4    !
    !                  and 1.e-2.                                                           !
    !---------------------------------------------------------------------------------------!
-   NL%RK4_TOLERANCE  = 0.001
+   NL%RK4_TOLERANCE  = 0.01
    !---------------------------------------------------------------------------------------!
 
 
@@ -663,7 +663,8 @@ $ED_NL
    !                  a few genuses in Costa Rica.  References:                            !
    !                  Cole and Ewel (2006), and Calvo Alvarado et al. (2008).              !
    !---------------------------------------------------------------------------------------!
-   NL%IALLOM          = 1
+   NL%IALLOM          = 4
+
    !---------------------------------------------------------------------------------------!
 
 
@@ -1089,7 +1090,7 @@ $ED_NL
    !            2.  Soil conductivity decreases with depth even for constant soil moisture !
    !                , otherwise it is the same as 1.                                       !
    !---------------------------------------------------------------------------------------!
-   NL%IPERCOL        = 0
+   NL%IPERCOL        = 1
    !---------------------------------------------------------------------------------------!
 
 
@@ -1203,7 +1204,7 @@ $ED_NL
    !                -folding lifetime" of the TSW in seconds due to runoff.  If you don't  !
    !                want runoff to happen, set this to 0.                                  !
    !---------------------------------------------------------------------------------------!
-   NL%RUNOFF_TIME    = 28800.0
+   NL%RUNOFF_TIME    = 3600.0
    !---------------------------------------------------------------------------------------!
 
 

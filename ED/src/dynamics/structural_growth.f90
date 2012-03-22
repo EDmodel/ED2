@@ -673,7 +673,7 @@ subroutine update_derived_cohort_props(cpatch,ico,green_leaf_factor,lsl)
       !     If LEAF biomass is not the maximum, set it to 1 (leaves partially flushed),    !
       ! otherwise, set it to 0 (leaves are fully flushed).                                 !
       !------------------------------------------------------------------------------------!
-      if (cpatch%bleaf(ico) < bl_max) then
+      if (cpatch%bleaf(ico) < bl_max .or. cpatch%elongf(ico) < 1.0) then
          cpatch%phenology_status(ico) = 1
       else
          cpatch%phenology_status(ico) = 0

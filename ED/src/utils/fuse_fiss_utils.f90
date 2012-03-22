@@ -1563,9 +1563,6 @@ module fuse_fiss_utils
       cpatch%today_nppdaily(recc)= cpatch%today_nppdaily(recc)                             &
                                  + cpatch%today_nppdaily(donc)
                                  
-      cpatch%today_nppleaf(recc) = cpatch%today_nppleaf(recc)                              &
-                                 + cpatch%today_nppleaf(donc)
-                                 
       cpatch%today_gpp_pot(recc) = cpatch%today_gpp_pot(recc)                              &
                                  + cpatch%today_gpp_pot(donc)
 
