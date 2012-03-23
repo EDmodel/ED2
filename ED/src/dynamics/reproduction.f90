@@ -80,20 +80,6 @@ subroutine reproduction(cgrid, month)
    logical                             :: late_spring
    real                                :: elim_nplant
    real                                :: elim_lai
-   real                                :: krdepth    ! depth profile for a pft
-   integer                             :: k          ! Layer counter
-   integer                             :: nsoil      ! Alias for soil texture class
-   real                                :: psi_layer  ! Water potential of this layer
-   real                                :: psi_wilt   ! Wilting point potential
-   real                                :: psi_crit   ! Critical point potential
-   real                                :: paw_avg    ! available water fraction
-   real                                :: elongf     ! elongf of new recruit
-   real                                :: mzg        
-   integer                             :: phenology_status
-   real                                :: salloc     ! balive:bleaf ratio
-   real                                :: salloci    ! bleaf:balive ratio
-   real                                :: bleaf_max  ! maximum bleaf
-   real                                :: balive_max ! balive if on-allometry
    real                                :: nplant_inc
    real                                :: bleaf_plant   
    real                                :: bdead_plant   
@@ -161,13 +147,12 @@ subroutine reproduction(cgrid, month)
             csite => cpoly%site(isi)
 
             !---------------------------------------------------------------------------------!
-            !    For the recruitment to happen, five requirements must be met:                !
+            !    For the recruitment to happen, four requirements must be met:                !
             !    1.  PFT is included in this simulation;                                      !
             !    2.  It is not too cold (min_monthly_temp > plant_min_temp - 5)               !
             !    3.  We are dealing with EITHER a non-agriculture patch OR                    !
             !        a PFT that could exist in an agricultural patch.                         !
             !    4.  There must be sufficient carbon to form the recruits.                    !
-            !    5.  It is not too dry to grow a new plant                                    !
             !---------------------------------------------------------------------------------!
             patchloop: do ipa = 1,csite%npatches
                inew = 0
@@ -191,119 +176,37 @@ subroutine reproduction(cgrid, month)
                      !------------------------------------------------------------------------!
                      if(csite%dist_type(ipa) /= 1 .or. include_pft_ag(ipft)) then
 
-
                         !---------------------------------------------------------------------!
-                        !    Check to make sure it is not too dry for a new recruit to grow   !
-                        !   To do this we caluclate the elongf for a minimum height plant,    !
-                        !   then find the phenology status associated with that elongf.       !
-                        !   If phenology status is other than 1 we do not allow reproduction  !
-                        !   but allow the plant to keep the seed biomass for future use.      !
-                        !                                        Mar 6, 2012 ALS              !
+                        !    We assign the recruit in the temporary recruitment structure.    !
                         !---------------------------------------------------------------------!
-                        krdepth=dbh2krdepth(hgt_min(ipft), h2dbh(hgt_min(ipft),ipft),         &
-                                            ipft, cpoly%lsl(isi))
-                        mzg = nzg
-
-
-
-                        !     Here we decide how to compute the mean available water fraction.!
-                        if (spot_phen) then
-                           !----- Use soil potential to determine phenology. -----------------!
-                           paw_avg = 0.0
-                           do k=krdepth,mzg
-                              nsoil = cpoly%ntext_soil(k,isi)
-
-                              psi_layer = soil(nsoil)%slpots / (csite%soil_water(k,ipa)       &
-                                        / soil(nsoil)%slmsts) ** soil(nsoil)%slbs
-                              psi_wilt  = soil(nsoil)%slpots / (soil(nsoil)%soilwp            &
-                                        / soil(nsoil)%slmsts) ** soil(nsoil)%slbs
-                              psi_crit  = soil(nsoil)%slpots  / (soil(nsoil)%soilld           &
-                                        / soil(nsoil)%slmsts) ** soil(nsoil)%slbs
-                              paw_avg = paw_avg   + max(0.0, (psi_layer - psi_wilt))          &
-                                                  * dslz(k) / (psi_crit  - psi_wilt)
-                           end do
-                           paw_avg = - paw_avg / slz(krdepth)
-                        else 
-                           !----- Use soil moisture (mass) to determine phenology. ------------!
-                           paw_avg = 0.0
-                           do k = krdepth, mzg
-                              nsoil = cpoly%ntext_soil(k,isi)
-                              paw_avg = paw_avg                                                &
-                                      + max(0.0, (csite%soil_water(k,ipa) - soil(nsoil)%soilwp))&
-                                      * dslz(k) / (soil(nsoil)%soilld - soil(nsoil)%soilwp)
-                           end do
-                           paw_avg = - paw_avg / slz(krdepth)
+                        rectest%pft       = ipft
+                        rectest%leaf_temp = csite%can_temp(ipa)
+                        rectest%wood_temp = csite%can_temp(ipa)
+                        !- recruits start at minimum height and dbh and bleaf are calculated from that
+                        rectest%hite      = hgt_min(ipft)
+                        rectest%dbh       = h2dbh(rectest%hite, ipft)
+                        rectest%bdead     = dbh2bd(rectest%dbh, ipft)
+                        rectest%bleaf     = size2bl(rectest%dbh,rectest%hite, ipft)
+                        rectest%balive    = rectest%bleaf                                     &
+                                          * (1.0 + q(ipft) + qsw(ipft) * rectest%hite)
+                        !- the number of plants we can make depends on how much carbon is available
+                        rectest%nplant    = csite%repro(ipft,ipa)                             &
+                                          / (rectest%balive + rectest%bdead)
+                         if(include_pft(ipft)) then
+                           rectest%nplant = rectest%nplant + seed_rain(ipft)
                         end if
 
-                        !----------------------------------------------------------------------!
-                        !    We make the elongation factor 1.0 when we are not solving the     !
-                        ! vegetation dynamics, otherwise we assign the normal values.          !
-                        !----------------------------------------------------------------------!
-                        select case (ivegt_dynamics)
-                        case (0)
-                           elongf = 1.0
-
-                        case default
-                           select case (phenology(ipft))
-                           case (1)
-                              if (paw_avg < 1.0) then
-                                 elongf = 0.0
-                              else
-                                 elongf = 1.0
-                              end if
-                           case (3,4)
-                              elongf  = max(0.0,min(1.0,paw_avg))
-                           case default
-                              elongf  = 1.0
-                           end select
-                        end select
                         !---------------------------------------------------------------------!
-
-                        !----- Set phenology status according to the elongation factor. ------!
-                        if (elongf >= 1.0) then
-                           phenology_status = 0
-                        elseif (elongf > elongf_min) then
-                           phenology_status = -1
-                        else
-                           phenology_status = 2
-                           elongf           = 0.
+                        ! If there is enough carbon, form the recruits.                       !
+                        !---------------------------------------------------------------------!
+                        if ( rectest%nplant * (rectest%balive + rectest%bdead) >              &
+                             min_recruit_size(ipft)) then
+                           inew = inew + 1
+                           call copy_recruit(rectest,recruit(inew))
+                           !----- Reset the carbon available for reproduction. ---------------!
+                           csite%repro(ipft,ipa) = 0.0
                         end if
-                        !---------------------------------------------------------------------!
-                        !---------------------------------------------------------------------!
-                        !---------------------------------------------------------------------!
 
-                        if (phenology_status==0) then   ! it is not too dry
-                             !---------------------------------------------------------------------!
-                             !    We assign the recruit in the temporary recruitment structure.    !
-                             !---------------------------------------------------------------------!
-                             rectest%pft       = ipft
-                             rectest%leaf_temp = csite%can_temp(ipa)
-                             rectest%wood_temp = csite%can_temp(ipa)
-                             !- recruits start at minimum height and dbh and bleaf are calculated from that
-                             rectest%hite      = hgt_min(ipft)
-                             rectest%dbh       = h2dbh(rectest%hite, ipft)
-                             rectest%bdead     = dbh2bd(rectest%dbh, ipft)
-                             rectest%bleaf     = size2bl(rectest%dbh,rectest%hite, ipft)
-                             rectest%balive    = rectest%bleaf                                     &
-                                               * (1.0 + q(ipft) + qsw(ipft) * rectest%hite)
-                             !- the number of plants we can make depends on how much carbon is available
-                             rectest%nplant    = csite%repro(ipft,ipa)                             &
-                                               / (rectest%balive + rectest%bdead)
-                              if(include_pft(ipft)) then
-                                rectest%nplant = rectest%nplant + seed_rain(ipft)
-                             end if
-
-                             !---------------------------------------------------------------------!
-                             ! If there is enough carbon, form the recruits.                       !
-                             !---------------------------------------------------------------------!
-                             if ( rectest%nplant * (rectest%balive + rectest%bdead) >              &
-                                  min_recruit_size(ipft)) then
-                                inew = inew + 1
-                                call copy_recruit(rectest,recruit(inew))
-                                !----- Reset the carbon available for reproduction. ---------------!
-                                csite%repro(ipft,ipa) = 0.0
-                             end if
-                        end if
 
 
 
@@ -831,7 +734,7 @@ subroutine seed_dispersal(cpoly,late_spring)
                   ! this patch and site so the total carbon is preserved.                  !
                   !------------------------------------------------------------------------!
                   csite%repro(donpft,recpa) = csite%repro(donpft,recpa)                    &
-                                            + nseed_maygo * csite%area(recpa)
+                                            + nseed_maygo * csite%area(donpa)
                   !------------------------------------------------------------------------!
 
 
@@ -914,8 +817,8 @@ subroutine seed_dispersal(cpoly,late_spring)
                      ! preserved.                                                          !
                      !---------------------------------------------------------------------!
                      recsite%repro(donpft,recpa) = recsite%repro(donpft,recpa)             &
-                                                 + nseed_maygo * recsite%area(recpa)       &
-                                                 * cpoly%area(recsi)
+                                                 + nseed_maygo * recsite%area(donpa)       &
+                                                 * cpoly%area(donsi)
                      !---------------------------------------------------------------------!
 
                      !---------------------------------------------------------------------!
