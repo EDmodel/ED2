@@ -84,7 +84,7 @@ recursive subroutine read_ed_xml_config(filename)
   integer             :: ng
 !  type(eddata) :: data
 
-  print*,"Opening ED2 XML Config file",trim(filename)
+  print*,"Opening ED2 XML Config file:  ",trim(filename)
 
   !! Open File and Init
   call libxml2f90__setformat(1) !set to pure XML but with blank removal
