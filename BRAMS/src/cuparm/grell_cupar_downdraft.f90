@@ -263,7 +263,8 @@ subroutine grell_theiv_downdraft(mkx,mgmzp,klod,cdd,mentrd_rate,theiv,theiv_cup,
                     + mentrd_rate(k)*dzd_cld(k)*theiv(k))                                  &
                     / (1.+(mentrd_rate(k)- 0.5*cdd(k))*dzd_cld(k))
    end do
-   
+   !---------------------------------------------------------------------------------------!
+  
    return
 end subroutine grell_theiv_downdraft
 !==========================================================================================!
@@ -356,6 +357,8 @@ subroutine grell_most_thermo_downdraft(mkx,mgmzp,klod,qtot,co2,mentrd_rate,cdd,p
    real, dimension(mgmzp) :: evapd_cld      ! Evaporated mix. ratio                [ kg/kg]
    real                   :: tdbis          ! Scratch var. for temperature         [     K]
    real                   :: delta          ! Aux. var. for bisection 2nd guess    [ kg/kg]
+   !----- Local constants. ----------------------------------------------------------------!
+   logical, parameter     :: debug =.false. ! Print debug info?                    [   T|F]
    !----- External functions --------------------------------------------------------------!
    real, external         :: buoyancy_acc   ! Buoyancy acceleration funtion.
    !---------------------------------------------------------------------------------------!
@@ -413,10 +416,12 @@ subroutine grell_most_thermo_downdraft(mkx,mgmzp,klod,qtot,co2,mentrd_rate,cdd,p
 
       !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
       !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
-      !write(unit=28,fmt='(a)') '-----------------------------------------------------------'
-      !write(unit=28,fmt='(a,1x,i5,1x,3(a,1x,f12.4,1x))')                                   &
-      !   'Input values. k= ',k,'qtotd_0_evap=',1000.*qtotd_0_evap                          &
-      !  ,'theivu_cld=',theivd_cld(k),'p_cup=',0.01*p_cup(k)
+      if (debug) then
+         write(unit=28,fmt='(a)') '--------------------------------------------------------'
+         write(unit=28,fmt='(a,1x,i5,1x,3(a,1x,f12.4,1x))')                                &
+            'Input values. k= ',k,'qtotd_0_evap=',1000.*qtotd_0_evap                       &
+           ,'theivu_cld=',theivd_cld(k),'p_cup=',0.01*p_cup(k)
+      end if
       !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
       !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
 
@@ -463,11 +468,13 @@ subroutine grell_most_thermo_downdraft(mkx,mgmzp,klod,qtot,co2,mentrd_rate,cdd,p
 
       !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
       !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
-      !write (unit=28,fmt='(2(a,1x,i5,1x),a,1x,l1,1x,8(a,1x,f10.4,1x),a,1x,es12.5)')        &
-      !     'k=',k,'it=',-1,'bisection=',.false.,'q000=',1000.*qtotd_0_evap                 &
-      !    ,'qtot=',1000.*qtotda,'evap=',1000.*evapd_cld(k),'qsat=',1000.*qsatd_cld(k)      &
-      !    ,'qvap=',1000.*qvapd_cld(k),'qliq=',1000.*qliqd_cld(k)                           &
-      !    ,'qice=',1000.*qiced_cld(k),'temp=',td_cld(k)-t00,'funa=',funa
+      if (debug) then
+         write (unit=28,fmt='(2(a,1x,i5,1x),a,1x,l1,1x,8(a,1x,f10.4,1x),a,1x,es12.5)')     &
+              'k=',k,'it=',-1,'bisection=',.false.,'q000=',1000.*qtotd_0_evap              &
+             ,'qtot=',1000.*qtotda,'evap=',1000.*evapd_cld(k),'qsat=',1000.*qsatd_cld(k)   &
+             ,'qvap=',1000.*qvapd_cld(k),'qliq=',1000.*qliqd_cld(k)                        &
+             ,'qice=',1000.*qiced_cld(k),'temp=',td_cld(k)-t00,'funa=',funa
+      end if
       !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
       !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
 
@@ -499,11 +506,14 @@ subroutine grell_most_thermo_downdraft(mkx,mgmzp,klod,qtot,co2,mentrd_rate,cdd,p
          func         = qtotdc - qtotd_0_evap + 0.5 * evapd_cld(k) * denomini
          !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
          !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
-         !write (unit=28,fmt='(2(a,1x,i5,1x),a,1x,l1,1x,8(a,1x,f10.4,1x),a,1x,es12.5)')     &
-         !     'k=',k,'it=',0,'bisection=',.false.,'q000=',1000.*qtotd_0_evap               &
-         !    ,'qtot=',1000.*qtotdc,'evap=',1000.*evapd_cld(k),'qsat=',1000.*qsatd_cld(k)   &
-         !    ,'qvap=',1000.*qvapd_cld(k),'qliq=',1000.*qliqd_cld(k)                        &
-         !    ,'qice=',1000.*qiced_cld(k),'temp=',td_cld(k)-t00,'func=',func
+         if (debug) then
+            write (unit=28,fmt='(2(a,1x,i5,1x),a,1x,l1,1x,8(a,1x,f10.4,1x),a,1x,es12.5)')  &
+                 'k=',k,'it=',0,'bisection=',.false.,'q000=',1000.*qtotd_0_evap            &
+                ,'qtot=',1000.*qtotdc,'evap=',1000.*evapd_cld(k)                           &
+                ,'qsat=',1000.*qsatd_cld(k),'qvap=',1000.*qvapd_cld(k)                     &
+                ,'qliq=',1000.*qliqd_cld(k),'qice=',1000.*qiced_cld(k)                     &
+                ,'temp=',td_cld(k)-t00,'func=',func
+         end if
          !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
          !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
          
@@ -553,12 +563,14 @@ subroutine grell_most_thermo_downdraft(mkx,mgmzp,klod,qtot,co2,mentrd_rate,cdd,p
             end if
             !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
             !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
-            !write (unit=28,fmt='(a,1x,i5,1x,a,1x,l1,1x,8(a,1x,f10.4,1x),a,1x,es12.5)')     &
-            !     'k=',k,'it=     ½ bisection=',.true.,'q000=',1000.*qtotd_0_evap           &
-            !    ,'qtot=',1000.*qtotdc,'evap=',1000.*evapd_cld(k)                           &
-            !    ,'qsat=',1000.*qsatd_cld(k),'qvap=',1000.*qvapd_cld(k)                     &
-            !    ,'qliq=',1000.*qliqd_cld(k),'qice=',1000.*qiced_cld(k)                     &
-            !    ,'temp=',tdbis-t00,'funz=',funz
+            if (debug) then
+               write (unit=28,fmt='(a,1x,i5,1x,a,1x,l1,1x,8(a,1x,f10.4,1x),a,1x,es12.5)')  &
+                    'k=',k,'it=     ½ bisection=',.true.,'q000=',1000.*qtotd_0_evap        &
+                   ,'qtot=',1000.*qtotdc,'evap=',1000.*evapd_cld(k)                        &
+                   ,'qsat=',1000.*qsatd_cld(k),'qvap=',1000.*qvapd_cld(k)                  &
+                   ,'qliq=',1000.*qliqd_cld(k),'qice=',1000.*qiced_cld(k)                  &
+                   ,'temp=',tdbis-t00,'funz=',funz
+            end if
             !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
             !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
          end if browsegss
@@ -608,12 +620,15 @@ subroutine grell_most_thermo_downdraft(mkx,mgmzp,klod,qtot,co2,mentrd_rate,cdd,p
 
             !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
             !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
-            !write (unit=28,fmt='(2(a,1x,i5,1x),a,1x,l1,1x,8(a,1x,f10.4,1x),a,1x,es12.5)')  &
-            !    'k=',k,'it=',it,'bisection=',.false.,'q000=',1000.*qtotd_0_evap            &
-            !   ,'qtot=',1000.*qtotd_cld(k),'evap=',1000.*evapd_cld(k)                      &
-            !   ,'qsat=',1000.*qsatd_cld(k),'qvap=',1000.*qvapd_cld(k)                      &
-            !   ,'qliq=',1000.*qliqd_cld(k),'qice=',1000.*qiced_cld(k)                      &
-            !   ,'temp=',td_cld(k)-t00,'funnow=',funnow
+            if (debug) then
+               write (unit=28                                                              &
+                     ,fmt='(2(a,1x,i5,1x),a,1x,l1,1x,8(a,1x,f10.4,1x),a,1x,es12.5)')       &
+                   'k=',k,'it=',it,'bisection=',.false.,'q000=',1000.*qtotd_0_evap         &
+                  ,'qtot=',1000.*qtotd_cld(k),'evap=',1000.*evapd_cld(k)                   &
+                  ,'qsat=',1000.*qsatd_cld(k),'qvap=',1000.*qvapd_cld(k)                   &
+                  ,'qliq=',1000.*qliqd_cld(k),'qice=',1000.*qiced_cld(k)                   &
+                  ,'temp=',td_cld(k)-t00,'funnow=',funnow
+            end if
             !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
             !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
 
@@ -655,8 +670,10 @@ subroutine grell_most_thermo_downdraft(mkx,mgmzp,klod,qtot,co2,mentrd_rate,cdd,p
       end if iterif
       !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
       !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
-      !write(unit=28,fmt='(a)') '-----------------------------------------------------------'
-      !write(unit=28,fmt='(a)') ' '
+      if (debug) then
+         write(unit=28,fmt='(a)') '-------------------------------------------------------'
+         write(unit=28,fmt='(a)') ' '
+      end if
       !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
       !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
 

@@ -162,11 +162,6 @@ subroutine grell_cupar_dynamic(cldd,clds,nclouds,dtime,maxens_cap,maxens_eff,max
    !    Aliases for some levels/flags, they will be stored in the ensemble structure       !
    ! later.                                                                                !
    !---------------------------------------------------------------------------------------!
-   !----- Scalars. ------------------------------------------------------------------------!
-   integer :: klod      ! Level in which downdrafts originate
-   integer :: kdet      ! Top of downdraft detrainemnt layer
-   integer :: kstabi    ! cloud stable layer base
-   integer :: kstabm    ! cloud stable layer top
    !----- Combined variables --------------------------------------------------------------!
    logical, dimension(nclouds)            :: comp_dn  ! Downdrafts were computed.
    integer, dimension(nclouds)            :: ierr     ! Cloud error flag        [      ---]
@@ -174,6 +169,7 @@ subroutine grell_cupar_dynamic(cldd,clds,nclouds,dtime,maxens_cap,maxens_eff,max
    integer, dimension(nclouds)            :: klfc     ! Level of free convection
    integer, dimension(nclouds)            :: klnb     ! Level of newtral buoyancy
    integer, dimension(nclouds)            :: ktop     ! Cloud top
+   integer, dimension(nclouds)            :: klod     ! Level in which downdrafts originate
    real   , dimension(nclouds,nclouds)    :: mfke     ! Mass flux kernel        [ J m2/kg2]
    real   , dimension(nclouds)            :: aatot    ! Forced cloud work fctn. [     J/kg]
    real   , dimension(nclouds)            :: aatot0   ! Prev. cloud work fctn.  [     J/kg]
@@ -227,10 +223,7 @@ subroutine grell_cupar_dynamic(cldd,clds,nclouds,dtime,maxens_cap,maxens_eff,max
          klfc    (icld) = ensemble_e(icld)%klfc_cap     (icap)
          klnb    (icld) = ensemble_e(icld)%klnb_cap     (icap)
          ktop    (icld) = ensemble_e(icld)%ktop_cap     (icap)
-         klod           = ensemble_e(icld)%klod_cap     (icap)
-         kdet           = ensemble_e(icld)%kdet_cap     (icap)
-         kstabi         = ensemble_e(icld)%kstabi_cap   (icap)
-         kstabm         = ensemble_e(icld)%kstabm_cap   (icap)
+         klod    (icld) = ensemble_e(icld)%klod_cap     (icap)
 
          do k=1,mkx
             cdd(k)         = ensemble_e(icld)%cdd_cap(k,icap)
@@ -403,15 +396,15 @@ subroutine grell_cupar_dynamic(cldd,clds,nclouds,dtime,maxens_cap,maxens_eff,max
                            !---------------------------------------------------------------!
                            ! 5g. Finding moist static energy                               !
                            !---------------------------------------------------------------!
-                           call grell_theiv_downdraft(mkx,mgmzp,klod,cdd,mentrd_rate       &
+                           call grell_theiv_downdraft(mkx,mgmzp,klod(icld),cdd,mentrd_rate &
                                                      ,x_theiv,x_theiv_cup,x_theivs_cup     &
                                                      ,dzd_cld,x_theivd_cld)
 
                            !---------------------------------------------------------------!
                            ! 5h. Moisture properties                                       !
                            !---------------------------------------------------------------!
-                           call grell_most_thermo_downdraft(mkx,mgmzp,klod,x_qtot,x_co2    &
-                                                           ,mentrd_rate,cdd,x_p_cup        &
+                           call grell_most_thermo_downdraft(mkx,mgmzp,klod(icld),x_qtot    &
+                                                           ,x_co2,mentrd_rate,cdd,x_p_cup  &
                                                            ,x_exner_cup,x_thil_cup,x_t_cup &
                                                            ,x_qtot_cup,x_qvap_cup          &
                                                            ,x_qliq_cup,x_qice_cup          &
@@ -434,8 +427,8 @@ subroutine grell_cupar_dynamic(cldd,clds,nclouds,dtime,maxens_cap,maxens_eff,max
                            !---------------------------------------------------------------!
                            ! 5i. Compute cloud work function associated with downdrafts.   !
                            !---------------------------------------------------------------!
-                           call grell_cldwork_downdraft(mkx,mgmzp,klod,x_dbyd,dzd_cld      &
-                                                       ,etad_cld,x_aad)
+                           call grell_cldwork_downdraft(mkx,mgmzp,klod(icld),x_dbyd        &
+                                                       ,dzd_cld,etad_cld,x_aad)
                         end if modif_down
                      end if modif_comp_if
 

@@ -495,8 +495,6 @@ module phenology_aux
       real                                   :: bleaf_max         ! maximum bleaf
       real                                   :: balive_max        ! balive if on-allometry
       real                                   :: psi_layer         ! Water pot. of this layer
-      real                                   :: psi_wilt          ! Wilting point potential
-      real                                   :: psi_crit          ! Critical point potential
       real                                   :: mcheight          ! Mid-crown height
       !------------------------------------------------------------------------------------!
 
@@ -516,13 +514,8 @@ module phenology_aux
             psi_layer = slzt(k) - mcheight                                                 &
                       + soil(nsoil)%slpots                                                 &
                       / (soil_water(k)      / soil(nsoil)%slmsts) ** soil(nsoil)%slbs
-            psi_wilt  = soil(nsoil)%slpots                                                 &
-                      / (soil(nsoil)%soilwp / soil(nsoil)%slmsts) ** soil(nsoil)%slbs
-            psi_crit  = soil(nsoil)%slpots                                                 &
-                      / (soil(nsoil)%soilld / soil(nsoil)%slmsts) ** soil(nsoil)%slbs
-
-            paw_avg   = paw_avg + max(0.0, (psi_layer - psi_wilt)) * dslz(k)               &
-                                / (psi_crit  - psi_wilt)
+            paw_avg   = paw_avg + max(0.0, (psi_layer - soil(nsoil)%slpotwp)) * dslz(k)               &
+                                / (soil(nsoil)%slpotld  - soil(nsoil)%slpotwp)
          end do
          paw_avg = paw_avg / abs(slz(kroot))
       else 
