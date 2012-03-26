@@ -393,7 +393,8 @@ subroutine spatial_averages
          cgrid%avg_balive          (ipy) = 0.0
          cgrid%avg_bleaf           (ipy) = 0.0
          cgrid%avg_broot           (ipy) = 0.0
-         cgrid%avg_bsapwood        (ipy) = 0.0
+         cgrid%avg_bsapwooda       (ipy) = 0.0
+         cgrid%avg_bsapwoodb       (ipy) = 0.0
          cgrid%avg_bdead           (ipy) = 0.0
          cgrid%avg_bstorage        (ipy) = 0.0
          cgrid%avg_bseeds          (ipy) = 0.0
@@ -810,8 +811,13 @@ subroutine spatial_averages
                                             * csite%area(ipa)*cpoly%area(isi)              &
                                             * site_area_i * poly_area_i
 
-                  cgrid%avg_bsapwood(ipy)   = cgrid%avg_bsapwood(ipy)                      &
-                                            + sum(cpatch%bsapwood*cpatch%nplant)           &
+                  cgrid%avg_bsapwooda(ipy)  = cgrid%avg_bsapwooda(ipy)                     &
+                                            + sum(cpatch%bsapwooda*cpatch%nplant)          &
+                                            * csite%area(ipa)*cpoly%area(isi)              &
+                                            * site_area_i * poly_area_i
+
+                  cgrid%avg_bsapwoodb(ipy)  = cgrid%avg_bsapwoodb(ipy)                     &
+                                            + sum(cpatch%bsapwoodb*cpatch%nplant)          &
                                             * csite%area(ipa)*cpoly%area(isi)              &
                                             * site_area_i * poly_area_i
 

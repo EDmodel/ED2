@@ -116,10 +116,8 @@ subroutine update_patch_derived_props(csite,lsl,prss,ipa)
 
       !----- Compute the patch-level above-ground biomass
       csite%plant_ag_biomass(ipa) = csite%plant_ag_biomass(ipa)                            &
-                                  + ed_biomass(cpatch%bdead(ico),cpatch%balive(ico)        &
-                                              ,cpatch%bleaf(ico),cpatch%pft(ico)           &
-                                              ,cpatch%hite(ico),cpatch%bstorage(ico)       &
-                                              ,cpatch%bsapwood(ico))                       &
+                                  + ed_biomass(cpatch%bdead(ico),cpatch%bleaf(ico)         &
+                                              ,cpatch%bsapwooda(ico),cpatch%pft(ico))                      &
                                   * cpatch%nplant(ico)           
       !------------------------------------------------------------------------------------!
 
@@ -285,7 +283,6 @@ subroutine update_site_derived_props(cpoly,census_flag,isi)
    use ed_state_vars , only : polygontype  & ! structure
                             , sitetype     & ! structure
                             , patchtype    ! ! structure
-   use allometry     , only : ed_biomass   ! ! function
    use consts_coms   , only : pio4         ! ! intent(in)
    implicit none
    !----- Arguments -----------------------------------------------------------------------!

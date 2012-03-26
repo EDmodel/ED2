@@ -815,7 +815,8 @@ module disturbance_utils
                                                      ,cpatch%pft(ico),cpatch%sla(ico)      &
                                                      ,cpatch%lai(ico),cpatch%wai(ico)      &
                                                      ,cpatch%crown_area(ico)               &
-                                                     ,cpatch%bsapwood(ico))
+                                                     ,cpatch%bsapwooda(ico))
+
                                  end do
                                  csite%area(ipa)     = csite%area(ipa)     / area_fac
                                  csite%age(ipa)      = csite%age(ipa)      * area_fac
@@ -1925,7 +1926,8 @@ module disturbance_utils
                                    ,cpatch%dbh(nc),csite%soil_water(:,np),ntext_soil       &
                                    ,green_leaf_factor,cpatch%paw_avg(nc),cpatch%elongf(nc) &
                                    ,cpatch%phenology_status(nc),cpatch%bleaf(nc)           &
-                                   ,cpatch%broot(nc),cpatch%bsapwood(nc),cpatch%balive(nc) &
+                                   ,cpatch%broot(nc),cpatch%bsapwooda(nc)                  &
+                                   ,cpatch%bsapwoodb(nc),cpatch%balive(nc)                 &
                                    ,cpatch%bstorage(nc))
       !------------------------------------------------------------------------------------!
 
@@ -1935,14 +1937,13 @@ module disturbance_utils
       call area_indices(cpatch%nplant(nc),cpatch%bleaf(nc),cpatch%bdead(nc)                &
                        ,cpatch%balive(nc),cpatch%dbh(nc),cpatch%hite(nc),cpatch%pft(nc)    &
                        ,cpatch%sla(nc),cpatch%lai(nc),cpatch%wai(nc),cpatch%crown_area(nc) &
-                       ,cpatch%bsapwood(nc))
+                       ,cpatch%bsapwooda(nc))
 
 
       !----- Find the new basal area and above-ground biomass. ----------------------------!
-      cpatch%basarea(nc) = pio4 * cpatch%dbh(nc) * cpatch%dbh(nc)
-      cpatch%agb(nc)     = ed_biomass(cpatch%bdead(nc),cpatch%balive(nc),cpatch%bleaf(nc)  &
-                                     ,cpatch%pft(nc),cpatch%hite(nc) ,cpatch%bstorage(nc)  &
-                                     ,cpatch%bsapwood(nc))
+      cpatch%basarea(nc)= pio4 * cpatch%dbh(nc) * cpatch%dbh(nc)
+      cpatch%agb(nc)    = ed_biomass(cpatch%bdead(nc),cpatch%bleaf(nc),cpatch%bsapwooda(nc)&
+                          ,cpatch%pft(nc))
 
       cpatch%leaf_temp(nc)  = csite%can_temp(np)
       cpatch%leaf_temp_pv(nc)=csite%can_temp(np)
@@ -1954,7 +1955,7 @@ module disturbance_utils
       cpatch%wood_fliq(nc)  = 0.0
 
       !----- Because we assigned no water, the internal energy is simply hcap*T. ----------!
-      call calc_veg_hcap(cpatch%bleaf(nc),cpatch%bdead(nc),cpatch%bsapwood(nc)             &
+      call calc_veg_hcap(cpatch%bleaf(nc),cpatch%bdead(nc),cpatch%bsapwooda(nc)             &
                         ,cpatch%nplant(nc),cpatch%pft(nc)                                  &
                         ,cpatch%leaf_hcap(nc),cpatch%wood_hcap(nc))
 

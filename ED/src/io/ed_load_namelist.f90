@@ -116,6 +116,7 @@ subroutine copy_nl(copy_type)
                                    , lwidth_nltree             & ! intent(out)
                                    , q10_c3                    & ! intent(out)
                                    , q10_c4                    & ! intent(out)
+                                   , lturnover_grass           & ! intent(out)
                                    , quantum_efficiency_T      ! ! intent(out)
    use phenology_coms       , only : iphen_scheme              & ! intent(out)
                                    , iphenys1                  & ! intent(out)
@@ -193,6 +194,7 @@ subroutine copy_nl(copy_type)
                                    , unitstate                 & ! intent(out)
                                    , event_file                & ! intent(out)
                                    , iallom                    & ! intent(out)
+                                   , igrass                    & ! intent(out)
                                    , min_site_area             ! ! intent(out)
    use grid_coms            , only : time                      & ! intent(out)
                                    , centlon                   & ! intent(out)
@@ -342,6 +344,7 @@ subroutine copy_nl(copy_type)
       ibranch_thermo            = nl%ibranch_thermo
       iphysiol                  = nl%iphysiol
       iallom                    = nl%iallom
+      igrass                    = nl%igrass
       iphen_scheme              = nl%iphen_scheme
       repro_scheme              = nl%repro_scheme
       lapse_scheme              = nl%lapse_scheme
@@ -380,6 +383,7 @@ subroutine copy_nl(copy_type)
       lwidth_nltree             = nl%lwidth_nltree
       q10_c3                    = nl%q10_c3
       q10_c4                    = nl%q10_c4
+      lturnover_grass           = nl%lturnover_grass
       thetacrit                 = nl%thetacrit
       quantum_efficiency_T      = nl%quantum_efficiency_T
       radint                    = nl%radint

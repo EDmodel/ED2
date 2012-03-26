@@ -24,7 +24,7 @@ module ed_therm_lib
    !                  to total biomass.  The right hand side of the main equation accounts !
    !                  for the mass of insterstitial water and its ability to hold energy.  !
    ! + BDEAD        - the structural wood biomass of the cohort in kgC/plant.              !
-   ! + BSAPWOOD     - the sapwood biomass of the cohort, in kgC/plant.                     !
+   ! + BSAPWOODA    - the above ground sapwood biomass of the cohort, in kgC/plant.        !
    ! + NPLANTS      - the number of plants per m2.                                         !
    ! + PFT          - the plant functional type of the current cohort, which may serve     !
    !                  for defining different parameterizations of specific heat capacity   !
@@ -44,22 +44,23 @@ module ed_therm_lib
    !      energy storages on the land surface fluxes and radiative temperature.            !
    !      J. Geophys. Res., v. 112, doi: 10.1029/2006JD007425.                             !
    !---------------------------------------------------------------------------------------!
-   subroutine calc_veg_hcap(bleaf,bdead,bsapwood,nplant,pft,leaf_hcap,wood_hcap)
+   subroutine calc_veg_hcap(bleaf,bdead,bsapwooda,nplant,pft,leaf_hcap,wood_hcap)
       use consts_coms          , only : cliq                ! ! intent(in)
       use pft_coms             , only : c_grn_leaf_dry      & ! intent(in)
                                       , wat_dry_ratio_grn   & ! intent(in)
                                       , c_ngrn_biom_dry     & ! intent(in)
                                       , wat_dry_ratio_ngrn  & ! intent(in)
                                       , delta_c             & ! intent(in)
+                                      , agf_bs              & ! intent(in)
                                       , C2B                 & ! intent(in)
                                       , brf_wd              ! ! intent(in)
+
       use rk4_coms             , only : ibranch_thermo      ! ! intent(in)
-      use allometry            , only : wood_biomass        ! ! function
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       real    , intent(in)    :: bleaf         ! Biomass of leaves              [kgC/plant]
       real    , intent(in)    :: bdead         ! Biomass of structural wood     [kgC/plant]
-      real    , intent(in)    :: bsapwood      ! Biomass of sapwood             [kgC/plant]
+      real    , intent(in)    :: bsapwooda     ! Biomass of above ground sapwood[kgC/plant]
       real    , intent(in)    :: nplant        ! Number of plants               [ plant/m2]
       integer , intent(in)    :: pft           ! Plant functional type          [     ----]
       real    , intent(out)   :: leaf_hcap     ! Leaf heat capacity             [   J/m2/K]
@@ -82,10 +83,7 @@ module ed_therm_lib
          !----- Find branch/twig specific heat and biomass. -------------------------------!
          spheat_wood = (c_ngrn_biom_dry(pft) + wat_dry_ratio_ngrn(pft) * cliq)             &
                      / (1. + wat_dry_ratio_ngrn(pft)) + delta_c(pft)
-         
-         !----- Find the total branchwood biomass. ----------------------------------------!
-         bwood       = brf_wd(pft) * wood_biomass(bdead, bsapwood,pft)
-
+         bwood = brf_wd(pft) * (bsapwooda + bdead*agf_bs(pft))
       end select
 
       !----- Find the leaf specific heat. -------------------------------------------------!
