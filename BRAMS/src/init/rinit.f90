@@ -204,7 +204,7 @@ do j=1,nyp
       endif
 
       c2 = 1. - cpor
-      c3 = cp ** c2
+      c3 = cpdry ** c2
       do k = n1-1,1,-1
          pi0(k,i,j) = pi0(k+1,i,j)  &
                     + c1 / ((th0(k,i,j) + th0(k+1,i,j)) * dzm(k))

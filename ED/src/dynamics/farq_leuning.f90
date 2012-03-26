@@ -33,7 +33,7 @@
 !                                                                                          !
 !------------------------------------------------------------------------------------------!
 module farq_leuning
-
+   use therm_lib8, only : toler8
 
    !---------------------------------------------------------------------------------------!
    !     This is a flag used in various sub-routines and functions and denote that we      !
@@ -49,7 +49,8 @@ module farq_leuning
    ! so it is a good idea to use a somewhat more strict tolerance than the ones used in    !
    ! therm_lib8.                                                                           !
    !---------------------------------------------------------------------------------------!
-   real(kind=8), parameter :: tolerfl8 = 1.d-10
+   ! real(kind=8), parameter :: tolerfl8 = 1.d-10
+   real(kind=8), parameter :: tolerfl8 = toler8
    !---------------------------------------------------------------------------------------!
 
 
@@ -79,12 +80,10 @@ module farq_leuning
                            ,lint_shv,green_leaf_factor,leaf_aging_factor,llspan,vm_bar     &
                            ,leaf_gbw,A_open,A_closed,gsw_open,gsw_closed,lsfc_shv_open     &
                            ,lsfc_shv_closed,lsfc_co2_open,lsfc_co2_closed,lint_co2_open    &
-                           ,lint_co2_closed,leaf_resp,vmout,comppout,limit_flag            &
-                           ,old_st_data)
+                           ,lint_co2_closed,leaf_resp,vmout,comppout,limit_flag)
       use rk4_coms       , only : tiny_offset              & ! intent(in)
                                 , effarea_transp           ! ! intent(in)
-      use c34constants   , only : stoma_data               & ! structure
-                                , thispft                  & ! intent(out)
+      use c34constants   , only : thispft                  & ! intent(out)
                                 , met                      & ! intent(out)
                                 , aparms                   & ! intent(out)
                                 , stclosed                 & ! intent(inout)
@@ -119,7 +118,6 @@ module farq_leuning
                                 , gbh_2_gbw8               & ! intent(in)
                                 , gbw_2_gbc8               & ! intent(in)
                                 , o2_ref8                  ! ! intent(in)
-      use therm_lib8     , only : rslif8                   ! ! function
       use consts_coms    , only : mmh2oi8                  & ! intent(in)
                                 , mmh2o8                   & ! intent(in)
                                 , mmdryi8                  & ! intent(in)
@@ -159,8 +157,6 @@ module farq_leuning
       real(kind=4), intent(out)   :: vmout             ! Max. Rubisco capacity  [µmol/m²/s]
       real(kind=4), intent(out)   :: comppout          ! GPP compensation point [ µmol/mol]
       integer     , intent(out)   :: limit_flag        ! Photosyn. limit. flag  [      ---]
-      !----- This structure save the full stomatal state for the small pert. solver. ------!
-      type(stoma_data), intent(inout) :: old_st_data ! Previous results.
       !----- External function. -----------------------------------------------------------!
       real(kind=4)    , external      :: sngloff     ! Safe double -> single precision
       !------------------------------------------------------------------------------------!

@@ -2,7 +2,7 @@
 subroutine cup_env(j,z,qes,he,hes,t,q,p,z1,mix,mgmxp,mkx,mgmzp,istart,iend     &
                   ,psur,ierr,tcrit,itest)
 
-  use rconstants, only : rdry, cp, alvl, aklv, akiv, ep, grav, rocp
+  use rconstants, only : rdry, cpdry, alvl3, aklv, akiv, ep, grav, rocp
   use therm_lib, only: virtt
 
   implicit none
@@ -56,7 +56,7 @@ subroutine cup_env(j,z,qes,he,hes,t,q,p,z1,mix,mgmxp,mkx,mgmzp,istart,iend     &
      do k=1,mkx
         do i=istart,iend
            if (ierr(i).eq.0) then
-              z(i,k) = (he(i,k)-cp*t(i,k)-alvl*q(i,k))/grav
+              z(i,k) = (he(i,k)-cpdry*t(i,k)-alvl3*q(i,k))/grav
               z(i,k) = max(1.e-3,z(i,k))
            endif
         enddo
@@ -69,8 +69,8 @@ subroutine cup_env(j,z,qes,he,hes,t,q,p,z1,mix,mgmxp,mkx,mgmzp,istart,iend     &
   do K=1,MKX
      do I=ISTART,IEND
         if (ierr(i).eq.0) then
-           if (itest.eq.0) HE(I,K) = grav*Z(I,K)+cp*T(I,K)+alvl*Q(I,K)
-           HES(I,K) = grav*Z(I,K)+cp*T(I,K)+alvl*QES(I,K)
+           if (itest.eq.0) HE(I,K) = grav*Z(I,K)+cpdry*T(I,K)+alvl3*Q(I,K)
+           HES(I,K) = grav*Z(I,K)+cpdry*T(I,K)+alvl3*QES(I,K)
 
            if (HE(I,K).ge.HES(I,K)) HE(I,K) = HES(I,K)
 
@@ -86,7 +86,7 @@ subroutine cup_env_clev(j,t,qes,q,he,hes,z,p,qes_cup,q_cup,he_cup,hes_cup      &
                        ,z_cup,p_cup,gamma_cup,t_cup,psur,mix,mgmxp,mkx,mgmzp   &
                        ,istart,iend,ierr,z1)
 
-  use rconstants, only : alvl, rh2o, aklv
+  use rconstants, only : alvl3, rh2o, aklv
   implicit none
 
   integer                         :: i, j, k, mix, mgmxp, mkx, mgmzp, istart   &
@@ -109,7 +109,7 @@ subroutine cup_env_clev(j,t,qes,q,he,hes,z,p,qes_cup,q_cup,he_cup,hes_cup      &
            p_cup(i,k) = .5*(p(i,k-1) + p(i,k))
            t_cup(i,k) = .5*(t(i,k-1) + t(i,k))
 
-           gamma_cup(i,k) =aklv*(alvl/(rh2o*t_cup(i,k)*t_cup(i,k)))*qes_cup(i,k)
+           gamma_cup(i,k) =aklv*(alvl3/(rh2o*t_cup(i,k)*t_cup(i,k)))*qes_cup(i,k)
         endif
      enddo
   enddo
@@ -125,7 +125,7 @@ subroutine cup_env_clev(j,t,qes,q,he,hes,z,p,qes_cup,q_cup,he_cup,hes_cup      &
         p_cup(i,1)   = psur(i)
         t_cup(i,1)   = t(i,1)
         !srf	
-        gamma_cup(i,1) = aklv*(alvl/(rh2o*t_cup(i,1)*t_cup(i,1)))*qes_cup(i,1)
+        gamma_cup(i,1) = aklv*(alvl3/(rh2o*t_cup(i,1)*t_cup(i,1)))*qes_cup(i,1)
      endif
   enddo
 
@@ -320,7 +320,7 @@ end subroutine cup_kbcon
 !--------------------------------------------------------------------
 subroutine cup_kbcon_cin(iloop,k22,kbcon,he_cup,hes_cup,z,tmean,qes,mix,mgmxp  &
                         ,mkx,mgmzp,istart,iend,ierr,kbmax,p_cup,cap_max)
-  use rconstants, only : alvl,aklv,rh2o,cp,grav
+  use rconstants, only : alvl3,aklv,rh2o,cpdry,grav
   implicit none
   integer                         :: i,mix,mgmxp,mkx,mgmzp,istart,iend,iloop
   integer, dimension(mgmxp)       :: kbcon,k22,ierr,kbmax
@@ -350,8 +350,8 @@ subroutine cup_kbcon_cin(iloop,k22,kbcon,he_cup,hes_cup,z,tmean,qes,mix,mgmxp  &
 32   continue
      dh = HE_cup(I,K22(I)) - HES_cup(I,KBCON(I))
      if (dh.lt. 0.) then
-        GAMMA = aklv*(alvl/(rh2o*(Tmean(I,K22(i))**2)))*QES(I,K22(i))
-        tprim = dh/(cp*(1.+gamma))
+        GAMMA = aklv*(alvl3/(rh2o*(Tmean(I,K22(i))**2)))*QES(I,K22(i))
+        tprim = dh/(cpdry*(1.+gamma))
 
         cin   = cin + grav*tprim*(z(i,k22(i))-z(i,k22(i)-1))/tmean(i,k22(i))
         go to 31

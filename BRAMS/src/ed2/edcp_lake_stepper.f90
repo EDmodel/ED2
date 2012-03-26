@@ -103,7 +103,7 @@ subroutine integrate_lake(dtfull,htryio)
          !     Try a step of varying size.                                                 !
          !---------------------------------------------------------------------------------!
          select case (integration_scheme)
-         case (0)
+         case (0,3)
             !------------------------------------------------------------------------------!
             !    Euler scheme.  This is very simple so it won't have a routine by itself.  !
             ! Integrate, then update and correct diagnostic variables to avoid overshoot-  !
@@ -119,12 +119,12 @@ subroutine integrate_lake(dtfull,htryio)
             !------------------------------------------------------------------------------!
 
          case (1)
-            call lake_heun(lake_buff%y,lake_buff%dydx,lake_buff%ytemp,lake_buff%yerr       &
-                          ,lake_buff%ak2,lake_buff%ak3,x,h,reject_step,reject_result)
-         case (2)
             call lake_rk4(lake_buff%y,lake_buff%dydx,lake_buff%ytemp,lake_buff%yerr        &
                          ,lake_buff%ak2,lake_buff%ak3,lake_buff%ak4,lake_buff%ak5          &
                          ,lake_buff%ak6,lake_buff%ak7,x,h,reject_step,reject_result)
+         case (2)
+            call lake_heun(lake_buff%y,lake_buff%dydx,lake_buff%ytemp,lake_buff%yerr       &
+                          ,lake_buff%ak2,lake_buff%ak3,x,h,reject_step,reject_result)
          end select
          !---------------------------------------------------------------------------------!
 

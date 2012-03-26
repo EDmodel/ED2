@@ -113,17 +113,17 @@ module mem_radiate
       type (radiate_vars), intent(inout) :: radiate
       !------------------------------------------------------------------------------------!
 
-      if (associated(radiate%fthrd         )) nullify (radiate%fthrd         )
-      if (associated(radiate%rshort        )) nullify (radiate%rshort        )
-      if (associated(radiate%rlong         )) nullify (radiate%rlong         )
-      if (associated(radiate%rlongup       )) nullify (radiate%rlongup       )
-      if (associated(radiate%albedt        )) nullify (radiate%albedt        )
-      if (associated(radiate%cosz          )) nullify (radiate%cosz          )
-      if (associated(radiate%fthrd_lw      )) nullify (radiate%fthrd_lw      )
-      if (associated(radiate%rshort_top    )) nullify (radiate%rshort_top    )
-      if (associated(radiate%rshortup_top  )) nullify (radiate%rshortup_top  )
-      if (associated(radiate%rlongup_top   )) nullify (radiate%rlongup_top   )
-      if (associated(radiate%rshort_diffuse)) nullify (radiate%rshort_diffuse)
+      nullify (radiate%fthrd         )
+      nullify (radiate%rshort        )
+      nullify (radiate%rlong         )
+      nullify (radiate%rlongup       )
+      nullify (radiate%albedt        )
+      nullify (radiate%cosz          )
+      nullify (radiate%fthrd_lw      )
+      nullify (radiate%rshort_top    )
+      nullify (radiate%rshortup_top  )
+      nullify (radiate%rlongup_top   )
+      nullify (radiate%rshort_diffuse)
 
       return
    end subroutine nullify_radiate

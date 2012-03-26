@@ -1,6 +1,6 @@
 #----- Here is the user-defined variable section. -----------------------------------------#
 here           = "thispath" # Current directory.
-srcdir         = "/n/Moorcroft_Lab/Users/mlongo/util/Rsc" # Source  directory.
+srcdir         = "/n/moorcroft_data/mlongo/util/Rsc"      # Source  directory.
 outroot        = "thisoutroot"
 myplaces       = c("thispoly")
 outform        = "png"          # Formats for output file.  Supported formats are:
@@ -315,7 +315,7 @@ for (place in myplaces){
    yyyymm              = paste(errmaxraw[,"year"]
                               ,substring(100+errmaxraw[,"mon"],2,3),sep="-")
    #----- Monthly totals. -----------------------------------------------------------------#
-   tserrmax            = qapply(mat=errmaxraw,index=yyyymm,bycol=TRUE,func=sum)
+   tserrmax            = qapply(X=errmaxraw,INDEX=yyyymm,DIM=1,FUN=sum)
    tserrmax            = data.frame(tserrmax)
    yyyymm              = unique(yyyymm)
    tserrmax$year       = as.numeric(substring(yyyymm,1,4))
@@ -323,7 +323,7 @@ for (place in myplaces){
    tserrmax$day        = 15
    #----- Monthly means. ------------------------------------------------------------------#
    mon                 = tserrmax$mon
-   cyerrmax            = qapply(mat=tserrmax,index=mon,bycol=TRUE,func=mean)
+   cyerrmax            = qapply(X=tserrmax,INDEX=mon,DIM=1,FUN=mean)
    cyerrmax            = data.frame(cyerrmax)
    mon                 = unique(mon)
    cyerrmax$mon        = mon
@@ -345,7 +345,7 @@ for (place in myplaces){
    yyyymm              = paste(sanchkraw[,"year"]
                               ,substring(100+sanchkraw[,"mon"],2,3),sep="-")
    #----- Monthly totals. -----------------------------------------------------------------#
-   tssanchk            = qapply(mat=sanchkraw,index=yyyymm,bycol=TRUE,func=sum)
+   tssanchk            = qapply(X=sanchkraw,INDEX=yyyymm,DIM=1,FUN=sum)
    tssanchk            = data.frame(tssanchk)
    yyyymm              = unique(yyyymm)
    tssanchk$year       = as.numeric(substring(yyyymm,1,4))
@@ -353,7 +353,7 @@ for (place in myplaces){
    tssanchk$day        = 15
    #----- Monthly means. ------------------------------------------------------------------#
    mon                 = tssanchk$mon
-   cysanchk            = qapply(mat=tssanchk,index=mon,bycol=TRUE,func=mean)
+   cysanchk            = qapply(X=tssanchk,INDEX=mon,DIM=1,FUN=mean)
    cysanchk            = data.frame(cysanchk)
    mon                 = unique(mon)
    cysanchk$mon        = mon

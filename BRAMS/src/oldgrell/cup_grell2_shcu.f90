@@ -17,7 +17,7 @@ subroutine CUPARTH_shal(mynum,mgmxp,mgmyp,mgmzp,m1,m2,m3,ia,iz,ja,jz,i0,j0      
        ensdim=>ensdim_sh,                          & !INTENT(IN)
        icoic=>icoic_sh                             !INTENT(IN)
 
-  use rconstants, only: rdry,cp,rh2o,p00,t00,grav,cpor
+  use rconstants, only: rdry,cpdry,rh2o,p00,t00,grav,cpor
 
   use mem_scratch2_grell_sh
 
@@ -90,13 +90,13 @@ subroutine CUPARTH_shal(mynum,mgmxp,mgmyp,mgmzp,m1,m2,m3,ia,iz,ja,jz,i0,j0      
         kr = K + 1	  ! nivel K da grade DO Grell corresponde ao nivel K + 1 DO RAMS
         do I = ISTART,IEND
            z1(I)= topo(i,j)
-           PSUR(I) = .5*( ((pp(1,i,j)+pi0(1,i,j))/cp)**cpor*p00 + &
-                ((pp(2,i,j)+pi0(2,i,j))/cp)**cpor*p00 )*1.e-2 ! Pressure in mbar
-           PO(I,K) = ((pp(kr,i,j)+pi0(kr,i,j))/cp)**cpor*p00*1.e-2      ! Pressure in mbar
+           PSUR(I) = .5*( ((pp(1,i,j)+pi0(1,i,j))/cpdry)**cpor*p00 + &
+                ((pp(2,i,j)+pi0(2,i,j))/cpdry)**cpor*p00 )*1.e-2 ! Pressure in mbar
+           PO(I,K) = ((pp(kr,i,j)+pi0(kr,i,j))/cpdry)**cpor*p00*1.e-2      ! Pressure in mbar
            US(I,K) = .5*( ua(kr,i,j) + ua(kr,i-1,j) )
            VS(I,K) = .5*( va(kr,i,j) + va(kr,i,j-1) )
            OMEG(I,K)   = -grav*dn0(kr,i,j)*.5*( wa(kr,i,j)+wa(kr-1,i,j) )
-           T(I,K)  = theta(kr,i,j)*(pp(kr,i,j)+pi0(kr,i,j))/cp
+           T(I,K)  = theta(kr,i,j)*(pp(kr,i,j)+pi0(kr,i,j))/cpdry
            Q(I,K)  = rv(kr,i,j)
            !variables for PBL top height
            PBLIDX(I) = KPBL(i,j)
@@ -108,7 +108,7 @@ subroutine CUPARTH_shal(mynum,mgmxp,mgmyp,mgmzp,m1,m2,m3,ia,iz,ja,jz,i0,j0      
            !cpdTdt= exner*tht(kr,i,j) + theta(kr,i,j)*pt(kr,i,j)
            cpdTdt  = exner*tht(kr,i,j)    !assuminDO PT(KR,I,J) << exner*THT(KR,I,J)/theta
            !Temperatura projetada se a conveccao nao ocorrer
-           TN(I,K) = T(I,K) + ( cpdTdt/cp )*dtime         
+           TN(I,K) = T(I,K) + ( cpdTdt/cpdry )*dtime         
            !Umidade projetada se a conveccao nao ocorrer
            QO(I,K) = Q(I,K) +   rtt(kr,i,j)*dtime
            !Atribuicoes DO eschema
@@ -150,12 +150,12 @@ subroutine CUPARTH_shal(mynum,mgmxp,mgmyp,mgmzp,m1,m2,m3,ia,iz,ja,jz,i0,j0      
         kr = K + 1
         do I = ISTART,IEND
            !      Converte tendencia da temperatura (OUTT) em tendencia de theta (OUTTEM)
-           !      cp*T=Pi*Theta => cp dT/dt = Theta*dPi/dt + Pi*dTheta/dt,
+           !      cp*T=Pi*Theta => cpdry dT/dt = Theta*dPi/dt + Pi*dTheta/dt,
            !      assuminDO dPi/dt (=pt(kr,i,j)) << (exner/theta)*dTheta/dt:
            !      Exner's function = pp(kr,i,j)+pi0(kr,i,j)
            exner          =   pp(kr,i,j) + pi0(kr,i,j)
            !
-           outtem(kr,i,j) =   CP/exner   *  OUTT(I,K) ! tendencia DO Theta  devida aos cumulus
+           outtem(kr,i,j) =   CPdry/exner   *  OUTT(I,K) ! tendencia DO Theta  devida aos cumulus
            outrt(kr,i,j) =   OUTQ(I,K)               ! tendencia DO Rtotal devida aos cumulus
            !
         enddo
@@ -189,7 +189,7 @@ subroutine CUP_enss_shal(mynum,m1,m2,m3,i0,                                & !
      
 
   use mem_scratch3_grell_sh
-  use rconstants, only: grav,cpi,alvl
+  use rconstants, only: grav,cpdryi,alvl3
 
   implicit none
   integer mynum,i0,j0,m1,m2,m3
@@ -415,7 +415,7 @@ subroutine CUP_enss_shal(mynum,m1,m2,m3,i0,                                & !
            if(ierr(i).eq.0)then
               XHE(I,K) =      DELLAH(I,K)*MBDT + HEO(I,K)
               XQ(I,K) =	      DELLAQ(I,K)*MBDT +  QO(I,K)
-              DELLAT(I,K) =  cpi*(DELLAH(I,K)-alvl*DELLAQ(I,K))
+              DELLAT(I,K) =  cpdryi*(DELLAH(I,K)-alvl3*DELLAQ(I,K))
               XT(I,K) =	      DELLAT(I,K)*MBDT +  TN(I,K)
               if(XQ(I,K).le.0.)XQ(I,K)=1.E-08
 

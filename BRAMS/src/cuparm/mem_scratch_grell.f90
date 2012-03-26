@@ -35,6 +35,7 @@ module mem_scratch_grell
               ,qvapsur   & ! Surface: mixing ratio                                 [ kg/kg]
               ,qliqsur   & ! Surface: mixing ratio                                 [ kg/kg]
               ,qicesur   & ! Surface: mixing ratio                                 [ kg/kg]
+              ,rhosur    & ! Surface: air density                                  [ kg/m³]
               ,tsur      & ! Surface: temperature                                  [     K]
               ,theivsur  & ! Surface: ice-vapour equivalent potential temperature  [     K]
               ,thilsur   ! ! Surface: ice-liquid potential temperature             [     K]

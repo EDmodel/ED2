@@ -552,8 +552,8 @@ SUBROUTINE Get_Env_Condition(k1,k2,kmt,thtcon,picon,rvcon,zcon,qvenv, &
   DO k=1,nkp
     DO ij=ijbeg,ijend
       IF(k>kmt(ij)) CYCLE
-      te(ij,k)  = the(ij,k)*pke(ij,k)/cp         ! temperature (K)
-      pe(ij,k)  = (pke(ij,k)/cp)**cpor*p00    ! pressure (Pa)
+      te(ij,k)  = the(ij,k)*pke(ij,k)/cpdry        ! temperature (K)
+      pe(ij,k)  = (pke(ij,k)/cpdry)**cpor*p00    ! pressure (Pa)
       dne(ij,k)= pe(ij,k)/(rdry*virtt(te(ij,k),qvenv(ij,k))) !  dry air density (kg/m3)
       !  print*,'ENV=',qvenv(k)*1000., te(k)-t00,zt(k)
     END DO
@@ -789,7 +789,7 @@ SUBROUTINE Makeplume(kmt,ztopmax,zm,dzm,zt,dz, &
   !**********************************************************************
   USE plume_utils, ONLY: ijindex,indexj,indexi
   
-  use rconstants, only : grav,rdry,cp,ep,alvi,alvl,alli 
+  use rconstants, only : grav,rdry,cpdry,ep,alvi3,alvl3,alli 
   IMPLICIT NONE
   ! ******************* SOME CONSTANTS **********************************
   !
@@ -1263,7 +1263,7 @@ SUBROUTINE Lbound(imm,iveg_ag,qh,qi,qc,rsurf,plume_2d,iveg,ijbeg,ijend,alpha,&
   ! QC(1).
   ! EFLUX = energy flux at ground,watt/m**2 for the last DT
   !
-  use rconstants, only: grav,rdry,cp,ep,pi1 
+  use rconstants, only: grav,rdry,cpdry,ep,pi1 
   USE plume_utils, ONLY: indexi,indexj
   
   implicit none
@@ -1323,7 +1323,7 @@ SUBROUTINE Lbound(imm,iveg_ag,qh,qi,qc,rsurf,plume_2d,iveg,ijbeg,ijend,alpha,&
     pres = pe(ij,1) * 1000.   !need pressure in n/m**2
     c1 = 5. / (6. * alpha)  !alpha is entrainment constant
     c2 = 0.9 * alpha  
-    f = eflux / (pres * cp * pi1)  
+    f = eflux / (pres * cpdry * pi1)  
     f = grav * rdry * f * plume_2d(ij,iveg_ag)  !buoyancy flux
     zv = c1 * rsurf(ij,iveg_ag)  !virtual boundary height
 
@@ -1345,7 +1345,7 @@ SUBROUTINE Lbound(imm,iveg_ag,qh,qi,qc,rsurf,plume_2d,iveg,ijbeg,ijend,alpha,&
     !advc = 0.  
     !advh = 0.  
     !advi = 0.  
-    !adiabat = - wbar * g / cp  
+    !adiabat = - wbar * g / cpdry
     vth(ij,1) = - 4.  
     vti(ij,1) = - 3.  
     txs(ij,1) = temp(ij,1) - te(ij,1)  
@@ -1440,15 +1440,15 @@ SUBROUTINE Evaporate(l,nkp,qsat,qv,wbar,dqsdz,dt,qh,qi,qc,temp,rho,est,cvi,ijbeg
   !
   !- evaporates cloud,rain and ice to saturation
   !
-  use rconstants, only: cp, alvl,alvi
+  use rconstants, only: cpdry, alvl3,alvi3
   IMPLICIT NONE
   !
   !        XNO=10.0E06
   !        HERC = 1.93*1.E-6*XN035        !evaporation constant
   !
-  REAL,PARAMETER :: herc = 5.44e-4, heatcond = alvl/1000.  
-  REAL,PARAMETER :: heatsubl = alvi/1000., tmelt = 273., tfreeze = 269.3
-  REAL,PARAMETER :: frc = heatcond / cp, src = heatsubl / cp
+  REAL,PARAMETER :: herc = 5.44e-4, heatcond = alvl3/1000.  
+  REAL,PARAMETER :: heatsubl = alvi3/1000., tmelt = 273., tfreeze = 269.3
+  REAL,PARAMETER :: frc = heatcond / cpdry, src = heatsubl / cpdry
   
   INTEGER,INTENT(IN) :: l,nkp,ijbeg,ijend
   REAL   ,INTENT(IN),DIMENSION(ijbeg:ijend):: wbar,dqsdz,dt
@@ -1663,11 +1663,11 @@ END SUBROUTINE Evaporate
 !-----------------------------------
 
 SUBROUTINE Sublimate(l,nkp,qv,qi,temp,dt,qsat,rho,est,ijbeg,ijend,nottodo)  
-  use rconstants, only: alvi,alli,cp
+  use rconstants, only: alvi3,alli,cpdry
   !
   ! ********************* VAPOR TO ICE (USE EQUATION OT22)***************
   !
-  REAL,PARAMETER :: src = alvi / cp, frc = alli / cp, tmelt = 273.3
+  REAL,PARAMETER :: src = alvi3 / cpdry, frc = alli / cpdry, tmelt = 273.3
   REAL,PARAMETER :: tfreeze = 269.3
 
   INTEGER,INTENT(IN)                       :: l,nkp,ijbeg,ijend
@@ -1728,13 +1728,13 @@ END SUBROUTINE Sublimate
 !------------------------------------------------------
 
 SUBROUTINE Glaciate(l,nkp,qh,qi,temp,qsat,dt,qv,ijbeg,ijend,nottodo)  
-  use rconstants, only: alli,cp,ep,alvi
+  use rconstants, only: alli,cpdry,ep,alvi3
   !
   ! *********************** CONVERSION OF RAIN TO ICE *******************
   !     uses equation OT 16, simplest. correction from W not applied, but
   !     vapor pressure differences are supplied.  
   !
-  REAL,PARAMETER :: frc = alli / cp, frs = alvi/cp, tfreeze =  269.3
+  REAL,PARAMETER :: frc = alli / cpdry, frs = alvi3/cpdry, tfreeze =  269.3
   REAL,PARAMETER :: glconst = 0.025   !glaciation time constant, 1/sec
   
   INTEGER,INTENT(IN) :: l,nkp,ijbeg,ijend
@@ -2216,7 +2216,7 @@ SUBROUTINE scl_misc(nm1,nkp,ijbeg,ijend,qvenv,te,vvel,temp,qv,qc,qh,qi, &
                     tt,qvt,qct,qht,qit,radius,alpha,adiabat,wbar,isdone)
 
   USE plume_utils, ONLY: ijindex
-  use rconstants, only:grav,cp
+  use rconstants, only:grav,cpdry
   IMPLICIT NONE
 
   INTEGER,INTENT(IN) ,DIMENSION(ijbeg:ijend) :: nm1
@@ -2237,7 +2237,7 @@ SUBROUTINE scl_misc(nm1,nkp,ijbeg,ijend,qvenv,te,vvel,temp,qv,qc,qh,qi, &
       IF(isdone(ij) .OR. k>nm1(ij)-1) CYCLE
       wbar(ij)    = 0.5*(vvel(ij,k)+vvel(ij,k-1))  
       !-- dry adiabat
-      adiabat = - wbar(ij) * grav / cp
+      adiabat = - wbar(ij) * grav / cpdry
       !-- entrainment    
       dmdtm = 2. * alpha * abs (wbar(ij)) / radius (ij,k)  != (1/m)dm/dt
       !-- tendency temperature = adv + adiab + entrainment
@@ -2316,7 +2316,7 @@ END SUBROUTINE Damp_Grav_Wave
 SUBROUTINE Fallpart(nm1,nkp,qvt,qct,qht,qit,rho,vvel,qh,qi,zm, &
                     vth,vti,cvi,ijbeg,ijend,isdone)
 
-  use rconstants, only: grav,cp,ep
+  use rconstants, only: grav,cpdry,ep
   IMPLICIT NONE
 
   REAL, PARAMETER :: vconst = 5.107387, f0 = 0.75  

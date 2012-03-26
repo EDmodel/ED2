@@ -59,7 +59,6 @@ subroutine h5_output(vtype)
    !------ Arguments. ---------------------------------------------------------------------!
    character(len=*)                                 , intent(in) :: vtype
    !------ Local variables. ---------------------------------------------------------------!
-   type(var_table_vector)                           , pointer    :: vtvec
    character(len=str_len)                                        :: anamel
    character(len=3)                                              :: cgrid
    character(len=40)                                             :: subaname
@@ -105,9 +104,21 @@ subroutine h5_output(vtype)
    integer                                          , save       :: irec_opt       = 0
    !----- Local constants. ----------------------------------------------------------------!
    logical                                          , parameter  :: collective_mpi = .false.
+   logical                                          , parameter  :: verbose        = .false.
    real(kind=8)                                     , parameter  :: zero           = 0.0d0
    !----- External functions. -------------------------------------------------------------!
    logical                                          , external   :: isleap
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !   Start with some banner just to make sure we got in here.                            !
+   !---------------------------------------------------------------------------------------!
+   if (verbose) then
+      write (unit=*,fmt='(a,1x,a,a,1x,i6,a)')                                              &
+                                 '+ HDF5.  Analysis:',trim(vtype),'.  Node:',mynum,'...'
+   end if
    !---------------------------------------------------------------------------------------!
 
 
@@ -120,7 +131,6 @@ subroutine h5_output(vtype)
 
 
    !------ Find which letter we should use to denote this type of analysis. ---------------!
-
    select case (trim(vtype))
    case ('INST')
       vnam='I'   ! Instantaneous analysis.
@@ -139,34 +149,60 @@ subroutine h5_output(vtype)
    case ('CONT') 
       vnam='Z'   ! The first time with history start, so we don't replace the history
    end select  
-   nvcnt=0
+   !---------------------------------------------------------------------------------------!
 
 
-   nrec = 1
-   irec = 1  
+   nvcnt = 0
+   nrec  = 1
+   irec  = 1  
 
    !---------------------------------------------------------------------------------------!
    !    Loop over the grids.                                                               !
    !---------------------------------------------------------------------------------------!
    gridloop: do ngr=1,ngrids
 
+      if (verbose) write (unit=*,fmt='(2(a,1x,i6),a)') '  * Grid:',ngr,'. Node:',mynum,'...'
+
       !----- I guess this cleans out anything that didn't finish correctly. ---------------!
+      if (verbose) write (unit=*,fmt='(a)') '  * Collect garbage...'
       call h5garbage_collect_f(hdferr) 
+      !------------------------------------------------------------------------------------!
 
 
       !----- Wait until the previous node has finished writing. ---------------------------!
       new_file=.true.
       if (mynum /= 1) then
-         call MPI_RECV(new_file,1,MPI_LOGICAL,recvnum,3510+ngr,MPI_COMM_WORLD,status,ierr)
+         call MPI_Recv(new_file,1,MPI_LOGICAL,recvnum,3510+ngr,MPI_COMM_WORLD,status,ierr)
       end if
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !     Print a check about the file status.                                           !
+      !------------------------------------------------------------------------------------!
+      if (verbose) then
+         write (unit=*,fmt='(a,1x,a,2(a,1x,i6),a,1x,l,a)')                                 &
+               '  * HDF5.  Type:',trim(vtype),'. Node:',mynum,'. Grid: ',ngr               &
+              ,'. New File:',new_file,'...'
+      end if
+      !------------------------------------------------------------------------------------!
+
+
 
       !------------------------------------------------------------------------------------!
       !    If there are no polygons on this node, then the node shouldn't do anything to   !
       ! this file.  This is something that happens only in coupled model runs.             !
       !------------------------------------------------------------------------------------!
-      if (gdpy(mynum,ngr)>0) then
+      if (gdpy(mynum,ngr) > 0) then
+         if (verbose) then
+            write (unit=*,fmt='(a,1x,i6,1x,a)') '    > Writing ',gdpy(mynum,ngr)           &
+                                               ,'polygons...'
+         end if
+
          !----- Make the grid flag. -------------------------------------------------------!
          write(cgrid,fmt='(a1,i2.2)') 'g',ngr
+         !---------------------------------------------------------------------------------!
 
 
          !---------------------------------------------------------------------------------!
@@ -304,6 +340,7 @@ subroutine h5_output(vtype)
          !---------------------------------------------------------------------------------!
          !     Initialise the HDF5 environment.                                            !
          !---------------------------------------------------------------------------------!
+         if (verbose) write (unit=*,fmt='(a)') '    > Opening HDF5 environment...'
          call h5open_f(hdferr)
          if (hdferr /= 0) then
             write(unit=*,fmt='(a,1x,i)') ' - HDF5 Open error #:',hdferr
@@ -318,6 +355,7 @@ subroutine h5_output(vtype)
          !     Either open or create the output file.                                      !
          !---------------------------------------------------------------------------------!
          if (new_file) then
+            if (verbose) write (unit=*,fmt='(a)') '    > Creating new file...'
             
             call h5fcreate_f(trim(anamel)//char(0), H5F_ACC_TRUNC_F, file_id, hdferr)
             if (hdferr /= 0) then
@@ -330,6 +368,7 @@ subroutine h5_output(vtype)
                call fatal_error('Failed creating the HDF file','h5_output','h5_output.F90')
             end if
          else
+            if (verbose) write (unit=*,fmt='(a)') '    > Opening new file...'
             call h5fopen_f(trim(anamel)//char(0), H5F_ACC_RDWR_F, file_id, hdferr)
             if (hdferr /= 0) then
                write(unit=*,fmt='(a)'      ) '--------------------------------------------'
@@ -349,6 +388,10 @@ subroutine h5_output(vtype)
          !   Create HDF5 datasets and then put them in the file; we must loop over all     !
          ! variables.                                                                      !
          !---------------------------------------------------------------------------------!
+         if (verbose) then
+            write (unit=*,fmt='(a,1x,a,1x,a)') '    > Loop over ',num_var(ngr)             &
+                                              ,'variables...'
+         end if
          varloop: do nv = 1,num_var(ngr)
             !----- Check whether the variable goes to the output. -------------------------!
             if ((vtype == 'INST' .and. vt_info(nv,ngr)%ianal == 1) .or.                    &
@@ -370,11 +413,18 @@ subroutine h5_output(vtype)
                              ,dsetrank,varn,nrec,irec)
                !---------------------------------------------------------------------------!
 
+               if (verbose) then
+                  write (unit=*,fmt='(a,1x,a,5(a,1x,i12))')                                & 
+                      '      # Variable:',trim(varn),'. Type:',vt_info(nv,ngr)%idim_type   &
+                     ,'. Size:',vt_info(nv,ngr)%var_len_global,'. Rank:',dsetrank          &
+                     ,'. Nrec:',nrec,'. Irec:',irec
+               end if
 
 
                !---------------------------------------------------------------------------!
                !     Create the data set.                                                  !
                !---------------------------------------------------------------------------!
+               if (verbose) write (unit=*,fmt='(a)') '      # Creating data set...'
                call h5screate_simple_f(dsetrank, globdims, filespace, hdferr)
                if (hdferr /= 0 .or. globdims(1) < 1 ) then
                   write (unit=*,fmt='(a,1x,a)') ' VTYPE:    ',trim(vtype)
@@ -392,10 +442,12 @@ subroutine h5_output(vtype)
                !---------------------------------------------------------------------------!
                !      Determine whether the dataset exists.                                !
                !---------------------------------------------------------------------------!
+               if (verbose) write (unit=*,fmt='(a)') '      # Opening file...'
                call h5eset_auto_f(0,hdferr)
                call h5dopen_f(file_id,varn,dset_id,hdferr)
 
                if (hdferr < 0) then
+                  if (verbose) write (unit=*,fmt='(a)') '      # Eset auto (HDFERR < 0)...'
                   call h5eset_auto_f(1,hdferr)
 
                   select case (vt_info(nv,ngr)%dtype)
@@ -431,6 +483,7 @@ subroutine h5_output(vtype)
                   !      Attached metadata if the user wants it.                           !
                   !------------------------------------------------------------------------!
                   if (attach_metadata == 1) then
+                     if (verbose) write (unit=*,fmt='(a)') '      # Attaching metadata...'
                      arank       = 1
                      adims       = 3_8
                      attrlen     = 64_8
@@ -470,8 +523,11 @@ subroutine h5_output(vtype)
 
                      call h5aclose_f(attr_id,hdferr)
                      call h5sclose_f(aspace_id,hdferr)
+                  elseif (verbose) then
+                     write (unit=*,fmt='(a)') '      # Skipping metadata...'
                   end if
 
+                  if (verbose) write (unit=*,fmt='(a)') '      # Creating dataset...'
                   call h5dopen_f(file_id,varn,dset_id,hdferr)
 
                   if (hdferr /= 0) then
@@ -488,9 +544,11 @@ subroutine h5_output(vtype)
                                      ,'h5_output','h5_output.F90')
                   end if
                else
+                  if (verbose) write (unit=*,fmt='(a)') '      # Eset auto (HDFERR >=0)...'
                   call h5eset_auto_f(1,hdferr)
                end if
 
+               if (verbose) write (unit=*,fmt='(a)') '      # Closing filespace...'
                call h5sclose_f(filespace,hdferr)
                if (hdferr /= 0) then
                   call fatal_error('Could not close the first filespace'                   &
@@ -501,23 +559,49 @@ subroutine h5_output(vtype)
                !---------------------------------------------------------------------------!
                !      Loop over all the pointers.                                          !
                !---------------------------------------------------------------------------!
+               if (verbose) then
+                  write (unit=*,fmt='(a,1x,i12,1x,a)')                                     &
+                               '      # Looping over ',vt_info(nv,ngr)%nptrs,'pointers ...'
+               end if
                pointerloop: do iptr = 1,vt_info(nv,ngr)%nptrs
-                  
-                  vtvec => vt_info(nv,ngr)%vt_vector(iptr)
+                  if (verbose) then
+                     write (unit=*,fmt='(a,1x,i12,1x,a)') '        ~ Pointer ',iptr,'...'
+                  end if
+
+
                   !------------------------------------------------------------------------!
                   !      Set the size of the chunk and it's offset in the global dataset.  !
                   !------------------------------------------------------------------------!
-                  if (vtvec%varlen > 0 ) then
+                  if (vt_info(nv,ngr)%vt_vector(iptr)%varlen > 0 ) then
+                     if (verbose) then
+                        write (unit=*,fmt='(a,1x,i12,1x,a)')                               &
+                          '          + Length',vt_info(nv,ngr)%vt_vector(iptr)%varlen,'...'
+                     end if
                      !---------------------------------------------------------------------!
                      !     Evaluate the variable output type.  Resolve the dimensioning    !
                      ! and the meta-data tags accordingly.  See ed_state_vars.f90 for a    !
                      ! description of the various datatype.                                !
                      !---------------------------------------------------------------------!
                      !----- Initialize hyperslab indices. ---------------------------------!
-                     call geth5dims(vt_info(nv,ngr)%idim_type,vtvec%varlen,vtvec%globid    &
+                     call geth5dims(vt_info(nv,ngr)%idim_type                              &
+                                   ,vt_info(nv,ngr)%vt_vector(iptr)%varlen                 &
+                                   ,vt_info(nv,ngr)%vt_vector(iptr)%globid                 &
                                    ,vt_info(nv,ngr)%var_len_global,dsetrank,varn,nrec,irec)
-                     
+
+
+
+                     if (verbose) then
+                        write (unit=*,fmt='(5(a,1x,i12))')                                 &
+                            '          + Type:',vt_info(nv,ngr)%idim_type                  &
+                           ,'. Size:',vt_info(nv,ngr)%var_len_global,'. Rank:',dsetrank    &
+                           ,'. Nrec:',nrec,'. Irec:',irec
+                     end if
+
                      !----- Create the data space for the dataset. ------------------------!
+                     if (verbose) then
+                        write (unit=*,fmt='(a)') '          + Create data space...'
+                     end if
+
                      call h5screate_simple_f(dsetrank, chnkdims, memspace, hdferr)
                      if (hdferr /= 0) then
                         write (unit=*,fmt=*) 'Chunk dimension:  ',chnkdims
@@ -529,12 +613,18 @@ subroutine h5_output(vtype)
                      end if
 
                      !----- Get the hyperslab in the file. --------------------------------!
+                     if (verbose) then
+                        write (unit=*,fmt='(a)') '          + Get hyperslab in the file...'
+                     end if
                      call h5dget_space_f(dset_id,filespace,hdferr)
                      if (hdferr /= 0) then
                         call fatal_error('Could not get the hyperslabs filespace'          &
                                         ,'h5_output','h5_output.F90')
                      end if
 
+                     if (verbose) then
+                        write (unit=*,fmt='(a)') '          + Select hyperslab...'
+                     end if
                      call h5sselect_hyperslab_f(filespace,H5S_SELECT_SET_F,chnkoffs,cnt    &
                                                ,hdferr,stride,chnkdims)
                      if (hdferr /= 0) then
@@ -546,45 +636,58 @@ subroutine h5_output(vtype)
                      !---------------------------------------------------------------------!
                      !     Choose the right pointer when writing the variable.             !
                      !---------------------------------------------------------------------!
+                     if (verbose) then
+                        write (unit=*,fmt='(a,1x,a,a)')                                    &
+                                                '          + Write variable of type '      &
+                                               ,vt_info(nv,ngr)%dtype,'...'
+                     end if
                      select case (vt_info(nv,ngr)%dtype)
                      case ('R') !----- Real variable (vector). ----------------------------!
-                        call h5dwrite_f(dset_id,H5T_NATIVE_REAL,vtvec%var_rp,globdims      &
-                                       ,hdferr,file_space_id=filespace                     &
+                        call h5dwrite_f(dset_id,H5T_NATIVE_REAL                            &
+                                       ,vt_info(nv,ngr)%vt_vector(iptr)%var_rp             &
+                                       ,globdims,hdferr,file_space_id=filespace            &
                                        ,mem_space_id=memspace)
 
                      case ('D') !----- Double precision variable (vector). ----------------!
-                        call h5dwrite_f(dset_id,H5T_NATIVE_DOUBLE,vtvec%var_dp,globdims    &
-                                       ,hdferr,file_space_id=filespace                     &
+                        call h5dwrite_f(dset_id,H5T_NATIVE_DOUBLE                          &
+                                       ,vt_info(nv,ngr)%vt_vector(iptr)%var_dp             &
+                                       ,globdims,hdferr,file_space_id=filespace            &
                                        ,mem_space_id=memspace)
 
                      case ('I') !----- Integer variable (vector). -------------------------!
-                        call h5dwrite_f(dset_id,H5T_NATIVE_INTEGER,vtvec%var_ip,globdims   &
-                                       ,hdferr,file_space_id=filespace                     &
+                        call h5dwrite_f(dset_id,H5T_NATIVE_INTEGER                         &
+                                       ,vt_info(nv,ngr)%vt_vector(iptr)%var_ip             &
+                                       ,globdims,hdferr,file_space_id=filespace            &
                                        ,mem_space_id=memspace)
 
                      case ('C') !----- Character variable (vector). -----------------------!
-                        call h5dwrite_f(dset_id,H5T_NATIVE_CHARACTER,vtvec%var_cp,globdims &
+                        call h5dwrite_f(dset_id,H5T_NATIVE_CHARACTER                       &
+                                       ,vt_info(nv,ngr)%vt_vector(iptr)%var_cp,globdims    &
                                        ,hdferr,file_space_id=filespace                     &
                                        ,mem_space_id = memspace)
 
                      case ('r') !----- Real variable (scalar). ----------------------------!
-                        call h5dwrite_f(dset_id,H5T_NATIVE_REAL,vtvec%sca_rp,globdims      &
-                                       ,hdferr,file_space_id=filespace                     &
+                        call h5dwrite_f(dset_id,H5T_NATIVE_REAL                            &
+                                       ,vt_info(nv,ngr)%vt_vector(iptr)%sca_rp             &
+                                       ,globdims,hdferr,file_space_id=filespace            &
                                        ,mem_space_id=memspace)
 
                      case ('d') !----- Double precision variable (scalar). ----------------!
-                        call h5dwrite_f(dset_id,H5T_NATIVE_DOUBLE,vtvec%sca_dp,globdims    &
-                                       ,hdferr,file_space_id=filespace                     &
+                        call h5dwrite_f(dset_id,H5T_NATIVE_DOUBLE                          &
+                                       ,vt_info(nv,ngr)%vt_vector(iptr)%sca_dp             &
+                                       ,globdims,hdferr,file_space_id=filespace            &
                                        ,mem_space_id=memspace)
 
                      case ('i') !----- Integer variable (scalar). -------------------------!
-                        call h5dwrite_f(dset_id,H5T_NATIVE_INTEGER,vtvec%sca_ip,globdims   &
-                                       ,hdferr,file_space_id=filespace                     &
+                        call h5dwrite_f(dset_id,H5T_NATIVE_INTEGER                         &
+                                       ,vt_info(nv,ngr)%vt_vector(iptr)%sca_ip             &
+                                       ,globdims,hdferr,file_space_id=filespace            &
                                        ,mem_space_id=memspace)
 
                      case ('c') !----- Character variable (scalar). -----------------------!
-                        call h5dwrite_f(dset_id,H5T_NATIVE_CHARACTER,vtvec%sca_cp,globdims &
-                                       ,hdferr,file_space_id=filespace                     &
+                        call h5dwrite_f(dset_id,H5T_NATIVE_CHARACTER                       &
+                                       ,vt_info(nv,ngr)%vt_vector(iptr)%sca_cp             &
+                                       ,globdims,hdferr,file_space_id=filespace            &
                                        ,mem_space_id=memspace)
 
                      end select
@@ -599,43 +702,59 @@ subroutine h5_output(vtype)
                                         ,'h5_output','h5_output.F90')
                      end if
 
-
+                     if (verbose) then
+                        write (unit=*,fmt='(a)') '          + Close hyperslab filespace...'
+                     end if
                      call h5sclose_f(filespace,hdferr)
                      if (hdferr /= 0) then
                         call fatal_error('Could not close the hyperslabs filespace'        &
                                         ,'h5_output','h5_output.F90')
                      end if
 
+                     if (verbose) then
+                        write (unit=*,fmt='(a)') '          + Close hyperslab memspace...'
+                     end if
                      call h5sclose_f(memspace,hdferr)
                      if (hdferr /= 0) then
                         call fatal_error('Could not close the hyperslabs memspace'         &
                                         ,'h5_output','h5_output.F90')
                      end if
+                  elseif (verbose) then
+                     write (unit=*,fmt='(a)') '          + Length 0, skipping...'
                   end if
                end do pointerloop
                !---------------------------------------------------------------------------!
 
+               if (verbose) write (unit=*,fmt='(a)') '      #  Close dataset...'
                call h5dclose_f(dset_id,hdferr)
                if (hdferr /= 0) then
-                  call fatal_error('Could not get the dataset','h5_output','h5_output.F90')
+                  call fatal_error('Could not close dataset','h5_output','h5_output.F90')
                end if
-              
+            elseif (verbose) then
+               write (unit=*,fmt='(a,1x,a)')                                               &
+                      '      # Skipping variable:',trim(varn)                              &
+                             ,', as it doesn''t belong to this file...'
             end if
          end do varloop
          !---------------------------------------------------------------------------------!
 
+         if (verbose) write (unit=*,fmt='(a)') '    > Closing file...'
          call h5fclose_f(file_id,hdferr)
          if (hdferr /= 0) then
             call fatal_error('Could not close the file','h5_output','h5_output.F90')
          end if
         
+         if (verbose) write (unit=*,fmt='(a)') '    > Closing HDF5 environment...'
          call h5close_f(hdferr)
          if (hdferr /= 0) then
             call fatal_error('Could not close the hdf environment'                         &
                             ,'h5_output','h5_output.F90')
          end if
+         if (verbose) write (unit=*,fmt='(a)') '    > Success!'
 
          new_file = .false.
+      elseif (verbose) then
+         write (unit=*,fmt='(a)') '    > No polygons in this node... '
       end if
       !------------------------------------------------------------------------------------!
 
@@ -723,7 +842,6 @@ subroutine geth5dims(idim_type,varlen,globid,var_len_global,dsetrank,varn,nrec,i
                                  , stride         & ! intent(in)
                                  , globdims       ! ! intent(in)
    use fusion_fission_coms, only : ff_nhgt        ! ! intent(in)
-   use c34constants       , only : n_stoma_atts   ! ! intent(in)
    use ed_misc_coms       , only : ndcycle        ! ! intent(in)
 
    implicit none
@@ -1171,23 +1289,6 @@ subroutine geth5dims(idim_type,varlen,globid,var_len_global,dsetrank,varn,nrec,i
       cnt(1:3)      = 1_8
       stride(1:3)   = 1_8
 
-  case (316) ! (n_stoma_atts,n_pft,npatches)
-
-      dsetrank = 3
-      globdims(1) = int(n_stoma_atts,8)
-      chnkdims(1) = int(n_stoma_atts,8)
-      chnkoffs(1) = 0_8
-      
-      globdims(2) = int(n_pft,8)
-      chnkdims(2) = int(n_pft,8)
-      chnkoffs(2) = 0_8
-
-      globdims(3) = int(var_len_global,8)
-      chnkdims(3) = int(varlen,8)
-      chnkoffs(3) = int(globid,8)
-      cnt(1:3)      = 1_8
-      stride(1:3)   = 1_8
-      
 
    case (36) !(n_dbh,npatches)
       

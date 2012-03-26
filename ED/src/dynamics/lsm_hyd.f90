@@ -106,15 +106,15 @@ subroutine initHydroSubsurface()
   use grid_coms, only: ngrids,nzg
   use ed_misc_coms, only: dtlsm
   use ed_state_vars, only: edgrid_g,edtype,polygontype,sitetype
-  use consts_coms, only: wdns,cicevlme,tsupercool,t3ple,cliqvlme
- use therm_lib, only: qwtk
+  use consts_coms, only: wdns,t3ple
+  use therm_lib, only: uextcm2tl, cmtl2uext
   implicit none
 
   type(edtype)      , pointer :: cgrid
   type(polygontype) , pointer :: cpoly
   type(sitetype)    , pointer :: csite
   integer :: igr, ipy, isi, ipa, k,  nsoil,slsl
-  real :: zbar_site,area_poly,zmin
+  real :: zbar_site,area_poly,zmin,fliq
   !! SEE calcHydroSubsurface for variable definitions
 
   if(useTOPMODEL == 0) return
@@ -179,18 +179,18 @@ subroutine initHydroSubsurface()
               end do
               !! reset energy
               do k = cpoly%lsl(isi),nzg
-                 if(csite%soil_tempk(k,ipa) > t3ple)then
-                    csite%soil_energy(k,ipa)  = soil(nsoil)%slcpd                       &
-                                              * csite%soil_tempk(k,ipa)                 &
-                                              + csite%soil_water(k,ipa)  * cliqvlme     &
-                                              * (csite%soil_tempk(k,ipa) - tsupercool)
+                 if (csite%soil_tempk(k,ipa) > t3ple) then
+                    fliq = 1.0
+                 elseif (csite%soil_tempk(k,ipa) < t3ple) then
+                    fliq = 0.0
                  else
-                    csite%soil_energy(k,ipa) = soil(nsoil)%slcpd                        &
-                                             * csite%soil_tempk(k,ipa)                  &
-                                             + csite%soil_water(k,ipa)                  &
-                                             * cicevlme * csite%soil_tempk(k,ipa)
+                    fliq = 0.5
                  end if
 
+                 csite%soil_energy(k,ipa)  = cmtl2uext( soil(nsoil)%slcpd                  &
+                                                      , csite%soil_water(k,ipa)  * wdns    &
+                                                      , csite%soil_tempk(k,ipa)            &
+                                                      , fliq                               )
               end do
               call calcWatertable(cpoly,isi,ipa)
            enddo
@@ -218,7 +218,7 @@ subroutine calcHydroSubsurface()
   use soil_coms, only: soil,slz,dslz
   use grid_coms, only: ngrids,nzg
   use ed_misc_coms, only: dtlsm
-  use therm_lib, only: qtk,qwtk
+  use therm_lib, only: uint2tl,uextcm2tl
   use consts_coms, only: wdns
   implicit none
 
@@ -344,7 +344,7 @@ subroutine calcHydroSubsurface()
         !! Compute mean temperature and liquid fraction of soil water              !!
         !! soil water converted from m3 -> kg                                      !!
         !!*************************************************************************!!
-        call qwtk(soil_sat_energy,soil_sat_water*wdns,soil_sat_heat,tempk,fracliqtotal)
+        call uextcm2tl(soil_sat_energy,soil_sat_water*wdns,soil_sat_heat,tempk,fracliqtotal)
 
 
         !!*************************************************************************!!
@@ -445,7 +445,7 @@ subroutine calcHydroSubsurface()
            !!**********************************************************************!!
            !! temperature and liquid fraction of water in flux                     !!
            !!**********************************************************************!!
-           call qtk(sheat/1000.0,tempk,fracliq)
+           call uint2tl(sheat/1000.0,tempk,fracliq)
 
            !!**********************************************************************!!
            !! Next, add water to other patches                                     !!
@@ -687,7 +687,7 @@ subroutine updateWatertableAdd(cpoly,isi,ipa,dw,sheat)
   use ed_state_vars, only: sitetype,polygontype
   use soil_coms, only: soil,slz,dslz,dslzi
   use grid_coms, only: nzg
-  use therm_lib, only: qwtk
+  use therm_lib, only: uextcm2tl
   use consts_coms, only: wdns
   implicit none
   type(polygontype) , target        :: cpoly
@@ -759,7 +759,7 @@ subroutine updateWatertableAdd(cpoly,isi,ipa,dw,sheat)
          !!***********************************************************************!!
          !!  update soil temperature and liquid fraction                          !!
          !!***********************************************************************!!
-         call qwtk(csite%soil_energy(k,ipa),csite%soil_water(k,ipa)*wdns            &
+         call uextcm2tl(csite%soil_energy(k,ipa),csite%soil_water(k,ipa)*wdns            &
                    ,soil(nsoil)%slcpd,tempk,fracliq)
          csite%soil_tempk(k,ipa) = tempk
          csite%soil_fracliq(k,ipa) = fracliq
@@ -835,10 +835,10 @@ subroutine updateWatertableSubtract(cpoly,isi,ipa,dz,sheat,swater)
    use hydrology_constants
    use hydrology_coms, only: MoistSatThresh
    use ed_state_vars,  only: polygontype, sitetype 
-   use consts_coms, only : cliqvlme,wdns,tsupercool
+   use consts_coms, only : wdns
    use soil_coms, only: soil,slz,dslz,dslzi
    use grid_coms, only: nzg
-   use therm_lib, only : qwtk
+   use therm_lib, only : uextcm2tl,tl2uint
 
    implicit none
    type(polygontype), target      :: cpoly
@@ -893,7 +893,7 @@ subroutine updateWatertableSubtract(cpoly,isi,ipa,dz,sheat,swater)
 
    !!work down from saturation layer, removing water & heat
    do while (k >= cpoly%lsl(isi))
-      call qwtk(csite%soil_energy(k,ipa),csite%soil_water(k,ipa)*1.e3,soil(nsoil)%slcpd,tempk,fracliq)
+      call uextcm2tl(csite%soil_energy(k,ipa),csite%soil_water(k,ipa)*1.e3,soil(nsoil)%slcpd,tempk,fracliq)
       !capacity for layer to loose moisture (unit = meters)
       wcap = (fracw - soil(nsoil)%soilcp/soil(nsoil)%slmsts) * dslz(k)*fracliq 
 
@@ -923,7 +923,7 @@ subroutine updateWatertableSubtract(cpoly,isi,ipa,dz,sheat,swater)
          endif
          
          !!update soil heat
-         dh = dw*cliqvlme*(tempk-tsupercool)
+         dh = dw * wdns * tl2uint(tempk,1.0)
          csite%soil_energy(k,ipa) = csite%soil_energy(k,ipa) + dh
          sheat = sheat - dh*dslz(k)   !cumulative sum as return value
          swater = swater - dw*dslz(k)
@@ -934,7 +934,7 @@ subroutine updateWatertableSubtract(cpoly,isi,ipa,dz,sheat,swater)
          
          
          !!update soil temperature
-         call qwtk(csite%soil_energy(k,ipa),csite%soil_water(k,ipa)*wdns               &
+         call uextcm2tl(csite%soil_energy(k,ipa),csite%soil_water(k,ipa)*wdns               &
               ,soil(nsoil)%slcpd,tempk,fracliq)
          csite%soil_tempk(k,ipa) = tempk
          csite%soil_fracliq(k,ipa) = fracliq
@@ -965,8 +965,8 @@ subroutine updateWatertableBaseflow(cpoly,isi,ipa,baseflow)
    use ed_state_vars, only: polygontype, sitetype
    use soil_coms, only: soil,slz,dslz,dslzi,slcons1
    use ed_misc_coms, only: dtlsm
-   use consts_coms, only: cliqvlme, tsupercool
-   use therm_lib, only : qwtk
+   use consts_coms, only: wdns
+   use therm_lib, only : uextcm2tl,tl2uint
    implicit none
 
    real, parameter :: freezeCoef = 7.0        !! should probably move to the com
@@ -986,7 +986,7 @@ subroutine updateWatertableBaseflow(cpoly,isi,ipa,baseflow)
    nsoil = cpoly%ntext_soil(slsl,isi)
 
    !! determine freeze
-   call qwtk(csite%soil_energy(slsl,ipa),csite%soil_water(slsl,ipa)*1.e3,soil(nsoil)%slcpd,tempk,fracliq)
+   call uextcm2tl(csite%soil_energy(slsl,ipa),csite%soil_water(slsl,ipa)*1.e3,soil(nsoil)%slcpd,tempk,fracliq)
    freezeCor = fracliq
    if(freezeCor .lt. 1.0) freezeCor = 10.0**(-freezeCoef*(1.0-freezeCor))
 
@@ -1012,7 +1012,8 @@ subroutine updateWatertableBaseflow(cpoly,isi,ipa,baseflow)
       bf = bf + (csite%soil_water(slsl,ipa)-soil(nsoil)%soilcp)*dslz(slsl)
       csite%soil_water(slsl,ipa) = soil(nsoil)%soilcp
    end if
-   csite%soil_energy(slsl,ipa) = csite%soil_energy(slsl,ipa)-bf*cliqvlme*(csite%soil_tempk(slsl,ipa)-tsupercool)
+   csite%soil_energy(slsl,ipa) = csite%soil_energy(slsl,ipa) &
+                               - bf*wdns*tl2uint(csite%soil_tempk(slsl,ipa),1.0)
 
    if(csite%soil_energy(slsl,ipa) /= csite%soil_energy(slsl,ipa)) then
                     call fatal_error('Failed soil_energy sanity check in lsm_hyd' &
@@ -1052,7 +1053,7 @@ subroutine writeHydro()
   use soil_coms           , only : dslzi
   use ed_node_coms        , only : mynum
   use consts_coms         , only : t00
-  use therm_lib           , only : qtk
+  use therm_lib           , only : uint2tl
 
   implicit none
   type(edtype)      , pointer          :: cgrid                              !Alias for "Current ED grid structure"
@@ -1114,7 +1115,7 @@ subroutine writeHydro()
            area_land = 0.0
 
            !calc temperature and liquid fraction of water in flux
-           call qtk(cgrid%sheat(ipy)*0.001,tempk,fracliq)
+           call uint2tl(cgrid%sheat(ipy)*0.001,tempk,fracliq)
 
            siteloop: do isi=1,cpoly%nsites
 
@@ -1134,7 +1135,7 @@ subroutine writeHydro()
                if(useRUNOFF == 0) cgrid%runoff(ipy) = cgrid%runoff(ipy) + cpoly%area(isi)*cpoly%runoff(isi)
                area_land = area_land + cpoly%area(isi)
                if(isi == cpoly%nsites .and. useRUNOFF == 0) cgrid%runoff(ipy) = cgrid%runoff(ipy)/area_land
-               if(cpoly%runoff(isi) > 0.0) call qtk(cpoly%avg_runoff_heat(isi)/cpoly%runoff(isi),runoff_t,runoff_fl)
+               if(cpoly%runoff(isi) > 0.0) call uint2tl(cpoly%avg_runoff_heat(isi)/cpoly%runoff(isi),runoff_t,runoff_fl)
 
                do ipa=1,csite%npatches
 
@@ -1205,9 +1206,9 @@ subroutine calcHydroSurface()
   use grid_coms, only: ngrids, nzg
   use ed_misc_coms, only: dtlsm
   use grid_coms,only:ngrids
-  use consts_coms, only : cliqvlme,cliq,t3ple,qicet3,qliqt3,tsupercool
+  use consts_coms, only : wdns,t3ple,uiicet3,uiliqt3
   use soil_coms, only: water_stab_thresh
-  use therm_lib, only: qtk
+  use therm_lib, only: uint2tl,tl2uint
   implicit none
   type(edtype)       , pointer :: cgrid
   type(polygontype)  , pointer :: cpoly
@@ -1262,17 +1263,17 @@ subroutine calcHydroSurface()
               top_surf_water = csite%nlev_sfcwater(ipa)
               if(top_surf_water > 0) then
                  !second check that some is liquid
-                 call qtk(csite%sfcwater_energy(top_surf_water,ipa),tempk,fracliq)
+                 call uint2tl(csite%sfcwater_energy(top_surf_water,ipa),tempk,fracliq)
                  if(fracliq > FracLiqRunoff) then
                     !! calculate water depth
                     swd_i = csite%sfcwater_mass(top_surf_water,ipa)*0.001*fracliq !convert liquid fraction from kg to meters
                     surf_water_depth = swd_i
-                    surf_water_heat = swd_i*cliqvlme*(tempk-tsupercool)
+                    surf_water_heat = swd_i*wdns * tl2uint(tempk,1.0)
                     do i=(top_surf_water-1),1,-1
-                       call qtk(csite%sfcwater_energy(i,ipa),tempk,fracliq)
+                       call uint2tl(csite%sfcwater_energy(i,ipa),tempk,fracliq)
                        swd_i = csite%sfcwater_mass(top_surf_water,ipa)*0.001*fracliq
                        surf_water_depth = surf_water_depth + swd_i
-                       surf_water_heat = surf_water_heat + swd_i*cliqvlme*(tempk-tsupercool)
+                       surf_water_heat = surf_water_heat + swd_i*wdns*tl2uint(tempk,1.0)
                     end do
                     !!sanity check
                     if(surf_water_depth > 1.0) then  !!if there's more than 1 m of standing water
@@ -1354,7 +1355,7 @@ subroutine calcHydroSurface()
               surf_water_depth = 0.0
               top_surf_water = csite%nlev_sfcwater(ipa)
               do i=1,top_surf_water
-                 call qtk(csite%sfcwater_energy(i,ipa),tempk,fracliq)
+                 call uint2tl(csite%sfcwater_energy(i,ipa),tempk,fracliq)
                  hts(i) = csite%sfcwater_mass(i,ipa)*0.001*fracliq
                  surf_water_depth = surf_water_depth + hts(i)
               end do
@@ -1395,7 +1396,7 @@ subroutine calcHydroSurface()
                     !!if surface water is too small, keep in equilibrium with soil
                     if(csite%sfcwater_mass(i,ipa) < water_stab_thresh   &
                          .and. i == 1) then
-                       csite%sfcwater_energy(i,ipa) = cliq * (csite%soil_tempk(nzg,ipa)-tsupercool)
+                       csite%sfcwater_energy(i,ipa) = tl2uint(csite%soil_tempk(nzg,ipa),1.0)
                     end if
                  end if
                  !! if sfcwater_depth < amount of water, set to water depth
@@ -1403,8 +1404,8 @@ subroutine calcHydroSurface()
                     csite%sfcwater_depth(i,ipa) = csite%sfcwater_mass(i,ipa)*0.001
                  end if
                  !! if sfcwater_energy < 0, set to freezing
-                 if(csite%sfcwater_energy(i,ipa) < qicet3) then
-                    csite%sfcwater_energy(i,ipa) = qliqt3
+                 if(csite%sfcwater_energy(i,ipa) < uiicet3) then
+                    csite%sfcwater_energy(i,ipa) = uiliqt3
                  end if
                  !!check for NaN
                  if(csite%sfcwater_energy(i,ipa) /= csite%sfcwater_energy(i,ipa))then
@@ -1548,7 +1549,7 @@ end subroutine calcHydroSurface
 !!!!!!   use ed_misc_coms, only: dtlsm
 !!!!!!   use ed_node_coms, only: master_num
 !!!!!!   use const_coms, only : g, 
-!!!!!!   use therm_lib, only: qtk
+!!!!!!   use therm_lib, only: uint2tl
 !!!!!!   implicit none
 !!!!!!   include "mpif.h"
 !!!!!!   type(plist),dimension(ngrids) :: polygon_list
@@ -1622,17 +1623,17 @@ end subroutine calcHydroSurface
 !!!!!!         top_surf_water = cpatch%nlev_sfcwater
 !!!!!!         if(top_surf_water .gt. 0) then
 !!!!!!            !second check that some is liquid
-!!!!!!            call qtk(cpatch%sfcwater_energy(top_surf_water),tempk,fracliq)
+!!!!!!            call uint2tl(cpatch%sfcwater_energy(top_surf_water),tempk,fracliq)
 !!!!!!            if(fracliq .gt. FracLiqRunoff) then
 !!!!!!               !! water depth
 !!!!!!               swd_i = cpatch%sfcwater_mass(top_surf_water)*0.001*fracliq
 !!!!!!               surf_water_depth = swd_i
-!!!!!!               surf_water_heat = swd_i*cliqvlme*(tempk-tsupercool)
+!!!!!!               surf_water_heat = swd_i*wdns*tl2uint(tempk,1.0)
 !!!!!!               do i=(top_surf_water-1),1,-1
-!!!!!!                  call qtk(cpatch%sfcwater_energy(i),tempk,fracliq)
+!!!!!!                  call uint2tl(cpatch%sfcwater_energy(i),tempk,fracliq)
 !!!!!!                  swd_i = cpatch%sfcwater_mass(top_surf_water)*0.001*fracliq
 !!!!!!                  surf_water_depth = surf_water_depth + swd_i
-!!!!!!                  surf_water_heat = surf_water_heat + swd_i*cliqvlme*(tempk-tsupercool)
+!!!!!!                  surf_water_heat = surf_water_heat + swd_i*wdns*tl2uint(tempk,1.0)
 !!!!!!               enddo
 !!!!!!               
 !!!!!!               !! calculate flow velocity (m/s)                 
@@ -1715,7 +1716,7 @@ end subroutine calcHydroSurface
 !!!!!!         top_surf_water = cpatch%nlev_sfcwater
 !!!!!!         !!compute fraction to distribute to each layer
 !!!!!!         do i=1,top_surf_water
-!!!!!!            call qtk(cpatch%sfcwater_energy(i),tempk,fracliq)
+!!!!!!            call uint2tl(cpatch%sfcwater_energy(i),tempk,fracliq)
 !!!!!!            hts(i) = cpatch%sfcwater_mass(i)*0.001*fracliq
 !!!!!!            surf_water_depth =  surf_water_depth + hts(i)
 !!!!!!         enddo
@@ -1744,7 +1745,7 @@ end subroutine calcHydroSurface
 !!!!!!            else
 !!!!!!               !!if surface water is too small, keep in equilibrium with soil
 !!!!!!               if(cpatch%sfcwater_mass(i) .lt. water_stab_thresh .and. i .eq. 1) then
-!!!!!!                  cpatch%sfcwater_energy(i) = cliq*(cpatch%soil_tempk(nzg)-tsupercool)
+!!!!!!                  cpatch%sfcwater_energy(i) = tl2uint(cpatch%soil_tempk(nzg),1.0)
 !!!!!!               endif
 !!!!!!            endif
 !!!!!!            if(cpatch%sfcwater_depth(i) .lt. cpatch%sfcwater_mass(i)*0.001) then

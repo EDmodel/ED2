@@ -154,6 +154,10 @@ SUBROUTINE COMMIO (CFILE,IO,IUN)
   ie=cio_i_sca(iun,irw,'itime1',itime1,1)
   ie=cio_i_sca(iun,irw,'isfcl',isfcl,1)
   ie=cio_i_sca(iun,irw,'istar',istar,1)
+  myiyear1  = iyear1
+  myimonth1 = imonth1
+  myidate1  = idate1
+  myitime1  = itime1
 
   ie=cio_f_sca(iun,irw,'ubmin',ubmin,1)
   ie=cio_f_sca(iun,irw,'ugbmin',ugbmin,1)

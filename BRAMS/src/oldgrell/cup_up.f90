@@ -55,7 +55,7 @@ end subroutine cup_up_he
 subroutine cup_up_moisture(ierr,z_cup,qc,qrc,pw,pwav,kbcon,ktop,mix,mgmxp,mkx  &
                           ,mgmzp,istart,iend,cd,dby,mentr_rate,q,GAMMA_cup,zu  &
                           ,qes_cup,k22,qe_cup)
-  use rconstants, only : alvl
+  use rconstants, only : alvl3
   implicit none
   ! cd= detrainment function 
   ! q = environmental q on model levels
@@ -119,7 +119,7 @@ subroutine cup_up_moisture(ierr,z_cup,qc,qrc,pw,pwav,kbcon,ktop,mix,mgmxp,mkx  &
              DZ*Q(i,K-1))/(1.+mentr_rate*DZ-.5*cd(i,k)*dz)
 
         !--- Saturation  in cloud, this is what is allowed to be in it
-        QRCH=QES_cup(I,K)+(1./alvl)*(GAMMA_cup(i,k)/(1.+GAMMA_cup(i,k)))*DBY(I,K)
+        QRCH=QES_cup(I,K)+(1./alvl3)*(GAMMA_cup(i,k)/(1.+GAMMA_cup(i,k)))*DBY(I,K)
 
         !--- Liquid water content in cloud after rainout
         QRC(I,K)=(QC(I,K)-QRCH)/(1.+C0*DZ)
@@ -182,7 +182,7 @@ end subroutine cup_up_nms
 !----------------------------------------------------------------------
 subroutine cup_up_aa0(aa0,z,zu,dby,GAMMA_CUP,t_cup,kbcon,ktop,mix,mgmxp,mkx    &
                      ,mgmzp,istart,iend,ierr)
-  use rconstants, only : grav, cp
+  use rconstants, only : grav, cpdry
   implicit none
   integer                         :: i,k,mix,mgmxp,mkx,mgmzp,istart,iend
   integer, dimension(mgmxp)       :: kbcon,ktop,ierr
@@ -198,7 +198,7 @@ subroutine cup_up_aa0(aa0,z,zu,dby,GAMMA_CUP,t_cup,kbcon,ktop,mix,mgmxp,mkx    &
         if (K.le.KBCON(I)) cycle
         if (K.gt.KTOP(I))  cycle
         DZ = Z(I,K)-Z(I,K-1)
-        da = zu(i,k)*DZ*(grav/(cp*((T_cup(I,K)))))*DBY(I,K-1)/  &
+        da = zu(i,k)*DZ*(grav/(cpdry*((T_cup(I,K)))))*DBY(I,K-1)/  &
              (1.+GAMMA_CUP(I,K))
         if (K.eq.KTOP(I).and.da.le.0.) cycle
         AA0(I)=AA0(I)+da

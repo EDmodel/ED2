@@ -77,7 +77,7 @@ subroutine dry_dep(ngrid,m1,m2,m3,npatch,ia,iz,ja,jz,jdim,dt       &
      ,ustar,tstar,patch_area,veg,Z0m	                           &
      ,v_dep_pm25, maxgrds,dzt,zt,nzpmax,naddsc                     )
 
-  USE rconstants         ,  ONLY :  cpi,cpor,p00
+  USE rconstants         ,  ONLY :  cpdryi,cpor,p00
   USE mem_scalar         ,  ONLY :  scalar_g
 
   IMPLICIT NONE
@@ -132,7 +132,7 @@ subroutine dry_dep(ngrid,m1,m2,m3,npatch,ia,iz,ja,jz,jdim,dt       &
   do j = ja,jz
      do i = ia,iz
         rvs  (i,j) = rv(2,i,j)
-        pis        = (pp(1,i,j) + pp(2,i,j) + pi0(1,i,j) + pi0(2,i,j))*.5 * cpi
+        pis        = (pp(1,i,j) + pp(2,i,j) + pi0(1,i,j) + pi0(2,i,j))*.5 * cpdryi
         prss (i,j) = pis ** cpor * p00                                               
         dens (i,j) = ( dn0(1,i,j) + dn0(2,i,j) ) * .5
         temps(i,j) = theta(2,i,j) * pis        ! temps=theta*Exner/CP
@@ -322,7 +322,7 @@ end subroutine sedim_particles
 subroutine lsl_particles(m2,m3,npatch,ia,iz,ja,jz           &
      ,temps,dens,vels,rvs,Zi,ustar,tstar,patch_area,veg,Z0m &
      ,v_sed,r_lsl)
-  use rconstants, only: t00, vonk,cp,pi1,grav,boltzmann
+  use rconstants, only: t00, vonk,cpdry,pi1,grav,boltzmann
   use leaf_coms, only : min_patch_area
   implicit none
   REAL,PARAMETER :: ASP = 1.257          ! 1.249
@@ -425,12 +425,12 @@ subroutine lsl_particles(m2,m3,npatch,ia,iz,ja,jz           &
                     !- thermal conductivity of dry air (Kd)
                     Kd = 0.023807 + 7.1128e-5*(temps(i,j) - t00) !- Eq.(2.3) 
                     !- Prandt number
-                    Pr =  n_air*Cp*(1.+0.859*rvs(i,j))/Kd           !- Eq.(17.32)  
+                    Pr =  n_air*cpdry*(1.+0.859*rvs(i,j))/Kd           !- Eq.(17.32)  
                     
                     !- energy moisture roughness lengths (Z0h)                
                     !- Eq.(8.10)
                     !-- molecular thermal diffusion coeff. (m^2 s^-1)
-                    Dh=Kd/(dens(i,j)*Cp)
+                    Dh=Kd/(dens(i,j)*cpdry)
                     !- Z0h	   
                     Z0h=Dh/(vonK*ustar(i,j,ipatch))
 

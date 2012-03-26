@@ -4,7 +4,8 @@
 ! conditions plus some soil parameters.                                                    !
 !------------------------------------------------------------------------------------------!
 subroutine ed_init_atm()
-   use ed_misc_coms          , only : runtype           ! ! intent(in)
+   use ed_misc_coms          , only : runtype           & ! intent(in)
+                                    , ibigleaf          ! ! intent(in)
    use ed_state_vars         , only : edtype            & ! structure
                                     , polygontype       & ! structure
                                     , sitetype          & ! structure
@@ -16,18 +17,13 @@ subroutine ed_init_atm()
                                     , slmstr            & ! intent(in)
                                     , stgoff            & ! intent(in)
                                     , ed_soil_idx2water ! ! intent(in)
-   use consts_coms           , only : tsupercool        & ! intent(in)
-                                    , cliqvlme          & ! intent(in)
-                                    , cicevlme          & ! intent(in)
-                                    , t3ple             & ! intent(in)
-                                    , cp                & ! intent(in)
-                                    , alvl              & ! intent(in)
-                                    , p00i              & ! intent(in)
-                                    , rocp              ! ! intent(in)
+   use consts_coms           , only : wdns              & ! intent(in)
+                                    , t3ple             ! ! intent(in)
    use grid_coms             , only : nzs               & ! intent(in)
                                     , nzg               & ! intent(in)
                                     , ngrids            ! ! intent(in)
    use fuse_fiss_utils       , only : fuse_patches      & ! subroutine
+                                    , rescale_patches   & ! subroutine
                                     , fuse_cohorts      & ! subroutine
                                     , terminate_cohorts & ! subroutine
                                     , split_cohorts     ! ! subroutine
@@ -40,8 +36,11 @@ subroutine ed_init_atm()
                                     , ed_grndvap        ! ! subroutine
    use therm_lib             , only : thetaeiv          & ! function
                                     , idealdenssh       & ! function
-                                    , rslif             & ! function
-                                    , reducedpress      ! ! function
+                                    , qslif             & ! function
+                                    , reducedpress      & ! function
+                                    , press2exner       & ! function
+                                    , extheta2temp      & ! function
+                                    , cmtl2uext         ! ! function
    use met_driver_coms       , only : met_driv_state    ! ! structure
    use canopy_struct_dynamics, only : canopy_turbulence ! ! subroutine
    implicit none
@@ -71,6 +70,7 @@ subroutine ed_init_atm()
    real                           :: poly_nplant
    real                           :: elim_nplant
    real                           :: elim_lai
+   real                           :: can_exner
    real                           :: rvaux
    !----- Add the MPI common block. -------------------------------------------------------!
    include 'mpif.h'
@@ -120,11 +120,14 @@ subroutine ed_init_atm()
                csite%can_prss (ipa) = reducedpress(cmet%prss,cmet%atm_theta,cmet%atm_shv   &
                                                   ,cmet%geoht,csite%can_theta(ipa)         &
                                                   ,csite%can_shv(ipa),csite%can_depth(ipa))
-               csite%can_temp (ipa) = csite%can_theta(ipa)                                 &
-                                    * (p00i *csite%can_prss(ipa)) ** rocp
+               can_exner            = press2exner(csite%can_prss(ipa))
+               csite%can_temp (ipa) = extheta2temp(can_exner,csite%can_theta(ipa))
+               csite%can_temp_pv(ipa)=csite%can_temp(ipa)
                rvaux                = csite%can_shv(ipa) / (1. - csite%can_shv(ipa))
+               
+
                csite%can_theiv(ipa) = thetaeiv(csite%can_theta(ipa),csite%can_prss(ipa)    &
-                                              ,csite%can_temp(ipa),rvaux,rvaux,-10)
+                                              ,csite%can_temp(ipa),rvaux,rvaux)
                csite%can_rhos (ipa) = idealdenssh(csite%can_prss(ipa)                      &
                                                  ,csite%can_temp(ipa),csite%can_shv(ipa))
 
@@ -146,22 +149,37 @@ subroutine ed_init_atm()
                   ! thermal equilibrium with the canopy air space and no intercepted       !
                   ! water sitting on top of leaves and branches.                           !
                   !------------------------------------------------------------------------!
-                  cpatch%leaf_temp   (ico) = csite%can_temp(ipa)
-                  cpatch%leaf_fliq   (ico) = 0.0
                   cpatch%leaf_water  (ico) = 0.0
-                  cpatch%wood_temp   (ico) = csite%can_temp(ipa)
-                  cpatch%wood_fliq   (ico) = 0.0
                   cpatch%wood_water  (ico) = 0.0
+                  cpatch%leaf_temp   (ico) = csite%can_temp(ipa)
+                  cpatch%wood_temp   (ico) = csite%can_temp(ipa)
+                  cpatch%leaf_temp_pv (ico) = csite%can_temp_pv(ipa)
+                  cpatch%wood_temp_pv (ico) = csite%can_temp_pv(ipa)
+                  if (csite%can_temp(ipa) == t3ple) then
+                     cpatch%leaf_fliq   (ico) = 0.5
+                     cpatch%wood_fliq   (ico) = 0.5
+                  elseif (csite%can_temp(ipa) > t3ple) then
+                     cpatch%leaf_fliq   (ico) = 1.0
+                     cpatch%wood_fliq   (ico) = 1.0
+                  else
+                     cpatch%leaf_fliq   (ico) = 0.0
+                     cpatch%wood_fliq   (ico) = 0.0
+                  end if
                   
                   
-                  call calc_veg_hcap(cpatch%bleaf(ico),cpatch%bdead(ico)                   &
-                                    ,cpatch%bsapwood(ico),cpatch%nplant(ico)               &
-                                    ,cpatch%pft(ico)                                       &
-                                    ,cpatch%leaf_hcap(ico),cpatch%wood_hcap(ico) )
+                  call calc_veg_hcap( cpatch%bleaf     (ico) , cpatch%bdead    (ico)       &
+                                    , cpatch%bsapwood  (ico) , cpatch%nplant   (ico)       &
+                                    , cpatch%pft       (ico) , cpatch%leaf_hcap(ico)       &
+                                    , cpatch%wood_hcap (ico) )
 
-                  cpatch%leaf_energy (ico) = cpatch%leaf_hcap(ico) * cpatch%leaf_temp(ico)
-                  cpatch%wood_energy (ico) = cpatch%wood_hcap(ico) * cpatch%wood_temp(ico)
-
+                  cpatch%leaf_energy (ico) = cmtl2uext( cpatch%leaf_hcap   (ico)           &
+                                                      , cpatch%leaf_water  (ico)           &
+                                                      , cpatch%leaf_temp   (ico)           &
+                                                      , cpatch%leaf_fliq   (ico) )
+                  cpatch%wood_energy (ico) = cmtl2uext( cpatch%wood_hcap   (ico)           &
+                                                      , cpatch%wood_water  (ico)           &
+                                                      , cpatch%wood_temp   (ico)           &
+                                                      , cpatch%wood_fliq   (ico) )
 
                   call is_resolvable(csite,ipa,ico,cpoly%green_leaf_factor(:,isi))
 
@@ -173,11 +191,14 @@ subroutine ed_init_atm()
                   cpatch%lint_co2_open(ico)   = cmet%atm_co2
                   cpatch%lint_co2_closed(ico) = cmet%atm_co2
                   !------------------------------------------------------------------------!
+
+
+                  !------------------------------------------------------------------------!
                   !      The intercellular specific humidity is assumed to be at           !
                   ! saturation.                                                            !
                   !------------------------------------------------------------------------!
-                  cpatch%lint_shv(ico) = rslif(csite%can_prss(ipa),cpatch%leaf_temp(ico))
-                  cpatch%lint_shv(ico) = cpatch%lint_shv(ico) / (1. + cpatch%lint_shv(ico))
+                  cpatch%lint_shv(ico) = qslif(csite%can_prss(ipa),cpatch%leaf_temp(ico))
+                  !------------------------------------------------------------------------!
                end do cohortloop1
             end do patchloop1
          end do siteloop1
@@ -232,25 +253,33 @@ subroutine ed_init_atm()
                if (csite%soil_tempk(1,ipa) == -100.0 .or. isoilstateinit == 0) then
 
                   groundloop2: do k = 1, nzg
-                     csite%soil_tempk(k,ipa) = csite%can_temp(ipa) + stgoff(k)
+                     nsoil=cpoly%ntext_soil(k,isi)
 
+                     !----- Find the initial temperature. ---------------------------------!
+                     csite%soil_tempk(k,ipa) = csite%can_temp(ipa) + stgoff(k)
+                     !---------------------------------------------------------------------!
+
+                     !------ Find the soil liquid fraction based on the temperature. ------!
                      if (csite%soil_tempk(k,ipa) > t3ple) then
                         nsoil=cpoly%ntext_soil(k,isi)
                         csite%soil_fracliq(k,ipa) = 1.0
-                        csite%soil_water(k,ipa)   = ed_soil_idx2water(slmstr(k),nsoil)
-                        csite%soil_energy(k,ipa)  = soil(nsoil)%slcpd                      &
-                                                  * csite%soil_tempk(k,ipa)                &
-                                                  + csite%soil_water(k,ipa) * cliqvlme     &
-                                                  * (csite%soil_tempk(k,ipa) - tsupercool)
-                     else
-                        nsoil=cpoly%ntext_soil(k,isi)
+                     elseif (csite%soil_tempk(k,ipa) < t3ple) then
                         csite%soil_fracliq(k,ipa) = 0.0
-                        csite%soil_water(k,ipa)   = ed_soil_idx2water(slmstr(k),nsoil)
-                        csite%soil_energy(k,ipa)  = soil(nsoil)%slcpd                      &
-                                                  * csite%soil_tempk(k,ipa)                &
-                                                  + csite%soil_water(k,ipa)                &
-                                                  * cicevlme * csite%soil_tempk(k,ipa)
+                     else
+                        csite%soil_fracliq(k,ipa) = 0.5
                      end if
+                     !---------------------------------------------------------------------!
+
+
+                     !---------------------------------------------------------------------!
+                     !    Initialise soil moisture and internal energy.                    !
+                     !---------------------------------------------------------------------!
+                     csite%soil_water(k,ipa)   = ed_soil_idx2water(slmstr(k),nsoil)
+                     csite%soil_energy(k,ipa)  = cmtl2uext( soil(nsoil)%slcpd              &
+                                                          , csite%soil_water(k,ipa)*wdns   &
+                                                          , csite%soil_tempk(k,ipa)        &
+                                                          , csite%soil_fracliq(k,ipa)      )
+                     !---------------------------------------------------------------------!
                   end do groundloop2
 
                   !----- Initial condition is with no snow/pond. --------------------------!
@@ -310,51 +339,108 @@ subroutine ed_init_atm()
       call update_polygon_derived_props(cgrid)
 
       !----- Fuse similar patches to speed up the run. ------------------------------------!
-      call fuse_patches(cgrid,igr)
+      select case(ibigleaf)
+      case (0)
+         !---------------------------------------------------------------------------------!
+         !    Size and age structure.  Start by fusing similar patches.                    !
+         !---------------------------------------------------------------------------------!
+         call fuse_patches(cgrid,igr)
+         !---------------------------------------------------------------------------------!
 
-      !------------------------------------------------------------------------------------!
-      !    Loop over all polygons/sites/patches, and fuse/split/terminate cohorts as       !
-      ! needed.                                                                            !
-      !------------------------------------------------------------------------------------!
-      polyloop3: do ipy = 1,cgrid%npolygons
-         ncohorts     = 0
-         npatches     = 0
-         poly_lai     = 0.0
-         poly_nplant  = 0.0
 
-         cpoly => cgrid%polygon(ipy)
-         poly_area_i = 1./sum(cpoly%area(:))
+         !---------------------------------------------------------------------------------!
+         !    Loop over all polygons/sites/patches, and fuse/split/terminate cohorts as    !
+         ! needed.                                                                         !
+         !---------------------------------------------------------------------------------!
+         polyloop3: do ipy = 1,cgrid%npolygons
+            ncohorts     = 0
+            npatches     = 0
+            poly_lai     = 0.0
+            poly_nplant  = 0.0
 
-         siteloop3: do isi = 1,cpoly%nsites
-            csite => cpoly%site(isi)
-            site_area_i = 1./sum(csite%area(:))
+            cpoly => cgrid%polygon(ipy)
+            poly_area_i = 1./sum(cpoly%area(:))
 
-            patchloop3: do ipa = 1,csite%npatches
-               npatches = npatches + 1
-               cpatch => csite%patch(ipa)
+            siteloop3: do isi = 1,cpoly%nsites
+               csite => cpoly%site(isi)
+               site_area_i = 1./sum(csite%area(:))
 
-               if (cpatch%ncohorts > 0) then
-                  call fuse_cohorts(csite,ipa,cpoly%green_leaf_factor(:,isi),cpoly%lsl(isi))
-                  call terminate_cohorts(csite,ipa,elim_nplant,elim_lai)
-                  call split_cohorts(cpatch,cpoly%green_leaf_factor(:,isi), cpoly%lsl(isi))
-               end if
+               patchloop3: do ipa = 1,csite%npatches
+                  npatches = npatches + 1
+                  cpatch => csite%patch(ipa)
 
-               cohortloop3: do ico = 1,cpatch%ncohorts
-                  ncohorts=ncohorts+1
-                  poly_lai    = poly_lai + cpatch%lai(ico) * csite%area(ipa)               &
-                                         * cpoly%area(isi) * site_area_i * poly_area_i
-                  poly_nplant = poly_nplant + cpatch%nplant(ico) * csite%area(ipa)         &
+                  if (cpatch%ncohorts > 0) then
+                     call fuse_cohorts(csite,ipa,cpoly%green_leaf_factor(:,isi)            &
+                                      ,cpoly%lsl(isi))
+                     call terminate_cohorts(csite,ipa,elim_nplant,elim_lai)
+                     call split_cohorts(cpatch,cpoly%green_leaf_factor(:,isi)              &
+                                       ,cpoly%lsl(isi))
+                  end if
+
+                  cohortloop3: do ico = 1,cpatch%ncohorts
+                     ncohorts=ncohorts+1
+                     poly_lai    = poly_lai + cpatch%lai(ico) * csite%area(ipa)            &
                                             * cpoly%area(isi) * site_area_i * poly_area_i
-               end do cohortloop3
-            end do patchloop3
-         end do siteloop3
+                     poly_nplant = poly_nplant + cpatch%nplant(ico) * csite%area(ipa)      &
+                                               * cpoly%area(isi) * site_area_i             &
+                                               * poly_area_i
+                  end do cohortloop3
+               end do patchloop3
+            end do siteloop3
 
-         write(unit=*,fmt='(2(a,1x,i6,1x),2(a,1x,f9.4,1x),2(a,1x,f7.2,1x),2(a,1x,i4,1x))') &
-             'Grid:',igr,'Poly:',ipy,'Lon:',cgrid%lon(ipy),'Lat: ',cgrid%lat(ipy)          &
-            ,'Nplants:',poly_nplant,'Avg. LAI:',poly_lai                                   &
-            ,'NPatches:',npatches,'NCohorts:',ncohorts
-      end do polyloop3
+            write(unit = *                                                                 &
+                 ,fmt  = '(2(a,1x,i6,1x),2(a,1x,f9.4,1x),2(a,1x,f7.2,1x),2(a,1x,i4,1x))')  &
+                     'Grid:',igr,'Poly:',ipy,'Lon:',cgrid%lon(ipy),'Lat: ',cgrid%lat(ipy)  &
+                    ,'Nplants:',poly_nplant,'Avg. LAI:',poly_lai                           &
+                    ,'NPatches:',npatches,'NCohorts:',ncohorts
+         end do polyloop3
+         !---------------------------------------------------------------------------------!
+
+
+      case (1)
+         !---------------------------------------------------------------------------------!
+         !     Big leaf.  No need to do anything, just print the banner.                   !
+         !---------------------------------------------------------------------------------!
+         polyloop4: do ipy = 1,cgrid%npolygons
+            ncohorts     = 0
+            npatches     = 0
+            poly_lai     = 0.0
+            poly_nplant  = 0.0
+            
+            cpoly => cgrid%polygon(ipy)
+            poly_area_i = 1./sum(cpoly%area(:))
+            
+            siteloop4: do isi = 1,cpoly%nsites
+               csite => cpoly%site(isi)
+               site_area_i = 1./sum(csite%area(:))
+               
+               !call rescale_patches(csite)
+               
+               patchloop4: do ipa = 1,csite%npatches
+                  npatches = npatches + 1
+                  cpatch => csite%patch(ipa)
+               
+                  cohortloop4: do ico = 1,cpatch%ncohorts
+                     ncohorts=ncohorts+1
+                     poly_lai    = poly_lai + cpatch%lai(ico) * csite%area(ipa)            &
+                                         * cpoly%area(isi) * site_area_i * poly_area_i
+                     poly_nplant = poly_nplant + cpatch%nplant(ico) * csite%area(ipa)      &
+                                           * cpoly%area(isi) * site_area_i * poly_area_i
+                  end do cohortloop4
+               end do patchloop4
+            end do siteloop4
+            
+            write( unit = *                                                                &
+                 , fmt  = '(2(a,1x,i6,1x),2(a,1x,f9.4,1x),2(a,1x,f7.2,1x),2(a,1x,i4,1x))') &
+                'Grid:',igr,'Poly:',ipy,'Lon:',cgrid%lon(ipy),'Lat: ',cgrid%lat(ipy)       &
+               ,'Nplants:',poly_nplant,'Avg. LAI:',poly_lai                                &
+               ,'NPatches:',npatches,'NCohorts:',ncohorts
+            end do polyloop4
+         !---------------------------------------------------------------------------------!
+         end select
+      !------------------------------------------------------------------------------------!
    end do gridloop
+   !---------------------------------------------------------------------------------------!
 
    return
 end subroutine ed_init_atm

@@ -114,8 +114,8 @@ subroutine hydrol(m2,m3,mzg,mzs,np,maxpatch,ngrps          &
    ,slz,ig,jg,ipg,lpg,slmsts,zi,fa,wi,finv                 &
    ,rhow,rhowi,dtlt,slcons0,slcpd,wateradd,time)
 
-use rconstants, only: cliq,cliqvlme, alli, wdns,wdnsi, tsupercool
-use therm_lib, only: qwtk,qtk
+use rconstants, only: wdns,wdnsi
+use therm_lib, only: uextcm2tl,uint2tl,tl2uint
 implicit none
 integer :: m2,m3,mzg,mzs,np,maxpatch,ngrps,ngd,i,j,k,lp,l,ip,nsoil,ibotpatch
 integer, dimension(*) :: ig,jg,lpg
@@ -204,7 +204,7 @@ do ngd = 1,ngrps
 
    enddo
 
-   call qwtk(energysum,watersum*wdns,slcpdsum,tempktopm,fracliq)
+   call uextcm2tl(energysum,watersum*wdns,slcpdsum,tempktopm,fracliq)
 
 !  If there is no saturated water or if saturated soil is more than half
 !  frozen, skip over soil hydrology.
@@ -242,15 +242,15 @@ do ngd = 1,ngrps
       if (wateradd(l) .lt. 0.) then
          ip = ipg(l,ngd)
          nsoil = nint(soil_text(ksat(l),i,j,ip))
-         call qwtk(soil_energy(ksat(l),i,j,ip)  &
+         call uextcm2tl(soil_energy(ksat(l),i,j,ip)  &
                   ,soil_water (ksat(l),i,j,ip)*wdns  &
                   ,slcpd(nsoil),tempk,fracliq)
          delta_water = wateradd(l) / (slz(ksat(l)+1) - slz(ksat(l)))
          soil_water(ksat(l),i,j,ip) = soil_water(ksat(l),i,j,ip) + delta_water
-         delta_energy = delta_water * cliqvlme * (tempk - tsupercool)
+         delta_energy = delta_water * wdns * tl2uint(tempk,1.0)
          soil_energy(ksat(l),i,j,ip) = soil_energy(ksat(l),i,j,ip) + delta_energy
          wsum = wsum + wateradd(l) * fa(l)
-         qwsum = qwsum + wateradd(l) * cliqvlme * (tempk - tsupercool) * fa(l)
+         qwsum = qwsum + wateradd(l) * wdns * tl2uint(tempk,1.0) * fa(l)
       endif
    enddo
 
@@ -314,12 +314,12 @@ do ngd = 1,ngrps
       ip = ipg(l,ngd)
 
       if (sfcwater_mass(1,i,j,ip) .gt. 0.) then
-         call qtk(sfcwater_energy(1,i,j,ip),tempk,fracliq)
+         call uint2tl(sfcwater_energy(1,i,j,ip),tempk,fracliq)
 
          if (fracliq .gt. .1) then
             qw = sfcwater_energy(1,i,j,ip) * sfcwater_mass(1,i,j,ip)
             wfreeb = sfcwater_mass(1,i,j,ip) * (fracliq - .1) / 0.9
-            qwfree = wfreeb * cliq * (tempk - tsupercool)
+            qwfree = wfreeb * tl2uint(tempk,1.0)
             sfcwater_mass(1,i,j,ip) = sfcwater_mass(1,i,j,ip) - wfreeb
             sfcwater_energy(1,i,j,ip) = (qw - qwfree)  &
                / (max(1.e-4,sfcwater_mass(1,i,j,ip)))

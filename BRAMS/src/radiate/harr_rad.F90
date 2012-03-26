@@ -52,7 +52,6 @@
 !------------------------------------------------------------------------------------------!
 subroutine harr_swrad(nz,alb,amu0,time,mynum)
 
-   use rconstants , only : cp                  ! ! intent(in)
    use mem_harr   , only : mb                  & ! intent(in)
                          , mg                  & ! intent(in)
                          , mk                  & ! intent(in)
@@ -412,7 +411,6 @@ end subroutine harr_swrad
 !------------------------------------------------------------------------------------------!
 subroutine harr_lwrad(nz,mynum)
 
-   use rconstants  , only : cp               ! ! intent(in)
    use mem_harr    , only : mb               & ! intent(in)
                           , mg               & ! intent(in)
                           , mk               & ! intent(in)

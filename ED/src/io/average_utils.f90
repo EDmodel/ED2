@@ -193,7 +193,6 @@ subroutine normalize_averaged_vars(cgrid,frqsum,dtlsm)
             csite%avg_albedo_beam    (ipa) = csite%avg_albedo_beam    (ipa) * frqsumi
             csite%avg_albedo_diffuse (ipa) = csite%avg_albedo_diffuse (ipa) * frqsumi
             csite%avg_rlong_albedo   (ipa) = csite%avg_rlong_albedo   (ipa) * frqsumi
-            csite%aux                (ipa) = csite%aux                (ipa) * frqsumi
             csite%avg_vapor_lc       (ipa) = csite%avg_vapor_lc       (ipa) * frqsumi
             csite%avg_vapor_wc       (ipa) = csite%avg_vapor_wc       (ipa) * frqsumi
             csite%avg_vapor_gc       (ipa) = csite%avg_vapor_gc       (ipa) * frqsumi
@@ -228,7 +227,6 @@ subroutine normalize_averaged_vars(cgrid,frqsum,dtlsm)
                csite%avg_sensible_gg(k,ipa) = csite%avg_sensible_gg(k,ipa) * frqsumi
                csite%avg_smoist_gg(k,ipa)   = csite%avg_smoist_gg(k,ipa)   * frqsumi
                csite%avg_transloss(k,ipa)   = csite%avg_transloss(k,ipa)   * frqsumi
-               csite%aux_s(k,ipa)           = csite%aux_s(k,ipa)           * frqsumi
             end do
             !------------------------------------------------------------------------------!
             
@@ -272,6 +270,7 @@ subroutine normalize_averaged_vars(cgrid,frqsum,dtlsm)
             csite%ebudget_precipgain(ipa)    = csite%ebudget_precipgain(ipa)    * frqsumi
             csite%ebudget_netrad(ipa)        = csite%ebudget_netrad(ipa)        * frqsumi
             csite%ebudget_denseffect(ipa)    = csite%ebudget_denseffect(ipa)    * frqsumi
+            csite%ebudget_prsseffect(ipa)    = csite%ebudget_prsseffect(ipa)    * frqsumi
             csite%ebudget_loss2atm(ipa)      = csite%ebudget_loss2atm(ipa)      * frqsumi
             csite%ebudget_loss2drainage(ipa) = csite%ebudget_loss2drainage(ipa) * frqsumi
             csite%ebudget_loss2runoff(ipa)   = csite%ebudget_loss2runoff(ipa)   * frqsumi
@@ -393,7 +392,6 @@ subroutine reset_averaged_vars(cgrid)
       cgrid%avg_runoff           (ipy) = 0.0
       cgrid%avg_drainage         (ipy) = 0.0
       cgrid%avg_drainage_heat    (ipy) = 0.0
-      cgrid%aux                  (ipy) = 0.0
       cgrid%avg_carbon_ac        (ipy) = 0.0
       cgrid%avg_carbon_st        (ipy) = 0.0
       cgrid%avg_sensible_lc      (ipy) = 0.0
@@ -405,7 +403,6 @@ subroutine reset_averaged_vars(cgrid)
       cgrid%avg_sensible_ac      (ipy) = 0.0
       cgrid%avg_runoff_heat      (ipy) = 0.0 
 
-      cgrid%aux_s              (:,ipy) = 0.0
       cgrid%avg_smoist_gg      (:,ipy) = 0.0
       cgrid%avg_transloss      (:,ipy) = 0.0
       cgrid%avg_sensible_gg    (:,ipy) = 0.0
@@ -508,6 +505,7 @@ subroutine reset_averaged_vars(cgrid)
             csite%ebudget_loss2runoff(ipa)      = 0.0
             csite%ebudget_loss2drainage(ipa)    = 0.0
             csite%ebudget_denseffect(ipa)       = 0.0
+            csite%ebudget_prsseffect(ipa)       = 0.0
             csite%ebudget_residual(ipa)         = 0.0
             !----------------------------------------------------------------!
 
@@ -550,8 +548,6 @@ subroutine reset_averaged_vars(cgrid)
             csite%avg_runoff_heat(ipa)      = 0.0
             csite%avg_rk4step(ipa)          = 0.0
             csite%avg_available_water(ipa)  = 0.0
-            csite%aux(ipa)                  = 0.0
-            csite%aux_s(:,ipa)              = 0.0
             csite%mean_rh(ipa)              = 0.0
          
             cohortloop: do ico=1,cpatch%ncohorts
@@ -785,12 +781,6 @@ subroutine integrate_ed_daily_output_state(cgrid)
                      cpatch%dmean_light_level_diff(ico) =                                  &
                                                cpatch%dmean_light_level_diff(ico)          &
                                              + cpatch%light_level_diff(ico)
-                     cpatch%dmean_beamext_level(ico)    = cpatch%dmean_beamext_level(ico)  &
-                                                        + cpatch%beamext_level(ico)
-                     cpatch%dmean_diffext_level(ico)    = cpatch%dmean_diffext_level(ico)  &
-                                                        + cpatch%diffext_level(ico)
-                     cpatch%dmean_lambda_light(ico)     = cpatch%dmean_lambda_light(ico)   &
-                                                        + cpatch%lambda_light(ico)
                   end if
                   !------------------------------------------------------------------------!
 
@@ -824,11 +814,6 @@ subroutine integrate_ed_daily_output_state(cgrid)
 
                end if
             end do
-
-            if (rshort_tot > rshort_twilight_min) then
-               csite%dmean_lambda_light(ipa) = csite%dmean_lambda_light(ipa)               &
-                                             + csite%lambda_light(ipa)
-            end if
          end do patchloop
 
          !---------------------------------------------------------------------------------!
@@ -2020,19 +2005,17 @@ subroutine normalize_ed_daily_output_vars(cgrid)
                                    , n_dbh         & ! intent(in)
                                    , n_age         & ! intent(in)
                                    , n_dist_types  ! ! intent(in)
-   use consts_coms          , only : cpi           & ! intent(in)
-                                   , alvl          & ! intent(in)
-                                   , day_sec       & ! intent(in)
+   use consts_coms          , only : day_sec       & ! intent(in)
                                    , umols_2_kgCyr & ! intent(in)
-                                   , yr_day        & ! intent(in)
-                                   , p00i          & ! intent(in)
-                                   , rocp          ! ! intent(in)
+                                   , yr_day        ! ! intent(in)
    use ed_misc_coms         , only : dtlsm         & ! intent(in)
                                    , frqsum        & ! intent(in)
                                    , ddbhi         & ! intent(in)
                                    , dagei         ! ! intent(in)
    use pft_coms             , only : init_density  ! ! intent(in)
-   use therm_lib            , only : qwtk          & ! subroutine
+   use therm_lib            , only : press2exner   & ! function
+                                   , extheta2temp  & ! function
+                                   , uextcm2tl     & ! subroutine
                                    , idealdenssh   ! ! function
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
@@ -2067,6 +2050,7 @@ subroutine normalize_ed_daily_output_vars(cgrid)
    real                                            :: sss_albedo_beam
    real                                            :: sss_albedo_diffuse
    real                                            :: veg_fliq
+   real                                            :: dmean_can_exner
    real                                            :: dtlsm_o_daylight
    real                                            :: frqsum_o_daylight
    !----- Locally saved variables. --------------------------------------------------------!
@@ -2087,11 +2071,9 @@ subroutine normalize_ed_daily_output_vars(cgrid)
    do ipy=1,cgrid%npolygons
       cpoly => cgrid%polygon(ipy)
       cgrid%lai_pft            (:,ipy) = 0.
-      cgrid%wpa_pft            (:,ipy) = 0.
       cgrid%wai_pft            (:,ipy) = 0.
       do isi=1,cpoly%nsites
          cpoly%lai_pft (:,isi)  = 0.
-         cpoly%wpa_pft (:,isi)  = 0.
          cpoly%wai_pft (:,isi)  = 0.
       end do
    end do
@@ -2130,8 +2112,9 @@ subroutine normalize_ed_daily_output_vars(cgrid)
       !------------------------------------------------------------------------------------!
       !     Find the canopy variables that are not conserved when pressure changes.        !
       !------------------------------------------------------------------------------------!
-      cgrid%dmean_can_temp(ipy)     = cgrid%dmean_can_theta(ipy)                           &
-                                    * (p00i * cgrid%dmean_can_prss(ipy)) ** rocp
+      dmean_can_exner               = press2exner(cgrid%dmean_can_prss(ipy))
+      cgrid%dmean_can_temp(ipy)     = extheta2temp( dmean_can_exner                        &
+                                                  , cgrid%dmean_can_theta(ipy) )
       cgrid%dmean_can_rhos(ipy)     = idealdenssh (cgrid%dmean_can_prss(ipy)               &
                                                   ,cgrid%dmean_can_temp(ipy)               &
                                                   ,cgrid%dmean_can_shv (ipy) )
@@ -2142,8 +2125,8 @@ subroutine normalize_ed_daily_output_vars(cgrid)
 
       !----- Find the leaf temperature, only when the mean heat capacity is non-zero. -----!
       if (cgrid%dmean_leaf_hcap(ipy) > 0.) then
-         call qwtk(cgrid%dmean_leaf_energy(ipy),cgrid%dmean_leaf_water(ipy)                &
-                  ,cgrid%dmean_leaf_hcap(ipy),cgrid%dmean_leaf_temp(ipy),veg_fliq)
+         call uextcm2tl(cgrid%dmean_leaf_energy(ipy),cgrid%dmean_leaf_water(ipy)           &
+                       ,cgrid%dmean_leaf_hcap(ipy),cgrid%dmean_leaf_temp(ipy),veg_fliq)
       else
          cgrid%dmean_leaf_temp(ipy) = cgrid%dmean_gnd_temp(ipy)
       end if
@@ -2154,8 +2137,8 @@ subroutine normalize_ed_daily_output_vars(cgrid)
 
       !----- Find the leaf temperature, only when the mean heat capacity is non-zero. -----!
       if (cgrid%dmean_wood_hcap(ipy) > 0.) then
-         call qwtk(cgrid%dmean_wood_energy(ipy),cgrid%dmean_wood_water(ipy)                &
-                  ,cgrid%dmean_wood_hcap(ipy),cgrid%dmean_wood_temp(ipy),veg_fliq)
+         call uextcm2tl(cgrid%dmean_wood_energy(ipy),cgrid%dmean_wood_water(ipy)           &
+                       ,cgrid%dmean_wood_hcap(ipy),cgrid%dmean_wood_temp(ipy),veg_fliq)
       else
          cgrid%dmean_wood_temp(ipy) = cgrid%dmean_gnd_temp(ipy)
       end if
@@ -2322,12 +2305,6 @@ subroutine normalize_ed_daily_output_vars(cgrid)
                                                      * dtlsm_o_daylight
                   cpatch%dmean_light_level_diff(ico) = cpatch%dmean_light_level_diff(ico)  &
                                                      * dtlsm_o_daylight
-                  cpatch%dmean_beamext_level   (ico) = cpatch%dmean_beamext_level   (ico)  &
-                                                     * dtlsm_o_daylight
-                  cpatch%dmean_diffext_level   (ico) = cpatch%dmean_diffext_level   (ico)  &
-                                                     * dtlsm_o_daylight
-                  cpatch%dmean_lambda_light    (ico) = cpatch%dmean_lambda_light    (ico)  &
-                                                     * dtlsm_o_daylight
                else
                   cpatch%dmean_fs_open         (ico) = 0.
                   cpatch%dmean_fsw             (ico) = 0.
@@ -2338,9 +2315,6 @@ subroutine normalize_ed_daily_output_vars(cgrid)
                   cpatch%dmean_light_level     (ico) = 0.
                   cpatch%dmean_light_level_beam(ico) = 0.
                   cpatch%dmean_light_level_diff(ico) = 0.
-                  cpatch%dmean_beamext_level   (ico) = 0.
-                  cpatch%dmean_diffext_level   (ico) = 0.
-                  cpatch%dmean_lambda_light    (ico) = 0.
                end if
             end do cohortloop
 
@@ -2377,17 +2351,7 @@ subroutine normalize_ed_daily_output_vars(cgrid)
                                              * frqsum_o_daysec
             csite%dmean_rk4step(ipa)         = csite%dmean_rk4step(ipa)                    &
                                              * frqsum_o_daysec
-            !------------------------------------------------------------------------------!
-            !     The light level is averaged over the length of day light only.  We find  !
-            ! this variable only if there is any day light (this is to avoid problems with !
-            ! polar nights).                                                               !
-            !------------------------------------------------------------------------------!
-            if (cpoly%daylight(isi) >= dtlsm) then
-               csite%dmean_lambda_light(ipa)    = csite%dmean_lambda_light(ipa)            &
-                                                * dtlsm / cpoly%daylight(isi)
-            else
-               csite%dmean_lambda_light(ipa)    = 0.0
-            end if
+
             !------------------------------------------------------------------------------!
             !     Heterotrophic respiration is currently the integral over a day, given    !
             ! in µmol(CO2)/m²/s, so we multiply by the number of seconds in a year and     !
@@ -2419,9 +2383,6 @@ subroutine normalize_ed_daily_output_vars(cgrid)
                do ipft=1,n_pft
                   cpoly%lai_pft(ipft,isi)  = cpoly%lai_pft(ipft,isi)                       &
                                            + sum(cpatch%lai,cpatch%pft == ipft)            &
-                                           * csite%area(ipa) * site_area_i
-                  cpoly%wpa_pft(ipft,isi)  = cpoly%wpa_pft(ipft,isi)                       &
-                                           + sum(cpatch%wpa,cpatch%pft == ipft)            &
                                            * csite%area(ipa) * site_area_i
                   cpoly%wai_pft(ipft,isi)  = cpoly%wai_pft(ipft,isi)                       &
                                            + sum(cpatch%wai,cpatch%pft == ipft)            &
@@ -2466,8 +2427,6 @@ subroutine normalize_ed_daily_output_vars(cgrid)
       do ipft=1,n_pft
          cgrid%lai_pft(ipft,ipy)  = cgrid%lai_pft(ipft,ipy)                                &
                                   + sum(cpoly%lai_pft(ipft,:)*cpoly%area) * poly_area_i
-         cgrid%wpa_pft(ipft,ipy)  = cgrid%wpa_pft(ipft,ipy)                                &
-                                  + sum(cpoly%wpa_pft(ipft,:)*cpoly%area) * poly_area_i
          cgrid%wai_pft(ipft,ipy)  = cgrid%wai_pft(ipft,ipy)                                &
                                   + sum(cpoly%wai_pft(ipft,:)*cpoly%area) * poly_area_i
       end do
@@ -2671,7 +2630,6 @@ subroutine zero_ed_daily_output_vars(cgrid)
       cgrid%dmean_atm_prss       (ipy) = 0.
       cgrid%dmean_atm_vels       (ipy) = 0.
       cgrid%lai_pft            (:,ipy) = 0.
-      cgrid%wpa_pft            (:,ipy) = 0.
       cgrid%wai_pft            (:,ipy) = 0.
       cgrid%dmean_co2_residual   (ipy) = 0.
       cgrid%dmean_energy_residual(ipy) = 0.
@@ -2682,7 +2640,6 @@ subroutine zero_ed_daily_output_vars(cgrid)
          csite => cpoly%site(isi)
 
          cpoly%lai_pft              (:,isi) = 0.
-         cpoly%wpa_pft              (:,isi) = 0.
          cpoly%wai_pft              (:,isi) = 0.
          cpoly%dmean_co2_residual     (isi) = 0.
          cpoly%dmean_energy_residual  (isi) = 0.
@@ -2695,7 +2652,6 @@ subroutine zero_ed_daily_output_vars(cgrid)
             csite%dmean_water_residual (ipa) = 0.
             csite%dmean_rh             (ipa) = 0.
             csite%dmean_rk4step        (ipa) = 0.
-            csite%dmean_lambda_light   (ipa) = 0.
             csite%dmean_A_decomp       (ipa) = 0.
             csite%dmean_Af_decomp      (ipa) = 0.
             csite%dmean_albedo         (ipa) = 0.
@@ -2726,9 +2682,6 @@ subroutine zero_ed_daily_output_vars(cgrid)
                cpatch%dmean_light_level(ico)      = 0.
                cpatch%dmean_light_level_beam(ico) = 0.
                cpatch%dmean_light_level_diff(ico) = 0.
-               cpatch%dmean_beamext_level(ico)    = 0.
-               cpatch%dmean_diffext_level(ico)    = 0.
-               cpatch%dmean_lambda_light(ico)     = 0.
             end do
          end do
       end do
@@ -2856,8 +2809,6 @@ subroutine integrate_ed_monthly_output_vars(cgrid)
 
       cgrid%mmean_lai_pft     (:,ipy) = cgrid%mmean_lai_pft     (:,ipy)                    &
                                       + cgrid%lai_pft           (:,ipy)
-      cgrid%mmean_wpa_pft     (:,ipy) = cgrid%mmean_wpa_pft     (:,ipy)                    &
-                                      + cgrid%wpa_pft           (:,ipy)
       cgrid%mmean_wai_pft     (:,ipy) = cgrid%mmean_wai_pft     (:,ipy)                    &
                                       + cgrid%wai_pft           (:,ipy)
 
@@ -3008,9 +2959,6 @@ subroutine integrate_ed_monthly_output_vars(cgrid)
             csite%mmean_rk4step(ipa)         = csite%mmean_rk4step(ipa)                    &
                                              + csite%dmean_rk4step(ipa)
 
-            csite%mmean_lambda_light(ipa)    = csite%mmean_lambda_light(ipa)               &
-                                             + csite%dmean_lambda_light(ipa)
-
             cpatch => csite%patch(ipa)
             cohort_loop: do ico=1,cpatch%ncohorts
                cpatch%mmean_fs_open     (ico) = cpatch%mmean_fs_open     (ico)             &
@@ -3063,12 +3011,6 @@ subroutine integrate_ed_monthly_output_vars(cgrid)
                                                   + cpatch%dmean_light_level_beam(ico)
                cpatch%mmean_light_level_diff(ico) = cpatch%mmean_light_level_diff(ico)     &
                                                   + cpatch%dmean_light_level_diff(ico)
-               cpatch%mmean_beamext_level(ico)    = cpatch%mmean_beamext_level(ico)        &
-                                                  + cpatch%dmean_beamext_level(ico)
-               cpatch%mmean_diffext_level(ico)    = cpatch%mmean_diffext_level(ico)        &
-                                                  + cpatch%dmean_diffext_level(ico)
-               cpatch%mmean_lambda_light(ico)     = cpatch%mmean_lambda_light(ico)         &
-                                                  + cpatch%dmean_lambda_light(ico)
 
                !----- Mortality rates. ----------------------------------------------------!
                do imt=1,n_mort
@@ -3115,16 +3057,16 @@ subroutine normalize_ed_monthly_output_vars(cgrid)
                                    , n_age         & ! intent(in)
                                    , n_dist_types  & ! intent(in)
                                    , n_mort        ! ! intent(in)
-   use consts_coms          , only : p00i          & ! intent(in)
-                                   , rocp          & ! intent(in)
-                                   , pio4          & ! intent(in)
+   use consts_coms          , only : pio4          & ! intent(in)
                                    , umol_2_kgC    & ! intent(in)
                                    , umols_2_kgCyr & ! intent(in)
                                    , day_sec       & ! intent(in)
                                    , yr_day        ! ! intent(in)
    use pft_coms             , only : init_density  ! ! intent(in)
-   use therm_lib            , only : idealdenssh   & ! function
-                                   , qwtk          ! ! function
+   use therm_lib            , only : press2exner   & ! function
+                                   , extheta2temp  & ! function
+                                   , idealdenssh   & ! function
+                                   , uextcm2tl     ! ! function
    use allometry            , only : ed_biomass    ! ! function
 
    implicit none
@@ -3167,6 +3109,8 @@ subroutine normalize_ed_monthly_output_vars(cgrid)
    logical                                         :: forest
    real                                            :: veg_fliq
    real                                            :: cohort_seeds
+   real                                            :: mmean_can_exner
+   real                                            :: qmean_can_exner
    !----- Locally saved variables. --------------------------------------------------------!
    logical                            , save       :: find_factors    = .true.
    real                               , save       :: dtlsm_o_frqfast = 1.e34
@@ -3266,7 +3210,6 @@ subroutine normalize_ed_monthly_output_vars(cgrid)
       cgrid%mmean_runoff         (ipy) = cgrid%mmean_runoff         (ipy) * ndaysi
       cgrid%mmean_drainage       (ipy) = cgrid%mmean_drainage       (ipy) * ndaysi
       cgrid%mmean_lai_pft      (:,ipy) = cgrid%mmean_lai_pft      (:,ipy) * ndaysi
-      cgrid%mmean_wpa_pft      (:,ipy) = cgrid%mmean_wpa_pft      (:,ipy) * ndaysi
       cgrid%mmean_wai_pft      (:,ipy) = cgrid%mmean_wai_pft      (:,ipy) * ndaysi
 
       cgrid%mmean_co2_residual(ipy)    = cgrid%mmean_co2_residual(ipy)    * ndaysi
@@ -3311,8 +3254,9 @@ subroutine normalize_ed_monthly_output_vars(cgrid)
       !------------------------------------------------------------------------------------!
       !       Mean canopy air properties.                                                  !
       !------------------------------------------------------------------------------------!
-      cgrid%mmean_can_temp    (ipy) = cgrid%mmean_can_theta(ipy)                           &
-                                    * (p00i * cgrid%mmean_can_prss(ipy)) ** rocp
+      mmean_can_exner               = press2exner(cgrid%mmean_can_prss(ipy))
+      cgrid%mmean_can_temp    (ipy) = extheta2temp( mmean_can_exner                        &
+                                                  , cgrid%mmean_can_theta(ipy) )
       cgrid%mmean_can_rhos    (ipy) = idealdenssh (cgrid%mmean_can_prss(ipy)               &
                                                   ,cgrid%mmean_can_temp(ipy)               &
                                                   ,cgrid%mmean_can_shv (ipy) )
@@ -3325,14 +3269,14 @@ subroutine normalize_ed_monthly_output_vars(cgrid)
       ! there is some heat storage.                                                        !
       !------------------------------------------------------------------------------------!
       if (cgrid%mmean_leaf_hcap(ipy) > 0.) then
-         call qwtk(cgrid%mmean_leaf_energy(ipy),cgrid%mmean_leaf_water(ipy)                &
-                  ,cgrid%mmean_leaf_hcap(ipy),cgrid%mmean_leaf_temp(ipy),veg_fliq)
+         call uextcm2tl(cgrid%mmean_leaf_energy(ipy),cgrid%mmean_leaf_water(ipy)           &
+                       ,cgrid%mmean_leaf_hcap(ipy),cgrid%mmean_leaf_temp(ipy),veg_fliq)
       else
          cgrid%mmean_leaf_temp(ipy) = cgrid%mmean_can_temp(ipy)
       end if
       if (cgrid%mmean_wood_hcap(ipy) > 0.) then
-         call qwtk(cgrid%mmean_wood_energy(ipy),cgrid%mmean_wood_water(ipy)                &
-                  ,cgrid%mmean_wood_hcap(ipy),cgrid%mmean_wood_temp(ipy),veg_fliq)
+         call uextcm2tl(cgrid%mmean_wood_energy(ipy),cgrid%mmean_wood_water(ipy)           &
+                       ,cgrid%mmean_wood_hcap(ipy),cgrid%mmean_wood_temp(ipy),veg_fliq)
       else
          cgrid%mmean_wood_temp(ipy) = cgrid%mmean_can_temp(ipy)
       end if
@@ -3416,7 +3360,6 @@ subroutine normalize_ed_monthly_output_vars(cgrid)
             csite%mmean_water_residual(ipa)  = csite%mmean_water_residual(ipa)  * ndaysi
             csite%mmean_rh(ipa)              = csite%mmean_rh(ipa)              * ndaysi
             csite%mmean_rk4step(ipa)         = csite%mmean_rk4step(ipa)         * ndaysi
-            csite%mmean_lambda_light(ipa)    = csite%mmean_lambda_light(ipa)    * ndaysi
             csite%mmean_A_decomp(ipa)        = csite%mmean_A_decomp(ipa)        * ndaysi
             csite%mmean_Af_decomp(ipa)       = csite%mmean_Af_decomp(ipa)       * ndaysi
             csite%mmean_albedo(ipa)          = csite%mmean_albedo(ipa)          * ndaysi
@@ -3473,12 +3416,6 @@ subroutine normalize_ed_monthly_output_vars(cgrid)
                cpatch%mmean_light_level_beam (ico) = cpatch%mmean_light_level_beam(ico)    &
                                                    * ndaysi
                cpatch%mmean_light_level_diff (ico) = cpatch%mmean_light_level_diff(ico)    &
-                                                   * ndaysi
-               cpatch%mmean_beamext_level (ico)    = cpatch%mmean_beamext_level(ico)       &
-                                                   * ndaysi
-               cpatch%mmean_diffext_level (ico)    = cpatch%mmean_diffext_level(ico)       &
-                                                   * ndaysi
-               cpatch%mmean_lambda_light(ico)      = cpatch%mmean_lambda_light(ico)        &
                                                    * ndaysi
 
                !----- Define to which PFT this cohort belongs. ----------------------------!
@@ -3758,8 +3695,9 @@ subroutine normalize_ed_monthly_output_vars(cgrid)
             !------------------------------------------------------------------------------!
             !     Find the derived average propertiesof the canopy air space.              !
             !------------------------------------------------------------------------------!
-            cgrid%qmean_can_temp (t,ipy) = cgrid%qmean_can_theta(t,ipy)                    &
-                                         *  (p00i * cgrid%qmean_can_prss(t,ipy)) ** rocp
+            qmean_can_exner              = press2exner (cgrid%qmean_can_prss(t,ipy))
+            cgrid%qmean_can_temp (t,ipy) = extheta2temp( qmean_can_exner                   &
+                                                       , cgrid%qmean_can_theta(t,ipy) )
             cgrid%qmean_can_rhos (t,ipy) = idealdenssh (cgrid%qmean_can_prss(t,ipy)        &
                                                        ,cgrid%qmean_can_temp(t,ipy)        &
                                                        ,cgrid%qmean_can_shv (t,ipy))
@@ -3771,16 +3709,16 @@ subroutine normalize_ed_monthly_output_vars(cgrid)
             ! canopy air space temperature.                                                !
             !------------------------------------------------------------------------------!
             if (cgrid%qmean_leaf_hcap(t,ipy) > 0.) then
-               call qwtk(cgrid%qmean_leaf_energy(t,ipy),cgrid%qmean_leaf_water(t,ipy)      &
-                        ,cgrid%qmean_leaf_hcap(t,ipy),cgrid%qmean_leaf_temp(t,ipy)         &
-                        ,veg_fliq)
+               call uextcm2tl(cgrid%qmean_leaf_energy(t,ipy),cgrid%qmean_leaf_water(t,ipy) &
+                             ,cgrid%qmean_leaf_hcap(t,ipy),cgrid%qmean_leaf_temp(t,ipy)    &
+                             ,veg_fliq)
             else
                cgrid%qmean_leaf_temp(t,ipy) = cgrid%qmean_can_temp (t,ipy)
             end if
             if (cgrid%qmean_wood_hcap(t,ipy) > 0.) then
-               call qwtk(cgrid%qmean_wood_energy(t,ipy),cgrid%qmean_wood_water(t,ipy)      &
-                        ,cgrid%qmean_wood_hcap(t,ipy),cgrid%qmean_wood_temp(t,ipy)         &
-                        ,veg_fliq)
+               call uextcm2tl(cgrid%qmean_wood_energy(t,ipy),cgrid%qmean_wood_water(t,ipy) &
+                             ,cgrid%qmean_wood_hcap(t,ipy),cgrid%qmean_wood_temp(t,ipy)    &
+                             ,veg_fliq)
             else
                cgrid%qmean_wood_temp(t,ipy) = cgrid%qmean_can_temp (t,ipy)
             end if
@@ -3901,7 +3839,6 @@ subroutine zero_ed_monthly_output_vars(cgrid)
       cgrid%mmean_runoff             (ipy) = 0.
       cgrid%mmean_drainage           (ipy) = 0.
       cgrid%mmean_lai_pft          (:,ipy) = 0.
-      cgrid%mmean_wpa_pft          (:,ipy) = 0.
       cgrid%mmean_wai_pft          (:,ipy) = 0.
       cgrid%agb_pft                (:,ipy) = 0.
       cgrid%ba_pft                 (:,ipy) = 0.
@@ -3943,7 +3880,6 @@ subroutine zero_ed_monthly_output_vars(cgrid)
             csite%mmean_water_residual    (ipa) = 0.
             csite%mmean_rh                (ipa) = 0.
             csite%mmean_rk4step           (ipa) = 0.
-            csite%mmean_lambda_light      (ipa) = 0.
             csite%mmean_A_decomp          (ipa) = 0.
             csite%mmean_Af_decomp         (ipa) = 0.
             csite%mmean_albedo            (ipa) = 0.
@@ -3980,9 +3916,6 @@ subroutine zero_ed_monthly_output_vars(cgrid)
                cpatch%mmean_light_level       (ico) = 0.
                cpatch%mmean_light_level_beam  (ico) = 0.
                cpatch%mmean_light_level_diff  (ico) = 0.
-               cpatch%mmean_beamext_level     (ico) = 0.
-               cpatch%mmean_diffext_level     (ico) = 0.
-               cpatch%mmean_lambda_light      (ico) = 0.
                cpatch%mmean_mort_rate       (:,ico) = 0.
             end do
          end do

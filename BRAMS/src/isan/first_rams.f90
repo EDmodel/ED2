@@ -286,6 +286,8 @@ else
          ,grid_g(ifm)%topt,grid_g(icm)%topt &
          ,is_grids(ifm)%rr_dn0,is_grids(ifm)%rr_dn0u &
          ,is_grids(ifm)%rr_dn0v,ztn(:,ifm),ztop )
+   deallocate(plt)
+   deallocate(pltc)
 endif
 
 
@@ -332,7 +334,7 @@ end
 subroutine comp_rhfrac(n1,n2,n3,a,b,c)
 
 use rconstants
-use therm_lib, only: rehuil
+use therm_lib, only: rehuil,exner2press,extheta2temp
 implicit none
 integer :: n1,n2,n3
 real :: a(n1,n2,n3),b(n1,n2,n3),c(n1,n2,n3)
@@ -341,9 +343,9 @@ integer :: i,j,k
 do k=1,n3
    do j=1,n2
       do i=1,n1
-         xtemp=c(i,j,k)*b(i,j,k)/cp
-         xpress=(b(i,j,k)/cp)**cpor*p00
-         a(i,j,k)=min(1.,rehuil(xpress,xtemp,a(i,j,k)))
+         xtemp    = extheta2temp(b(i,j,k),c(i,j,k))
+         xpress   = exner2press (b(i,j,k))
+         a(i,j,k) = min(1.,rehuil(xpress,xtemp,a(i,j,k),.false.))
       enddo
    enddo
 enddo
@@ -355,7 +357,7 @@ end
 subroutine comp_press(n1,n2,n3,a)
 
 use rconstants
-
+use therm_lib, only: exner2press
 implicit none
 integer :: n1,n2,n3
 real :: a(n1,n2,n3)
@@ -363,7 +365,7 @@ integer :: i,j,k
    do k=1,n3
       do j=1,n2
          do i=1,n1
-            a(i,j,k)=(a(i,j,k)/cp)**cpor*p00*.01
+            a(i,j,k)=exner2press(a(i,j,k)) * .01
          enddo
       enddo
    enddo
@@ -407,7 +409,7 @@ do j=1,n3
 
       c1=grav*2.*(1.-topt(i,j)/ztop)
       c2=(1-cpor)
-      c3=cp**c2
+      c3=cpdry**c2
       do k=n1-1,1,-1
          pi0(k,i,j)=pi0(k+1,i,j)  &
              +c1/((th0(k,i,j)+th0(k+1,i,j))*dzmn(k,ngrd))
@@ -512,6 +514,9 @@ call ezcntr(plt(1,1),nnxp(ifm),nnyp(ifm))
 !call ae1m1(nnzp(ifm)*nnxp(ifm)*nnyp(ifm),plt3b(1,1,1),plt3(1,1,1),var2(1))
 !plt(1:nnxp(ifm),1:nnyp(ifm)) =plt3b(12,1:nnxp(ifm),1:nnyp(ifm))
 !call ezcntr(plt,nnxp(ifm),nnyp(ifm))
+deallocate (plt)
+deallocate (plt3)
+deallocate (plt3b)
 
 
 return

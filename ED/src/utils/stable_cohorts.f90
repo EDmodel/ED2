@@ -70,7 +70,7 @@ subroutine is_resolvable(csite,ipa,ico,green_leaf_factor)
    use ed_state_vars , only : sitetype        & ! structure
                             , patchtype       ! ! structure
    use phenology_coms, only : elongf_min      ! ! intent(in)
-   use pft_coms      , only : lai_min         ! ! intent(in)
+   use pft_coms      , only : veg_hcap_min    ! ! intent(in)
    use ed_max_dims   , only : n_pft           ! ! intent(in)
 
    implicit none
@@ -103,12 +103,12 @@ subroutine is_resolvable(csite,ipa,ico,green_leaf_factor)
 
 
    !---------------------------------------------------------------------------------------!
-   ! 2.   Check whether this cohort is not extremely sparse.  Wood area index is always    !
-   !      set to zero when branch thermodynamics is turned off, so this will always be     !
-   !      false in this case.                                                              !
+   ! 2.   Check whether this cohort is not extremely sparse.  Wood area heat capacity is   !
+   !      always set to zero when branch thermodynamics is turned off, so this will always !
+   !      be .false. in this case.                                                         !
    !---------------------------------------------------------------------------------------!
-   leaf_enough  = cpatch%lai(ico) > lai_min(ipft) .and. cpatch%leaf_hcap(ico) > 0.0
-   wood_enough  = cpatch%wai(ico) > lai_min(ipft) .and. cpatch%wood_hcap(ico) > 0.0
+   leaf_enough  = cpatch%leaf_hcap(ico) > veg_hcap_min(ipft)
+   wood_enough  = cpatch%wood_hcap(ico) > veg_hcap_min(ipft)
    !---------------------------------------------------------------------------------------!
 
 

@@ -30,10 +30,8 @@ subroutine odeint(h1,csite,ipa,nsteps)
                              , nzs                    ! ! intent(in)
    use soil_coms      , only : dslz8                  & ! intent(in)
                              , runoff_time            ! ! intent(in)
-   use consts_coms    , only : cliq8                  & ! intent(in)
-                             , t3ple8                 & ! intent(in)
-                             , tsupercool8            & ! intent(in)
-                             , wdnsi8                 ! ! intent(in)
+   use consts_coms    , only : wdnsi8                 ! ! intent(in)
+   use therm_lib8     , only : tl2uint8               ! ! intent(in)
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    type(sitetype)            , target      :: csite            ! Current site
@@ -100,7 +98,7 @@ subroutine odeint(h1,csite,ipa,nsteps)
    timesteploop: do i=1,maxstp
 
       !----- Get initial derivatives ------------------------------------------------------!
-      call leaf_derivs(integration_buff%y,integration_buff%dydx,csite,ipa)
+      call leaf_derivs(integration_buff%y,integration_buff%dydx,csite,ipa,-9000.d0)
 
       !----- Get scalings used to determine stability -------------------------------------!
       call get_yscal(integration_buff%y, integration_buff%dydx,h,integration_buff%yscal    &
@@ -131,8 +129,7 @@ subroutine odeint(h1,csite,ipa,nsteps)
                       * integration_buff%y%sfcwater_mass(ksn)                              &
                       * (integration_buff%y%sfcwater_fracliq(ksn) - 1.d-1) / 9.d-1
 
-               qwfree = wfreeb                                                             &
-                      * cliq8 * (integration_buff%y%sfcwater_tempk(ksn) - tsupercool8 )
+               qwfree = wfreeb * tl2uint8(integration_buff%y%sfcwater_tempk(ksn),1.d0)
 
                integration_buff%y%sfcwater_mass(ksn) =                                     &
                                    integration_buff%y%sfcwater_mass(ksn)                   &
@@ -142,7 +139,7 @@ subroutine odeint(h1,csite,ipa,nsteps)
                                    integration_buff%y%sfcwater_depth(ksn)                  &
                                  - wfreeb*wdnsi8
 
-               !----- Recompute the energy removing runoff --------------------------------!
+               !----- Remove internal energy lost due to runoff. --------------------------!
                integration_buff%y%sfcwater_energy(ksn) =                                   &
                                      integration_buff%y%sfcwater_energy(ksn) - qwfree
 
@@ -218,19 +215,26 @@ end subroutine odeint
 ! is to ensure all variables are in double precision, so consistent with the buffer vari-  !
 ! ables.                                                                                   !
 !------------------------------------------------------------------------------------------!
-subroutine copy_met_2_rk4site(mzg,vels,atm_theiv,atm_theta,atm_tmp,atm_shv,atm_co2,zoff    &
-                             ,exner,pcpg,qpcpg,dpcpg,prss,rshort,rlong,par_beam            &
-                             ,par_diffuse,nir_beam,nir_diffuse,geoht,lsl,ntext_soil        &
-                             ,green_leaf_factor,lon,lat,cosz)
+subroutine copy_met_2_rk4site(mzg,can_theta,can_shv,can_depth,vels,atm_theiv,atm_theta     &
+                             ,atm_tmp,atm_shv,atm_co2,zoff,exner,pcpg,qpcpg,dpcpg,prss     &
+                             ,rshort,rlong,par_beam,par_diffuse,nir_beam,nir_diffuse,geoht &
+                             ,lsl,ntext_soil,green_leaf_factor,lon,lat,cosz)
    use ed_max_dims    , only : n_pft         ! ! intent(in)
    use rk4_coms       , only : rk4site       ! ! structure
    use canopy_air_coms, only : ubmin8        ! ! intent(in)
    use therm_lib8     , only : rehuil8       & ! function
+                             , reducedpress8 & ! function
+                             , tq2enthalpy8  & ! function
+                             , press2exner8  & ! function
+                             , extheta2temp8 & ! function
                              , idealdenssh8  ! ! function
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    integer                  , intent(in) :: mzg
    integer                  , intent(in) :: lsl
+   real                     , intent(in) :: can_theta
+   real                     , intent(in) :: can_shv
+   real                     , intent(in) :: can_depth
    real                     , intent(in) :: vels
    real                     , intent(in) :: atm_theiv
    real                     , intent(in) :: atm_theta
@@ -256,7 +260,12 @@ subroutine copy_met_2_rk4site(mzg,vels,atm_theiv,atm_theta,atm_tmp,atm_shv,atm_c
    real                     , intent(in) :: lat
    real                     , intent(in) :: cosz
    !----- Local variables. ----------------------------------------------------------------!
-   integer             :: ipft
+   integer                               :: ipft
+   real(kind=8)                          :: can_theta8
+   real(kind=8)                          :: can_shv8
+   real(kind=8)                          :: can_depth8
+   real(kind=8)                          :: can_prss8
+   real(kind=8)                          :: can_exner8
    !---------------------------------------------------------------------------------------!
 
    
@@ -291,14 +300,34 @@ subroutine copy_met_2_rk4site(mzg,vels,atm_theiv,atm_theta,atm_tmp,atm_shv,atm_c
    !---------------------------------------------------------------------------------------!
 
 
+
+   !---------------------------------------------------------------------------------------!
+   !     Copy the canopy air space properties to double precision scratch variables.       !
+   !---------------------------------------------------------------------------------------!
+   can_theta8 = dble(can_theta)
+   can_shv8   = dble(can_shv  )
+   can_depth8 = dble(can_depth)
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Find the pressure and Exner functions at the canopy depth, find the temperature   !
+   ! of the air above canopy at the canopy depth, and the specific enthalpy at that level. !
+   !---------------------------------------------------------------------------------------!
+   can_prss8            = reducedpress8(rk4site%atm_prss,rk4site%atm_theta,rk4site%atm_shv &
+                                       ,rk4site%geoht,can_theta8,can_shv8,can_depth8)
+   can_exner8           = press2exner8 (can_prss8)
+   rk4site%atm_tmp_zcan = extheta2temp8(can_exner8,rk4site%atm_theta)
+   rk4site%atm_enthalpy = tq2enthalpy8 (rk4site%atm_tmp_zcan,rk4site%atm_shv,.true.)
+   !---------------------------------------------------------------------------------------!
+
+
+
    !----- Find the other variables that require a little math. ----------------------------!
-   rk4site%vels                  = max(ubmin8,dble(vels))
-   rk4site%atm_lntheta           = log(rk4site%atm_theta)
-   rk4site%atm_rvap              = rk4site%atm_shv / (1.d0 - rk4site%atm_shv)
-   rk4site%atm_rhv               = rehuil8(rk4site%atm_prss,rk4site%atm_tmp                &
-                                          ,rk4site%atm_rvap)
-   rk4site%atm_rhos              = idealdenssh8(rk4site%atm_prss,rk4site%atm_tmp           &
-                                               ,rk4site%atm_shv)
+   rk4site%vels     = max(ubmin8,dble(vels))
+   rk4site%atm_rhv  = rehuil8(rk4site%atm_prss,rk4site%atm_tmp,rk4site%atm_shv,.true.)
+   rk4site%atm_rhos = idealdenssh8(rk4site%atm_prss,rk4site%atm_tmp,rk4site%atm_shv)
    !---------------------------------------------------------------------------------------!
 
 
@@ -339,7 +368,7 @@ subroutine inc_rk4_patch(rkp, inc, fac, cpatch)
    integer                         :: k      ! Counter
    !---------------------------------------------------------------------------------------!
 
-   rkp%can_lntheta  = rkp%can_lntheta  + fac * inc%can_lntheta
+   rkp%can_enthalpy = rkp%can_enthalpy + fac * inc%can_enthalpy
    rkp%can_shv      = rkp%can_shv      + fac * inc%can_shv
    rkp%can_co2      = rkp%can_co2      + fac * inc%can_co2
 
@@ -377,10 +406,10 @@ subroutine inc_rk4_patch(rkp, inc, fac, cpatch)
       rkp%psi_closed(ico) = rkp%psi_closed(ico) + fac * inc%psi_closed(ico)
    end do
 
-   if(checkbudget) then
+   if (checkbudget) then
 
-     rkp%co2budget_storage      = rkp%co2budget_storage     + fac * inc%co2budget_storage
-     rkp%co2budget_loss2atm     = rkp%co2budget_loss2atm    + fac * inc%co2budget_loss2atm
+      rkp%co2budget_storage      = rkp%co2budget_storage     + fac * inc%co2budget_storage
+      rkp%co2budget_loss2atm     = rkp%co2budget_loss2atm    + fac * inc%co2budget_loss2atm
 
       rkp%wbudget_storage       = rkp%wbudget_storage       + fac * inc%wbudget_storage
       rkp%wbudget_loss2atm      = rkp%wbudget_loss2atm      + fac * inc%wbudget_loss2atm
@@ -388,6 +417,7 @@ subroutine inc_rk4_patch(rkp, inc, fac, cpatch)
                                 + fac * inc%wbudget_loss2drainage
 
       rkp%ebudget_storage       = rkp%ebudget_storage       + fac * inc%ebudget_storage
+      rkp%ebudget_netrad        = rkp%ebudget_netrad        + fac * inc%ebudget_netrad
       rkp%ebudget_loss2atm      = rkp%ebudget_loss2atm      + fac * inc%ebudget_loss2atm
       rkp%ebudget_loss2drainage = rkp%ebudget_loss2drainage                                &
                                 + fac * inc%ebudget_loss2drainage
@@ -515,9 +545,7 @@ subroutine get_yscal(y,dy,htry,yscal,cpatch)
                                    , checkbudget           ! ! intent(in)
    use grid_coms            , only : nzg                   & ! intent(in)
                                    , nzs                   ! ! intent(in)
-   use consts_coms          , only : cliq8                 & ! intent(in)
-                                   , qliqt38               & ! intent(in)
-                                   , wdnsi8                ! ! intent(in)
+   use consts_coms          , only : wdnsi8                ! ! intent(in)
    use soil_coms            , only : isoilbc               & ! intent(in)
                                    , dslzi8                ! ! intent(in)
    implicit none
@@ -535,9 +563,9 @@ subroutine get_yscal(y,dy,htry,yscal,cpatch)
    integer                        :: ico                   ! Current cohort ID
    !---------------------------------------------------------------------------------------!
 
-   yscal%can_lntheta =  abs(y%can_lntheta) + abs(dy%can_lntheta  * htry)
-   yscal%can_shv     =  abs(y%can_shv    ) + abs(dy%can_shv      * htry)
-   yscal%can_co2     =  abs(y%can_co2    ) + abs(dy%can_co2      * htry)
+   yscal%can_enthalpy =  abs(y%can_enthalpy) + abs(dy%can_enthalpy * htry)
+   yscal%can_shv      =  abs(y%can_shv     ) + abs(dy%can_shv      * htry)
+   yscal%can_co2      =  abs(y%can_co2     ) + abs(dy%can_co2      * htry)
 
    !---------------------------------------------------------------------------------------!
    !     We don't solve pressure prognostically, so the scale cannot be computed based on  !
@@ -598,7 +626,7 @@ subroutine get_yscal(y,dy,htry,yscal,cpatch)
       yscal%sfcwater_mass  (1) = abs(y%sfcwater_mass   (1)       )                         &
                                + abs(dy%sfcwater_mass  (1) * htry)
       yscal%sfcwater_depth (1) = abs(y%sfcwater_depth  (1)       )                         &
-                               + abs(dy%sfcwater_energy(1) * htry)
+                               + abs(dy%sfcwater_depth (1) * htry)
       yscal%sfcwater_energy(1) = huge_offset
       do k=2,nzs
          yscal%sfcwater_mass  (k) = huge_offset
@@ -632,7 +660,7 @@ subroutine get_yscal(y,dy,htry,yscal,cpatch)
          yscal%sfcwater_energy(k) = abs(y%sfcwater_energy (k)       )                      &
                                   + abs(dy%sfcwater_energy(k) * htry)
          yscal%sfcwater_depth (k) = abs(y%sfcwater_depth  (k)       )                      &
-                                  + abs(dy%sfcwater_energy(k) * htry)
+                                  + abs(dy%sfcwater_depth (k) * htry)
       end do
       do k=y%nlev_sfcwater+1,nzs
          yscal%sfcwater_mass  (k) = huge_offset
@@ -719,7 +747,7 @@ subroutine get_yscal(y,dy,htry,yscal,cpatch)
          !----- Copy the logical tests. ---------------------------------------------------!
          yscal%leaf_resolvable(ico) = y%leaf_resolvable(ico)
          yscal%wood_resolvable(ico) = y%wood_resolvable(ico)
-         yscal%veg_resolvable(ico)  = y%veg_resolvable(ico)
+         yscal%veg_resolvable (ico) = y%veg_resolvable(ico)
          !---------------------------------------------------------------------------------!
 
 
@@ -730,7 +758,7 @@ subroutine get_yscal(y,dy,htry,yscal,cpatch)
             yscal%leaf_temp(ico)   = abs( y%leaf_temp(ico))
             yscal%leaf_water(ico)  = max( abs(y%leaf_water(ico))                           &
                                         + abs(dy%leaf_water(ico)  * htry)                  &
-                                       , rk4leaf_drywhc * y%lai(ico))
+                                        , rk4leaf_drywhc * y%lai(ico))
          else
             yscal%leaf_water(ico)  = huge_offset
             yscal%leaf_energy(ico) = huge_offset
@@ -746,7 +774,7 @@ subroutine get_yscal(y,dy,htry,yscal,cpatch)
             yscal%wood_temp(ico)   = abs( y%wood_temp(ico))
             yscal%wood_water(ico)  = max( abs(y%wood_water(ico))                           &
                                         + abs(dy%wood_water(ico)  * htry)                  &
-                                       , rk4leaf_drywhc * y%wai(ico))
+                                        , rk4leaf_drywhc * y%wai(ico))
          else
             yscal%wood_water(ico)  = huge_offset
             yscal%wood_energy(ico) = huge_offset
@@ -765,16 +793,6 @@ subroutine get_yscal(y,dy,htry,yscal,cpatch)
    !---------------------------------------------------------------------------------------!
 
 
-
-   !---------------------------------------------------------------------------------------!
-   !    Scale for wood water and energy. In case the user doesn't want to solve branch     !
-   ! thermodynamics, the wood area index is too small, or the plant is buried in snow, we  !
-   ! assign huge values for typical scale, thus preventing unecessary small steps.         !
-   !    Also, if the cohort has almost no water, make the scale less strict.               !
-   !---------------------------------------------------------------------------------------!
-   do ico = 1,cpatch%ncohorts
-   end do
-   !---------------------------------------------------------------------------------------!
 
    !---------------------------------------------------------------------------------------!
    !     Here we just need to make sure the user is checking mass, otherwise  these vari-  !
@@ -796,6 +814,15 @@ subroutine get_yscal(y,dy,htry,yscal,cpatch)
          yscal%co2budget_loss2atm = abs(y%co2budget_loss2atm)                              &
                                   + abs(dy%co2budget_loss2atm*htry)
          yscal%co2budget_loss2atm = max(yscal%co2budget_loss2atm,1.d-1)
+      end if
+
+      if (abs(y%ebudget_netrad)  < tiny_offset .and.                                       &
+          abs(dy%ebudget_netrad) < tiny_offset) then
+         yscal%ebudget_netrad  = 1.d0
+      else 
+         yscal%ebudget_netrad  = abs(y%ebudget_netrad)                                     &
+                               + abs(dy%ebudget_netrad*htry)
+         yscal%ebudget_netrad = max(yscal%ebudget_netrad,1.d0)
       end if
 
       if (abs(y%ebudget_loss2atm)  < tiny_offset .and.                                     &
@@ -862,6 +889,7 @@ subroutine get_yscal(y,dy,htry,yscal,cpatch)
    else 
       yscal%co2budget_storage       = huge_offset
       yscal%co2budget_loss2atm      = huge_offset
+      yscal%ebudget_netrad          = huge_offset
       yscal%ebudget_loss2atm        = huge_offset
       yscal%wbudget_loss2atm        = huge_offset
       yscal%ebudget_storage         = huge_offset
@@ -935,7 +963,7 @@ subroutine get_errmax(errmax,yerr,yscal,cpatch,y,ytemp)
    ! temperature, water vapour mixing ratio and carbon dioxide mixing ratio are accounted. !
    ! Temperature and density will be also checked for sanity.                              !
    !---------------------------------------------------------------------------------------!
-   err    = abs(yerr%can_lntheta/yscal%can_lntheta)
+   err    = abs(yerr%can_enthalpy/yscal%can_enthalpy)
    errmax = max(errmax,err)
    if(record_err .and. err > rk4eps) integ_err(1,1) = integ_err(1,1) + 1_8 
 
@@ -1061,29 +1089,33 @@ subroutine get_errmax(errmax,yerr,yscal,cpatch,y,ytemp)
       errmax = max(errmax,err)
       if(record_err .and. err > rk4eps) integ_err(14,1) = integ_err(14,1) + 1_8
 
-      err    = abs(yerr%ebudget_loss2atm/yscal%ebudget_loss2atm)
+      err    = abs(yerr%ebudget_netrad/yscal%ebudget_netrad)
       errmax = max(errmax,err)
       if(record_err .and. err > rk4eps) integ_err(15,1) = integ_err(15,1) + 1_8
 
+      err    = abs(yerr%ebudget_loss2atm/yscal%ebudget_loss2atm)
+      errmax = max(errmax,err)
+      if(record_err .and. err > rk4eps) integ_err(16,1) = integ_err(17,1) + 1_8
+
       err    = abs(yerr%wbudget_loss2atm/yscal%wbudget_loss2atm)
       errmax = max(errmax,err)
-      if(record_err .and. err > rk4eps) integ_err(16,1) = integ_err(16,1) + 1_8
+      if(record_err .and. err > rk4eps) integ_err(17,1) = integ_err(18,1) + 1_8
 
       err    = abs(yerr%ebudget_loss2drainage/yscal%ebudget_loss2drainage)
       errmax = max(errmax,err)
-      if(record_err .and. err > rk4eps) integ_err(17,1) = integ_err(17,1) + 1_8
+      if(record_err .and. err > rk4eps) integ_err(18,1) = integ_err(19,1) + 1_8
 
       err    = abs(yerr%wbudget_loss2drainage/yscal%wbudget_loss2drainage)
       errmax = max(errmax,err)
-      if(record_err .and. err > rk4eps) integ_err(18,1) = integ_err(18,1) + 1_8
+      if(record_err .and. err > rk4eps) integ_err(19,1) = integ_err(20,1) + 1_8
 
       err    = abs(yerr%ebudget_storage/yscal%ebudget_storage)
       errmax = max(errmax,err)
-      if(record_err .and. err > rk4eps) integ_err(19,1) = integ_err(19,1) + 1_8
+      if(record_err .and. err > rk4eps) integ_err(20,1) = integ_err(21,1) + 1_8
 
       err    = abs(yerr%wbudget_storage/yscal%wbudget_storage)
       errmax = max(errmax,err)
-      if(record_err .and. err > rk4eps) integ_err(20,1) = integ_err(20,1) + 1_8
+      if(record_err .and. err > rk4eps) integ_err(21,1) = integ_err(22,1) + 1_8
    end if
    !---------------------------------------------------------------------------------------!
 
@@ -1159,8 +1191,7 @@ subroutine copy_rk4_patch(sourcep, targetp, cpatch)
    integer                         :: k
    !---------------------------------------------------------------------------------------!
 
-   targetp%can_theiv        = sourcep%can_theiv
-   targetp%can_lntheta      = sourcep%can_lntheta
+   targetp%can_enthalpy     = sourcep%can_enthalpy
    targetp%can_theta        = sourcep%can_theta
    targetp%can_temp         = sourcep%can_temp
    targetp%can_shv          = sourcep%can_shv
@@ -1168,8 +1199,8 @@ subroutine copy_rk4_patch(sourcep, targetp, cpatch)
    targetp%can_rhos         = sourcep%can_rhos
    targetp%can_prss         = sourcep%can_prss
    targetp%can_exner        = sourcep%can_exner
+   targetp%can_cp           = sourcep%can_cp
    targetp%can_depth        = sourcep%can_depth
-   targetp%can_rvap         = sourcep%can_rvap
    targetp%can_rhv          = sourcep%can_rhv
    targetp%can_ssh          = sourcep%can_ssh
    targetp%veg_height       = sourcep%veg_height
@@ -1276,7 +1307,6 @@ subroutine copy_rk4_patch(sourcep, targetp, cpatch)
       targetp%nplant          (k) = sourcep%nplant          (k)
       targetp%lai             (k) = sourcep%lai             (k)
       targetp%wai             (k) = sourcep%wai             (k)
-      targetp%wpa             (k) = sourcep%wpa             (k)
       targetp%tai             (k) = sourcep%tai             (k)
       targetp%crown_area      (k) = sourcep%crown_area      (k)
       targetp%elongf          (k) = sourcep%elongf          (k)
@@ -1296,6 +1326,7 @@ subroutine copy_rk4_patch(sourcep, targetp, cpatch)
    if (checkbudget) then
       targetp%co2budget_storage      = sourcep%co2budget_storage
       targetp%co2budget_loss2atm     = sourcep%co2budget_loss2atm
+      targetp%ebudget_netrad         = sourcep%ebudget_netrad
       targetp%ebudget_loss2atm       = sourcep%ebudget_loss2atm
       targetp%ebudget_loss2drainage  = sourcep%ebudget_loss2drainage
       targetp%ebudget_loss2runoff    = sourcep%ebudget_loss2runoff
@@ -1408,9 +1439,12 @@ subroutine initialize_rk4patches(init)
                             , patchtype             ! ! structure
    use rk4_coms      , only : integration_buff      & ! structure
                             , deallocate_rk4_coh    & ! structure
+                            , deallocate_rk4_aux    & ! structure
                             , allocate_rk4_patch    & ! structure
                             , allocate_rk4_coh      & ! structure
-                            , allocate_rk4_aux      ! ! structure
+                            , allocate_rk4_aux      & ! structure
+                            , allocate_bdf2_patch   &
+                            , deallocate_bdf2_patch
    use ed_misc_coms  , only : integration_scheme    ! ! intent(in)
    use grid_coms     , only : ngrids                ! ! intent(in)
    implicit none
@@ -1432,22 +1466,33 @@ subroutine initialize_rk4patches(init)
       !------------------------------------------------------------------------------------!
       !     If this is initialization, make sure soil and sfcwater arrays are allocated.   !
       !------------------------------------------------------------------------------------!
-      allocate(integration_buff%initp )
-      allocate(integration_buff%yscal )
-      allocate(integration_buff%y     )
-      allocate(integration_buff%dydx  )
-      allocate(integration_buff%yerr  )
-      allocate(integration_buff%ytemp )
 
-      call allocate_rk4_patch(integration_buff%initp )
-      call allocate_rk4_patch(integration_buff%yscal )
-      call allocate_rk4_patch(integration_buff%y     )
-      call allocate_rk4_patch(integration_buff%dydx  )
-      call allocate_rk4_patch(integration_buff%yerr  )
-      call allocate_rk4_patch(integration_buff%ytemp )
+      select case (integration_scheme)
+      case (3)
 
-      !------ Allocate and initialise the auxiliary structure. ----------------------------!
-      call allocate_rk4_aux(nzg,nzs)
+         allocate(integration_buff%initp)
+         allocate(integration_buff%ytemp)
+
+         call allocate_rk4_patch(integration_buff%initp )
+         call allocate_rk4_patch(integration_buff%ytemp )
+      
+      case default
+
+         allocate(integration_buff%initp )
+         allocate(integration_buff%yscal )
+         allocate(integration_buff%y     )
+         allocate(integration_buff%dydx  )
+         allocate(integration_buff%yerr  )
+         allocate(integration_buff%ytemp )
+         
+         call allocate_rk4_patch(integration_buff%initp )
+         call allocate_rk4_patch(integration_buff%yscal )
+         call allocate_rk4_patch(integration_buff%y     )
+         call allocate_rk4_patch(integration_buff%dydx  )
+         call allocate_rk4_patch(integration_buff%yerr  )
+         call allocate_rk4_patch(integration_buff%ytemp )
+
+      end select
 
 
       !------------------------------------------------------------------------------------!
@@ -1481,6 +1526,13 @@ subroutine initialize_rk4patches(init)
 
          call allocate_rk4_patch(integration_buff%ak2)
          call allocate_rk4_patch(integration_buff%ak3)
+
+      case (3) !----- Hybrid (forward Euler/BDF2)------------------------------------------!
+
+         allocate(integration_buff%dinitp)
+         call allocate_rk4_patch(integration_buff%dinitp)
+         allocate(integration_buff%yprev)
+
       end select
       !------------------------------------------------------------------------------------!
    else
@@ -1488,12 +1540,21 @@ subroutine initialize_rk4patches(init)
       !    If this is not initialization, deallocate cohort memory from integration        !
       ! patches.                                                                           !
       !------------------------------------------------------------------------------------!
-      call deallocate_rk4_coh(integration_buff%initp )
-      call deallocate_rk4_coh(integration_buff%yscal )
-      call deallocate_rk4_coh(integration_buff%y     )
-      call deallocate_rk4_coh(integration_buff%dydx  )
-      call deallocate_rk4_coh(integration_buff%yerr  )
-      call deallocate_rk4_coh(integration_buff%ytemp )
+
+      if(integration_scheme == 3)then
+         call deallocate_rk4_coh(integration_buff%initp )
+         call deallocate_rk4_coh(integration_buff%ytemp )
+      else
+         call deallocate_rk4_coh(integration_buff%initp )
+         call deallocate_rk4_coh(integration_buff%yscal )
+         call deallocate_rk4_coh(integration_buff%y     )
+         call deallocate_rk4_coh(integration_buff%dydx  )
+         call deallocate_rk4_coh(integration_buff%yerr  )
+         call deallocate_rk4_coh(integration_buff%ytemp )
+      end if
+
+      !------ De-allocate the auxiliary structure. ----------------------------------------!
+      call deallocate_rk4_aux()
 
       !------------------------------------------------------------------------------------!
       !     The following structures are allocated/deallocated depending on the            !
@@ -1512,6 +1573,9 @@ subroutine initialize_rk4patches(init)
       case (2) !----- Heun's. -------------------------------------------------------------!
          call deallocate_rk4_coh(integration_buff%ak2)
          call deallocate_rk4_coh(integration_buff%ak3)
+      case (3) !----- Hybrid --------------------------------------------------------------!
+         call deallocate_rk4_coh(integration_buff%dinitp)
+         call deallocate_bdf2_patch(integration_buff%yprev)
       end select
       !------------------------------------------------------------------------------------!
    end if
@@ -1534,12 +1598,19 @@ subroutine initialize_rk4patches(init)
    ! write (unit=*,fmt='(a,1x,i5)') 'Maxcohort = ',maxcohort
 
    !----- Create new memory in each of the integration patches. ---------------------------!
-   call allocate_rk4_coh(maxcohort,integration_buff%initp )
-   call allocate_rk4_coh(maxcohort,integration_buff%yscal )
-   call allocate_rk4_coh(maxcohort,integration_buff%y     )
-   call allocate_rk4_coh(maxcohort,integration_buff%dydx  )
-   call allocate_rk4_coh(maxcohort,integration_buff%yerr  )
-   call allocate_rk4_coh(maxcohort,integration_buff%ytemp )
+   if(integration_scheme == 3)then
+      call allocate_rk4_coh(maxcohort,integration_buff%initp )
+      call allocate_rk4_coh(maxcohort,integration_buff%ytemp )
+   else
+      call allocate_rk4_coh(maxcohort,integration_buff%initp )
+      call allocate_rk4_coh(maxcohort,integration_buff%yscal )
+      call allocate_rk4_coh(maxcohort,integration_buff%y     )
+      call allocate_rk4_coh(maxcohort,integration_buff%dydx  )
+      call allocate_rk4_coh(maxcohort,integration_buff%yerr  )
+      call allocate_rk4_coh(maxcohort,integration_buff%ytemp )
+   end if
+   !---------------------------------------------------------------------------------------!
+
 
    !---------------------------------------------------------------------------------------!
    !     The following structures are allocated/deallocated depending on the integration   !
@@ -1558,7 +1629,16 @@ subroutine initialize_rk4patches(init)
    case (2) !----- Heun's. ----------------------------------------------------------------!
       call allocate_rk4_coh(maxcohort,integration_buff%ak2   )
       call allocate_rk4_coh(maxcohort,integration_buff%ak3   )
+   case (3) !----- Hybrid -----------------------------------------------------------------!
+      call allocate_rk4_coh(maxcohort,integration_buff%dinitp)
+      call allocate_bdf2_patch(integration_buff%yprev,maxcohort)
    end select
+   !---------------------------------------------------------------------------------------!
+
+
+   !------ Allocate and initialise the auxiliary structure. -------------------------------!
+   call allocate_rk4_aux(nzg,nzs,maxcohort)
+   !---------------------------------------------------------------------------------------!
 
    return
 end subroutine initialize_rk4patches

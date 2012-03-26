@@ -79,12 +79,14 @@ subroutine edcp_get_work(ifm,nxp,nyp,inode,mxp,myp,ia,iz,i0,ja,jz,j0)
    allocate(ncol_soil_list (maxsite,npoly))
    allocate(ipcent_land    (maxsite,npoly))
    allocate(ipcent_soil    (maxsite,npoly))
-  
-   !----- Fill lat/lon lists. -------------------------------------------------------------!
+   !---------------------------------------------------------------------------------------!
+
 
 
 
    !---------------------------------------------------------------------------------------!
+   !  Fill in the longitude and latitude lists.                                            !
+   !                                                                                       !
    !  i index: West-East (longitude).  It increases eastwards.                             !
    !  j index: South-North (latitude).  It increases northwards.                           !
    !---------------------------------------------------------------------------------------!

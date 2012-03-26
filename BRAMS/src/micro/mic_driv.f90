@@ -352,44 +352,48 @@ end subroutine mcphys_main
 !==========================================================================================!
 subroutine copyback(m1,i,j,pp,pi0,thp,btheta,rtp,rv,micro)
 
-   use mem_micro, only: &
-           micro_vars   ! ! INTENT(IN) ! Only a type structure
-
-   use micphys, only:   &
-           k1           & ! intent(in)
-          ,k2           & ! intent(in)
-          ,k3           & ! intent(in)
-          ,lpw          & ! intent(in)
-          ,ncat         & ! intent(in)
-          ,jnmb         & ! intent(in)
-          ,availcat     & ! intent(in)
-          ,progncat     & ! intent(in)
-          ,rx           & ! intent(in)
-          ,cx           & ! intent(in)
-          ,qx           & ! intent(in)
-          ,pottemp      & ! intent(in)
-          ,thil         & ! intent(in)
-          ,rvap         & ! intent(in)
-          ,rtot         & ! intent(in)
-          ,accpx        & ! intent(in)
-          ,pcprx        ! ! intent(in)
-
-   use mem_scratch, only : &
-           vctr11        ! ! intent(out)
-   
-   use rconstants, only: t00,cliq,cice,alli,p00,cpi,cpor
-   use therm_lib , only: qtk
-   use node_mod  , only: mynum
+   use mem_micro, only : micro_vars   ! ! intent(in) ! structure
+   use micphys  , only : k1           & ! intent(in)
+                       , k2           & ! intent(in)
+                       , k3           & ! intent(in)
+                       , lpw          & ! intent(in)
+                       , ncat         & ! intent(in)
+                       , jnmb         & ! intent(in)
+                       , availcat     & ! intent(in)
+                       , progncat     & ! intent(in)
+                       , rx           & ! intent(in)
+                       , cx           & ! intent(in)
+                       , qx           & ! intent(in)
+                       , pottemp      & ! intent(in)
+                       , thil         & ! intent(in)
+                       , rvap         & ! intent(in)
+                       , rtot         & ! intent(in)
+                       , accpx        & ! intent(in)
+                       , pcprx        ! ! intent(in)
+   use therm_lib, only : exner2press  & ! function
+                       , extheta2temp ! ! function
+   use node_mod , only : mynum        ! ! intent(in)
    implicit none
 
    !----- Arguments: ----------------------------------------------------------------------!
-   integer                         , intent(in)    :: m1,i,j
-   real             , dimension(m1), intent(inout) :: pp,pi0,thp,rtp,rv,btheta
+   integer                         , intent(in)    :: m1
+   integer                         , intent(in)    :: i
+   integer                         , intent(in)    :: j
+   real             , dimension(m1), intent(inout) :: pp
+   real             , dimension(m1), intent(inout) :: pi0
+   real             , dimension(m1), intent(inout) :: thp
+   real             , dimension(m1), intent(inout) :: rtp
+   real             , dimension(m1), intent(inout) :: rv
+   real             , dimension(m1), intent(inout) :: btheta
    type (micro_vars)               , intent(inout) :: micro
    !----- Local variables -----------------------------------------------------------------!
-   integer                                         :: k,lcat
-   real                                            :: tcoal, fracliq
-   real                                            :: exner, pres, temp
+   integer                                         :: k
+   integer                                         :: lcat
+   real                                            :: tcoal
+   real                                            :: fracliq
+   real                                            :: exner
+   real                                            :: pres
+   real                                            :: temp
    !---------------------------------------------------------------------------------------!
 
   
@@ -492,8 +496,8 @@ subroutine copyback(m1,i,j,pp,pi0,thp,btheta,rtp,rv,micro)
 
    if (rv(k) > rtp(k) .or. any(rx(k,:) < 0)) then
       exner = pi0(k) + pp(k)
-      pres  = p00 * (cpi * exner) ** cpor
-      temp  = cpi * btheta(k) * exner
+      pres  = exner2press(exner)
+      temp  = extheta2temp(exner,btheta(k))
       write (unit=*,fmt='(a)') '------ MODEL THERMODYNAMIC IS NON-SENSE... ------'
       write (unit=*,fmt='(a,1x,i5,a)'  ) 'In node ',mynum,'...'
       write (unit=*,fmt='(a,1x,i5)'    ) 'I     =',i

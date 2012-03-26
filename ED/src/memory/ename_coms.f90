@@ -131,6 +131,7 @@ module ename_coms
 
       !----- Options for model dynamics. --------------------------------------------------!
       integer                                           :: ivegt_dynamics
+      integer                                           :: ibigleaf
       integer                                           :: integration_scheme
       real                                              :: rk4_tolerance
       integer                                           :: ibranch_thermo
@@ -180,6 +181,7 @@ module ename_coms
       integer                                           :: n_decomp_lim
       integer                                           :: decomp_scheme
       integer                                           :: include_fire
+      real                                              :: fire_parameter
       real                                              :: sm_fire
       integer                                           :: ianth_disturb
       integer                                           :: icanturb
@@ -232,11 +234,16 @@ module ename_coms
       character(len=str_len)                            :: phenpath
       character(len=str_len)                            :: event_file
 
+      !----- Variables to control detailed output. ----------------------------------------!
+      integer                                           :: idetailed
+      integer                                           :: patch_keep
+
       !----- Variables that control the sought number of patches and cohorts. -------------!
       integer                                           :: maxsite
       integer                                           :: maxpatch
       integer                                           :: maxcohort
       real                                              :: min_site_area
+      real                                              :: min_patch_area
 
       !----- Directory for optimizer inputs. ----------------------------------------------!
       character(len=str_len)                            :: ioptinpt
@@ -378,6 +385,7 @@ module ename_coms
  
 
       enl%ivegt_dynamics            = undef_integer
+      enl%ibigleaf                  = undef_integer
       enl%integration_scheme        = undef_integer
       enl%rk4_tolerance             = undef_real
       enl%ibranch_thermo            = undef_integer
@@ -427,6 +435,7 @@ module ename_coms
       enl%n_decomp_lim              = undef_integer
       enl%decomp_scheme             = undef_integer
       enl%include_fire              = undef_integer
+      enl%fire_parameter            = undef_real
       enl%sm_fire                   = undef_real
       enl%ianth_disturb             = undef_integer
       enl%icanturb                  = undef_integer
@@ -476,10 +485,14 @@ module ename_coms
       enl%phenpath                  = undef_path
       enl%event_file                = undef_path
 
+      enl%idetailed                 = undef_integer
+      enl%patch_keep                = undef_integer
+
       enl%maxsite                   = undef_integer
       enl%maxpatch                  = undef_integer
       enl%maxcohort                 = undef_integer
       enl%min_site_area             = undef_real
+      enl%min_patch_area            = undef_real
 
       enl%ioptinpt                  = undef_path
       enl%zrough                    = undef_real

@@ -141,8 +141,8 @@ module mem_ensemble
       !------------------------------------------------------------------------------------!
       !      Scalars, for dynamic control ensemble calculation and feedback.               !
       !------------------------------------------------------------------------------------!
-      real :: prev_dnmf                    ! Dndraft mass flux last time          [kg/m²/s]
-      real :: precip                       ! Precipitation rate                   [kg/m²/s]
+      real, pointer, dimension(:) :: prev_dnmf ! Dndraft mass flux last time      [kg/m²/s]
+      real, pointer, dimension(:) :: precip    ! Precipitation rate               [kg/m²/s]
 
    end type ensemble_vars
 
@@ -230,6 +230,9 @@ module mem_ensemble
       allocate (ensemble%outthil                        (mgmzp)                      )
       allocate (ensemble%outco2                         (mgmzp)                      )
 
+
+      allocate (ensemble%prev_dnmf                      (    1)                      )
+      allocate (ensemble%precip                         (    1)                      )
       return
    end subroutine alloc_ensemble
    !=======================================================================================!
@@ -247,64 +250,67 @@ module mem_ensemble
       implicit none
       type(ensemble_vars) :: ensemble
 
-      if(associated(ensemble%dnmf_ens       ))  nullify(ensemble%dnmf_ens       )
-      if(associated(ensemble%upmf_ens       ))  nullify(ensemble%upmf_ens       )
-      if(associated(ensemble%dnmx_ens       ))  nullify(ensemble%dnmx_ens       )
-      if(associated(ensemble%upmx_ens       ))  nullify(ensemble%upmx_ens       )
+      nullify(ensemble%dnmf_ens       )
+      nullify(ensemble%upmf_ens       )
+      nullify(ensemble%dnmx_ens       )
+      nullify(ensemble%upmx_ens       )
 
-      if(associated(ensemble%x_aatot        ))  nullify(ensemble%x_aatot        )
+      nullify(ensemble%x_aatot        )
 
-      if(associated(ensemble%edt_eff        ))  nullify(ensemble%edt_eff        )
-      if(associated(ensemble%aatot0_eff     ))  nullify(ensemble%aatot0_eff     )
-      if(associated(ensemble%aatot_eff      ))  nullify(ensemble%aatot_eff      )
+      nullify(ensemble%edt_eff        )
+      nullify(ensemble%aatot0_eff     )
+      nullify(ensemble%aatot_eff      )
 
-      if(associated(ensemble%dellatheiv_eff ))  nullify(ensemble%dellatheiv_eff )
-      if(associated(ensemble%dellathil_eff  ))  nullify(ensemble%dellathil_eff  )
-      if(associated(ensemble%dellaqtot_eff  ))  nullify(ensemble%dellaqtot_eff  )
-      if(associated(ensemble%dellaco2_eff   ))  nullify(ensemble%dellaco2_eff   )
-      if(associated(ensemble%pw_eff         ))  nullify(ensemble%pw_eff         )
+      nullify(ensemble%dellatheiv_eff )
+      nullify(ensemble%dellathil_eff  )
+      nullify(ensemble%dellaqtot_eff  )
+      nullify(ensemble%dellaco2_eff   )
+      nullify(ensemble%pw_eff         )
 
-      if(associated(ensemble%ierr_cap       ))  nullify(ensemble%ierr_cap       )
-      if(associated(ensemble%comp_down_cap  ))  nullify(ensemble%comp_down_cap  )
-      if(associated(ensemble%klod_cap       ))  nullify(ensemble%klod_cap       )
-      if(associated(ensemble%klou_cap       ))  nullify(ensemble%klou_cap       )
-      if(associated(ensemble%klcl_cap       ))  nullify(ensemble%klcl_cap       )
-      if(associated(ensemble%klfc_cap       ))  nullify(ensemble%klfc_cap       )
-      if(associated(ensemble%kdet_cap       ))  nullify(ensemble%kdet_cap       )
-      if(associated(ensemble%kstabi_cap     ))  nullify(ensemble%kstabi_cap     )
-      if(associated(ensemble%kstabm_cap     ))  nullify(ensemble%kstabm_cap     )
-      if(associated(ensemble%klnb_cap       ))  nullify(ensemble%klnb_cap       )
-      if(associated(ensemble%ktop_cap       ))  nullify(ensemble%ktop_cap       )
-      if(associated(ensemble%pwav_cap       ))  nullify(ensemble%pwav_cap       )
-      if(associated(ensemble%pwev_cap       ))  nullify(ensemble%pwev_cap       )
-      if(associated(ensemble%dnmf_cap       ))  nullify(ensemble%dnmf_cap       )
-      if(associated(ensemble%upmf_cap       ))  nullify(ensemble%upmf_cap       )
-      if(associated(ensemble%areadn_cap     ))  nullify(ensemble%areadn_cap     )
-      if(associated(ensemble%areaup_cap     ))  nullify(ensemble%areaup_cap     )
-      if(associated(ensemble%wdndraft_cap   ))  nullify(ensemble%wdndraft_cap   )
-      if(associated(ensemble%wupdraft_cap   ))  nullify(ensemble%wupdraft_cap   )
-      if(associated(ensemble%wbuoymin_cap   ))  nullify(ensemble%wbuoymin_cap   )
-
-
-      if(associated(ensemble%cdd_cap        ))  nullify(ensemble%cdd_cap        )
-      if(associated(ensemble%cdu_cap        ))  nullify(ensemble%cdu_cap        )
-      if(associated(ensemble%mentrd_rate_cap))  nullify(ensemble%mentrd_rate_cap)
-      if(associated(ensemble%mentru_rate_cap))  nullify(ensemble%mentru_rate_cap)
-      if(associated(ensemble%dbyd_cap       ))  nullify(ensemble%dbyd_cap       )
-      if(associated(ensemble%dbyu_cap       ))  nullify(ensemble%dbyu_cap       )
-      if(associated(ensemble%etad_cld_cap   ))  nullify(ensemble%etad_cld_cap   )
-      if(associated(ensemble%etau_cld_cap   ))  nullify(ensemble%etau_cld_cap   )
-      if(associated(ensemble%rhod_cld_cap   ))  nullify(ensemble%rhod_cld_cap   )
-      if(associated(ensemble%rhou_cld_cap   ))  nullify(ensemble%rhou_cld_cap   )
-      if(associated(ensemble%qliqd_cld_cap  ))  nullify(ensemble%qliqd_cld_cap  )
-      if(associated(ensemble%qliqu_cld_cap  ))  nullify(ensemble%qliqu_cld_cap  )
-      if(associated(ensemble%qiced_cld_cap  ))  nullify(ensemble%qiced_cld_cap  )
-      if(associated(ensemble%qiceu_cld_cap  ))  nullify(ensemble%qiceu_cld_cap  )
+      nullify(ensemble%ierr_cap       )
+      nullify(ensemble%comp_down_cap  )
+      nullify(ensemble%klod_cap       )
+      nullify(ensemble%klou_cap       )
+      nullify(ensemble%klcl_cap       )
+      nullify(ensemble%klfc_cap       )
+      nullify(ensemble%kdet_cap       )
+      nullify(ensemble%kstabi_cap     )
+      nullify(ensemble%kstabm_cap     )
+      nullify(ensemble%klnb_cap       )
+      nullify(ensemble%ktop_cap       )
+      nullify(ensemble%pwav_cap       )
+      nullify(ensemble%pwev_cap       )
+      nullify(ensemble%dnmf_cap       )
+      nullify(ensemble%upmf_cap       )
+      nullify(ensemble%areadn_cap     )
+      nullify(ensemble%areaup_cap     )
+      nullify(ensemble%wdndraft_cap   )
+      nullify(ensemble%wupdraft_cap   )
+      nullify(ensemble%wbuoymin_cap   )
 
 
-      if(associated(ensemble%outco2         ))  nullify(ensemble%outco2         )
-      if(associated(ensemble%outqtot        ))  nullify(ensemble%outqtot        )
-      if(associated(ensemble%outthil        ))  nullify(ensemble%outthil        )
+      nullify(ensemble%cdd_cap        )
+      nullify(ensemble%cdu_cap        )
+      nullify(ensemble%mentrd_rate_cap)
+      nullify(ensemble%mentru_rate_cap)
+      nullify(ensemble%dbyd_cap       )
+      nullify(ensemble%dbyu_cap       )
+      nullify(ensemble%etad_cld_cap   )
+      nullify(ensemble%etau_cld_cap   )
+      nullify(ensemble%rhod_cld_cap   )
+      nullify(ensemble%rhou_cld_cap   )
+      nullify(ensemble%qliqd_cld_cap  )
+      nullify(ensemble%qliqu_cld_cap  )
+      nullify(ensemble%qiced_cld_cap  )
+      nullify(ensemble%qiceu_cld_cap  )
+
+
+      nullify(ensemble%outco2         )
+      nullify(ensemble%outqtot        )
+      nullify(ensemble%outthil        )
+
+      nullify(ensemble%prev_dnmf      )
+      nullify(ensemble%precip         )
 
       return
    end subroutine nullify_ensemble
@@ -381,6 +387,9 @@ module mem_ensemble
       if(associated(ensemble%outco2         ))  deallocate(ensemble%outco2         )
       if(associated(ensemble%outqtot        ))  deallocate(ensemble%outqtot        )
       if(associated(ensemble%outthil        ))  deallocate(ensemble%outthil        )
+
+      if(associated(ensemble%prev_dnmf      ))  deallocate(ensemble%prev_dnmf      )
+      if(associated(ensemble%precip         ))  deallocate(ensemble%precip         )
 
       return
    end subroutine dealloc_ensemble
@@ -459,8 +468,8 @@ module mem_ensemble
       if(associated(ensemble%outthil        ))  ensemble%outthil         = 0.
 
       !----- Real variables ----------------------------------------------------------------!
-      ensemble%prev_dnmf         = 0.
-      ensemble%precip            = 0.
+      if(associated(ensemble%prev_dnmf      ))  ensemble%prev_dnmf       = 0.
+      if(associated(ensemble%precip         ))  ensemble%precip          = 0.
       !-------------------------------------------------------------------------------------!
 
       return
