@@ -44,7 +44,7 @@ module libxml2f90_module
   character(1),allocatable    ::  tempstringa(:)
   integer(4)                  ::  filelines
   integer(4)                  ::  lbact
-  character(32)               ::  default_llid='CNTL'
+  character(512)               ::  default_llid='CNTL'  !
   integer(4)                  ::  xmlformat=3
   integer(4)                  ::  arraystep=2000
   integer(4)                  ::  indstep=2
@@ -430,9 +430,9 @@ end module libxml2f90_strings_module
 
 module ll_module
   type ll_type
-     character(32)            :: LL_ID
-     character(32)            :: TAG
-     character(32)            :: ID
+     character(512)            :: LL_ID
+     character(512)            :: TAG
+     character(512)            :: ID
      character(1),dimension(:),pointer :: VALUE
 !     real(8),dimension(:),pointer     :: row
      type(ll_type),pointer    :: NEXT_LL
@@ -607,8 +607,8 @@ contains
     character(*),intent(in)        :: id
     real(8),intent(in)             :: value
     integer(4)                     :: size_ 
-    character(32)                  :: ch
-    character, dimension(32)       :: chvec
+    character(512)                  :: ch
+    character, dimension(512)       :: chvec
     integer                        :: s
     !............................................
     
@@ -631,7 +631,7 @@ contains
     character(*),intent(in)        :: id
     integer(4),intent(in)          :: n
     real(8),intent(in)             :: value(n)
-    character(32)                  :: ch(n)
+    character(512)                  :: ch(n)
     integer(4)                     :: i,l,ipos
     integer(4)                     :: size_
     character(1),allocatable       :: ch1(:)
@@ -667,7 +667,7 @@ contains
     character(*),intent(in)        :: id
     complex(8),intent(in)          :: value
     integer(4)                     :: size_ 
-    character(32)                  :: ch
+    character(512)                  :: ch
     !............................................
     
 !!__    !convert the value to a string
@@ -3387,7 +3387,7 @@ subroutine libxml2f90_ll_addpureid(size_,value)
   implicit none
   integer(4),intent(in)               :: size_
   character(1),intent(in)             :: value(size_)
-  character(32)                       :: id
+  character(512)                       :: id
   integer(4)                          :: line
   !...........................
   THIS=>THIS%FIRST_ID
@@ -3873,7 +3873,7 @@ subroutine libxml2f90_transform_paw()
   use libxml2f90_module
   use libxml2f90_strings_module
   implicit none
-  character(32),allocatable   :: idarray(:)
+  character(512),allocatable   :: idarray(:)
   integer(4)                  :: iid
   integer(4)                  :: iread,iwrite,i,c,j
   character(1),allocatable    :: newstringa(:)

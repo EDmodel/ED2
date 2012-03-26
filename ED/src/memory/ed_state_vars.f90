@@ -8211,7 +8211,8 @@ contains
          nvar=nvar+1
          call vtable_edio_r(npts,cgrid%avg_qwshed_vg,nvar,igr,init,cgrid%pyglob_id, &
               var_len,var_len_global,max_ptrs,'AVG_QWSHED_VG :11:hist:anal') 
-         call metadata_edio(nvar,igr,'Polygon averaged internal energy flux of water shed from vegetation to ground','[W/m2]','ipoly') 
+         call metadata_edio(nvar,igr,'Polygon averaged internal energy flux of water shed from vegetation to ground', &
+         '[W/m2]','ipoly') 
       end if
        
       if (associated(cgrid%avg_qintercepted)) then
