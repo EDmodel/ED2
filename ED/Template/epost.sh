@@ -1,6 +1,6 @@
 #!/bin/bash
 here=`pwd`                            # ! Main path
-diskthere='/n/scratch2/moorcroft_lab' # ! Disk where the output files are
+diskthere='/n/moorcroftfs2' # ! Disk where the output files are
 thisqueue='moorcroft'                 # ! Queue where jobs should be submitted
 lonlat=${here}'/joborder.txt'         # ! File with the job instructions
 #----- Outroot is the main output directory. ----------------------------------------------#
@@ -54,7 +54,9 @@ echo 'Number of polygons: '${npolys}'...'
 #   - plot_photo.r   - This creates plots from the detailed output for Farquhar-Leuning.   #
 #   - plot_rk4pc.r   - This creates plots from the detailed output for Runge-Kutta.        #
 #                      (patch- and cohort-level).                                          #
-# 
+#   - plot_budget.r  - This creates plots from the detailed budget for Runge-Kutta.        #
+#                      (patch-level only).                                                 #
+#                                                                                          #
 #   The following scripts should work too, but I haven't tested them.                      #
 #   - plot_daily.r   - This creates plots from the daily mean output.                      #
 #   - plot_fast.r    - This creates plots from the analysis files.                         #
@@ -140,23 +142,29 @@ do
    atmco2=`echo ${oi}       | awk '{print $57}'`
    thcrit=`echo ${oi}       | awk '{print $58}'`
    smfire=`echo ${oi}       | awk '{print $59}'`
-   isoilbc=`echo ${oi}      | awk '{print $60}'`
-   imetrad=`echo ${oi}      | awk '{print $61}'`
-   ibranch=`echo ${oi}      | awk '{print $62}'`
-   icanrad=`echo ${oi}      | awk '{print $63}'`
-   crown=`echo   ${oi}      | awk '{print $64}'`
-   ltransvis=`echo ${oi}    | awk '{print $65}'`
-   lreflectvis=`echo ${oi}  | awk '{print $66}'`
-   ltransnir=`echo ${oi}    | awk '{print $67}'`
-   lreflectnir=`echo ${oi}  | awk '{print $68}'`
-   orienttree=`echo ${oi}   | awk '{print $69}'`
-   orientgrass=`echo ${oi}  | awk '{print $70}'`
-   clumptree=`echo ${oi}    | awk '{print $71}'`
-   clumpgrass=`echo ${oi}   | awk '{print $72}'`
-   ivegtdyn=`echo ${oi}     | awk '{print $73}'`
-   igndvap=`echo ${oi}      | awk '{print $74}'`
-   iphen=`echo ${oi}        | awk '{print $75}'`
-   iallom=`echo ${oi}       | awk '{print $76}'`
+   ifire=`echo ${oi}        | awk '{print $60}'`
+   fireparm=`echo ${oi}     | awk '{print $61}'`
+   ipercol=`echo ${oi}      | awk '{print $62}'`
+   isoilbc=`echo ${oi}      | awk '{print $63}'`
+   runoff=`echo ${oi}       | awk '{print $64}'`
+   imetrad=`echo ${oi}      | awk '{print $65}'`
+   ibranch=`echo ${oi}      | awk '{print $66}'`
+   icanrad=`echo ${oi}      | awk '{print $67}'`
+   crown=`echo   ${oi}      | awk '{print $68}'`
+   ltransvis=`echo ${oi}    | awk '{print $69}'`
+   lreflectvis=`echo ${oi}  | awk '{print $70}'`
+   ltransnir=`echo ${oi}    | awk '{print $71}'`
+   lreflectnir=`echo ${oi}  | awk '{print $72}'`
+   orienttree=`echo ${oi}   | awk '{print $73}'`
+   orientgrass=`echo ${oi}  | awk '{print $74}'`
+   clumptree=`echo ${oi}    | awk '{print $75}'`
+   clumpgrass=`echo ${oi}   | awk '{print $76}'`
+   ivegtdyn=`echo ${oi}     | awk '{print $77}'`
+   igndvap=`echo ${oi}      | awk '{print $78}'`
+   iphen=`echo ${oi}        | awk '{print $79}'`
+   iallom=`echo ${oi}       | awk '{print $80}'`
+   ibigleaf=`echo ${oi}     | awk '{print $81}'`
+   irepro=`echo ${oi}       | awk '{print $82}'`
    #---------------------------------------------------------------------------------------#
 
 
@@ -188,6 +196,13 @@ do
          epostout='pmon_epost.out'
          epostlsf='pmon_epost.lsf'
          epostjob='eb-pmon-'${polyiata}
+         ;;
+      plot_budget.r)
+         thisyeara=${yeara}
+         let thisdatea=${datea}+1
+         epostout='pbdg_epost.out'
+         epostlsf='pbdg_epost.lsf'
+         epostjob='eb-pbdg-'${polyiata}
          ;;
       plot_rk4.r)
          thisyeara=${yeara}

@@ -243,6 +243,8 @@ subroutine ed_coup_model(ifm)
       call rk4_timestep(edgrid_g(ifm),ifm)
    case (2)
       call heun_timestep(edgrid_g(ifm))
+   case (3)
+      call hybrid_timestep(edgrid_g(ifm))
    end select
 
    !---------------------------------------------------------------------------------------!

@@ -487,12 +487,16 @@ module pft_coms
    !---------------------------------------------------------------------------------------!
    !----- Initial plant density in a near-bare-ground run [plant/m²]. ---------------------!
    real   , dimension(n_pft)    :: init_density
+   !----- Initial maximum LAI in a near-bare-ground run [m²/m²] - Big leaf only. ----------!
+   real   , dimension(n_pft)    :: init_laimax
    !----- Minimum height of an individual [m]. --------------------------------------------!
    real   , dimension(n_pft)    :: hgt_min
    !----- Maximum height of an individual [m]. --------------------------------------------!
    real   , dimension(n_pft)    :: hgt_max
    !----- Minimum biomass density [kgC/m²] required to form a new recruit. ----------------!
    real   , dimension(n_pft) :: min_recruit_size
+   !----- Amount of biomass [kgC] in one tree, used for 'big-leaf' ED. --------------------!
+   real   , dimension(n_pft) :: one_plant_c
    !---------------------------------------------------------------------------------------!
    !    Fraction of (positive) carbon balance devoted to storage (unwise to set this to    !
    ! anything other than zero unless storage turnover rate is adjusted accordingly).       !
@@ -540,12 +544,15 @@ module pft_coms
 
    !=======================================================================================!
    !=======================================================================================!
-   !     The following varible is used to "turn off" the lights for extremely sparse       !
-   ! cohorts, that otherwise can have strange light values due to numeric precision.  This !
-   ! will cause the cohort to starve to death, and it will be quickly eliminated.          !
+   !     The following varible will be used to "turn off" the biophysics for extremely low !
+   ! biomass cohorts, that otherwise could shrink the time step in case they were solved.  !
+   ! We use heat capacity rather than leaf/wood area index as the threshold because the    !
+   ! heat capacity what will control the time step.  Also, in case of leaves, the bio-     !
+   ! physics "turn off" will kill the cohorts, because they won't be able to do photo-     !
+   ! synthesis.                                                                            !
    !=======================================================================================!
    !=======================================================================================!
-   real, dimension(n_pft) :: lai_min
+   real, dimension(n_pft) :: veg_hcap_min
    !=======================================================================================!
    !=======================================================================================!
 
@@ -574,13 +581,22 @@ module pft_coms
    !---------------------------------------------------------------------------------------!
    type recruittype
       integer :: pft
+      integer :: krdepth
+      integer :: phenology_status
       real    :: leaf_temp
       real    :: wood_temp
+      real    :: leaf_temp_pv
+      real    :: wood_temp_pv
       real    :: hite
       real    :: dbh
       real    :: bdead
       real    :: bleaf
+      real    :: broot
+      real    :: bsapwood
       real    :: balive
+      real    :: paw_avg
+      real    :: elongf
+      real    :: bstorage
       real    :: nplant
    end type recruittype
    !=======================================================================================!
@@ -605,16 +621,25 @@ module pft_coms
       !------------------------------------------------------------------------------------!
 
       do p=1,maxp
-         recruit(p)%pft       = 0
-         recruit(p)%leaf_temp = 0.
-         recruit(p)%wood_temp = 0.
-         recruit(p)%hite      = 0.
-         recruit(p)%dbh       = 0.
-         recruit(p)%bdead     = 0.
-         recruit(p)%bleaf     = 0.
-         recruit(p)%balive    = 0.
-         recruit(p)%nplant    = 0.
-      end do
+         recruit(p)%pft              = 0
+         recruit(p)%krdepth          = 0
+         recruit(p)%phenology_status = 0
+         recruit(p)%leaf_temp        = 0.
+         recruit(p)%wood_temp        = 0.
+         recruit(p)%leaf_temp_pv     = 0.
+         recruit(p)%wood_temp_pv     = 0.
+         recruit(p)%hite             = 0.
+         recruit(p)%dbh              = 0.
+         recruit(p)%bdead            = 0.
+         recruit(p)%bleaf            = 0.
+         recruit(p)%broot            = 0.
+         recruit(p)%bsapwood         = 0.
+         recruit(p)%balive           = 0.
+         recruit(p)%paw_avg          = 0.
+         recruit(p)%elongf           = 0.
+         recruit(p)%bstorage         = 0.
+         recruit(p)%nplant           = 0.
+       end do
 
       return
    end subroutine zero_recruit
@@ -637,15 +662,24 @@ module pft_coms
       type(recruittype), intent(out) :: rectarget
       !------------------------------------------------------------------------------------!
 
-      rectarget%pft       = recsource%pft
-      rectarget%leaf_temp = recsource%leaf_temp
-      rectarget%wood_temp = recsource%wood_temp
-      rectarget%hite      = recsource%hite
-      rectarget%dbh       = recsource%dbh
-      rectarget%bdead     = recsource%bdead
-      rectarget%bleaf     = recsource%bleaf
-      rectarget%balive    = recsource%balive
-      rectarget%nplant    = recsource%nplant
+      rectarget%pft              = recsource%pft
+      rectarget%krdepth          = recsource%krdepth
+      rectarget%phenology_status = recsource%phenology_status
+      rectarget%leaf_temp        = recsource%leaf_temp
+      rectarget%wood_temp        = recsource%wood_temp
+      rectarget%leaf_temp_pv     = recsource%leaf_temp_pv
+      rectarget%wood_temp_pv     = recsource%wood_temp_pv
+      rectarget%hite             = recsource%hite
+      rectarget%dbh              = recsource%dbh
+      rectarget%bdead            = recsource%bdead
+      rectarget%bleaf            = recsource%bleaf
+      rectarget%broot            = recsource%broot
+      rectarget%bsapwood         = recsource%bsapwood
+      rectarget%balive           = recsource%balive
+      rectarget%paw_avg          = recsource%paw_avg
+      rectarget%elongf           = recsource%elongf
+      rectarget%bstorage         = recsource%bstorage
+      rectarget%nplant           = recsource%nplant
 
       return
    end subroutine copy_recruit

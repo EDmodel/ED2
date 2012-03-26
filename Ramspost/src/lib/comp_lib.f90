@@ -16,7 +16,15 @@ subroutine RAMS_comp(n1,n2,n3,n4,n5,n6)
 use somevars
 use rconstants
 use rpost_coms
-use therm_lib, only : qtk, dewfrostpoint, rslif, virtt, thetaeiv
+use rout_coms, only : undefflg
+use therm_lib, only : uint2tl        & ! function
+                    , dewfrostpoint  & ! function
+                    , rslif          & ! function
+                    , virtt          & ! function
+                    , thetaeiv       & ! function
+                    , rehuil         & ! function
+                    , exner2press    & ! function
+                    , extheta2temp   ! ! function
 
 dimension a(n1,n2,n3),b(n1,n2,n3),c(n1,n2,n3),d(n1,n2,n3),e(n1,n2,n3),o(n1,n2,n3),topt(n1,n2)
 dimension a2(n1,n2,n4,n5),a6(n1,n2,n3,n6)
@@ -80,7 +88,7 @@ tkemin =1.E-2
       
       do i=1,n1
          do j=1,n2
-          a(i,j,1) = (ztn(2,ngrd)+ ztn(1,ngrd))
+          a(i,j,1) = (myztn(2,ngrd)+ myztn(1,ngrd))
          enddo
       enddo
 
@@ -91,7 +99,7 @@ tkemin =1.E-2
 !         print*,k,c(i,j,k),ztn(k,ngrd)
          if(c(i,j,k).lt.tkemin) then
             kzi = k
-            a(i,j,1)=0.5*(ztn(kzi,ngrd)+ ztn(kzi-1,ngrd))
+            a(i,j,1)=0.5*(myztn(kzi,ngrd)+ myztn(kzi-1,ngrd))
 	    go to 500
 	 endif
 	 enddo
@@ -111,7 +119,7 @@ entry RAMS_comp_nebulosidade(n1,n2,n3,a,b,c,e,ngrd)
          rnebu=0.
          rodzint=0
          do k=2,n3-1
-          dz=(ztn(k,ngrd)-ztn(k-1,ngrd))*(1.-e(i,j,1)/zmn(nnzp(1)-1,1))
+          dz=(myztn(k,ngrd)-myztn(k-1,ngrd))*(1.-e(i,j,1)/myzmn(mynnzp(1)-1,1))
           rnebu   = rnebu   + b(i,j,k)*c(i,j,k)*dz	  
           rodzint = rodzint +	       c(i,j,k)*dz	  
          enddo
@@ -195,7 +203,7 @@ entry set_undef(n1,n2,n3,a,c)
   do j=1,n2
       do i=1,n1
 	a(i,j,1)=c(i,j,1)
-!        if(a(i,j,1) .lt. 0.0001) a(i,j,1) = -9.99e33
+!        if(a(i,j,1) .lt. 0.0001) a(i,j,1) = undefflg
 !	print*,i,j,klevel,c(i,j,klevel)
       enddo
   enddo
@@ -350,7 +358,7 @@ entry RAMS_comp_z(n1,n2,n3,a,c,ngrd)
       do j=1,n2
          do i=1,n1
             a(i,j,k)=c(i,j,1)  &
-                 +ztn(k,ngrd)*(1.-c(i,j,1)/zmn(nnzp(1)-1,1))
+                 +myztn(k,ngrd)*(1.-c(i,j,1)/myzmn(mynnzp(1)-1,1))
          enddo
       enddo
    enddo
@@ -375,7 +383,7 @@ entry RAMS_comp_tempK(n1,n2,n3,a,b)
    do k=1,n3
       do j=1,n2
          do i=1,n1
-            a(i,j,k)=a(i,j,k)*b(i,j,k)/cp
+            a(i,j,k)=a(i,j,k)*b(i,j,k)/cpdry
          enddo
       enddo
    enddo
@@ -385,7 +393,7 @@ entry RAMS_comp_press(n1,n2,n3,a)
    do k=1,n3
       do j=1,n2
          do i=1,n1
-            a(i,j,k)=(a(i,j,k)/cp)**cpor*p00*.01
+            a(i,j,k)=exner2press(a(i,j,k)) * .01
          enddo
       enddo
    enddo
@@ -434,7 +442,7 @@ return
 entry RAMS_comp_sfcdiv(n1,n2,n3,a,ngrd)
    do j=1,n2
       do i=1,n1
-         a(i,j,1)=-(a(i,j,2)-a(i,j,1))*dztn(2,ngrd)
+         a(i,j,1)=-(a(i,j,2)-a(i,j,1))*mydztn(2,ngrd)
       enddo
    enddo
 return
@@ -489,8 +497,8 @@ entry RAMS_comp_dewK(n1,n2,n3,a,b,c)
    do k=1,n3
       do j=1,n2
          do i=1,n1
-            xpress=(b(i,j,k)/cp)**cpor*p00
-            xtemp=c(i,j,k)*b(i,j,k)/cp
+            xpress=exner2press(b(i,j,k))
+            xtemp=extheta2temp(b(i,j,k),c(i,j,k))
             xwatsat=rslif(xpress,xtemp)
             a(i,j,k)=dewfrostpoint(xpress,min(a(i,j,k),xwatsat) )
          enddo
@@ -505,26 +513,11 @@ entry RAMS_comp_thete(n1,n2,n3,a,e,f1,f2)
          do i=1,n1
          TL=55.+1./( 1./(f1(i,j,k)-55.) -  &
             log(f2(i,j,k)/100.)/2840.)
-            a(i,j,k)=a(i,j,k)*exp((alvl*e(i,j,k))/(cp*TL))
+            a(i,j,k)=a(i,j,k)*exp((alvl3*e(i,j,k))/(cpdry*TL))
          enddo
       enddo
    enddo
 return
-
-!entry RAMS_comp_thete(n1,n2,n3,a,b,c)
-!   do k=1,n3
-!      do j=1,n2
-!         do i=1,n1
-!            xpress=(b(i,j,k)/cp)**cpor*p00
-!            xtemp=c(i,j,k)*b(i,j,k)/cp
-!            xwatsat=rslif(xpress,xtemp)
-!            a(i,j,k)=c(i,j,k)*exp( alvl*xwatsat  &
-!                 /(cp*dewfrostpoint(xpress,min(a(i,j,k),xwatsat) )) )
-!         enddo
-!      enddo
-!   enddo
-!return
-
 !Demerval>
 
 entry RAMS_comp_thetv(n1,n2,n3,a,b,c)
@@ -551,22 +544,9 @@ entry RAMS_comp_rh(n1,n2,n3,a,b,c)
    do k=1,n3
       do j=1,n2
          do i=1,n1
-            xtemp=c(i,j,k)*b(i,j,k)/cp
-            xpress=(b(i,j,k)/cp)**cpor*p00
-            a(i,j,k)=100.*min(1.  &
-                 ,max(0.,a(i,j,k)/rslif(xpress,xtemp)))
-         enddo
-      enddo
-   enddo
-return
-
-entry RAMS_comp_watsat(n1,n2,n3,a,b,c)
-   do k=1,n3
-      do j=1,n2
-         do i=1,n1
-            c(i,j,k)=c(i,j,k)*a(i,j,k)/cp
-            b(i,j,k)=(b(i,j,k)/cp)**cpor*p00
-            a(i,j,k)=rslif(b(i,j,k),c(i,j,k))
+            xtemp    = extheta2temp(b(i,j,k),c(i,j,k))
+            xpress   = exner2press(b(i,j,k))
+            a(i,j,k) = 100. * min(1.,rehuil(xpress,xtemp,a(i,j,k),.false.))
          enddo
       enddo
    enddo
@@ -584,31 +564,20 @@ entry RAMS_comp_horizdiv(n1,n2,n3,a)
    do k=2,n3
       do j=1,n2
          do i=1,n1
-            a(i,j,k)=-(a(i,j,k)-a(i,j,k-1))*dztn(k,ngrd)
+            a(i,j,k)=-(a(i,j,k)-a(i,j,k-1))*mydztn(k,ngrd)
          enddo
       enddo
    enddo
 return
 
 entry RAMS_comp_vertint(n1,n2,n3,a,topt,ngrd)
-   ztop = zmn(nnzp(1)-1,1)
+   ztop = myzmn(mynnzp(1)-1,1)
    do j = 1,n2
       do i = 1,n1
          rtgt = 1. - topt(i,j) / ztop
          a(i,j,1) = 0.
          do k = 2,n3-1
-            a(i,j,1) = a(i,j,1) + a(i,j,k) * (zmn(k,ngrd)-zmn(k-1,ngrd)) * rtgt
-         enddo
-      enddo
-   enddo
-return
-
-entry RAMS_comp_ppress(n1,n2,n3,a,c)
-   do k=1,n3
-      do j=1,n2
-         do i=1,n1
-            a(i,j,k) = 1000. * (a(i,j,k)/cp) ** cpor  &
-                     - 1000. * (c(i,j,k)/cp) ** cpor
+            a(i,j,1) = a(i,j,1) + a(i,j,k) * (myzmn(k,ngrd)-myzmn(k-1,ngrd)) * rtgt
          enddo
       enddo
    enddo
@@ -619,9 +588,9 @@ entry RAMS_comp_raintemp(n1,n2,n3,a)
       do j=1,n2
          do i=1,n1
             if (a(i,j,k) > 0.) then
-               a(i,j,k) = tsupercool + a(i,j,k) * cliqi - t00
+               a(i,j,k) = tsupercool_liq + a(i,j,k) * cliqi - t00
             else
-               a(i,j,k) = -9.99e33
+               a(i,j,k) = undefflg
             end if
          enddo
       enddo
@@ -633,10 +602,10 @@ entry RAMS_comp_qtcpcp(n1,n2,n3,a)
       do j=1,n2
          do i=1,n1
             if (a(i,j,k) > 0.) then
-               call qtk(a(i,j,k),temptemp,fracliq)
+               call uint2tl(a(i,j,k),temptemp,fracliq)
                a(i,j,k) = temptemp - t00
             else
-               a(i,j,k) = -9.99e33
+               a(i,j,k) = undefflg
             end if
          end do
       end do
@@ -647,7 +616,7 @@ entry RAMS_comp_fracliq(n1,n2,n3,a)
    do k=1,n3
       do j=1,n2
          do i=1,n1
-            call qtk(a(i,j,k),temptemp,fracliq)
+            call uint2tl(a(i,j,k),temptemp,fracliq)
             a(i,j,k) = fracliq
          end do
       end do
@@ -658,7 +627,7 @@ entry RAMS_comp_fracice(n1,n2,n3,a)
    do k=1,n3
       do j=1,n2
          do i=1,n1
-            call qtk(a(i,j,k),temptemp,fracliq)
+            call uint2tl(a(i,j,k),temptemp,fracliq)
             a(i,j,k) = 1.0 - fracliq
          enddo
       enddo
@@ -693,7 +662,7 @@ return
 entry rams_fill_sst(n1,n2,n3,kp,a,c)
    do j=1,n2
       do i = 1,n1
-         call qtk(c(i,j,kp),temptemp,fracliq)
+         call uint2tl(c(i,j,kp),temptemp,fracliq)
          a(i,j,1) = temptemp-t00
       enddo
    enddo
@@ -721,10 +690,10 @@ entry acha_ztropop(n1,n2,n3,a,c,ngrd)
   do i=1,n1
     do j=1,n2
       malhakz: do k=3,n3
-        dtheta  = (c(i,j,k)-c(i,j,k-1))/(ztn(k,ngrd)-ztn(k-1,ngrd))
+        dtheta  = (c(i,j,k)-c(i,j,k-1))/(myztn(k,ngrd)-myztn(k-1,ngrd))
         if (dtheta.gt.estratosfera) exit malhakz
       end do malhakz
-      a(i,j,1)=0.5*(ztn(k,ngrd)+ztn(k-1,ngrd))
+      a(i,j,1)=0.5*(myztn(k,ngrd)+myztn(k-1,ngrd))
     end do
   end do
 return
@@ -735,7 +704,7 @@ entry acha_ttropop(n1,n2,n3,a,c,e,ngrd)
   do i=1,n1
     do j=1,n2
       malhakt: do k=3,n3
-        dtheta  = (c(i,j,k)-c(i,j,k-1))/(ztn(k,ngrd)-ztn(k-1,ngrd))
+        dtheta  = (c(i,j,k)-c(i,j,k-1))/(myztn(k,ngrd)-myztn(k-1,ngrd))
         if (dtheta.gt.estratosfera) exit malhakt
       end do malhakt
       a(i,j,1)=0.5*(e(i,j,k)+e(i,j,k-1))
@@ -749,7 +718,7 @@ entry acha_ptropop(n1,n2,n3,a,c,e,ngrd)
   do i=1,n1
     do j=1,n2
       malhakp: do k=3,n3
-        dtheta  = (c(i,j,k)-c(i,j,k-1))/(ztn(k,ngrd)-ztn(k-1,ngrd))
+        dtheta  = (c(i,j,k)-c(i,j,k-1))/(myztn(k,ngrd)-myztn(k-1,ngrd))
         if (dtheta.gt.estratosfera) exit malhakp
       end do malhakp
       a(i,j,1)=exp(0.5*(log(e(i,j,k))+log(e(i,j,k-1))))
@@ -777,11 +746,11 @@ entry get_ZItheta(n1,n2,n3,a,c,e,ngrd)
           kzi = k
           if(abs(e(i,j,k)).gt.1.e-5) then
 
-            a(i,j,1) =0.5*(ztn(kzi,ngrd)+ ztn(kzi-1,ngrd))
+            a(i,j,1) =0.5*(myztn(kzi,ngrd)+ myztn(kzi-1,ngrd))
 
           else
         
-            a(i,j,1) =0.5*(ztn(kzi,ngrd)+ ztn(kzi-1,ngrd))
+            a(i,j,1) =0.5*(myztn(kzi,ngrd)+ myztn(kzi-1,ngrd))
           endif
 
           if(a(i,j,1).lt.0..or.kzi.le.2) a(i,j,1)=0.
@@ -807,7 +776,7 @@ do j=1,n2
    do i=1,n1
       pblht=0.
       do k=2,n3
-         pblht=ztn(k,ngrd)*(1.-c(i,j,1)/zmn(nnzp(1)-1,1))
+         pblht=myztn(k,ngrd)*(1.-c(i,j,1)/myzmn(mynnzp(1)-1,1))
 !DSM         if(a(i,j,k).le.tkethrsh) goto 10
       enddo
       10 continue
@@ -817,24 +786,6 @@ do j=1,n2
    enddo
 enddo
 
-return
-
-entry RAMS_comp_etrans(n1,n2,n3,a,b,a2d)
-   do j=1,n2
-      do i=1,n1
-         temp1=a(i,j,1)*b(i,j,1)/cp
-         press1=(b(i,j,1)/cp)**cpor*p00
-         dens=press1/(rgas*temp1)
-         if(i.eq.5.and.j.eq.5) then
-            print*,'============++++++'
-            print*,temp1,press1,dens,a2d(i,j)
-         endif
-         a(i,j,1)=a2d(i,j)*dens*1.e-3*39.37*3600.
-         do k=2,n3
-            a(i,j,k)=a(i,j,1)
-         enddo
-      enddo
-   enddo
 return
 
 entry RAMS_comp_slpress(n1,n2,n3,theta,pp,z,slp)
@@ -868,7 +819,7 @@ entry RAMS_comp_slpress(n1,n2,n3,theta,pp,z,slp)
             thbar=.5*(theta(i,j,kbot)+theta(i,j,ktop))
          endif
          slp(i,j)=pp(i,j,kbot)-ddz*sl_g/thbar
-         slp(i,j)=(slp(i,j) * cpi)**cpor*p00
+         slp(i,j)=(slp(i,j) * cpdryi)**cpor*p00
       end do
    end do
 return
@@ -881,7 +832,7 @@ entry RAMS_comp_ctprof(n1,n2,n3,a,b,ngrd)
             if(a(i,j,k).ge.0.0001.and.b(i,j,k).ge.0.99)kmax=k
          enddo
          if(kmax.gt.2)then
-            a(i,j,1)=ztn(kmax,ngrd)
+            a(i,j,1)=myztn(kmax,ngrd)
          else
             a(i,j,1)=0.0
          endif
@@ -942,20 +893,35 @@ end subroutine get_leaf_soil
 
 !==========================================================================================!
 !==========================================================================================!
+!     This sub-routine converts a 3-D array into a cloud-dependent, 4-D array.             !
+!------------------------------------------------------------------------------------------!
 subroutine get_cumulus(n1,n2,n3,n6,a,a6)
    implicit none
-   integer, intent(in) :: n1,n2,n3,n6
+   !------ Arguments. ---------------------------------------------------------------------!
+   integer                     , intent(in)  :: n1
+   integer                     , intent(in)  :: n2
+   integer                     , intent(in)  :: n3
+   integer                     , intent(in)  :: n6
    real, dimension(n1,n2,n3,n6), intent(out) :: a6
-   real, dimension(n1,n2,n3*n6), intent(in) :: a
-   integer :: kip, k,i,j,ip
+   real, dimension(n1,n2,n3*n6), intent(in)  :: a
+   !----- Local variables. ----------------------------------------------------------------!
+   integer                                   :: kic
+   integer                                   :: k
+   integer                                   :: i
+   integer                                   :: j
+   integer                                   :: ic
+   !---------------------------------------------------------------------------------------!
 
-   kip=0
-   do ip=1,n6
+
+   !---------------------------------------------------------------------------------------!
+   !---------------------------------------------------------------------------------------!
+   kic=0
+   do ic=1,n6
       do k=1,n3
-         kip=kip+1
+         kic=kic+1
          do j=1,n2
             do i=1,n1
-               a6(i,j,k,ip)=a(i,j,kip)
+               a6(i,j,k,ic)=a(i,j,kic)
             end do
          end do
       end do
@@ -976,7 +942,7 @@ subroutine RAMS_comp_richardson(n1,n2,n3,np,rib,z0,speed,thetav_atm,thetav_can,t
 
    use somevars
    use rconstants
-   use therm_lib, only : qtk, qwtk, dewfrostpoint, rslif, virtt, thetaeiv
+   use therm_lib, only : uint2tl, uextcm2tl, dewfrostpoint, rslif, virtt, thetaeiv
    implicit none
    integer                     , intent(in)    :: n1,n2,n3,np
    real   , dimension(n1,n2,np), intent(inout) :: rib
@@ -1014,7 +980,7 @@ subroutine RAMS_comp_dn0(n1,n2,n3,a,b,c,topt,ngrd)
 
    use somevars
    use rconstants
-   use therm_lib, only : qtk, qwtk, dewfrostpoint, rslif, virtt, thetaeiv
+   use therm_lib, only : uint2tl, uextcm2tl, dewfrostpoint, rslif, virtt, thetaeiv
    implicit none
    integer                     , intent(in)    :: n1,n2,n3
    real   , dimension(n1,n2,n3), intent(inout) :: a,b,c
@@ -1039,7 +1005,7 @@ subroutine RAMS_comp_dn0(n1,n2,n3,a,b,c,topt,ngrd)
 
          c1=grav*2.*(1.-topt(i,j)/zedtop)
          c2=(1-cpor)
-         c3=cp**c2
+         c3=cpdry**c2
          do k=n3-1,1,-1
             a(i,j,k)=a(i,j,k+1) +c1/((b(i,j,k)+b(i,j,k+1))*mydzmn(k,ngrd))
          enddo
@@ -1065,7 +1031,7 @@ subroutine RAMS_comp_relvortx(n1,n2,n3,a,b,c,topt,ngrd)
 
    use somevars
    use rconstants
-   use therm_lib, only : qtk, qwtk, dewfrostpoint, rslif, virtt, thetaeiv
+   use therm_lib, only : uint2tl, uextcm2tl, dewfrostpoint, rslif, virtt, thetaeiv
    implicit none
    integer                     , intent(in)    :: n1,n2,n3
    real   , dimension(n1,n2,n3), intent(inout) :: a,b,c
@@ -1136,7 +1102,7 @@ subroutine RAMS_comp_relvorty(n1,n2,n3,a,b,c,topt,ngrd)
 
    use somevars
    use rconstants
-   use therm_lib, only : qtk, qwtk, dewfrostpoint, rslif, virtt, thetaeiv
+   use therm_lib, only : uint2tl, uextcm2tl, dewfrostpoint, rslif, virtt, thetaeiv
    implicit none
    integer                     , intent(in)    :: n1,n2,n3
    real   , dimension(n1,n2,n3), intent(inout) :: a,b,c
@@ -1210,7 +1176,7 @@ subroutine RAMS_comp_relvortz(n1,n2,n3,a,b,c,topt,ngrd)
 
    use somevars
    use rconstants
-   use therm_lib, only : qtk, qwtk, dewfrostpoint, rslif, virtt, thetaeiv
+   use therm_lib, only : uint2tl, uextcm2tl, dewfrostpoint, rslif, virtt, thetaeiv
    implicit none
    integer                     , intent(in)    :: n1,n2,n3
    real   , dimension(n1,n2,n3), intent(inout) :: a,b,c
@@ -1276,7 +1242,7 @@ subroutine RAMS_comp_totvortz(n1,n2,n3,a,b,c,topt,ngrd)
 
    use somevars
    use rconstants
-   use therm_lib, only : qtk, qwtk, dewfrostpoint, rslif, virtt, thetaeiv
+   use therm_lib, only : uint2tl, uextcm2tl, dewfrostpoint, rslif, virtt, thetaeiv
    implicit none
    integer                     , intent(in)    :: n1,n2,n3
    real   , dimension(n1,n2,n3), intent(inout) :: a,b,c
@@ -1351,7 +1317,7 @@ end subroutine RAMS_comp_totvortz
 subroutine RAMS_comp_potvortz(n1,n2,n3,a,b,c,e,topt,ngrd)
    use somevars
    use rconstants
-   use therm_lib, only : qtk, qwtk, dewfrostpoint, rslif, virtt, thetaeiv
+   use therm_lib, only : uint2tl, uextcm2tl, dewfrostpoint, rslif, virtt, thetaeiv
    implicit none
    integer                     , intent(in)    :: n1,n2,n3
    real   , dimension(n1,n2,n3), intent(inout) :: a,b,c,e
@@ -1566,13 +1532,13 @@ end subroutine RAMS_comp_solenoidy
 !==========================================================================================!
 subroutine RAMS_comp_sfcwmeantemp(n1,n2,ns,np,a,b,c,d,e)
    use rconstants
-   use therm_lib, only: qtk
+   use rout_coms, only  : undefflg
+   use therm_lib, only: uint2tl
    implicit none 
    integer :: n1,n2,ns,np,nlev,i,j,ip,k
    real, dimension(n1,n2,np)    :: a,d,e
    real, dimension(n1,n2,ns,np) :: b,c
    real :: temptemp,fracliq,snowarea,xmasstot
-   real, parameter :: undef=-9.99e33
    !a  area
    !b energy
    !c  mass
@@ -1590,7 +1556,7 @@ subroutine RAMS_comp_sfcwmeantemp(n1,n2,ns,np,a,b,c,d,e)
                  do k=1,nlev
                     if (c(i,j,k,ip) > 1.e-6) then
                        xmasstot  = xmasstot + c(i,j,k,ip)
-                       call qtk(b(i,j,k,ip),temptemp,fracliq)
+                       call uint2tl(b(i,j,k,ip),temptemp,fracliq)
                        e(i,j,ip) = e(i,j,ip) + temptemp*c(i,j,k,ip)
                     end if
                  end do
@@ -1610,10 +1576,10 @@ subroutine RAMS_comp_sfcwmeantemp(n1,n2,ns,np,a,b,c,d,e)
            if (snowarea > 0.) then
               e(i,j,1) = e(i,j,1) / snowarea
            else
-              e(i,j,1) = undef
+              e(i,j,1) = undefflg
            end if
         else
-           e(i,j,1) = undef
+           e(i,j,1) = undefflg
         end if
      end do
    end do
@@ -1641,7 +1607,7 @@ subroutine RAMS_comp_thetaeiv(n1,n2,n3,xxx,temp,pres,rv,rtp)
          do i=1,n1
             if (rtp(i,j,k) < rv(i,j,k)) rtp(i,j,k) = rv(i,j,k)
             xxx(i,j,k)=thetaeiv(xxx(i,j,k),pres(i,j,k),temp(i,j,k),rv(i,j,k),rtp(i,j,k)    &
-                               ,12,.true.)
+                               ,.true.)
          end do
       end do
    end do
@@ -1658,11 +1624,11 @@ end subroutine RAMS_comp_thetaeiv
 !==========================================================================================!
 !==========================================================================================!
 subroutine RAMS_comp_sfcwinteg(n1,n2,ns,np,a,c,d,e)
+   use rout_coms, only : undefflg
    implicit none 
    integer :: n1,n2,ns,np,nlev,i,j,ip,k
    real, dimension(n1,n2,np)    :: a,d,e
    real, dimension(n1,n2,ns,np) :: c
-   real, parameter :: undef=-9.99e33
    !a  area                                                   
    !c mass/depth                                             
    !d  nlev                                                   
@@ -1670,7 +1636,7 @@ subroutine RAMS_comp_sfcwinteg(n1,n2,ns,np,a,c,d,e)
       do j=1,n2                                               
         do i=1,n1                                             
            if (a(i,j,1) > 0.99) then                          
-              e(i,j,1) = -9.99e33                                
+              e(i,j,1) = undefflg                           
            else
               e(i,j,1) = 0.                                  
               do ip=2,np                                     
@@ -1781,6 +1747,7 @@ end subroutine RAMS_comp_patchsum
 !------------------------------------------------------------------------------------------!
 subroutine RAMS_comp_patchsum_l(nx,ny,nz,np,iovar)
    use leaf_coms, only : min_patch_area
+   use rout_coms, only : undefflg
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
    integer                         , intent(in)    :: nx
@@ -1839,7 +1806,7 @@ subroutine RAMS_comp_patchsum_l(nx,ny,nz,np,iovar)
                end do
                psum(x,y,z)    = psum(x,y,z) / landarea
             else
-               psum(x,y,z)    = -9.99e33
+               psum(x,y,z)    = undefflg
             end if
          end do
       end do
@@ -1907,7 +1874,7 @@ end subroutine RAMS_comp_bigpatch
 !==========================================================================================!
 subroutine RAMS_comp_tvegc(n1,n2,n3,a,b,c,e)
    use rconstants, only : t00
-   use therm_lib , only : qwtk
+   use therm_lib , only : uextcm2tl
    implicit none
    integer, intent(in) :: n1,n2,n3
    real, dimension(n1,n2,n3), intent(in)    :: c,e
@@ -1929,7 +1896,7 @@ subroutine RAMS_comp_tvegc(n1,n2,n3,a,b,c,e)
             ! canopy temperature.
             !------------------------------------------------------------------------ 
             if (c(i,j,k) > 10.) then
-               call qwtk(a(i,j,k),b(i,j,k),c(i,j,k),temptemp,fracliq)
+               call uextcm2tl(a(i,j,k),b(i,j,k),c(i,j,k),temptemp,fracliq)
                a(i,j,k) = temptemp-t00
                b(i,j,k) = fracliq
             else
@@ -2489,11 +2456,11 @@ end subroutine RAMS_flush_to_zero
 !    Ouput: SLP   - sea-level pressure    (hPa)       2D                                   !
 !------------------------------------------------------------------------------------------!
 subroutine RAMS_comp_slpmm5(n1,n2,n3,theta,pp,z,slp)
-   use rconstants, only : cp   & ! intent(in)
-                        , cpi  & ! intent(in)
-                        , rdry & ! intent(in)
-                        , cpor & ! intent(in)
-                        , p00  ! ! intent(in)
+   use rconstants, only : cpdryi      & ! intent(in)
+                        , rdry        & ! intent(in)
+                        , cpor        & ! intent(in)
+                        , p00         ! ! intent(in)
+   use therm_lib , only : exner2press ! ! function
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
    integer                    , intent(in)    :: n1
@@ -2517,9 +2484,9 @@ subroutine RAMS_comp_slpmm5(n1,n2,n3,theta,pp,z,slp)
    do j = 1,n2
       do i = 1,n1
          !----- Calculate surface pressure. -----------------------------------------------!
-         sfp(i,j) = (0.5*(pp(i,j,1)+pp(i,j,2))/cp)**cpor*p00*.01
+         sfp(i,j) = exner2press(0.5*(pp(i,j,1)+pp(i,j,2))) *.01
          !----- Calculate surface temp. ---------------------------------------------------!
-         ts(i,j)  = 0.5 * cpi * (theta(i,j,1)*pp(i,j,1) + theta(i,j,2)*pp(j,j,2))
+         ts(i,j)  = 0.5 * cpdryi * (theta(i,j,1)*pp(i,j,1) + theta(i,j,2)*pp(j,j,2))
       end do
    end do
 
@@ -2528,8 +2495,8 @@ subroutine RAMS_comp_slpmm5(n1,n2,n3,theta,pp,z,slp)
       do j = 1,n2
          do i = 1,n1
             !----- Flip arrays upside down for input to GRAPH subroutine. -----------------!
-            t_mm5(i,j,kk) = theta(i,j,k) * pp(i,j,k) * cpi
-            p_mm5(i,j,kk) = (pp(i,j,k) * cpi)**cpor * p00 * .01
+            t_mm5(i,j,kk) = theta(i,j,k) * pp(i,j,k) * cpdryi
+            p_mm5(i,j,kk) = exner2press(pp(i,j,k)) * .01
          end do
       end do
    end do
@@ -2775,10 +2742,10 @@ end subroutine RAMS_comp_slmstf
 !     This subroutine computes the temperature and liquid fraction given the internal      !
 ! energy and water content.                                                                !
 !------------------------------------------------------------------------------------------!
-subroutine RAMS_comp_qwtk(nx,ny,nz,np,inqoutt,inwoutl,soil_text)
+subroutine RAMS_comp_uextcm2tl(nx,ny,nz,np,inqoutt,inwoutl,soil_text)
    use rconstants, only : wdns ! ! intent(in)
    use soil_coms , only : soil ! ! intent(in)
-   use therm_lib , only : qwtk ! ! subroutine
+   use therm_lib , only : uextcm2tl ! ! subroutine
    !----- Arguments. ----------------------------------------------------------------------!
    integer                     , intent(in)    :: nx
    integer                     , intent(in)    :: ny
@@ -2811,7 +2778,7 @@ subroutine RAMS_comp_qwtk(nx,ny,nz,np,inqoutt,inwoutl,soil_text)
                nsoil   = nint(soil_text(x,y,z,p))
                dryhcap = soil(nsoil)%slcpd
                !----- Compute temperature and liquid water fraction. ----------------------!
-               call qwtk(energy,water,dryhcap,temperature,fracliq)
+               call uextcm2tl(energy,water,dryhcap,temperature,fracliq)
                !----- Save in the variables that will be returned. ------------------------!
                inqoutt(x,y,z,p) = temperature
                inwoutl(x,y,z,p) = fracliq
@@ -2821,7 +2788,7 @@ subroutine RAMS_comp_qwtk(nx,ny,nz,np,inqoutt,inwoutl,soil_text)
    end do
 
    return
-end subroutine RAMS_comp_qwtk
+end subroutine RAMS_comp_uextcm2tl
 !==========================================================================================!
 !==========================================================================================!
 
@@ -2833,7 +2800,7 @@ end subroutine RAMS_comp_qwtk
 !==========================================================================================!
 !==========================================================================================!
 subroutine RAMS_comp_copysst(nx,ny,nz,inqoutt)
-   use therm_lib , only : qtk  ! ! subroutine
+   use therm_lib , only : uint2tl  ! ! subroutine
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
    integer                    , intent(in)    :: nx
@@ -2853,7 +2820,7 @@ subroutine RAMS_comp_copysst(nx,ny,nz,inqoutt)
    do y=1,ny
       do x=1,nx
          energy = inqoutt(x,y,nz)
-         call qtk(energy,temperature(x,y),fracliq)
+         call uint2tl(energy,temperature(x,y),fracliq)
       end do
    end do
 
@@ -3058,6 +3025,57 @@ subroutine RAMS_comp_zenith(nx,ny,cosz,zenith)
 
    return
 end subroutine RAMS_comp_zenith
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+subroutine RAMS_comp_wflx2latent(nx,ny,np,wflx,temp)
+   use rconstants, only : t3ple & ! intent(in)
+                        , alvl3 & ! intent(in)
+                        , alvi3 ! ! intent(in)
+   use therm_lib , only : alvl  & ! function
+                        , alvi  ! ! function
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   integer                     , intent(in)    :: nx
+   integer                     , intent(in)    :: ny
+   integer                     , intent(in)    :: np
+   real   , dimension(nx,ny,np), intent(inout) :: wflx
+   real   , dimension(nx,ny,np), intent(in)    :: temp
+   !----- Local variables. ----------------------------------------------------------------!
+   integer                                     :: p
+   integer                                     :: x
+   integer                                     :: y
+   real                                        :: latent
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   do p=1,np
+      do y=1,ny
+         do x=1,nx
+            if (temp(x,y,p) == t3ple) then
+               latent = 0.5 * (alvl3 + alvi3)
+            elseif (temp(x,y,p) > t3ple) then
+               latent = alvl(temp(x,y,p))
+            else
+               latent = alvi(temp(x,y,p))
+            end if
+            wflx(x,y,p) = wflx(x,y,p) * latent
+         end do
+      end do
+   end do
+   !---------------------------------------------------------------------------------------!
+
+   return
+end subroutine RAMS_comp_wflx2latent
 !==========================================================================================!
 !==========================================================================================!
 

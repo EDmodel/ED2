@@ -3,11 +3,14 @@
 !    This subroutine controls the changes in leaf biomass due to phenology.                !
 !------------------------------------------------------------------------------------------!
 subroutine phenology_driver(cgrid, doy, month, tfact)
-   use ed_state_vars  , only : edtype        & ! structure
-                             , polygontype   & ! structure
-                             , sitetype      ! ! structure
-   use phenology_coms , only : iphen_scheme  ! ! intent(in)
-   use ed_misc_coms      , only : current_time  ! ! intent(in)
+   use ed_state_vars  , only : edtype                & ! structure
+                             , polygontype           & ! structure
+                             , sitetype              ! ! structure
+   use phenology_coms , only : iphen_scheme          ! ! intent(in)
+   use ed_misc_coms   , only : current_time          ! ! intent(in)
+   use phenology_aux  , only : prescribed_leaf_state & ! subroutine
+                             , update_thermal_sums   & ! subroutine
+                             , update_turnover       ! ! subroutine
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    type(edtype)      , target      :: cgrid
@@ -79,11 +82,14 @@ end subroutine phenology_driver
 ! ecosystem state.                                                                         !
 !------------------------------------------------------------------------------------------!
 subroutine phenology_driver_eq_0(cgrid, doy, month, tfact)
-   use ed_state_vars  , only : edtype        & ! structure
-                             , polygontype   & ! structure
-                             , sitetype      ! ! structure
-   use phenology_coms , only : iphen_scheme  ! ! intent(in)
-   use ed_misc_coms      , only : current_time  ! ! intent(in)
+   use ed_state_vars  , only : edtype                & ! structure
+                             , polygontype           & ! structure
+                             , sitetype              ! ! structure
+   use phenology_coms , only : iphen_scheme          ! ! intent(in)
+   use ed_misc_coms   , only : current_time          ! ! intent(in)
+   use phenology_aux  , only : prescribed_leaf_state & ! subroutine
+                             , update_thermal_sums   & ! subroutine
+                             , update_turnover       ! ! subroutine
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    type(edtype)      , target      :: cgrid
@@ -178,7 +184,7 @@ subroutine update_phenology(doy, cpoly, isi, lat)
    use allometry      , only : area_indices             & ! subroutine
                              , ed_biomass               & ! function
                              , dbh2bl                   ! ! function
-
+   use phenology_aux  , only : daylength                ! ! function
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    type(polygontype)        , target     :: cpoly
@@ -202,8 +208,6 @@ subroutine update_phenology(doy, cpoly, isi, lat)
    real                                  :: old_leaf_hcap
    real                                  :: old_wood_hcap
    real                                  :: salloci
-   !----- External functions. -------------------------------------------------------------!
-   real                     , external   :: daylength
    !----- Variables used only for debugging purposes. -------------------------------------!
    logical                  , parameter  :: printphen=.false.
    logical, dimension(n_pft), save       :: first_time=.true.
@@ -486,12 +490,11 @@ subroutine update_phenology(doy, cpoly, isi, lat)
          end select
          !---------------------------------------------------------------------------------!
 
-         !----- Update LAI, WPA, and WAI accordingly. -------------------------------------!
+         !----- Update LAI, WAI, and CAI accordingly. -------------------------------------!
          call area_indices(cpatch%nplant(ico),cpatch%bleaf(ico),cpatch%bdead(ico)          &
                           ,cpatch%balive(ico),cpatch%dbh(ico),cpatch%hite(ico)             &
                           ,cpatch%pft(ico),cpatch%sla(ico),cpatch%lai(ico)                 &
-                          ,cpatch%wpa(ico),cpatch%wai(ico),cpatch%crown_area(ico)          &
-                          ,cpatch%bsapwood(ico))
+                          ,cpatch%wai(ico),cpatch%crown_area(ico),cpatch%bsapwood(ico))
 
          !----- Update above-ground biomass. ----------------------------------------------!
          cpatch%agb(ico) = ed_biomass(cpatch%bdead(ico),cpatch%balive(ico)                 &
@@ -563,6 +566,7 @@ subroutine update_phenology_eq_0(doy, cpoly, isi, lat)
    use allometry      , only : area_indices             & ! subroutine
                              , ed_biomass               & ! function
                              , dbh2bl                   ! ! function
+   use phenology_aux  , only : daylength                ! ! function
 
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
@@ -587,8 +591,6 @@ subroutine update_phenology_eq_0(doy, cpoly, isi, lat)
    real                                  :: old_leaf_hcap
    real                                  :: old_wood_hcap
    real                                  :: salloci
-   !----- External functions. -------------------------------------------------------------!
-   real                     , external   :: daylength
    !---------------------------------------------------------------------------------------!
 
 
@@ -827,12 +829,11 @@ subroutine update_phenology_eq_0(doy, cpoly, isi, lat)
          end select
          !---------------------------------------------------------------------------------!
 
-         !----- Update LAI, WPA, and WAI accordingly. -------------------------------------!
+         !----- Update LAI, WAI, and CAI accordingly. -------------------------------------!
          call area_indices(cpatch%nplant(ico),cpatch%bleaf(ico),cpatch%bdead(ico)          &
                           ,cpatch%balive(ico),cpatch%dbh(ico),cpatch%hite(ico)             &
                           ,cpatch%pft(ico),cpatch%sla(ico),cpatch%lai(ico)                 &
-                          ,cpatch%wpa(ico),cpatch%wai(ico),cpatch%crown_area(ico)          &
-                          ,cpatch%bsapwood(ico))
+                          ,cpatch%wai(ico),cpatch%crown_area(ico),cpatch%bsapwood(ico))
 
          !----- Update above-ground biomass. ----------------------------------------------!
          cpatch%agb(ico) = ed_biomass(cpatch%bdead(ico),cpatch%balive(ico)                 &

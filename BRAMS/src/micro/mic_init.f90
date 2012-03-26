@@ -301,24 +301,35 @@ end subroutine micro_master
 !------------------------------------------------------------------------------------------!
 subroutine initqin(n1,n2,n3,q2,q6,q7,pi0,pp,theta,dn0,cccnp,cifnp)
 
-   use micphys, only : &
-        exner,         & ! intent(out)
-        tair,          & ! intent(out)
-        icloud,        & ! intent(in)
-        irain,         & ! intent(in)
-        igraup,        & ! intent(in)
-        ihail,         & ! intent(in)
-        ipris            ! intent(in)
-   use rconstants, only : cpi,t3ple,cliq,cice,alli !intent(in)
-
+   use micphys   , only : exner          & ! intent(out)
+                        , tair           & ! intent(out)
+                        , icloud         & ! intent(in)
+                        , irain          & ! intent(in)
+                        , igraup         & ! intent(in)
+                        , ihail          & ! intent(in)
+                        , ipris          ! ! intent(in)
+   use therm_lib , only : extheta2temp   & ! function
+                        , tl2uint        ! ! function
+   use rconstants, only : t3ple          ! ! intent(in)
    implicit none
 
    !----- Arguments -----------------------------------------------------------------------!
-   integer,                   intent(in)    :: n1,n2,n3
-   real, dimension(n1,n2,n3), intent(inout) :: q2, q6, q7, cifnp, cccnp
-   real, dimension(n1,n2,n3), intent(in)    :: pi0, pp, theta, dn0
+   integer,                   intent(in)    :: n1
+   integer,                   intent(in)    :: n2
+   integer,                   intent(in)    :: n3
+   real, dimension(n1,n2,n3), intent(inout) :: q2
+   real, dimension(n1,n2,n3), intent(inout) :: q6
+   real, dimension(n1,n2,n3), intent(inout) :: q7
+   real, dimension(n1,n2,n3), intent(inout) :: cifnp
+   real, dimension(n1,n2,n3), intent(inout) :: cccnp
+   real, dimension(n1,n2,n3), intent(in)    :: pi0
+   real, dimension(n1,n2,n3), intent(in)    :: pp
+   real, dimension(n1,n2,n3), intent(in)    :: theta
+   real, dimension(n1,n2,n3), intent(in)    :: dn0
    !----- Local Variables -----------------------------------------------------------------!
-   integer :: i,j,k
+   integer                                  :: i
+   integer                                  :: j
+   integer                                  :: k
    !---------------------------------------------------------------------------------------!
 
 
@@ -327,11 +338,11 @@ subroutine initqin(n1,n2,n3,q2,q6,q7,pi0,pp,theta,dn0,cccnp,cifnp)
       do i = 1,n2
          do k = 1,n1
             exner(k) = pi0(k,i,j) + pp(k,i,j)
-            tair(k)  = theta(k,i,j) * exner(k) * cpi
+            tair(k)  = extheta2temp(exner(k),theta(k,i,j))
 
-            if (irain  >= 1) q2(k,i,j)    = 0. ! cliq*tair(k) + alli
-            if (igraup >= 1) q6(k,i,j)    = 0. ! 0.5 * (cliq+cice)*min(t3ple,tair(k)) + 0.5*alli
-            if (ihail  >= 1) q7(k,i,j)    = 0. !0.5 * (cliq+cice)*min(t3ple,tair(k)) + 0.5*alli
+            if (irain  >= 1) q2(k,i,j) = tl2uint(tair(k),1.0)
+            if (igraup >= 1) q6(k,i,j) = tl2uint(min(t3ple,tair(k)),0.5)
+            if (ihail  >= 1) q7(k,i,j) = tl2uint(min(t3ple,tair(k)),0.5)
             !----- Making up something, but not sure about this one. ----------------------!
             if (icloud == 7) cccnp(k,i,j) = 6.66e9
             if (ipris  == 7) cifnp(k,i,j) = 1.e5 * dn0(k,i,j) ** 5.4

@@ -71,11 +71,11 @@ contains
 
     ! Deallocate all scratch arrays
 
-    if (associated(scratch1%vtu ))  nullify (scratch1%vtu )
-    if (associated(scratch1%vtv ))  nullify (scratch1%vtv )
-    if (associated(scratch1%vtw ))  nullify (scratch1%vtw )
-    if (associated(scratch1%vtp ))  nullify (scratch1%vtp )
-    if (associated(scratch1%vtscalar ))  nullify (scratch1%vtscalar )
+    nullify (scratch1%vtu )
+    nullify (scratch1%vtv )
+    nullify (scratch1%vtw )
+    nullify (scratch1%vtp )
+    nullify (scratch1%vtscalar )
 
 
     return

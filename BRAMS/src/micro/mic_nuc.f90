@@ -232,7 +232,7 @@ subroutine icenuc(m1,ngr,dtlt)
    k2pnuc = 1
 
    do k = lpw,m1-1
-      rhhz = rehuil(press(k),tair(k),rvap(k))
+      rhhz = rehuil(press(k),tair(k),rvap(k),.false.)
       haznuc = 0.
       if (rhhz > 0.82 .and. tairc(k) <= -35.01) then
          rirhhz  = min(0.1799,rhhz-0.82) / drhhz + 1.0
@@ -258,7 +258,7 @@ subroutine icenuc(m1,ngr,dtlt)
       !     Heterogeneous nucleation by deposition condensation freezing with deposition   !
       ! nuclei.  In 4.3 and beyond, assume that it gives #/kg.                             !
       !------------------------------------------------------------------------------------!
-      ssi = min(ssi0,rehui(press(k),tair(k),rvap(k)) - 1.)
+      ssi = min(ssi0,rehui(press(k),tair(k),rvap(k),.false.) - 1.)
       if (ssi > 0. .and. tairc(k) <= -5.) then
          fracifn = exp(12.96 * (ssi - ssi0))
       else

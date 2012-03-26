@@ -524,7 +524,7 @@ if(guess1st.ne.'RAMS') then
         do k=lbc+1,nisn
            pi_s(i,j,k)=1e30
            if(pi_p(i,j,k).lt.1e19) then
-               pi_s(i,j,k)=syo+cp*(po**rocp+pi_p(i,j,k)**rocp)  &
+               pi_s(i,j,k)=syo+cpdry*(po**rocp+pi_p(i,j,k)**rocp)  &
                     *.5/p00**rocp *(levth(k)-tho)
                syo=pi_s(i,j,k)
                po=pi_p(i,j,k)
@@ -541,7 +541,7 @@ if(guess1st.ne.'RAMS') then
          do k=lbc-1,1,-1
             pi_s(i,j,k)=1e30
             if(pi_p(i,j,k).lt.1e19) then
-               pi_s(i,j,k)=syo+cp*(po**rocp+pi_p(i,j,k)**rocp)  &
+               pi_s(i,j,k)=syo+cpdry*(po**rocp+pi_p(i,j,k)**rocp)  &
                     *.5/p00**rocp*(levth(k)-tho)
                syo=pi_s(i,j,k)
                po=pi_p(i,j,k)
@@ -584,11 +584,11 @@ do i=1,nxp
       do k=1,nsigz
          temp(k)=ps_t(i,j,k)*(ps_p(i,j,k)/p00)**rocp
          sigzr(k)=topt(i,j)+sigz(k)*rtgt(i,j)
-         raux = ptrh2rvapil(ps_r(i,j,k),ps_p(i,j,k),temp(k))
+         raux = ptrh2rvapil(ps_r(i,j,k),ps_p(i,j,k),temp(k),.false.)
          thv(k)=virtt(ps_t(i,j,k),raux)
       enddo
 
-      ps_p(i,j,lbcp)=cp*(ps_p(i,j,lbcp)/p00)**rocp
+      ps_p(i,j,lbcp)=cpdry*(ps_p(i,j,lbcp)/p00)**rocp
 
       thvo=thv(lbcp)
       po=ps_p(i,j,lbcp)
@@ -617,7 +617,7 @@ do i=1,nxp
       enddo
 
       do k=1,nsigz
-         ps_p(i,j,k)=(ps_p(i,j,k)/cp)**cpor*p00
+         ps_p(i,j,k)=(ps_p(i,j,k)/cpdry)**cpor*p00
       enddo
 
    enddo

@@ -94,7 +94,7 @@ do j=1,n3
                  .and.pi_u(i,j,ki).lt.1e20.and.pi_v(i,j,ki).lt.1e20)  &
                  then
                nki=nki+1
-               v2(nki)=(pi_s(i,j,ki)-cp*levth(ki)  &
+               v2(nki)=(pi_s(i,j,ki)-cpdry*levth(ki)  &
                     *(pi_p(i,j,ki)*p00i)**rocp)/grav
 !                    print*,'v2:',i,j,nki,pi_s(i,j,ki),levth(ki),pi_p(i,j,ki)
                     
@@ -169,7 +169,7 @@ subroutine visurf(n1,n2,n3,up,vp,thp,rtp,pp,topt,rtgt,zt)
 
 use isan_coms
 use rconstants
-use therm_lib, only: rehuil,ptrh2rvapil,virtt
+use therm_lib, only: rehuil,ptrh2rvapil,virtt,exner2press,extheta2temp
 
 implicit none
 
@@ -205,15 +205,15 @@ do j=1,n3
                     up(k,i,j)=up(k,i,j)*wt+rs_u(i,j)*(1.-wt)
                if(rs_v(i,j).lt.1.e10)  &
                     vp(k,i,j)=vp(k,i,j)*wt+rs_v(i,j)*(1.-wt)
-               ppp=(pp(k,i,j)/cp)**cpor*p00
-               ttt=thp(k,i,j)*pp(k,i,j)/cp
-               rhm=rehuil(ppp,ttt,rtp(k,i,j))
+               ppp=exner2press(pp(k,i,j))
+               ttt=extheta2temp(pp(k,i,j),thp(k,i,j))
+               rhm=rehuil(ppp,ttt,rtp(k,i,j),.false.)
                if(rs_r(i,j).lt.1.e10)  &
                     rhm=rhm*wt+rs_r(i,j)*(1.-wt)
                if(rs_t(i,j).lt.1.e10)  &
                     thp(k,i,j)=thp(k,i,j)*wt+rs_t(i,j)*(1.-wt)
-               ttt=thp(k,i,j)*pp(k,i,j)/cp
-               rtp(k,i,j)=ptrh2rvapil(rhm,ppp,ttt)
+               ttt=extheta2temp(pp(k,i,j),thp(k,i,j))
+               rtp(k,i,j)=ptrh2rvapil(rhm,ppp,ttt,.false.)
             endif
          enddo
 
@@ -242,7 +242,7 @@ subroutine vshyd(n1,n2,n3,pp,tt,rr,topt,rtg,zt)
      
 use isan_coms
 use rconstants
-use therm_lib, only: ptrh2rvapil,virtt
+use therm_lib, only: ptrh2rvapil,virtt,press2exner,exner2press,extheta2temp
 implicit none
      
 integer :: n1,n2,n3
@@ -309,7 +309,7 @@ do j=1,n3
 
 !         Integrate P to surface
 
-         piibc=cp*(pi_p(i,j,lbc)*p00i)**rocp
+         piibc=press2exner(pi_p(i,j,lbc))
          ziibc=(pi_s(i,j,lbc)-levth(lbc)*piibc)/grav
          gd2=2.*grav
          pp(kabc-1,i,j)=piibc+gd2*(ziibc-v3(kabc-1))  &
@@ -330,13 +330,13 @@ do j=1,n3
 !           hydrostatic integration.
 !
          do k=1,n1
-            ppp=(pp(k,i,j)/cp)**cpor*p00
-            ttt=tt(k,i,j)*pp(k,i,j)/cp
-            rr(k,i,j)=ptrh2rvapil(rr(k,i,j),ppp,ttt)
+            ppp=exner2press(pp(k,i,j))
+            ttt=extheta2temp(pp(k,i,j),tt(k,i,j))
+            rr(k,i,j)=ptrh2rvapil(rr(k,i,j),ppp,ttt,.false.)
          enddo
 
-         tmpbc=levth(lbc)*piibc/cp
-         rvibc=ptrh2rvapil(pi_r(i,j,lbc),pi_p(i,j,lbc),tmpbc)
+         tmpbc=extheta2temp(piibc,real(levth(lbc)))
+         rvibc=ptrh2rvapil(pi_r(i,j,lbc),pi_p(i,j,lbc),tmpbc,.false.)
 
          pp(kabc-1,i,j)=piibc+gd2*(ziibc-v3(kabc-1))  &
               /(virtt(real(levth(lbc)),rvibc)  &
@@ -358,10 +358,10 @@ do j=1,n3
          do k=1,n1
             ppp=pp(k,i,j)
             ttt=tt(k,i,j)*(ppp/p00)**rocp
-            rr(k,i,j)=ptrh2rvapil(rr(k,i,j),ppp,ttt)
+            rr(k,i,j)=ptrh2rvapil(rr(k,i,j),ppp,ttt,.false.)
          enddo
 
-         pp(1,i,j)= cp*(pp(1,i,j)/p00)**rocp
+         pp(1,i,j)= press2exner(pp(1,i,j))
          do k=2,n1
             pp(k,i,j)=pp(k-1,i,j)-grav*(v3(k)-v3(k-1))  &
                  /((virtt(tt(k,i,j),rr(k,i,j))+virtt(tt(k-1,i,j),rr(k-1,i,j)) ) *.5)

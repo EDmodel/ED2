@@ -145,23 +145,23 @@ module mem_edcp
       type(ed_flux), intent(inout) :: edflux
       !------------------------------------------------------------------------------------!
      
-      if (associated(edflux%ustar      ))  nullify(edflux%ustar      )
-      if (associated(edflux%tstar      ))  nullify(edflux%tstar      )
-      if (associated(edflux%rstar      ))  nullify(edflux%rstar      )
-      if (associated(edflux%cstar      ))  nullify(edflux%cstar      )
-      if (associated(edflux%zeta       ))  nullify(edflux%zeta       )
-      if (associated(edflux%ribulk     ))  nullify(edflux%ribulk     )
-      if (associated(edflux%sflux_u    ))  nullify(edflux%sflux_u    )
-      if (associated(edflux%sflux_v    ))  nullify(edflux%sflux_v    )
-      if (associated(edflux%sflux_r    ))  nullify(edflux%sflux_r    )
-      if (associated(edflux%sflux_t    ))  nullify(edflux%sflux_t    )
-      if (associated(edflux%sflux_c    ))  nullify(edflux%sflux_c    )
-      if (associated(edflux%sflux_w    ))  nullify(edflux%sflux_w    )
-      if (associated(edflux%rshort_gnd ))  nullify(edflux%rshort_gnd )
-      if (associated(edflux%rlong_gnd  ))  nullify(edflux%rlong_gnd  )
-      if (associated(edflux%albedt     ))  nullify(edflux%albedt     )
-      if (associated(edflux%rlongup    ))  nullify(edflux%rlongup    )
-      if (associated(edflux%rk4step    ))  nullify(edflux%rk4step    )
+      nullify(edflux%ustar      )
+      nullify(edflux%tstar      )
+      nullify(edflux%rstar      )
+      nullify(edflux%cstar      )
+      nullify(edflux%zeta       )
+      nullify(edflux%ribulk     )
+      nullify(edflux%sflux_u    )
+      nullify(edflux%sflux_v    )
+      nullify(edflux%sflux_r    )
+      nullify(edflux%sflux_t    )
+      nullify(edflux%sflux_c    )
+      nullify(edflux%sflux_w    )
+      nullify(edflux%rshort_gnd )
+      nullify(edflux%rlong_gnd  )
+      nullify(edflux%albedt     )
+      nullify(edflux%rlongup    )
+      nullify(edflux%rk4step    )
 
       return
    end subroutine nullify_edflux
@@ -340,8 +340,8 @@ module mem_edcp
 
 
 
-      if (associated(edprec%prev_aconpr )) nullify(edprec%prev_aconpr )
-      if (associated(edprec%prev_abulkpr)) nullify(edprec%prev_abulkpr)
+      nullify(edprec%prev_aconpr )
+      nullify(edprec%prev_abulkpr)
 
       return
    end subroutine  nullify_edprecip

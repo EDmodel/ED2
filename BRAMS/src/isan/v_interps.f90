@@ -123,8 +123,8 @@ staloop: do ns=1,nsta
      cycle staloop
    end if
 
-   syo=cp*pth(lbcp)*pk(lbcp)/p00**rocp+grav*zsnd(ns,lbcp)
-   obss(ns,lbc)=syo+cp*(pk(lbcp)+obsp(ns,lbc)**rocp)  &
+   syo=cpdry*pth(lbcp)*pk(lbcp)/p00**rocp+grav*zsnd(ns,lbcp)
+   obss(ns,lbc)=syo+cpdry*(pk(lbcp)+obsp(ns,lbc)**rocp)  &
         *.5/p00**rocp *(levth(lbc)-pth(lbcp))
    po=obsp(ns,lbc)
    syo=obss(ns,lbc)
@@ -132,7 +132,7 @@ staloop: do ns=1,nsta
    do k=lbc+1,nisn
       obss(ns,k)=1e30
       if(obsp(ns,k) < 1e19) then
-         obss(ns,k)=syo+cp*(po**rocp+obsp(ns,k)**rocp)  &
+         obss(ns,k)=syo+cpdry*(po**rocp+obsp(ns,k)**rocp)  &
               *.5/p00**rocp *(levth(k)-tho)
          syo=obss(ns,k)
          po=obsp(ns,k)
@@ -146,7 +146,7 @@ staloop: do ns=1,nsta
    do k=lbc-1,1,-1
       obss(ns,k)=1e30
       if(obsp(ns,k).lt.1e19) then
-         obss(ns,k)=syo+cp*(po**rocp+obsp(ns,k)**rocp)*.5  &
+         obss(ns,k)=syo+cpdry*(po**rocp+obsp(ns,k)**rocp)*.5  &
               /p00**rocp*(levth(k)-tho)
          syo=obss(ns,k)
          po=obsp(ns,k)
@@ -156,7 +156,7 @@ staloop: do ns=1,nsta
 
    do k=1,nisn
       if(obss(ns,k).lt.1e19) then
-         zi(k)=(obss(ns,k)-cp*levth(k)*(obsp(ns,k)*p00i)**rocp)/grav
+         zi(k)=(obss(ns,k)-cpdry*levth(k)*(obsp(ns,k)*p00i)**rocp)/grav
       else
          zi(k)=1e30
       endif
@@ -334,7 +334,7 @@ staloop: do ns=1,nsta
        cycle staloop
      end if
 
-     pio=cp*(psnd(ns,lbcp)/p00)**rocp
+     pio=cpdry*(psnd(ns,lbcp)/p00)**rocp
      obsp(ns,lbc)=pio-(sigzr(lbc)-zsnd(ns,lbcp))*grav/((pth(lbcp)+obst(ns,lbc))*.5)
      pio=obsp(ns,lbc)
      zso=sigzr(lbc)
@@ -366,10 +366,10 @@ staloop: do ns=1,nsta
 
      DO K=1,nsigz
         IF(obsp(ns,K)+obst(ns,k) < 1E19) THEN
-           tsz(k)=obst(ns,k)*obsp(ns,k)/cp
-           psz(K)=(obsp(ns,k)/cp)**cpor*p00
+           tsz(k)=obst(ns,k)*obsp(ns,k)/cpdry
+           psz(K)=(obsp(ns,k)/cpdry)**cpor*p00
            IF(obsr(ns,k).LT.1E19) THEN
-              rsz(k)=ptrh2rvapl(obsr(ns,k),psz(k),tsz(k))
+              rsz(k)=ptrh2rvapl(obsr(ns,k),psz(k),tsz(k),.false.)
               tsz(k)=virtt(obst(ns,k),rsz(k))
            else
               tsz(k)=obst(ns,k)
@@ -412,7 +412,7 @@ staloop: do ns=1,nsta
         endif
      enddo
      do k=1,nsigz
-        if(obsp(ns,k) < 1e19) obsp(ns,k)=(obsp(ns,k)/cp)**cpor*p00
+        if(obsp(ns,k) < 1e19) obsp(ns,k)=(obsp(ns,k)/cpdry)**cpor*p00
      enddo
 
    ! Vertically interpolate winds in height
@@ -573,20 +573,20 @@ do j=1,np2
          endif
       enddo
 
-      sy=cp*thd(kpbc)*pkd(kpbc)/p00k+grav*zn(i,j,kpbc-2)
+      sy=cpdry*thd(kpbc)*pkd(kpbc)/p00k+grav*zn(i,j,kpbc-2)
 
-      si2(i,j,kibc-1)=sy-cp*(pi2(i,j,kibc-1)**rocp  &
+      si2(i,j,kibc-1)=sy-cpdry*(pi2(i,j,kibc-1)**rocp  &
            +ppd(kpbc)**rocp)/(2.*p00k)*(thd(kpbc)-levth(kibc-1))
       do k=kibc-2,1,-1
-         si2(i,j,k)=si2(i,j,k+1)+cp*(pi2(i,j,k+1)**rocp  &
+         si2(i,j,k)=si2(i,j,k+1)+cpdry*(pi2(i,j,k+1)**rocp  &
               +pi2(i,j,k)**rocp)/(2.*p00k)  &
               *(levth(k)-levth(k+1))
       enddo
 
-      si2(i,j,kibc)=sy+cp*(pi2(i,j,kibc)**rocp  &
+      si2(i,j,kibc)=sy+cpdry*(pi2(i,j,kibc)**rocp  &
            +ppd(kpbc)**rocp)/(2.*p00k)*(levth(kibc)-thd(kpbc))
       do k=kibc+1,nisn
-         si2(i,j,k)=si2(i,j,k-1)+cp*(pi2(i,j,k-1)**rocp  &
+         si2(i,j,k)=si2(i,j,k-1)+cpdry*(pi2(i,j,k-1)**rocp  &
               +pi2(i,j,k)**rocp)/(2.*p00k)  &
               *(levth(k)-levth(k-1))
       enddo
@@ -685,9 +685,9 @@ do j=1,np2
       npd=nprz+2
       DO K=1,NPD
          PKD(K)=PPD(K)**ROCP
-         pid(k)=cp*(ppd(k)/p00)**rocp
-         tempd(k)=thetd(k)*pid(k)/cp
-         rtd(k)=ptrh2rvapil(rd(k),ppd(k),tempd(k))
+         pid(k)=cpdry*(ppd(k)/p00)**rocp
+         tempd(k)=thetd(k)*pid(k)/cpdry
+         rtd(k)=ptrh2rvapil(rd(k),ppd(k),tempd(k),.false.)
          thvd(k)=virtt(thetd(k),rtd(k))
       ENDDO
 
@@ -710,7 +710,7 @@ do j=1,np2
       call htint(npd,pid,zd,npi3,vvv,sigzr)
       call psfill(npi3,vvv,pi2,np1,np2,i,j)
       do k=1,npi3
-         pi2(i,j,k)=(pi2(i,j,k)/cp)**cpor*p00
+         pi2(i,j,k)=(pi2(i,j,k)/cpdry)**cpor*p00
       enddo
 
       DO KL=Npi3,1,-1
@@ -748,14 +748,14 @@ do j=1,np2
 
       do k=1,npi3
          vvv(k)=ti2(i,j,k)*(pi2(i,j,k)/p00)**rocp
-         raux  =ptrh2rvapil(ri2(i,j,k),pi2(i,j,k),vvv(k))
+         raux  =ptrh2rvapil(ri2(i,j,k),pi2(i,j,k),vvv(k),.false.)
          vvv(k)=virtt(ti2(i,j,k),raux)
       enddo
-      raux = ptrh2rvapil(rd(kpbc),ppd(kpbc),tempd(kpbc))
+      raux = ptrh2rvapil(rd(kpbc),ppd(kpbc),tempd(kpbc),.false.)
       thvp=virtt(thetd(kpbc),raux)
 
 
-      piibc=cp*pkd(kpbc)/p00**rocp
+      piibc=cpdry*pkd(kpbc)/p00**rocp
       pi2(i,j,kibc-1)=piibc+(zd(kpbc)-sigzr(kibc-1))*grav/(.5*(thvp+vvv(kibc-1)))
       do k=kibc-2,1,-1
          pi2(i,j,k)=pi2(i,j,k+1)+(sigzr(k+1)-sigzr(k))*grav/(.5*(vvv(k+1)+vvv(k)))
@@ -765,7 +765,7 @@ do j=1,np2
          pi2(i,j,k)=pi2(i,j,k-1)-(sigzr(k)-sigzr(k-1))*grav/(.5*(vvv(k-1)+vvv(k)))
       enddo
       do k=1,npi3
-         pi2(i,j,k)=(pi2(i,j,k)/cp)**cpor*p00
+         pi2(i,j,k)=(pi2(i,j,k)/cpdry)**cpor*p00
       enddo
 
       4500 continue

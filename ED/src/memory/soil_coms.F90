@@ -161,6 +161,7 @@ module soil_coms
       real(kind=4) :: slpotwp    ! Water potential for wilting point             [       m]
       real(kind=4) :: slpotfc    ! Water potential for field capacity            [       m]
       real(kind=4) :: slpotld    ! Water pot. below which drought phen happens   [       m]
+      real(kind=4) :: slpotfr    ! Water pot. below which fire happens           [       m]
    end type soil_class
    !----- Double precision version --------------------------------------------------------!
    type soil_class8
@@ -188,6 +189,7 @@ module soil_coms
       real(kind=8) :: slpotwp    ! Water potential for wilting point             [       m]
       real(kind=8) :: slpotfc    ! Water potential for field capacity            [       m]
       real(kind=8) :: slpotld    ! Water pot. below which drought phen happens   [       m]
+      real(kind=8) :: slpotfr    ! Water pot. below which fire happens           [       m]
    end type soil_class8
    !---------------------------------------------------------------------------------------!
    !----- To be filled in ed_params.f90. --------------------------------------------------!

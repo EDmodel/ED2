@@ -6,10 +6,10 @@
 #------------------------------------------------------------------------------------------#
 here=`pwd`                             # Local disk
 moi=`whoami`                           # User name
-diskthere='/n/scratch2/moorcroft_lab'  # Output directory
+diskthere='/n/moorcroftfs2'            # Output directory
 queue='camd'                           # Queue to be used
-whena='08-01-2008 00:00'               # Initial time for simulation
-whenz='09-01-2008 00:00'               # Final time for simulation
+whena='01-01-2008 00:00'               # Initial time for simulation
+whenz='01-01-2009 00:00'               # Final time for simulation
 isfcl=5                                # 1 = LEAF-3 run, 5 = ED-2.2 run
 
 #------------------------------------------------------------------------------------------#
@@ -192,7 +192,8 @@ then
 elif [ ! -s ${there} ]
 then
    mv tothere ${there}
-else
+elif [ ${here} != ${there} ]
+then
    echo ' There is already a directory called '${there}'...'
    echo ' Do you want to delete it? [y/N]'
    read  proceed
@@ -232,6 +233,8 @@ else
    rm -frv ${there}
 
    mv tothere ${there}
+else
+   mv tothere/* .
 fi
 #------------------------------------------------------------------------------------------#
 

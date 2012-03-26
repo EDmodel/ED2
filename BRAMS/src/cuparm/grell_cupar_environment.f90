@@ -19,13 +19,13 @@ subroutine grell_thermo_cldlev(mkx,mgmzp,z_cup,exner,thil,t,qtot,qliq,qice,co2,e
                               ,t_cup,thil_cup,qtot_cup,qvap_cup,qliq_cup,qice_cup,qsat_cup &
                               ,co2_cup,rho_cup,theiv_cup,theivs_cup)
 
-   use rconstants, only : p00,cpi,cpor,t3ple
-   use therm_lib , only : & 
-           thetaeiv       & ! Function that computes thetae_iv
-          ,thetaeivs      & ! Function that computes sat. thetae_iv
-          ,idealdens      & ! Function that computes density for ideal gas
-          ,rslif          & ! Function that computes saturation mixing ratio
-          ,theta_iceliq   ! ! Function that computes theta_il
+   use rconstants, only : t3ple        ! ! Triple point temperature
+   use therm_lib , only : thetaeiv     & ! Function that computes thetae_iv
+                        , thetaeivs    & ! Function that computes sat. thetae_iv
+                        , idealdens    & ! Function that computes density for ideal gas
+                        , rslif        & ! Function that computes saturation mixing ratio
+                        , theta_iceliq & ! Function that computes theta_il
+                        , exner2press  ! ! Function that computes pressure
 
    implicit none
    !------ Input variables ----------------------------------------------------------------!
@@ -92,7 +92,7 @@ subroutine grell_thermo_cldlev(mkx,mgmzp,z_cup,exner,thil,t,qtot,qliq,qice,co2,e
    !---------------------------------------------------------------------------------------!
    do k = 1,mkx
       !------ Pressure, straightforward and it could be interpolated too ------------------!
-      p_cup(k)   = p00*(cpi*exner_cup(k))**cpor
+      p_cup(k)   = exner2press(exner_cup(k))
 
       !------ Finding liquid and ice mixing ratio -----------------------------------------!
       qsat_cup(k) = rslif(p_cup(k),t_cup(k))
@@ -110,7 +110,7 @@ subroutine grell_thermo_cldlev(mkx,mgmzp,z_cup,exner,thil,t,qtot,qliq,qice,co2,e
       !------ Finding the air density -----------------------------------------------------!
       rho_cup(k)    = idealdens(p_cup(k),t_cup(k),qvap_cup(k),qtot_cup(k)) 
       !------ Finding the ice-vapour equivalent potential temperature ---------------------!
-      theiv_cup(k)  = thetaeiv(thil_cup(k),p_cup(k),t_cup(k),qvap_cup(k),qtot_cup(k),8)
+      theiv_cup(k)  = thetaeiv(thil_cup(k),p_cup(k),t_cup(k),qvap_cup(k),qtot_cup(k))
       !------ Finding the saturation ice-vapour equivalent potential temperature ----------!
       theivs_cup(k) = thetaeivs(thil_cup(k),t_cup(k),qsat_cup(k),qliq_cup(k),qice_cup(k))
    end do

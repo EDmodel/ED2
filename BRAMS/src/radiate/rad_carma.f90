@@ -29,11 +29,9 @@ module rad_carma
       use mem_aerad   , only : nwave              ! ! intent(in)
       use mem_radiate , only : rad_cosz_min       ! ! intent(in)
       use rconstants  , only : day_sec            & ! intent(in)
-                             , p00                & ! intent(in)
-                             , t00                & ! intent(in)
-                             , cpor               & ! intent(in)
-                             , cpi                ! ! intent(in)
-         
+                             , t00                ! ! intent(in)
+      use therm_lib   , only : exner2press        & ! function
+                             , extheta2temp       ! ! function
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
       integer                          , intent(in)    :: m1
@@ -101,6 +99,7 @@ module rad_carma
       real, dimension(m1)                              :: fthrd_cld
       real, dimension(nwave)                           :: aotl_cld
       real, dimension(nwave)                           :: aotl
+      real                                             :: exner
       real                                             :: press
       real                                             :: tempc
       real                                             :: rvcgs
@@ -253,8 +252,9 @@ module rad_carma
                                                          ,'FTHRD [K/day]'
                   write (unit=*,fmt='(123a)') ('-',k=1,123)
                   do k=1,m1
-                     press = ((pp(k,i,j) + pi0(k,i,j)) * cpi) ** cpor * p00 * 0.01
-                     tempc = (theta(k,i,j) * (pp(k,i,j) + pi0(k,i,j)) * cpi) - t00
+                     exner = pp(k,i,j) + pi0(k,i,j)
+                     press = exner2press(exner) * 0.01
+                     tempc = extheta2temp(exner,theta(k,i,j)) - t00
                      rvcgs = rv(k,i,j) * 1000.
                      write (unit=*,fmt='(i5,1x,8(f13.6,1x),es13.6,1x)')                    &
                                                                 k, tempc     , press       &
@@ -307,34 +307,33 @@ module rad_carma
    subroutine radcarma(nzpmax,m1,solfac,theta,pi0,pp,rv,rain,lwl,iwl,lwl_cld,iwl_cld,dn0   &
                       ,rtp,fthrd,rtgt,f13t,f23t,glat,glon,rshort,rshort_top,rshortup_top   &
                       ,rlong,rlongup_top,albedt,cosz,rlongup,mynum,fmapt,pm,aotl,xland)
-      use catt_start  , only : catt       ! ! intent(in)
-      use mem_grid    , only : centlon    & ! intent(in)
-                             , dzm        & ! intent(in)
-                             , dzt        & ! intent(in)
-                             , idatea     & ! intent(in)
-                             , imontha    & ! intent(in)
-                             , itimea     & ! intent(in)
-                             , itopo      & ! intent(in)
-                             , iyeara     & ! intent(in)
-                             , ngrid      & ! intent(in)
-                             , nzp        & ! intent(in)
-                             , plonn      & ! intent(in)
-                             , time       & ! intent(in)
-                             , dtlt       ! ! intent(in)
-      use mem_radiate , only : lonrad     & ! intent(in)
-                             , iswrtyp    & ! intent(in)
-                             , ilwrtyp    ! ! intent(in)
-      use rconstants  , only : cp         & ! intent(in)
-                             , cpor       & ! intent(in)
-                             , p00        & ! intent(in)
-                             , pio180     & ! intent(in)
-                             , halfpi     & ! intent(in)
-                             , wdns       & ! intent(in)
-                             , stefan     & ! intent(in)
-                             , toodry     ! ! intent(in)
-      use mem_aerad   , only : ngas       & ! intent(in)
-                             , nwave      & ! intent(in)
-                             , lprocopio  ! ! intent(in)
+      use catt_start  , only : catt         ! ! intent(in)
+      use mem_grid    , only : centlon      & ! intent(in)
+                             , dzm          & ! intent(in)
+                             , dzt          & ! intent(in)
+                             , idatea       & ! intent(in)
+                             , imontha      & ! intent(in)
+                             , itimea       & ! intent(in)
+                             , itopo        & ! intent(in)
+                             , iyeara       & ! intent(in)
+                             , ngrid        & ! intent(in)
+                             , nzp          & ! intent(in)
+                             , plonn        & ! intent(in)
+                             , time         & ! intent(in)
+                             , dtlt         ! ! intent(in)
+      use mem_radiate , only : lonrad       & ! intent(in)
+                             , iswrtyp      & ! intent(in)
+                             , ilwrtyp      ! ! intent(in)
+      use rconstants  , only : pio180       & ! intent(in)
+                             , halfpi       & ! intent(in)
+                             , wdns         & ! intent(in)
+                             , stefan       & ! intent(in)
+                             , toodry       ! ! intent(in)
+      use mem_aerad   , only : ngas         & ! intent(in)
+                             , nwave        & ! intent(in)
+                             , lprocopio    ! ! intent(in)
+      use therm_lib   , only : exner2press  & ! function
+                             , extheta2temp ! ! function
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
       integer                  , intent(in)    :: nzpmax
@@ -383,7 +382,7 @@ module rad_carma
       real                                     :: xlandr
       real, dimension(nzpmax)                  :: fthrl
       real, dimension(nzpmax)                  :: fthrs
-      real                                     :: pird
+      real                                     :: exner
       real                                     :: dzsdx
       real                                     :: dzsdy
       real                                     :: dlon
@@ -413,12 +412,12 @@ module rad_carma
       !----- Copy environment variables to some scratch arrays. ---------------------------!
       nzz = m1 - 1
       do k = 1,m1
-         pird      = (pp(k) + pi0(k)) / cp
-         temprd(k) = theta(k) * pird ! air temperature (k)
+         exner     = pp(k) + pi0(k)
+         temprd(k) = extheta2temp(exner,theta(k)) ! air temperature (k)
          rvr(k)    = max(toodry,rv(k))
 
          !----- Convert the next 7 variables to cgs for the time being. -------------------!
-         prd(k)  = pird ** cpor * p00 * 10.  ! pressure
+         prd(k)  = exner2press(exner) * 10.  ! pressure
          dn0r(k) = dn0(k) * 1.e-3         ! air density
          dztr(k) = dzt(k) / rtgt * 1.e-2
 

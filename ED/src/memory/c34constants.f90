@@ -142,38 +142,6 @@ module c34constants
    !---------------------------------------------------------------------------------------!
 
 
-
-   !---------------------------------------------------------------------------------------!
-   !   This structure contains the variables that may be copied to the model standard      !
-   ! output.                                                                               !
-   !---------------------------------------------------------------------------------------!
-   type stoma_data
-      integer         :: recalc=1   !THIS SHOULD BE INIT IN ED_PARAMS
-      real(kind=4)    :: T_L
-      real(kind=4)    :: e_A
-      real(kind=4)    :: PAR
-      real(kind=4)    :: rb_factor
-      real(kind=4)    :: prss
-      real(kind=4)    :: phenology_factor
-      real(kind=4)    :: gsw_open
-      integer         :: ilimit
-      
-      real(kind=4)    :: T_L_residual
-      real(kind=4)    :: e_a_residual
-      real(kind=4)    :: par_residual
-      real(kind=4)    :: rb_residual
-      real(kind=4)    :: prss_residual
-      real(kind=4)    :: leaf_residual
-      real(kind=4)    :: gsw_residual
-   end type stoma_data
-   !---------------------------------------------------------------------------------------!
-
-
-   !------ The number of stomatal attributes. ---------------------------------------------!
-   integer, parameter :: n_stoma_atts = 16
-   !---------------------------------------------------------------------------------------!
-
-
    !=======================================================================================!
    !=======================================================================================!
 

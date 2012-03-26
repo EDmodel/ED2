@@ -13,11 +13,10 @@ module lake_coms
    type lakemettype
       real(kind=8)  :: atm_rhos
       real(kind=8)  :: atm_tmp
+      real(kind=8)  :: atm_tmp_zcan
       real(kind=8)  :: atm_theta
-      real(kind=8)  :: atm_theiv
-      real(kind=8)  :: atm_lntheta
+      real(kind=8)  :: atm_enthalpy
       real(kind=8)  :: atm_shv
-      real(kind=8)  :: atm_rvap
       real(kind=8)  :: atm_rhv
       real(kind=8)  :: atm_co2
       real(kind=8)  :: atm_exner
@@ -47,52 +46,51 @@ module lake_coms
    ! integration (the "canopy" air space and fluxes).                                      !
    !---------------------------------------------------------------------------------------!
    type lakesitetype
-      real(kind=8)  :: can_temp
-      real(kind=8)  :: can_theiv
-      real(kind=8)  :: can_theta
-      real(kind=8)  :: can_shv
-      real(kind=8)  :: can_rhv
-      real(kind=8)  :: can_ssh
-      real(kind=8)  :: can_co2
-      real(kind=8)  :: can_prss
-      real(kind=8)  :: can_rvap
-      real(kind=8)  :: can_lntheta
-      real(kind=8)  :: can_exner
-      real(kind=8)  :: can_rhos
-      real(kind=8)  :: can_depth
-      real(kind=8)  :: lake_temp
-      real(kind=8)  :: lake_fliq
-      real(kind=8)  :: lake_shv
-      real(kind=8)  :: lake_ssh
-      real(kind=8)  :: lake_rough
-      real(kind=8)  :: ustar
-      real(kind=8)  :: tstar
-      real(kind=8)  :: estar
-      real(kind=8)  :: qstar
-      real(kind=8)  :: cstar
-      real(kind=8)  :: zeta
-      real(kind=8)  :: ribulk
-      real(kind=8)  :: gglake
-      real(kind=8)  :: avg_vapor_gc
-      real(kind=8)  :: avg_vapor_ac
-      real(kind=8)  :: avg_sensible_gc
-      real(kind=8)  :: avg_sensible_ac
-      real(kind=8)  :: avg_carbon_gc
-      real(kind=8)  :: avg_carbon_ac
-      real(kind=8)  :: avg_carbon_st
-      real(kind=8)  :: avg_sflux_u
-      real(kind=8)  :: avg_sflux_w
-      real(kind=8)  :: avg_sflux_v
-      real(kind=8)  :: avg_sflux_t
-      real(kind=8)  :: avg_sflux_r
-      real(kind=8)  :: avg_sflux_c
-      real(kind=8)  :: avg_rshort_gnd
-      real(kind=8)  :: avg_albedt
-      real(kind=8)  :: avg_rlongup
-      real(kind=8)  :: avg_ustar
-      real(kind=8)  :: avg_tstar
-      real(kind=8)  :: avg_qstar
-      real(kind=8)  :: avg_cstar
+      real(kind=8)  :: can_temp        ! Temperature                         [           K]
+      real(kind=8)  :: can_enthalpy    ! Canopy specific enthalpy            [        J/kg]
+      real(kind=8)  :: can_theta       ! Potential Temperature               [           K]
+      real(kind=8)  :: can_shv         ! Specific humidity                   [       kg/kg]
+      real(kind=8)  :: can_rhv         ! Relative humidity                   [         ---]
+      real(kind=8)  :: can_ssh         ! Saturation specific humidity        [       kg/kg]
+      real(kind=8)  :: can_co2         ! CO_2 mixing ratio                   [    µmol/mol]
+      real(kind=8)  :: can_prss        ! Pressure                            [          Pa]
+      real(kind=8)  :: can_exner       ! Exner function                      [      J/kg/K]
+      real(kind=8)  :: can_rhos        ! Canopy air density                  [       kg/m³]
+      real(kind=8)  :: can_depth       ! Canopy depth                        [           m]
+      real(kind=8)  :: can_cp          ! Specific heat                       [      J/kg/K]
+      real(kind=8)  :: lake_temp       ! Lake surface temperature            [           K]
+      real(kind=8)  :: lake_fliq       ! Liquid water fraction               [         ---]
+      real(kind=8)  :: lake_shv        ! Specific humidity at lake surface   [       kg/kg]
+      real(kind=8)  :: lake_ssh        ! Sat. specific humdity at lake sfc.  [       kg/kg]
+      real(kind=8)  :: lake_rough      ! Lake roughess                       [           m]
+      real(kind=8)  :: ustar           ! Friction velocity                   [         m/s]
+      real(kind=8)  :: tstar           ! Temperature gradient scale          [           K]
+      real(kind=8)  :: estar           ! Enthalpy gradient scale             [        J/kg]
+      real(kind=8)  :: qstar           ! Specific humidity gradient scale    [       kg/kg]
+      real(kind=8)  :: cstar           ! CO2 gradient scale                  [    µmol/mol]
+      real(kind=8)  :: zeta            ! Normalised height                   [         ---]
+      real(kind=8)  :: ribulk          ! Bulk Richardson number              [         ---]
+      real(kind=8)  :: gglake          ! Lake boundary layer conductance     [         m/s]
+      real(kind=8)  :: avg_vapor_gc    ! Lake -> CAS vapour flux             [     kg/m²/s]
+      real(kind=8)  :: avg_vapor_ac    ! Atmosphere -> CAS vapour flux       [     kg/m²/s]
+      real(kind=8)  :: avg_sensible_gc ! Lake -> CAS sensible heat flux      [        W/m²]
+      real(kind=8)  :: avg_sensible_ac ! Atmosphere -> CAS sens. heat flux   [        W/m²]
+      real(kind=8)  :: avg_carbon_gc   ! Lake -> CAS CO2 flux                [   µmol/m²/s]
+      real(kind=8)  :: avg_carbon_ac   ! Atmosphere -> CAS CO2 flux          [   µmol/m²/s]
+      real(kind=8)  :: avg_carbon_st   ! CO2 storage                         [   µmol/m²/s]
+      real(kind=8)  :: avg_sflux_u     ! Momentum flux (zonal direction)     [       m²/s²]
+      real(kind=8)  :: avg_sflux_w     ! Momentum flux (vertical direction)  [       m²/s²]
+      real(kind=8)  :: avg_sflux_v     ! Momentum flux (meridional direction)[       m²/s²]
+      real(kind=8)  :: avg_sflux_t     ! Temperature eddy flux               [       K m/s]
+      real(kind=8)  :: avg_sflux_r     ! Vapour eddy flux                    [   kg/kg m/s]
+      real(kind=8)  :: avg_sflux_c     ! CO2 eddy flux                       [µmol/mol m/s]
+      real(kind=8)  :: avg_rshort_gnd  ! Absorbed shortwave radiation        [        W/m²]
+      real(kind=8)  :: avg_albedt      ! Ground albedo                       [        ----]
+      real(kind=8)  :: avg_rlongup     ! Upward longwave radiation           [        W/m²]
+      real(kind=8)  :: avg_ustar       ! Mean u*                             [         m/s]
+      real(kind=8)  :: avg_tstar       ! Mean Theta*                         [           K]
+      real(kind=8)  :: avg_qstar       ! Mean q*                             [       kg/kg]
+      real(kind=8)  :: avg_cstar       ! Mean c*                             [    µmol/mol]
    end type lakesitetype
    !---------------------------------------------------------------------------------------!
 
@@ -137,11 +135,17 @@ module lake_coms
    !---------------------------------------------------------------------------------------!
 
 
-   !----- "Canopy" water and heat capacity variables. -------------------------------------!
-   real(kind=8)    :: wcapcan
-   real(kind=8)    :: wcapcani
-   real(kind=8)    :: hcapcani
-   real(kind=8)    :: ccapcani
+   !---------------------------------------------------------------------------------------!
+   !      Canopy air space capacities.  These variables are used to convert the intensive  !
+   ! version of canopy air space prognostic variables (specific enthalpy, water vapour     !
+   ! specific humidity and CO2 mixing ratio) into extensive variables.                     ! 
+   !---------------------------------------------------------------------------------------!
+   real(kind=8) :: wcapcan  ! Water capacity                               [  kg_air/m²gnd]
+   real(kind=8) :: hcapcan  ! Enthalpy capacity                            [  kg_air/m²gnd]
+   real(kind=8) :: ccapcan  ! CO2 capacity                                 [ mol_air/m²gnd]
+   real(kind=8) :: wcapcani ! Inverse of water capacity                    [  m²gnd/kg_air]
+   real(kind=8) :: hcapcani ! Inverse of enthalpy capacity                 [  m²gnd/kg_air]
+   real(kind=8) :: ccapcani ! Inverse of CO2 capacity                      [ m²gnd/mol_air]
    !---------------------------------------------------------------------------------------!
 
 
@@ -224,18 +228,17 @@ module lake_coms
 
       !----- Reset the variables. ---------------------------------------------------------!
       lake%can_temp        = 0.d0
-      lake%can_theiv       = 0.d0
+      lake%can_enthalpy    = 0.d0
       lake%can_theta       = 0.d0
       lake%can_shv         = 0.d0
       lake%can_rhv         = 0.d0
       lake%can_ssh         = 0.d0
       lake%can_co2         = 0.d0
       lake%can_prss        = 0.d0
-      lake%can_rvap        = 0.d0
-      lake%can_lntheta     = 0.d0
       lake%can_exner       = 0.d0
       lake%can_rhos        = 0.d0
       lake%can_depth       = 0.d0
+      lake%can_cp          = 0.d0
       lake%lake_temp       = 0.d0
       lake%lake_fliq       = 0.d0
       lake%lake_shv        = 0.d0
@@ -296,23 +299,22 @@ module lake_coms
 
       !----- Reset the variables. ---------------------------------------------------------!
       lakeout%can_temp        = lakein%can_temp
-      lakeout%can_theiv       = lakein%can_theiv
+      lakeout%can_enthalpy    = lakein%can_enthalpy
       lakeout%can_theta       = lakein%can_theta
       lakeout%can_shv         = lakein%can_shv
       lakeout%can_rhv         = lakein%can_rhv
       lakeout%can_ssh         = lakein%can_ssh
       lakeout%can_co2         = lakein%can_co2
       lakeout%can_prss        = lakein%can_prss
-      lakeout%can_rvap        = lakein%can_rvap
-      lakeout%can_lntheta     = lakein%can_lntheta
       lakeout%can_exner       = lakein%can_exner
       lakeout%can_rhos        = lakein%can_rhos
       lakeout%can_depth       = lakein%can_depth
-      lakeout%lake_temp       = lakein%lake_temp  
-      lakeout%lake_fliq       = lakein%lake_fliq  
-      lakeout%lake_shv        = lakein%lake_shv   
-      lakeout%lake_ssh        = lakein%lake_ssh   
-      lakeout%lake_rough      = lakein%lake_rough 
+      lakeout%can_cp          = lakein%can_cp
+      lakeout%lake_temp       = lakein%lake_temp
+      lakeout%lake_fliq       = lakein%lake_fliq
+      lakeout%lake_shv        = lakein%lake_shv
+      lakeout%lake_ssh        = lakein%lake_ssh
+      lakeout%lake_rough      = lakein%lake_rough
       lakeout%ustar           = lakein%ustar
       lakeout%tstar           = lakein%tstar
       lakeout%estar           = lakein%estar
@@ -370,7 +372,7 @@ module lake_coms
       !----- Integrate the variables. -----------------------------------------------------!
       lake%can_shv         = lake%can_shv          + dtim * dlakedt%can_shv
       lake%can_co2         = lake%can_co2          + dtim * dlakedt%can_co2
-      lake%can_lntheta     = lake%can_lntheta      + dtim * dlakedt%can_lntheta
+      lake%can_enthalpy    = lake%can_enthalpy     + dtim * dlakedt%can_enthalpy
       lake%lake_temp       = lake%lake_temp        + dtim * dlakedt%lake_temp
       lake%avg_vapor_gc    = lake%avg_vapor_gc     + dtim * dlakedt%avg_vapor_gc
       lake%avg_vapor_ac    = lake%avg_vapor_ac     + dtim * dlakedt%avg_vapor_ac
@@ -471,10 +473,10 @@ module lake_coms
       real(kind=8)      , intent(in) :: htry
       !------------------------------------------------------------------------------------!
 
-      lakescal%can_lntheta = abs(lake%can_lntheta) + abs(dlakedt%can_lntheta * htry)
-      lakescal%can_shv     = abs(lake%can_shv    ) + abs(dlakedt%can_shv     * htry)
-      lakescal%can_co2     = abs(lake%can_co2    ) + abs(dlakedt%can_co2     * htry)
-      lakescal%lake_temp   = abs(lake%lake_temp  ) + abs(dlakedt%lake_temp   * htry)
+      lakescal%can_enthalpy = abs(lake%can_enthalpy) + abs(dlakedt%can_enthalpy * htry)
+      lakescal%can_shv      = abs(lake%can_shv     ) + abs(dlakedt%can_shv      * htry)
+      lakescal%can_co2      = abs(lake%can_co2     ) + abs(dlakedt%can_co2      * htry)
+      lakescal%lake_temp    = abs(lake%lake_temp   ) + abs(dlakedt%lake_temp    * htry)
 
 
       return
@@ -514,7 +516,7 @@ module lake_coms
       ! worst guess in the end.  We only check prognostic variables.                       !
       !------------------------------------------------------------------------------------!
       !----- 1. Log of potential temperature. ---------------------------------------------!
-      err    = abs(lakeerr%can_lntheta / lakescal%can_lntheta)
+      err    = abs(lakeerr%can_enthalpy / lakescal%can_enthalpy)
       errmax = max(errmax,err)
       !----- 2. Specific humidity. --------------------------------------------------------!
       err    = abs(lakeerr%can_shv / lakescal%can_shv)

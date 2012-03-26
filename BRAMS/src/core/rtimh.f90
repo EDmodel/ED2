@@ -68,7 +68,7 @@ subroutine timestep()
    use advect_kit         , only : calc_advec      ! ! sub-routine
    use mem_mass           , only : iexev           & ! intent(in)
                                  , imassflx        ! ! intent(in)
-
+   use mem_mnt_advec      , only : iadvec          ! ! intent(in)
    implicit none
    !----- Local variables. ----------------------------------------------------------------!
    real              :: t1
@@ -295,7 +295,12 @@ subroutine timestep()
    !  Thermodynamic advection.                                                             !
    !---------------------------------------------------------------------------------------!
    t1 = cputime(w1)
-   call advectc('T',mzp,mxp,myp,ia,iz,ja,jz,izu,jzv,mynum)
+   select case (iadvec)
+   case (1)
+      call advectc('T',mzp,mxp,myp,ia,iz,ja,jz,izu,jzv,mynum)
+   case (2)
+      call radvc_mnt_driver(mzp,mxp,myp,ia,iz,ja,jz,mynum)
+   end select
    if (acct) call acctimes('accu',19,'ADVECTs',t1,w1)
    !---------------------------------------------------------------------------------------!
 
@@ -606,15 +611,16 @@ end subroutine acctimes
 !==========================================================================================!
 !     This subroutine will update the lateral boundary conditions.                         !
 !------------------------------------------------------------------------------------------!
-subroutine mpilbc_driver(action,istflag)
+subroutine mpilbc_driver(action,izzflag)
    use node_mod, only : ipara ! ! intent(in)
    use mem_grid, only : ngrid ! ! intent(in)
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
    character(len=*), intent(in) :: action
-   integer         , intent(in) :: istflag
+   integer         , intent(in) :: izzflag
    !----- Local variables. ----------------------------------------------------------------!
    integer                      :: ist
+   integer                      :: iadv
    !---------------------------------------------------------------------------------------!
 
 
@@ -675,12 +681,12 @@ subroutine mpilbc_driver(action,istflag)
       !     Send staggered lateral conditions.  Here we also use the flag telling which    !
       ! field should be exchanged.                                                         !
       !------------------------------------------------------------------------------------!
-      call node_sendst(istflag)
+      call node_sendst(izzflag)
 
       !------------------------------------------------------------------------------------!
       !     If it is the first grid, check whether we need to exchange cyclic conditions.  !
       !------------------------------------------------------------------------------------!
-      if (ngrid  ==  1) call node_sendcyclic(istflag)
+      if (ngrid  ==  1) call node_sendcyclic(izzflag)
       !------------------------------------------------------------------------------------!
 
    case ('getst')
@@ -688,12 +694,12 @@ subroutine mpilbc_driver(action,istflag)
       !     Get staggered lateral conditions.  Here we also use the flag telling which     !
       ! field should be exchanged.                                                         !
       !------------------------------------------------------------------------------------!
-      call node_getst(istflag)
+      call node_getst(izzflag)
 
       !------------------------------------------------------------------------------------!
       !     If it is the first grid, check whether we need to exchange cyclic conditions.  !
       !------------------------------------------------------------------------------------!
-      if (ngrid  ==  1) call node_getcyclic(istflag)
+      if (ngrid  ==  1) call node_getcyclic(izzflag)
       !------------------------------------------------------------------------------------!
 
    case ('fullst')
@@ -701,8 +707,8 @@ subroutine mpilbc_driver(action,istflag)
       !     Full exchange of staggered lateral conditions.  Here we also use the flag      !
       ! telling which field should be exchanged.                                           !
       !------------------------------------------------------------------------------------!
-      call node_sendst(istflag)
-      call node_getst (istflag)
+      call node_sendst(izzflag)
+      call node_getst (izzflag)
       !------------------------------------------------------------------------------------!
 
 
@@ -711,46 +717,63 @@ subroutine mpilbc_driver(action,istflag)
       !     If it is the first grid, check whether we need to exchange cyclic conditions.  !
       !------------------------------------------------------------------------------------!
       if (ngrid  ==  1) then
-         call node_sendcyclic(istflag)
-         call node_getcyclic(istflag)
+         call node_sendcyclic(izzflag)
+         call node_getcyclic(izzflag)
       end if
       !------------------------------------------------------------------------------------!
 
-   case ('ultimate')
-      !------------------------------------------------------------------------------------!
-      !     This is the "ultimate" exchange of boundary conditions.  Both thermodynamic    !
-      ! and staggered grids are exchanged, and all possible flags are used for the         !
-      ! staggered exchange.  This should be used only for debugging purposes, as it slows  !
-      ! down the run considerably.                                                         !
-      !------------------------------------------------------------------------------------!
-
-
-
-      !---- Exchange thermodynamic lateral conditions. ------------------------------------!
-      call node_sendlbc()
-      call node_getlbc()
-      !------------------------------------------------------------------------------------!
-
-
-
-      !---- Exchange staggered lateral conditions. ----------------------------------------!
-      do ist=2,6
-         call node_sendst(ist)
-         call node_getst (ist)
-      end do
-      !------------------------------------------------------------------------------------!
-
-
+   case ('sendadv')
 
       !------------------------------------------------------------------------------------!
-      !     If it is the first grid, check whether we need to exchange cyclic conditions.  !
+      !      Send the advection boundary conditions variables.                             !
       !------------------------------------------------------------------------------------!
-      if (ngrid  ==  1) then
-         do ist=1,6
-            call node_sendcyclic(ist)
-            call node_getcyclic(ist)
-         end do 
-      end if
+      select case (izzflag)
+      case (0)
+         !----- Send most variables (iaflag from 1 to 4). ---------------------------------!
+         do iadv=1,4
+            call node_sendadv(iadv)
+         end do
+      case default
+         !----- Send only variabes corresponding to izzflag. ------------------------------!
+         call node_sendadv(izzflag)
+      end select
+      !------------------------------------------------------------------------------------!
+
+   case ('getadv')
+
+      !------------------------------------------------------------------------------------!
+      !      Get the advection boundary conditions variables.                              !
+      !------------------------------------------------------------------------------------!
+      select case (izzflag)
+      case (0)
+         !----- Get most variables (iaflag from 1 to 4). ----------------------------------!
+         do iadv=1,4
+            call node_getadv(iadv)
+         end do
+      case default
+         !----- Get only variabes corresponding to izzflag. -------------------------------!
+         call node_getadv(izzflag)
+      end select
+      !------------------------------------------------------------------------------------!
+
+   case ('fulladv')
+
+      !------------------------------------------------------------------------------------!
+      !     Full exchange of advection lateral conditions.  Here we also use the flag      !
+      ! telling which field should be exchanged.                                           !
+      !------------------------------------------------------------------------------------!
+      select case (izzflag)
+      case (0)
+         !----- Get most variables (iaflag from 1 to 4). ----------------------------------!
+         do iadv=1,4
+            call node_sendadv(iadv)
+            call node_getadv (iadv)
+         end do
+      case default
+         !----- Get only variabes corresponding to izzflag. -------------------------------!
+         call node_sendadv(izzflag)
+         call node_getadv (izzflag)
+      end select
       !------------------------------------------------------------------------------------!
    end select
 

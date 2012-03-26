@@ -16,6 +16,7 @@ subroutine NAMEOUT
   use mem_all
   use therm_lib, only: level
   use mem_mass, only : iexev, imassflx
+  use mem_mnt_advec, only : iadvec
   use grell_coms, only:  &
           closure_type,  & ! INTENT(IN)
           maxclouds,     & ! INTENT(IN)
@@ -122,7 +123,7 @@ subroutine NAMEOUT
 
 ![MLO - Adding ED2 and mass variables: 
 ! mass:
-  write(6,298) IEXEV,IMASSFLX,IBRUVAIS,IBOTFLX
+  write(6,298) IADVEC,IEXEV,IMASSFLX,IBRUVAIS,IBOTFLX
 ! ED2:
   write(6,205)LONRAD,IMONTHA,IDATEA,IYEARA,ITIMEA
   write(6,297) ISFCL,ISTAR,IGRNDVAP
@@ -146,8 +147,9 @@ subroutine NAMEOUT
 205 format('  LONRAD=',I4,'    IMONTHA=',I4,'     IDATEA=',I4  &
        ,'     IYEARA=',I4,'     ITIMEA=',I4)
 297 format('   ISFCL=',I4,'      ISTAR=',I4,'   IGRNDVAP=',I4)
-298 format('   IEXEV=',I4,'   IMASSFLX=',I4,'   IBRUVAIS=',I4,'   IBOTFLX=',I4)
-299 format('  IMONTHZ=',I4,'     IDATEZ=',I4  &
+298 format('  IADVEC=',I4,'      IEXEV=',I4,'   IMASSFLX=',I4  &
+       ,'   IBRUVAIS=',I4,'    IBOTFLX=',I4)
+299 format(' IMONTHZ=',I4,'     IDATEZ=',I4  &
        ,'     IYEARZ=',I4,'     ITIMEZ=',I4)
 
 206 format('  NVGCON=',I4,'       NPLT=',I4,'     IPSFLG=',I4  &

@@ -22,7 +22,9 @@ subroutine ed_driver()
                                 , nnodetot            & ! intent(in)
                                 , sendnum             & ! intent(inout)
                                 , recvnum             ! ! intent(in)
-
+   use detailed_coms     , only : idetailed           & ! intent(in)
+                                , patch_keep          ! ! intent(in)
+   use phenology_aux     , only : first_phenology     ! ! subroutine
    implicit none
    !----- Included variables. -------------------------------------------------------------!
    include 'mpif.h' ! MPI commons
@@ -36,6 +38,7 @@ subroutine ed_driver()
    real                        :: w1
    real                        :: w2
    real                        :: wtime_start
+   logical                     :: patch_detailed
    !----- External functions. -------------------------------------------------------------!
    real             , external :: walltime    ! wall time
    !---------------------------------------------------------------------------------------!
@@ -138,13 +141,16 @@ subroutine ed_driver()
    end if
 
    !---------------------------------------------------------------------------------------!
-   !      TEMPORARY THING... We eliminate all patches but the one to be debugged.          !
-   ! Special cases:                                                                        !
+   !      In case the runs is going to produce detailed output, we eliminate all patches   !
+   ! but the one to be analysed in detail.  Special cases:                                 !
    !  0 -- Keep all patches.                                                               !
    ! -1 -- Keep the one with the highest LAI                                               !
    ! -2 -- Keep the one with the lowest LAI                                                !
    !---------------------------------------------------------------------------------------!
-   !call exterminate_patches_except(-1)
+   patch_detailed = ibclr(idetailed,5) > 0
+   if (patch_detailed) then
+      call exterminate_patches_except(patch_keep)
+   end if
    !---------------------------------------------------------------------------------------!
 
 
@@ -418,7 +424,20 @@ subroutine exterminate_patches_except(keeppa)
                keepact = maxloc(csite%lai,dim=1)
             case default
                !----- Keep a fixed patch number. ------------------------------------------!
-               keepact = min(keeppa,csite%npatches)
+               keepact = keeppa
+               
+               if (keepact > csite%npatches) then
+                  write(unit=*,fmt='(a)')       '-----------------------------------------'
+                  write(unit=*,fmt='(a,1x,i6)') ' - IPY      = ',ipy
+                  write(unit=*,fmt='(a,1x,i6)') ' - ISI      = ',isi
+                  write(unit=*,fmt='(a,1x,i6)') ' - NPATCHES = ',csite%npatches
+                  write(unit=*,fmt='(a,1x,i6)') ' - KEEPPA   = ',keeppa
+                  write(unit=*,fmt='(a)')       '-----------------------------------------'
+                  call fail_whale ('KEEPPA can''t be greater than NPATCHES'                &
+                                  ,'ed_driver.f90')
+                  call fatal_error('KEEPPA can''t be greater than NPATCHES'                &
+                                  ,'exterminate_patches_except','ed_driver.f90')
+               end if
             end select
 
             patchloop: do ipa=1,csite%npatches

@@ -274,7 +274,6 @@ module rk4_stepper
       !----- Local variables --------------------------------------------------------------!
       type(patchtype)   , pointer     :: cpatch
       real(kind=8)                    :: combh
-      real(kind=8)                    :: dpdt
       !------------------------------------------------------------------------------------!
 
 
@@ -312,14 +311,8 @@ module rk4_stepper
       !------------------------------------------------------------------------------------!
 
 
-      !------ Estimate the derivative of canopy pressure. ---------------------------------!
-      dpdt          = (ak7%can_prss - y%can_prss) / combh
-      dydx%can_prss = dpdt * rk4_b21
-      !------------------------------------------------------------------------------------!
-
-
       !------ Get the new derivative evaluation. ------------------------------------------!
-      call leaf_derivs(ak7, ak2, csite, ipa)
+      call leaf_derivs(ak7, ak2, csite, ipa,-9000.d0)
       !------------------------------------------------------------------------------------!
 
 
@@ -337,15 +330,8 @@ module rk4_stepper
       !------------------------------------------------------------------------------------!
 
 
-      !------ Estimate the derivative of canopy pressure. ---------------------------------!
-      dpdt          = (ak7%can_prss - y%can_prss) / combh
-      dydx%can_prss = dydx%can_prss + dpdt * rk4_b31
-      ak2%can_prss  =                 dpdt * rk4_b32
-      !------------------------------------------------------------------------------------!
-
-
       !------ Get the new derivative evaluation. ------------------------------------------!
-      call leaf_derivs(ak7, ak3, csite,ipa)
+      call leaf_derivs(ak7, ak3, csite,ipa,-9000.d0)
       !------------------------------------------------------------------------------------!
 
 
@@ -364,16 +350,8 @@ module rk4_stepper
       !------------------------------------------------------------------------------------!
 
 
-      !------ Estimate the derivative of canopy pressure. ---------------------------------!
-      dpdt          = (ak7%can_prss - y%can_prss) / combh
-      dydx%can_prss = dydx%can_prss + dpdt * rk4_b41
-      ak2%can_prss  = ak2%can_prss  + dpdt * rk4_b42
-      ak3%can_prss  =                 dpdt * rk4_b43
-      !------------------------------------------------------------------------------------!
-
-
       !------ Get the new derivative evaluation. ------------------------------------------!
-      call leaf_derivs(ak7, ak4, csite, ipa)
+      call leaf_derivs(ak7, ak4, csite, ipa,-9000.d0)
       !------------------------------------------------------------------------------------!
 
 
@@ -393,17 +371,8 @@ module rk4_stepper
       !------------------------------------------------------------------------------------!
 
 
-      !------ Estimate the derivative of canopy pressure. ---------------------------------!
-      dpdt          = (ak7%can_prss - y%can_prss) / combh
-      dydx%can_prss = dydx%can_prss + dpdt * rk4_b51
-      ak2%can_prss  = ak2%can_prss  + dpdt * rk4_b52
-      ak3%can_prss  = ak3%can_prss  + dpdt * rk4_b53
-      ak4%can_prss  =                 dpdt * rk4_b54
-      !------------------------------------------------------------------------------------!
-
-
       !------ Get the new derivative evaluation. ------------------------------------------!
-      call leaf_derivs(ak7, ak5, csite, ipa)
+      call leaf_derivs(ak7, ak5, csite, ipa,-9000.d0)
       !------------------------------------------------------------------------------------!
 
 
@@ -424,18 +393,8 @@ module rk4_stepper
       !------------------------------------------------------------------------------------!
 
 
-      !------ Estimate the derivative of canopy pressure. ---------------------------------!
-      dpdt          = (ak7%can_prss - y%can_prss) / combh
-      dydx%can_prss = dydx%can_prss + dpdt * rk4_b61
-      ak2%can_prss  = ak2%can_prss  + dpdt * rk4_b62
-      ak3%can_prss  = ak3%can_prss  + dpdt * rk4_b63
-      ak4%can_prss  = ak4%can_prss  + dpdt * rk4_b64
-      ak5%can_prss  =                 dpdt * rk4_b65
-      !------------------------------------------------------------------------------------!
-
-
       !------ Get the new derivative evaluation. ------------------------------------------!
-      call leaf_derivs(ak7, ak6, csite,ipa)
+      call leaf_derivs(ak7, ak6, csite,ipa,-9000.d0)
       !------------------------------------------------------------------------------------!
 
 
@@ -453,34 +412,6 @@ module rk4_stepper
       call rk4_sanity_check(yout, reject_result, csite,ipa,dydx,h,print_diags)
       !------------------------------------------------------------------------------------!
       if(reject_result)return
-      !------------------------------------------------------------------------------------!
-
-
-      !------ Estimate the derivative of canopy pressure. ---------------------------------!
-      dpdt          = (ak7%can_prss - y%can_prss) / combh
-      dydx%can_prss = dydx%can_prss + dpdt * rk4_c1
-      ak3%can_prss  = ak3%can_prss  + dpdt * rk4_c3
-      ak4%can_prss  = ak4%can_prss  + dpdt * rk4_c4
-      ak6%can_prss  =                 dpdt * rk4_c6
-      !------------------------------------------------------------------------------------!
-
-
-
-      !------------------------------------------------------------------------------------!
-      !      Average the pressure derivative estimates.                                    !
-      !------------------------------------------------------------------------------------!
-      dydx%can_prss = dydx%can_prss                                                        &
-                    / (rk4_b21 + rk4_b31 + rk4_b41 + rk4_b51 + rk4_b61 + rk4_c1)
-      ak2%can_prss  = ak2%can_prss                                                         &
-                    / (          rk4_b32 + rk4_b42 + rk4_b52 + rk4_b62         )
-      ak3%can_prss  = ak3%can_prss                                                         &
-                    / (                    rk4_b43 + rk4_b53 + rk4_b63 + rk4_c3)
-      ak4%can_prss  = ak4%can_prss                                                         &
-                    / (                              rk4_b54 + rk4_b64 + rk4_c4)
-      ak5%can_prss  = ak5%can_prss                                                         &
-                    / (                                        rk4_b65         )
-      ak6%can_prss  = ak6%can_prss                                                         &
-                    / (                                                  rk4_c6)
       !------------------------------------------------------------------------------------!
 
 
@@ -519,8 +450,8 @@ module rk4_stepper
                                        , rk4site               & ! intent(in)
                                        , rk4eps                & ! intent(in)
                                        , toocold               & ! intent(in)
-                                       , rk4min_can_theiv      & ! intent(in)
-                                       , rk4max_can_theiv      & ! intent(in)
+                                       , rk4min_can_enthalpy   & ! intent(in)
+                                       , rk4max_can_enthalpy   & ! intent(in)
                                        , rk4min_can_theta      & ! intent(in)
                                        , rk4max_can_theta      & ! intent(in)
                                        , rk4max_can_shv        & ! intent(in)
@@ -529,8 +460,6 @@ module rk4_stepper
                                        , rk4max_can_rhv        & ! intent(in)
                                        , rk4min_can_temp       & ! intent(in)
                                        , rk4max_can_temp       & ! intent(in)
-                                       , rk4min_can_theiv      & ! intent(in)
-                                       , rk4max_can_theiv      & ! intent(in)
                                        , rk4min_can_prss       & ! intent(in)
                                        , rk4max_can_prss       & ! intent(in)
                                        , rk4min_can_co2        & ! intent(in)
@@ -589,14 +518,15 @@ module rk4_stepper
       !------------------------------------------------------------------------------------!
       !   Check whether the canopy air equivalent potential temperature is off.            !
       !------------------------------------------------------------------------------------!
-      if (y%can_theiv > rk4max_can_theiv .or. y%can_theiv < rk4min_can_theiv ) then
+      if (y%can_enthalpy > rk4max_can_enthalpy   .or.                                      &
+          y%can_enthalpy < rk4min_can_enthalpy        ) then
          reject_step = .true.
          if(record_err) integ_err(1,2) = integ_err(1,2) + 1_8
          if (print_problems) then
             write(unit=*,fmt='(a)')           '==========================================='
-            write(unit=*,fmt='(a)')           ' + Canopy air theta_Eiv is off-track...'
+            write(unit=*,fmt='(a)')           ' + Canopy air enthalpy is off-track...'
             write(unit=*,fmt='(a)')           '-------------------------------------------'
-            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_THEIV:         ',y%can_theiv
+            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_ENTHALPY:      ',y%can_enthalpy
             write(unit=*,fmt='(a,1x,es12.4)') ' CAN_THETA:         ',y%can_theta
             write(unit=*,fmt='(a,1x,es12.4)') ' CAN_SHV:           ',y%can_shv
             write(unit=*,fmt='(a,1x,es12.4)') ' CAN_RHV:           ',y%can_rhv
@@ -605,7 +535,7 @@ module rk4_stepper
             write(unit=*,fmt='(a,1x,es12.4)') ' CAN_CO2:           ',y%can_co2
             write(unit=*,fmt='(a,1x,es12.4)') ' CAN_DEPTH:         ',y%can_depth
             write(unit=*,fmt='(a,1x,es12.4)') ' CAN_PRSS:          ',y%can_prss
-            write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_LNTHETA )/Dt:',dydx%can_lntheta
+            write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_ENTHALPY)/Dt:',dydx%can_enthalpy
             write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_SHV     )/Dt:',dydx%can_shv
             write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_CO2     )/Dt:',dydx%can_co2
             write(unit=*,fmt='(a)')           '==========================================='
@@ -628,7 +558,7 @@ module rk4_stepper
             write(unit=*,fmt='(a)')           '==========================================='
             write(unit=*,fmt='(a)')           ' + Canopy air pot. temp. is off-track...'
             write(unit=*,fmt='(a)')           '-------------------------------------------'
-            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_THEIV:         ',y%can_theiv
+            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_ENTHALPY:      ',y%can_enthalpy
             write(unit=*,fmt='(a,1x,es12.4)') ' CAN_THETA:         ',y%can_theta
             write(unit=*,fmt='(a,1x,es12.4)') ' CAN_SHV:           ',y%can_shv
             write(unit=*,fmt='(a,1x,es12.4)') ' CAN_RHV:           ',y%can_rhv
@@ -637,7 +567,7 @@ module rk4_stepper
             write(unit=*,fmt='(a,1x,es12.4)') ' CAN_CO2:           ',y%can_co2
             write(unit=*,fmt='(a,1x,es12.4)') ' CAN_DEPTH:         ',y%can_depth
             write(unit=*,fmt='(a,1x,es12.4)') ' CAN_PRSS:          ',y%can_prss
-            write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_LNTHETA )/Dt:',dydx%can_lntheta
+            write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_ENTHALPY)/Dt:',dydx%can_enthalpy
             write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_SHV     )/Dt:',dydx%can_shv
             write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_CO2     )/Dt:',dydx%can_co2
             write(unit=*,fmt='(a)')           '==========================================='
@@ -660,7 +590,7 @@ module rk4_stepper
             write(unit=*,fmt='(a)')           '==========================================='
             write(unit=*,fmt='(a)')           ' + Canopy air sp. humidity is off-track...'
             write(unit=*,fmt='(a)')           '-------------------------------------------'
-            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_THEIV:         ',y%can_theiv
+            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_ENTHALPY:      ',y%can_enthalpy
             write(unit=*,fmt='(a,1x,es12.4)') ' CAN_THETA:         ',y%can_theta
             write(unit=*,fmt='(a,1x,es12.4)') ' CAN_SHV:           ',y%can_shv
             write(unit=*,fmt='(a,1x,es12.4)') ' CAN_RHV:           ',y%can_rhv
@@ -669,7 +599,7 @@ module rk4_stepper
             write(unit=*,fmt='(a,1x,es12.4)') ' CAN_CO2:           ',y%can_co2
             write(unit=*,fmt='(a,1x,es12.4)') ' CAN_DEPTH:         ',y%can_depth
             write(unit=*,fmt='(a,1x,es12.4)') ' CAN_PRSS:          ',y%can_prss
-            write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_LNTHETA )/Dt:',dydx%can_lntheta
+            write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_ENTHALPY)/Dt:',dydx%can_enthalpy
             write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_SHV     )/Dt:',dydx%can_shv
             write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_CO2     )/Dt:',dydx%can_co2
             write(unit=*,fmt='(a)')           '==========================================='
@@ -692,7 +622,7 @@ module rk4_stepper
             write(unit=*,fmt='(a)')           '==========================================='
             write(unit=*,fmt='(a)')           ' + Canopy air temperature is off-track...'
             write(unit=*,fmt='(a)')           '-------------------------------------------'
-            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_THEIV:         ',y%can_theiv
+            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_ENTHALPY:      ',y%can_enthalpy
             write(unit=*,fmt='(a,1x,es12.4)') ' CAN_THETA:         ',y%can_theta
             write(unit=*,fmt='(a,1x,es12.4)') ' CAN_SHV:           ',y%can_shv
             write(unit=*,fmt='(a,1x,es12.4)') ' CAN_RHV:           ',y%can_rhv
@@ -701,7 +631,7 @@ module rk4_stepper
             write(unit=*,fmt='(a,1x,es12.4)') ' CAN_CO2:           ',y%can_co2
             write(unit=*,fmt='(a,1x,es12.4)') ' CAN_DEPTH:         ',y%can_depth
             write(unit=*,fmt='(a,1x,es12.4)') ' CAN_PRSS:          ',y%can_prss
-            write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_LNTHETA )/Dt:',dydx%can_lntheta
+            write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_ENTHALPY)/Dt:',dydx%can_enthalpy
             write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_SHV     )/Dt:',dydx%can_shv
             write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_CO2     )/Dt:',dydx%can_co2
             write(unit=*,fmt='(a)')           '==========================================='
@@ -724,7 +654,7 @@ module rk4_stepper
             write(unit=*,fmt='(a)')           '==========================================='
             write(unit=*,fmt='(a)')           ' + Canopy air pressure is off-track...'
             write(unit=*,fmt='(a)')           '-------------------------------------------'
-            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_THEIV:         ',y%can_theiv
+            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_ENTHALPY:      ',y%can_enthalpy
             write(unit=*,fmt='(a,1x,es12.4)') ' CAN_THETA:         ',y%can_theta
             write(unit=*,fmt='(a,1x,es12.4)') ' CAN_SHV:           ',y%can_shv
             write(unit=*,fmt='(a,1x,es12.4)') ' CAN_RHV:           ',y%can_rhv
@@ -733,7 +663,7 @@ module rk4_stepper
             write(unit=*,fmt='(a,1x,es12.4)') ' CAN_CO2:           ',y%can_co2
             write(unit=*,fmt='(a,1x,es12.4)') ' CAN_DEPTH:         ',y%can_depth
             write(unit=*,fmt='(a,1x,es12.4)') ' CAN_PRSS:          ',y%can_prss
-            write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_LNTHETA )/Dt:',dydx%can_lntheta
+            write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_ENTHALPY)/Dt:',dydx%can_enthalpy
             write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_SHV     )/Dt:',dydx%can_shv
             write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_CO2     )/Dt:',dydx%can_co2
             write(unit=*,fmt='(a)')           '==========================================='
@@ -757,7 +687,7 @@ module rk4_stepper
             write(unit=*,fmt='(a)')           '==========================================='
             write(unit=*,fmt='(a)')           ' + Canopy air CO2 is off-track...'
             write(unit=*,fmt='(a)')           '-------------------------------------------'
-            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_THEIV:         ',y%can_theiv
+            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_ENTHALPY:      ',y%can_enthalpy
             write(unit=*,fmt='(a,1x,es12.4)') ' CAN_THETA:         ',y%can_theta
             write(unit=*,fmt='(a,1x,es12.4)') ' CAN_SHV:           ',y%can_shv
             write(unit=*,fmt='(a,1x,es12.4)') ' CAN_RHV:           ',y%can_rhv
@@ -766,7 +696,7 @@ module rk4_stepper
             write(unit=*,fmt='(a,1x,es12.4)') ' CAN_CO2:           ',y%can_co2
             write(unit=*,fmt='(a,1x,es12.4)') ' CAN_DEPTH:         ',y%can_depth
             write(unit=*,fmt='(a,1x,es12.4)') ' CAN_PRSS:          ',y%can_prss
-            write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_LNTHETA )/Dt:',dydx%can_lntheta
+            write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_ENTHALPY)/Dt:',dydx%can_enthalpy
             write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_SHV     )/Dt:',dydx%can_shv
             write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_CO2     )/Dt:',dydx%can_co2
             write(unit=*,fmt='(a)')           '==========================================='
@@ -803,7 +733,6 @@ module rk4_stepper
                write(unit=*,fmt='(a,1x,es12.4)') ' HEIGHT:        ',cpatch%hite(ico)
                write(unit=*,fmt='(a,1x,es12.4)') ' LAI:           ',y%lai(ico)
                write(unit=*,fmt='(a,1x,es12.4)') ' WAI:           ',y%wai(ico)
-               write(unit=*,fmt='(a,1x,es12.4)') ' WPA:           ',y%wpa(ico)
                write(unit=*,fmt='(a,1x,es12.4)') ' TAI:           ',y%tai(ico)
                write(unit=*,fmt='(a,1x,es12.4)') ' NPLANT:        ',y%nplant(ico)
                write(unit=*,fmt='(a,1x,es12.4)') ' CROWN_AREA:    ',y%crown_area(ico)
@@ -842,7 +771,6 @@ module rk4_stepper
                write(unit=*,fmt='(a,1x,es12.4)') ' HEIGHT:        ',cpatch%hite(ico)
                write(unit=*,fmt='(a,1x,es12.4)') ' LAI:           ',y%lai(ico)
                write(unit=*,fmt='(a,1x,es12.4)') ' WAI:           ',y%wai(ico)
-               write(unit=*,fmt='(a,1x,es12.4)') ' WPA:           ',y%wpa(ico)
                write(unit=*,fmt='(a,1x,es12.4)') ' TAI:           ',y%tai(ico)
                write(unit=*,fmt='(a,1x,es12.4)') ' NPLANT:        ',y%nplant(ico)
                write(unit=*,fmt='(a,1x,es12.4)') ' CROWN_AREA:    ',y%crown_area(ico)
@@ -898,7 +826,6 @@ module rk4_stepper
                write(unit=*,fmt='(a,1x,es12.4)') ' HEIGHT:        ',cpatch%hite(ico)
                write(unit=*,fmt='(a,1x,es12.4)') ' LAI:           ',y%lai(ico)
                write(unit=*,fmt='(a,1x,es12.4)') ' WAI:           ',y%wai(ico)
-               write(unit=*,fmt='(a,1x,es12.4)') ' WPA:           ',y%wpa(ico)
                write(unit=*,fmt='(a,1x,es12.4)') ' TAI:           ',y%tai(ico)
                write(unit=*,fmt='(a,1x,es12.4)') ' NPLANT:        ',y%nplant(ico)
                write(unit=*,fmt='(a,1x,es12.4)') ' CROWN_AREA:    ',y%crown_area(ico)
@@ -937,7 +864,6 @@ module rk4_stepper
                write(unit=*,fmt='(a,1x,es12.4)') ' HEIGHT:        ',cpatch%hite(ico)
                write(unit=*,fmt='(a,1x,es12.4)') ' LAI:           ',y%lai(ico)
                write(unit=*,fmt='(a,1x,es12.4)') ' WAI:           ',y%wai(ico)
-               write(unit=*,fmt='(a,1x,es12.4)') ' WPA:           ',y%wpa(ico)
                write(unit=*,fmt='(a,1x,es12.4)') ' TAI:           ',y%tai(ico)
                write(unit=*,fmt='(a,1x,es12.4)') ' NPLANT:        ',y%nplant(ico)
                write(unit=*,fmt='(a,1x,es12.4)') ' CROWN_AREA:    ',y%crown_area(ico)
@@ -1155,16 +1081,16 @@ module rk4_stepper
          write(unit=*,fmt='(a)')           ' '
          write(unit=*,fmt='(a)')           ' 1. CANOPY AIR SPACE: '
          write(unit=*,fmt='(a)')           ' '
-         write(unit=*,fmt='(6(a,1x))')     '   MIN_THEIV','   MAX_THEIV','     MIN_SHV'    &
-                                          ,'     MAX_SHV','     MIN_RHV','     MAX_RHV'
-         write(unit=*,fmt='(6(es12.5,1x))')  rk4min_can_theiv,rk4max_can_theiv             &
-                                            ,rk4min_can_shv  ,rk4max_can_shv               &
+         write(unit=*,fmt='(4(a,1x))')     '     MIN_SHV','     MAX_SHV','     MIN_RHV'    &
+                                          ,'     MAX_RHV'
+         write(unit=*,fmt='(4(es12.5,1x))')  rk4min_can_shv  ,rk4max_can_shv               &
                                             ,rk4min_can_rhv  ,rk4max_can_rhv
          write(unit=*,fmt='(a)') ' '
-         write(unit=*,fmt='(4(a,1x))')     '    MIN_TEMP','    MAX_TEMP','   MIN_THETA'    &
-                                          ,'   MAX_THETA'
-         write(unit=*,fmt='(4(es12.5,1x))') rk4min_can_temp ,rk4max_can_temp               &
-                                           ,rk4min_can_theta,rk4max_can_theta
+         write(unit=*,fmt='(6(a,1x))')     '    MIN_TEMP','    MAX_TEMP','   MIN_THETA'    &
+                                          ,'   MAX_THETA','MIN_ENTHALPY','MAX_ENTHALPY'
+         write(unit=*,fmt='(6(es12.5,1x))') rk4min_can_temp    ,rk4max_can_temp            &
+                                           ,rk4min_can_theta   ,rk4max_can_theta           &
+                                           ,rk4min_can_enthalpy,rk4max_can_enthalpy
          write(unit=*,fmt='(a)') ' '
          write(unit=*,fmt='(4(a,1x))')     '    MIN_PRSS','    MAX_PRSS','     MIN_CO2'    &
                                           ,'     MAX_CO2'
@@ -1272,30 +1198,28 @@ module rk4_stepper
       write(unit=*,fmt='(a)') ' '
       write(unit=*,fmt='(78a)') ('-',k=1,78)
       cpatch => csite%patch(ipa)
-      write (unit=*,fmt='(2(a5,1x),8(a12,1x))')                                            &
-         '  COH','  PFT','         LAI','         WAI','         WPA','         TAI'       &
-                        ,' LEAF_ENERGY',' OLD_LEAF_EN','   LEAF_TEMP','OLD_LEAF_TMP'
+      write (unit=*,fmt='(2(a5,1x),7(a12,1x))')                                            &
+         '  COH','  PFT','         LAI','         WAI','         TAI',' LEAF_ENERGY'       &
+                        ,' OLD_LEAF_EN','   LEAF_TEMP','OLD_LEAF_TMP'
       do ico = 1,cpatch%ncohorts
          if(y%leaf_resolvable(ico)) then
-            write(unit=*,fmt='(2(i5,1x),8(es12.4,1x))')                                    &
-               ico,cpatch%pft(ico),y%lai(ico),y%wai(ico),y%wpa(ico),y%tai(ico)             &
-                  ,y%leaf_energy(ico),cpatch%leaf_energy(ico),y%leaf_temp(ico)             &
-                  ,cpatch%leaf_temp(ico)
+            write(unit=*,fmt='(2(i5,1x),7(es12.4,1x))')                                    &
+               ico,cpatch%pft(ico),y%lai(ico),y%wai(ico),y%tai(ico),y%leaf_energy(ico)     &
+                  ,cpatch%leaf_energy(ico),y%leaf_temp(ico),cpatch%leaf_temp(ico)
          end if
       end do
       write(unit=*,fmt='(78a)') ('-',k=1,78)
 
       write(unit=*,fmt='(a)') ' '
       write(unit=*,fmt='(78a)') ('-',k=1,78)
-      write (unit=*,fmt='(2(a5,1x),8(a12,1x))') &
-         '  COH','  PFT','         LAI','         WAI','         WPA','         TAI'       &
-                        ,'  LEAF_WATER','OLD_LEAF_H2O','   LEAF_HCAP','   LEAF_FLIQ'
+      write (unit=*,fmt='(2(a5,1x),7(a12,1x))') &
+         '  COH','  PFT','         LAI','         WAI','         TAI','  LEAF_WATER'       &
+                        ,'OLD_LEAF_H2O','   LEAF_HCAP','   LEAF_FLIQ'
       do ico = 1,cpatch%ncohorts
          if(y%leaf_resolvable(ico)) then
-            write(unit=*,fmt='(2(i5,1x),8(es12.4,1x))')                                    &
-               ico,cpatch%pft(ico),y%lai(ico),y%wai(ico),y%wpa(ico),y%tai(ico)             &
-                  ,y%leaf_water(ico),cpatch%leaf_water(ico),cpatch%leaf_hcap(ico)          &
-                  ,y%leaf_hcap(ico)
+            write(unit=*,fmt='(2(i5,1x),7(es12.4,1x))')                                    &
+               ico,cpatch%pft(ico),y%lai(ico),y%wai(ico),y%tai(ico),y%leaf_water(ico)      &
+                  ,cpatch%leaf_water(ico),cpatch%leaf_hcap(ico),y%leaf_hcap(ico)
          end if
       end do
       write(unit=*,fmt='(78a)') ('-',k=1,78)
@@ -1304,30 +1228,28 @@ module rk4_stepper
       write(unit=*,fmt='(a)') ' '
       write(unit=*,fmt='(78a)') ('-',k=1,78)
       cpatch => csite%patch(ipa)
-      write (unit=*,fmt='(2(a5,1x),8(a12,1x))')                                            &
-         '  COH','  PFT','         LAI','         WAI','         WPA','         TAI'       &
-                        ,' WOOD_ENERGY',' OLD_WOOD_EN','   WOOD_TEMP','OLD_WOOD_TMP'
+      write (unit=*,fmt='(2(a5,1x),7(a12,1x))')                                            &
+         '  COH','  PFT','         LAI','         WAI','         TAI',' WOOD_ENERGY'       &
+                        ,' OLD_WOOD_EN','   WOOD_TEMP','OLD_WOOD_TMP'
       do ico = 1,cpatch%ncohorts
          if(y%wood_resolvable(ico)) then
-            write(unit=*,fmt='(2(i5,1x),8(es12.4,1x))')                                    &
-               ico,cpatch%pft(ico),y%lai(ico),y%wai(ico),y%wpa(ico),y%tai(ico)             &
-                  ,y%wood_energy(ico),cpatch%wood_energy(ico),y%wood_temp(ico)             &
-                  ,cpatch%wood_temp(ico)
+            write(unit=*,fmt='(2(i5,1x),7(es12.4,1x))')                                    &
+               ico,cpatch%pft(ico),y%lai(ico),y%wai(ico),y%tai(ico),y%wood_energy(ico)     &
+                  ,cpatch%wood_energy(ico),y%wood_temp(ico),cpatch%wood_temp(ico)
          end if
       end do
       write(unit=*,fmt='(78a)') ('-',k=1,78)
 
       write(unit=*,fmt='(a)') ' '
       write(unit=*,fmt='(78a)') ('-',k=1,78)
-      write (unit=*,fmt='(2(a5,1x),8(a12,1x))') &
-         '  COH','  PFT','         LAI','         WAI','         WPA','         TAI'       &
-                        ,'  WOOD_WATER','OLD_WOOD_H2O','   WOOD_HCAP','   WOOD_FLIQ'
+      write (unit=*,fmt='(2(a5,1x),7(a12,1x))') &
+         '  COH','  PFT','         LAI','         WAI','         TAI','  WOOD_WATER'       &
+                        ,'OLD_WOOD_H2O','   WOOD_HCAP','   WOOD_FLIQ'
       do ico = 1,cpatch%ncohorts
          if(y%wood_resolvable(ico)) then
-            write(unit=*,fmt='(2(i5,1x),8(es12.4,1x))')                                    &
-               ico,cpatch%pft(ico),y%lai(ico),y%wai(ico),y%wpa(ico),y%tai(ico)             &
-                  ,y%wood_water(ico),cpatch%wood_water(ico),cpatch%wood_hcap(ico)          &
-                  ,y%wood_hcap(ico)
+            write(unit=*,fmt='(2(i5,1x),7(es12.4,1x))')                                    &
+               ico,cpatch%pft(ico),y%lai(ico),y%wai(ico),y%tai(ico),y%wood_water(ico)      &
+                  ,cpatch%wood_water(ico),cpatch%wood_hcap(ico),y%wood_hcap(ico)
          end if
       end do
       write(unit=*,fmt='(78a)') ('-',k=1,78)

@@ -290,7 +290,8 @@ end subroutine soil_depth_fill
 !------------------------------------------------------------------------------------------!
 subroutine load_ecosystem_state()
    use phenology_coms    , only : iphen_scheme    ! ! intent(in)
-   use ed_misc_coms      , only : ied_init_mode   ! ! intent(in)
+   use ed_misc_coms      , only : ied_init_mode   & ! intent(in)
+                                , ibigleaf        ! ! intent(in)
    use phenology_startup , only : phenology_init  ! ! intent(in)
    use ed_node_coms      , only : mynum           & ! intent(in)
                                 , nmachs          & ! intent(in)
@@ -354,23 +355,38 @@ subroutine load_ecosystem_state()
   
 
    select case (ied_init_mode)
-   case(-8,-1,0)
-      !----- Initialize everything with near-bare ground ----------------------------------!
-      if (mynum /= 1) write(unit=*,fmt='(a)') ' + Doing near bare ground initialization...'
-      do igr=1,ngrids
-           call near_bare_ground_init(edgrid_g(igr))
-      end do
+   case (-8,-1,0)
+   
+      select case (ibigleaf)
+      case (0)
+         !----- Initialize everything with near-bare ground -------------------------------!
+         if (mynum /= 1) then
+            write (unit=*,fmt='(a)') ' + Doing near bare ground initialization...'
+         end if
+         do igr=1,ngrids
+              call near_bare_ground_init(edgrid_g(igr))
+         end do
 
-   case(1,2,3,6)
+      case (1)
+         !----- Initialize everything with near-bare ground -------------------------------!
+         if (mynum /= 1) then
+            write(unit=*,fmt='(a)') ' + Doing near-bare-ground big-leaf initialization...'
+         end if
+         do igr=1,ngrids
+              call near_bare_ground_big_leaf_init(edgrid_g(igr))
+         end do
+      end select
+
+   case (1,2,3,6)
       !----- Initialize with ED1-type restart information. --------------------------------!
       write(unit=*,fmt='(a,i3.3)') ' + Initializing from ED restart file. Node: ',mynum
       call read_ed10_ed20_history_file
 
-   case(4)   
+   case (4)   
       write(unit=*,fmt='(a,i3.3)') ' + Initializing from ED2.1 state file. Node: ',mynum
       call read_ed21_history_file
 
-   case(5,99)
+   case (5,99)
       write(unit=*,fmt='(a,i3.3)')                                                         &
           ' + Initializing from a collection of ED2.1 state files. Node: ',mynum
       call read_ed21_history_unstruct

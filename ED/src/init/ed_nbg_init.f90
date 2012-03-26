@@ -221,12 +221,11 @@ subroutine init_nbg_cohorts(csite,lsl,ipa_a,ipa_z)
          cpatch%bstorage(ico)         = 0.5 * ( cpatch%bleaf(ico) + cpatch%broot(ico)      &
                                               + cpatch%bsapwood(ico))
 
-         !----- Find the initial area indices (LAI, WPA, WAI). ----------------------------!
+         !----- Find the initial area indices (LAI, WAI, CAI). ----------------------------!
          call area_indices(cpatch%nplant(ico),cpatch%bleaf(ico),cpatch%bdead(ico)          &
                           ,cpatch%balive(ico),cpatch%dbh(ico), cpatch%hite(ico)            &
                           ,cpatch%pft(ico),cpatch%sla(ico),cpatch%lai(ico)                 &
-                          ,cpatch%wpa(ico),cpatch%wai(ico),cpatch%crown_area(ico)          &
-                          ,cpatch%bsapwood(ico))
+                          ,cpatch%wai(ico),cpatch%crown_area(ico),cpatch%bsapwood(ico))
 
          !----- Find the above-ground biomass and basal area. -----------------------------!
          cpatch%agb(ico) = ed_biomass(cpatch%bdead(ico),cpatch%balive(ico)                 &
@@ -361,12 +360,11 @@ subroutine init_cohorts_by_layers(csite,lsl,ipa_a,ipa_z)
          !----- NPlant is defined such that the cohort LAI is equal to LAI0
          cpatch%nplant(ico)           = lai0 / (cpatch%bleaf(ico) * cpatch%sla(ico))
 
-         !----- Find the initial area indices (LAI, WPA, WAI). ----------------------------!
+         !----- Find the initial area indices (LAI, WAI, CAI). ----------------------------!
          call area_indices(cpatch%nplant(ico),cpatch%bleaf(ico),cpatch%bdead(ico)          &
                           ,cpatch%balive(ico),cpatch%dbh(ico), cpatch%hite(ico)            &
                           ,cpatch%pft(ico),cpatch%sla(ico),cpatch%lai(ico)                 &
-                          ,cpatch%wpa(ico),cpatch%wai(ico),cpatch%crown_area(ico)          &
-                          ,cpatch%bsapwood(ico))
+                          ,cpatch%wai(ico),cpatch%crown_area(ico),cpatch%bsapwood(ico))
 
          !----- Find the above-ground biomass and basal area. -----------------------------!
          cpatch%agb(ico) = ed_biomass(cpatch%bdead(ico),cpatch%balive(ico)                 &
@@ -391,5 +389,189 @@ subroutine init_cohorts_by_layers(csite,lsl,ipa_a,ipa_z)
 
    return
 end subroutine init_cohorts_by_layers
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!      This subroutine initializes a near-bare ground 'big-leaf' ed run.                   !
+!------------------------------------------------------------------------------------------!
+subroutine near_bare_ground_big_leaf_init(cgrid)
+   use ed_state_vars  , only : edtype            & ! structure
+                             , polygontype       & ! structure
+                             , sitetype          & ! structure
+                             , patchtype         & ! structure
+                             , allocate_sitetype & ! subroutine
+                             , allocate_patchtype! ! subroutine
+   use ed_misc_coms   , only : ied_init_mode     & ! intent(in)
+                             , ibigleaf          ! ! intent(in)
+   use physiology_coms, only : n_plant_lim       ! ! intent(in)
+   use grid_coms      , only : nzg               ! ! intent(in)
+   use pft_coms       , only : q                 & ! intent(in)
+                             , qsw               & ! intent(in)
+                             , sla               & ! intent(in)
+                             , hgt_min           & ! intent(in)
+                             , include_pft       & ! intent(in)
+                             , include_these_pft & ! intent(in)
+                             , include_pft_ag    & ! intent(in)
+                             , init_density      ! ! intent(in)
+   use consts_coms        , only : t3ple         & ! intent(in)
+                                 , pio4          & ! intent(in)
+                                 , kgom2_2_tonoha& ! intent(in)
+                                 , tonoha_2_kgom2! ! intent(in)
+   use allometry          , only : h2dbh         & ! function
+                                 , dbh2bd        & ! function
+                                 , dbh2bl        & ! function
+                                 , ed_biomass    & ! function
+                                 , area_indices  ! ! subroutine
+   implicit none
+
+   !----- Arguments. ----------------------------------------------------------------------!
+   type(edtype)      , target  :: cgrid
+   !----- Local variables. ----------------------------------------------------------------!
+   type(polygontype) , pointer :: cpoly
+   type(sitetype)    , pointer :: csite
+   type(patchtype)   , pointer :: cpatch            ! Current patch
+   integer                     :: ipy               ! Patch counter
+   integer                     :: ico               ! Cohort counter
+   integer                     :: isi               ! Site counter
+   integer                     :: ipa      
+   integer                     :: k       
+   integer                     :: mypfts            ! Number of included PFTs
+   integer                     :: ipft              ! PFT counter
+   real                        :: salloc            ! balive/bleaf when on allom.
+   real                        :: salloci           ! 1./salloc
+   !---------------------------------------------------------------------------------------!
+
+
+   !----- Big loop ------------------------------------------------------------------------!
+   polyloop: do ipy=1,cgrid%npolygons
+      cpoly => cgrid%polygon(ipy)
+      siteloop: do isi=1,cpoly%nsites
+         csite => cpoly%site(isi)
+         
+         !-- Figure out how many patches (1 patch per pft), always primary vegetation. ----!
+         select case (ied_init_mode)
+         case (-1) !------ True bare ground simulation (absolute desert). -----------------!
+            mypfts = 1
+         case ( 0) !------ Nearly bare ground simulation (start with a few seedlings). ----!
+            mypfts = count(include_pft)
+         end select
+         csite%npatches = mypfts
+         
+         call allocate_sitetype(csite,mypfts)
+         
+         !----- Patch loop  ---------------------------------------------------------------!
+         patchloop: do ipa=1, csite%npatches
+            cpatch => csite%patch(ipa)
+            ipft = include_these_pft(ipa)
+            
+            csite%dist_type          (ipa) = 3
+            csite%age                (ipa) = 0.0
+            csite%area               (ipa) = 1.0 / mypfts
+
+            select case (n_plant_lim)
+            case (0)
+               csite%fast_soil_C        (ipa) = 0.0
+               csite%slow_soil_C        (ipa) = 0.0
+               csite%structural_soil_C  (ipa) = 0.0
+               csite%structural_soil_L  (ipa) = 0.0
+               csite%mineralized_soil_N (ipa) = 0.0
+               csite%fast_soil_N        (ipa) = 0.0
+
+            case (1)
+               csite%fast_soil_C        (ipa) = 0.2
+               csite%slow_soil_C        (ipa) = 0.01
+               csite%structural_soil_C  (ipa) = 10.0
+               csite%structural_soil_L  (ipa) = csite%structural_soil_C (1)
+               csite%mineralized_soil_N (ipa) = 1.0
+               csite%fast_soil_N        (ipa) = 1.0
+
+            end select
+            !------------------------------------------------------------------------------!
+
+            csite%sum_dgd            (ipa) = 0.0
+            csite%sum_chd            (ipa) = 0.0
+            csite%plantation         (ipa) = 0
+            csite%plant_ag_biomass   (ipa) = 0.
+
+            !------------------------------------------------------------------------------!
+            !     We now populate the cohorts with near bare ground condition.  In case of !
+            ! a desert, we initialise with an empty patch, otherwise we add one cohort per !
+            ! patch.                                                                       !
+            !------------------------------------------------------------------------------!
+            select case (ied_init_mode)
+            case (-1)
+               call allocate_patchtype(cpatch,0)
+            case default
+               ico = 1
+            
+               call allocate_patchtype(cpatch,1)
+               !----- The PFT is the plant functional type. -------------------------------!
+               cpatch%pft(ico)              = ipft
+
+               !---------------------------------------------------------------------------!
+               !     Define the near-bare ground state using the standard minimum height   !
+               ! and minimum plant density.  We assume all NBG PFTs to have leaves fully   !
+               ! flushed, but with no storage biomass.  We then compute the other biomass  !
+               ! quantities using the standard allometry for this PFT.                     !
+               !---------------------------------------------------------------------------!
+               cpatch%nplant(ico)           = init_density(ipft)
+               cpatch%hite(ico)             = hgt_min(ipft)
+               cpatch%phenology_status(ico) = 0
+               cpatch%bstorage(ico)         = 0.0
+               cpatch%dbh(ico)              = h2dbh(cpatch%hite(ico),ipft)
+               cpatch%bdead(ico)            = dbh2bd(cpatch%dbh(ico),ipft)
+               cpatch%bleaf(ico)            = dbh2bl(cpatch%dbh(ico),ipft)
+               cpatch%sla(ico)              = sla(ipft)
+
+               salloc                       = 1.0 + q(ipft) + qsw(ipft) * cpatch%hite(ico)
+               salloci                      = 1. / salloc
+
+               cpatch%balive(ico)           = cpatch%bleaf(ico) * salloc
+               cpatch%broot(ico)            = q(ipft) * cpatch%balive(ico) * salloci
+               cpatch%bsapwood(ico)         = qsw(ipft) * cpatch%hite(ico)                 &
+                                            * cpatch%balive(ico) * salloci
+
+               !----- Find the initial area indices (LAI, WAI, CAI). ----------------------!
+               call area_indices(cpatch%nplant(ico),cpatch%bleaf(ico),cpatch%bdead(ico)    &
+                                ,cpatch%balive(ico),cpatch%dbh(ico), cpatch%hite(ico)      &
+                                ,cpatch%pft(ico),cpatch%sla(ico),cpatch%lai(ico)           &
+                                ,cpatch%wai(ico),cpatch%crown_area(ico)                    &
+                                ,cpatch%bsapwood(ico))
+
+               !----- Find the above-ground biomass and basal area. -----------------------!
+               cpatch%agb(ico) = ed_biomass(cpatch%bdead(ico),cpatch%balive(ico)           &
+                                           ,cpatch%bleaf(ico),cpatch%pft(ico)              &
+                                           ,cpatch%hite(ico),cpatch%bstorage(ico)          &
+                                           ,cpatch%bsapwood(ico))
+               cpatch%basarea(ico) = pio4 * cpatch%dbh(ico)*cpatch%dbh(ico)
+
+               !----- Initialize other cohort-level variables. ----------------------------!
+               call init_ed_cohort_vars(cpatch,ico,cpoly%lsl(isi))
+
+               !----- Update total patch-level above-ground biomass -----------------------!
+               csite%plant_ag_biomass(ipa) = csite%plant_ag_biomass(ipa)                   &
+                                           + cpatch%nplant(ico) * cpatch%agb(ico)
+            end select
+         end do patchloop
+         
+         !----- Initialise the patches now that cohorts are there. ------------------------!
+         call init_ed_patch_vars(csite,1,csite%npatches,cpoly%lsl(isi))
+      end do siteloop
+      !----- Initialise some site-level variables. ----------------------------------------!
+      call init_ed_site_vars(cpoly,cgrid%lat(ipy))
+   end do polyloop
+   
+   !----- Last, but not the least, the polygons. ------------------------------------------!
+   call init_ed_poly_vars(cgrid)
+
+   return
+end subroutine near_bare_ground_big_leaf_init
 !==========================================================================================!
 !==========================================================================================!

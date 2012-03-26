@@ -537,7 +537,6 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
 
   call hdf_getslab_r(cgrid%lai    (ipy:ipy),'LAI     ',dsetrank,iparallel,.true.)
   call hdf_getslab_r(cgrid%wai    (ipy:ipy),'WAI     ',dsetrank,iparallel,.true.)
-  call hdf_getslab_r(cgrid%wpa    (ipy:ipy),'WPA     ',dsetrank,iparallel,.true.)
   call hdf_getslab_r(cgrid%avg_lma(ipy:ipy),'AVG_LMA ',dsetrank,iparallel,.false.)
  
   call hdf_getslab_r(cgrid%runoff(ipy:ipy),'RUNOFF ',dsetrank,iparallel,.true.)
@@ -1567,13 +1566,9 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
         dsetrank,iparallel,.false.)
    if(associated(cgrid%lai_pft)) call hdf_getslab_r(cgrid%lai_pft(:,ipy) ,'LAI_PFT '       , &
         dsetrank,iparallel,.false.)
-   if(associated(cgrid%wpa_pft)) call hdf_getslab_r(cgrid%wpa_pft(:,ipy) ,'WPA_PFT '       , &
-        dsetrank,iparallel,.false.)
    if(associated(cgrid%wai_pft)) call hdf_getslab_r(cgrid%wai_pft(:,ipy) ,'WAI_PFT '       , &
         dsetrank,iparallel,.false.)
    if(associated(cgrid%mmean_lai_pft)) call hdf_getslab_r(cgrid%mmean_lai_pft(:,ipy) ,'MMEAN_LAI_PFT ' , &
-        dsetrank,iparallel,.false.)
-   if(associated(cgrid%mmean_wpa_pft)) call hdf_getslab_r(cgrid%mmean_wpa_pft(:,ipy) ,'MMEAN_WPA_PFT ' , &
         dsetrank,iparallel,.false.)
    if(associated(cgrid%mmean_wai_pft)) call hdf_getslab_r(cgrid%mmean_wai_pft(:,ipy) ,'MMEAN_WAI_PFT ' , &
         dsetrank,iparallel,.false.)
@@ -1880,8 +1875,6 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
 
    if (associated(cpoly%lai_pft)) call hdf_getslab_r(cpoly%lai_pft,'LAI_PFT_SI ', &
         dsetrank,iparallel,.false.)
-   if (associated(cpoly%wpa_pft)) call hdf_getslab_r(cpoly%wpa_pft,'WPA_PFT_SI ', &
-        dsetrank,iparallel,.false.)
    if (associated(cpoly%wai_pft)) call hdf_getslab_r(cpoly%wai_pft,'WAI_PFT_SI ', &
         dsetrank,iparallel,.false.)
    call hdf_getslab_r(cpoly%green_leaf_factor,'GREEN_LEAF_FACTOR ', &
@@ -1989,7 +1982,6 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
 
    use ed_state_vars,only: sitetype
    use grid_coms,only : nzg,nzs
-   use c34constants,only:n_stoma_atts
    use ed_max_dims,only : n_pft,n_dbh
    use hdf5_coms,only:file_id,dset_id,dspace_id,plist_id, &
         globdims,chnkdims,chnkoffs,cnt,stride, &
@@ -2077,6 +2069,7 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
    call hdf_getslab_r(csite%can_prss,'CAN_PRSS ',dsetrank,iparallel,.true.)
    call hdf_getslab_r(csite%can_theta,'CAN_THETA ',dsetrank,iparallel,.true.)
    call hdf_getslab_r(csite%can_temp,'CAN_TEMP ',dsetrank,iparallel,.true.)
+   call hdf_getslab_r(csite%can_temp_pv,'CAN_TEMP_PV ',dsetrank,iparallel,.false.)
    call hdf_getslab_r(csite%can_shv,'CAN_SHV ',dsetrank,iparallel,.true.)
    call hdf_getslab_r(csite%can_co2,'CAN_CO2 ',dsetrank,iparallel,.true.)
    call hdf_getslab_r(csite%can_rhos,'CAN_RHOS ',dsetrank,iparallel,.true.)
@@ -2088,7 +2081,6 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
    call hdf_getslab_r(csite%opencan_frac,'OPENCAN_FRAC ',dsetrank,iparallel,.false.)
    !  call hdf_getslab_i(csite%pname,'PNAME ',dsetrank,iparallel)
    call hdf_getslab_r(csite%lai,'LAI_PA ',dsetrank,iparallel,.true.)
-   call hdf_getslab_r(csite%wpa,'WPA_PA ',dsetrank,iparallel,.false.)
    call hdf_getslab_r(csite%wai,'WAI_PA ',dsetrank,iparallel,.false.)
    call hdf_getslab_i(csite%nlev_sfcwater,'NLEV_SFCWATER ',dsetrank,iparallel,.true.)
    call hdf_getslab_r(csite%ground_shv ,'GROUND_SHV ',dsetrank,iparallel,.false.)
@@ -2119,14 +2111,6 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
    if (associated(csite%mmean_albedo_diffuse  )) &
         call hdf_getslab_r(csite%mmean_albedo_diffuse,'MMEAN_ALBEDO_DIFFUSE_PA ',dsetrank,iparallel,.false.)
 
-   call hdf_getslab_r(csite%lambda_light,'LAMBDA_LIGHT ',dsetrank,iparallel,.true.)
-
-   if (associated(csite%dmean_lambda_light       )) &
-        call hdf_getslab_r(csite%dmean_lambda_light,'DMEAN_LAMBDA_LIGHT ',dsetrank,iparallel,.false.)
-
-   if (associated(csite%mmean_lambda_light       )) &
-        call hdf_getslab_r(csite%mmean_lambda_light,'MMEAN_LAMBDA_LIGHT ',dsetrank,iparallel,.false.)
-   
    call hdf_getslab_r(csite%mean_nep,'MEAN_NEP ',dsetrank,iparallel,.true.)
 
    call hdf_getslab_r(csite%wbudget_loss2atm,'WBUDGET_LOSS2ATM ',dsetrank,iparallel,.true.)
@@ -2136,6 +2120,7 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
    call hdf_getslab_r(csite%wbudget_initialstorage,'WBUDGET_INITIALSTORAGE ',dsetrank,iparallel,.true.)
    call hdf_getslab_r(csite%ebudget_loss2atm,'EBUDGET_LOSS2ATM ',dsetrank,iparallel,.true.)
    call hdf_getslab_r(csite%ebudget_denseffect,'EBUDGET_DENSEFFECT ',dsetrank,iparallel,.true.)
+   call hdf_getslab_r(csite%ebudget_prsseffect,'EBUDGET_PRSSEFFECT ',dsetrank,iparallel,.false.)
    call hdf_getslab_r(csite%ebudget_loss2runoff,'EBUDGET_LOSS2RUNOFF ',dsetrank,iparallel,.true.)
    call hdf_getslab_r(csite%ebudget_netrad,'EBUDGET_NETRAD ',dsetrank,iparallel,.true.)
    call hdf_getslab_r(csite%ebudget_precipgain,'EBUDGET_PRECIPGAIN ',dsetrank,iparallel,.true.)
@@ -2193,7 +2178,6 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
    call hdf_getslab_r(csite%f_decomp,'F_DECOMP ',dsetrank,iparallel,.true.)
    call hdf_getslab_r(csite%rh,'RH ',dsetrank,iparallel,.true.)
    call hdf_getslab_r(csite%cwd_rh,'CWD_RH ',dsetrank,iparallel,.true.)
-   call hdf_getslab_i(csite%fuse_flag,'FUSE_FLAG ',dsetrank,iparallel,.true.)
    call hdf_getslab_r(csite%plant_ag_biomass,'PLANT_AG_BIOMASS ',dsetrank,iparallel,.true.)
    call hdf_getslab_r(csite%mean_wflux,'MEAN_WFLUX ',dsetrank,iparallel,.true.)
    call hdf_getslab_r(csite%mean_latflux,'MEAN_LATFLUX ',dsetrank,iparallel,.true.)
@@ -2201,6 +2185,13 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
    call hdf_getslab_r(csite%mean_runoff,'MEAN_RUNOFF ',dsetrank,iparallel,.true.)
    call hdf_getslab_r(csite%mean_qrunoff,'MEAN_QRUNOFF ',dsetrank,iparallel,.true.)
    call hdf_getslab_r(csite%htry,'HTRY ',dsetrank,iparallel,.true.)
+   call hdf_getslab_r(csite%hprev,'HPREV ',dsetrank,iparallel,.false.)
+
+   if(csite%hprev(1) < 1.0d-10)then
+      csite%hprev=csite%htry
+   end if
+   
+
    if (associated(csite%dmean_rk4step)) &
         call hdf_getslab_r(csite%dmean_rk4step,'DMEAN_RK4STEP ',dsetrank,iparallel,.false.)
    if (associated(csite%mmean_rk4step)) &
@@ -2253,6 +2244,8 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
                      ,dsetrank,iparallel,.true.)
    call hdf_getslab_r(csite%ebudget_denseffect        ,'EBUDGET_DENSEFFECT '               &
                      ,dsetrank,iparallel,.true.)
+   call hdf_getslab_r(csite%ebudget_prsseffect        ,'EBUDGET_PRSSEFFECT '               &
+                     ,dsetrank,iparallel,.false.)
    call hdf_getslab_r(csite%ebudget_loss2runoff       ,'EBUDGET_LOSS2RUNOFF '              &
                      ,dsetrank,iparallel,.true.)
    call hdf_getslab_r(csite%ebudget_loss2drainage     ,'EBUDGET_LOSS2DRAINAGE '            &
@@ -2447,9 +2440,6 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
   memoffs(2)  = 0_8
   call hdf_getslab_r(csite%co2budget_gpp_dbh,'CO2BUDGET_GPP_DBH ',dsetrank,iparallel,.true.)
 
-!!!! MAY NEED TO ADD THIS ONE
-!  call hdf_getslab_r(csite%old_stoma_data_max,'OLD ',dsetrank,iparallel,.true.)
-
   dsetrank    = 3
   globdims(3) = int(npatches_global,8)
   chnkdims(3) = int(csite%npatches,8)
@@ -2475,54 +2465,6 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
 
   call hdf_getslab_r(csite%cumlai_profile,'CUMLAI_PROFILE ',dsetrank,iparallel,.false.)
 
-
-  dsetrank    = 3
-  globdims(3) = int(npatches_global,8)
-  chnkdims(3) = int(csite%npatches,8)
-  chnkoffs(3) = int(sipa_index - 1,8)
-
-  memdims(3)  = int(csite%npatches,8)
-  memsize(3)  = int(csite%npatches,8)
-  memoffs(3)  = 0_8
-  
-  globdims(2) = int(n_pft,8)
-  chnkdims(2) = int(n_pft,8)
-  memdims(2)  = int(n_pft,8)
-  memsize(2)  = int(n_pft,8)
-  chnkoffs(2) = 0_8
-  memoffs(2)  = 0_8
-
-  globdims(1) = int(n_stoma_atts,8)
-  chnkdims(1) = int(n_stoma_atts,8)
-  memdims(1)  = int(n_stoma_atts,8)
-  memsize(1)  = int(n_stoma_atts,8)
-  chnkoffs(1) = 0_8
-  memoffs(1)  = 0_8
-
-  call hdf_getslab_r(csite%old_stoma_vector_max,'OLD_STOMA_VECTOR_MAX ',dsetrank,iparallel,.true.)
-
-  patchloop: do ipa=1,csite%npatches
-     pftloop: do ipft = 1,n_pft
-        csite%old_stoma_data_max(ipft,ipa)%recalc = int(csite%old_stoma_vector_max(1,ipft,ipa))
-        csite%old_stoma_data_max(ipft,ipa)%T_L    = csite%old_stoma_vector_max(2,ipft,ipa)
-        csite%old_stoma_data_max(ipft,ipa)%e_A    = csite%old_stoma_vector_max(3,ipft,ipa)
-        csite%old_stoma_data_max(ipft,ipa)%PAR    = csite%old_stoma_vector_max(4,ipft,ipa)
-        csite%old_stoma_data_max(ipft,ipa)%rb_factor = csite%old_stoma_vector_max(5,ipft,ipa)
-        csite%old_stoma_data_max(ipft,ipa)%prss   = csite%old_stoma_vector_max(6,ipft,ipa)
-        csite%old_stoma_data_max(ipft,ipa)%phenology_factor = csite%old_stoma_vector_max(7,ipft,ipa)
-        csite%old_stoma_data_max(ipft,ipa)%gsw_open = csite%old_stoma_vector_max(8,ipft,ipa)
-        csite%old_stoma_data_max(ipft,ipa)%ilimit = int(csite%old_stoma_vector_max(9,ipft,ipa))
-        
-        csite%old_stoma_data_max(ipft,ipa)%T_L_residual = csite%old_stoma_vector_max(10,ipft,ipa)
-        csite%old_stoma_data_max(ipft,ipa)%e_a_residual = csite%old_stoma_vector_max(11,ipft,ipa)
-        csite%old_stoma_data_max(ipft,ipa)%par_residual = csite%old_stoma_vector_max(12,ipft,ipa)
-        csite%old_stoma_data_max(ipft,ipa)%rb_residual  = csite%old_stoma_vector_max(13,ipft,ipa)
-        csite%old_stoma_data_max(ipft,ipa)%prss_residual= csite%old_stoma_vector_max(14,ipft,ipa)
-        csite%old_stoma_data_max(ipft,ipa)%leaf_residual= csite%old_stoma_vector_max(15,ipft,ipa)
-        csite%old_stoma_data_max(ipft,ipa)%gsw_residual = csite%old_stoma_vector_max(16,ipft,ipa)
-     end do pftloop
-  end do patchloop
-
   return
 end subroutine fill_history_site
 
@@ -2536,12 +2478,9 @@ subroutine fill_history_patch(cpatch,paco_index,ncohorts_global,green_leaf_facto
        filespace,memspace, &
        globdims,chnkdims,chnkoffs,cnt,stride, &
        memdims,memoffs,memsize
-  use consts_coms, only: cliq,cice,t3ple,tsupercool
-  use c34constants,only: n_stoma_atts
   use ed_max_dims,only: n_pft, n_mort
   use allometry, only : dbh2ca
   use ed_misc_coms, only : ndcycle
-  use therm_lib, only : qwtk
   implicit none
 
 #if USE_INTERF
@@ -2628,7 +2567,6 @@ subroutine fill_history_patch(cpatch,paco_index,ncohorts_global,green_leaf_facto
      call hdf_getslab_r(cpatch%bstorage,'BSTORAGE ',dsetrank,iparallel,.true.)
      call hdf_getslab_r(cpatch%cbr_bar,'CBR_BAR ',dsetrank,iparallel,.true.)
      
-     call hdf_getslab_r(cpatch%wpa,'WPA_CO ',dsetrank,iparallel,.true.)
      call hdf_getslab_r(cpatch%wai,'WAI_CO ',dsetrank,iparallel,.true.)
      
      call hdf_getslab_r(cpatch%crown_area,'CROWN_AREA_CO ',dsetrank,iparallel,.false.)
@@ -2642,11 +2580,13 @@ subroutine fill_history_patch(cpatch,paco_index,ncohorts_global,green_leaf_facto
      call hdf_getslab_r(cpatch%leaf_energy,'LEAF_ENERGY ',dsetrank,iparallel,.true.)
      call hdf_getslab_r(cpatch%leaf_hcap,'LEAF_HCAP ',dsetrank,iparallel,.true.)
      call hdf_getslab_r(cpatch%leaf_temp,'LEAF_TEMP ',dsetrank,iparallel,.true.)
+     call hdf_getslab_r(cpatch%leaf_temp_pv,'LEAF_TEMP_PV ',dsetrank,iparallel,.false.)
      call hdf_getslab_r(cpatch%leaf_water,'LEAF_WATER ',dsetrank,iparallel,.true.)
      call hdf_getslab_r(cpatch%leaf_fliq,'LEAF_FLIQ ',dsetrank,iparallel,.true.)
      call hdf_getslab_r(cpatch%wood_energy,'WOOD_ENERGY ',dsetrank,iparallel,.true.)
      call hdf_getslab_r(cpatch%wood_hcap,'WOOD_HCAP ',dsetrank,iparallel,.true.)
      call hdf_getslab_r(cpatch%wood_temp,'WOOD_TEMP ',dsetrank,iparallel,.true.)
+     call hdf_getslab_r(cpatch%wood_temp_pv,'WOOD_TEMP_PV ',dsetrank,iparallel,.false.)
      call hdf_getslab_r(cpatch%wood_water,'WOOD_WATER ',dsetrank,iparallel,.true.)
      call hdf_getslab_r(cpatch%wood_fliq,'WOOD_FLIQ ',dsetrank,iparallel,.true.)
      call hdf_getslab_r(cpatch%veg_wind,'VEG_WIND ',dsetrank,iparallel,.true.)
@@ -2795,23 +2735,6 @@ subroutine fill_history_patch(cpatch,paco_index,ncohorts_global,green_leaf_facto
      call hdf_getslab_r(cpatch%mmean_par_l_beam,'MMEAN_PAR_L_BEAM ',dsetrank,iparallel,.false.)
      if (associated(cpatch%mmean_par_l_diff       )) &
      call hdf_getslab_r(cpatch%mmean_par_l_diff,'MMEAN_PAR_L_DIFF ',dsetrank,iparallel,.false.)
-     if (associated(cpatch%dmean_beamext_level       )) &
-     call hdf_getslab_r(cpatch%dmean_beamext_level,'DMEAN_BEAMEXT_LEVEL ',dsetrank,iparallel,.false.)
-     if (associated(cpatch%mmean_beamext_level      )) &
-     call hdf_getslab_r(cpatch%mmean_beamext_level,'MMEAN_BEAMEXT_LEVEL ',dsetrank,iparallel,.false.)
-
-     if (associated(cpatch%dmean_diffext_level       )) &
-     call hdf_getslab_r(cpatch%dmean_diffext_level,'DMEAN_DIFFEXT_LEVEL ',dsetrank,iparallel,.false.)
-
-     if (associated(cpatch%mmean_diffext_level       )) &
-     call hdf_getslab_r(cpatch%mmean_diffext_level,'MMEAN_DIFFEXT_LEVEL ',dsetrank,iparallel,.false.)
-
-     if (associated(cpatch%dmean_lambda_light       )) &
-          call hdf_getslab_r(cpatch%dmean_lambda_light,'DMEAN_LAMBDA_LIGHT_CO ',dsetrank,iparallel,.false.)
-
-     if (associated(cpatch%mmean_lambda_light       )) &
-     call hdf_getslab_r(cpatch%mmean_lambda_light,'MMEAN_LAMBDA_LIGHT_CO ',dsetrank,iparallel,.false.)
-
      call hdf_getslab_r(cpatch%Psi_open,'PSI_OPEN ',dsetrank,iparallel,.true.)
      call hdf_getslab_i(cpatch%krdepth,'KRDEPTH ',dsetrank,iparallel,.true.)
      call hdf_getslab_i(cpatch%first_census,'FIRST_CENSUS ',dsetrank,iparallel,.true.)
@@ -2819,9 +2742,6 @@ subroutine fill_history_patch(cpatch,paco_index,ncohorts_global,green_leaf_facto
      call hdf_getslab_r(cpatch%light_level,'LIGHT_LEVEL ',dsetrank,iparallel,.true.)
      call hdf_getslab_r(cpatch%light_level_beam,'LIGHT_LEVEL_BEAM ',dsetrank,iparallel,.true.)
      call hdf_getslab_r(cpatch%light_level_diff,'LIGHT_LEVEL_DIFF ',dsetrank,iparallel,.true.)
-     call hdf_getslab_r(cpatch%beamext_level,'BEAMEXT_LEVEL ',dsetrank,iparallel,.true.)
-     call hdf_getslab_r(cpatch%diffext_level,'DIFFEXT_LEVEL ',dsetrank,iparallel,.true.)
-     call hdf_getslab_r(cpatch%lambda_light,'LAMBDA_LIGHT_CO ',dsetrank,iparallel,.true.)
      call hdf_getslab_r(cpatch%par_l,'PAR_L ',dsetrank,iparallel,.true.)
      call hdf_getslab_r(cpatch%par_l_beam,'PAR_L_BEAM ',dsetrank,iparallel,.true.)
      call hdf_getslab_r(cpatch%par_l_diffuse,'PAR_L_DIFFUSE ',dsetrank,iparallel,.true.)
@@ -2966,46 +2886,6 @@ subroutine fill_history_patch(cpatch,paco_index,ncohorts_global,green_leaf_facto
      if (associated(cpatch%qmean_water_supply))                                            &
         call hdf_getslab_r(cpatch%qmean_water_supply,'QMEAN_WATER_SUPPLY_CO '              &
                           ,dsetrank,iparallel,.true.)
-
-
-     dsetrank    = 2
-     globdims(1) = int(n_stoma_atts,8)
-     chnkdims(1) = int(n_stoma_atts,8)
-     chnkoffs(1) = 0_8
-     memdims(1)  = int(n_stoma_atts,8)
-     memsize(1)  = int(n_stoma_atts,8)
-     memoffs(2)  = 0_8
-     
-     globdims(2) = int(ncohorts_global,8)
-     chnkdims(2) = int(cpatch%ncohorts,8)
-     chnkoffs(2) = int(paco_index - 1,8)
-     
-     memdims(2)  = int(cpatch%ncohorts,8)
-     memsize(2)  = int(cpatch%ncohorts,8)
-     memoffs(2)  = 0_8
-     
-
-     call hdf_getslab_r(cpatch%old_stoma_vector,'OLD_STOMA_VECTOR', &
-          dsetrank,iparallel,.true.)
-
-  cohortloop: do ico=1,cpatch%ncohorts
-     cpatch%old_stoma_data(ico)%recalc = int(cpatch%old_stoma_vector(1,ico))
-     cpatch%old_stoma_data(ico)%T_L    = cpatch%old_stoma_vector(2,ico)
-     cpatch%old_stoma_data(ico)%e_A    = cpatch%old_stoma_vector(3,ico)
-     cpatch%old_stoma_data(ico)%PAR    = cpatch%old_stoma_vector(4,ico)
-     cpatch%old_stoma_data(ico)%rb_factor = cpatch%old_stoma_vector(5,ico)
-     cpatch%old_stoma_data(ico)%prss = cpatch%old_stoma_vector(6,ico) 
-     cpatch%old_stoma_data(ico)%phenology_factor = cpatch%old_stoma_vector(7,ico)
-     cpatch%old_stoma_data(ico)%gsw_open = cpatch%old_stoma_vector(8,ico)
-     cpatch%old_stoma_data(ico)%ilimit   = int(cpatch%old_stoma_vector(9,ico))
-     cpatch%old_stoma_data(ico)%T_L_residual = cpatch%old_stoma_vector(10,ico)
-     cpatch%old_stoma_data(ico)%e_a_residual = cpatch%old_stoma_vector(11,ico)
-     cpatch%old_stoma_data(ico)%par_residual = cpatch%old_stoma_vector(12,ico)
-     cpatch%old_stoma_data(ico)%rb_residual  = cpatch%old_stoma_vector(13,ico)
-     cpatch%old_stoma_data(ico)%prss_residual= cpatch%old_stoma_vector(14,ico) 
-     cpatch%old_stoma_data(ico)%leaf_residual= cpatch%old_stoma_vector(15,ico)
-     cpatch%old_stoma_data(ico)%gsw_residual = cpatch%old_stoma_vector(16,ico)
-  enddo cohortloop
 
 endif
 

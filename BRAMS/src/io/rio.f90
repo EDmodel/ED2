@@ -138,14 +138,15 @@ subroutine hist_read(maxarr,hnamein,iunhd)
    integer                                                  :: ngr,npts,nptsh,nv,nvh,i
    character(len=10)                                        :: post
    real             , allocatable, dimension(:)             :: scr
-   type (head_table), allocatable              , save       :: hr_table(:)
+   type (head_table), allocatable, dimension(:)             :: hr_table
    !----- Local constants -----------------------------------------------------------------!
    integer                                     , parameter  :: inhunt=10
    !---------------------------------------------------------------------------------------!
 
 
-   !----- Allocating scratch array --------------------------------------------------------!
+   !----- Allocate a scratch array. -------------------------------------------------------!
    allocate (scr(maxarr))
+   !---------------------------------------------------------------------------------------!
 
    !----- Read variable header information ------------------------------------------------!
    rewind(unit= iunhd)
@@ -156,20 +157,24 @@ subroutine hist_read(maxarr,hnamein,iunhd)
                              ,hr_table(nv)%idim_type,hr_table(nv)%ngrid                    &
                              ,hr_table(nv)%nvalues
    end do
+   !---------------------------------------------------------------------------------------!
 
 
    !----- Open history data file ----------------------------------------------------------!
    call rams_f_open(inhunt,hnamein,'UNFORMATTED','OLD','READ',0)
+   !---------------------------------------------------------------------------------------!
 
    !----- Loop through all variables ------------------------------------------------------!
    do nvh=1,nvbtab
       !----- Read a variable --------------------------------------------------------------!
       nptsh = hr_table(nvh)%nvalues
       read(unit=inhunt) (scr(i),i=1,nptsh)
+      !------------------------------------------------------------------------------------!
 
       !----- See if this variable is active in the current run ----------------------------!
       ngr = hr_table(nvh)%ngrid
       if(ngr > nvgrids) cycle
+      !------------------------------------------------------------------------------------!
 
       do nv = 1,num_var(ngr)
          npts=vtab_r(nv,ngr)%npts
@@ -185,13 +190,17 @@ subroutine hist_read(maxarr,hnamein,iunhd)
             call atob(npts,scr(1),vtab_r(nv,ngr)%var_p)
             exit
          end if
+         !---------------------------------------------------------------------------------!
       end do
-
+      !------------------------------------------------------------------------------------!
    end do
+   !---------------------------------------------------------------------------------------!
 
-   !----- Close the input history file then freeing some memory ---------------------------!
+   !----- Close the input history file then free some memory. -----------------------------!
    close(unit=inhunt,status='keep')
-   deallocate(scr,hr_table)
+   deallocate(scr)
+   deallocate(hr_table)
+   !---------------------------------------------------------------------------------------!
 
    return
 end subroutine hist_read
@@ -223,20 +232,29 @@ subroutine hiswrt(restart)
    !----- Arguments -----------------------------------------------------------------------!
    character (len=*)                           , intent(in) :: restart
    !----- Local variables -----------------------------------------------------------------!
-   character(len=10)                                        :: c0, c1
-   character(len=str_len)                      , save       :: hnameold,hnameoldh
-   character(len=str_len)                                   :: hnamel,hnamelh
+   character(len=10)                                        :: c0
+   character(len=10)                                        :: c1
+   character(len=str_len)                      , save       :: hnameold
+   character(len=str_len)                      , save       :: hnameoldh
+   character(len=str_len)                                   :: hnamel
+   character(len=str_len)                                   :: hnamelh
    logical                                                  :: hereitis
-   integer                                                  :: nv,nwordh,ngr,nvcnt
-   integer                                     , save       :: iohunt=10, ncall=0
-   integer                                     , save       :: ncall_head=0,nvtoth=0
+   integer                                                  :: nv
+   integer                                                  :: nwordh
+   integer                                                  :: ngr
+   integer                                                  :: nvcnt
+   !----- Locally saved variables. --------------------------------------------------------!
+   integer                                     , save       :: iohunt= 10
+   logical                                     , save       :: first_call      = .true.
+   logical                                     , save       :: first_call_head = .true.
+   integer                                     , save       :: nvtoth = 0
    type (head_table), dimension(:), allocatable, save       :: hw_table
    !----- Local constants -----------------------------------------------------------------!
    !---------------------------------------------------------------------------------------!
   
    if (ioutput == 0) return
 
-   if (ncall_head == 0) then
+   if (first_call_head) then
       !-----  Find total number of fields to be written -----------------------------------!
       do ngr=1,ngrids
          do nv = 1,num_var(ngr)
@@ -244,7 +262,7 @@ subroutine hiswrt(restart)
          end do
       end do
       allocate (hw_table(nvtoth))
-      ncall_head=1
+      first_call_head = .false.
    end if
 
    !----- Open a new output file. ---------------------------------------------------------!
@@ -300,11 +318,11 @@ subroutine hiswrt(restart)
 
    !----- DO NOT remove the old history file if doing a restart or if IFLAG is set. -------!
    if (ihistdel == 1) then
-      if (ncall == 0) then
+      if (first_call) then
          hnameold  = hnamel
          hnameoldh = hnamelh
       end if
-      if (ncall == 1 .and. iflag == 0) then
+      if ((.not. first_call) .and. iflag == 0) then
          inquire (file=trim(hnameold),exist=hereitis)
          !----- This is to avoid system calls that cause infiniband to crash --------------!
          if (hereitis) then
@@ -319,8 +337,10 @@ subroutine hiswrt(restart)
          hnameold  = hnamel
          hnameoldh = hnamelh
       end if
-      ncall = 1
-   endif
+      first_call = .false.
+      !------------------------------------------------------------------------------------!
+   end if
+   !---------------------------------------------------------------------------------------!
 
    return
 end subroutine hiswrt

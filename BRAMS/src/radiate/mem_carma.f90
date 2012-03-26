@@ -148,17 +148,16 @@ module mem_carma
 
    !=======================================================================================!
    !=======================================================================================!
-   subroutine alloc_carma(car,ng,nmxp,nmyp,nw)
+   subroutine alloc_carma(car,nmxp,nmyp,nw)
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
-      type (carma_v), dimension(:), intent(inout) :: car
-      integer                     , intent(in)    :: ng
-      integer                     , intent(in)    :: nw
-      integer                     , intent(in)    :: nmxp
-      integer                     , intent(in)    :: nmyp
+      type (carma_v), intent(inout) :: car
+      integer       , intent(in)    :: nw
+      integer       , intent(in)    :: nmxp
+      integer       , intent(in)    :: nmyp
       !------------------------------------------------------------------------------------!
 
-      allocate (car(ng)%aot(nmxp,nmyp,nw))
+      allocate (car%aot(nmxp,nmyp,nw))
 
       return
    end subroutine alloc_carma
@@ -172,14 +171,13 @@ module mem_carma
 
    !=======================================================================================!
    !=======================================================================================!
-   subroutine nullify_carma(car,ng)
+   subroutine nullify_carma(car)
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
-      type (carma_v), dimension(:), intent(inout) :: car
-      integer                     , intent(in)    :: ng
+      type (carma_v), intent(inout) :: car
       !------------------------------------------------------------------------------------!
 
-      if (associated(car(ng)%aot ))  nullify (car(ng)%aot )
+      nullify (car%aot)
 
   
       return
@@ -194,14 +192,13 @@ module mem_carma
 
    !=======================================================================================!
    !=======================================================================================!
-   subroutine dealloc_carma(car,ng) 
+   subroutine dealloc_carma(car) 
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
-      type (carma_v), dimension(:), intent(inout) :: car
-      integer                     , intent(in)    :: ng
+      type (carma_v), intent(inout) :: car
       !------------------------------------------------------------------------------------!
   
-      if (associated(car(ng)%aot ))  deallocate (car(ng)%aot )
+      if (associated(car%aot))  deallocate (car%aot)
 
       return
    end subroutine dealloc_carma
@@ -215,14 +212,13 @@ module mem_carma
 
    !=======================================================================================!
    !=======================================================================================!
-   subroutine zero_carma(car,ng)
+   subroutine zero_carma(car)
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
-      type (carma_v), dimension(:), intent(inout) :: car
-      integer                     , intent(in)    :: ng
+      type (carma_v), intent(inout) :: car
       !------------------------------------------------------------------------------------!
 
-      if (associated(car(ng)%aot )) car(ng)%aot(:,:,:)=0. 
+      if (associated(car%aot )) car%aot(:,:,:) = 0. 
 
       return
    end subroutine zero_carma
@@ -248,14 +244,12 @@ module mem_carma
       integer       , intent(in)    :: imean
       !----- Local variables. -------------------------------------------------------------!
       integer                       :: npts
-      character(len=7)              :: sname
       !------------------------------------------------------------------------------------!
 
       if (associated(cv%aot)) then
          npts=nmx*nmy*nmwave
-         write(sname,fmt='(a4)') 'AOT'
          call vtables2(cv%aot,cvm%aot,ng,npts,imean                                        &
-                      ,sname//' :7:hist:anal:mpti:mpt3')
+                      ,'AOT :7:hist:anal:mpti:mpt3')
       end if
       return
    end subroutine filltab_carma

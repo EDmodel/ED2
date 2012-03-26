@@ -428,7 +428,8 @@ subroutine init_fields(init)
    !----- Arguments. ----------------------------------------------------------------------!
    logical, intent(in)            :: init
    !----- Local variables. ----------------------------------------------------------------!
-   integer, dimension(ndim_types) :: npvar
+   integer, dimension(ndim_types) :: npvar_mpt1
+   integer, dimension(ndim_types) :: npvar_mpt4
    integer                        :: ierr
    integer                        :: hugedim
    integer                        :: ng
@@ -441,14 +442,19 @@ subroutine init_fields(init)
    integer                        :: j2
    integer                        :: xlbc
    integer                        :: ylbc
+   integer                        :: xadv
+   integer                        :: yadv
    integer                        :: xst
    integer                        :: yst
    integer                        :: fdzp
    integer                        :: fdep
    integer                        :: idim
-   integer                        :: memf
+   integer                        :: memf_mpt1
+   integer                        :: memf_mpt4
+   integer                        :: memf_st
    integer                        :: nv
    integer                        :: isflag
+   integer                        :: iaflag
    !----- Include modules. ----------------------------------------------------------------!
    include 'interface.h'
    include 'mpif.h'
@@ -497,12 +503,25 @@ subroutine init_fields(init)
 
 
    !----- Find number of lbc variables to be communicated. --------------------------------!
-   npvar(:) = 0
+   npvar_mpt1(:) = 0
+   npvar_mpt4(:) = 0
    do nv = 1,num_var(1)
-      if (vtab_r(nv,1)%impt1 == 1 ) then
-         idim        = vtab_r(nv,1)%idim_type
-         npvar(idim) = npvar(idim) + 1
+      idim        = vtab_r(nv,1)%idim_type
+
+
+      !----- LBC variables. ---------------------------------------------------------------!
+      if (vtab_r(nv,1)%impt1 == 1 ) npvar_mpt1(idim) = npvar_mpt1(idim) + 1
+      !------------------------------------------------------------------------------------!
+
+
+      !----- ADV variables. ---------------------------------------------------------------!
+      if (vtab_r(nv,1)%iadvt == 1 .or. vtab_r(nv,1)%iadvu == 1 .or.                        &
+          vtab_r(nv,1)%iadvv == 1 .or. vtab_r(nv,1)%iadvw == 1 .or.                        &
+          vtab_r(nv,1)%name  == 'SCAL_IN'     ) then
+         npvar_mpt4(idim) = npvar_mpt4(idim) + 1
       end if
+      !------------------------------------------------------------------------------------!
+
    end do
    !---------------------------------------------------------------------------------------!
 
@@ -512,6 +531,7 @@ subroutine init_fields(init)
    !      Find the size of the lateral boundary condition buffers.                         !
    !---------------------------------------------------------------------------------------!
    nbuff_feed = 0
+   nbuff_adv  = 0
    do ng=1,ngrids
       do nm=1,nmachs
          i1         = ipaths(1,itype,ng,nm)
@@ -521,13 +541,54 @@ subroutine init_fields(init)
          xlbc       = i2 - i1 + 1
          ylbc       = j2 - j1 + 1 
          
-         memf = 0
+         memf_mpt1 = 0
          do idim = 2, ndim_types
             call ze_dims(ng,idim,.false.,fdzp,fdep)
-            memf = memf + fdzp * xlbc * ylbc * fdep * npvar(idim)
+            memf_mpt1 = memf_mpt1 + fdzp * xlbc * ylbc * fdep * npvar_mpt1(idim)
          end do 
 
-         nbuff_feed = max(nbuff_feed,memf)
+         nbuff_feed = max(nbuff_feed,memf_mpt1)
+      end do
+   end do
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !      Find the size of the advection lateral boundary condition buffers.               !
+   !---------------------------------------------------------------------------------------!
+   nbuff_adv = 0
+   do ng=1,ngrids
+      do nm=1,nmachs
+         do iaflag=1,5
+            
+            !----- Find the appropriate type. ---------------------------------------------!
+            select case (iaflag)
+            case (2,3)
+               jtype = iaflag
+            case default
+               jtype = 1
+            end select 
+            !------------------------------------------------------------------------------!
+
+            i1         = ipaths(1,jtype,ng,nm)
+            i2         = ipaths(2,jtype,ng,nm)
+            j1         = ipaths(3,jtype,ng,nm)
+            j2         = ipaths(4,jtype,ng,nm)
+            xadv       = i2 - i1 + 1
+            yadv       = j2 - j1 + 1 
+
+            !------------------------------------------------------------------------------!
+            !     Add the number of points of all possible dimensions.                     !
+            !------------------------------------------------------------------------------!
+            memf_mpt4 = 0
+            do idim = 2, ndim_types
+               call ze_dims(ng,idim,.false.,fdzp,fdep)
+               memf_mpt4 = memf_mpt4 + fdzp * xadv * yadv * fdep * npvar_mpt4(idim)
+            end do 
+            nbuff_adv  = max(nbuff_adv ,memf_mpt4)
+            !------------------------------------------------------------------------------!
+         end do
       end do
    end do
    !---------------------------------------------------------------------------------------!
@@ -553,9 +614,9 @@ subroutine init_fields(init)
             !------------------------------------------------------------------------------!
             !    The 2 is because depending on the type the package may have 2 variables.  !
             !------------------------------------------------------------------------------!
-            memf = 2 * fdzp * xst * yst * fdep
+            memf_st  = 2 * fdzp * xst * yst * fdep
 
-            nbuff_st = max(nbuff_st,memf)
+            nbuff_st = max(nbuff_st,memf_st)
          end do
       end do
    end do
@@ -585,6 +646,9 @@ subroutine init_fields(init)
          do isflag=1,6
             call dealloc_node_buff(node_buffs_st(isflag,nm))
          end do
+         do iaflag=1,5
+            call dealloc_node_buff(node_buffs_adv(iaflag,nm))
+         end do
       end do
    end if
    !---------------------------------------------------------------------------------------!
@@ -609,6 +673,11 @@ subroutine init_fields(init)
             call dealloc_node_buff(node_buffs_st(isflag,nm))
             call alloc_node_buff(node_buffs_st(isflag,nm),nbuff_st,f_ndmd_size)
          end do
+
+         do iaflag=1,5
+            call dealloc_node_buff(node_buffs_adv(iaflag,nm))
+            call alloc_node_buff(node_buffs_adv(iaflag,nm),nbuff_adv,f_ndmd_size)
+         end do
       end if
    end do
    !---------------------------------------------------------------------------------------!
@@ -619,7 +688,7 @@ subroutine init_fields(init)
    !      In case the boundary conditions are cyclic, initialise the cyclic structure.     !
    !---------------------------------------------------------------------------------------!
    if (ibnd == 4 .or. jbnd == 4) then
-      call node_cycinit(nnzp(1),nnxp(1),nnyp(1),npvar,nmachs,ibnd,jbnd,mynum)
+      call node_cycinit(nnzp(1),nnxp(1),nnyp(1),npvar_mpt1,nmachs,ibnd,jbnd,mynum)
    end if
    !---------------------------------------------------------------------------------------!
 

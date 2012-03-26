@@ -772,8 +772,10 @@ use grid_dims, only  : str_len
 implicit none
 integer :: iblksizo,no,isbego,iwbego,lb
 real :: offlat,offlon,deltallo
-character :: ofn*(*),title*str_len,ifield*(*)
-character :: h5name*(*)
+character(len=*) :: ofn
+character(len=str_len) :: title
+character(len=*) :: ifield
+character(len=*) :: h5name
 
 
 lb = len_trim(ofn)
@@ -834,7 +836,9 @@ integer :: n2,n3,no,iblksizo,isbego,iwbego,isoc,iwoc,iofr  &
 real :: rio,rjo,rno,platn,plonn,offlat,offlon  &
        ,glatp1,glonp1,deltallo,wio2,wjo2,wio1,wjo1
 
-character :: title1*3,title2*4,title3*str_len
+character(len=3) :: title1
+character(len=4) :: title2
+character(len=str_len) :: title3
 
 logical l1,l2,h5,missing
 integer :: ndims,idims(4),ii,jj

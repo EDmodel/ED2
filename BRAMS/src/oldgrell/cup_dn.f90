@@ -38,7 +38,7 @@ end subroutine cup_dd_he
 subroutine cup_dd_moisture(j,zd,hcd,hes_cup,qcd,qes_cup,pwd,q_cup,z_cup,cdd    &
                           ,entr,jmin,ierr,gamma_cup,pwev,mix,mgmxp,mkx,mgmzp   &
                           ,istart,iend,bu,qrcd,q,he,hc,t_cup,iloop)
-  use rconstants, only : alvl
+  use rconstants, only : alvl3
   implicit none
   integer                         :: mix,mgmxp,mkx,mgmzp,istart,iend,i,k,ki,j  &
                                     ,iloop
@@ -81,7 +81,7 @@ subroutine cup_dd_moisture(j,zd,hcd,hes_cup,qcd,qes_cup,pwd,q_cup,z_cup,cdd    &
 
            DH=HCD(I,ki)-HES_cup(I,Ki)
            bu(i)=bu(i)+dz*dh
-           QRCD(I,Ki)=qes_cup(i,ki)+(1./alvl)*(GAMMA_cup(i,ki)/  &
+           QRCD(I,Ki)=qes_cup(i,ki)+(1./alvl3)*(GAMMA_cup(i,ki)/  &
                 (1.+GAMMA_cup(i,ki)))*DH
            dqeva=qcd(i,ki)-qrcd(i,ki)
            if(dqeva.gt.0.) dqeva=0.
@@ -143,7 +143,7 @@ end subroutine cup_dd_nms
 !--------------------------------------------------------------------
 subroutine cup_dd_aa0(edt,ierr,aa0,jmin,gamma_cup,t_cup,hcd,hes_cup,z,mix      &
                      ,mgmxp,mkx,mgmzp,istart,iend,zd)
-  use rconstants, only : grav, cp
+  use rconstants, only : grav, cpdry
   implicit none
   integer                      :: i,k,kk,mix,mgmxp,mkx,mgmzp,istart,iend
   integer, dimension(mgmxp)    :: jmin,ierr
@@ -156,7 +156,7 @@ subroutine cup_dd_aa0(edt,ierr,aa0,jmin,gamma_cup,t_cup,hcd,hes_cup,z,mix      &
            KK=JMIN(I)-K
 
            DZ=(Z(I,KK)-Z(I,KK+1))
-           AA0(I)=AA0(I)+zd(i,kk)*EDT(I)*DZ*(grav/(cp*T_cup(I,KK)))* &
+           AA0(I)=AA0(I)+zd(i,kk)*EDT(I)*DZ*(grav/(cpdry*T_cup(I,KK)))* &
                 ((hcd(i,kk)-hes_cup(i,kk))/(1.+GAMMA_cup(i,kk)))
         endif
      enddo

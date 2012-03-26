@@ -34,6 +34,7 @@ subroutine initlz (name_name)
    use teb_spm_start      , only : TEB_SPM                   ! ! intent(in)
    use mem_teb            , only : teb_g                     ! ! intent(inout)
    use mem_teb_common     , only : tebc_g                    ! ! intent(inout)
+   use mem_mnt_advec      , only : iadvec                    ! ! intent(inout)
    use teb_vars_const     , only : iteb                      ! ! intent(in)
    use mem_gaspart        , only : gaspart_g                 ! ! intent(inout)
    use mem_emiss          , only : ichemi                    & ! intent(inout)
@@ -206,16 +207,19 @@ subroutine initlz (name_name)
          call thermo(nzp,nxp,nyp,1,nxp,1,nyp)
 
          if (level  ==  3) then
-            call azero3(nzp*nxp*nyp,scratch%vt3da,scratch%vt3dg,scratch%vt3dh)
-            call azero2(nzp*nxp*nyp,scratch%vt3dc,scratch%vt3di)
+            call azero(nzp*nxp*nyp,scratch%vt3da)
+            call azero(nzp*nxp*nyp,scratch%vt3dg)
+            call azero(nzp*nxp*nyp,scratch%vt3dh)
+            call azero(nzp*nxp*nyp,scratch%vt3dc)
+            call azero(nzp*nxp*nyp,scratch%vt3di)
             !----- Use scratch variables to define cccnp and cifnp ------------------------!
             call initqin(nzp,nxp,nyp,scratch%vt3da,scratch%vt3dg,scratch%vt3dh             &
                         ,basic_g(ifm)%pi0,basic_g(ifm)%pp,basic_g(ifm)%theta               &
                         ,basic_g(ifm)%dn0,scratch%vt3dc,scratch%vt3di        )
             !----- Copying them to the micro arrays if they are allocated -----------------!
-            if (irain  >= 1) call atob(nzp*nxp*nyp,scratch%vt3da,micro_g(ifm)%rrp)
-            if (igraup >= 1) call atob(nzp*nxp*nyp,scratch%vt3dg,micro_g(ifm)%rgp)
-            if (ihail  >= 1) call atob(nzp*nxp*nyp,scratch%vt3dh,micro_g(ifm)%rhp)
+            if (irain  >= 1) call atob(nzp*nxp*nyp,scratch%vt3da,micro_g(ifm)%q2)
+            if (igraup >= 1) call atob(nzp*nxp*nyp,scratch%vt3dg,micro_g(ifm)%q6)
+            if (ihail  >= 1) call atob(nzp*nxp*nyp,scratch%vt3dh,micro_g(ifm)%q7)
             if (icloud == 7) call atob(nzp*nxp*nyp,scratch%vt3dc,micro_g(ifm)%cccnp)
             if (ipris  == 7) call atob(nzp*nxp*nyp,scratch%vt3di,micro_g(ifm)%cifnp)
          end if
@@ -477,9 +481,21 @@ subroutine initlz (name_name)
             call negadj1(nzp,nxp,nyp,1,nxp,1,nyp)
             call thermo(nzp,nxp,nyp,1,nxp,1,nyp)
             if (level  ==  3) then
-               call initqin(nzp,nxp,nyp,micro_g(ifm)%q2,micro_g(ifm)%q6,micro_g(ifm)%q7    &
+               call azero(nzp*nxp*nyp,scratch%vt3da)
+               call azero(nzp*nxp*nyp,scratch%vt3dg)
+               call azero(nzp*nxp*nyp,scratch%vt3dh)
+               call azero(nzp*nxp*nyp,scratch%vt3dc)
+               call azero(nzp*nxp*nyp,scratch%vt3di)
+               !----- Use scratch variables to define cccnp and cifnp ---------------------!
+               call initqin(nzp,nxp,nyp,scratch%vt3da,scratch%vt3dg,scratch%vt3dh          &
                            ,basic_g(ifm)%pi0,basic_g(ifm)%pp,basic_g(ifm)%theta            &
-                           ,basic_g(ifm)%dn0,micro_g(ifm)%cccnp,micro_g(ifm)%cifnp)
+                           ,basic_g(ifm)%dn0,scratch%vt3dc,scratch%vt3di        )
+               !----- Copying them to the micro arrays if they are allocated --------------!
+               if (irain  >= 1) call atob(nzp*nxp*nyp,scratch%vt3da,micro_g(ifm)%q2)
+               if (igraup >= 1) call atob(nzp*nxp*nyp,scratch%vt3dg,micro_g(ifm)%q6)
+               if (ihail  >= 1) call atob(nzp*nxp*nyp,scratch%vt3dh,micro_g(ifm)%q7)
+               if (icloud == 7) call atob(nzp*nxp*nyp,scratch%vt3dc,micro_g(ifm)%cccnp)
+               if (ipris  == 7) call atob(nzp*nxp*nyp,scratch%vt3di,micro_g(ifm)%cifnp)
             end if
 
             !----- Heterogenous Soil Moisture Initialisation. -----------------------------!
@@ -1050,6 +1066,7 @@ subroutine read_nl(filename)
                                  , bulk_on8   => bulk_on   & ! intent(out)
                                  , level8     => level     ! ! intent(out)
    use rconstants         , only : vonk                    ! ! intent(in)
+   use mem_mnt_advec      , only : iadvec                  ! ! intent(in)
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
    character(len=*) , intent(in)   :: filename           ! file name with namelists
@@ -1111,18 +1128,18 @@ subroutine read_nl(filename)
                                  ,zkbmax,zcutdown,z_detr,max_heat,closure_type,maxens_lsf  &
                                  ,maxens_eff,maxens_cap
 
-   namelist /MODEL_OPTIONS/       naddsc,icorflg,iexev,imassflx,ibnd,jbnd,cphas,lsflg,nfpt &
-                                 ,distim,iswrtyp,ilwrtyp,icumfdbk,radfrq,lonrad,npatch     &
-                                 ,nvegpat,min_patch_area,isfcl,dtleaf,istar,igrndvap,ubmin &
-                                 ,ugbmin,ustmin,gamm,gamh,tprandtl,ribmax,leaf_maxwhc,ico2 &
-                                 ,co2con,nvgcon,pctlcon,nslcon,isoilcol,drtcon,zrough      &
-                                 ,albedo,seatmp,dthcon,soil_moist,soil_moist_fail          &
-                                 ,usdata_in,usmodel_in,slz,slmstr,stgoff,isoilbc,ipercol   &
-                                 ,runoff_time,if_urban_canopy,idiffk,ibruvais,ibotflx      &
-                                 ,ihorgrad,csx,csz,xkhkm,zkhkm,nna,nnb,nnc,akmin,akmax     &
-                                 ,hgtmin,hgtmax,level,icloud,irain,ipris,isnow,iaggr       &
-                                 ,igraup,ihail,cparm,rparm,pparm,sparm,aparm,gparm,hparm   &
-                                 ,gnu
+   namelist /MODEL_OPTIONS/       naddsc,icorflg,iadvec,iexev,imassflx,ibnd,jbnd,cphas     &
+                                 ,lsflg,nfpt,distim,iswrtyp,ilwrtyp,icumfdbk,radfrq,lonrad &
+                                 ,npatch,nvegpat,min_patch_area,isfcl,dtleaf,istar         &
+                                 ,igrndvap,ubmin,ugbmin,ustmin,gamm,gamh,tprandtl,ribmax   &
+                                 ,leaf_maxwhc,ico2,co2con,nvgcon,pctlcon,nslcon,isoilcol   &
+                                 ,drtcon,zrough,albedo,seatmp,dthcon,soil_moist            &
+                                 ,soil_moist_fail,usdata_in,usmodel_in,slz,slmstr,stgoff   &
+                                 ,isoilbc,ipercol,runoff_time,if_urban_canopy,idiffk       &
+                                 ,ibruvais,ibotflx,ihorgrad,csx,csz,xkhkm,zkhkm,nna,nnb    &
+                                 ,nnc,akmin,akmax,hgtmin,hgtmax,level,icloud,irain,ipris   &
+                                 ,isnow,iaggr,igraup,ihail,cparm,rparm,pparm,sparm,aparm   &
+                                 ,gparm,hparm,gnu
 
    namelist /MODEL_SOUND/         ipsflg,itsflg,irtsflg,iusflg,hs,ps,ts,rts,us,vs,co2s
 
@@ -1757,6 +1774,7 @@ subroutine read_nl(filename)
       write (unit=*,fmt='(a)')        ''
       write (unit=*,fmt=*) ' naddsc          =',naddsc
       write (unit=*,fmt=*) ' icorflg         =',icorflg
+      write (unit=*,fmt=*) ' iadvec          =',iadvec
       write (unit=*,fmt=*) ' iexev           =',iexev
       write (unit=*,fmt=*) ' imassflx        =',imassflx
       write (unit=*,fmt=*) ' ibnd            =',ibnd

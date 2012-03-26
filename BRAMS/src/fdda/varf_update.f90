@@ -323,10 +323,12 @@ subroutine varref(n1,n2,n3,thp,pc,pi0,th0,rtp,co2p,dn0,dn0u,dn0v,uc,vc,topt,topu
    use ref_sounding
    use mem_scratch
    use rconstants
-   use therm_lib   , only : virtt     & ! intent(in)
-                          , vapour_on ! ! intent(in)
-   use mem_basic   , only : co2_on    & ! intent(in)
-                          , co2con    ! ! intent(in)
+   use therm_lib   , only : virtt        & ! intent(in)
+                          , exner2press  & ! intent(in)
+                          , extheta2temp & ! intent(in)
+                          , vapour_on    ! ! intent(in)
+   use mem_basic   , only : co2_on       & ! intent(in)
+                          , co2con       ! ! intent(in)
 
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
@@ -429,8 +431,8 @@ subroutine varref(n1,n2,n3,thp,pc,pi0,th0,rtp,co2p,dn0,dn0u,dn0v,uc,vc,topt,topu
 
    !----- Finding the density. ------------------------------------------------------------!
    do k = 1,nzp
-     vctr4(k)        = (pi01dn(k,ngrid) / cp) ** cpor * p00
-     dn01dn(k,ngrid) = cp * vctr4(k) / (rdry * th01dn(k,ngrid) * pi01dn(k,ngrid))
+     vctr4(k)        = exner2press(pi01dn(k,ngrid))
+     dn01dn(k,ngrid) = vctr4(k) / (rdry * extheta2temp(pi01dn(k,ngrid),th01dn(k,ngrid)) )
    end do
 
    !------ Compute 3-D reference state from 1-D reference state. --------------------------!

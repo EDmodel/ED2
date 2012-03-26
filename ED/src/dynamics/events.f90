@@ -386,11 +386,11 @@ subroutine event_harvest(agb_frac8,bgb_frac8,fol_frac8,stor_frac8)
                     cpatch%hite(ico) = 0.0
                  end if
                  
-                 !----- Update LAI, WPA, and WAI ------------------------------------------!
+                 !----- Update LAI, WAI, and CAI ------------------------------------------!
                  call area_indices(cpatch%nplant(ico),cpatch%bleaf(ico),cpatch%bdead(ico)  &
                                   ,cpatch%balive(ico),cpatch%dbh(ico), cpatch%hite(ico)    &
                                   ,cpatch%pft(ico),cpatch%sla(ico), cpatch%lai(ico)        &
-                                  ,cpatch%wpa(ico),cpatch%wai(ico), cpatch%crown_area(ico) &
+                                  ,cpatch%wai(ico), cpatch%crown_area(ico)                 &
                                   ,cpatch%bsapwood(ico))
 
                  !----- Update basal area and above-ground biomass. -----------------------!
@@ -575,8 +575,8 @@ subroutine event_irrigate(rval8)
   use ed_state_vars,only: edgrid_g, &
        edtype,polygontype,sitetype, &
        patchtype
-  use therm_lib, only: qtk
-  use consts_coms, only : cliqvlme, allivlme,cicevlme,tsupercool,wdnsi,t00
+  use therm_lib, only: uint2tl,tl2uint
+  use consts_coms, only : wdns,wdnsi,t00
   implicit none
   real(kind=8),intent(in) :: rval8
 
@@ -622,12 +622,11 @@ subroutine event_irrigate(rval8)
 
               !! note, assume irrigation water is at same temperature as soil
               if(csite%soil_tempk(nzg,ipa) > t00)then
-                 ienergy = cliqvlme * (csite%soil_tempk(nzg,ipa) - tsupercool)
                  fliq = 1.0
               else
-                 ienergy = cicevlme * csite%soil_tempk(nzg,ipa)
                  fliq = 0.0
               end if
+              ienergy = wdns * tl2uint(csite%soil_tempk(nzg,ipa),fliq)
 
               k = csite%nlev_sfcwater(ipa)
               if(k .eq. 0) then
@@ -642,7 +641,7 @@ subroutine event_irrigate(rval8)
                       + ienergy*iwater)/(csite%sfcwater_mass(k,ipa) + iwater)
                  csite%sfcwater_mass(k,ipa)   = csite%sfcwater_mass(k,ipa) + iwater
                  csite%sfcwater_depth(k,ipa)  = csite%sfcwater_depth(k,ipa) + iwater*wdnsi
-                 call qtk(csite%sfcwater_energy(k,ipa),csite%sfcwater_tempk(k,ipa),csite%sfcwater_fracliq(k,ipa))
+                 call uint2tl(csite%sfcwater_energy(k,ipa),csite%sfcwater_tempk(k,ipa),csite%sfcwater_fracliq(k,ipa))
               endif
 
               !! do we need to call infiltration?
@@ -754,7 +753,6 @@ subroutine event_till(rval8)
                  cpatch%bstorage(ico)         = 0.0
                  cpatch%nplant(ico)           = 0.0
                  cpatch%lai(ico)              = 0.0
-                 cpatch%wpa(ico)              = 0.0
                  cpatch%wai(ico)              = 0.0
                  cpatch%crown_area(ico)       = 0.0
                  cpatch%bleaf(ico)            = 0.0
