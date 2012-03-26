@@ -324,7 +324,6 @@ subroutine spatial_averages
                                     , isoilbc            & ! intent(in)
                                     , soil               & ! intent(in)
                                     , dslz               ! ! intent(in)
-   use c34constants          , only : n_stoma_atts       ! ! intent(in)
    use ed_max_dims           , only : n_pft              ! ! intent(in)
    implicit none
    !----- Local variables -----------------------------------------------------------------!
@@ -340,8 +339,6 @@ subroutine spatial_averages
    integer                        :: lai_index
    integer                        :: nsoil
    real                           :: lai_patch
-   real                           :: laiarea_site
-   real                           :: laiarea_poly
    real                           :: site_area_i
    real                           :: poly_area_i
    real                           :: frqsumi
@@ -378,7 +375,6 @@ subroutine spatial_averages
 
          !----- Initialise some integrated variables --------------------------------------!
          area_sum           = 0.0
-         laiarea_poly       = 0.0
          poly_avg_soil_hcap = 0.0
 
          !---------------------------------------------------------------------------------!
@@ -442,7 +438,6 @@ subroutine spatial_averages
 
             !----- LAI --------------------------------------------------------------------!
             cpoly%lai(isi)  = sum(csite%lai  * csite%area ) * site_area_i
-            cpoly%wpa(isi)  = sum(csite%wpa  * csite%area ) * site_area_i
             cpoly%wai(isi)  = sum(csite%wai  * csite%area ) * site_area_i
 
 
@@ -459,7 +454,6 @@ subroutine spatial_averages
             cpoly%avg_vapor_ac(isi)  = sum(csite%avg_vapor_ac  * csite%area ) * site_area_i
             cpoly%avg_transp(isi)    = sum(csite%avg_transp    * csite%area ) * site_area_i
             cpoly%avg_evap(isi)      = sum(csite%avg_evap      * csite%area ) * site_area_i
-            cpoly%aux(isi)           = sum(csite%aux           * csite%area ) * site_area_i
             cpoly%avg_drainage(isi)  = sum(csite%avg_drainage  * csite%area ) * site_area_i
             cpoly%avg_runoff(isi)    = sum(csite%avg_runoff    * csite%area ) * site_area_i
             cpoly%avg_drainage_heat(isi) = sum(csite%avg_drainage_heat * csite%area )      &
@@ -529,8 +523,6 @@ subroutine spatial_averages
             cpoly%avg_smoist_gg(:,isi)   = matmul(csite%avg_smoist_gg  ,csite%area)        &
                                          * site_area_i
             cpoly%avg_transloss(:,isi)   = matmul(csite%avg_transloss  ,csite%area)        &
-                                         * site_area_i
-            cpoly%aux_s(:,isi)           = matmul(csite%aux_s          ,csite%area)        &
                                          * site_area_i
             cpoly%avg_soil_energy(:,isi) = matmul(csite%soil_energy    ,csite%area)        &
                                          * site_area_i
@@ -893,12 +885,6 @@ subroutine spatial_averages
                   end if
                end if
 
-               if (lai_patch > 0.) then
-                  csite%laiarea(ipa) = csite%area(ipa)
-               else
-                  csite%laiarea(ipa) = 0.
-               end if
-
                cgrid%avg_htroph_resp(ipy) = cgrid%avg_htroph_resp(ipy)                     &
                                           + csite%mean_rh(ipa)                             &
                                           * csite%area(ipa)*cpoly%area(isi)                &
@@ -950,23 +936,6 @@ subroutine spatial_averages
 
 
                cohortloop: do ico=1,cpatch%ncohorts
-                  cpatch%old_stoma_vector(1,ico) = real(cpatch%old_stoma_data(ico)%recalc)
-                  cpatch%old_stoma_vector(2,ico) = cpatch%old_stoma_data(ico)%T_L
-                  cpatch%old_stoma_vector(3,ico) = cpatch%old_stoma_data(ico)%e_A
-                  cpatch%old_stoma_vector(4,ico) = cpatch%old_stoma_data(ico)%PAR
-                  cpatch%old_stoma_vector(5,ico) = cpatch%old_stoma_data(ico)%rb_factor
-                  cpatch%old_stoma_vector(6,ico) = cpatch%old_stoma_data(ico)%prss
-                  cpatch%old_stoma_vector(7,ico) = cpatch%old_stoma_data(ico)%phenology_factor
-                  cpatch%old_stoma_vector(8,ico) = cpatch%old_stoma_data(ico)%gsw_open
-                  cpatch%old_stoma_vector(9,ico) = real(cpatch%old_stoma_data(ico)%ilimit)
-                  
-                  cpatch%old_stoma_vector(10,ico) = cpatch%old_stoma_data(ico)%T_L_residual
-                  cpatch%old_stoma_vector(11,ico) = cpatch%old_stoma_data(ico)%e_a_residual
-                  cpatch%old_stoma_vector(12,ico) = cpatch%old_stoma_data(ico)%par_residual
-                  cpatch%old_stoma_vector(13,ico) = cpatch%old_stoma_data(ico)%rb_residual
-                  cpatch%old_stoma_vector(14,ico) = cpatch%old_stoma_data(ico)%prss_residual
-                  cpatch%old_stoma_vector(15,ico) = cpatch%old_stoma_data(ico)%leaf_residual
-                  cpatch%old_stoma_vector(16,ico) = cpatch%old_stoma_data(ico)%gsw_residual
 
 
                   !------------------------------------------------------------------------!
@@ -982,36 +951,7 @@ subroutine spatial_averages
 
 
                end do cohortloop
-                  
-               pftloop: do ipft = 1,n_pft
-                  csite%old_stoma_vector_max(1,ipft,ipa) = real(csite%old_stoma_data_max(ipft,ipa)%recalc)
-                  csite%old_stoma_vector_max(2,ipft,ipa) = csite%old_stoma_data_max(ipft,ipa)%T_L
-                  csite%old_stoma_vector_max(3,ipft,ipa) = csite%old_stoma_data_max(ipft,ipa)%e_A
-                  csite%old_stoma_vector_max(4,ipft,ipa) = csite%old_stoma_data_max(ipft,ipa)%PAR
-                  csite%old_stoma_vector_max(5,ipft,ipa) = csite%old_stoma_data_max(ipft,ipa)%rb_factor
-                  csite%old_stoma_vector_max(6,ipft,ipa) = csite%old_stoma_data_max(ipft,ipa)%prss
-                  csite%old_stoma_vector_max(7,ipft,ipa) = csite%old_stoma_data_max(ipft,ipa)%phenology_factor
-                  csite%old_stoma_vector_max(8,ipft,ipa) = csite%old_stoma_data_max(ipft,ipa)%gsw_open
-                  csite%old_stoma_vector_max(9,ipft,ipa) = real(csite%old_stoma_data_max(ipft,ipa)%ilimit)
-                  
-                  csite%old_stoma_vector_max(10,ipft,ipa) = csite%old_stoma_data_max(ipft,ipa)%T_L_residual
-                  csite%old_stoma_vector_max(11,ipft,ipa) = csite%old_stoma_data_max(ipft,ipa)%e_a_residual
-                  csite%old_stoma_vector_max(12,ipft,ipa) = csite%old_stoma_data_max(ipft,ipa)%par_residual
-                  csite%old_stoma_vector_max(13,ipft,ipa) = csite%old_stoma_data_max(ipft,ipa)%rb_residual
-                  csite%old_stoma_vector_max(14,ipft,ipa) = csite%old_stoma_data_max(ipft,ipa)%prss_residual
-                  csite%old_stoma_vector_max(15,ipft,ipa) = csite%old_stoma_data_max(ipft,ipa)%leaf_residual
-                  csite%old_stoma_vector_max(16,ipft,ipa) = csite%old_stoma_data_max(ipft,ipa)%gsw_residual
-               end do pftloop
-            
             end do longpatchloop
-
-            laiarea_site  = sum(csite%laiarea)
-            laiarea_poly  = laiarea_poly + laiarea_site
-            if (laiarea_site == 0.0) then
-               csite%laiarea = 0.0
-            else
-               csite%laiarea = csite%laiarea / laiarea_site
-            end if
 
 
             ! Take an area weighted average of the root density to get site level fraction
@@ -1161,7 +1101,6 @@ subroutine spatial_averages
 
          !----- Finding the polygon mean LAI ----------------------------------------------!
          cgrid%lai(ipy)  = sum(cpoly%lai  * cpoly%area ) * poly_area_i
-         cgrid%wpa(ipy)  = sum(cpoly%wpa  * cpoly%area ) * poly_area_i
          cgrid%wai(ipy)  = sum(cpoly%wai  * cpoly%area ) * poly_area_i
          !----- Average fast time flux dynamics over polygons. ----------------------------!
          cgrid%avg_rshort_gnd(ipy)   = sum(cpoly%avg_rshort_gnd   *cpoly%area)*poly_area_i
@@ -1187,7 +1126,6 @@ subroutine spatial_averages
          cgrid%avg_vapor_ac(ipy)     = sum(cpoly%avg_vapor_ac     *cpoly%area)*poly_area_i
          cgrid%avg_transp(ipy)       = sum(cpoly%avg_transp       *cpoly%area)*poly_area_i
          cgrid%avg_evap(ipy)         = sum(cpoly%avg_evap         *cpoly%area)*poly_area_i
-         cgrid%aux(ipy)              = sum(cpoly%aux              *cpoly%area)*poly_area_i
          cgrid%avg_sensible_lc(ipy)  = sum(cpoly%avg_sensible_lc  *cpoly%area)*poly_area_i
          cgrid%avg_sensible_wc(ipy)  = sum(cpoly%avg_sensible_wc  *cpoly%area)*poly_area_i
          cgrid%avg_qwshed_vg(ipy)    = sum(cpoly%avg_qwshed_vg    *cpoly%area)*poly_area_i
@@ -1242,8 +1180,6 @@ subroutine spatial_averages
          cgrid%avg_smoist_gg    (:,ipy) = matmul(cpoly%avg_smoist_gg    , cpoly%area)      &
                                         * poly_area_i
          cgrid%avg_transloss    (:,ipy) = matmul(cpoly%avg_transloss    , cpoly%area)      &
-                                        * poly_area_i
-         cgrid%aux_s            (:,ipy) = matmul(cpoly%aux_s            , cpoly%area)      &
                                         * poly_area_i
          cgrid%avg_soil_energy  (:,ipy) = matmul(cpoly%avg_soil_energy  , cpoly%area)      &
                                         * poly_area_i

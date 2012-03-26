@@ -119,6 +119,7 @@ do
    iphen=`echo ${oi}        | awk '{print $79}'`
    iallom=`echo ${oi}       | awk '{print $80}'`
    ibigleaf=`echo ${oi}     | awk '{print $81}'`
+   irepro=`echo ${oi}       | awk '{print $82}'`
    #---------------------------------------------------------------------------------------#
 
 

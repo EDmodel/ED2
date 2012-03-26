@@ -551,7 +551,6 @@ subroutine read_ed21_history_file
                      !    Initialise patch-level variables that depend on the cohort ones. !
                      !---------------------------------------------------------------------!
                      csite%lai(ipa)               = 0.0
-                     csite%wpa(ipa)               = 0.0
                      csite%wai(ipa)               = 0.0
                      csite%plant_ag_biomass(ipa)  = 0.0
 
@@ -698,8 +697,8 @@ subroutine read_ed21_history_file
                            ! the model initialises with stable numbers whilst ensuring     !
                            ! that the cohorts will be eliminated.                          !
                            !---------------------------------------------------------------!
-                           if (cpatch%balive(ico) > 0.                .and.                &
-                               cpatch%balive(ico) < tiny_biomass)     then
+                           if (cpatch%balive(ico) > 0.            .and.                    &
+                               cpatch%balive(ico) < tiny_biomass) then
                               cpatch%balive(ico) = tiny_biomass
                            end if
                            if (cpatch%bleaf(ico) > 0.                .and.                 &
@@ -734,23 +733,20 @@ subroutine read_ed21_history_file
                            !----- Compute the above-ground biomass. -----------------------!
                            cpatch%agb(ico) = ed_biomass(cpatch%bdead(ico),cpatch%bleaf(ico)&
                                                     ,cpatch%bsapwooda(ico),cpatch%pft(ico))
-
                            cpatch%basarea(ico)  = pio4 * cpatch%dbh(ico) * cpatch%dbh(ico)
 
                             
-                           !----- Assign LAI, WPA, and WAI --------------------------------!
+                           !----- Assign LAI, WAI, and CAI --------------------------------!
                            call area_indices(cpatch%nplant(ico),cpatch%bleaf(ico)          &
                                             ,cpatch%bdead(ico),cpatch%balive(ico)          &
                                             ,cpatch%dbh(ico), cpatch%hite(ico)             &
                                             ,cpatch%pft(ico), SLA(cpatch%pft(ico))         &
-                                            ,cpatch%lai(ico),cpatch%wpa(ico)               &
-                                            ,cpatch%wai(ico),cpatch%crown_area(ico)        &
-                                            ,cpatch%bsapwooda(ico))
+                                            ,cpatch%lai(ico),cpatch%wai(ico)               &
+                                            ,cpatch%crown_area(ico),cpatch%bsapwooda(ico))
 
 
                            !----- Update the derived patch-level variables. ---------------!
                            csite%lai(ipa)  = csite%lai(ipa) + cpatch%lai(ico)
-                           csite%wpa(ipa)  = csite%wpa(ipa) + cpatch%wpa(ico)
                            csite%wai(ipa)  = csite%wai(ipa) + cpatch%wai(ico)
                            csite%plant_ag_biomass(ipa) = csite%plant_ag_biomass(ipa)       &
                                                        + cpatch%agb(ico)*cpatch%nplant(ico)
@@ -775,6 +771,7 @@ subroutine read_ed21_history_file
 
                !----- Initialise the other patch-level variables. -------------------------!
                call init_ed_patch_vars(csite,1,csite%npatches,cpoly%lsl(isi))
+
             end if
             !------------------------------------------------------------------------------!
          end do siteloop
@@ -1708,7 +1705,6 @@ subroutine read_ed21_history_unstruct
                      ! ones.                                                               !
                      !---------------------------------------------------------------------!
                      csite%lai(ipa)               = 0.0
-                     csite%wpa(ipa)               = 0.0
                      csite%wai(ipa)               = 0.0
                      csite%plant_ag_biomass(ipa)  = 0.0
 
@@ -1891,19 +1887,17 @@ subroutine read_ed21_history_unstruct
 
                            cpatch%basarea(ico)  = pio4 * cpatch%dbh(ico) * cpatch%dbh(ico)
 
-                           !----- Assign LAI, WPA, and WAI --------------------------------!
+                           !----- Assign LAI, WAI, and CAI --------------------------------!
                            call area_indices(cpatch%nplant(ico),cpatch%bleaf(ico)          &
                                             ,cpatch%bdead(ico),cpatch%balive(ico)          &
                                             ,cpatch%dbh(ico),cpatch%hite(ico)              &
                                             ,cpatch%pft(ico),SLA(cpatch%pft(ico))          &
-                                            ,cpatch%lai(ico),cpatch%wpa(ico)               &
-                                            ,cpatch%wai(ico),cpatch%crown_area(ico)        &
-                                            ,cpatch%bsapwooda(ico))
+                                            ,cpatch%lai(ico),cpatch%wai(ico)               &
+                                            ,cpatch%crown_area(ico),cpatch%bsapwooda(ico))
 
 
                            !----- Update the derived patch-level variables. ---------------!
                            csite%lai(ipa)  = csite%lai(ipa) + cpatch%lai(ico)
-                           csite%wpa(ipa)  = csite%wpa(ipa) + cpatch%wpa(ico)
                            csite%wai(ipa)  = csite%wai(ipa) + cpatch%wai(ico)
                            csite%plant_ag_biomass(ipa) = csite%plant_ag_biomass(ipa)       &
                                                        + cpatch%agb(ico)*cpatch%nplant(ico)

@@ -92,9 +92,9 @@ execname='ed_2.1-opt'
 #----- Set the main path for the site, pseudo drought and Sheffield met drivers. ----------#
 if [ ${copy2scratch} == 'y' -o ${copy2scratch} == 'Y' ]
 then
-   sitemet='/scratch/'${moi}'/met_driver/site_met_driver'
-   pdroughtpath='/scratch/'${moi}'/met_driver/pseudo_drought'
-   shefpath='/scratch/'${moi}'/met_driver/sheffield'
+   sitemet='/scratch/ed2_data/met_driver/site_met_driver'
+   pdroughtpath='/scratch/ed2_data/met_driver/pseudo_drought'
+   shefpath='/scratch/ed2_data/met_driver/sheffield'
 else
    sitemet=${sitemetdef}
    pdroughtpath=${pdroughtpathdef}
@@ -319,6 +319,7 @@ do
    iphen=`echo ${oi}        | awk '{print $79}'`
    iallom=`echo ${oi}       | awk '{print $80}'`
    ibigleaf=`echo ${oi}     | awk '{print $81}'`
+   irepro=`echo ${oi}       | awk '{print $82}'`
    #---------------------------------------------------------------------------------------#
 
 
@@ -464,17 +465,17 @@ do
    #     Determine which PFTs to use based on the "iata" code.                             #
    #---------------------------------------------------------------------------------------#
    case ${polyiata} in
-   wch|zmh|nqn)
-      pfts='6,7,8,9,10,11,16,17'
-      crop=5
+   tzi|zmh|nqn)
+      pfts='6,7,9,10,11,16,17'
+      crop=16
       plantation=17
       ;;
-   hvd)
-      pfts='6,8,9,10,11,16'
-      crop=5
-      plantation=8
+   hvd|wch|tqh)
+      pfts='6,8,9,10,11,16,17'
+      crop=16
+      plantation=17
       ;;
-   aei|asu|cnf|bnu|cwb|erm|iqq|ipv|mgf|rao|sla|zpe|kna)
+   asu|cnf|bnu|cwb|erm|iqq|ipv|mgf|rao|sla|zpe|kna|sfn)
       pfts='1,2,3,4,16,17'
       crop=16
       plantation=17
@@ -524,6 +525,12 @@ do
          metdriverdb=${sitemet}'/Harvard_Forest/Harvard_Forest_HEADER'
          metcyc1=1992
          metcycf=2003
+         imetavg=1
+         ;;
+      Tonzi)
+         metdriverdb=${sitemet}'/Tonzi/Tonzi_HEADER'
+         metcyc1=2000
+         metcycf=2010
          imetavg=1
          ;;
       Manaus_KM34)
@@ -576,12 +583,6 @@ do
          ;;
       Guyaflux)
          metdriverdb=${sitemet}'/Guyaflux/Guyaflux_HEADER'
-         metcyc1=2007
-         metcycf=2009
-         imetavg=1
-         ;;
-      Guyaflux_Natalia)
-         metdriverdb=${sitemet}'/Guyaflux_Natalia/Guyaflux_Natalia_HEADER'
          metcyc1=2007
          metcycf=2009
          imetavg=1
@@ -1135,6 +1136,7 @@ do
    sed -i s@myclumpgrass@${clumpgrass}@g     ${ED2IN}
    sed -i s@myvegtdyn@${ivegtdyn}@g          ${ED2IN}
    sed -i s@mybigleaf@${ibigleaf}@g          ${ED2IN}
+   sed -i s@myrepro@${irepro}@g              ${ED2IN}
    sed -i s@myubmin@${ubmin}@g               ${ED2IN}
    sed -i s@myugbmin@${ugbmin}@g             ${ED2IN}
    sed -i s@myustmin@${ustmin}@g             ${ED2IN}

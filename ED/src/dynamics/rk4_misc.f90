@@ -267,7 +267,6 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
       !----- Copy the leaf area index and total (leaf+branch+twig) area index. ------------!
       targetp%lai(ico)        = dble(cpatch%lai(ico))
       targetp%wai(ico)        = dble(cpatch%wai(ico))
-      targetp%wpa(ico)        = dble(cpatch%wpa(ico))
       targetp%tai(ico)        = targetp%lai(ico) + targetp%wai(ico)
       targetp%crown_area(ico) = dble(cpatch%crown_area(ico))
       targetp%elongf(ico)     = dble(cpatch%elongf(ico)) * rk4site%green_leaf_factor(ipft)
@@ -3064,7 +3063,7 @@ subroutine print_errmax(errmax,yerr,yscal,cpatch,y,ytemp)
    !----- Constants -----------------------------------------------------------------------!
    character(len=28)  , parameter    :: onefmt = '(a16,1x,3(es12.4,1x),11x,l1)'
    character(len=34)  , parameter    :: lyrfmt = '(a16,1x,i6,1x,3(es12.4,1x),11x,l1)'
-   character(len=34)  , parameter    :: cohfmt = '(a16,1x,i6,1x,7(es12.4,1x),11x,l1)'
+   character(len=34)  , parameter    :: cohfmt = '(a16,1x,i6,1x,6(es12.4,1x),11x,l1)'
    !----- Functions -----------------------------------------------------------------------!
    logical            , external     :: large_error
    !---------------------------------------------------------------------------------------!
@@ -3158,16 +3157,15 @@ subroutine print_errmax(errmax,yerr,yscal,cpatch,y,ytemp)
       write(unit=*,fmt='(a)'  ) 
       write(unit=*,fmt='(80a)') ('-',k=1,80)
       write(unit=*,fmt='(a)'      ) ' Veg-level variables (only the resolvable ones):'
-      write(unit=*,fmt='(10(a,1x))')        'Name            ','   PFT','         LAI'     &
-                                         ,'         WAI','         WPA','         TAI'     &
-                                         ,'   Max.Error','   Abs.Error','       Scale'     &
-                                         ,'Problem(T|F)'
+      write(unit=*,fmt='(9(a,1x))')         'Name            ','   PFT','         LAI'     &
+                                         ,'         WAI','         TAI','   Max.Error'     &
+                                         ,'   Abs.Error','       Scale','Problem(T|F)'
       do ico = 1,cpatch%ncohorts
          if (y%veg_resolvable(ico)) then
             errmax       = max(errmax,abs(yerr%veg_water(ico)/yscal%veg_water(ico)))
             troublemaker = large_error(yerr%veg_water(ico),yscal%veg_water(ico))
             write(unit=*,fmt=cohfmt) 'VEG_WATER:',cpatch%pft(ico),y%lai(ico),y%wai(ico)    &
-                                                  ,y%wpa(ico),y%tai(ico),errmax            &
+                                                  ,y%tai(ico),errmax                       &
                                                   ,yerr%veg_water(ico)                     &
                                                   ,yscal%veg_water(ico),troublemaker
                  
@@ -3175,7 +3173,7 @@ subroutine print_errmax(errmax,yerr,yscal,cpatch,y,ytemp)
             errmax       = max(errmax,abs(yerr%veg_energy(ico)/yscal%veg_energy(ico)))
             troublemaker = large_error(yerr%veg_energy(ico),yscal%veg_energy(ico))
             write(unit=*,fmt=cohfmt) 'VEG_ENERGY:',cpatch%pft(ico),cpatch%lai(ico)         &
-                                                   ,y%wai(ico),y%wpa(ico),y%tai(ico)       &
+                                                   ,y%wai(ico),y%tai(ico)                  &
                                                    ,errmax,yerr%veg_energy(ico)            &
                                                    ,yscal%veg_energy(ico)                  &
                                                    ,troublemaker
@@ -3192,23 +3190,22 @@ subroutine print_errmax(errmax,yerr,yscal,cpatch,y,ytemp)
       write(unit=*,fmt='(a)'  ) 
       write(unit=*,fmt='(80a)') ('-',k=1,80)
       write(unit=*,fmt='(a)'      ) ' Leaf-level variables (only the resolvable ones):'
-      write(unit=*,fmt='(10(a,1x))')        'Name            ','   PFT','         LAI'     &
-                                         ,'         WAI','         WPA','         TAI'     &
-                                         ,'   Max.Error','   Abs.Error','       Scale'     &
-                                         ,'Problem(T|F)'
+      write(unit=*,fmt='(9(a,1x))')         'Name            ','   PFT','         LAI'     &
+                                         ,'         WAI','         TAI','   Max.Error'     &
+                                         ,'   Abs.Error','       Scale','Problem(T|F)'
       do ico = 1,cpatch%ncohorts
          if (y%leaf_resolvable(ico)) then
             errmax       = max(errmax,abs(yerr%leaf_water(ico)/yscal%leaf_water(ico)))
             troublemaker = large_error(yerr%leaf_water(ico),yscal%leaf_water(ico))
             write(unit=*,fmt=cohfmt) 'LEAF_WATER:',cpatch%pft(ico),y%lai(ico),y%wai(ico)   &
-                                                  ,y%wpa(ico),y%tai(ico),errmax            &
+                                                  ,y%tai(ico),errmax                       &
                                                   ,yerr%leaf_water(ico)                    &
                                                   ,yscal%leaf_water(ico),troublemaker
 
             errmax       = max(errmax,abs(yerr%leaf_energy(ico)/yscal%leaf_energy(ico)))
             troublemaker = large_error(yerr%leaf_energy(ico),yscal%leaf_energy(ico))
             write(unit=*,fmt=cohfmt) 'LEAF_ENERGY:',cpatch%pft(ico),cpatch%lai(ico)        &
-                                                   ,y%wai(ico),y%wpa(ico),y%tai(ico)       &
+                                                   ,y%wai(ico),y%tai(ico)                  &
                                                    ,errmax,yerr%leaf_energy(ico)           &
                                                    ,yscal%leaf_energy(ico)                 &
                                                    ,troublemaker
@@ -3226,23 +3223,22 @@ subroutine print_errmax(errmax,yerr,yscal,cpatch,y,ytemp)
       write(unit=*,fmt='(a)'  ) 
       write(unit=*,fmt='(80a)') ('-',k=1,80)
       write(unit=*,fmt='(a)'      ) ' Wood-level variables (only the resolvable ones):'
-      write(unit=*,fmt='(10(a,1x))')        'Name            ','   PFT','         LAI'     &
-                                         ,'         WAI','         WPA','         TAI'     &
-                                         ,'   Max.Error','   Abs.Error','       Scale'     &
-                                         ,'Problem(T|F)'
+      write(unit=*,fmt='(9(a,1x))')         'Name            ','   PFT','         LAI'     &
+                                         ,'         WAI','         TAI','   Max.Error'     &
+                                         ,'   Abs.Error','       Scale','Problem(T|F)'
       do ico = 1,cpatch%ncohorts
          if (y%wood_resolvable(ico)) then
             errmax       = max(errmax,abs(yerr%wood_water(ico)/yscal%wood_water(ico)))
             troublemaker = large_error(yerr%wood_water(ico),yscal%wood_water(ico))
             write(unit=*,fmt=cohfmt) 'WOOD_WATER:',cpatch%pft(ico),y%lai(ico),y%wai(ico)   &
-                                                  ,y%wpa(ico),y%tai(ico),errmax            &
+                                                  ,y%tai(ico),errmax                       &
                                                   ,yerr%wood_water(ico)                    &
                                                   ,yscal%wood_water(ico),troublemaker
 
             errmax       = max(errmax,abs(yerr%wood_energy(ico)/yscal%wood_energy(ico)))
             troublemaker = large_error(yerr%wood_energy(ico),yscal%wood_energy(ico))
             write(unit=*,fmt=cohfmt) 'WOOD_ENERGY:',cpatch%pft(ico),cpatch%lai(ico)        &
-                                                   ,y%wai(ico),y%wpa(ico),y%tai(ico)       &
+                                                   ,y%wai(ico),y%tai(ico)                  &
                                                    ,errmax,yerr%wood_energy(ico)           &
                                                    ,yscal%wood_energy(ico),troublemaker
          end if

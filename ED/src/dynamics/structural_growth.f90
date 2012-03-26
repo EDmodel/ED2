@@ -139,6 +139,14 @@ subroutine structural_growth(cgrid, month)
                                              * cpatch%bstorage(ico) * cpatch%nplant(ico)
                end if
 
+               if (ibigleaf == 0 ) then
+                  !------ NPP allocation to wood and course roots in KgC /m2 --------------!
+                  cpatch%today_NPPwood(ico) = agf_bs(ipft)*f_bdead*cpatch%bstorage(ico)    &
+                                             * cpatch%nplant(ico)
+                  cpatch%today_NPPcroot(ico) = (1. - agf_bs(ipft)) * f_bdead               &
+                                             * cpatch%bstorage(ico) * cpatch%nplant(ico)
+               end if
+
                !---------------------------------------------------------------------------!
                !      Rebalance the plant nitrogen uptake considering the actual alloc-    !
                ! ation to structural growth.  This is necessary because c2n_stem does not  !
@@ -538,7 +546,6 @@ subroutine plant_structural_allocation(ipft,hite,dbh,lat,phen_status,f_bseeds,f_
    logical                        :: late_spring
    logical          , parameter   :: printout  = .false.
    character(len=13), parameter   :: fracfile  = 'storalloc.txt'
-   real                           :: hgtfudge
    !----- Locally saved variables. --------------------------------------------------------!
    logical          , save        :: first_time = .true.
    !---------------------------------------------------------------------------------------!
@@ -579,7 +586,6 @@ subroutine plant_structural_allocation(ipft,hite,dbh,lat,phen_status,f_bseeds,f_
       ! dropping leaves or off allometry.                                                  !
       !------------------------------------------------------------------------------------!
       if ((phenology(ipft) /= 2   .or.  late_spring) .and. phen_status == 0)    then
-
             !------------------------------------------------------------------------------!
             !---ALS=== This is where allocation to seeds is occuring.  It will need to be  !
             ! modified but I'm leaving it for later --- GRASSES!  Want to add a functional !
@@ -649,7 +655,7 @@ subroutine plant_structural_allocation(ipft,hite,dbh,lat,phen_status,f_bseeds,f_
       close (unit=66,status='keep')
    end if
    !---------------------------------------------------------------------------------------!
-  
+
    return
 end subroutine plant_structural_allocation
 !==========================================================================================!
@@ -683,7 +689,6 @@ subroutine update_derived_cohort_props(cpatch,ico,green_leaf_factor,lsl)
                             , area_indices        ! ! subroutine
    use consts_coms   , only : pio4                ! ! intent(in)
    use ed_misc_coms  , only : igrass              ! ! intent(in)
-
    
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
@@ -734,7 +739,7 @@ subroutine update_derived_cohort_props(cpatch,ico,green_leaf_factor,lsl)
       !     If LEAF biomass is not the maximum, set it to 1 (leaves partially flushed),    !
       ! otherwise, set it to 0 (leaves are fully flushed).                                 !
       !------------------------------------------------------------------------------------!
-      if (cpatch%bleaf(ico) < bl_max) then
+      if (cpatch%bleaf(ico) < bl_max .or. cpatch%elongf(ico) < 1.0) then
          cpatch%phenology_status(ico) = 1
       else
          cpatch%phenology_status(ico) = 0
@@ -742,11 +747,11 @@ subroutine update_derived_cohort_props(cpatch,ico,green_leaf_factor,lsl)
 
    end select
       
-   !----- Update LAI, WPA, and WAI --------------------------------------------------------!
+   !----- Update LAI, WAI, and CAI. -------------------------------------------------------!
    call area_indices(cpatch%nplant(ico),cpatch%bleaf(ico),cpatch%bdead(ico)                &
-              ,cpatch%balive(ico),cpatch%dbh(ico), cpatch%hite(ico),ipft                   &
-              ,cpatch%sla(ico),cpatch%lai(ico),cpatch%wpa(ico),cpatch%wai(ico)             &
-              ,cpatch%crown_area(ico),cpatch%bsapwooda(ico))
+              ,cpatch%balive(ico),cpatch%dbh(ico), cpatch%hite(ico),cpatch%pft(ico)        &
+              ,cpatch%sla(ico),cpatch%lai(ico),cpatch%wai(ico),cpatch%crown_area(ico)      &
+              ,cpatch%bsapwooda(ico))
 
    !----- Finding the new basal area and above-ground biomass. ----------------------------!
    cpatch%basarea(ico)= pio4 * cpatch%dbh(ico) * cpatch%dbh(ico)                

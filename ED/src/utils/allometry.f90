@@ -256,6 +256,7 @@ module allometry
                              , b1Bl        & ! intent(in), lookup table
                              , b2Bl        ! ! intent(in), lookup table
       use ed_misc_coms, only : igrass      ! ! intent(in)
+
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       real   , intent(in) :: bleaf
@@ -332,7 +333,6 @@ module allometry
    !---------------------------------------------------------------------------------------!
    real function dbh2ca(dbh,hite,sla,ipft)
       use ed_misc_coms, only : iallom      ! ! intent(in)
-
       use pft_coms    , only : dbh_crit    & ! intent(in)
                              , hgt_max     & ! intent(in)
                              , is_tropical & ! intent(in)
@@ -370,7 +370,6 @@ module allometry
             else
                  dbh2ca = b1Ca(ipft) * min(dbh,dbh_crit(ipft)            ) ** b2Ca(ipft)
             end if
-
          end select
       end if
 
@@ -507,7 +506,6 @@ module allometry
 
    !=======================================================================================!
    !=======================================================================================!
-
    !     This subroutine finds the total above ground biomass (wood + leaves)              !
    !---------------------------------------------------------------------------------------!
    real function ed_biomass(bdead, bleaf, bsapwooda, ipft)
@@ -548,8 +546,8 @@ module allometry
    !        climate change conditions.  The Open Geography Journal, 3, 91-102  (they       !
    !        didn't develop the allometry, but the original reference is in German...)      !
    !---------------------------------------------------------------------------------------!
-   subroutine area_indices(nplant,bleaf,bdead,balive,dbh,hite,pft,sla,lai,wpa,wai          &
-                          ,crown_area,bsapwooda)
+   subroutine area_indices(nplant,bleaf,bdead,balive,dbh,hite,pft,sla,lai,wai,crown_area   &
+                          ,bsapwooda)
       use pft_coms    , only : is_tropical     & ! intent(in)
                              , is_grass        & ! intent(in)
                              , agf_bs          & ! intent(in)
@@ -574,7 +572,6 @@ module allometry
       real    , intent(in)  :: hite       ! Plant height                     [           m]
       real    , intent(in)  :: sla        ! Specific leaf area               [m²leaf/plant]
       real    , intent(out) :: lai        ! Leaf area index                  [   m²leaf/m²]
-      real    , intent(out) :: wpa        ! Wood projected area              [   m²wood/m²]
       real    , intent(out) :: wai        ! Wood area index                  [   m²wood/m²]
       real    , intent(out) :: crown_area ! Crown area                       [  m²crown/m²]
       !----- Local variables --------------------------------------------------------------!
@@ -602,7 +599,6 @@ module allometry
       select case (ibranch_thermo)
       case (0) 
          !----- Ignore branches and trunk. ------------------------------------------------!
-         wpa  = 0.
          wai  = 0.
          !---------------------------------------------------------------------------------!
 
@@ -611,7 +607,6 @@ module allometry
          !    Solve branches using the equations from Ahrends et al. (2010).               !
          !---------------------------------------------------------------------------------!
          wai = nplant * b1WAI(pft) * min(dbh,dbh_crit(pft)) ** b2WAI(pft)
-         wpa = wai * dbh2ca(dbh,hite,sla,pft)
          !---------------------------------------------------------------------------------!
 
       end select

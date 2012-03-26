@@ -917,7 +917,7 @@ $CUPARM_OPTIONS
    ! CONFRQ: how often should the cumulus parametrisation be updated?                      !
    ! CPTIME: when I should start computing the cumulus parametrisation.                    !
    !---------------------------------------------------------------------------------------!
-   CONFRQ = 1200.,
+   CONFRQ =  720.,
    CPTIME =    0.,
    !---------------------------------------------------------------------------------------!
 
@@ -963,7 +963,7 @@ $CUPARM_OPTIONS
    !           velocity and sigma-w and assuming normal distribution, so this option works !
    !           only when IDIFFK is 1 or 7.                                                 !
    !---------------------------------------------------------------------------------------!
-   CAP_MAXS  =  -25.,
+   CAP_MAXS  =  -20.,
    !---------------------------------------------------------------------------------------!
 
 
@@ -1777,7 +1777,7 @@ $MODEL_OPTIONS
       !          is set to 5, CPARM represents the concentration of CCN.  Otherwise, the   !
       !          value is ignored if the IXXXX variable is set to 5.                       !
       !------------------------------------------------------------------------------------!
-      CPARM   =  .3e9,  ! cloud droplets, or less frequently, CCN
+      CPARM   =  1.3e9, ! cloud droplets, or less frequently, CCN
       RPARM   =  1e-3,  ! rain drops
       PPARM   =  0.,    ! pristine ice (ignored as IPRIS must be 5)
       SPARM   =  1e-3,  ! snow
@@ -1829,7 +1829,7 @@ $ED2_INFO
    !          If time is a problem, i.e., the runs are too slow, then try making it        !
    !          larger, but not much larger so to avoid problems...                          !
    !---------------------------------------------------------------------------------------!
-   DTLSM  = 600.0,
+   DTLSM  = 240.0,
    !---------------------------------------------------------------------------------------!
 
 
@@ -2001,7 +2001,7 @@ $ED2_INFO
    !---------------------------------------------------------------------------------------!
    VEG_DATABASE      = '/n/Moorcroft_Lab/Lab/data/ed2_data/oge2OLD/OGE2_',
    SOIL_DATABASE     = '/n/Moorcroft_Lab/Lab/data/ed2_data/faoOLD/FAO_',
-   LU_DATABASE       = '/n/Moorcroft_Lab/Lab/data/ed2_data/land_use/glu/glu-',
+   LU_DATABASE       = '/n/Moorcroft_Lab/Lab/data/ed2_data/land_use/glu-3.3.1+sa1/half/glu-3.3.1+sa1-',
    PLANTATION_FILE   = '',
    LU_RESCALE_FILE   = '/n/Moorcroft_Lab/Lab/data/ed2_data/21restart/rescale/SA1relative.lu.area-22km-2038.txt',
    THSUMS_DATABASE   = '/n/Moorcroft_Lab/Lab/data/ed2_data/ed_inputs/',
@@ -2221,6 +2221,10 @@ $ED2_INFO
    !                     to the same polygon, even if they are in different sites.  They   !
    !                     can't go outside their original polygon, though.  This is the     !
    !                     same as option 1 if there is only one site per polygon.           !
+   !                 3.  Similar to 2, but recruits will only be formed if their phenology !
+   !                     status would be "leaves fully flushed".  This only matters for    !
+   !                     drought deciduous plants.  This option is for testing purposes    !
+   !                     only, think 50 times before using it...                           !
    !---------------------------------------------------------------------------------------!
    REPRO_SCHEME    = 2,
    !---------------------------------------------------------------------------------------!
@@ -2287,9 +2291,9 @@ $ED2_INFO
    LTRANS_NIR     =  0.270,
    LREFLECT_VIS   =  0.100,
    LREFLECT_NIR   =  0.540,
-   ORIENT_TREE    =  0.150,
-   ORIENT_GRASS   = -0.050,
-   CLUMP_TREE     =  1.000,
+   ORIENT_TREE    =  0.100,
+   ORIENT_GRASS   = -0.100,
+   CLUMP_TREE     =  0.800,
    CLUMP_GRASS    =  1.000,
    !---------------------------------------------------------------------------------------!
 
@@ -2325,7 +2329,7 @@ $ED2_INFO
    !                      depth, H it the crown height and psi_fc and psi_wp are the       !
    !                      matric potentials at wilting point and field capacity.  This is  !
    !---------------------------------------------------------------------------------------!
-   H2O_PLANT_LIM   = 1,
+   H2O_PLANT_LIM   = 2,
    !---------------------------------------------------------------------------------------!
 
 
@@ -2410,7 +2414,7 @@ $ED2_INFO
    !                       ing point is by definition -1.5MPa, so make sure that the value !
    !                       is above -1.5.                                                  !
    !---------------------------------------------------------------------------------------!
-   THETACRIT       = -1.28,
+   THETACRIT       = -1.15,
    !---------------------------------------------------------------------------------------!
 
 
@@ -2469,9 +2473,9 @@ $ED2_INFO
    !                           potential is defined as -3.1 MPa, so make sure SM_FIRE is   !
    !                           greater than this value.                                    !
    !---------------------------------------------------------------------------------------!
-   INCLUDE_FIRE    = 2,
-   FIRE_PARAMETER  = 1.,
-   SM_FIRE         = 0.07,
+   INCLUDE_FIRE    =     2,
+   FIRE_PARAMETER  =   0.1,
+   SM_FIRE         = -1.45,
    !---------------------------------------------------------------------------------------!
 
 
@@ -2565,8 +2569,8 @@ $ED2_INFO
    ! MIN_PATCH_AREA -- This is the minimum fraction area of a given soil type that allows  !
    !                   a site to be created (ignored if IED_INIT_MODE is set to 3).        !
    !---------------------------------------------------------------------------------------!
-   MAXPATCH       =    15,
-   MAXCOHORT      =    72,
+   MAXPATCH       =    10,
+   MAXCOHORT      =    60,
    MIN_PATCH_AREA = 0.005,
    !---------------------------------------------------------------------------------------!
 

@@ -162,6 +162,21 @@ module grell_coms
                           , 813.0 , 886.0 , 947.0 ,1138.0 ,1377.0 ,1896.0                 /)
   !----------------------------------------------------------------------------------------!
 
+
+  !----------------------------------------------------------------------------------------!
+  !      List of maximum and minimum values that are acceptable.                           !
+  !----------------------------------------------------------------------------------------!
+  real, parameter :: grellmax_zcheck = 9000.  ! Maximum height to test         [        m]
+  real, parameter :: grell_lapse_wet = 0.0045 ! Typical lapse rate             [      K/m]
+  real, parameter :: grellmin_t0     = 184.   ! Minimum surface temperature    [        K]
+  real, parameter :: grellmax_t0     = 341.   ! Maximum surface temperature    [        K]
+  real, parameter :: grellmin_rhv    = 0.001  ! Minimum relative humidity      [      ---]
+  real, parameter :: grellmax_rhv    = 1.0    ! Maximum relative humidity      [      ---]
+  real, parameter :: grellmin_co2    = 50.    ! Minimum CO2 mixing ratio       [ µmol/mol]
+  real, parameter :: grellmax_co2    = 1000.  ! Maximum CO2 mixing ratio       [ µmol/mol]
+  !----------------------------------------------------------------------------------------!
+
+
   contains
 !==========================================================================================!
 !==========================================================================================!

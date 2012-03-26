@@ -251,12 +251,12 @@ module growth_balive
                   cpatch%monthly_dndt(ico) = cpatch%monthly_dndt(ico) + dndt
 
 
-                  !----- Updating LAI, WPA, and WAI. --------------------------------------!
+                  !----- Updating LAI, WAI, and CAI. --------------------------------------!
                   call area_indices(cpatch%nplant(ico),cpatch%bleaf(ico)                   &
                                    ,cpatch%bdead(ico),cpatch%balive(ico),cpatch%dbh(ico)   &
                                    ,cpatch%hite(ico) ,cpatch%pft(ico),cpatch%sla(ico)      &
-                                   ,cpatch%lai(ico),cpatch%wpa(ico),cpatch%wai(ico)        &
-                                   ,cpatch%crown_area(ico),cpatch%bsapwooda(ico))
+                                   ,cpatch%lai(ico),cpatch%wai(ico),cpatch%crown_area(ico) &
+                                   ,cpatch%bsapwooda(ico))
 
                   !----- Update above-ground biomass. -------------------------------------!
                   cpatch%agb(ico) = ed_biomass(cpatch%bdead(ico),cpatch%bleaf(ico)         &
@@ -1337,7 +1337,7 @@ end subroutine alloc_plant_c_balance_grass
                                , q            & ! intent(in)
                                , qsw          & ! intent(in)
                                , agf_bs       & ! intent(in)
-                               , c2n_stem     ! ! intent(in)4
+                               , c2n_stem     ! ! intent(in)
       use decomp_coms   , only : f_labile     ! ! intent(in)
       use allometry     , only : dbh2bl       ! ! function
       implicit none
@@ -1563,7 +1563,6 @@ end subroutine alloc_plant_c_balance_grass
    end subroutine alloc_plant_c_balance_eq_0
    !=======================================================================================!
    !=======================================================================================!
-
 
 
 

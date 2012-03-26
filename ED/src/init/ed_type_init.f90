@@ -59,9 +59,6 @@ subroutine init_ed_cohort_vars(cpatch,ico, lsl)
    cpatch%light_level     (ico)  = 0.0
    cpatch%light_level_beam(ico)  = 0.0
    cpatch%light_level_diff(ico)  = 0.0
-   cpatch%beamext_level   (ico)  = 0.0
-   cpatch%diffext_level   (ico)  = 0.0
-   cpatch%lambda_light(ico)      = 0.0
 
    cpatch%gpp(ico)                 = 0.0
    cpatch%leaf_respiration(ico)    = 0.0
@@ -141,31 +138,6 @@ subroutine init_ed_cohort_vars(cpatch,ico, lsl)
    !---------------------------------------------------------------------------------------!
 
 
-   !---------------------------------------------------------------------------------------!
-   !    The stomate structure.  This is initialised with zeroes except for the "recalc"    !
-   ! element, which should be set to 1 so the photosynthesis will be solved exactly at the !
-   ! first time.                                                                           !
-   !---------------------------------------------------------------------------------------!
-   cpatch%old_stoma_data(ico)%recalc           = 1
-   cpatch%old_stoma_data(ico)%T_L              = 0.0
-   cpatch%old_stoma_data(ico)%e_A              = 0.0
-   cpatch%old_stoma_data(ico)%PAR              = 0.0
-   cpatch%old_stoma_data(ico)%rb_factor        = 0.0
-   cpatch%old_stoma_data(ico)%prss             = 0.0
-   cpatch%old_stoma_data(ico)%phenology_factor = 0.0
-   cpatch%old_stoma_data(ico)%gsw_open         = 0.0
-   cpatch%old_stoma_data(ico)%ilimit           = 0
-   cpatch%old_stoma_data(ico)%T_L_residual     = 0.0
-   cpatch%old_stoma_data(ico)%e_a_residual     = 0.0
-   cpatch%old_stoma_data(ico)%par_residual     = 0.0
-   cpatch%old_stoma_data(ico)%rb_residual      = 0.0
-   cpatch%old_stoma_data(ico)%leaf_residual    = 0.0
-   cpatch%old_stoma_data(ico)%gsw_residual     = 0.0
-   cpatch%old_stoma_vector(:,ico) = 0.
-   cpatch%old_stoma_vector(1,ico) = 1.
-   !---------------------------------------------------------------------------------------!
-
-
 
 
    !---------------------------------------------------------------------------------------!
@@ -241,15 +213,12 @@ subroutine init_ed_cohort_vars(cpatch,ico, lsl)
       cpatch%mmean_light_level      (ico) = 0.0
       cpatch%mmean_light_level_beam (ico) = 0.0
       cpatch%mmean_light_level_diff (ico) = 0.0
-      cpatch%mmean_beamext_level    (ico) = 0.0
-      cpatch%mmean_diffext_level    (ico) = 0.0
       cpatch%mmean_fs_open          (ico) = 0.0
       cpatch%mmean_fsw              (ico) = 0.0
       cpatch%mmean_fsn              (ico) = 0.0
       cpatch%mmean_psi_open         (ico) = 0.0
       cpatch%mmean_psi_closed       (ico) = 0.0
       cpatch%mmean_water_supply     (ico) = 0.0
-      cpatch%mmean_lambda_light     (ico) = 0.0
       cpatch%mmean_leaf_maintenance (ico) = 0.0
       cpatch%mmean_root_maintenance (ico) = 0.0
       cpatch%mmean_leaf_drop        (ico) = 0.0
@@ -281,15 +250,12 @@ subroutine init_ed_cohort_vars(cpatch,ico, lsl)
       cpatch%dmean_light_level      (ico) = 0.0
       cpatch%dmean_light_level_beam (ico) = 0.0
       cpatch%dmean_light_level_diff (ico) = 0.0
-      cpatch%dmean_beamext_level    (ico) = 0.0
-      cpatch%dmean_diffext_level    (ico) = 0.0
       cpatch%dmean_fsw              (ico) = 0.0
       cpatch%dmean_fsn              (ico) = 0.0
       cpatch%dmean_fs_open          (ico) = 0.0
       cpatch%dmean_psi_open         (ico) = 0.0
       cpatch%dmean_psi_closed       (ico) = 0.0
       cpatch%dmean_water_supply     (ico) = 0.0
-      cpatch%dmean_lambda_light     (ico) = 0.0
    end if
 
 
@@ -387,15 +353,6 @@ subroutine init_ed_patch_vars(csite,ip1,ip2,lsl)
    !---------------------------------------------------------------------------------------!
 
 
-
-   do ipa = ip1,ip2
-      !------ Make sure photosynthesis will be calculated at the first time. --------------!
-      do ipft = 1,n_pft
-         csite%old_stoma_data_max(ipft,ipa)%recalc = 1
-      end do
-   end do
-
-
    !------ Initialise soil state variables. -----------------------------------------------!
    csite%soil_water(1:nzg,ip1:ip2)     = 0.0
    csite%soil_energy(1:nzg,ip1:ip2)   = 0.0
@@ -431,7 +388,6 @@ subroutine init_ed_patch_vars(csite,ip1,ip2,lsl)
    csite%f_decomp(ip1:ip2)             = 0.0
    csite%rh(ip1:ip2)                   = 0.0
    csite%cwd_rh(ip1:ip2)               = 0.0
-   csite%fuse_flag(ip1:ip2)            = 0.0
    csite%plant_ag_biomass(ip1:ip2)     = 0.0
 
    csite%mean_runoff(ip1:ip2) = 0.0
@@ -488,7 +444,6 @@ subroutine init_ed_patch_vars(csite,ip1,ip2,lsl)
       csite%dmean_co2_residual    (ip1:ip2) = 0.0
       csite%dmean_energy_residual (ip1:ip2) = 0.0
       csite%dmean_water_residual  (ip1:ip2) = 0.0
-      csite%dmean_lambda_light    (ip1:ip2) = 0.0
       csite%dmean_rk4step         (ip1:ip2) = 0.0
       csite%dmean_albedo          (ip1:ip2) = 0.0
       csite%dmean_albedo_beam     (ip1:ip2) = 0.0
@@ -502,7 +457,6 @@ subroutine init_ed_patch_vars(csite,ip1,ip2,lsl)
       csite%mmean_co2_residual    (ip1:ip2) = 0.0
       csite%mmean_energy_residual (ip1:ip2) = 0.0
       csite%mmean_water_residual  (ip1:ip2) = 0.0
-      csite%mmean_lambda_light    (ip1:ip2) = 0.0
       csite%mmean_rk4step         (ip1:ip2) = 0.0
       csite%mmean_albedo          (ip1:ip2) = 0.0
       csite%mmean_albedo_beam     (ip1:ip2) = 0.0
@@ -546,7 +500,6 @@ subroutine init_ed_patch_vars(csite,ip1,ip2,lsl)
    csite%avg_runoff           (ip1:ip2) = 0.0
    csite%avg_drainage         (ip1:ip2) = 0.0
    csite%avg_drainage_heat    (ip1:ip2) = 0.0
-   csite%aux                  (ip1:ip2) = 0.0
    csite%avg_sensible_lc      (ip1:ip2) = 0.0
    csite%avg_sensible_wc      (ip1:ip2) = 0.0
    csite%avg_qwshed_vg        (ip1:ip2) = 0.0
@@ -558,7 +511,6 @@ subroutine init_ed_patch_vars(csite,ip1,ip2,lsl)
    csite%avg_sensible_gg    (:,ip1:ip2) = 0.0
    csite%avg_smoist_gg      (:,ip1:ip2) = 0.0
    csite%avg_transloss      (:,ip1:ip2) = 0.0
-   csite%aux_s              (:,ip1:ip2) = 0.0
    csite%avg_available_water  (ip1:ip2) = 0.0
    csite%avg_leaf_energy      (ip1:ip2) = 0.0 
    csite%avg_leaf_temp        (ip1:ip2) = 0.0 
@@ -591,7 +543,6 @@ subroutine init_ed_patch_vars(csite,ip1,ip2,lsl)
    csite%albedo_diffuse       (ip1:ip2) = 0.0
    csite%rlongup              (ip1:ip2) = 0.0
    csite%rlong_albedo         (ip1:ip2) = 0.0
-   csite%lambda_light         (ip1:ip2) = 0.0
 
    csite%fsc_in                      (ip1:ip2) = 0.0
    csite%ssc_in                      (ip1:ip2) = 0.0
@@ -629,28 +580,6 @@ subroutine init_ed_patch_vars(csite,ip1,ip2,lsl)
    csite%ggveg (ip1:ip2) = 0.0
    csite%ggnet (ip1:ip2) = 0.0
    csite%ggsoil(ip1:ip2) = 0.0
-
-   csite%old_stoma_data_max(:,ip1:ip2)%recalc = 1
-   csite%old_stoma_data_max(:,ip1:ip2)%T_L = 0.0
-   csite%old_stoma_data_max(:,ip1:ip2)%e_A              = 0.0
-   csite%old_stoma_data_max(:,ip1:ip2)%PAR              = 0.0
-   csite%old_stoma_data_max(:,ip1:ip2)%rb_factor        = 0.0
-   csite%old_stoma_data_max(:,ip1:ip2)%prss             = 0.0
-   csite%old_stoma_data_max(:,ip1:ip2)%phenology_factor = 0.0
-   csite%old_stoma_data_max(:,ip1:ip2)%gsw_open         = 0.0
-   csite%old_stoma_data_max(:,ip1:ip2)%ilimit           = 0
-   csite%old_stoma_data_max(:,ip1:ip2)%T_L_residual     = 0.0
-   csite%old_stoma_data_max(:,ip1:ip2)%e_a_residual     = 0.0
-   csite%old_stoma_data_max(:,ip1:ip2)%par_residual     = 0.0
-   csite%old_stoma_data_max(:,ip1:ip2)%rb_residual      = 0.0
-   csite%old_stoma_data_max(:,ip1:ip2)%leaf_residual    = 0.0
-   csite%old_stoma_data_max(:,ip1:ip2)%gsw_residual     = 0.0
-   
-   
-   csite%old_stoma_vector_max(:,:,ip1:ip2) = 0.
-   csite%old_stoma_vector_max(1,:,ip1:ip2) =                                               &
-                                         real(csite%old_stoma_data_max(:,ip1:ip2)%recalc)
-
 
    ncohorts = 0
    do ipa=1,csite%npatches

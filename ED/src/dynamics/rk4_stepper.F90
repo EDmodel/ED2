@@ -733,7 +733,6 @@ module rk4_stepper
                write(unit=*,fmt='(a,1x,es12.4)') ' HEIGHT:        ',cpatch%hite(ico)
                write(unit=*,fmt='(a,1x,es12.4)') ' LAI:           ',y%lai(ico)
                write(unit=*,fmt='(a,1x,es12.4)') ' WAI:           ',y%wai(ico)
-               write(unit=*,fmt='(a,1x,es12.4)') ' WPA:           ',y%wpa(ico)
                write(unit=*,fmt='(a,1x,es12.4)') ' TAI:           ',y%tai(ico)
                write(unit=*,fmt='(a,1x,es12.4)') ' NPLANT:        ',y%nplant(ico)
                write(unit=*,fmt='(a,1x,es12.4)') ' CROWN_AREA:    ',y%crown_area(ico)
@@ -772,7 +771,6 @@ module rk4_stepper
                write(unit=*,fmt='(a,1x,es12.4)') ' HEIGHT:        ',cpatch%hite(ico)
                write(unit=*,fmt='(a,1x,es12.4)') ' LAI:           ',y%lai(ico)
                write(unit=*,fmt='(a,1x,es12.4)') ' WAI:           ',y%wai(ico)
-               write(unit=*,fmt='(a,1x,es12.4)') ' WPA:           ',y%wpa(ico)
                write(unit=*,fmt='(a,1x,es12.4)') ' TAI:           ',y%tai(ico)
                write(unit=*,fmt='(a,1x,es12.4)') ' NPLANT:        ',y%nplant(ico)
                write(unit=*,fmt='(a,1x,es12.4)') ' CROWN_AREA:    ',y%crown_area(ico)
@@ -828,7 +826,6 @@ module rk4_stepper
                write(unit=*,fmt='(a,1x,es12.4)') ' HEIGHT:        ',cpatch%hite(ico)
                write(unit=*,fmt='(a,1x,es12.4)') ' LAI:           ',y%lai(ico)
                write(unit=*,fmt='(a,1x,es12.4)') ' WAI:           ',y%wai(ico)
-               write(unit=*,fmt='(a,1x,es12.4)') ' WPA:           ',y%wpa(ico)
                write(unit=*,fmt='(a,1x,es12.4)') ' TAI:           ',y%tai(ico)
                write(unit=*,fmt='(a,1x,es12.4)') ' NPLANT:        ',y%nplant(ico)
                write(unit=*,fmt='(a,1x,es12.4)') ' CROWN_AREA:    ',y%crown_area(ico)
@@ -867,7 +864,6 @@ module rk4_stepper
                write(unit=*,fmt='(a,1x,es12.4)') ' HEIGHT:        ',cpatch%hite(ico)
                write(unit=*,fmt='(a,1x,es12.4)') ' LAI:           ',y%lai(ico)
                write(unit=*,fmt='(a,1x,es12.4)') ' WAI:           ',y%wai(ico)
-               write(unit=*,fmt='(a,1x,es12.4)') ' WPA:           ',y%wpa(ico)
                write(unit=*,fmt='(a,1x,es12.4)') ' TAI:           ',y%tai(ico)
                write(unit=*,fmt='(a,1x,es12.4)') ' NPLANT:        ',y%nplant(ico)
                write(unit=*,fmt='(a,1x,es12.4)') ' CROWN_AREA:    ',y%crown_area(ico)
@@ -1202,30 +1198,28 @@ module rk4_stepper
       write(unit=*,fmt='(a)') ' '
       write(unit=*,fmt='(78a)') ('-',k=1,78)
       cpatch => csite%patch(ipa)
-      write (unit=*,fmt='(2(a5,1x),8(a12,1x))')                                            &
-         '  COH','  PFT','         LAI','         WAI','         WPA','         TAI'       &
-                        ,' LEAF_ENERGY',' OLD_LEAF_EN','   LEAF_TEMP','OLD_LEAF_TMP'
+      write (unit=*,fmt='(2(a5,1x),7(a12,1x))')                                            &
+         '  COH','  PFT','         LAI','         WAI','         TAI',' LEAF_ENERGY'       &
+                        ,' OLD_LEAF_EN','   LEAF_TEMP','OLD_LEAF_TMP'
       do ico = 1,cpatch%ncohorts
          if(y%leaf_resolvable(ico)) then
-            write(unit=*,fmt='(2(i5,1x),8(es12.4,1x))')                                    &
-               ico,cpatch%pft(ico),y%lai(ico),y%wai(ico),y%wpa(ico),y%tai(ico)             &
-                  ,y%leaf_energy(ico),cpatch%leaf_energy(ico),y%leaf_temp(ico)             &
-                  ,cpatch%leaf_temp(ico)
+            write(unit=*,fmt='(2(i5,1x),7(es12.4,1x))')                                    &
+               ico,cpatch%pft(ico),y%lai(ico),y%wai(ico),y%tai(ico),y%leaf_energy(ico)     &
+                  ,cpatch%leaf_energy(ico),y%leaf_temp(ico),cpatch%leaf_temp(ico)
          end if
       end do
       write(unit=*,fmt='(78a)') ('-',k=1,78)
 
       write(unit=*,fmt='(a)') ' '
       write(unit=*,fmt='(78a)') ('-',k=1,78)
-      write (unit=*,fmt='(2(a5,1x),8(a12,1x))') &
-         '  COH','  PFT','         LAI','         WAI','         WPA','         TAI'       &
-                        ,'  LEAF_WATER','OLD_LEAF_H2O','   LEAF_HCAP','   LEAF_FLIQ'
+      write (unit=*,fmt='(2(a5,1x),7(a12,1x))') &
+         '  COH','  PFT','         LAI','         WAI','         TAI','  LEAF_WATER'       &
+                        ,'OLD_LEAF_H2O','   LEAF_HCAP','   LEAF_FLIQ'
       do ico = 1,cpatch%ncohorts
          if(y%leaf_resolvable(ico)) then
-            write(unit=*,fmt='(2(i5,1x),8(es12.4,1x))')                                    &
-               ico,cpatch%pft(ico),y%lai(ico),y%wai(ico),y%wpa(ico),y%tai(ico)             &
-                  ,y%leaf_water(ico),cpatch%leaf_water(ico),cpatch%leaf_hcap(ico)          &
-                  ,y%leaf_hcap(ico)
+            write(unit=*,fmt='(2(i5,1x),7(es12.4,1x))')                                    &
+               ico,cpatch%pft(ico),y%lai(ico),y%wai(ico),y%tai(ico),y%leaf_water(ico)      &
+                  ,cpatch%leaf_water(ico),cpatch%leaf_hcap(ico),y%leaf_hcap(ico)
          end if
       end do
       write(unit=*,fmt='(78a)') ('-',k=1,78)
@@ -1234,30 +1228,28 @@ module rk4_stepper
       write(unit=*,fmt='(a)') ' '
       write(unit=*,fmt='(78a)') ('-',k=1,78)
       cpatch => csite%patch(ipa)
-      write (unit=*,fmt='(2(a5,1x),8(a12,1x))')                                            &
-         '  COH','  PFT','         LAI','         WAI','         WPA','         TAI'       &
-                        ,' WOOD_ENERGY',' OLD_WOOD_EN','   WOOD_TEMP','OLD_WOOD_TMP'
+      write (unit=*,fmt='(2(a5,1x),7(a12,1x))')                                            &
+         '  COH','  PFT','         LAI','         WAI','         TAI',' WOOD_ENERGY'       &
+                        ,' OLD_WOOD_EN','   WOOD_TEMP','OLD_WOOD_TMP'
       do ico = 1,cpatch%ncohorts
          if(y%wood_resolvable(ico)) then
-            write(unit=*,fmt='(2(i5,1x),8(es12.4,1x))')                                    &
-               ico,cpatch%pft(ico),y%lai(ico),y%wai(ico),y%wpa(ico),y%tai(ico)             &
-                  ,y%wood_energy(ico),cpatch%wood_energy(ico),y%wood_temp(ico)             &
-                  ,cpatch%wood_temp(ico)
+            write(unit=*,fmt='(2(i5,1x),7(es12.4,1x))')                                    &
+               ico,cpatch%pft(ico),y%lai(ico),y%wai(ico),y%tai(ico),y%wood_energy(ico)     &
+                  ,cpatch%wood_energy(ico),y%wood_temp(ico),cpatch%wood_temp(ico)
          end if
       end do
       write(unit=*,fmt='(78a)') ('-',k=1,78)
 
       write(unit=*,fmt='(a)') ' '
       write(unit=*,fmt='(78a)') ('-',k=1,78)
-      write (unit=*,fmt='(2(a5,1x),8(a12,1x))') &
-         '  COH','  PFT','         LAI','         WAI','         WPA','         TAI'       &
-                        ,'  WOOD_WATER','OLD_WOOD_H2O','   WOOD_HCAP','   WOOD_FLIQ'
+      write (unit=*,fmt='(2(a5,1x),7(a12,1x))') &
+         '  COH','  PFT','         LAI','         WAI','         TAI','  WOOD_WATER'       &
+                        ,'OLD_WOOD_H2O','   WOOD_HCAP','   WOOD_FLIQ'
       do ico = 1,cpatch%ncohorts
          if(y%wood_resolvable(ico)) then
-            write(unit=*,fmt='(2(i5,1x),8(es12.4,1x))')                                    &
-               ico,cpatch%pft(ico),y%lai(ico),y%wai(ico),y%wpa(ico),y%tai(ico)             &
-                  ,y%wood_water(ico),cpatch%wood_water(ico),cpatch%wood_hcap(ico)          &
-                  ,y%wood_hcap(ico)
+            write(unit=*,fmt='(2(i5,1x),7(es12.4,1x))')                                    &
+               ico,cpatch%pft(ico),y%lai(ico),y%wai(ico),y%tai(ico),y%wood_water(ico)      &
+                  ,cpatch%wood_water(ico),cpatch%wood_hcap(ico),y%wood_hcap(ico)
          end if
       end do
       write(unit=*,fmt='(78a)') ('-',k=1,78)

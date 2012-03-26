@@ -721,12 +721,12 @@ subroutine read_ed10_ed20_history_file
 
 
 
-                        !----- Assign LAI, WPA, and WAI -----------------------------------!
+                        !----- Assign LAI, WAI, and CAI -----------------------------------!
                         call area_indices(cpatch%nplant(ic2),cpatch%bleaf(ic2)             &
                                          ,cpatch%bdead(ic2),cpatch%balive(ic2)             &
                                          ,cpatch%dbh(ic2), cpatch%hite(ic2)                &
                                          ,cpatch%pft(ic2), SLA(cpatch%pft(ic2))            &
-                                         ,cpatch%lai(ic2),cpatch%wpa(ic2), cpatch%wai(ic2) &
+                                         ,cpatch%lai(ic2), cpatch%wai(ic2)                 &
                                          ,cpatch%crown_area(ic2),cpatch%bsapwooda(ic2))
 
                         !----- Initialise the carbon balance. -----------------------------!
@@ -777,17 +777,15 @@ subroutine read_ed10_ed20_history_file
             area_tot      = sum(csite%area(1:csite%npatches))
             csite%area(:) = csite%area(:)/area_tot
 
-            !----- Find the patch-level LAI, WPA, and WAI. --------------------------------!
+            !----- Find the patch-level LAI, WAI, and CAI. --------------------------------!
             do ipa=1,csite%npatches
                area_sum        = area_sum + csite%area(ipa)
                csite%lai(ipa)  = 0.0
-               csite%wpa(ipa)  = 0.0
                csite%wai(ipa)  = 0.0
                
                cpatch => csite%patch(ipa)
                do ico = 1,cpatch%ncohorts
                   csite%lai(ipa)  = csite%lai(ipa) + cpatch%lai(ico)
-                  csite%wpa(ipa)  = csite%wpa(ipa) + cpatch%wpa(ico)
                   csite%wai(ipa)  = csite%wai(ipa) + cpatch%wai(ico)
                   ncohorts        = ncohorts + 1
                end do
@@ -826,7 +824,6 @@ subroutine read_ed10_ed20_history_file
 
             do ipa = 1,csite%npatches
                csite%lai(ipa)  = 0.0
-               csite%wpa(ipa)  = 0.0
                csite%wai(ipa)  = 0.0
                npatchco        = 0
 
@@ -835,7 +832,6 @@ subroutine read_ed10_ed20_history_file
                   ncohorts        = ncohorts+1
                   npatchco        = npatchco+1
                   csite%lai(ipa)  = csite%lai(ipa)  + cpatch%lai(ico)
-                  csite%wpa(ipa)  = csite%wpa(ipa)  + cpatch%wpa(ico)
                   csite%wai(ipa)  = csite%wai(ipa)  + cpatch%wai(ico)
                end do
 

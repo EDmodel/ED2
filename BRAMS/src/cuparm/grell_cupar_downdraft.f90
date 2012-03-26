@@ -307,7 +307,7 @@ subroutine grell_most_thermo_downdraft(mkx,mgmzp,klod,qtot,co2,mentrd_rate,cdd,p
    real, dimension(mgmzp), intent(in)    :: mentrd_rate ! Entrainment rate;        [   1/m]
    real, dimension(mgmzp), intent(in)    :: cdd         ! Detrainment function;    [   1/m]
    !----- Variables at cloud levels -------------------------------------------------------!
-   real, dimension(mgmzp), intent(in)    :: p_cup       ! Pressure @ cloud levels  [   1/m]
+   real, dimension(mgmzp), intent(in)    :: p_cup       ! Pressure @ cloud levels  [    Pa]
    real, dimension(mgmzp), intent(in)    :: exner_cup   ! Exner fctn. @ cloud lev. [J/kg/K]
    real, dimension(mgmzp), intent(in)    :: thil_cup    ! Theta_il                 [     K]
    real, dimension(mgmzp), intent(in)    :: t_cup       ! Temperature              [     K]

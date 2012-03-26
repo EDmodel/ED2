@@ -500,6 +500,12 @@ subroutine ed_opspec_times
       !   Check outfast setting and adjusting it if needed. Depending on the               !
       ! configuration, this will cause the run to crash.                                   !
       !------------------------------------------------------------------------------------!
+      elseif (frqfast < 10*60) then
+         write(reason,fmt='(a,1x,a,1x,es14.7)')                                    &
+             'FRQFAST must be greater than 10min (600 sec) when daily and/or monthly'    &
+            ,'analysis are on or you will create a memory leak. Yours is set to ',frqfast
+         call opspec_fatal(reason,'opspec_misc')
+         ifaterr = ifaterr +1
       elseif(outfast == 0.) then
          !----- User didn't specify any outfast, use frqfast ------------------------------!
          outfast    = frqfast
@@ -909,8 +915,6 @@ subroutine ed_opspec_times
       !------------------------------------------------------------------------------------!
       elseif (outstate /= 0. .or. outstate > frqstate) then
 
-         outstate = frqstate
-         nrec_state = 1
          write (unit=*,fmt='(a)') ' '
          write (unit=*,fmt='(a)') '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
          write (unit=*,fmt='(a)') '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
@@ -920,10 +924,14 @@ subroutine ed_opspec_times
          write (unit=*,fmt='(a)') ' -> Outstate cannot be different than frqstate when'
          write (unit=*,fmt='(a)') '    unitstate is set to 3 (years).'
          write (unit=*,fmt='(a,1x,f7.0,1x,a)')                                             &
-                                  '    Oustate was redefined to ',outstate,'years.'
+                                  '    Oustate was set to ',outstate,'years.'
+         write (unit=*,fmt='(a,1x,f7.0,1x,a)')                                             &
+                                  '    Oustate was redefined to ',frqstate,'years.'
          write (unit=*,fmt='(a)') '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
          write (unit=*,fmt='(a)') '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
          write (unit=*,fmt='(a)') ' '
+         outstate = frqstate
+         nrec_state = 1
       else !----- The user either knew or was lucky, don't print the banner ---------------!
          outstate = frqstate
          nrec_state = 1
@@ -1161,7 +1169,6 @@ subroutine ed_opspec_misc
                                     , lwidth_nltree                & ! intent(in)
                                     , q10_c3                       & ! intent(in)
                                     , q10_c4                       & ! intent(in)
-                                    , lturnover_grass              & ! intent(in)
                                     , quantum_efficiency_T         ! ! intent(in)
    use decomp_coms           , only : n_decomp_lim                 ! ! intent(in)
    use disturb_coms          , only : include_fire                 & ! intent(in)
@@ -1172,6 +1179,7 @@ subroutine ed_opspec_misc
                                     , treefall_disturbance_rate    & ! intent(in)
                                     , min_patch_area               ! ! intent(in)
    use phenology_coms        , only : iphen_scheme                 & ! intent(in)
+                                    , repro_scheme                 & ! intent(in)
                                     , radint                       & ! intent(in)
                                     , radslp                       & ! intent(in)
                                     , thetacrit                    ! ! intent(in)
@@ -1561,6 +1569,14 @@ end do
       ifaterr = ifaterr +1
    end if
 
+   if (repro_scheme < 0 .or. repro_scheme > 3) then
+      write (reason,fmt='(a,1x,i4,a)')                                                     &
+                    'Invalid REPRO_SCHEME, it must be between  0 and 3. Yours is set to'   &
+                    ,repro_scheme,'...'
+      call opspec_fatal(reason,'opspec_misc')
+      ifaterr = ifaterr +1
+   end if
+
    if (radint < -100.0 .or. radint > 100.0) then
       write (reason,fmt='(a,1x,es12.5,a)')                                                 &
                     'Invalid RADINT, it must be between -100 and 100. Yours is set to'     &
@@ -1776,14 +1792,6 @@ end do
       ifaterr = ifaterr +1
    end if
 
-   if (lturnover_grass < 1.0 .or. lturnover_grass > 10.) then
-      write (reason,fmt='(a,1x,es12.5,a)')                                                 &
-                    'Invalid LTURNOVER_GRASS, it must be between 1.0 and 10.  Yours is set to'      &
-                    ,lturnover_grass,'...'
-      call opspec_fatal(reason,'opspec_misc')
-      ifaterr = ifaterr +1
-   end if
- 
    if (thetacrit < -1.49 .or. thetacrit > 1.) then
       write (reason,fmt='(a,1x,es12.5,a)')                                                 &
                     'Invalid THETACRIT, it must be between -1.49 and 1. Yours is set to'   &

@@ -400,11 +400,11 @@ subroutine event_harvest(agb_frac8,bgb_frac8,fol_frac8,stor_frac8)
                     cpatch%hite(ico) = 0.0
                  end if
                  
-                 !----- Update LAI, WPA, and WAI ------------------------------------------!
+                 !----- Update LAI, WAI, and CAI ------------------------------------------!
                  call area_indices(cpatch%nplant(ico),cpatch%bleaf(ico),cpatch%bdead(ico)  &
                                   ,cpatch%balive(ico),cpatch%dbh(ico), cpatch%hite(ico)    &
                                   ,cpatch%pft(ico),cpatch%sla(ico), cpatch%lai(ico)        &
-                                  ,cpatch%wpa(ico),cpatch%wai(ico), cpatch%crown_area(ico) &
+                                  ,cpatch%wai(ico), cpatch%crown_area(ico)                 &
                                   ,cpatch%bsapwooda(ico))
 
                  !----- Update basal area and above-ground biomass. -----------------------!
@@ -765,7 +765,6 @@ subroutine event_till(rval8)
                  cpatch%bstorage(ico)         = 0.0
                  cpatch%nplant(ico)           = 0.0
                  cpatch%lai(ico)              = 0.0
-                 cpatch%wpa(ico)              = 0.0
                  cpatch%wai(ico)              = 0.0
                  cpatch%crown_area(ico)       = 0.0
                  cpatch%bleaf(ico)            = 0.0

@@ -399,14 +399,7 @@ subroutine sfcrad_ed(cosz,cosaoi,csite,mzg,mzs,ntext_soil,ncol_soil,maxcohort,tu
 
 
 
-      !----- Recalc the maximum photosynthetic rates next time around. --------------------!
-      csite%old_stoma_data_max(1:n_pft,ipa)%recalc = 1
-      !------------------------------------------------------------------------------------!
-
-
-
       !----- Set the light extinction to zero, just in case it is night time... -----------!
-      csite%lambda_light(ipa) = 0.0 
       lambda_tot              = 0.d0
       !------------------------------------------------------------------------------------!
 
@@ -457,14 +450,9 @@ subroutine sfcrad_ed(cosz,cosaoi,csite,mzg,mzs,ntext_soil,ncol_soil,maxcohort,tu
             cpatch%rlong_w_incid(ico)         = 0.0
             cpatch%rlong_w_surf(ico)          = 0.0
 
-            cpatch%old_stoma_data(ico)%recalc = 1
-            
             cpatch%light_level     (ico)      = 0.0
             cpatch%light_level_beam(ico)      = 0.0
             cpatch%light_level_diff(ico)      = 0.0
-            cpatch%lambda_light    (ico)      = 0.0
-            cpatch%beamext_level   (ico)      = 0.0
-            cpatch%diffext_level   (ico)      = 0.0
             if (cpatch%leaf_resolvable(ico) .or. cpatch%wood_resolvable(ico)) then
                !----- This will eventually have the index of the tallest used cohort. -----!
                tuco = ico
@@ -542,15 +530,10 @@ subroutine sfcrad_ed(cosz,cosaoi,csite,mzg,mzs,ntext_soil,ncol_soil,maxcohort,tu
             cpatch%rlong_w(1)               = 0.0
             cpatch%rlong_w_incid(1)         = 0.0
             cpatch%rlong_w_surf(1)          = 0.0
-
-            cpatch%old_stoma_data(1)%recalc = 1
             
             cpatch%light_level     (1)      = 0.0
             cpatch%light_level_beam(1)      = 0.0
             cpatch%light_level_diff(1)      = 0.0
-            cpatch%lambda_light    (1)      = 0.0
-            cpatch%beamext_level   (1)      = 0.0
-            cpatch%diffext_level   (1)      = 0.0
 
             !------------------------------------------------------------------------------!
             !     Check whether the cohort is resolvable or not.                           !
@@ -951,7 +934,6 @@ subroutine sfcrad_ed(cosz,cosaoi,csite,mzg,mzs,ntext_soil,ncol_soil,maxcohort,tu
                                                , tiny_offset )
             csite%albedo(ipa) = ( upward_par_above_beam    + upward_nir_above_beam         &
                                 + upward_par_above_diffuse + upward_nir_above_diffuse )
-            csite%lambda_light(ipa)   = sngloff(lambda_tot,tiny_offset)
             !------------------------------------------------------------------------------!
          else
 
@@ -972,7 +954,6 @@ subroutine sfcrad_ed(cosz,cosaoi,csite,mzg,mzs,ntext_soil,ncol_soil,maxcohort,tu
                                             + albedo_ground_nir * nir_beam_norm            &
                                             + albedo_ground_par * par_diff_norm            &
                                             + albedo_ground_nir * nir_diff_norm
-            csite%lambda_light(ipa)       = 0.0
          end if
 
          !---------------------------------------------------------------------------------!
@@ -1056,12 +1037,6 @@ subroutine sfcrad_ed(cosz,cosaoi,csite,mzg,mzs,ntext_soil,ncol_soil,maxcohort,tu
 
 
                   !----- Save the light levels. -------------------------------------------!
-                  cpatch%lambda_light     (ico) = sngloff(lambda_array          (il)       &
-                                                         ,tiny_offset )
-                  cpatch%beamext_level    (ico) = sngloff(beam_level_array      (il)       &
-                                                         ,tiny_offset )
-                  cpatch%diffext_level    (ico) = sngloff(diff_level_array      (il)       &
-                                                         ,tiny_offset )
                   cpatch%light_level      (ico) = sngloff(light_level_array     (il)       &
                                                          ,tiny_offset )
                   cpatch%light_level_beam (ico) = sngloff(light_beam_level_array(il)       &
@@ -1167,12 +1142,6 @@ subroutine sfcrad_ed(cosz,cosaoi,csite,mzg,mzs,ntext_soil,ncol_soil,maxcohort,tu
 
                !----- Save the light levels as the median level. --------------------------!
                il = ceiling(real(cohort_count)/2.0)
-               cpatch%lambda_light     (1) = sngloff(lambda_array          (il)            &
-                                                      ,tiny_offset )
-               cpatch%beamext_level    (1) = sngloff(beam_level_array      (il)            &
-                                                      ,tiny_offset )
-               cpatch%diffext_level    (1) = sngloff(diff_level_array      (il)            &
-                                                      ,tiny_offset )
                cpatch%light_level      (1) = sngloff(light_level_array     (il)            &
                                                       ,tiny_offset )
                cpatch%light_level_beam (1) = sngloff(light_beam_level_array(il)            &

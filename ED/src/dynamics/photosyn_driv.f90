@@ -5,7 +5,6 @@
 !------------------------------------------------------------------------------------------!
 subroutine canopy_photosynthesis(csite,cmet,mzg,ipa,lsl,ntext_soil                         &
                                 ,leaf_aging_factor,green_leaf_factor)
-
    use ed_state_vars  , only : sitetype           & ! structure
                              , patchtype          ! ! structure
    use ed_max_dims    , only : n_pft              ! ! intent(in)
@@ -17,8 +16,7 @@ subroutine canopy_photosynthesis(csite,cmet,mzg,ipa,lsl,ntext_soil              
    use soil_coms      , only : soil               & ! intent(in)
                              , slz                & ! intent(in)
                              , slzt               & ! intent(in)
-                             , dslz               & ! intent(in)
-                             , freezecoef         ! ! intent(in)
+                             , dslz               ! ! intent(in)
    use consts_coms    , only : t00                & ! intent(in)
                              , epi                & ! intent(in)
                              , wdnsi              & ! intent(in)
@@ -74,10 +72,6 @@ subroutine canopy_photosynthesis(csite,cmet,mzg,ipa,lsl,ntext_soil              
    real                                    :: broot_tot
    real                                    :: broot_loc
    real                                    :: wgpfrac
-   real                                    :: avg_fracliq
-   real                                    :: psi_wilting
-   real                                    :: psi_layer
-   real                                    :: freezecor
    real                                    :: water_demand
    real                                    :: psiplusz
    real                                    :: avail_h2o_lyr
@@ -104,11 +98,9 @@ subroutine canopy_photosynthesis(csite,cmet,mzg,ipa,lsl,ntext_soil              
 
    !----- Find the patch-level Total Leaf and Wood Area Index. ----------------------------!
    csite%lai(ipa) = 0.0
-   csite%wpa(ipa) = 0.0
    csite%wai(ipa) = 0.0
    do ico=1,cpatch%ncohorts
       csite%lai(ipa)  = csite%lai(ipa)  + cpatch%lai(ico)
-      csite%wpa(ipa)  = csite%wpa(ipa)  + cpatch%wpa(ico)
       csite%wai(ipa)  = csite%wai(ipa)  + cpatch%wai(ico)
    end do
    !---------------------------------------------------------------------------------------!
@@ -344,7 +336,6 @@ subroutine canopy_photosynthesis(csite,cmet,mzg,ipa,lsl,ntext_soil              
              , vm                          & ! Max. capacity of Rubisco         [µmol/m²/s]
              , compp                       & ! Gross photo. compensation point  [ µmol/mol]
              , limit_flag                  & ! Photosynthesis limitation flag   [      ---]
-             , csite%old_stoma_data_max(ipft,ipa) & ! Previous state            [      ---]
              )
          end if
       end do
@@ -425,7 +416,6 @@ subroutine canopy_photosynthesis(csite,cmet,mzg,ipa,lsl,ntext_soil              
              , vm                          & ! Max. capacity of Rubisco         [µmol/m²/s]
              , compp                       & ! Gross photo. compensation point  [ µmol/mol]
              , limit_flag                  & ! Photosynthesis limitation flag   [      ---]
-             , csite%old_stoma_data_max(ipft,ipa) & ! Previous state            [      ---]
              )
 
             !----- Convert leaf respiration to [µmol/m²ground/s] --------------------------!
@@ -459,7 +449,7 @@ subroutine canopy_photosynthesis(csite,cmet,mzg,ipa,lsl,ntext_soil              
                cpatch%fsw(ico) = 1.0
 
             case (1,2)
-               water_demand    = cpatch%psi_open(ico) * cpatch%lai(ico) 
+               water_demand    = cpatch%psi_open(ico) * cpatch%lai(ico)
                if (cpatch%water_supply (ico) < tiny_num) then
                   cpatch%fsw(ico) = 0.0
                else
