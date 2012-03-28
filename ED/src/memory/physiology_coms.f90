@@ -105,6 +105,7 @@ module physiology_coms
    !                  only.                                                                !
    ! Q10_C3        -- Q10 factor for C3 plants (used only if IPHYSIOL is set to 2 or 3).   !
    ! Q10_C4        -- Q10 factor for C4 plants (used only if IPHYSIOL is set to 2 or 3).   !
+   ! LTURNOVER_GRASS- Leave turnover rate for grasses (1/yr)                               !
    !---------------------------------------------------------------------------------------!
    real(kind=4)               :: vmfact_c3
    real(kind=4)               :: vmfact_c4
@@ -130,6 +131,7 @@ module physiology_coms
    real(kind=4)               :: lwidth_nltree
    real(kind=4)               :: q10_c3
    real(kind=4)               :: q10_c4
+   real(kind=4)               :: lturnover_grass
    !---------------------------------------------------------------------------------------!
 
    !---------------------------------------------------------------------------------------!

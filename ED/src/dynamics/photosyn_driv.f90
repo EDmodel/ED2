@@ -31,6 +31,7 @@ subroutine canopy_photosynthesis(csite,cmet,mzg,ipa,lsl,ntext_soil              
    use phenology_coms , only : llspan_inf         ! ! intent(in)
    use farq_leuning   , only : lphysiol_full      ! ! sub-routine
    use allometry      , only : h2crownbh          ! ! function
+
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    type(sitetype)            , target      :: csite             ! Current site

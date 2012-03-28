@@ -57,6 +57,7 @@ module mortality
       expmort                 = max( lnexp_min, min( lnexp_max                             &
                                                    , mort2(ipft) * cpatch%cbr_bar(ico)))
       cpatch%mort_rate(2,ico) = mort1(ipft) / (1. + exp(expmort))
+      
       !------------------------------------------------------------------------------------!
 
 

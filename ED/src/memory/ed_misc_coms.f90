@@ -218,4 +218,11 @@ Module ed_misc_coms
                      !      the height is 35.0m.
    !---------------------------------------------------------------------------------------!
 
+
+   !----- Namelist option for the new grass scheme. (ALS, Feb 2012) -----------------------!
+   integer :: igrass ! 0 -- Original ED-2.1 grasses (aka bonzai grass)
+                     ! 1 -- New grass scheme which has bdead = 0, height = f(bleaf), and   
+                     !      growth occurs daily
+   !---------------------------------------------------------------------------------------!
+   
 end module ed_misc_coms

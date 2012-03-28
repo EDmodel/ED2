@@ -317,7 +317,6 @@ subroutine inventory_mat_forests(cpoly,isi,area_mature_primary,agb_mature_primar
                             , patchtype           ! ! structure
    use disturb_coms  , only : plantation_rotation & ! intent(in)
                             , mature_harvest_age  ! ! intent(in)
-   use allometry     , only : ed_biomass          ! ! function
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    type(polygontype) , target      :: cpoly
