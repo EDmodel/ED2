@@ -643,6 +643,7 @@ module fuse_fiss_utils
                                      , b1Ht                & ! intent(in)
                                      , hgt_max             & ! intent(in)
                                      , sla                 & ! intent(in)
+                                     , is_grass            & ! intent(in)
                                      , hgt_ref             ! ! intent(in)
       use fusion_fission_coms , only : fusetol_h           & ! intent(in)
                                      , fusetol             & ! intent(in)
@@ -654,6 +655,7 @@ module fuse_fiss_utils
       use canopy_layer_coms   , only : crown_mod           ! ! intent(in)
       use allometry           , only : dbh2h               & ! function
                                      , dbh2bl              ! ! function
+      use ed_misc_coms        , only : igrass              ! ! intent(in)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       type(sitetype)         , target      :: csite             ! Current site
@@ -763,11 +765,19 @@ module fuse_fiss_utils
                   ! leaves fully flushed, this is the same as adding the individual LAIs,  !
                   ! but if they are not, we need to consider that LAI may grow...          !
                   !------------------------------------------------------------------------!
-                  lai_max = ( cpatch%nplant(recc)                                          &
-                            * dbh2bl(cpatch%dbh(recc),cpatch%pft(recc))                    &
-                            + cpatch%nplant(donc)                                          &
-                            * dbh2bl(cpatch%dbh(donc),cpatch%pft(donc)))                   &
-                          * cpatch%sla(recc)
+                  if (is_grass(cpatch%pft(donc)) .and. igrass==1) then
+                      !--use actual bleaf for grass
+                      lai_max = ( cpatch%nplant(recc) * cpatch%bleaf(recc)                 &
+                                + cpatch%nplant(donc) * cpatch%bleaf(donc) )               &
+                                * cpatch%sla(recc)
+                  else
+                      !--use dbh for trees
+                      lai_max = ( cpatch%nplant(recc)                                      &
+                                * dbh2bl(cpatch%dbh(recc),cpatch%pft(recc))                &
+                                + cpatch%nplant(donc)                                      &
+                                * dbh2bl(cpatch%dbh(donc),cpatch%pft(donc)))               &
+                                * cpatch%sla(recc)
+                  end if
 
                   !----- Checking the total size of this cohort before and after fusion. --!
                   total_size = cpatch%nplant(donc) * ( cpatch%balive(donc)                 &
@@ -777,7 +787,9 @@ module fuse_fiss_utils
                                                      + cpatch%bdead(recc)                  &
                                                      + cpatch%bstorage(recc) )
 
-
+                  
+                  
+                  
                   !------------------------------------------------------------------------!
                   !    Five conditions must be met to allow two cohorts to be fused:       !
                   ! 1. Both cohorts must have the same PFT;                                !
@@ -908,15 +920,19 @@ module fuse_fiss_utils
 
       use ed_state_vars        , only : patchtype              ! ! structure
       use pft_coms             , only : q                      & ! intent(in), lookup table
-                                      , qsw                    ! ! intent(in), lookup table
+                                      , qsw                    & ! intent(in), lookup table
+                                      , is_grass               ! ! intent(in)
       use fusion_fission_coms  , only : lai_tol                ! ! intent(in)
       use ed_max_dims          , only : n_pft                  ! ! intent(in)
       use allometry            , only : dbh2h                  & ! function
                                       , bd2dbh                 & ! function
+                                      , bl2dbh                 & ! function
+                                      , bl2h                   & ! function
                                       , dbh2bd                 ! ! function
       use ed_misc_coms         , only : iqoutput               & ! intent(in)
                                       , imoutput               & ! intent(in)
-                                      , idoutput               ! ! intent(in)
+                                      , idoutput               & ! intent(in)
+                                      , igrass                 ! ! intent(in)
       use canopy_layer_coms    , only : crown_mod              ! ! intent(in)
       implicit none
       !----- Constants --------------------------------------------------------------------!
@@ -1062,13 +1078,25 @@ module fuse_fiss_utils
                !---------------------------------------------------------------------------!
 
                !----- Tweaking bdead, to ensure carbon is conserved. ----------------------!
-               cpatch%bdead(ico)  = cpatch%bdead(ico) * (1.-epsilon)
-               cpatch%dbh  (ico)  = bd2dbh(cpatch%pft(ico), cpatch%bdead(ico))
-               cpatch%hite (ico)  = dbh2h(cpatch%pft(ico), cpatch%dbh(ico))
+               if (is_grass(cpatch%pft(ico)) .and. igrass==1) then 
+                   !-- use bleaf for grass
+                   cpatch%bleaf(ico)  = cpatch%bleaf(ico) * (1.-epsilon)
+                   cpatch%dbh  (ico)  = bl2dbh(cpatch%bleaf(ico), cpatch%pft(ico))
+                   cpatch%hite (ico)  = bl2h(cpatch%bleaf(ico), cpatch%pft(ico))
 
-               cpatch%bdead(inew) = cpatch%bdead(inew) * (1.+epsilon)
-               cpatch%dbh  (inew) = bd2dbh(cpatch%pft(inew), cpatch%bdead(inew))
-               cpatch%hite (inew) = dbh2h(cpatch%pft(inew), cpatch%dbh(inew))
+                   cpatch%bleaf(inew)  = cpatch%bleaf(inew) * (1.+epsilon)
+                   cpatch%dbh  (inew)  = bl2dbh(cpatch%bleaf(inew), cpatch%pft(inew))
+                   cpatch%hite (inew)  = bl2h(cpatch%bleaf(inew), cpatch%pft(inew))               
+               else
+                   !-- use bdead for trees
+                   cpatch%bdead(ico)  = cpatch%bdead(ico) * (1.-epsilon)
+                   cpatch%dbh  (ico)  = bd2dbh(cpatch%pft(ico), cpatch%bdead(ico))
+                   cpatch%hite (ico)  = dbh2h(cpatch%pft(ico), cpatch%dbh(ico))
+
+                   cpatch%bdead(inew) = cpatch%bdead(inew) * (1.+epsilon)
+                   cpatch%dbh  (inew) = bd2dbh(cpatch%pft(inew), cpatch%bdead(inew))
+                   cpatch%hite (inew) = dbh2h(cpatch%pft(inew), cpatch%dbh(inew))
+               end if
                !---------------------------------------------------------------------------!
 
             end if
@@ -1135,7 +1163,8 @@ module fuse_fiss_utils
       cpatch%bdead(idt)                = cpatch%bdead(isc)
       cpatch%bleaf(idt)                = cpatch%bleaf(isc)
       cpatch%broot(idt)                = cpatch%broot(isc)
-      cpatch%bsapwood(idt)             = cpatch%bsapwood(isc)
+      cpatch%bsapwooda(idt)            = cpatch%bsapwooda(isc)
+      cpatch%bsapwoodb(idt)            = cpatch%bsapwoodb(isc)
       cpatch%phenology_status(idt)     = cpatch%phenology_status(isc)
       cpatch%balive(idt)               = cpatch%balive(isc)
       cpatch%lai(idt)                  = cpatch%lai(isc)
@@ -1346,17 +1375,21 @@ module fuse_fiss_utils
    subroutine fuse_2_cohorts(cpatch,donc,recc, newn,green_leaf_factor, can_prss,lsl)
       use ed_state_vars , only : patchtype              ! ! Structure
       use pft_coms      , only : q                      & ! intent(in), lookup table
-                               , qsw                    ! ! intent(in), lookup table
+                               , qsw                    & ! intent(in), lookup table
+                               , is_grass               ! ! intent(in)
       use therm_lib     , only : uextcm2tl              & ! subroutine
                                , qslif                  ! ! function
       use allometry     , only : dbh2krdepth            & ! function
                                , bd2dbh                 & ! function
+                               , bl2dbh                 & ! function
+                               , bl2h                   & ! function
                                , dbh2h                  ! ! function
       use ed_max_dims   , only : n_mort                 ! ! intent(in)
       use ed_misc_coms  , only : imoutput               & ! intent(in)
                                , iqoutput               & ! intent(in)
                                , idoutput               & ! intent(in)
-                               , ndcycle                ! ! intent(in)
+                               , ndcycle                & ! intent(in)
+                               , igrass                 ! ! intent(in)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       type(patchtype) , target     :: cpatch            ! Current patch
@@ -1394,12 +1427,23 @@ module fuse_fiss_utils
 
 
       !----- Conserve carbon by calculating bdead first. ----------------------------------!
-      cpatch%bdead(recc) = ( cpatch%nplant(recc) * cpatch%bdead(recc)                      &
-                           + cpatch%nplant(donc) * cpatch%bdead(donc) ) * newni
-
       !----- Then get dbh and hite from bdead. --------------------------------------------!
-      cpatch%dbh(recc)   = bd2dbh(cpatch%pft(recc), cpatch%bdead(recc))
-      cpatch%hite(recc)  = dbh2h(cpatch%pft(recc),  cpatch%dbh(recc))
+      if (is_grass(cpatch%pft(donc)) .and. igrass==1) then
+          !--use bleaf for grass
+          cpatch%bleaf(recc) = ( cpatch%nplant(recc) * cpatch%bleaf(recc)                  &
+                               + cpatch%nplant(donc) * cpatch%bleaf(donc) ) * newni
+          cpatch%dbh(recc)   = bl2dbh(cpatch%bleaf(recc), cpatch%pft(recc))
+          cpatch%hite(recc)  = bl2h  (cpatch%bleaf(recc), cpatch%pft(recc))
+      else
+          !--use bdead for trees
+          cpatch%bdead(recc) = ( cpatch%nplant(recc) * cpatch%bdead(recc)                  &
+                               + cpatch%nplant(donc) * cpatch%bdead(donc) ) * newni
+          cpatch%dbh(recc)   = bd2dbh(cpatch%pft(recc), cpatch%bdead(recc))
+          cpatch%hite(recc)  = dbh2h(cpatch%pft(recc),  cpatch%dbh(recc))
+      end if
+
+
+
 
 
       !------------------------------------------------------------------------------------!
@@ -1409,8 +1453,10 @@ module fuse_fiss_utils
                                + cpatch%nplant(donc) * cpatch%balive(donc) ) *newni
       cpatch%broot(recc)     = ( cpatch%nplant(recc) * cpatch%broot(recc)                  &
                                + cpatch%nplant(donc) * cpatch%broot(donc) ) *newni
-      cpatch%bsapwood(recc)  = ( cpatch%nplant(recc) * cpatch%bsapwood(recc)               &
-                             + cpatch%nplant(donc) * cpatch%bsapwood(donc) ) *newni
+      cpatch%bsapwooda(recc) = ( cpatch%nplant(recc) * cpatch%bsapwooda(recc)              &
+                             + cpatch%nplant(donc) * cpatch%bsapwooda(donc) ) *newni
+      cpatch%bsapwoodb(recc) = ( cpatch%nplant(recc) * cpatch%bsapwoodb(recc)              &
+                             + cpatch%nplant(donc) * cpatch%bsapwoodb(donc) ) *newni
       cpatch%bstorage(recc)  = ( cpatch%nplant(recc) * cpatch%bstorage(recc)               &
                                + cpatch%nplant(donc) * cpatch%bstorage(donc) ) * newni
       cpatch%bseeds(recc)    = ( cpatch%nplant(recc) * cpatch%bseeds(recc)                 &
@@ -4050,7 +4096,9 @@ module fuse_fiss_utils
                                      , hgt_class  ! ! intent(in)
       use allometry           , only : dbh2bl     ! ! intent(in)
       use ed_max_dims         , only : n_pft      ! ! intent(in)
-      use pft_coms            , only : hgt_min    ! ! intent(in)
+      use pft_coms            , only : hgt_min    & ! intent(in)
+                                     , is_grass   ! ! intent(in)
+      use ed_misc_coms        , only : igrass     ! ! intent(in)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       type(sitetype)         , target     :: csite     ! Current site
@@ -4097,8 +4145,14 @@ module fuse_fiss_utils
 
 
          !----- Find the potential (on-allometry) leaf area index. ------------------------!
-         lai_pot = cpatch%nplant(ico) * cpatch%sla(ico)                                    &
-                 * dbh2bl(cpatch%dbh(ico),ipft)
+         if (is_grass(ipft) .and. igrass==1) then
+             !--use actual bleaf for grass
+             lai_pot = cpatch%nplant(ico) * cpatch%sla(ico) * cpatch%bleaf(ico)
+         else
+             !--use dbh for trees
+             lai_pot = cpatch%nplant(ico) * cpatch%sla(ico)                                &
+                     * dbh2bl(cpatch%dbh(ico),ipft)
+         end if
          !---------------------------------------------------------------------------------!
 
 

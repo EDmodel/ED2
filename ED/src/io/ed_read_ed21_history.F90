@@ -22,6 +22,7 @@ subroutine read_ed21_history_file
                              , include_pft             & ! intent(in)
                              , include_pft_ag          & ! intent(in)
                              , pft_1st_check           & ! intent(in)
+                             , agf_bs                  & ! intent(in)
                              , include_these_pft       ! ! intent(in)
    use ed_misc_coms   , only : sfilin                  & ! intent(in)
                              , current_time            & ! intent(in)
@@ -53,6 +54,7 @@ subroutine read_ed21_history_file
    use allometry      , only : area_indices            & ! function
                              , ed_biomass              & ! function
                              , bd2dbh                  & ! function
+                             , size2bl                 & ! function
                              , dbh2h                   & ! function
                              , dbh2bd                  & ! function
                              , dbh2bl                  ! ! function
@@ -596,15 +598,19 @@ subroutine read_ed21_history_file
                               cpatch%bdead(ico) = dbh2bd(cpatch%dbh(ico),cpatch%pft  (ico))
                            end if
 
-                           cpatch%bleaf(ico)  = dbh2bl(cpatch%dbh(ico),cpatch%pft(ico))
+                           cpatch%bleaf(ico)  = size2bl(cpatch%dbh(ico),cpatch%hite(ico)   &
+                                                        ,cpatch%pft(ico))
 
                            !----- Find the other pools. -----------------------------------!
                            salloc  = (1.0 + q(ipft) + qsw(ipft) * cpatch%hite(ico))
                            salloci = 1.0 / salloc
                            cpatch%balive  (ico) = cpatch%bleaf(ico) * salloc
                            cpatch%broot   (ico) = cpatch%balive(ico) * q(ipft) * salloci
-                           cpatch%bsapwood(ico) = cpatch%balive(ico) * qsw(ipft)           &
-                                                * cpatch%hite(ico) * salloci
+                           cpatch%bsapwooda(ico) = cpatch%balive(ico) * qsw(ipft)          &
+                                                 * cpatch%hite(ico) * salloci * agf_bs(ipft)
+                           cpatch%bsapwoodb(ico) = cpatch%balive(ico) * qsw(ipft)          &
+                                                 * cpatch%hite(ico) * salloci              &
+                                                 * (1.-agf_bs(ipft))
                            cpatch%bstorage(ico) = 0.0
                            cpatch%phenology_status(ico) = 0
                         end do
@@ -695,24 +701,28 @@ subroutine read_ed21_history_file
                                cpatch%balive(ico) < tiny_biomass) then
                               cpatch%balive(ico) = tiny_biomass
                            end if
-                           if (cpatch%bleaf(ico) > 0.            .and.                     &
-                               cpatch%bleaf(ico) < tiny_biomass) then
+                           if (cpatch%bleaf(ico) > 0.                .and.                 &
+                               cpatch%bleaf(ico) < tiny_biomass)     then
                               cpatch%bleaf(ico) = tiny_biomass
                            end if
-                           if (cpatch%broot(ico) > 0.            .and.                     &
-                               cpatch%broot(ico) < tiny_biomass) then
+                           if (cpatch%broot(ico) > 0.                .and.                 &
+                               cpatch%broot(ico) < tiny_biomass)     then
                               cpatch%broot(ico) = tiny_biomass
                            end if
-                           if (cpatch%bsapwood(ico) > 0.            .and.                  &
-                               cpatch%bsapwood(ico) < tiny_biomass) then
-                              cpatch%bsapwood(ico) = tiny_biomass
+                           if (cpatch%bsapwooda(ico) > 0.            .and.                 &
+                               cpatch%bsapwooda(ico) < tiny_biomass) then
+                              cpatch%bsapwooda(ico) = tiny_biomass
                            end if
-                           if (cpatch%bdead(ico) > 0.            .and.                     &
-                               cpatch%bdead(ico) < tiny_biomass) then
+                           if (cpatch%bsapwoodb(ico) > 0.            .and.                 &
+                               cpatch%bsapwoodb(ico) < tiny_biomass) then
+                              cpatch%bsapwoodb(ico) = tiny_biomass
+                           end if
+                           if (cpatch%bdead(ico) > 0.                .and.                 &
+                               cpatch%bdead(ico) < tiny_biomass)     then
                               cpatch%bdead(ico) = tiny_biomass
                            end if
-                           if (cpatch%bstorage(ico) > 0.            .and.                  &
-                               cpatch%bstorage(ico) < tiny_biomass) then
+                           if (cpatch%bstorage(ico) > 0.             .and.                 &
+                               cpatch%bstorage(ico) < tiny_biomass)  then
                               cpatch%bstorage(ico) = tiny_biomass
                            end if
                            !---------------------------------------------------------------!
@@ -721,14 +731,8 @@ subroutine read_ed21_history_file
 
 
                            !----- Compute the above-ground biomass. -----------------------!
-                           cpatch%agb(ico) = ed_biomass(cpatch%bdead(ico)                  &
-                                                       ,cpatch%balive(ico)                 &
-                                                       ,cpatch%bleaf(ico)                  &
-                                                       ,cpatch%pft(ico)                    &
-                                                       ,cpatch%hite(ico)                   &
-                                                       ,cpatch%bstorage(ico)               &
-                                                       ,cpatch%bsapwood(ico) )
-
+                           cpatch%agb(ico) = ed_biomass(cpatch%bdead(ico),cpatch%bleaf(ico)&
+                                                    ,cpatch%bsapwooda(ico),cpatch%pft(ico))
                            cpatch%basarea(ico)  = pio4 * cpatch%dbh(ico) * cpatch%dbh(ico)
 
                             
@@ -738,7 +742,7 @@ subroutine read_ed21_history_file
                                             ,cpatch%dbh(ico), cpatch%hite(ico)             &
                                             ,cpatch%pft(ico), SLA(cpatch%pft(ico))         &
                                             ,cpatch%lai(ico),cpatch%wai(ico)               &
-                                            ,cpatch%crown_area(ico),cpatch%bsapwood(ico))
+                                            ,cpatch%crown_area(ico),cpatch%bsapwooda(ico))
 
 
                            !----- Update the derived patch-level variables. ---------------!
@@ -859,6 +863,7 @@ subroutine read_ed21_history_unstruct
                              , include_pft_ag          & ! intent(in)
                              , pft_1st_check           & ! intent(in)
                              , include_these_pft       & ! intent(in)
+                             , agf_bs                  & ! intent(in)
                              , min_cohort_size         ! ! intent(in)
    use ed_misc_coms   , only : sfilin                  & ! intent(in)
                              , current_time            & ! intent(in)
@@ -1752,11 +1757,14 @@ subroutine read_ed21_history_unstruct
                            !----- Find the other pools. -----------------------------------!
                            salloc  = (1.0 + q(ipft) + qsw(ipft) * cpatch%hite(ico))
                            salloci = 1.0 / salloc
-                           cpatch%balive  (ico) = cpatch%bleaf(ico) * salloc
-                           cpatch%broot   (ico) = cpatch%balive(ico) * q(ipft) * salloci
-                           cpatch%bsapwood(ico) = cpatch%balive(ico) * qsw(ipft)           &
-                                                * cpatch%hite(ico) * salloci
-                           cpatch%bstorage(ico) = 0.0
+                           cpatch%balive  (ico)  = cpatch%bleaf(ico) * salloc
+                           cpatch%broot   (ico)  = cpatch%balive(ico) * q(ipft) * salloci
+                           cpatch%bsapwooda(ico) = cpatch%balive(ico) * qsw(ipft)          &
+                                                 * cpatch%hite(ico) * salloci * agf_bs(ipft)
+                           cpatch%bsapwoodb(ico) = cpatch%balive(ico) * qsw(ipft)          &
+                                                 * cpatch%hite(ico) * salloci              &
+                                                 * (1.-agf_bs(ipft))
+                           cpatch%bstorage(ico)  = 0.0
                            cpatch%phenology_status(ico) = 0
                         end do
 
@@ -1854,9 +1862,13 @@ subroutine read_ed21_history_unstruct
                                cpatch%broot(ico) < tiny_biomass) then
                               cpatch%broot(ico) = tiny_biomass
                            end if
-                           if (cpatch%bsapwood(ico) > 0.            .and.                  &
-                               cpatch%bsapwood(ico) < tiny_biomass) then
-                              cpatch%bsapwood(ico) = tiny_biomass
+                           if (cpatch%bsapwooda(ico) > 0.        .and.                     &
+                               cpatch%bsapwooda(ico) < tiny_biomass) then
+                              cpatch%bsapwooda(ico) = tiny_biomass
+                           end if
+                           if (cpatch%bsapwoodb(ico) > 0.        .and.                     &
+                               cpatch%bsapwoodb(ico) < tiny_biomass) then
+                              cpatch%bsapwoodb(ico) = tiny_biomass
                            end if
                            if (cpatch%bdead(ico) > 0.            .and.                     &
                                cpatch%bdead(ico) < tiny_biomass) then
@@ -1870,12 +1882,8 @@ subroutine read_ed21_history_unstruct
 
 
                            !----- Compute the above-ground biomass. -----------------------!
-                           cpatch%agb(ico) = ed_biomass(cpatch%bdead(ico)                  &
-                                                       ,cpatch%balive(ico)                 &
-                                                       ,cpatch%bleaf(ico),cpatch%pft(ico)  &
-                                                       ,cpatch%hite(ico)                   &
-                                                       ,cpatch%bstorage(ico)               &
-                                                       ,cpatch%bsapwood(ico))
+                           cpatch%agb(ico) = ed_biomass(cpatch%bdead(ico),cpatch%bleaf(ico)&
+                                                     ,cpatch%bsapwooda(ico),cpatch%pft(ico))
 
                            cpatch%basarea(ico)  = pio4 * cpatch%dbh(ico) * cpatch%dbh(ico)
 
@@ -1885,7 +1893,7 @@ subroutine read_ed21_history_unstruct
                                             ,cpatch%dbh(ico),cpatch%hite(ico)              &
                                             ,cpatch%pft(ico),SLA(cpatch%pft(ico))          &
                                             ,cpatch%lai(ico),cpatch%wai(ico)               &
-                                            ,cpatch%crown_area(ico),cpatch%bsapwood(ico))
+                                            ,cpatch%crown_area(ico),cpatch%bsapwooda(ico))
 
 
                            !----- Update the derived patch-level variables. ---------------!

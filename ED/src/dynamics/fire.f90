@@ -21,7 +21,6 @@ subroutine fire_frequency(cgrid)
                             , fire_smoist_depth      & ! intent(in)
                             , k_fire_first           & ! intent(in)
                             , fire_parameter         ! ! intent(in)
-   use allometry     , only : ed_biomass             ! ! function
    use consts_coms   , only : wdns                   & ! intent(in)
                             , wdnsi                  & ! intent(in)
                             , day_sec                ! ! intent(in)
@@ -91,7 +90,9 @@ subroutine fire_frequency(cgrid)
             ! be defined as the above-ground biomass per unit area.                        !
             !------------------------------------------------------------------------------!
             cohortloop: do ico = 1,cpatch%ncohorts
+
                fuel = fuel + cpatch%nplant(ico) * cpatch%agb(ico)
+
             end do cohortloop
             !------------------------------------------------------------------------------!
 

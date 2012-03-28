@@ -444,14 +444,15 @@ subroutine reset_averaged_vars(cgrid)
       cgrid%avg_balive           (ipy) = 0.0
       cgrid%avg_bleaf            (ipy) = 0.0
       cgrid%avg_broot            (ipy) = 0.0
-      cgrid%avg_bsapwood         (ipy) = 0.0
-      cgrid%avg_bstorage         (ipy) = 0.0 
+      cgrid%avg_bsapwooda        (ipy) = 0.0
+      cgrid%avg_bsapwoodb        (ipy) = 0.0
+      cgrid%avg_bstorage         (ipy) = 0.0
       cgrid%avg_bseeds           (ipy) = 0.0
       cgrid%avg_fsc              (ipy) = 0.0
-      cgrid%avg_ssc              (ipy) = 0.0 
+      cgrid%avg_ssc              (ipy) = 0.0
       cgrid%avg_stsc             (ipy) = 0.0
       cgrid%avg_fsn              (ipy) = 0.0
-      cgrid%avg_msn              (ipy) = 0.0 
+      cgrid%avg_msn              (ipy) = 0.0
 
 
       cpoly => cgrid%polygon(ipy)
@@ -4057,7 +4058,6 @@ subroutine update_ed_yearly_vars(cgrid)
    use ed_state_vars,only:edtype,polygontype,sitetype,patchtype
    use ed_max_dims, only: n_pft, n_dbh
    use consts_coms, only: pi1
-   use allometry, only: ed_biomass
   
    implicit none
 
