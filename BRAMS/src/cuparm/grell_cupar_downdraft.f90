@@ -400,19 +400,25 @@ subroutine grell_most_thermo_downdraft(mkx,mgmzp,klod,qtot,co2,mentrd_rate,cdd,p
    !    entrainment and detrainment not happen.                                            !
    !---------------------------------------------------------------------------------------!
    do k=klod,1,-1
-      !------------------------------------------------------------------------------------!
-      !    This is the mixing ratio the downdraft would have did evaporation not happen.   !
-      !------------------------------------------------------------------------------------!
       denomin      = 1.+(mentrd_rate(k)-0.5*cdd(k))*dzd_cld(k)
       denomini     = 1./denomin
-      qtotd_0_evap = (qtotd_cld(k+1)*(1.-0.5*cdd(k)*dzd_cld(k))                            &
-                   + mentrd_rate(k)*dzd_cld(k)*qtot(k) -0.5*evapd_cld(k+1))                &
-                   * denomini
 
       !----- CO2 is assumed to be an inert gas (i.e., no sources or sinks). ---------------!
       co2d_cld(k) = (co2d_cld(k+1)*(1.-0.5*cdd(k)*dzd_cld(k))                              &
                   + mentrd_rate(k)*dzd_cld(k)*co2(k) )                                     &
                   * denomini
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !    This is the mixing ratio the downdraft would have did evaporation not happen.   !
+      ! This is also the first guess.                                                      !
+      !------------------------------------------------------------------------------------!
+      qtotd_0_evap = ( qtotd_cld(k+1) * (1. - 0.5 * cdd(k) * dzd_cld(k))                   &
+                     + mentrd_rate(k) * dzd_cld(k) * qtot(k) ) * denomini
+      !------------------------------------------------------------------------------------!
+
 
       !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
       !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
@@ -443,13 +449,17 @@ subroutine grell_most_thermo_downdraft(mkx,mgmzp,klod,qtot,co2,mentrd_rate,cdd,p
       ! signs for bisection, and a third one which will be the secant's second "chrono-    !
       ! logical" guess.                                                                    !
       !------------------------------------------------------------------------------------!
+
       
       !------------------------------------------------------------------------------------!
-      ! a. Initialising the convergence and bisection flags.                               !
+      ! a. Initialise the convergence and bisection flags.                                 !
       !------------------------------------------------------------------------------------!
       converged   = .false.
       bisection   = .false.
-      
+      !------------------------------------------------------------------------------------!
+
+
+
       !------------------------------------------------------------------------------------!
       ! b. 1st guess outside the loop. For the 1st guess we assume no evaporation state.   !
       !    It may turn out to be the case because the environment entrainment may bring    !
@@ -463,8 +473,8 @@ subroutine grell_most_thermo_downdraft(mkx,mgmzp,klod,qtot,co2,mentrd_rate,cdd,p
       thild_cld(k) = thetaeiv2thil(theivd_cld(k),p_cup(k),qtotda)
       call thil2tqall(thild_cld(k),exner_cup(k),p_cup(k),qtotda,qliqd_cld(k)               &
                      ,qiced_cld(k),td_cld(k),qvapd_cld(k),qsatd_cld(k))
-      evapd_cld(k) = min(0.,2. * (qtotd_0_evap - qsatd_cld(k)) * denomin)
-      funa         = qtotda - qtotd_0_evap + 0.5 * evapd_cld(k) * denomini
+      evapd_cld(k) = min(0., qtotd_0_evap - qsatd_cld(k) )
+      funa         = qtotda - ( qtotd_0_evap - evapd_cld(k) )
 
       !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
       !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
@@ -498,12 +508,12 @@ subroutine grell_most_thermo_downdraft(mkx,mgmzp,klod,qtot,co2,mentrd_rate,cdd,p
          ! case we put a lid of 30. g/kg, which is a fairly large number and should never  !
          ! be below the maximum under normal conditions.                                   !
          !---------------------------------------------------------------------------------!
-         qtotdc = min(max(toodry,qtotd_0_evap - 0.5 * evapd_cld(k) * denomini),toowet)
+         qtotdc = min(max(toodry,qtotd_0_evap - evapd_cld(k)),toowet)
          thild_cld(k) = thetaeiv2thil(theivd_cld(k),p_cup(k),qtotdc)
          call thil2tqall(thild_cld(k),exner_cup(k),p_cup(k),qtotdc,qliqd_cld(k)            &
                         ,qiced_cld(k),td_cld(k),qvapd_cld(k),qsatd_cld(k))
-         evapd_cld(k) = min(0.,2. * (qtotd_0_evap - qsatd_cld(k)) * denomin)
-         func         = qtotdc - qtotd_0_evap + 0.5 * evapd_cld(k) * denomini
+         evapd_cld(k) = min(0., qtotd_0_evap - qsatd_cld(k) )
+         func         = qtotdc - ( qtotd_0_evap - evapd_cld(k))
          !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
          !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
          if (debug) then
@@ -546,8 +556,8 @@ subroutine grell_most_thermo_downdraft(mkx,mgmzp,klod,qtot,co2,mentrd_rate,cdd,p
                call thil2tqall(thild_cld(k),exner_cup(k),p_cup(k),qtotdz                   &
                               ,qliqd_cld(k),qiced_cld(k),tdbis,qvapd_cld(k)                &
                               ,qsatd_cld(k))
-               evapd_cld(k) = min(0., 2. * (qtotd_0_evap - qsatd_cld(k)) * denomin )
-               funz         = qtotdz - qtotd_0_evap + 0.5 * evapd_cld(k) * denomini
+               evapd_cld(k) = min(0., qtotd_0_evap - qsatd_cld(k) )
+               funz         = qtotdz - (qtotd_0_evap - evapd_cld(k) )
 
                bisection = funa*funz < 0.
                if (bisection) exit zgssloop
@@ -615,8 +625,8 @@ subroutine grell_most_thermo_downdraft(mkx,mgmzp,klod,qtot,co2,mentrd_rate,cdd,p
             thild_cld(k) = thetaeiv2thil(theivd_cld(k),p_cup(k),qtotd_cld(k))
             call thil2tqall(thild_cld(k),exner_cup(k),p_cup(k),qtotd_cld(k),qliqd_cld(k)   &
                            ,qiced_cld(k),td_cld(k),qvapd_cld(k),qsatd_cld(k))
-            evapd_cld(k) = min(0., 2. * (qtotd_0_evap - qsatd_cld(k)) * denomin )
-            funnow       = qtotd_cld(k) - qtotd_0_evap + 0.5 * evapd_cld(k) * denomini
+            evapd_cld(k) = min(0., qtotd_0_evap - qsatd_cld(k) )
+            funnow       = qtotd_cld(k) - ( qtotd_0_evap - evapd_cld(k) )
 
             !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
             !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
@@ -713,7 +723,7 @@ subroutine grell_most_thermo_downdraft(mkx,mgmzp,klod,qtot,co2,mentrd_rate,cdd,p
       ! small amount of liquid/ice that may exist in the downdraft due to entrainment of   !
       ! saturated air.                                                                     !
       !------------------------------------------------------------------------------------!
-      pwd_cld(k) = etad_cld(k) * evapd_cld(k)
+      pwd_cld(k) = etad_cld(k) * evapd_cld(k) * dzd_cld(k)
       pwev       = pwev        + pwd_cld(k)
 
       !------ Finding density, assuming pd_cld(k) ~= p_cup(k)... --------------------------!

@@ -665,21 +665,33 @@ subroutine grell_most_thermo_updraft(preccld,check_top,mkx,mgmzp,klfc,ktpse,cld2
       !------------------------------------------------------------------------------------!
       denomin     = 1.+(mentru_rate(k)-0.5*cdu(k))*dzu_cld(k)
       denomini    = 1./denomin
-      qeverything = max(toodry,( qtotu_cld(k-1)*(1.-.5*cdu(k)*dzu_cld(k))                  &
-                               + qtot(k-1)*mentru_rate(k)*dzu_cld(k) - 0.5*leftu_cld(k-1)) &
-                               * denomini )
+      !------------------------------------------------------------------------------------!
+
+
 
       !----- CO2 will not fall through precipitation, a simple balance is enough. ---------!
       co2u_cld(k) = ( co2u_cld(k-1)*(1.-.5*cdu(k)*dzu_cld(k))                              &
                      + co2(k-1)*mentru_rate(k)*dzu_cld(k))                                 &
                     * denomini
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !    Qeverything is the total mixing ration in case all water remained in the cloud. !
+      ! It will also be the first guess.                                                   !
+      !------------------------------------------------------------------------------------!
+      qeverything = max(toodry, ( qtotu_cld(k-1) * (1. - 0.5 * cdu(k) * dzu_cld(k))        &
+                                + qtot(k-1) * mentru_rate(k) * dzu_cld(k) ) * denomini )
+      !------------------------------------------------------------------------------------!
+
 
       !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
       !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
       if (debug) then
          write(unit=38,fmt='(a)') '-------------------------------------------------------'
-         write(unit=38,fmt='(a,1x,i5,1x,3(a,1x,f12.4,1x))')                                   &
-            'Input values. k= ',k,'qeverything=',1000.*qeverything                            &
+         write(unit=38,fmt='(a,1x,i5,1x,3(a,1x,f12.4,1x))')                                &
+            'Input values. k= ',k,'qeverything=',1000.*qeverything                         &
            ,'theivu_cld=',theivu_cld(k),'p_cup=',0.01*p_cup(k)
       end if
       !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
@@ -702,13 +714,17 @@ subroutine grell_most_thermo_updraft(preccld,check_top,mkx,mgmzp,klfc,ktpse,cld2
       ! signs for bisection, and a third one which will be the secant's second "chrono-    !
       ! logical" guess.                                                                    !
       !------------------------------------------------------------------------------------!
-      
+
+
+
       !------------------------------------------------------------------------------------!
       ! a. Initialising the convergence and bisection flags.                               !
       !------------------------------------------------------------------------------------!
       converged   = .false.
       bisection   = .false.
-      
+      !------------------------------------------------------------------------------------!
+
+
       !------------------------------------------------------------------------------------!
       ! b. 1st guess outside the loop. For the 1st guess we assume no fall-out condensate. !
       !    It may turn out to be the case because the environment may be bringing too dry  !
@@ -718,12 +734,13 @@ subroutine grell_most_thermo_updraft(preccld,check_top,mkx,mgmzp,klfc,ktpse,cld2
       !    it will eventually return to qtotua. 
       !------------------------------------------------------------------------------------!
       qtotua = qeverything
-      !----- Finding the equilibrium state ------------------------------------------------!
+      !----- Find the equilibrium state. --------------------------------------------------!
       thilu_cld(k) = thetaeiv2thil(theivu_cld(k),p_cup(k),qtotua)
       call thil2tqall(thilu_cld(k),exner_cup(k),p_cup(k),qtotua,qliqu_cld(k)               &
                      ,qiceu_cld(k),tu_cld(k),qvapu_cld(k),qsatu_cld(k))
-      leftu_cld(k) = c0 * (qliqu_cld(k) + qiceu_cld(k))*dzu_cld(k)
-      funa         = qtotua - qeverything + 0.5 * leftu_cld(k) * denomini
+      leftu_cld(k) = c0 * dzu_cld(k) * (qliqu_cld(k) + qiceu_cld(k))
+      funa         = qtotua - ( qeverything - leftu_cld(k) )
+      !------------------------------------------------------------------------------------!
 
       !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
       !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
@@ -748,12 +765,12 @@ subroutine grell_most_thermo_updraft(preccld,check_top,mkx,mgmzp,klfc,ktpse,cld2
          qtotup = qtotua
          funp   = funa
          !------ Finding the current guess ------------------------------------------------!
-         qtotuc = min(max(toodry,qeverything - 0.5 * leftu_cld(k) * denomini),toowet)
+         qtotuc = min(max(toodry,qeverything - leftu_cld(k)),toowet)
          thilu_cld(k) = thetaeiv2thil(theivu_cld(k),p_cup(k),qtotuc)
          call thil2tqall(thilu_cld(k),exner_cup(k),p_cup(k),qtotuc,qliqu_cld(k)            &
                         ,qiceu_cld(k),tu_cld(k),qvapu_cld(k),qsatu_cld(k))
-         leftu_cld(k) = c0 * (qliqu_cld(k) + qiceu_cld(k)) * dzu_cld(k)
-         func         = qtotuc - qeverything + 0.5 * leftu_cld(k) * denomini
+         leftu_cld(k) = c0 * dzu_cld(k) * (qliqu_cld(k) + qiceu_cld(k))
+         func         = qtotuc - ( qeverything - leftu_cld(k) )
 
          !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
          !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
@@ -798,8 +815,8 @@ subroutine grell_most_thermo_updraft(preccld,check_top,mkx,mgmzp,klfc,ktpse,cld2
                call thil2tqall(thilu_cld(k),exner_cup(k),p_cup(k),qtotuz                   &
                               ,qliqu_cld(k),qiceu_cld(k),tubis,qvapu_cld(k)                &
                               ,qsatu_cld(k))
-               leftu_cld(k) = c0 * (qliqu_cld(k) + qiceu_cld(k)) * dzu_cld(k)
-               funz         = qtotuz - qeverything + 0.5 * leftu_cld(k) * denomini
+               leftu_cld(k) = c0 * dzu_cld(k) * (qliqu_cld(k) + qiceu_cld(k))
+               funz         = qtotuz - ( qeverything - leftu_cld(k) )
 
                bisection = funa*funz < 0.
                if (bisection) exit zgssloop
@@ -867,8 +884,8 @@ subroutine grell_most_thermo_updraft(preccld,check_top,mkx,mgmzp,klfc,ktpse,cld2
             thilu_cld(k) = thetaeiv2thil(theivu_cld(k),p_cup(k),qtotu_cld(k))
             call thil2tqall(thilu_cld(k),exner_cup(k),p_cup(k),qtotu_cld(k),qliqu_cld(k)   &
                            ,qiceu_cld(k),tu_cld(k),qvapu_cld(k),qsatu_cld(k))
-            leftu_cld(k) = c0 * (qliqu_cld(k) + qiceu_cld(k)) * dzu_cld(k)
-            funnow       = qtotu_cld(k) - qeverything + 0.5 * leftu_cld(k) * denomini
+            leftu_cld(k) = c0 * dzu_cld(k) * (qliqu_cld(k) + qiceu_cld(k))
+            funnow       = qtotu_cld(k) - ( qeverything - leftu_cld(k) )
 
             !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
             !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!

@@ -309,7 +309,7 @@ subroutine grell_cupar_static(comp_noforc_cldwork,checkmass,iupmethod,maxens_cap
    !----- String for sanity check. --------------------------------------------------------!
    character(len=str_len) :: which
    !----- Parameter to print debug stuff. -------------------------------------------------!
-   logical          , parameter :: print_debug=.true.
+   logical          , parameter :: print_debug = .false.
    character(len=11)            :: levname
    !---------------------------------------------------------------------------------------!
 

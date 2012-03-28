@@ -422,7 +422,7 @@ module phenology_aux
                                     ,cpatch%leaf_hcap(ico),cpatch%wood_hcap(ico) )
                   cpatch%leaf_energy(ico) = cpatch%leaf_hcap(ico) * cpatch%leaf_temp(ico)
                   cpatch%wood_energy(ico) = cpatch%wood_hcap(ico) * cpatch%wood_temp(ico)
-                  call is_resolvable(csite,ipa,ico,cpoly%green_leaf_factor(:,isi))
+                  call is_resolvable(csite,ipa,ico)
                   !------------------------------------------------------------------------!
                end do cohortloop
                !---------------------------------------------------------------------------!
@@ -550,7 +550,7 @@ module phenology_aux
       if (elongf >= 1.0) then
          phenology_status = 0
       elseif (elongf > elongf_min) then
-         phenology_status = -1
+         phenology_status = 1
       else
          phenology_status = 2
          elongf           = 0.

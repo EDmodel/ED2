@@ -584,6 +584,8 @@ subroutine grell_cupar_output(m1,mgmzp,maxens_cap,rtgt,zm,zt,dnmf,upmf,dnmx,upmx
    real                               :: exner     ! Exner fctn. for tend. conv.  [ J/kg/K]
    real                               :: nmoki     ! 1/nmok
    real                               :: zhgt      ! Height
+   real                               :: f_dn      ! Fraction for downdraft
+   real                               :: f_up      ! Fraction for updraft
    integer                            :: klod      ! Downdraft origin
    integer                            :: klou      ! Updraft origin
    integer                            :: klcl      ! Lifting condensation level
@@ -604,7 +606,7 @@ subroutine grell_cupar_output(m1,mgmzp,maxens_cap,rtgt,zm,zt,dnmf,upmf,dnmx,upmx
    real, dimension(m1,maxens_cap)   :: cupriceu_cap ! Cumulus ice mixing ratio    [  kg/kg]
    !----- Local constants, for debugging. -------------------------------------------------!
    integer                          :: iun
-   logical          , parameter     :: print_debug=.true.
+   logical          , parameter     :: print_debug=.false.
    !---------------------------------------------------------------------------------------!
 
 
@@ -715,20 +717,31 @@ subroutine grell_cupar_output(m1,mgmzp,maxens_cap,rtgt,zm,zt,dnmf,upmf,dnmx,upmx
       if (ierr_cap(icap) == 0) then
 
          !---------------------------------------------------------------------------------!
-         !   I compute the cloud condensed mixing ratio for this realisation.  This is     !
-         ! used by Harrington when cumulus feedback is requested, so we rescale the liquid !
-         ! water at the downdrafts and updrafts by their area.                             !
+         !     Find the fraction due to downdrafts and updrafts.                           !
          !---------------------------------------------------------------------------------!
-         do k=1,ktop_cap(icap)
+         f_dn = areadn_cap(icap) / (areadn_cap(icap) + areaup_cap(icap))
+         f_up = areaup_cap(icap) / (areadn_cap(icap) + areaup_cap(icap))
+         !---------------------------------------------------------------------------------!
+
+
+
+         !---------------------------------------------------------------------------------!
+         !   Compute the cloud condensed mixing ratio for this realisation.  This is used  !
+         ! by Harrington when cumulus feedback is requested, so we rescale the liquid      !
+         ! water at the downdrafts and updrafts by their area.  Levels outside the cloud   !
+         ! range may contain environment values, and we don't want to double account.      !
+         !---------------------------------------------------------------------------------!
+         do k=1,klod_cap(icap)
             kr=k+kgoff
-            cuprliq_cap(kr,icap) = max(0., ( qliqd_cld_cap(k,icap) * areadn_cap(icap)      &
-                                           + qliqu_cld_cap(k,icap) * areaup_cap(icap) )    &
-                                           / (areadn_cap(icap) + areaup_cap(icap) ) )
-            cuprice_cap(kr,icap) = max(0., ( qiced_cld_cap(k,icap) * areadn_cap(icap)      &
-                                           + qiceu_cld_cap(k,icap) * areaup_cap(icap) )    &
-                                           / (areadn_cap(icap) + areaup_cap(icap) ) )
+            cuprliq_cap (kr,icap) = cuprliq_cap (kr,icap) + qliqd_cld_cap(k,icap) * f_dn
+            cuprice_cap (kr,icap) = cuprice_cap (kr,icap) + qiced_cld_cap(k,icap) * f_dn
             cuprliqd_cap(kr,icap) = qliqd_cld_cap(k,icap)
             cupriced_cap(kr,icap) = qiced_cld_cap(k,icap)
+         end do
+         do k=klou_cap(icap),ktop_cap(icap)
+            kr=k+kgoff
+            cuprliq_cap (kr,icap) = cuprliq_cap (kr,icap) + qliqu_cld_cap(k,icap) * f_up
+            cuprice_cap (kr,icap) = cuprice_cap (kr,icap) + qiceu_cld_cap(k,icap) * f_up
             cuprliqu_cap(kr,icap) = qliqu_cld_cap(k,icap)
             cupriceu_cap(kr,icap) = qiceu_cld_cap(k,icap)
          end do

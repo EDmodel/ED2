@@ -1543,7 +1543,7 @@ subroutine init_pft_photo_params()
    Vm0(11)                   =  6.981875 * vmfact_c3
    Vm0(12:13)                = 18.300000 * vmfact_c3
    Vm0(14:15)                = 12.500000 * vmfact_c4
-   Vm0(16)                   = 25.000000 * vmfact_c3
+   Vm0(16)                   = 21.875000 * vmfact_c3
    Vm0(17)                   = 15.625000 * vmfact_c3
    !---------------------------------------------------------------------------------------!
 
@@ -1581,7 +1581,7 @@ subroutine init_pft_photo_params()
    dark_respiration_factor(14)    = gamma_c3
    dark_respiration_factor(15)    = gamma_c3
    dark_respiration_factor(16)    = gamma_c3
-   dark_respiration_factor(17)    = gamma_c3 * 1.2
+   dark_respiration_factor(17)    = gamma_c3
    !---------------------------------------------------------------------------------------!
 
 
@@ -3121,7 +3121,8 @@ subroutine init_pft_derived_params()
                                    , negligible_nplant    & ! intent(out)
                                    , c2n_recruit          & ! intent(out)
                                    , veg_hcap_min         ! ! intent(out)
-   use phenology_coms       , only : elongf_min           ! ! intent(in)
+   use phenology_coms       , only : elongf_min           & ! intent(in)
+                                   , elongf_flush         ! ! intent(in)
    use allometry            , only : h2dbh                & ! function
                                    , dbh2h                & ! function
                                    , dbh2bl               & ! function
@@ -4224,6 +4225,7 @@ subroutine init_phen_coms
                             , thetacrit                & ! intent(in)
                             , retained_carbon_fraction & ! intent(out)
                             , elongf_min               & ! intent(out)
+                            , elongf_flush             & ! intent(out)
                             , spot_phen                & ! intent(out)
                             , dl_tr                    & ! intent(out)
                             , st_tr1                   & ! intent(out)
@@ -4266,6 +4268,15 @@ subroutine init_phen_coms
    ! ing leaves.                                                                           !
    !---------------------------------------------------------------------------------------!
    elongf_min               = 0.05
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !      Minimum elongation factor that allows plants to start flushing out new leaves if !
+   ! they are drought deciduous and have been losing leaves.                               !
+   !---------------------------------------------------------------------------------------!
+   elongf_flush             = 0.25
    !---------------------------------------------------------------------------------------!
 
 

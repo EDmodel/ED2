@@ -322,7 +322,7 @@ subroutine grell_efficiency_ensemble(mkx,mgmzp,maxens_eff,klou,klfc,ktop,edtmin,
    !---------------------------------------------------------------------------------------!
    !    Variable that allow extra information to be printed.                               !
    !---------------------------------------------------------------------------------------!
-   logical               , parameter     :: debug = .true.
+   logical               , parameter     :: debug = .false.
    !---------------------------------------------------------------------------------------!
 
 

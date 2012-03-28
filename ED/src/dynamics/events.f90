@@ -414,7 +414,7 @@ subroutine event_harvest(agb_frac8,bgb_frac8,fol_frac8,stor_frac8)
                  call update_veg_energy_cweh(csite,ipa,ico,old_leaf_hcap,old_wood_hcap)
 
                  !----- Update flags telling whether leaves and branches can be solved. ---!
-                 call is_resolvable(csite,ipa,ico,cpoly%green_leaf_factor(:,isi))
+                 call is_resolvable(csite,ipa,ico)
 
               enddo
              

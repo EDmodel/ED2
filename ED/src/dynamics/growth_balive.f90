@@ -85,16 +85,6 @@ module growth_balive
                   !----- Alias for current PFT. -------------------------------------------!
                   ipft = cpatch%pft(ico)
 
-                  !----- Update the elongation factor. ------------------------------------!
-                  select case (phenology(ipft))
-                  case (3,4)
-                     cpatch%elongf(ico) = max(0.0, min(1.0, cpatch%paw_avg(ico)))
-                  case default
-                     cpatch%elongf(ico) = 1.0
-
-                  end select
-
-
                   !----- Initialize cohort nitrogen uptake. -------------------------------!
                   nitrogen_uptake = 0.0
                   N_uptake_pot    = 0.0
@@ -262,7 +252,7 @@ module growth_balive
                                     ,cpatch%leaf_hcap(ico),cpatch%wood_hcap(ico))
                   call update_veg_energy_cweh(csite,ipa,ico,old_leaf_hcap,old_wood_hcap)
                   !----- Update the stability status. -------------------------------------!
-                  call is_resolvable(csite,ipa,ico,cpoly%green_leaf_factor(:,isi))
+                  call is_resolvable(csite,ipa,ico)
                   !------------------------------------------------------------------------!
                end do
                
@@ -786,16 +776,18 @@ module growth_balive
    !=======================================================================================!
    subroutine alloc_plant_c_balance(csite,ipa,ico,salloc,salloci,carbon_balance            &
                                    ,nitrogen_uptake,green_leaf_factor)
-      use ed_state_vars , only : sitetype     & ! structure
-                               , patchtype    ! ! structure
-      use pft_coms      , only : c2n_storage  & ! intent(in)
-                               , c2n_leaf     & ! intent(in)
-                               , sla          & ! intent(in)
-                               , q            & ! intent(in)
-                               , qsw          & ! intent(in)
-                               , c2n_stem     ! ! intent(in)
-      use decomp_coms   , only : f_labile     ! ! intent(in)
-      use allometry     , only : dbh2bl       ! ! function
+      use ed_state_vars , only : sitetype                 & ! structure
+                               , patchtype                ! ! structure
+      use pft_coms      , only : phenology                & ! intent(in)
+                               , c2n_storage              & ! intent(in)
+                               , c2n_leaf                 & ! intent(in)
+                               , sla                      & ! intent(in)
+                               , q                        & ! intent(in)
+                               , qsw                      & ! intent(in)
+                               , c2n_stem                 ! ! intent(in)
+      use decomp_coms   , only : f_labile                 ! ! intent(in)
+      use allometry     , only : dbh2bl                   ! ! function
+      use phenology_coms, only : elongf_min               ! ! intent(in)
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
       type(sitetype) , target        :: csite
@@ -809,10 +801,15 @@ module growth_balive
       !----- Local variables. -------------------------------------------------------------!
       type(patchtype), pointer       :: cpatch
       integer                        :: ipft
-      real                           :: bl_max
+      real                           :: bleaf_aim
+      real                           :: broot_aim
+      real                           :: bsapwood_aim
+      real                           :: balive_aim
+      real                           :: bleaf_max
       real                           :: balive_max
-      real                           :: bl_pot
+      real                           :: bloss_max
       real                           :: increment
+      real                           :: carbon_loss
       real                           :: old_status
       real                           :: delta_bleaf
       real                           :: delta_broot
@@ -822,11 +819,10 @@ module growth_balive
       real                           :: f_bleaf
       real                           :: f_broot
       real                           :: f_bsapwood
-      real                           :: f_resp
+      real                           :: f_bstorage
       real                           :: tr_bleaf
       real                           :: tr_broot
       real                           :: tr_bsapwood
-      real                           :: bl
       logical                        :: on_allometry
       logical                        :: time_to_flush
       !------------------------------------------------------------------------------------!
@@ -841,13 +837,19 @@ module growth_balive
       ! positive. Under this circumstance, we have to allow plants to grow leaves.         !
       !------------------------------------------------------------------------------------!
       increment     = cpatch%bstorage(ico) + carbon_balance
-      time_to_flush = (carbon_balance <= 0.0) .and. (increment > 0.0) .and.                &
-                      (cpatch%phenology_status(ico) == 1) 
+      time_to_flush = carbon_balance <= 0.0 .and. increment > 0.0 .and.                    &
+                      cpatch%phenology_status(ico) == 1
+      !------------------------------------------------------------------------------------!
 
+
+
+      !------------------------------------------------------------------------------------!
+      !      Check whether to increase living tissue biomass or not.                       !
+      !------------------------------------------------------------------------------------!
       if (carbon_balance > 0.0 .or. time_to_flush) then 
          if (cpatch%phenology_status(ico) == 1) then
             !------------------------------------------------------------------------------!
-            ! There are leaves, we are not actively dropping leaves and we're off          !
+            !     There are leaves, we are not actively dropping leaves and we're off      !
             ! allometry.  Here we will compute the maximum amount that can go to balive    !
             ! pools, and put any excess in storage.                                        !
             !------------------------------------------------------------------------------!
@@ -858,36 +860,39 @@ module growth_balive
             ! plant is drought stress (elongf < 1), we do not allow the plant to get back  !
             ! to full allometry.                                                           !
             !------------------------------------------------------------------------------!
-            bl_max     = dbh2bl(cpatch%dbh(ico),ipft) * green_leaf_factor                  &
-                       * cpatch%elongf(ico)
-            balive_max = dbh2bl(cpatch%dbh(ico),ipft) * salloc * cpatch%elongf(ico)
+            bleaf_max      = dbh2bl(cpatch%dbh(ico),ipft)
+            bleaf_aim      = bleaf_max * green_leaf_factor * cpatch%elongf(ico)
+            broot_aim      = bleaf_max * q(ipft)
+            bsapwood_aim   = bleaf_max * qsw(ipft) * cpatch%hite(ico)
+            balive_aim     = bleaf_aim + broot_aim + bsapwood_aim
+            !---- Amount that bleaf, broot, and bsapwood are off allometry. ---------------!
+            delta_bleaf    = max (0.0, bleaf_aim    - cpatch%bleaf   (ico))
+            delta_broot    = max (0.0, broot_aim    - cpatch%broot   (ico))
+            delta_bsapwood = max (0.0, bsapwood_aim - cpatch%bsapwood(ico))
+            !------------------------------------------------------------------------------!
 
-            !--- Amount that bleaf, broot, and bsapwood are off allometry -----------------!
-            delta_bleaf = max (0.0, bl_max- cpatch%bleaf(ico))
-            delta_broot = max (0.0, balive_max * q(ipft) * salloci - cpatch%broot(ico))
-            delta_bsapwood = max (0.0, balive_max * qsw(ipft) * cpatch%hite(ico) * salloci &
-                                     - cpatch%bsapwood(ico))
+
 
             !------------------------------------------------------------------------------!
-            ! If the available carbon is less than what we need to get back to allometry.  !
-            ! Grow pools in proportion to demand.  If we have enough carbon, we'll put the !
-            ! extra into bstorage.                                                         !
+            !     If the available carbon is less than what we need to get back to         !
+            ! allometry.  Grow pools in proportion to demand.  If we have enough carbon,   !
+            ! we'll put the extra into bstorage.                                           !
             !------------------------------------------------------------------------------!
-            
-            f_bleaf    = delta_bleaf / bl_max
-            f_broot    = delta_broot / (balive_max * q(ipft) * salloci )
-            f_bsapwood = delta_bsapwood / (balive_max * qsw(ipft) * cpatch%hite(ico)       &
-                       * salloci)
+            f_bleaf    = delta_bleaf    / bleaf_aim
+            f_broot    = delta_broot    / broot_aim
+            f_bsapwood = delta_bsapwood / bsapwood_aim
             f_total    = f_bleaf + f_broot + f_bsapwood
+            !------------------------------------------------------------------------------!
+
 
             !------------------------------------------------------------------------------!
             !     We only allow transfer from storage to living tissues if there is need   !
             ! to transfer.                                                                 !
             !------------------------------------------------------------------------------!
             if (f_total > 0.0) then
-               tr_bleaf    = min( delta_bleaf   , (f_bleaf/f_total)    * available_carbon)
-               tr_broot    = min( delta_broot   , (f_broot/f_total)    * available_carbon)
-               tr_bsapwood = min( delta_bsapwood, (f_bsapwood/f_total) * available_carbon)
+               tr_bleaf    = min( delta_bleaf   , (f_bleaf   /f_total) * available_carbon )
+               tr_broot    = min( delta_broot   , (f_broot   /f_total) * available_carbon )
+               tr_bsapwood = min( delta_bsapwood, (f_bsapwood/f_total) * available_carbon )
             else
                tr_bleaf    = 0.
                tr_broot    = 0.
@@ -895,28 +900,44 @@ module growth_balive
             end if
             !------------------------------------------------------------------------------!
 
-            cpatch%bleaf(ico)    = cpatch%bleaf(ico)    + tr_bleaf
-            cpatch%broot(ico)    = cpatch%broot(ico)    + tr_broot
-            cpatch%bsapwood(ico) = cpatch%bsapwood(ico) + tr_bsapwood
 
-            cpatch%balive(ico)   = cpatch%bleaf(ico) + cpatch%broot(ico)                   &
-                                 + cpatch%bsapwood(ico)
-            
+
+            !------------------------------------------------------------------------------!
+            !     Update the carbon pools of the living tissues.                           !
+            !------------------------------------------------------------------------------!
+            cpatch%bleaf            (ico) = cpatch%bleaf(ico)    + tr_bleaf
+            cpatch%broot            (ico) = cpatch%broot(ico)    + tr_broot
+            cpatch%bsapwood         (ico) = cpatch%bsapwood(ico) + tr_bsapwood
+            cpatch%balive           (ico) = cpatch%bleaf(ico) + cpatch%broot(ico)          &
+                                          + cpatch%bsapwood(ico)
+            !------------------------------------------------------------------------------!
+
+
+
             !----- NPP allocation in diff pools in KgC/m2/day. ----------------------------!
-            cpatch%today_nppleaf(ico)   = tr_bleaf       * cpatch%nplant(ico)
-            cpatch%today_nppfroot(ico)  = tr_broot       * cpatch%nplant(ico)
-            cpatch%today_nppsapwood(ico)= tr_bsapwood    * cpatch%nplant(ico)
-            cpatch%today_nppdaily(ico)  = carbon_balance * cpatch%nplant(ico)
-            
+            cpatch%today_nppleaf    (ico) = tr_bleaf       * cpatch%nplant(ico)
+            cpatch%today_nppfroot   (ico) = tr_broot       * cpatch%nplant(ico)
+            cpatch%today_nppsapwood (ico) = tr_bsapwood    * cpatch%nplant(ico)
+            cpatch%today_nppdaily   (ico) = carbon_balance * cpatch%nplant(ico)
+            !------------------------------------------------------------------------------!
+
+
+
             !------------------------------------------------------------------------------!
             !    Find the amount of carbon used to recover the tissues that were off-      !
             ! -allometry, take that from the carbon balance first, then use some of the    !
             ! storage if needed be.                                                        !
             !------------------------------------------------------------------------------!
-            increment = carbon_balance -  tr_bleaf - tr_broot - tr_bsapwood
+            increment            = carbon_balance -  tr_bleaf - tr_broot - tr_bsapwood
             cpatch%bstorage(ico) = max(0.0, cpatch%bstorage(ico) + increment)
             !------------------------------------------------------------------------------!
 
+
+
+            !------------------------------------------------------------------------------!
+            !     Check whether there is still some carbon to go to storage or if we are   !
+            ! burning some of the storage.                                                 !
+            !------------------------------------------------------------------------------!
             if (increment <= 0.0)  then
                !---------------------------------------------------------------------------!
                !    We are using up all of daily C gain and some of bstorage.  First       !
@@ -955,15 +976,22 @@ module growth_balive
                !----- N uptake for fraction of daily C gain going to bstorage. ------------!
                nitrogen_uptake = nitrogen_uptake + increment / c2n_storage
             end if
+            !------------------------------------------------------------------------------!
 
-            on_allometry = 2.0 * abs(balive_max - cpatch%balive(ico))                      &
-                         / (balive_max + cpatch%balive(ico))          < 1.e-6
+
+
+            !------------------------------------------------------------------------------!
+            !     Check whether we are on allometry or not.                                !
+            !------------------------------------------------------------------------------!
+            on_allometry = 2.0 * abs(balive_aim - cpatch%balive(ico))                      &
+                         / (balive_aim + cpatch%balive(ico))          < 1.e-6
             if (cpatch%elongf(ico) == 1.0 .and. on_allometry) then
                !---------------------------------------------------------------------------!
                !     We're back to allometry, change phenology_status.                     !
                !---------------------------------------------------------------------------!
                cpatch%phenology_status(ico) = 0
             end if
+            !------------------------------------------------------------------------------!
          else
             !------------------------------------------------------------------------------!
             !     Put carbon gain into storage.  If we're not actively dropping leaves or  !
@@ -978,77 +1006,87 @@ module growth_balive
             cpatch%today_nppfroot(ico)   = 0.0
             cpatch%today_nppsapwood(ico) = 0.0
             cpatch%today_nppdaily(ico)   = carbon_balance * cpatch%nplant(ico)
+            
+            !------------------------------------------------------------------------------!
+            !    When plants go to negative carbon balance, they may have lost some leaves !
+            ! and their phenology status was reset to -1.  This will happen even for       !
+            ! plants that don't normally shed leaves, like conifers or hardwoods during    !
+            ! the summer.  At this point, the carbon balance has become positive again, so !
+            ! we just switch back the phenology status to 1 (plants growing leaves).  In   !
+            ! case the phenology is bad for leaves, it will be checked again the following !
+            ! day, and it may become negative again.                                       !
+            !------------------------------------------------------------------------------!
+            select case (phenology(ipft))
+            case (0,2)
+               if (cpatch%phenology_status(ico) == -1) cpatch%phenology_status(ico) = 1
+            end select
+            !------------------------------------------------------------------------------!
          end if
- 
 
       else
          !---------------------------------------------------------------------------------!
-         !   Carbon balance is negative, take it out of storage.                           !
+         !     Carbon balance is negative, we deplete both the living tissues and storage. !
+         ! The amount taken from each pool is proportional to its biomass.                 !
          !---------------------------------------------------------------------------------!
-         increment =  cpatch%bstorage(ico) + carbon_balance
-
-         if (increment <= 0.0)  then
-            !----- Use Storage pool first then take out of balive. ------------------------!
-            increment            =  - increment
-            cpatch%bstorage(ico) = 0.0
-            csite%fsn_in(ipa)    = csite%fsn_in(ipa) + cpatch%bstorage(ico) / c2n_storage  &
-                                                     * cpatch%nplant(ico)
-
-            if (cpatch%phenology_status(ico) == 0)  then
-               !---------------------------------------------------------------------------!
-               !     We were on allometry, but now we need to burn carbon and go off-      !
-               ! -allometry.                                                               !
-               !---------------------------------------------------------------------------!
-               cpatch%balive(ico)   = cpatch%balive(ico) - increment
-               cpatch%bleaf(ico)    = cpatch%balive(ico) * salloci * green_leaf_factor
-               cpatch%broot(ico)    = cpatch%balive(ico) * q(ipft) * salloci
-               cpatch%bsapwood(ico) = cpatch%balive(ico) * cpatch%hite(ico) * qsw(ipft)    &
-                                    * salloci
-               cpatch%phenology_status(ico) = 1
-            else
-               f_resp = cpatch%today_leaf_resp(ico)                                        &
-                      / ( cpatch%today_leaf_resp(ico) + cpatch%today_root_resp(ico) )
-               bl     = cpatch%bleaf(ico) - f_resp * (increment)
-
-               if (bl > 0.0) then
-                  cpatch%bleaf(ico) = bl
-                  cpatch%broot(ico) = cpatch%broot(ico) - (1.0 - f_resp) * increment 
-               else
-                  cpatch%broot(ico) = cpatch%broot(ico) - (increment - cpatch%bleaf(ico))
-                  cpatch%bleaf(ico) = 0.0
-                  cpatch%elongf(ico) = 0.0
-                  cpatch%phenology_status(ico) = 2
-               end if
-
-               cpatch%balive(ico) = cpatch%bleaf(ico) + cpatch%broot(ico)                  &
-                                  + cpatch%bsapwood(ico)    
-            end if
-
-            !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-            !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-            !                  NOT SURE IF THIS IS CORRECT N ACCOUNTING                    !
-            !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-            !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-            csite%fsn_in(ipa) = csite%fsn_in(ipa) + increment                              &
-                              * ( f_labile(ipft) / c2n_leaf(ipft)                          &
-                                + (1.0 - f_labile(ipft)) / c2n_stem(ipft) )                &
-                              * cpatch%nplant(ico)
-
+         carbon_loss = - carbon_balance
+         bloss_max   = cpatch%balive(ico) + cpatch%bstorage(ico)
+         if (carbon_loss > bloss_max) then
+            !------------------------------------------------------------------------------!
+            !    This cohort has less available carbon than the demand to close the        !
+            ! budget.  It is with profound sadness that we announce that this cohort is    !
+            ! going to the fertiliser business soon.                                       !
+            !------------------------------------------------------------------------------!
+            cpatch%bleaf           (ico) = 0.0
+            cpatch%broot           (ico) = 0.0
+            cpatch%bsapwood        (ico) = 0.0
+            cpatch%bstorage        (ico) = 0.0
+            cpatch%phenology_status(ico) = 2
          else
-            !------ Burn the storage pool.  Dont' forget the nitrogen. --------------------!
-            cpatch%bstorage(ico) =  cpatch%bstorage(ico) + carbon_balance
-            csite%fsn_in(ipa)    = csite%fsn_in(ipa) - carbon_balance                      &
-                                 * ( f_labile(ipft) / c2n_leaf(ipft)                       &
-                                   + (1.0 - f_labile(ipft)) / c2n_stem(ipft))              &
-                                 * cpatch%nplant(ico)   
+            !------------------------------------------------------------------------------!
+            !     We keep the proportion of the living+storage biomass the same.           !
+            !------------------------------------------------------------------------------!
+            !------ Find the fraction. ----------------------------------------------------!
+            f_bleaf    = cpatch%bleaf   (ico) / bloss_max
+            f_broot    = cpatch%broot   (ico) / bloss_max
+            f_bsapwood = cpatch%bsapwood(ico) / bloss_max
+            f_bstorage = cpatch%bstorage(ico) / bloss_max
+            !------ Take away the biomass needed to close the budget. ---------------------!
+            cpatch%bleaf           (ico) = cpatch%bleaf   (ico) - f_bleaf    * carbon_loss
+            cpatch%broot           (ico) = cpatch%broot   (ico) - f_broot    * carbon_loss
+            cpatch%bsapwood        (ico) = cpatch%bsapwood(ico) - f_bsapwood * carbon_loss
+            cpatch%bstorage        (ico) = cpatch%bstorage(ico) - f_bstorage * carbon_loss
+            cpatch%phenology_status(ico) = -1
+            !------------------------------------------------------------------------------!
          end if
+         !---------------------------------------------------------------------------------!
+
+
+         !---------------------------------------------------------------------------------!
+         !     Update living biomass.                                                      !
+         !---------------------------------------------------------------------------------!
+         cpatch%balive(ico) = cpatch%bleaf(ico) + cpatch%broot(ico)                        &
+                            + cpatch%bsapwood(ico)    
+         !---------------------------------------------------------------------------------!
+
+
+
+
+         !------ Update soil nitrogen. ----------------------------------------------------!
+         csite%fsn_in(ipa)    = csite%fsn_in(ipa) - carbon_balance                         &
+                              * ( f_labile(ipft) / c2n_leaf(ipft)                          &
+                                + (1.0 - f_labile(ipft)) / c2n_stem(ipft))                 &
+                              * cpatch%nplant(ico)   
+         !---------------------------------------------------------------------------------!
+
 
          !---- NPP allocation in diff pools in KgC/m2/day. --------------------------------!
          cpatch%today_nppleaf(ico)    = 0.0
          cpatch%today_nppfroot(ico)   = 0.0
          cpatch%today_nppsapwood(ico) = 0.0
          cpatch%today_nppdaily(ico)   = carbon_balance * cpatch%nplant(ico)
+         !---------------------------------------------------------------------------------!
       end if
+      !------------------------------------------------------------------------------------!
 
       return
    end subroutine alloc_plant_c_balance
@@ -1090,10 +1128,13 @@ module growth_balive
       !----- Local variables. -------------------------------------------------------------!
       type(patchtype), pointer       :: cpatch
       integer                        :: ipft
-      real                           :: bl_max
-      real                           :: balive_max
-      real                           :: bl_pot
+      real                           :: bleaf_aim
+      real                           :: broot_aim
+      real                           :: bsapwood_aim
+      real                           :: balive_aim
+      real                           :: bleaf_max
       real                           :: increment
+      real                           :: carbon_loss
       real                           :: old_status
       real                           :: delta_bleaf
       real                           :: delta_broot
@@ -1107,7 +1148,6 @@ module growth_balive
       real                           :: tr_bleaf
       real                           :: tr_broot
       real                           :: tr_bsapwood
-      real                           :: bl
       logical                        :: on_allometry
       logical                        :: time_to_flush
       !------------------------------------------------------------------------------------!
@@ -1139,26 +1179,27 @@ module growth_balive
             ! plant is drought stress (elongf < 1), we do not allow the plant to get back  !
             ! to full allometry.                                                           !
             !------------------------------------------------------------------------------!
-            bl_max     = dbh2bl(cpatch%dbh(ico),ipft) * green_leaf_factor                  &
-                       * cpatch%elongf(ico)
-            balive_max = dbh2bl(cpatch%dbh(ico),ipft) * salloc * cpatch%elongf(ico)
+            bleaf_max    = dbh2bl(cpatch%dbh(ico),ipft)
+            bleaf_aim    = bleaf_max * green_leaf_factor * cpatch%elongf(ico)
+            broot_aim    = bleaf_max * q(ipft)
+            bsapwood_aim = bleaf_max * qsw(ipft) * cpatch%hite(ico)
+            balive_aim   = bleaf_aim + broot_aim + bsapwood_aim
+            !---- Amount that bleaf, broot, and bsapwood are off allometry. ---------------!
+            delta_bleaf    = max (0.0, bleaf_aim    - cpatch%bleaf   (ico))
+            delta_broot    = max (0.0, broot_aim    - cpatch%broot   (ico))
+            delta_bsapwood = max (0.0, bsapwood_aim - cpatch%bsapwood(ico))
+            !------------------------------------------------------------------------------!
 
-            !--- Amount that bleaf, broot, and bsapwood are off allometry -----------------!
-            delta_bleaf = max (0.0, bl_max- cpatch%bleaf(ico))
-            delta_broot = max (0.0, balive_max * q(ipft) * salloci - cpatch%broot(ico))
-            delta_bsapwood = max (0.0, balive_max * qsw(ipft) * cpatch%hite(ico) * salloci &
-                                     - cpatch%bsapwood(ico))
+
 
             !------------------------------------------------------------------------------!
-            ! If the available carbon is less than what we need to get back to allometry.  !
-            ! Grow pools in proportion to demand.  If we have enough carbon, we'll put the !
-            ! extra into bstorage.                                                         !
+            !     If the available carbon is less than what we need to get back to         !
+            ! allometry.  Grow pools in proportion to demand.  If we have enough carbon,   !
+            ! we'll put the extra into bstorage.                                           !
             !------------------------------------------------------------------------------!
-            
-            f_bleaf    = delta_bleaf / bl_max
-            f_broot    = delta_broot / (balive_max * q(ipft) * salloci )
-            f_bsapwood = delta_bsapwood / (balive_max * qsw(ipft) * cpatch%hite(ico)       &
-                       * salloci)
+            f_bleaf    = delta_bleaf    / bleaf_aim
+            f_broot    = delta_broot    / broot_aim
+            f_bsapwood = delta_bsapwood / bsapwood_aim
             f_total    = f_bleaf + f_broot + f_bsapwood
 
             !------------------------------------------------------------------------------!
@@ -1176,13 +1217,8 @@ module growth_balive
             end if
             !------------------------------------------------------------------------------!
 
-            cpatch%bleaf(ico)    = cpatch%bleaf(ico)
-            cpatch%broot(ico)    = cpatch%broot(ico)
-            cpatch%bsapwood(ico) = cpatch%bsapwood(ico)
 
-            cpatch%balive(ico)   = cpatch%bleaf(ico) + cpatch%broot(ico)                   &
-                                 + cpatch%bsapwood(ico)
-            
+
             !----- NPP allocation in diff pools in KgC/m2/day. ----------------------------!
             cpatch%today_nppleaf(ico)   = tr_bleaf       * cpatch%nplant(ico)
             cpatch%today_nppfroot(ico)  = tr_broot       * cpatch%nplant(ico)
@@ -1237,8 +1273,8 @@ module growth_balive
                nitrogen_uptake = nitrogen_uptake + increment / c2n_storage
             end if
 
-            on_allometry = 2.0 * abs(balive_max - cpatch%balive(ico))                      &
-                         / (balive_max + cpatch%balive(ico))          < 1.e-6
+            on_allometry = 2.0 * abs(balive_aim - cpatch%balive(ico))                      &
+                         / (balive_aim + cpatch%balive(ico))          < 1.e-6
             if (cpatch%elongf(ico) == 1.0 .and. on_allometry) then
                !---------------------------------------------------------------------------!
                !     We're back to allometry, change phenology_status.                     !
@@ -1266,11 +1302,10 @@ module growth_balive
          !---------------------------------------------------------------------------------!
          !   Carbon balance is negative, take it out of storage.                           !
          !---------------------------------------------------------------------------------!
-         increment =  cpatch%bstorage(ico) + carbon_balance
+         carbon_loss = min(0.0, - (cpatch%bstorage(ico) + carbon_balance))
 
-         if (increment <= 0.0)  then
+         if (carbon_loss >= 0.0)  then
             !----- Use Storage pool first then take out of balive. ------------------------!
-            increment            =  - increment
             cpatch%bstorage(ico) = 0.0
             csite%fsn_in(ipa)    = csite%fsn_in(ipa)
          else

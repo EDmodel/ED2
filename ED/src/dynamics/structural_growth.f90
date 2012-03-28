@@ -200,7 +200,7 @@ subroutine structural_growth(cgrid, month)
                                  ,cpatch%nplant(ico),cpatch%pft(ico)                       &
                                  ,cpatch%leaf_hcap(ico),cpatch%wood_hcap(ico) )
                call update_veg_energy_cweh(csite,ipa,ico,old_leaf_hcap,old_wood_hcap)
-               call is_resolvable(csite,ipa,ico,cpoly%green_leaf_factor(:,isi))
+               call is_resolvable(csite,ipa,ico)
                !---------------------------------------------------------------------------!
 
 
@@ -648,39 +648,26 @@ subroutine update_derived_cohort_props(cpatch,ico,green_leaf_factor,lsl)
    real           , intent(in) :: green_leaf_factor
    integer        , intent(in) :: lsl
    !----- Local variables -----------------------------------------------------------------!
-   real :: bl
-   real :: bl_max
+   real :: bleaf_max
    !---------------------------------------------------------------------------------------!
 
-   !----- Gett DBH and height from structural biomass. ------------------------------------!
+   !----- Get DBH and height from structural biomass. -------------------------------------!
    cpatch%dbh(ico)  = bd2dbh(cpatch%pft(ico), cpatch%bdead(ico))
    cpatch%hite(ico) = dbh2h(cpatch%pft(ico), cpatch%dbh(ico))
-   
+
+   !---------------------------------------------------------------------------------------!
+   !     Because DBH may have increased, the maximum leaf biomass may be different, which  !
+   ! will put plants off allometry even if they were on-allometry before.  Here we check   !
+   ! whether this is the case.                                                             !
+   !---------------------------------------------------------------------------------------!
    !----- Check the phenology status and whether it needs to change. ----------------------!
    select case (cpatch%phenology_status(ico))
-   case (0,1)
-
-      select case (phenology(cpatch%pft(ico)))
-      case (3,4)
-         cpatch%elongf(ico)  = max(0.0,min (1.0, cpatch%paw_avg(ico)))
-      case default
-         cpatch%elongf(ico)  = 1.0
-      end select
-
-      bl_max = dbh2bl(cpatch%dbh(ico),cpatch%pft(ico))                                     &
-             * green_leaf_factor * cpatch%elongf(ico)
-      !------------------------------------------------------------------------------------!
-      !     If LEAF biomass is not the maximum, set it to 1 (leaves partially flushed),    !
-      ! otherwise, set it to 0 (leaves are fully flushed).                                 !
-      !------------------------------------------------------------------------------------!
-      if (cpatch%bleaf(ico) < bl_max .or. cpatch%elongf(ico) < 1.0) then
-         cpatch%phenology_status(ico) = 1
-      else
-         cpatch%phenology_status(ico) = 0
-      end if
-
+   case (0)
+      bleaf_max = dbh2bl(cpatch%dbh(ico),cpatch%pft(ico))
+      if (cpatch%bleaf(ico) < bleaf_max) cpatch%phenology_status(ico) = 1
    end select
-      
+   !---------------------------------------------------------------------------------------!
+
    !----- Update LAI, WAI, and CAI. -------------------------------------------------------!
    call area_indices(cpatch%nplant(ico),cpatch%bleaf(ico),cpatch%bdead(ico)                &
               ,cpatch%balive(ico),cpatch%dbh(ico), cpatch%hite(ico),cpatch%pft(ico)        &

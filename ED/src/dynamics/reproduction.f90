@@ -356,7 +356,7 @@ subroutine reproduction(cgrid, month)
                      cpatch%leaf_energy(ico) = cpatch%leaf_hcap(ico)*cpatch%leaf_temp(ico)
                      cpatch%wood_energy(ico) = cpatch%wood_hcap(ico)*cpatch%wood_temp(ico)
 
-                     call is_resolvable(csite,ipa,ico,cpoly%green_leaf_factor(:,isi))
+                     call is_resolvable(csite,ipa,ico)
 
                      !----- Update number of cohorts in this site. ------------------------!
                      csite%cohort_count(ipa) = csite%cohort_count(ipa) + 1
@@ -502,7 +502,7 @@ subroutine reproduction(cgrid, month)
                         cpatch%wood_energy(ico) = cpatch%wood_hcap(ico)                    &
                                                   * cpatch%wood_temp(ico)
   
-                        call is_resolvable(csite,ipa,ico,cpoly%green_leaf_factor(:,isi))
+                        call is_resolvable(csite,ipa,ico)
                   end if
 
                end do cohortloop_big

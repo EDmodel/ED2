@@ -35,7 +35,7 @@ subroutine flag_stable_cohorts(cgrid)
             cohortloop: do ico=1, cpatch%ncohorts
 
                !----- Check whether we can resolve this cohort. ---------------------------!
-               call is_resolvable(csite,ipa,ico,cpoly%green_leaf_factor(:,isi))
+               call is_resolvable(csite,ipa,ico)
                !---------------------------------------------------------------------------!
 
             end do cohortloop
@@ -66,7 +66,7 @@ end subroutine flag_stable_cohorts
 ! 3. The cohort is extremely sparse.                                                       !
 ! 4. The user doesn't want to solve wood thermodynamics (wood only).                       !
 !------------------------------------------------------------------------------------------!
-subroutine is_resolvable(csite,ipa,ico,green_leaf_factor)
+subroutine is_resolvable(csite,ipa,ico)
    use ed_state_vars , only : sitetype        & ! structure
                             , patchtype       ! ! structure
    use phenology_coms, only : elongf_min      ! ! intent(in)
@@ -78,12 +78,10 @@ subroutine is_resolvable(csite,ipa,ico,green_leaf_factor)
    type(sitetype)        , target     :: csite             ! Current site
    integer               , intent(in) :: ipa               ! Patch index
    integer               , intent(in) :: ico               ! Cohort index
-   real, dimension(n_pft), intent(in) :: green_leaf_factor ! Cold phenology scale
    !----- Local variables. ----------------------------------------------------------------!
    type(patchtype)  , pointer         :: cpatch       ! Current patch
    integer                            :: ipft         ! Cohort PFT
    logical                            :: exposed      ! Cohort is above snow       [   T|F]
-   logical                            :: green        ! Cohort has some leaves.    [   T|F]
    logical                            :: leaf_enough  ! Cohort have enough leaves  [   T|F]
    logical                            :: wood_enough  ! Cohort have enough wood    [   T|F]
    !---------------------------------------------------------------------------------------!
@@ -114,18 +112,9 @@ subroutine is_resolvable(csite,ipa,ico,green_leaf_factor)
 
 
    !---------------------------------------------------------------------------------------!
-   ! 3.  Check for relative leaf biomass, which is the product of the drought-phenology    !
-   !     and cold-phenology elongation factors.                                            !
-   !---------------------------------------------------------------------------------------!
-   green        = cpatch%elongf(ico) * green_leaf_factor(ipft) >= elongf_min
-   !---------------------------------------------------------------------------------------!
-
-
-
-   !---------------------------------------------------------------------------------------!
    !     Save the tests in the cohort variable, so the checks are done consistently.       !
    !---------------------------------------------------------------------------------------!
-   cpatch%leaf_resolvable(ico) = exposed .and. leaf_enough .and. green
+   cpatch%leaf_resolvable(ico) = exposed .and. leaf_enough
    cpatch%wood_resolvable(ico) = exposed .and. wood_enough
    !---------------------------------------------------------------------------------------!
 

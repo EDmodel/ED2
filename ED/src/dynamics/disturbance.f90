@@ -1961,7 +1961,7 @@ module disturbance_utils
       cpatch%leaf_energy(nc) = cpatch%leaf_hcap(nc) * cpatch%leaf_temp(nc)
       cpatch%wood_energy(nc) = cpatch%wood_hcap(nc) * cpatch%wood_temp(nc)
 
-      call is_resolvable(csite,np,nc,green_leaf_factor)
+      call is_resolvable(csite,np,nc)
 
       !----- Should plantations be considered recruits? -----------------------------------!
       cpatch%new_recruit_flag(nc) = 1
