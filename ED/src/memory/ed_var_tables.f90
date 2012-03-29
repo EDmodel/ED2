@@ -123,7 +123,7 @@ module ed_var_tables
       character (len=64)  :: dimlab
       logical             :: vector_allocated
       !----- Multiple pointer defs (maxptrs) ----------------------------------------------!
-      type(var_table_vector), allocatable, dimension(:) :: vt_vector
+      type(var_table_vector), pointer, dimension(:) :: vt_vector
    end type var_table
    !---------------------------------------------------------------------------------------!
 
@@ -1550,9 +1550,9 @@ module ed_var_tables
    subroutine reset_vt_vector_pointers(vt)
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
-      type(var_table), intent(inout) :: vt
+      type(var_table), target :: vt
       !----- Local variables. -------------------------------------------------------------!
-      integer                        :: iptr
+      integer                 :: iptr
       !------------------------------------------------------------------------------------!
 
       !------------------------------------------------------------------------------------!
@@ -1585,6 +1585,7 @@ module ed_var_tables
       !      Now it's safe to deallocate, just remind to update the logical flag...        !
       !------------------------------------------------------------------------------------!
       deallocate(vt%vt_vector)
+      nullify(vt%vt_vector)
       vt%vector_allocated = .false.
       !------------------------------------------------------------------------------------!
 

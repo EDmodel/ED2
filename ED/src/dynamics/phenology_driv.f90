@@ -531,27 +531,13 @@ subroutine update_phenology(doy, cpoly, isi, lat)
                cpatch%cb(13,ico)     = cpatch%cb(13,ico)     - cpatch%leaf_drop(ico)
                cpatch%cb_max(13,ico) = cpatch%cb_max(13,ico) - cpatch%leaf_drop(ico)
                !---------------------------------------------------------------------------!
-            else
+            elseif (elongf_try >= elongf_min .and. cpatch%phenology_status(ico) /= 0) then
                !---------------------------------------------------------------------------!
                !       Elongation factor could increase, but we first check whether it is  !
                ! safe to do so based on the phenology status.                              !
                !---------------------------------------------------------------------------!
-               select case (cpatch%phenology_status(ico))
-               case (0,1)
-                  !----- Plants weren't stressed, increase elongation factor. -------------!
-                  cpatch%elongf(ico) = elongf_try
-               case (-1,2)
-                  !------------------------------------------------------------------------!
-                  !     Plants had lost leaves, let the cohort grow leaves only if         !
-                  ! conditions are improving significantly.                                !
-                  !------------------------------------------------------------------------!
-                  elongf_grow = min(1.0,max(elongf_flush,cpatch%elongf(ico)+elongf_min))
-                  if (elongf_try >= elongf_grow) then
-                     cpatch%elongf          (ico) = elongf_try
-                     cpatch%phenology_status(ico) = 1
-                  end if
-                  !------------------------------------------------------------------------!
-               end select
+               cpatch%elongf          (ico) = elongf_try
+               cpatch%phenology_status(ico) = 1
                !---------------------------------------------------------------------------!
             end if
             !------------------------------------------------------------------------------!
@@ -692,7 +678,7 @@ subroutine update_phenology_eq_0(doy, cpoly, isi, lat)
       call phenology_thresholds(daylight,csite%soil_tempk(isoil_lev,ipa)                   &
                                ,csite%soil_water(:,ipa),cpoly%ntext_soil(:,isi)            &
                                ,csite%sum_chd(ipa),csite%sum_dgd(ipa),drop_cold            &
-                               ,leaf_out_cold,theta,cpoly%lsl(isi))
+                               ,leaf_out_cold,cpoly%lsl(isi))
 
       cohortloop: do ico = 1,cpatch%ncohorts
          ipft    = cpatch%pft(ico)
