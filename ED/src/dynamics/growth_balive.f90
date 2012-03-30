@@ -59,6 +59,7 @@ module growth_balive
       real                          :: balive_in
       real                          :: nitrogen_supply
       real                          :: dndt
+      real                          :: dlnndt
       real                          :: old_leaf_hcap
       real                          :: old_wood_hcap
       real                          :: nitrogen_uptake
@@ -221,10 +222,12 @@ module growth_balive
                   !------------------------------------------------------------------------!
                   call mortality_rates(cpatch,ipa,ico,csite%avg_daily_temp(ipa)            &
                                       ,csite%age(ipa))
-                  dndt = - sum(cpatch%mort_rate(:,ico)) * cpatch%nplant(ico) * tfact
+                  dndt   = - sum(cpatch%mort_rate(:,ico))
+                  dlnndt = dndt * cpatch%nplant(ico)
 
-                  !----- Update monthly mortality rate [plants/m2/month]. -----------------!
-                  cpatch%monthly_dndt(ico) = cpatch%monthly_dndt(ico) + dndt
+                  !----- Update monthly mortality rates [plants/m2/month and 1/month]. ----!
+                  cpatch%monthly_dndt  (ico) = cpatch%monthly_dndt  (ico) + dndt   * tfact
+                  cpatch%monthly_dlnndt(ico) = cpatch%monthly_dlnndt(ico) + dlnndt * tfact
 
 
                   !----- Updating LAI, WAI, and CAI. --------------------------------------!
@@ -329,7 +332,6 @@ module growth_balive
       real                          :: carbon_balance_max
       real                          :: balive_in
       real                          :: nitrogen_supply
-      real                          :: dndt
       real                          :: old_leaf_hcap
       real                          :: old_wood_hcap
       real                          :: nitrogen_uptake
@@ -489,9 +491,6 @@ module growth_balive
                   !------------------------------------------------------------------------!
                   call mortality_rates(cpatch,ipa,ico,csite%avg_daily_temp(ipa)            &
                                       ,csite%age(ipa))
-
-                  !----- Don't update monthly mortality rate [plants/m2/month]. -----------!
-                  cpatch%monthly_dndt(ico) = cpatch%monthly_dndt(ico)
 
                end do
 

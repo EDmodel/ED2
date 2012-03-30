@@ -402,7 +402,7 @@ subroutine grell_cupar_static(comp_noforc_cldwork,checkmass,iupmethod,maxens_cap
       !    ting all to a non-sense value to make the point that convection did not happen. !
       !------------------------------------------------------------------------------------!
       klod    = 0
-      klou    = 0
+      klou    = 1
       klcl    = 0
       klfc    = 0
       kdet    = 0

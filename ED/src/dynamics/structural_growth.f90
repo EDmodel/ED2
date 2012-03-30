@@ -103,9 +103,16 @@ subroutine structural_growth(cgrid, month)
                ! sparse cohort is about to be terminated, anyway).                         !
                ! NB: monthly_dndt may be negative.                                         !
                !---------------------------------------------------------------------------!
-               cpatch%monthly_dndt(ico) = max(cpatch%monthly_dndt(ico)                     &
-                                             ,negligible_nplant(ipft) - cpatch%nplant(ico))
-               cpatch%nplant(ico)       = cpatch%nplant(ico) + cpatch%monthly_dndt(ico)
+               cpatch%monthly_dndt  (ico) = max( cpatch%monthly_dndt   (ico)               &
+                                               , negligible_nplant     (ipft)              &
+                                               - cpatch%nplant         (ico) )
+               cpatch%monthly_dlnndt(ico) = max( cpatch%monthly_dlnndt (ico)               &
+                                               , log( negligible_nplant(ipft)              &
+                                                    / cpatch%nplant    (ico) ) )
+               cpatch%nplant(ico)         = cpatch%nplant(ico)                               &
+                                          * exp(cpatch%monthly_dlnndt(ico))
+               !---------------------------------------------------------------------------!
+
 
                !----- Calculate litter owing to mortality. --------------------------------!
                balive_mort_litter   = - cpatch%balive(ico)   * cpatch%monthly_dndt(ico)
@@ -115,7 +122,8 @@ subroutine structural_growth(cgrid, month)
                                     + struct_litter
 
                !----- Reset monthly_dndt. -------------------------------------------------!
-               cpatch%monthly_dndt(ico) = 0.0
+               cpatch%monthly_dndt  (ico) = 0.0
+               cpatch%monthly_dlnndt(ico) = 0.0
 
                !----- Determine how to distribute what is in bstorage. --------------------!
                call plant_structural_allocation(cpatch%pft(ico),cpatch%hite(ico)           &
@@ -367,8 +375,8 @@ subroutine structural_growth_eq_0(cgrid, month)
                ! sparse cohort is about to be terminated, anyway).                         !
                ! NB: monthly_dndt may be negative.                                         !
                !---------------------------------------------------------------------------!
-               cpatch%monthly_dndt(ico) = 0.0
-               cpatch%nplant(ico)       = cpatch%nplant(ico)
+               cpatch%monthly_dndt  (ico) = 0.0
+               cpatch%monthly_dlnndt(ico) = 0.0
 
                !----- Calculate litter owing to mortality. --------------------------------!
                balive_mort_litter   = - cpatch%balive(ico)   * cpatch%monthly_dndt(ico)

@@ -1194,6 +1194,7 @@ module fuse_fiss_utils
       cpatch%vleaf_respiration(idt)    = cpatch%vleaf_respiration(isc)
       cpatch%fsn(idt)                  = cpatch%fsn(isc)
       cpatch%monthly_dndt(idt)         = cpatch%monthly_dndt(isc)
+      cpatch%monthly_dlnndt(idt)       = cpatch%monthly_dlnndt(isc)
       cpatch%agb(idt)                  = cpatch%agb(isc)
       cpatch%basarea(idt)              = cpatch%basarea(isc)
       cpatch%dagb_dt(idt)              = cpatch%dagb_dt(isc)
@@ -1711,10 +1712,15 @@ module fuse_fiss_utils
 
 
       !------------------------------------------------------------------------------------!
-      !     Updating the tendency of plant density.  All variables are per unit of area,   !
-      ! so they should be added, not scaled.                                               !
+      !     Updating the tendency of plant density and the relative mortality rate.  The   !
+      ! first is extensive (i.e. per unit of area), so it must be added, not scaled.  The  !
+      ! second is intensive so it must be scaled.                                          !
       !------------------------------------------------------------------------------------!
-      cpatch%monthly_dndt(recc) = cpatch%monthly_dndt(recc) + cpatch%monthly_dndt(donc)
+      cpatch%monthly_dndt  (recc) = cpatch%monthly_dndt(recc) + cpatch%monthly_dndt(donc)
+      cpatch%monthly_dlnndt(recc) = ( cpatch%monthly_dlnndt(recc) * cpatch%nplant(recc)    &
+                                    + cpatch%monthly_dlnndt(donc) * cpatch%nplant(donc) )  &
+                                    * newni
+      
       !------------------------------------------------------------------------------------!
 
 

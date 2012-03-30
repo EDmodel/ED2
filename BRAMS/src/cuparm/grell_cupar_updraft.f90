@@ -71,7 +71,7 @@ subroutine grell_updraft_origin(mkx,mgmzp,iupmethod,kpbl,kbmax,z,wwind,sigw,tke,
    case (4) ! Combined mechanical forcing and turbulent
       if (kpbl /= 0) then ! Nakanishi and Niino is used, sigw is available
          wboth = wwind + sigw
-         klou = (kstart-1) + maxloc(wboth(kstart:kpbl),dim=1)
+         klou = max(kstart,maxloc(wboth(1:kpbl),dim=1))
       else ! Estimate sigw as the square root of 2 TKE
          call grell_find_pbl_height(mkx,mgmzp,z,tke,qliq,qice,kpblloc)
          wboth = wwind + sqrt(2.*tke)
@@ -207,6 +207,11 @@ recursive subroutine grell_find_cloud_lfc(mkx,mgmzp,kbmax,cap_max,wnorm_max,wwin
    ! fore klcl will be set to the nearest level above the actual LCL (or at it if we are   !
    ! really lucky...).                                                                     !
    !---------------------------------------------------------------------------------------!
+   if (klou > kbmax) then
+      !------ Gave up... Cloud would be too high to be a cumulus. -------------------------!
+      ierr = 3
+      return
+   end if
    call lcl_il(thil_cup(klou),p_cup(klou),t_cup(klou),qtot_cup(klou),qvap_cup(klou)        &
               ,tlcl,plcl,dzlcl)
    klcl = klou

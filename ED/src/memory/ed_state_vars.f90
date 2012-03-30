@@ -289,6 +289,9 @@ module ed_state_vars
      ! Plant density tendency [plants/m2/month]
      real ,pointer,dimension(:) :: monthly_dndt
 
+     ! Plant density tendency [1/month]
+     real ,pointer,dimension(:) :: monthly_dlnndt
+
      ! Mortality rate [yr-1]
      real , pointer, dimension(:,:) :: mort_rate
 
@@ -2184,7 +2187,6 @@ contains
     num_var = 0
     
     allocate(vt_info(maxvars,ngrids))
-    vt_info(:,:)%vector_allocated = .false.
 
 
     !  Initialize the global offsets
@@ -3316,6 +3318,7 @@ contains
     allocate(cpatch%vleaf_respiration(ncohorts))
     allocate(cpatch%fsn(ncohorts))
     allocate(cpatch%monthly_dndt(ncohorts))
+    allocate(cpatch%monthly_dlnndt(ncohorts))
     allocate(cpatch%mort_rate(n_mort,ncohorts))
 
     allocate(cpatch%Psi_open(ncohorts))
@@ -4508,6 +4511,7 @@ contains
     nullify(cpatch%vleaf_respiration)
     nullify(cpatch%fsn)
     nullify(cpatch%monthly_dndt)
+    nullify(cpatch%monthly_dlnndt)
     nullify(cpatch%mort_rate)
     nullify(cpatch%mmean_mort_rate)
     nullify(cpatch%Psi_open)
@@ -5696,6 +5700,7 @@ contains
     if(associated(cpatch%mmean_vleaf_resp  ))  deallocate(cpatch%mmean_vleaf_resp  )
     if(associated(cpatch%fsn))                 deallocate(cpatch%fsn)
     if(associated(cpatch%monthly_dndt))        deallocate(cpatch%monthly_dndt)
+    if(associated(cpatch%monthly_dlnndt))      deallocate(cpatch%monthly_dlnndt)
     if(associated(cpatch%mort_rate))           deallocate(cpatch%mort_rate)
     if(associated(cpatch%mmean_mort_rate))     deallocate(cpatch%mmean_mort_rate)
 
@@ -6519,6 +6524,7 @@ contains
     patchout%vleaf_respiration(1:inc) = pack(patchin%vleaf_respiration,mask)
     patchout%fsn(1:inc)              = pack(patchin%fsn,mask)
     patchout%monthly_dndt(1:inc)     = pack(patchin%monthly_dndt,mask)
+    patchout%monthly_dlnndt(1:inc)     = pack(patchin%monthly_dlnndt,mask)
     
     patchout%Psi_open(1:inc)         = pack(patchin%Psi_open,mask)
     patchout%krdepth(1:inc)          = pack(patchin%krdepth,mask)
@@ -6761,6 +6767,7 @@ contains
        patchout%vleaf_respiration(iout) = patchin%vleaf_respiration(iin)
        patchout%fsn(iout)               = patchin%fsn(iin)
        patchout%monthly_dndt(iout)      = patchin%monthly_dndt(iin)
+       patchout%monthly_dlnndt(iout)    = patchin%monthly_dlnndt(iin)
        patchout%mort_rate(:,iout)       = patchin%mort_rate(:,iin)
     
        patchout%Psi_open(iout)         = patchin%Psi_open(iin)
@@ -7022,7 +7029,7 @@ contains
     ! =================================================
     
     
-    use ed_var_tables,only:num_var,vt_info,var_table,reset_vt_vector_pointers
+    use ed_var_tables,only:num_var,vt_info,var_table,nullify_vt_vector_pointers
     use ed_node_coms,only:mynum,mchnum,machs,nmachs,nnodetot,sendnum,recvnum,master_num
     use ed_max_dims, only: maxgrds, maxmach
     implicit none
@@ -7053,7 +7060,12 @@ contains
        
        if (num_var(igr)>0) then
           do nv=1,num_var(igr)
-             call reset_vt_vector_pointers(vt_info(nv,igr))
+             if (associated(vt_info(nv,igr)%vt_vector)) then
+                do iptr=1,vt_info(nv,igr)%nptrs
+                   call nullify_vt_vector_pointers(vt_info(nv,igr)%vt_vector(iptr))
+                end do
+                deallocate(vt_info(nv,igr)%vt_vector)
+             end if
           end do
        end if
 
@@ -13925,6 +13937,13 @@ contains
          nvar=nvar+1
            call vtable_edio_r(npts,cpatch%monthly_dndt,nvar,igr,init,cpatch%coglob_id, &
            var_len,var_len_global,max_ptrs,'MONTHLY_DNDT :41:hist') 
+         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+      end if
+
+      if (associated(cpatch%monthly_dlnndt)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,cpatch%monthly_dlnndt,nvar,igr,init,cpatch%coglob_id, &
+           var_len,var_len_global,max_ptrs,'MONTHLY_DLNNDT :41:hist') 
          call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
       end if
 

@@ -79,6 +79,7 @@ subroutine init_ed_cohort_vars(cpatch,ico, lsl)
 
 
    cpatch%monthly_dndt(ico)     = 0.0
+   cpatch%monthly_dlnndt(ico)   = 0.0
    cpatch%mort_rate(:,ico)      = 0.0
 
    cpatch%dagb_dt(ico)          = 0.0

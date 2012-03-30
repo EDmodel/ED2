@@ -2627,6 +2627,7 @@ subroutine fill_history_patch(cpatch,paco_index,ncohorts_global,green_leaf_facto
      call hdf_getslab_r(cpatch%vleaf_respiration,'VLEAF_RESPIRATION ',dsetrank,iparallel,.true.)
      call hdf_getslab_r(cpatch%fsn,'FSN ',dsetrank,iparallel,.true.)
      call hdf_getslab_r(cpatch%monthly_dndt,'MONTHLY_DNDT ',dsetrank,iparallel,.true.)
+     call hdf_getslab_r(cpatch%monthly_dlnndt,'MONTHLY_DLNNDT ',dsetrank,iparallel,.true.)
 
      if (associated(cpatch%mmean_gpp       )) &
           call hdf_getslab_r(cpatch%mmean_gpp,'MMEAN_GPP_CO ',dsetrank,iparallel,.false.)
