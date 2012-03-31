@@ -184,7 +184,7 @@ subroutine update_phenology(doy, cpoly, isi, lat)
    use ed_misc_coms   , only : current_time             ! ! intent(in)
    use allometry      , only : area_indices             & ! subroutine
                              , ed_biomass               & ! function
-                             , dbh2bl                   ! ! function
+                             , size2bl                  ! ! function
    use phenology_aux  , only : daylength                ! ! function
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
@@ -459,7 +459,7 @@ subroutine update_phenology(doy, cpoly, isi, lat)
 
 
             !----- Find the maximum allowed leaf biomass. ---------------------------------!
-            bl_max = elongf_try * dbh2bl(cpatch%dbh(ico),ipft)
+            bl_max = elongf_try * size2bl(cpatch%dbh(ico),cpatch%hite(ico),ipft)
             !------------------------------------------------------------------------------!
 
 
@@ -551,21 +551,15 @@ subroutine update_phenology(doy, cpoly, isi, lat)
          call area_indices(cpatch%nplant(ico),cpatch%bleaf(ico),cpatch%bdead(ico)          &
                           ,cpatch%balive(ico),cpatch%dbh(ico),cpatch%hite(ico)             &
                           ,cpatch%pft(ico),cpatch%sla(ico),cpatch%lai(ico)                 &
-                          ,cpatch%wai(ico),cpatch%crown_area(ico),cpatch%bsapwood(ico))
+                          ,cpatch%wai(ico),cpatch%crown_area(ico),cpatch%bsapwooda(ico))
          !---------------------------------------------------------------------------------!
 
 
 
 
          !----- Update above-ground biomass. ----------------------------------------------!
-         cpatch%agb(ico) = ed_biomass(cpatch%bdead(ico),cpatch%balive(ico)                 &
-                                     ,cpatch%bleaf(ico),cpatch%pft(ico)                    &
-                                     ,cpatch%hite(ico) ,cpatch%bstorage(ico)               &
-                                     ,cpatch%bsapwood(ico)) 
-         !---------------------------------------------------------------------------------!
-
-
-
+         cpatch%agb(ico) = ed_biomass(cpatch%bdead(ico),cpatch%bleaf(ico)                  &
+                                     ,cpatch%bsapwooda(ico),cpatch%pft(ico)) 
 
          !---------------------------------------------------------------------------------!
          !    The leaf biomass of the cohort has changed, update the vegetation energy -   !
@@ -573,7 +567,7 @@ subroutine update_phenology(doy, cpoly, isi, lat)
          !---------------------------------------------------------------------------------!
          old_leaf_hcap       = cpatch%leaf_hcap(ico)
          old_wood_hcap       = cpatch%wood_hcap(ico)
-         call calc_veg_hcap(cpatch%bleaf(ico),cpatch%bdead(ico),cpatch%bsapwood(ico)       &
+         call calc_veg_hcap(cpatch%bleaf(ico),cpatch%bdead(ico),cpatch%bsapwooda(ico)      &
                            ,cpatch%nplant(ico),cpatch%pft(ico)                             &
                            ,cpatch%leaf_hcap(ico),cpatch%wood_hcap(ico) )
          call update_veg_energy_cweh(csite,ipa,ico,old_leaf_hcap,old_wood_hcap)
@@ -632,7 +626,7 @@ subroutine update_phenology_eq_0(doy, cpoly, isi, lat)
    use ed_misc_coms   , only : current_time             ! ! intent(in)
    use allometry      , only : area_indices             & ! subroutine
                              , ed_biomass               & ! function
-                             , dbh2bl                   ! ! function
+                             , size2bl                  ! ! function
    use phenology_aux  , only : daylength                ! ! function
 
    implicit none
@@ -760,7 +754,7 @@ subroutine update_phenology_eq_0(doy, cpoly, isi, lat)
                ! leaves appear all of a sudden.                                            !
                !---------------------------------------------------------------------------! 
                cpatch%phenology_status(ico) = 1
-               cpatch%bleaf(ico)            = dbh2bl(cpatch%dbh(ico),ipft)
+               cpatch%bleaf(ico)            = size2bl(cpatch%dbh(ico),cpatch%hite(ico),ipft)
                cpatch%balive(ico)           = cpatch%balive(ico) + cpatch%bleaf(ico)
                cpatch%elongf(ico)           = 1.0
             end if  ! critical moisture
@@ -781,7 +775,7 @@ subroutine update_phenology_eq_0(doy, cpoly, isi, lat)
                   bleaf_new = 0.0
                else
                   bleaf_new = cpoly%green_leaf_factor(ipft,isi)                            &
-                            * dbh2bl(cpatch%dbh(ico),ipft)
+                            * size2bl(cpatch%dbh(ico),cpatch%hite(ico),ipft)
                end if
                
                delta_bleaf = cpatch%bleaf(ico) - bleaf_new
@@ -830,7 +824,7 @@ subroutine update_phenology_eq_0(doy, cpoly, isi, lat)
                cpatch%phenology_status(ico) = 1
                cpatch%elongf          (ico) = 1.
                cpatch%bleaf(ico)            = cpoly%green_leaf_factor(ipft,isi)            &
-                                            * dbh2bl(cpatch%dbh(ico),ipft)
+                                            * size2bl(cpatch%dbh(ico),cpatch%hite(ico),ipft)
                cpatch%balive(ico)           = cpatch%balive(ico) + cpatch%bleaf(ico)
                !---------------------------------------------------------------------------!
             end if
@@ -851,7 +845,7 @@ subroutine update_phenology_eq_0(doy, cpoly, isi, lat)
             !----- In case it is too dry, drop all the leaves. ----------------------------!
             if (elongf_try < elongf_min) elongf_try = 0.
             !----- Find the new leaf biomass. ---------------------------------------------!
-            bleaf_new = elongf_try * dbh2bl(cpatch%dbh(ico),ipft)
+            bleaf_new = elongf_try * size2bl(cpatch%dbh(ico),cpatch%hite(ico),ipft)
 
             !------------------------------------------------------------------------------!
             !     Delta_bleaf is the difference between the current leaf biomass and the   !
@@ -914,13 +908,11 @@ subroutine update_phenology_eq_0(doy, cpoly, isi, lat)
          call area_indices(cpatch%nplant(ico),cpatch%bleaf(ico),cpatch%bdead(ico)          &
                           ,cpatch%balive(ico),cpatch%dbh(ico),cpatch%hite(ico)             &
                           ,cpatch%pft(ico),cpatch%sla(ico),cpatch%lai(ico)                 &
-                          ,cpatch%wai(ico),cpatch%crown_area(ico),cpatch%bsapwood(ico))
+                          ,cpatch%wai(ico),cpatch%crown_area(ico),cpatch%bsapwooda(ico))
 
          !----- Update above-ground biomass. ----------------------------------------------!
-         cpatch%agb(ico) = ed_biomass(cpatch%bdead(ico),cpatch%balive(ico)                 &
-                                     ,cpatch%bleaf(ico),cpatch%pft(ico)                    &
-                                     ,cpatch%hite(ico) ,cpatch%bstorage(ico)               &
-                                     ,cpatch%bsapwood(ico)) 
+         cpatch%agb(ico) = ed_biomass(cpatch%bdead(ico),cpatch%bleaf(ico)                  &
+                                     ,cpatch%bsapwooda(ico),cpatch%pft(ico)) 
 
          !---------------------------------------------------------------------------------!
          !    The leaf biomass of the cohort has changed, update the vegetation energy -   !
@@ -928,7 +920,7 @@ subroutine update_phenology_eq_0(doy, cpoly, isi, lat)
          !---------------------------------------------------------------------------------!
          old_leaf_hcap       = cpatch%leaf_hcap(ico)
          old_wood_hcap       = cpatch%wood_hcap(ico)
-         call calc_veg_hcap(cpatch%bleaf(ico),cpatch%bdead(ico),cpatch%bsapwood(ico)       &
+         call calc_veg_hcap(cpatch%bleaf(ico),cpatch%bdead(ico),cpatch%bsapwooda(ico)      &
                            ,cpatch%nplant(ico),cpatch%pft(ico)                             &
                            ,cpatch%leaf_hcap(ico),cpatch%wood_hcap(ico) )
          call update_veg_energy_cweh(csite,ipa,ico,old_leaf_hcap,old_wood_hcap)
@@ -1026,7 +1018,7 @@ end subroutine phenology_thresholds
 !------------------------------------------------------------------------------------------!
 subroutine assign_prescribed_phen(green_leaf_factor,leaf_aging_factor,dbh,height,pft       &
                                  ,drop_cold,leaf_out_cold,bl_max)
-   use allometry     , only : dbh2bl
+   use allometry     , only : size2bl
    use phenology_coms, only : elongf_min
    implicit none
    !------ Arguments. ---------------------------------------------------------------------!
@@ -1042,7 +1034,7 @@ subroutine assign_prescribed_phen(green_leaf_factor,leaf_aging_factor,dbh,height
 
    drop_cold     = green_leaf_factor /= leaf_aging_factor
    leaf_out_cold = green_leaf_factor > elongf_min .and. (.not. drop_cold)
-   bl_max        = green_leaf_factor * dbh2bl(dbh, pft)
+   bl_max        = green_leaf_factor * size2bl(dbh, height, pft)
 
    return
 end subroutine assign_prescribed_phen

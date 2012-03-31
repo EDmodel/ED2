@@ -287,18 +287,19 @@ subroutine event_harvest(agb_frac8,bgb_frac8,fol_frac8,stor_frac8)
   use ed_state_vars,only: edgrid_g, &
        edtype,polygontype,sitetype, &
        patchtype,allocate_patchtype,copy_patchtype,deallocate_patchtype 
-  use pft_coms, only:sla,qsw,q,hgt_min, agf_bs
+  use pft_coms, only:sla,qsw,q,hgt_min, agf_bs, is_grass
   use disturbance_utils,only: plant_patch
   use ed_therm_lib, only: calc_veg_hcap,update_veg_energy_cweh
   use fuse_fiss_utils, only: terminate_cohorts
-  use allometry, only : bd2dbh, dbh2h, area_indices, ed_biomass
+  use allometry, only : bd2dbh, dbh2h, bl2dbh, bl2h, area_indices, ed_biomass
   use consts_coms, only : pio4
+  use ed_misc_coms     , only : igrass               ! ! intent(in)
   implicit none
   real(kind=8),intent(in) :: agb_frac8
   real(kind=8),intent(in) :: bgb_frac8
   real(kind=8),intent(in) :: fol_frac8
   real(kind=8),intent(in) :: stor_frac8
-  real :: ialloc,bdead_new,bsw_new,bleaf_new,bfr_new,bstore_new
+  real :: ialloc,bdead_new,bswa_new,bswb_new,bleaf_new,bfr_new,bstore_new
   real :: agb_frac,bgb_frac,fol_frac,stor_frac
   real :: old_leaf_hcap
   real :: old_wood_hcap
@@ -310,9 +311,9 @@ subroutine event_harvest(agb_frac8,bgb_frac8,fol_frac8,stor_frac8)
   type(sitetype),pointer :: csite
   type(patchtype),pointer :: cpatch
 
-  agb_frac = real(agb_frac8)
-  bgb_frac = real(bgb_frac8)
-  fol_frac = real(fol_frac8)
+  agb_frac  = real(agb_frac8)
+  bgb_frac  = real(bgb_frac8)
+  fol_frac  = real(fol_frac8)
   stor_frac = real(stor_frac8)
 
   print*,"----------------------------"
@@ -347,14 +348,20 @@ subroutine event_harvest(agb_frac8,bgb_frac8,fol_frac8,stor_frac8)
                  
                  pft = cpatch%pft(ico)                 
                  !! calc new pool sizes
-                 ialloc =  1.0 / (1.0 + q(pft) + qsw(pft) * cpatch%hite(ico))
-                 bdead_new = cpatch%bdead(ico)*&
-                      & (1.0-agb_frac*agf_bs(pft) - bgb_frac*(1.0-agf_bs(pft)))
-                 bsw_new   = cpatch%balive(ico) * qsw(pft) * cpatch%hite(ico) *&
-                      & ialloc * (1.0-agb_frac*agf_bs(pft) - bgb_frac*(1.0-agf_bs(pft)))
-                 bstore_new = cpatch%bstorage(ico)*(1.0-stor_frac)
-                 bleaf_new = cpatch%balive(ico) * ialloc *(1.0-fol_frac)
-                 bfr_new   = cpatch%balive(ico) * q(pft) * ialloc * (1.0-bgb_frac)
+
+                 ialloc     =  1.0 / (1.0 + q(pft) + qsw(pft) * cpatch%hite(ico))
+                 bdead_new  = cpatch%bdead(ico) *                                        &
+                              (1.0-agb_frac * agf_bs(pft) - bgb_frac*(1.0-agf_bs(pft)))
+                 bswa_new   = cpatch%balive(ico) * qsw(pft) * cpatch%hite(ico)           &
+                              * agf_bs(pft) * ialloc * (1.0-agb_frac*agf_bs(pft)         &
+                              - bgb_frac*(1.0-agf_bs(pft)))
+                 bswb_new   = cpatch%balive(ico) * qsw(pft) * cpatch%hite(ico)           &
+                              * (1.-agf_bs(pft)) * ialloc                                &
+                              * (1.0-agb_frac*agf_bs(pft) - bgb_frac*(1.0-agf_bs(pft)))
+
+                 bstore_new = cpatch%bstorage(ico) * (1.0-stor_frac)
+                 bleaf_new  = cpatch%balive(ico)   * ialloc *(1.0-fol_frac)
+                 bfr_new    = cpatch%balive(ico)   * q(pft) * ialloc * (1.0-bgb_frac)
 
                  !! move residual frac to debris/litter pools
                    !! For now assume 100% removal [[needs to be updated]]
@@ -363,11 +370,13 @@ subroutine event_harvest(agb_frac8,bgb_frac8,fol_frac8,stor_frac8)
                  !! update biomass pools  
                  !! [[this needs to be more sophisticated]] 
                  
-                 cpatch%balive(ico)   = max(0.0,bleaf_new + bfr_new + bsw_new)
-                 cpatch%broot(ico)    = max(0.0,bfr_new)
-                 cpatch%bsapwood(ico) = max(0.0,bsw_new)
-                 cpatch%bdead(ico)    = max(0.0,bdead_new)
-                 cpatch%bstorage(ico) = max(0.0,bstore_new)
+                 cpatch%balive(ico)    = max(0.0,bleaf_new + bfr_new + bswa_new + bswb_new)
+                 cpatch%broot(ico)     = max(0.0,bfr_new)
+                 cpatch%bsapwooda(ico) = max(0.0,bswa_new)
+                 cpatch%bsapwoodb(ico) = max(0.0,bswb_new)
+                 cpatch%bdead(ico)     = max(0.0,bdead_new)
+                 cpatch%bstorage(ico)  = max(0.0,bstore_new)
+                 
                  if(bleaf_new .le. tiny(1.0)) then
                     cpatch%phenology_status(ico) = 2
                     cpatch%elongf(ico)           = 0.0
@@ -379,8 +388,13 @@ subroutine event_harvest(agb_frac8,bgb_frac8,fol_frac8,stor_frac8)
                  end if
 
                  if(cpatch%bdead(ico) .gt. tiny(1.0)) then
-                    cpatch%dbh(ico) = bd2dbh(cpatch%pft(ico), cpatch%bdead(ico)) 
-                    cpatch%hite(ico) = dbh2h(cpatch%pft(ico), cpatch%dbh(ico))
+                    if(is_grass(cpatch%pft(ico)) .and. igrass==1) then 
+                        cpatch%dbh(ico)  = bl2dbh(cpatch%bleaf(ico),cpatch%pft(ico)) 
+                        cpatch%hite(ico) = bl2h  (cpatch%bleaf(ico),cpatch%pft(ico))
+                    else
+                        cpatch%dbh(ico)  = bd2dbh(cpatch%pft(ico), cpatch%bdead(ico)) 
+                        cpatch%hite(ico) = dbh2h (cpatch%pft(ico), cpatch%dbh(ico))
+                    end if
                  else
                     cpatch%dbh(ico)  = 0.0
                     cpatch%hite(ico) = 0.0
@@ -391,15 +405,12 @@ subroutine event_harvest(agb_frac8,bgb_frac8,fol_frac8,stor_frac8)
                                   ,cpatch%balive(ico),cpatch%dbh(ico), cpatch%hite(ico)    &
                                   ,cpatch%pft(ico),cpatch%sla(ico), cpatch%lai(ico)        &
                                   ,cpatch%wai(ico), cpatch%crown_area(ico)                 &
-                                  ,cpatch%bsapwood(ico))
+                                  ,cpatch%bsapwooda(ico))
 
                  !----- Update basal area and above-ground biomass. -----------------------!
-                 cpatch%basarea(ico) = pio4 * cpatch%dbh(ico) * cpatch%dbh(ico)                
-                 cpatch%agb(ico)     = ed_biomass(cpatch%bdead(ico),cpatch%balive(ico)     &
-                                                 ,cpatch%bleaf(ico),cpatch%pft(ico)        &
-                                                 ,cpatch%hite(ico) ,cpatch%bstorage(ico)   &
-                                                 ,cpatch%bsapwood(ico))     
-
+                 cpatch%basarea(ico) = pio4 * cpatch%dbh(ico) * cpatch%dbh(ico)            
+                 cpatch%agb(ico)     = ed_biomass(cpatch%bdead(ico),cpatch%bleaf(ico)      &
+                                                 ,cpatch%bsapwooda(ico),cpatch%pft(ico))   
                  !-------------------------------------------------------------------------!
                  !    Here we are leaving all water in the branches and twigs... Do not    !
                  ! worry, if there is any, it will go down through shedding the next       !
@@ -408,7 +419,7 @@ subroutine event_harvest(agb_frac8,bgb_frac8,fol_frac8,stor_frac8)
                  old_leaf_hcap = cpatch%leaf_hcap(ico)
                  old_wood_hcap = cpatch%wood_hcap(ico)
                  call calc_veg_hcap(cpatch%bleaf(ico),cpatch%bdead(ico)                    &
-                                   ,cpatch%bsapwood(ico),cpatch%nplant(ico)                &
+                                   ,cpatch%bsapwooda(ico),cpatch%nplant(ico)               &
                                    ,cpatch%pft(ico)                                        &
                                    ,cpatch%leaf_hcap(ico),cpatch%wood_hcap(ico))
                  call update_veg_energy_cweh(csite,ipa,ico,old_leaf_hcap,old_wood_hcap)
@@ -748,7 +759,8 @@ subroutine event_till(rval8)
                  !! update biomass pools
                  cpatch%balive(ico)           = 0.0
                  cpatch%broot(ico)            = 0.0
-                 cpatch%bsapwood(ico)         = 0.0
+                 cpatch%bsapwooda(ico)        = 0.0
+                 cpatch%bsapwoodb(ico)        = 0.0
                  cpatch%bdead(ico)            = 0.0
                  cpatch%bstorage(ico)         = 0.0
                  cpatch%nplant(ico)           = 0.0
@@ -762,9 +774,9 @@ subroutine event_till(rval8)
                  cpatch%wood_water(ico)       = 0.0
                  cpatch%wood_fliq(ico)        = 0.0
                  cpatch%wood_temp(ico)        = csite%can_temp(ipa)
-                 call calc_veg_hcap(cpatch%bleaf(ico),cpatch%bdead(ico) &
-                                   ,cpatch%bsapwood(ico),cpatch%nplant(ico) &
-                                   ,cpatch%pft(ico) &
+                 call calc_veg_hcap(cpatch%bleaf(ico),cpatch%bdead(ico)                        &
+                                   ,cpatch%bsapwooda(ico),cpatch%nplant(ico)                   &
+                                   ,cpatch%pft(ico)                                            &
                                    ,cpatch%leaf_hcap(ico),cpatch%wood_hcap(ico))
                  cpatch%leaf_energy(ico)      = cpatch%leaf_hcap(ico) * cpatch%leaf_temp(ico)
                  cpatch%wood_energy(ico)      = cpatch%wood_hcap(ico) * cpatch%wood_temp(ico)
@@ -808,7 +820,7 @@ end subroutine event_till
 !!$              cpatch%hite(ico)    = hgt_min(pft)
 !!$              cpatch%dbh(ico)     = h2dbh(hgt_min(pft),pft)
 !!$              cpatch%bdead(ico)   = dbh2bd(cpatch%dbh(ico),pft)
-!!$              cpatch%bleaf(ico)   = dbh2bl(cpatch%dbh(ico),pft)
+!!$              cpatch%bleaf(ico)   = size2bl(cpatch%dbh(ico),cpatch%hite(ico),pft)
 !!$print*,cpatch%hite(ico),cpatch%dbh(ico),cpatch%bdead(ico),cpatch%bleaf(ico)
 !!$              cpatch%phenology_status(ico) = 0
 !!$              cpatch%balive(ico)  = cpatch%bleaf(ico)* &

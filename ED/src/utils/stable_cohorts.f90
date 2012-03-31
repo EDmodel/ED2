@@ -75,9 +75,9 @@ subroutine is_resolvable(csite,ipa,ico)
 
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
-   type(sitetype)        , target     :: csite             ! Current site
-   integer               , intent(in) :: ipa               ! Patch index
-   integer               , intent(in) :: ico               ! Cohort index
+   type(sitetype)        , target     :: csite        ! Current site
+   integer               , intent(in) :: ipa          ! Patch index
+   integer               , intent(in) :: ico          ! Cohort index
    !----- Local variables. ----------------------------------------------------------------!
    type(patchtype)  , pointer         :: cpatch       ! Current patch
    integer                            :: ipft         ! Cohort PFT

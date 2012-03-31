@@ -193,6 +193,7 @@ subroutine copy_nl(copy_type)
                                    , unitstate                 & ! intent(out)
                                    , event_file                & ! intent(out)
                                    , iallom                    & ! intent(out)
+                                   , igrass                    & ! intent(out)
                                    , min_site_area             ! ! intent(out)
    use grid_coms            , only : time                      & ! intent(out)
                                    , centlon                   & ! intent(out)
@@ -342,6 +343,7 @@ subroutine copy_nl(copy_type)
       ibranch_thermo            = nl%ibranch_thermo
       iphysiol                  = nl%iphysiol
       iallom                    = nl%iallom
+      igrass                    = nl%igrass
       iphen_scheme              = nl%iphen_scheme
       repro_scheme              = nl%repro_scheme
       lapse_scheme              = nl%lapse_scheme

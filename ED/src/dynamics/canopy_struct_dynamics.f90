@@ -138,12 +138,15 @@ module canopy_struct_dynamics
                                   , cph2o                ! ! intent(in)
       use soil_coms        , only : snow_rough           & ! intent(in)
                                   , soil_rough           ! ! intent(in)
+      use pft_coms         , only : is_grass             ! ! intent(in)
       use therm_lib        , only : press2exner          & ! function
                                   , extheta2temp         & ! function
                                   , tq2enthalpy          ! ! function
       use allometry        , only : h2crownbh            & ! function
-                                  , dbh2bl               ! ! function
+                                  , size2bl              ! ! function
+      use ed_misc_coms     , only : igrass               ! ! intent(in)
       use phenology_coms   , only : elongf_min           ! ! intent(in)
+
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       type(polygontype)   , target      :: cpoly         ! Current polygon
@@ -771,8 +774,14 @@ module canopy_struct_dynamics
 
 
                !------ Estimate WAI. ------------------------------------------------------!
-               waiuse = 0.10 * cpatch%nplant(ico) * cpatch%sla(ico)                        &
-                      * dbh2bl(cpatch%dbh(ico),ipft)
+               if (is_grass(ipft) .and. igrass == 1) then
+                  !---- Use actual leaf mass for new grasses. -----------------------------!
+                  waiuse = 0.10 * cpatch%nplant(ico) * cpatch%sla(ico) * cpatch%bleaf(ico)
+               else
+                  !---- Use dbh for trees and old grasses. --------------------------------!
+                  waiuse = 0.10 * cpatch%nplant(ico) * cpatch%sla(ico)                     &
+                         * size2bl(cpatch%dbh(ico),cpatch%hite(ico),ipft)
+               end if
                !---------------------------------------------------------------------------!
 
 
@@ -843,7 +852,7 @@ module canopy_struct_dynamics
                   !     Dry grasses only.  Create a pseudo TAI so it won't be a            !
                   ! singularity.                                                           !
                   !------------------------------------------------------------------------!
-                  tai_drygrass = elongf_min * dbh2bl(cpatch%dbh(ico),ipft)
+                  tai_drygrass = elongf_min * size2bl(cpatch%dbh(ico),cpatch%hite(ico),ipft)
                   ladcohort    = tai_drygrass / (htopcrown - hbotcrown)
                   !------------------------------------------------------------------------!
                else
@@ -1391,8 +1400,10 @@ module canopy_struct_dynamics
                                   , kin_visci8           ! ! intent(in)
       use soil_coms        , only : snow_rough8          & ! intent(in)
                                   , soil_rough8          ! ! intent(in)
+      use pft_coms         , only : is_grass             ! ! intent(in)
       use allometry        , only : h2crownbh            & ! function
-                                  , dbh2bl               ! ! function
+                                  , size2bl              ! ! function
+      use ed_misc_coms     , only : igrass               ! ! intent(in)
       use phenology_coms   , only : elongf_min           ! ! intent(in)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
@@ -1952,8 +1963,15 @@ module canopy_struct_dynamics
 
 
                !------ Estimate WAI. ------------------------------------------------------!
-               waiuse = 1.d-1 * initp%nplant(ico) * dble(cpatch%sla(ico))                  &
-                      * dble(dbh2bl(cpatch%dbh(ico),ipft))
+               if (is_grass(ipft) .and. igrass==1) then
+                   !--use actual leaf mass for grass
+                   waiuse = 1.d-1 * initp%nplant(ico) * dble(cpatch%sla(ico))              &
+                          * dble(cpatch%bleaf(ico))
+               else
+                   !--use dbh for trees
+                   waiuse = 1.d-1 * initp%nplant(ico) * dble(cpatch%sla(ico))              &
+                          * dble(size2bl(cpatch%dbh(ico),cpatch%hite(ico),ipft))
+               end if
                !---------------------------------------------------------------------------!
 
 
@@ -2024,7 +2042,8 @@ module canopy_struct_dynamics
                   !     Dry grasses only.  Create a pseudo TAI so it won't be a            !
                   ! singularity.                                                           !
                   !------------------------------------------------------------------------!
-                  tai_drygrass = dble(elongf_min * dbh2bl(cpatch%dbh(ico),ipft))
+                  tai_drygrass = dble( elongf_min                                          &
+                                     * size2bl(cpatch%dbh(ico),cpatch%hite(ico),ipft) )
                   ladcohort    = tai_drygrass / (htopcrown - hbotcrown)
                   !------------------------------------------------------------------------!
                else

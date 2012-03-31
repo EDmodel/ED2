@@ -592,7 +592,8 @@ module pft_coms
       real    :: bdead
       real    :: bleaf
       real    :: broot
-      real    :: bsapwood
+      real    :: bsapwooda
+      real    :: bsapwoodb
       real    :: balive
       real    :: paw_avg
       real    :: elongf
@@ -633,13 +634,14 @@ module pft_coms
          recruit(p)%bdead            = 0.
          recruit(p)%bleaf            = 0.
          recruit(p)%broot            = 0.
-         recruit(p)%bsapwood         = 0.
+         recruit(p)%bsapwooda        = 0.
+         recruit(p)%bsapwoodb        = 0.
          recruit(p)%balive           = 0.
          recruit(p)%paw_avg          = 0.
          recruit(p)%elongf           = 0.
          recruit(p)%bstorage         = 0.
          recruit(p)%nplant           = 0.
-       end do
+      end do
 
       return
    end subroutine zero_recruit
@@ -674,7 +676,8 @@ module pft_coms
       rectarget%bdead            = recsource%bdead
       rectarget%bleaf            = recsource%bleaf
       rectarget%broot            = recsource%broot
-      rectarget%bsapwood         = recsource%bsapwood
+      rectarget%bsapwooda        = recsource%bsapwooda
+      rectarget%bsapwoodb        = recsource%bsapwoodb
       rectarget%balive           = recsource%balive
       rectarget%paw_avg          = recsource%paw_avg
       rectarget%elongf           = recsource%elongf

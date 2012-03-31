@@ -1578,8 +1578,8 @@ subroutine init_pft_photo_params()
    dark_respiration_factor(11)    = gamma_c3
    dark_respiration_factor(12)    = gamma_c3
    dark_respiration_factor(13)    = gamma_c3
-   dark_respiration_factor(14)    = gamma_c3
-   dark_respiration_factor(15)    = gamma_c3
+   dark_respiration_factor(14)    = gamma_c4
+   dark_respiration_factor(15)    = gamma_c4
    dark_respiration_factor(16)    = gamma_c3
    dark_respiration_factor(17)    = gamma_c3
    !---------------------------------------------------------------------------------------!
@@ -2190,13 +2190,14 @@ subroutine init_pft_alloc_params()
                            , sapwood_ratio         ! ! intent(out)
    use allometry    , only : h2dbh                 & ! function
                            , dbh2bd                & ! function
-                           , dbh2bl                ! ! function
+                           , size2bl               ! ! function
    use consts_coms  , only : twothirds             & ! intent(in)
                            , huge_num              & ! intent(in)
                            , pi1                   ! ! intent(in)
    use ed_max_dims  , only : n_pft                 & ! intent(in)
                            , str_len               ! ! intent(in)
    use ed_misc_coms , only : iallom                & ! intent(in)
+                           , igrass                & ! intent(in)
                            , ibigleaf              ! ! intent(in)
    use detailed_coms, only : idetailed             ! ! intent(in)
    implicit none
@@ -2204,6 +2205,7 @@ subroutine init_pft_alloc_params()
    integer                           :: ipft
    integer                           :: n
    real                              :: aux
+   real                              :: init_density_grass
    real                              :: init_bleaf
    logical                           :: write_allom
    !----- Constants shared by both bdead and bleaf (tropical PFTs) ------------------------!
@@ -2320,7 +2322,7 @@ subroutine init_pft_alloc_params()
    sla_slope = -0.46
 
    !----- [KIM] - new tropical parameters. ------------------------------------------------!
-   SLA( 1) = 21.0 ! 10.0**(sla_inter + sla_slope * log10(12.0/leaf_turnover_rate( 1))) * sla_scale
+   SLA( 1) = 22.7 !--value from Mike Dietze: mean: 22.7, median 19.1, 95% CI: 5.7, 78.6
    SLA( 2) = 10.0**(sla_inter + sla_slope * log10(12.0/leaf_turnover_rate( 2))) * sla_scale
    SLA( 3) = 10.0**(sla_inter + sla_slope * log10(12.0/leaf_turnover_rate( 3))) * sla_scale
    SLA( 4) = 10.0**(sla_inter + sla_slope * log10(12.0/leaf_turnover_rate( 4))) * sla_scale
@@ -2333,9 +2335,9 @@ subroutine init_pft_alloc_params()
    SLA(11) = 60.0
    SLA(12) = 22.0
    SLA(13) = 22.0
-   SLA(14) = 21.0 ! 10.0**(sla_inter + sla_slope * log10(12.0/leaf_turnover_rate(14))) * sla_scale
-   SLA(15) = 21.0 ! 10.0**(sla_inter + sla_slope * log10(12.0/leaf_turnover_rate(15))) * sla_scale
-   SLA(16) = 21.0 ! 10.0**(sla_inter + sla_slope * log10(12.0/leaf_turnover_rate(16))) * sla_scale
+   SLA(14) = 22.7 ! 10.0**(sla_inter + sla_slope * log10(12.0/leaf_turnover_rate(14))) * sla_scale
+   SLA(15) = 22.7 ! 10.0**(sla_inter + sla_slope * log10(12.0/leaf_turnover_rate(15))) * sla_scale
+   SLA(16) = 22.7 !--value from Mike Dietze: mean: 22.7, median 19.1, 95% CI: 5.7, 78.6
    SLA(17) = 10.0
 
    !---------------------------------------------------------------------------------------!
@@ -2390,6 +2392,27 @@ subroutine init_pft_alloc_params()
    qsw(14:15)  = SLA(14:15) / sapwood_ratio(14:15)  !new is SLA(14:15)(3900.0*2.0/1000.0)
    qsw(16)     = SLA(16)    / sapwood_ratio(16)
    qsw(17)     = SLA(17)    / sapwood_ratio(17)
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !    Initial density of plants, for near-bare-ground simulations [# of individuals/m2]  !
+   !---------------------------------------------------------------------------------------!
+   if (igrass==1) then
+      init_density_grass = 1.
+   else
+      init_density_grass = 0.1
+   end if
+   init_density(1)     = init_density_grass
+   init_density(2:4)   = 0.1
+   init_density(5)     = 0.1
+   init_density(6:8)   = 0.1
+   init_density(9:11)  = 0.1
+   init_density(12:13) = 0.1
+   init_density(14:15) = 0.1
+   init_density(16)    = init_density_grass
+   init_density(17)    = 0.1
    !---------------------------------------------------------------------------------------!
 
 
@@ -2835,7 +2858,7 @@ subroutine init_pft_alloc_params()
        !----- Big leaf. 1st we set the maximum initial LAI for each PFT. ------------------!
        init_laimax(1:17)   = 0.1
        do ipft=1,n_pft
-          init_bleaf = dbh2bl(dbh_crit(ipft),ipft)
+          init_bleaf = size2bl(dbh_crit(ipft),hgt_max(ipft),ipft)
           init_density(ipft) = init_laimax(ipft) / (init_bleaf * SLA(ipft))
        end do
        !-----------------------------------------------------------------------------------!
@@ -2925,6 +2948,7 @@ end subroutine init_pft_nitro_params
 !   This subroutine sets up some PFT and leaf dependent properties.                        !
 !------------------------------------------------------------------------------------------!
 subroutine init_pft_leaf_params()
+   use ed_misc_coms   , only : igrass               ! ! intent(in)
    use rk4_coms       , only : ibranch_thermo       ! ! intent(in)
    use pft_coms       , only : phenology            & ! intent(out)
                              , b1Cl                 & ! intent(out)
@@ -2934,44 +2958,92 @@ subroutine init_pft_leaf_params()
                              , wat_dry_ratio_grn    & ! intent(out)
                              , wat_dry_ratio_ngrn   & ! intent(out)
                              , delta_c              ! ! intent(out)
-   use consts_coms    , only : t3ple                ! ! intent(out) 
+   use consts_coms    , only : t3ple                ! ! intent(out)
    use phenology_coms , only :iphen_scheme
 
    implicit none
 
-   select case (iphen_scheme)
-   case (-1)
-      phenology(1:8)   = 0
-      phenology(9:11)  = 2
-      phenology(12:17) = 0
-   case (0,1)
-      phenology(1)     = 1
-      phenology(2:4)   = 1
-      phenology(5)     = 1
-      phenology(6:8)   = 0
-      phenology(9:11)  = 2
-      phenology(12:15) = 1
-      phenology(16)    = 1
-      phenology(17)    = 0
-   case (2)
-      phenology(1)     = 4
-      phenology(2:4)   = 4
-      phenology(5)     = 4
-      phenology(6:8)   = 0
-      phenology(9:11)  = 2
-      phenology(12:15) = 4
-      phenology(16)    = 4
-      phenology(17)    = 0
-   case (3)
-      phenology(1)     = 4
-      phenology(2:4)   = 3
-      phenology(5)     = 4
-      phenology(6:8)   = 0
-      phenology(9:11)  = 2
-      phenology(12:15) = 4
-      phenology(16)    = 4
-      phenology(17)    = 0
+   !---------------------------------------------------------------------------------------!
+   !     Tree phenology is the same for both cases, but in the new grass allometry they    !
+   ! must be evergreens.                                                                   !
+   !---------------------------------------------------------------------------------------!
+   select case (igrass)
+   case (0)
+      !----- Bonsai grasses. --------------------------------------------------------------!
+      select case (iphen_scheme)
+      case (-1)
+         phenology(1:8)   = 0
+         phenology(9:11)  = 2
+         phenology(12:17) = 0
+      case (0,1)
+         phenology(1)     = 1
+         phenology(2:4)   = 1
+         phenology(5)     = 1
+         phenology(6:8)   = 0
+         phenology(9:11)  = 2
+         phenology(12:15) = 1
+         phenology(16)    = 1
+         phenology(17)    = 0
+      case (2)
+         phenology(1)     = 4
+         phenology(2:4)   = 4
+         phenology(5)     = 4
+         phenology(6:8)   = 0
+         phenology(9:11)  = 2
+         phenology(12:15) = 4
+         phenology(16)    = 4
+         phenology(17)    = 0
+      case (3)
+         phenology(1)     = 4
+         phenology(2:4)   = 3
+         phenology(5)     = 4
+         phenology(6:8)   = 0
+         phenology(9:11)  = 2
+         phenology(12:15) = 4
+         phenology(16)    = 4
+         phenology(17)    = 0
+      end select
+      !------------------------------------------------------------------------------------!
+   case (1)
+      !----- New grasses. -----------------------------------------------------------------!
+      select case (iphen_scheme)
+      case (-1)
+         phenology(1:8)   = 0
+         phenology(9:11)  = 2
+         phenology(12:17) = 0
+      case (0,1)
+         phenology(1)     = 0
+         phenology(2:4)   = 1
+         phenology(5)     = 0
+         phenology(6:8)   = 0
+         phenology(9:11)  = 2
+         phenology(12:15) = 1
+         phenology(16)    = 0
+         phenology(17)    = 0
+      case (2)
+         phenology(1)     = 0
+         phenology(2:4)   = 4
+         phenology(5)     = 0
+         phenology(6:8)   = 0
+         phenology(9:11)  = 2
+         phenology(12:15) = 4
+         phenology(16)    = 0
+         phenology(17)    = 0
+      case (3)
+         phenology(1)     = 0
+         phenology(2:4)   = 3
+         phenology(5)     = 0
+         phenology(6:8)   = 0
+         phenology(9:11)  = 2
+         phenology(12:15) = 0
+         phenology(16)    = 0
+         phenology(17)    = 0
+      end select
+      !------------------------------------------------------------------------------------!
    end select
+   !---------------------------------------------------------------------------------------!
+
+
 
    !---------------------------------------------------------------------------------------!
    !      The following parameters are second sources found in Gu et al. (2007)            !
@@ -3125,7 +3197,7 @@ subroutine init_pft_derived_params()
                                    , elongf_flush         ! ! intent(in)
    use allometry            , only : h2dbh                & ! function
                                    , dbh2h                & ! function
-                                   , dbh2bl               & ! function
+                                   , size2bl              & ! function
                                    , dbh2bd               ! ! function
    use ed_therm_lib         , only : calc_veg_hcap        ! ! function
    implicit none
@@ -3183,12 +3255,13 @@ subroutine init_pft_derived_params()
 
       !----- Find the DBH and carbon pools associated with a newly formed recruit. --------!
       dbh          = h2dbh(hgt_min(ipft),ipft)
-      bleaf_min    = dbh2bl(dbh,ipft)
+      bleaf_min    = size2bl(dbh,hgt_min(ipft),ipft) 
       broot_min    = bleaf_min * q(ipft)
       bsapwood_min = bleaf_min * qsw(ipft) * hgt_min(ipft)
       balive_min   = bleaf_min + broot_min + bsapwood_min
       bdead_min    = dbh2bd(dbh,ipft)
       !------------------------------------------------------------------------------------!
+
 
       !------------------------------------------------------------------------------------!
       !   Find the maximum bleaf and bdead supported.  This is to find the negligible      !
@@ -3197,7 +3270,7 @@ subroutine init_pft_derived_params()
       !------------------------------------------------------------------------------------!
       huge_dbh     = 3. * dbh_crit(ipft)
       huge_height  = dbh2h(ipft, dbh_crit(ipft))
-      bleaf_max    = dbh2bl(huge_dbh,ipft)
+      bleaf_max    = size2bl(huge_dbh,huge_height,ipft)
       broot_max    = bleaf_max * q(ipft)
       bsapwood_max = bleaf_max * qsw(ipft) * huge_height
       balive_max   = bleaf_max + broot_max + bsapwood_max

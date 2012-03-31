@@ -688,6 +688,19 @@ $ED_NL
 
 
 
+   !---------------------------------------------------------------------------------------!
+   ! IGRASS -- This controls the dynamics and growth calculation for grasses.  A new       !
+   !           grass scheme is now available where bdead = 0, height is a function of bleaf!
+   !           and growth happens daily.  ALS (3/3/12)                                     !
+   ! 0: grasses behave like trees as in ED2.1 (old scheme)                                 !
+   !                                                                                       !
+   ! 1: new grass scheme as described above                                                !
+   !---------------------------------------------------------------------------------------!
+   NL%IGRASS          = 0
+   !---------------------------------------------------------------------------------------!
+
+
+
 
    !---------------------------------------------------------------------------------------!
    ! IPHEN_SCHEME -- It controls the phenology scheme.  Even within each scheme, the       !

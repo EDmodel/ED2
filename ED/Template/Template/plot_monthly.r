@@ -788,7 +788,7 @@ for (place in myplaces){
              bdeadconow      = mymont$BDEAD
              bleafconow      = mymont$BLEAF
              brootconow      = mymont$BROOT
-             bswoodconow     = mymont$BSAPWOOD
+             bswoodconow     = mymont$BSAPWOODA+mymont$BSAPWOODB
              bstoreconow     = mymont$BSTORAGE
 
 

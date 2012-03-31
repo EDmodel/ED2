@@ -59,8 +59,8 @@ $ED_NL
    ! RADFRQ -- Time step to integrate radiation, in seconds.  This must be an integer      !
    !            multiple of DTLSM, and we recommend it to be exactly the same as DTLSM.    !
    !---------------------------------------------------------------------------------------!
-   NL%DTLSM  =  240.
-   NL%RADFRQ  = 240.
+   NL%DTLSM  =  600.
+   NL%RADFRQ  = 600.
    !---------------------------------------------------------------------------------------!
 
 
@@ -248,7 +248,7 @@ $ED_NL
    !                         Multiple timepoints should not be used in the history files   !
    !                         if you intend to use these for HISTORY runs.                  !
    !---------------------------------------------------------------------------------------!
-   NL%OUTFAST    = 3600.
+   NL%OUTFAST    = 1.
    NL%OUTSTATE   = 1.
    !---------------------------------------------------------------------------------------!
 
@@ -261,7 +261,7 @@ $ED_NL
    ! FRQSTATE -- time interval between history files, units defined by UNITSTATE.          !
    !---------------------------------------------------------------------------------------!
    NL%ICLOBBER  = 1
-   NL%FRQFAST   = 1.
+   NL%FRQFAST   = 3600.
    NL%FRQSTATE  = 1.
    !---------------------------------------------------------------------------------------!
 
@@ -343,7 +343,7 @@ $ED_NL
    !              path+prefix will be used, as the history for every grid must have come   !
    !              from the same simulation.                                                !
    !---------------------------------------------------------------------------------------!
-   NL%SFILIN   = '/n/moorcroft_scratch/nlevine/data/ed2_data/site_bio_data/'
+   NL%SFILIN   = '/n/moorcroft_data/nlevine/data/site_bio_data/k34_ustein'
    !---------------------------------------------------------------------------------------!
 
 
@@ -405,8 +405,41 @@ $ED_NL
    !   5 -- loam                |  11 -- clay                |  17 -- clayey silt          !
    !   6 -- sandy clay loam     |  12 -- peat                                              !
    !---------------------------------------------------------------------------------------!
-   NL%NSLCON   =  8
+   NL%NSLCON   =  11
    !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   ! ISOILCOL -- LEAF-3 and ED-2 soil colour classes that the model will use when ISOILFLG !
+   !             is set to 2.  Soil classes are from 1 to 20 (1 = lightest; 20 = darkest). !
+   !             The values are the same as CLM-4.0.  The table is the albedo for visible  !
+   !             and near infra-red.                                                       !
+   !---------------------------------------------------------------------------------------!
+   !                                                                                       !
+   !       |-----------------------------------------------------------------------|       !
+   !       |       |   Dry soil  |  Saturated  |       |   Dry soil  |  Saturated  |       !
+   !       | Class |-------------+-------------| Class +-------------+-------------|       !
+   !       |       |  VIS |  NIR |  VIS |  NIR |       |  VIS |  NIR |  VIS |  NIR |       !
+   !       |-------+------+------+------+------+-------+------+------+------+------|       !
+   !       |     1 | 0.36 | 0.61 | 0.25 | 0.50 |    11 | 0.24 | 0.37 | 0.13 | 0.26 |       !
+   !       |     2 | 0.34 | 0.57 | 0.23 | 0.46 |    12 | 0.23 | 0.35 | 0.12 | 0.24 |       !
+   !       |     3 | 0.32 | 0.53 | 0.21 | 0.42 |    13 | 0.22 | 0.33 | 0.11 | 0.22 |       !
+   !       |     4 | 0.31 | 0.51 | 0.20 | 0.40 |    14 | 0.20 | 0.31 | 0.10 | 0.20 |       !
+   !       |     5 | 0.30 | 0.49 | 0.19 | 0.38 |    15 | 0.18 | 0.29 | 0.09 | 0.18 |       !
+   !       |     6 | 0.29 | 0.48 | 0.18 | 0.36 |    16 | 0.16 | 0.27 | 0.08 | 0.16 |       !
+   !       |     7 | 0.28 | 0.45 | 0.17 | 0.34 |    17 | 0.14 | 0.25 | 0.07 | 0.14 |       !
+   !       |     8 | 0.27 | 0.43 | 0.16 | 0.32 |    18 | 0.12 | 0.23 | 0.06 | 0.12 |       !
+   !       |     9 | 0.26 | 0.41 | 0.15 | 0.30 |    19 | 0.10 | 0.21 | 0.05 | 0.10 |       !
+   !       |    10 | 0.25 | 0.39 | 0.14 | 0.28 |    20 | 0.08 | 0.16 | 0.04 | 0.08 |       !
+   !       |-----------------------------------------------------------------------|       !
+   !                                                                                       !
+   !   Soil type 21 is a special case in which we use the albedo method that used to be    !
+   ! the default in ED-2.1.                                                                !
+   !---------------------------------------------------------------------------------------!
+   NL%ISOILCOL  = 21
+   !---------------------------------------------------------------------------------------!
+
 
 
 
@@ -510,7 +543,7 @@ $ED_NL
    NL%LU_DATABASE       = '/n/Moorcroft_Lab/Lab/data/ed2_data/land_use/glu/glu-'
    NL%PLANTATION_FILE   = ''
    NL%THSUMS_DATABASE   = '/n/Moorcroft_Lab/Lab/data/ed2_data/ed_inputs/'
-   NL%ED_MET_DRIVER_DB = '/n/moorcroft_scratch/nlevine/data/ed2_data/site_met_driver/Manaus_KM34/Manaus_KM34_HEADER'
+   NL%ED_MET_DRIVER_DB = '/n/moorcroft_data/nlevine/data/site_met_driver/Manaus_KM34/Manaus_KM34_HEADER'
    NL%SOILSTATE_DB='/n/Moorcroft_Lab/Lab/data/ed2_data/ed_inputs/STW1996OCT.dat'
    NL%SOILDEPTH_DB='/n/Moorcroft_Lab/Lab/data/ed2_data/ed_inputs/soil_depths.dat'
    !---------------------------------------------------------------------------------------!
@@ -663,11 +696,21 @@ $ED_NL
    !                  a few genuses in Costa Rica.  References:                            !
    !                  Cole and Ewel (2006), and Calvo Alvarado et al. (2008).              !
    !---------------------------------------------------------------------------------------!
-   NL%IALLOM          = 4
-
+   NL%IALLOM          = 1
    !---------------------------------------------------------------------------------------!
 
 
+
+   !---------------------------------------------------------------------------------------!
+   ! IGRASS -- This controls the dynamics and growth calculation for grasses.  A new       !
+   !           grass scheme is now available where bdead = 0, height is a function of bleaf!
+   !           and growth happens daily.  ALS (3/3/12)                                     !
+   ! 0: grasses behave like trees as in ED2.1 (old scheme)                                 !
+   !                                                                                       !
+   ! 1: new grass scheme as described above                                                !
+   !---------------------------------------------------------------------------------------!
+   NL%IGRASS          = 0
+   !---------------------------------------------------------------------------------------!
 
 
    !---------------------------------------------------------------------------------------!
@@ -798,9 +841,9 @@ $ED_NL
    NL%LTRANS_NIR     =  0.270
    NL%LREFLECT_VIS   =  0.150
    NL%LREFLECT_NIR   =  0.540
-   NL%ORIENT_TREE    =  0.150
-   NL%ORIENT_GRASS   = -0.150
-   NL%CLUMP_TREE     =  1.000
+   NL%ORIENT_TREE    =  0.100
+   NL%ORIENT_GRASS   = -0.100
+   NL%CLUMP_TREE     =  0.800
    NL%CLUMP_GRASS    =  1.000
    !---------------------------------------------------------------------------------------!
 
@@ -881,25 +924,25 @@ $ED_NL
    ! Q10_C3        -- Q10 factor for C3 plants (used only if IPHYSIOL is set to 2 or 3).   !
    ! Q10_C4        -- Q10 factor for C4 plants (used only if IPHYSIOL is set to 2 or 3).   !
    !---------------------------------------------------------------------------------------!
-   NL%VMFACT_C3       =   1.25
-   NL%VMFACT_C4       =   1.00
-   NL%MPHOTO_TRC3     =    9.0
-   NL%MPHOTO_TEC3     =    7.2
-   NL%MPHOTO_C4       =    5.0
+   NL%VMFACT_C3       = 1.00
+   NL%VMFACT_C4       = 1.00
+   NL%MPHOTO_TRC3     = 9.0
+   NL%MPHOTO_TEC3     = 7.2
+   NL%MPHOTO_C4       = 5.2
    NL%BPHOTO_BLC3     = 10000.
    NL%BPHOTO_NLC3     = 1000.
-   NL%BPHOTO_C4       = 8000.
-   NL%KW_GRASS        =   300.
-   NL%KW_TREE         =   300.
-   NL%GAMMA_C3        =  0.015
-   NL%GAMMA_C4        =  0.036
-   NL%D0_GRASS        =  0.015
-   NL%D0_TREE         =  0.015
-   NL%ALPHA_C3        =  0.080
-   NL%ALPHA_C4        =  0.053
-   NL%KLOWCO2IN       =  4000.
-   NL%RRFFACT         =  1.000
-   NL%GROWTHRESP      =  0.33333333333
+   NL%BPHOTO_C4       = 10000.
+   NL%KW_GRASS        = 900.
+   NL%KW_TREE         = 600.
+   NL%GAMMA_C3        = 0.015
+   NL%GAMMA_C4        = 0.040
+   NL%D0_GRASS        = 0.016
+   NL%D0_TREE         = 0.016
+   NL%ALPHA_C3        = 0.080
+   NL%ALPHA_C4        = 0.055
+   NL%KLOWCO2IN       = 4000.
+   NL%RRFFACT         = 1.000
+   NL%GROWTHRESP      = 0.333
    NL%LWIDTH_GRASS    = 0.05
    NL%LWIDTH_BLTREE   = 0.10
    NL%LWIDTH_NLTREE   = 0.05
@@ -920,7 +963,7 @@ $ED_NL
    !                       ing point is by definition -1.5MPa, so make sure that the value !
    !                       is above -1.5.                                                  !
    !---------------------------------------------------------------------------------------!
-   NL%THETACRIT       = -1.20
+   NL%THETACRIT       = -1.15
    !---------------------------------------------------------------------------------------!
 
 
@@ -980,8 +1023,8 @@ $ED_NL
    !                           greater than this value.                                    !
    !---------------------------------------------------------------------------------------!
    NL%INCLUDE_FIRE    = 2
-   NL%FIRE_PARAMETER  = 1.
-   NL%SM_FIRE         = 0.07
+   NL%FIRE_PARAMETER  = 0.2
+   NL%SM_FIRE         = -1.45
    !---------------------------------------------------------------------------------------!
 
 
@@ -1012,7 +1055,7 @@ $ED_NL
    !             4.  Same as 0, but if finds the ground conductance following CLM          !
    !                 technical note (equations 5.98-5.100).                                !
    !---------------------------------------------------------------------------------------!
-   NL%ICANTURB        = 4
+   NL%ICANTURB        = 2
    !---------------------------------------------------------------------------------------!
 
 
