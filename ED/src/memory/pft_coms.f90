@@ -509,7 +509,9 @@ module pft_coms
    !----- Fraction of seed dispersal that is gridcell-wide. -------------------------------!
    real   , dimension(n_pft) :: nonlocal_dispersal !  
    !----- Minimum height plants need to attain before allocating to reproduction. ---------!
-   real   , dimension(n_pft) :: repro_min_h 
+   real   , dimension(n_pft) :: repro_min_h
+   !----- Minimum DBH to be included in the census. ---------------------------------------!
+   real   , dimension(n_pft) :: min_recruit_dbh
    !=======================================================================================!
    !=======================================================================================!
 

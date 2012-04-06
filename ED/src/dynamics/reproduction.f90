@@ -329,12 +329,15 @@ subroutine reproduction(cgrid, month)
                      !    Computing initial AGB and Basal Area. Their derivatives will be  !
                      ! zero.                                                               !
                      !---------------------------------------------------------------------!
-                     cpatch%agb(ico)     = ed_biomass(cpatch%bdead(ico),cpatch%bleaf(ico)  &
-                                                     ,cpatch%bsapwooda(ico),cpatch%pft(ico))
-                     cpatch%basarea(ico) = pio4 * cpatch%dbh(ico)  * cpatch%dbh(ico)
-                     cpatch%dagb_dt(ico) = 0.0
-                     cpatch%dba_dt(ico)  = 0.0
-                     cpatch%ddbh_dt(ico) = 0.0
+                     cpatch%agb      (ico) = ed_biomass( cpatch%bdead     (ico)            &
+                                                       , cpatch%bleaf     (ico)            &
+                                                       , cpatch%bsapwooda (ico)            &
+                                                       , cpatch%pft       (ico) )
+                     cpatch%basarea  (ico) = pio4 * cpatch%dbh(ico)  * cpatch%dbh(ico)
+                     cpatch%dagb_dt  (ico) = 0.0
+                     cpatch%dba_dt   (ico) = 0.0
+                     cpatch%ddbh_dt  (ico) = 0.0
+                     cpatch%dlndbh_dt(ico) = 0.0
                      !---------------------------------------------------------------------!
                      !     Setting new_recruit_flag to 1 indicates that this cohort is     !
                      ! included when we tally agb_recruit, basal_area_recruit.             !

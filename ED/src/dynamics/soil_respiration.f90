@@ -340,28 +340,29 @@ subroutine resp_rh(csite,ipa,Lc)
 
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
-   type(sitetype), target      :: csite
-   integer       , intent(in)  :: ipa
-   real          , intent(in)  :: Lc
+   type(sitetype), target       :: csite
+   integer       , intent(in)   :: ipa
+   real          , intent(in)   :: Lc
    !----- Local variables. ----------------------------------------------------------------!
-   real                        :: fast_C_loss
-   real                        :: structural_C_loss
-   real                        :: slow_C_loss
+   real                         :: fast_C_loss
+   real                         :: structural_C_loss
+   real                         :: slow_C_loss
    !---------------------------------------------------------------------------------------!
 
 
 
-   !----- The following variables have units of [kgC/m2/day]. -----------------------------!
-   fast_C_loss       = csite%A_decomp(ipa) * K2 * csite%fast_soil_C(ipa)
-   structural_C_loss = csite%A_decomp(ipa) * Lc * K1 * csite%structural_soil_C(ipa)        &
-                     * csite%f_decomp(ipa)
-   slow_C_loss       = csite%A_decomp(ipa) * K3 * csite%slow_soil_C(ipa)
-
    !----- The following variables have units of [umol_CO2/m2/s]. --------------------------!
-   csite%rh(ipa)     = kgCday_2_umols * ( r_fsc * fast_C_loss + r_stsc * structural_C_loss &
-                                        + r_ssc * slow_C_loss)                             
-   csite%cwd_rh(ipa) = kgCday_2_umols * (r_stsc * structural_C_loss + r_ssc * slow_C_loss) &
-                     * cwd_frac
+   fast_C_loss       = kgCday_2_umols * csite%A_decomp(ipa) * K2 * csite%fast_soil_C(ipa)
+   structural_C_loss = kgCday_2_umols * csite%A_decomp(ipa) * Lc * K1                      &
+                     * csite%structural_soil_C(ipa)* csite%f_decomp(ipa)
+   slow_C_loss       = kgCday_2_umols * csite%A_decomp(ipa) * K3 * csite%slow_soil_C(ipa)
+   !---------------------------------------------------------------------------------------!
+
+   !----- Find the heterotrophic respiration and the fraction due to CWD. -----------------!
+   csite%rh(ipa)     = r_fsc * fast_C_loss + r_stsc * structural_C_loss                    &
+                     + r_ssc * slow_C_loss
+   csite%cwd_rh(ipa) = cwd_frac * (r_stsc * structural_C_loss + r_ssc * slow_C_loss)
+   !---------------------------------------------------------------------------------------!
 
    return
 end subroutine resp_rh

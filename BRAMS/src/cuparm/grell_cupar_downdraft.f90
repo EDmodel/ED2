@@ -280,12 +280,12 @@ end subroutine grell_theiv_downdraft
 !     This subroutine computes the moisture profile, as well as the evaporation rate       !
 ! associated with each level.                                                              !
 !------------------------------------------------------------------------------------------!
-subroutine grell_most_thermo_downdraft(mkx,mgmzp,klod,qtot,co2,mentrd_rate,cdd,p_cup       &
+subroutine grell_most_thermo_downdraft(mkx,mgmzp,klod,qtot,co2,mentrd_rate,cdd,z_cup,p_cup &
                                       ,exner_cup,thil_cup,t_cup,qtot_cup,qvap_cup,qliq_cup &
                                       ,qice_cup,qsat_cup,co2_cup,rho_cup,pwav,theivd_cld   &
                                       ,etad_cld,dzd_cld,thild_cld,td_cld,qtotd_cld         &
                                       ,qvapd_cld,qliqd_cld,qiced_cld,qsatd_cld,co2d_cld    &
-                                      ,rhod_cld,dbyd,pwd_cld,pwev,ierr)
+                                      ,rhod_cld,dbyd,pwd_cld,pwev,ierr,which)
    use rconstants, only : epi           & ! intent(in)
                         , rdry          & ! intent(in)
                         , t00           & ! intent(in)
@@ -308,6 +308,7 @@ subroutine grell_most_thermo_downdraft(mkx,mgmzp,klod,qtot,co2,mentrd_rate,cdd,p
    real, dimension(mgmzp), intent(in)    :: mentrd_rate ! Entrainment rate;        [   1/m]
    real, dimension(mgmzp), intent(in)    :: cdd         ! Detrainment function;    [   1/m]
    !----- Variables at cloud levels -------------------------------------------------------!
+   real, dimension(mgmzp), intent(in)    :: z_cup       ! Height @ cloud levels    [     m]
    real, dimension(mgmzp), intent(in)    :: p_cup       ! Pressure @ cloud levels  [    Pa]
    real, dimension(mgmzp), intent(in)    :: exner_cup   ! Exner fctn. @ cloud lev. [J/kg/K]
    real, dimension(mgmzp), intent(in)    :: thil_cup    ! Theta_il                 [     K]
@@ -340,6 +341,8 @@ subroutine grell_most_thermo_downdraft(mkx,mgmzp,klod,qtot,co2,mentrd_rate,cdd,p
    real                  , intent(out)   :: pwev        ! Total evaporation flux   [ kg/kg]
    !----- Variable that may change in this subroutine -------------------------------------!
    integer               , intent(inout) :: ierr        ! Error flag
+   !----- Flag to tell which call is this one. --------------------------------------------!
+   character(len=*)      , intent(in)    :: which
    !----- Local variables -----------------------------------------------------------------!
    integer                :: k              ! Counter                              [  ----]
    integer                :: it             ! Iteration counter                    [  ----]
@@ -471,6 +474,8 @@ subroutine grell_most_thermo_downdraft(mkx,mgmzp,klod,qtot,co2,mentrd_rate,cdd,p
       qtotda       = qtotd_0_evap
       !----- Finding the equilibrium state ------------------------------------------------!
       thild_cld(k) = thetaeiv2thil(theivd_cld(k),p_cup(k),qtotda)
+      call grell_sanity_thil2tqall(k,z_cup(k),thild_cld(k),exner_cup(k),p_cup(k),qtotda    &
+                                 ,which)
       call thil2tqall(thild_cld(k),exner_cup(k),p_cup(k),qtotda,qliqd_cld(k)               &
                      ,qiced_cld(k),td_cld(k),qvapd_cld(k),qsatd_cld(k))
       evapd_cld(k) = min(0., qtotd_0_evap - qsatd_cld(k) )
@@ -510,6 +515,8 @@ subroutine grell_most_thermo_downdraft(mkx,mgmzp,klod,qtot,co2,mentrd_rate,cdd,p
          !---------------------------------------------------------------------------------!
          qtotdc = min(max(toodry,qtotd_0_evap - evapd_cld(k)),toowet)
          thild_cld(k) = thetaeiv2thil(theivd_cld(k),p_cup(k),qtotdc)
+         call grell_sanity_thil2tqall(k,z_cup(k),thild_cld(k),exner_cup(k),p_cup(k),qtotdc &
+                                    ,which)
          call thil2tqall(thild_cld(k),exner_cup(k),p_cup(k),qtotdc,qliqd_cld(k)            &
                         ,qiced_cld(k),td_cld(k),qvapd_cld(k),qsatd_cld(k))
          evapd_cld(k) = min(0., qtotd_0_evap - qsatd_cld(k) )
@@ -553,6 +560,8 @@ subroutine grell_most_thermo_downdraft(mkx,mgmzp,klod,qtot,co2,mentrd_rate,cdd,p
                qtotdz = min(max(toodry,qtotda + real((-1)**it * (it+3)/2) * delta),toowet)
                !----- Finding this equilibrium state --------------------------------------!
                thild_cld(k) = thetaeiv2thil(theivd_cld(k),p_cup(k),qtotdz)
+               call grell_sanity_thil2tqall(k,z_cup(k),thild_cld(k),exner_cup(k),p_cup(k)  &
+                                          ,qtotdz,which)
                call thil2tqall(thild_cld(k),exner_cup(k),p_cup(k),qtotdz                   &
                               ,qliqd_cld(k),qiced_cld(k),tdbis,qvapd_cld(k)                &
                               ,qsatd_cld(k))
@@ -623,6 +632,8 @@ subroutine grell_most_thermo_downdraft(mkx,mgmzp,klod,qtot,co2,mentrd_rate,cdd,p
             ! e3. Finding the new function evaluation.                                     !
             !------------------------------------------------------------------------------!
             thild_cld(k) = thetaeiv2thil(theivd_cld(k),p_cup(k),qtotd_cld(k))
+            call grell_sanity_thil2tqall(k,z_cup(k),thild_cld(k),exner_cup(k),p_cup(k)     &
+                                       ,qtotd_cld(k),which)
             call thil2tqall(thild_cld(k),exner_cup(k),p_cup(k),qtotd_cld(k),qliqd_cld(k)   &
                            ,qiced_cld(k),td_cld(k),qvapd_cld(k),qsatd_cld(k))
             evapd_cld(k) = min(0., qtotd_0_evap - qsatd_cld(k) )

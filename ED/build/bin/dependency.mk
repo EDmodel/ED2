@@ -20,7 +20,7 @@ canopy_struct_dynamics.o: rk4_coms.mod soil_coms.mod therm_lib.mod
 disturbance.o: allometry.mod consts_coms.mod decomp_coms.mod disturb_coms.mod
 disturbance.o: ed_max_dims.mod ed_misc_coms.mod ed_state_vars.mod
 disturbance.o: ed_therm_lib.mod fuse_fiss_utils.mod grid_coms.mod
-disturbance.o: mem_polygons.mod pft_coms.mod phenology_aux.mod
+disturbance.o: mem_polygons.mod mortality.mod pft_coms.mod phenology_aux.mod
 disturbance.o: phenology_coms.mod
 euler_driver.o: canopy_air_coms.mod consts_coms.mod ed_max_dims.mod
 euler_driver.o: ed_misc_coms.mod ed_state_vars.mod grid_coms.mod

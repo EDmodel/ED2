@@ -634,15 +634,6 @@ subroutine read_ed21_history_file
                         call hdf_getslab_r(cpatch%cb_max,'CB_MAX '                         &
                                           ,dsetrank,iparallel,.true.)
                         
-                        !------------------------------------------------------------------!
-                        !    The following variables are initialised with default values.  !
-                        !------------------------------------------------------------------!
-                        cpatch%dagb_dt              = 0.
-                        cpatch%dba_dt               = 0.
-                        cpatch%ddbh_dt              = 0.
-                        cpatch%fsw                  = 1.0
-                        cpatch%gpp                  = 0.0
-                        cpatch%par_l                = 0.0
                         
                         cohortloop: do ico=1,cpatch%ncohorts
                            !---------------------------------------------------------------!
@@ -1787,16 +1778,6 @@ subroutine read_ed21_history_unstruct
                                           ,dsetrank,iparallel,.true.)
                         call hdf_getslab_r(cpatch%cb_max,'CB_MAX '                         &
                                           ,dsetrank,iparallel,.true.)
-
-                        !------------------------------------------------------------------!
-                        !    The following variables are initialised with default values.  !
-                        !------------------------------------------------------------------!
-                        cpatch%dagb_dt              = 0.
-                        cpatch%dba_dt               = 0.
-                        cpatch%ddbh_dt              = 0.
-                        cpatch%fsw                  = 1.0
-                        cpatch%gpp                  = 0.0
-                        cpatch%par_l                = 0.0
 
                         cohortloop: do ico=1,cpatch%ncohorts
                            !---------------------------------------------------------------!

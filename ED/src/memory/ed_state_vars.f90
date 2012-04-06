@@ -81,6 +81,9 @@ module ed_state_vars
      
      ! Rate of change in dbh (cm/yr)
      real, pointer, dimension(:) :: ddbh_dt
+     
+     ! Rate of change in dbh ( 1/yr)
+     real, pointer, dimension(:) :: dlndbh_dt
 
      ! Plant diameter at breast height (cm)
      real ,pointer,dimension(:) :: dbh
@@ -94,12 +97,17 @@ module ed_state_vars
 
      ! phenology_status codes:
      ! 0 - plant has the maximum LAI, given its size
-     ! 1 - plant has an LAI between 0 and its maximum
+     ! 1 - plant is growing leaves
      ! -1 - plant is actively dropping leaves
      ! 2 - plant has no leaves
-
-     
      integer ,pointer,dimension(:) :: phenology_status
+
+     ! recruit_dbh codes:
+     ! 0 - new plant
+     ! 1 - first census with DBH > 10cm
+     ! 2 - established as DBH > 10cm
+     integer, pointer, dimension(:) :: recruit_dbh
+
 
      ! Biomass of live tissue (kgC/plant)
      real ,pointer,dimension(:) :: balive
@@ -3267,10 +3275,12 @@ contains
     allocate(cpatch%dagb_dt(ncohorts))
     allocate(cpatch%dba_dt(ncohorts))
     allocate(cpatch%ddbh_dt(ncohorts))
+    allocate(cpatch%dlndbh_dt(ncohorts))
     allocate(cpatch%dbh(ncohorts))
     allocate(cpatch%bdead(ncohorts))
     allocate(cpatch%bleaf(ncohorts))
     allocate(cpatch%phenology_status(ncohorts))
+    allocate(cpatch%recruit_dbh(ncohorts))
     allocate(cpatch%balive(ncohorts))
     allocate(cpatch%broot(ncohorts))
     allocate(cpatch%bsapwooda(ncohorts))
@@ -4439,10 +4449,12 @@ contains
     nullify(cpatch%dagb_dt)
     nullify(cpatch%dba_dt)
     nullify(cpatch%ddbh_dt)
+    nullify(cpatch%dlndbh_dt)
     nullify(cpatch%dbh)
     nullify(cpatch%bdead)
     nullify(cpatch%bleaf)
     nullify(cpatch%phenology_status)
+    nullify(cpatch%recruit_dbh)
     nullify(cpatch%balive)
     nullify(cpatch%broot)
     nullify(cpatch%bsapwooda)
@@ -5631,10 +5643,12 @@ contains
     if(associated(cpatch%dagb_dt))             deallocate(cpatch%dagb_dt)
     if(associated(cpatch%dba_dt))              deallocate(cpatch%dba_dt)
     if(associated(cpatch%ddbh_dt))             deallocate(cpatch%ddbh_dt)
+    if(associated(cpatch%dlndbh_dt))           deallocate(cpatch%dlndbh_dt)
     if(associated(cpatch%dbh))                 deallocate(cpatch%dbh)
     if(associated(cpatch%bdead))               deallocate(cpatch%bdead)
     if(associated(cpatch%bleaf))               deallocate(cpatch%bleaf)
     if(associated(cpatch%phenology_status))    deallocate(cpatch%phenology_status)
+    if(associated(cpatch%recruit_dbh))         deallocate(cpatch%recruit_dbh)
     if(associated(cpatch%balive))              deallocate(cpatch%balive)
     if(associated(cpatch%broot))               deallocate(cpatch%broot)
     if(associated(cpatch%bsapwooda))           deallocate(cpatch%bsapwooda)
@@ -6482,10 +6496,12 @@ contains
     patchout%dagb_dt(1:inc)          = pack(patchin%dagb_dt,mask)
     patchout%dba_dt(1:inc)           = pack(patchin%dba_dt,mask)
     patchout%ddbh_dt(1:inc)          = pack(patchin%ddbh_dt,mask)
+    patchout%dlndbh_dt(1:inc)        = pack(patchin%dlndbh_dt,mask)
     patchout%dbh(1:inc)              = pack(patchin%dbh,mask)
     patchout%bdead(1:inc)            = pack(patchin%bdead,mask)
     patchout%bleaf(1:inc)            = pack(patchin%bleaf,mask)
     patchout%phenology_status(1:inc) = pack(patchin%phenology_status,mask)
+    patchout%recruit_dbh(1:inc)      = pack(patchin%recruit_dbh,mask)
     patchout%balive(1:inc)           = pack(patchin%balive,mask)
     patchout%broot(1:inc)            = pack(patchin%broot,mask)
     patchout%bsapwooda(1:inc)        = pack(patchin%bsapwooda,mask)
@@ -6724,10 +6740,12 @@ contains
        patchout%dagb_dt(iout)          = patchin%dagb_dt(iin)
        patchout%dba_dt(iout)           = patchin%dba_dt(iin)
        patchout%ddbh_dt(iout)          = patchin%ddbh_dt(iin)
+       patchout%dlndbh_dt(iout)        = patchin%dlndbh_dt(iin)
        patchout%dbh(iout)              = patchin%dbh(iin)
        patchout%bdead(iout)            = patchin%bdead(iin)
        patchout%bleaf(iout)            = patchin%bleaf(iin)
        patchout%phenology_status(iout) = patchin%phenology_status(iin)
+       patchout%recruit_dbh(iout)      = patchin%recruit_dbh(iin)
        patchout%balive(iout)           = patchin%balive(iin)
        patchout%broot(iout)            = patchin%broot(iin)
        patchout%bsapwooda(iout)        = patchin%bsapwooda(iin)
@@ -11918,42 +11936,42 @@ contains
       if (associated(csite%fast_soil_C)) then
          nvar=nvar+1
            call vtable_edio_r(npts,csite%fast_soil_C,nvar,igr,init,csite%paglob_id, &
-           var_len,var_len_global,max_ptrs,'FAST_SOIL_C :31:hist:year') 
+           var_len,var_len_global,max_ptrs,'FAST_SOIL_C :31:hist:year:dcyc') 
          call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
       end if
 
       if (associated(csite%slow_soil_C)) then
          nvar=nvar+1
            call vtable_edio_r(npts,csite%slow_soil_C,nvar,igr,init,csite%paglob_id, &
-           var_len,var_len_global,max_ptrs,'SLOW_SOIL_C :31:hist:year') 
+           var_len,var_len_global,max_ptrs,'SLOW_SOIL_C :31:hist:year:dcyc') 
          call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
       end if
 
       if (associated(csite%structural_soil_C)) then
          nvar=nvar+1
            call vtable_edio_r(npts,csite%structural_soil_C,nvar,igr,init,csite%paglob_id, &
-           var_len,var_len_global,max_ptrs,'STRUCTURAL_SOIL_C :31:hist:year') 
+           var_len,var_len_global,max_ptrs,'STRUCTURAL_SOIL_C :31:hist:year:dcyc') 
          call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
       end if
 
       if (associated(csite%structural_soil_L)) then
          nvar=nvar+1
            call vtable_edio_r(npts,csite%structural_soil_L,nvar,igr,init,csite%paglob_id, &
-           var_len,var_len_global,max_ptrs,'STRUCTURAL_SOIL_L :31:hist:year') 
+           var_len,var_len_global,max_ptrs,'STRUCTURAL_SOIL_L :31:hist:year:dcyc') 
          call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
       end if
 
       if (associated(csite%mineralized_soil_N)) then
          nvar=nvar+1
            call vtable_edio_r(npts,csite%mineralized_soil_N,nvar,igr,init,csite%paglob_id, &
-           var_len,var_len_global,max_ptrs,'MINERALIZED_SOIL_N :31:hist:year') 
+           var_len,var_len_global,max_ptrs,'MINERALIZED_SOIL_N :31:hist:year:dcyc') 
          call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
       end if
 
       if (associated(csite%fast_soil_N)) then
          nvar=nvar+1
            call vtable_edio_r(npts,csite%fast_soil_N,nvar,igr,init,csite%paglob_id, &
-           var_len,var_len_global,max_ptrs,'FAST_SOIL_N :31:hist:year') 
+           var_len,var_len_global,max_ptrs,'FAST_SOIL_N :31:hist:year:dcyc') 
          call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
       end if
       
@@ -13357,6 +13375,13 @@ contains
          call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
       end if
 
+      if (associated(cpatch%recruit_dbh)) then
+         nvar=nvar+1
+           call vtable_edio_i(npts,cpatch%recruit_dbh,nvar,igr,init,cpatch%coglob_id, &
+           var_len,var_len_global,max_ptrs,'RECRUIT_DBH :40:hist:dail:mont:dcyc:year') 
+         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+      end if
+
       if (associated(cpatch%krdepth)) then
          nvar=nvar+1
            call vtable_edio_i(npts,cpatch%krdepth,nvar,igr,init,cpatch%coglob_id, &
@@ -13426,6 +13451,13 @@ contains
            call vtable_edio_r(npts,cpatch%ddbh_dt,nvar,igr,init,cpatch%coglob_id, &
            var_len,var_len_global,max_ptrs,'DDBH_DT :41:hist:mont:dcyc:year') 
          call metadata_edio(nvar,igr,'DBH growth','[cm/plant/yr]','icohort') 
+      end if
+
+      if (associated(cpatch%dlndbh_dt)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,cpatch%dlndbh_dt,nvar,igr,init,cpatch%coglob_id, &
+           var_len,var_len_global,max_ptrs,'DLNDBH_DT :41:hist:mont:dcyc:year') 
+         call metadata_edio(nvar,igr,'Relative DBH growth','[1/yr]','icohort') 
       end if
 
       if (associated(cpatch%dbh)) then

@@ -470,12 +470,12 @@ subroutine grell_cupar_static(comp_noforc_cldwork,checkmass,iupmethod,maxens_cap
       !    a. This call may end up preventing convection, so I must check after the call   !
       !    b. This subroutine may also affect the updraft originating level.               !
       !------------------------------------------------------------------------------------!
-      call grell_find_cloud_lfc(mkx,mgmzp,kbmax,cap_max,wbuoy_max,wwind,sigw,exner_cup     &
-                               ,p_cup,theiv_cup,thil_cup,t_cup,qtot_cup,qvap_cup,qliq_cup  &
-                               ,qice_cup,qsat_cup,co2_cup,rho_cup,dzd_cld,mentru_rate      &
-                               ,theivu_cld,thilu_cld,tu_cld,qtotu_cld,qvapu_cld,qliqu_cld  &
-                               ,qiceu_cld,qsatu_cld,co2u_cld,rhou_cld,dbyu,klou,ierr,klcl  &
-                               ,klfc,wbuoymin)
+      call grell_find_cloud_lfc(mkx,mgmzp,kbmax,cap_max,wbuoy_max,wwind,sigw,z_cup         &
+                               ,exner_cup,p_cup,theiv_cup,thil_cup,t_cup,qtot_cup,qvap_cup &
+                               ,qliq_cup,qice_cup,qsat_cup,co2_cup,rho_cup,dzd_cld         &
+                               ,mentru_rate,theivu_cld,thilu_cld,tu_cld,qtotu_cld          &
+                               ,qvapu_cld,qliqu_cld,qiceu_cld,qsatu_cld,co2u_cld,rhou_cld  &
+                               ,dbyu,klou,ierr,klcl,klfc,wbuoymin)
 
       if (ierr /= 0) then
          ierr_cap(icap) = ierr
@@ -522,14 +522,14 @@ subroutine grell_cupar_static(comp_noforc_cldwork,checkmass,iupmethod,maxens_cap
       ! 8. Find the moisture profiles associated with updrafts, and check whether the      !
       !    profile makes sense or not.                                                     !
       !------------------------------------------------------------------------------------!
-      call grell_most_thermo_updraft(prec_cld,.true.,mkx,mgmzp,klfc,ktpse                  &
-                                    ,cld2prec,cdu,mentru_rate,qtot,co2,p_cup,exner_cup     &
+      write(which,fmt='(2(a,i4.4))') 'extrap_updraft_icap=',icap,'_icld=',icld
+      call grell_most_thermo_updraft(prec_cld,.true.,mkx,mgmzp,klfc,ktpse,cld2prec,cdu     &
+                                    ,mentru_rate,qtot,co2,z_cup,p_cup,exner_cup            &
                                     ,theiv_cup,thil_cup,t_cup,qtot_cup,qvap_cup,qliq_cup   &
                                     ,qice_cup,qsat_cup,co2_cup,rho_cup,theivu_cld,etau_cld &
                                     ,dzu_cld,thilu_cld,tu_cld,qtotu_cld,qvapu_cld          &
                                     ,qliqu_cld,qiceu_cld,qsatu_cld,co2u_cld,rhou_cld,dbyu  &
-                                    ,pwu_cld,pwav,klnb,ktop,ierr)
-      write(which,fmt='(2(a,i4.4))') 'extrap_updraft_icap=',icap,'_icld=',icld
+                                    ,pwu_cld,pwav,klnb,ktop,ierr,which)
       call grell_sanity_check(mkx,mgmzp,z_cup,p_cup,exner_cup,theivu_cld,thilu_cld,tu_cld  &
                              ,qtotu_cld,qvapu_cld,qliqu_cld,qiceu_cld,co2u_cld,rhou_cld    &
                              ,which)
@@ -638,14 +638,14 @@ subroutine grell_cupar_static(comp_noforc_cldwork,checkmass,iupmethod,maxens_cap
          !    dynamics, we must check whether buoyancy makes sense, in case it doesn't we  !
          !    will assign an error flag to this cloud and don't let it happen.             !
          !---------------------------------------------------------------------------------!
-         call grell_most_thermo_downdraft(mkx,mgmzp,klod,qtot,co2,mentrd_rate,cdd,p_cup    &
-                                         ,exner_cup,thil_cup,t_cup,qtot_cup,qvap_cup       &
+         write(which,fmt='(2(a,i4.4))') 'extrap_downdraft_icap=',icap,'_icld=',icld
+         call grell_most_thermo_downdraft(mkx,mgmzp,klod,qtot,co2,mentrd_rate,cdd,z_cup    &
+                                         ,p_cup,exner_cup,thil_cup,t_cup,qtot_cup,qvap_cup &
                                          ,qliq_cup,qice_cup,qsat_cup,co2_cup,rho_cup,pwav  &
                                          ,theivd_cld,etad_cld,dzd_cld,thild_cld,td_cld     &
                                          ,qtotd_cld,qvapd_cld,qliqd_cld,qiced_cld          &
                                          ,qsatd_cld,co2d_cld,rhod_cld,dbyd,pwd_cld,pwev    &
-                                         ,ierr)
-         write(which,fmt='(2(a,i4.4))') 'extrap_downdraft_icap=',icap,'_icld=',icld
+                                         ,ierr,which)
          call grell_sanity_check(mkx,mgmzp,z_cup,p_cup,exner_cup,theivd_cld,thild_cld      &
                                 ,td_cld,qtotd_cld,qvapd_cld,qliqd_cld,qiced_cld,co2d_cld   &
                                 ,rhod_cld,which)
@@ -751,11 +751,12 @@ subroutine grell_cupar_static(comp_noforc_cldwork,checkmass,iupmethod,maxens_cap
          ! iv.    Calculate the thermodynamic properties below the level of free convec-   !
          !        tion.                                                                    !
          !---------------------------------------------------------------------------------!
-         call grell_buoy_below_lfc(mkx,mgmzp,klou,klfc,exner0_cup,p0_cup,theiv0_cup        &
+         write(which,fmt='(2(a,i4.4))') 'buoy_below_lfc_icap=',icap,'_icld=',icld
+         call grell_buoy_below_lfc(mkx,mgmzp,klou,klfc,z_cup,exner0_cup,p0_cup,theiv0_cup  &
                                   ,thil0_cup,t0_cup,qtot0_cup,qvap0_cup,qliq0_cup          &
                                   ,qice0_cup,qsat0_cup,co20_cup,rho0_cup,theiv0u_cld       &
                                   ,thil0u_cld,t0u_cld,qtot0u_cld,qvap0u_cld,qliq0u_cld     &
-                                  ,qice0u_cld,qsat0u_cld,co20u_cld,rho0u_cld,dby0u)
+                                  ,qice0u_cld,qsat0u_cld,co20u_cld,rho0u_cld,dby0u,which)
 
          !---------------------------------------------------------------------------------!
          ! v.     Calculate the incloud ice-vapour equivalent potential temperature        !
@@ -767,15 +768,15 @@ subroutine grell_cupar_static(comp_noforc_cldwork,checkmass,iupmethod,maxens_cap
          ! vi.    Find the moisture profiles associated with updrafts, and check whether   !
          !        they make sense or not.                                                  !
          !---------------------------------------------------------------------------------!
+         write(which,fmt='(2(a,i4.4))') 'zero_updraft_icap=',icap
          call grell_most_thermo_updraft(comp_down_cap(icap),.false.,mkx,mgmzp,klfc,ktop    &
-                                       ,cld2prec,cdu,mentru_rate,qtot0,co20,p0_cup         &
+                                       ,cld2prec,cdu,mentru_rate,qtot0,co20,z_cup,p0_cup   &
                                        ,exner0_cup,theiv0_cup,thil0_cup,t0_cup,qtot0_cup   &
                                        ,qvap0_cup,qliq0_cup,qice0_cup,qsat0_cup,co20_cup   &
                                        ,rho0_cup,theiv0u_cld,etau_cld,dzu_cld,thil0u_cld   &
                                        ,t0u_cld,qtot0u_cld,qvap0u_cld,qliq0u_cld           &
                                        ,qice0u_cld,qsat0u_cld,co20u_cld,rho0u_cld,dby0u    &
-                                       ,pw0u_cld,pwav0,klnb0,ktop0,ierr0)
-         write(which,fmt='(2(a,i4.4))') 'zero_updraft_icap=',icap
+                                       ,pw0u_cld,pwav0,klnb0,ktop0,ierr0,which)
          call grell_sanity_check(mkx,mgmzp,z_cup,p0_cup,exner0_cup,theiv0u_cld,thil0u_cld  &
                                 ,t0u_cld,qtot0u_cld,qvap0u_cld,qliq0u_cld,qice0u_cld       &
                                 ,co20u_cld,rho0u_cld,which)
@@ -796,15 +797,15 @@ subroutine grell_cupar_static(comp_noforc_cldwork,checkmass,iupmethod,maxens_cap
             !------------------------------------------------------------------------------!
             ! ix.    Moisture properties of downdraft                                      !
             !------------------------------------------------------------------------------!
-            call grell_most_thermo_downdraft(mkx,mgmzp,klod,qtot0,co20,mentrd_rate,cdd     &
-                                            ,p0_cup,exner0_cup,thil0_cup,t0_cup,qtot0_cup  &
-                                            ,qvap0_cup,qliq0_cup,qice0_cup,qsat0_cup       &
-                                            ,co20_cup,rho0_cup,pwav0,theiv0d_cld,etad_cld  &
-                                            ,dzd_cld,thil0d_cld,t0d_cld,qtot0d_cld         &
-                                            ,qvap0d_cld,qliq0d_cld,qice0d_cld,qsat0d_cld   &
-                                            ,co20d_cld,rho0d_cld,dby0d,pw0d_cld,pwev0      &
-                                            ,ierr0)
             write(which,fmt='(a,i4.4)') 'zero_downdraft_icap=',icap
+            call grell_most_thermo_downdraft(mkx,mgmzp,klod,qtot0,co20,mentrd_rate,cdd     &
+                                            ,z_cup,p0_cup,exner0_cup,thil0_cup,t0_cup      &
+                                            ,qtot0_cup,qvap0_cup,qliq0_cup,qice0_cup       &
+                                            ,qsat0_cup,co20_cup,rho0_cup,pwav0,theiv0d_cld &
+                                            ,etad_cld,dzd_cld,thil0d_cld,t0d_cld           &
+                                            ,qtot0d_cld,qvap0d_cld,qliq0d_cld,qice0d_cld   &
+                                            ,qsat0d_cld,co20d_cld,rho0d_cld,dby0d,pw0d_cld &
+                                            ,pwev0,ierr0,which)
             call grell_sanity_check(mkx,mgmzp,z_cup,p0_cup,exner0_cup,theiv0d_cld          &
                                    ,thil0d_cld,t0d_cld,qtot0d_cld,qvap0d_cld,qliq0d_cld    &
                                    ,qice0d_cld,co20d_cld,rho0d_cld,which)

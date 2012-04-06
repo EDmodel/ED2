@@ -327,7 +327,8 @@ subroutine update_phenology(doy, cpoly, isi, lat)
                csite%fsn_in(ipa) = csite%fsn_in(ipa)                                       &
                                  + cpatch%nplant(ico) * cpatch%leaf_drop(ico)              &
                                  * f_labile(ipft) / c2n_leaf(ipft)
-               csite%ssc_in(ipa) = csite%ssc_in(ipa) + cpatch%leaf_drop(ico)               &
+               csite%ssc_in(ipa) = csite%ssc_in(ipa)                                       &
+                                 + cpatch%nplant(ico) * cpatch%leaf_drop(ico)              &
                                  * (1.0 - f_labile(ipft))
                csite%ssl_in(ipa) = csite%ssl_in(ipa)                                       &
                                  + cpatch%nplant(ico) * cpatch%leaf_drop(ico)              &
@@ -531,13 +532,28 @@ subroutine update_phenology(doy, cpoly, isi, lat)
                cpatch%cb(13,ico)     = cpatch%cb(13,ico)     - cpatch%leaf_drop(ico)
                cpatch%cb_max(13,ico) = cpatch%cb_max(13,ico) - cpatch%leaf_drop(ico)
                !---------------------------------------------------------------------------!
-            elseif (elongf_try >= elongf_min .and. cpatch%phenology_status(ico) /= 0) then
+            elseif (cpatch%phenology_status(ico) /= 0) then
                !---------------------------------------------------------------------------!
                !       Elongation factor could increase, but we first check whether it is  !
                ! safe to do so based on the phenology status.                              !
                !---------------------------------------------------------------------------!
-               cpatch%elongf          (ico) = elongf_try
-               cpatch%phenology_status(ico) = 1
+               select case(cpatch%phenology_status(ico))
+               case (1)
+                  !----- Leaves were already growing, keep growing. -----------------------!
+                  cpatch%elongf          (ico) = elongf_try
+                  !------------------------------------------------------------------------!
+               case (-1,2)
+                  !------------------------------------------------------------------------!
+                  !     Leaves were dropping or gone, we first check that conditions are   !
+                  ! really improving before we turn on leaf production.                    !
+                  !------------------------------------------------------------------------!
+                  elongf_grow = min(1.0,max(elongf_flush,cpatch%elongf(ico)+0.02))
+                  if (elongf_try >= elongf_grow) then
+                     cpatch%elongf          (ico) = elongf_try
+                     cpatch%phenology_status(ico) = 1
+                  end if
+                  !------------------------------------------------------------------------!
+               end select
                !---------------------------------------------------------------------------!
             end if
             !------------------------------------------------------------------------------!

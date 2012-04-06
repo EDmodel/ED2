@@ -192,6 +192,27 @@ contains
     allocate(fir_up_aerad(nz_rad+1))
     allocate(fir_dn_aerad(nz_rad+1))
 
+    r_aerad(nbin,ngroup) = 0
+    rcore_aerad(nbin,ngroup) = 0
+    rup_aerad(nbin,ngroup) = 0
+    rcoreup_aerad(nbin,ngroup) = 0
+    !p_aerad(nz_rad) = 0
+    !pc_aerad(nz_rad,nbin,ngroup) = 0
+    !t_aerad(nz_rad) = 0
+    c_aerad(nz_rad,nbin,ngroup) = 0
+    !qv_aerad(nz_rad) = 0
+    is_grp_ice_aerad(ngroup) = 0
+    wave_aerad(nwave+1) = 0
+    !heati_aerad(nz_rad) = 0
+    !heats_aerad(nz_rad) = 0
+    alb_toa_aerad(nsol) = 0
+    opd_aerad(nwave) = 0
+    qrad_aerad(nbin,nz_rad,ngroup) = 0
+    fsl_up_aerad(nz_rad+1) = 0
+    fsl_dn_aerad(nz_rad+1) = 0
+    fir_up_aerad(nz_rad+1) = 0
+    fir_dn_aerad(nz_rad+1) = 0
+
   end subroutine initial_definitions_aerad
 
   ! **************************************************************************

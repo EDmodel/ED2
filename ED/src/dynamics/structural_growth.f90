@@ -450,14 +450,6 @@ subroutine structural_growth_eq_0(cgrid, month)
                !----- Decrement the storage pool. -----------------------------------------!
                cpatch%bstorage(ico) = cpatch%bstorage(ico) * (1.0 - f_bdead - f_bseeds)
 
-               !----- Finalize litter inputs. ---------------------------------------------!
-               csite%fsc_in(ipa) = csite%fsc_in(ipa)
-               csite%fsn_in(ipa) = csite%fsn_in(ipa)
-               csite%ssc_in(ipa) = csite%ssc_in(ipa)
-               csite%ssl_in(ipa) = csite%ssl_in(ipa)
-               csite%total_plant_nitrogen_uptake(ipa) =                                    &
-                      csite%total_plant_nitrogen_uptake(ipa)
-
 
                !----- Update annual average carbon balances for mortality. ----------------!
                update_month = month - 1
@@ -701,7 +693,8 @@ subroutine update_derived_cohort_props(cpatch,ico,green_leaf_factor,lsl)
    use pft_coms      , only : phenology           & ! intent(in)
                             , q                   & ! intent(in)
                             , qsw                 & ! intent(in)
-                            , is_grass            ! ! intent(in)
+                            , is_grass            & ! intent(in)
+                            , min_recruit_dbh     ! ! intent(in)
    use allometry     , only : bd2dbh              & ! function
                             , dbh2h               & ! function
                             , dbh2krdepth         & ! function
@@ -738,6 +731,15 @@ subroutine update_derived_cohort_props(cpatch,ico,green_leaf_factor,lsl)
    end if
    !---------------------------------------------------------------------------------------!
 
+
+   !---------------------------------------------------------------------------------------!
+   !     Update the recruitment flag regarding DBH if needed.                              !
+   !---------------------------------------------------------------------------------------!
+   if (cpatch%dbh(ico) >= min_recruit_dbh(ipft) .and. cpatch%recruit_dbh(ico) /= 2) then
+      cpatch%recruit_dbh(ico) = cpatch%recruit_dbh(ico) + 1
+   end if
+   !---------------------------------------------------------------------------------------!
+   
 
    !---------------------------------------------------------------------------------------!
    !     Because DBH may have increased, the maximum leaf biomass may be different, which  !
@@ -838,9 +840,13 @@ subroutine update_vital_rates(cpatch,ico,ilu,dbh_in,bdead_in,balive_in,hite_in,b
    !     Change the agb growth to kgC/plant/year, basal area to cm2/plant/year, and DBH    !
    ! growth to cm/year.                                                                    !
    !---------------------------------------------------------------------------------------!
-   cpatch%dagb_dt(ico)    = (cpatch%agb(ico)     - agb_in ) * 12.0
-   cpatch%dba_dt(ico)     = (cpatch%basarea(ico) - ba_in  ) * 12.0
-   cpatch%ddbh_dt(ico)    = (cpatch%dbh(ico)     - dbh_in ) * 12.0
+   cpatch%dagb_dt(ico)    =    (cpatch%agb(ico)     - agb_in ) * 12.0
+   cpatch%dba_dt(ico)     =    (cpatch%basarea(ico) - ba_in  ) * 12.0
+   cpatch%ddbh_dt(ico)    =    (cpatch%dbh(ico)     - dbh_in ) * 12.0
+   cpatch%dlndbh_dt(ico)  = log(cpatch%dbh(ico)     / dbh_in ) * 12.0
+   !---------------------------------------------------------------------------------------!
+
+
 
    !---------------------------------------------------------------------------------------!
    !     These are polygon-level variable, so they are done in kgC/m2.  Update the current !

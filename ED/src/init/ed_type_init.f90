@@ -78,50 +78,51 @@ subroutine init_ed_cohort_vars(cpatch,ico, lsl)
    !---------------------------------------------------------------------------------------!
 
 
-   cpatch%monthly_dndt(ico)     = 0.0
-   cpatch%monthly_dlnndt(ico)   = 0.0
-   cpatch%mort_rate(:,ico)      = 0.0
+   cpatch%monthly_dndt          (ico) = 0.0
+   cpatch%monthly_dlnndt        (ico) = 0.0
+   cpatch%mort_rate           (:,ico) = 0.0
 
-   cpatch%dagb_dt(ico)          = 0.0
-   cpatch%dba_dt(ico)           = 0.0
-   cpatch%ddbh_dt(ico)          = 0.0
+   cpatch%dagb_dt               (ico) = 0.0
+   cpatch%dba_dt                (ico) = 0.0
+   cpatch%ddbh_dt               (ico) = 0.0
+   cpatch%dlndbh_dt             (ico) = 0.0
 
 
-   cpatch%par_l(ico)            = 0.0
-   cpatch%par_l_beam(ico)       = 0.0
-   cpatch%par_l_diffuse(ico)    = 0.0
-   cpatch%rshort_l(ico)         = 0.0
-   cpatch%rshort_l_beam(ico)    = 0.0
-   cpatch%rshort_l_diffuse(ico) = 0.0
-   cpatch%rlong_l(ico)          = 0.0
-   cpatch%rlong_l_surf(ico)     = 0.0
-   cpatch%rlong_l_incid(ico)    = 0.0
-   cpatch%rshort_w(ico)         = 0.0
-   cpatch%rshort_w_beam(ico)    = 0.0
-   cpatch%rshort_w_diffuse(ico) = 0.0
-   cpatch%rlong_w(ico)          = 0.0
-   cpatch%rlong_w_surf(ico)     = 0.0
-   cpatch%rlong_w_incid(ico)    = 0.0
+   cpatch%par_l                 (ico) = 0.0
+   cpatch%par_l_beam            (ico) = 0.0
+   cpatch%par_l_diffuse         (ico) = 0.0
+   cpatch%rshort_l              (ico) = 0.0
+   cpatch%rshort_l_beam         (ico) = 0.0
+   cpatch%rshort_l_diffuse      (ico) = 0.0
+   cpatch%rlong_l               (ico) = 0.0
+   cpatch%rlong_l_surf          (ico) = 0.0
+   cpatch%rlong_l_incid         (ico) = 0.0
+   cpatch%rshort_w              (ico) = 0.0
+   cpatch%rshort_w_beam         (ico) = 0.0
+   cpatch%rshort_w_diffuse      (ico) = 0.0
+   cpatch%rlong_w               (ico) = 0.0
+   cpatch%rlong_w_surf          (ico) = 0.0
+   cpatch%rlong_w_incid         (ico) = 0.0
 
-   cpatch%leaf_gbh(ico)             = 0.0
-   cpatch%leaf_gbw(ico)             = 0.0
-   cpatch%wood_gbh(ico)             = 0.0
-   cpatch%wood_gbw(ico)             = 0.0
-   cpatch%A_open(ico)               = 0.0
-   cpatch%A_closed(ico)             = 0.0
-   cpatch%psi_open(ico)             = 0.0
-   cpatch%psi_closed(ico)           = 0.0
-   cpatch%water_supply(ico)         = 0.0
-   cpatch%gsw_open(ico)             = 0.0
-   cpatch%gsw_closed(ico)           = 0.0
-   cpatch%stomatal_conductance(ico) = 0.0
+   cpatch%leaf_gbh              (ico) = 0.0
+   cpatch%leaf_gbw              (ico) = 0.0
+   cpatch%wood_gbh              (ico) = 0.0
+   cpatch%wood_gbw              (ico) = 0.0
+   cpatch%A_open                (ico) = 0.0
+   cpatch%A_closed              (ico) = 0.0
+   cpatch%psi_open              (ico) = 0.0
+   cpatch%psi_closed            (ico) = 0.0
+   cpatch%water_supply          (ico) = 0.0
+   cpatch%gsw_open              (ico) = 0.0
+   cpatch%gsw_closed            (ico) = 0.0
+   cpatch%stomatal_conductance  (ico) = 0.0
        
        
-   cpatch%leaf_maintenance   (ico) = 0.0
-   cpatch%root_maintenance   (ico) = 0.0
-   cpatch%leaf_drop          (ico) = 0.0
-   cpatch%paw_avg            (ico) = 0.0
-   cpatch%elongf             (ico) = 0.0
+   cpatch%leaf_maintenance      (ico) = 0.0
+   cpatch%root_maintenance      (ico) = 0.0
+   cpatch%leaf_drop             (ico) = 0.0
+   cpatch%paw_avg               (ico) = 0.0
+   cpatch%elongf                (ico) = 0.0
    !---------------------------------------------------------------------------------------!
 
 
@@ -131,11 +132,11 @@ subroutine init_ed_cohort_vars(cpatch,ico, lsl)
    ! element (current month integration) must be set to 0, though, otherwise the first     !
    ! month carbon balance will be incorrect.                                               !
    !---------------------------------------------------------------------------------------!
-   cpatch%cb(1:12,ico)     = 1.0
-   cpatch%cb_max(1:12,ico) = 1.0
-   cpatch%cbr_bar(ico)     = 1.0
-   cpatch%cb(13,ico)       = 0.0
-   cpatch%cb_max(13,ico)   = 0.0
+   cpatch%cb               (1:12,ico) = 1.0
+   cpatch%cb_max           (1:12,ico) = 1.0
+   cpatch%cbr_bar               (ico) = 1.0
+   cpatch%cb                 (13,ico) = 0.0
+   cpatch%cb_max             (13,ico) = 0.0
    !---------------------------------------------------------------------------------------!
 
 
@@ -150,9 +151,11 @@ subroutine init_ed_cohort_vars(cpatch,ico, lsl)
 
 
    !---------------------------------------------------------------------------------------!
-   !       First census must be 1.  Not sure what this variable does, though.              !
+   !       First census must be 1.  Not sure what this variable does, though.  Recruit_dbh !
+   ! is a diagnostic variable that tells the cohort status regarding DBH recruitment.      !
    !---------------------------------------------------------------------------------------!
-   cpatch%first_census(ico) = 1
+   cpatch%first_census  (ico) = 1
+   cpatch%recruit_dbh(ico) = 0
    !---------------------------------------------------------------------------------------!
 
 

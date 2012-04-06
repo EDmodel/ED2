@@ -793,19 +793,22 @@ module fuse_fiss_utils
                   
                   
                   !------------------------------------------------------------------------!
-                  !    Five conditions must be met to allow two cohorts to be fused:       !
+                  !    Six conditions must be met to allow two cohorts to be fused:        !
                   ! 1. Both cohorts must have the same PFT;                                !
                   ! 2. Combined LAI won't be too large.                                    !
                   ! 3. Both cohorts must have the same status with respect to the first    !
                   !    census.                                                             !
                   ! 4. Both cohorts must have the same recruit status with respect to the  !
                   !    first census.                                                       !
-                  ! 5. Both cohorts must have the same phenology status.                   !
+                  ! 5. Both cohorts must have the same recruitment status with respect to  !
+                  !    the DBH.                                                            !
+                  ! 6. Both cohorts must have the same phenology status.                   !
                   !------------------------------------------------------------------------!
                   if (     cpatch%pft(donc)              == cpatch%pft(recc)               &
                      .and. lai_max                        < lai_fuse_tol*tolerance_mult    &
                      .and. cpatch%first_census(donc)     == cpatch%first_census(recc)      &
                      .and. cpatch%new_recruit_flag(donc) == cpatch%new_recruit_flag(recc)  &
+                     .and. cpatch%recruit_dbh     (donc) == cpatch%recruit_dbh(recc)       &
                      .and. cpatch%phenology_status(donc) == cpatch%phenology_status(recc)  &
                      ) then
 
@@ -1168,6 +1171,7 @@ module fuse_fiss_utils
       cpatch%bsapwooda(idt)            = cpatch%bsapwooda(isc)
       cpatch%bsapwoodb(idt)            = cpatch%bsapwoodb(isc)
       cpatch%phenology_status(idt)     = cpatch%phenology_status(isc)
+      cpatch%recruit_dbh(idt)          = cpatch%recruit_dbh(isc)
       cpatch%balive(idt)               = cpatch%balive(isc)
       cpatch%lai(idt)                  = cpatch%lai(isc)
       cpatch%wai(idt)                  = cpatch%wai(isc)
@@ -1231,6 +1235,7 @@ module fuse_fiss_utils
       cpatch%dagb_dt(idt)              = cpatch%dagb_dt(isc)
       cpatch%dba_dt(idt)               = cpatch%dba_dt(isc)
       cpatch%ddbh_dt(idt)              = cpatch%ddbh_dt(isc)
+      cpatch%dlndbh_dt(idt)            = cpatch%dlndbh_dt(isc)
       cpatch%Psi_open(idt)             = cpatch%Psi_open(isc)
       cpatch%krdepth(idt)              = cpatch%krdepth(isc)
       cpatch%first_census(idt)         = cpatch%first_census(isc)
@@ -1752,8 +1757,8 @@ module fuse_fiss_utils
       cpatch%dba_dt(recc)       = ( cpatch%dba_dt(recc)      * cpatch%nplant(recc)         &
                                   + cpatch%dba_dt(donc)      * cpatch%nplant(donc) )       &
                                 * newni
-      cpatch%ddbh_dt(recc)      = ( cpatch%ddbh_dt(recc)     * cpatch%nplant(recc)         &
-                                  + cpatch%ddbh_dt(donc)     * cpatch%nplant(donc) )       &
+      cpatch%dlndbh_dt(recc)    = ( cpatch%dlndbh_dt(recc)   * cpatch%nplant(recc)         &
+                                  + cpatch%dlndbh_dt(donc)   * cpatch%nplant(donc) )       &
                                 * newni
       !------------------------------------------------------------------------------------!
 

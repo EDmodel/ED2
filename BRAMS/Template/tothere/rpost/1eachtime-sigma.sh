@@ -11,18 +11,19 @@
 #------------------------------------------------------------------------------------------#
 #    CHANGE LOG                                                                            #
 #------------------------------------------------------------------------------------------#
-ramspost='/n/moorcroftfs2/mlongo/EDBRAMS/coupled/monotonic-test/rpost/ramspost_6.2'    # Name of executable file
-tmpfolder='/n/moorcroftfs2/mlongo/EDBRAMS/coupled/monotonic-test/rpost/.temp'      # Name of a timestrrary folder
-nice=''                      # Command to "nice" the job.  Put nothing if you don't want 
-                             #      to be nice
-runoutput='/n/moorcroftfs2/mlongo/EDBRAMS/coupled/monotonic-test/rpost/ramspost.out'     # Name of a renewable output file
-compression='none'           # Kind of compression:(Z, bz2, zip, gz, or none)   
-title='EDBRAMS-1.4'          # Title to appear in the header 
-                             #   (no practical relevance)
-deleteintctl='y'             # Delete intermediate ctl [y/N]
-                             # (a template will be provided)
-outshell='y'
-shellout='/n/moorcroftfs2/mlongo/EDBRAMS/coupled/monotonic-test/rpost/serial_out.out'    # File for 1eachtime-sigma.sh output
+ramspost='myoutpath/rpost/ramspost_6.2'      # Name of executable file
+tmpfolder='myoutpath/rpost/.temp'            # Name of a timestrrary folder
+nice=''                                      # Command to "nice" the job.  Put nothing
+                                             #    if you don't want to be nice
+runoutput='myoutpath/rpost/ramspost.out'     # Name of a renewable output file
+compression='none'                           # Kind of compression:
+                                             #    (Z, bz2, zip, gz, or none)   
+title='EDBRAMS-1.4'                          # Title to appear in the header 
+                                             #    (no practical relevance)
+deleteintctl='y'                             # Delete intermediate ctl [y/N]
+                                             #    (a template will be provided)
+outshell='y'                                 # Create an output file for shell
+shellout='myoutpath/rpost/serial_out.out'    # File for 1eachtime-sigma.sh output
 
 #------------------------------------------------------------------------------------------#
 #------------------------------------------------------------------------------------------#

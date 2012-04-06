@@ -1543,7 +1543,7 @@ subroutine init_pft_photo_params()
    Vm0(11)                   =  6.981875 * vmfact_c3
    Vm0(12:13)                = 18.300000 * vmfact_c3
    Vm0(14:15)                = 12.500000 * vmfact_c4
-   Vm0(16)                   = 21.875000 * vmfact_c3
+   Vm0(16)                   = 20.833333 * vmfact_c3
    Vm0(17)                   = 15.625000 * vmfact_c3
    !---------------------------------------------------------------------------------------!
 
@@ -1846,11 +1846,11 @@ subroutine init_pft_resp_params()
    root_turnover_rate(16)         = leaf_turnover_rate(16)
    root_turnover_rate(17)         = leaf_turnover_rate(17)
 
-   storage_turnover_rate(1)       = 0.00 ! 0.25
-   storage_turnover_rate(2)       = 0.00 ! 0.25
-   storage_turnover_rate(3)       = 0.00 ! 0.25
-   storage_turnover_rate(4)       = 0.00 ! 0.25
-   storage_turnover_rate(5)       = 0.00 ! 0.25
+   storage_turnover_rate(1)       = onethird
+   storage_turnover_rate(2)       = onesixth
+   storage_turnover_rate(3)       = onesixth
+   storage_turnover_rate(4)       = onesixth
+   storage_turnover_rate(5)       = 0.00
    storage_turnover_rate(6)       = 0.00 ! 0.25
    storage_turnover_rate(7)       = 0.00 ! 0.25
    storage_turnover_rate(8)       = 0.00 ! 0.25
@@ -1859,10 +1859,10 @@ subroutine init_pft_resp_params()
    storage_turnover_rate(11)      = 0.6243
    storage_turnover_rate(12)      = 0.00 ! 0.25
    storage_turnover_rate(13)      = 0.00 ! 0.25
-   storage_turnover_rate(14)      = 0.00 ! 0.25
-   storage_turnover_rate(15)      = 0.00 ! 0.25
-   storage_turnover_rate(16)      = 0.00 ! 0.25
-   storage_turnover_rate(17)      = 0.00 ! 0.25
+   storage_turnover_rate(14)      = onethird
+   storage_turnover_rate(15)      = onethird
+   storage_turnover_rate(16)      = onethird
+   storage_turnover_rate(17)      = onesixth
 
    f_labile(1:5)                  = 1.0
    f_labile(6:11)                 = 0.79
@@ -1973,10 +1973,10 @@ subroutine init_pft_mort_params()
    frost_mort(16:17) = 3.0
 
 
-   mort1(1)  = 10.0
-   mort1(2)  = 10.0
-   mort1(3)  = 10.0
-   mort1(4)  = 10.0
+   mort1(1)  = 5.0 ! 10.0
+   mort1(2)  = 5.0 ! 10.0
+   mort1(3)  = 5.0 ! 10.0
+   mort1(4)  = 5.0 ! 10.0
    mort1(5)  = 1.0
    mort1(6)  = 1.0
    mort1(7)  = 1.0
@@ -1986,15 +1986,15 @@ subroutine init_pft_mort_params()
    mort1(11) = 1.0
    mort1(12) = 1.0
    mort1(13) = 1.0
-   mort1(14) = 10.0
-   mort1(15) = 10.0
-   mort1(16) = 10.0
-   mort1(17) = 10.0
+   mort1(14) = 5.0 ! 10.0
+   mort1(15) = 5.0 ! 10.0
+   mort1(16) = 5.0 ! 10.0
+   mort1(17) = 5.0 ! 10.0
 
-   mort2(1)  = 20.0
-   mort2(2)  = 20.0
-   mort2(3)  = 20.0
-   mort2(4)  = 20.0
+   mort2(1)  = 10.0 ! 20.0
+   mort2(2)  = 10.0 ! 20.0
+   mort2(3)  = 10.0 ! 20.0
+   mort2(4)  = 10.0 ! 20.0
    mort2(5)  = 20.0
    mort2(6)  = 20.0
    mort2(7)  = 20.0
@@ -2004,10 +2004,10 @@ subroutine init_pft_mort_params()
    mort2(11) = 20.0
    mort2(12) = 20.0
    mort2(13) = 20.0
-   mort2(14) = 20.0
-   mort2(15) = 20.0
-   mort2(16) = 20.0
-   mort2(17) = 20.0
+   mort2(14) = 10.0 ! 20.0
+   mort2(15) = 10.0 ! 20.0
+   mort2(16) = 10.0 ! 20.0
+   mort2(17) = 10.0 ! 20.0
 
    mort3(1)  = 0.15 * (1. - rho(1) / rho(4)) 
    mort3(2)  = 0.15 * (1. - rho(2) / rho(4))  
@@ -3105,7 +3105,8 @@ subroutine init_pft_repro_params()
                       , st_fract           & ! intent(out)
                       , seed_rain          & ! intent(out)
                       , nonlocal_dispersal & ! intent(out)
-                      , repro_min_h        ! ! intent(out)
+                      , repro_min_h        & ! intent(out)
+                      , min_recruit_dbh    ! ! intent(out)
    implicit none
 
    r_fract(1)              = 0.3
@@ -3151,6 +3152,15 @@ subroutine init_pft_repro_params()
    repro_min_h(12:15)      = 0.0
    repro_min_h(16)         = 0.0
    repro_min_h(17)         = 5.0
+
+   !---------------------------------------------------------------------------------------!
+   !     This is the threshold to change the recruitment status with respect to DBH.       !
+   ! Cohorts with DBH less than min_recruit_dbh will be flagged as 0, cohorts that have    !
+   ! just reached min_recruit_dbh will be flagged as 1, and if they make until next month, !
+   ! they will be flagged as 2.                                                            !
+   !---------------------------------------------------------------------------------------!
+   min_recruit_dbh(1:17)   = 10.0
+   !---------------------------------------------------------------------------------------!
 
    return
 end subroutine init_pft_repro_params

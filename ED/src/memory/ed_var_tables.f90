@@ -59,6 +59,7 @@
 !     !  44  : rank 2 : cohort, pft                         !                              !
 !     !  46  : rank 2 : cohort, dbh                         !                              !
 !     !  47  : rank 2 : cohort, age                         !                              !
+!     !  48  : rank 2 : cohort, mort                        !                              !
 !     !  49  : rank 2 : cohort, nmonths+1                   !                              !
 !     !-----------------------------------------------------!                              !
 !                                                                                          !
