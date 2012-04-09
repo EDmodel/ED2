@@ -1413,8 +1413,6 @@ module fuse_fiss_utils
       integer                      :: imty              ! Mortality type
       real                         :: newni             ! Inverse of new nplants
       real                         :: newlaii           ! Inverse of new LAI
-      real                         :: cb_act            !
-      real                         :: cb_max            !
       !------------------------------------------------------------------------------------!
 
 
@@ -1546,31 +1544,33 @@ module fuse_fiss_utils
 
       !------ Find the intercellular value assuming saturation. ---------------------------!
       cpatch%lint_shv(recc) = qslif(can_prss,cpatch%leaf_temp(recc))
+      !------------------------------------------------------------------------------------!
 
-      cb_act = 0.
-      cb_max = 0.
-      do imon = 1,12
+
+      !------------------------------------------------------------------------------------!
+      !     CB and CB_Max are scaled by population, as they are in kgC/plant/yr.  The      !
+      ! relative carbon balance, however, is no longer derived from the annual values of   !
+      ! CB and CB_Max, but tracked independently as it used to be in ED-1.0.               !
+      !------------------------------------------------------------------------------------!
+      do imon = 1,13
          cpatch%cb(imon,recc)     = ( cpatch%cb(imon,recc) * cpatch%nplant(recc)           &
                                     + cpatch%cb(imon,donc) * cpatch%nplant(donc) ) * newni
 
          cpatch%cb_max(imon,recc) = ( cpatch%cb_max(imon,recc) * cpatch%nplant(recc)       &
                                     + cpatch%cb_max(imon,donc) * cpatch%nplant(donc))      &
                                     * newni
-         cb_act = cb_act + cpatch%cb(imon,recc)
-         cb_max = cb_max + cpatch%cb_max(imon,recc)
       end do
-      cpatch%cb(13,recc)     = ( cpatch%cb(13,recc) * cpatch%nplant(recc)                  &
-                               + cpatch%cb(13,donc) * cpatch%nplant(donc) ) * newni
+      !------------------------------------------------------------------------------------!
 
-      cpatch%cb_max(13,recc) = ( cpatch%cb_max(13,recc) * cpatch%nplant(recc)              &
-                               + cpatch%cb_max(13,donc) * cpatch%nplant(donc))             &
-                               * newni
 
-      if(cb_max > 0.0)then
-         cpatch%cbr_bar(recc) = cb_act / cb_max
-      else
-         cpatch%cbr_bar(recc) = 0.0
-      end if
+
+      !------------------------------------------------------------------------------------!
+      !     Relative carbon balance is also averaged between the cohorts, to avoid wild    !
+      ! oscillations in mortality.                                                         !
+      !------------------------------------------------------------------------------------!
+      cpatch%cbr_bar(recc) = ( cpatch%cbr_bar(recc) * cpatch%nplant(recc)                  &
+                             + cpatch%cbr_bar(donc) * cpatch%nplant(donc) ) * newni
+      !------------------------------------------------------------------------------------!
 
 
 

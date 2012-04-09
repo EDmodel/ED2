@@ -296,12 +296,6 @@ subroutine canopy_photosynthesis(csite,cmet,mzg,ipa,lsl,ntext_soil              
 
 
             !------------------------------------------------------------------------------!
-            !    Scale photosynthetically active radiation per unit of leaf.               !
-            !------------------------------------------------------------------------------!
-            leaf_par = csite%par_l_max(ipa) / cpatch%lai(tuco)
-            !------------------------------------------------------------------------------!
-
-            !------------------------------------------------------------------------------!
             !    Call the photosynthesis for maximum photosynthetic rates.  The units      !
             ! of the input and output are the standard in most of ED modules, but many of  !
             ! them are converted inside the photosynthesis model.                          !
@@ -314,7 +308,7 @@ subroutine canopy_photosynthesis(csite,cmet,mzg,ipa,lsl,ntext_soil              
              , csite%can_shv(ipa)          & ! Canopy air sp. humidity          [    kg/kg]
              , csite%can_co2(ipa)          & ! Canopy air CO2 mixing ratio      [ µmol/mol]
              , ipft                        & ! Plant functional type            [      ---]
-             , leaf_par                    & ! Absorbed photos. active rad.     [     W/m²]
+             , csite%par_l_max(ipa)        & ! Absorbed photos. active rad.     [ W/m²leaf]
              , cpatch%leaf_temp(tuco)      & ! Leaf temperature                 [        K]
              , cpatch%lint_shv(tuco)       & ! Leaf intercellular spec. hum.    [    kg/kg]
              , green_leaf_factor(ipft)     & ! Greenness rel. to on-allometry   [      ---]
@@ -394,7 +388,7 @@ subroutine canopy_photosynthesis(csite,cmet,mzg,ipa,lsl,ntext_soil              
              , csite%can_shv(ipa)          & ! Canopy air sp. humidity          [    kg/kg]
              , csite%can_co2(ipa)          & ! Canopy air CO2 mixing ratio      [ µmol/mol]
              , ipft                        & ! Plant functional type            [      ---]
-             , leaf_par                    & ! Absorbed photos. active rad.     [     W/m²]
+             , leaf_par                    & ! Absorbed photos. active rad.     [ W/m²leaf]
              , cpatch%leaf_temp(ico)       & ! Leaf temperature                 [        K]
              , cpatch%lint_shv(ico)        & ! Leaf intercellular spec. hum.    [    kg/kg]
              , green_leaf_factor(ipft)     & ! Greenness rel. to on-allometry   [      ---]
