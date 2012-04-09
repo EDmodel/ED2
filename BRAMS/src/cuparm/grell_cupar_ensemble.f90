@@ -92,7 +92,7 @@ subroutine grell_dellas_ensemble(mgmzp,checkmass,masstol,edt,kdet,klou,klfc,klod
    use rconstants, only : grav
 
    implicit none
-
+   !----- Arguments. ----------------------------------------------------------------------!
    integer               , intent(in)    :: mgmzp       ! Number of levels
    logical               , intent(in)    :: checkmass   ! Flag for mass balance check
    real                  , intent(in)    :: masstol     ! Mass tolerance.
@@ -102,7 +102,6 @@ subroutine grell_dellas_ensemble(mgmzp,checkmass,masstol,edt,kdet,klou,klfc,klod
    integer               , intent(in)    :: klfc        ! Level of free convection
    integer               , intent(in)    :: klod        ! Level of origin of downdraft
    integer               , intent(in)    :: ktop        ! Cloud top
-   
    real, dimension(mgmzp), intent(in)    :: this        ! Thermo variable @ model levels
    real, dimension(mgmzp), intent(in)    :: p_cup       ! Pressure at cloud levels [Pa]
    real, dimension(mgmzp), intent(in)    :: this_cup    ! Thermo variable @ cloud levels
@@ -116,7 +115,7 @@ subroutine grell_dellas_ensemble(mgmzp,checkmass,masstol,edt,kdet,klou,klfc,klod
    real, dimension(mgmzp), intent(in)    :: thisd_cld   ! Thermo variable at downdraft;
    real, dimension(mgmzp), intent(in)    :: thisu_cld   ! Thermo variable at updraft;
    real, dimension(mgmzp), intent(inout) :: dellathis   ! Change of thermo per unit of mass
-
+   !----- Local variables. ----------------------------------------------------------------!
    integer                               :: k           ! Counter
    real                                  :: subin       ! Subsidence from level aloft;
    real                                  :: subout      ! Subsidence to level below;
@@ -125,6 +124,10 @@ subroutine grell_dellas_ensemble(mgmzp,checkmass,masstol,edt,kdet,klou,klfc,klod
    real                                  :: detup       ! Updraft detrainment term
    real                                  :: entup       ! Updraft entrainment term
    real                                  :: totmass     ! Total mass balance
+   !---------------------------------------------------------------------------------------!
+
+
+
 
    !---------------------------------------------------------------------------------------!
    !    The vertical loop is done between the 2nd level and cloud top. The first level was !
@@ -264,38 +267,44 @@ end subroutine grell_dellas_ensemble
 !      verification. J. Atm. Sci., vol. 43(18). 1913-1943. (zf or ZF86).                   !
 !------------------------------------------------------------------------------------------!
 subroutine grell_efficiency_ensemble(mkx,mgmzp,maxens_eff,klou,klfc,ktop,edtmin,edtmax     &
-                                    ,pwav,pwev,z_cup,uwind,vwind,dzd_cld,edt_eff)
+                                    ,pwav,pwev,z_cup,uwind,vwind,dzd_cld,edt_eff,icld,icap)
 
    implicit none
-
-   integer                 , intent(in)  :: mkx, mgmzp  ! Grid dimesnsions
-   integer                 , intent(in)  :: maxens_eff  ! # of prec. efficiency members
-   integer                 , intent(in)  :: klou        ! Updraft origin
-   integer                 , intent(in)  :: klfc        ! Level of free convection
-   integer                 , intent(in)  :: ktop        ! Cloud top
-
-
-   real                       , intent(in)  :: edtmin   ! Minimum efficiency
-   real                       , intent(in)  :: edtmax   ! Maximum efficiency
-   real                       , intent(in)  :: pwav     ! Integrated updraft cond.    (I1)
-   real                       , intent(in)  :: pwev     ! Integrated downdraft evap. (-I2)
-   real, dimension(mgmzp)     , intent(in)  :: z_cup    ! Height @ cloud levels;
-   real, dimension(mgmzp)     , intent(in)  :: uwind    ! Zonal wind @ model levels;
-   real, dimension(mgmzp)     , intent(in)  :: vwind    ! Meridional wind @ model levels;
-   real, dimension(mgmzp)     , intent(in)  :: dzd_cld  ! Layer thickness
-   real, dimension(maxens_eff), intent(out) :: edt_eff  ! Prec. efficiency for ensemble.
-   
-   integer                               :: k,e         ! Counters
-   integer                               :: incr        ! Increment
-   real                                  :: botwind     ! Wind magnitude at cloud bottom;
-   real                                  :: topwind     ! Wind magnitude at cloud top;
-   real                                  :: vshear      ! Wind shear
-   real                                  :: edt         ! Standard prec. Efficiency 
-   real                                  :: delta_edt   ! Efficiency "step" for ensemble.
-   real                                  :: pef_fc      ! Precipitation efficiency (FC80).
-   real                                  :: er_zf       ! Temporary variable to compute...
-   real                                  :: pef_zf      ! Prec. efficiency (ZF86)
-   real                                  :: zkbc_kft    ! Level of free convection height
+   !----- Arguments. ----------------------------------------------------------------------!
+   integer                    , intent(in)  :: mkx        ! Grid dimesnsion
+   integer                    , intent(in)  :: mgmzp      ! Grid dimesnsion
+   integer                    , intent(in)  :: maxens_eff ! # of prec. efficiency members
+   integer                    , intent(in)  :: klou       ! Updraft origin
+   integer                    , intent(in)  :: klfc       ! Level of free convection
+   integer                    , intent(in)  :: ktop       ! Cloud top
+   integer                    , intent(in)  :: icld       ! Cloud type
+   integer                    , intent(in)  :: icap       ! Static control type
+   real                       , intent(in)  :: edtmin     ! Minimum efficiency
+   real                       , intent(in)  :: edtmax     ! Maximum efficiency
+   real                       , intent(in)  :: pwav       ! Integ. updraft cond.       (I1)
+   real                       , intent(in)  :: pwev       ! Integ. downdraft evap.    (-I2)
+   real, dimension(mgmzp)     , intent(in)  :: z_cup      ! Height @ cloud levels;
+   real, dimension(mgmzp)     , intent(in)  :: uwind      ! Zonal wind @ model levels;
+   real, dimension(mgmzp)     , intent(in)  :: vwind      ! Meridional wind @ model levels;
+   real, dimension(mgmzp)     , intent(in)  :: dzd_cld    ! Layer thickness
+   real, dimension(maxens_eff), intent(out) :: edt_eff    ! Prec. efficiency for ensemble.
+   !----- Local variables. ----------------------------------------------------------------!
+   integer                                  :: k          ! Counter
+   integer                                  :: e          ! Counter
+   integer                                  :: iun        ! File unit
+   integer                                  :: incr       ! Increment
+   real                                     :: botwind    ! Wind magnitude at cloud bottom
+   real                                     :: topwind    ! Wind magnitude at cloud top
+   real                                     :: vshear     ! Wind shear
+   real                                     :: edt        ! Standard prec. Efficiency 
+   real                                     :: delta_edt  ! Efficiency "step" for ensemble.
+   real                                     :: pef_fc     ! Precipitation efficiency (FC80).
+   real                                     :: er_zf      ! Temp. variable to compute...
+   real                                     :: pef_zf     ! Prec. efficiency (ZF86)
+   real                                     :: zkbc_kft   ! Level of free convection height
+   !---------------------------------------------------------------------------------------!
+   !      Local constants.                                                                 !
+   !---------------------------------------------------------------------------------------!
    !---------------------------------------------------------------------------------------!
    !    The coefficients below were extracted from the papers, and they are named after    !
    ! the equation they came from. For example fc58 is the vector with all coefficients     !
@@ -310,6 +319,10 @@ subroutine grell_efficiency_ensemble(mkx,mgmzp,maxens_eff,klou,klfc,ktop,edtmin,
    !---------------------------------------------------------------------------------------!
    real, dimension(0:5)  , parameter     :: zf13=(/    .96729352,-.70034167,.162179896     &
                                                   ,-1.2569798E-2, 4.2772E-4,  -5.44E-6 /)
+   !---------------------------------------------------------------------------------------!
+   !    Variable that allow extra information to be printed.                               !
+   !---------------------------------------------------------------------------------------!
+   logical               , parameter     :: debug = .false.
    !---------------------------------------------------------------------------------------!
 
 
@@ -382,21 +395,6 @@ subroutine grell_efficiency_ensemble(mkx,mgmzp,maxens_eff,klou,klfc,ktop,edtmin,
    !---------------------------------------------------------------------------------------!
    pef_zf = 1./(1. + er_zf)
 
-   !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
-   !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
-   !write (unit=57,fmt='(a)') '-------------------------------------------------------------'
-   !write (unit=57,fmt='(5(a9,1x),a12,2(1x,a8))')                                           &
-   !     '  botwind','  topwind','   z(klou)','z(klfc)','  z(ktop)','  wind_shear'          &
-   !     ,'  pef_fc','  pef_zf'
-   !write (unit=57,fmt='(5(f9.3,1x),es12.5,2(1x,f8.4))')                                    &
-   !        botwind ,topwind ,z_cup(klou),z_cup(klfc),z_cup(ktop),vshear,pef_fc ,pef_zf
-   !write (unit=57,fmt='(a)') ' '
-   !write (unit=57,fmt='(2(a,1x,es11.4,1x))') 'pwav=',pwav,'pwev=',pwev
-   !write (unit=57,fmt='(a)') '-------------------------------------------------------------'
-   !write (unit=57,fmt='(a)') ' '
-   !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
-   !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
-
 
    !---------------------------------------------------------------------------------------!
    !    The standard precipitation efficiency is simply the average between both methods.  !
@@ -417,6 +415,31 @@ subroutine grell_efficiency_ensemble(mkx,mgmzp,maxens_eff,klou,klfc,ktop,edtmin,
       !----- Shifted from edt -------------------------------------------------------------!
       ! edt_eff(e) = max(edtmin,min(edtmax,edt-float(k-1)*edtinc))
    end do
+
+   !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
+   !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
+   if (debug) then
+      iun = 50 + icld
+      write (unit=iun,fmt='(a)')          '-----------------------------------------------'
+      write (unit=iun,fmt='(a,1x,i5)'   ) ' ICAP    =',icap
+      write (unit=iun,fmt='(a)')          ' '
+      write (unit=iun,fmt='(a,1x,f11.4)') ' BOTWIND [   m/s] =',botwind
+      write (unit=iun,fmt='(a,1x,f11.4)') ' TOPWIND [   m/s] =',topwind
+      write (unit=iun,fmt='(a,1x,f11.4)') ' ZKLOU   [     m] =',z_cup(klou)
+      write (unit=iun,fmt='(a,1x,f11.4)') ' ZKLFC   [     m] =',z_cup(klfc)
+      write (unit=iun,fmt='(a,1x,f11.4)') ' ZKTOP   [     m] =',z_cup(ktop)
+      write (unit=iun,fmt='(a,1x,f11.4)') ' VSHEAR  [m/s/km] =',vshear*1000.
+      write (unit=iun,fmt='(a,1x,f11.4)') ' PEF_FC  [   ---] =',pef_fc
+      write (unit=iun,fmt='(a,1x,f11.4)') ' PEF_ZF  [   ---] =',pef_zf
+      write (unit=iun,fmt='(a,1x,f11.4)') ' PWAV    [  g/kg] =',pwav*1000.
+      write (unit=iun,fmt='(a,1x,f11.4)') ' PWEV    [  g/kg] =',pwev*1000.
+      write (unit=iun,fmt='(a,1x,f11.4)') ' EDT     [   ---] =',edt
+      write (unit=iun,fmt='(a)')          '-----------------------------------------------'
+      write (unit=iun,fmt='(a)') ' '
+      write (unit=iun,fmt='(a)') ' '
+   end if
+   !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
+   !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
    
    return
 end subroutine grell_efficiency_ensemble

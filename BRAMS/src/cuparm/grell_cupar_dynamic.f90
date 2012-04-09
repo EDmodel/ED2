@@ -162,11 +162,6 @@ subroutine grell_cupar_dynamic(cldd,clds,nclouds,dtime,maxens_cap,maxens_eff,max
    !    Aliases for some levels/flags, they will be stored in the ensemble structure       !
    ! later.                                                                                !
    !---------------------------------------------------------------------------------------!
-   !----- Scalars. ------------------------------------------------------------------------!
-   integer :: klod      ! Level in which downdrafts originate
-   integer :: kdet      ! Top of downdraft detrainemnt layer
-   integer :: kstabi    ! cloud stable layer base
-   integer :: kstabm    ! cloud stable layer top
    !----- Combined variables --------------------------------------------------------------!
    logical, dimension(nclouds)            :: comp_dn  ! Downdrafts were computed.
    integer, dimension(nclouds)            :: ierr     ! Cloud error flag        [      ---]
@@ -174,6 +169,7 @@ subroutine grell_cupar_dynamic(cldd,clds,nclouds,dtime,maxens_cap,maxens_eff,max
    integer, dimension(nclouds)            :: klfc     ! Level of free convection
    integer, dimension(nclouds)            :: klnb     ! Level of newtral buoyancy
    integer, dimension(nclouds)            :: ktop     ! Cloud top
+   integer, dimension(nclouds)            :: klod     ! Level in which downdrafts originate
    real   , dimension(nclouds,nclouds)    :: mfke     ! Mass flux kernel        [ J m2/kg2]
    real   , dimension(nclouds)            :: aatot    ! Forced cloud work fctn. [     J/kg]
    real   , dimension(nclouds)            :: aatot0   ! Prev. cloud work fctn.  [     J/kg]
@@ -227,10 +223,7 @@ subroutine grell_cupar_dynamic(cldd,clds,nclouds,dtime,maxens_cap,maxens_eff,max
          klfc    (icld) = ensemble_e(icld)%klfc_cap     (icap)
          klnb    (icld) = ensemble_e(icld)%klnb_cap     (icap)
          ktop    (icld) = ensemble_e(icld)%ktop_cap     (icap)
-         klod           = ensemble_e(icld)%klod_cap     (icap)
-         kdet           = ensemble_e(icld)%kdet_cap     (icap)
-         kstabi         = ensemble_e(icld)%kstabi_cap   (icap)
-         kstabm         = ensemble_e(icld)%kstabm_cap   (icap)
+         klod    (icld) = ensemble_e(icld)%klod_cap     (icap)
 
          do k=1,mkx
             cdd(k)         = ensemble_e(icld)%cdd_cap(k,icap)
@@ -328,8 +321,12 @@ subroutine grell_cupar_dynamic(cldd,clds,nclouds,dtime,maxens_cap,maxens_eff,max
                         !     interpolate them to the cloud levels, and check whether the  !
                         !     profile makes sense.                                         !
                         !------------------------------------------------------------------!
+                        write (which,fmt='(3(a,i4.4))') 'nudge_environment_icap=',icap     &
+                                                       ,'_icld=',icld,'_jcld=',jcld
                         do k=1,mkx
                            x_t(k)    = t  (k)
+                           call grell_sanity_thil2tqall(k,z_cup(k),x_thil(k),exner(k),p(k) &
+                                                      ,x_qtot(k),which)
                            call thil2tqall(x_thil(k),exner(k),p(k),x_qtot(k),x_qliq(k)     &
                                           ,x_qice(k),x_t(k),x_qvap(k),x_qsat)
                         end do
@@ -340,8 +337,6 @@ subroutine grell_cupar_dynamic(cldd,clds,nclouds,dtime,maxens_cap,maxens_eff,max
                                                 ,x_qtot_cup,x_qvap_cup,x_qliq_cup          &
                                                 ,x_qice_cup,x_qsat_cup,x_co2_cup,x_rho_cup &
                                                 ,x_theiv_cup,x_theivs_cup)
-                        write (which,fmt='(3(a,i4.4))') 'nudge_environment_icap=',icap     &
-                                                       ,'_icld=',icld,'_jcld=',jcld
                         call grell_sanity_check(mkx,mgmzp,z_cup,x_p_cup,x_exner_cup        &
                                                ,x_theiv_cup,x_thil_cup,x_t_cup,x_qtot_cup  &
                                                ,x_qvap_cup,x_qliq_cup,x_qice_cup,x_co2_cup &
@@ -351,14 +346,17 @@ subroutine grell_cupar_dynamic(cldd,clds,nclouds,dtime,maxens_cap,maxens_eff,max
                         ! 5c. Find the updraft thermodynamics between the updraft origin   !
                         !     and the level of free convection.                            !
                         !------------------------------------------------------------------!
-                        call grell_buoy_below_lfc(mkx,mgmzp,klou(icld),klfc(icld)          &
+                        write (which,fmt='(3(a,i4.4))') 'nudge_buoy_below_lfc_icap=',icap  &
+                                                       ,'_icld=',icld,'_jcld=',jcld
+                        call grell_buoy_below_lfc(mkx,mgmzp,klou(icld),klfc(icld),z_cup    &
                                                  ,x_exner_cup,x_p_cup,x_theiv_cup          &
                                                  ,x_thil_cup,x_t_cup,x_qtot_cup,x_qvap_cup &
                                                  ,x_qliq_cup,x_qice_cup,x_qsat_cup         &
                                                  ,x_co2_cup,x_rho_cup,x_theivu_cld         &
                                                  ,x_thilu_cld,x_tu_cld,x_qtotu_cld         &
                                                  ,x_qvapu_cld,x_qliqu_cld,x_qiceu_cld      &
-                                                 ,x_qsatu_cld,x_co2u_cld,x_rhou_cld,x_dbyu)
+                                                 ,x_qsatu_cld,x_co2u_cld,x_rhou_cld,x_dbyu &
+                                                 ,which)
 
                         !------------------------------------------------------------------!
                         ! 5d. Compute the updraft profiles ice-vapour equivalent potential !
@@ -372,21 +370,21 @@ subroutine grell_cupar_dynamic(cldd,clds,nclouds,dtime,maxens_cap,maxens_eff,max
                         ! 5e. Get the updraft moisture profile, and check whether it makes !
                         !     sense or not.                                                !
                         !------------------------------------------------------------------!
-                        call grell_most_thermo_updraft(prec_cld(icld),.false.,mkx,mgmzp    &
-                                                      ,klfc(icld),ktop(icld),cld2prec,cdu  &
-                                                      ,mentru_rate,x_qtot,x_co2,x_p_cup    &
-                                                      ,x_exner_cup,x_theiv_cup,x_thil_cup  &
-                                                      ,x_t_cup,x_qtot_cup,x_qvap_cup       &
-                                                      ,x_qliq_cup,x_qice_cup,x_qsat_cup    &
-                                                      ,x_co2_cup,x_rho_cup,x_theivu_cld    &
-                                                      ,etau_cld,dzu_cld,x_thilu_cld        &
-                                                      ,x_tu_cld,x_qtotu_cld,x_qvapu_cld    &
-                                                      ,x_qliqu_cld,x_qiceu_cld,x_qsatu_cld &
-                                                      ,x_co2u_cld,x_rhou_cld,x_dbyu        &
-                                                      ,x_pwu_cld,x_pwav,x_klnb,x_ktop      &
-                                                      ,x_ierr)
                         write (which,fmt='(3(a,i4.4))') 'nudge_updraft_icap=',icap         &
                                                        ,'_icld=',icld,'_jcld=',jcld
+                        call grell_most_thermo_updraft(prec_cld(icld),.false.,mkx,mgmzp    &
+                                                      ,klfc(icld),ktop(icld),cld2prec,cdu  &
+                                                      ,mentru_rate,x_qtot,x_co2,z_cup      &
+                                                      ,x_p_cup,x_exner_cup,x_theiv_cup     &
+                                                      ,x_thil_cup,x_t_cup,x_qtot_cup       &
+                                                      ,x_qvap_cup,x_qliq_cup,x_qice_cup    &
+                                                      ,x_qsat_cup,x_co2_cup,x_rho_cup      &
+                                                      ,x_theivu_cld,etau_cld,dzu_cld       &
+                                                      ,x_thilu_cld,x_tu_cld,x_qtotu_cld    &
+                                                      ,x_qvapu_cld,x_qliqu_cld,x_qiceu_cld &
+                                                      ,x_qsatu_cld,x_co2u_cld,x_rhou_cld   &
+                                                      ,x_dbyu,x_pwu_cld,x_pwav,x_klnb      &
+                                                      ,x_ktop,x_ierr,which)
                         call grell_sanity_check(mkx,mgmzp,z_cup,x_p_cup,x_exner_cup        &
                                                ,x_theivu_cld,x_thilu_cld,x_tu_cld          &
                                                ,x_qtotu_cld,x_qvapu_cld,x_qliqu_cld        &
@@ -403,17 +401,19 @@ subroutine grell_cupar_dynamic(cldd,clds,nclouds,dtime,maxens_cap,maxens_eff,max
                            !---------------------------------------------------------------!
                            ! 5g. Finding moist static energy                               !
                            !---------------------------------------------------------------!
-                           call grell_theiv_downdraft(mkx,mgmzp,klod,cdd,mentrd_rate       &
+                           call grell_theiv_downdraft(mkx,mgmzp,klod(icld),cdd,mentrd_rate &
                                                      ,x_theiv,x_theiv_cup,x_theivs_cup     &
                                                      ,dzd_cld,x_theivd_cld)
 
                            !---------------------------------------------------------------!
                            ! 5h. Moisture properties                                       !
                            !---------------------------------------------------------------!
-                           call grell_most_thermo_downdraft(mkx,mgmzp,klod,x_qtot,x_co2    &
-                                                           ,mentrd_rate,cdd,x_p_cup        &
-                                                           ,x_exner_cup,x_thil_cup,x_t_cup &
-                                                           ,x_qtot_cup,x_qvap_cup          &
+                           write (which,fmt='(3(a,i4.4))') 'nudge_downdraft_icap=',icap    &
+                                                          ,'_icld=',icld,'_jcld=',jcld
+                           call grell_most_thermo_downdraft(mkx,mgmzp,klod(icld),x_qtot    &
+                                                           ,x_co2,mentrd_rate,cdd,z_cup    &
+                                                           ,x_p_cup,x_exner_cup,x_thil_cup &
+                                                           ,x_t_cup,x_qtot_cup,x_qvap_cup  &
                                                            ,x_qliq_cup,x_qice_cup          &
                                                            ,x_qsat_cup,x_co2_cup,x_rho_cup &
                                                            ,x_pwav,x_theivd_cld            &
@@ -423,9 +423,7 @@ subroutine grell_cupar_dynamic(cldd,clds,nclouds,dtime,maxens_cap,maxens_eff,max
                                                            ,x_qliqd_cld,x_qiced_cld        &
                                                            ,x_qsatd_cld,x_co2d_cld         &
                                                            ,x_rhod_cld,x_dbyd,x_pwd_cld    &
-                                                           ,x_pwev,x_ierr)
-                           write (which,fmt='(3(a,i4.4))') 'nudge_downdraft_icap=',icap    &
-                                                          ,'_icld=',icld,'_jcld=',jcld
+                                                           ,x_pwev,x_ierr,which)
                            call grell_sanity_check(mkx,mgmzp,z_cup,x_p_cup,x_exner_cup     &
                                                   ,x_theivd_cld,x_thild_cld,x_td_cld       &
                                                   ,x_qtotd_cld,x_qvapd_cld,x_qliqd_cld     &
@@ -434,8 +432,8 @@ subroutine grell_cupar_dynamic(cldd,clds,nclouds,dtime,maxens_cap,maxens_eff,max
                            !---------------------------------------------------------------!
                            ! 5i. Compute cloud work function associated with downdrafts.   !
                            !---------------------------------------------------------------!
-                           call grell_cldwork_downdraft(mkx,mgmzp,klod,x_dbyd,dzd_cld      &
-                                                       ,etad_cld,x_aad)
+                           call grell_cldwork_downdraft(mkx,mgmzp,klod(icld),x_dbyd        &
+                                                       ,dzd_cld,etad_cld,x_aad)
                         end if modif_down
                      end if modif_comp_if
 

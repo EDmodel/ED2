@@ -20,7 +20,7 @@ canopy_struct_dynamics.o: rk4_coms.mod soil_coms.mod therm_lib.mod
 disturbance.o: allometry.mod consts_coms.mod decomp_coms.mod disturb_coms.mod
 disturbance.o: ed_max_dims.mod ed_misc_coms.mod ed_state_vars.mod
 disturbance.o: ed_therm_lib.mod fuse_fiss_utils.mod grid_coms.mod
-disturbance.o: mem_polygons.mod pft_coms.mod phenology_aux.mod
+disturbance.o: mem_polygons.mod mortality.mod pft_coms.mod phenology_aux.mod
 disturbance.o: phenology_coms.mod
 euler_driver.o: canopy_air_coms.mod consts_coms.mod ed_max_dims.mod
 euler_driver.o: ed_misc_coms.mod ed_state_vars.mod grid_coms.mod
@@ -39,7 +39,7 @@ forestry.o: ed_misc_coms.mod ed_state_vars.mod fuse_fiss_utils.mod grid_coms.mod
 growth_balive.o: allometry.mod consts_coms.mod decomp_coms.mod ed_max_dims.mod
 growth_balive.o: ed_misc_coms.mod ed_state_vars.mod ed_therm_lib.mod
 growth_balive.o: fuse_fiss_utils.mod grid_coms.mod mortality.mod pft_coms.mod
-growth_balive.o: physiology_coms.mod
+growth_balive.o: phenology_coms.mod physiology_coms.mod
 heun_driver.o: canopy_air_coms.mod consts_coms.mod ed_max_dims.mod
 heun_driver.o: ed_misc_coms.mod ed_state_vars.mod grid_coms.mod
 heun_driver.o: hydrology_coms.mod met_driver_coms.mod rk4_coms.mod
@@ -240,7 +240,7 @@ update_derived_props.o: allometry.mod canopy_air_coms.mod consts_coms.mod
 update_derived_props.o: ed_misc_coms.mod ed_state_vars.mod ed_therm_lib.mod
 update_derived_props.o: fuse_fiss_utils.mod grid_coms.mod soil_coms.mod
 update_derived_props.o: therm_lib.mod
-utils_c.o: /n/home09/aswann/ALS_grassoption/ED/src/include/utils_sub_names.h
+utils_c.o: /n/home09/aswann/EDBRAMS/ED/src/include/utils_sub_names.h
 utils_c.o:
 allometry.mod: allometry.o
 an_header.mod: an_header.o

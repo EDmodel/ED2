@@ -54,6 +54,7 @@ module disturbance_utils
                               , nzs                     ! ! intent(in)
       use pft_coms     , only : include_pft             ! ! intent(in)
       use allometry    , only : area_indices            ! ! function
+      use mortality    , only : disturbance_mortality   ! ! subroutine
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
       type(edtype)                   , target      :: cgrid
@@ -95,6 +96,7 @@ module disturbance_utils
       real                                         :: area
       real                                         :: area_fac
       real                                         :: dA
+      real                                         :: total_distrate
       real                                         :: elim_nplant
       real                                         :: elim_lai
       real   , dimension(3)                        :: area_old
@@ -182,6 +184,19 @@ module disturbance_utils
                   call initialize_disturbed_patch(csite,cpoly%met(isi)%atm_tmp,new_lu,1    &
                                                  ,cpoly%lsl(isi))
                end do
+               !---------------------------------------------------------------------------!
+
+
+               !---------------------------------------------------------------------------!
+               !       Reset mortality rates due to disturbance.                           !
+               !---------------------------------------------------------------------------!
+               resetdist: do ipa=1,onsp
+                  cpatch => csite%patch(ipa)
+                  do ico=1,cpatch%ncohorts
+                     cpatch%mort_rate(5,ico) = 0.0
+                  end do
+               end do resetdist
+               !---------------------------------------------------------------------------!
 
                !----- Loop over q, the *destination* landuse type. ------------------------!
                new_lu_loop: do new_lu = 1, n_dist_types
@@ -228,10 +243,10 @@ module disturbance_utils
                      ! always false for new_lu.                                            !
                      !---------------------------------------------------------------------!
                      if  (ploughed .or. abandoned .or. natural .or. logged) then
-                        dA = csite%area(ipa)                                               &
-                           * (1. - exp(- ( cpoly%disturbance_rates(new_lu,old_lu,isi)      &
-                             + cpoly%disturbance_memory(new_lu,old_lu,isi) ) ) )
-                        area = area + dA
+                        total_distrate = cpoly%disturbance_rates (new_lu,old_lu,isi)       &
+                                       + cpoly%disturbance_memory(new_lu,old_lu,isi)
+                        dA             = csite%area(ipa) * ( 1.0 - exp(- total_distrate) )
+                        area           = area + dA
                      end if
                      !---------------------------------------------------------------------!
 
@@ -314,12 +329,13 @@ module disturbance_utils
                         ! update the litter layer.                                         !
                         !------------------------------------------------------------------!
                         if (ploughed .or. abandoned .or. natural .or. logged) then
-                           dA  = csite%area(ipa)                                           &
-                               * (1. - exp(- ( cpoly%disturbance_rates(new_lu,old_lu,isi)  &
-                                 + cpoly%disturbance_memory(new_lu,old_lu,isi) ) ) ) 
+                           total_distrate = cpoly%disturbance_rates (new_lu,old_lu,isi)    &
+                                          + cpoly%disturbance_memory(new_lu,old_lu,isi)
+                           dA             = csite%area(ipa) * (1.0 - exp(- total_distrate))
 
                            area_fac = dA / csite%area(onsp+new_lu)
-                         
+                           call disturbance_mortality(csite,ipa,total_distrate,new_lu      &
+                                                     ,poly_dest_type,mindbh_harvest)
                            call increment_patch_vars(csite,new_lu+onsp,ipa,area_fac)
                            call insert_survivors(csite,new_lu+onsp,ipa,new_lu,area_fac     &
                                                 ,poly_dest_type,mindbh_harvest)
@@ -584,9 +600,9 @@ module disturbance_utils
                      ! always false for new_lu.                                            !
                      !---------------------------------------------------------------------!
                      if  (ploughed .or. abandoned .or. natural .or. logged) then
-                        dA = csite%area(ipa)                                               &
-                           * (1. - exp(- ( cpoly%disturbance_rates(new_lu,old_lu,isi)      &
-                                         + cpoly%disturbance_memory(new_lu,old_lu,isi) )))
+                        total_distrate = cpoly%disturbance_rates (new_lu,old_lu,isi)       &
+                                       + cpoly%disturbance_memory(new_lu,old_lu,isi)
+                        dA             = csite%area(ipa) * (1.0 - exp(- total_distrate))
                         area = area + dA
                      end if
                      !---------------------------------------------------------------------!
@@ -679,11 +695,13 @@ module disturbance_utils
                         ! update the litter layer.                                         !
                         !------------------------------------------------------------------!
                         if (ploughed) then
-                           dA  = csite%area(ipa)                                           &
-                               * (1. - exp(- ( cpoly%disturbance_rates(new_lu,old_lu,isi)  &
-                                          + cpoly%disturbance_memory(new_lu,old_lu,isi)))) 
+                           total_distrate = cpoly%disturbance_rates (new_lu,old_lu,isi)    &
+                                          + cpoly%disturbance_memory(new_lu,old_lu,isi)
+                           dA             = csite%area(ipa) * (1.0 - exp(- total_distrate))
 
                            area_fac = dA / csite%area(onsp+new_lu)
+                           call disturbance_mortality(csite,ipa,total_distrate,new_lu      &
+                                                     ,poly_dest_type,mindbh_harvest)
                            call increment_patch_vars(csite,new_lu+onsp,ipa,area_fac)
                            call accum_dist_litt(csite,new_lu+onsp,ipa,new_lu,area_fac      &
                                                ,poly_dest_type,mindbh_harvest)
@@ -693,12 +711,15 @@ module disturbance_utils
                         else if(abandoned .or. natural .or. logged)then
                            do ipft=1,mypfts
                               i   = (new_lu-2)*mypfts+1+ipft
-                              dA  = csite%area(ipa)                                        &
-                                  * (1. - exp(-(cpoly%disturbance_rates(new_lu,old_lu,isi) &
-                                          + cpoly%disturbance_memory(new_lu,old_lu,isi))))
-                              dA = dA / real(mypfts)
+                              total_distrate = cpoly%disturbance_rates (new_lu,old_lu,isi) &
+                                             + cpoly%disturbance_memory(new_lu,old_lu,isi)
+                              dA             = csite%area(ipa)                             &
+                                             * (1.0 - exp(- total_distrate))
+                              dA             = dA / real(mypfts)
 
                               area_fac = dA / csite%area(onsp+i)
+                              call disturbance_mortality(csite,ipa,total_distrate,new_lu   &
+                                                        ,poly_dest_type,mindbh_harvest)
                               call increment_patch_vars(csite,onsp+i,ipa,area_fac)
                               call accum_dist_litt(csite,onsp+i,ipa,new_lu,area_fac        &
                                                   ,poly_dest_type,mindbh_harvest)
@@ -1478,12 +1499,13 @@ module disturbance_utils
    !---------------------------------------------------------------------------------------!
    subroutine insert_survivors(csite, np, cp, q, area_fac,poly_dest_type,mindbh_harvest)
 
-      use ed_state_vars, only : sitetype   & ! structure
-                              , patchtype  ! ! structure
-      use ed_misc_coms , only : idoutput   & ! intent(in)
-                              , iqoutput   & ! intent(in)
-                              , imoutput   ! ! intent(in)
-      use ed_max_dims  , only : n_pft      ! ! intent(in)
+      use ed_state_vars, only : sitetype     & ! structure
+                              , patchtype    ! ! structure
+      use ed_misc_coms , only : idoutput     & ! intent(in)
+                              , iqoutput     & ! intent(in)
+                              , imoutput     ! ! intent(in)
+      use ed_max_dims  , only : n_pft        ! ! intent(in)
+      use mortality    , only : survivorship ! ! function
     
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
@@ -1516,17 +1538,22 @@ module disturbance_utils
       allocate(tpatch)
 
       !----- Mask: flag to decide whether the cohort survived or not. ---------------------!
-      allocate(mask(cpatch%ncohorts))
-      mask(:) = .false.
+      if (cpatch%ncohorts > 0) then
+         allocate(mask(cpatch%ncohorts))
+         mask(:) = .false.
     
-      survivalloop: do ico = 1,cpatch%ncohorts
-         survival_fac = survivorship(q,poly_dest_type, mindbh_harvest, csite, cp, ico)     &
-                      * area_fac
-         n_survivors     = cpatch%nplant(ico) * survival_fac
+         survivalloop: do ico = 1,cpatch%ncohorts
+            survival_fac = survivorship(q,poly_dest_type, mindbh_harvest, csite, cp, ico)  &
+                         * area_fac
+            n_survivors     = cpatch%nplant(ico) * survival_fac
 
-         !----- If something survived, make a new cohort. ---------------------------------!
-         mask(ico) = n_survivors > 0.0
-      end do survivalloop
+            !----- If something survived, make a new cohort. ------------------------------!
+            mask(ico) = n_survivors > 0.0
+         end do survivalloop
+      end if
+      !------------------------------------------------------------------------------------!
+
+
 
       !------------------------------------------------------------------------------------!
       !     If the new patch has received survivors from a donor already, then it should   !
@@ -1616,6 +1643,9 @@ module disturbance_utils
                tpatch%qmean_par_l_diff(:,nco) = tpatch%qmean_par_l_diff (:,nco)            &
                                               * survival_fac
             end if
+            
+            !----- Make mortality rate due to disturbance zero to avoid double counting. --!
+            tpatch%mort_rate(5,nco) = 0.0
          end if
       end do cohortloop
 
@@ -1625,7 +1655,7 @@ module disturbance_utils
       call deallocate_patchtype(tpatch)
 
       deallocate(tpatch)
-      deallocate(mask)
+      if (allocated(mask)) deallocate(mask)
 
 
       return
@@ -1655,6 +1685,7 @@ module disturbance_utils
                               , l2n_stem     ! ! intent(in)
       use pft_coms     , only : agf_bs       ! ! intent(in)
       use grid_coms    , only : nzg          ! ! intent(in)
+      use mortality    , only : survivorship ! ! function
 
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
@@ -1676,6 +1707,7 @@ module disturbance_utils
       real                                          :: struct_lignin
       real                                          :: fast_litter_n
       real                                          :: struct_cohort
+      real                                          :: survival_fac
       !------------------------------------------------------------------------------------!
 
       !---- Initialise the non-scaled litter pools. ---------------------------------------!
@@ -1707,19 +1739,22 @@ module disturbance_utils
          end select
          !---------------------------------------------------------------------------------!
 
+         !----- Find survivorship only once. ----------------------------------------------!
+         survival_fac  = survivorship(q,poly_dest_type,mindbh_harvest,csite,cp,ico)
+
 
          fast_litter   = fast_litter                                                       &
-                       + (1. - survivorship(q,poly_dest_type,mindbh_harvest,csite,cp,ico)) &
+                       + (1. - survival_fac)                                               &
                        * ( f_labile(ipft) * cpatch%balive(ico) + cpatch%bstorage(ico))     &
                        * cpatch%nplant(ico)
          fast_litter_n = fast_litter_n                                                     &
-                       + (1. - survivorship(q,poly_dest_type,mindbh_harvest,csite,cp,ico)) &
+                       + (1. - survival_fac)                                               &
                        * ( f_labile(ipft) * cpatch%balive(ico) / c2n_leaf(ipft)            &
                          + cpatch%bstorage(ico) / c2n_storage )                            &
                        * cpatch%nplant(ico)
 
          struct_cohort = cpatch%nplant(ico)                                                &
-                       * (1. - survivorship(q,poly_dest_type,mindbh_harvest,csite,cp,ico)) &
+                       * (1. - survival_fac)                                               &
                        * ( (1. - loss_fraction ) * cpatch%bdead(ico)                       &
                          + (1. - f_labile(ipft)) * cpatch%balive(ico) )
 
@@ -1735,87 +1770,6 @@ module disturbance_utils
 
       return
    end subroutine accum_dist_litt
-   !=======================================================================================!
-   !=======================================================================================!
-
-
-
-
-
-
-   !=======================================================================================!
-   !=======================================================================================!
-   !     This function computes the survivorship rate after some disturbance happens.      !
-   !---------------------------------------------------------------------------------------!
-   real function survivorship(dest_type,poly_dest_type,mindbh_harvest,csite,ipa,ico)
-      use ed_state_vars, only : patchtype                & ! structure
-                              , sitetype                 ! ! structure
-      use disturb_coms , only : treefall_hite_threshold  ! ! intent(in)
-      use pft_coms     , only : treefall_s_ltht          & ! intent(in)
-                              , treefall_s_gtht          ! ! intent(in)
-      use ed_max_dims  , only : n_pft                    ! ! intent(in)
-      
-      implicit none
-      !----- Arguments. -------------------------------------------------------------------!
-      type(sitetype)                  , target     :: csite
-      real          , dimension(n_pft), intent(in) :: mindbh_harvest
-      integer                         , intent(in) :: ico
-      integer                         , intent(in) :: ipa
-      integer                         , intent(in) :: dest_type
-      integer                         , intent(in) :: poly_dest_type
-      !----- Local variables. -------------------------------------------------------------!
-      type(patchtype)                 , pointer    :: cpatch
-      integer                                      :: ipft
-      !------------------------------------------------------------------------------------!
-
-
-      cpatch => csite%patch(ipa)
-      ipft = cpatch%pft(ico)
-
-      !----- Base the survivorship rates on the destination type. -------------------------!
-      select case(dest_type)
-      case (1) !----- Agriculture/cropland. -----------------------------------------------!
-         survivorship = 0.0
-
-      case (2) !----- Secondary land or forest plantation. --------------------------------!
-
-         !----- Decide the fate based on the type of secondary disturbance. ---------------!
-         select case (poly_dest_type)
-         case (0) !----- Land abandonment, assume this is the last harvest. ---------------!
-            survivorship = 0.0
-         case (1) !----- Biomass logging, assume that nothing stays. ----------------------!
-            survivorship = 0.0
-         case (2) !----- Selective logging. -----------------------------------------------!
-            !------------------------------------------------------------------------------!
-            !     If the PFT DBH exceeds the minimum PFT for harvesting, the survivorship  !
-            ! should be zero, otherwise, we assume survivorship similar to the treefall    !
-            ! disturbance rate for short trees.                                            ! 
-            !------------------------------------------------------------------------------!
-            if (cpatch%dbh(ico) >= mindbh_harvest(ipft)) then
-               survivorship = 0.0
-            else
-               survivorship = treefall_s_ltht(ipft)
-            end if
-         end select
-
-      case (3) !----- Primary land. -------------------------------------------------------!
-
-         !----- Decide the fate based on the type of natural disturbance. -----------------!
-         select case (poly_dest_type)
-         case (0) !----- Treefall, we must check the cohort height. -----------------------!
-            if (cpatch%hite(ico) < treefall_hite_threshold) then
-               survivorship =  treefall_s_ltht(ipft)
-            else
-               survivorship = treefall_s_gtht(ipft)
-            end if
-
-         case (1) !----- Fire, no survival. -----------------------------------------------!
-            survivorship = 0.0
-         end select
-      end select
-
-      return
-   end function survivorship
    !=======================================================================================!
    !=======================================================================================!
 
@@ -1942,8 +1896,8 @@ module disturbance_utils
 
       !----- Find the new basal area and above-ground biomass. ----------------------------!
       cpatch%basarea(nc)= pio4 * cpatch%dbh(nc) * cpatch%dbh(nc)
-      cpatch%agb(nc)    = ed_biomass(cpatch%bdead(nc),cpatch%bleaf(nc),cpatch%bsapwooda(nc)&
-                          ,cpatch%pft(nc))
+      cpatch%agb(nc)    = ed_biomass(cpatch%bdead(nc),cpatch%bleaf(nc)                     &
+                                    ,cpatch%bsapwooda(nc),cpatch%pft(nc))
 
       cpatch%leaf_temp(nc)  = csite%can_temp(np)
       cpatch%leaf_temp_pv(nc)=csite%can_temp(np)
@@ -1955,14 +1909,14 @@ module disturbance_utils
       cpatch%wood_fliq(nc)  = 0.0
 
       !----- Because we assigned no water, the internal energy is simply hcap*T. ----------!
-      call calc_veg_hcap(cpatch%bleaf(nc),cpatch%bdead(nc),cpatch%bsapwooda(nc)             &
+      call calc_veg_hcap(cpatch%bleaf(nc),cpatch%bdead(nc),cpatch%bsapwooda(nc)            &
                         ,cpatch%nplant(nc),cpatch%pft(nc)                                  &
                         ,cpatch%leaf_hcap(nc),cpatch%wood_hcap(nc))
 
       cpatch%leaf_energy(nc) = cpatch%leaf_hcap(nc) * cpatch%leaf_temp(nc)
       cpatch%wood_energy(nc) = cpatch%wood_hcap(nc) * cpatch%wood_temp(nc)
 
-      call is_resolvable(csite,np,nc,green_leaf_factor)
+      call is_resolvable(csite,np,nc)
 
       !----- Should plantations be considered recruits? -----------------------------------!
       cpatch%new_recruit_flag(nc) = 1

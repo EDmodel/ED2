@@ -367,7 +367,7 @@ module fuse_fiss_utils
       use ed_misc_coms , only : iqoutput           & ! intent(in)
                               , imoutput           & ! intent(in)
                               , idoutput           ! ! intent(in)
-      use allometry    , only : dbh2bl             ! ! function
+      use allometry    , only : size2bl            ! ! function
       use ed_max_dims  , only : n_dist_types       ! ! intent(in)
       
       implicit none
@@ -480,8 +480,8 @@ module fuse_fiss_utils
          !---------------------------------------------------------------------------------!
          do ico = 1,cpatch%ncohorts
             patch_blmax(ipa) = patch_blmax(ipa) + cpatch%nplant(ico) * cpatch%sla(ico)     &
-                                                * dbh2bl(cpatch%dbh(ico),cpatch%pft(ico))  &
-                                                * csite%area(ipa)
+                             * size2bl(cpatch%dbh(ico),cpatch%hite(ico),cpatch%pft(ico))   &
+                             * csite%area(ipa)
          end do
 
          dist_area(lu)  = dist_area(lu)  + csite%area(ipa)
@@ -654,7 +654,7 @@ module fuse_fiss_utils
       use mem_polygons        , only : maxcohort           ! ! intent(in)
       use canopy_layer_coms   , only : crown_mod           ! ! intent(in)
       use allometry           , only : dbh2h               & ! function
-                                     , dbh2bl              ! ! function
+                                     , size2bl             ! ! function
       use ed_misc_coms        , only : igrass              ! ! intent(in)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
@@ -773,9 +773,11 @@ module fuse_fiss_utils
                   else
                       !--use dbh for trees
                       lai_max = ( cpatch%nplant(recc)                                      &
-                                * dbh2bl(cpatch%dbh(recc),cpatch%pft(recc))                &
+                                * size2bl(cpatch%dbh(recc),cpatch%hite(recc)               &
+                                         ,cpatch%pft(recc))                                &
                                 + cpatch%nplant(donc)                                      &
-                                * dbh2bl(cpatch%dbh(donc),cpatch%pft(donc)))               &
+                                * size2bl(cpatch%dbh(donc),cpatch%hite(donc)               &
+                                         ,cpatch%pft(donc)))                               &
                                 * cpatch%sla(recc)
                   end if
 
@@ -791,19 +793,22 @@ module fuse_fiss_utils
                   
                   
                   !------------------------------------------------------------------------!
-                  !    Five conditions must be met to allow two cohorts to be fused:       !
+                  !    Six conditions must be met to allow two cohorts to be fused:        !
                   ! 1. Both cohorts must have the same PFT;                                !
                   ! 2. Combined LAI won't be too large.                                    !
                   ! 3. Both cohorts must have the same status with respect to the first    !
                   !    census.                                                             !
                   ! 4. Both cohorts must have the same recruit status with respect to the  !
                   !    first census.                                                       !
-                  ! 5. Both cohorts must have the same phenology status.                   !
+                  ! 5. Both cohorts must have the same recruitment status with respect to  !
+                  !    the DBH.                                                            !
+                  ! 6. Both cohorts must have the same phenology status.                   !
                   !------------------------------------------------------------------------!
                   if (     cpatch%pft(donc)              == cpatch%pft(recc)               &
                      .and. lai_max                        < lai_fuse_tol*tolerance_mult    &
                      .and. cpatch%first_census(donc)     == cpatch%first_census(recc)      &
                      .and. cpatch%new_recruit_flag(donc) == cpatch%new_recruit_flag(recc)  &
+                     .and. cpatch%recruit_dbh     (donc) == cpatch%recruit_dbh(recc)       &
                      .and. cpatch%phenology_status(donc) == cpatch%phenology_status(recc)  &
                      ) then
 
@@ -1166,6 +1171,7 @@ module fuse_fiss_utils
       cpatch%bsapwooda(idt)            = cpatch%bsapwooda(isc)
       cpatch%bsapwoodb(idt)            = cpatch%bsapwoodb(isc)
       cpatch%phenology_status(idt)     = cpatch%phenology_status(isc)
+      cpatch%recruit_dbh(idt)          = cpatch%recruit_dbh(isc)
       cpatch%balive(idt)               = cpatch%balive(isc)
       cpatch%lai(idt)                  = cpatch%lai(isc)
       cpatch%wai(idt)                  = cpatch%wai(isc)
@@ -1223,11 +1229,13 @@ module fuse_fiss_utils
       cpatch%vleaf_respiration(idt)    = cpatch%vleaf_respiration(isc)
       cpatch%fsn(idt)                  = cpatch%fsn(isc)
       cpatch%monthly_dndt(idt)         = cpatch%monthly_dndt(isc)
+      cpatch%monthly_dlnndt(idt)       = cpatch%monthly_dlnndt(isc)
       cpatch%agb(idt)                  = cpatch%agb(isc)
       cpatch%basarea(idt)              = cpatch%basarea(isc)
       cpatch%dagb_dt(idt)              = cpatch%dagb_dt(isc)
       cpatch%dba_dt(idt)               = cpatch%dba_dt(isc)
       cpatch%ddbh_dt(idt)              = cpatch%ddbh_dt(isc)
+      cpatch%dlndbh_dt(idt)            = cpatch%dlndbh_dt(isc)
       cpatch%Psi_open(idt)             = cpatch%Psi_open(isc)
       cpatch%krdepth(idt)              = cpatch%krdepth(isc)
       cpatch%first_census(idt)         = cpatch%first_census(isc)
@@ -1749,18 +1757,23 @@ module fuse_fiss_utils
       cpatch%dba_dt(recc)       = ( cpatch%dba_dt(recc)      * cpatch%nplant(recc)         &
                                   + cpatch%dba_dt(donc)      * cpatch%nplant(donc) )       &
                                 * newni
-      cpatch%ddbh_dt(recc)      = ( cpatch%ddbh_dt(recc)     * cpatch%nplant(recc)         &
-                                  + cpatch%ddbh_dt(donc)     * cpatch%nplant(donc) )       &
+      cpatch%dlndbh_dt(recc)    = ( cpatch%dlndbh_dt(recc)   * cpatch%nplant(recc)         &
+                                  + cpatch%dlndbh_dt(donc)   * cpatch%nplant(donc) )       &
                                 * newni
       !------------------------------------------------------------------------------------!
 
 
 
       !------------------------------------------------------------------------------------!
-      !     Updating the tendency of plant density.  All variables are per unit of area,   !
-      ! so they should be added, not scaled.                                               !
+      !     Updating the tendency of plant density and the relative mortality rate.  The   !
+      ! first is extensive (i.e. per unit of area), so it must be added, not scaled.  The  !
+      ! second is intensive so it must be scaled.                                          !
       !------------------------------------------------------------------------------------!
-      cpatch%monthly_dndt(recc) = cpatch%monthly_dndt(recc) + cpatch%monthly_dndt(donc)
+      cpatch%monthly_dndt  (recc) = cpatch%monthly_dndt(recc) + cpatch%monthly_dndt(donc)
+      cpatch%monthly_dlnndt(recc) = ( cpatch%monthly_dlnndt(recc) * cpatch%nplant(recc)    &
+                                    + cpatch%monthly_dlnndt(donc) * cpatch%nplant(donc) )  &
+                                    * newni
+      
       !------------------------------------------------------------------------------------!
 
 
@@ -4094,7 +4107,7 @@ module fuse_fiss_utils
                                      , patchtype  ! ! structure
       use fusion_fission_coms , only : ff_nhgt    & ! intent(in)
                                      , hgt_class  ! ! intent(in)
-      use allometry           , only : dbh2bl     ! ! intent(in)
+      use allometry           , only : size2bl    ! ! intent(in)
       use ed_max_dims         , only : n_pft      ! ! intent(in)
       use pft_coms            , only : hgt_min    & ! intent(in)
                                      , is_grass   ! ! intent(in)
@@ -4151,7 +4164,7 @@ module fuse_fiss_utils
          else
              !--use dbh for trees
              lai_pot = cpatch%nplant(ico) * cpatch%sla(ico)                                &
-                     * dbh2bl(cpatch%dbh(ico),ipft)
+                     * size2bl(cpatch%dbh(ico),cpatch%hite(ico),ipft)
          end if
          !---------------------------------------------------------------------------------!
 

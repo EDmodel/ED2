@@ -697,10 +697,20 @@ $ED_NL
    !                  Cole and Ewel (2006), and Calvo Alvarado et al. (2008).              !
    !---------------------------------------------------------------------------------------!
    NL%IALLOM          = 1
-
    !---------------------------------------------------------------------------------------!
 
 
+
+   !---------------------------------------------------------------------------------------!
+   ! IGRASS -- This controls the dynamics and growth calculation for grasses.  A new       !
+   !           grass scheme is now available where bdead = 0, height is a function of bleaf!
+   !           and growth happens daily.  ALS (3/3/12)                                     !
+   ! 0: grasses behave like trees as in ED2.1 (old scheme)                                 !
+   !                                                                                       !
+   ! 1: new grass scheme as described above                                                !
+   !---------------------------------------------------------------------------------------!
+   NL%IGRASS          = 0
+   !---------------------------------------------------------------------------------------!
 
    !---------------------------------------------------------------------------------------!
    ! IGRASS -- This controls the dynamics and growth calculation for grasses.  A new       !

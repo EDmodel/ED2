@@ -3431,13 +3431,13 @@ subroutine print_csiteipa(csite, ipa)
    write (unit=*,fmt='(80a)') ('-',k=1,80)
    write (unit=*,fmt='(a)'  ) 'Wood information (only the resolvable ones shown): '
    write (unit=*,fmt='(80a)') ('-',k=1,80)
-   write (unit=*,fmt='(2(a7,1x),8(a12,1x))')                                               &
+   write (unit=*,fmt='(2(a7,1x),9(a12,1x))')                                               &
          '    PFT','KRDEPTH','      NPLANT','         WAI','         DBH','       BDEAD'   &
-                            ,'    BSAPWOODA','    BSAPWOODB',' WOOD_ENERGY','   WOOD_TEMP' &
+                            ,'   BSAPWOODA','   BSAPWOODB',' WOOD_ENERGY','   WOOD_TEMP'   &
                             ,'  WOOD_WATER'
    do ico = 1,cpatch%ncohorts
       if (cpatch%wood_resolvable(ico)) then
-         write(unit=*,fmt='(2(i7,1x),8(es12.4,1x))') cpatch%pft(ico), cpatch%krdepth(ico)  &
+         write(unit=*,fmt='(2(i7,1x),9(es12.4,1x))') cpatch%pft(ico), cpatch%krdepth(ico)  &
               ,cpatch%nplant(ico),cpatch%wai(ico),cpatch%dbh(ico),cpatch%bdead(ico)        &
               ,cpatch%bsapwooda(ico),cpatch%bsapwoodb(ico),cpatch%wood_energy(ico)         &
               ,cpatch%wood_temp(ico),cpatch%wood_water(ico)
@@ -3675,12 +3675,12 @@ subroutine print_rk4patch(y,csite,ipa)
    write (unit=*,fmt='(80a)') ('=',k=1,80)
    write (unit=*,fmt='(a)'  ) 'Wood information (only those resolvable are shown): '
    write (unit=*,fmt='(80a)') ('-',k=1,80)
-   write (unit=*,fmt='(2(a7,1x),5(a12,1x))')                                               &
+   write (unit=*,fmt='(2(a7,1x),6(a12,1x))')                                               &
          '    PFT','KRDEPTH','      NPLANT','      HEIGHT','         DBH','       BDEAD'   &
                             ,'    BSAPWOODA','    BSAPWOODB'
    do ico = 1,cpatch%ncohorts
       if (cpatch%wood_resolvable(ico)) then
-         write(unit=*,fmt='(2(i7,1x),5(es12.4,1x))') cpatch%pft(ico), cpatch%krdepth(ico)  &
+         write(unit=*,fmt='(2(i7,1x),6(es12.4,1x))') cpatch%pft(ico), cpatch%krdepth(ico)  &
               ,cpatch%nplant(ico),cpatch%hite(ico),cpatch%dbh(ico),cpatch%bdead(ico)       &
               ,cpatch%bsapwooda(ico),cpatch%bsapwoodb(ico)
       end if

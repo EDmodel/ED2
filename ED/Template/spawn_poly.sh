@@ -59,6 +59,15 @@ toldef='0.01'
 initmode=6
 #------------------------------------------------------------------------------------------#
 
+
+#------------------------------------------------------------------------------------------#
+#     Which type of under storey should I use?                                             #
+# 0 -- No Frankenstein's understorey                                                       #
+# 1 -- Frankenstein's understorey                                                          #
+#------------------------------------------------------------------------------------------#
+iustein=1
+#------------------------------------------------------------------------------------------#
+
 #------------------------------------------------------------------------------------------#
 #    Name of the unrestricted_parallel scripts:                                            #
 # callunpa: script that calls callserial.sh for unrestricted_parallel runs.                #
@@ -553,7 +562,7 @@ do
          ;;
       Santarem_KM66)
          metdriverdb=${sitemet}'/Santarem_KM66/Santarem_KM66_HEADER'
-         metcyc1=2002
+         metcyc1=2001
          metcycf=2010
          imetavg=1
          ;;
@@ -986,63 +995,101 @@ do
    elif [ ${initmode} -eq 6 ]
    then
       thissfilin=${fullygrown}
-      case ${polyiata} in
-      hvd)
-         thissfilin=${bioinit}'/harvard.'
+      case ${iustein} in
+      0)
+         #----- Frankeinstein's understorey for those that have one. ----------------------#
+         case ${polyiata} in
+         hvd)
+            thissfilin=${bioinit}'/harvard.'
+            ;;
+         s66|s67|s83)
+            thissfilin=${bioinit}'/s66_newallom.'
+            ;;
+         m34)
+            thissfilin=${bioinit}'/m34_newallom.'
+            ;;
+         gyf)
+            thissfilin=${bioinit}'/gyf_newallom.'
+            ;;
+         pdg)
+            thissfilin=${bioinit}'/pdg_ustein_newallom.'
+            ;;
+         fns)
+            thissfilin=${bioinit}'/fns_c3c4.'
+            ;;
+         s77)
+            thissfilin=${bioinit}'/km77_c3c4.'
+            ;;
+         *)
+            echo ' Polygon: '${polyname}
+            echo ' IATA: '${polyiata}
+            echo ' IUSTEIN: '${iustein}
+            echo 'This IATA cannot be used by biomass initialisation with this IUSTEIN!'
+            exit 59
+            ;;
+         esac
          ;;
-      s66)
-         thissfilin=${bioinit}'/km67_ustein_newallom.'
-         ;;
-      s67)
-         thissfilin=${bioinit}'/km67_ustein_newallom.'
-         ;;
-      s83)
-         thissfilin=${bioinit}'/km67_ustein_newallom.'
-         ;;
-      m34)
-         thissfilin=${bioinit}'/k34_ustein_newallom.'
-         ;;
-      bdf)
-         thissfilin=${bioinit}'/pBDFFP1_1983_ustein.'
-         ;;
-      pdg)
-         thissfilin=${bioinit}'/pdg_ustein_newallom.'
-         ;;
-      fns)
-         thissfilin=${bioinit}'/fns_c4.'
-         ;;
-      fns_c4)
-         thissfilin=${bioinit}'/fns_c4.'
-         ;;
-      fns_c3)
-         thissfilin=${bioinit}'/fns_c3.'
-         ;;
-      fns_34)
-         thissfilin=${bioinit}'/fns_c3c4.'
-         ;;
-      s77)
-         thissfilin=${bioinit}'/km77_c3.'
-         ;;
-      s77_c3)
-         thissfilin=${bioinit}'/km77_c3.'
-         ;;
-      s77_c4)
-         thissfilin=${bioinit}'/km77_c4.'
-         ;;
-      s77_34)
-         thissfilin=${bioinit}'/km77_c3c4.'
-         ;;
-      cax)
-         thissfilin=${bioinit}'/cax06_ustein_newallom.'
-         ;;
-      rja)
-         thissfilin=${bioinit}'/rja_ustein_newallom.'
+      1)
+         #----- Frankeinstein's understorey for those that have one. ----------------------#
+         case ${polyiata} in
+         hvd)
+            thissfilin=${bioinit}'/harvard.'
+            ;;
+         s66|s67|s83)
+            thissfilin=${bioinit}'/km67_ustein_newallom.'
+            ;;
+         m34)
+            thissfilin=${bioinit}'/k34_ustein_newallom.'
+            ;;
+         bdf)
+            thissfilin=${bioinit}'/pBDFFP1_1983_ustein.'
+            ;;
+         pdg)
+            thissfilin=${bioinit}'/pdg_ustein_newallom.'
+            ;;
+         fns)
+            thissfilin=${bioinit}'/fns_c4.'
+            ;;
+         fns_c4)
+            thissfilin=${bioinit}'/fns_c4.'
+            ;;
+         fns_c3)
+            thissfilin=${bioinit}'/fns_c3.'
+            ;;
+         fns_34)
+            thissfilin=${bioinit}'/fns_c3c4.'
+            ;;
+         s77)
+            thissfilin=${bioinit}'/km77_c3.'
+            ;;
+         s77_c3)
+            thissfilin=${bioinit}'/km77_c3.'
+            ;;
+         s77_c4)
+            thissfilin=${bioinit}'/km77_c4.'
+            ;;
+         s77_34)
+            thissfilin=${bioinit}'/km77_c3c4.'
+            ;;
+         cax)
+            thissfilin=${bioinit}'/cax06_ustein_newallom.'
+            ;;
+         rja)
+            thissfilin=${bioinit}'/rja_ustein_newallom.'
+            ;;
+         *)
+            echo ' Polygon: '${polyname}
+            echo ' IATA:    '${polyiata}
+            echo ' IUSTEIN: '${iustein}
+            echo 'This IATA cannot be used by biomass initialisation with this IUSTEIN!'
+            exit 59
+            ;;
+         esac
          ;;
       *)
-         echo ' Polygon: '${polyname}
-         echo ' IATA: '${polyiata}
-         echo 'This IATA cannot be used by biomass initialisation!'
-         exit 59
+         #----- Bad settings. -------------------------------------------------------------#
+         echo ' IUSTEIN should be 0 or 1, yours is set to '${iustein}'...'
+         exit 66
          ;;
       esac
    else

@@ -874,7 +874,7 @@ subroutine ed_opspec_times
       !    This is fine but now outstate must be set exactly as frqstate. If the user wasn't !
       ! aware of this, print an informative banner.                                        !
       !------------------------------------------------------------------------------------!
-      elseif (outstate /= 0. .or. outstate > frqstate) then
+      elseif (outstate /= 0. .and. outstate > frqstate) then
          outstate = frqstate
          nrec_state = 1
          write (unit=*,fmt='(a)') ' '

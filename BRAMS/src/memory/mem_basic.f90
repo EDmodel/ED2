@@ -251,10 +251,10 @@ module mem_basic
       !----- Diagnostic variables. --------------------------------------------------------!
       if (associated(basic%theta))                                                         &
          call vtables2 (basic%theta,basicm%theta,ng, npts, imean                           &
-                       ,'THETA :3:hist:anal:mpti:mpt3')
+                       ,'THETA :3:hist:anal:mpti:mpt3:mpt1')
       if (associated(basic%rv))                                                            &
          call vtables2 (basic%rv,basicm%rv,ng, npts, imean                                 &
-                       ,'RV :3:hist:anal:mpti:mpt3')
+                       ,'RV :3:hist:anal:mpti:mpt3:mpt1')
       !----- Reference state variables. ---------------------------------------------------!
       if (associated(basic%pi0))                                                           &
          call vtables2 (basic%pi0,basicm%pi0,ng, npts, imean                               &

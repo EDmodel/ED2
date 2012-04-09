@@ -181,7 +181,8 @@ subroutine grell_cupar_static(comp_noforc_cldwork,checkmass,iupmethod,maxens_cap
       ,theivs_cup   & ! intent(out) - Sat. Ice-vapour equiv. pot. temp. w/ forcing[      K]
       ,wbuoymin0    & ! intent(out) - Updraft Minimum buoyant velocity            [    m/s]
       ,wbuoymin     ! ! intent(out) - Minimum buoyancy velocity                   [    ---]
-   use rconstants, only : toodry
+   use rconstants, only : toodry & ! intent(in)
+                        , t00    ! ! intent(in)
    use therm_lib , only : toler
    implicit none
    
@@ -294,6 +295,7 @@ subroutine grell_cupar_static(comp_noforc_cldwork,checkmass,iupmethod,maxens_cap
    integer :: klnb0     ! klnb, but it is just a dummy variable.
    integer :: ktop0     ! ktop, but it is just a dummy variable.
    integer :: iun       ! Unit number, for debugging only
+   integer :: l         ! Counter for drawing lines
    logical :: comp_dn0  ! Flag for downdraft
    !---------------------------------------------------------------------------------------!
    !    Miscellaneous parameters                                                           !
@@ -307,7 +309,8 @@ subroutine grell_cupar_static(comp_noforc_cldwork,checkmass,iupmethod,maxens_cap
    !----- String for sanity check. --------------------------------------------------------!
    character(len=str_len) :: which
    !----- Parameter to print debug stuff. -------------------------------------------------!
-   logical, parameter :: print_debug=.false.
+   logical          , parameter :: print_debug = .false.
+   character(len=11)            :: levname
    !---------------------------------------------------------------------------------------!
 
    !---------------------------------------------------------------------------------------!
@@ -399,7 +402,7 @@ subroutine grell_cupar_static(comp_noforc_cldwork,checkmass,iupmethod,maxens_cap
       !    ting all to a non-sense value to make the point that convection did not happen. !
       !------------------------------------------------------------------------------------!
       klod    = 0
-      klou    = 0
+      klou    = 1
       klcl    = 0
       klfc    = 0
       kdet    = 0
@@ -436,7 +439,7 @@ subroutine grell_cupar_static(comp_noforc_cldwork,checkmass,iupmethod,maxens_cap
 
       ![[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[!
       !------------------------------------------------------------------------------------!
-      ! I. Finding some updraft properties, namely the levels in which updrafts originate, !
+      ! I. Find some updraft properties, namely the levels in which updrafts originate,    !
       !    the level of free convection and the cloud top, and the updraft-related energy, !
       !    mass, and moisture properties.                                                  !
       !------------------------------------------------------------------------------------!
@@ -454,6 +457,7 @@ subroutine grell_cupar_static(comp_noforc_cldwork,checkmass,iupmethod,maxens_cap
       !------------------------------------------------------------------------------------!
       call grell_updraft_origin(mkx,mgmzp,iupmethod,kpbl,kbmax,z,wwind,sigw,tke,qice,qliq  &
                                ,theiv_cup,ierr,klou)
+      !------------------------------------------------------------------------------------!
 
 
       if (ierr /= 0) then
@@ -466,12 +470,12 @@ subroutine grell_cupar_static(comp_noforc_cldwork,checkmass,iupmethod,maxens_cap
       !    a. This call may end up preventing convection, so I must check after the call   !
       !    b. This subroutine may also affect the updraft originating level.               !
       !------------------------------------------------------------------------------------!
-      call grell_find_cloud_lfc(mkx,mgmzp,kbmax,cap_max,wbuoy_max,wwind,sigw,exner_cup     &
-                               ,p_cup,theiv_cup,thil_cup,t_cup,qtot_cup,qvap_cup,qliq_cup  &
-                               ,qice_cup,qsat_cup,co2_cup,rho_cup,dzd_cld,mentru_rate      &
-                               ,theivu_cld,thilu_cld,tu_cld,qtotu_cld,qvapu_cld,qliqu_cld  &
-                               ,qiceu_cld,qsatu_cld,co2u_cld,rhou_cld,dbyu,klou,ierr,klcl  &
-                               ,klfc,wbuoymin)
+      call grell_find_cloud_lfc(mkx,mgmzp,kbmax,cap_max,wbuoy_max,wwind,sigw,z_cup         &
+                               ,exner_cup,p_cup,theiv_cup,thil_cup,t_cup,qtot_cup,qvap_cup &
+                               ,qliq_cup,qice_cup,qsat_cup,co2_cup,rho_cup,dzd_cld         &
+                               ,mentru_rate,theivu_cld,thilu_cld,tu_cld,qtotu_cld          &
+                               ,qvapu_cld,qliqu_cld,qiceu_cld,qsatu_cld,co2u_cld,rhou_cld  &
+                               ,dbyu,klou,ierr,klcl,klfc,wbuoymin)
 
       if (ierr /= 0) then
          ierr_cap(icap) = ierr
@@ -502,29 +506,36 @@ subroutine grell_cupar_static(comp_noforc_cldwork,checkmass,iupmethod,maxens_cap
       !------------------------------------------------------------------------------------!
       call grell_theiv_updraft(mkx,mgmzp,klou,klfc,cdu,mentru_rate,theiv,theiv_cup,dzu_cld &
                               ,theivu_cld)
+      !------------------------------------------------------------------------------------!
+
 
       !------------------------------------------------------------------------------------!
-      ! 7. Find the normalized mass fluxes associated with updrafts.  Since we are using  !
+      ! 7. Find the normalized mass fluxes associated with updrafts.  Since we are using   !
       !    height-based vertical coordinate, there is no need to find the forced           !
       !    normalized mass flux, they'll be the same, so just copy it afterwards.          !
       !------------------------------------------------------------------------------------!
       call grell_nms_updraft(mkx,mgmzp,klou,klfc,ktpse,mentru_rate,cdu,dzu_cld,etau_cld)
+      !------------------------------------------------------------------------------------!
+
 
       !------------------------------------------------------------------------------------!
       ! 8. Find the moisture profiles associated with updrafts, and check whether the      !
       !    profile makes sense or not.                                                     !
       !------------------------------------------------------------------------------------!
-      call grell_most_thermo_updraft(prec_cld,.true.,mkx,mgmzp,klfc,ktpse                  &
-                                    ,cld2prec,cdu,mentru_rate,qtot,co2,p_cup,exner_cup     &
+      write(which,fmt='(2(a,i4.4))') 'extrap_updraft_icap=',icap,'_icld=',icld
+      call grell_most_thermo_updraft(prec_cld,.true.,mkx,mgmzp,klfc,ktpse,cld2prec,cdu     &
+                                    ,mentru_rate,qtot,co2,z_cup,p_cup,exner_cup            &
                                     ,theiv_cup,thil_cup,t_cup,qtot_cup,qvap_cup,qliq_cup   &
                                     ,qice_cup,qsat_cup,co2_cup,rho_cup,theivu_cld,etau_cld &
                                     ,dzu_cld,thilu_cld,tu_cld,qtotu_cld,qvapu_cld          &
                                     ,qliqu_cld,qiceu_cld,qsatu_cld,co2u_cld,rhou_cld,dbyu  &
-                                    ,pwu_cld,pwav,klnb,ktop,ierr)
-      write(which,fmt='(2(a,i4.4))') 'extrap_updraft_icap=',icap,'_icld=',icld
+                                    ,pwu_cld,pwav,klnb,ktop,ierr,which)
       call grell_sanity_check(mkx,mgmzp,z_cup,p_cup,exner_cup,theivu_cld,thilu_cld,tu_cld  &
                              ,qtotu_cld,qvapu_cld,qliqu_cld,qiceu_cld,co2u_cld,rhou_cld    &
                              ,which)
+      !------------------------------------------------------------------------------------!
+
+
 
       !------------------------------------------------------------------------------------!
       ! 9. Check whether we found a cloud top. Since this may keep convection to           !
@@ -543,6 +554,9 @@ subroutine grell_cupar_static(comp_noforc_cldwork,checkmass,iupmethod,maxens_cap
          ierr_cap(icap) = 7
          cycle stacloop
       end if
+      !------------------------------------------------------------------------------------!
+
+
 
       !------------------------------------------------------------------------------------!
       !10. Find the cloud work function associated with updrafts. If this cloud doesn't    !
@@ -553,8 +567,8 @@ subroutine grell_cupar_static(comp_noforc_cldwork,checkmass,iupmethod,maxens_cap
          ierr_cap(icap) = 10
          cycle stacloop
       end if
-
       !]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]!
+
 
 
 
@@ -597,32 +611,41 @@ subroutine grell_cupar_static(comp_noforc_cldwork,checkmass,iupmethod,maxens_cap
                    + (1. - (pmass_kept*z_cup(k) + pmass_left*z_cup(kdet))                  &
                      / (pmass_kept*z_cup(k+1) + pmass_left*z_cup(kdet)) )/dzd_cld(k)
          end do
+         !---------------------------------------------------------------------------------!
+
+
 
          !---------------------------------------------------------------------------------!
          ! 4. Normalised mass fluxes.                                                      !
          !---------------------------------------------------------------------------------!
          call grell_nms_downdraft(mkx,mgmzp,kdet,klod,mentrd_rate,cdd,z_cup,dzd_cld        &
                                  ,etad_cld)
+         !---------------------------------------------------------------------------------!
+
+
 
          !---------------------------------------------------------------------------------!
          ! 5. Moist static energy.                                                         !
          !---------------------------------------------------------------------------------!
          call grell_theiv_downdraft(mkx,mgmzp,klod,cdd,mentrd_rate,theiv,theiv_cup         &
                                    ,theivs_cup,dzd_cld,theivd_cld)
+         !---------------------------------------------------------------------------------!
+
+
 
          !---------------------------------------------------------------------------------!
          ! 6. Moisture properties of downdraft, and its sanity check.  Besides the thermo- !
          !    dynamics, we must check whether buoyancy makes sense, in case it doesn't we  !
          !    will assign an error flag to this cloud and don't let it happen.             !
          !---------------------------------------------------------------------------------!
-         call grell_most_thermo_downdraft(mkx,mgmzp,klod,qtot,co2,mentrd_rate,cdd,p_cup    &
-                                         ,exner_cup,thil_cup,t_cup,qtot_cup,qvap_cup       &
+         write(which,fmt='(2(a,i4.4))') 'extrap_downdraft_icap=',icap,'_icld=',icld
+         call grell_most_thermo_downdraft(mkx,mgmzp,klod,qtot,co2,mentrd_rate,cdd,z_cup    &
+                                         ,p_cup,exner_cup,thil_cup,t_cup,qtot_cup,qvap_cup &
                                          ,qliq_cup,qice_cup,qsat_cup,co2_cup,rho_cup,pwav  &
                                          ,theivd_cld,etad_cld,dzd_cld,thild_cld,td_cld     &
                                          ,qtotd_cld,qvapd_cld,qliqd_cld,qiced_cld          &
                                          ,qsatd_cld,co2d_cld,rhod_cld,dbyd,pwd_cld,pwev    &
-                                         ,ierr)
-         write(which,fmt='(2(a,i4.4))') 'extrap_downdraft_icap=',icap,'_icld=',icld
+                                         ,ierr,which)
          call grell_sanity_check(mkx,mgmzp,z_cup,p_cup,exner_cup,theivd_cld,thild_cld      &
                                 ,td_cld,qtotd_cld,qvapd_cld,qliqd_cld,qiced_cld,co2d_cld   &
                                 ,rhod_cld,which)
@@ -630,6 +653,7 @@ subroutine grell_cupar_static(comp_noforc_cldwork,checkmass,iupmethod,maxens_cap
             ierr_cap(icap) = ierr
             cycle stacloop
          end if
+         !---------------------------------------------------------------------------------!
 
          !---------------------------------------------------------------------------------!
          ! 7. Compute the downdraft strength in terms of windshear.  Remembering that edt  !
@@ -637,7 +661,7 @@ subroutine grell_cupar_static(comp_noforc_cldwork,checkmass,iupmethod,maxens_cap
          !---------------------------------------------------------------------------------!
          call grell_efficiency_ensemble(mkx,mgmzp,maxens_eff,klou,klfc,klnb,edtmin,edtmax  &
                                        ,pwav,pwev,z_cup,uwind,vwind,dzd_cld                &
-                                       ,edt_eff(:,icap))
+                                       ,edt_eff(:,icap),icld,icap)
          !------------------------------------------------------------------------------------!
 
 
@@ -727,11 +751,12 @@ subroutine grell_cupar_static(comp_noforc_cldwork,checkmass,iupmethod,maxens_cap
          ! iv.    Calculate the thermodynamic properties below the level of free convec-   !
          !        tion.                                                                    !
          !---------------------------------------------------------------------------------!
-         call grell_buoy_below_lfc(mkx,mgmzp,klou,klfc,exner0_cup,p0_cup,theiv0_cup        &
+         write(which,fmt='(2(a,i4.4))') 'buoy_below_lfc_icap=',icap,'_icld=',icld
+         call grell_buoy_below_lfc(mkx,mgmzp,klou,klfc,z_cup,exner0_cup,p0_cup,theiv0_cup  &
                                   ,thil0_cup,t0_cup,qtot0_cup,qvap0_cup,qliq0_cup          &
                                   ,qice0_cup,qsat0_cup,co20_cup,rho0_cup,theiv0u_cld       &
                                   ,thil0u_cld,t0u_cld,qtot0u_cld,qvap0u_cld,qliq0u_cld     &
-                                  ,qice0u_cld,qsat0u_cld,co20u_cld,rho0u_cld,dby0u)
+                                  ,qice0u_cld,qsat0u_cld,co20u_cld,rho0u_cld,dby0u,which)
 
          !---------------------------------------------------------------------------------!
          ! v.     Calculate the incloud ice-vapour equivalent potential temperature        !
@@ -743,15 +768,15 @@ subroutine grell_cupar_static(comp_noforc_cldwork,checkmass,iupmethod,maxens_cap
          ! vi.    Find the moisture profiles associated with updrafts, and check whether   !
          !        they make sense or not.                                                  !
          !---------------------------------------------------------------------------------!
+         write(which,fmt='(2(a,i4.4))') 'zero_updraft_icap=',icap
          call grell_most_thermo_updraft(comp_down_cap(icap),.false.,mkx,mgmzp,klfc,ktop    &
-                                       ,cld2prec,cdu,mentru_rate,qtot0,co20,p0_cup         &
+                                       ,cld2prec,cdu,mentru_rate,qtot0,co20,z_cup,p0_cup   &
                                        ,exner0_cup,theiv0_cup,thil0_cup,t0_cup,qtot0_cup   &
                                        ,qvap0_cup,qliq0_cup,qice0_cup,qsat0_cup,co20_cup   &
                                        ,rho0_cup,theiv0u_cld,etau_cld,dzu_cld,thil0u_cld   &
                                        ,t0u_cld,qtot0u_cld,qvap0u_cld,qliq0u_cld           &
                                        ,qice0u_cld,qsat0u_cld,co20u_cld,rho0u_cld,dby0u    &
-                                       ,pw0u_cld,pwav0,klnb0,ktop0,ierr0)
-         write(which,fmt='(2(a,i4.4))') 'zero_updraft_icap=',icap
+                                       ,pw0u_cld,pwav0,klnb0,ktop0,ierr0,which)
          call grell_sanity_check(mkx,mgmzp,z_cup,p0_cup,exner0_cup,theiv0u_cld,thil0u_cld  &
                                 ,t0u_cld,qtot0u_cld,qvap0u_cld,qliq0u_cld,qice0u_cld       &
                                 ,co20u_cld,rho0u_cld,which)
@@ -772,15 +797,15 @@ subroutine grell_cupar_static(comp_noforc_cldwork,checkmass,iupmethod,maxens_cap
             !------------------------------------------------------------------------------!
             ! ix.    Moisture properties of downdraft                                      !
             !------------------------------------------------------------------------------!
-            call grell_most_thermo_downdraft(mkx,mgmzp,klod,qtot0,co20,mentrd_rate,cdd     &
-                                            ,p0_cup,exner0_cup,thil0_cup,t0_cup,qtot0_cup  &
-                                            ,qvap0_cup,qliq0_cup,qice0_cup,qsat0_cup       &
-                                            ,co20_cup,rho0_cup,pwav0,theiv0d_cld,etad_cld  &
-                                            ,dzd_cld,thil0d_cld,t0d_cld,qtot0d_cld         &
-                                            ,qvap0d_cld,qliq0d_cld,qice0d_cld,qsat0d_cld   &
-                                            ,co20d_cld,rho0d_cld,dby0d,pw0d_cld,pwev0      &
-                                            ,ierr0)
             write(which,fmt='(a,i4.4)') 'zero_downdraft_icap=',icap
+            call grell_most_thermo_downdraft(mkx,mgmzp,klod,qtot0,co20,mentrd_rate,cdd     &
+                                            ,z_cup,p0_cup,exner0_cup,thil0_cup,t0_cup      &
+                                            ,qtot0_cup,qvap0_cup,qliq0_cup,qice0_cup       &
+                                            ,qsat0_cup,co20_cup,rho0_cup,pwav0,theiv0d_cld &
+                                            ,etad_cld,dzd_cld,thil0d_cld,t0d_cld           &
+                                            ,qtot0d_cld,qvap0d_cld,qliq0d_cld,qice0d_cld   &
+                                            ,qsat0d_cld,co20d_cld,rho0d_cld,dby0d,pw0d_cld &
+                                            ,pwev0,ierr0,which)
             call grell_sanity_check(mkx,mgmzp,z_cup,p0_cup,exner0_cup,theiv0d_cld          &
                                    ,thil0d_cld,t0d_cld,qtot0d_cld,qvap0d_cld,qliq0d_cld    &
                                    ,qice0d_cld,co20d_cld,rho0d_cld,which)
@@ -861,48 +886,6 @@ subroutine grell_cupar_static(comp_noforc_cldwork,checkmass,iupmethod,maxens_cap
                                    ,dzd_cld,etad_cld,etau_cld,co2d_cld,co2u_cld            &
                                    ,dellaco2_eff(:,iedt,icap))
 
-
-         !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
-         !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
-         if (print_debug) then
-            iun=mynum+20
-            write(unit=iun,fmt='(a)') '---------------------------------------------------'
-            write(unit=iun,fmt='(2(a,1x,i5,1x))') ' I=',i,'J=',icap
-            write(unit=iun,fmt='(2(a,1x,i5,1x))') ' IEDT=',iedt,'ICAP=',icap
-            write(unit=iun,fmt='(7(a,1x,f10.4,1x))') ' KLOU  =',z(klou)                    &
-                                                     ,'KLCL  =',z(klcl)                    &
-                                                     ,'KLFC  =',z(klfc)                    &
-                                                     ,'KDET  =',z(kdet)                    &
-                                                     ,'KLOD  =',z(klod)                    &
-                                                     ,'KLNB  =',z(klnb)                    &
-                                                     ,'KTOP  =',z(ktop)
-            write(unit=iun,fmt='(a,34(1x,a))')  'Level'                                    &
-                   ,'       THIL','      THIL0','   THIL_CUP','  THILD_CLD','  THILD_CLD'  &
-                   ,'      THEIV','     THEIV0','  THEIV_CUP',' THEIVD_CLD',' THEIVD_CLD'  &
-                   ,'       QTOT','      QTOT0','   QTOT_CUP','  QTOTD_CLD','  QTOTU_CLD'  &
-                   ,'       QVAP','      QVAP0','   QVAP_CUP','  QVAPD_CLD','  QVAPU_CLD'  &
-                   ,'       QLIQ','      QLIQ0','   QLIQ_CUP','  QLIQD_CLD','  QLIQU_CLD'  &
-                   ,'       QICE','      QICE0','   QICE_CUP','  QICED_CLD','  QICEU_CLD'  &
-                   ,'        CO2','       CO20','    CO2_CUP','   CO2D_CLD','   CO2U_CLD'  &
-                   ,' DELLA_THIL','DELLA_THEIV',' DELLA_QTOT','  DELLA_CO2'
-            do k=1,mkx
-               write(unit=iun,fmt='(i5,34(1x,es12.5))')                                    &
-                   k, thil(k), thil0(k), thil_cup(k), thild_cld(k), thilu_cld(k)           &
-                    ,theiv(k),theiv0(k),theiv_cup(k),theivd_cld(k),theivu_cld(k)           &
-                    , qtot(k), qtot0(k), qtot_cup(k), qtotd_cld(k), qtotu_cld(k)           &
-                    , qvap(k), qvap0(k), qvap_cup(k), qvapd_cld(k), qvapu_cld(k)           &
-                    , qliq(k), qliq0(k), qliq_cup(k), qliqd_cld(k), qliqu_cld(k)           &
-                    , qice(k), qice0(k), qice_cup(k), qiced_cld(k), qiceu_cld(k)           &
-                    ,  co2(k),  co20(k),  co2_cup(k),  co2d_cld(k),  co2u_cld(k)           &
-                    ,dellathil_eff(k,iedt,icap),dellatheiv_eff(k,iedt,icap)                &
-                    ,dellaqtot_eff(k,iedt,icap),dellaco2_eff(k,iedt,icap)
-            end do
-            write(unit=iun,fmt='(a)') '---------------------------------------------------'
-            write(unit=iun,fmt='(a)') ' '
-         end if
-         !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
-         !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
-
          !---------------------------------------------------------------------------------!
          ! 5. Computing the rainfall flux, which will be simply all the fall-out water     !
          !    that wasn't consumed by the downdrafts.                                      !
@@ -911,6 +894,102 @@ subroutine grell_cupar_static(comp_noforc_cldwork,checkmass,iupmethod,maxens_cap
             !------ Precipitation ---------------------------------------------------------!
             pw_eff(k,iedt,icap) =  pwu_cld(k) + edt * pwd_cld(k)
          end do
+
+
+         !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
+         !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
+         if (print_debug) then
+            iun=icld+70
+            write(unit=iun,fmt='(504a)')             ('=',l=1,504)
+            write(unit=iun,fmt='(504a)')             ('=',l=1,504)
+            write(unit=iun,fmt='((a,1x,i5,1x))'    ) ' I      =',i
+            write(unit=iun,fmt='((a,1x,i5,1x))'    ) ' J      =',j
+            write(unit=iun,fmt='((a,1x,i5,1x))'    ) ' IEDT   =',iedt
+            write(unit=iun,fmt='((a,1x,i5,1x))'    ) ' ICAP   =',icap
+            write(unit=iun,fmt='(a,1x,f10.4,1x,i5)') ' KLOU   =',z(klou),klou
+            write(unit=iun,fmt='(a,1x,f10.4,1x,i5)') ' KLCL   =',z(klcl),klcl
+            write(unit=iun,fmt='(a,1x,f10.4,1x,i5)') ' KLFC   =',z(klfc),klfc
+            write(unit=iun,fmt='(a,1x,f10.4,1x,i5)') ' KDET   =',z(kdet),kdet
+            write(unit=iun,fmt='(a,1x,f10.4,1x,i5)') ' KLOD   =',z(klod),klod
+            write(unit=iun,fmt='(a,1x,f10.4,1x,i5)') ' KLNB   =',z(klnb),klnb
+            write(unit=iun,fmt='(a,1x,f10.4,1x,i5)') ' KTOP   =',z(ktop),ktop
+            write(unit=iun,fmt='(a,1x,f10.4,1x,i5)') ' PWAV   =',pwav
+            write(unit=iun,fmt='(a,1x,f10.4,1x,i5)') ' PWEV   =',pwev
+            write(unit=iun,fmt='(a,1x,f10.4,1x,i5)') ' EDT    =',edt
+            write(unit=iun,fmt='(504a)')          ('-',l=1,504)
+            write(unit=iun,fmt='(a,3(1x,a))'    ) ' Type'    ,'    AA_DOWN','      AA_UP'  &
+                                                             ,'     AA_TOT'
+            write(unit=iun,fmt='(a,3(1x,f11.4))') ' Zero',aa0d,aa0u,aatot0_eff(iedt,icap)
+            write(unit=iun,fmt='(a,3(1x,f11.4))') ' One ',aad ,aau ,aatot_eff (iedt,icap)
+            write(unit=iun,fmt='(504a)')          ('-',l=1,504)
+            write(unit=iun,fmt='(42(1x,a))')    '      LEVEL','      Z_CUP','      P_CUP'  &
+                                 ,'       THIL','   THIL_CUP','  THILD_CLD','  THILU_CLD'  &
+                                 ,'      THEIV','  THEIV_CUP',' THEIVD_CLD',' THEIVU_CLD'  &
+                                 ,'          T','      T_CUP','     TD_CLD','     TU_CLD'  &
+                                 ,'       QTOT','   QTOT_CUP','  QTOTD_CLD','  QTOTU_CLD'  &
+                                 ,'        CO2','    CO2_CUP','   CO2D_CLD','   CO2U_CLD'  &
+                                 ,'       QVAP','   QVAP_CUP','  QVAPD_CLD','  QVAPU_CLD'  &
+                                 ,'       QCON','   QCON_CUP','  QCOND_CLD','  QCONU_CLD'  &
+                                 ,'        RHO','    RHO_CUP','   RHOD_CLD','   RHOU_CLD'  &
+                                 ,'    PWD_CLD','    PWU_CLD','     PW_TOT'                &
+                                 ,' DELLA_THIL','DELLA_THEIV',' DELLA_QTOT','  DELLA_CO2'
+            write(unit=iun,fmt='(504a)')          ('-',l=1,504)
+            do k=mkx,1,-1
+               if (k == ktop) then
+                  levname = '        TOP'
+               elseif (k == klnb) then
+                  levname = '        LNB'
+               elseif (k == klod) then
+                  levname = '        LOD'
+               elseif (k == kdet) then
+                  levname = '        DET'
+               elseif (k == klfc) then
+                  levname = '        LFC'
+               elseif (k == klou) then
+                  levname = '        LOU'
+               elseif (k == klcl) then
+                  levname = '        LCL'
+               else
+                  levname = '           '
+               end if
+            
+               write(unit=iun,fmt='(1x,a,41(1x,f11.4))') levname,z_cup(k),0.01*p_cup(k)    &
+                    ,      thil(k),      thil_cup(k),      thild_cld(k),      thilu_cld(k) &
+                    ,     theiv(k),     theiv_cup(k),     theivd_cld(k),     theivu_cld(k) &
+                    ,     t(k)-t00,     t_cup(k)-t00,     td_cld(k)-t00,     tu_cld(k)-t00 &
+                    ,1000.*qtot(k),1000.*qtot_cup(k),1000.*qtotd_cld(k),1000.*qtotu_cld(k) &
+                    ,       co2(k),       co2_cup(k),       co2d_cld(k),       co2u_cld(k) &
+                    ,1000.*qvap(k),1000.*qvap_cup(k),1000.*qvapd_cld(k),1000.*qvapu_cld(k) &
+                    ,1000.*(qliq(k)+qice(k)),1000.*(qliq_cup(k)+qice_cup(k))               &
+                    ,1000.*(qliqd_cld(k)+qiced_cld(k)),1000.*(qliqu_cld(k)+qiceu_cld(k))   &
+                    ,       rho(k),       rho_cup(k),       rhod_cld(k),       rhou_cld(k) &
+                    ,1000.*pwd_cld(k),1000.*pwu_cld(k),1000.*pw_eff(k,iedt,icap)           &
+                    ,dellathil_eff(k,iedt,icap)     ,dellatheiv_eff(k,iedt,icap)           &
+                    ,1000*dellaqtot_eff(k,iedt,icap),dellaco2_eff(k,iedt,icap)
+            end do
+            write(unit=iun,fmt='(504a)')          ('-',l=1,504)
+            write(unit=iun,fmt='(42(1x,a))')    '      LEVEL','      Z_CUP','      P_CUP'  &
+                                 ,'       THIL','   THIL_CUP','  THILD_CLD','  THILU_CLD'  &
+                                 ,'      THEIV','  THEIV_CUP',' THEIVD_CLD',' THEIVU_CLD'  &
+                                 ,'          T','      T_CUP','     TD_CLD','     TU_CLD'  &
+                                 ,'       QTOT','   QTOT_CUP','  QTOTD_CLD','  QTOTU_CLD'  &
+                                 ,'        CO2','    CO2_CUP','   CO2D_CLD','   CO2U_CLD'  &
+                                 ,'       QVAP','   QVAP_CUP','  QVAPD_CLD','  QVAPU_CLD'  &
+                                 ,'       QCON','   QCON_CUP','  QCOND_CLD','  QCONU_CLD'  &
+                                 ,'        RHO','    RHO_CUP','   RHOD_CLD','   RHOU_CLD'  &
+                                 ,'    PWD_CLD','    PWU_CLD','     PW_TOT'                &
+                                 ,' DELLA_THIL','DELLA_THEIV',' DELLA_QTOT','  DELLA_CO2'
+            write(unit=iun,fmt='(504a)')          ('=',l=1,504)
+            write(unit=iun,fmt='(504a)')          ('=',l=1,504)
+            write(unit=iun,fmt='(a)') ' '
+            write(unit=iun,fmt='(a)') ' '
+            write(unit=iun,fmt='(a)') ' '
+            write(unit=iun,fmt='(a)') ' '
+            write(unit=iun,fmt='(a)') ' '
+            write(unit=iun,fmt='(a)') ' '
+         end if
+         !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
+         !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
       end do effloop
       !]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]!
 

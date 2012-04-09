@@ -2539,7 +2539,7 @@ subroutine fill_history_patch(cpatch,paco_index,ncohorts_global,green_leaf_facto
   memsize(1)  = int(cpatch%ncohorts,8)
   memoffs(1)  = 0_8
 
-  if(cpatch%ncohorts>0) then
+  if (cpatch%ncohorts > 0) then
 
      call hdf_getslab_i(cpatch%pft,'PFT ',dsetrank,iparallel,.true.)
      call hdf_getslab_r(cpatch%nplant,'NPLANT ',dsetrank,iparallel,.true.)
@@ -2550,10 +2550,12 @@ subroutine fill_history_patch(cpatch,paco_index,ncohorts_global,green_leaf_facto
      call hdf_getslab_r(cpatch%dagb_dt,'DAGB_DT ',dsetrank,iparallel,.true.)
      call hdf_getslab_r(cpatch%dba_dt,'DBA_DT',dsetrank,iparallel,.true.)
      call hdf_getslab_r(cpatch%ddbh_dt,'DDBH_DT',dsetrank,iparallel,.true.)
+     call hdf_getslab_r(cpatch%dlndbh_dt,'DLNDBH_DT',dsetrank,iparallel,.true.)
 
      call hdf_getslab_r(cpatch%bdead,'BDEAD ',dsetrank,iparallel,.true.)
      call hdf_getslab_r(cpatch%bleaf,'BLEAF ',dsetrank,iparallel,.true.)
      call hdf_getslab_i(cpatch%phenology_status,'PHENOLOGY_STATUS ',dsetrank,iparallel,.true.)
+     call hdf_getslab_i(cpatch%recruit_dbh,'RECRUIT_DBH ',dsetrank,iparallel,.true.)
      call hdf_getslab_r(cpatch%balive,'BALIVE ',dsetrank,iparallel,.true.)
      call hdf_getslab_r(cpatch%broot,'BROOT  ',dsetrank,iparallel,.true.)
      call hdf_getslab_r(cpatch%bsapwooda,'BSAPWOODA ',dsetrank,iparallel,.true.)
@@ -2628,6 +2630,7 @@ subroutine fill_history_patch(cpatch,paco_index,ncohorts_global,green_leaf_facto
      call hdf_getslab_r(cpatch%vleaf_respiration,'VLEAF_RESPIRATION ',dsetrank,iparallel,.true.)
      call hdf_getslab_r(cpatch%fsn,'FSN ',dsetrank,iparallel,.true.)
      call hdf_getslab_r(cpatch%monthly_dndt,'MONTHLY_DNDT ',dsetrank,iparallel,.true.)
+     call hdf_getslab_r(cpatch%monthly_dlnndt,'MONTHLY_DLNNDT ',dsetrank,iparallel,.true.)
 
      if (associated(cpatch%mmean_gpp       )) &
           call hdf_getslab_r(cpatch%mmean_gpp,'MMEAN_GPP_CO ',dsetrank,iparallel,.false.)

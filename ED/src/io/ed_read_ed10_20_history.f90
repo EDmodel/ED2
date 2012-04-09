@@ -46,7 +46,6 @@ subroutine read_ed10_ed20_history_file
                              , dbh2h               & ! function
                              , h2dbh               & ! function
                              , dbh2bd              & ! function
-                             , dbh2bl              & ! function
                              , size2bl             & ! function
                              , ed_biomass          & ! function
                              , area_indices        ! ! subroutine
@@ -741,9 +740,10 @@ subroutine read_ed10_ed20_history_file
                         cpatch%basarea(ic2)  = pio4 * cpatch%dbh(ic2) * cpatch%dbh(ic2)
 
                         !----- Growth rates, start with zero. -----------------------------!
-                        cpatch%dagb_dt(ic2)  = 0.
-                        cpatch%dba_dt(ic2)   = 0.
-                        cpatch%ddbh_dt(ic2)  = 0.
+                        cpatch%dagb_dt  (ic2)  = 0.
+                        cpatch%dba_dt   (ic2)  = 0.
+                        cpatch%ddbh_dt  (ic2)  = 0.
+                        cpatch%dlndbh_dt(ic2)  = 0.
                         
                         !------------------------------------------------------------------!
                         !      Initialise other cohort variables.  Some of them won't be   !

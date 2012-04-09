@@ -192,8 +192,12 @@ subroutine grell_cupar_feedback(mgmzp,maxens_cap,maxens_eff,maxens_lsf,maxens_dy
    ! is heating/cooling too much, rescale the reference upward mass flux.                  !
    !---------------------------------------------------------------------------------------!
    do k=1,mkx
-      outthil(k) = upmf * sum(dellathil_eff(k,1:maxens_eff,1:maxens_cap))                  &
-                 * inv_maxens_ec
+      do icap=1,maxens_cap
+         do iedt=1,maxens_eff
+            outthil(k) = outthil(k) + upmf * dellathil_eff(k,iedt,icap)
+         end do
+      end do
+      outthil(k) = outthil(k) * inv_maxens_ec
    end do
    !----- Get minimum and maximum outt, and where they happen -----------------------------!
    kmin = minloc(outthil,dim=1)
@@ -247,10 +251,14 @@ subroutine grell_cupar_feedback(mgmzp,maxens_cap,maxens_eff,maxens_lsf,maxens_dy
    !    With the mass flux and heating on the track, compute other sources/sinks           !
    !---------------------------------------------------------------------------------------!
    do k=1,mkx
-      outqtot(k) = upmf * sum(dellaqtot_eff(k,1:maxens_eff,1:maxens_cap))                  &
-                 * inv_maxens_ec
-      outco2(k)  = upmf * sum(dellaco2_eff (k,1:maxens_eff,1:maxens_cap))                  &
-                 * inv_maxens_ec
+      do icap=1,maxens_cap
+         do iedt=1,maxens_eff
+            outqtot(k) = outqtot(k) + upmf * dellaqtot_eff(k,iedt,icap)
+            outco2 (k) = outco2 (k) + upmf * dellaco2_eff (k,iedt,icap)
+         end do
+      end do
+      outqtot(k) = outqtot(k) * inv_maxens_ec
+      outco2 (k) = outco2 (k) * inv_maxens_ec
    end do
    !---------------------------------------------------------------------------------------!
 
@@ -576,6 +584,8 @@ subroutine grell_cupar_output(m1,mgmzp,maxens_cap,rtgt,zm,zt,dnmf,upmf,dnmx,upmx
    real                               :: exner     ! Exner fctn. for tend. conv.  [ J/kg/K]
    real                               :: nmoki     ! 1/nmok
    real                               :: zhgt      ! Height
+   real                               :: f_dn      ! Fraction for downdraft
+   real                               :: f_up      ! Fraction for updraft
    integer                            :: klod      ! Downdraft origin
    integer                            :: klou      ! Updraft origin
    integer                            :: klcl      ! Lifting condensation level
@@ -583,9 +593,17 @@ subroutine grell_cupar_output(m1,mgmzp,maxens_cap,rtgt,zm,zt,dnmf,upmf,dnmx,upmx
    integer                            :: kdet      ! Origin of downdraft detrainment
    integer                            :: klnb      ! Cloud top
    integer                            :: ktop      ! Cloud top
+   real, dimension(m1)                :: cuprliqd  ! Cumulus water mixing ratio   [  kg/kg]
+   real, dimension(m1)                :: cupriced  ! Cumulus ice mixing ratio     [  kg/kg]
+   real, dimension(m1)                :: cuprliqu  ! Cumulus water mixing ratio   [  kg/kg]
+   real, dimension(m1)                :: cupriceu  ! Cumulus ice mixing ratio     [  kg/kg]
    !----- Aux. variables for fractional area. ---------------------------------------------! 
    real, dimension(m1,maxens_cap)   :: cuprliq_cap  ! Cumulus water mixing ratio  [  kg/kg]
    real, dimension(m1,maxens_cap)   :: cuprice_cap  ! Cumulus ice mixing ratio    [  kg/kg]
+   real, dimension(m1,maxens_cap)   :: cuprliqd_cap ! Cumulus water mixing ratio  [  kg/kg]
+   real, dimension(m1,maxens_cap)   :: cupriced_cap ! Cumulus ice mixing ratio    [  kg/kg]
+   real, dimension(m1,maxens_cap)   :: cuprliqu_cap ! Cumulus water mixing ratio  [  kg/kg]
+   real, dimension(m1,maxens_cap)   :: cupriceu_cap ! Cumulus ice mixing ratio    [  kg/kg]
    !----- Local constants, for debugging. -------------------------------------------------!
    integer                          :: iun
    logical          , parameter     :: print_debug=.false.
@@ -595,27 +613,35 @@ subroutine grell_cupar_output(m1,mgmzp,maxens_cap,rtgt,zm,zt,dnmf,upmf,dnmx,upmx
    !---------------------------------------------------------------------------------------!
    !    Flushing all variables to zero in case convection didn't happen.                   !
    !---------------------------------------------------------------------------------------!
-   thsrc        = 0.
-   rtsrc        = 0.
-   co2src       = 0.
-   cuprliq      = 0.
-   cuprice      = 0.
-   cuprliq_cap  = 0.
-   cuprice_cap  = 0.
+   thsrc         = 0.
+   rtsrc         = 0.
+   co2src        = 0.
+   cuprliq       = 0.
+   cuprice       = 0.
+   cuprliqd      = 0.
+   cupriced      = 0.
+   cuprliqu      = 0.
+   cupriceu      = 0.
+   cuprliq_cap   = 0.
+   cuprice_cap   = 0.
+   cuprliqd_cap  = 0.
+   cupriced_cap  = 0.
+   cuprliqu_cap  = 0.
+   cupriceu_cap  = 0.
 
-   areadn       = 0.
-   areaup       = 0.
-   conprr       = 0.
-   zkdt         = 0.
-   zklou        = 0.
-   zklcl        = 0.
-   zklfc        = 0.
-   zklod        = 0.
-   zklnb        = 0.
-   zktop        = 0.
-   wdndraft     = 0.
-   wupdraft     = 0.
-   wbuoymin     = 0.
+   areadn        = 0.
+   areaup        = 0.
+   conprr        = 0.
+   zkdt          = 0.
+   zklou         = 0.
+   zklcl         = 0.
+   zklfc         = 0.
+   zklod         = 0.
+   zklnb         = 0.
+   zktop         = 0.
+   wdndraft      = 0.
+   wupdraft      = 0.
+   wbuoymin      = 0.
 
    !---------------------------------------------------------------------------------------!
    !    Find the number of clouds and the cloud mask.                                      !
@@ -691,18 +717,33 @@ subroutine grell_cupar_output(m1,mgmzp,maxens_cap,rtgt,zm,zt,dnmf,upmf,dnmx,upmx
       if (ierr_cap(icap) == 0) then
 
          !---------------------------------------------------------------------------------!
-         !   I compute the cloud condensed mixing ratio for this realisation.  This is     !
-         ! used by Harrington when cumulus feedback is requested, so we rescale the liquid !
-         ! water at the downdrafts and updrafts by their area.                             !
+         !     Find the fraction due to downdrafts and updrafts.                           !
          !---------------------------------------------------------------------------------!
-         do k=1,ktop_cap(icap)
+         f_dn = areadn_cap(icap) / (areadn_cap(icap) + areaup_cap(icap))
+         f_up = areaup_cap(icap) / (areadn_cap(icap) + areaup_cap(icap))
+         !---------------------------------------------------------------------------------!
+
+
+
+         !---------------------------------------------------------------------------------!
+         !   Compute the cloud condensed mixing ratio for this realisation.  This is used  !
+         ! by Harrington when cumulus feedback is requested, so we rescale the liquid      !
+         ! water at the downdrafts and updrafts by their area.  Levels outside the cloud   !
+         ! range may contain environment values, and we don't want to double account.      !
+         !---------------------------------------------------------------------------------!
+         do k=1,klod_cap(icap)
             kr=k+kgoff
-            cuprliq_cap(kr,icap) = max(0., ( qliqd_cld_cap(k,icap) * areadn_cap(icap)      &
-                                           + qliqu_cld_cap(k,icap) * areaup_cap(icap) )    &
-                                           / (areadn_cap(icap) + areaup_cap(icap) ) )
-            cuprice_cap(kr,icap) = max(0., ( qiced_cld_cap(k,icap) * areadn_cap(icap)      &
-                                           + qiceu_cld_cap(k,icap) * areaup_cap(icap) )    &
-                                           / (areadn_cap(icap) + areaup_cap(icap) ) )
+            cuprliq_cap (kr,icap) = cuprliq_cap (kr,icap) + qliqd_cld_cap(k,icap) * f_dn
+            cuprice_cap (kr,icap) = cuprice_cap (kr,icap) + qiced_cld_cap(k,icap) * f_dn
+            cuprliqd_cap(kr,icap) = qliqd_cld_cap(k,icap)
+            cupriced_cap(kr,icap) = qiced_cld_cap(k,icap)
+         end do
+         do k=klou_cap(icap),ktop_cap(icap)
+            kr=k+kgoff
+            cuprliq_cap (kr,icap) = cuprliq_cap (kr,icap) + qliqu_cld_cap(k,icap) * f_up
+            cuprice_cap (kr,icap) = cuprice_cap (kr,icap) + qiceu_cld_cap(k,icap) * f_up
+            cuprliqu_cap(kr,icap) = qliqu_cld_cap(k,icap)
+            cupriceu_cap(kr,icap) = qiceu_cld_cap(k,icap)
          end do
       end if
    end do stacloop
@@ -718,8 +759,12 @@ subroutine grell_cupar_output(m1,mgmzp,maxens_cap,rtgt,zm,zt,dnmf,upmf,dnmx,upmx
    wbuoymin = sum(wbuoymin_cap) * nmoki
    do icap=1,maxens_cap
       do kr=1,m1
-         cuprliq(kr) = cuprliq(kr) + cuprliq_cap(kr,icap) * nmoki
-         cuprice(kr) = cuprice(kr) + cuprice_cap(kr,icap) * nmoki
+         cuprliq (kr) = cuprliq (kr) + cuprliq_cap (kr,icap) * nmoki
+         cuprice (kr) = cuprice (kr) + cuprice_cap (kr,icap) * nmoki
+         cuprliqd(kr) = cuprliqd(kr) + cuprliqd_cap(kr,icap) * nmoki
+         cupriced(kr) = cupriced(kr) + cupriced_cap(kr,icap) * nmoki
+         cuprliqu(kr) = cuprliqu(kr) + cuprliqu_cap(kr,icap) * nmoki
+         cupriceu(kr) = cupriceu(kr) + cupriceu_cap(kr,icap) * nmoki
       end do
    end do
    !---------------------------------------------------------------------------------------!
@@ -731,7 +776,7 @@ subroutine grell_cupar_output(m1,mgmzp,maxens_cap,rtgt,zm,zt,dnmf,upmf,dnmx,upmx
    ! characteristics.                                                                      !
    !---------------------------------------------------------------------------------------!
    if (print_debug) then
-      write(unit=20+icld,fmt='(92a)'             ) ('-',k=1,92)
+      write(unit=20+icld,fmt='(143a)'            ) ('-',k=1,143)
       write(unit=20+icld,fmt='(a)'               ) ''
       write(unit=20+icld,fmt='(a,1x,i5)'         ) '  I        =',i
       write(unit=20+icld,fmt='(a,1x,i5)'         ) '  J        =',j
@@ -756,22 +801,27 @@ subroutine grell_cupar_output(m1,mgmzp,maxens_cap,rtgt,zm,zt,dnmf,upmf,dnmx,upmx
       write(unit=20+icld,fmt='(a,1x,es12.5)'     ) '  WBUOYMIN =',wbuoymin
       write(unit=20+icld,fmt='(a,1x,es12.5)'     ) '  CONPRR   =',conprr * day_sec
       write(unit=20+icld,fmt='(a)'               ) ''
-      write(unit=20+icld,fmt='(7(a,1x))')   '           K','      HEIGHT','       THSRC'   &
+      write(unit=20+icld,fmt='(11(a,1x))')  '           K','      HEIGHT','       THSRC'   &
                                            ,'       RTSRC','      CO2SRC','     CUPRICE'   &
-                                           ,'     CUPRLIQ'
-      write(unit=20+icld,fmt='(92(a))') ('-',k=1,92)
+                                           ,'     CUPRLIQ','  CUPRICE_DN','  CUPRLIQ_DN'   &
+                                           ,'  CUPRICE_UP','  CUPRLIQ_UP'
+      write(unit=20+icld,fmt='(143(a))') ('-',k=1,143)
       do k=m1,1,-1
          zhgt = ( zt(k+kgoff) - zm(kgoff) ) * rtgt
-         write (unit=20+icld,fmt='(i12,1x,f12.2,1x,5(es12.5,1x))')                         &
+         write (unit=20+icld,fmt='(i12,1x,f12.2,1x,9(es12.5,1x))')                         &
                                                               k                            &
                                                             , zhgt                         &
-                                                            , thsrc  (k) * day_sec         &
-                                                            , rtsrc  (k) * day_sec * 1000. &
-                                                            , co2src (k) * day_sec         &
-                                                            , cuprice(k) * 1000.           &
-                                                            , cuprliq(k) * 1000.
+                                                            , thsrc  (k)  * day_sec        &
+                                                            , rtsrc  (k)  * day_sec*1000.  &
+                                                            , co2src (k)  * day_sec        &
+                                                            , cuprice(k)  * 1000.          &
+                                                            , cuprliq(k)  * 1000.          &
+                                                            , cupriced(k) * 1000.          &
+                                                            , cuprliqd(k) * 1000.          &
+                                                            , cupriceu(k) * 1000.          &
+                                                            , cuprliqu(k) * 1000.
       end do
-      write(unit=20+icld,fmt='(92(a))') ('-',k=1,92)
+      write(unit=20+icld,fmt='(143(a))') ('-',k=1,143)
       write(unit=20+icld,fmt='(a)'               ) ''
    end if
    !---------------------------------------------------------------------------------------!

@@ -221,8 +221,10 @@ subroutine init_nbg_cohorts(csite,lsl,ipa_a,ipa_z)
                                       * salloci * agf_bs(ipft)
          cpatch%bsapwoodb(ico)        = qsw(ipft) * cpatch%hite(ico) * cpatch%balive(ico)  &
                                       * salloci * (1.-agf_bs(ipft))
-         cpatch%bstorage(ico)         = 0.5 * ( cpatch%bleaf(ico) + cpatch%broot(ico)      &
-                                              + cpatch%bsapwooda(ico)+ cpatch%bsapwoodb(ico))
+         cpatch%bstorage(ico)         = 0.5 * ( cpatch%bleaf(ico)                          &
+                                              + cpatch%broot(ico)                          &
+                                              + cpatch%bsapwooda(ico)                      &
+                                              + cpatch%bsapwoodb(ico))
 
          !----- Find the initial area indices (LAI, WAI, CAI). ----------------------------!
          call area_indices(cpatch%nplant(ico),cpatch%bleaf(ico),cpatch%bdead(ico)          &
@@ -429,7 +431,7 @@ subroutine near_bare_ground_big_leaf_init(cgrid)
                                  , tonoha_2_kgom2! ! intent(in)
    use allometry          , only : h2dbh         & ! function
                                  , dbh2bd        & ! function
-                                 , dbh2bl        & ! function
+                                 , size2bl       & ! function
                                  , ed_biomass    & ! function
                                  , area_indices  ! ! subroutine
    implicit none
@@ -530,7 +532,7 @@ subroutine near_bare_ground_big_leaf_init(cgrid)
                cpatch%bstorage(ico)         = 0.0
                cpatch%dbh(ico)              = h2dbh(cpatch%hite(ico),ipft)
                cpatch%bdead(ico)            = dbh2bd(cpatch%dbh(ico),ipft)
-               cpatch%bleaf(ico)            = dbh2bl(cpatch%dbh(ico),ipft)
+               cpatch%bleaf(ico)            = size2bl(cpatch%dbh(ico),cpatch%hite(ico),ipft)
                cpatch%sla(ico)              = sla(ipft)
 
                salloc                       = 1.0 + q(ipft) + qsw(ipft) * cpatch%hite(ico)

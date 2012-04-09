@@ -425,7 +425,7 @@ subroutine event_harvest(agb_frac8,bgb_frac8,fol_frac8,stor_frac8)
                  call update_veg_energy_cweh(csite,ipa,ico,old_leaf_hcap,old_wood_hcap)
 
                  !----- Update flags telling whether leaves and branches can be solved. ---!
-                 call is_resolvable(csite,ipa,ico,cpoly%green_leaf_factor(:,isi))
+                 call is_resolvable(csite,ipa,ico)
 
               enddo
              
@@ -820,7 +820,7 @@ end subroutine event_till
 !!$              cpatch%hite(ico)    = hgt_min(pft)
 !!$              cpatch%dbh(ico)     = h2dbh(hgt_min(pft),pft)
 !!$              cpatch%bdead(ico)   = dbh2bd(cpatch%dbh(ico),pft)
-!!$              cpatch%bleaf(ico)   = dbh2bl(cpatch%dbh(ico),pft)
+!!$              cpatch%bleaf(ico)   = size2bl(cpatch%dbh(ico),cpatch%hite(ico),pft)
 !!$print*,cpatch%hite(ico),cpatch%dbh(ico),cpatch%bdead(ico),cpatch%bleaf(ico)
 !!$              cpatch%phenology_status(ico) = 0
 !!$              cpatch%balive(ico)  = cpatch%bleaf(ico)* &

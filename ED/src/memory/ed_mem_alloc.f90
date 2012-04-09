@@ -5,7 +5,6 @@ subroutine ed_mem_alloc(proc_type)
    use ed_max_dims         , only : n_pft                   & ! intent(in)
                                   , n_dist_types            & ! intent(in)
                                   , n_dbh                   & ! intent(in)
-                                  , maxvars                 & ! intent(in)
                                   , maxgrds                 ! ! intent(in)
    use ed_mem_grid_dim_defs, only : define_grid_dim_pointer ! ! subroutine
    use ed_state_vars       , only : gdpy                    & ! intent(in)

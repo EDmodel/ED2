@@ -401,7 +401,8 @@ module phenology_aux
                                                ,cpatch%paw_avg(ico),cpatch%elongf(ico)     &
                                                ,cpatch%phenology_status(ico)               &
                                                ,cpatch%bleaf(ico),cpatch%broot(ico)        &
-                                               ,cpatch%bsapwooda(ico),cpatch%bsapwoodb(ico)&
+                                               ,cpatch%bsapwooda(ico)                      &
+                                               ,cpatch%bsapwoodb(ico)                      &
                                                ,cpatch%balive(ico),cpatch%bstorage(ico))
                   !------------------------------------------------------------------------!
 
@@ -422,7 +423,7 @@ module phenology_aux
                                     ,cpatch%leaf_hcap(ico),cpatch%wood_hcap(ico) )
                   cpatch%leaf_energy(ico) = cpatch%leaf_hcap(ico) * cpatch%leaf_temp(ico)
                   cpatch%wood_energy(ico) = cpatch%wood_hcap(ico) * cpatch%wood_temp(ico)
-                  call is_resolvable(csite,ipa,ico,cpoly%green_leaf_factor(:,isi))
+                  call is_resolvable(csite,ipa,ico)
                   !------------------------------------------------------------------------!
                end do cohortloop
                !---------------------------------------------------------------------------!
@@ -466,7 +467,8 @@ module phenology_aux
       use pft_coms      , only : phenology           & ! intent(in)
                                , agf_bs              & ! intent(in)
                                , q                   & ! intent(in)
-                               , qsw                 ! ! intent(in)
+                               , qsw                 & ! intent(in)
+                               , agf_bs              ! ! intent(in)
       use ed_max_dims   , only : n_pft               ! ! intent(in)
       use allometry     , only : size2bl             & ! function
                                , h2crownbh           ! ! function
@@ -485,8 +487,8 @@ module phenology_aux
       integer                  , intent(out) :: phenology_status  ! phenology Flag
       real                     , intent(out) :: bleaf             ! Leaf biomass
       real                     , intent(out) :: broot             ! Root biomass
-      real                     , intent(out) :: bsapwooda         ! Sapwood biomass above ground
-      real                     , intent(out) :: bsapwoodb         ! Sapwood biomass below ground
+      real                     , intent(out) :: bsapwooda         ! AG Sapwood biomass 
+      real                     , intent(out) :: bsapwoodb         ! BG Sapwood biomass 
       real                     , intent(out) :: balive            ! Living tissue biomass
       real                     , intent(out) :: bstorage          ! Storage biomass
       !----- Local variables --------------------------------------------------------------!
@@ -497,8 +499,6 @@ module phenology_aux
       real                                   :: bleaf_max         ! maximum bleaf
       real                                   :: balive_max        ! balive if on-allometry
       real                                   :: psi_layer         ! Water pot. of this layer
-      real                                   :: psi_wilt          ! Wilting point potential
-      real                                   :: psi_crit          ! Critical point potential
       real                                   :: mcheight          ! Mid-crown height
       !------------------------------------------------------------------------------------!
       !------------------------------------------------------------------------------------!
@@ -514,12 +514,8 @@ module phenology_aux
             psi_layer = slzt(k) - mcheight                                                 &
                       + soil(nsoil)%slpots                                                 &
                       / (soil_water(k)      / soil(nsoil)%slmsts) ** soil(nsoil)%slbs
-            psi_wilt  = soil(nsoil)%slpots                                                 &
-                      / (soil(nsoil)%soilwp / soil(nsoil)%slmsts) ** soil(nsoil)%slbs
-            psi_crit  = soil(nsoil)%slpots                                                 &
-                      / (soil(nsoil)%soilld / soil(nsoil)%slmsts) ** soil(nsoil)%slbs
-            paw_avg   = paw_avg + max(0.0, (psi_layer - psi_wilt)) * dslz(k)               &
-                                / (psi_crit  - psi_wilt)
+            paw_avg   = paw_avg + max(0.0, (psi_layer - soil(nsoil)%slpotwp)) * dslz(k)               &
+                                / (soil(nsoil)%slpotld  - soil(nsoil)%slpotwp)
          end do
 
          paw_avg = paw_avg / abs(slz(kroot))
@@ -555,7 +551,7 @@ module phenology_aux
       if (elongf >= 1.0) then
          phenology_status = 0
       elseif (elongf > elongf_min) then
-         phenology_status = -1
+         phenology_status = 1
       else
          phenology_status = 2
          elongf           = 0.
@@ -572,7 +568,7 @@ module phenology_aux
       bleaf      = bleaf_max * elongf
       broot      = balive_max * q(ipft)   * salloci
       bsapwooda  = balive_max * qsw(ipft) * height * salloci * agf_bs(ipft)
-      bsapwoodb  = balive_max * qsw(ipft) * height * salloci * (1.-agf_bs(ipft))
+      bsapwoodb  = balive_max * qsw(ipft) * height * salloci * (1.0 - agf_bs(ipft))
       balive     = bleaf + broot + bsapwooda + bsapwoodb
       !------------------------------------------------------------------------------------!
 

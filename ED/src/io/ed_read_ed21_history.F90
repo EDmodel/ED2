@@ -56,8 +56,7 @@ subroutine read_ed21_history_file
                              , bd2dbh                  & ! function
                              , size2bl                 & ! function
                              , dbh2h                   & ! function
-                             , dbh2bd                  & ! function
-                             , dbh2bl                  ! ! function
+                             , dbh2bd                  ! ! function
    use fuse_fiss_utils, only : terminate_cohorts       ! ! subroutine
 
    implicit none
@@ -635,15 +634,6 @@ subroutine read_ed21_history_file
                         call hdf_getslab_r(cpatch%cb_max,'CB_MAX '                         &
                                           ,dsetrank,iparallel,.true.)
                         
-                        !------------------------------------------------------------------!
-                        !    The following variables are initialised with default values.  !
-                        !------------------------------------------------------------------!
-                        cpatch%dagb_dt              = 0.
-                        cpatch%dba_dt               = 0.
-                        cpatch%ddbh_dt              = 0.
-                        cpatch%fsw                  = 1.0
-                        cpatch%gpp                  = 0.0
-                        cpatch%par_l                = 0.0
                         
                         cohortloop: do ico=1,cpatch%ncohorts
                            !---------------------------------------------------------------!
@@ -771,7 +761,6 @@ subroutine read_ed21_history_file
 
                !----- Initialise the other patch-level variables. -------------------------!
                call init_ed_patch_vars(csite,1,csite%npatches,cpoly%lsl(isi))
-
             end if
             !------------------------------------------------------------------------------!
          end do siteloop
@@ -898,7 +887,7 @@ subroutine read_ed21_history_unstruct
                              , bd2dbh                  & ! function
                              , dbh2h                   & ! function
                              , dbh2bd                  & ! function
-                             , dbh2bl                  ! ! function
+                             , size2bl                 ! ! function
    use fuse_fiss_utils, only : terminate_cohorts       ! ! subroutine
    use disturb_coms   , only : ianth_disturb           & ! intent(in)
                              , lu_rescale_file         & ! intent(in)
@@ -1752,7 +1741,9 @@ subroutine read_ed21_history_unstruct
                               cpatch%bdead(ico) = dbh2bd(cpatch%dbh  (ico),ipft)
                            end if
 
-                           cpatch%bleaf(ico)  = dbh2bl(cpatch%dbh(ico),ipft)
+                           cpatch%bleaf(ico)  = size2bl( cpatch%dbh (ico)                  &
+                                                       , cpatch%hite(ico)                  &
+                                                       , ipft )
 
                            !----- Find the other pools. -----------------------------------!
                            salloc  = (1.0 + q(ipft) + qsw(ipft) * cpatch%hite(ico))
@@ -1787,16 +1778,6 @@ subroutine read_ed21_history_unstruct
                                           ,dsetrank,iparallel,.true.)
                         call hdf_getslab_r(cpatch%cb_max,'CB_MAX '                         &
                                           ,dsetrank,iparallel,.true.)
-
-                        !------------------------------------------------------------------!
-                        !    The following variables are initialised with default values.  !
-                        !------------------------------------------------------------------!
-                        cpatch%dagb_dt              = 0.
-                        cpatch%dba_dt               = 0.
-                        cpatch%ddbh_dt              = 0.
-                        cpatch%fsw                  = 1.0
-                        cpatch%gpp                  = 0.0
-                        cpatch%par_l                = 0.0
 
                         cohortloop: do ico=1,cpatch%ncohorts
                            !---------------------------------------------------------------!

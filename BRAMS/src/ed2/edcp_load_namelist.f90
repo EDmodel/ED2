@@ -132,6 +132,7 @@ subroutine read_ednl(iunit,filename)
                                    , event_file                            & ! intent(out)
                                    , attach_metadata                       & ! intent(out)
                                    , iallom                                & ! intent(out)
+                                   , igrass                                & ! intent(out)
                                    , min_site_area                         ! ! intent(out)
    use canopy_air_coms      , only : icanturb                              & ! intent(out)
                                    , isfclyrm                              & ! intent(out)
@@ -230,8 +231,8 @@ subroutine read_ednl(iunit,filename)
                        ,plantation_file,lu_rescale_file,thsums_database,soilstate_db       &
                        ,soildepth_db,isoilstateinit,isoildepthflg,ivegt_dynamics,ibigleaf  &
                        ,integration_scheme,rk4_tolerance,ibranch_thermo,iphysiol,iallom    &
-                       ,iphen_scheme,radint,radslp,repro_scheme,lapse_scheme,crown_mod     &
-                       ,icanrad,ltrans_vis,ltrans_nir,lreflect_vis,lreflect_nir            &
+                       ,igrass,iphen_scheme,radint,radslp,repro_scheme,lapse_scheme        &
+                       ,crown_mod,icanrad,ltrans_vis,ltrans_nir,lreflect_vis,lreflect_nir  &
                        ,orient_tree,orient_grass,clump_tree,clump_grass,decomp_scheme      &
                        ,h2o_plant_lim,vmfact_c3,vmfact_c4,mphoto_trc3,mphoto_tec3          &
                        ,mphoto_c4,bphoto_blc3,bphoto_nlc3,bphoto_c4,kw_grass               &
@@ -309,6 +310,7 @@ subroutine read_ednl(iunit,filename)
       write (unit=*,fmt=*) ' ibranch_thermo            =',ibranch_thermo
       write (unit=*,fmt=*) ' iphysiol                  =',iphysiol
       write (unit=*,fmt=*) ' iallom                    =',iallom
+      write (unit=*,fmt=*) ' igrass                    =',igrass
       write (unit=*,fmt=*) ' iphen_scheme              =',iphen_scheme
       write (unit=*,fmt=*) ' radint                    =',radint
       write (unit=*,fmt=*) ' radslp                    =',radslp

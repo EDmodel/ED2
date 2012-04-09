@@ -162,10 +162,14 @@ module allometry
 
 
 
+
    !=======================================================================================!
-   !  Intended to replace dbh2bl and h2bl with a single generic function. This simplifies  !
-   ! the code in many other places for grasses.
    !=======================================================================================!
+   !      This function computes the maximum leaf biomass [kgC/m2] given the size (either  !
+   ! height or DBH).  Trees would always use DBH as the starting point, but grasses may    !
+   ! use DBH (old style) or height (new style).  This replaces dbh2bl and h2bl with a      !
+   ! single generic function that should be used by all plants.                            !
+   !---------------------------------------------------------------------------------------!
    real function size2bl(dbh,hite,ipft)
       use pft_coms    , only : dbh_crit    & ! intent(in), lookup table
                              , C2B         & ! intent(in), lookup table
@@ -174,7 +178,6 @@ module allometry
                              , hgt_max     & ! intent(in), lookup table
                              , is_grass    ! ! intent(in)
       use ed_misc_coms, only : igrass      ! ! intent(in)
-
 
       implicit none
       !----- Arguments --------------------------------------------------------------------!
@@ -185,12 +188,12 @@ module allometry
       real                :: mdbh
       !------------------------------------------------------------------------------------!
       
-      if (is_grass(ipft) .and. igrass==1) then 
-          !-- use height for grasses
-          mdbh   = min(h2dbh(hite,ipft),dbh_crit(ipft))
+      if (is_grass(ipft) .and. igrass == 1) then 
+         !---- Use height for new grasses. ------------------------------------------------!
+         mdbh   = min(h2dbh(hite,ipft),dbh_crit(ipft))
       else
-          !--use dbh for trees
-          mdbh   = min(dbh,dbh_crit(ipft))
+         !---- Use dbh for trees. ---------------------------------------------------------!
+         mdbh   = min(dbh,dbh_crit(ipft))
       end if
       
       size2bl = b1Bl(ipft) / C2B * mdbh ** b2Bl(ipft)
@@ -202,50 +205,14 @@ module allometry
 
 
 
-   !=======================================================================================!
-   !=======================================================================================!
-   !     This function determines the maximum leaf biomass (kgC/plant)
-   real function dbh2bl(dbh,ipft)
-      use pft_coms    , only : dbh_crit    & ! intent(in), lookup table
-                             , C2B         & ! intent(in), lookup table
-                             , b1Bl        & ! intent(in), lookup table
-                             , b2Bl        & ! intent(in), lookup table
-                             , hgt_max     & ! intent(in), lookup table
-                             , is_grass    ! ! intent(in)
-      use ed_misc_coms, only : igrass      ! ! intent(in)
-
-      implicit none
-      !----- Arguments --------------------------------------------------------------------!
-      real   , intent(in) :: dbh
-      integer, intent(in) :: ipft
-      !----- Local variables --------------------------------------------------------------!
-      real                :: mdbh
-      !------------------------------------------------------------------------------------!
-      
-      if (is_grass(ipft) .and. igrass==1) then 
-      !--- The grasses really shouldent use this function at all - use size2bl
-          ! test grasses against maximum height rather than maximum dbh
-          mdbh = min(dbh, h2dbh(hgt_max(ipft),ipft))
-      else
-          mdbh   = min(dbh,dbh_crit(ipft))
-      end if
-      
-      !------------------------------------------------------------------------------------!
-      !      Find maximum leaf biomass.                                                    !
-      !------------------------------------------------------------------------------------!
-      dbh2bl = b1Bl(ipft) / C2B * mdbh ** b2Bl(ipft)
-      !------------------------------------------------------------------------------------!
-
-      return
-   end function dbh2bl
-   !=======================================================================================!
-   !=======================================================================================!
 
 
 
    !=======================================================================================!
-   !           INVERSION OF DBH2BL                                                         !
    !=======================================================================================!
+   !      This function determines an effective DBH for grasses given their leaf biomass.  !
+   ! DBH has no real meaning for grasses with the new allometry.                           !
+   !---------------------------------------------------------------------------------------!
    real function bl2dbh(bleaf,ipft)
       use pft_coms,     only : is_tropical & ! intent(in), lookup table
                              , rho         & ! intent(in), lookup table
@@ -281,8 +248,13 @@ module allometry
 
 
 
+
+
+
    !=======================================================================================!
    !=======================================================================================!
+   !      This function determines the height for grasses given their leaf biomass.        !
+   !---------------------------------------------------------------------------------------!
    real function bl2h(bleaf,ipft)
       use pft_coms, only:  hgt_max     ! ! intent(in), lookup table
       
@@ -292,38 +264,14 @@ module allometry
       integer, intent(in) :: ipft
       !------------------------------------------------------------------------------------!
       
-      !---Use existing allometric equations to convert leaves to height
-      bl2h = dbh2h(ipft,bl2dbh(bleaf,ipft))
-      
-      if (bl2h > hgt_max(ipft)) then
-          bl2h = hgt_max(ipft)
-      end if
+      !----- Use existing allometric equations to convert leaves to height. ---------------!
+      bl2h = min(hgt_max(ipft),dbh2h(ipft,bl2dbh(bleaf,ipft)))
 
       return
    end function bl2h
    !=======================================================================================!
    !=======================================================================================!
 
-
-
-   !=======================================================================================!
-   !=======================================================================================!
-   real function h2bl(hite,ipft)
-
-      implicit none
-      !----- Arguments --------------------------------------------------------------------!
-      real   , intent(in) :: hite
-      integer, intent(in) :: ipft
-      !------------------------------------------------------------------------------------!
-      
-      !---Use existing allometric equations to convert height to leaves
-      h2bl = dbh2bl(h2dbh(hite,ipft), ipft)
-
-
-      return
-   end function h2bl
-   !=======================================================================================!
-   !=======================================================================================!
 
 
 
@@ -355,9 +303,8 @@ module allometry
          dbh2ca = 0.0
       else
 
-         !!loclai = sla * dbh2bl(dbh,ipft)
-         loclai = sla * size2bl(dbh,hite,ipft)  ! make this function generic to size, not just dbh
-
+         !----- make this function generic to size, not just dbh. -------------------------!
+         loclai = sla * size2bl(dbh,hite,ipft) 
          select case (iallom)
          case (0)
             !----- No upper bound in the allometry. ---------------------------------------!

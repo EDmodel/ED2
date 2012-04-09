@@ -91,8 +91,12 @@ subroutine apply_forestry(cpoly, isi, year)
          end if
       end do find_lu_year
    else
+      write(unit=*,fmt='(a,1x,i6)') ' YEAR         =',year
+      write(unit=*,fmt='(a,1x,i6)') ' USEYEAR      =',useyear
+      write(unit=*,fmt='(a,1x,i6)') ' LANDUSE_YEAR =',cpoly%clutimes(1,isi)%landuse_year
+      write(unit=*,fmt='(a,1x,i6)') ' NUM_YEARS    =',cpoly%num_landuse_years(isi)
       call fatal_error('Invalid initial year when using land-use disturbance'              &
-                      &,'apply_forestry','forestry.f90')
+                      ,'apply_forestry','forestry.f90')
    end if
 
    clutime => cpoly%clutimes(useyear,isi)

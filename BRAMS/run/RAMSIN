@@ -2176,6 +2176,20 @@ $ED2_INFO
 
 
    !---------------------------------------------------------------------------------------!
+   ! IGRASS -- This controls the dynamics and growth calculation for grasses.  A new       !
+   !           grass scheme is now available where bdead = 0, height is a function of bleaf!
+   !           and growth happens daily.  ALS (3/3/12)                                     !
+   ! 0: grasses behave like trees as in ED2.1 (old scheme)                                 !
+   !                                                                                       !
+   ! 1: new grass scheme as described above                                                !
+   !---------------------------------------------------------------------------------------!
+   IGRASS          = 0,
+   !---------------------------------------------------------------------------------------!
+
+
+
+
+   !---------------------------------------------------------------------------------------!
    ! IPHEN_SCHEME -- It controls the phenology scheme.  Even within each scheme, the       !
    !                 actual phenology will be different depending on the PFT.              !
    !                                                                                       !

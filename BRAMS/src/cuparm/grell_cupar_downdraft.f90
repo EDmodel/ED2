@@ -263,7 +263,8 @@ subroutine grell_theiv_downdraft(mkx,mgmzp,klod,cdd,mentrd_rate,theiv,theiv_cup,
                     + mentrd_rate(k)*dzd_cld(k)*theiv(k))                                  &
                     / (1.+(mentrd_rate(k)- 0.5*cdd(k))*dzd_cld(k))
    end do
-   
+   !---------------------------------------------------------------------------------------!
+  
    return
 end subroutine grell_theiv_downdraft
 !==========================================================================================!
@@ -279,12 +280,12 @@ end subroutine grell_theiv_downdraft
 !     This subroutine computes the moisture profile, as well as the evaporation rate       !
 ! associated with each level.                                                              !
 !------------------------------------------------------------------------------------------!
-subroutine grell_most_thermo_downdraft(mkx,mgmzp,klod,qtot,co2,mentrd_rate,cdd,p_cup       &
+subroutine grell_most_thermo_downdraft(mkx,mgmzp,klod,qtot,co2,mentrd_rate,cdd,z_cup,p_cup &
                                       ,exner_cup,thil_cup,t_cup,qtot_cup,qvap_cup,qliq_cup &
                                       ,qice_cup,qsat_cup,co2_cup,rho_cup,pwav,theivd_cld   &
                                       ,etad_cld,dzd_cld,thild_cld,td_cld,qtotd_cld         &
                                       ,qvapd_cld,qliqd_cld,qiced_cld,qsatd_cld,co2d_cld    &
-                                      ,rhod_cld,dbyd,pwd_cld,pwev,ierr)
+                                      ,rhod_cld,dbyd,pwd_cld,pwev,ierr,which)
    use rconstants, only : epi           & ! intent(in)
                         , rdry          & ! intent(in)
                         , t00           & ! intent(in)
@@ -307,6 +308,7 @@ subroutine grell_most_thermo_downdraft(mkx,mgmzp,klod,qtot,co2,mentrd_rate,cdd,p
    real, dimension(mgmzp), intent(in)    :: mentrd_rate ! Entrainment rate;        [   1/m]
    real, dimension(mgmzp), intent(in)    :: cdd         ! Detrainment function;    [   1/m]
    !----- Variables at cloud levels -------------------------------------------------------!
+   real, dimension(mgmzp), intent(in)    :: z_cup       ! Height @ cloud levels    [     m]
    real, dimension(mgmzp), intent(in)    :: p_cup       ! Pressure @ cloud levels  [    Pa]
    real, dimension(mgmzp), intent(in)    :: exner_cup   ! Exner fctn. @ cloud lev. [J/kg/K]
    real, dimension(mgmzp), intent(in)    :: thil_cup    ! Theta_il                 [     K]
@@ -339,6 +341,8 @@ subroutine grell_most_thermo_downdraft(mkx,mgmzp,klod,qtot,co2,mentrd_rate,cdd,p
    real                  , intent(out)   :: pwev        ! Total evaporation flux   [ kg/kg]
    !----- Variable that may change in this subroutine -------------------------------------!
    integer               , intent(inout) :: ierr        ! Error flag
+   !----- Flag to tell which call is this one. --------------------------------------------!
+   character(len=*)      , intent(in)    :: which
    !----- Local variables -----------------------------------------------------------------!
    integer                :: k              ! Counter                              [  ----]
    integer                :: it             ! Iteration counter                    [  ----]
@@ -356,6 +360,8 @@ subroutine grell_most_thermo_downdraft(mkx,mgmzp,klod,qtot,co2,mentrd_rate,cdd,p
    real, dimension(mgmzp) :: evapd_cld      ! Evaporated mix. ratio                [ kg/kg]
    real                   :: tdbis          ! Scratch var. for temperature         [     K]
    real                   :: delta          ! Aux. var. for bisection 2nd guess    [ kg/kg]
+   !----- Local constants. ----------------------------------------------------------------!
+   logical, parameter     :: debug =.false. ! Print debug info?                    [   T|F]
    !----- External functions --------------------------------------------------------------!
    real, external         :: buoyancy_acc   ! Buoyancy acceleration funtion.
    !---------------------------------------------------------------------------------------!
@@ -397,26 +403,34 @@ subroutine grell_most_thermo_downdraft(mkx,mgmzp,klod,qtot,co2,mentrd_rate,cdd,p
    !    entrainment and detrainment not happen.                                            !
    !---------------------------------------------------------------------------------------!
    do k=klod,1,-1
-      !------------------------------------------------------------------------------------!
-      !    This is the mixing ratio the downdraft would have did evaporation not happen.   !
-      !------------------------------------------------------------------------------------!
       denomin      = 1.+(mentrd_rate(k)-0.5*cdd(k))*dzd_cld(k)
       denomini     = 1./denomin
-      qtotd_0_evap = (qtotd_cld(k+1)*(1.-0.5*cdd(k)*dzd_cld(k))                            &
-                   + mentrd_rate(k)*dzd_cld(k)*qtot(k) -0.5*evapd_cld(k+1))                &
-                   * denomini
 
       !----- CO2 is assumed to be an inert gas (i.e., no sources or sinks). ---------------!
       co2d_cld(k) = (co2d_cld(k+1)*(1.-0.5*cdd(k)*dzd_cld(k))                              &
                   + mentrd_rate(k)*dzd_cld(k)*co2(k) )                                     &
                   * denomini
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !    This is the mixing ratio the downdraft would have did evaporation not happen.   !
+      ! This is also the first guess.                                                      !
+      !------------------------------------------------------------------------------------!
+      qtotd_0_evap = ( qtotd_cld(k+1) * (1. - 0.5 * cdd(k) * dzd_cld(k))                   &
+                     + mentrd_rate(k) * dzd_cld(k) * qtot(k) ) * denomini
+      !------------------------------------------------------------------------------------!
+
 
       !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
       !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
-      !write(unit=28,fmt='(a)') '-----------------------------------------------------------'
-      !write(unit=28,fmt='(a,1x,i5,1x,3(a,1x,f12.4,1x))')                                   &
-      !   'Input values. k= ',k,'qtotd_0_evap=',1000.*qtotd_0_evap                          &
-      !  ,'theivu_cld=',theivd_cld(k),'p_cup=',0.01*p_cup(k)
+      if (debug) then
+         write(unit=28,fmt='(a)') '--------------------------------------------------------'
+         write(unit=28,fmt='(a,1x,i5,1x,3(a,1x,f12.4,1x))')                                &
+            'Input values. k= ',k,'qtotd_0_evap=',1000.*qtotd_0_evap                       &
+           ,'theivu_cld=',theivd_cld(k),'p_cup=',0.01*p_cup(k)
+      end if
       !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
       !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
 
@@ -438,13 +452,17 @@ subroutine grell_most_thermo_downdraft(mkx,mgmzp,klod,qtot,co2,mentrd_rate,cdd,p
       ! signs for bisection, and a third one which will be the secant's second "chrono-    !
       ! logical" guess.                                                                    !
       !------------------------------------------------------------------------------------!
+
       
       !------------------------------------------------------------------------------------!
-      ! a. Initialising the convergence and bisection flags.                               !
+      ! a. Initialise the convergence and bisection flags.                                 !
       !------------------------------------------------------------------------------------!
       converged   = .false.
       bisection   = .false.
-      
+      !------------------------------------------------------------------------------------!
+
+
+
       !------------------------------------------------------------------------------------!
       ! b. 1st guess outside the loop. For the 1st guess we assume no evaporation state.   !
       !    It may turn out to be the case because the environment entrainment may bring    !
@@ -456,18 +474,22 @@ subroutine grell_most_thermo_downdraft(mkx,mgmzp,klod,qtot,co2,mentrd_rate,cdd,p
       qtotda       = qtotd_0_evap
       !----- Finding the equilibrium state ------------------------------------------------!
       thild_cld(k) = thetaeiv2thil(theivd_cld(k),p_cup(k),qtotda)
+      call grell_sanity_thil2tqall(k,z_cup(k),thild_cld(k),exner_cup(k),p_cup(k),qtotda    &
+                                 ,which)
       call thil2tqall(thild_cld(k),exner_cup(k),p_cup(k),qtotda,qliqd_cld(k)               &
                      ,qiced_cld(k),td_cld(k),qvapd_cld(k),qsatd_cld(k))
-      evapd_cld(k) = min(0.,2. * (qtotd_0_evap - qsatd_cld(k)) * denomin)
-      funa         = qtotda - qtotd_0_evap + 0.5 * evapd_cld(k) * denomini
+      evapd_cld(k) = min(0., qtotd_0_evap - qsatd_cld(k) )
+      funa         = qtotda - ( qtotd_0_evap - evapd_cld(k) )
 
       !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
       !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
-      !write (unit=28,fmt='(2(a,1x,i5,1x),a,1x,l1,1x,8(a,1x,f10.4,1x),a,1x,es12.5)')        &
-      !     'k=',k,'it=',-1,'bisection=',.false.,'q000=',1000.*qtotd_0_evap                 &
-      !    ,'qtot=',1000.*qtotda,'evap=',1000.*evapd_cld(k),'qsat=',1000.*qsatd_cld(k)      &
-      !    ,'qvap=',1000.*qvapd_cld(k),'qliq=',1000.*qliqd_cld(k)                           &
-      !    ,'qice=',1000.*qiced_cld(k),'temp=',td_cld(k)-t00,'funa=',funa
+      if (debug) then
+         write (unit=28,fmt='(2(a,1x,i5,1x),a,1x,l1,1x,8(a,1x,f10.4,1x),a,1x,es12.5)')     &
+              'k=',k,'it=',-1,'bisection=',.false.,'q000=',1000.*qtotd_0_evap              &
+             ,'qtot=',1000.*qtotda,'evap=',1000.*evapd_cld(k),'qsat=',1000.*qsatd_cld(k)   &
+             ,'qvap=',1000.*qvapd_cld(k),'qliq=',1000.*qliqd_cld(k)                        &
+             ,'qice=',1000.*qiced_cld(k),'temp=',td_cld(k)-t00,'funa=',funa
+      end if
       !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
       !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
 
@@ -491,19 +513,24 @@ subroutine grell_most_thermo_downdraft(mkx,mgmzp,klod,qtot,co2,mentrd_rate,cdd,p
          ! case we put a lid of 30. g/kg, which is a fairly large number and should never  !
          ! be below the maximum under normal conditions.                                   !
          !---------------------------------------------------------------------------------!
-         qtotdc = min(max(toodry,qtotd_0_evap - 0.5 * evapd_cld(k) * denomini),toowet)
+         qtotdc = min(max(toodry,qtotd_0_evap - evapd_cld(k)),toowet)
          thild_cld(k) = thetaeiv2thil(theivd_cld(k),p_cup(k),qtotdc)
+         call grell_sanity_thil2tqall(k,z_cup(k),thild_cld(k),exner_cup(k),p_cup(k),qtotdc &
+                                    ,which)
          call thil2tqall(thild_cld(k),exner_cup(k),p_cup(k),qtotdc,qliqd_cld(k)            &
                         ,qiced_cld(k),td_cld(k),qvapd_cld(k),qsatd_cld(k))
-         evapd_cld(k) = min(0.,2. * (qtotd_0_evap - qsatd_cld(k)) * denomin)
-         func         = qtotdc - qtotd_0_evap + 0.5 * evapd_cld(k) * denomini
+         evapd_cld(k) = min(0., qtotd_0_evap - qsatd_cld(k) )
+         func         = qtotdc - ( qtotd_0_evap - evapd_cld(k))
          !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
          !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
-         !write (unit=28,fmt='(2(a,1x,i5,1x),a,1x,l1,1x,8(a,1x,f10.4,1x),a,1x,es12.5)')     &
-         !     'k=',k,'it=',0,'bisection=',.false.,'q000=',1000.*qtotd_0_evap               &
-         !    ,'qtot=',1000.*qtotdc,'evap=',1000.*evapd_cld(k),'qsat=',1000.*qsatd_cld(k)   &
-         !    ,'qvap=',1000.*qvapd_cld(k),'qliq=',1000.*qliqd_cld(k)                        &
-         !    ,'qice=',1000.*qiced_cld(k),'temp=',td_cld(k)-t00,'func=',func
+         if (debug) then
+            write (unit=28,fmt='(2(a,1x,i5,1x),a,1x,l1,1x,8(a,1x,f10.4,1x),a,1x,es12.5)')  &
+                 'k=',k,'it=',0,'bisection=',.false.,'q000=',1000.*qtotd_0_evap            &
+                ,'qtot=',1000.*qtotdc,'evap=',1000.*evapd_cld(k)                           &
+                ,'qsat=',1000.*qsatd_cld(k),'qvap=',1000.*qvapd_cld(k)                     &
+                ,'qliq=',1000.*qliqd_cld(k),'qice=',1000.*qiced_cld(k)                     &
+                ,'temp=',td_cld(k)-t00,'func=',func
+         end if
          !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
          !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
          
@@ -533,11 +560,13 @@ subroutine grell_most_thermo_downdraft(mkx,mgmzp,klod,qtot,co2,mentrd_rate,cdd,p
                qtotdz = min(max(toodry,qtotda + real((-1)**it * (it+3)/2) * delta),toowet)
                !----- Finding this equilibrium state --------------------------------------!
                thild_cld(k) = thetaeiv2thil(theivd_cld(k),p_cup(k),qtotdz)
+               call grell_sanity_thil2tqall(k,z_cup(k),thild_cld(k),exner_cup(k),p_cup(k)  &
+                                          ,qtotdz,which)
                call thil2tqall(thild_cld(k),exner_cup(k),p_cup(k),qtotdz                   &
                               ,qliqd_cld(k),qiced_cld(k),tdbis,qvapd_cld(k)                &
                               ,qsatd_cld(k))
-               evapd_cld(k) = min(0., 2. * (qtotd_0_evap - qsatd_cld(k)) * denomin )
-               funz         = qtotdz - qtotd_0_evap + 0.5 * evapd_cld(k) * denomini
+               evapd_cld(k) = min(0., qtotd_0_evap - qsatd_cld(k) )
+               funz         = qtotdz - (qtotd_0_evap - evapd_cld(k) )
 
                bisection = funa*funz < 0.
                if (bisection) exit zgssloop
@@ -553,12 +582,14 @@ subroutine grell_most_thermo_downdraft(mkx,mgmzp,klod,qtot,co2,mentrd_rate,cdd,p
             end if
             !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
             !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
-            !write (unit=28,fmt='(a,1x,i5,1x,a,1x,l1,1x,8(a,1x,f10.4,1x),a,1x,es12.5)')     &
-            !     'k=',k,'it=     ½ bisection=',.true.,'q000=',1000.*qtotd_0_evap           &
-            !    ,'qtot=',1000.*qtotdc,'evap=',1000.*evapd_cld(k)                           &
-            !    ,'qsat=',1000.*qsatd_cld(k),'qvap=',1000.*qvapd_cld(k)                     &
-            !    ,'qliq=',1000.*qliqd_cld(k),'qice=',1000.*qiced_cld(k)                     &
-            !    ,'temp=',tdbis-t00,'funz=',funz
+            if (debug) then
+               write (unit=28,fmt='(a,1x,i5,1x,a,1x,l1,1x,8(a,1x,f10.4,1x),a,1x,es12.5)')  &
+                    'k=',k,'it=     ½ bisection=',.true.,'q000=',1000.*qtotd_0_evap        &
+                   ,'qtot=',1000.*qtotdc,'evap=',1000.*evapd_cld(k)                        &
+                   ,'qsat=',1000.*qsatd_cld(k),'qvap=',1000.*qvapd_cld(k)                  &
+                   ,'qliq=',1000.*qliqd_cld(k),'qice=',1000.*qiced_cld(k)                  &
+                   ,'temp=',tdbis-t00,'funz=',funz
+            end if
             !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
             !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
          end if browsegss
@@ -601,19 +632,24 @@ subroutine grell_most_thermo_downdraft(mkx,mgmzp,klod,qtot,co2,mentrd_rate,cdd,p
             ! e3. Finding the new function evaluation.                                     !
             !------------------------------------------------------------------------------!
             thild_cld(k) = thetaeiv2thil(theivd_cld(k),p_cup(k),qtotd_cld(k))
+            call grell_sanity_thil2tqall(k,z_cup(k),thild_cld(k),exner_cup(k),p_cup(k)     &
+                                       ,qtotd_cld(k),which)
             call thil2tqall(thild_cld(k),exner_cup(k),p_cup(k),qtotd_cld(k),qliqd_cld(k)   &
                            ,qiced_cld(k),td_cld(k),qvapd_cld(k),qsatd_cld(k))
-            evapd_cld(k) = min(0., 2. * (qtotd_0_evap - qsatd_cld(k)) * denomin )
-            funnow       = qtotd_cld(k) - qtotd_0_evap + 0.5 * evapd_cld(k) * denomini
+            evapd_cld(k) = min(0., qtotd_0_evap - qsatd_cld(k) )
+            funnow       = qtotd_cld(k) - ( qtotd_0_evap - evapd_cld(k) )
 
             !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
             !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
-            !write (unit=28,fmt='(2(a,1x,i5,1x),a,1x,l1,1x,8(a,1x,f10.4,1x),a,1x,es12.5)')  &
-            !    'k=',k,'it=',it,'bisection=',.false.,'q000=',1000.*qtotd_0_evap            &
-            !   ,'qtot=',1000.*qtotd_cld(k),'evap=',1000.*evapd_cld(k)                      &
-            !   ,'qsat=',1000.*qsatd_cld(k),'qvap=',1000.*qvapd_cld(k)                      &
-            !   ,'qliq=',1000.*qliqd_cld(k),'qice=',1000.*qiced_cld(k)                      &
-            !   ,'temp=',td_cld(k)-t00,'funnow=',funnow
+            if (debug) then
+               write (unit=28                                                              &
+                     ,fmt='(2(a,1x,i5,1x),a,1x,l1,1x,8(a,1x,f10.4,1x),a,1x,es12.5)')       &
+                   'k=',k,'it=',it,'bisection=',.false.,'q000=',1000.*qtotd_0_evap         &
+                  ,'qtot=',1000.*qtotd_cld(k),'evap=',1000.*evapd_cld(k)                   &
+                  ,'qsat=',1000.*qsatd_cld(k),'qvap=',1000.*qvapd_cld(k)                   &
+                  ,'qliq=',1000.*qliqd_cld(k),'qice=',1000.*qiced_cld(k)                   &
+                  ,'temp=',td_cld(k)-t00,'funnow=',funnow
+            end if
             !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
             !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
 
@@ -655,8 +691,10 @@ subroutine grell_most_thermo_downdraft(mkx,mgmzp,klod,qtot,co2,mentrd_rate,cdd,p
       end if iterif
       !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
       !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
-      !write(unit=28,fmt='(a)') '-----------------------------------------------------------'
-      !write(unit=28,fmt='(a)') ' '
+      if (debug) then
+         write(unit=28,fmt='(a)') '-------------------------------------------------------'
+         write(unit=28,fmt='(a)') ' '
+      end if
       !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
       !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
 
@@ -696,7 +734,7 @@ subroutine grell_most_thermo_downdraft(mkx,mgmzp,klod,qtot,co2,mentrd_rate,cdd,p
       ! small amount of liquid/ice that may exist in the downdraft due to entrainment of   !
       ! saturated air.                                                                     !
       !------------------------------------------------------------------------------------!
-      pwd_cld(k) = etad_cld(k) * evapd_cld(k)
+      pwd_cld(k) = etad_cld(k) * evapd_cld(k) * dzd_cld(k)
       pwev       = pwev        + pwd_cld(k)
 
       !------ Finding density, assuming pd_cld(k) ~= p_cup(k)... --------------------------!
