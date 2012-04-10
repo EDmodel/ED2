@@ -44,7 +44,7 @@ module leaf_coms
    !     Commons used by LEAF-3.                                                           !
    !---------------------------------------------------------------------------------------!
    integer :: niter_leaf       ! ! number of leaf timesteps
-
+   integer :: flag_sfcwater    ! ! flag to determine the pounding water stability.
    logical :: resolvable       ! ! Flag to determine whether to resolve vegetation or not.
 
    real    :: dtll             & ! leaf timestep
@@ -556,24 +556,26 @@ module leaf_coms
       !------------------------------------------------------------------------------------!
       select case (trim(idel))
       case ('INITIAL','GRID_POINT')
-         atm_up    = 0
-         atm_vp    = 0.
-         atm_thil  = 0.
-         atm_theta = 0
-         atm_temp  = 0.
-         atm_rvap  = 0.
-         atm_rtot  = 0
-         atm_shv   = 0.
-         atm_co2   = 0.
-         atm_theiv = 0
-         atm_rhos  = 0.
-         geoht     = 0.
-         atm_exner = 0
-         atm_prss  = 0.
-         atm_vels  = 0.
-         pcpgl     = 0
-         qpcpgl    = 0.
-         dpcpgl    = 0.
+         atm_up        = 0
+         atm_vp        = 0.
+         atm_thil      = 0.
+         atm_theta     = 0
+         atm_temp      = 0.
+         atm_temp_zcan = 0.
+         atm_enthalpy  = 0.
+         atm_rvap      = 0.
+         atm_rtot      = 0
+         atm_shv       = 0.
+         atm_co2       = 0.
+         atm_theiv     = 0
+         atm_rhos      = 0.
+         geoht         = 0.
+         atm_exner     = 0
+         atm_prss      = 0.
+         atm_vels      = 0.
+         pcpgl         = 0
+         qpcpgl        = 0.
+         dpcpgl        = 0.
       end select
       !------------------------------------------------------------------------------------!
 
@@ -592,6 +594,7 @@ module leaf_coms
          can_exner               = 0
          can_rhos                = 0.
          can_depth               = 0.
+         flag_sfcwater           = 0
 
          sfcwater_energy_ext (:) = 0.
 
@@ -625,6 +628,7 @@ module leaf_coms
       gsw                    = 0.
       ggnet                  = 0.
       ggbare                 = 0.
+      ggsoil                 = 0.
       ggveg                  = 0.
       rho_ustar              = 0.
 

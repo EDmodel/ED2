@@ -1302,8 +1302,9 @@ subroutine leaf3_sfcrad(mzg,mzs,ip,soil_water,soil_color,soil_text,sfcwater_dept
 
 
       !------ Diagnose snow temperature and the influence of snow covering veg. -----------!
-      nveg = nint(leaf_class)
-      ksn  = nint(sfcwater_nlev)
+      nveg  = nint(leaf_class)
+      nsoil = nint(soil_text(mzg))
+      ksn   = nint(sfcwater_nlev)
 
       !------ Defining the exposed area. --------------------------------------------------!
       vf  = veg_fracarea * (1. - snowfac)
@@ -1314,7 +1315,6 @@ subroutine leaf3_sfcrad(mzg,mzs,ip,soil_water,soil_color,soil_text,sfcwater_dept
       ! using some soil texture dependence, even though soil colour depends on a lot more  !
       ! things.                                                                            !
       !------------------------------------------------------------------------------------!
-      nsoil = nint(soil_text(mzg))
       select case (nsoil)
       case (13)
          !----- Bedrock, use constants soil value for granite. ----------------------------!

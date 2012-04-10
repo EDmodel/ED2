@@ -384,18 +384,19 @@ subroutine leaf3_tw(mzg,mzs,soil_water, soil_energy,soil_text,sfcwater_energy_in
 
    do k = 1,ksn
       sfcwater_energy_ext(k) = sfcwater_energy_ext(k)                                      &
-                             + dtll * (hfluxgsc(k+mzg) - hfluxgsc(k+1+mzg) + rshort_s(k))
+                             + dtll                                                        &
+                             * (hfluxgsc(k+mzg) - hfluxgsc(k+1+mzg) + rshort_s(k))
    end do
    !---------------------------------------------------------------------------------------!
 
 
 
    !---------------------------------------------------------------------------------------!
-   !     Reset all soil an temporar surface water fluxes.                                  !
+   !     Reset all soil and temporary surface water fluxes.                                !
    !---------------------------------------------------------------------------------------!
    w_flux (:) = 0.
    qw_flux(:) = 0.
-   d_flux(:)  = 0.
+   d_flux (:) = 0.
    !---------------------------------------------------------------------------------------!
 
 
@@ -541,7 +542,7 @@ subroutine leaf3_tw(mzg,mzs,soil_water, soil_energy,soil_text,sfcwater_energy_in
    !     Re-organise the snow layers, and shed the water from the virtual layer.           !
    !---------------------------------------------------------------------------------------!
    call leaf3_adjust_sfcw(mzg,mzs,soil_energy,soil_water,soil_text,sfcwater_nlev           &
-                         ,sfcwater_mass,sfcwater_depth)
+                         ,sfcwater_mass,sfcwater_depth,can_rvap)
    !---------------------------------------------------------------------------------------!
 
 
@@ -587,6 +588,7 @@ end subroutine leaf3_tw
 subroutine leaf3_soilsfcw_diag(ip,mzg,mzs,soil_energy,soil_water,soil_text,sfcwater_nlev   &
                               ,sfcwater_energy_int,sfcwater_mass,sfcwater_depth,initial)
    use leaf_coms , only : slcpd               & ! intent(in)
+                        , water_stab_thresh   & ! intent(in)
                         , soil_tempk          & ! intent(out)
                         , soil_fracliq        & ! intent(out)
                         , sfcwater_energy_ext & ! intent(inout)
@@ -594,7 +596,8 @@ subroutine leaf3_soilsfcw_diag(ip,mzg,mzs,soil_energy,soil_water,soil_text,sfcwa
                         , sfcwater_fracliq    & ! intent(out) 
                         , virtual_energy      & ! intent(out)
                         , virtual_water       & ! intent(out) 
-                        , virtual_depth       ! ! intent(out)
+                        , virtual_depth       & ! intent(out)
+                        , flag_sfcwater       ! ! intent(out)
    use therm_lib , only : uextcm2tl           & ! sub-routine
                         , uint2tl             ! ! sub-routine
    use rconstants, only : wdns                ! ! intent(in)
@@ -615,6 +618,7 @@ subroutine leaf3_soilsfcw_diag(ip,mzg,mzs,soil_energy,soil_water,soil_text,sfcwa
    integer                                :: k
    integer                                :: ksn
    integer                                :: nsoil
+   real                                   :: sum_sfcw_mass
    !---------------------------------------------------------------------------------------!
 
 
@@ -641,17 +645,22 @@ subroutine leaf3_soilsfcw_diag(ip,mzg,mzs,soil_energy,soil_water,soil_text,sfcwa
    ksn     = nint(sfcwater_nlev)
    if (initial) then
       !----- Initial call, find the extensive internal energy from the intensive. ---------!
+      sum_sfcw_mass = 0.
       do k=1,ksn
          sfcwater_energy_ext(k) = sfcwater_energy_int(k) * sfcwater_mass(k)
          call uint2tl(sfcwater_energy_int(k),sfcwater_tempk(k),sfcwater_fracliq(k))
+         sum_sfcw_mass = sum_sfcw_mass + sfcwater_mass(k)
       end do
       !----- Fill the layers above with zeroes or dummy values. ---------------------------!
       if (ksn == 0) then
-         sfcwater_energy_ext(1:mzs) = 0.
-         sfcwater_energy_int(1:mzs) = 0.
-         sfcwater_mass      (1:mzs) = 0.
-         sfcwater_tempk     (1:mzs) = soil_tempk  (mzg)
-         sfcwater_fracliq   (1:mzs) = soil_fracliq(mzg)
+         do k=1,mzs
+            sfcwater_energy_ext(k) = 0.
+            sfcwater_energy_int(k) = 0.
+            sfcwater_mass      (k) = 0.
+            sfcwater_tempk     (k) = soil_tempk  (mzg)
+            sfcwater_fracliq   (k) = soil_fracliq(mzg)
+         end do
+         flag_sfcwater = 0
       else
          do k=ksn+1,mzs
             sfcwater_energy_ext(k) = 0.
@@ -660,6 +669,11 @@ subroutine leaf3_soilsfcw_diag(ip,mzg,mzs,soil_energy,soil_water,soil_text,sfcwa
             sfcwater_tempk     (k) = sfcwater_tempk  (ksn)
             sfcwater_fracliq   (k) = sfcwater_fracliq(ksn)
          end do
+         if (sum_sfcw_mass < water_stab_thresh) then
+            flag_sfcwater = 1
+         else
+            flag_sfcwater = 2
+         end if
       end if
    else
       !----- Convert extensive internal energy into intensive. ----------------------------!     
@@ -669,11 +683,13 @@ subroutine leaf3_soilsfcw_diag(ip,mzg,mzs,soil_energy,soil_water,soil_text,sfcwa
       end do
       !----- Fill the layers above with zeroes or dummy values. ---------------------------!
       if (ksn == 0) then
-         sfcwater_energy_ext(1:mzs) = 0.
-         sfcwater_energy_int(1:mzs) = 0.
-         sfcwater_mass      (1:mzs) = 0.
-         sfcwater_tempk     (1:mzs) = soil_tempk  (mzg)
-         sfcwater_fracliq   (1:mzs) = soil_fracliq(mzg)
+         do k=1,mzs
+            sfcwater_energy_ext(k) = 0.
+            sfcwater_energy_int(k) = 0.
+            sfcwater_mass      (k) = 0.
+            sfcwater_tempk     (k) = soil_tempk  (mzg)
+            sfcwater_fracliq   (k) = soil_fracliq(mzg)
+         end do
       else
          do k=ksn+1,mzs
             sfcwater_energy_ext(k) = 0.
@@ -710,7 +726,7 @@ end subroutine leaf3_soilsfcw_diag
 ! layer to the place that can hold the water.                                              !
 !------------------------------------------------------------------------------------------!
 subroutine leaf3_adjust_sfcw(mzg,mzs,soil_energy,soil_water,soil_text,sfcwater_nlev        &
-                            ,sfcwater_mass,sfcwater_depth)
+                            ,sfcwater_mass,sfcwater_depth,can_rvap)
    use mem_leaf   , only : ipercol                  ! ! intent(in)
    use leaf_coms  , only : sfcwater_energy_ext      & ! intent(in)
                          , min_sfcwater_mass        & ! intent(in)
@@ -719,10 +735,15 @@ subroutine leaf3_adjust_sfcw(mzg,mzs,soil_energy,soil_water,soil_text,sfcwater_n
                          , virtual_water            & ! intent(inout)
                          , virtual_energy           & ! intent(inout)
                          , virtual_depth            & ! intent(inout)
+                         , flag_sfcwater            & ! intent(inout)
+                         , can_enthalpy             & ! intent(inout)
+                         , can_rhos                 & ! intent(in)
+                         , can_depth                & ! intent(in)
                          , dslz                     & ! intent(in)
                          , dslzi                    & ! intent(in)
                          , slcpd                    & ! intent(in)
                          , slmsts                   & ! intent(in)
+                         , soilcp                   & ! intent(in)
                          , thick                    & ! intent(in)
                          , thicknet                 ! ! intent(in)
    use mem_scratch, only : newsfcw_mass   => vctr14 & ! intent(out)
@@ -730,20 +751,24 @@ subroutine leaf3_adjust_sfcw(mzg,mzs,soil_energy,soil_water,soil_text,sfcwater_n
                          , newsfcw_depth  => vctr18 ! ! intent(out)
    use rconstants , only : wdns                     & ! intent(in)
                          , wdnsi                    & ! intent(in)
-                         , uiliqt3                  ! ! intent(in)
+                         , uiliqt3                  & ! intent(in)
+                         , toodry                   ! ! intent(in)
    use therm_lib  , only : uint2tl                  & ! sub-routine
                          , uextcm2tl                & ! sub-routine
-                         , tl2uint                  ! ! function
+                         , tl2uint                  & ! function
+                         , alvi                     & ! function
+                         , alvl                     ! ! function
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
-   integer, intent(in) :: mzg
-   integer, intent(in) :: mzs
+   integer                , intent(in)    :: mzg
+   integer                , intent(in)    :: mzs
    real   , dimension(mzg), intent(inout) :: soil_energy
    real   , dimension(mzg), intent(inout) :: soil_water
    real   , dimension(mzg), intent(in)    :: soil_text
    real                   , intent(inout) :: sfcwater_nlev
    real   , dimension(mzs), intent(inout) :: sfcwater_mass
    real   , dimension(mzs), intent(inout) :: sfcwater_depth
+   real                   , intent(inout) :: can_rvap
    !----- Local variables. ----------------------------------------------------------------!
    integer                                :: kold
    integer                                :: newlayers
@@ -752,34 +777,74 @@ subroutine leaf3_adjust_sfcw(mzg,mzs,soil_energy,soil_water,soil_text,sfcwater_n
    integer                                :: ksnnew
    integer                                :: k
    integer                                :: nsoil
-   real                                   :: wtold
-   real                                   :: wtnew
-   real                                   :: wdiff
-   real                                   :: sum_sfcw_mass
-   real                                   :: sum_sfcw_energy
-   real                                   :: sum_sfcw_depth
-   real                                   :: energy_free
-   real                                   :: wmass_free
-   real                                   :: depth_free
-   real                                   :: wmass_perc
-   real                                   :: energy_perc
-   real                                   :: depth_perc
-   real                                   :: i_energy_try
-   real                                   :: energy_try
-   real                                   :: wmass_try
-   real                                   :: depth_try
-   real                                   :: temp_try
-   real                                   :: fliq_try
-   real                                   :: energy_tot
-   real                                   :: wmass_tot
-   real                                   :: hcapdry_tot
-   real                                   :: wmass_room
-   real                                   :: depthloss
-   real                                   :: snden
-   real                                   :: sndenmin
-   real                                   :: sndenmax
-   real                                   :: cr               ! snow water holding capacity
-   real                                   :: gi               ! Partial density of ice
+   real(kind=4)                           :: wtold
+   real(kind=4)                           :: wtnew
+   real(kind=4)                           :: wdiff
+   real(kind=4)                           :: sum_sfcw_mass
+   real(kind=4)                           :: sum_sfcw_energy
+   real(kind=4)                           :: sum_sfcw_depth
+   real(kind=4)                           :: energy_free
+   real(kind=4)                           :: wmass_free
+   real(kind=4)                           :: depth_free
+   real(kind=4)                           :: tempk_free
+   real(kind=4)                           :: fracliq_free
+   real(kind=4)                           :: energy_latent
+   real(kind=4)                           :: energy_available
+   real(kind=4)                           :: wmass_available
+   real(kind=4)                           :: depth_available
+   real(kind=4)                           :: tempk_available
+   real(kind=4)                           :: fracliq_available
+   real(kind=4)                           :: energy_needed
+   real(kind=4)                           :: wmass_needed
+   real(kind=4)                           :: depth_needed
+   real(kind=4)                           :: tempk_needed
+   real(kind=4)                           :: fracliq_needed
+   real(kind=4)                           :: wmass_perc
+   real(kind=4)                           :: energy_perc
+   real(kind=4)                           :: depth_perc
+   real(kind=4)                           :: i_energy_try
+   real(kind=4)                           :: energy_try
+   real(kind=4)                           :: wmass_try
+   real(kind=4)                           :: depth_try
+   real(kind=4)                           :: temp_try
+   real(kind=4)                           :: fliq_try
+   real(kind=4)                           :: energy_tot
+   real(kind=4)                           :: wmass_tot
+   real(kind=4)                           :: hcapdry_tot
+   real(kind=4)                           :: wmass_room
+   real(kind=4)                           :: energy_room
+   real(kind=4)                           :: depthloss
+   real(kind=4)                           :: snden
+   real(kind=4)                           :: sndenmin
+   real(kind=4)                           :: sndenmax
+   real(kind=4)                           :: wmass_cas_beg
+   real(kind=4)                           :: enthalpy_cas_beg
+   real(kind=4)                           :: wmass_virtual_beg
+   real(kind=4)                           :: energy_virtual_beg
+   real(kind=4)                           :: wmass_sfcw_beg
+   real(kind=4)                           :: energy_sfcw_beg
+   real(kind=4)                           :: wmass_soil_beg
+   real(kind=4)                           :: energy_soil_beg
+   real(kind=4)                           :: wmass_total_beg
+   real(kind=4)                           :: energy_total_beg
+   real(kind=4)                           :: wmass_cas_end
+   real(kind=4)                           :: enthalpy_cas_end
+   real(kind=4)                           :: wmass_virtual_end
+   real(kind=4)                           :: energy_virtual_end
+   real(kind=4)                           :: wmass_sfcw_end
+   real(kind=4)                           :: energy_sfcw_end
+   real(kind=4)                           :: wmass_soil_end
+   real(kind=4)                           :: energy_soil_end
+   real(kind=4)                           :: wmass_total_end
+   real(kind=4)                           :: energy_total_end
+   real(kind=4)                           :: wmass_total_rch
+   real(kind=4)                           :: energy_total_rch
+   real(kind=4)                           :: wcapcan
+   real(kind=4)                           :: hcapcan
+   real(kind=4)                           :: wcapcani
+   real(kind=4)                           :: hcapcani
+   real(kind=4)                           :: cr               ! snow water holding capacity
+   real(kind=4)                           :: gi               ! Partial density of ice
    !----- Constants -----------------------------------------------------------------------!
    real                   , parameter     :: crmin   = 0.03
    real                   , parameter     :: crmax   = 0.1
@@ -795,6 +860,15 @@ subroutine leaf3_adjust_sfcw(mzg,mzs,soil_energy,soil_water,soil_text,sfcwater_n
 
    !----- Copy the soil type at the topmost level to nsoil. -------------------------------!
    nsoil     = nint(soil_text(mzg))
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !----- Find the total area mass of the canopy air space. -------------------------------!
+   wcapcan  = can_rhos * can_depth
+   hcapcan  = can_rhos * can_depth
+   wcapcani = 1. / wcapcan
+   hcapcani = 1. / hcapcan
    !---------------------------------------------------------------------------------------!
    
 
@@ -816,12 +890,128 @@ subroutine leaf3_adjust_sfcw(mzg,mzs,soil_energy,soil_water,soil_text,sfcwater_n
 
 
    !---------------------------------------------------------------------------------------!
+   !      Initialise the budget variables.                                                 !
+   !---------------------------------------------------------------------------------------!
+   wmass_cas_beg      = can_rvap     * wcapcan
+   enthalpy_cas_beg   = can_enthalpy * hcapcan
+   wmass_virtual_beg  = virtual_water
+   energy_virtual_beg = virtual_energy
+   wmass_sfcw_beg     = sum_sfcw_mass
+   energy_sfcw_beg    = sum_sfcw_energy
+   wmass_soil_beg     = soil_water(mzg)  * dslz(mzg) * wdns
+   energy_soil_beg    = soil_energy(mzg) * dslz(mzg)
+   wmass_total_beg    = wmass_virtual_beg  + wmass_sfcw_beg  + wmass_soil_beg              &
+                      + wmass_cas_beg
+   energy_total_beg   = energy_virtual_beg + energy_sfcw_beg + energy_soil_beg             &
+                      + enthalpy_cas_beg
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
    !     Check the total amount of water that has just fallen plus the amount that is al-  !
    ! ready sitting over the top soil layer.  We must do this as the first step because we  !
    ! may want to eliminate this water by binding it to the top soil layer in case there is !
    ! too little water.                                                                     !
    !---------------------------------------------------------------------------------------!
-   if ((virtual_water + sum_sfcw_mass) < min_sfcwater_mass) then
+   if ((virtual_water + sum_sfcw_mass) < 0.0) then
+      !------------------------------------------------------------------------------------!
+      !     The mass of the potential new temporary surface water is within bounds but it  !
+      ! is negative.  This can only happen if the layer evaporated more than what it       !
+      ! should, so we condense some of the water back from the canopy air space.  If it is !
+      ! going to deplete the canopy air space specific humidity too much, then we leave    !
+      ! the remainder to be stolen from the top soil, but this is dangerous because the    !
+      ! soil may be too dry too.                                                           !
+      !------------------------------------------------------------------------------------!
+      wmass_needed  = - (virtual_water  + sum_sfcw_mass  )
+      energy_needed = - (virtual_energy + sum_sfcw_energy)
+      depth_needed  = - (virtual_depth  + sum_sfcw_depth )
+      !------------------------------------------------------------------------------------!
+
+
+
+      !----- Find the amount available at the canopy air space. ---------------------------!
+      wmass_available  = wcapcan * (can_rvap - 5.0 * toodry)
+      !------------------------------------------------------------------------------------!
+
+      if ( wmass_available >= wmass_needed) then
+
+         !---------------------------------------------------------------------------------!
+         !     Find the latent heat associated with the phase change.                      !
+         !---------------------------------------------------------------------------------!
+         call uint2tl(energy_needed/wmass_needed,tempk_needed,fracliq_needed)
+         !----- Remove the energy. --------------------------------------------------------!
+         energy_latent = wmass_needed * ( (1.0 - fracliq_needed) * alvi(tempk_needed)      &
+                                        + fracliq_needed * alvl(tempk_needed) )
+         !---------------------------------------------------------------------------------!
+
+
+         !---------------------------------------------------------------------------------!
+         !    There is enough water vapour. The transfer will require phase change, so the !
+         ! energy transfer will be a latent heat flux.  Remove the water from the canopy   !
+         ! air space.  The energy lost by the canopy air space to pad the missing water at !
+         ! the virtual+temporary surface water layer must go somewhere, so we add it to    !
+         ! the soil because it is the closest to the pounding layer.                       !
+         !---------------------------------------------------------------------------------!
+         can_rvap         = can_rvap - wmass_needed * wcapcani
+         can_enthalpy     = can_enthalpy - (energy_needed + energy_latent) * hcapcani
+         soil_energy(mzg) = soil_energy(mzg)  + energy_latent * dslzi(mzg)
+         !---------------------------------------------------------------------------------!
+
+
+         wmass_free  = 0.0
+         energy_free = 0.0
+         depth_free  = 0.0
+
+      elseif (wmass_available > 0.0) then
+
+         !---------------------------------------------------------------------------------!
+         !     Find the latent heat associated with the phase change.                      !
+         !---------------------------------------------------------------------------------!
+         call uint2tl(energy_needed/wmass_needed,tempk_needed,fracliq_needed)
+         !----- Remove the energy. --------------------------------------------------------!
+         energy_available = wmass_available * energy_needed / wmass_needed
+         energy_latent    = wmass_available * ( (1.0 - fracliq_needed)                     &
+                                              * alvi(tempk_needed)                         &
+                                              + fracliq_needed * alvl(tempk_needed) )
+         !---------------------------------------------------------------------------------!
+
+
+         !---------------------------------------------------------------------------------!
+         !    There is not enough water vapour. Dry down to the minimum, and correct       !
+         ! energy.  Since there is so little negative mass needed, we include the latent   !
+         ! heat associated with this condensation to the soil, because otherwise we could  !
+         ! end up with energy and water mass with opposite signs.                          !
+         !---------------------------------------------------------------------------------!
+         can_rvap         = can_rvap - wmass_available  * wcapcani
+         can_enthalpy     = can_enthalpy - ( energy_available + energy_latent ) * hcapcani
+         soil_energy(mzg) = soil_energy(mzg) + energy_latent * dslzi(mzg)
+         !---------------------------------------------------------------------------------!
+
+         wmass_free         = wmass_available  - wmass_needed 
+         energy_free        = energy_available - energy_needed
+         depth_free         = depth_available  - depth_needed
+      else
+         !---------------------------------------------------------------------------------!
+         !    There is not any water vapour.  Hope for the best.                           !
+         !---------------------------------------------------------------------------------!
+         wmass_free         = wmass_needed
+         energy_free        = energy_needed
+         depth_free         = depth_needed
+         !---------------------------------------------------------------------------------!
+      end if
+
+      !----- Reset both the temporary surface water and the virtual layer. ----------------!
+      virtual_water          = 0.0
+      virtual_energy         = 0.0
+      virtual_depth          = 0.0
+      sfcwater_mass      (:) = 0.0
+      sfcwater_energy_ext(:) = 0.0
+      sfcwater_depth     (:) = 0.0
+      !----- Set ksnnew to zero to force all free water to go to the soil. ----------------!
+      ksnnew                 = 0
+
+   elseif ((virtual_water + sum_sfcw_mass) < min_sfcwater_mass) then
       !------------------------------------------------------------------------------------!
       !     The mass of the potential new temporary surface water is within bounds but it  !
       ! is too small to be maintained.  We add both the virtual mass and the total surface !
@@ -835,9 +1025,9 @@ subroutine leaf3_adjust_sfcw(mzg,mzs,soil_energy,soil_water,soil_text,sfcwater_n
       virtual_water          = 0.0
       virtual_energy         = 0.0
       virtual_depth          = 0.0
-      sfcwater_mass(:)       = 0.0
+      sfcwater_mass      (:) = 0.0
       sfcwater_energy_ext(:) = 0.0
-      sfcwater_depth(:)      = 0.0
+      sfcwater_depth     (:) = 0.0
       !----- Set ksnnew to zero to force all free water to go to the soil. ----------------!
       ksnnew                 = 0
    else
@@ -886,7 +1076,7 @@ subroutine leaf3_adjust_sfcw(mzg,mzs,soil_energy,soil_water,soil_text,sfcwater_n
       ! the sense that the water sitting on the top of the surface is in thermal           !
       ! equilibrium with the surface.                                                      !
       !------------------------------------------------------------------------------------!
-      if (ksnnew == 1 .and. wmass_try < water_stab_thresh) then
+      if (flag_sfcwater /= 2 .or. (ksnnew == 1 .and. wmass_try < water_stab_thresh)) then
          !---------------------------------------------------------------------------------!
          !     Find the total internal energy of the combined pool (top soil layer plus    !
          ! the thin temporary surface water).  The units of soil properties are J/m3 for   !
@@ -1056,10 +1246,127 @@ subroutine leaf3_adjust_sfcw(mzg,mzs,soil_energy,soil_water,soil_text,sfcwater_n
 
 
    !---------------------------------------------------------------------------------------!
-   !     Add any remaining free water to the top soil layer.                               !
+   !     There may be a tiny amount of free standing water left.  We dump what we can in   !
+   ! the soil, and if there is still some water to be removed we  evaporate what is left.  !
    !---------------------------------------------------------------------------------------!
-   soil_water(mzg)  = soil_water(mzg)  + wmass_free  * dslzi(mzg) * wdnsi
-   soil_energy(mzg) = soil_energy(mzg) + energy_free * dslzi(mzg)
+   if (wmass_free >= 0.0) then
+      wmass_room  = max(0.0, slmsts(nsoil) - soil_water(mzg)) * wdns * dslz(mzg)
+      energy_room = energy_free * wmass_room / wmass_free
+
+      if (wmass_room >= wmass_free) then
+         !---------------------------------------------------------------------------------!
+         !     There is enough space in the top soil layer for the remaining water, put    !
+         ! all the free water there.                                                       !
+         !---------------------------------------------------------------------------------!
+         soil_water (mzg) = soil_water(mzg)  + wmass_free  * dslzi(mzg) * wdnsi
+         soil_energy(mzg) = soil_energy(mzg) + energy_free * dslzi(mzg)
+
+         wmass_free       = 0.0
+         energy_free      = 0.0
+         depth_free       = 0.0
+      else
+         !---------------------------------------------------------------------------------!
+         !     There is not enough space in the top soil layer for the remaining water,    !
+         ! put what we can there, and boil the remaining.                                  !
+         !---------------------------------------------------------------------------------!
+
+
+         !----- Remove the water that can go to the soil. ---------------------------------!
+         wmass_free  = wmass_free  - wmass_room
+         energy_free = energy_free - energy_room
+         !---------------------------------------------------------------------------------!
+
+
+         !----- Find the amount of latent heat associated with boiling. -------------------!
+         call uint2tl(energy_free/wmass_free,tempk_free,fracliq_free)
+         energy_latent = wmass_free * ( (1.0 - fracliq_free) * alvi(tempk_free)            &
+                                      + fracliq_free * alvl(tempk_free) )
+         !---------------------------------------------------------------------------------!
+
+
+
+         !---------------------------------------------------------------------------------!
+         !     Dump what we can dump on the top soil layer.  Since no energy will be left  !
+         ! in the free layer, we must get the energy for latent heat from somewhere, and   !
+         ! we take it from the top most soil layer.                                        !
+         !---------------------------------------------------------------------------------!
+         soil_water (mzg) = soil_water (mzg) + wmass_room  * dslzi(mzg) * wdnsi
+         soil_energy(mzg) = soil_energy(mzg) + ( energy_room - energy_latent ) * dslzi(mzg)
+         !---------------------------------------------------------------------------------!
+
+
+         !---------------------------------------------------------------------------------!
+         !     Boil the remaining.                                                         !
+         !---------------------------------------------------------------------------------!
+         !------ Update the canopy air space properties. ----------------------------------!
+         can_rvap     = can_rvap     + wmass_free                      * wcapcani
+         can_enthalpy = can_enthalpy + ( energy_free + energy_latent ) * hcapcani
+         !---------------------------------------------------------------------------------!
+
+         wmass_free  = 0.0
+         energy_free = 0.0
+         depth_free  = 0.0
+      end if
+   elseif (wmass_free < 0.0) then
+      wmass_needed     = - wmass_free
+      energy_needed    = - energy_free
+      depth_needed     = - depth_free
+
+      !------ Find the amount of water that the soil can provide. -------------------------!
+      wmass_available  = max(0.0,soil_water(mzg) - soilcp(nsoil)) * wdns * dslz(mzg)
+      energy_available = energy_free * wmass_available / wmass_free
+
+      if (wmass_available >= wmass_needed) then
+         !---------------------------------------------------------------------------------!
+         !     There is enough space in the top soil layer to correct remaining negative   !
+         ! water, get all the water needed there.                                          !
+         !---------------------------------------------------------------------------------!
+         soil_water (mzg) = soil_water(mzg)  - wmass_needed  * dslzi(mzg) * wdnsi
+         soil_energy(mzg) = soil_energy(mzg) - energy_needed * dslzi(mzg)
+         wmass_needed     = 0.0
+         energy_needed    = 0.0
+         depth_needed     = 0.0
+      else
+         !---------------------------------------------------------------------------------!
+         !     There is not enough space in the top soil layer to correct remaining        !
+         ! negative water, get all the water we can from the top soil and condense the     !
+         ! remaining.                                                                      !
+         !---------------------------------------------------------------------------------!
+
+
+         !----- Add the water that can come from the soil. --------------------------------!
+         wmass_needed  = wmass_needed  - wmass_available
+         energy_needed = energy_needed - energy_available
+         !---------------------------------------------------------------------------------!
+
+
+         !----- Find the amount of latent heat associated with condensation. --------------!
+         call uint2tl(energy_needed/wmass_needed,tempk_needed,fracliq_needed)
+         energy_latent = wmass_needed * ( (1.0 - fracliq_needed) * alvi(tempk_needed)      &
+                                        + fracliq_needed * alvl(tempk_needed) )
+         !---------------------------------------------------------------------------------!
+
+
+         !----- Dump what we can dump on the top soil layer. ------------------------------!
+         soil_water(mzg)  = soil_water (mzg) - wmass_available  * dslzi(mzg) * wdnsi
+         soil_energy(mzg) = soil_energy(mzg)                                               &
+                          - ( energy_available - energy_latent) * dslzi(mzg)
+         !---------------------------------------------------------------------------------!
+
+
+         !---------------------------------------------------------------------------------!
+         !     Condense the remaining, and hope for the best.                              !
+         !---------------------------------------------------------------------------------!
+         !----- Update the canopy air space properties. -----------------------------------!
+         can_rvap     = can_rvap     - wmass_needed                      * wcapcani
+         can_enthalpy = can_enthalpy - ( energy_needed + energy_latent ) * hcapcani
+         wmass_free   = 0.0
+         energy_free  = 0.0
+         depth_free   = 0.0
+         !---------------------------------------------------------------------------------!
+      end if
+      !------------------------------------------------------------------------------------!
+   end if
    !---------------------------------------------------------------------------------------!
 
 
@@ -1070,6 +1377,11 @@ subroutine leaf3_adjust_sfcw(mzg,mzs,soil_energy,soil_water,soil_text,sfcwater_n
    if (sum_sfcw_mass <= min_sfcwater_mass) then
       !----- Not enough water in the temporary surface water, eliminate all layers. -------!
       sfcwater_nlev = 0.
+      !------------------------------------------------------------------------------------!
+
+
+      !----- Update the flag for temporary surface water. ---------------------------------!
+      flag_sfcwater = 0
       !------------------------------------------------------------------------------------!
 
 
@@ -1097,6 +1409,11 @@ subroutine leaf3_adjust_sfcw(mzg,mzs,soil_energy,soil_water,soil_text,sfcwater_n
       !------------------------------------------------------------------------------------!
 
 
+      !----- Update the flag for temporary surface water. ---------------------------------!
+      flag_sfcwater = 1
+      !------------------------------------------------------------------------------------!
+
+
       !------------------------------------------------------------------------------------!
       !    If the total amount of temporary surface water is not enough to make it stable, !
       ! we impose it to have a single layer with all the ponding/snow in there.            !
@@ -1117,6 +1434,11 @@ subroutine leaf3_adjust_sfcw(mzg,mzs,soil_energy,soil_water,soil_text,sfcwater_n
       newsfcw_mass  (:) = 0.
       newsfcw_energy(:) = 0.
       newsfcw_depth (:) = 0.
+
+
+      !----- Update the flag for temporary surface water. ---------------------------------!
+      flag_sfcwater     = 2
+      !------------------------------------------------------------------------------------!
 
 
       !---- Check whether there is enough snow for a new layer. ---------------------------!
@@ -1193,6 +1515,72 @@ subroutine leaf3_adjust_sfcw(mzg,mzs,soil_energy,soil_water,soil_text,sfcwater_n
          sfcwater_energy_ext(k) = 0.0
          sfcwater_depth     (k) = 0.0
       end do
+   end if
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !      Compute the budget variables after the adjustments.                              !
+   !---------------------------------------------------------------------------------------!
+   wmass_cas_end      = can_rvap     * wcapcan
+   enthalpy_cas_end   = can_enthalpy * hcapcan
+   wmass_virtual_end  = virtual_water
+   energy_virtual_end = virtual_energy
+   wmass_sfcw_end     = sum_sfcw_mass
+   energy_sfcw_end    = sum_sfcw_energy
+   wmass_soil_end     = soil_water (mzg) * dslz(mzg) * wdns
+   energy_soil_end    = soil_energy(mzg) * dslz(mzg)
+   wmass_total_end    = wmass_virtual_end  + wmass_sfcw_end  + wmass_soil_end              &
+                      + wmass_cas_end
+   energy_total_end   = energy_virtual_end + energy_sfcw_end + energy_soil_end             &
+                      + enthalpy_cas_end
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !      Check whether energy and mass are conserved.                                     !
+   !---------------------------------------------------------------------------------------!
+   wmass_total_rch  = 2.0 * abs(wmass_total_end  - wmass_total_beg)                        &
+                    / (abs(wmass_total_end ) + abs(wmass_total_beg ))
+   energy_total_rch = 2.0 * abs(energy_total_end - energy_total_beg)                       &
+                    / (abs(energy_total_end) + abs(energy_total_beg))
+   if (wmass_total_rch > 1.e-6 .or. energy_total_rch > 1.e-6) then
+      write (unit=*,fmt='(a)')           '------------------------------------------------'
+      write (unit=*,fmt='(a)')           ' Water or energy conservation was violated!!!   '
+      write (unit=*,fmt='(a)')           '------------------------------------------------'
+      write (unit=*,fmt='(a)')           ' '
+      write (unit=*,fmt='(a)')           ' - Initial conditions: '
+      write (unit=*,fmt='(a,1x,es14.7)') '   + Total water mass    = ',wmass_total_beg
+      write (unit=*,fmt='(a,1x,es14.7)') '   + CAS mass            = ',wmass_cas_beg
+      write (unit=*,fmt='(a,1x,es14.7)') '   + Virtual mass        = ',wmass_virtual_beg
+      write (unit=*,fmt='(a,1x,es14.7)') '   + Ponding/snow mass   = ',wmass_sfcw_beg
+      write (unit=*,fmt='(a,1x,es14.7)') '   + Soil mass           = ',wmass_soil_beg
+      write (unit=*,fmt='(a,1x,es14.7)') '   + Total energy        = ',energy_total_beg
+      write (unit=*,fmt='(a,1x,es14.7)') '   + CAS enthalpy        = ',enthalpy_cas_beg
+      write (unit=*,fmt='(a,1x,es14.7)') '   + Virtual energy      = ',energy_virtual_beg
+      write (unit=*,fmt='(a,1x,es14.7)') '   + Ponding/snow energy = ',energy_sfcw_beg
+      write (unit=*,fmt='(a,1x,es14.7)') '   + Soil energy         = ',energy_soil_beg
+      write (unit=*,fmt='(a)')           ' '
+      write (unit=*,fmt='(a)')           ' - Final conditions: '
+      write (unit=*,fmt='(a,1x,es14.7)') '   + Total water mass    = ',wmass_total_end
+      write (unit=*,fmt='(a,1x,es14.7)') '   + CAS mass            = ',wmass_cas_end
+      write (unit=*,fmt='(a,1x,es14.7)') '   + Virtual mass        = ',wmass_virtual_end
+      write (unit=*,fmt='(a,1x,es14.7)') '   + Ponding/snow mass   = ',wmass_sfcw_end
+      write (unit=*,fmt='(a,1x,es14.7)') '   + Soil mass           = ',wmass_soil_end
+      write (unit=*,fmt='(a,1x,es14.7)') '   + Total energy        = ',energy_total_end
+      write (unit=*,fmt='(a,1x,es14.7)') '   + CAS enthalpy        = ',enthalpy_cas_end
+      write (unit=*,fmt='(a,1x,es14.7)') '   + Virtual energy      = ',energy_virtual_end
+      write (unit=*,fmt='(a,1x,es14.7)') '   + Ponding/snow energy = ',energy_sfcw_end
+      write (unit=*,fmt='(a,1x,es14.7)') '   + Soil energy         = ',energy_soil_end
+      write (unit=*,fmt='(a)')           ' '
+      write (unit=*,fmt='(a)')           ' - Relative error: '
+      write (unit=*,fmt='(a,1x,es14.7)') '   + Total water mass    = ',wmass_total_rch
+      write (unit=*,fmt='(a,1x,es14.7)') '   + Total energy        = ',energy_total_rch
+      write (unit=*,fmt='(a)')           ' '
+      write (unit=*,fmt='(a)')           '------------------------------------------------'
+      call abort_run('Energy or water is not being conserved!!!'                           &
+                    ,'leaf3_adjust_sfcw','leaf3_tw.f90')
    end if
    !---------------------------------------------------------------------------------------!
 
