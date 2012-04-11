@@ -168,6 +168,8 @@ for (place in myplaces){
    npppftdbh       = array(data=0.,dim=c(totmon,ndbh+1,npft))
    mcopftdbh       = array(data=0.,dim=c(totmon,ndbh+1,npft))
    cbapftdbh       = array(data=0.,dim=c(totmon,ndbh+1,npft))
+   cbamaxpftdbh    = array(data=0.,dim=c(totmon,ndbh+1,npft))
+   cbarelpftdbh    = array(data=0.,dim=c(totmon,ndbh+1,npft))
    ldrpftdbh       = array(data=0.,dim=c(totmon,ndbh+1,npft))
    fsopftdbh       = array(data=0.,dim=c(totmon,ndbh+1,npft))
    demandpftdbh    = array(data=0.,dim=c(totmon,ndbh+1,npft))
@@ -191,6 +193,8 @@ for (place in myplaces){
    npppft          = matrix(data=0,nrow=totmon,ncol=npft+1)
    mcopft          = matrix(data=0,nrow=totmon,ncol=npft+1)
    cbapft          = matrix(data=0,nrow=totmon,ncol=npft+1)
+   cbamaxpft       = matrix(data=0,nrow=totmon,ncol=npft+1)
+   cbarelpft       = matrix(data=0,nrow=totmon,ncol=npft+1)
    ldroppft        = matrix(data=0,nrow=totmon,ncol=npft+1)
    fsopft          = matrix(data=0,nrow=totmon,ncol=npft+1)
    balivepft       = matrix(data=0,nrow=totmon,ncol=npft+1)
@@ -241,6 +245,8 @@ for (place in myplaces){
    mco             = NULL
    npp             = NULL
    cba             = NULL
+   cbamax          = NULL
+   cbarel          = NULL
    ldrop           = NULL
    nep             = NULL
    nee             = NULL
@@ -325,8 +331,9 @@ for (place in myplaces){
    gpplco       = list()
    respco       = list()
    nppco        = list()
-   cbrbarco     = list()
-   cbalco       = list()
+   cbaco        = list()
+   cbarelco     = list()
+   cbamaxco     = list()
    mcostco      = list()
    ldropco      = list()
    agbco        = list()
@@ -413,6 +420,9 @@ for (place in myplaces){
        #----- Loop over months. -----------------------------------------------------------#
        for (month in firstmonth:lastmonth){
           m = m + 1
+          
+          #----- Find out the previous month. ---------------------------------------------#
+          lastmonth = 12 * (month == 1) + month - 1
 
           #----- Build the month and year vector. -----------------------------------------#
           monnum = c(monnum,month)
@@ -812,11 +822,12 @@ for (place in myplaces){
                                + mymont$MMEAN.GROWTH.RESP.CO + mymont$MMEAN.STORAGE.RESP.CO
                                + mymont$MMEAN.VLEAF.RESP.CO  )
              nppconow        = gppconow-respconow
-             cbalconow       = mymont$MMEAN.CB
+             cbaconow        = mymont$MMEAN.CB
+             cbamaxconow     = mymont$CB.MAX[,lastmonth]
+             cbarelconow     = mymont$CBR.BAR
              mcostconow      = ( mymont$MMEAN.LEAF.MAINTENANCE
                                + mymont$MMEAN.ROOT.MAINTENANCE )
              ldropconow      = mymont$MMEAN.LEAF.DROP.CO
-             cbrbarconow     = mymont$CBR.BAR
              fsoconow        = mymont$MMEAN.FS.OPEN.CO
              lightconow      = mymont$MMEAN.LIGHT.LEVEL
              lightbeamconow  = mymont$MMEAN.LIGHT.LEVEL.BEAM
@@ -880,30 +891,31 @@ for (place in myplaces){
              leafrespconow   = NA
              rootrespconow   = NA
              growthrespconow = NA
-             respconow       = NA 
-             nppconow        = NA 
-             cbalconow       = NA 
-             mcostconow      = NA 
-             ldropconow      = NA 
-             cbrbarconow     = NA 
-             fsoconow        = NA 
-             lightconow      = NA 
-             lightbeamconow  = NA 
-             lightdiffconow  = NA 
-             parlconow       = NA 
-             demandconow     = NA 
-             supplyconow     = NA 
-             baliveconow     = NA 
-             bdeadconow      = NA 
-             bleafconow      = NA 
-             brootconow      = NA 
-             bswoodconow     = NA 
-             bstoreconow     = NA 
+             respconow       = NA
+             nppconow        = NA
+             cbaconow        = NA
+             cbamaxconow     = NA
+             mcostconow      = NA
+             ldropconow      = NA
+             cbarelconow     = NA
+             fsoconow        = NA
+             lightconow      = NA
+             lightbeamconow  = NA
+             lightdiffconow  = NA
+             parlconow       = NA
+             demandconow     = NA
+             supplyconow     = NA
+             baliveconow     = NA
+             bdeadconow      = NA
+             bleafconow      = NA
+             brootconow      = NA
+             bswoodconow     = NA
+             bstoreconow     = NA
              mortconow       = NA
-             agemortconow    = NA 
-             ncbmortconow    = NA 
-             tfallmortconow  = NA 
-             coldmortconow   = NA 
+             agemortconow    = NA
+             ncbmortconow    = NA
+             tfallmortconow  = NA
+             coldmortconow   = NA
              distmortconow   = NA
              recdbhconow     = NA
              growthconow     = NA
@@ -935,43 +947,48 @@ for (place in myplaces){
           #     Build the PFT arrays.                                                      #
           #--------------------------------------------------------------------------------#
           for (p in 1:npft){
-              if (all(is.na(pftconow))){
-                 sel      = rep(FALSE,times=length(pftconow))
-              }else{
-                 sel      = pftconow == p
-              }#end if
-              if (any(sel)){
+             if (all(is.na(pftconow))){
+                sel      = rep(FALSE,times=length(pftconow))
+             }else{
+                sel      = pftconow == p
+             }#end if
+             if (any(sel)){
 
-                 #----- "Extensive" variables, add them. ----------------------------------#
-                 nplantpft    [m,p] = sum(nplantconow[sel] * areaconow[sel])
-                 laipft       [m,p] = sum(laiconow   [sel] * areaconow[sel])
-                 waipft       [m,p] = sum(waiconow   [sel] * areaconow[sel])
-                 taipft       [m,p] = sum(taiconow   [sel] * areaconow[sel])
-                 #-------------------------------------------------------------------------#
+                #----- "Extensive" variables, add them. -----------------------------------#
+                nplantpft    [m,p] = sum(nplantconow[sel] * areaconow[sel])
+                laipft       [m,p] = sum(laiconow   [sel] * areaconow[sel])
+                waipft       [m,p] = sum(waiconow   [sel] * areaconow[sel])
+                taipft       [m,p] = sum(taiconow   [sel] * areaconow[sel])
+                #--------------------------------------------------------------------------#
 
-                 #----- "Intensive" variables, use nplant or LAI to make them extensive. --#
-                 basareapft   [m,p] = sum( w.nplant[sel] * baconow        [sel] )
-                 agbpft       [m,p] = sum( w.nplant[sel] * agbconow       [sel] )
-                 bseedspft    [m,p] = sum( w.nplant[sel] * bseedsconow    [sel] )
-                 gpppft       [m,p] = sum( w.nplant[sel] * gppconow       [sel] )
-                 npppft       [m,p] = sum( w.nplant[sel] * nppconow       [sel] )
-                 mcopft       [m,p] = sum( w.nplant[sel] * mcostconow     [sel] )
-                 cbapft       [m,p] = sum( w.nplant[sel] * cbalconow      [sel] )
-                 ldroppft     [m,p] = sum( w.nplant[sel] * ldropconow     [sel] )
-                 balivepft    [m,p] = sum( w.nplant[sel] * baliveconow    [sel] )
-                 bdeadpft     [m,p] = sum( w.nplant[sel] * bdeadconow     [sel] )
-                 bleafpft     [m,p] = sum( w.nplant[sel] * bleafconow     [sel] )
-                 brootpft     [m,p] = sum( w.nplant[sel] * brootconow     [sel] )
-                 bswoodpft    [m,p] = sum( w.nplant[sel] * bswoodconow    [sel] )
-                 bstorepft    [m,p] = sum( w.nplant[sel] * bstoreconow    [sel] )
-                 leafresppft  [m,p] = sum( w.nplant[sel] * leafrespconow  [sel] )
-                 rootresppft  [m,p] = sum( w.nplant[sel] * rootrespconow  [sel] )
-                 growthresppft[m,p] = sum( w.nplant[sel] * growthrespconow[sel] )
+                #----- "Intensive" variables, use nplant or LAI to make them extensive. ---#
+                basareapft   [m,p] = sum( w.nplant[sel] * baconow        [sel] )
+                agbpft       [m,p] = sum( w.nplant[sel] * agbconow       [sel] )
+                bseedspft    [m,p] = sum( w.nplant[sel] * bseedsconow    [sel] )
+                gpppft       [m,p] = sum( w.nplant[sel] * gppconow       [sel] )
+                npppft       [m,p] = sum( w.nplant[sel] * nppconow       [sel] )
+                mcopft       [m,p] = sum( w.nplant[sel] * mcostconow     [sel] )
+                cbapft       [m,p] = sum( w.nplant[sel] * cbaconow       [sel] )
+                cbamaxpft    [m,p] = sum( w.nplant[sel] * cbamaxconow    [sel] )
+                ldroppft     [m,p] = sum( w.nplant[sel] * ldropconow     [sel] )
+                balivepft    [m,p] = sum( w.nplant[sel] * baliveconow    [sel] )
+                bdeadpft     [m,p] = sum( w.nplant[sel] * bdeadconow     [sel] )
+                bleafpft     [m,p] = sum( w.nplant[sel] * bleafconow     [sel] )
+                brootpft     [m,p] = sum( w.nplant[sel] * brootconow     [sel] )
+                bswoodpft    [m,p] = sum( w.nplant[sel] * bswoodconow    [sel] )
+                bstorepft    [m,p] = sum( w.nplant[sel] * bstoreconow    [sel] )
+                leafresppft  [m,p] = sum( w.nplant[sel] * leafrespconow  [sel] )
+                rootresppft  [m,p] = sum( w.nplant[sel] * rootrespconow  [sel] )
+                growthresppft[m,p] = sum( w.nplant[sel] * growthrespconow[sel] )
 
-                 #----- Fso is added here, but it will be scaled back to intensive. -------#
-                 fsopft       [m,p] = sum( w.lai   [sel] * fsoconow       [sel] )
-                 #-------------------------------------------------------------------------#
-              }#end if (any(sel))
+                #----- Fso is added here, but it will be scaled back to intensive. --------#
+                fsopft       [m,p] = sum( w.lai   [sel] * fsoconow       [sel] )
+                #--------------------------------------------------------------------------#
+
+                #----- cbarel is added here, but it will be scaled back to intensive. -----#
+                cbarelpft    [m,p] = sum( w.nplant[sel] * cbarelconow    [sel] )
+                #--------------------------------------------------------------------------#
+             }#end if (any(sel))
           }#end for (p in 1:npft)
           #------ Find the total. ---------------------------------------------------------#
           nplantpft    [m,npft+1] = sum(nplantpft    [m,1:npft],na.rm=TRUE)
@@ -1006,6 +1023,19 @@ for (place in myplaces){
          }#end for
          if (laipft[m,npft+1] != 0){
             fsopft[m,npft+1] = sum(fsopft[m,1:npft] * laipft[m,1:npft]) / laipft[m,npft+1]
+         }#end for
+         #---------------------------------------------------------------------------------#
+
+
+         #----- Find the average Fsopen for each PFT. -------------------------------------#
+         for (p in 1:npft){
+            if (nplantpft[m,p] != 0){
+               cbarelpft[m,p] = cbarelpft[m,p] / nplantpft[m,p]
+            }#end if
+         }#end for
+         if (nplantpft[m,npft+1] != 0){
+            cbarelpft[m,npft+1] = ( sum(cbarelpft[m,1:npft] * nplantpft[m,1:npft]) 
+                                  / nplantpft[m,npft+1] )
          }#end for
          #---------------------------------------------------------------------------------#
 
@@ -1228,10 +1258,13 @@ for (place in myplaces){
                   gpppftdbh    [m,d,p] = sum( w.nplant    [sel] * gppconow   [sel] )
                   npppftdbh    [m,d,p] = sum( w.nplant    [sel] * nppconow   [sel] )
                   mcopftdbh    [m,d,p] = sum( w.nplant    [sel] * mcostconow [sel] )
-                  cbapftdbh    [m,d,p] = sum( w.nplant    [sel] * cbalconow  [sel] )
+                  cbapftdbh    [m,d,p] = sum( w.nplant    [sel] * cbaconow   [sel] )
+                  cbamaxpftdbh [m,d,p] = sum( w.nplant    [sel] * cbamaxconow[sel] )
                   ldrpftdbh    [m,d,p] = sum( w.nplant    [sel] * ldropconow [sel] )
                   #----- FSO, use LAI to scale them, we will normalise outside the loop. --#
                   fsopftdbh    [m,d,p] = sum( laiconow    [sel] * fsoconow   [sel] )
+                  #----- CBAREL, like FSO, but we use nplant to scale them. ---------------#
+                  cbarelpftdbh [m,d,p] = sum( nplantconow [sel] * cbarelconow[sel] )
                   #------------------------------------------------------------------------#
                }#end if
 
@@ -1298,8 +1331,7 @@ for (place in myplaces){
 
 
             #------------------------------------------------------------------------------#
-            #     Find the average Fsopen and growth rate for each DBH class and amongst   #
-            # all classes.                                                                 #
+            #     Find the average Fsopen for each DBH class and amongst all classes.      #
             #------------------------------------------------------------------------------#
             for (d in 1:ndbh){
                #---------------------------------------------------------------------------#
@@ -1313,6 +1345,26 @@ for (place in myplaces){
                fsopftdbh[m,ndbh+1,p] = ( sum( fsopftdbh[m,1:ndbh,p]
                                             * laipftdbh[m,1:ndbh,p] )
                                        / laipftdbh[m,ndbh+1,p] )
+            }#end for
+            #------------------------------------------------------------------------------#
+
+
+            #------------------------------------------------------------------------------#
+            #     Find the average relative carbon balance for each DBH class and amongst  #
+            # all classes.                                                                 #
+            #------------------------------------------------------------------------------#
+            for (d in 1:ndbh){
+               #---------------------------------------------------------------------------#
+               #      CBAREL is scaled by Nplant.                                          #
+               #---------------------------------------------------------------------------#
+               if (nplantpftdbh[m,d,p] != 0){
+                  cbarelpftdbh[m,d,p] = cbarelpftdbh[m,d,p] / nplantpftdbh[m,d,p]
+               }#end if
+            }#end for
+            if (nplantpftdbh[m,ndbh+1,p] != 0){
+               cbarelpftdbh[m,ndbh+1,p] = ( sum( cbarelpftdbh[m,1:ndbh,p]
+                                               * nplantpftdbh[m,1:ndbh,p] )
+                                          / nplantpftdbh[m,ndbh+1,p] )
             }#end for
             #------------------------------------------------------------------------------#
 
@@ -1408,8 +1460,9 @@ for (place in myplaces){
             gpplco      [[labwhen]] = gpplconow
             respco      [[labwhen]] = respconow
             nppco       [[labwhen]] = nppconow
-            cbrbarco    [[labwhen]] = cbrbarconow
-            cbalco      [[labwhen]] = cbalconow
+            cbaco       [[labwhen]] = cbaconow
+            cbamaxco    [[labwhen]] = cbamaxconow
+            cbarelco    [[labwhen]] = cbarelconow
             mcostco     [[labwhen]] = mcostconow
             agbco       [[labwhen]] = agbconow
             fsoco       [[labwhen]] = fsoconow
