@@ -12,27 +12,48 @@ module allometry
       use pft_coms    , only : is_tropical & ! intent(in)
                              , b1Ht        & ! intent(in), lookup table
                              , b2Ht        & ! intent(in), lookup table
-                             , hgt_ref     ! ! intent(in), lookup table
-      use ed_misc_coms, only : iallom      ! ! intent(in)
+                             , hgt_ref     & ! intent(in), lookup table
+                             , dbh_bigleaf ! ! intent(in)
+      use ed_misc_coms, only : iallom      & ! intent(in)
+                             , ibigleaf    ! ! intent(in)
 
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       real   , intent(in) :: h
       integer, intent(in) :: ipft
       !------------------------------------------------------------------------------------!
-      if (is_tropical(ipft)) then
-         select case (iallom)
-         case (0,1)
-            !----- Default ED-2.1 allometry. ----------------------------------------------!
-            h2dbh = exp((log(h)-b1Ht(ipft))/b2Ht(ipft))
-         case (2)
-            !----- Poorter et al. (2006) allometry. ---------------------------------------!
-            h2dbh =  ( log(hgt_ref(ipft) / ( hgt_ref(ipft) - h ) ) / b1Ht(ipft) )          &
-                  ** ( 1.0 / b2Ht(ipft) )
-         end select
-      else ! Temperate
-         h2dbh = log(1.0-(h-hgt_ref(ipft))/b1Ht(ipft))/b2Ht(ipft)
-      end if
+
+
+      !------------------------------------------------------------------------------------!
+      !      Select which type of model we are running.                                    !
+      !------------------------------------------------------------------------------------!
+      select case (ibigleaf)
+      case (0)
+         !----- Size- and age-structure (typical ED model). -------------------------------!
+         if (is_tropical(ipft)) then
+            select case (iallom)
+            case (0,1)
+               !----- Default ED-2.1 allometry. -------------------------------------------!
+               h2dbh = exp((log(h)-b1Ht(ipft))/b2Ht(ipft))
+            case (2)
+               !----- Poorter et al. (2006) allometry. ------------------------------------!
+               h2dbh =  ( log(hgt_ref(ipft) / ( hgt_ref(ipft) - h ) ) / b1Ht(ipft) )       &
+                     ** ( 1.0 / b2Ht(ipft) )
+            end select
+         else ! Temperate
+            h2dbh = log(1.0-(h-hgt_ref(ipft))/b1Ht(ipft))/b2Ht(ipft)
+         end if
+
+      case (1)
+         !---------------------------------------------------------------------------------!
+         !     Big-leaf version of ED. Height is constant, and DBH is not meaningful.      !
+         ! DBH, however, controls biomass so we assign a prescribed constant DBH that      !
+         ! makes the conversion meaningful.                                                !
+         !---------------------------------------------------------------------------------!
+         h2dbh = dbh_bigleaf(ipft)
+         !---------------------------------------------------------------------------------!
+      end select
+      !------------------------------------------------------------------------------------!
 
       return
    end function h2dbh
@@ -51,8 +72,10 @@ module allometry
                              , dbh_crit    & ! intent(in)
                              , b1Ht        & ! intent(in)
                              , b2Ht        & ! intent(in)
-                             , hgt_ref     ! ! intent(in)
-      use ed_misc_coms, only : iallom      ! ! intent(in)
+                             , hgt_ref     & ! intent(in)
+                             , hgt_max     ! ! intent(in)
+      use ed_misc_coms, only : iallom      & ! intent(in)
+                             , ibigleaf    ! ! intent(in)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       integer , intent(in) :: ipft
@@ -61,19 +84,37 @@ module allometry
       real                :: mdbh
       !------------------------------------------------------------------------------------!
 
-      if (is_tropical(ipft)) then
-         mdbh = min(dbh,dbh_crit(ipft))
-         select case (iallom)
-         case (0,1)
-            !----- Default ED-2.1 allometry. ----------------------------------------------!
-            dbh2h = exp (b1Ht(ipft) + b2Ht(ipft) * log(mdbh) )
-         case (2)
-            !----- Poorter et al. (2006) allometry. ---------------------------------------!
-            dbh2h = hgt_ref(ipft) * (1. - exp (-b1Ht(ipft) * mdbh ** b2Ht(ipft) ) )
-         end select
-      else !----- Temperate PFT allometry. ------------------------------------------------!
-         dbh2h = hgt_ref(ipft) + b1Ht(ipft) * (1.0 - exp(b2Ht(ipft) * dbh))
-      end if
+
+      !------------------------------------------------------------------------------------!
+      !      Select which type of model we are running.                                    !
+      !------------------------------------------------------------------------------------!
+      select case (ibigleaf)
+      case (0)
+         !----- Size- and age-structure (typical ED model). -------------------------------!
+         if (is_tropical(ipft)) then
+            mdbh = min(dbh,dbh_crit(ipft))
+            select case (iallom)
+            case (0,1)
+               !----- Default ED-2.1 allometry. -------------------------------------------!
+               dbh2h = exp (b1Ht(ipft) + b2Ht(ipft) * log(mdbh) )
+            case (2)
+               !----- Poorter et al. (2006) allometry. ------------------------------------!
+               dbh2h = hgt_ref(ipft) * (1. - exp (-b1Ht(ipft) * mdbh ** b2Ht(ipft) ) )
+            end select
+         else !----- Temperate PFT allometry. ---------------------------------------------!
+            dbh2h = hgt_ref(ipft) + b1Ht(ipft) * (1.0 - exp(b2Ht(ipft) * dbh))
+         end if
+
+      case (1)
+         !---------------------------------------------------------------------------------!
+         !     Big-leaf version of ED. DBH is not really meaningful, but in the big-leaf   !
+         ! model the typical allometry doesn't really make sense so we impose maximum      !
+         ! height.                                                                         !
+         !---------------------------------------------------------------------------------!
+         dbh2h = hgt_max(ipft)
+         !---------------------------------------------------------------------------------!
+      end select
+      !------------------------------------------------------------------------------------!
 
       return
    end function dbh2h

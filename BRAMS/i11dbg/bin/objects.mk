@@ -294,6 +294,7 @@ OBJ_MODEL =                         \
 	detailed_coms.o             \
 	disturb_coms.o              \
 	disturbance.o               \
+	ed_bigleaf_init.o           \
 	ed_filelist.o               \
 	ed_grid.o                   \
 	ed_init_full_history.o      \

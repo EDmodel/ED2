@@ -2165,6 +2165,7 @@ subroutine init_pft_alloc_params()
                            , hgt_max               & ! intent(out)
                            , min_dbh               & ! intent(out)
                            , dbh_crit              & ! intent(out)
+                           , dbh_bigleaf           & ! intent(out)
                            , min_bdead             & ! intent(out)
                            , bdead_crit            & ! intent(out)
                            , b1Ht                  & ! intent(out)
@@ -2191,7 +2192,8 @@ subroutine init_pft_alloc_params()
    use allometry    , only : h2dbh                 & ! function
                            , dbh2bd                & ! function
                            , size2bl               ! ! function
-   use consts_coms  , only : twothirds             & ! intent(in)
+   use consts_coms  , only : onethird              & ! intent(in)
+                           , twothirds             & ! intent(in)
                            , huge_num              & ! intent(in)
                            , pi1                   ! ! intent(in)
    use ed_max_dims  , only : n_pft                 & ! intent(in)
@@ -2541,15 +2543,43 @@ subroutine init_pft_alloc_params()
 
 
 
+   !---------------------------------------------------------------------------------------!
+   !    This is the typical DBH that all big leaf plants will have.  Because the big-leaf  !
+   ! ED doesn't really solve individuals, the typical DBH should be one that makes a good  !
+   ! ratio between LAI and biomass.  This is a tuning parameter and right now the initial  !
+   ! guess is 1/3 of the critical DBH for trees and the critical DBH for grasses.          !
+   !---------------------------------------------------------------------------------------!
+   dbh_bigleaf( 1) =  0.597
+   dbh_bigleaf( 2) = 32.1
+   dbh_bigleaf( 3) = 32.1
+   dbh_bigleaf( 4) = 32.1
+   dbh_bigleaf( 5) = 3.99
+   dbh_bigleaf( 6) = 25.6
+   dbh_bigleaf( 7) = 25.6
+   dbh_bigleaf( 8) = 21.3
+   dbh_bigleaf( 9) = 14.5
+   dbh_bigleaf(10) = 19.8
+   dbh_bigleaf(11) = 17.7
+   dbh_bigleaf(12) =  3.99
+   dbh_bigleaf(13) =  3.99
+   dbh_bigleaf(14) =  0.597
+   dbh_bigleaf(15) =  0.597
+   dbh_bigleaf(16) =  0.597
+   dbh_bigleaf(17) = 32.1
+   !---------------------------------------------------------------------------------------!
+
+
+
    !---------------------------------------------------------------------------------------! 
-   !   MIN_DBH  -- minimum DBH allowed for the PFT.                                        !
-   !   DBH_CRIT -- minimum DBH that brings the PFT to its tallest possible height.         !
+   !   MIN_DBH     -- minimum DBH allowed for the PFT.                                     !
+   !   DBH_CRIT    -- minimum DBH that brings the PFT to its tallest possible height.      !
    !---------------------------------------------------------------------------------------!
    do ipft=1,n_pft
-      min_dbh (ipft) = h2dbh(hgt_min(ipft),ipft)
-      dbh_crit(ipft) = h2dbh(hgt_max(ipft),ipft)
+      min_dbh    (ipft) = h2dbh(hgt_min(ipft),ipft)
+      dbh_crit   (ipft) = h2dbh(hgt_max(ipft),ipft)
    end do
    !---------------------------------------------------------------------------------------!
+
 
 
    !---------------------------------------------------------------------------------------!
@@ -2827,68 +2857,68 @@ subroutine init_pft_alloc_params()
    !---------------------------------------------------------------------------------------!
    select case (ibigleaf)
    case (0)
-       !----- Size and age structure. -----------------------------------------------------!
-       select case (iallom)
-       case (0,1)
-          init_density(1)     = 1.0
-          init_density(2:4)   = 1.0
-          init_density(5)     = 0.1
-          init_density(6:8)   = 0.1
-          init_density(9:11)  = 0.1
-          init_density(12:13) = 0.1
-          init_density(14:15) = 0.1
-          init_density(16)    = 1.0
-          init_density(17)    = 1.0
-       case (2)
-          init_density(1)     = 0.1
-          init_density(2:4)   = 0.1
-          init_density(5)     = 0.1
-          init_density(6:8)   = 0.1
-          init_density(9:11)  = 0.1
-          init_density(12:13) = 0.1
-          init_density(14:15) = 0.1
-          init_density(16)    = 0.1
-          init_density(17)    = 0.1
-       end select
+      !----- Size and age structure. ------------------------------------------------------!
+      select case (iallom)
+      case (0,1)
+         init_density(1)     = 1.0
+         init_density(2:4)   = 1.0
+         init_density(5)     = 0.1
+         init_density(6:8)   = 0.1
+         init_density(9:11)  = 0.1
+         init_density(12:13) = 0.1
+         init_density(14:15) = 0.1
+         init_density(16)    = 1.0
+         init_density(17)    = 1.0
+      case (2)
+         init_density(1)     = 0.1
+         init_density(2:4)   = 0.1
+         init_density(5)     = 0.1
+         init_density(6:8)   = 0.1
+         init_density(9:11)  = 0.1
+         init_density(12:13) = 0.1
+         init_density(14:15) = 0.1
+         init_density(16)    = 0.1
+         init_density(17)    = 0.1
+      end select
 
-       !----- Define a non-sense number. --------------------------------------------------!
-       init_laimax(1:17)   = huge_num
+      !----- Define a non-sense number. ---------------------------------------------------!
+      init_laimax(1:17)   = huge_num
 
-    case(1)
-       !----- Big leaf. 1st we set the maximum initial LAI for each PFT. ------------------!
-       init_laimax(1:17)   = 0.1
-       do ipft=1,n_pft
-          init_bleaf = size2bl(dbh_crit(ipft),hgt_max(ipft),ipft)
-          init_density(ipft) = init_laimax(ipft) / (init_bleaf * SLA(ipft))
-       end do
-       !-----------------------------------------------------------------------------------!
+   case(1)
+      !----- Big leaf. 1st we set the maximum initial LAI for each PFT. -------------------!
+      init_laimax(1:17)   = 0.1
+      do ipft=1,n_pft
+         init_bleaf = size2bl(dbh_bigleaf(ipft),hgt_max(ipft),ipft)
+         init_density(ipft) = init_laimax(ipft) / (init_bleaf * SLA(ipft))
+      end do
+      !------------------------------------------------------------------------------------!
    end select
    !---------------------------------------------------------------------------------------!
 
 
    if (write_allom) then
       open (unit=18,file=trim(allom_file),status='replace',action='write')
-      write(unit=18,fmt='(299a)') ('-',n=1,299)
-      write(unit=18,fmt='(23(1x,a))') '         PFT','    Tropical','       Grass'         &
+      write(unit=18,fmt='(312a)') ('-',n=1,312)
+      write(unit=18,fmt='(24(1x,a))') '         PFT','    Tropical','       Grass'         &
                                      ,'         Rho','        b1Ht','        b2Ht'         &
                                      ,'     Hgt_ref','        b1Bl','        b2Bl'         &
                                      ,'  b1Bs_Small','  b2Bs_Small','  b1Bs_Large'         &
                                      ,'  b1Bs_Large','        b1Ca','        b2Ca'         &
                                      ,'     Hgt_min','     Hgt_max','     Min_DBH'         &
-                                     ,'    DBH_Crit','  Bdead_Crit','   Init_dens'         &
-                                     ,' Init_LAImax','         SLA'
+                                     ,'    DBH_Crit',' DBH_BigLeaf','  Bdead_Crit'         &
+                                     ,'   Init_dens',' Init_LAImax','         SLA'
 
-      write(unit=18,fmt='(299a)') ('-',n=1,299)
+      write(unit=18,fmt='(312a)') ('-',n=1,312)
       do ipft=1,n_pft
-         write (unit=18,fmt='(8x,i5,2(12x,l1),20(1x,es12.5))')                             &
+         write (unit=18,fmt='(8x,i5,2(12x,l1),21(1x,es12.5))')                             &
                         ipft,is_tropical(ipft),is_grass(ipft),rho(ipft),b1Ht(ipft)         &
                        ,b2Ht(ipft),hgt_ref(ipft),b1Bl(ipft),b2Bl(ipft),b1Bs_small(ipft)    &
                        ,b2Bs_small(ipft),b1Bs_large(ipft),b2Bs_large(ipft),b1Ca(ipft)      &
                        ,b2Ca(ipft),hgt_min(ipft),hgt_max(ipft),min_dbh(ipft)               &
-                       ,dbh_crit(ipft),bdead_crit(ipft),init_density(ipft)                 &
-                       ,init_laimax(ipft),sla(ipft)
+                       ,dbh_crit(ipft),dbh_bigleaf(ipft),bdead_crit(ipft)                  &
+                       ,init_density(ipft),init_laimax(ipft),sla(ipft)
       end do
-      write(unit=18,fmt='(299a)') ('-',n=1,299)
+      write(unit=18,fmt='(312a)') ('-',n=1,312)
       close(unit=18,status='keep')
    end if
 

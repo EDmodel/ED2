@@ -398,6 +398,8 @@ module pft_coms
    real   , dimension(n_pft)    :: min_dbh
    !----- Critical DBH for height/bdead, point in which plants stop growing vertically. ---!
    real   , dimension(n_pft)    :: dbh_crit
+   !----- Prescribed DBH for the big leaf model, that allows a reasonable LAI/biomass. ----!
+   real   , dimension(n_pft)    :: dbh_bigleaf
    !----- Minimum Bdead attainable by this PFT. -------------------------------------------!
    real   , dimension(n_pft)    :: min_bdead
    !----- Critical Bdead, point in which plants stop growing vertically. ------------------!

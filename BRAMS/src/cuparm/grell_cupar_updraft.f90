@@ -626,19 +626,7 @@ subroutine grell_most_thermo_updraft(preccld,check_top,mkx,mgmzp,klfc,ktpse,cld2
 
 
    !---------------------------------------------------------------------------------------!
-   ! 1. First of all, I'll check whether this is a precipitating cloud or not.  The        !
-   !    conversion rate from cloud to rain should be a function of the cloud size and wind !
-   !    shear, but it is only a step function, 0 if the radius is small, or a non-zero     !
-   !    constant otherwise. Perhaps this should be done in a different way in the future.  !
-   !---------------------------------------------------------------------------------------!
-   if (preccld) then
-      c0 = cld2prec
-   else 
-      c0 = 0.
-   end if
-   
-   !---------------------------------------------------------------------------------------!
-   ! 2.  Initialise integrated condensation and top flag.                                  !
+   !    Initialise integrated condensation and top flag.                                   !
    !---------------------------------------------------------------------------------------!
    pwavu     = 0.
    pwu_cld   = 0.
@@ -646,8 +634,8 @@ subroutine grell_most_thermo_updraft(preccld,check_top,mkx,mgmzp,klfc,ktpse,cld2
    
    
    !---------------------------------------------------------------------------------------!
-   ! 3.  Initialise the cloud top check. The check is done only once. The non-forced and   !
-   !     the modified profiles should use the original cloud top definition.               !
+   !    Initialise the cloud top check. The check is done only once. The non-forced and    !
+   ! the modified profiles should use the original cloud top definition.                   !
    !---------------------------------------------------------------------------------------!
    if (check_top) then
       foundtop  = .false.
@@ -658,11 +646,11 @@ subroutine grell_most_thermo_updraft(preccld,check_top,mkx,mgmzp,klfc,ktpse,cld2
    end if
 
    !---------------------------------------------------------------------------------------!
-   ! 4. Between the surface and the level of free convection, everything is already set up !
-   !    (it was done at the grell_find_cloud_lfc subroutine) but between the LFC and the   !
-   !    cloud top I will need a first guess for most variables, so I will initialise with  !
-   !    the environment. Above the cloud top, no mass flux, nothing happens in terms of    !
-   !    updraft, so I will set up the variables with environment values.                   !
+   !    Between the surface and the level of free convection, everything is already set up !
+   ! (it was done at the grell_find_cloud_lfc subroutine) but between the LFC and the      !
+   ! cloud top I will need a first guess for most variables, so I will initialise with the !
+   ! environment. Above the cloud top, no mass flux, nothing happens in terms of updraft,  !
+   ! so I will set up the variables with environment values.                               !
    !---------------------------------------------------------------------------------------!
    thilu_cld((klfc+1):mkx) = thil_cup((klfc+1):mkx)
    tu_cld   ((klfc+1):mkx) = t_cup   ((klfc+1):mkx)
@@ -673,16 +661,44 @@ subroutine grell_most_thermo_updraft(preccld,check_top,mkx,mgmzp,klfc,ktpse,cld2
    co2u_cld ((klfc+1):mkx) = co2_cup ((klfc+1):mkx)
    rhou_cld ((klfc+1):mkx) = rho_cup ((klfc+1):mkx)
    dbyu     ((klfc+1):mkx) = 0.
+   !---------------------------------------------------------------------------------------!
 
 
 
    !---------------------------------------------------------------------------------------!
-   ! 5. Between the LFC and the cloud top, we need to consider entrainment and detrainment !
-   !    contributions. Also, as the air parcel moves upward, condensation will happen, and !
-   !    a fraction of this condensation will fall out as rainfall. Here we will compute    !
-   !    all these variables, some of them in an iterative way.                             !
+   !    Between the LFC and the cloud top, we need to consider entrainment and detrainment !
+   ! contributions. Also, as the air parcel moves upward, condensation will happen, and a  !
+   ! fraction of this condensation will fall out as rainfall. Here we will compute all     !
+   ! these variables, some of them in an iterative way.                                    !
    !---------------------------------------------------------------------------------------!
    vertiloop: do k=klfc,ktpse
+
+
+
+
+      !------------------------------------------------------------------------------------!
+      !    Check whether this is a precipitating cloud or not.  The conversion rate from   !
+      ! cloud to rain ultimately should be a function of the cloud size and wind shear.    !
+      ! These parameters are very unconstrained so we keep it simple here.  Right now only !
+      ! three options exist:                                                               !
+      ! 1. The cloud radius is too small so the lost water is assumed zero.                !
+      ! 2. cld2prec is positive.  The fraction is a function of the layer thickness, al-   !
+      !    though we make sure that the actual fraction never exceeds one.                 !
+      ! 3. cld2prec is negative, so we simply assume a constant rate throughout the cloud. !
+      !------------------------------------------------------------------------------------!
+      if (preccld) then
+         if (cld2prec > 0.) then
+            c0 = max(0.,min(cld2prec * dzu_cld(k),1.0))
+         else
+            c0 = -cld2prec
+         end if
+      else 
+         c0 = 0.
+      end if
+      !------------------------------------------------------------------------------------!
+
+
+
       !------------------------------------------------------------------------------------!
       !    The total mixing ratio is what came from level immediately beneath us plus      !
       ! entrainment and detrainment, plus the water and ice that is about to leave the     !
@@ -765,7 +781,7 @@ subroutine grell_most_thermo_updraft(preccld,check_top,mkx,mgmzp,klfc,ktpse,cld2
                                  ,qtotua,which)
       call thil2tqall(thilu_cld(k),exner_cup(k),p_cup(k),qtotua,qliqu_cld(k)               &
                      ,qiceu_cld(k),tu_cld(k),qvapu_cld(k),qsatu_cld(k))
-      leftu_cld(k) = c0 * dzu_cld(k) * (qliqu_cld(k) + qiceu_cld(k))
+      leftu_cld(k) = c0 * (qliqu_cld(k) + qiceu_cld(k))
       funa         = qtotua - ( qeverything - leftu_cld(k) )
       !------------------------------------------------------------------------------------!
 
@@ -798,7 +814,7 @@ subroutine grell_most_thermo_updraft(preccld,check_top,mkx,mgmzp,klfc,ktpse,cld2
                                     ,qtotuc,which)
          call thil2tqall(thilu_cld(k),exner_cup(k),p_cup(k),qtotuc,qliqu_cld(k)            &
                         ,qiceu_cld(k),tu_cld(k),qvapu_cld(k),qsatu_cld(k))
-         leftu_cld(k) = c0 * dzu_cld(k) * (qliqu_cld(k) + qiceu_cld(k))
+         leftu_cld(k) = c0 * (qliqu_cld(k) + qiceu_cld(k))
          func         = qtotuc - ( qeverything - leftu_cld(k) )
 
          !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
@@ -846,7 +862,7 @@ subroutine grell_most_thermo_updraft(preccld,check_top,mkx,mgmzp,klfc,ktpse,cld2
                call thil2tqall(thilu_cld(k),exner_cup(k),p_cup(k),qtotuz                   &
                               ,qliqu_cld(k),qiceu_cld(k),tubis,qvapu_cld(k)                &
                               ,qsatu_cld(k))
-               leftu_cld(k) = c0 * dzu_cld(k) * (qliqu_cld(k) + qiceu_cld(k))
+               leftu_cld(k) = c0 * (qliqu_cld(k) + qiceu_cld(k))
                funz         = qtotuz - ( qeverything - leftu_cld(k) )
 
                bisection = funa*funz < 0.
@@ -917,7 +933,7 @@ subroutine grell_most_thermo_updraft(preccld,check_top,mkx,mgmzp,klfc,ktpse,cld2
                                        ,qtotu_cld(k),which)
             call thil2tqall(thilu_cld(k),exner_cup(k),p_cup(k),qtotu_cld(k),qliqu_cld(k)   &
                            ,qiceu_cld(k),tu_cld(k),qvapu_cld(k),qsatu_cld(k))
-            leftu_cld(k) = c0 * dzu_cld(k) * (qliqu_cld(k) + qiceu_cld(k))
+            leftu_cld(k) = c0 * (qliqu_cld(k) + qiceu_cld(k))
             funnow       = qtotu_cld(k) - ( qeverything - leftu_cld(k) )
 
             !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!

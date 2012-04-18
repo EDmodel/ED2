@@ -1014,6 +1014,9 @@ do
          pdg)
             thissfilin=${bioinit}'/pdg_ustein_newallom.'
             ;;
+         rja)
+            thissfilin=${bioinit}'/rja_newallom.'
+            ;;
          fns)
             thissfilin=${bioinit}'/fns_c3c4.'
             ;;

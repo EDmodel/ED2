@@ -28,6 +28,7 @@ OBJ_MODEL =                        \
 	disturb_coms.o             \
 	edio.o                     \
 	ed_1st.o                   \
+	ed_bigleaf_init.o          \
 	ed_driver.o                \
 	ed_filelist.o              \
 	ed_grid.o                  \

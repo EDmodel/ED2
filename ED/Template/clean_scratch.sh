@@ -57,6 +57,13 @@ unrestricted_parallel)
 unrestricted_serial)
    nodes="soph57 soph58 soph59 soph60 soph61 soph62 soph63 soph64"
    ;;
+long_serial)
+   nodes="soph03 soph04 soph05 soph13 soph14 soph16 soph17 soph18 soph19 soph24 
+          soph25 soph26 soph27 soph28 soph29 soph30 soph31 soph32 soph33 soph34 
+          soph35 soph36 soph37 soph38 soph39 soph40 soph41 soph42 soph43 soph44 
+          soph45 soph46 soph47 soph48 soph49 soph50 soph51 soph52 soph53 soph54 
+          soph55 soph56"
+   ;;
 *)
    echo ' I cannot recognise queue '${queue}'...'
    exit 39

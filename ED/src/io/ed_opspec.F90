@@ -1559,6 +1559,13 @@ end do
                     ,igrass,'...'
       call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
+   elseif (igrass == 1 .and. ibigleaf == 1) then
+      write (reason,fmt='(a,1x,a)')                                                        &
+                    'Invalid setting.  New grass allometry (IGRASS = 1) is not supported'  &
+                   ,'in big leaf ED (IBIGLEAF = 1)...'
+      call opspec_fatal(reason,'opspec_misc')
+      ifaterr = ifaterr +1
+   
    end if
 
    if (iphen_scheme < -1 .or. iphen_scheme > 3) then

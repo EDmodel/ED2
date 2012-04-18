@@ -100,6 +100,9 @@ twostream_rad.o: rk4_coms.mod
 vegetation_dynamics.o: consts_coms.mod disturbance_utils.mod ed_misc_coms.mod
 vegetation_dynamics.o: ed_state_vars.mod fuse_fiss_utils.mod grid_coms.mod
 vegetation_dynamics.o: growth_balive.mod mem_polygons.mod
+ed_bigleaf_init.o: allometry.mod consts_coms.mod ed_max_dims.mod
+ed_bigleaf_init.o: ed_misc_coms.mod ed_node_coms.mod ed_state_vars.mod
+ed_bigleaf_init.o: fuse_fiss_utils.mod pft_coms.mod
 ed_init.o: consts_coms.mod ed_max_dims.mod ed_misc_coms.mod ed_node_coms.mod
 ed_init.o: ed_state_vars.mod ed_work_vars.mod grid_coms.mod mem_polygons.mod
 ed_init.o: phenology_coms.mod phenology_startup.mod rk4_coms.mod soil_coms.mod
