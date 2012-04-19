@@ -420,6 +420,7 @@ subroutine near_bare_ground_big_leaf_init(cgrid)
                                  , qsw                & ! intent(in)
                                  , sla                & ! intent(in)
                                  , agf_bs             & ! intent(in)
+                                 , dbh_bigleaf        & ! intent(in)
                                  , hgt_max            & ! intent(in)
                                  , include_pft        & ! intent(in)
                                  , include_these_pft  & ! intent(in)
@@ -429,8 +430,7 @@ subroutine near_bare_ground_big_leaf_init(cgrid)
                                  , pio4               & ! intent(in)
                                  , kgom2_2_tonoha     & ! intent(in)
                                  , tonoha_2_kgom2     ! ! intent(in)
-   use allometry          , only : h2dbh              & ! function
-                                 , dbh2bd             & ! function
+   use allometry          , only : dbh2bd             & ! function
                                  , size2bl            & ! function
                                  , ed_biomass         & ! function
                                  , area_indices       ! ! subroutine
@@ -527,10 +527,10 @@ subroutine near_bare_ground_big_leaf_init(cgrid)
                ! quantities using the standard allometry for this PFT.                     !
                !---------------------------------------------------------------------------!
                cpatch%nplant(ico)           = init_density(ipft)
+               cpatch%dbh(ico)              = dbh_bigleaf(ipft)
                cpatch%hite(ico)             = hgt_max(ipft)
                cpatch%phenology_status(ico) = 0
                cpatch%bstorage(ico)         = 0.0
-               cpatch%dbh(ico)              = h2dbh(cpatch%hite(ico),ipft)
                cpatch%bdead(ico)            = dbh2bd(cpatch%dbh(ico),ipft)
                cpatch%bleaf(ico)            = size2bl(cpatch%dbh(ico),cpatch%hite(ico),ipft)
                cpatch%sla(ico)              = sla(ipft)

@@ -587,10 +587,6 @@ subroutine reproduction_eq_0(cgrid, month)
    use mem_polygons       , only : maxcohort             ! ! intent(in)
    use consts_coms        , only : pio4                  ! ! intent(in)
    use ed_therm_lib       , only : calc_veg_hcap         ! ! function
-   use allometry          , only : dbh2bd                & ! function
-                                 , size2bl               & ! function
-                                 , h2dbh                 & ! function
-                                 , area_indices          ! ! subroutine
    use grid_coms          , only : nzg                   ! ! intent(in)
    implicit none
    !----- Arguments -----------------------------------------------------------------------!

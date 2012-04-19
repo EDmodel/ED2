@@ -44,7 +44,6 @@ subroutine read_ed10_ed20_history_file
    use grid_coms      , only : ngrids              ! ! intent(in)
    use allometry      , only : bd2dbh              & ! function
                              , dbh2h               & ! function
-                             , h2dbh               & ! function
                              , dbh2bd              & ! function
                              , size2bl             & ! function
                              , ed_biomass          & ! function

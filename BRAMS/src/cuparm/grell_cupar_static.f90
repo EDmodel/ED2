@@ -662,7 +662,7 @@ subroutine grell_cupar_static(comp_noforc_cldwork,checkmass,iupmethod,maxens_cap
          call grell_efficiency_ensemble(mkx,mgmzp,maxens_eff,klou,klfc,klnb,edtmin,edtmax  &
                                        ,pwav,pwev,z_cup,uwind,vwind,dzd_cld                &
                                        ,edt_eff(:,icap),icld,icap)
-         !------------------------------------------------------------------------------------!
+         !---------------------------------------------------------------------------------!
 
 
 
@@ -671,10 +671,101 @@ subroutine grell_cupar_static(comp_noforc_cldwork,checkmass,iupmethod,maxens_cap
          !    downdraft is always saturated, and it gets the moisture from the rain.  How- !
          !    ever, it cannot require more rain than what is available, so if that would   !
          !    be the case, we don't allow this cloud to exist.                             !
-         !------------------------------------------------------------------------------------!
+         !---------------------------------------------------------------------------------!
          ddcheckloop: do iedt = 1, maxens_eff
             if (pwav + edt_eff(iedt,icap) * pwev < 0. ) then
                ierr_cap(icap) = 9
+               !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
+               !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
+               if (print_debug) then
+                  iun=icld+90
+                  write(unit=iun,fmt='(504a)')             ('=',l=1,504)
+                  write(unit=iun,fmt='(504a)')             ('=',l=1,504)
+                  write(unit=iun,fmt='((a,1x,i5,1x))'    ) ' I      =',i
+                  write(unit=iun,fmt='((a,1x,i5,1x))'    ) ' J      =',j
+                  write(unit=iun,fmt='((a,1x,i5,1x))'    ) ' IEDT   =',iedt
+                  write(unit=iun,fmt='((a,1x,i5,1x))'    ) ' ICAP   =',icap
+                  write(unit=iun,fmt='(a,1x,f10.4,1x,i5)') ' KLOU   =',z(klou),klou
+                  write(unit=iun,fmt='(a,1x,f10.4,1x,i5)') ' KLCL   =',z(klcl),klcl
+                  write(unit=iun,fmt='(a,1x,f10.4,1x,i5)') ' KLFC   =',z(klfc),klfc
+                  write(unit=iun,fmt='(a,1x,f10.4,1x,i5)') ' KDET   =',z(kdet),kdet
+                  write(unit=iun,fmt='(a,1x,f10.4,1x,i5)') ' KLOD   =',z(klod),klod
+                  write(unit=iun,fmt='(a,1x,f10.4,1x,i5)') ' KLNB   =',z(klnb),klnb
+                  write(unit=iun,fmt='(a,1x,f10.4,1x,i5)') ' KTOP   =',z(ktop),ktop
+                  write(unit=iun,fmt='(a,1x,f10.4,1x,i5)') ' PWAV   =',pwav
+                  write(unit=iun,fmt='(a,1x,f10.4,1x,i5)') ' PWEV   =',pwev
+                  write(unit=iun,fmt='(a,1x,f10.4,1x,i5)') ' EDT    =',edt
+                  write(unit=iun,fmt='(504a)')          ('-',l=1,504)
+                  write(unit=iun,fmt='(42(1x,a))')                                         &
+                                                '      LEVEL','      Z_CUP','      P_CUP'  &
+                                 ,'       THIL','   THIL_CUP','  THILD_CLD','  THILU_CLD'  &
+                                 ,'      THEIV','  THEIV_CUP',' THEIVD_CLD',' THEIVU_CLD'  &
+                                 ,'          T','      T_CUP','     TD_CLD','     TU_CLD'  &
+                                 ,'       QTOT','   QTOT_CUP','  QTOTD_CLD','  QTOTU_CLD'  &
+                                 ,'        CO2','    CO2_CUP','   CO2D_CLD','   CO2U_CLD'  &
+                                 ,'       QVAP','   QVAP_CUP','  QVAPD_CLD','  QVAPU_CLD'  &
+                                 ,'       QCON','   QCON_CUP','  QCOND_CLD','  QCONU_CLD'  &
+                                 ,'        RHO','    RHO_CUP','   RHOD_CLD','   RHOU_CLD'  &
+                                 ,'    PWD_CLD','    PWU_CLD','     PW_TOT'                &
+                                 ,' DELLA_THIL','DELLA_THEIV',' DELLA_QTOT','  DELLA_CO2'
+                  write(unit=iun,fmt='(504a)')          ('-',l=1,504)
+                  do k=mkx,1,-1
+                     if (k == ktop) then
+                        levname = '        TOP'
+                     elseif (k == klnb) then
+                        levname = '        LNB'
+                     elseif (k == klod) then
+                        levname = '        LOD'
+                     elseif (k == kdet) then
+                        levname = '        DET'
+                     elseif (k == klfc) then
+                        levname = '        LFC'
+                     elseif (k == klou) then
+                        levname = '        LOU'
+                     elseif (k == klcl) then
+                        levname = '        LCL'
+                     else
+                        levname = '           '
+                     end if
+                  
+                     write (unit=iun,fmt='(1x,a,41(1x,f11.4))') levname,z_cup(k)           &
+                     ,0.01*p_cup(k),thil(k),thil_cup(k),thild_cld(k),thilu_cld(k),theiv(k) &
+                     ,theiv_cup(k),theivd_cld(k),theivu_cld(k),t(k)-t00,t_cup(k)-t00       &
+                     ,td_cld(k)-t00,tu_cld(k)-t00,1000.*qtot(k),1000.*qtot_cup(k)          &
+                     ,1000.*qtotd_cld(k),1000.*qtotu_cld(k),co2(k),co2_cup(k),co2d_cld(k)  &
+                     ,co2u_cld(k),1000.*qvap(k),1000.*qvap_cup(k),1000.*qvapd_cld(k)       &
+                     ,1000.*qvapu_cld(k),1000.*(qliq(k)+qice(k))                           &
+                     ,1000.*(qliq_cup(k)+qice_cup(k)),1000.*(qliqd_cld(k)+qiced_cld(k))    &
+                     ,1000.*(qliqu_cld(k)+qiceu_cld(k)),rho(k),rho_cup(k),rhod_cld(k)      &
+                     ,rhou_cld(k),1000.*pwd_cld(k),1000.*pwu_cld(k)                        &
+                     ,1000.*pw_eff(k,iedt,icap),dellathil_eff(k,iedt,icap)                 &
+                     ,dellatheiv_eff(k,iedt,icap),1000*dellaqtot_eff(k,iedt,icap)          &
+                     ,dellaco2_eff(k,iedt,icap)
+                  end do
+                  write(unit=iun,fmt='(504a)')          ('-',l=1,504)
+                  write(unit=iun,fmt='(42(1x,a))')                                         &
+                                                '      LEVEL','      Z_CUP','      P_CUP'  &
+                                 ,'       THIL','   THIL_CUP','  THILD_CLD','  THILU_CLD'  &
+                                 ,'      THEIV','  THEIV_CUP',' THEIVD_CLD',' THEIVU_CLD'  &
+                                 ,'          T','      T_CUP','     TD_CLD','     TU_CLD'  &
+                                 ,'       QTOT','   QTOT_CUP','  QTOTD_CLD','  QTOTU_CLD'  &
+                                 ,'        CO2','    CO2_CUP','   CO2D_CLD','   CO2U_CLD'  &
+                                 ,'       QVAP','   QVAP_CUP','  QVAPD_CLD','  QVAPU_CLD'  &
+                                 ,'       QCON','   QCON_CUP','  QCOND_CLD','  QCONU_CLD'  &
+                                 ,'        RHO','    RHO_CUP','   RHOD_CLD','   RHOU_CLD'  &
+                                 ,'    PWD_CLD','    PWU_CLD','     PW_TOT'                &
+                                 ,' DELLA_THIL','DELLA_THEIV',' DELLA_QTOT','  DELLA_CO2'
+                  write(unit=iun,fmt='(504a)')          ('=',l=1,504)
+                  write(unit=iun,fmt='(504a)')          ('=',l=1,504)
+                  write(unit=iun,fmt='(a)') ' '
+                  write(unit=iun,fmt='(a)') ' '
+                  write(unit=iun,fmt='(a)') ' '
+                  write(unit=iun,fmt='(a)') ' '
+                  write(unit=iun,fmt='(a)') ' '
+                  write(unit=iun,fmt='(a)') ' '
+               end if
+               !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
+               !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
                cycle stacloop
             end if
          end do ddcheckloop

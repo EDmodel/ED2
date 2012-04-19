@@ -2543,33 +2543,6 @@ subroutine init_pft_alloc_params()
 
 
 
-   !---------------------------------------------------------------------------------------!
-   !    This is the typical DBH that all big leaf plants will have.  Because the big-leaf  !
-   ! ED doesn't really solve individuals, the typical DBH should be one that makes a good  !
-   ! ratio between LAI and biomass.  This is a tuning parameter and right now the initial  !
-   ! guess is 1/3 of the critical DBH for trees and the critical DBH for grasses.          !
-   !---------------------------------------------------------------------------------------!
-   dbh_bigleaf( 1) =  0.597
-   dbh_bigleaf( 2) = 32.1
-   dbh_bigleaf( 3) = 32.1
-   dbh_bigleaf( 4) = 32.1
-   dbh_bigleaf( 5) = 3.99
-   dbh_bigleaf( 6) = 25.6
-   dbh_bigleaf( 7) = 25.6
-   dbh_bigleaf( 8) = 21.3
-   dbh_bigleaf( 9) = 14.5
-   dbh_bigleaf(10) = 19.8
-   dbh_bigleaf(11) = 17.7
-   dbh_bigleaf(12) =  3.99
-   dbh_bigleaf(13) =  3.99
-   dbh_bigleaf(14) =  0.597
-   dbh_bigleaf(15) =  0.597
-   dbh_bigleaf(16) =  0.597
-   dbh_bigleaf(17) = 32.1
-   !---------------------------------------------------------------------------------------!
-
-
-
    !---------------------------------------------------------------------------------------! 
    !   MIN_DBH     -- minimum DBH allowed for the PFT.                                     !
    !   DBH_CRIT    -- minimum DBH that brings the PFT to its tallest possible height.      !
@@ -2578,6 +2551,33 @@ subroutine init_pft_alloc_params()
       min_dbh    (ipft) = h2dbh(hgt_min(ipft),ipft)
       dbh_crit   (ipft) = h2dbh(hgt_max(ipft),ipft)
    end do
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !    This is the typical DBH that all big leaf plants will have.  Because the big-leaf  !
+   ! ED doesn't really solve individuals, the typical DBH should be one that makes a good  !
+   ! ratio between LAI and biomass.  This is a tuning parameter and right now the initial  !
+   ! guess is 1/3 of the critical DBH for trees and the critical DBH for grasses.          !
+   !---------------------------------------------------------------------------------------!
+   dbh_bigleaf( 1) = dbh_crit( 1)
+   dbh_bigleaf( 2) = dbh_crit( 2) * onethird
+   dbh_bigleaf( 3) = dbh_crit( 3) * onethird
+   dbh_bigleaf( 4) = dbh_crit( 4) * onethird
+   dbh_bigleaf( 5) = dbh_crit( 5)
+   dbh_bigleaf( 6) = dbh_crit( 6) * onethird
+   dbh_bigleaf( 7) = dbh_crit( 7) * onethird
+   dbh_bigleaf( 8) = dbh_crit( 8) * onethird
+   dbh_bigleaf( 9) = dbh_crit( 9) * onethird
+   dbh_bigleaf(10) = dbh_crit(10) * onethird
+   dbh_bigleaf(11) = dbh_crit(11) * onethird
+   dbh_bigleaf(12) = dbh_crit(12)
+   dbh_bigleaf(13) = dbh_crit(13)
+   dbh_bigleaf(14) = dbh_crit(14)
+   dbh_bigleaf(15) = dbh_crit(15)
+   dbh_bigleaf(16) = dbh_crit(16)
+   dbh_bigleaf(17) = dbh_crit(17) * onethird
    !---------------------------------------------------------------------------------------!
 
 
@@ -3227,6 +3227,7 @@ subroutine init_pft_derived_params()
                                    , pft_name16           & ! intent(in)
                                    , hgt_max              & ! intent(in)
                                    , dbh_crit             & ! intent(in)
+                                   , dbh_bigleaf          & ! intent(in)
                                    , one_plant_c          & ! intent(out)
                                    , min_recruit_size     & ! intent(out)
                                    , min_cohort_size      & ! intent(out)
@@ -3256,6 +3257,11 @@ subroutine init_pft_derived_params()
    real                              :: bsapwood_max
    real                              :: balive_max
    real                              :: bdead_max
+   real                              :: bleaf_bl
+   real                              :: broot_bl
+   real                              :: bsapwood_bl
+   real                              :: balive_bl
+   real                              :: bdead_bl
    real                              :: leaf_hcap_min
    real                              :: wood_hcap_min
    real                              :: lai_min
@@ -3277,18 +3283,21 @@ subroutine init_pft_derived_params()
    !---------------------------------------------------------------------------------------!
    if (print_zero_table) then
       open  (unit=61,file=trim(zero_table_fn),status='replace',action='write')
-      write (unit=61,fmt='(24(a,1x))')                '  PFT',        'NAME            '   &
+      write (unit=61,fmt='(29(a,1x))')                '  PFT',        'NAME            '   &
                                               ,'     HGT_MIN','         DBH'               &
                                               ,'   BLEAF_MIN','   BROOT_MIN'               &
                                               ,'BSAPWOOD_MIN','  BALIVE_MIN'               &
-                                              ,'   BDEAD_MIN','   BLEAF_MAX'               &
-                                              ,'   BROOT_MAX','BSAPWOOD_MAX'               &
-                                              ,'  BALIVE_MAX','   BDEAD_MAX'               &
-                                              ,'   INIT_DENS','MIN_REC_SIZE'               &
-                                              ,'MIN_COH_SIZE',' NEGL_NPLANT'               &
-                                              ,'         SLA','VEG_HCAP_MIN'               &
-                                              ,'     LAI_MIN','     HGT_MAX'               &
-                                              ,'    DBH_CRIT',' ONE_PLANT_C'
+                                              ,'   BDEAD_MIN','    BLEAF_BL'               &
+                                              ,'    BROOT_BL',' BSAPWOOD_BL'               &
+                                              ,'   BALIVE_BL','    BDEAD_BL'               &
+                                              ,'   BLEAF_MAX','   BROOT_MAX'               &
+                                              ,'BSAPWOOD_MAX','  BALIVE_MAX'               &
+                                              ,'   BDEAD_MAX','   INIT_DENS'               &
+                                              ,'MIN_REC_SIZE','MIN_COH_SIZE'               &
+                                              ,' NEGL_NPLANT','         SLA'               &
+                                              ,'VEG_HCAP_MIN','     LAI_MIN'               &
+                                              ,'     HGT_MAX','    DBH_CRIT'               &
+                                              ,' ONE_PLANT_C'
    end if
    min_plant_dens = onesixth * minval(init_density)
    do ipft = 1,n_pft
@@ -3321,7 +3330,12 @@ subroutine init_pft_derived_params()
       !------------------------------------------------------------------------------------!
       !    Biomass of one individual plant at recruitment.                                 !
       !------------------------------------------------------------------------------------!
-      one_plant_c(ipft)      =  bdead_min + balive_min
+      bleaf_bl          = size2bl(dbh_bigleaf(ipft),hgt_min(ipft),ipft) 
+      broot_bl          = bleaf_bl * q(ipft)
+      bsapwood_bl       = bleaf_bl * qsw(ipft) * hgt_max(ipft)
+      balive_bl         = bleaf_bl + broot_bl + bsapwood_bl
+      bdead_bl          = dbh2bd(dbh_bigleaf(ipft),ipft)
+      one_plant_c(ipft) =  bdead_bl + balive_bl
       !------------------------------------------------------------------------------------!
 
 
@@ -3379,12 +3393,14 @@ subroutine init_pft_derived_params()
 
 
       if (print_zero_table) then
-         write (unit=61,fmt='(i5,1x,a16,1x,22(es12.5,1x))')                                &
+         write (unit=61,fmt='(i5,1x,a16,1x,27(es12.5,1x))')                                &
                                                      ipft,pft_name16(ipft),hgt_min(ipft)   &
                                                     ,dbh,bleaf_min,broot_min,bsapwood_min  &
-                                                    ,balive_min,bdead_min,bleaf_max        &
-                                                    ,broot_max,bsapwood_max,balive_max     &
-                                                    ,bdead_max,init_density(ipft)          &
+                                                    ,balive_min,bdead_min,bleaf_bl         &
+                                                    ,broot_bl,bsapwood_bl,balive_bl        &
+                                                    ,bdead_bl,bleaf_max,broot_max          &
+                                                    ,bsapwood_max,balive_max,bdead_max     &
+                                                    ,init_density(ipft)                    &
                                                     ,min_recruit_size(ipft)                &
                                                     ,min_cohort_size(ipft)                 &
                                                     ,negligible_nplant(ipft)               &

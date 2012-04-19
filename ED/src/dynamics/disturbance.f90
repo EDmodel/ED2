@@ -1790,8 +1790,11 @@ module disturbance_utils
       use pft_coms       , only : q                        & ! intent(in)
                                 , qsw                      & ! intent(in)
                                 , sla                      & ! intent(in)
-                                , hgt_min                  ! ! intent(in)
-      use ed_misc_coms   , only : dtlsm                    ! ! intent(in)
+                                , hgt_min                  & ! intent(in)
+                                , hgt_max                  & ! intent(in)
+                                , dbh_bigleaf              ! ! intent(in)
+      use ed_misc_coms   , only : dtlsm                    & ! intent(in)
+                                , ibigleaf                 ! ! intent(in)
       use fuse_fiss_utils, only : sort_cohorts             ! ! sub-routine
       use ed_therm_lib   , only : calc_veg_hcap            ! ! function
       use consts_coms    , only : t3ple                    & ! intent(in)
@@ -1859,17 +1862,38 @@ module disturbance_utils
       !------------------------------------------------------------------------------------!
       cpatch%pft(nc)    = pft
       cpatch%nplant(nc) = density
-      cpatch%hite(nc)   = hgt_min(cpatch%pft(nc)) * min(1.0,height_factor)
+      select case (ibigleaf)
+      case (0)
+         !---------------------------------------------------------------------------------!
+         !    SAS approximation, assign height and use it to find DBH and the structural   !
+         ! (dead) biomass.                                                                 !
+         !---------------------------------------------------------------------------------!
+         cpatch%hite (nc) = hgt_min(cpatch%pft(nc)) * min(1.0,height_factor)
+         cpatch%dbh  (nc) = h2dbh(cpatch%hite(nc),cpatch%pft(nc))
+         cpatch%bdead(nc) = dbh2bd(cpatch%dbh(nc),cpatch%pft(nc))
+         !---------------------------------------------------------------------------------!
+
+      case (1)
+         !---------------------------------------------------------------------------------!
+         !    Big leaf approximation, assign the typical DBH and height and use them to    !
+         ! find height and the structural (dead) biomass.                                  !
+         !---------------------------------------------------------------------------------!
+         cpatch%hite (nc) = hgt_max(cpatch%pft(nc))
+         cpatch%dbh  (nc) = dbh_bigleaf(cpatch%pft(nc))
+         cpatch%bdead(nc) = dbh2bd(cpatch%dbh(nc),cpatch%pft(nc))
+         !---------------------------------------------------------------------------------!
+      end select
       !------------------------------------------------------------------------------------!
+
+
+
 
       !----- Initialise other cohort-level variables. -------------------------------------!
       call init_ed_cohort_vars(cpatch, nc, lsl)
+      !------------------------------------------------------------------------------------!
 
 
 
-      !----- Find DBH and the maximum leaf biomass. ---------------------------------------!
-      cpatch%dbh(nc)   = h2dbh(cpatch%hite(nc),cpatch%pft(nc))
-      cpatch%bdead(nc) = dbh2bd(cpatch%dbh(nc),cpatch%pft(nc))
 
       !------------------------------------------------------------------------------------!
       !      Initialise the active and storage biomass scaled by the leaf drought          !
