@@ -411,42 +411,60 @@ do
 
             /bin/rm -f ${here}/badfile.txt
          done
+         #---------------------------------------------------------------------------------#
+
+
+
+         #---------------------------------------------------------------------------------#
+         #      Run the small R script to check whether the simulation was running or not, #
+         # and whether there was any cohort left by the time the runs were stopped.        #
+         #---------------------------------------------------------------------------------#
+         sed -i s@thispoly@${polyname}@g ${here}/${polyname}/whichrun.r
+         sed -i s@thisqueue@${queue}@g   ${here}/${polyname}/whichrun.r
+         sed -i s@pathhere@${here}@g     ${here}/${polyname}/whichrun.r
+         sed -i s@paththere@${there}@g   ${here}/${polyname}/whichrun.r
+         R CMD BATCH ${here}/${polyname}/whichrun.r ${here}/${polyname}/outwhichrun.txt
+         while [ ! -s ${here}/${polyname}/statusrun.txt ]
+         do
+            sleep 0.5
+         done
+         year=`cat ${here}/${polyname}/statusrun.txt  | awk '{print $2}'`
+         month=`cat ${here}/${polyname}/statusrun.txt | awk '{print $3}'`
+         date=`cat ${here}/${polyname}/statusrun.txt  | awk '{print $4}'`
+         time=`cat ${here}/${polyname}/statusrun.txt  | awk '{print $5}'`
+         runt=`cat ${here}/${polyname}/statusrun.txt  | awk '{print $6}'`
+         #---------------------------------------------------------------------------------#
+      else
+
+         #---------------------------------------------------------------------------------#
+         #      Make a copy of the directory "there" in case here and there aren't the     #
+         # same.                                                                           #
+         #---------------------------------------------------------------------------------#
+         if [ ${here} != ${there} ]
+         then
+            cp -r ${here}/Template ${there}/${polyname}
+         fi
+
+         sed -i s@thispoly@${polyname}@g ${here}/${polyname}/whichrun.r
+         sed -i s@thisqueue@${queue}@g   ${here}/${polyname}/whichrun.r
+         sed -i s@pathhere@${here}@g     ${here}/${polyname}/whichrun.r
+         sed -i s@paththere@${there}@g   ${here}/${polyname}/whichrun.r
+         year=${yeara}
+         month=${montha}
+         date=${datea}
+         time=${timea}
+         runt='INITIAL'
+         #---------------------------------------------------------------------------------#
       fi
       #------------------------------------------------------------------------------------#
-
-
-
-
-
-
-      #------------------------------------------------------------------------------------#
-      #      Run the small R script to check whether the simulation was running or not,    #
-      # and whether there was any cohort left by the time the runs were stopped.           #
-      #------------------------------------------------------------------------------------#
-      sed -i s@thispoly@${polyname}@g ${here}/${polyname}/whichrun.r
-      sed -i s@thisqueue@${queue}@g   ${here}/${polyname}/whichrun.r
-      sed -i s@pathhere@${here}@g     ${here}/${polyname}/whichrun.r
-      sed -i s@paththere@${there}@g   ${here}/${polyname}/whichrun.r
-      R CMD BATCH ${here}/${polyname}/whichrun.r ${here}/${polyname}/outwhichrun.txt
-      while [ ! -s ${here}/${polyname}/statusrun.txt ]
-      do
-         sleep 0.5
-      done
-      year=`cat ${here}/${polyname}/statusrun.txt  | awk '{print $2}'`
-      month=`cat ${here}/${polyname}/statusrun.txt | awk '{print $3}'`
-      date=`cat ${here}/${polyname}/statusrun.txt  | awk '{print $4}'`
-      time=`cat ${here}/${polyname}/statusrun.txt  | awk '{print $5}'`
-      runt=`cat ${here}/${polyname}/statusrun.txt  | awk '{print $6}'`
-      #------------------------------------------------------------------------------------#
-
    else
-   
+
       #----- Make a copy of the directory "there" in case here and there aren't the same. -#
       if [ ${here} != ${there} ]
       then
          cp -r ${here}/Template ${there}/${polyname}
       fi
-   
+
       sed -i s@thispoly@${polyname}@g ${here}/${polyname}/whichrun.r
       sed -i s@thisqueue@${queue}@g   ${here}/${polyname}/whichrun.r
       sed -i s@pathhere@${here}@g     ${here}/${polyname}/whichrun.r
@@ -458,13 +476,6 @@ do
       runt='INITIAL'
    fi
    #---------------------------------------------------------------------------------------#
-
-
-
-
-
-
-
 
 
 

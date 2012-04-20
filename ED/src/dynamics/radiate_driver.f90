@@ -549,17 +549,37 @@ subroutine sfcrad_ed(cosz,cosaoi,csite,mzg,mzs,ntext_soil,ncol_soil,maxcohort,tu
             !------------------------------------------------------------------------------!
             !     Check whether the cohort is resolvable or not.                           !
             !------------------------------------------------------------------------------!
-            if (cpatch%leaf_resolvable(1) .or. cpatch%wood_resolvable(1)) then
+           if (cpatch%leaf_resolvable(1) .or. cpatch%wood_resolvable(1)) then
                tuco = 1 !---- Dummy variable. ---------------------------------------------!
 
+
+
                !---------------------------------------------------------------------------!
-               !     Patch/cohort has enough leaf or wood.  Find the number of layers for  !
-               ! the radiation scheme.                                                     !
+               !     Here we only tell the true LAI if the leaf is resolvable, and the     !
+               ! true   !
+               ! WAI if the wood is resolvable.  Also, for photosynthesis, we must keep track !
+               ! of the tallest cohort that has leaves (we track the array counters because   !
+               ! we will extract the information directly from the arrays.                    !
                !---------------------------------------------------------------------------!
-               cohort_count = ceiling( (cpatch%lai(1) + cpatch%wai(1)) / tai_lyr_max )
-               bl_lai_each  = cpatch%lai(1) / real(cohort_count)
-               bl_wai_each  = cpatch%wai(1) / real(cohort_count) 
+               if (cpatch%leaf_resolvable(1) .and. cpatch%wood_resolvable(1)) then
+                  cohort_count = ceiling( (cpatch%lai(1) + cpatch%wai(1)) / tai_lyr_max )
+                  bl_lai_each  = cpatch%lai(1) / real(cohort_count)
+                  bl_wai_each  = cpatch%wai(1) / real(cohort_count) 
+                  tuco_leaf    = cohort_count
+               elseif (cpatch%leaf_resolvable(1)) then
+                  cohort_count = ceiling( cpatch%lai(1) / tai_lyr_max )
+                  bl_lai_each  = cpatch%lai(1) / real(cohort_count)
+                  bl_wai_each  = 0.0
+                  tuco_leaf    = cohort_count
+               elseif (cpatch%wood_resolvable(1)) then
+                  cohort_count = ceiling( cpatch%wai(1) / tai_lyr_max )
+                  bl_lai_each  = 0.0
+                  bl_wai_each  = cpatch%wai(1) / real(cohort_count)
+               end if
                !---------------------------------------------------------------------------!
+
+
+
 
                !---------------------------------------------------------------------------!
                !     Loop over all layers, and assign equal amounts of LAI and WAI such    !
