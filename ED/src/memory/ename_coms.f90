@@ -236,6 +236,10 @@ module ename_coms
       character(len=str_len)                            :: event_file
 
       !----- Variables to control detailed output. ----------------------------------------!
+      integer                                           :: dt_census
+      integer                                           :: yr1st_census
+      integer                                           :: mon1st_census
+      real                                              :: min_recruit_dbh
       integer                                           :: idetailed
       integer                                           :: patch_keep
 
@@ -487,6 +491,10 @@ module ename_coms
       enl%phenpath                  = undef_path
       enl%event_file                = undef_path
 
+      enl%dt_census                 = undef_integer
+      enl%yr1st_census              = undef_integer
+      enl%mon1st_census             = undef_integer
+      enl%min_recruit_dbh           = undef_real
       enl%idetailed                 = undef_integer
       enl%patch_keep                = undef_integer
 

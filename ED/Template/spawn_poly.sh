@@ -64,8 +64,9 @@ initmode=6
 #     Which type of under storey should I use?                                             #
 # 0 -- No Frankenstein's understorey                                                       #
 # 1 -- Frankenstein's understorey                                                          #
+# 2 -- Based on sci_005 runs.                                                              #
 #------------------------------------------------------------------------------------------#
-iustein=1
+iustein=2
 #------------------------------------------------------------------------------------------#
 
 #------------------------------------------------------------------------------------------#
@@ -518,6 +519,34 @@ do
    esac
    #---------------------------------------------------------------------------------------#
 
+
+
+
+
+   #---------------------------------------------------------------------------------------#
+   #     Determine the census structure.                                                   #
+   #---------------------------------------------------------------------------------------#
+   case ${polyiata} in
+   gyf)
+      dtcensus=24
+      yr1stcensus=2004
+      mon1stcensus=7
+      minrecruitdbh=10
+      ;;
+   s66|s67)
+      dtcensus=24
+      yr1stcensus=1999
+      mon1stcensus=7
+      minrecruitdbh=10
+      ;;
+   *)
+      dtcensus=1
+      yr1stcensus=2000
+      mon1stcensus=1
+      minrecruitdbh=10
+      ;;
+   esac
+   #---------------------------------------------------------------------------------------#
 
 
 
@@ -1003,7 +1032,7 @@ do
       date=${dateh}
       time=${timeh}
       thissfilin=${fullygrown}
-   elif [ ${initmode} -eq 6 ]
+   elif [ ${runt} == 'INITIAL' ] && [ ${initmode} -eq 6 ]
    then
       thissfilin=${fullygrown}
       case ${iustein} in
@@ -1100,9 +1129,45 @@ do
             ;;
          esac
          ;;
+      2)
+         #----- New Frankeinstein's under-storey for those that have one. -----------------#
+         case ${polyiata} in
+         hvd)
+            thissfilin=${bioinit}'/harvard.'
+            ;;
+         s66|s67|s83)
+            thissfilin=${bioinit}'/s66_under_sci005.'
+            ;;
+         m34)
+            thissfilin=${bioinit}'/m34_under_sci005.'
+            ;;
+         gyf)
+            thissfilin=${bioinit}'/gyf_under_sci005.'
+            ;;
+         pdg)
+            thissfilin=${bioinit}'/pdg_under_sci005.'
+            ;;
+         rja)
+            thissfilin=${bioinit}'/rja_under_sci005.'
+            ;;
+         fns)
+            thissfilin=${bioinit}'/fns_under_sci005.'
+            ;;
+         s77)
+            thissfilin=${bioinit}'/s77_under_sci005.'
+            ;;
+         *)
+            echo ' Polygon: '${polyname}
+            echo ' IATA: '${polyiata}
+            echo ' IUSTEIN: '${iustein}
+            echo 'This IATA cannot be used by biomass initialisation with this IUSTEIN!'
+            exit 59
+            ;;
+         esac
+         ;;
       *)
          #----- Bad settings. -------------------------------------------------------------#
-         echo ' IUSTEIN should be 0 or 1, yours is set to '${iustein}'...'
+         echo ' IUSTEIN should be 0, 1, or 2 yours is set to '${iustein}'...'
          exit 66
          ;;
       esac
@@ -1112,100 +1177,104 @@ do
    #---------------------------------------------------------------------------------------#
 
    ED2IN=${here}'/'${polyname}'/ED2IN'
-   sed -i s@paththere@${there}@g             ${ED2IN}
-   sed -i s@myyeara@${thisyeara}@g           ${ED2IN}
-   sed -i s@mymontha@${montha}@g             ${ED2IN}
-   sed -i s@mydatea@${datea}@g               ${ED2IN}
-   sed -i s@mytimea@${timea}@g               ${ED2IN}
-   sed -i s@myyearz@${thisyearz}@g           ${ED2IN}
-   sed -i s@mymonthz@${monthz}@g             ${ED2IN}
-   sed -i s@mydatez@${datez}@g               ${ED2IN}
-   sed -i s@mytimez@${timez}@g               ${ED2IN}
-   sed -i s@mydtlsm@${dtlsm}@g               ${ED2IN}
-   sed -i s@thispoly@${polyname}@g           ${ED2IN}
-   sed -i s@plonflag@${polylon}@g            ${ED2IN}
-   sed -i s@platflag@${polylat}@g            ${ED2IN}
-   sed -i s@timehhhh@${time}@g               ${ED2IN}
-   sed -i s@datehhhh@${date}@g               ${ED2IN}
-   sed -i s@monthhhh@${month}@g              ${ED2IN}
-   sed -i s@yearhhhh@${year}@g               ${ED2IN}
-   sed -i s@myinitmode@${initmode}@g         ${ED2IN}
-   sed -i s@mysfilin@${thissfilin}@g         ${ED2IN}
-   sed -i s@mytrees@${pfts}@g                ${ED2IN}
-   sed -i s@mycrop@${crop}@g                 ${ED2IN}
-   sed -i s@myplantation@${plantation}@g     ${ED2IN}
-   sed -i s@myiphen@${iphen}@g               ${ED2IN}
-   sed -i s@myallom@${iallom}@g              ${ED2IN}
-   sed -i s@myisoilflg@${polyisoil}@g        ${ED2IN}
-   sed -i s@mynslcon@${polyntext}@g          ${ED2IN}
-   sed -i s@myslxsand@${polysand}@g          ${ED2IN}
-   sed -i s@myslxclay@${polyclay}@g          ${ED2IN}
-   sed -i s@mysoilcol@${polycol}@g           ${ED2IN}
-   sed -i s@mynzg@${polynzg}@g               ${ED2IN}
-   sed -i s@mymetdriverdb@${metdriverdb}@g   ${ED2IN}
-   sed -i s@mymetcyc1@${metcyc1}@g           ${ED2IN}
-   sed -i s@mymetcycf@${metcycf}@g           ${ED2IN}
-   sed -i s@mytoler@${toler}@g               ${ED2IN}
-   sed -i s@RUNFLAG@${runt}@g                ${ED2IN}
-   sed -i s@myvmfactc3@${vmfactc3}@g         ${ED2IN}
-   sed -i s@myvmfactc4@${vmfactc4}@g         ${ED2IN}
-   sed -i s@mymphototrc3@${mphototrc3}@g     ${ED2IN}
-   sed -i s@mymphototec3@${mphototec3}@g     ${ED2IN}
-   sed -i s@mymphotoc4@${mphotoc4}@g         ${ED2IN}
-   sed -i s@mybphotoblc3@${bphotoblc3}@g     ${ED2IN}
-   sed -i s@mybphotonlc3@${bphotonlc3}@g     ${ED2IN}
-   sed -i s@mybphotoc4@${bphotoc4}@g         ${ED2IN}
-   sed -i s@mykwgrass@${kwgrass}@g           ${ED2IN}
-   sed -i s@mykwtree@${kwtree}@g             ${ED2IN}
-   sed -i s@mygammac3@${gammac3}@g           ${ED2IN}
-   sed -i s@mygammac4@${gammac4}@g           ${ED2IN}
-   sed -i s@myd0grass@${d0grass}@g           ${ED2IN}
-   sed -i s@myd0tree@${d0tree}@g             ${ED2IN}
-   sed -i s@myalphac3@${alphac3}@g           ${ED2IN}
-   sed -i s@myalphac4@${alphac4}@g           ${ED2IN}
-   sed -i s@myklowco2@${klowco2}@g           ${ED2IN}
-   sed -i s@myrrffact@${rrffact}@g           ${ED2IN}
-   sed -i s@mygrowthresp@${growthresp}@g     ${ED2IN}
-   sed -i s@mylwidthgrass@${lwidthgrass}@g   ${ED2IN}
-   sed -i s@mylwidthbltree@${lwidthbltree}@g ${ED2IN}
-   sed -i s@mylwidthnltree@${lwidthnltree}@g ${ED2IN}
-   sed -i s@myq10c3@${q10c3}@g               ${ED2IN}
-   sed -i s@myq10c4@${q10c4}@g               ${ED2IN}
-   sed -i s@myh2olimit@${h2olimit}@g         ${ED2IN}
-   sed -i s@mysfclyrm@${isfclyrm}@g          ${ED2IN}
-   sed -i s@myicanturb@${icanturb}@g         ${ED2IN}
-   sed -i s@myatmco2@${atmco2}@g             ${ED2IN}
-   sed -i s@mythcrit@${thcrit}@g             ${ED2IN}
-   sed -i s@mysmfire@${smfire}@g             ${ED2IN}
-   sed -i s@myfire@${ifire}@g                ${ED2IN}
-   sed -i s@myfuel@${fireparm}@g             ${ED2IN}
-   sed -i s@mymetavg@${imetavg}@g            ${ED2IN}
-   sed -i s@mypercol@${ipercol}@g            ${ED2IN}
-   sed -i s@mysoilbc@${isoilbc}@g            ${ED2IN}
-   sed -i s@myrunoff@${runoff}@g             ${ED2IN}
-   sed -i s@mymetrad@${imetrad}@g            ${ED2IN}
-   sed -i s@mybranch@${ibranch}@g            ${ED2IN}
-   sed -i s@mycanrad@${icanrad}@g            ${ED2IN}
-   sed -i s@mycrown@${crown}@g               ${ED2IN}
-   sed -i s@myltransvis@${ltransvis}@g       ${ED2IN}
-   sed -i s@myltransnir@${ltransnir}@g       ${ED2IN}
-   sed -i s@mylreflectvis@${lreflectvis}@g   ${ED2IN}
-   sed -i s@mylreflectnir@${lreflectnir}@g   ${ED2IN}
-   sed -i s@myorienttree@${orienttree}@g     ${ED2IN}
-   sed -i s@myorientgrass@${orientgrass}@g   ${ED2IN}
-   sed -i s@myclumptree@${clumptree}@g       ${ED2IN}
-   sed -i s@myclumpgrass@${clumpgrass}@g     ${ED2IN}
-   sed -i s@myvegtdyn@${ivegtdyn}@g          ${ED2IN}
-   sed -i s@mybigleaf@${ibigleaf}@g          ${ED2IN}
-   sed -i s@myrepro@${irepro}@g              ${ED2IN}
-   sed -i s@myubmin@${ubmin}@g               ${ED2IN}
-   sed -i s@myugbmin@${ugbmin}@g             ${ED2IN}
-   sed -i s@myustmin@${ustmin}@g             ${ED2IN}
-   sed -i s@mygamm@${gamm}@g                 ${ED2IN}
-   sed -i s@mygamh@${gamh}@g                 ${ED2IN}
-   sed -i s@mytprandtl@${tprandtl}@g         ${ED2IN}
-   sed -i s@myribmax@${ribmax}@g             ${ED2IN}
-   sed -i s@mygndvap@${igndvap}@g            ${ED2IN}
+   sed -i s@paththere@${there}@g                ${ED2IN}
+   sed -i s@myyeara@${thisyeara}@g              ${ED2IN}
+   sed -i s@mymontha@${montha}@g                ${ED2IN}
+   sed -i s@mydatea@${datea}@g                  ${ED2IN}
+   sed -i s@mytimea@${timea}@g                  ${ED2IN}
+   sed -i s@myyearz@${thisyearz}@g              ${ED2IN}
+   sed -i s@mymonthz@${monthz}@g                ${ED2IN}
+   sed -i s@mydatez@${datez}@g                  ${ED2IN}
+   sed -i s@mytimez@${timez}@g                  ${ED2IN}
+   sed -i s@mydtlsm@${dtlsm}@g                  ${ED2IN}
+   sed -i s@thispoly@${polyname}@g              ${ED2IN}
+   sed -i s@plonflag@${polylon}@g               ${ED2IN}
+   sed -i s@platflag@${polylat}@g               ${ED2IN}
+   sed -i s@timehhhh@${time}@g                  ${ED2IN}
+   sed -i s@datehhhh@${date}@g                  ${ED2IN}
+   sed -i s@monthhhh@${month}@g                 ${ED2IN}
+   sed -i s@yearhhhh@${year}@g                  ${ED2IN}
+   sed -i s@myinitmode@${initmode}@g            ${ED2IN}
+   sed -i s@mysfilin@${thissfilin}@g            ${ED2IN}
+   sed -i s@mytrees@${pfts}@g                   ${ED2IN}
+   sed -i s@mycrop@${crop}@g                    ${ED2IN}
+   sed -i s@myplantation@${plantation}@g        ${ED2IN}
+   sed -i s@myiphen@${iphen}@g                  ${ED2IN}
+   sed -i s@myallom@${iallom}@g                 ${ED2IN}
+   sed -i s@myisoilflg@${polyisoil}@g           ${ED2IN}
+   sed -i s@mynslcon@${polyntext}@g             ${ED2IN}
+   sed -i s@myslxsand@${polysand}@g             ${ED2IN}
+   sed -i s@myslxclay@${polyclay}@g             ${ED2IN}
+   sed -i s@mysoilcol@${polycol}@g              ${ED2IN}
+   sed -i s@mynzg@${polynzg}@g                  ${ED2IN}
+   sed -i s@mymetdriverdb@${metdriverdb}@g      ${ED2IN}
+   sed -i s@mymetcyc1@${metcyc1}@g              ${ED2IN}
+   sed -i s@mymetcycf@${metcycf}@g              ${ED2IN}
+   sed -i s@mytoler@${toler}@g                  ${ED2IN}
+   sed -i s@RUNFLAG@${runt}@g                   ${ED2IN}
+   sed -i s@myvmfactc3@${vmfactc3}@g            ${ED2IN}
+   sed -i s@myvmfactc4@${vmfactc4}@g            ${ED2IN}
+   sed -i s@mymphototrc3@${mphototrc3}@g        ${ED2IN}
+   sed -i s@mymphototec3@${mphototec3}@g        ${ED2IN}
+   sed -i s@mymphotoc4@${mphotoc4}@g            ${ED2IN}
+   sed -i s@mybphotoblc3@${bphotoblc3}@g        ${ED2IN}
+   sed -i s@mybphotonlc3@${bphotonlc3}@g        ${ED2IN}
+   sed -i s@mybphotoc4@${bphotoc4}@g            ${ED2IN}
+   sed -i s@mykwgrass@${kwgrass}@g              ${ED2IN}
+   sed -i s@mykwtree@${kwtree}@g                ${ED2IN}
+   sed -i s@mygammac3@${gammac3}@g              ${ED2IN}
+   sed -i s@mygammac4@${gammac4}@g              ${ED2IN}
+   sed -i s@myd0grass@${d0grass}@g              ${ED2IN}
+   sed -i s@myd0tree@${d0tree}@g                ${ED2IN}
+   sed -i s@myalphac3@${alphac3}@g              ${ED2IN}
+   sed -i s@myalphac4@${alphac4}@g              ${ED2IN}
+   sed -i s@myklowco2@${klowco2}@g              ${ED2IN}
+   sed -i s@myrrffact@${rrffact}@g              ${ED2IN}
+   sed -i s@mygrowthresp@${growthresp}@g        ${ED2IN}
+   sed -i s@mylwidthgrass@${lwidthgrass}@g      ${ED2IN}
+   sed -i s@mylwidthbltree@${lwidthbltree}@g    ${ED2IN}
+   sed -i s@mylwidthnltree@${lwidthnltree}@g    ${ED2IN}
+   sed -i s@myq10c3@${q10c3}@g                  ${ED2IN}
+   sed -i s@myq10c4@${q10c4}@g                  ${ED2IN}
+   sed -i s@myh2olimit@${h2olimit}@g            ${ED2IN}
+   sed -i s@mysfclyrm@${isfclyrm}@g             ${ED2IN}
+   sed -i s@myicanturb@${icanturb}@g            ${ED2IN}
+   sed -i s@myatmco2@${atmco2}@g                ${ED2IN}
+   sed -i s@mythcrit@${thcrit}@g                ${ED2IN}
+   sed -i s@mysmfire@${smfire}@g                ${ED2IN}
+   sed -i s@myfire@${ifire}@g                   ${ED2IN}
+   sed -i s@myfuel@${fireparm}@g                ${ED2IN}
+   sed -i s@mymetavg@${imetavg}@g               ${ED2IN}
+   sed -i s@mypercol@${ipercol}@g               ${ED2IN}
+   sed -i s@mysoilbc@${isoilbc}@g               ${ED2IN}
+   sed -i s@myrunoff@${runoff}@g                ${ED2IN}
+   sed -i s@mymetrad@${imetrad}@g               ${ED2IN}
+   sed -i s@mybranch@${ibranch}@g               ${ED2IN}
+   sed -i s@mycanrad@${icanrad}@g               ${ED2IN}
+   sed -i s@mycrown@${crown}@g                  ${ED2IN}
+   sed -i s@myltransvis@${ltransvis}@g          ${ED2IN}
+   sed -i s@myltransnir@${ltransnir}@g          ${ED2IN}
+   sed -i s@mylreflectvis@${lreflectvis}@g      ${ED2IN}
+   sed -i s@mylreflectnir@${lreflectnir}@g      ${ED2IN}
+   sed -i s@myorienttree@${orienttree}@g        ${ED2IN}
+   sed -i s@myorientgrass@${orientgrass}@g      ${ED2IN}
+   sed -i s@myclumptree@${clumptree}@g          ${ED2IN}
+   sed -i s@myclumpgrass@${clumpgrass}@g        ${ED2IN}
+   sed -i s@myvegtdyn@${ivegtdyn}@g             ${ED2IN}
+   sed -i s@mybigleaf@${ibigleaf}@g             ${ED2IN}
+   sed -i s@myrepro@${irepro}@g                 ${ED2IN}
+   sed -i s@myubmin@${ubmin}@g                  ${ED2IN}
+   sed -i s@myugbmin@${ugbmin}@g                ${ED2IN}
+   sed -i s@myustmin@${ustmin}@g                ${ED2IN}
+   sed -i s@mygamm@${gamm}@g                    ${ED2IN}
+   sed -i s@mygamh@${gamh}@g                    ${ED2IN}
+   sed -i s@mytprandtl@${tprandtl}@g            ${ED2IN}
+   sed -i s@myribmax@${ribmax}@g                ${ED2IN}
+   sed -i s@mygndvap@${igndvap}@g               ${ED2IN}
+   sed -i s@mydtcensus@${dtcensus}@g            ${ED2IN}
+   sed -i s@myyr1stcensus@${yr1stcensus}@g      ${ED2IN}
+   sed -i s@mymon1stcensus@${mon1stcensus}@g    ${ED2IN}
+   sed -i s@myminrecruitdbh@${minrecruitdbh}@g  ${ED2IN}
 
    #------ Soil variables. ----------------------------------------------------------------#
    sed -i s@myslz1@"${polyslz1}"@g           ${ED2IN}

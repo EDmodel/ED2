@@ -197,6 +197,7 @@ subroutine grell_cupar_dynamic(cldd,clds,nclouds,dtime,maxens_cap,maxens_eff,max
    real, dimension(nclouds)    :: edt     ! Alias for the downdraft/updraft ratio.
    !------ Printing aux. variables. -------------------------------------------------------!
    logical          , parameter :: printing=.false. ! Printing some debug stuff   [    T|F]
+   logical                      :: anyzero
    integer                      :: uni
    character(len=13), parameter :: fmti='(a,1x,i13,1x)'
    character(len=16), parameter :: fmtf='(a,1x,es13.6,1x)'
@@ -207,6 +208,7 @@ subroutine grell_cupar_dynamic(cldd,clds,nclouds,dtime,maxens_cap,maxens_eff,max
    !    Contrary to the static control, now we must consider all clouds together...  This  !
    ! is going to happen in a bunch of nested loops, so we get all permutations.            !
    !---------------------------------------------------------------------------------------!
+   anyzero = .false.
    icldloop1: do icld = cldd, clds
 
       stacloop1: do icap = maxens_cap,1,-1
@@ -224,7 +226,7 @@ subroutine grell_cupar_dynamic(cldd,clds,nclouds,dtime,maxens_cap,maxens_eff,max
          klnb    (icld) = ensemble_e(icld)%klnb_cap     (icap)
          ktop    (icld) = ensemble_e(icld)%ktop_cap     (icap)
          klod    (icld) = ensemble_e(icld)%klod_cap     (icap)
-
+         anyzero        = anyzero .or. ierr(icld) == 0
          do k=1,mkx
             cdd(k)         = ensemble_e(icld)%cdd_cap(k,icap)
             cdu(k)         = ensemble_e(icld)%cdu_cap(k,icap)
@@ -462,12 +464,21 @@ subroutine grell_cupar_dynamic(cldd,clds,nclouds,dtime,maxens_cap,maxens_eff,max
 
    !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
    !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
-   if (printing) then
+   if (printing .and. anyzero) then
       uni = 60 + mynum
-      write(unit=uni,fmt='(a)') '---------------------------------------------------------'
-      write(unit=uni,fmt=fmti ) ' I        =', i
-      write(unit=uni,fmt=fmti ) ' J        =', j
-      write(unit=uni,fmt='(a)') ' '
+      write (unit=uni,fmt='(299a)'    ) ('=',k=1,299)
+      write (unit=uni,fmt='(a,1x,i5)' ) ' I        =', i
+      write (unit=uni,fmt='(a,1x,i5)' ) ' J        =', j
+      write (unit=uni,fmt='(299a)'    ) ('-',k=1,299)
+      write (unit=uni,fmt='(23(a,1x))') '        ICAP','        IEDT','        IMBP'       &
+                                       ,'        ICLD','        JCLD','        IDYN'       &
+                                       ,'        IERR','       ZKLOU','       ZKLFC'       &
+                                       ,'       ZKLNB','       ZKTOP','         EDT'       &
+                                       ,'     MBPRIME','    TSCAL_KF','       DTIME'       &
+                                       ,'      AATOT0','       AATOT','     X_AATOT'       &
+                                       ,'        MFKE','    DNMF_DYN','    DNMX_DYN'       &
+                                       ,'    UPMF_DYN','    UPMX_DYN'
+      write (unit=uni,fmt='(299a)') ('-',k=1,299)
    end if
    !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
    !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
@@ -481,36 +492,11 @@ subroutine grell_cupar_dynamic(cldd,clds,nclouds,dtime,maxens_cap,maxens_eff,max
    !     mass flux will then have maxens_eff × maxens_lsf × maxens_dyn different values.   !
    !---------------------------------------------------------------------------------------!
    stacloop2: do icap=1,maxens_cap
-      !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
-      !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
-      if (printing) then
-         write(unit=uni,fmt=fmti ) '  ICAP     =', icap
-         write(unit=uni,fmt='(a)') ' '
-      end if
-      !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
-      !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
 
       effloop2: do iedt=1,maxens_eff
 
-         !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
-         !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
-         if (printing) then
-            write(unit=uni,fmt=fmti ) '   IEDT     =', iedt
-            write(unit=uni,fmt='(a)') ' '
-         end if
-         !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
-         !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
-
          mbprimeloop2: do imbp=1,maxens_lsf
-            !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
-            !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
-            if (printing) then
-               write(unit=uni,fmt=fmti ) '    IMBP     =', imbp
-               write(unit=uni,fmt=fmtf ) '    MBPRIME  =', mbprime(1)
-               write(unit=uni,fmt='(a)') ' '
-            end if
-            !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
-            !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
+
 
             !------------------------------------------------------------------------------!
             ! 6a. Copying some variables to scratch arrays.                                !
@@ -534,34 +520,6 @@ subroutine grell_cupar_dynamic(cldd,clds,nclouds,dtime,maxens_cap,maxens_eff,max
                pwev(icld)      = ensemble_e(icld)%pwev_cap(icap)
                prev_dnmf(icld) = ensemble_e(icld)%prev_dnmf(1)
 
-               !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
-               !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
-               if (printing) then
-                  write(unit=uni,fmt=fmti ) '     ICLD     =', icld
-                  write(unit=uni,fmt=fmtf ) '     EDT      =', edt(icld)
-                  write(unit=uni,fmt=fmtf ) '     TSCAL_KF =', tscal_kf
-                  write(unit=uni,fmt=fmtf ) '     DTIME    =', dtime
-                  if (klou(icld) > 0) then
-                     write(unit=uni,fmt=fmtf ) '     KLOU     =', z(klou(icld))
-                  end if
-                  if (klfc(icld) > 0) then
-                     write(unit=uni,fmt=fmtf ) '     KLFC     =', z(klfc(icld))
-                  end if
-                  if (klnb(icld) > 0) then
-                     write(unit=uni,fmt=fmtf ) '     KLNB     =', z(klnb(icld))
-                  end if
-                  if (ktop(icld) > 0) then
-                     write(unit=uni,fmt=fmtf ) '     KTOP     =', z(ktop(icld))
-                  end if
-                  write(unit=uni,fmt=fmti ) '     IERR     =', ierr(icld)
-                  write(unit=uni,fmt=fmtf ) '     AATOT0   ='                              &
-                                            , ensemble_e(icld)%aatot0_eff(iedt,icap)
-                  write(unit=uni,fmt=fmtf ) '     AATOT    ='                              &
-                                            , ensemble_e(icld)%aatot_eff(iedt,icap)
-                  write(unit=uni,fmt='(a)') ' '
-               end if
-               !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
-               !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
 
 
                !---------------------------------------------------------------------------!
@@ -570,18 +528,6 @@ subroutine grell_cupar_dynamic(cldd,clds,nclouds,dtime,maxens_cap,maxens_eff,max
                do jcld=cldd,clds
                   mfke(icld,jcld) = ( ensemble_e(icld)%x_aatot(jcld,imbp,iedt,icap)        &
                                     - aatot(icld)) / (mbprime(imbp) * dtime) 
-
-                  !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
-                  !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
-                  if (printing) then
-                     write(unit=uni,fmt=fmti ) '      JCLD     =', jcld
-                     write(unit=uni,fmt=fmtf ) '      X_AATOT  =',                         &
-                                              ensemble_e(icld)%x_aatot(jcld,imbp,iedt,icap)
-                     write(unit=uni,fmt=fmtf ) '      MFKE     =', mfke(icld,jcld)
-                     write(unit=uni,fmt='(a)') ' '
-                  end if
-                  !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
-                  !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
                end do
             end do
 
@@ -600,38 +546,50 @@ subroutine grell_cupar_dynamic(cldd,clds,nclouds,dtime,maxens_cap,maxens_eff,max
             ! 6d. Copying back the error flag and mass fluxes to the ensemble structures.  !
             !------------------------------------------------------------------------------!
             do icld=cldd,clds
-               !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
-               !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
-               if (printing) then
-                  write(unit=uni,fmt=fmti ) '     ICLD     =', icld
-                  write(unit=uni,fmt='(a)') ' '
-               end if
-               !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
-               !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
-
                do idyn=1,maxens_dyn
                   ensemble_e(icld)%dnmf_ens(idyn,imbp,iedt,icap) = dnmf_dyn(icld,idyn)
                   ensemble_e(icld)%upmf_ens(idyn,imbp,iedt,icap) = upmf_dyn(icld,idyn)
                   ensemble_e(icld)%dnmx_ens(idyn,imbp,iedt,icap) = dnmx_dyn(icld,idyn)
                   ensemble_e(icld)%upmx_ens(idyn,imbp,iedt,icap) = upmx_dyn(icld,idyn)
+
+
                   !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
                   !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
-                  if (printing) then
-                     write(unit=uni,fmt=fmti ) '      IDYN     =', idyn
-                     write(unit=uni,fmt=fmtf ) '      DNMF     =', dnmf_dyn(icld,idyn)
-                     write(unit=uni,fmt=fmtf ) '      UPMF     =', upmf_dyn(icld,idyn)
-                     write(unit=uni,fmt='(a)') ' '
+                  if (printing .and. anyzero) then
+                     uni             = 60 + mynum
+                     edt      (icld) = ensemble_e(icld)%edt_eff   (iedt,icap)
+                     aatot0   (icld) = ensemble_e(icld)%aatot0_eff(iedt,icap)
+                     aatot    (icld) = ensemble_e(icld)%aatot_eff (iedt,icap)
+                     klou     (icld) = ensemble_e(icld)%klou_cap       (icap)
+                     klfc     (icld) = ensemble_e(icld)%klfc_cap       (icap)
+                     klnb     (icld) = ensemble_e(icld)%klnb_cap       (icap)
+                     ktop     (icld) = ensemble_e(icld)%ktop_cap       (icap)
+                     ierr     (icld) = ensemble_e(icld)%ierr_cap       (icap)
+                     pwav     (icld) = ensemble_e(icld)%pwav_cap       (icap)
+                     pwev     (icld) = ensemble_e(icld)%pwev_cap       (icap)
+                     prev_dnmf(icld) = ensemble_e(icld)%prev_dnmf         (1)
+
+
+
+                     !---------------------------------------------------------------------!
+                     ! 6b. MFKE is the kernel matrix for this member.                      !
+                     !---------------------------------------------------------------------!
+                     do jcld=cldd,clds
+                        mfke(icld,jcld) = ( ensemble_e(icld)%x_aatot(jcld,imbp,iedt,icap)  &
+                                          - aatot(icld)) / (mbprime(imbp) * dtime) 
+                        write(unit=uni,fmt='(7(i12,1x),16(f12.5,1x))')                     &
+                                   icap, iedt, imbp, icld, jcld, idyn, ierr(icld)          &
+                                 , z(klou(icld)), z(klfc(icld)), z(klnb(icld))             &
+                                 , z(ktop(icld)), edt(icld), mbprime(1), tscal_kf          &
+                                 , dtime, ensemble_e(icld)%aatot0_eff(iedt,icap)           &
+                                 , ensemble_e(icld)%aatot_eff(iedt,icap)                   &
+                                 , ensemble_e(icld)%x_aatot(jcld,imbp,iedt,icap)           &
+                                 , mfke(icld,jcld),dnmf_dyn(icld,idyn),dnmx_dyn(icld,idyn) &
+                                 , upmf_dyn(icld,idyn), upmx_dyn(icld,idyn)
+                     end do
                   end if
                   !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
                   !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
-
-                  !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
-                  !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
-                  !write(unit=60+mynum,fmt='(2(a,1x,f10.4,1x))') '     dnmf   =',ensemble_e(icld)%dnmf_ens(1,imbp,iedt,icap),'upmf   =',ensemble_e(icld)%upmf_ens(1,imbp,iedt,icap)
-                  !write(unit=60+mynum,fmt='(a)')                '-------------------------------------------------------------------------------------------------'
-                  !write(unit=60+mynum,fmt='(a)'               ) ' '
-                  !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
-                  !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
                end do
             end do
         end do mbprimeloop2
@@ -640,9 +598,10 @@ subroutine grell_cupar_dynamic(cldd,clds,nclouds,dtime,maxens_cap,maxens_eff,max
 
    !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
    !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
-   if (printing) then
-      write(unit=uni,fmt='(a)') '---------------------------------------------------------'
-      write(unit=uni,fmt='(a)') ' '
+   if (printing .and. anyzero) then
+      uni = 60 + mynum
+      write (unit=uni,fmt='(299a)') ('=',k=1,299)
+      write (unit=uni,fmt='(a)') ' '
    end if
    !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
    !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!

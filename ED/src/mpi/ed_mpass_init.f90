@@ -272,8 +272,12 @@ subroutine ed_masterput_nl(par_run)
    use rk4_coms             , only : rk4_tolerance             & ! intent(in)
                                    , ibranch_thermo            & ! intent(in)
                                    , ipercol                   ! ! intent(in)
-   use detailed_coms        , only : idetailed                 & ! intent(in)
-                                   , patch_keep                ! ! intent(in)
+   use detailed_coms        , only : dt_census                  & ! intent(in)
+                                   , yr1st_census               & ! intent(in)
+                                   , mon1st_census              & ! intent(in)
+                                   , min_recruit_dbh            & ! intent(in)
+                                   , idetailed                  & ! intent(in)
+                                   , patch_keep                 ! ! intent(in)
    implicit none
    include 'mpif.h'
    integer :: ierr
@@ -514,6 +518,10 @@ subroutine ed_masterput_nl(par_run)
    call MPI_Bcast(attach_metadata,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
 
 
+   call MPI_Bcast(dt_census,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(yr1st_census,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(mon1st_census,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(min_recruit_dbh,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(idetailed,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(patch_keep,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
 
@@ -1363,8 +1371,12 @@ subroutine ed_nodeget_nl
    use rk4_coms             , only : rk4_tolerance             & ! intent(out)
                                    , ibranch_thermo            & ! intent(out)
                                    , ipercol                   ! ! intent(out)
-   use detailed_coms        , only : idetailed                 & ! intent(out)
-                                   , patch_keep                ! ! intent(out)
+   use detailed_coms        , only : dt_census                  & ! intent(out)
+                                   , yr1st_census               & ! intent(out)
+                                   , mon1st_census              & ! intent(out)
+                                   , min_recruit_dbh            & ! intent(out)
+                                   , idetailed                  & ! intent(out)
+                                   , patch_keep                 ! ! intent(out)
    implicit none
    include 'mpif.h'
    integer :: ierr
@@ -1609,18 +1621,24 @@ subroutine ed_nodeget_nl
    call MPI_Bcast(edres,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
    
    call MPI_Bcast(attach_metadata,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
-
+  
+   call MPI_Bcast(dt_census,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(yr1st_census,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(mon1st_census,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(min_recruit_dbh,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(idetailed,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(patch_keep,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
-   
-!------------------------------------------------------------------------------------------!
-!     Receiving the layer index based on soil_depth. This is allocatable, so I first       !
-! allocate, then let the master know that it is safe to send to me and I reveive the data. !
-!------------------------------------------------------------------------------------------!
+ 
+   !---------------------------------------------------------------------------------------!
+   !     Receive the layer index based on soil_depth.  This is allocatable, so we first    !
+   ! allocate, then let the master know that it is safe to send to this node and then the  !
+   ! node reveives the data.                                                               !
+   !---------------------------------------------------------------------------------------!
    if (allocated(layer_index)) deallocate(layer_index)
    allocate(layer_index(nlat_lyr,nlon_lyr))
    call MPI_Barrier(MPI_COMM_WORLD,ierr) ! Safe to receive the data.
    call MPI_Bcast(layer_index,nlat_lyr*nlon_lyr,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
+   !---------------------------------------------------------------------------------------!
 
    return
 end subroutine ed_nodeget_nl

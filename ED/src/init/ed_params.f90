@@ -1945,6 +1945,7 @@ subroutine init_pft_mort_params()
                           , frost_mort                 ! ! intent(out)
    use consts_coms , only : t00                        & ! intent(in)
                           , lnexp_max                  & ! intent(in)
+                          , onethird                   & ! intent(in)
                           , twothirds                  ! ! intent(in)
    use ed_misc_coms, only : ibigleaf                   ! ! intent(in)
    use disturb_coms, only : treefall_disturbance_rate  & ! intent(inout)
@@ -2028,7 +2029,6 @@ subroutine init_pft_mort_params()
    mort3(17) = 0.0043 ! Same as pines
 
 
-
    !---------------------------------------------------------------------------------------!
    !     Here we check whether we need to re-calculate the treefall disturbance rate so it !
    ! is consistent with the time to reach the canopy.                                      !
@@ -2106,12 +2106,24 @@ subroutine init_pft_mort_params()
    !---------------------------------------------------------------------------------------!
 
 
-   seedling_mortality(1)    = 0.95
-   seedling_mortality(2:4)  = 0.95
-   seedling_mortality(5)    = 0.95
-   seedling_mortality(6:15) = 0.95
-   seedling_mortality(16)   = 0.95
-   seedling_mortality(17)   = 0.95
+   
+   select case (ibigleaf)
+   case (0)
+      seedling_mortality(1)    = 0.95
+      seedling_mortality(2:4)  = 0.95
+      seedling_mortality(5)    = 0.95
+      seedling_mortality(6:15) = 0.95
+      seedling_mortality(16)   = 0.95
+      seedling_mortality(17)   = 0.95
+   case (1)
+      seedling_mortality(1)     = 0.9500
+      seedling_mortality(2:4)   = onethird
+      seedling_mortality(5)     = 0.9500
+      seedling_mortality(6:8)   = onethird
+      seedling_mortality(9:11)  = onethird
+      seedling_mortality(12:16) = 0.9500
+      seedling_mortality(17)    = onethird
+   end select
 
    treefall_s_gtht(1:17)    = 0.0
 
@@ -2559,12 +2571,12 @@ subroutine init_pft_alloc_params()
    !    This is the typical DBH that all big leaf plants will have.  Because the big-leaf  !
    ! ED doesn't really solve individuals, the typical DBH should be one that makes a good  !
    ! ratio between LAI and biomass.  This is a tuning parameter and right now the initial  !
-   ! guess is 1/3 of the critical DBH for trees and the critical DBH for grasses.          !
+   ! guess is 1/3 of the critical DBH.                                                     !
    !---------------------------------------------------------------------------------------!
    dbh_bigleaf( 1) = dbh_crit( 1)
-   dbh_bigleaf( 2) = dbh_crit( 2) * onethird
-   dbh_bigleaf( 3) = dbh_crit( 3) * onethird
-   dbh_bigleaf( 4) = dbh_crit( 4) * onethird
+   dbh_bigleaf( 2) = 29.69716
+   dbh_bigleaf( 3) = 31.41038
+   dbh_bigleaf( 4) = 16.67251
    dbh_bigleaf( 5) = dbh_crit( 5)
    dbh_bigleaf( 6) = dbh_crit( 6) * onethird
    dbh_bigleaf( 7) = dbh_crit( 7) * onethird
@@ -2577,7 +2589,7 @@ subroutine init_pft_alloc_params()
    dbh_bigleaf(14) = dbh_crit(14)
    dbh_bigleaf(15) = dbh_crit(15)
    dbh_bigleaf(16) = dbh_crit(16)
-   dbh_bigleaf(17) = dbh_crit(17) * onethird
+   dbh_bigleaf(17) = 30.0
    !---------------------------------------------------------------------------------------!
 
 
@@ -3135,8 +3147,7 @@ subroutine init_pft_repro_params()
                       , st_fract           & ! intent(out)
                       , seed_rain          & ! intent(out)
                       , nonlocal_dispersal & ! intent(out)
-                      , repro_min_h        & ! intent(out)
-                      , min_recruit_dbh    ! ! intent(out)
+                      , repro_min_h        ! ! intent(out)
    implicit none
 
    r_fract(1)              = 0.3
@@ -3183,15 +3194,6 @@ subroutine init_pft_repro_params()
    repro_min_h(16)         = 0.0
    repro_min_h(17)         = 5.0
 
-   !---------------------------------------------------------------------------------------!
-   !     This is the threshold to change the recruitment status with respect to DBH.       !
-   ! Cohorts with DBH less than min_recruit_dbh will be flagged as 0, cohorts that have    !
-   ! just reached min_recruit_dbh will be flagged as 1, and if they make until next month, !
-   ! they will be flagged as 2.                                                            !
-   !---------------------------------------------------------------------------------------!
-   min_recruit_dbh(1:17)   = 10.0
-   !---------------------------------------------------------------------------------------!
-
    return
 end subroutine init_pft_repro_params
 !==========================================================================================!
@@ -3210,6 +3212,7 @@ end subroutine init_pft_repro_params
 subroutine init_pft_derived_params()
    use decomp_coms          , only : f_labile             ! ! intent(in)
    use detailed_coms        , only : idetailed            ! ! intent(in)
+   use ed_misc_coms         , only : ibigleaf             ! ! intent(in)
    use ed_max_dims          , only : n_pft                & ! intent(in)
                                    , str_len              ! ! intent(in)
    use consts_coms          , only : onesixth             & ! intent(in)
@@ -3335,7 +3338,20 @@ subroutine init_pft_derived_params()
       bsapwood_bl       = bleaf_bl * qsw(ipft) * hgt_max(ipft)
       balive_bl         = bleaf_bl + broot_bl + bsapwood_bl
       bdead_bl          = dbh2bd(dbh_bigleaf(ipft),ipft)
-      one_plant_c(ipft) =  bdead_bl + balive_bl
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !     Find the carbon value for one plant.  If SAS approximation, we define it as    !
+      ! the carbon of a seedling, and for the big leaf case we assume the typical big leaf !
+      ! plant size.                                                                        !
+      !------------------------------------------------------------------------------------!
+      select case (ibigleaf)
+      case (0)
+         one_plant_c(ipft) = bdead_min + balive_min
+      case (1)
+         one_plant_c(ipft) = bdead_bl  + balive_bl
+      end select
       !------------------------------------------------------------------------------------!
 
 

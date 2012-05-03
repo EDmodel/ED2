@@ -152,10 +152,13 @@ subroutine init_ed_cohort_vars(cpatch,ico, lsl)
 
    !---------------------------------------------------------------------------------------!
    !       First census must be 1.  Not sure what this variable does, though.  Recruit_dbh !
-   ! is a diagnostic variable that tells the cohort status regarding DBH recruitment.      !
+   ! is a diagnostic variable that tells the cohort status regarding DBH recruitment, and  !
+   ! census_status is similar to recruit_dbh, except that is updated only when there is a  !
+   ! census.                                                                               !
    !---------------------------------------------------------------------------------------!
    cpatch%first_census  (ico) = 1
-   cpatch%recruit_dbh(ico) = 0
+   cpatch%recruit_dbh   (ico) = 0
+   cpatch%census_status (ico) = 0
    !---------------------------------------------------------------------------------------!
 
 

@@ -1088,7 +1088,7 @@ subroutine grell_sanity_check(mkx,mgmzp,z,press,exner,theiv,thil,t,qtot,qvap,qli
    integer :: m               ! Counter                                          [      --]
    !---------------------------------------------------------------------------------------!
 
-   return
+   
 
    !---------------------------------------------------------------------------------------!
    !      Let's be optimistic and assume that everything is fine.                          !
@@ -1240,7 +1240,7 @@ subroutine grell_sanity_thil2tqall(k,z,thil,exner,press,qtot,which)
    integer :: m               ! Counter 
    !---------------------------------------------------------------------------------------!
 
-   return
+   
 
    !---------------------------------------------------------------------------------------!
    !      Let's be optimistic and assume that everything is fine.                          !

@@ -745,8 +745,7 @@ subroutine update_derived_cohort_props(cpatch,ico,green_leaf_factor,lsl)
    use pft_coms      , only : phenology           & ! intent(in)
                             , q                   & ! intent(in)
                             , qsw                 & ! intent(in)
-                            , is_grass            & ! intent(in)
-                            , min_recruit_dbh     ! ! intent(in)
+                            , is_grass            ! ! intent(in)
    use allometry     , only : bd2dbh              & ! function
                             , dbh2h               & ! function
                             , dbh2krdepth         & ! function
@@ -756,8 +755,12 @@ subroutine update_derived_cohort_props(cpatch,ico,green_leaf_factor,lsl)
                             , ed_biomass          & ! function
                             , area_indices        ! ! subroutine
    use consts_coms   , only : pio4                ! ! intent(in)
-   use ed_misc_coms  , only : igrass              ! ! intent(in)
-   
+   use ed_misc_coms  , only : igrass              & ! intent(in)
+                            , current_time        ! ! intent(in)
+   use detailed_coms , only : dt_census           & ! intent(in)
+                            , yr1st_census        & ! intent(in)
+                            , mon1st_census       & ! intent(in)
+                            , min_recruit_dbh     ! ! intent(in)
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    type(patchtype), target     :: cpatch
@@ -767,6 +770,22 @@ subroutine update_derived_cohort_props(cpatch,ico,green_leaf_factor,lsl)
    !----- Local variables -----------------------------------------------------------------!
    real                        :: bleaf_max
    integer                     :: ipft
+   integer                     :: elapsed_months
+   logical                     :: census_time
+   !---------------------------------------------------------------------------------------!
+
+   !---------------------------------------------------------------------------------------!
+   !    Find the number of elapsed months since the first census, and decide whether there !
+   ! was a census last month or not.  It is absolutely fine to be negative, although none  !
+   ! of the cohorts will be flagged as measured until the first census.                    !
+   !                                                                                       !
+   ! IMPORTANT: the flag will be updated only AFTER the census month, because the time     !
+   !            step is at the beginning of the month, likely to be just before the        !
+   !            census...                                                                  !
+   !---------------------------------------------------------------------------------------!
+   elapsed_months = (current_time%year-yr1st_census-1)*12                                  &
+                  + current_time%month + (12 - mon1st_census - 1) 
+   census_time    = elapsed_months >= 0 .and. mod(elapsed_months,dt_census) == 0
    !---------------------------------------------------------------------------------------!
 
    ipft    = cpatch%pft(ico)
@@ -787,8 +806,17 @@ subroutine update_derived_cohort_props(cpatch,ico,green_leaf_factor,lsl)
    !---------------------------------------------------------------------------------------!
    !     Update the recruitment flag regarding DBH if needed.                              !
    !---------------------------------------------------------------------------------------!
-   if (cpatch%dbh(ico) >= min_recruit_dbh(ipft) .and. cpatch%recruit_dbh(ico) /= 2) then
-      cpatch%recruit_dbh(ico) = cpatch%recruit_dbh(ico) + 1
+   if (cpatch%dbh(ico) >= min_recruit_dbh) then
+      cpatch%recruit_dbh(ico) = min(2,cpatch%recruit_dbh(ico) + 1)
+   end if
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Update the census status if this is the time to do so.                            !
+   !---------------------------------------------------------------------------------------!
+   if ( cpatch%dbh(ico) >= min_recruit_dbh .and. census_time ) then
+      cpatch%census_status(ico) = min(2,cpatch%census_status(ico) + 1)
    end if
    !---------------------------------------------------------------------------------------!
    

@@ -429,8 +429,8 @@ module fuse_fiss_utils
          !---------------------------------------------------------------------------------!
 
          !---------------------------------------------------------------------------------!
-         !      Determine the maximum leaf area index for each PFT, and among each PFT,    !
-         ! the                                    !
+         !      Determine the maximum attainable leaf area index for each PFT, which will  !
+         ! be used to rescale the relative area of the patch.                              !
          !---------------------------------------------------------------------------------!
          do ico = 1,cpatch%ncohorts
             ipft              = cpatch%pft(ico)
@@ -445,6 +445,9 @@ module fuse_fiss_utils
 
          site_area      = site_area + csite%area(ipa) 
       end do
+      !------------------------------------------------------------------------------------!
+
+
 
       !------ Normalise the area of each land use type so the total is going to be one. ---!
       lu_area(:) = lu_area(:) / site_area
@@ -453,94 +456,87 @@ module fuse_fiss_utils
 
 
       !------------------------------------------------------------------------------------!
-      !     No need to re-scale patches if there is only one patch (or less) per           !
-      !  per disturbance type.                                                             !
+      !    Renormalize the total area.                                                     !
       !------------------------------------------------------------------------------------!
-      if (any(lu_npatch > 1)) then
+      site_area = 0.0
+      do ipa = 1,csite%npatches
+
+         !----- Find the disturbance type. ------------------------------------------------!
+         ilu = csite%dist_type(ipa)
          !---------------------------------------------------------------------------------!
-         !    Renormalize the total area.                                                  !
+
+
+         !----- Find the new area, based on the fraction of biomass. ----------------------!
+         old_area(ipa)   = csite%area(ipa)
+         csite%area(ipa) = patch_laimax(ipa) / lu_laimax(ilu) * lu_area(ilu)
+         site_area       = site_area + csite%area(ipa)
          !---------------------------------------------------------------------------------!
-         site_area = 0.0
-         do ipa = 1,csite%npatches
-
-            !----- Find the disturbance type. ---------------------------------------------!
-            ilu = csite%dist_type(ipa)
-            !------------------------------------------------------------------------------!
 
 
-            !----- Find the new area, based on the fraction of biomass. -------------------!
-            old_area(ipa)   = csite%area(ipa)
-            csite%area(ipa) = patch_laimax(ipa) / lu_laimax(ilu) * lu_area(ilu)
-            site_area       = site_area + csite%area(ipa)
-            !------------------------------------------------------------------------------!
+         !---------------------------------------------------------------------------------!
+         !     We must change the scale for nplant (and all "extensive" cohort-level       !
+         ! variables) so the site-level maximum LAI and maximum biomass stay the same.     !
+         !---------------------------------------------------------------------------------!
+         n_scale = old_area(ipa) / csite%area(ipa)
+         !---------------------------------------------------------------------------------!
 
-
-            !------------------------------------------------------------------------------!
-            !     We must change the scale for nplant (and all "extensive" cohort-level    !
-            ! variables) so the site-level maximum LAI and maximum biomass stay the same.  !
-            !------------------------------------------------------------------------------!
-            n_scale = old_area(ipa) / csite%area(ipa)
-            !------------------------------------------------------------------------------!
-
-            cpatch => csite%patch(ipa)
-            do ico = 1, cpatch%ncohorts
-               cpatch%nplant               (ico) = cpatch%nplant            (ico) * n_scale
-               cpatch%lai                  (ico) = cpatch%lai               (ico) * n_scale
-               cpatch%wai                  (ico) = cpatch%wai               (ico) * n_scale
-               cpatch%mean_gpp             (ico) = cpatch%mean_gpp          (ico) * n_scale
-               cpatch%mean_leaf_resp       (ico) = cpatch%mean_leaf_resp    (ico) * n_scale
-               cpatch%mean_root_resp       (ico) = cpatch%mean_root_resp    (ico) * n_scale
-               cpatch%mean_growth_resp     (ico) = cpatch%mean_growth_resp  (ico) * n_scale
-               cpatch%mean_storage_resp    (ico) = cpatch%mean_storage_resp (ico) * n_scale
-               cpatch%mean_vleaf_resp      (ico) = cpatch%mean_vleaf_resp   (ico) * n_scale
-               cpatch%Psi_open             (ico) = cpatch%Psi_open          (ico) * n_scale
-               cpatch%gpp                  (ico) = cpatch%gpp               (ico) * n_scale
-               cpatch%leaf_respiration     (ico) = cpatch%leaf_respiration  (ico) * n_scale
-               cpatch%root_respiration     (ico) = cpatch%root_respiration  (ico) * n_scale
-               cpatch%leaf_water           (ico) = cpatch%leaf_water        (ico) * n_scale
-               cpatch%leaf_hcap            (ico) = cpatch%leaf_hcap         (ico) * n_scale
-               cpatch%leaf_energy          (ico) = cpatch%leaf_energy       (ico) * n_scale
-               cpatch%wood_water           (ico) = cpatch%wood_water        (ico) * n_scale
-               cpatch%wood_hcap            (ico) = cpatch%wood_hcap         (ico) * n_scale
-               cpatch%wood_energy          (ico) = cpatch%wood_energy       (ico) * n_scale
-               cpatch%monthly_dndt         (ico) = cpatch%monthly_dndt      (ico) * n_scale
-               cpatch%monthly_dlnndt       (ico) = cpatch%monthly_dlnndt    (ico) * n_scale
-               cpatch%today_gpp            (ico) = cpatch%today_gpp         (ico) * n_scale
-               cpatch%today_nppleaf        (ico) = cpatch%today_nppleaf     (ico) * n_scale
-               cpatch%today_nppfroot       (ico) = cpatch%today_nppfroot    (ico) * n_scale
-               cpatch%today_nppsapwood     (ico) = cpatch%today_nppsapwood  (ico) * n_scale
-               cpatch%today_nppcroot       (ico) = cpatch%today_nppcroot    (ico) * n_scale
-               cpatch%today_nppseeds       (ico) = cpatch%today_nppseeds    (ico) * n_scale
-               cpatch%today_nppwood        (ico) = cpatch%today_nppwood     (ico) * n_scale
-               cpatch%today_nppdaily       (ico) = cpatch%today_nppdaily    (ico) * n_scale
-               cpatch%today_gpp_pot        (ico) = cpatch%today_gpp_pot     (ico) * n_scale
-               cpatch%today_gpp_max        (ico) = cpatch%today_gpp_max     (ico) * n_scale
-               cpatch%today_leaf_resp      (ico) = cpatch%today_leaf_resp   (ico) * n_scale
-               cpatch%today_root_resp      (ico) = cpatch%today_root_resp   (ico) * n_scale
-                        
-               !----- Crown area shall not exceed one. ---------------------------------------!
-               cpatch%crown_area           (ico) = min(1.,cpatch%crown_area (ico) * n_scale)
-               if (idoutput > 0 .or. imoutput > 0 .or. iqoutput > 0) then
-                  cpatch%dmean_par_l       (ico) = cpatch%dmean_par_l       (ico) * n_scale
-                  cpatch%dmean_par_l_beam  (ico) = cpatch%dmean_par_l_beam  (ico) * n_scale
-                  cpatch%dmean_par_l_diff  (ico) = cpatch%dmean_par_l_diff  (ico) * n_scale
-               end if
-               if (imoutput > 0 .or. iqoutput > 0) then
-                  cpatch%mmean_par_l       (ico) = cpatch%mmean_par_l       (ico) * n_scale
-                  cpatch%mmean_par_l_beam  (ico) = cpatch%mmean_par_l_beam  (ico) * n_scale
-                  cpatch%mmean_par_l_diff  (ico) = cpatch%mmean_par_l_diff  (ico) * n_scale
-               end if
-               if (iqoutput > 0) then
-                  cpatch%qmean_par_l     (:,ico) = cpatch%qmean_par_l     (:,ico) * n_scale
-                  cpatch%qmean_par_l_beam(:,ico) = cpatch%qmean_par_l_beam(:,ico) * n_scale
-                  cpatch%qmean_par_l_diff(:,ico) = cpatch%qmean_par_l_diff(:,ico) * n_scale
-               end if
-               !---------------------------------------------------------------------------!
-            end do
+         cpatch => csite%patch(ipa)
+         do ico = 1, cpatch%ncohorts
+            cpatch%nplant               (ico) = cpatch%nplant            (ico) * n_scale
+            cpatch%lai                  (ico) = cpatch%lai               (ico) * n_scale
+            cpatch%wai                  (ico) = cpatch%wai               (ico) * n_scale
+            cpatch%mean_gpp             (ico) = cpatch%mean_gpp          (ico) * n_scale
+            cpatch%mean_leaf_resp       (ico) = cpatch%mean_leaf_resp    (ico) * n_scale
+            cpatch%mean_root_resp       (ico) = cpatch%mean_root_resp    (ico) * n_scale
+            cpatch%mean_growth_resp     (ico) = cpatch%mean_growth_resp  (ico) * n_scale
+            cpatch%mean_storage_resp    (ico) = cpatch%mean_storage_resp (ico) * n_scale
+            cpatch%mean_vleaf_resp      (ico) = cpatch%mean_vleaf_resp   (ico) * n_scale
+            cpatch%Psi_open             (ico) = cpatch%Psi_open          (ico) * n_scale
+            cpatch%gpp                  (ico) = cpatch%gpp               (ico) * n_scale
+            cpatch%leaf_respiration     (ico) = cpatch%leaf_respiration  (ico) * n_scale
+            cpatch%root_respiration     (ico) = cpatch%root_respiration  (ico) * n_scale
+            cpatch%leaf_water           (ico) = cpatch%leaf_water        (ico) * n_scale
+            cpatch%leaf_hcap            (ico) = cpatch%leaf_hcap         (ico) * n_scale
+            cpatch%leaf_energy          (ico) = cpatch%leaf_energy       (ico) * n_scale
+            cpatch%wood_water           (ico) = cpatch%wood_water        (ico) * n_scale
+            cpatch%wood_hcap            (ico) = cpatch%wood_hcap         (ico) * n_scale
+            cpatch%wood_energy          (ico) = cpatch%wood_energy       (ico) * n_scale
+            cpatch%monthly_dndt         (ico) = cpatch%monthly_dndt      (ico) * n_scale
+            cpatch%monthly_dlnndt       (ico) = cpatch%monthly_dlnndt    (ico) * n_scale
+            cpatch%today_gpp            (ico) = cpatch%today_gpp         (ico) * n_scale
+            cpatch%today_nppleaf        (ico) = cpatch%today_nppleaf     (ico) * n_scale
+            cpatch%today_nppfroot       (ico) = cpatch%today_nppfroot    (ico) * n_scale
+            cpatch%today_nppsapwood     (ico) = cpatch%today_nppsapwood  (ico) * n_scale
+            cpatch%today_nppcroot       (ico) = cpatch%today_nppcroot    (ico) * n_scale
+            cpatch%today_nppseeds       (ico) = cpatch%today_nppseeds    (ico) * n_scale
+            cpatch%today_nppwood        (ico) = cpatch%today_nppwood     (ico) * n_scale
+            cpatch%today_nppdaily       (ico) = cpatch%today_nppdaily    (ico) * n_scale
+            cpatch%today_gpp_pot        (ico) = cpatch%today_gpp_pot     (ico) * n_scale
+            cpatch%today_gpp_max        (ico) = cpatch%today_gpp_max     (ico) * n_scale
+            cpatch%today_leaf_resp      (ico) = cpatch%today_leaf_resp   (ico) * n_scale
+            cpatch%today_root_resp      (ico) = cpatch%today_root_resp   (ico) * n_scale
+                     
+            !----- Crown area shall not exceed one. ---------------------------------------!
+            cpatch%crown_area           (ico) = min(1.,cpatch%crown_area (ico) * n_scale)
+            if (idoutput > 0 .or. imoutput > 0 .or. iqoutput > 0) then
+               cpatch%dmean_par_l       (ico) = cpatch%dmean_par_l       (ico) * n_scale
+               cpatch%dmean_par_l_beam  (ico) = cpatch%dmean_par_l_beam  (ico) * n_scale
+               cpatch%dmean_par_l_diff  (ico) = cpatch%dmean_par_l_diff  (ico) * n_scale
+            end if
+            if (imoutput > 0 .or. iqoutput > 0) then
+               cpatch%mmean_par_l       (ico) = cpatch%mmean_par_l       (ico) * n_scale
+               cpatch%mmean_par_l_beam  (ico) = cpatch%mmean_par_l_beam  (ico) * n_scale
+               cpatch%mmean_par_l_diff  (ico) = cpatch%mmean_par_l_diff  (ico) * n_scale
+            end if
+            if (iqoutput > 0) then
+               cpatch%qmean_par_l     (:,ico) = cpatch%qmean_par_l     (:,ico) * n_scale
+               cpatch%qmean_par_l_beam(:,ico) = cpatch%qmean_par_l_beam(:,ico) * n_scale
+               cpatch%qmean_par_l_diff(:,ico) = cpatch%qmean_par_l_diff(:,ico) * n_scale
+            end if
             !------------------------------------------------------------------------------!
          end do
          !---------------------------------------------------------------------------------!
-      end if
+      end do
       !------------------------------------------------------------------------------------!
 
 
@@ -771,13 +767,16 @@ module fuse_fiss_utils
                   !    first census.                                                       !
                   ! 5. Both cohorts must have the same recruitment status with respect to  !
                   !    the DBH.                                                            !
-                  ! 6. Both cohorts must have the same phenology status.                   !
+                  ! 6. Both cohorts must have the same recruitment status with respect to  !
+                  !    the census.                                                         !
+                  ! 7. Both cohorts must have the same phenology status.                   !
                   !------------------------------------------------------------------------!
                   if (     cpatch%pft(donc)              == cpatch%pft(recc)               &
                      .and. lai_max                        < lai_fuse_tol*tolerance_mult    &
                      .and. cpatch%first_census(donc)     == cpatch%first_census(recc)      &
                      .and. cpatch%new_recruit_flag(donc) == cpatch%new_recruit_flag(recc)  &
                      .and. cpatch%recruit_dbh     (donc) == cpatch%recruit_dbh(recc)       &
+                     .and. cpatch%census_status   (donc) == cpatch%census_status(recc)     &
                      .and. cpatch%phenology_status(donc) == cpatch%phenology_status(recc)  &
                      ) then
 
@@ -1141,6 +1140,7 @@ module fuse_fiss_utils
       cpatch%bsapwoodb(idt)            = cpatch%bsapwoodb(isc)
       cpatch%phenology_status(idt)     = cpatch%phenology_status(isc)
       cpatch%recruit_dbh(idt)          = cpatch%recruit_dbh(isc)
+      cpatch%census_status(idt)        = cpatch%census_status(isc)
       cpatch%balive(idt)               = cpatch%balive(isc)
       cpatch%lai(idt)                  = cpatch%lai(isc)
       cpatch%wai(idt)                  = cpatch%wai(isc)

@@ -79,7 +79,7 @@ subroutine grell_cupar_driver(cldd,clds)
          ! 2. We now initialise some variables that don't depend on the cloud spectral     !
          !    size because they must be done only once.                                    !
          !---------------------------------------------------------------------------------!
-         call grell_cupar_initial(i,j,dtlt)
+         call grell_cupar_initial(i,j,confrq)
 
 
          !---------------------------------------------------------------------------------!
@@ -94,7 +94,7 @@ subroutine grell_cupar_driver(cldd,clds)
          ! 4. We now compute the dynamic control, which will determine the characteristic  !
          !    mass flux for each Grell cumulus cloud.                                      !
          !---------------------------------------------------------------------------------!
-         call grell_cupar_dynamic(cldd,clds,nclouds,dtlt,maxens_cap,maxens_eff             &
+         call grell_cupar_dynamic(cldd,clds,nclouds,confrq,maxens_cap,maxens_eff           &
                                  ,maxens_lsf,maxens_dyn,mgmzp,closure_type                 &
                                  ,comp_modif_thermo,prec_cld,cld2prec,mynum,i,j)
 

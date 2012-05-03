@@ -1,10 +1,18 @@
 #!/bin/bash
+. ${HOME}/.bashrc
 here=`pwd`                            # ! Main path
-diskthere='/n/moorcroftfs2' # ! Disk where the output files are
-thisqueue='moorcroft'                 # ! Queue where jobs should be submitted
+diskthere='/n/scratch2/moorcroft_lab' # ! Disk where the output files are
+thisqueue='wofsy'                     # ! Queue where jobs should be submitted
 lonlat=${here}'/joborder.txt'         # ! File with the job instructions
 #----- Outroot is the main output directory. ----------------------------------------------#
-outroot='/n/moorcroftfs1/mlongo/diary/XXXXXXXXXXXXX/figures/Template'
+outroot='/n/moorcroftfs2/mlongo/diary/XXXXXXXXXXX/figures/xxx_XXX/xxxxxxxx'
+submit='y'       # y = Submit the script; n = Copy the script
+#----- Plot only one meteorological cycle. ------------------------------------------------#
+onemetcycle='n'  # Plot only one met cycle only (ignored by plot_eval_ed.r/plot_census.r)
+shiftiata=''     # Places that we must shift the cycle
+shiftcycle=-1    # In case your met driver doesn't match the model simulation
+#----- Check whether to use openlava or typical job submission. ---------------------------#
+openlava='n'
 #------------------------------------------------------------------------------------------#
 
 #------------------------------------------------------------------------------------------#
@@ -18,6 +26,51 @@ droughtyearz=1609           # Year that the last drought instance happens (even 
                             #     partial)
 monthsdrought="c(12,1,2,3)" # List of months that get drought, if it starts late in the
                             #     year, put the last month first.
+#------------------------------------------------------------------------------------------#
+
+
+#------------------------------------------------------------------------------------------#
+#    If this is an openlava run, load the openlava stuff.                                  #
+#------------------------------------------------------------------------------------------#
+if [ 'x'${openlava} == 'xy' ] || [ 'x'${openlava} == 'xY' ]
+then
+   . /opt/openlava-2.0/etc/openlava-client.sh
+fi
+#------------------------------------------------------------------------------------------#
+
+
+
+#------------------------------------------------------------------------------------------#
+#    Make sure that the directory there exists, if not, create all parent directories      #
+# needed.                                                                                  #
+#------------------------------------------------------------------------------------------#
+while [ ! -s ${outroot} ]
+do
+   namecheck=`basename ${outroot}`
+   dircheck=`dirname ${outroot}`
+   while [ ! -s ${dircheck} ] && [ ${namecheck} != '/' ]
+   do
+      namecheck=`basename ${dircheck}`
+      dircheck=`dirname ${dircheck}`
+   done
+
+   if [ ${namecheck} == '/' ]
+   then
+      echo 'Invalid disk for variable outroot:'
+      echo ' DISK ='${diskhere}
+      exit 58
+   elif [ ${namecheck} == 'xxxxxxxx' ] || [ ${namecheck} == 'xxx_XXX' ] ||
+        [ ${namecheck} == 'XXXXXXXXXXX' ]
+   then
+      echo " - Found this directory in your path: ${namecheck} ..."
+      echo " - Outroot given: ${outroot} ..."
+      echo " - It looks like you forgot to set up your outroot path, check it!"
+      exit 92
+   else
+      echo 'Making directory: '${dircheck}/${namecheck}
+      mkdir ${dircheck}/${namecheck}
+   fi
+done
 #------------------------------------------------------------------------------------------#
 
 
@@ -56,6 +109,8 @@ echo 'Number of polygons: '${npolys}'...'
 #                      (patch- and cohort-level).                                          #
 #   - plot_budget.r  - This creates plots from the detailed budget for Runge-Kutta.        #
 #                      (patch-level only).                                                 #
+#   - plot_eval_ed.r - This creates plots comparing model with eddy flux observations.     #
+#   - plot_census.r  - This creates plots comparing model with biometric data.             #
 #                                                                                          #
 #   The following scripts should work too, but I haven't tested them.                      #
 #   - plot_daily.r   - This creates plots from the daily mean output.                      #
@@ -168,17 +223,21 @@ do
    #---------------------------------------------------------------------------------------#
 
 
-
    #----- Find time and minute. -----------------------------------------------------------#
    houra=`echo ${timea}  | awk '{print substr($1,1,2)}'`
    minua=`echo ${timea}  | awk '{print substr($1,3,2)}'`
    hourz=`echo ${timez}  | awk '{print substr($1,1,2)}'`
    minuz=`echo ${timez}  | awk '{print substr($1,3,2)}'`
+   #---------------------------------------------------------------------------------------#
+
 
    #----- Retrieve some information from ED2IN. -------------------------------------------#
    iphysiol=`grep -i NL%IPHYSIOL ${here}/${polyname}/ED2IN | awk '{print $3}'`
    iallom=`grep -i NL%IALLOM ${here}/${polyname}/ED2IN | awk '{print $3}'`
-   
+   metcyca=`grep -i NL%METCYC1 ${here}/${polyname}/ED2IN | awk '{print $3}'`
+   metcycz=`grep -i NL%METCYCF ${here}/${polyname}/ED2IN | awk '{print $3}'`
+   #---------------------------------------------------------------------------------------#
+
    if [ ${droughtmark} == "TRUE" ]
    then 
       let yeara=${droughtyeara}-1
@@ -187,78 +246,186 @@ do
 
    for script in ${rscripts}
    do
-      echo "Submitting script ${script} for polygon: ${polyname}..."
+      if [ 'x'${submit} == 'xy' ] || [ 'x'${submit} == 'xY' ]
+      then
+         echo "Submitting script ${script} for polygon: ${polyname}..."
+      else
+         echo "Copying script ${script} to polygon: ${polyname}..."
+      fi
 
       case ${script} in
       plot_monthly.r)
-         let thisyeara=${yeara}+0
+         if [ ${onemetcycle} == 'y' ]
+         then
+            if [ ${metdriver} != 'Sheffield' ]
+            then
+               thisyeara=${metcyca}
+               thisyearz=${metcycz}
+               for i in ${shiftiata}
+               do
+                  if [ 'x'${i} == 'x'${polyiata} ]
+                  then
+                     echo '     -> Shifting met cycle'
+                     let metcycle=${metcycz}-${metcyca}+1
+                     let deltayr=${shiftcycle}*${metcycle}
+                     let thisyeara=${metcyca}+${deltayr}
+                     let thisyearz=${metcycz}+${deltayr}
+                  fi # end [ ${i} == ${iata} ]
+               done #end for i in ${shiftiata}
+            else
+               thisyeara=${metcyca}
+               thisyearz=${metcycz}
+            fi # end [ ${metdriver} != 'Sheffield' ]
+         else 
+            let thisyeara=${yeara}+0
+            thisyearz=${yearz}
+         fi # end [ ${onemetcycle} == 'y' ]
+         thismontha=${montha}
+         thismonthz=${monthz}
          thisdatea=${datea}
          epostout='pmon_epost.out'
+         epostsh='pmon_epost.sh'
          epostlsf='pmon_epost.lsf'
-         epostjob='eb-pmon-'${polyiata}
+         epostjob='eb-pmon-'${polyname}
+         ;;
+      plot_eval_ed.r)
+         if [ ${metdriver} != 'Sheffield' ]
+         then
+            thisyeara=${metcyca}
+            thisyearz=${metcycz}
+            for i in ${shiftiata}
+            do
+               if [ 'x'${i} == 'x'${polyiata} ]
+               then
+                  echo '     -> Shifting met cycle'
+                  let metcycle=${metcycz}-${metcyca}+1
+                  let deltayr=${shiftcycle}*${metcycle}
+                  let thisyeara=${metcyca}+${deltayr}
+                  let thisyearz=${metcycz}+${deltayr}
+               fi # end [ ${i} == ${iata} ]
+            done #end for i in ${shiftiata}
+         else
+            thisyeara=${metcyca}
+            thisyearz=${metcycz}
+         fi # end [ ${metdriver} != 'Sheffield' ]
+         thismontha=1
+         thismonthz=12
+         thisdatea=${datea}
+         epostout='peed_epost.out'
+         epostsh='peed_epost.sh'
+         epostlsf='peed_epost.lsf'
+         epostjob='eb-peed-'${polyname}
+         ;;
+      plot_census.r)
+         thismontha=${montha}
+         thismontha=${monthz}
+         thisyeara=${yeara}
+         thisyearz=${yearz}
+
+         thisdatea=${datea}
+         epostout='pcen_epost.out'
+         epostsh='pcen_epost.sh'
+         epostlsf='pcen_epost.lsf'
+         epostjob='eb-pcen-'${polyname}
          ;;
       plot_budget.r)
          thisyeara=${yeara}
+         thisyearz=${yearz}
+         thismontha=${montha}
+         thismonthz=${monthz}
          let thisdatea=${datea}+1
          epostout='pbdg_epost.out'
+         epostsh='pbdg_epost.sh'
          epostlsf='pbdg_epost.lsf'
-         epostjob='eb-pbdg-'${polyiata}
+         epostjob='eb-pbdg-'${polyname}
          ;;
       plot_rk4.r)
          thisyeara=${yeara}
+         thisyearz=${yearz}
+         thismontha=${montha}
+         thismonthz=${monthz}
          let thisdatea=${datea}+1
          epostout='prk4_epost.out'
+         epostsh='prk4_epost.sh'
          epostlsf='prk4_epost.lsf'
-         epostjob='eb-prk4-'${polyiata}
+         epostjob='eb-prk4-'${polyname}
          ;;
       plot_rk4pc.r)
          thisyeara=${yeara}
+         thisyearz=${yearz}
+         thismontha=${montha}
+         thismonthz=${monthz}
          let thisdatea=${datea}+1
          epostout='prpc_epost.out'
+         epostsh='prpc_epost.sh'
          epostlsf='prpc_epost.lsf'
-         epostjob='eb-prpc-'${polyiata}
+         epostjob='eb-prpc-'${polyname}
          ;;
       plot_photo.r)
          thisyeara=${yeara}
+         thisyearz=${yearz}
+         thismontha=${montha}
+         thismonthz=${monthz}
          let thisdatea=${datea}+1
          epostout='ppht_epost.out'
+         epostsh='ppht_epost.sh'
          epostlsf='ppht_epost.lsf'
-         epostjob='eb-ppht-'${polyiata}
+         epostjob='eb-ppht-'${polyname}
          ;;
       patchprops.r)
          thisyeara=${yeara}
+         thisyearz=${yearz}
+         thismontha=${montha}
+         thismonthz=${monthz}
          thisdatea=${datea}
          epostout='ppro_epost.out'
+         epostsh='ppro_epost.sh'
          epostlsf='ppro_epost.lsf'
-         epostjob='eb-ppro-'${polyiata}
+         epostjob='eb-ppro-'${polyname}
          ;;
       plot_daily.r)
          thisyeara=${yeara}
+         thisyearz=${yearz}
+         thismontha=${montha}
+         thismonthz=${monthz}
          thisdatea=${datea}
          epostout='pday_epost.out'
+         epostsh='pday_epost.sh'
          epostlsf='pday_epost.lsf'
-         epostjob='eb-pday-'${polyiata}
+         epostjob='eb-pday-'${polyname}
          ;;
       plot_fast.r)
          thisyeara=${yeara}
+         thisyearz=${yearz}
+         thismontha=${montha}
+         thismonthz=${monthz}
          thisdatea=${datea}
          epostout='pfst_epost.out'
+         epostsh='pfst_epost.sh'
          epostlsf='pfst_epost.lsf'
-         epostjob='eb-pfst-'${polyiata}
+         epostjob='eb-pfst-'${polyname}
          ;;
       reject_ed.r)
          thisyeara=${yeara}
+         thisyearz=${yearz}
+         thismontha=${montha}
+         thismonthz=${monthz}
          thisdatea=${datea}
          epostout='prej_epost.out'
+         epostsh='prej_epost.sh'
          epostlsf='prej_epost.lsf'
-         epostjob='eb-prej-'${polyiata}
+         epostjob='eb-prej-'${polyname}
          ;;
       *)
          thisyeara=${yeara}
+         thisyearz=${yearz}
+         thismontha=${montha}
+         thismonthz=${monthz}
          thisdatea=${datea}
          epostout='pidn_epost.out'
+         epostsh='pidn_epost.sh'
          epostlsf='pidn_epost.lsf'
-         epostjob='eb-pidn-'${polyiata}
+         epostjob='eb-pidn-'${polyname}
          ;;
       esac
 
@@ -272,12 +439,12 @@ do
       sed -i s@thispath@${here}@g                 ${here}/${polyname}/${script}
       sed -i s@thatpath@${there}@g                ${here}/${polyname}/${script}
       sed -i s@thisyeara@${thisyeara}@g           ${here}/${polyname}/${script}
-      sed -i s@thismontha@${montha}@g             ${here}/${polyname}/${script}
+      sed -i s@thismontha@${thismontha}@g         ${here}/${polyname}/${script}
       sed -i s@thisdatea@${thisdatea}@g           ${here}/${polyname}/${script}
       sed -i s@thishoura@${houra}@g               ${here}/${polyname}/${script}
       sed -i s@thisminua@${minua}@g               ${here}/${polyname}/${script}
-      sed -i s@thisyearz@${yearz}@g               ${here}/${polyname}/${script}
-      sed -i s@thismonthz@${monthz}@g             ${here}/${polyname}/${script}
+      sed -i s@thisyearz@${thisyearz}@g           ${here}/${polyname}/${script}
+      sed -i s@thismonthz@${thismonthz}@g         ${here}/${polyname}/${script}
       sed -i s@thisdatez@${datez}@g               ${here}/${polyname}/${script}
       sed -i s@thishourz@${hourz}@g               ${here}/${polyname}/${script}
       sed -i s@thisminuz@${minuz}@g               ${here}/${polyname}/${script}
@@ -290,7 +457,50 @@ do
 
       #----- Run R to get the plots. ------------------------------------------------------#
       comm="R CMD BATCH ${here}/${polyname}/${script} ${here}/${polyname}/${epostout}"
-      bsub -q ${thisqueue} -J ${epostjob} -o ${polyname}/${epostlsf} "${comm}" 1> /dev/null 2> /dev/null
+
+      #------------------------------------------------------------------------------------#
+      #      plot_eval_ed won't run all at once due to the sheer number of HDF5 files.     #
+      # Run it several times until it is complete.                                         #
+      #------------------------------------------------------------------------------------#
+      case ${script} in
+      plot_eval_ed.r)
+         complete="${here}/${polyname}/eval_load_complete.txt"
+         echo '#!/bin/bash'                >  ${here}/${polyname}/${epostsh}
+         echo "/bin/rm -fr ${complete}"    >> ${here}/${polyname}/${epostsh}
+         echo "while [ ! -s ${complete} ]" >> ${here}/${polyname}/${epostsh}
+         echo "do"                         >> ${here}/${polyname}/${epostsh}
+         echo "   sleep 3"                 >> ${here}/${polyname}/${epostsh}
+         echo "   ${comm}"                 >> ${here}/${polyname}/${epostsh}
+         echo "done"                       >> ${here}/${polyname}/${epostsh}
+         chmod +x ${here}/${polyname}/${epostsh}
+         ;;
+      *)
+         echo '#!/bin/bash' > ${here}/${polyname}/${epostsh}
+         echo ${comm} >> ${here}/${polyname}/${epostsh}
+         chmod +x ${here}/${polyname}/${epostsh}
+         ;;
+      esac
+      #------------------------------------------------------------------------------------#
+
+
+
+      #------------------------------------------------------------------------------------#
+      #     Submit the job according to the style (LSF or openlava).                       #
+      #------------------------------------------------------------------------------------#
+      if [ 'x'${submit} == 'xy' ] || [ 'x'${submit} == 'xY' ]
+      then
+         if [ 'x'${openlava} == 'xy' ] || [ 'x'${openlava} == 'xY' ]
+         then
+            bsub="iobsub -J ${epostjob} -o ${here}/${polyname}/${epostlsf}"
+            bsub="${bsub} ${here}/${polyname}/${epostsh} 1> /dev/null 2> /dev/null"
+         else
+            bsub="bsub -q ${thisqueue} -J ${epostjob} -o ${polyname}/${epostlsf}"
+            bsub="${bsub} ${here}/${polyname}/${epostsh} 1> /dev/null 2> /dev/null"
+         fi
+         ${bsub}
+      fi
+      #------------------------------------------------------------------------------------#
    done
+   #---------------------------------------------------------------------------------------#
 done
 #------------------------------------------------------------------------------------------#

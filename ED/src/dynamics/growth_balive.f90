@@ -715,7 +715,7 @@ module growth_balive
       real                                   :: growth_respiration_max
       integer                                :: ipft
       !----- Local constants. -------------------------------------------------------------!
-      logical                  , parameter   :: print_debug = .true.
+      logical                  , parameter   :: print_debug = .false.
       !----- Locally saved variables. -----------------------------------------------------!
       logical, dimension(n_pft), save        :: first_time  = .true.
       !------------------------------------------------------------------------------------!

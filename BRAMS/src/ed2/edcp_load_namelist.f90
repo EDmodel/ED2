@@ -212,7 +212,11 @@ subroutine read_ednl(iunit,filename)
                                    , leaf_min_patch_area => min_patch_area ! ! intent(in)
    use mem_radiate          , only : radfrq                                ! ! intent(in)
    use consts_coms          , only : day_sec                               ! ! intent(in)
-   use detailed_coms        , only : idetailed                             & ! intent(in)
+   use detailed_coms        , only : dt_census                             & ! intent(in)
+                                   , yr1st_census                          & ! intent(in)
+                                   , mon1st_census                         & ! intent(in)
+                                   , min_recruit_dbh                       & ! intent(in)
+                                   , idetailed                             & ! intent(in)
                                    , patch_keep                            ! ! intent(in)
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
@@ -439,6 +443,11 @@ subroutine read_ednl(iunit,filename)
                             !     outstate, the special flags cover all possibilities.
    slxclay   = -1.          ! This is not going to be used in coupled runs because the 
    slxsand   = -1.          !     soil should come from lon/lat maps.
+   dt_census       = 1      ! Dummy variable, we can't really track census in regional
+                            !     runs
+   yr1st_census    = 2000   ! Dummy variable
+   mon1st_census   = 1      ! Dummy variable
+   min_recruit_dbh = 0.     ! Dummy variable
    idetailed =  0           ! No detailed output in coupled runs (it is already too slow 
                             !     with the normal output...)
    patch_keep = 0           ! Keep all patches.

@@ -1876,7 +1876,6 @@ for (place in myplaces){
 
 
 
-
    #---------------------------------------------------------------------------------------#
    #      Time series by PFT.                                                              #
    #---------------------------------------------------------------------------------------#
@@ -2116,6 +2115,487 @@ for (place in myplaces){
          }#end for (p in pftuse)
       }#end if (tseragbpft)
    } #end for tseries
+   #---------------------------------------------------------------------------------------#
+
+
+
+
+   #---------------------------------------------------------------------------------------#
+   #   Plot the comparison between observations and model.                                 #
+   #---------------------------------------------------------------------------------------#
+   print(paste("    + Comparisons of time series (model vs. observations)..."))
+   for (cc in 1:ncompemean){
+
+      #----- Retrieve variable information from the list. ---------------------------------#
+      compnow      = compemean[[cc]]
+      vname        = compnow$vnam  
+      description  = compnow$desc  
+      unit         = compnow$unit  
+      lcolours     = compnow$colour
+      llwd         = compnow$lwd
+      llwd         = compnow$lwd
+      ltype        = compnow$type
+      plog         = compnow$plog
+      legpos       = compnow$legpos
+      plotit       = compnow$plt
+
+      #----- Check whether there are observations for this particular site. ---------------#
+      if (iata == "mao" | iata == "bdf"){
+         obsnow = "obs.m34"
+      }else if(iata == "stm"){
+         obsnow = "obs.s67"
+      }else if(iata == "rao"){
+         obsnow = "obs.pdg"
+      }else if(iata == "jpr"){
+         obsnow = "obs.fns"
+      }else if(iata == "btr"){
+         obsnow = "obs.s77"
+      }else{
+         obsnow = paste("obs.",iata,sep="")
+      }#end if
+
+      plotit       = plotit && obsnow %in% ls()
+
+
+
+
+
+      if (plotit){
+         #---------------------------------------------------------------------------------#
+         #    Copy the observations to a scratch variable.                                 #
+         #---------------------------------------------------------------------------------#
+         thisobs = get(obsnow)
+         mnvar   = paste("emean",vname,sep=".")
+         obsmean = thisobs[[mnvar]]
+         obswhen = thisobs$tomonth
+         #---------------------------------------------------------------------------------#
+
+
+
+         #---------------------------------------------------------------------------------#
+         #    Check whether the time series directory exists.  If not, create it.          #
+         #---------------------------------------------------------------------------------#
+         outdir   = paste(outpref,"compemean",sep="/")
+         if (! file.exists(outdir)) dir.create(outdir)
+         print (paste("      - ",description,"comparison..."))
+         #---------------------------------------------------------------------------------#
+
+
+
+         #----- Define the number of layers. ----------------------------------------------#
+         sel       = thismonth >= min(obswhen) & thismonth <= max(obswhen)
+         thiswhen  = thismonth
+         thismean  = get(vname)
+         #---------------------------------------------------------------------------------# 
+
+
+
+         #----- Find the plot range. ------------------------------------------------------#
+         ylimit    = range(c(thismean[sel],obsmean),na.rm=TRUE)
+         #----- Expand the upper range in so the legend doesn't hide things. --------------#
+         if (ylimit[1] == ylimit[2]  & ylimit[1] == 0){
+            ylimit[1] = -1
+            ylimit[2] =  1
+         }else if (ylimit[1] == ylimit[2] & ylimit[1] > 0){
+            ylimit[2] = (1.0+scalleg) * ylimit[1]
+         }else if (ylimit[1] == ylimit[2] & ylimit[1] < 0){
+            ylimit[2] = (1.0-scalleg) * ylimit[1]
+         }else{
+            ylimit[2] = ylimit[2] + scalleg * (ylimit[2] - ylimit[1])
+         }#end if
+         #---------------------------------------------------------------------------------#
+
+
+
+         #---------------------------------------------------------------------------------#
+         #     Find the nice scale for time.                                               #
+         #---------------------------------------------------------------------------------#
+         whenplote = pretty.time(obswhen,n=8)
+         #---------------------------------------------------------------------------------#
+
+
+
+         #---------------------------------------------------------------------------------#
+         #     Check if the directory exists.  If not, create it.                          #
+         #---------------------------------------------------------------------------------#
+
+         #----- Loop over formats. --------------------------------------------------------#
+         for (o in 1:nout){
+            fichier = paste(outdir,"/",vname,".",outform[o],sep="")
+            if(outform[o] == "x11"){
+               X11(width=size$width,height=size$height,pointsize=ptsz)
+            }else if(outform[o] == "png"){
+               png(filename=fichier,width=size$width*depth,height=size$height*depth
+                  ,pointsize=ptsz,res=depth)
+            }else if(outform[o] == "eps"){
+               postscript(file=fichier,width=size$width,height=size$height
+                         ,pointsize=ptsz,paper=paper)
+            }#end if
+
+            #----- Load variable ----------------------------------------------------------#
+            letitre = paste(description," - ",lieu,"\n","Monthly mean",sep="")
+            plot(x=thiswhen,y=thismean,type="n",main=letitre,xlab="Time"
+                ,ylim=ylimit,ylab=paste("[",unit,"]",sep=""),log=plog,xaxt="n"
+                ,cex.main=cex.main)
+            axis(side=1,at=whenplote$levels,labels=whenplote$labels,padj=whenplote$padj)
+            if (plotgrid){
+               abline(v=whenplote$levels,h=axTicks(side=2),col="gray52",lty="solid")
+            }#end if
+            points(x=thiswhen,y=thismean,col=lcolours[1],lwd=llwd[1],type=ltype
+                  ,pch=16,cex=1.0)
+            points(x=obswhen,y=obsmean ,col=lcolours[2],lwd=llwd[2],type=ltype
+                  ,pch=16,cex=1.0)
+            legend(x=legpos,inset=0.01,legend=c("Model","Observation")
+                  ,col=lcolours,lwd=llwd,cex=1.0,pch=16)
+            if (outform[o] == "x11"){
+               locator(n=1)
+               dev.off()
+            }else{
+               dev.off()
+            }#end if
+         } #end for outform
+      }#end if plotit
+   }#end for ncompare
+   #---------------------------------------------------------------------------------------#
+
+
+
+
+   #---------------------------------------------------------------------------------------#
+   #   Plot the comparison between observations and model.                                 #
+   #---------------------------------------------------------------------------------------#
+   print(paste("    + Comparisons of monthly means (model vs. observations)..."))
+   for (cc in 1:ncompmmean){
+
+      #----- Retrieve variable information from the list. ---------------------------------#
+      compnow      = compmmean[[cc]]
+      vname        = compnow$vnam  
+      description  = compnow$desc  
+      unit         = compnow$unit  
+      plotsd       = compnow$plotsd
+      lcolours     = compnow$colour
+      errcolours   = compnow$errcol
+      angle        = compnow$angle
+      dens         = compnow$dens
+      llwd         = compnow$lwd
+      shwd         = compnow$shwd
+      llwd         = compnow$lwd
+      ltype        = compnow$type
+      plog         = compnow$plog
+      legpos       = compnow$legpos
+      plotit       = compnow$plt
+
+      #----- Check whether there are observations for this particular site. ---------------#
+      if (iata == "mao" | iata == "bdf"){
+         obsnow = "obs.m34"
+      }else if(iata == "stm"){
+         obsnow = "obs.s67"
+      }else if(iata == "rao"){
+         obsnow = "obs.pdg"
+      }else if(iata == "jpr"){
+         obsnow = "obs.fns"
+      }else if(iata == "btr"){
+         obsnow = "obs.s77"
+      }else{
+         obsnow = paste("obs.",iata,sep="")
+      }#end if
+
+      plotit       = plotit && obsnow %in% ls()
+
+
+
+
+
+      if (plotit){
+         #---------------------------------------------------------------------------------#
+         #    Copy the observations to a scratch variable.                                 #
+         #---------------------------------------------------------------------------------#
+         thisobs = get(obsnow)
+         mnvar   = paste("mmean",vname,sep=".")
+         sdvar   = paste("msdev",vname,sep=".")
+         obsmean = thisobs[[mnvar]]
+         obssdev = thisobs[[sdvar]]
+         #---------------------------------------------------------------------------------#
+
+
+
+         #---------------------------------------------------------------------------------#
+         #    Check whether the time series directory exists.  If not, create it.          #
+         #---------------------------------------------------------------------------------#
+         outdir   = paste(outpref,"compmmean",sep="/")
+         if (! file.exists(outdir)) dir.create(outdir)
+         print (paste("      - ",description,"comparison..."))
+         #---------------------------------------------------------------------------------#
+
+
+
+         #----- Define the number of layers. ----------------------------------------------#
+         thismean  = mont12mn[[vname]]
+         thissdev  = mont12sd[[vname]]
+         #---------------------------------------------------------------------------------# 
+
+
+
+         #---------------------------------------------------------------------------------# 
+         #    Some variables have no standard deviation in the model.  Make them 0 if this #
+         # is the case.                                                                    #
+         #---------------------------------------------------------------------------------# 
+         if (length(thissdev) == 0){
+            thissdev = 0. * thismean
+         }#end if
+         #---------------------------------------------------------------------------------# 
+
+
+
+         #----- Find the plot range. ------------------------------------------------------#
+         if (plotsd){
+            ylimit    = range(c(thismean + thissdev ,thismean - thissdev
+                               ,obsmean  + obssdev  ,obsmean  - obssdev    ),na.rm=TRUE)
+         }else{
+            ylimit    = range(c(thismean,obsmean),na.rm=TRUE)
+         }#end if
+         #----- Expand the upper range in so the legend doesn't hide things. --------------#
+         if (ylimit[1] == ylimit[2]  & ylimit[1] == 0){
+            ylimit[1] = -1
+            ylimit[2] =  1
+         }else if (ylimit[1] == ylimit[2] & ylimit[1] > 0){
+            ylimit[2] = (1.0+scalleg) * ylimit[1]
+         }else if (ylimit[1] == ylimit[2] & ylimit[1] < 0){
+            ylimit[2] = (1.0-scalleg) * ylimit[1]
+         }else{
+            ylimit[2] = ylimit[2] + scalleg * (ylimit[2] - ylimit[1])
+         }#end if
+         #---------------------------------------------------------------------------------#
+
+
+
+         #---------------------------------------------------------------------------------#
+         #     Check if the directory exists.  If not, create it.                          #
+         #---------------------------------------------------------------------------------#
+
+         #----- Loop over formats. --------------------------------------------------------#
+         for (o in 1:nout){
+            fichier = paste(outdir,"/",vname,".",outform[o],sep="")
+            if(outform[o] == "x11"){
+               X11(width=size$width,height=size$height,pointsize=ptsz)
+            }else if(outform[o] == "png"){
+               png(filename=fichier,width=size$width*depth,height=size$height*depth
+                  ,pointsize=ptsz,res=depth)
+            }else if(outform[o] == "eps"){
+               postscript(file=fichier,width=size$width,height=size$height
+                         ,pointsize=ptsz,paper=paper)
+            }#end if
+
+            #----- Load variable ----------------------------------------------------------#
+            letitre = paste(description," - ",lieu,"\n","Monthly mean",sep="")
+            plot(x=montmont,y=thismean,type="n",main=letitre,xlab="Time"
+                ,ylim=ylimit,ylab=paste("[",unit,"]",sep=""),log=plog,xaxt="n"
+                ,cex.main=cex.main)
+            axis(side=1,at=montplot$levels,labels=montplot$labels,padj=montplot$padj)
+            if (plotgrid){ 
+               abline(v=montplot$levels,h=axTicks(side=2),col="gray52",lty="solid")
+            }#end if
+            if (plotsd){
+               err.x = c(montmont,rev(montmont),NA,montmont,rev(montmont))
+               err.y = c(thismean + thissdev,rev(thismean) - rev(thissdev),NA
+                        ,obsmean  + obssdev ,rev(obsmean ) - rev(obssdev )   )
+               polygon(x=err.x,y=err.y,col=errcolours,angle=angle,density=dens
+                      ,lty="solid",lwd=shwd)
+            }#end if
+            points(x=montmont,y=thismean,col=lcolours[1],lwd=llwd[1],type=ltype
+                  ,pch=16,cex=1.0)
+            points(x=montmont,y=obsmean ,col=lcolours[2],lwd=llwd[2],type=ltype
+                  ,pch=16,cex=1.0)
+            if (plotsd){
+               legend(x=legpos,inset=0.05,legend=c("Model","Observation")
+                     ,fill=errcolours,angle=angle,density=dens,lwd=llwd,col=lcolours
+                     ,bg="white",title="Shaded areas = 1 SD",cex=1.0,pch=16)
+            }else{
+               legend(x=legpos,inset=0.05,legend=c("Model","Observation")
+                     ,col=lcolours,lwd=llwd,cex=1.0,pch=16)
+            }#end if
+            if (outform[o] == "x11"){
+               locator(n=1)
+               dev.off()
+            }else{
+               dev.off()
+            }#end if
+         } #end for outform
+      }#end if plotit
+   }#end for ncompare
+   #---------------------------------------------------------------------------------------#
+
+
+
+
+   #---------------------------------------------------------------------------------------#
+   #   Plot the comparison between observations and model.                                 #
+   #---------------------------------------------------------------------------------------#
+   print(paste("      * Comparisons of mean diurnal cycle (model vs. observations)..."))
+   for (cc in 1:ncompdcyc){
+
+      #----- Retrieve variable information from the list. ---------------------------------#
+      compnow      = compdcyc[[cc]]
+      vname        = compnow$vnam  
+      description  = compnow$desc  
+      unit         = compnow$unit  
+      plotsd       = compnow$plotsd
+      lcolours     = compnow$colour
+      errcolours   = compnow$errcol
+      angle        = compnow$angle
+      dens         = compnow$dens
+      llwd         = compnow$lwd
+      shwd         = compnow$shwd
+      llwd         = compnow$lwd
+      ltype        = compnow$type
+      plog         = compnow$plog
+      legpos       = compnow$legpos
+      plotit       = compnow$plt
+
+      #----- Check whether there are observations for this particular site. ---------------#
+      if (iata == "mao" | iata == "bdf"){
+         obsnow = "obs.m34"
+      }else if(iata == "stm"){
+         obsnow = "obs.s67"
+      }else if(iata == "rao"){
+         obsnow = "obs.pdg"
+      }else if(iata == "jpr"){
+         obsnow = "obs.fns"
+      }else if(iata == "btr"){
+         obsnow = "obs.s77"
+      }else{
+         obsnow = paste("obs.",iata,sep="")
+      }#end if
+      plotit       = plotit && obsnow %in% ls()
+
+      if (plotit){
+         #---------------------------------------------------------------------------------#
+         #    Copy the observations to a scratch variable.                                 #
+         #---------------------------------------------------------------------------------#
+         thisobs = get(obsnow)
+         mnvar   = paste("qmean",vname,sep=".")
+         sdvar   = paste("qsdev",vname,sep=".")
+         obsmean = thisobs[[mnvar]]
+         obssdev = thisobs[[sdvar]]
+         #----- Append 1st hour after the last. -------------------------------------------#
+         obsmean = cbind(obsmean,obsmean[,1])
+         obssdev = cbind(obssdev,obssdev[,1])
+         #---------------------------------------------------------------------------------#
+
+
+         #---------------------------------------------------------------------------------#
+         #    Check whether the time series directory exists.  If not, create it.          #
+         #---------------------------------------------------------------------------------#
+         outdir   = paste(outpref,"compdcyc",sep="/")
+         if (! file.exists(outdir)) dir.create(outdir)
+         outtheme = paste(outdir,vname,sep="/")
+         if (! file.exists(outtheme)) dir.create(outtheme)
+         print (paste("      +",description,"comparison..."))
+         #---------------------------------------------------------------------------------# 
+
+
+
+         #----- Define the number of layers. ----------------------------------------------#
+         thismean  = dcyc12mn[[vname]]
+         thissdev  = dcyc12sd[[vname]]
+         #---------------------------------------------------------------------------------# 
+
+
+
+         #---------------------------------------------------------------------------------# 
+         #    Some variables have no standard deviation in the model.  Make them 0 if this #
+         # is the case.                                                                    #
+         #---------------------------------------------------------------------------------# 
+         if (length(thissdev) == 0){
+            thissdev = 0. * thismean
+         }#end if
+         #---------------------------------------------------------------------------------# 
+
+
+         #----- Append the last hour before the first one. --------------------------------#
+         thismean  = cbind(thismean[,ndcycle],thismean)
+         thissdev  = cbind(thissdev[,ndcycle],thissdev)
+         #---------------------------------------------------------------------------------# 
+
+
+         #----- Find the plot range. ------------------------------------------------------#
+         if (plotsd){
+            ylimit    = range(c(thismean + thissdev ,thismean - thissdev
+                               ,obsmean  + obssdev  ,obsmean  - obssdev    ),na.rm=TRUE)
+         }else{
+            ylimit    = range(c(thismean,obsmean),na.rm=TRUE)
+         }#end if
+         #---------------------------------------------------------------------------------#
+
+
+         #---------------------------------------------------------------------------------#
+         #      Loop over all months.                                                      #
+         #---------------------------------------------------------------------------------#
+         for (pmon in 1:12){
+            cmon    = substring(100+pmon,2,3)
+            namemon = mlist[pmon]
+
+            #------------------------------------------------------------------------------#
+            #     Check if the directory exists.  If not, create it.                       #
+            #------------------------------------------------------------------------------#
+            print (paste("        > ",description," time series - ",namemon,"...",sep=""))
+
+            #----- Loop over formats. -----------------------------------------------------#
+            for (o in 1:nout){
+               fichier = paste(outtheme,"/",vname,"-",cmon,".",outform[o]
+                              ,sep="")
+               if(outform[o] == "x11"){
+                  X11(width=size$width,height=size$height,pointsize=ptsz)
+               }else if(outform[o] == "png"){
+                  png(filename=fichier,width=size$width*depth,height=size$height*depth
+                     ,pointsize=ptsz,res=depth)
+               }else if(outform[o] == "eps"){
+                  postscript(file=fichier,width=size$width,height=size$height
+                            ,pointsize=ptsz,paper=paper)
+               }#end if
+
+               #----- Load variable -------------------------------------------------------#
+               letitre = paste(description," - ",lieu,"\n"
+                              ,"Mean diurnal cycle - ",namemon,sep="")
+               plot(x=thisday,y=thismean[pmon,],type="n",main=letitre,xlab="Time"
+                   ,ylim=ylimit,ylab=paste("[",unit,"]",sep=""),log=plog,xaxt="n"
+                   ,cex.main=cex.main)
+               axis(side=1,at=dcycplot$levels,labels=dcycplot$labels,padj=dcycplot$padj)
+               if (plotgrid){ 
+                  abline(v=dcycplot$levels,h=axTicks(side=2),col="gray52",lty="solid")
+               }#end if
+               if (plotsd){
+                  err.x = c(thisday,rev(thisday),NA,thisday,rev(thisday))
+                  err.y = c(thismean[pmon,] + thissdev[pmon,]
+                           ,rev(thismean[pmon,]) - rev(thissdev[pmon,])
+                           ,NA
+                           ,obsmean[pmon,]      + obssdev[pmon,]
+                           ,rev(obsmean[pmon,]) - rev(obssdev[pmon,]))
+                  polygon(x=err.x,y=err.y,col=errcolours,angle=angle,density=dens
+                         ,lty="solid",lwd=shwd)
+               }#end if
+               points(x=thisday,y=thismean[pmon,],col=lcolours[1]
+                     ,lwd=llwd[1],type=ltype,pch=16,cex=1.0)
+               points(x=thisday,y=obsmean[pmon,],col=lcolours[2]
+                     ,lwd=llwd[2],type=ltype,pch=16,cex=1.0)
+               if (plotsd){
+                  legend(x=legpos,inset=0.05,legend=c("Model","Observation")
+                        ,fill=errcolours,angle=angle,density=dens,lwd=llwd,col=lcolours
+                        ,bg="white",title="Shaded areas = 1 SD",cex=1.0,pch=16)
+               }else{
+                  legend(x=legpos,inset=0.05,legend=c("Model","Observation")
+                        ,col=lcolours,lwd=llwd,cex=1.0,pch=16)
+               }#end if
+               if (outform[o] == "x11"){
+                  locator(n=1)
+                  dev.off()
+               }else{
+                  dev.off()
+               }#end if
+            } #end for outform
+         }#end for pmon
+      }#end if plotit
+   }#end for ncompare
    #---------------------------------------------------------------------------------------#
 
 
@@ -2559,346 +3039,6 @@ for (place in myplaces){
          }#end for pmon
       }#end if plotit
    }#end for ntser
-   #---------------------------------------------------------------------------------------#
-
-
-
-
-   #---------------------------------------------------------------------------------------#
-   #   Plot the comparison between observations and model.                                 #
-   #---------------------------------------------------------------------------------------#
-   print(paste("      * Comparisons of mean diurnal cycle (model vs. observations)..."))
-   for (cc in 1:ncompdcyc){
-
-      #----- Retrieve variable information from the list. ---------------------------------#
-      compnow      = compdcyc[[cc]]
-      vname        = compnow$vnam  
-      description  = compnow$desc  
-      unit         = compnow$unit  
-      plotsd       = compnow$plotsd
-      lcolours     = compnow$colour
-      errcolours   = compnow$errcol
-      angle        = compnow$angle
-      dens         = compnow$dens
-      llwd         = compnow$lwd
-      shwd         = compnow$shwd
-      llwd         = compnow$lwd
-      ltype        = compnow$type
-      plog         = compnow$plog
-      legpos       = compnow$legpos
-      plotit       = compnow$plt
-
-      #----- Check whether there are observations for this particular site. ---------------#
-      if (iata == "mao" | iata == "bdf"){
-         obsnow = "obs.m34"
-      }else if(iata == "stm"){
-         obsnow = "obs.s67"
-      }else if(iata == "rao"){
-         obsnow = "obs.pdg"
-      }else if(iata == "jpr"){
-         obsnow = "obs.fns"
-      }else if(iata == "btr"){
-         obsnow = "obs.s77"
-      }else{
-         obsnow = paste("obs.",iata,sep="")
-      }#end if
-      plotit       = plotit && obsnow %in% ls()
-
-      if (plotit){
-         #---------------------------------------------------------------------------------#
-         #    Copy the observations to a scratch variable.                                 #
-         #---------------------------------------------------------------------------------#
-         thisobs = get(obsnow)
-         mnvar   = paste("qmean",vname,sep=".")
-         sdvar   = paste("qsdev",vname,sep=".")
-         obsmean = thisobs[[mnvar]]
-         obssdev = thisobs[[sdvar]]
-         #----- Append 1st hour after the last. -------------------------------------------#
-         obsmean = cbind(obsmean,obsmean[,1])
-         obssdev = cbind(obssdev,obssdev[,1])
-         #---------------------------------------------------------------------------------#
-
-
-         #---------------------------------------------------------------------------------#
-         #    Check whether the time series directory exists.  If not, create it.          #
-         #---------------------------------------------------------------------------------#
-         outdir   = paste(outpref,"compdcyc",sep="/")
-         if (! file.exists(outdir)) dir.create(outdir)
-         outtheme = paste(outdir,vname,sep="/")
-         if (! file.exists(outtheme)) dir.create(outtheme)
-         print (paste("      +",description,"comparison..."))
-         #---------------------------------------------------------------------------------# 
-
-
-
-         #----- Define the number of layers. ----------------------------------------------#
-         thismean  = dcyc12mn[[vname]]
-         thissdev  = dcyc12sd[[vname]]
-         #---------------------------------------------------------------------------------# 
-
-
-
-         #---------------------------------------------------------------------------------# 
-         #    Some variables have no standard deviation in the model.  Make them 0 if this #
-         # is the case.                                                                    #
-         #---------------------------------------------------------------------------------# 
-         if (length(thissdev) == 0){
-            thissdev = 0. * thismean
-         }#end if
-         #---------------------------------------------------------------------------------# 
-
-
-         #----- Append the last hour before the first one. --------------------------------#
-         thismean  = cbind(thismean[,ndcycle],thismean)
-         thissdev  = cbind(thissdev[,ndcycle],thissdev)
-         #---------------------------------------------------------------------------------# 
-
-
-         #----- Find the plot range. ------------------------------------------------------#
-         if (plotsd){
-            ylimit    = range(c(thismean + thissdev ,thismean - thissdev
-                               ,obsmean  + obssdev  ,obsmean  - obssdev    ),na.rm=TRUE)
-         }else{
-            ylimit    = range(c(thismean,obsmean),na.rm=TRUE)
-         }#end if
-         #---------------------------------------------------------------------------------#
-
-
-         #---------------------------------------------------------------------------------#
-         #      Loop over all months.                                                      #
-         #---------------------------------------------------------------------------------#
-         for (pmon in 1:12){
-            cmon    = substring(100+pmon,2,3)
-            namemon = mlist[pmon]
-
-            #------------------------------------------------------------------------------#
-            #     Check if the directory exists.  If not, create it.                       #
-            #------------------------------------------------------------------------------#
-            print (paste("        > ",description," time series - ",namemon,"...",sep=""))
-
-            #----- Loop over formats. -----------------------------------------------------#
-            for (o in 1:nout){
-               fichier = paste(outtheme,"/",vname,"-",cmon,".",outform[o]
-                              ,sep="")
-               if(outform[o] == "x11"){
-                  X11(width=size$width,height=size$height,pointsize=ptsz)
-               }else if(outform[o] == "png"){
-                  png(filename=fichier,width=size$width*depth,height=size$height*depth
-                     ,pointsize=ptsz,res=depth)
-               }else if(outform[o] == "eps"){
-                  postscript(file=fichier,width=size$width,height=size$height
-                            ,pointsize=ptsz,paper=paper)
-               }#end if
-
-               #----- Load variable -------------------------------------------------------#
-               letitre = paste(description," - ",lieu,"\n"
-                              ,"Mean diurnal cycle - ",namemon,sep="")
-               plot(x=thisday,y=thismean[pmon,],type="n",main=letitre,xlab="Time"
-                   ,ylim=ylimit,ylab=paste("[",unit,"]",sep=""),log=plog,xaxt="n"
-                   ,cex.main=cex.main)
-               axis(side=1,at=dcycplot$levels,labels=dcycplot$labels,padj=dcycplot$padj)
-               if (plotgrid){ 
-                  abline(v=dcycplot$levels,h=axTicks(side=2),col="gray52",lty="solid")
-               }#end if
-               if (plotsd){
-                  err.x = c(thisday,rev(thisday),NA,thisday,rev(thisday))
-                  err.y = c(thismean[pmon,] + thissdev[pmon,]
-                           ,rev(thismean[pmon,]) - rev(thissdev[pmon,])
-                           ,NA
-                           ,obsmean[pmon,]      + obssdev[pmon,]
-                           ,rev(obsmean[pmon,]) - rev(obssdev[pmon,]))
-                  polygon(x=err.x,y=err.y,col=errcolours,angle=angle,density=dens
-                         ,lty="solid",lwd=shwd)
-               }#end if
-               points(x=thisday,y=thismean[pmon,],col=lcolours[1]
-                     ,lwd=llwd[1],type=ltype,pch=16,cex=1.0)
-               points(x=thisday,y=obsmean[pmon,],col=lcolours[2]
-                     ,lwd=llwd[2],type=ltype,pch=16,cex=1.0)
-               if (plotsd){
-                  legend(x=legpos,inset=0.05,legend=c("Model","Observation")
-                        ,fill=errcolours,angle=angle,density=dens,lwd=llwd,col=lcolours
-                        ,bg="white",title="Shaded areas = 1 SD",cex=1.0,pch=16)
-               }else{
-                  legend(x=legpos,inset=0.05,legend=c("Model","Observation")
-                        ,col=lcolours,lwd=llwd,cex=1.0,pch=16)
-               }#end if
-               if (outform[o] == "x11"){
-                  locator(n=1)
-                  dev.off()
-               }else{
-                  dev.off()
-               }#end if
-            } #end for outform
-         }#end for pmon
-      }#end if plotit
-   }#end for ncompare
-   #---------------------------------------------------------------------------------------#
-
-
-
-
-   #---------------------------------------------------------------------------------------#
-   #   Plot the comparison between observations and model.                                 #
-   #---------------------------------------------------------------------------------------#
-   print(paste("    + Comparisons of monthly means (model vs. observations)..."))
-   for (cc in 1:ncompmmean){
-
-      #----- Retrieve variable information from the list. ---------------------------------#
-      compnow      = compmmean[[cc]]
-      vname        = compnow$vnam  
-      description  = compnow$desc  
-      unit         = compnow$unit  
-      plotsd       = compnow$plotsd
-      lcolours     = compnow$colour
-      errcolours   = compnow$errcol
-      angle        = compnow$angle
-      dens         = compnow$dens
-      llwd         = compnow$lwd
-      shwd         = compnow$shwd
-      llwd         = compnow$lwd
-      ltype        = compnow$type
-      plog         = compnow$plog
-      legpos       = compnow$legpos
-      plotit       = compnow$plt
-
-      #----- Check whether there are observations for this particular site. ---------------#
-      if (iata == "mao" | iata == "bdf"){
-         obsnow = "obs.m34"
-      }else if(iata == "stm"){
-         obsnow = "obs.s67"
-      }else if(iata == "rao"){
-         obsnow = "obs.pdg"
-      }else if(iata == "jpr"){
-         obsnow = "obs.fns"
-      }else if(iata == "btr"){
-         obsnow = "obs.s77"
-      }else{
-         obsnow = paste("obs.",iata,sep="")
-      }#end if
-
-      plotit       = plotit && obsnow %in% ls()
-
-
-
-
-
-      if (plotit){
-         #---------------------------------------------------------------------------------#
-         #    Copy the observations to a scratch variable.                                 #
-         #---------------------------------------------------------------------------------#
-         thisobs = get(obsnow)
-         mnvar   = paste("mmean",vname,sep=".")
-         sdvar   = paste("msdev",vname,sep=".")
-         obsmean = thisobs[[mnvar]]
-         obssdev = thisobs[[sdvar]]
-         #---------------------------------------------------------------------------------#
-
-
-
-         #---------------------------------------------------------------------------------#
-         #    Check whether the time series directory exists.  If not, create it.          #
-         #---------------------------------------------------------------------------------#
-         outdir   = paste(outpref,"compmmean",sep="/")
-         if (! file.exists(outdir)) dir.create(outdir)
-         print (paste("      - ",description,"comparison..."))
-         #---------------------------------------------------------------------------------#
-
-
-
-         #----- Define the number of layers. ----------------------------------------------#
-         thismean  = mont12mn[[vname]]
-         thissdev  = mont12sd[[vname]]
-         #---------------------------------------------------------------------------------# 
-
-
-
-         #---------------------------------------------------------------------------------# 
-         #    Some variables have no standard deviation in the model.  Make them 0 if this #
-         # is the case.                                                                    #
-         #---------------------------------------------------------------------------------# 
-         if (length(thissdev) == 0){
-            thissdev = 0. * thismean
-         }#end if
-         #---------------------------------------------------------------------------------# 
-
-
-
-         #----- Find the plot range. ------------------------------------------------------#
-         if (plotsd){
-            ylimit    = range(c(thismean + thissdev ,thismean - thissdev
-                               ,obsmean  + obssdev  ,obsmean  - obssdev    ),na.rm=TRUE)
-         }else{
-            ylimit    = range(c(thismean,obsmean),na.rm=TRUE)
-         }#end if
-         #----- Expand the upper range in so the legend doesn't hide things. --------------#
-         if (ylimit[1] == ylimit[2]  & ylimit[1] == 0){
-            ylimit[1] = -1
-            ylimit[2] =  1
-         }else if (ylimit[1] == ylimit[2] & ylimit[1] > 0){
-            ylimit[2] = (1.0+scalleg) * ylimit[1]
-         }else if (ylimit[1] == ylimit[2] & ylimit[1] < 0){
-            ylimit[2] = (1.0-scalleg) * ylimit[1]
-         }else{
-            ylimit[2] = ylimit[2] + scalleg * (ylimit[2] - ylimit[1])
-         }#end if
-         #---------------------------------------------------------------------------------#
-
-
-
-         #---------------------------------------------------------------------------------#
-         #     Check if the directory exists.  If not, create it.                          #
-         #---------------------------------------------------------------------------------#
-
-         #----- Loop over formats. --------------------------------------------------------#
-         for (o in 1:nout){
-            fichier = paste(outdir,"/",vname,".",outform[o],sep="")
-            if(outform[o] == "x11"){
-               X11(width=size$width,height=size$height,pointsize=ptsz)
-            }else if(outform[o] == "png"){
-               png(filename=fichier,width=size$width*depth,height=size$height*depth
-                  ,pointsize=ptsz,res=depth)
-            }else if(outform[o] == "eps"){
-               postscript(file=fichier,width=size$width,height=size$height
-                         ,pointsize=ptsz,paper=paper)
-            }#end if
-
-            #----- Load variable ----------------------------------------------------------#
-            letitre = paste(description," - ",lieu,"\n","Monthly mean",sep="")
-            plot(x=montmont,y=thismean,type="n",main=letitre,xlab="Time"
-                ,ylim=ylimit,ylab=paste("[",unit,"]",sep=""),log=plog,xaxt="n"
-                ,cex.main=cex.main)
-            axis(side=1,at=montplot$levels,labels=montplot$labels,padj=montplot$padj)
-            if (plotgrid){ 
-               abline(v=montplot$levels,h=axTicks(side=2),col="gray52",lty="solid")
-            }#end if
-            if (plotsd){
-               err.x = c(montmont,rev(montmont),NA,montmont,rev(montmont))
-               err.y = c(thismean + thissdev,rev(thismean) - rev(thissdev),NA
-                        ,obsmean  + obssdev ,rev(obsmean ) - rev(obssdev )   )
-               polygon(x=err.x,y=err.y,col=errcolours,angle=angle,density=dens
-                      ,lty="solid",lwd=shwd)
-            }#end if
-            points(x=montmont,y=thismean,col=lcolours[1],lwd=llwd[1],type=ltype
-                  ,pch=16,cex=1.0)
-            points(x=montmont,y=obsmean ,col=lcolours[2],lwd=llwd[2],type=ltype
-                  ,pch=16,cex=1.0)
-            if (plotsd){
-               legend(x=legpos,inset=0.05,legend=c("Model","Observation")
-                     ,fill=errcolours,angle=angle,density=dens,lwd=llwd,col=lcolours
-                     ,bg="white",title="Shaded areas = 1 SD",cex=1.0,pch=16)
-            }else{
-               legend(x=legpos,inset=0.05,legend=c("Model","Observation")
-                     ,col=lcolours,lwd=llwd,cex=1.0,pch=16)
-            }#end if
-            if (outform[o] == "x11"){
-               locator(n=1)
-               dev.off()
-            }else{
-               dev.off()
-            }#end if
-         } #end for outform
-      }#end if plotit
-   }#end for ncompare
    #---------------------------------------------------------------------------------------#
 
 
@@ -3388,6 +3528,159 @@ for (place in myplaces){
          } #end for outform
       }#end if
    }#end for nbox
+   #---------------------------------------------------------------------------------------#
+
+
+
+
+
+
+   #---------------------------------------------------------------------------------------#
+   #      Bar plot by DBH class.                                                           #
+   #---------------------------------------------------------------------------------------#
+   print(paste("    + Bar plot by DBH classes..."))
+   monbplot    = which(nummonths(thismonth) %in% sasmonth)
+   nmonbplot   = length(monbplot)
+   pftuse      = which(apply(X=nplantpftdbh,MARGIN=3,FUN=sum,na.rm=TRUE) > 0.)
+   npftuse     = length(pftuse)
+   pftname.use = pft$name  [pftuse]
+   pftcol.use  = pft$colour[pftuse]
+   for (v in 1:nbarplotdbh){
+      #----- Load settings for this variable.----------------------------------------------#
+      thisbar     = barplotdbh[[v]]
+      vnam        = thisbar$vnam
+      description = thisbar$desc
+      unit        = thisbar$unit
+      stacked     = thisbar$stack
+      plotit      = thisbar$plt
+      #------------------------------------------------------------------------------------#
+
+
+      #------------------------------------------------------------------------------------#
+      #      Check whether to plot this 
+      #------------------------------------------------------------------------------------#
+      if (plotit){
+         print (paste("      - ",description,"..."))
+
+
+         #---------------------------------------------------------------------------------#
+         #     Retrieve the variable, and keep only the part that is usable.               #
+         #---------------------------------------------------------------------------------#
+         thisvnam                  = get(vnam)[monbplot,,]
+         thisvnam                  = thisvnam [,,pftuse]
+         thisvnam                  = thisvnam [,-(ndbh+1),]
+         
+         thisvnam[is.na(thisvnam)] = 0.
+         thiswhen                  = thismonth[monbplot]
+         #---------------------------------------------------------------------------------#
+       
+
+         #---------------------------------------------------------------------------------#
+         #      Find the limits for the plots.  We use the same axis so it is easier to    #
+         # compare different times.                                                        #
+         #---------------------------------------------------------------------------------#
+         if (stacked){
+            ylimit   = c(0,max(apply(X=thisvnam,MARGIN=c(1,2),FUN=sum,na.rm=TRUE)))
+         }else{
+            ylimit   = range(x=thisvnam,na.rm=TRUE)
+         }#end if
+         #----- Expand the upper range in so the legend doesn't hide things. --------------#
+         if (ylimit[1] == ylimit[2]  & ylimit[1] == 0){
+            ylimit[1] = -1
+            ylimit[2] =  1
+         }else if (ylimit[1] == ylimit[2] & ylimit[1] > 0){
+            ylimit[2] = (1.0+scalleg) * ylimit[1]
+         }else if (ylimit[1] == ylimit[2] & ylimit[1] < 0){
+            ylimit[2] = (1.0-scalleg) * ylimit[1]
+         }else{
+            ylimit[2] = ylimit[2] + scalleg * (ylimit[2] - ylimit[1])
+         }#end if
+         #---------------------------------------------------------------------------------#
+
+
+
+         #---------------------------------------------------------------------------------#
+         #     Check if the directory exists.  If not, create it.                          #
+         #---------------------------------------------------------------------------------#
+         barplotdir = paste(outpref,"barplotdbh",sep="/")
+         if (! file.exists(barplotdir)) dir.create(barplotdir)
+         outdir = paste(barplotdir,vnam,sep="/")
+         if (! file.exists(outdir)) dir.create(outdir)
+         #---------------------------------------------------------------------------------#
+
+
+
+         #---------------------------------------------------------------------------------#
+         #      Loop over all possible months.                                             #
+         #---------------------------------------------------------------------------------#
+         for (m in 1:nmonbplot){
+
+            #----- Find which year we are plotting. ---------------------------------------#
+            cmonth    = sprintf("%2.2i",(nummonths(thiswhen[m])))
+            cyear     = sprintf("%4.4i",(numyears(thiswhen[m])))
+            mm        = as.numeric(cmonth)
+            yy        = as.numeric(cyear)
+            whentitle = paste(mon2mmm(mm,cap1=TRUE),cyear,sep="-")
+            #------------------------------------------------------------------------------#
+
+
+            #----- Loop over output formats. ----------------------------------------------#
+            for (o in 1:nout){
+               #------ Open the plot. -----------------------------------------------------#
+               fichier = paste(outdir,"/",vnam,"-",cyear,"-",cmonth,"-",suffix
+                                         ,".",outform[o],sep="")
+               if (outform[o] == "x11"){
+                  X11(width=size$width,height=size$height,pointsize=ptsz)
+               }else if(outform[o] == "png"){
+                  png(filename=fichier,width=size$width*depth,height=size$height*depth
+                     ,pointsize=ptsz,res=depth)
+               }else if(outform[o] == "eps"){
+                  postscript(file=fichier,width=size$width,height=size$height
+                            ,pointsize=ptsz,paper=paper)
+               }#end if
+               #---------------------------------------------------------------------------#
+
+
+               #------ Set up the title and axis labels. ----------------------------------#
+               letitre = paste(lieu,"\n",description," - Time : ",whentitle,sep="")
+               lexlab  = "DBH Classes"
+               leylab  = paste(description," [",unit,"]",sep="")
+               #---------------------------------------------------------------------------#
+
+
+               #----- Plot all monthly means together. ------------------------------------#
+               barplot(height=t(thisvnam[m,,]),names.arg=dbhnames[1:ndbh],width=1.0
+                      ,main=letitre,xlab=lexlab,ylab=leylab,ylim=ylimit,legend.text=FALSE
+                      ,beside=(! stacked),col=pftcol.use
+                      ,border="gray23",xpd=FALSE,cex.main=cex.main)
+               if (plotgrid & (! stacked)){
+                  xgrid=0.5+(1:ndbh)*(1+npftuse)
+                  abline(v=xgrid,col="gray46",lty="solid")
+               }#end if
+               box()
+               legend(x="topleft",inset=0.01,legend=pftname.use,fill=pftcol.use
+                     ,ncol=1,title="PFT",cex=1.0,bg="white")
+               #---------------------------------------------------------------------------#
+
+
+
+               #---------------------------------------------------------------------------#
+               #     Close the device.                                                     #
+               #---------------------------------------------------------------------------#
+               if (outform[o] == "x11"){
+                  locator(n=1)
+                  dev.off()
+               }else{
+                  dev.off()
+               }#end if
+               #---------------------------------------------------------------------------#
+            } #end for outform
+            #------------------------------------------------------------------------------#
+         }#end for
+         #---------------------------------------------------------------------------------#
+      }#end if
+      #------------------------------------------------------------------------------------#
+   }#end for
    #---------------------------------------------------------------------------------------#
 
 

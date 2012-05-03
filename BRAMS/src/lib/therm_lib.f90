@@ -4573,9 +4573,9 @@ module therm_lib
          !---------------------------------------------------------------------------------!
          else
             if (abs(funnow-funa) < 100.*toler*tempa) then
-               delta = 100.*toler*tempa
+               delta = 0.5
             else
-               delta = max(abs(funa)*abs((tempz-tempa)/(funnow-funa)),100.*toler*tempa)
+               delta = max(abs(funa)*abs((tempz-tempa)/(funnow-funa)),0.5)
             end if
             tempz = tempa + delta
             funz  = funa

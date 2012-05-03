@@ -175,7 +175,11 @@ subroutine masterput_ednl(mainnum)
                                    , ribmax                     & ! intent(in)
                                    , leaf_maxwhc                ! ! intent(in)
    use mem_edcp             , only : co2_offset                 ! ! intent(in)
-   use detailed_coms        , only : idetailed                  & ! intent(in)
+   use detailed_coms        , only : dt_census                  & ! intent(in)
+                                   , yr1st_census               & ! intent(in)
+                                   , mon1st_census              & ! intent(in)
+                                   , min_recruit_dbh            & ! intent(in)
+                                   , idetailed                  & ! intent(in)
                                    , patch_keep                 ! ! intent(in)
    implicit none
    !----- Standard common blocks. ---------------------------------------------------------!
@@ -388,6 +392,10 @@ subroutine masterput_ednl(mainnum)
    call MPI_Bcast(leaf_maxwhc,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
 
 
+   call MPI_Bcast(dt_census,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(yr1st_census,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(mon1st_census,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(min_recruit_dbh,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(idetailed,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(patch_keep,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
 
@@ -576,7 +584,11 @@ subroutine nodeget_ednl(master_num)
                                    , ribmax                     & ! intent(out)
                                    , leaf_maxwhc                ! ! intent(out)
    use mem_edcp             , only : co2_offset                 ! ! intent(out)
-   use detailed_coms        , only : idetailed                  & ! intent(out)
+   use detailed_coms        , only : dt_census                  & ! intent(out)
+                                   , yr1st_census               & ! intent(out)
+                                   , mon1st_census              & ! intent(out)
+                                   , min_recruit_dbh            & ! intent(out)
+                                   , idetailed                  & ! intent(out)
                                    , patch_keep                 ! ! intent(out)
    implicit none
    !----- Standard common blocks. ---------------------------------------------------------!
@@ -790,6 +802,10 @@ subroutine nodeget_ednl(master_num)
    call MPI_Bcast(ribmax,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(leaf_maxwhc,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
 
+   call MPI_Bcast(dt_census,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(yr1st_census,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(mon1st_census,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(min_recruit_dbh,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(idetailed,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(patch_keep,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
 
