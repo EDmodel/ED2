@@ -632,7 +632,7 @@ do
          ;;
       Guyaflux)
          metdriverdb=${sitemet}'/Guyaflux/Guyaflux_HEADER'
-         metcyc1=2007
+         metcyc1=2004
          metcycf=2009
          imetavg=1
          ;;

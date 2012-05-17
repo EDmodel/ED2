@@ -13,6 +13,8 @@ shiftiata=''     # Places that we must shift the cycle
 shiftcycle=-1    # In case your met driver doesn't match the model simulation
 #----- Check whether to use openlava or typical job submission. ---------------------------#
 openlava='n'
+#----- Yearly comparison . ----------------------------------------------------------------#
+seasonmona=1
 #------------------------------------------------------------------------------------------#
 
 #------------------------------------------------------------------------------------------#
@@ -101,6 +103,7 @@ echo 'Number of polygons: '${npolys}'...'
 
 #------------------------------------------------------------------------------------------#
 #    List all the R scripts you want to run.                                               #
+#   - plot_yearly.r  - This creates yearly comparisons based on the monthly mean output.   #
 #   - plot_monthly.r - This creates several plots based on the monthly mean output.        #
 #   - plot_rk4.r     - This creates plots from the detailed output for Runge-Kutta.        #
 #                      (patch-level only).                                                 #
@@ -138,88 +141,88 @@ do
    # latitude.                                                                             #
    #---------------------------------------------------------------------------------------#
    oi=`head -${line} ${lonlat} | tail -1`
-   polyname=`echo ${oi}     | awk '{print $1 }'`
-   polyiata=`echo ${oi}     | awk '{print $2 }'`
-   polylon=`echo ${oi}      | awk '{print $3 }'`
-   polylat=`echo ${oi}      | awk '{print $4 }'`
-   yeara=`echo ${oi}        | awk '{print $5 }'`
-   montha=`echo ${oi}       | awk '{print $6 }'`
-   datea=`echo ${oi}        | awk '{print $7 }'`
-   timea=`echo ${oi}        | awk '{print $8 }'`
-   yearz=`echo ${oi}        | awk '{print $9 }'`
-   monthz=`echo ${oi}       | awk '{print $10}'`
-   datez=`echo ${oi}        | awk '{print $11}'`
-   timez=`echo ${oi}        | awk '{print $12}'`
-   polyisoil=`echo ${oi}    | awk '{print $13}'`
-   polyntext=`echo ${oi}    | awk '{print $14}'`
-   polysand=`echo ${oi}     | awk '{print $15}'`
-   polyclay=`echo ${oi}     | awk '{print $16}'`
-   polydepth=`echo ${oi}    | awk '{print $17}'`
-   polycol=`echo ${oi}      | awk '{print $18}'`
-   slzres=`echo ${oi}       | awk '{print $19}'`
-   queue=`echo ${oi}        | awk '{print $20}'`
-   metdriver=`echo ${oi}    | awk '{print $21}'`
-   dtlsm=`echo ${oi}        | awk '{print $22}'`
-   vmfactc3=`echo ${oi}     | awk '{print $23}'`
-   vmfactc4=`echo ${oi}     | awk '{print $24}'`
-   mphototrc3=`echo ${oi}   | awk '{print $25}'`
-   mphototec3=`echo ${oi}   | awk '{print $26}'`
-   mphotoc4=`echo ${oi}     | awk '{print $27}'`
-   bphotoblc3=`echo ${oi}   | awk '{print $28}'`
-   bphotonlc3=`echo ${oi}   | awk '{print $29}'`
-   bphotoc4=`echo ${oi}     | awk '{print $30}'`
-   kwgrass=`echo ${oi}      | awk '{print $31}'`
-   kwtree=`echo ${oi}       | awk '{print $32}'`
-   gammac3=`echo ${oi}      | awk '{print $33}'`
-   gammac4=`echo ${oi}      | awk '{print $34}'`
-   d0grass=`echo ${oi}      | awk '{print $35}'`
-   d0tree=`echo ${oi}       | awk '{print $36}'`
-   alphac3=`echo ${oi}      | awk '{print $37}'`
-   alphac4=`echo ${oi}      | awk '{print $38}'`
-   klowco2=`echo ${oi}      | awk '{print $39}'`
-   rrffact=`echo ${oi}      | awk '{print $40}'`
-   growthresp=`echo ${oi}   | awk '{print $41}'`
-   lwidthgrass=`echo ${oi}  | awk '{print $42}'`
-   lwidthbltree=`echo ${oi} | awk '{print $43}'`
-   lwidthnltree=`echo ${oi} | awk '{print $44}'`
-   q10c3=`echo ${oi}        | awk '{print $45}'`
-   q10c4=`echo ${oi}        | awk '{print $46}'`
-   h2olimit=`echo ${oi}     | awk '{print $47}'`
-   isfclyrm=`echo ${oi}     | awk '{print $48}'`
-   icanturb=`echo ${oi}     | awk '{print $49}'`
-   ubmin=`echo ${oi}        | awk '{print $50}'`
-   ugbmin=`echo ${oi}       | awk '{print $51}'`
-   ustmin=`echo ${oi}       | awk '{print $52}'`
-   gamm=`echo ${oi}         | awk '{print $53}'`
-   gamh=`echo ${oi}         | awk '{print $54}'`
-   tprandtl=`echo ${oi}     | awk '{print $55}'`
-   ribmax=`echo ${oi}       | awk '{print $56}'`
-   atmco2=`echo ${oi}       | awk '{print $57}'`
-   thcrit=`echo ${oi}       | awk '{print $58}'`
-   smfire=`echo ${oi}       | awk '{print $59}'`
-   ifire=`echo ${oi}        | awk '{print $60}'`
-   fireparm=`echo ${oi}     | awk '{print $61}'`
-   ipercol=`echo ${oi}      | awk '{print $62}'`
-   isoilbc=`echo ${oi}      | awk '{print $63}'`
-   runoff=`echo ${oi}       | awk '{print $64}'`
-   imetrad=`echo ${oi}      | awk '{print $65}'`
-   ibranch=`echo ${oi}      | awk '{print $66}'`
-   icanrad=`echo ${oi}      | awk '{print $67}'`
-   crown=`echo   ${oi}      | awk '{print $68}'`
-   ltransvis=`echo ${oi}    | awk '{print $69}'`
-   lreflectvis=`echo ${oi}  | awk '{print $70}'`
-   ltransnir=`echo ${oi}    | awk '{print $71}'`
-   lreflectnir=`echo ${oi}  | awk '{print $72}'`
-   orienttree=`echo ${oi}   | awk '{print $73}'`
-   orientgrass=`echo ${oi}  | awk '{print $74}'`
-   clumptree=`echo ${oi}    | awk '{print $75}'`
-   clumpgrass=`echo ${oi}   | awk '{print $76}'`
-   ivegtdyn=`echo ${oi}     | awk '{print $77}'`
-   igndvap=`echo ${oi}      | awk '{print $78}'`
-   iphen=`echo ${oi}        | awk '{print $79}'`
-   iallom=`echo ${oi}       | awk '{print $80}'`
-   ibigleaf=`echo ${oi}     | awk '{print $81}'`
-   irepro=`echo ${oi}       | awk '{print $82}'`
+   polyname=`echo ${oi}        | awk '{print $1 }'`
+   polyiata=`echo ${oi}        | awk '{print $2 }'`
+   polylon=`echo ${oi}         | awk '{print $3 }'`
+   polylat=`echo ${oi}         | awk '{print $4 }'`
+   yeara=`echo ${oi}           | awk '{print $5 }'`
+   montha=`echo ${oi}          | awk '{print $6 }'`
+   datea=`echo ${oi}           | awk '{print $7 }'`
+   timea=`echo ${oi}           | awk '{print $8 }'`
+   yearz=`echo ${oi}           | awk '{print $9 }'`
+   monthz=`echo ${oi}          | awk '{print $10}'`
+   datez=`echo ${oi}           | awk '{print $11}'`
+   timez=`echo ${oi}           | awk '{print $12}'`
+   polyisoil=`echo ${oi}       | awk '{print $13}'`
+   polyntext=`echo ${oi}       | awk '{print $14}'`
+   polysand=`echo ${oi}        | awk '{print $15}'`
+   polyclay=`echo ${oi}        | awk '{print $16}'`
+   polydepth=`echo ${oi}       | awk '{print $17}'`
+   polycol=`echo ${oi}         | awk '{print $18}'`
+   slzres=`echo ${oi}          | awk '{print $19}'`
+   queue=`echo ${oi}           | awk '{print $20}'`
+   metdriver=`echo ${oi}       | awk '{print $21}'`
+   dtlsm=`echo ${oi}           | awk '{print $22}'`
+   vmfactc3=`echo ${oi}        | awk '{print $23}'`
+   vmfactc4=`echo ${oi}        | awk '{print $24}'`
+   mphototrc3=`echo ${oi}      | awk '{print $25}'`
+   mphototec3=`echo ${oi}      | awk '{print $26}'`
+   mphotoc4=`echo ${oi}        | awk '{print $27}'`
+   bphotoblc3=`echo ${oi}      | awk '{print $28}'`
+   bphotonlc3=`echo ${oi}      | awk '{print $29}'`
+   bphotoc4=`echo ${oi}        | awk '{print $30}'`
+   kwgrass=`echo ${oi}         | awk '{print $31}'`
+   kwtree=`echo ${oi}          | awk '{print $32}'`
+   gammac3=`echo ${oi}         | awk '{print $33}'`
+   gammac4=`echo ${oi}         | awk '{print $34}'`
+   d0grass=`echo ${oi}         | awk '{print $35}'`
+   d0tree=`echo ${oi}          | awk '{print $36}'`
+   alphac3=`echo ${oi}         | awk '{print $37}'`
+   alphac4=`echo ${oi}         | awk '{print $38}'`
+   klowco2=`echo ${oi}         | awk '{print $39}'`
+   rrffact=`echo ${oi}         | awk '{print $40}'`
+   growthresp=`echo ${oi}      | awk '{print $41}'`
+   lwidthgrass=`echo ${oi}     | awk '{print $42}'`
+   lwidthbltree=`echo ${oi}    | awk '{print $43}'`
+   lwidthnltree=`echo ${oi}    | awk '{print $44}'`
+   q10c3=`echo ${oi}           | awk '{print $45}'`
+   q10c4=`echo ${oi}           | awk '{print $46}'`
+   h2olimit=`echo ${oi}        | awk '{print $47}'`
+   isfclyrm=`echo ${oi}        | awk '{print $48}'`
+   icanturb=`echo ${oi}        | awk '{print $49}'`
+   ubmin=`echo ${oi}           | awk '{print $50}'`
+   ugbmin=`echo ${oi}          | awk '{print $51}'`
+   ustmin=`echo ${oi}          | awk '{print $52}'`
+   gamm=`echo ${oi}            | awk '{print $53}'`
+   gamh=`echo ${oi}            | awk '{print $54}'`
+   tprandtl=`echo ${oi}        | awk '{print $55}'`
+   ribmax=`echo ${oi}          | awk '{print $56}'`
+   atmco2=`echo ${oi}          | awk '{print $57}'`
+   thcrit=`echo ${oi}          | awk '{print $58}'`
+   smfire=`echo ${oi}          | awk '{print $59}'`
+   ifire=`echo ${oi}           | awk '{print $60}'`
+   fireparm=`echo ${oi}        | awk '{print $61}'`
+   ipercol=`echo ${oi}         | awk '{print $62}'`
+   isoilbc=`echo ${oi}         | awk '{print $63}'`
+   runoff=`echo ${oi}          | awk '{print $64}'`
+   imetrad=`echo ${oi}         | awk '{print $65}'`
+   ibranch=`echo ${oi}         | awk '{print $66}'`
+   icanrad=`echo ${oi}         | awk '{print $67}'`
+   crown=`echo   ${oi}         | awk '{print $68}'`
+   ltransvis=`echo ${oi}       | awk '{print $69}'`
+   lreflectvis=`echo ${oi}     | awk '{print $70}'`
+   ltransnir=`echo ${oi}       | awk '{print $71}'`
+   lreflectnir=`echo ${oi}     | awk '{print $72}'`
+   orienttree=`echo ${oi}      | awk '{print $73}'`
+   orientgrass=`echo ${oi}     | awk '{print $74}'`
+   clumptree=`echo ${oi}       | awk '{print $75}'`
+   clumpgrass=`echo ${oi}      | awk '{print $76}'`
+   ivegtdyn=`echo ${oi}        | awk '{print $77}'`
+   igndvap=`echo ${oi}         | awk '{print $78}'`
+   iphen=`echo ${oi}           | awk '{print $79}'`
+   iallom=`echo ${oi}          | awk '{print $80}'`
+   ibigleaf=`echo ${oi}        | awk '{print $81}'`
+   irepro=`echo ${oi}          | awk '{print $82}'`
    #---------------------------------------------------------------------------------------#
 
 
@@ -254,6 +257,34 @@ do
       fi
 
       case ${script} in
+      plot_yearly.r)
+         if [ ${metdriver} != 'Sheffield' ]
+         then
+            thisyeara=${metcyca}
+            thisyearz=${metcycz}
+            for i in ${shiftiata}
+            do
+               if [ 'x'${i} == 'x'${polyiata} ]
+               then
+                  echo '     -> Shifting met cycle'
+                  let metcycle=${metcycz}-${metcyca}+1
+                  let deltayr=${shiftcycle}*${metcycle}
+                  let thisyeara=${metcyca}+${deltayr}
+                  let thisyearz=${metcycz}+${deltayr}
+               fi # end [ ${i} == ${iata} ]
+            done #end for i in ${shiftiata}
+         else
+            thisyeara=${metcyca}
+            thisyearz=${metcycz}
+         fi # end [ ${metdriver} != 'Sheffield' ]
+         thismontha=${montha}
+         thismonthz=${monthz}
+         thisdatea=${datea}
+         epostout='pyrs_epost.out'
+         epostsh='pyrs_epost.sh'
+         epostlsf='pyrs_epost.lsf'
+         epostjob='eb-pyrs-'${polyname}
+         ;;
       plot_monthly.r)
          if [ ${onemetcycle} == 'y' ]
          then
@@ -448,6 +479,7 @@ do
       sed -i s@thisdatez@${datez}@g               ${here}/${polyname}/${script}
       sed -i s@thishourz@${hourz}@g               ${here}/${polyname}/${script}
       sed -i s@thisminuz@${minuz}@g               ${here}/${polyname}/${script}
+      sed -i s@thisseasonmona@${seasonmona}@g     ${here}/${polyname}/${script}
       sed -i s@myphysiol@${iphysiol}@g            ${here}/${polyname}/${script}
       sed -i s@myallom@${iallom}@g                ${here}/${polyname}/${script}
       sed -i s@mydroughtmark@${droughtmark}@g     ${here}/${polyname}/${script}

@@ -149,7 +149,7 @@ subroutine canopy_photosynthesis(csite,cmet,mzg,ipa,lsl,ntext_soil              
       end do
       !------------------------------------------------------------------------------------!
 
-   case (2)
+   case (2:4)
       !------------------------------------------------------------------------------------!
       !     The available water factor is the soil moisture at field capacity minus wilt-  !
       ! ing point, scaled by the wilting factor, defined as a function of soil potential   !
