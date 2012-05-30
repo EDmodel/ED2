@@ -252,6 +252,7 @@ subroutine sfcrad_ed(cosz,cosaoi,csite,mzg,mzs,ntext_soil,ncol_soil,maxcohort,tu
    integer                                       :: colour
    integer                                       :: k
    integer                                       :: ksn
+   integer                                       :: tuco_leaf
    real                                          :: fcpct
    real                                          :: albedo_soil_par
    real                                          :: albedo_soil_nir
@@ -395,6 +396,7 @@ subroutine sfcrad_ed(cosz,cosaoi,csite,mzg,mzs,ntext_soil,ncol_soil,maxcohort,tu
       !------------------------------------------------------------------------------------!
       cohort_count = 0
       tuco         = 0
+      tuco_leaf    = 0
       !------------------------------------------------------------------------------------!
 
 
@@ -456,22 +458,30 @@ subroutine sfcrad_ed(cosz,cosaoi,csite,mzg,mzs,ntext_soil,ncol_soil,maxcohort,tu
             if (cpatch%leaf_resolvable(ico) .or. cpatch%wood_resolvable(ico)) then
                !----- This will eventually have the index of the tallest used cohort. -----!
                tuco = ico
+               !---------------------------------------------------------------------------!
 
                cohort_count                          = cohort_count + 1
                pft_array              (cohort_count) = cpatch%pft(ico)
+
+
+
                !---------------------------------------------------------------------------!
                !     Here we only tell the true LAI if the leaf is resolvable, and the     !
-               ! true WAI if the wood is resolvable.                                       !
+               ! true WAI if the wood is resolvable.  Also, for photosynthesis, we must    !
+               ! keep track of the tallest cohort that has leaves (we track the array      !
+               ! counters because we will extract the information directly from the        !
+               ! arrays.                                                                   !
                !---------------------------------------------------------------------------!
                if (cpatch%leaf_resolvable(ico)) then
-                  lai_array              (cohort_count) = dble(cpatch%lai(ico))
+                  tuco_leaf                 = cohort_count
+                  lai_array  (cohort_count) = dble(cpatch%lai(ico))
                else
-                  lai_array              (cohort_count) = 0.d0
+                  lai_array  (cohort_count) = 0.d0
                end if
                if (cpatch%wood_resolvable(ico)) then
-                  wai_array              (cohort_count) = dble(cpatch%wai(ico))
+                  wai_array  (cohort_count) = dble(cpatch%wai(ico))
                else
-                  wai_array              (cohort_count) = 0.d0
+                  wai_array  (cohort_count) = 0.d0
                end if
                !---------------------------------------------------------------------------!
 
@@ -487,6 +497,7 @@ subroutine sfcrad_ed(cosz,cosaoi,csite,mzg,mzs,ntext_soil,ncol_soil,maxcohort,tu
                light_level_array      (cohort_count) = 0.d0
                light_beam_level_array (cohort_count) = 0.d0
                light_diff_level_array (cohort_count) = 0.d0
+               !---------------------------------------------------------------------------!
 
                !---------------------------------------------------------------------------!
                !      Decide whether to assume infinite crown, or the crown area allometry !
@@ -900,16 +911,22 @@ subroutine sfcrad_ed(cosz,cosaoi,csite,mzg,mzs,ntext_soil,ncol_soil,maxcohort,tu
             ! possible PAR is just the PAR from the tallest resolvable cohort is good      !
             ! enough.                                                                      !
             !------------------------------------------------------------------------------!
-            ipft      = pft_array(cohort_count)
-            wleaf_vis = sngloff( clumping_factor(ipft) * (1.d0 - leaf_scatter_vis(ipft))   &
-                               * LAI_array(cohort_count)                                   &
-                               / ( clumping_factor(ipft) * (1.d0 - leaf_scatter_vis(ipft)) &
-                                 * LAI_array(cohort_count)                                 &
-                                 + (1.d0 - wood_scatter_vis(ipft))                         &
-                                 * WAI_array(cohort_count) )                               &
-                               , tiny_offset)
-            csite%par_l_beam_max(ipa)    = par_v_beam_array(cohort_count)    * wleaf_vis
-            csite%par_l_diffuse_max(ipa) = par_v_diffuse_array(cohort_count) * wleaf_vis
+            if (tuco_leaf /= 0) then
+               ipft      = pft_array(tuco_leaf)
+               wleaf_vis = sngloff( clumping_factor(ipft)                                  &
+                                  * (1.d0 - leaf_scatter_vis(ipft))                        &
+                                  * LAI_array(tuco_leaf)                                   &
+                                  / ( clumping_factor(ipft)                                &
+                                    * (1.d0 - leaf_scatter_vis(ipft))                      &
+                                    * LAI_array(tuco_leaf)                                 &
+                                    + (1.d0 - wood_scatter_vis(ipft))                      &
+                                    * WAI_array(tuco_leaf) )                               &
+                                  , tiny_offset)
+               csite%par_l_beam_max(ipa)    = par_v_beam_array(tuco_leaf)    * wleaf_vis   &
+                                            / LAI_array(tuco_leaf)
+               csite%par_l_diffuse_max(ipa) = par_v_diffuse_array(tuco_leaf) * wleaf_vis   &
+                                            / LAI_array(tuco_leaf)
+            end if
             !------------------------------------------------------------------------------!
 
 

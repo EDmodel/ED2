@@ -890,7 +890,7 @@ $CUPARM_OPTIONS
    ! PS3: If NCLOUDS >= 3, then the middle ones will necessarily use Grell's               !
    !      parameterization.                                                                !
    !---------------------------------------------------------------------------------------!
-   NCLOUDS  = 2,
+   NCLOUDS  = 1,
    !---------------------------------------------------------------------------------------!
 
 
@@ -946,7 +946,7 @@ $CUPARM_OPTIONS
    !             (grell_coms.f90).  Default min_down_radius is 900.                        !
    ! DEPTH_MIN - Minimum depth that the cloud must have [m].                               !
    !---------------------------------------------------------------------------------------!
-   RADIUS    = 12000., 600., ! 4577., 1746., 666.,
+   RADIUS    = 10000., 600., ! 4577., 1746., 666.,
    DEPTH_MIN =  1200., 100., ! 457.7, 174.6, 66.6,
    !---------------------------------------------------------------------------------------!
 
@@ -972,7 +972,7 @@ $CUPARM_OPTIONS
    !---------------------------------------------------------------------------------------!
    !     The following variables are scalars.                                              !
    !---------------------------------------------------------------------------------------!
-   CLD2PREC = 0.001,  ! Ratio of conversion of condensates to precipitation.       [   ---]
+   CLD2PREC = -0.5 ,  ! Ratio of conversion of condensates to precipitation.       [   ---]
    ZKBMAX   = 4000.,  ! Maximum AGL height in which updrafts can originate.        [     m]
    ZCUTDOWN = 3000.,  ! Maximum AGL height in which downdrafts can originate.      [     m]
    Z_DETR   = 1250.,  ! Top of the downdraft detrainment layer                     [     m]
@@ -999,7 +999,7 @@ $CUPARM_OPTIONS
    !  !----------------------------------------------------------------------------------! !
    !                                                                                       !
    !---------------------------------------------------------------------------------------!
-   CLOSURE_TYPE = 'NC',
+   CLOSURE_TYPE = 'KF',
    !---------------------------------------------------------------------------------------!
 
    !---------------------------------------------------------------------------------------!
@@ -1174,7 +1174,7 @@ $MODEL_OPTIONS
    !             1 -- yes.  That's the standard for most runs.                             !
    !---------------------------------------------------------------------------------------!
    ISWRTYP  = 3,
-   ILWRTYP  = 4,
+   ILWRTYP  = 1,
    ICUMFDBK = 1,
    RADFRQ   = 600.,
    LONRAD   = 1,
@@ -1208,8 +1208,8 @@ $MODEL_OPTIONS
       !                    will be the minimum SITE area (I know it's confusing, but the   !
       !                    definition of PATCH in LEAF is different from ED).              !
       !------------------------------------------------------------------------------------!
-      NPATCH         = 5,
-      NVEGPAT        = 4,
+      NPATCH         = 2,
+      NVEGPAT        = 1,
       MIN_PATCH_AREA = 0.005,
       !------------------------------------------------------------------------------------!
 
@@ -1235,7 +1235,7 @@ $MODEL_OPTIONS
       !           must not exceed DTLONG.  In case DTLONG < DTLEAF, DTLONG will be used    !
       !           instead
       !------------------------------------------------------------------------------------!
-      ISFCL  =  1,
+      ISFCL  =  5,
       DTLEAF = 6.,
       !------------------------------------------------------------------------------------!
 
@@ -1342,7 +1342,7 @@ $MODEL_OPTIONS
       !           or 1, only the first value will be considered, and if ICO2=2, then       !
       !           provide one value per level.  Unit here is µmol/mol.                     !
       !------------------------------------------------------------------------------------!
-      ICO2   =    0,
+      ICO2   =    1,
       CO2CON = 380.,
       !------------------------------------------------------------------------------------!
 

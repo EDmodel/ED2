@@ -43,8 +43,7 @@ subroutine structural_growth(cgrid, month)
    integer                       :: ico
    integer                       :: ilu
    integer                       :: ipft
-   integer                       :: update_month
-   integer                       :: imonth
+   integer                       :: prev_month
    real                          :: salloc
    real                          :: salloci
    real                          :: balive_in
@@ -56,6 +55,7 @@ subroutine structural_growth(cgrid, month)
    real                          :: bstorage_in
    real                          :: agb_in
    real                          :: ba_in
+   real                          :: cbr_now
    real                          :: f_bseeds
    real                          :: f_bdead
    real                          :: balive_mort_litter
@@ -65,8 +65,6 @@ subroutine structural_growth(cgrid, month)
    real                          :: seed_litter
    real                          :: net_seed_N_uptake
    real                          :: net_stem_N_uptake
-   real                          :: cb_act
-   real                          :: cb_max
    real                          :: old_leaf_hcap
    real                          :: old_wood_hcap
    !---------------------------------------------------------------------------------------!
@@ -230,40 +228,61 @@ subroutine structural_growth(cgrid, month)
 
 
                !----- Update annual average carbon balances for mortality. ----------------!
-               update_month = month - 1
-               if(update_month == 0) update_month = 12
-               cpatch%cb(update_month,ico)     = cpatch%cb(13,ico)
-               cpatch%cb_max(update_month,ico) = cpatch%cb_max(13,ico)
+               if (month == 1) then
+                  prev_month = 12
+               else
+                  prev_month = month - 1 
+               end if
+               cpatch%cb    (prev_month,ico) = cpatch%cb    (13,ico)
+               cpatch%cb_max(prev_month,ico) = cpatch%cb_max(13,ico)
+               !---------------------------------------------------------------------------!
+
+
 
                !----- If monthly files are written, save the current carbon balance. ------!
                if (associated(cpatch%mmean_cb)) then
                   cpatch%mmean_cb(ico)         = cpatch%cb(13,ico)
                end if
+               !---------------------------------------------------------------------------!
+
+
 
                !----- Reset the current month integrator. ---------------------------------!
                cpatch%cb(13,ico)               = 0.0
                cpatch%cb_max(13,ico)           = 0.0
+               !---------------------------------------------------------------------------!
 
-               !----- Compute the relative carbon balance. --------------------------------!
-               cb_act = 0.0
-               cb_max = 0.0
-               
-               if (is_grass(ipft).and. igrass==1) then  !!Grass loop, use past month's carbon balance only
-                  cb_act =  cpatch%cb(update_month,ico)
-                  cb_max =  cpatch%cb_max(update_month,ico)
-               else  !!Tree loop, use annual average carbon balance
-                  do imonth = 1,12
-                     cb_act = cb_act + cpatch%cb(imonth,ico)
-                     cb_max = cb_max + cpatch%cb_max(imonth,ico)
-                  end do
+
+
+               !---------------------------------------------------------------------------!
+               !     cbr_bar is the running average carbon balance for the past month      !
+               ! (if this is a new grass) or past year (if this is a tree or an old        !
+               ! grass).                                                                   !
+               !---------------------------------------------------------------------------!
+               if (is_grass(ipft) .and. igrass == 1) then  
+                  !----- New grasses. -----------------------------------------------------!
+                  if (cpatch%cb_max(prev_month,ico) > 0.0) then
+                     cpatch%cbr_bar(ico) = cpatch%cb    (prev_month,ico)                   &
+                                         / cpatch%cb_max(prev_month,ico)
+                  else
+                     cpatch%cbr_bar(ico) = 0.0
+                  end if
+                  !------------------------------------------------------------------------!
+               else  
+                  !----- Trees or old grasses, update the running average. ----------------!
+                  if (cpatch%cb_max(prev_month,ico) > 0.0) then
+                     cbr_now = cpatch%cb(prev_month,ico) / cpatch%cb_max(prev_month,ico)
+                  else
+                     cbr_now = 0.0
+                  end if
+                  !------------------------------------------------------------------------!
+
+                  !------------------------------------------------------------------------!
+                  !      Update the running average.                                       !
+                  !------------------------------------------------------------------------!
+                  cpatch%cbr_bar(ico) = (11. * cpatch%cbr_bar(ico) + cbr_now) / 12.
+                  !------------------------------------------------------------------------!
                end if
-               
-               if(cb_max > 0.0)then
-                  cpatch%cbr_bar(ico) = cb_act / cb_max
-               else
-                  cpatch%cbr_bar(ico) = 0.0
-               end if
-               
                !---------------------------------------------------------------------------!
 
 
@@ -317,12 +336,14 @@ subroutine structural_growth_eq_0(cgrid, month)
                             , c2n_stem               & ! intent(in)
                             , l2n_stem               & ! intent(in)
                             , negligible_nplant      & ! intent(in)
-                            , agf_bs                 ! ! intent(in)
+                            , agf_bs                 & ! intent(in)
+                            , is_grass               ! ! intent(in)
    use decomp_coms   , only : f_labile               ! ! intent(in)
    use ed_max_dims   , only : n_pft                  & ! intent(in)
                             , n_dbh                  ! ! intent(in)
    use ed_therm_lib  , only : calc_veg_hcap          & ! function
                             , update_veg_energy_cweh ! ! function
+   use ed_misc_coms  , only : igrass                 ! ! intent(in)
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    type(edtype)     , target     :: cgrid
@@ -337,10 +358,10 @@ subroutine structural_growth_eq_0(cgrid, month)
    integer                       :: ico
    integer                       :: ilu
    integer                       :: ipft
-   integer                       :: update_month
-   integer                       :: imonth
+   integer                       :: prev_month
    real                          :: salloc
    real                          :: salloci
+   real                          :: cbr_now
    real                          :: balive_in
    real                          :: bdead_in
    real                          :: hite_in
@@ -358,8 +379,6 @@ subroutine structural_growth_eq_0(cgrid, month)
    real                          :: seed_litter
    real                          :: net_seed_N_uptake
    real                          :: net_stem_N_uptake
-   real                          :: cb_act
-   real                          :: cb_max
    real                          :: old_leaf_hcap
    real                          :: old_wood_hcap
    !---------------------------------------------------------------------------------------!
@@ -453,37 +472,70 @@ subroutine structural_growth_eq_0(cgrid, month)
                !---------------------------------------------------------------------------!
                net_seed_N_uptake = cpatch%bseeds(ico) * cpatch%nplant(ico)                 &
                                  * (1.0 / c2n_recruit(ipft) - 1.0 / c2n_storage)
+               !---------------------------------------------------------------------------!
+
+
 
                !----- Decrement the storage pool. -----------------------------------------!
                cpatch%bstorage(ico) = cpatch%bstorage(ico) * (1.0 - f_bdead - f_bseeds)
+               !---------------------------------------------------------------------------!
 
 
                !----- Update annual average carbon balances for mortality. ----------------!
-               update_month = month - 1
-               if(update_month == 0) update_month = 12
-               cpatch%cb(update_month,ico)     = cpatch%cb(13,ico)
-               cpatch%cb_max(update_month,ico) = cpatch%cb_max(13,ico)
+               if (month == 1) then
+                  prev_month = 12
+               else
+                  prev_month = month - 1
+               end if
+               cpatch%cb    (prev_month,ico) = cpatch%cb    (13,ico)
+               cpatch%cb_max(prev_month,ico) = cpatch%cb_max(13,ico)
+               !---------------------------------------------------------------------------!
+
+
 
                !----- If monthly files are written, save the current carbon balance. ------!
                if (associated(cpatch%mmean_cb)) then
                   cpatch%mmean_cb(ico)         = cpatch%cb(13,ico)
                end if
+               !---------------------------------------------------------------------------!
+
+
 
                !----- Reset the current month integrator. ---------------------------------!
                cpatch%cb(13,ico)               = 0.0
                cpatch%cb_max(13,ico)           = 0.0
+               !---------------------------------------------------------------------------!
 
-               !----- Compute the relative carbon balance. --------------------------------!
-               cb_act = 0.0
-               cb_max = 0.0
-               do imonth = 1,12
-                  cb_act = cb_act + cpatch%cb(imonth,ico)
-                  cb_max = cb_max + cpatch%cb_max(imonth,ico)
-               end do
-               if(cb_max > 0.0)then
-                  cpatch%cbr_bar(ico) = cb_act / cb_max
-               else
-                  cpatch%cbr_bar(ico) = 0.0
+
+
+               !---------------------------------------------------------------------------!
+               !     cbr_bar is the running average carbon balance for the past month      !
+               ! (if this is a new grass) or past year (if this is a tree or an old        !
+               ! grass).                                                                   !
+               !---------------------------------------------------------------------------!
+               if (is_grass(ipft) .and. igrass == 1) then  
+                  !----- New grasses. -----------------------------------------------------!
+                  if (cpatch%cb_max(prev_month,ico) > 0.0) then
+                     cpatch%cbr_bar(ico) = cpatch%cb    (prev_month,ico)                   &
+                                         / cpatch%cb_max(prev_month,ico)
+                  else
+                     cpatch%cbr_bar(ico) = 0.0
+                  end if
+                  !------------------------------------------------------------------------!
+               else  
+                  !----- Trees or old grasses, update the running average. ----------------!
+                  if (cpatch%cb_max(prev_month,ico) > 0.0) then
+                     cbr_now = cpatch%cb(prev_month,ico) / cpatch%cb_max(prev_month,ico)
+                  else
+                     cbr_now = 0.0
+                  end if
+                  !------------------------------------------------------------------------!
+
+                  !------------------------------------------------------------------------!
+                  !      Update the running average.                                       !
+                  !------------------------------------------------------------------------!
+                  cpatch%cbr_bar(ico) = (11. * cpatch%cbr_bar(ico) + cbr_now) / 12.
+                  !------------------------------------------------------------------------!
                end if
                !---------------------------------------------------------------------------!
 

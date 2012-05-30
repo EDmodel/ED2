@@ -545,7 +545,7 @@ subroutine leaf3_timestep()
                                      ,leaf_g(ngrid)%veg_water               (    i,j,ip)   &
                                      ,leaf_g(ngrid)%veg_hcap                (    i,j,ip)   )
 
-                  call leaf3_grndvap(leaf_g(ngrid)%soil_energy               (nzg,i,j,ip)   &
+                  call leaf3_grndvap(leaf_g(ngrid)%soil_energy              (nzg,i,j,ip)   &
                                     ,leaf_g(ngrid)%soil_water               (nzg,i,j,ip)   &
                                     ,leaf_g(ngrid)%soil_text                (nzg,i,j,ip)   &
                                     ,leaf_g(ngrid)%sfcwater_energy          (  1,i,j,ip)   &
