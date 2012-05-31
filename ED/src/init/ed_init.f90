@@ -78,7 +78,7 @@ subroutine set_site_defprops()
    integer                    :: npoly
    integer                    :: nsite
    integer                    :: k
-   real                       :: sc
+   integer                    :: sc
    real                       :: zmin
    real                       :: fa
    real                       :: fb
