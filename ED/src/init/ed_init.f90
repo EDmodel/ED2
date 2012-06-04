@@ -338,7 +338,7 @@ subroutine load_ecosystem_state()
       do igr = 1,ngrids
          call read_site_file(edgrid_g(igr),igr)
       end do
-   case (4)
+   case (4,42)
       continue
    case default
          call set_site_defprops()
@@ -409,6 +409,17 @@ subroutine load_ecosystem_state()
          end do
       end select
 
+   case (42)
+      write(unit=*,fmt='(a,i3.3)')                                                         &
+           ' + Initializing Soils+Veg from nearest neighbor ED2.1 files. Node: ',mynum
+      call read_ed21_polyclone
+      select case (ibigleaf)
+      case (1)
+         do igr=1,ngrids
+            call ed_bigleaf_init(edgrid_g(igr))
+         end do
+      end select
+      
    end select
 
 
