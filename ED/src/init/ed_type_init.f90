@@ -346,7 +346,8 @@ subroutine init_ed_patch_vars(csite,ip1,ip2,lsl)
                              , minimum_canopy_depth ! ! intent(in)
    use ed_misc_coms   , only : imoutput             & ! intent(in)
                              , idoutput             & ! intent(in)
-                             , iqoutput             ! ! intent(in)
+                             , iqoutput             & ! intent(in)
+                             , ied_init_mode   
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
    type(sitetype)   , target     :: csite
@@ -361,7 +362,9 @@ subroutine init_ed_patch_vars(csite,ip1,ip2,lsl)
 
 
    !------ Initialise soil state variables. -----------------------------------------------!
-   csite%soil_water(1:nzg,ip1:ip2)     = 0.0
+   if (ied_init_mode.ne.7)then
+      csite%soil_water(1:nzg,ip1:ip2)     = 0.0
+   end if
    csite%soil_energy(1:nzg,ip1:ip2)   = 0.0
    csite%soil_tempk(1:nzg,ip1:ip2)    = 0.0
    csite%soil_fracliq(1:nzg,ip1:ip2)  = 0.0
@@ -559,7 +562,7 @@ subroutine init_ed_patch_vars(csite,ip1,ip2,lsl)
    csite%mineralized_N_loss          (ip1:ip2) = 0.0
    csite%mineralized_N_input         (ip1:ip2) = 0.0
    
-   csite%watertable(ip1:ip2)                  = slz(lsl)
+   csite%watertable(ip1:ip2) = slz(lsl)
    csite%ustar (ip1:ip2) = 0.0
    csite%tstar (ip1:ip2) = 0.0
    csite%qstar (ip1:ip2) = 0.0

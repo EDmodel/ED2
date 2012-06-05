@@ -79,8 +79,8 @@ subroutine grell_cupar_driver(cldd,clds)
          ! 2. We now initialise some variables that don't depend on the cloud spectral     !
          !    size because they must be done only once.                                    !
          !---------------------------------------------------------------------------------!
-         call grell_cupar_initial(i,j,confrq)
-
+         call grell_cupar_initial(i,j,dtlt)  ! CHANGED PER MLO INSTRUCTIONS (RGK)
+!         call grell_cupar_initial(i,j,confrq)
 
          !---------------------------------------------------------------------------------!
          ! 3. We will now go through the cloud sizes for the first time, in order to solve !
@@ -94,9 +94,14 @@ subroutine grell_cupar_driver(cldd,clds)
          ! 4. We now compute the dynamic control, which will determine the characteristic  !
          !    mass flux for each Grell cumulus cloud.                                      !
          !---------------------------------------------------------------------------------!
-         call grell_cupar_dynamic(cldd,clds,nclouds,confrq,maxens_cap,maxens_eff           &
-                                 ,maxens_lsf,maxens_dyn,mgmzp,closure_type                 &
-                                 ,comp_modif_thermo,prec_cld,cld2prec,mynum,i,j)
+!        CHANGED PER MLO INSTRUCTIONS (RGK)
+!         call grell_cupar_dynamic(cldd,clds,nclouds,confrq,maxens_cap,maxens_eff         &
+!                                 ,maxens_lsf,maxens_dyn,mgmzp,closure_type               &
+!                                 ,comp_modif_thermo,prec_cld,cld2prec,mynum,i,j)
+
+         call grell_cupar_dynamic(cldd,clds,nclouds,dtlt,maxens_cap,maxens_eff           &
+              ,maxens_lsf,maxens_dyn,mgmzp,closure_type                 &
+              ,comp_modif_thermo,prec_cld,cld2prec,mynum,i,j)
 
          !---------------------------------------------------------------------------------!
          ! 5. We now go through the cloud sizes again, to compute the feedback to the      !

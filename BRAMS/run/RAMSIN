@@ -1959,6 +1959,13 @@ $ED2_INFO
    !                                                                                       !
    !    6 - Initialize with ED-2 style files without multiple sites, exactly like option   !
    !        2, except that the PFT types are preserved.                                    !
+   !                                                                                       !
+   !    7.  Initialize from a list of both POI and gridded ED2.1 state files, organized    !
+   !        in the same manner as 5.  This method overrides the soil database info and     !
+   !        takes the soil texture and soil moisture information from the initializing     !
+   !        ED2.1 state file.  It allows for different layering, and assigns via nearest   !
+   !        neighbor.  Set ISOILSTATE=0 for compatibility purposes.                        !
+   !                                                                                       !
    !---------------------------------------------------------------------------------------!
    IED_INIT_MODE   = 5,
    !---------------------------------------------------------------------------------------!

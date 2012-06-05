@@ -251,7 +251,8 @@ subroutine ed_init_atm()
             patchloop2: do ipa = 1,csite%npatches
                cpatch => csite%patch(ipa)
 
-               if (csite%soil_tempk(1,ipa) == -100.0 .or. isoilstateinit == 0) then
+               if (csite%soil_tempk(1,ipa) == -100.0 .or. isoilstateinit == 0 &
+                    .or. ied_init_mode .eq. 7 ) then  ! The third is redundant, but keep it
 
                   groundloop2: do k = 1, nzg
                      nsoil=cpoly%ntext_soil(k,isi)
@@ -275,7 +276,7 @@ subroutine ed_init_atm()
                      !---------------------------------------------------------------------!
                      !    Initialise soil moisture and internal energy.                    !
                      !---------------------------------------------------------------------!
-                     if (ied_init_mode .ne. 42) then
+                     if (ied_init_mode .ne. 7) then
                         csite%soil_water(k,ipa)   = ed_soil_idx2water(slmstr(k),nsoil)
                      end if
                      csite%soil_energy(k,ipa)  = cmtl2uext( soil(nsoil)%slcpd              &

@@ -974,7 +974,7 @@ subroutine read_ed21_history_unstruct
    logical                                                      :: exists
    logical                                                      :: rescale_glob
    logical                                                      :: rescale_loc
-   real                  , dimension(huge_polygon)              :: pdist
+   real                  , dimension(  :)         , allocatable :: pdist
    real                  , dimension(huge_polygon)              :: plon_list
    real                  , dimension(huge_polygon)              :: plat_list
    real                  , dimension(huge_polygon)              :: dist_rscl
@@ -1156,10 +1156,13 @@ subroutine read_ed21_history_unstruct
       ! polygon is the closest one to each polygon.                                        !
       !------------------------------------------------------------------------------------!
       allocate (pclosest(cgrid%npolygons),psrcfile(cgrid%npolygons))
-
+      allocate(pdist(total_grid_py))
       nneighloop: do ipy=1,cgrid%npolygons
+         
+
          !----- Reset pdist to a very large number. ---------------------------------------!
-         pdist(:)   = 1.e20
+         
+         pdist(1:total_grid_py)   = 1.e20
 
          do ifpy=1,total_grid_py
             pdist(ifpy) = dist_gc(plon_list(ifpy),cgrid%lon(ipy)                           &
@@ -1189,7 +1192,7 @@ subroutine read_ed21_history_unstruct
          end select
       end do nneighloop
       
-
+      deallocate(pdist)
       !------------------------------------------------------------------------------------!
       !     Now that we have all polygons matched with their nearest neighbours, we will   !
       ! loop over all files instead of all polygons.  This is to avoid opening and closing !
@@ -2038,7 +2041,9 @@ subroutine read_ed21_polyclone
    use disturb_coms   , only : ianth_disturb           & ! intent(in)
                              , lu_rescale_file         & ! intent(in)
                              , min_patch_area          ! ! intent(in)
-   use soil_coms      , only : soil                    ! ! intent(in)
+   use soil_coms      , only : soil                    & ! intent(in)
+                             , slzt                    &
+                             , isoilcol
 
    implicit none
 
@@ -2066,6 +2071,11 @@ subroutine read_ed21_polyclone
    integer               , dimension(  :)         , allocatable :: paco_id
    integer               , dimension(  :)         , allocatable :: this_ntext
    integer               , dimension(  :)         , allocatable :: islakesite
+   real    :: mindist
+   integer :: minind
+   real                  ,  dimension(:, :)        , allocatable :: this_soil_water
+   real                  ,  dimension(  :)        , allocatable :: dset_slzm
+   integer                , dimension(  :)        , allocatable :: slz_match
    integer                                                      :: year
    integer                                                      :: igr
    integer                                                      :: ipy
@@ -2073,18 +2083,13 @@ subroutine read_ed21_polyclone
    integer                                                      :: is
    integer                                                      :: ipa
    integer                                                      :: ico
-   integer                                                      :: isi_best
-   integer                                                      :: is_best
-   integer                                                      :: isi_try
-   integer                                                      :: is_try
    integer                                                      :: nsoil
-   integer                                                      :: nsoil_try
    integer                                                      :: nsites_inp
    integer                                                      :: xclosest
    integer                                                      :: nflist
    integer                                                      :: nhisto
    integer                                                      :: nrescale
-   integer                                                      :: k
+   integer                                                      :: k,kd,km
    integer                                                      :: nf
    integer                                                      :: dset_npolygons_global
    integer                                                      :: dset_nsites_global
@@ -2110,7 +2115,8 @@ subroutine read_ed21_polyclone
    logical                                                      :: exists
    logical                                                      :: rescale_glob
    logical                                                      :: rescale_loc
-   real                  , dimension(huge_polygon)              :: pdist
+   real                  , dimension(  :)         , allocatable :: pdist
+   !real                  , dimension(huge_polygon)              :: pdist
    real                  , dimension(huge_polygon)              :: plon_list
    real                  , dimension(huge_polygon)              :: plat_list
    real                  , dimension(huge_polygon)              :: dist_rscl
@@ -2294,10 +2300,10 @@ subroutine read_ed21_polyclone
       ! polygon is the closest one to each polygon.                                        !
       !------------------------------------------------------------------------------------!
       allocate (pclosest(cgrid%npolygons),psrcfile(cgrid%npolygons))
-
+      allocate (pdist(total_grid_py))
       nneighloop: do ipy=1,cgrid%npolygons
          !----- Reset pdist to a very large number. ---------------------------------------!
-         pdist(:)   = 1.e20
+         pdist(1:total_grid_py)   = 1.e20
 
          do ifpy=1,total_grid_py
             pdist(ifpy) = dist_gc(plon_list(ifpy),cgrid%lon(ipy)                           &
@@ -2309,7 +2315,7 @@ subroutine read_ed21_polyclone
          
  
       end do nneighloop
-      
+      deallocate(pdist)
 
       !------------------------------------------------------------------------------------!
       !     Now that we have all polygons matched with their nearest neighbours, we will   !
@@ -2354,8 +2360,9 @@ subroutine read_ed21_polyclone
          call h5dread_f(dset_id, H5T_NATIVE_INTEGER,dset_nzg,globdims, hdferr)
          call h5sclose_f(dspace_id, hdferr)
          call h5dclose_f(dset_id, hdferr)
+         
 
-         allocate(this_ntext(dset_nzg))
+ 
 
          call h5dopen_f(file_id,'NPOLYGONS_GLOBAL', dset_id, hdferr)
          call h5dget_space_f(dset_id, dspace_id, hdferr)
@@ -2430,6 +2437,28 @@ subroutine read_ed21_polyclone
          call h5dread_f(dset_id, H5T_NATIVE_INTEGER,paco_id,globdims, hdferr)
          call h5sclose_f(dspace_id, hdferr)
          call h5dclose_f(dset_id, hdferr)
+
+         dsetrank = 1
+         globdims(1) = dset_nzg
+         chnkdims(1) = dset_nzg
+         chnkoffs(1) = 0_8
+         memdims(1)  = dset_nzg 
+         memsize(1)  = dset_nzg
+         memoffs(1)  = 0_8
+        
+
+         allocate(this_ntext(dset_nzg))
+         allocate(dset_slzm(dset_nzg))
+         
+         call hdf_getslab_r(dset_slzm,'SLZ ',dsetrank                  &
+              ,iparallel,.true.)
+
+         ! Calculate the mid-points of the dataset soil-layers
+         do kd=1,dset_nzg-1
+            dset_slzm(kd) = 0.5*(dset_slzm(kd)+dset_slzm(kd+1))
+         end do
+         dset_slzm(dset_nzg) = 0.5*(dset_slzm(dset_nzg)+0.0)
+
 
 	 polyloop: do ipy = 1,cgrid%npolygons
 	 	       cpoly => cgrid%polygon(ipy)
@@ -2564,7 +2593,22 @@ subroutine read_ed21_polyclone
                   call hdf_getslab_i(cpoly%patch_count(is),'PATCH_COUNT ',dsetrank,iparallel,.true.)  
                   call hdf_getslab_i(cpoly%sitenum(is),'SITENUM ',dsetrank,iparallel,.true.)
                   call hdf_getslab_i(cpoly%lsl(is),'LSL_SI ',dsetrank,iparallel,.true.)   
-                  call hdf_getslab_i(cpoly%ncol_soil(is),'NCOL_SOIL_SI ',dsetrank,iparallel,.true.)
+                  
+                  call hdf_getslab_i(cpoly%ncol_soil(is),'NCOL_SOIL_SI ',dsetrank,iparallel,.false.)
+
+                  ! If this data is not available in the dataset, we should really just use
+                  ! a default value.  It is probably not a good idea to use values derived from
+                  ! a soils dataset earlier in the code, if we are no longer using the associated
+                  ! textures.
+
+                  if (cpoly%ncol_soil(is).eq.0) then
+                     write (unit=*,fmt='(a,i3)')                       &
+                          'Soil color info not in ED2.1 state file, using ISOILCOL=',isoilcol
+                     cpoly%ncol_soil(is)  = isoilcol
+                     cgrid%ncol_soil(ipy) = isoilcol
+                  end if
+                  
+
                   call hdf_getslab_r(cpoly%area(is),'AREA_SI ',dsetrank,iparallel,.true.)
                   call hdf_getslab_r(cpoly%patch_area(is),'PATCH_AREA ',dsetrank,iparallel,.true.)
                   call hdf_getslab_r(cpoly%elevation(is),'ELEVATION ',dsetrank,iparallel,.true.)
@@ -2599,6 +2643,8 @@ subroutine read_ed21_polyclone
                   call hdf_getslab_i( this_ntext(:), &
                        'NTEXT_SOIL_SI ',dsetrank, iparallel, .true.)
 
+                  
+
                   !------------------------------------------------------------------------!
                   !      The input file may have different number of soil layers than this !
                   ! simulation.  This is not a problem at this point because the soil maps !
@@ -2607,15 +2653,38 @@ subroutine read_ed21_polyclone
                   ! code...  For the time being, we assume here that there is only one     !
                   ! soil type, so all that we need is to save one layer for each site.     !
                   !------------------------------------------------------------------------!
-                  
-                  cpoly%ntext_soil(:,is) = this_ntext(dset_nzg)
 
+                  allocate(slz_match(nzg))
+                  do km=1,nzg     !km is k-model
+                     mindist = 1.e10
+                     minind  = -1
+                     do kd=1,dset_nzg  !kd is k-dset
+                        if (abs(slzt(km)-dset_slzm(kd))<mindist) then
+                           mindist = abs(slzt(km)-dset_slzm(kd))
+                           minind = kd
+                        end if
+                     end do
+                     if(minind>0)then
+                        slz_match(km)=minind
+                     else
+                        call fatal_error('Could not find soil layer match!',&
+                             'ed_read_polyclone','ed_read_ed21_history.F90')
+                     end if
+                     cpoly%ntext_soil(km,is) = this_ntext(slz_match(km))
+                  end do
+
+                  ! ALSO, LETS RE-ASSIGN THE LSL
+
+                  if (cpoly%lsl(is)>dset_nzg .or. cpoly%lsl(is)<1)then
+                     print*,"FUNKY LSL:",cpoly%lsl(is)
+                     stop
+                  else
+                     cpoly%lsl(is) = slz_match(cpoly%lsl(is))
+                  end if
                   
+
                   ! We also need to set all the default properties because they were bypassed
                   ! in ed_init
-                  
-                  
-
 
                   if (sipa_n(si_index) > 0) then
                      
@@ -2672,9 +2741,31 @@ subroutine read_ed21_polyclone
                      memsize(2)   = int(csite%npatches,8)
                      memoffs(2)   = 0_8
                      
+                     allocate(this_soil_water(dset_nzg,csite%npatches))
+                     call hdf_getslab_r(this_soil_water,'SOIL_WATER_PA '        &
+                          ,dsetrank,iparallel,.true.)
 
-                  call hdf_getslab_r(csite%soil_water,'SOIL_WATER_PA '        &
-                                    ,dsetrank,iparallel,.true.)
+                     ! ----------------------------------------------------------
+                     ! Go through the layer centers of the model layers
+                     ! Find the layer in the dataset that matches it most closely
+                     ! and copy soil-water from that dataset to the model
+                     ! ----------------------------------------------------------
+                     do ipa=1,csite%npatches
+                        do km=1,nzg
+                           
+!                           if( this_soil_water(slz_match(km),ipa) .gt.     &
+!                                soil(cpoly%ntext_soil(km,is))%slmsts .or.  &
+!                                this_soil_water(slz_match(km),ipa).le.0.0 ) then
+!
+!                              call fatal_error('Soil moisture is greater than porosity' &
+!                                   ,'read_ed21_polyclone','ed_read_ed21_history.F90')
+!                           end if
+                           csite%soil_water(km,ipa) = &
+                                min(this_soil_water(slz_match(km),ipa), &
+                                soil(cpoly%ntext_soil(km,is))%slmsts)
+                        end do
+                     end do
+                     deallocate(this_soil_water)
 
                   !------------------------------------------------------------------------!
                   !     Check whether area should be re-scaled.                            !
@@ -2948,8 +3039,11 @@ subroutine read_ed21_polyclone
 
                !----- Initialise the other patch-level variables. -------------------------!
                call init_ed_patch_vars(csite,1,csite%npatches,cpoly%lsl(isi))
-               
+
+               deallocate(slz_match)
+
             end if
+
          end do siteloop
          
          
@@ -2991,7 +3085,7 @@ subroutine read_ed21_polyclone
          
          deallocate (islakesite        )
          !------------------------------------------------------------------------------!
-         
+
       end do polyloop
       
       !----- Close the dataset. --------------------------------------------------------!
@@ -3008,12 +3102,13 @@ subroutine read_ed21_polyclone
       deallocate(sipa_n    ,sipa_id  )
       deallocate(pysi_n    ,pysi_id  )
       deallocate(this_ntext          )
-      
+      deallocate(dset_slzm           )
       
    end do rstfileloop
    
    !----- Initialise the other polygon-level variables. --------------------------------!
    call init_ed_poly_vars(cgrid)
+
    
    !----- Deallocate the closest index vector. -----------------------------------------!
    deallocate(pclosest,psrcfile)
